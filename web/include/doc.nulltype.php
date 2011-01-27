@@ -894,11 +894,11 @@ class doc_Nulltype
 	protected function DrawBankField()
 	{
 		global $tmpl;
-		if($this->doc_data['firm_id'])	$sql_add="OR `firm_id`='{$this->doc_data['firm_id']}')";
+		if($this->doc_data['firm_id'])	$sql_add="OR `firm_id`='{$this->doc_data['firm_id']}'";
 		else				$sql_add='';
 		$tmpl->AddText("Банк:<br>
 		<select name='bank'>");
-		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank' AND (`firm_id`='0' OR `num`='{$this->doc_data[16]}') $sql_add ORDER BY `num`");
+		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank' AND (`firm_id`='0' OR `num`='{$this->doc_data[16]}' $sql_add ) ORDER BY `num`");
 		if(mysql_errno())	throw new Exception("Не удалось выбрать список банков");
 		while($nxt=mysql_fetch_row($res))
 		{
