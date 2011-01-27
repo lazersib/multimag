@@ -60,10 +60,9 @@ class doc_s_Inform
 		{
 			$pos=rcv('pos');
 			
-			$rt=time()-60*60*24*30;
 			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_agent`.`name`, `doc_dopdata`.`value`
 			FROM `doc_list_pos`
-			INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0' AND `doc_list`.`date`>'$rt' AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
+			INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
 			LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 			LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='dataprib'
 			WHERE `doc_list_pos`.`tovar`='$pos'");
