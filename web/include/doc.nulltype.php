@@ -898,7 +898,7 @@ class doc_Nulltype
 		else				$sql_add='';
 		$tmpl->AddText("Банк:<br>
 		<select name='bank'>");
-		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank' AND (`firm_id`='0' OR `num`='{$this->doc_data[16]}' $sql_add ORDER BY `num`");
+		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank' AND (`firm_id`='0' OR `num`='{$this->doc_data[16]}') $sql_add ORDER BY `num`");
 		if(mysql_errno())	throw new Exception("Не удалось выбрать список банков");
 		while($nxt=mysql_fetch_row($res))
 		{
