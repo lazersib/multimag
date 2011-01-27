@@ -1,0 +1,263 @@
+body
+{
+	margin: 0;
+	padding: 0;
+	font-family: verdana, arial, helvetica, sans-serif;
+	font-size: 80%;
+	color: #000;
+	background-color: #fff;
+}
+
+input
+{
+	vertical-align:middle;
+	padding:0.3ex;
+	margin:0.5ex;
+	border:	1px solid #ccc;
+	-moz-border-radius:	4px;
+	border-radius:		4px;
+}
+
+textarea
+{
+	border:	1px solid #ccc;
+	background-color:#fcfcfc;
+	margin:1ex;
+	padding:1ex;
+	width: 90%;
+	height: 100px;
+	-moz-border-radius:	4px;
+	border-radius:		4px;
+}
+
+select
+{
+	border:	1px solid #ccc;
+	-moz-border-radius:	4px;
+	border-radius:		4px;
+}
+
+form
+{
+	margin:1ex;
+	padding:0
+}
+
+hr
+{
+	height: 1px;
+	border-width: 1px 0 0 0;
+	border-style: solid;
+	border-color: #ccc;
+}
+
+a, a:link, a:visited, a:active
+{
+	color:#0066CC;
+	background:transparent;
+	text-decoration:none;
+}
+
+a:hover
+{
+	color:#0066CC;
+	background:transparent;
+	text-decoration:underline;
+}
+
+h1, h2, h3, h4, h5, h6
+{
+	margin: 1.2em 0em 1.2em 0em;
+	font-weight: normal;
+	color:rgb(39,78,144);
+	background-color:transparent;
+}
+
+h1
+{
+	font-size: 2.0em;
+	margin-top: 0em;
+	margin-bottom: 0em;
+}
+
+h2
+{
+	font-size: 1.7em;
+}
+
+h3
+{
+	font-size: 1.4em;
+}
+
+h4
+{
+	font-size: 1.2em;
+}
+
+h5
+{
+	font-size: 1.0em;
+}
+h6
+{
+	font-size: 0.8em;
+}
+
+ol, ul, li
+{
+	font-size: 1.0em;
+	line-height: 1.8em;
+	margin-top: 0.2em;
+	margin-bottom: 0.1em;
+}
+
+p
+{
+	font-size: 1.0em;
+	line-height: 1.8em;
+	margin: 1.2em 0em 1.2em 0em;
+}
+
+li > p
+{
+	margin-top: 0.2em;
+}
+
+dt, dd
+{
+	font-size: 1.0em;
+	line-height: 1.8em;
+	margin-top: 0.2em;
+	margin-bottom: 0.1em;
+}
+
+pre, code {
+	font-family: monospace;
+	font-size: 1.1em;
+	line-height:1.5em;
+}
+
+acronym, cite
+{
+	border-bottom: 1px dotted rgb(153,153,153);
+	cursor: help;
+	margin: 0;
+	padding: 0 0 0.4px 0;
+	white-space:normal;
+}
+
+strong, b
+{
+	font-weight: bold;
+}
+
+img
+{
+	border: none 0px #ffffff;
+}
+
+table th
+{
+	BACKGROUND-COLOR: rgb(100,135,220);
+	color: #fff;
+	text-align: center;
+	font-weight: bold;
+}
+
+
+/* My styles !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+div.err
+{
+    width: 97%;
+    BORDER: #ee0000 1px solid;
+    FONT-SIZE: 14px;
+    text-align: center;
+    vertical-align: middle;
+    color: #ee0000 ;
+    padding: 10px;
+}
+
+div.ok
+{
+    width: 97%;
+    BORDER: #009900 1px solid;
+    FONT-SIZE: 14px;
+    text-align: center;
+    vertical-align: middle;
+    color: #009900 ;
+    padding: 10px;
+}
+
+div.notify
+{
+    width: 97%;
+    BORDER: #999900 1px solid;
+    FONT-SIZE: 14px;
+    text-align: center;
+    vertical-align: middle;
+    color: #009900 ;
+    padding: 10px;
+}
+
+.f_green
+{
+   font-weight: bold;
+   COLOR: #00cc00;
+}
+
+.f_purple
+{
+   font-weight: bold;
+   COLOR: #cc00cc;
+}
+
+.f_brown
+{
+   font-weight: bold;
+   COLOR: #773300;
+}
+
+.f_more
+{
+   font-weight: bold;
+   COLOR: #28a488;
+}
+
+.f_red
+{
+   font-weight: bold;
+   COLOR: #ff0000;
+}
+
+.f_blue
+{
+   font-weight: bold;
+   COLOR: #0000ff;
+}
+
+.b_green
+{
+   BACKGROUND-COLOR: #aaffaa;
+}
+
+.b_red
+{
+   BACKGROUND-COLOR: #ffaaaa;
+}
+
+.b_selection
+{
+   BACKGROUND-COLOR: #A9D1FF;
+}
+
+input.tedit
+{
+	width:			55px;
+	margin:			0px;
+	border:			0px none;
+	text-align:		right;
+}
+
+-->

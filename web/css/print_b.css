@@ -1,0 +1,60 @@
+BODY {
+FONT-SIZE: 14px;
+COLOR: #000000;
+FONT-FAMILY: sans-serif;
+BACKGROUND-COLOR: #ffffff
+}
+
+H1 {
+FONT-WEIGHT: bold;
+FONT-SIZE: 24px; FONT-FAMILY:
+sans-serif
+}
+
+TABLE {
+FONT-SIZE: 14px;
+BORDER-RIGHT: #000000 1px solid;
+BORDER-TOP: #000000 1px solid;
+BORDER-LEFT: #000000 1px solid;
+BORDER-BOTTOM: #000000 1px solid;
+BORDER-COLLAPSE: collapse;
+border-spacing: 0;
+}
+
+TH {
+BORDER-RIGHT: #000000 1px solid;
+PADDING-RIGHT: 2px;
+BORDER-TOP: #000000 1px solid;
+PADDING-LEFT: 2px;
+FONT-WEIGHT: bold;
+PADDING-BOTTOM: 2px;
+BORDER-LEFT: #000000 1px solid;
+COLOR: #000000;
+PADDING-TOP: 2px;
+BORDER-BOTTOM: #000000 1px solid;
+BACKGROUND-COLOR: #ffffff
+}
+
+TD {
+BORDER-RIGHT: #000000 1px solid;
+PADDING-RIGHT: 2px;
+BORDER-TOP: #000000 1px solid;
+PADDING-LEFT: 2px;
+PADDING-BOTTOM: 2px;
+BORDER-LEFT: #000000 1px solid;
+COLOR: #000000;
+PADDING-TOP: 2px;
+BORDER-BOTTOM: #000000 1px solid;
+BACKGROUND-COLOR: #ffffff
+}
+
+.min {
+font-size: 10px;
+}
+
+.chead
+{
+font-size: 10px;
+width: 800px;
+text-align: center;
+}

@@ -1,0 +1,286 @@
+BODY {
+FONT-SIZE: 12px;
+COLOR: #000000;
+FONT-FAMILY: sans-serif;
+BACKGROUND-COLOR: #ffffff
+}
+
+H1 {
+FONT-WEIGHT: bold;
+FONT-SIZE: 24px;
+FONT-FAMILY:sans-serif;
+}
+
+TABLE.vis {
+FONT-SIZE: 14px;
+BORDER-RIGHT: #000000 1px solid;
+BORDER-TOP: #000000 1px solid;
+BORDER-LEFT: #000000 1px solid;
+BORDER-BOTTOM: #000000 1px solid;
+BORDER-COLLAPSE: collapse;
+border-spacing: 0;
+}
+
+TH.vis {
+BORDER-RIGHT: #000000 1px solid;
+PADDING-RIGHT: 2px;
+BORDER-TOP: #000000 1px solid;
+PADDING-LEFT: 2px;
+FONT-WEIGHT: bold;
+PADDING-BOTTOM: 2px;
+BORDER-LEFT: #000000 1px solid;
+COLOR: #000000;
+PADDING-TOP: 2px;
+BORDER-BOTTOM: #000000 1px solid;
+BACKGROUND-COLOR: #ffffff
+}
+
+.vis {
+BORDER-RIGHT: #000000 1px solid;
+PADDING-RIGHT: 2px;
+BORDER-TOP: #000000 1px solid;
+PADDING-LEFT: 2px;
+PADDING-BOTTOM: 2px;
+BORDER-LEFT: #000000 1px solid;
+COLOR: #000000;
+PADDING-TOP: 2px;
+BORDER-BOTTOM: #000000 1px solid;
+BACKGROUND-COLOR: #ffffff
+}
+
+.ul {
+PADDING: 2px;
+COLOR: #000000;
+BORDER-BOTTOM: #000000 1px solid;
+BACKGROUND-COLOR: #ffffff;
+font-size: 12px;
+}
+
+.chead
+{
+font-size: 10px;
+width: 850px;
+text-align: center;
+align: center;
+}
+.mini {font-size: 10px;}
+
+.micro {font-size: 8px;}
+.microc {font-size: 8px; text-align: center;}
+
+
+.ht {BORDER-RIGHT: #000000 0px solid; BORDER-TOP: #000000 0px solid; BORDER-LEFT: #000000 0px solid;BORDER-BOTTOM: #000000 0px solid; font-size: 10px;}
+
+
+
+.tn
+{
+    width: 100%;
+    BORDER-COLLAPSE: collapse;
+    border-spacing: 0;
+    font-size: 12px;
+}
+
+.tn .tl
+{
+    padding: 1px;
+    width: 400px;
+    font-size: 14px;
+    FONT-WEIGHT: bold;
+    text-align: right;
+}
+
+.tn .microc
+{
+    font-size: 8px;
+    text-align: center;
+    border: #000000 1px solid;
+    width: 120px;
+    padding: 3px;
+}
+
+.tn .bc
+{
+    text-align: center;
+    border: #000000 3px solid;
+    font-size: 14px;
+    FONT-WEIGHT: bold;
+    width: 120px;
+    padding: 1px;
+}
+
+
+.tn .rst
+{
+    font-size: 8px;
+    text-align: center;
+    border: #000000 1px solid;
+    width: 60px;
+    padding: 3px;
+}
+
+.tn .rsh
+{
+    font-size: 10px;
+    text-align: center;
+    border-bottom: #000000 1px solid;
+    border-left: #000000 3px solid;
+    border-right: #000000 3px solid;
+    border-top: #000000 3px solid;
+    FONT-WEIGHT: bold;
+    width: 60px;
+    padding: 1px;
+}
+.tn .rsm
+{
+    font-size: 8px;
+    text-align: center;
+    border-bottom: #000000 1px solid;
+    border-left: #000000 3px solid;
+    border-right: #000000 3px solid;
+    border-top: #000000 1px solid;
+    width: 60px;
+    padding: 3px;
+}
+
+.tn .rsl
+{
+    font-size: 10px;
+    text-align: center;
+    border: #000000 1px solid;
+    width: 40px;
+    padding: 3px;
+}
+
+.tn .rsb
+{
+    font-size: 10px;
+    text-align: center;
+    border-bottom: #000000 3px solid;
+    border-left: #000000 3px solid;
+    border-right: #000000 3px solid;
+    border-top: #000000 1px solid;
+    width: 60px;
+    padding: 3px;
+}
+
+.tn .rslb
+{
+    font-size: 9px;
+    text-align: center;
+    border: #000000 0px none;
+    width: 38px;
+    padding: 1px;
+}
+
+.tm
+{
+    width: 1200px;
+    BORDER-COLLAPSE: collapse;
+    border-spacing: 0;
+    font-size: 12px;
+}
+
+.tm td
+{
+    font-size: 12px;
+    text-align: center;
+    border: #000000 1px solid;
+    padding: 3px;
+}
+
+.tm thead #bb
+{
+    border-bottom: #000000 3px solid;
+}
+
+.tm tbody #bb
+{
+    border-right: #000000 3px solid;
+}
+
+.tm tbody #bd
+{
+    border-right: #000000 2px dotted;
+}
+
+.tm .nb td
+{
+    border: none;
+
+}
+
+.tm .nb #bb
+{
+    border: none;
+    border-top: #000000 3px solid;
+}
+
+.tm .nb #bt
+{
+    border: #000000 1px solid;
+    border-top: #000000 3px solid;
+}
+
+.tm .nb #bs
+{
+    border: #000000 1px solid;
+}
+
+.tb
+{
+    width: 1200px;
+    BORDER-COLLAPSE: collapse;
+    border-spacing: 0;
+    font-size: 12px;
+}
+
+.tb .bc
+{
+    text-align: center;
+    border: #000000 3px solid;
+    font-size: 14px;
+    FONT-WEIGHT: bold;
+    width: 120px;
+    padding: 1px;
+}
+.tb .txt
+{
+    text-align: right;
+    border: none;
+    font-size: 12px;
+    width: 150px;
+    padding: 1px;
+}
+
+.tb .cl
+{
+    border: none;
+    BORDER-right: #000000 1px solid;
+    width: 50%;
+}
+
+.tp
+{
+    width: 100%;
+    BORDER-COLLAPSE: collapse;
+    border-spacing: 0;
+    font-size: 11px;
+}
+
+.tp .ul {
+PADDING: 2px;
+COLOR: #000000;
+BORDER-BOTTOM: #000000 1px solid;
+BACKGROUND-COLOR: #ffffff;
+font-size: 12px;
+width: 120px;
+}
+
+.tp .fc {
+PADDING: 2px;
+COLOR: #000000;
+BACKGROUND-COLOR: #ffffff;
+font-size: 10px;
+width: 130px;
+}

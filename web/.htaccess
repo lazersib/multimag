@@ -1,0 +1,20 @@
+ErrorDocument 404 "/e404.php"
+
+#
+#  /abc/def/.htaccess -- per-dir config file for directory /abc/def
+#  Помните: /abc/def это физический путь /xyz, т.е., у сервера есть
+#            директива 'Alias /xyz /abc/def' к примеру
+#
+
+RewriteEngine On
+
+#  даем серверу знать что мы работаем через /xyz а не
+#  через префикс физического пути /abc/def
+RewriteBase   /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^wiki(.*)$ wiki.php [L,QSA]
+RewriteRule ^vitrina(.*)$ vitrina.php [L,QSA]
+
+#php_flag zlib.output_compression On
+#php_value zlib.output_compression_level 3

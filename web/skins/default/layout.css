@@ -1,0 +1,397 @@
+div#wiki-wrap {
+	margin:	0;
+	padding:0;
+	border:	0;
+}
+
+div#wiki-top
+{
+	margin:		0;
+	padding:	0.2em 0.6em 0.4em 0.6em;
+	border:		0;
+	height:		0.9em;
+	min-height:	1.5em;
+	color: 		#fff;
+	background-color: rgb(100,135,220);
+}
+	div#top-left {
+		float:	left;
+	}
+	div#top-right {
+		float:	right;
+	}
+	div#wiki-top a:link, div#wiki-top a:visited, div#wiki-top a:active {
+		color: 	#fff;
+		background-color:transparent;
+		text-decoration:none;
+	}
+	div#wiki-top a:hover {
+		color: 	#fff;
+		background-color:transparent;
+		text-decoration:underline;
+	}
+	
+	div#wiki-top p
+	{
+		margin-top:0px; margin-bottom:0px;
+	}
+
+div#wiki-head {
+	padding:	0.1em;
+	margin:		0;
+	border:		0;
+	text-align:	right;
+	height:		4.7em;
+	min-width:	90%;
+	color: 		rgb(39,78,144);
+	background-color: rgb(140,170,230);
+}
+	div#wiki-head h1 {
+		margin:			0;
+		padding:		0.1em;
+		padding-left:	0.4em;
+		padding-top:	0;
+		float:			left;
+		font-size:		3.3em;
+		color: 			rgb(39,78,144);
+		background-color: transparent;
+	}
+	div#wiki-head div {
+		margin:		0;
+		padding:	0;
+		float:		left;
+		background-color: transparent;
+	}
+	
+	
+	div#wiki-head form{
+		padding:	0;
+		margin:		0.8em 0 0 0;
+	}
+
+div#wiki-info {
+	margin:		0;
+	padding:	0.3em;
+	border:		0;
+	height:		1.8em;
+	min-width:	90%;
+	color:		#fff;
+	background-color: rgb(0,51,153);
+	font-size:	1.1em;
+}
+	div#wiki-info a {
+		font-weight:	bold;
+		color:			#fff;
+		background-color:transparent;
+		margin:			0;
+		padding:		0.1em;
+		border:			0;
+		display:		inline;
+		text-decoration:none;
+	}
+	div#wiki-info p {
+		margin:			0;
+		padding:		0;
+	}
+	div#info-left {
+		float:			left;		
+	}
+	div#info-right {
+		float:			right;
+	}
+	div#wiki-info  a:hover {
+		color:			rgb(253,160,91);
+		background-color:transparent;
+	}
+	div#wiki-info  ul, div#wiki-info  div ul {
+		list-style-type:		none;
+		list-style-position: 	inside;
+		margin: 		0;
+		padding:		0;
+		border:			0;
+		white-space: 	normal;	
+	}
+	div#wiki-info  li, div#wiki-info  div ul li {
+		display:		inline;
+		margin: 		0;
+		padding: 		0 0.2em 0 0.4em;
+		border:			0;
+		border-left:	0.1em solid white;
+	}
+	div#wiki-info li.noborder, div#wiki-info  div ul li.noborder {
+		border:			0;
+	}
+
+div#wiki-menu {
+	margin:			0;
+	border:			0;
+	border-right:	0.1em solid #aaa;
+	padding:		0;
+	width:			15em;
+	min-height:		25em;
+	color: 			#000;
+	background-color:rgb(240,240,240);
+	float:			left;
+}
+	div#wiki-menu ul{
+		list-style-type: 		none;
+		list-style-position: 	inside;
+		margin:					0;
+		padding: 				0 0 0.1em 0;
+		border-bottom:			0.1em solid #aaa;
+		white-space: 			normal;
+	}
+	div#wiki-menu li {
+		margin: 				0;
+		padding: 				0.1ex 0;
+		border:					0;
+	}
+	div#wiki-menu ul li a:before{
+		content: "\203A \0020" ; 
+	}
+	
+	div#wiki-menu a{
+		border:				0;
+		color: 				rgb(0,102,204);
+		background-color: 	transparent;
+		text-decoration:	none;
+		margin: 			0;
+		padding: 			0.3em 0.3em 0.3em 0.5em;
+		display: 			block;
+	}
+	
+	div#wiki-menu a:hover{
+		color:				white;
+		background-color: 	rgb(100,135,220);
+		text-decoration: 	none;
+	}
+	div#wiki-menu p {
+		margin:				0;
+		padding:			0;
+	}	
+	div#wiki-menu p.sidehead a {
+		font-size:			1.2em;
+		font-weight:		bold;
+		color:				rgb(0,51,153);
+		background-color:	transparent;
+	}
+	div#wiki-menu p.sidehead a:hover{
+		font-size:			1.2em;
+		font-weight:		bold;
+		color: 				white;
+		background-color: 	rgb(100,135,220);
+		text-decoration: none;
+	}
+	
+	div#wiki-menu p.sidehead a:before {
+		content: "\203A  \0020"
+	}
+
+div#wiki-page-nolmenu {
+	margin-left:	0;
+	padding:	0.1em;
+	border:		0;
+	border-left:	0.1em solid #aaa;
+	vertical-align:	top;
+	color: 		#000;
+	background-color:#fff;
+	table-layout:	fixed;
+}
+
+div#wiki-text {
+	margin:			0;
+	margin-left:	15.2em;
+	padding:		0;
+	border:			0;
+	min-width:		20%;
+	min-height:		25em;
+}
+
+div#wiki-page {
+	margin-left:	15em;
+	padding:	1.8em;
+	border:		0;
+	border-left:	0.1em solid #aaa;
+	vertical-align:	top;
+	color: 			#000;
+	background-color:rgb(255,255,255);
+	table-layout:	fixed;
+	text-align:	justify;
+}
+	#page-title {
+		margin:		0;
+		padding:	0;
+		border:		0;
+		border-bottom:0.1ex solid #bbb;
+		font-size:	2em;
+		font-weight:normal;
+		color:		rgb(39,78,144);
+		background-color: transparent;
+	}
+	div#page-info {
+		margin:		0;
+		margin-bottom:0.5em;
+		padding:	0;
+		border:		0;
+		font-size:	1em;
+		color:		#ccc;
+		background-color: transparent;
+		text-align: left;
+	}
+	div#page-info:hover {
+		color:		#444;
+		background-color: transparent;
+	}
+	
+	div#wiki-page P {
+		text-indent: 	25px;
+	}
+	
+	
+	hr#page-end {
+		border:		0;
+		margin:		0;
+		padding:	0;
+		color:		white;
+		background-color:white;
+		clear:		both;
+	}
+
+div#wiki-foot {
+	padding:		0.6em;
+	margin:			0;
+	border:			0;
+	min-height:		5em;
+	clear:			both;
+	height:			4em;
+	color: 			#fff;
+	background-color: rgb(100,135,220);
+}
+	div#foot-left {
+		float:			left;
+	}
+	div#foot-right {
+		float:		right;
+		text-align:	right;
+	}
+	div#wiki-foot  ul, div#wiki-foot  div ul {
+		list-style-type: none;
+		list-style-position: inside;
+		margin: 	0;
+		padding:	0;
+		border:		0;
+		white-space:normal;	
+	}
+	div#wiki-foot  li, div#wiki-foot  div ul li {
+		display:	inline;
+		margin: 	0;
+		padding: 	0 0.2em 0 0.4em;
+		border:		0;
+		border-left:0.1em solid white;
+	}
+	div#wiki-foot  li.noborder, div#wiki-foot  div ul li.noborder {
+		border:		0;
+	}
+	div#wiki-foot a:link, div#wiki-foot a:visited, div#wiki-foot a:active {
+		color:		#fff;
+		background-color:transparent;
+		text-decoration:none;
+	}
+	div#wiki-foot a:hover {
+		color:		#fff;
+		background-color:transparent;
+		text-decoration:underline;
+	}
+	div#wiki-foot p {
+		margin:		0;
+		padding:	0;
+	}
+	div#wiki-top  li.noborder, div#wiki-top  div ul li.noborder {
+		border:		0;
+	}
+
+
+div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
+
+
+.lin0{
+    BACKGROUND-COLOR: #f0f8ff;    
+}
+
+.lin0 td
+{
+	border-right: #e0f0ff 1px solid;
+}
+
+.lin1 {
+    BACKGROUND-COLOR: #e0f0ff;
+}
+
+.lin1 td
+{
+    border-right: #fff 1px solid;
+}
+
+.lin01 {
+    BACKGROUND-COLOR: #c0dfff;
+}
+
+.lin11 {
+    BACKGROUND-COLOR: #b0d8ff;
+}
+
+table.colorized tr:first-child(even)
+{
+	background: #f0f8ff;
+}
+
+table.colorized tr:first-child(odd)
+{
+	background: #e0f0ff;
+}
+
+ul.tabs
+{
+	list-style: 	none;
+	border-bottom: 	5px solid #b0d8ff;
+	padding: 	0px;
+	padding-left:	15px;
+	padding-top:	5px;
+	margin:		0px;
+	background: 	#f0f8ff;
+}
+
+ul.tabs li
+{
+	display:	inline;
+}
+
+ul.tabs li a
+{
+	color: 				#000;
+	text-decoration:		none;
+	background:			#e0f0ff;
+	border:				1px solid #225588;
+	-moz-border-radius-topleft:	5px;
+	-moz-border-radius-topright:	5px;
+	border-top-left-radius:		5px;
+	border-top-right-radius:	5px;
+	border-bottom:			1px solid #b0d8ff; 
+	margin:				0;
+	margin-left:			5px;
+	padding:			3px 15px 3px 15px 
+}
+
+ul.tabs li a.selected
+{
+	color:			#000;
+	background:		#b0d8ff;
+	border:			1px #225588 solid;
+	border-bottom:		1px solid #b0d8ff;
+	border-left:		1px solid #225588;
+	padding:		3px 15px 3px 15px;
+	margin:			0;
+	margin-left:		5px;
+	box-shadow: 		2px -2px 5px rgba(0,0,0,0.4);
+	-moz-box-shadow:	2px -2px 5px rgba(0,0,0,0.4);
+}
