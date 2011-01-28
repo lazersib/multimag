@@ -18,6 +18,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
