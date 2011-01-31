@@ -42,7 +42,7 @@ if($mode=="")
 	if($opt=='email')	$desc='при помощи эелектронной почты (e-mail)';
 	$tmpl->AddText("
 	<h1 id='page-title'>Написать сообщение</h1>
-	<div id='page-info'>Сообщение будет доставлено менеджеру</div>
+	<div id='page-info'>Сообщение будет доставлено на адрес $to $desc</div>
 	<form action='' method='post'>
 	<input type='hidden' name='mode' value='send'>
 	<input type='hidden' name='to' value='$to'>

@@ -24,7 +24,11 @@ class doc_s_Price_an
 	{
 		global $tmpl;
 		doc_menu(0,0);
-		
+		$tmpl->AddStyle("
+		.tlist{border: 1px solid #bbb; width: 100%; border-collapse: collapse;}
+		.tlist tr:nth-child(2n) {background: #e0f0ff; } 
+		.tlist td{border: 1px solid #bbb;}
+		");
 		$tmpl->AddText("<table width='100%'><tr><td width='300'><h1>Анализатор прайсов</h1>
 		<td align='right'>
 		</table>
@@ -355,11 +359,7 @@ class doc_s_Price_an
 
 		if(mysql_num_rows($res))
 		{
-$tmpl->AddStyle("
-.tlist{border: 1px solid #bbb; width: 100%; border-collapse: collapse;}
-tr:nth-child(2n) {background: #e0f0ff; } 
-.tlist td{border: 1px solid #bbb;}
-");
+
 			$tmpl->AddText("<table class='tlist' cellspacing='1'><tr>
 			<th>№<th>Наименование<th>Наша цена<th>Цена<th>Наличие<th>Фирма");
 			$i=0;

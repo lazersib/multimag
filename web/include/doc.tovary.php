@@ -157,7 +157,7 @@ function doc_groups($doc)
 function link_sklad($doc, $link, $text)
 {
 	global $tmpl;
-	$tmpl->AddText("<a title='$link' href='' onclick=\"EditThis('/doc.php?mode=srv&opt=sklad&doc=$doc&$link','sklad'); return false;\" >$text</a> ");
+	return "<a title='$link' href='' onclick=\"EditThis('/doc.php?mode=srv&opt=sklad&doc=$doc&$link','sklad'); return false;\" >$text</a> ";
 }
 
 function doc_sklad($doc, $group, $sklad=1)
@@ -192,39 +192,41 @@ function ViewSklad($doc, $group, $s, $sklad)
 	$page=rcv('p');
 	$res=mysql_query($sql);
 	$row=mysql_num_rows($res);
+	$pagebar='';
 	if($row>$lim)
 	{
-		$dop="g=$group";
+		$dop="group=$group";
 		if($page<1) $page=1;
 		if($page>1)
 		{
 			$i=$page-1;
-			link_sklad($doc, "$dop&p=$i","&lt;&lt;");
+			$pagebar.=link_sklad($doc, "$dop&p=$i","&lt;&lt;");
 		}
+		else $pagebar.='<span>&lt;&lt;</span>';
 		$cp=$row/$lim;
 		for($i=1;$i<($cp+1);$i++)
 		{
-			if($i==$page) $tmpl->AddText(" <b>$i</b> ");
-			else $tmpl->AddText("<a href='' onclick=\"EditThis('/doc.php?mode=srv&amp;opt=sklad&amp;doc=$doc&amp;group=$group&amp;p=$i','sklad'); return false;\">$i</a> ");
+			if($i==$page) $pagebar.=" <b>$i</b> ";
+			else $pagebar.="<a href='' onclick=\"EditThis('/doc.php?mode=srv&amp;opt=sklad&amp;doc=$doc&amp;group=$group&amp;p=$i','sklad'); return false;\">$i</a> ";
 		}
 		if($page<$cp)
 		{
 			$i=$page+1;
-			link_sklad($doc, "$dop&p=$i","&gt;&gt;");
+			$pagebar.=link_sklad($doc, "$dop&p=$i","&gt;&gt;");
 		}
-		$tmpl->AddText("<br>");
+		else $pagebar.='<span>&gt;&gt;</span>';
 		$sl=($page-1)*$lim;
 
-		$res=mysql_query("$sql LIMIT $sl,$lim");
+		mysql_data_seek($res,$sl);
 	}
 
 	if(mysql_num_rows($res))
 	{
-		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
+		$tmpl->AddText("$pagebar<br><table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 		<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-		DrawSkladTable($res,$s,$doc);
-		$tmpl->AddText("</table><a href='/docs.php?mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
+		DrawSkladTable($res,$s,$doc,$lim);
+		$tmpl->AddText("</table>$pagebar<br><a href='/docs.php?mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
 	}
 	else $tmpl->msg("В выбранной группе товаров не найдено!");
 }
@@ -284,10 +286,11 @@ function ViewSkladS($doc, $group, $s, $sklad)
 	if($sf==0)	$tmpl->msg("По данным критериям товаров не найдено!");
 }
 
-function DrawSkladTable($res,$s,$doc)
+function DrawSkladTable($res,$s,$doc,$limit=0)
 {
 	global $tmpl, $dop_data;
 	$i=0;
+	$cnt=0;
 	while($nxt=mysql_fetch_row($res))
 	{
 		$rezerv=DocRezerv($nxt[0],$doc);
@@ -321,6 +324,8 @@ function DrawSkladTable($res,$s,$doc)
 		<td>$nxt[0]
 		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
 		<td align=left>$nxt[2]<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
+		$cnt++;
+		if( $limit && ( $cnt>= $limit))	break;
 	}	
 }
 

@@ -28,8 +28,8 @@ $tmpl->HideBlock('left');
 if($mode=='')
 {
 	$tmpl->AddText("<ul>");
-	$tmpl->AddText("<li><a href='http://multimag.tndproject.org/newticket' accesskey='w' title='Сообщить разработчикам об ошибке в программе' style='color: #0a0'>Сообщить об ошибке или попросить новую функцию</a></li>");
-	
+
+	$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
 	
 
 	$rights=getright('doc_list',$uid);
@@ -82,7 +82,31 @@ if($mode=='')
 	}
 	$tmpl->AddText("</ul>");
 }
+else if($mode=='frequest')
+{
+	$tmpl->SetText("<h1>Оформление запроса на доработку программы</h1>
+	Внимание! Данная страница в разработке. Вы можете воспользоваться старой версией, доступной по адресу: <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a>
+	<br><br>
+	<p class='text'>
+	
+	Внимательно заполните все поля. Если иное не написано рядом с полем, все поля являются обязательными для заполнения. Особое внимание стоит уделить полю *краткое содержание*. <b>ВНИМАНИЕ! Для удобства отслеживания исполнения задач (вашего и разработчиков) каждая задача должна быть отдельной задачей. Несоблюдение этого условия может привести к тому, что некоторые задачи окажутся незамеченными</b>. Все глобальные задания можно и нужно отслеживать через систему-треккер.
+	</p>
+	
+	<form action='/user.php' method='post'>
+	<input type='hidden' name='mode' value='sendrequest'>
+	<b>Краткое содержание</b>. Тема задачи. Максимально кратко (3-6 слов) и ёмко изложите суть поставленной задачи. Максимум 64 символа.<br>
+	<i><u>Пример</u>: Реализовать печатную форму: Товарный чек</i><br>
+	<input type='text' maxlength='64' name='summary' style='width:90%'><br>
+	<b>Подробное описание</b>. Максимально подробно изложите суть задачи. Описание должно являться дополнением краткого содержания. Не допускается писать несколько задач.<br>
+	<textarea name='description' rows='40' cols='6'></textarea><br>
+	
+	
+	<button type='submit'>Сформировать задачу</button>
+	</form>
+	");
 
+
+}
 else if($mode=="elog")
 {
 	$rights=getright('errorlog',$uid);

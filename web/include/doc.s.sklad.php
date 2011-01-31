@@ -173,7 +173,8 @@ class doc_s_Sklad
 				if($nxt[8]) $cc.="<input type='hidden' name='pos_type' value='1'>Услуга";
 				else $cc.="<input type='hidden' name='pos_type' value='0'>Товар";
 			}
-			$tmpl->AddText("<form action='' method='post'><table cellpadding='0' width='100%'>
+			$tmpl->AddText("<form action='' method='post'>
+			<table cellpadding='0' width='100%'>
 			<input type='hidden' name='mode' value='esave'>
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='pos' value='$pos'>
@@ -554,7 +555,7 @@ class doc_s_Sklad
 			WHERE `id`='$group'");
 			@$nxt=mysql_fetch_row($res);
 			$tmpl->AddText("<h1>Описание группы</h1>
-			<form action='docs.php'>
+			<form action='docs.php' method='post'>
 			<input type='hidden' name='mode' value='esave'>
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='g' value='$nxt[0]'>
@@ -1138,6 +1139,7 @@ class doc_s_Sklad
 		$res=mysql_query($sql);
 		$row=mysql_num_rows($res);
 		echo mysql_error();
+		$pagebar='';
 		if($row>$lim)
 		{
 			$dop="g=$group";
@@ -1145,33 +1147,34 @@ class doc_s_Sklad
 			if($page>1)
 			{
 				$i=$page-1;
-				link_sklad($doc, "$dop&amp;p=$i","&lt;&lt;");
+				$pagebar.="<a href='' onclick=\"EditThis('/docs.php?l=sklad&amp;mode=srv&amp;opt=pl&amp;$dop&amp;p=$i','sklad'); return false;\">&lt;&lt;</a> ";
 			}
+			else $pagebar.='<span>&lt;&lt;</span>';
 			$cp=$row/$lim;
 			for($i=1;$i<($cp+1);$i++)
 			{
-				if($i==$page) $tmpl->AddText(" <b>$i</b> ");
-				else $tmpl->AddText("<a href='' onclick=\"EditThis('/docs.php?l=sklad&amp;mode=srv&amp;opt=pl&amp;$dop&amp;p=$i','sklad'); return false;\">$i</a> ");
+				if($i==$page) $pagebar.=" <b>$i</b> ";
+				else $pagebar.="<a href='' onclick=\"EditThis('/docs.php?l=sklad&amp;mode=srv&amp;opt=pl&amp;$dop&amp;p=$i','sklad'); return false;\">$i</a> ";
 			}
 			if($page<$cp)
 			{
 				$i=$page+1;
-				link_sklad($doc, "$dop&amp;p=$i","&gt;&gt;");
+				$pagebar.="<a href='' onclick=\"EditThis('/docs.php?l=sklad&amp;mode=srv&amp;opt=pl&amp;$dop&amp;p=$i','sklad'); return false;\">&gt;&gt;</a> ";
 			}
-			$tmpl->AddText("<br>");
+			else $pagebar.='<span>&gt;&gt;</span>';
 			$sl=($page-1)*$lim;
-	
+			$pagebar.='<br>';
 			$res=mysql_query("$sql LIMIT $sl,$lim");
 		}
 
 		if(mysql_num_rows($res))
 		{
-			$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
+			$tmpl->AddText("$pagebar<table width='100%' cellspacing='1' cellpadding='2'><tr>
 			<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
 			$i=0;
 			$this->DrawSkladTable($res,$s);
-			$tmpl->AddText("</table>");
+			$tmpl->AddText("</table>$pagebar");
 
 		}
 		else $tmpl->msg("В выбранной группе товаров не найдено!");
