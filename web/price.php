@@ -651,14 +651,14 @@ if(!$c_cena_id)	$c_cena_id=1;
 if($mode=="")
 {
 	$tmpl->SetTitle("Прайс-лист");
-	$tmpl->AddText("<h2 id='page-title'>Прайс-лист</h2><div id='page-info'>Формирование прайс-листа по вашим требованиям</div>
-	Для тех, кому не удобно просматривать товары в режиме онлайн, сделана возможность сформировать прайс - лист. Специально для Вас мы сделали возможность получить прайс-лист в наиболее удобном для Вас формате. Сейчас доступны <a class='wiki' href='price.php?mode=gen&f=pdf'>PDF</a>, <a class='wiki' href='price.php?mode=gen&f=csv'>CSV</a>, <a class='wiki' href='price.php?mode=gen&f=html'>HTML</a> и <a class='wiki' href='price.php?mode=gen&f=xls'>XLS</a> форматы. В ближайшее время планируется реализовать ODF. Для получения прайса выберите формат:<br>
+	$tmpl->AddText("<h1 id='page-title'>Прайс-лист</h1><div id='page-info'>Формирование прайс-листа по вашим требованиям</div>
+	Для тех, кому не удобно просматривать товары в режиме онлайн, сделана возможность сформировать прайс - лист. Специально для Вас мы сделали возможность получить прайс-лист в наиболее удобном для Вас формате. Сейчас доступны <a class='wiki' href='/price.php?mode=gen&amp;f=pdf'>PDF</a>, <a class='wiki' href='/price.php?mode=gen&amp;f=csv'>CSV</a>, <a class='wiki' href='/price.php?mode=gen&amp;f=html'>HTML</a> и <a class='wiki' href='/price.php?mode=gen&amp;f=xls'>XLS</a> форматы. В ближайшее время планируется реализовать ODF. Для получения прайса выберите формат:<br>
 	<ul>
-	<li><a class='wiki' href='price.php?mode=gen&f=pdf'>Получить в формате pdf</a> (для просмотра и печати в программах Foxit reader, Adobe reader, Okular, и <a class='wiki_ext' href='http://pdfreaders.org/'>другие</a>...)</li>
-	<li><a class='wiki' href='price.php?mode=gen&f=csv'>Получить в формате csv</a>  (для просмотра в текстоовых редакторах, Openoffice Calc и Microsoft office Excel)</li>
-	<li><a class='wiki' href='price.php?mode=gen&f=html'>Получить в формате html</a> (для просмотра в любом html броузере: Mozilla, Opera, Internet explorer)</li>
-	<li><a class='wiki' href='price.php?mode=gen&f=xls'>Получить в формате xls</a> (для просмотра в табличных редакторах Microsoft office Excel, Openoffice Calc, и подобных)</li>
-	<li style='color: #f00;'>Если не знаете, что именно Вам выбрать - выбирайте <a class='wiki' href='price.php?mode=gen&f=html'>Получить в формате html</a>!</li>
+	<li><a class='wiki' href='/price.php?mode=gen&amp;f=pdf'>Прайс-лист в формате pdf</a> (для просмотра и печати в программах Foxit reader, Adobe reader, Okular, и <a class='wiki_ext' href='http://pdfreaders.org/'>другие</a>...)</li>
+	<li><a class='wiki' href='/price.php?mode=gen&amp;f=csv'>Прайс-лист в формате csv</a>  (для просмотра в текстоовых редакторах, Openoffice Calc и Microsoft office Excel)</li>
+	<li><a class='wiki' href='/price.php?mode=gen&amp;f=html'>Прайс-лист в формате html</a> (для просмотра в любом html броузере: Mozilla, Opera, Internet explorer)</li>
+	<li><a class='wiki' href='/price.php?mode=gen&amp;f=xls'>Прайс-лист в формате xls</a> (для просмотра в табличных редакторах Microsoft office Excel, Openoffice Calc, и подобных)</li>
+	<li style='color: #f00;'>Если не знаете, что именно Вам выбрать - выбирайте <a class='wiki' href='/price.php?mode=gen&amp;f=html'>Прайс-лист в формате html</a>!</li>
 	</ul>");
 }
 else if($mode=="gen")
@@ -667,7 +667,7 @@ else if($mode=="gen")
 
 	if($f=="csv")
 	{
-		$tmpl->AddText("<h2 id='page-title'>Загрузка прайс - листа</h2><div id='page-info'>Используется csv формат</div>
+		$tmpl->AddText("<h1 id='page-title'>Загрузка прайс - листа</h1><div id='page-info'>Используется csv формат</div>
 		В файле содержится электронная таблица. Формат удобен для случаев, когда Вам необходимо что-либо изменить в полученном прайсе, или если Вам привычнее пользоваться табличным редактором.<br>
 		Загруженный файл можно будет открыть при помощи:
 		<ul>

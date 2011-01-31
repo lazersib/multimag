@@ -53,7 +53,7 @@ function skin_render($page,$tpl)
 	$tmpl->AddLMenu("<p class='vspace sidehead'><a class='wikilink' >Навигация</a></p>
 	<ul>
 	<li><a class='selflink' href='/index.php'>Домашняя страница</a></li>
-	<li $rr><a class='selflink' href='/vitrina.php?mode=korz' $ll>Корзина</a></li>
+	<li $rr><a class='selflink' href='/vitrina.php?mode=basket' $ll rel='nofollow'>Корзина</a></li>
 	<li><a class='selflink' href='/adv_search.php'>Поиск по параметрам</a></li>
 	<li><a class='selflink' href='/message.php?to={$CONFIG['site']['doc_adm_email']}&amp;opt=email'>Задать вопрос</a></li>
 	<li><a class='selflink' href='/photogalery.php'>Фотогалерея</a></li>
@@ -66,10 +66,10 @@ function skin_render($page,$tpl)
 	</ul>
 	<p class='vspace sidehead'> <a class='wikilink' href='/index.php?n=Main.Links'>Наши друзья</a></p>
 	<ul>
-	<li><a class='urllink' href='http://nsk-ps.info' rel='nofollow'>nsk-ps.info</a></li>
-	<li><a class='urllink' href='http://root-shop.ru' rel='nofollow'>root-shop.ru</a></li>
-	<li><a class='urllink' href='http://magnoliasib.ru' rel='nofollow'>magnoliasib.ru</a></li>
-	<li><a class='urllink' href='http://tndproject.org' rel='nofollow'>tndproject.org</a></li>
+	<li><a class='urllink' href='http://nsk-ps.info'>nsk-ps.info</a></li>
+	<li><a class='urllink' href='http://root-shop.ru'>root-shop.ru</a></li>
+	<li><a class='urllink' href='http://magnoliasib.ru'>magnoliasib.ru</a></li>
+	<li><a class='urllink' href='http://tndproject.org'>tndproject.org</a></li>
 	</ul>");
 	
 	$page=$tmpl->page;

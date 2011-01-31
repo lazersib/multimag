@@ -52,7 +52,7 @@ if($mode=="")
 	Адрес для обратной связи (e-mail или jid)<br>
 	<input type='text' name='backadr' value=''><br>
 	Текст сообщения:<br>
-	<textarea name='text'></textarea><br>
+	<textarea name='text' rows='5' cols='40'></textarea><br>
 	<b>Не забудте указать информацию для обратной связи!</b><br>
 	<input type='submit' value='Отправить'>
 	</form>");

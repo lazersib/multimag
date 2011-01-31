@@ -49,7 +49,7 @@ $tmpl->AddStyle("
 $tmpl->SetTitle("Поиск по сайту: ".$s);
 $tmpl->AddText("<div class='searchblock'><h1>Поиск по сайту</h1>
 <form action='/search.php' method='get'>
-<input type=text name='s' value='$s' class='sp'> <input type='submit' value='Найти'><br>
+<input type='text' name='s' value='$s' class='sp'> <input type='submit' value='Найти'><br>
 <a href='/adv_search.php?s=$s'>Расширенный поиск продукции</a>
 </form>
 </div>");
@@ -96,7 +96,7 @@ function SearchTovar($s)
 	echo mysql_error();
 	if($row=mysql_num_rows($res))
 	{
-		$ret.="<table width=100% cellspacing=0 border=0><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
+		$ret.="<table width='100%' cellspacing='0' border='0'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
 		<th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
 		$i=0;
 		$cl="lin0";
@@ -160,7 +160,7 @@ function SearchText($s)
 		}
  		$str.=" ...";	
 		$str=mb_eregi_replace($s,"<b>$s</b>",$str);	
-		$ret.="<li><a href='/wiki/$nxt[0]'>$head</a><br>$str</li>";		
+		$ret.="<li><a href='/wiki/$nxt[0].html'>$head</a><br>$str</li>";		
 	}
 	return $ret;
 }

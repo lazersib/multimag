@@ -61,7 +61,89 @@ function attack_test()
 	return $captcha;	
 }
 
+function regMsg($login, $pass, $conf)
+{
+global $CONFIG;
+return "Вы получили это письмо потому, что в заявке на регистрацию на сайте http://{$CONFIG['site']['name']} был указан Ваш адрес электронной почты. Для продолжения регистрации введите следующий код подтверждения:
+$conf
+или перейдите по ссылке http://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .
+Если не переходить по ссылке (например, если заявка подана не Вами), то регистрационные данные будут автоматически удалены через неделю.
+Ваш аккаунт:
+Логин: $login
+Пароль: $pass
 
+После подтверждения регистрации Вы сможете получить доступ к расширенным функциям сайта. Неактивные аккаунты удаляются через 6 месяцев.
+
+------------------------------------------------------------------------------------------
+
+You have received this letter because in the form of registration in a site http://{$CONFIG['site']['name']} your e-mail address has been entered. For continuation of registration enter this key:
+$conf
+or pass under the link http://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .  If not going under the reference (for example if the form is submitted not by you) registration data will be automatically removed after a week.
+Your account:
+login: $login
+pass: $pass
+
+After confirmatoin of registration you can get access to the expanded functions of a site. Inactive accounts leave in 6 months.
+
+------------------------------------------------------------------------------------------
+Сообщение сгенерировано автоматически, отвечать на него не нужно!
+The message is generated automatically, to answer it is not necessary!";
+}
+
+class RegException extends Exception
+{
+	var $target;
+	function __construct($text='', $target='')
+	{
+		parent::__construct($text);	
+		$this->target=$target;
+	}
+
+}
+
+function RegForm($err_target='', $err_msg='')
+{
+	global $tmpl;
+	$login=rcv('login');
+	$email=rcv('email');
+	
+	$err_msgs=array('login'=>'', 'email'=>'','img'=>'');
+	$err_msgs[$err_target]="<div style='color: #c00'>$err_msg</div>";
+
+	$tmpl->AddText("<p id='text'>
+	Для использования всех возможностей этого сайта, необходимо пройти процедуру регистрации. Регистрация не сложная,
+	и займёт всего несколько минут. Все зарегистрированные пользователи автоматически получают возможность приобретать товар по специальным ценам!</p>
+	<h2>Для регистрации заполните следующую форму:</h2>
+	<form method='post'>
+	<input type='hidden' name='mode' value='regs'>
+	<table>
+	<tr><td width='50%'>
+	Ваш login
+	<div class='mini'>
+	имя, которое Вы будете использовать для входа на сайт:
+	<br>должен состоять из латинских букв и цифр, начинаться с буквы, иметь длину от 3 до 24 символов
+	</div>
+	<td>
+	<input type='text' name='login' value='$login'>{$err_msgs['login']}
+	<tr><td>
+	Адрес электронной почты e-mail<br>
+	<div class='mini'>в формате user@host.zone</div>
+	<td><input type='text' name='email' value='$email'>{$err_msgs['email']}
+	<tr><td><td><input type='checkbox' name='subs' value='1' checked>Подписаться на новости и другую информацию
+	<tr><td>
+	Введите код подтверждения, изображенный на картинке:<br>
+	<img src='/kcaptcha/index.php'><br>
+	<td>
+	<input type='text' name='img'>{$err_msgs['img']}
+	<tr><td style='color: #c00;'><td>
+	<button type='submit'>Далее &gt;&gt;</button>
+	</form>
+	</table>");
+
+
+
+
+}
 
 if($mode=='')
 {
@@ -86,7 +168,8 @@ if($mode=='')
 	$_SESSION['redir_to']=$from;	
 	
 	$cont=rcv('cont');
-	$tmpl->AddText("<h1 id='page-title'>Авторизация</h1>");
+	$tmpl->AddText("<h1 id='page-title'>Аутенитфикация</h1>");
+	$tmpl->SetTitle("Аутенитфикация");
 	if($cont)	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти авторизацию.</div>");
 
 	//$_SESSION['c_str']=strtoupper(keygen_unique(0,5,7));
@@ -106,7 +189,7 @@ if($mode=='')
 	{
 		if($opt=='login')
 		{
-			if( ($at==1) && ($_SESSION['captcha_keystring']!=$img) && ($_SESSION['captcha_keystring']!='') )
+			if( (($at==1) && ($_SESSION['captcha_keystring']!=$img)) || ($_SESSION['captcha_keystring']=='') )
 			{
 				$tmpl->msg("Введите правильный код подтверждения, изображенный на картинке", "err");
 				mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
@@ -160,10 +243,10 @@ if($mode=='')
 		$tmpl->AddText("<form method='post' action='login.php'>
 		<input type='hidden' name='opt' value='login'>
 		<table>
-		<tr><th colspan=2>
+		<tr><th colspan='2'>
 		Введите данные:
-		<tr><td colspan=2>
-		Если у Вас их нет, вы можете <a class='wiki' href='?mode=reg'>зарегистрироваться</a>
+		<tr><td colspan='2'>
+		Если у Вас их нет, вы можете <a class='wiki' href='/login.php?mode=reg'>зарегистрироваться</a>
 		<tr><td>
 		Имя:<td>
 		<input type='text' name='login' class='text' id='input_name' value='$login'><br>
@@ -197,96 +280,56 @@ else if($mode=='logout')
 }
 else if($mode=='reg')
 {
-    if(!$uid)
-    {
-		$login=rcv('login');
-		$email=rcv('email');
-		$l=rcv('l');
-		$e=rcv('e');
-		$i=rcv('i');
+	if(!$uid)
+	{
+		$tmpl->SetTitle("Регистрация");
 		$tmpl->AddText("<h1 id='page-title'>Регистрация</h1>");
-		if($l) $lt=" <div style='color: #c00'>Выбранный логин уже занят другим пользователем, используйте другой!</div>";
-		if($e) $et=" <div style='color: #c00'>Выбранный адрес уже занят другим пользователем, используйте другой!</div>";
-		if($i) $it=" <div style='color: #c00'>Вы неправильно ввели код подтверждения!</div>";
-		$tmpl->AddText("<p id='text'>
-		Для использования всех возможностей этого сайта, необходимо пройти процедуру регистрации. Регистрация не сложная,
-		и займёт всего несколько минут. Все зарегистрированные пользователи автоматически получают возможность приобретать товар по специальным ценам!</p>
-		<h2>Для регистрации заполните следующую форму:</h2>
-		<form method='post'>
-		<input type='hidden' name='mode' value='regs'>
-		<table>
-		<tr><td width='50%'>
-		Ваш login
-		<br>имя, которое Вы будете использовать для входа на сайт:
-		<td>
-		<input type='text' name='login' value='$login'>$lt
-		<tr><td>
-		Адрес электронной почты e-mail<br>
-		<td><input type='text' name='email' value='$email'>$et<br>
-		<tr><td><td><input type='checkbox' name='subs' value='1' checked>Подписаться на новости и другую информацию
-		<tr><td>
-		Введите код подтверждения, изображенный на картинке:<br>
-		<img src='/kcaptcha/index.php'><br>
-		<td>
-		<input type='text' name='img'>$it
-		<tr><td style='color: #c00;'><td>
-		<button type='submit'>Далее &gt;&gt;</button>
-		</form>
-		</table>");
+		RegForm();
 	}	else $tmpl->msg("Вы уже являетесь нашим зарегистрированным пользователем. Повторная регистрация не требуется.","info");
 }
 else if($mode=='regs')
 {
-	$login=rcv('login');
-	$email=rcv('email');
-	$img=strtoupper(rcv('img'));
-	$subs=rcv('subs');
-	if($subs!='0') $subs=1;
-	
-	$res=mysql_query("SELECT `id` FROM `users` WHERE `name`='$login'");
-	$lc=mysql_num_rows($res);
-	
-	$res=mysql_query("SELECT `id` FROM `users` WHERE `email`='$email'");
-	$ec=mysql_num_rows($res);
-	
-	if($lc||$ec||(strtoupper($_SESSION['captcha_keystring'])!=$img)||(strlen($login)<3))
+	try
 	{
-		$l="&login=$login&email=$email";
-		if($lc||(strlen($login)<3)) $l.="&l=1";
-		if($ec) $l.="&e=1";
-		if($_SESSION['c_str']!=$img) $l.="&i=1";
-		header("Location: login.php?mode=reg".$l);
-	}
-	else
-	{
-		unset($_SESSION['c_str']);
+		$login=rcv('login');
+		$email=rcv('email');
+		$img=strtoupper(rcv('img'));
+		$subs=rcv('subs');
+		if($subs!='0') $subs=1;
+		
+		if($login=='')
+			throw new RegException('Поле login не заполнено','login');
+		if(strlen($login)<3)
+			throw new RegException('login слишком короткий','login');
+		if(strlen($login)>24)
+			throw new RegException('login слишком длинный','login');
+		if( !preg_match('/^[a-z][a-z\d]*$/', $login))
+			throw new RegException('login должен состоять из английских букв, цифр, начинаться с буквы','login');
+		
+		$res=mysql_query("SELECT `id` FROM `users` WHERE `name`='$login'");
+		if(mysql_num_rows($res))
+			throw new RegException('Такой login занят. Используйте другой.','login');
+		
+		if($email=='')
+			throw new RegException('Поле email не заполнено','email');
+		if( !preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $email))
+			throw new RegException('Неверный формат адреса e-mail. Адрес должен быть в формате user@host.zone','email');
+		$res=mysql_query("SELECT `id` FROM `users` WHERE `email`='$email'");
+		if(mysql_num_rows($res))
+			throw new RegException('Пользователь с таким email уже зарегистрирован. Используйте другой.','email');
+		
+		if($img=='')
+			throw new RegException('Код подтверждения не введён','img');
+		if(strtoupper($_SESSION['captcha_keystring'])!=$img)
+			throw new RegException('Код подтверждения введён неверно','img');
+			
+			
+
+// 			header("Location: login.php?mode=reg".$l);
 		$conf=md5(time()+rand(0,1000000));
 		$pass=keygen_unique(0,6,9);
-$msg="Вы получили это письмо потому, что в заявке на регистрацию на сайте http://{$CONFIG['site']['name']} был указан Ваш адрес электронной почты. Для продолжения регистрации введите следующий код подтверждения:
-$conf
-или перейдите по ссылке http://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .
-Если не переходить по ссылке (например, если заявка подана не Вами), то регистрационные данные будут автоматически удалены через неделю.
-Ваш аккаунт:
-Логин: $login
-Пароль: $pass
+		$msg=regMsg($login, $pass, $conf);
 
-После подтверждения регистрации Вы сможете получить доступ к расширенным функциям сайта. Неактивные аккаунты удаляются через 6 месяцев.
-
-------------------------------------------------------------------------------------------
-
-You have received this letter because in the form of registration in a site http://{$CONFIG['site']['name']} your e-mail address has been entered. For continuation of registration enter this key:
-$conf
-or pass under the link http://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .  If not going under the reference (for example if the form is submitted not by you) registration data will be automatically removed after a week.
-Your account:
-login: $login
-pass: $pass
-
-After confirmatoin of registration you can get access to the expanded functions of a site. Inactive accounts leave in 6 months.
-
-------------------------------------------------------------------------------------------
-Сообщение сгенерировано автоматически, отвечать на него не нужно!
-The message is generated automatically, to answer it is not necessary!";
-	
 	
 		if(mailto($email,"Registration on ".$CONFIG['site']['name'], $msg))
 		{
@@ -302,7 +345,21 @@ The message is generated automatically, to answer it is not necessary!";
 			Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!
 			</form>");	
 		}
-		else $tmpl->msg("Не удалось отправить сообщение электронной почты!","err");
+		else throw new Exception('Не удалось отправить сообщение электронной почты. Попытайтесь позднее. Если проблема сохранится - убедительная просьба сообщить об этом администратору.','img');
+	}
+	catch(RegException $e)
+	{
+		mysql_query("ROLLBACK");
+		$tmpl->SetTitle("Регистрация");
+		$tmpl->SetText("<h1 id='page-title'>Регистрация</h1>");
+		$tmpl->msg("Проверьте данные! ".$e->getMessage(),"err","Неверный ввод!");
+		RegForm($e->target, $e->getMessage());
+		
+	}
+	catch(Exception $e)
+	{
+		mysql_query("ROLLBACK");
+		$tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
 	}
 
 }

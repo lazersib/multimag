@@ -67,16 +67,6 @@ if (!xmlhttp && typeof XMLHttpRequest != 'undefined') {
 // See http://www.quirksmode.org/js/findpos.html
 // ----------------------------------------------------------------------------
 
-var mousX=100;
-var mousY=100;
-
-function getCoor( event ) {
-	mousX = event.x;
-	mousY = event.y;
-}
-
-document.onmousemove = getCoor;
-
 
 function findPosX(obj) {
     var curleft = mousX;

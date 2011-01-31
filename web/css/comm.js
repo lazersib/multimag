@@ -59,53 +59,47 @@ var val_id;
 function MakePopup(txt)
 {
 	var scrollLeft,scrollTop;
-	if (window.pageYOffset){  
-		scrollTop = window.pageYOffset 
-	} else if(document.documentElement && document.documentElement.scrollTop){ 
-		scrollTop = document.documentElement.scrollTop; 
-	} else if(document.body){ 
-		scrollTop = document.body.scrollTop; 
-	} 
-	
-	if(window.pageXOffset){ 
-		scrollLeft=window.pageXOffset 
-	} else if(document.documentElement && document.documentElement.scrollLeft){ 
-		scrollLeft=document.documentElement.scrollLeft; 
-	} else if(document.body){ 
-		scrollLeft=document.body.scrollLeft; 
-	}
+	if (window.pageYOffset)
+			scrollTop = window.pageYOffset 
+	else if(document.documentElement && document.documentElement.scrollTop)
+			scrollTop = document.documentElement.scrollTop; 
+	else if(document.body)
+			scrollTop = document.body.scrollTop; 
 		
+	if(window.pageXOffset)
+			scrollLeft=window.pageXOffset 
+	else if(document.documentElement && document.documentElement.scrollLeft)
+			scrollLeft=document.documentElement.scrollLeft; 
+	else if(document.body)
+			scrollLeft=document.body.scrollLeft; 
+	
 	
 	var popup=document.createElement('div');
-	var body = document.getElementsByTagName('body');
-	body[0].appendChild(popup);
-	popup.style.cssText="border: 2px outset #888; min-width: 250px; max-width: 80%; background-color: #f0f5ff;  text-align: left; margin:0px; position: absolute;  display: block; padding: 3px; left: 0px; top: 0px;";
-
-	
+	document.getElementsByTagName('body')[0].appendChild(popup);
+	popup.style.cssText="border: 1px solid #aaa; min-width: 250px; max-width: 80%; background-color: #eee;  text-align: left; margin:0px; position: absolute;  display: block; padding: 0px; left: 0px; top: 0px;";
+		
 	var windowWidth,windowHeight; // frame width & height
 
-	if(window.innerWidth){ 
-	windowWidth=window.innerWidth; 
-	} else if(document.documentElement && document.documentElement.clientWidth){ 
-	windowWidth=document.documentElement.clientWidth; 
-	} else if(document.body){ 
-	windowWidth=document.body.offsetWidth; 
-	} 
+	if(window.innerWidth)
+			windowWidth=window.innerWidth; 
+	else if(document.documentElement && document.documentElement.clientWidth)
+			windowWidth=document.documentElement.clientWidth; 
+	else if(document.body)
+			windowWidth=document.body.offsetWidth; 
 	
-	if(window.innerHeight){ 
-	windowHeight=window.innerHeight; 
-	} else if(document.documentElement && document.documentElement.clientHeight){ 
-	windowHeight=document.documentElement.clientHeight; 
-	} else if(document.body){ 
-	windowHeight=document.body.clientHeight; 
-	}
+	if(window.innerHeight)
+			windowHeight=window.innerHeight; 
+	else if(document.documentElement && document.documentElement.clientHeight)
+			windowHeight=document.documentElement.clientHeight; 
+	else if(document.body)
+			windowHeight=document.body.clientHeight; 
 	
 	if((mousX+300)>windowWidth)
-		popup.style.left=windowWidth-300+scrollLeft;
-	else popup.style.left=mousX-5+scrollLeft;
+			popup.style.left=(windowWidth-300+scrollLeft)+'px';
+	else		popup.style.left=(mousX-5+scrollLeft)+'px';
 	if((mousY+150)>windowHeight)
-		popup.style.top=windowHeight-150+scrollTop;
-	else popup.style.top=mousY-5+scrollTop;
+			popup.style.top=(windowHeight-150+scrollTop)+'px';
+	else		popup.style.top=(mousY-5+scrollTop)+'px';
 	
  	popup.id="pup"+(Math.floor(Math.random()*1000));
 	popup.innerHTML=txt;
@@ -116,24 +110,22 @@ function MakePopup(txt)
 function MakeModal(txt, base)
 {
 	var popup=document.createElement('div');
-    base.appendChild(popup);
+	base.appendChild(popup);
 
-    popup.style.cssText="border: 2px outset #888; min-width: 250px; max-width: 80%; background-color: #f0f5ff;  text-align: left; margin:0px; position: fixed;  display: block; padding: 3px;  opacity: 1.0; filter:alpha(opacity=100);";
+	popup.style.cssText="border: 2px outset #aaa; min-width: 250px; max-width: 80%; background-color: #eee;  text-align: left; margin:0px; position: fixed;  display: block; padding: 3px;  opacity: 1.0;";
 
 	popup.style.left=mousX-5;
 	popup.style.top=mousY-5;
 
 
  	popup.id="pup"+(Math.floor(Math.random()*1000));
-    popup.innerHTML=txt;
+	popup.innerHTML=txt;
 	return popup;
 }
 
-// opacity: 0.8; filter:alpha(opacity=80);
-
 function HeadPopup(popup,dt)
 {
-	return "<div width=100% align=right style='background-color: #89e; color:#fff;'><b>"+dt+"</b> <a onclick=\"KillPopup('"+popup.id+"'); return false;\" href=''><img src='img/i_del.png' border=0></a></div>";
+	return "<div style='background-color: #aaa; color:#fff; width: 100%-6px; text-align: right; padding: 3px;'><b>"+dt+"</b> <a onclick=\"KillPopup('"+popup.id+"'); return false;\" href=''><img src='/img/i_del.png' border=0></a></div>";
 }
 
 function FreePopup(popup)
@@ -160,7 +152,7 @@ function EditThis(url,id)
         httpRequest = new XMLHttpRequest(); }
 
     if (!httpRequest) { return false; }
-    var popup=MakePopup("<img src='img/icon_load.gif'> Загрузка...");
+    var popup=MakePopup("<img src='/img/icon_load.gif'> Загрузка...");
     httpRequest.onreadystatechange = function() { EditThisGet(httpRequest,id,popup); };
     httpRequest.open('GET', url, true);
     httpRequest.send(null);
@@ -175,7 +167,7 @@ function EditThisSave(url,id, val)
         httpRequest = new XMLHttpRequest(); }
 
     if (!httpRequest) { return false; }
-    var popup=MakePopup("<img src='img/icon_load.gif'> Загрузка...");
+    var popup=MakePopup("<img src='/img/icon_load.gif'> Загрузка...");
     httpRequest.onreadystatechange = function() { EditThisGet(httpRequest,id,popup); };
     httpRequest.open('GET', url, true);
     httpRequest.send(null);
@@ -192,27 +184,27 @@ function DelayedSave(url,id,val)
 
 function EditThisGet(httpRequest, id, popup)
 {
-    var txt=document.getElementById(id);
-    //popup.style.display="block";
-    if (httpRequest.readyState == 4)
-    {
-        if (httpRequest.status == 200)
-        {
-            txt.innerHTML=httpRequest.responseText;
-            FreePopup(popup);
-            
-        }
-        else popup.innerHTML=HeadPopup(popup,'')+"Ошибка "+httpRequest.status;
-    }
-    else if (httpRequest.readyState == 2)
-    {
-        popup.innerHTML=HeadPopup(popup,'')+"<img src='img/icon_load.gif'> Загрузка...";
-    }
-    else if (httpRequest.readyState == 3)
-    {
-        popup.innerHTML=HeadPopup(popup,'')+"Обработка..."+id;
-    }
-    else popup.innerHTML=HeadPopup(popup,'')+"state "+httpRequest.readyState;
+	var txt=document.getElementById(id);
+	//popup.style.display="block";
+	if (httpRequest.readyState == 4)
+	{
+		if (httpRequest.status == 200)
+		{
+		txt.innerHTML=httpRequest.responseText;
+		FreePopup(popup);
+		
+		}
+		else popup.innerHTML=HeadPopup(popup,'')+" "+httpRequest.status;
+	}
+	else if (httpRequest.readyState == 2)
+	{
+		popup.innerHTML=HeadPopup(popup,'')+"<img src='/img/icon_load.gif'> Загрузка...";
+	}
+	else if (httpRequest.readyState == 3)
+	{
+		popup.innerHTML=HeadPopup(popup,'')+"Обработка..."+id;
+	}
+	else popup.innerHTML=HeadPopup(popup,'')+"state "+httpRequest.readyState;
 }
 
 
@@ -260,7 +252,7 @@ function AutoFillProcess(httpRequest ,_dropdown)
     }
     else if (httpRequest.readyState == 2)
     {
-        dropdown.innerHTML="<img src='img/icon_load.gif'> Загрузка...";
+        dropdown.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
     }
     else if (httpRequest.readyState == 3)
     {
@@ -324,7 +316,7 @@ function processContents(httpRequest)
     }
     else if (httpRequest.readyState == 2)
     {
-        popup.innerHTML="<img src='img/icon_load.gif'> Загрузка...";
+        popup.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
     }
     else if (httpRequest.readyState == 3)
     {
@@ -343,7 +335,7 @@ function GetValue(url,id,s) {
         httpRequest = new XMLHttpRequest(); }
 
     if (!httpRequest) { return false; }
-    var popup=MakePopup("<img src='img/icon_load.gif'> Загрузка...");
+    var popup=MakePopup("<img src='/img/icon_load.gif'> Загрузка...");
     httpRequest.onreadystatechange = function() { processGet(httpRequest,id,popup); };
     httpRequest.open('GET', url, true);
     httpRequest.send(null);
@@ -364,7 +356,7 @@ function processGet(httpRequest, id, popup)
     }
     else if (httpRequest.readyState == 2)
     {
-        popup.innerHTML="<img src='img/icon_load.gif'> Загрузка...";
+        popup.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
     }
     else if (httpRequest.readyState == 3)
     {
@@ -382,7 +374,7 @@ function ShowPopupWin(url)
 
     if (!httpRequest) { return false; }
 
-    var popup=MakePopup("<img src='img/icon_load.gif'> Загрузка...");
+    var popup=MakePopup("<img src='/img/icon_load.gif'> Загрузка...");
 
     //httpRequest.onreadystatechange = function() { procReqWin(httpRequest,id); };
     httpRequest.onreadystatechange = function() { popupReqWin(httpRequest,popup); };
@@ -391,31 +383,28 @@ function ShowPopupWin(url)
 }
 
 function popupReqWin(httpRequest,popup)
-{
-    if (httpRequest.readyState == 4)
-    {
-        if (httpRequest.status == 200)
-        {
+	{
+	if (httpRequest.readyState == 4)
+	{
+		if (httpRequest.status == 200)
+		{
 			var str=httpRequest.responseText;
 			var re = /(.*)(<h1>)(.*)(<\/h1>)(.*)(\s|$)/
-        	var str1 = str.match(re);
-			var str = str.replace(re, '$1'+'$5');
-            popup.innerHTML = HeadPopup(popup,'')+str;
-
-
-            if(DateTimeShortcuts) DateTimeShortcuts.init();
-        }
-        else popup.innerHTML=HeadPopup(popup,'')+"Ошибка "+httpRequest.status;
-    }
-    else if (httpRequest.readyState == 2)
-    {
-        popup.innerHTML="<img src='img/icon_load.gif'> Загрузка...";
-    }
-    else if (httpRequest.readyState == 3)
-    {
-        //popup.innerHTML="Обработка...";
-    }
-    else popup.innerHTML="state "+httpRequest.readyState;
+			var str1 = str.match(re);
+				var str = str.replace(re, '$1'+'$5');
+			popup.innerHTML = HeadPopup(popup, '')+str;
+		}
+		else popup.innerHTML=HeadPopup(popup,'')+"Ошибка "+httpRequest.status;
+	}
+	else if (httpRequest.readyState == 2)
+	{
+		popup.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
+	}
+	else if (httpRequest.readyState == 3)
+	{
+		//popup.innerHTML="Обработка...";
+	}
+	else popup.innerHTML="state "+httpRequest.readyState;
 }
 
 // ============================== Динамическое модальное окно ===================================
@@ -433,7 +422,7 @@ function ShowPopupModal(url)
     dis.style.cssText="width: 2000px; height: 2000px; background-color: #555; text-align: left; margin:0px; position: fixed; display: block; left: 0px; top: 0px; opacity: 0.9; filter:alpha(opacity=90);";
     dis.id="pup"+(Math.floor(Math.random()*1000));
 
-    var popup=MakeModal("<img src='img/icon_load.gif'> Загрузка...",dis);
+    var popup=MakeModal("<img src='/img/icon_load.gif'> Загрузка...",dis);
 
 
     //httpRequest.onreadystatechange = function() { procReqWin(httpRequest,id); };
@@ -593,13 +582,6 @@ function ClearText(elID)
 	document.getElementById(elID).value='';
 }
 
-function getCoor( event ) {
-	mousX = event.x;
-	mousY = event.y;
-}
-
-document.onmousemove = getCoor;
-
 
 // ======================= Context menu =========================================
 
@@ -728,9 +710,17 @@ function PriceRegTestEx(url)
 	var httpRequest = new XMLHttpRequest();
 	
 	if (!httpRequest) { return false; }
-	var popup=MakePopup("<img src='img/icon_load.gif'> Загрузка...");
+	var popup=MakePopup("<img src='/img/icon_load.gif'> Загрузка...");
 	httpRequest.onreadystatechange = function() { EditThisGet(httpRequest, 'regex_result', popup); };
 	httpRequest.open('GET', url, true);
 	httpRequest.send(null);
 
 }
+
+function getCoor( event ) {
+	mousX = event.clientX;
+	mousY = event.clientY;
+}
+
+document.onmousemove = getCoor;
+
