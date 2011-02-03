@@ -555,7 +555,7 @@ class doc_s_Sklad
 			WHERE `id`='$group'");
 			@$nxt=mysql_fetch_row($res);
 			$tmpl->AddText("<h1>Описание группы</h1>
-			<form action='docs.php' method='post'>
+			<form action='docs.php' method='post' enctype='multipart/form-data'>
 			<input type='hidden' name='mode' value='esave'>
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='g' value='$nxt[0]'>
@@ -580,6 +580,10 @@ class doc_s_Sklad
 				if($nx[0]==$nxt[3]) $i=" selected";
 				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[0])</option>");
 			}
+			
+			if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
+				$img="<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$nxt[0]&amp;param=gid'>Удалить изображение</a>";
+			
 			$tmpl->AddText("</select>
 			<tr class='lin1'>
 			<td>Индекс сокрытия:
@@ -587,10 +591,12 @@ class doc_s_Sklad
 			<tr class='lin0'>
 			<td>Печатное название:
 			<td><input type='text' name='pname' value='$nxt[5]'>
-			<tr class='lin1'>
+			<tr class='lin1'><td>Изображение (jpg, до 100 кб, 50*50 - 150*150):
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>$img
+			<tr class='lin0'>
 			<td>Описание:
 			<td><textarea name='desc'>$nxt[2]</textarea>
-			<tr class='lin0'><td colspan='2' align='center'>        	
+			<tr class='lin1'><td colspan='2' align='center'>        	
 			<input type='submit' value='Сохранить'>
 			</table>
 			</form>");
@@ -654,7 +660,7 @@ class doc_s_Sklad
 	}
 	function ESave()
 	{
-		global $tmpl;		
+		global $tmpl, $CONFIG;		
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -987,6 +993,7 @@ class doc_s_Sklad
 		}
 		else if($param=='g')
 		{
+			$max_size=100;
 			$name=rcv('name');
 			$desc=rcv('desc');
 			$pid=rcv('pid');
@@ -997,8 +1004,38 @@ class doc_s_Sklad
 			else 
 				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`)
 				VALUES ('$name', '$desc', '$pid', '$hid', '$pname')"); 
-			if($res) $tmpl->msg("Сохранено!");
-			else $tmpl->msg("Ошибка!","err");
+			if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию группы");
+				
+			if($_FILES['userfile']['size']>0)
+			{
+				if($_FILES['userfile']['size']>$max_size*1024)
+					throw new Exception("Слишком большой файл! Допустимо не более $max_size кб!");
+				else
+				{
+					$iminfo=getimagesize($_FILES['userfile']['tmp_name']);						
+					switch ($iminfo[2])
+					{
+						case IMAGETYPE_JPEG: $imtype='jpg'; break;
+						default: $imtype='';
+					}
+					if(!$imtype) throw new Exception("Неверный формат файла! Допустимы только изображения в формате jpeg.");
+					else if(($iminfo[0]<50)||($iminfo[1]<50))
+					throw new Exception("Слишком мелкая картинка! Минимальный размер - 50*50 пикселей!");
+					else if(($iminfo[0]>150)||($iminfo[1]>150))
+					throw new Exception("Слишком большая картинка! Максимальный размер - 150*150 пикселей!");
+					if(!move_uploaded_file($_FILES['userfile']['tmp_name'], "{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
+							throw new Exception("Не удалось записать изображение. Проверьте права доступа к директории {$CONFIG['site']['var_data_fs']}/category/");
+				}
+			}
+			$tmpl->msg("Сохранено!");
+		}
+		else if($param=='gid')
+		{
+			if(!file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
+				throw new Exception("Изображение не найдено");
+			if(!unlink("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
+				throw new Exception("Не удалось удалить изображение! Проверьте права доступа!");
+			$tmpl->msg("Изображение удалено!","ok");
 		}
 		else if($param=='gc')
 		{
