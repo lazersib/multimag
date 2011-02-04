@@ -377,7 +377,24 @@ class doc_Postuplenie extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
+			$tmpl->AddText("<a href='?mode=morphto&amp;doc=$doc&amp;tt=2'><div>Реализация</div></a>");
 			$tmpl->AddText("<a href='?mode=morphto&amp;doc=$doc&amp;tt=7'><div>Расходный кассовый ордер</div></a>");
+		}
+		else if($target_type==2)
+		{
+			mysql_query("START TRANSACTION");
+			$base=$this->Otgruzka($this->doc);
+			if(!$base)
+			{
+				mysql_query("ROLLBACK");
+				$tmpl->msg("Не удалось создать подчинённый документ!","err");
+			}
+			else
+			{
+				mysql_query("COMMIT");
+				$ref="Location: doc.php?mode=body&doc=$base";
+				header($ref);
+			}
 		}
 		else if($target_type==7)
 		{
@@ -386,30 +403,103 @@ class doc_Postuplenie extends doc_Nulltype
 			$tm=time();
 			$altnum=GetNextAltNum($target_type ,$doc_data[10]);
 			$res=mysql_query("INSERT INTO `doc_list`
-			(`type`, `agent`, `date`, `sklad`, `kassa` `user`, `altnum`, `subtype`, `p_doc`, `sum`)
+			(`type`, `agent`, `date`, `sklad`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`)
 			VALUES ('$target_type', '$doc_data[2]', '$tm', '1', '1', '$uid', '$altnum', '$doc_data[10]', '$doc', '$sum')");
+			if(mysql_errno())	throw new MysqlException("Не удалось создать подчинённый документ");
 			$ndoc= mysql_insert_id();
 			// Вид расхода - закуп товара на продажу
 			mysql_query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('$ndoc','rasxodi','6')");
-
-			if($res)
-			{
-				mysql_query("COMMIT");
-				$ref="Location: doc.php?mode=body&doc=$ndoc";
-				header($ref);
-			}
-			else
-			{
-				mysql_query("ROLLBACK");
-				$tmpl->msg("Не удалось создать подчинённый документ!","err");
-			}
+			if(mysql_errno())	throw new MysqlException("Не удалось записать вид расходов");
+			mysql_query("COMMIT");
+			$ref="Location: doc.php?mode=body&doc=$ndoc";
+			header($ref);
 		}
 		else
 		{
 			$tmpl->msg("В разработке","info");
 		}
 	}
+	
+	//	================== Функции только этого класса ======================================================
+	function Otgruzka()
+	{
+		$target_type=2;
+		global $tmpl;
+		global $uid;
+
+		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `type`='$target_type'");
+		@$r_id=mysql_result($res,0,0);
+		if(!$r_id)
+		{
+			$altnum=GetNextAltNum($target_type, $this->doc_data[10]);
+			$tm=time();
+			$sum=DocSumUpdate($this->doc);
+			$res=mysql_query("INSERT INTO `doc_list`
+			(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `nds`, `firm_id`)
+			VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '{$this->doc_data[7]}', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '$sum', '{$this->doc_data[12]}', '{$this->doc_data[17]}')");
+			
+			$r_id= mysql_insert_id();
+
+			if(!$r_id) return 0;
+			
+			doc_log("CREATE", "FROM {$this->doc_name} {$this->doc_name}", 'doc', $r_id);
+			
+			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+			VALUES ('$r_id','cena','{$this->dop_data['cena']}')");
+
+			$res=mysql_query("SELECT `tovar`, `cnt`, `sn`, `comm`, `cost` FROM `doc_list_pos`
+			WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+			while($nxt=mysql_fetch_row($res))
+			{
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
+				VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+			}
+		}
+		else
+		{
+			$new_id=0;
+			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`sn`, `a`.`comm`, `a`.`cost`,
+			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
+			INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->doc}' AND `doc_list`.`mark_del`='0'
+			WHERE `b`.`tovar`=`a`.`tovar` )
+			FROM `doc_list_pos` AS `a`
+			WHERE `a`.`doc`='{$this->doc}'");
+
+			while($nxt=mysql_fetch_row($res))
+			{
+				//echo"$nxt[5] - $nxt[1]<br>";
+				if($nxt[5]<$nxt[1])
+				{
+					
+					if(!$new_id)
+					{
+						$altnum=GetNextAltNum($target_type, $this->doc_data[10]);
+						$tm=time();
+						$sum=DocSumUpdate($this->doc);
+						$rs=mysql_query("INSERT INTO `doc_list`
+						(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `nds`, `firm_id`)
+						VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '{$this->doc_data[7]}', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '$sum', '{$this->doc_data[12]}', '{$this->doc_data[17]}')");
+						$new_id= mysql_insert_id();
+						
+						mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+						VALUES ('$new_id','cena','{$this->dop_data['cena']}')");
+					}
+					$n_cnt=$nxt[1]-$nxt[5];
+					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
+ 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+				}
+			}
+			if($new_id)
+			{
+				$r_id=$new_id;
+				DocSumUpdate($new_id);
+			}
+		}
+
+		return $r_id;
+	}
+
 	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function DelExec($doc)
 	{

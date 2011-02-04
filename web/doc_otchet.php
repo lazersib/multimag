@@ -536,7 +536,7 @@ if($rights['read'])
 		$date_end=strtotime(rcv('date_end'))+60*60*24-1;
 		$ag=rcv('ag');
 		
-		if($firm)
+		if($firm_id)
 		{
 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
 			$dv=mysql_fetch_assoc($res);
@@ -596,49 +596,42 @@ if($rights['read'])
 				else  $pr=$ras='';
 				if($pr)	$pr=sprintf("%01.2f", $pr);
 				if($ras)$ras=sprintf("%01.2f", $ras);
-				$tmpl->AddText("<tr><td colspan=2>Сальдо на начало периода<td>$pr<td>$ras<td><td><td><td>");
+				$tmpl->AddText("<tr><td colspan=2>Сальдо на начало периода<td>$ras<td>$pr<td><td><td><td>");
 			}
 
 			if($nxt[1]==1)
 			{
-				$tp="Приход товара";
 				$pr+=$nxt[3];
-				$deb=$nxt[3];
+				$kr=$nxt[3];
 			}
 			else if($nxt[1]==2)
 			{
-				$tp="Расход товара";
 				$ras+=$nxt[3];
-				$kr=$nxt[3];
+				$deb=$nxt[3];
 			}
 			if( ($nxt[1]==3) || ($nxt[1]==12))
 			{
-				$tp="-";
 				continue;
 			}
 			if($nxt[1]==4)
 			{
-				$tp="Оплата б/н";
 				$pr+=$nxt[3];
-				$deb=$nxt[3];
+				$kr=$nxt[3];
 			}
 			if($nxt[1]==5)
 			{
-				$tp="Возврат б/н";
 				$ras+=$nxt[3];
-				$kr=$nxt[3];
+				$deb=$nxt[3];
 			}
 			if($nxt[1]==6)
 			{
-				$tp="Оплата нал.";
 				$pr+=$nxt[3];
-				$deb=$nxt[3];
+				$kr=$nxt[3];
 			}
 			if($nxt[1]==7)
 			{
-				$tp="Возврат нал.";
 				$ras+=$nxt[3];
-				$kr=$nxt[3];
+				$deb=$nxt[3];
 			}
 
 			if($f_print)
@@ -658,7 +651,7 @@ if($rights['read'])
 		$pr=sprintf("%01.2f", $pr);
 		$ras=sprintf("%01.2f", $ras);
 
-		$tmpl->AddText("<tr><td colspan=2>Обороты за период<td>$pr<td>$ras		<td><td><td><td>");
+		$tmpl->AddText("<tr><td colspan=2>Обороты за период<td>$ras<td>$pr<td><td><td><td>");
 		if($pr>$ras)
 		{
 			$pr-=$ras;
@@ -673,7 +666,7 @@ if($rights['read'])
 		if($pr)	$pr=sprintf("%01.2f", $pr);
 		if($ras)$ras=sprintf("%01.2f", $ras);
 		
-		$tmpl->AddText("<tr><td colspan=2>Сальдо на конец периода<td>$pr<td>$ras<td colspan=4>
+		$tmpl->AddText("<tr><td colspan=2>Сальдо на конец периода<td>$ras<td>$pr<td colspan=4>
 		<tr><td colspan=4>");
 		if($razn>0)		$tmpl->AddText("переплата в пользу ".$dv['firm_name']." $razn_p руб.");
 		else	if($razn<0) 	$tmpl->AddText("задолженность в пользу ".$dv['firm_name']." $razn_p руб.");

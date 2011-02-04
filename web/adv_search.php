@@ -17,7 +17,39 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+function GetCountInfo($count, $tranzit)
+{
+	global $CONFIG;	
+	if(!isset($CONFIG['site']['vitrina_pcnt_limit']))	$CONFIG['site']['vitrina_pcnt_limit']	= array(1,10,100);
+	if($CONFIG['site']['vitrina_pcnt']==1)
+	{
+		if($count<=0)
+		{
+			if($tranzit) return 'в пути';
+			else	return 'уточняйте';
+		}
+		else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][0]) return '*';
+		else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][1]) return '**';
+		else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][2]) return '***';
+		else return '****';
+	}
+	else if($CONFIG['site']['vitrina_pcnt']==2)
+	{
+		if($count<=0)
+		{
+			if($tranzit) return 'в пути';
+			else	return 'уточняйте';
+		}
+		else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][0]) return 'мало';
+		else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][1]) return 'есть';
+		else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][2]) return 'много';
+		else return 'оч.много';
+	}
+	else	return round($count).($tranzit?('/'.$tranzit):'');
+}
+
 include_once("core.php");
+include_once("include/doc.core.php");
 $analog=rcv('analog');
 $proizv=rcv('proizv');
 $mesto=rcv('mesto');
@@ -42,6 +74,12 @@ if(!$name)
 		$analog=1;
 	}
 }
+
+if(@$_SESSION['uid'])	$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
+else			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
+if(mysql_errno())	throw new MysqlException('Не удалось выбрать цену для пользователя');
+$cost_id=		mysql_result($res,0,0);
+if(!$cost_id)	$cost_id=1;
 
 $cstr=rcv('cstr');
 if(($cstr<=0)||($cstr>500)) $cstr=500;
@@ -99,17 +137,18 @@ if($mode)
 	if($di_max)		$sql.="AND `doc_base_dop`.`d_int` <= '$di_max'";
 	if($de_min)		$sql.="AND `doc_base_dop`.`d_ext` >= '$de_min'";
 	if($de_max)		$sql.="AND `doc_base_dop`.`d_ext` <= '$de_max'";
-	if($size_min)	$sql.="AND `doc_base_dop`.`size` >= '$size_min'";
-	if($size_max)	$sql.="AND `doc_base_dop`.`size` <= '$size_max'";
+	if($size_min)		$sql.="AND `doc_base_dop`.`size` >= '$size_min'";
+	if($size_max)		$sql.="AND `doc_base_dop`.`size` <= '$size_max'";
 	if($m_min)		$sql.="AND `doc_base_dop`.`mass` >= '$m_min'";
 	if($m_max)		$sql.="AND `doc_base_dop`.`mass` <= '$m_max'";
-	if($cost_min)	$sql.="AND `doc_base`.`cost` >= '$cost_min'";
-	if($cost_max)	$sql.="AND `doc_base`.`cost` <= '$cost_max'";
+	if($cost_min)		$sql.="AND `doc_base`.`cost` >= '$cost_min'";
+	if($cost_max)		$sql.="AND `doc_base`.`cost` <= '$cost_max'";
 
 	$sql.=" LIMIT 1000";
 	$res=mysql_query($sql);
-    if($row=mysql_numrows($res))
-    {
+	if(mysql_errno())	throw new MysqlException("Не удалось сделать выборку товаров");
+	if($row=mysql_numrows($res))
+	{
 		$s="По запросу найдено $row товаров";
 		if($row>=1000) 	$s="Показаны только первые $row товаров, используйте более строгий запрос!";
 		$tmpl->AddText("<h1 id='page-title'>Результаты поиска</h1><div id='page-info'>$s</div>
@@ -119,25 +158,19 @@ if($mode)
 		$cl="lin0";
 		while($nxt=mysql_fetch_row($res))
 		{
-			$i=1-$i;
-			$cost = sprintf("%01.2f руб.", $nxt[4]);
+			if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
+			else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
 			
-			if($nxt[12]<=0)
-			{
-				if($rrr[13]) $nal='в пути';
-				else	$nal="";
-			}
-			else if($nxt[12]==1) $nal="мало";
-			else if($nxt[12]<10) $nal="есть";
-			else if($nxt[12]<100) $nal="много";
-			else $nal="оч.много";
+			$i=1-$i;
+			$cost=GetCostPos($nxt[0], $cost_id);
+			$nal=GetCountInfo($nxt[12], $nxt[13]);
 			
 			$dcc=strtotime($nxt[5]);
 			$cce='';
 			if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
-			$tmpl->AddText("<tr class=lin$i><td><a href='vitrina.php?mode=info&amp;p=$nxt[0]'>$nxt[1] $nxt[2]</a>
+			$tmpl->AddText("<tr class=lin$i><td><a href='$link'>$nxt[1] $nxt[2]</a>
 			<td>$nxt[3]<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
-			<a href='vitrina.php?mode=korz_add&amp;p=$nxt[0]&amp;cnt=1'><img src='img/i_korz.png' alt='В корзину!'></a>");
+			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='/img/i_korz.png' alt='В корзину!'></a>");
 			$sf++;
 			$cc=1-$cc;
 			$cl="lin".$cc;
