@@ -84,6 +84,44 @@ if($mode=='')
 }
 else if($mode=='frequest')
 {
+        // create curl resource 
+        $ch = curl_init();
+        // set url 
+        curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/login");
+        //return the transfer as a string 
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_USERPWD, "");
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        
+        // $output contains the output string 
+        $data = curl_exec($ch);
+        $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+	//$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+	preg_match_all("/Set-Cookie: (.*?)=(.*?);/i",$header,$res);
+	$cookie='';
+	foreach ($res[1] as $key => $value)
+		$cookie.= $value.'='.$res[2][$key].'; ';
+        
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_COOKIE,$cookie);
+        curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
+        $output = curl_exec($ch);
+        // close curl resource to free up system resources 
+        curl_close($ch); 
+        
+        $_SESSION['trac_cookie']=$cookie;
+        
+        $doc = new DOMDocument();
+	$doc->loadHTML($output);
+	$doc->normalizeDocument ();
+	$form=$doc->getElementById('propertyform');
+	$elements=$form->getElementsByTagName("div");
+	$token_elem=$elements->item(0)->getElementsByTagName('input')->item(0);
+	$token=$token_elem->attributes->getNamedItem('value')->nodeValue;
+	
+	$type=$doc->getElementById('field-type');
+
 	$tmpl->SetText("<h1>Оформление запроса на доработку программы</h1>
 	Внимание! Данная страница в разработке. Вы можете воспользоваться старой версией, доступной по адресу: <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a>
 	<br><br>
@@ -93,17 +131,40 @@ else if($mode=='frequest')
 	</p>
 	
 	<form action='/user.php' method='post'>
+	<input type='hidden' name='token' value='$token'>
 	<input type='hidden' name='mode' value='sendrequest'>
 	<b>Краткое содержание</b>. Тема задачи. Максимально кратко (3-6 слов) и ёмко изложите суть поставленной задачи. Максимум 64 символа.<br>
 	<i><u>Пример</u>: Реализовать печатную форму: Товарный чек</i><br>
 	<input type='text' maxlength='64' name='summary' style='width:90%'><br>
 	<b>Подробное описание</b>. Максимально подробно изложите суть задачи. Описание должно являться дополнением краткого содержания. Не допускается писать несколько задач.<br>
 	<textarea name='description' rows='40' cols='6'></textarea><br>
-	
+	Тип задачи:<br>
+	<select name='field_type'>
+	<option>Дефект (Bug)</option><option selected='selected'>Улучшение</option><option>Задача</option><option>Предложение</option>
+	</select><br>
+	Приоритет:<br>
+	<select name='field_priority'>
+	<option>Критический</option><option>Важный</option><option selected='selected'>Обычный</option><option>Неважный</option><option>Несущественный</option>
+	</select><br>
+	Срочность выполнения:<br>
+	<select name='field_milestone'>
+	<option></option>
+	<optgroup label='Open (by due date)'>
+	<option selected='selected'>0.1</option>
+	</optgroup><optgroup label='Open (no due date)'>
+	<option>0.2</option><option>0.9</option><option>1.0</option>
+	</optgroup>
+	</select><br>
+	Компонент:<br>
+	<select id='field-component' name='field_component'>
+	<option>CLI: Внешние обработчики</option><option>Wiki</option><option>Анализатор прайсов</option><option>Витрина и прайс-лист</option><option>Документы</option><option selected='selected'>Другое</option><option>Отчёты</option><option>Справочники</option><option>Ядро</option>
+	</select><br>
 	
 	<button type='submit'>Сформировать задачу</button>
 	</form>
 	");
+
+
 
 
 }
