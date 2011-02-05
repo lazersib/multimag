@@ -18,7 +18,11 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once("vitrina.php");
+include_once("core.php");
+
+if(file_exists( $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/index.tpl.php' ) )
+	include_once($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/index.tpl.php');
+else	include_once("vitrina.php");
 ?>
 
 

@@ -191,6 +191,7 @@ CREATE TABLE IF NOT EXISTS `doc_base` (
   `vc` varchar(32) NOT NULL COMMENT 'Код изготовителя',
   `desc` text NOT NULL COMMENT 'Описание',
   `cost` double(10,2) NOT NULL default '0.00' COMMENT 'Цена',
+  `stock` tinyint(1) NOT NULL default '0' COMMENT 'Распродажа',
   `proizv` varchar(24) NOT NULL COMMENT 'Производитель',
   `likvid` decimal(6,2) NOT NULL default '0.00' COMMENT 'Ликвидность',
   `cost_date` datetime NOT NULL COMMENT 'Дата изменения цены',
@@ -200,11 +201,12 @@ CREATE TABLE IF NOT EXISTS `doc_base` (
   UNIQUE KEY `id` (`id`),
   KEY `group` (`group`),
   KEY `name` (`name`),
+  KEY `stock` (`stock`),
   KEY `cost_date` (`cost_date`),
   KEY `hidden` (`hidden`),
   KEY `unit` (`unit`),
   KEY `vc` (`vc`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 --
 -- Дамп данных таблицы `doc_base`
@@ -952,11 +954,12 @@ CREATE TABLE IF NOT EXISTS `loginfo` (
 
 CREATE TABLE IF NOT EXISTS `news` (
   `id` int(11) NOT NULL auto_increment,
-  `text` text character set utf8 collate utf8_swedish_ci NOT NULL,
+  `title` varchar(64) NOT NULL,
+  `text` text  NOT NULL,
   `date` datetime NOT NULL,
   `owner` int(11) NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 --
 -- Дамп данных таблицы `news`
@@ -984,7 +987,7 @@ CREATE TABLE IF NOT EXISTS `notes` (
   KEY `sender` (`sender`),
   KEY `senddate` (`senddate`),
   KEY `enddate` (`enddate`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 --
 -- Дамп данных таблицы `notes`

@@ -151,7 +151,7 @@ class doc_s_Sklad
 		
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`
+			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
@@ -202,6 +202,7 @@ class doc_s_Sklad
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
 			
 			if($nxt[9])	$hid_check='checked';
+			if($nxt[12])	$stock_check='checked';
 			
 			$tmpl->AddText("</select>
 			<tr class='lin0'><td align='right'>Код изготовителя<td><input type='text' name='vc' value='$nxt[11]'>
@@ -218,12 +219,13 @@ class doc_s_Sklad
 			<tr class='lin1'><td align='right'>Актуальная цена поступления:<td><b>$act_cost</b>
 			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]%</b>
 			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</a>
-			<tr class='lin0'><td align='right'>Описание<td colspan='2'><textarea name='desc'>$nxt[2]</textarea>");
+			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</a>
+			<tr class='lin1'><td align='right'>Описание<td colspan='2'><textarea name='desc'>$nxt[2]</textarea>");
 			if($pos!=0)
-				$tmpl->AddText("<tr class='lin1'><td align='right'>Режим записи:<td>
+				$tmpl->AddText("<tr class='lin0'><td align='right'>Режим записи:<td>
 				<label><input type='radio' name='sr' value='0' checked>Сохранить</label><br>
 				<label><input type='radio' name='sr' value='1'>Добавить</label><br>");
-			$tmpl->AddText("<tr class='lin0'><td><td><input type='submit' value='Сохранить'>
+			$tmpl->AddText("<tr class='lin1'><td><td><input type='submit' value='Сохранить'>
 			<script type='text/javascript' src='/css/jquery/jquery.js'></script>
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		
@@ -678,17 +680,19 @@ class doc_s_Sklad
 			$g=rcv('g');
 			$desc=rcv('desc');
 			$cost=rcv('cost');
+			$stock=rcv('stock');
 			$sr=rcv('sr');
 			$pos_type=rcv('pos_type');
 			$hid=rcv('hid');
 			$unit=rcv('unit');
 			$vc=rcv('vc');
 			if(!$hid)	$hid=0;
+			if(!$stock)	$stock=0;
 			$cc='Цена осталась прежняя!';
 			if( ($pos)&&(!$sr) )
 			{
 				$sql_add=$log_add='';
-				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc` FROM `doc_base` WHERE `id`='$pos'");
+				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock` FROM `doc_base` WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить старые свойства позиции!");
 				$old_data=mysql_fetch_assoc($res);
 				if($old_data['name']!=$pos_name)
@@ -732,6 +736,11 @@ class doc_s_Sklad
 					$sql_add.=", `hidden`='$hid'";
 					$log_add.=", hidden:({$old_data['hidden']} => $hid)";
 				}
+				if($old_data['stock']!=$stock)
+				{
+					$sql_add.=", `stock`='$stock'";
+					$log_add.=", stock:({$old_data['stock']} => $stock)";
+				}
 				if($old_data['unit']!=$unit)
 				{
 					$sql_add.=", `unit`='$unit'";
@@ -750,8 +759,8 @@ class doc_s_Sklad
 			}
 			else
 			{	
-				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `cost_date`, `pos_type`, `hidden`, `unit`)
-				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', NOW() , '$pos_type', '$hid', '$unit')");
+				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`)
+				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit')");
 				$opos=$pos;
 				$pos=mysql_insert_id();
 				if($opos)
