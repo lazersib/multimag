@@ -186,8 +186,12 @@ protected function ViewGroup($group, $page)
 	if(!$nxt)		throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 		$tmpl->AddText("<div class='rfloat'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
-	$tmpl->AddText('<h1>'.$this->GetVitPath($nxt[1])." / $nxt[0]</h1><div class='group-description'>$nxt[2]</div><br>");
-		
+	$tmpl->AddText('<h1>'.$this->GetVitPath($nxt[1])." / $nxt[0]</h1>");
+	if($nxt[2])
+	{
+		$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
+		$tmpl->AddText("<div class='group-description'>$text</div><br>");
+	}		
 	if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle($group);
 	else						$this->GroupList_ImageStyle($group);
 	/// TODO: сделать возможность выбора вида отображения списка товаров посетителем
@@ -221,7 +225,6 @@ protected function ProductList($group, $page)
 //		else if($CONFIG['site']['vitrina_plstyle']=='tilelist')		$this->TovList_TileList($res);
 		else if($CONFIG['site']['vitrina_plstyle']=='extable')		$this->TovList_ExTable($res, $lim);
 		else								$this->TovList_SimpleTable($res, $lim);
-		
 		$this->PageBar($group, $rows, $lim, $page);
 		$tmpl->AddText("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}
