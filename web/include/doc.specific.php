@@ -305,7 +305,7 @@ class doc_Specific extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);	
 		$pdf->Cell(0,5,$str,0,1,'C',0);
 		
-		$str="Срок поставки - в течение {$this->dop_data['srok']} рабочих дней с момента поступления товара на склад посттавщика.";
+		$str="Срок поставки - в течение {$this->dop_data['srok']} рабочих дней с момента поступления товара на склад поставщика.";
 		$str = iconv('UTF-8', 'windows-1251', $str);	
 		$pdf->Cell(0,5,$str,0,1,'C',0);
 		$pdf->Ln(10);
@@ -320,13 +320,13 @@ class doc_Specific extends doc_Nulltype
 
 		$pdf->Ln(5);
 		$pdf->SetFont('','',10);
-		$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`pfio`, `doc_agent`.`pdol`
+		$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`pfio`, `doc_agent`.`pdol`
 		FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
 		if(mysql_errno())		throw new MysqlException("Невозможно получить данные агента!");
 		
 		$agent_info=mysql_fetch_array($res);
 		
-		$str="$agent_info[2], тел. $agent_info[3]\nИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]\nР/С $agent_info[8], в банке $agent_info[10]\nК/С $agent_info[9], БИК $agent_info[7]";
+		$str=unhtmlentities("$agent_info[1]\n$agent_info[2], тел. $agent_info[3]\nИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]\nР/С $agent_info[8], в банке $agent_info[10]\nК/С $agent_info[9], БИК $agent_info[7]");
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		
 		$y=$pdf->GetY();
@@ -335,7 +335,7 @@ class doc_Specific extends doc_Nulltype
 		$pdf->SetY($y);
 		$pdf->SetX(110);
 
-		$str="1{$this->firm_vars['firm_name']}\n{$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}\nК/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}";
+		$str=unhtmlentities("{$this->firm_vars['firm_name']}\n{$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}\nК/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}");
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,'L',0);
 		
