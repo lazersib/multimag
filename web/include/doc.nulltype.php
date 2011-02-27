@@ -279,26 +279,34 @@ class doc_Nulltype
 		
 		if($this->doc_data[4]) $tmpl->AddText("<br><b>Примечание:</b> ".$this->doc_data[4]."<br>");
 		
-		if($this->sklad_editor_enable)
-		{
-			doc_poslist($this->doc);
-		}
+		include_once('doc.poseditor.php');
+		$poseditor=new PosEditor('doc_list_pos',$this->doc);
+		$poseditor->SetColumn('pos', 'tovar');
+		$poseditor->cost_id=$this->dop_data['cena'];
+		$poseditor->sklad_id=$this->doc_data['sklad'];
+		$tmpl->AddText($poseditor->Show());
 		
-		if($this->sklad_editor_enable)
-		{
-			if($this->doc_data[6])	$hide="style='display: none;'";
-			$tmpl->AddText("
-			<script type=\"text/javascript\">
-			window.document.onkeydown = OnEnterBlur; 
-			</script>
-			<table width=100% id='sklad_editor' $hide>
-			<tr><td id='groups' width=200 valign='top' class='lin0>'");
-			doc_groups($this->doc);
-			$tmpl->AddText("<td id='sklad' valign='top' class='lin1'>");
 		
-			doc_sklad($this->doc,0);
-			$tmpl->AddText("</table>");
-		}
+// 		if($this->sklad_editor_enable)
+// 		{
+// 			doc_poslist($this->doc);
+// 		}
+// 		
+// 		if($this->sklad_editor_enable)
+// 		{
+// 			if($this->doc_data[6])	$hide="style='display: none;'";
+// 			$tmpl->AddText("
+// 			<script type=\"text/javascript\">
+// 			window.document.onkeydown = OnEnterBlur; 
+// 			</script>
+// 			<table width=100% id='sklad_editor' $hide>
+// 			<tr><td id='groups' width=200 valign='top' class='lin0>'");
+// 			doc_groups($this->doc);
+// 			$tmpl->AddText("<td id='sklad' valign='top' class='lin1'>");
+// 		
+// 			doc_sklad($this->doc,0);
+// 			$tmpl->AddText("</table>");
+// 		}
 		
 		$tmpl->AddText("<div id='statusblock'>");
 		if($this->doc_data[6])$tmpl->AddText("<b>Дата проведения:</b> ".date("d.m.Y H:i:s",$this->doc_data[6]));
@@ -541,6 +549,135 @@ class doc_Nulltype
 				$tmpl->msg("Операция не допускается для проведённого документа!","err");
 			else if($doc_data[14])
 				$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
+			// Json-вариант списка товаров
+			else if($opt=='jget')
+			{
+				include_once('doc.poseditor.php');
+				$poseditor=new PosEditor('doc_list_pos',$this->doc);
+				$poseditor->cost_id=$this->dop_data['cena'];
+				$poseditor->sklad_id=$this->doc_data['sklad'];
+				$doc_sum=DocSumUpdate($this->doc);
+				$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";			
+				$tmpl->AddText($str);			
+			}
+			// Получение данных наименования
+			else if($opt=='jgpi')
+			{
+				$pos=rcv('pos');
+				include_once('doc.poseditor.php');
+				$poseditor=new PosEditor('doc_list_pos',$this->doc);
+				$poseditor->cost_id=$this->dop_data['cena'];
+				$poseditor->sklad_id=$this->doc_data['sklad'];
+				$tmpl->AddText($poseditor->GetPosInfo($pos));
+			}
+			// Json вариант добавления позиции
+			else if($opt=='jadd')
+			{
+				$pos=rcv('pos');
+				$cnt=rcv('cnt');
+				$cost=rcv('cost');
+				$add=0;
+					
+				$res=mysql_query("SELECT `id`, `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `tovar`='$pos'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
+				if(mysql_num_rows($res)==0)
+				{
+					mysql_query("INSERT INTO doc_list_pos (`doc`,`tovar`,`cnt`,`cost`) VALUES ('{$this->doc}','$pos','$cnt','$cost')");
+					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку в документ!");
+					$pos_line=mysql_insert_id();
+					doc_log("UPDATE {$this->doc_name}","add pos: pos:$pos",'doc',$this->doc);
+					doc_log("UPDATE {$this->doc_name}","add pos: pos:$pos",'pos',$pos);
+					$add=1;
+				}
+				else
+				{
+					$nxt=mysql_fetch_row($res);
+					$pos_line=$nxt[0];
+					mysql_query("UPDATE `doc_list_pos` SET `cnt`='$cnt', `cost`='$cost' WHERE `id`='$nxt[0]'");
+					if(mysql_errno())	throw MysqlException("Не удалось вставить строку в документ!");
+					doc_log("UPDATE {$this->doc_name}","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1",'doc',$this->doc);
+					doc_log("UPDATE {$this->doc_name}","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1, doc:$doc",'pos',$nxt[1]);
+				}	
+				$doc_sum=DocSumUpdate($this->doc);
+				
+				if($add)
+				{
+					$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
+					FROM `doc_list_pos`
+					INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+					INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
+					WHERE `doc_list_pos`.`id`='$pos_line'");
+					if(mysql_errno())	throw MysqlException("Не удалось получить строку документа");
+					$line=mysql_fetch_assoc($res);
+					$cost=GetCostPos($pos, $this->dop_data['cena']);
+					$tmpl->SetText("{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '{$line['mesto']}' }, sum: '$doc_sum' }");
+				}
+				else
+				{
+					$cost=sprintf("%0.2f",$cost);
+					$tmpl->SetText("{ response: '4', update: { line_id: '$pos_line', cnt: '{$cnt}', cost: '{$cost}'}, sum: '$doc_sum' }");
+				}
+			}
+			// Json вариант удаления строки
+			else if($opt=='jdel')
+			{
+				$line_id=rcv('line_id');
+				$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `doc` FROM `doc_list_pos` WHERE `id`='$line_id'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
+				$nxt=mysql_fetch_row($res);
+				if(!$nxt)		throw new Exception("Строка $line_id не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+				if($nxt[3]!=$this->doc)	throw new Exception("Строка отностися к другому документу. Удаление невозможно.");
+				$res=mysql_query("DELETE FROM `doc_list_pos` WHERE `id`='$line_id'");
+				$doc_sum=DocSumUpdate($this->doc);
+				
+				doc_log("UPDATE {$this->doc_name}","del line: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1], cost:$nxt[2]",'doc',$this->doc);
+				doc_log("UPDATE {$this->doc_name}","del line: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1], cost:$nxt[2]",'pos',$nxt[0]);
+				$tmpl->SetText("{ response: '5', remove: { line_id: '$line_id' }, sum: '$doc_sum' }");
+			}
+			// Json вариант обновления
+			else if($opt=='jup')
+			{
+				$line_id=rcv('line_id');
+				$value=rcv('value');
+				$type=rcv('type');
+				if($value<=0) $value=1;
+				$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `doc` FROM `doc_list_pos` WHERE `id`='$line_id'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
+				$nxt=mysql_fetch_row($res);
+				if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+				if($nxt[3]!=$this->doc)	throw new Exception("Строка отностися к другому документу. Удаление невозможно.");
+				
+				if($type=='cnt' && $value!=$nxt[1])
+				{
+					$res=mysql_query("UPDATE `doc_list_pos` SET `cnt`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
+					if(mysql_errno())	throw new MysqlException("Не удалось обновить количество в строке документа");
+					$doc_sum=DocSumUpdate($this->doc);
+					doc_log("UPDATE {$this->doc_name}","change cnt: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1] => $value",'doc',$this->doc);
+					doc_log("UPDATE {$this->doc_name}","change cnt: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1] => $value",'pos',$nxt[0]);
+					$tmpl->SetText("{ response: '4', update: { line_id: '$line_id', cnt: '{$value}', cost: '{$nxt[2]}' }, sum: '$doc_sum' }");
+				}
+				else if($type=='cost' && $value!=$nxt[2])
+				{
+					$res=mysql_query("UPDATE `doc_list_pos` SET `cost`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
+					if(mysql_errno())	throw new MysqlException("Не удалось обновить цену в строке документа");
+					$doc_sum=DocSumUpdate($this->doc);
+					doc_log("UPDATE {$this->doc_name}","change cost: pos:$nxt[0], line_id:$pos, cost:$nxt[2] => $value",'doc',$this->doc);
+					doc_log("UPDATE {$this->doc_name}","change cost: pos:$nxt[0], line_id:$pos, cost:$nxt[2] => $value",'pos',$nxt[0]);
+					$value=sprintf('%0.2f',$value);
+					$tmpl->SetText("{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$value}'}, sum: '$doc_sum' }");
+				}
+				else if($type=='sum' && $value!=($nxt[1]*$nxt[2]))
+				{
+					$value=sprintf("%0.2f",$value/$nxt[1]);
+					$res=mysql_query("UPDATE `doc_list_pos` SET `cost`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
+					if(mysql_errno())	throw new MysqlException("Не удалось обновить цену в строке документа");
+					$doc_sum=DocSumUpdate($this->doc);
+					doc_log("UPDATE {$this->doc_name}","change cost: pos:$nxt[0], line_id:$pos, cost:$nxt[2] => $value",'doc',$this->doc);
+					doc_log("UPDATE {$this->doc_name}","change cost: pos:$nxt[0], line_id:$pos, cost:$nxt[2] => $value",'pos',$nxt[0]);
+					$tmpl->SetText("{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$value}'}, sum: '$doc_sum' }");
+				}
+				else $tmpl->SetText("{ response: '0', message: 'value: $value, type:$type, line_id:$line_id'}");
+			}
 			// Добавление позиции
 			else if($opt=='pos')
 			{

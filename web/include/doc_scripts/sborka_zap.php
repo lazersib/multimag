@@ -206,6 +206,7 @@ function CalcZP($doc)
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 		if(!mysql_num_rows($res))	continue;
 		$zp+=$nxt[2]*mysql_result($rs,0,1);
+		//echo"$nxt[2] * ".mysql_result($rs,0,1)."<br>";
 	}
 	return $zp;
 }

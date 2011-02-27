@@ -1073,7 +1073,7 @@ CREATE TABLE IF NOT EXISTS `price` (
 CREATE TABLE IF NOT EXISTS `prices_replaces` (
   `id` int(11) NOT NULL auto_increment,
   `search_str` varchar(16) NOT NULL,
-  `replace_str` varchar(256) NOT NULL,
+  `replace_str` varchar(512) NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `search_str` (`search_str`)

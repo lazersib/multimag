@@ -107,13 +107,27 @@ class doc_s_Sklad
 			$q=rcv('q');
 			$i=0;
 			$tmpl->ajax=1;
-			$res=mysql_query("SELECT `id`, `name`, `proizv` FROM `doc_base` WHERE LOWER(`name`) LIKE LOWER('%$q%') ORDER BY `name`");
+			$res=mysql_query("SELECT `id`, `name`, `proizv`, `vc` FROM `doc_base` WHERE LOWER(`name`) LIKE LOWER('%$q%') ORDER BY `name`");
 			$row=mysql_numrows($res);
 			while($nxt=mysql_fetch_row($res))
 			{
 				$i=1;
 				$nxt[1]=unhtmlentities($nxt[1]);
-				$tmpl->AddText("$nxt[1]|$nxt[0]|$nxt[2]\n");
+				$tmpl->AddText("$nxt[1]|$nxt[0]|$nxt[2]|$nxt[3]\n");
+			}
+		}
+		else if($opt=='acv')
+		{
+			$q=rcv('q');
+			$i=0;
+			$tmpl->ajax=1;
+			$res=mysql_query("SELECT `id`, `name`, `proizv`, `vc` FROM `doc_base` WHERE LOWER(`vc`) LIKE LOWER('%$q%') ORDER BY `name`");
+			$row=mysql_numrows($res);
+			while($nxt=mysql_fetch_row($res))
+			{
+				$i=1;
+				$nxt[1]=unhtmlentities($nxt[1]);
+				$tmpl->AddText("$nxt[3]|$nxt[0]|$nxt[2]|$nxt[1]\n");
 			}
 		}
 		else if($opt=='acp')

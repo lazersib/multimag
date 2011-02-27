@@ -39,6 +39,9 @@ $tmpl->AddTMenu("
 <link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen' />
 ");
 
+try
+{
+
 $rights=getright('doc',$uid);
 if($rights['read'])
 {
@@ -137,6 +140,20 @@ if($rights['read'])
 	else $tmpl->msg("ERROR $mode","err");
 }
 else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
+
+}
+catch(MysqlException $e)
+{
+	mysql_query("ROLLBACK");
+	$tmpl->msg($e->getMessage(),'err','Ошибка в базе данных');
+}
+catch( Exception $e)
+{
+	mysql_query("ROLLBACK");
+	$tmpl->msg($e->getMessage(),'err');
+}
+
+
 
 $tmpl->write();
 ?>

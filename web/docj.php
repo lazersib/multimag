@@ -534,6 +534,7 @@ else
 			$dp="<th>Кол-во<th>Цена<th>Сумма";
 			$info.=", <b>товар:</b> {$_SESSION['j_select_tov_name']}";
 		}
+		//echo $sql;
 		$res=mysql_query($sql);
 		$row=mysql_num_rows($res);
 	

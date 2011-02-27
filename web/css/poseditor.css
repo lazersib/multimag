@@ -1,0 +1,143 @@
+#poslist
+{
+	width:		100%;
+	border:		2px #88f solid;
+	border-spacing:	0px;
+	margin-top:	5px;
+}
+
+#poslist td, #poslist th
+{
+	border-right:	#fff 1px solid;
+	padding:	1px;
+	padding-left:	3px;
+	padding-right:	3px;
+}
+
+#poslist tbody tr:nth-child(odd), #poslist tbody tr:nth-child(odd) input
+{
+	background:	#f0f8ff;
+}
+
+#poslist tbody tr:nth-child(even), #poslist tbody tr:nth-child(even) input
+{
+	background:	#e0f0ff;
+}
+
+#poslist tbody td
+{
+	text-align:	right;
+}
+
+#poslist tbody .la
+{
+	text-align:	left;
+}
+
+/* edited line - строки, ожидающие сохранения на сервер */
+#poslist tbody .el, #poslist tbody .el input
+{
+	background-color:	#ff0 !important; 
+}
+
+/* higlight line - подсветка изменённых строк */
+#poslist tbody .hl, #poslist tbody .hl input
+{
+	background-color:	#0f0 !important; 
+}
+/* deleted line*/
+#poslist tbody .dl, #poslist tbody .dl input
+{
+	background-color:	#eee !important;
+	color:			#fff !important;
+}
+
+
+#poslist tbody input
+{
+	border:			none;
+	margin:			0px;
+	border-radius:		0;
+	-moz-border-radius:	0;
+	width:			100%;
+	padding:		0px;
+	padding-right:		2px;
+	background:		inherit;
+	text-align:		right;
+}
+
+#poslist tbody input:focus
+{
+	border:			2px #0f0 solid;
+}
+
+#poslist tbody img
+{
+	border:			0 none;
+	margin:			2px 3px 0px 3px;
+}
+
+
+#pladd
+{
+	background-color:	#ffc;
+}
+
+#pladd td
+{
+	padding:	2px;
+	text-align:	right;
+}
+
+
+#pladd input
+{
+	border:			none;
+	margin:			0px;
+	border-radius:		0;
+	-moz-border-radius:	0;
+	width:			100%;
+	padding:		0px;
+	padding-right:		2px;
+	background:		#eea;
+}
+
+#pladd.process
+{
+	background-color:	#aaa;
+}
+
+#pladd.process input
+{
+	background-color:	#888;
+}
+
+#pladd.error
+{
+	background-color:	#faa;
+}
+
+#pladd.error input
+{
+	background-color:	#f88;
+}
+
+#pos_id
+{
+	
+}
+
+#pos_cost, #pos_cnt
+{
+	text-align:		right;
+}
+
+/* Нижний, *складской* блок */
+
+#sklad_view
+{
+	width:		100%;
+	border:		2px #88f solid;
+	border-spacing:	0px;
+	margin-top:	5px;
+}

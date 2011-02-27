@@ -194,6 +194,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$tmpl->AddText("
 			<a href='?mode=print&amp;doc=$doc&amp;opt=nak'><div>Накладная</div></a>
 			<a href='?mode=print&amp;doc=$doc&amp;opt=kop'><div>Копия чека</div></a>
+			<a href='?mode=print&amp;doc=$doc&amp;opt=tc'><div>Товарный чек</div></a>
 			<a href='?mode=print&amp;doc=$doc&amp;opt=tg12'><div>Форма ТОРГ-12 (УСТАРЕЛО)</div></a>
 			<a href='?mode=print&amp;doc=$doc&amp;opt=tg12_pdf'><div>Форма ТОРГ-12 (PDF)</div></a>
 			<a href='?mode=print&amp;doc=$doc&amp;opt=sf_pdf'><div>Счёт - фактура</div></a>
@@ -221,6 +222,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->SfakEmail($doc);
 		else if($opt=='kop')
 			$this->PrintKopia($doc);
+		else if($opt=='tc')
+			$this->PrintTovCheck($doc);
 		else
 			$this->PrintNakl($doc);
 	}
@@ -428,10 +431,9 @@ class doc_Realizaciya extends doc_Nulltype
 		$prop
 		<p>Поставщик:_____________________________________</p>
 		<p>Покупатель: ____________________________________</p>");
-
 	}
 	
-	// -- Обычная накладная --------------
+	// -- Копия чека --------------
 	function PrintKopia($doc)
 	{
 		global $tmpl;
@@ -472,7 +474,56 @@ class doc_Realizaciya extends doc_Nulltype
 		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>
 		<p>Поставщик:_____________________________________</p>
 		<br><br><p align=right>Место печати</p>");
+	}
+	
+		// -- Обычная накладная --------------
+	function PrintTovCheck()
+	{
+		global $tmpl;
+		global $uid;
 
+		$tmpl->LoadTemplate('print');
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$tmpl->AddText("<h1>Товарный чек N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt</h1>
+		".$this->firm_vars['firm_name']."<br>
+		ИНН: ".$this->firm_vars['firm_inn']."<br>
+		Содержание хозяйственной операции: продажа товаров за наличный расчёт
+		<br><br>");
+
+		$tmpl->AddText("
+		<table width=800 cellspacing=0 cellpadding=0>
+		<tr><th>N пор.</th><th width=450>Наименование товара<th>Ед. изм.<th>Цена<th>Кол-во<th>Сумма</tr>");
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_units`.`printname`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		$i=0;
+		$ii=1;
+		$sum=$cnt=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f", $nxt[4]);
+			$cost2 = sprintf("%01.2f", $sm);
+			if($nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[5]<td>$cost<td>$nxt[3]<td>$cost2");
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+			$cnt+=$nxt[3];
+		}
+		$ii--;
+		$cost = sprintf("%01.2f", $sum);
+		$sum_p=num2str($sum);
+		$tmpl->AddText("
+		<tr><td><td colspan='3'><b>Итого:</b><td>$cnt<td>$cost
+		</table>
+		<p>Всего отпущено и оплачено наличными денежными средствами $ii товаров на сумму:<br>$sum_p</p>
+		<p>{$this->firm_vars['firm_name']}: _____________________________________</p>
+		");
 	}
 
 // -- Накладная торг 12 -------------------
