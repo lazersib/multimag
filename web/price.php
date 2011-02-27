@@ -348,8 +348,9 @@ class PriceWriterXLS
 			$name=iconv('UTF-8', 'windows-1251', "$group_name $nxt[1]".(($this->view_proizv&&$nxt[3])?" ($nxt[3])":''));	
 			$this->worksheet->write($this->line, 1, $name, $this->format_line[$i]);		// наименование	
 			$this->worksheet->write($this->line, 2, '', $this->format_line[$i]);		// наличие - пока не отображается	
-			$str = GetCostPos($nxt[0], $this->cost_id);
-			$str=iconv('UTF-8', 'windows-1251',$str);			
+			$cost = GetCostPos($nxt[0], $this->cost_id);
+			if($cost==0)	continue;
+			$str=iconv('UTF-8', 'windows-1251',$cost);			
 			$this->worksheet->write($this->line, 3, $str, $this->format_line[$i]);		// цена	
 // НАДО СДЕЛАТЬ ПОДСВЕТКУ ЦЕН		
 // 			$dcc=strtotime($data['cost_date']);
@@ -478,7 +479,7 @@ class PriceWriterCSV
 			}
 		
 			$c = GetCostPos($nxt[0], $this->cost_id);
-			if(!$c) $c='Звоните!';
+			if($c==0)	continue;
 			if(($this->view_proizv)&&($nxt[3])) $pr=" (".$nxt[3].")"; else $pr="";
 			echo $this->shielder.$nxt[1].$pr.$this->shielder.$this->divider.$this->shielder.$c.$this->shielder;
 
@@ -628,7 +629,7 @@ tr:nth-child(odd) {background-color: #cff;}
 			}
 		
 			$c = GetCostPos($nxt[0], $this->cost_id);
-			if(!$c) $c='Звоните!';
+			if($c==0)	continue;
 			if(($this->view_proizv)&&($nxt[3])) $pr=" (".$nxt[3].")"; else $pr="";
 			echo "<td>".$nxt[1].$pr."</td><td>".$c."</td>";
 

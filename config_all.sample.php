@@ -4,6 +4,7 @@ $CONFIG['site']['admin_email']	= '';
 $CONFIG['site']['doc_adm_email']= '';
 $CONFIG['site']['doc_adm_jid']	= '';
 $CONFIG['site']['name']		= 'multimag';
+$CONFIG['site']['default_firm']	= 1;				// Организация по умолчанию для работы сайта
 $CONFIG['site']['sn_enable']	= false;			// Включить поддержку работы с серийными номерами
 $CONFIG['site']['sn_restrict']	= false;			// Включить ограничения на выписку документов без серийных номеров
 $CONFIG['location']		= '/usr/share/multimag';
@@ -22,6 +23,9 @@ $CONFIG['xmpp']['host']		= '';
 $CONFIG['xmpp']['port']		= 5222;
 $CONFIG['xmpp']['login']	= '';
 $CONFIG['xmpp']['pass']		= '';
+
+// Настройки для яндекс-маркет
+$CONFIG['ymarket']['local_delivery_cost']	= 150;
 
 require_once($CONFIG['location']."/common/class.phpmailer.php"); 
 require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');

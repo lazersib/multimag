@@ -22,7 +22,7 @@ $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
 
-set_time_limit(60*30);	// Выполнять не более 15 минут
+set_time_limit(60*120);	// Выполнять не более 15 минут
 $start_time=microtime(TRUE);
 
 $c=explode('/',__FILE__);

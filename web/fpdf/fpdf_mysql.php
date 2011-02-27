@@ -71,10 +71,11 @@ function Row($data, $divider=0, $cost_id=1)
     $this->SetX($this->TableX);
     $ci=$this->ColorIndex;
     $fill=!empty($this->RowColors[$ci]);
-
-    
+	
     if(!$divider)
     {
+	$cost = GetCostPos($data['pos_id'], $cost_id);
+	if($cost==0)	return;
 		if($fill)
 			$this->SetFillColor($this->RowColors[$ci][0],$this->RowColors[$ci][1],$this->RowColors[$ci][2]);
 		foreach($this->aCols as $col)
@@ -84,11 +85,11 @@ function Row($data, $divider=0, $cost_id=1)
 			
 			if($col['f']=='cost')
 			{
-				$dcc=strtotime($data['cost_date']);
-				$str = GetCostPos($data['pos_id'], $cost_id);				
-				if( ($dcc<(time()-60*60*24*30*6))|| ($str==0) ) $cce=128;
+				$dcc=strtotime($data['cost_date']);				
+				if( ($dcc<(time()-60*60*24*30*6))|| ($cost==0) ) $cce=128;
 				else $cce=0;
-				if(!$str) $str='Звоните!';
+				if(!$cost) $cost='Звоните!';
+				$str=$cost;
 			} else $cce=0;  
 			
 			$str = iconv('UTF-8', 'windows-1251', $str);
