@@ -882,6 +882,10 @@ if($rights['read'])
 			$res=mysql_query("SELECT `id`, `fullname`, `pdol`, `pfio` FROM `doc_agent` WHERE `id`='$agent_id'");
 			if(mysql_errno())	throw new Exception("Не удалось выбрать агента");
 			$agent=mysql_fetch_assoc($res);
+			
+			$firm_vars['firm_name']=unhtmlentities($firm_vars['firm_name']);
+			$agent['fullname']=unhtmlentities($agent['fullname']);			
+			
 			define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
 			require('fpdf/fpdf.php');
 			$pdf=new FPDF('P');
