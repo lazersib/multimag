@@ -24,6 +24,7 @@ need_auth();
 $tmpl->SetTitle('Отчёты');
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
+$tmpl->HideBlock('left');
 
 function otch_list()
 {
@@ -35,7 +36,9 @@ function otch_list()
 	<a href='doc_otchet.php?mode=dolgi&amp;opt=1'><div>Долги: наши</div></a>
 	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день</div></a>
 	<a href='doc_otchet.php?mode=ostatki'><div>Остатки на складе</div></a>
+	<a href='doc_otchet.php?mode=ostatki_d'><div>Остатки на складе на дату</div></a>
 	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
+	<a href='doc_otchet.php?mode=komplekt'><div>Отчет по комплектующим</div></a>
 	<a href='doc_otchet.php?mode=proplaty'><div>Отчет по проплатам</div></a>
 	<a href='doc_otchet.php?mode=prod'><div>Отчёт по продажам</div></a>
 	<a href='doc_otchet.php?mode=bezprodaj'><div>Отчёт по товарам без продаж</div></a>
@@ -188,6 +191,85 @@ if($rights['read'])
 	 	<p>Итого: $i должников с общей суммой долга $sum_dolga  руб.<br> (".num2str($sum_dolga).")</p>");
 
 	}
+	else if($mode=='komplekt')
+	{
+		$opt=rcv('opt');
+		if($opt=='')
+		{
+			$tmpl->SetText("<h1>Отчёт по комплектующим (с зарплатой)</h1>
+			<form action='' method='post'>
+			<input type='hidden' name='mode' value='komplekt'>
+			<input type='hidden' name='opt' value='make'>
+			Группа товаров:<br>
+			<select name='group'>
+			<option value='0' selected>-- не выбрана</option>");
+			$res=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
+			while($nxt=mysql_fetch_row($res))
+			{
+				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[0])</option>");
+			}
+			$tmpl->AddText("</select>
+			<button type='submit'>Создать отчет</button>
+			</form>");
+		}
+		else
+		{
+			$tmpl->LoadTemplate('print');
+			$group=rcv('group');
+			settype($group,'int');
+			$date=date('Y-m-d');
+			$sel=$group?"AND `group`='$group'":'';
+			// Получение id свойства зарплаты
+			$res=mysql_query("SELECT `id` FROM `doc_base_params` WHERE `param`='ZP'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить выборку доп.информации");
+			if(mysql_num_rows($res)==0)	throw new Exception("Данные о зарплате за сборку в базе не найдены. Необходим дополнительный параметр 'ZP'");
+			$zp_id=mysql_result($res,0,0);
+			
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base_values`.`value` AS `zp`
+			FROM `doc_base`
+			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+			LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`='$zp_id'
+			WHERE 1 $sel
+			ORDER BY `doc_base`.`name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить выборку наименований");
+			$tmpl->AddText("<h1>Отчёт по комплектующим с зарплатой для группы $group на $date</h1><table width='100%'>
+			<tr><th rowspan='2'>ID<th rowspan='2'>Код<br>произв.<th rowspan='2'>Наименование<th rowspan='2'>Зар. плата<th colspan='4'>Комплектующие<th rowspan='2'>Стоимость сборки<th rowspan='2'>Стоимость с зарплатой
+			<tr><th>Наименование<th>Цена<th>Количество<th>Стоимость");
+			$zp_sum=$kompl_sum=$all_sum=0;
+			while($nxt=mysql_fetch_assoc($res))
+			{
+				settype($nxt['zp'], 'double');
+				$cnt=$sum=0;
+				$kompl_data1=$kompl_data='';
+				$rs=mysql_query("SELECT `doc_base_kompl`.`kompl_id` AS `id`, `doc_base`.`name`, `doc_base`.`cost`, `doc_base_kompl`.`cnt`
+				FROM `doc_base_kompl`
+				LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
+				WHERE `doc_base_kompl`.`pos_id`='{$nxt['id']}'");
+				echo mysql_error();
+				if(mysql_errno())	throw new MysqlException("Не удалось получить выборку комплектующих");
+				while($nx=mysql_fetch_row($rs))
+				{
+					$cnt++;
+					$cc=$nx[2]*$nx[3];
+					$sum+=$cc;
+					if(!$kompl_data1)	$kompl_data1="<td>$nx[1]<td>$nx[2]<td>$nx[3]<td>$cc";
+					else			$kompl_data.="<tr><td>$nx[1]<td>$nx[2]<td>$nx[3]<td>$cc";
+				}
+				$span=($cnt>1)?"rowspan='$cnt'":'';
+				if(!$kompl_data1)	$kompl_data1="<td><td><td><td>";
+				$zsum=$nxt['zp']+$sum;
+				$tmpl->AddText("<tr><td $span>{$nxt['id']}<td $span>{$nxt['vc']}<td $span>{$nxt['printname']} {$nxt['name']} / {$nxt['proizv']}<td $span>{$nxt['zp']} $kompl_data1<td $span>$sum<td $span>$zsum
+				$kompl_data");
+				$zp_sum+=$nxt['zp'];
+				$kompl_sum+=$sum;
+				$all_sum+=$zsum;
+			}
+			$tmpl->AddText("
+			<tr><td colspan='3'><b>Итого:</b><td>$zp_sum<td colspan='4'><td>$kompl_sum<td>$all_sum
+			</table>");
+			
+		}
+	}
 	else if($mode=='ostatki')
 	{
 		$tmpl->LoadTemplate('print');
@@ -217,7 +299,47 @@ if($rights['read'])
 		}
 		$tmpl->AddText("<tr><td colspan='5'><b>Итого:</b><td>$sum<td>$bsum
 		</table><h3>Общая масса склада: $summass кг.</h3>");
-	
+	}
+	else if($mode=='ostatki_d')
+	{
+		$opt=rcv('opt');
+		if($opt=='')
+		{
+			$curdate=date("Y-m-d");
+			$tmpl->AddText("
+			<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
+			<script src='/css/jquery/ui/jquery.ui.core.js'></script>
+			<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
+			<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
+			<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
+			<form action='' method='post'>
+			<input type='hidden' name='opt' value='gen'>
+			Выберите дату:<br>
+			<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
+			<button type='submit'>Выполнить</button>
+			</form>
+			<script type='text/javascript'>
+			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
+			
+			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
+			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+			$( '#datepicker_f' ).datepicker( 'setDate' , '$curdate' );
+			</script>");
+		}
+		else
+		{
+			$date=rcv('date');
+			$tovar_id=1;
+			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`
+			FROM `doc_list`
+			INNER JOIN `doc_list_pos` AS `pos` ON `doc_list`.`id`=`pos`.`doc` AND `pos`.`tovar`='$tovar_id`
+			WHERE `doc_list`.`date`<='$dt'");
+			while($nxt=mysql_fetch_row($res))
+			{
+			
+			
+			}
+		}
 	}
 	else if($mode=='fin_otchet')
 	{
@@ -228,7 +350,7 @@ if($rights['read'])
 		$date_end=date("Y-m-d");
 		$tmpl->AddText("
 		<form method='post'>
-		<input type=hidden name=mode value='fin_otchet_g'>
+		<input type='hidden' name='mode' value='fin_otchet_g'>
 		<table width=400>
 		<tr><th>
 		Задание начальных условий:
@@ -869,7 +991,7 @@ if($rights['read'])
 			С:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_f' value='$date'><br>
 			По:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_t' value='$date'>
 			</fieldset>
-			</p><br>Вид документиов:<br>
+			</p><br>Вид документов:<br>
 			<select name='doc_type'>
 			<option value='0'>-- без отбора --</option>");
 			$res=mysql_query("SELECT * FROM `doc_types` ORDER BY `name`");
@@ -879,7 +1001,6 @@ if($rights['read'])
 				if($dsel==$nxt[0]) $ss='selected';
 				$tmpl->AddText("<option value='$nxt[0]' $ss>$nxt[1]</option>");	
 			}
-			
 			$tmpl->AddText("
 			</select><br>
 			Организация:<br>
@@ -941,14 +1062,19 @@ if($rights['read'])
 			}
 			$tmpl->AddText("</ul>");
 		}
-	
 	}
 	else if($mode=='kassday')
 	{
 		$opt=rcv('opt');
 		if($opt=='')
 		{
+			$curdate=date("Y-m-d");
 			$tmpl->AddText("<h1>Отчёт по кассе за текущий день</h1>
+			<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
+			<script src='/css/jquery/ui/jquery.ui.core.js'></script>
+			<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
+			<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
+			<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
 			<form action=''>
 			<input type='hidden' name='mode' value='kassday'>
 			<input type='hidden' name='opt' value='ok'>
@@ -960,18 +1086,18 @@ if($rights['read'])
 				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
 			}
 			$tmpl->AddText("</select><br>
-			<button type='submit'>Сформировать</button>	
-			</form>");
-			
+			Выберите дату:<br>
+			<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
+			<button type='submit'>Сформировать</button></form>");
 		}
 		else
 		{
 			$tmpl->LoadTemplate('print');
-			$dt=date("Y-m-d");
+			$dt=rcv('date');
 			$kass=rcv('kass');
-			$tmpl->AddText("<h1>Отчёт по кассе за текущий день - $dt</h1>");		
-			$daytime=strtotime(date("d M Y 00:00:00"));
-			
+			$tmpl->AddText("<h1>Отчёт по кассе за $dt</h1>");		
+			$daystart=strtotime("$dt 00:00:00");
+			$dayend=strtotime("$dt 23:59:59");
 			$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Сумма документа<th>В кассе");			
 			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`		
 			FROM `doc_list`
@@ -984,8 +1110,8 @@ if($rights['read'])
 			$sum=$daysum=$prix=$rasx=0;
 			$flag=0;
 			while($nxt=mysql_fetch_row($res))
-			{			
-				if( !$flag && $nxt[3]>$daytime)
+			{
+				if( !$flag && $nxt[3]>=$daystart && $nxt[3]<=$dayend)
 				{
 					$flag=1;
 					$sum_p=sprintf("%0.2f руб.",$sum);
@@ -993,7 +1119,7 @@ if($rights['read'])
 				}
 				if($nxt[1]==6)		$sum+=$nxt[2];
 				else 			$sum-=$nxt[2];
-				if($nxt[3]>$daytime)
+				if($nxt[3]>=$daystart && $nxt[3]<=$dayend)
 				{
 					if($nxt[1]==6)
 					{
