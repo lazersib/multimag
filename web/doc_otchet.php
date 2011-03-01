@@ -39,9 +39,10 @@ function otch_list()
 	<a href='doc_otchet.php?mode=ostatki_d'><div>Остатки на складе на дату</div></a>
 	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
 	<a href='doc_otchet.php?mode=komplekt'><div>Отчет по комплектующим</div></a>
-	<a href='doc_otchet.php?mode=proplaty'><div>Отчет по проплатам</div></a>
 	<a href='doc_otchet.php?mode=prod'><div>Отчёт по продажам</div></a>
+	<a href='doc_otchet.php?mode=proplaty'><div>Отчет по проплатам</div></a>
 	<a href='doc_otchet.php?mode=bezprodaj'><div>Отчёт по товарам без продаж</div></a>
+	<a href='doc_otchet.php?mode=cost'><div>Отчёт по ценам</div></a>
 	<a href='doc_otchet.php?mode=doc_reestr'><div>Реестр документов</div></a>
 	<a href='doc_otchet.php?mode=fin_otchet'><div>Сводный финансовый отчёт</div></a>
 	<a href='doc_otchet.php?mode=bank_comp'><div>Сверка банка</div></a>	
@@ -975,6 +976,65 @@ if($rights['read'])
 			$tmpl->AddTExt("
 			<tr><td>Итого:<td colspan='2'>$cnt товаров без продаж
 			</table>");
+		}
+	}
+	else if($mode=='cost')
+	{
+		$tmpl->SetTitle("Отчёт по ценам");
+		$opt=rcv('opt');
+		if($opt=='')
+		{
+			$tmpl->AddText("<h1>Отчёт по ценам</h1>
+			<form action='' method='post'>
+			<input type='hidden' name='mode' value='cost'>
+			<input type='hidden' name='opt' value='get'>
+			Отображать следующие расчётные цены:<br>");
+			$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать список цен");
+			while($nxt=mysql_fetch_row($res))
+			{
+				$tmpl->AddText("<label><input type='checkbox' name='cost$nxt[0]' value='1' checked>$nxt[1]</label><br>");			
+			}
+			$tmpl->AddText("<button type='submit'>Сформировать отчёт</button>
+			</form>
+			");
+		}
+		else
+		{
+			$tmpl->LoadTemplate('print');
+			$tmpl->AddText("<h1>Отчёт по ценам</h1>");
+			$costs=array();
+			$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать список цен");
+			$cost_cnt=0;
+			while($nxt=mysql_fetch_row($res))
+			{
+				if(!rcv('cost'.$nxt[0]))	continue;
+				$costs[$nxt[0]]=$nxt[1];
+				$cost_cnt++;
+			}
+			
+			$tmpl->AddText("<table width='100%'>
+			<tr><th rowspan='2'>N<th rowspan='2'>Код<th rowspan='2'>Наименование<th rowspan='2'>Базовая цена<th rowspan='2'>АЦП<th colspan='$cost_cnt'>Расчётные цены
+			<tr>");
+			foreach($costs as $cost_name)
+				$tmpl->AddText("<th>$cost_name");
+			
+			$res=mysql_query("SELECT `id`, `vc`, `name`, `proizv`, `cost` FROM `doc_base`
+			ORDER BY `name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать список позиций");
+			while($nxt=mysql_fetch_row($res))
+			{
+				$act_cost=sprintf('%0.2f',GetInCost($nxt[0]));
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2] / $nxt[3]<td align='right'>$nxt[4]<td align='right'>$act_cost");
+				foreach($costs as $cost_id => $cost_name)
+				{
+					$cost=GetCostPos($nxt[0], $cost_id);
+					$tmpl->AddText("<td align='right'>$cost");
+				}
+			}
+			
+			$tmpl->AddText("</table>");
 		}
 	}
 	else if($mode=='doc_reestr')
