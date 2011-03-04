@@ -905,7 +905,7 @@ if($rights['read'])
 			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->MultiCell(0,4,$str,0,'C',0);
 			$pdf->Ln(2);
-			$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и {$agent['pdol']} {$agent['fullname']} {$agent['pfio']}, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
+			$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и              {$agent['fullname']}                 , с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
 			$str = iconv('UTF-8', 'windows-1251', $str);	
 			$pdf->Write(5,$str,'');
 			
