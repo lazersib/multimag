@@ -615,6 +615,7 @@ if($rights['read'])
 	}
 	else if($mode=='sverka')
 	{
+		global $CONFIG;
 		$opt=rcv('opt');
 		if($opt=='')
 		{
@@ -645,7 +646,7 @@ if($rights['read'])
 			$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 			while($nx=mysql_fetch_row($rs))
 			{
-				if($_SESSION['firm']==$nx[0]) $s=' selected'; else $s='';
+				if($CONFIG['site']['default_firm']==$nx[0]) $s=' selected'; else $s='';
 				$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");		
 			}		
 			$tmpl->AddText("</select><br>
@@ -899,8 +900,7 @@ if($rights['read'])
 			$str = iconv('UTF-8', 'windows-1251', "Акт сверки взаимных расчетов");
 			$pdf->Cell(0,6,$str,0,1,'C',0);			
 			
-			$str="от {$firm_vars['firm_name']}
-			За период с ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end);
+			$str="от {$firm_vars['firm_name']}\nза период с ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end);
 			$pdf->SetFont('Arial','',10);
 			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->MultiCell(0,4,$str,0,'C',0);
@@ -1060,20 +1060,23 @@ if($rights['read'])
 			$pdf->Cell($t_width[4]+$t_width[5],4,'',1,0,'L',0);
 			$pdf->Cell($t_width[6],4,'',1,0,'L',0);
 			$pdf->Cell($t_width[7],4,'',1,0,'L',0);
-			$pdf->Ln();
+			$pdf->Ln(7);
 			
+			$str=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']} на ".date("d.m.Y",$date_end));
+			$pdf->Write(4,$str);
+			$pdf->Ln();
 			if($razn>0)		$str="переплата в пользу ".$firm_vars['firm_name']." $razn_p руб.";
 			else	if($razn<0) 	$str="задолженность в пользу ".$firm_vars['firm_name']." $razn_p руб.";
-			else			$str="$razn переплат и задолженностей нет!";
+			else			$str="переплат и задолженностей нет!";
 			
 			$str=iconv('UTF-8', 'windows-1251', $str);
-			$pdf->Write(5,$str);
-			$pdf->Ln();
+			$pdf->Write(4,$str);
+			$pdf->Ln(7);
 			$x=$pdf->getX()+$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
 			$y=$pdf->getY();
-			$str=iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
+			$str=iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
 			$pdf->MultiCell($t_width[0]+$t_width[1]+$t_width[2]+$t_width[3],5,$str,0,'L',0);
-			$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n{$agent['pdol']} ____________________________ ({$agent['pfio']})\n\n           м.п.");
+			$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n\n           ____________________________ (                )\n\n           м.п.");
 			$pdf->lMargin=$x;
 			$pdf->setX($x);
 			

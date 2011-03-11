@@ -774,7 +774,7 @@ class doc_Nulltype
 	// Служебные методы формирования документа
 	protected function DrawHeadformStart()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$tmpl->AddText('<h1>'.$this->doc_viewname."</h1>
 		<script type='text/javascript' src='css/jquery/jquery.date_input.js'></script>
 		<link rel='stylesheet' href='css/jquery/date_input.css' type='text/css'>
@@ -791,7 +791,7 @@ class doc_Nulltype
 		Организация:<br><select name='firm'>");
 		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 			
-		if($this->doc_data[17]==0) $this->doc_data[17]=$_SESSION['j_select_firm'];
+		if($this->doc_data[17]==0) $this->doc_data[17]=$CONFIG['site']['default_firm'];
 		
 		while($nx=mysql_fetch_row($rs))
 		{
