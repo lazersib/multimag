@@ -38,6 +38,7 @@ function otch_list()
 	<a href='doc_otchet.php?mode=ostatki'><div>Остатки на складе</div></a>
 	<a href='doc_otchet.php?mode=ostatki_d'><div>Остатки на складе на дату</div></a>
 	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
+	<a href='doc_otchet.php?mode=img_otchet'><div>Отчет по изображениям</div></a>
 	<a href='doc_otchet.php?mode=komplekt'><div>Отчет по комплектующим</div></a>
 	<a href='doc_otchet.php?mode=proplaty'><div>Отчет по проплатам</div></a>
 	<a href='doc_otchet.php?mode=prod'><div>Отчёт по продажам</div></a>
@@ -1160,6 +1161,27 @@ if($rights['read'])
 			$tmpl->AddText("<tr><td>".$doc_types[$nxt[1]]." N$nxt[3]$nxt[4] ($nxt[0])<br>от $dt $tovar<td>$prix_p<td>$rasx_p<td>$sum_p");
 		}
 		$tmpl->AddText("</table>");
+	}
+	else if($mode=='img_otchet')
+	{
+		$tmpl->LoadTemplate('print');
+		$tmpl->SetText("<h1>Отчёт по изображениям</h1>");
+		$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`name`, `doc_img`.`type`, `doc_base_img`.`default`, `doc_base_img`.`pos_id`, `doc_base`.`name` AS `pos_name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_group`.`printname`
+		FROM `doc_base_img`
+		INNER JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_img`.`pos_id`
+		INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		ORDER BY `doc_base_img`.`img_id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список изображений");
+	
+		$tmpl->AddText("<table width='100%'>
+		<tr><th>ID<th>Изображение<th>Умолч.<th>ID товара<th>Код<th>Наименование / произв.");
+		while($nxt=mysql_fetch_array($res))
+		{
+			$tmpl->AddText("<tr><td>{$nxt['img_id']}<td>{$nxt['name']} ({$nxt['type']})<td>{$nxt['default']}<td>{$nxt['pos_id']}<td>{$nxt['vc']}<td>{$nxt['printname']} {$nxt['pos_name']} / {$nxt['proizv']}");
+		}
+		$tmpl->AddText("</table>");
+		
 	}
 	else if($mode=='prod')
 	{
