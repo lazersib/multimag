@@ -58,7 +58,7 @@ while($nxt=mysql_fetch_row($res))
 echo"</categories>
 <local_delivery_cost>{$CONFIG['ymarket']['local_delivery_cost']}</local_delivery_cost>
 <offers>";
-$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `nal`
+$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `nal`, `doc_base`.`cost`
 FROM `doc_base`
 INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -71,7 +71,8 @@ while($nxt=mysql_fetch_assoc($res))
 	if($CONFIG['site']['recode_enable'])	$url= "http://{$CONFIG['site']['name']}/vitrina/ip/{$nxt['id']}.html";
 	else					$url= "http://{$CONFIG['site']['name']}/vitrina.php?mode=product&amp;p={$nxt['id']}";
 	$cost=GetCostPos($nxt['id'], $cost_id);
-	if($cost==0)	continue;
+	if($nxt['cost']==0)	continue;
+	if($cost==0)		continue;
 	$picture=($nxt['img_id'])?"<picture>http://{$CONFIG['site']['name']}/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=200</picture>":'';
 
 	$nxt['name']=html_entity_decode($nxt['name'],ENT_QUOTES,"UTF-8");

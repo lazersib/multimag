@@ -136,7 +136,7 @@ class doc_s_Sklad
 // Служебные функции класса
 	function Edit()
 	{
-		global $tmpl, $CONFIG;
+		global $tmpl, $CONFIG, $uid;
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -552,6 +552,8 @@ class doc_s_Sklad
 		// Правка описания группы
 		else if($param=='g')
 		{
+			$rights=getright('doc_sklad_groups',$uid);
+			if(!$rights['read'])	throw new AccessException('Нет прав для просмотра группы');
 			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname` 
 			FROM `doc_group`
 			WHERE `id`='$group'");
@@ -662,7 +664,7 @@ class doc_s_Sklad
 	}
 	function ESave()
 	{
-		global $tmpl, $CONFIG;		
+		global $tmpl, $CONFIG, $uid;		
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -1008,11 +1010,18 @@ class doc_s_Sklad
 			$pid=rcv('pid');
 			$hid=rcv('hid');
 			$pname=rcv('pname');
+			$rights=getright('doc_sklad_groups',$uid);
 			if($group)
+			{
+				if(!$rights['edit'])	throw new AccessException('Нет прав для редактирования группы');
 				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname' WHERE `id` = '$group'");
+			}
 			else 
+			{
+				if(!$rights['write'])	throw new AccessException('Нет прав для создания группы');
 				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`)
 				VALUES ('$name', '$desc', '$pid', '$hid', '$pname')"); 
+			}
 			if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию группы");
 				
 			if($_FILES['userfile']['size']>0)

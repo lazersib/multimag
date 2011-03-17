@@ -201,7 +201,7 @@ protected function ViewGroup($group, $page)
 protected function ProductList($group, $page)
 {
 	global $tmpl, $CONFIG;
-	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`,
+	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
 	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type`, `doc_units`.`printname` AS `units`
 	FROM `doc_base`
@@ -567,7 +567,7 @@ protected function BuyMakeForm()
 /// Сделать покупку
 protected function MakeBuy()
 {
-	global $tmpl, $CONFIG;
+	global $tmpl, $CONFIG, $uid, $xmppclient;
 	$soplat=rcv('soplat');
 	$org=rcv('org');
 	$tel=rcv('tel');
@@ -595,7 +595,8 @@ protected function MakeBuy()
 		$ip=getenv("REMOTE_ADDR");
 		$comm="Организация: $org<br>Телефон: $tel<br>Контактное лицо: $kont<br>IP: $ip<br>Другая информация:<br>$dop";
 	
-		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`) VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','{$CONFIG['site']['default_firm']}','1')");
+		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`) 
+		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','{$CONFIG['site']['default_firm']}','1')");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ заявки");
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}')");
@@ -607,11 +608,34 @@ protected function MakeBuy()
 		}
 		DocSumUpdate($doc);
 		$_SESSION['zakaz_docnum']=$doc;
+		
+		$text="На сайте {$CONFIG['site']['name']} оформлен новый заказ.\n";
+		$text.="Посмотреть можно по ссылке: http://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
+		if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
+		
+		if($CONFIG['site']['doc_adm_jid'])
+		{
+			try 
+			{
+				$xmppclient->connect();
+				$xmppclient->processUntil('session_start');
+				$xmppclient->presence();
+				$xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
+				$xmppclient->disconnect();
+			} 
+			catch(XMPPHP_Exception $e) 
+			{
+				$tmpl->logger("Невозможно отправить сообщение XMPP!","err");
+			}
+		}
+		if($CONFIG['site']['doc_adm_email'])
+			mailto($CONFIG['site']['doc_adm_email'],"Message from {$CONFIG['site']['name']}", $text);
+		
 		$tmpl->AddText("<h1 id='page-title'>Заказ оформлен</h1>");
 		if($soplat=='bn')
 		{
 			$tmpl->msg("Ваш заказ оформлен! Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>выписать счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
-			//$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
+			$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
 		}
 		else $tmpl->msg("Ваш заказ оформлен! Вам перезвонят в ближайшее время для уточнения деталей!");
 	}
