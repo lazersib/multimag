@@ -939,7 +939,7 @@ if($rights['read'])
 			`doc_list`.`altnum`, `doc_types`.`name`
 			FROM `doc_list`
 			LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-			WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' ".$sql_add." ORDER BY `doc_list`.`date`" );
+			WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`<'8' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
 			while($nxt=mysql_fetch_array($res))
 			{
 				$deb=$kr="";				
