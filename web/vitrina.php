@@ -178,7 +178,7 @@ function ExecMode($mode)
 /// Список групп / подгрупп
 protected function ViewGroup($group, $page)
 {
-	global $tmpl, $CONFIG;
+	global $tmpl, $CONFIG, $wikiparser;
 	settype($group,'int');
 	$res=mysql_query("SELECT `name`, `pid`, `desc` FROM `doc_group` WHERE `id`='$group'");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать информацию о группе');

@@ -13,6 +13,7 @@ $CONFIG['bank']['pass']			= '';
 $CONFIG['price']['dir']			= '/home/ftp/price';
 
 // Архивация
+$CONFIG['backup']['archiver']		= 'zip';
 $CONFIG['backup']['archiv_dir']		= '/mnt/backup';
 $CONFIG['backup']['ftp_host']		= '';
 $CONFIG['backup']['ftp_login']		= '';

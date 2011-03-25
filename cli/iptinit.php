@@ -51,10 +51,14 @@ if($CONFIG['route']['ulog']['enable'])	`modprobe ipt_ULOG nlbufsiz=800000`;
 `$ipt -A allowed -p TCP -j DROP`;
 `$ipt -A allowed -j ACCEPT`;
 
+
+
 // TCP rules
 `$ipt -N tcp_packets`;
+
+`$ipt -A tcp_packets -p TCP -s 189.52.17.130 --dport 25 -j DROP`;	// SMTP
+
 // FTP
-`$ipt -A tcp_packets -p TCP -s 114.32.231.17 --dport 25 -j DROP`;
 `$ipt -A tcp_packets -p TCP -s 0/0 --dport 20 -j allowed`;
 `$ipt -A tcp_packets -p TCP -s 0/0 --dport 21 -j allowed`;
 `$ipt -A tcp_packets -p TCP -s 0/0 --dport 22 -j allowed`;	// SSH
@@ -167,6 +171,11 @@ if( ($date_time_array['hours']>=$CONFIG['route']['iplimit']['hstart']) && ($date
 else echo"IP limit NOT set, now ".$date_time_array['hours']." hours!\n";
 }
 
+if($CONFIG['route']['transparent_proxy'])
+{
+    echo "Transparent proxy start\n";
+    `$ipt -t nat -A PREROUTING -d ! {$CONFIG['route']['ext_ip']} -p tcp -m multiport --dport 80 -j REDIRECT --to-port 3128`;
+}
 
 `$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 10012 -j DNAT --to-destination 192.168.1.12:10012`;
 `$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p udp -m udp --dport 10012 -j DNAT --to-destination 192.168.1.12:10012`;
@@ -180,7 +189,5 @@ else echo"IP limit NOT set, now ".$date_time_array['hours']." hours!\n";
 `$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} -d ! {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['ext_iface']} -j SNAT --to-source {$CONFIG['route']['ext_ip']}`;
 
 echo"All ok!\n";
-
-
 
 ?>
