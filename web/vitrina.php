@@ -594,9 +594,13 @@ protected function MakeBuy()
 		$altnum=GetNextAltNum(3,$subtype);
 		$ip=getenv("REMOTE_ADDR");
 		$comm="Организация: $org<br>Телефон: $tel<br>Контактное лицо: $kont<br>IP: $ip<br>Другая информация:<br>$dop";
-	
+		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
+		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");
+		$bank=mysql_result($res,0,0);
+		
 		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`) 
-		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','{$CONFIG['site']['default_firm']}','1')");
+		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','{$CONFIG['site']['default_firm']}','$bank')");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ заявки");
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}')");

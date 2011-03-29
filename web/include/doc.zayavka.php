@@ -679,7 +679,7 @@ class doc_Zayavka extends doc_Nulltype
 		
 		$pdf=new FPDF('P');
 		$pdf->Open();
-		$pdf->SetAutoPageBreak(1,12);
+		$pdf->SetAutoPageBreak(0,10);
 		$pdf->AddFont('Arial','','arial.php');
 		$pdf->tMargin=5;
 		$pdf->AddPage();
@@ -803,7 +803,7 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->Cell($t_width[4],5,$str,1,0,'C',0);
 		$pdf->Ln();
 		
-		$pdf->SetFont('','',10);
+		$pdf->SetFont('','',9);
 		
 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`
 		FROM `doc_list_pos`
@@ -821,18 +821,37 @@ class doc_Zayavka extends doc_Nulltype
 			$summass+=$nxt[5]*$nxt[3];
 			$cost = sprintf("%01.2f р.", $nxt[4]);
 			$smcost = sprintf("%01.2f р.", $sm);
+			
+			$name=$nxt[0].' '.$nxt[1];
+			if($nxt[2]) $name.='('.$nxt[2].')';
+			$name = iconv('UTF-8', 'windows-1251', unhtmlentities($name));
 
-			$pdf->Cell($t_width[0],5,$i,1,0,'R',0);
-			$str=$nxt[0].' '.$nxt[1];
-			if($nxt[2]) $str.='('.$nxt[2].')';
-			$str = iconv('UTF-8', 'windows-1251', $str);	
-			$pdf->Cell($t_width[1],5,$str,1,0,'L',0);
-			$pdf->Cell($t_width[2],5,$nxt[3],1,0,'C',0);
+			$rough_lines=ceil($pdf->GetStringWidth($name)/$t_width[1]);
+
+			if( $pdf->h <= ($pdf->GetY()+15 + $rough_lines*5 ) ) $pdf->AddPage();			
+
+			
+			// Вывод наименования и расчёт отступов
+			$old_x=$pdf->GetX();
+			$old_y=$pdf->GetY();
+			$pdf->SetX($pdf->GetX()+$t_width[0]);			
+			$pdf->MultiCell($t_width[1],5,$name,1,'L');
+			$line_height=$pdf->GetY()-$old_y;
+			$pdf->SetX($old_x);
+			$pdf->SetY($old_y);
+			
+			
+
+			$pdf->Cell($t_width[0],$line_height,$i,1,0,'R');
+			$pdf->Cell($t_width[1],5,'',0,0,'L');
+			//if($pdf->GetStringWidth($str)>$t_width[1])
+			//$pdf->MultiCell($t_width[1],5,$str,1,'L');
+			$pdf->Cell($t_width[2],$line_height,$nxt[3],1,0,'C');
 			$str = iconv('UTF-8', 'windows-1251', $cost);	
-			$pdf->Cell($t_width[3],5,$str,1,0,'R',0);
+			$pdf->Cell($t_width[3],$line_height,$str,1,0,'R');
 			$str = iconv('UTF-8', 'windows-1251', $smcost);	
-			$pdf->Cell($t_width[4],5,$str,1,0,'R',0);
-			$pdf->Ln();
+			$pdf->Cell($t_width[4],$line_height,$str,1,0,'R');
+			$pdf->Ln($line_height);
 		}
 		
 		$cost = num2str($sum);

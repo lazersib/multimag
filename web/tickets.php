@@ -184,9 +184,9 @@ else if($mode=='add')
 	
 	$msg="Для Вас новое задание от $uid: $theme - $text\n";
 	if($to_date) $msg.="Выполнить до $to_date\n";
-	$msg.="Посмотреть задание можно здесь: http://{$CONFIG['site']['name']}/ticket.php/mode=view&n=$n";
+	$msg.="Посмотреть задание можно здесь: http://{$CONFIG['site']['name']}/tickets.php/mode=view&n=$n";
 	
-	mailto($email, "New ticket - $theme", $msg);
+	mailto($email, "У Вас Новое задание - $theme", $msg);
 	
 	ShowTicket($n);
 	
