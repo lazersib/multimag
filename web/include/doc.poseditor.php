@@ -75,6 +75,7 @@ function Show($param='')
 	</tr>
 	</tfoot>
 	<tbody>
+	<tr><td colspan='9' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'>
  	</tbody>
 	</table>
 	<p align='right' id='sum'>Итого: $ii позиций на сумму $sum_p руб.</p>";
@@ -172,9 +173,6 @@ function GetPosInfo($pos)
 		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}'
 		} }";
 	}
-
-
-
 
 	return $ret;
 }

@@ -45,6 +45,7 @@ if($mode=='')
 	<li><a href='?mode=doc_log'>Журнал изменений</a></li>
 	<li><a href='?mode=cost'>Управление ценами</a></li>
 	<li><a href='?mode=firm'>Настройки организаций</a></li>
+	<li><a href='?mode=vrasx'>Настройки видов расходов</a></li>
 	</ul>");
 }
 else if($mode=='merge_agent')
@@ -115,7 +116,7 @@ else if($mode=='merge_tovar_ok')
 	if(mysql_error())		throw new MysqlException("Не удалось перенести документы на указанный объект!");
 	$af_doc=mysql_affected_rows();
 	mysql_query("UPDATE `doc_base` SET `name`=CONCAT('old ',`name`), `group`='$gr' WHERE `id`='$tov2'");
-	if(mysql_error())		throw new MysqlException("Не удалось обновить данные агента!");
+	if(mysql_error())		throw new MysqlException("Не удалось обновить данные товара!");
 	$tmpl->msg("Операция выполнена - обновлено $af_doc документов","ok");
 	
 	mysql_query("COMMIT");
@@ -131,7 +132,7 @@ else if($mode=='doc_log')
 	}
 	$motions=array_unique($motions);
 	$targets=array_unique($targets);
-
+	$tmpl->msg("Разработка функции временно приостановлена. Функция неработоспособна.","err");
 	$tmpl->AddText("<h1>Журнал изменений</h1>
 	Данная функция позволяет получить информацию по изменениям в базе документов, отобранной по заданным критериям.
 	<form method='post'><input type='hidden' name='mode' value=doc_log_ok'>
@@ -265,7 +266,7 @@ else if($mode=='cost')
 }
 else if($mode=='costs')
 {
-	if(!$rights['edit'])	throw new Exception("Недостаточно привилегий!");
+	if(!$rights['edit'])	throw new AccessException("Недостаточно привилегий!");
 	$n=rcv('n');
 	$nm=rcv('nm');
 	$cost_type=rcv('cost_type');
@@ -364,7 +365,56 @@ else if($mode=='firms')
 	$res=mysql_query($ss);
 	if(mysql_errno())	throw new MysqlException("Не удалось сохранить данные! $ss");
 	$tmpl->msg("Данные сохранены!","ok");
-}       
+}    
+else if($mode=='vrasx')
+{
+	$tmpl->AddText("<h1>Редактор видов расходов</h1>");
+	$opt=rcv('opt');
+	if($opt!='')
+	{
+		if(!$rights['edit'])	throw new AccessException("Недостаточно привилегий!");
+		$res=mysql_query("SELECT `id`, `name`, `adm` FROM `doc_rasxodi` ORDER BY `id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список расходов");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$name=rcv('nm'.$nxt[0]);
+			$adm=rcv('ch'.$nxt[0]);
+			settype($adm,'int');
+			if( ($name!=$nxt[1]) || ($adm!=$nxt[2]))
+			mysql_query("UPDATE `doc_rasxodi` SET `name`='$name', `adm`='$adm' WHERE `id`='$nxt[0]'");
+			if(mysql_errno())	throw new MysqlException("Не удалось изменить список расходов");
+		}
+		$name=rcv('nm_new');
+		$adm=rcv('ch_new');
+		if($name)
+		{
+			mysql_query("INSERT INTO `doc_rasxodi` (`name`, `adm`) VALUES ('$name', '$adm')");
+			if(mysql_errno())	throw new MysqlException("Не удалось пополнить список расходов");
+		}
+		$tmpl->msg("Информация обновлена!");
+	}
+	
+	$res=mysql_query("SELECT `id`, `name`, `adm` FROM `doc_rasxodi` ORDER BY `id`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список расходов");
+	$tmpl->AddText("
+	<form action='' method='post'>
+	<input type='hidden' name='mode' value='vrasx'>
+	<input type='hidden' name='opt'  value='save'>
+	<table>
+	<tr><th>ID<th>Наименование<th>Административный");
+	$i=0;
+	while($nxt=mysql_fetch_row($res))
+	{
+		$checked=$nxt[2]?'checked':'';
+		$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td><input type='text' name='nm$nxt[0]' value='$nxt[1]' style='width: 400px;'><td><label><input type='checkbox' name='ch$nxt[0]' $checked value='1'> Да</label>");
+		$i=1-$i;
+	}
+	$tmpl->AddText("<tr><td>Новый<td><input type='text' name='nm_new' value='' style='width: 400px;'><td><label><input type='checkbox' name='ch_new' value='1'> Да</label>");
+	
+	$tmpl->AddText("</table>
+	<button type='submit'>Записать</button>
+	</form>");
+}
 else $tmpl->logger("Запрошена несуществующая опция!");
 }
 catch(MysqlException $e)

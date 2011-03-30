@@ -70,12 +70,6 @@ class doc_Nulltype
 		$this->header_fields			='';
 		$this->dop_menu_buttons			='';
 		$this->get_docdata();
-		
-		if($this->firm_vars['firm_skin'])
-		{
-			global $tmpl;
-			//$tmpl->LoadTemplate($this->firm_vars['firm_skin']);
-		}
 	}
 	
 	function head()
@@ -545,10 +539,6 @@ class doc_Nulltype
 				$group=rcv('group');
 				doc_poslist($doc);
 			}
-			else if($this->doc_data[6])
-				$tmpl->msg("Операция не допускается для проведённого документа!","err");
-			else if($doc_data[14])
-				$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
 			// Json-вариант списка товаров
 			else if($opt=='jget')
 			{
@@ -560,6 +550,10 @@ class doc_Nulltype
 				$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";			
 				$tmpl->AddText($str);			
 			}
+			else if($this->doc_data[6])
+				$tmpl->msg("Операция не допускается для проведённого документа!","err");
+			else if($doc_data[14])
+				$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
 			// Получение данных наименования
 			else if($opt=='jgpi')
 			{
@@ -918,6 +912,8 @@ class doc_Nulltype
 		<form method='post' action=''>
 		<input type=hidden name=mode value='heads'>
 		<input type=hidden name=type value='".$this->doc_type."'>");
+		if($this->doc_data[0])
+			$tmpl->AddText("<input type=hidden name=doc value='".$this->doc_data[0]."'>");
 		if($this->doc_data[14]) $tmpl->AddText("<h3>Документ помечен на удаление!</h3>");
 		$tmpl->AddText("
 		Подтип:<br>
@@ -952,13 +948,17 @@ class doc_Nulltype
 		{
 			$dt=date("Y-m-d",$this->doc_data[5]);
 			$tm=date("H:i:s",$this->doc_data[5]);
-			$tmpl->AddText("<input type=hidden name=doc value='".$this->doc_data[0]."'>
-			<fieldset style='height: 70px; width: 350px;'><legend>Дата</legend>
-			<input type=text name='date' value='$dt' class='vDateField'>
-			<input type=text name='time' value='$tm' class='vTimeField'>
-			<script type='text/javascript'>$($.date_input.initialize);</script>
-			</fieldset>");
 		}
+		else
+		{
+			$dt=date("Y-m-d");
+			$tm=date("H:i:s");
+		}
+		$tmpl->AddText("<fieldset style='height: 70px; width: 350px;'><legend>Дата</legend>
+		<input type=text name='date' value='$dt' class='vDateField'>
+		<input type=text name='time' value='$tm' class='vTimeField'>
+		<script type='text/javascript'>$($.date_input.initialize);</script>
+		</fieldset>");
 	}
 
 	protected function DrawAgentField()

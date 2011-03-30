@@ -8,7 +8,7 @@ function PosEditorInit(doc)
 		type:   'POST', 
 	       url:    '/doc.php', 
 	       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jget', 
-	       success: function(msg) { rcvDataSuccess(msg); }, 
+	       success: function(msg) { poslist.tBodies[0].innerHTML=''; rcvDataSuccess(msg); }, 
 	       error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); }, 
 	});
 	
@@ -165,7 +165,7 @@ function PosEditorInit(doc)
 				poslist.RemoveLine(json.remove.line_id)
 				p_sum.innerHTML='Итого: <b>'+(poslist.tBodies[0].rows.length)+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
 			}
-			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Изменение списка товаров", null,  'icon_err');
 		}
 		catch(e)
 		{
@@ -175,6 +175,42 @@ function PosEditorInit(doc)
 	}
 }
 
+function SkladViewInit(doc)
+{
+	var skladview=document.getElementById('sklad_view');
+	var skladlist=document.getElementById('sklad_list');
+	
+	skladlist.getGroupData=function (group)
+	{
+		$.ajax({ 
+			type:   'POST', 
+		       url:    '/doc.php', 
+		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jsklad&group_id='+group, 
+		       success: function(msg) { rcvDataSuccess(msg); }, 
+		       error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
+		});
+	}
+	
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			var json=eval('('+msg+')');
+			if(json.response==0)
+				jAlert(json.message,"Ошибка", {}, 'icon_err');
+			else if(json.response==6)
+			{
+				skladlist.innerHTML="<table width='100%'></table>";
+			}
+			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+		}
+		catch(e)
+		{
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+		}	
+	}
+}
 
 
 function PladdInit()
