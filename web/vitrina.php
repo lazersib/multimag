@@ -535,7 +535,16 @@ protected function BuyMakeForm()
 		$str='Товар будет зарезервирован для Вас на 3 рабочих дня.';
 		//if( ($_SESSION['korz_sum']>20000) && $uid )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
 	}
-	else $str='Для незарегистрированных пользователей наличие товара на складе не гарантируется.';
+	else
+	{
+		$str='<b>Для незарегистрированных пользователей наличие товара на складе не гарантируется.</b>';
+		$email_field="e-mail:<br>
+		<input type='text' name='email' value=''><br>
+		Необходимо заполнить телефон или e-mail<br>";
+	}
+	
+	if(rcv('cwarn'))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
+	
 	$tmpl->AddText("
 	<h4>Для оформления заказа требуется следующая информация</h4>
 	<form action='/vitrina.php' method='post'>
@@ -545,6 +554,7 @@ protected function BuyMakeForm()
 	<input type='text' name='org' value='".$users_data['org']."'><br>
 	Телефон:<br>
 	<input type='text' name='tel' value='".$users_data['tel']."'><br>
+	$email_field
 	Контактное лицо (Фамилия И.О.):<br>
 	<input type='text' name='kont' value='".$users_data['kont_lico']."'><br>
 	Способ оплаты:<br>
@@ -554,9 +564,7 @@ protected function BuyMakeForm()
 	<label><input type='radio' name='soplat' value='bn' checked>Безналичный перевод.
 	<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня)</label><br>
 	<label><input type='radio' name='soplat' value='n'>Наличный расчет.
-	<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>
-	<label><input type='radio' name='soplat' value='z'>Только заказ.
-	<b>Только самовывоз</b>, расчет при отгрузке. Используется для сообщения информации оператору. Наличие товара на складе не гарантируется.</label><br>
+	<b>Только самовывоз</b>, расчет при отгрузке. $str</label>
 	
 	Другая информация:<br>
 	<textarea name='dop' rows='5' cols='30'>".$users_data['dop_info']."</textarea><br>
@@ -571,6 +579,7 @@ protected function MakeBuy()
 	$soplat=rcv('soplat');
 	$org=rcv('org');
 	$tel=rcv('tel');
+	$email=rcv('email');
 	$kont=rcv('kont');
 	$dop=rcv('dop');
 	if($_SESSION['uid'])
@@ -586,6 +595,14 @@ protected function MakeBuy()
 			if(!$this->cost_id)	$this->cost_id=1;
 		}
 	}
+	else if(!$tel && !$email)
+	{
+		header("Location: /vitrina.php?mode=buy&step=1&cwarn=1");
+		return;
+	}
+	
+	
+	
 	if($_SESSION['korz_cnt'])
 	{
 		$subtype="site";
@@ -594,6 +611,7 @@ protected function MakeBuy()
 		$altnum=GetNextAltNum(3,$subtype);
 		$ip=getenv("REMOTE_ADDR");
 		$comm="Организация: $org<br>Телефон: $tel<br>Контактное лицо: $kont<br>IP: $ip<br>Другая информация:<br>$dop";
+		if(!$uid)	$comm="e-mail: $email<br>".$comm;
 		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
 		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");

@@ -29,7 +29,7 @@ if($mode=='')
 {
 	$tmpl->AddText("<ul>");
 
-	$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
+	//$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
 	
 
 	$rights=getright('doc_list',$uid);

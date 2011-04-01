@@ -189,7 +189,7 @@ if($mode=='')
 	{
 		if($opt=='login')
 		{
-			if( ($at==1) && ( ($_SESSION['captcha_keystring']!=$img) || ($_SESSION['captcha_keystring']=='') ) )
+			if( ($at==1) && ( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper($img)) || ($_SESSION['captcha_keystring']=='') ) )
 			{
 				$tmpl->msg("Введите правильный код подтверждения, изображенный на картинке", "err");
 				mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
