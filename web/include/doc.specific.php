@@ -34,30 +34,6 @@ class doc_Specific extends doc_Nulltype
 		settype($this->doc,'int');
 	}
 	
-	function DopHead()
-	{
-		global $tmpl;
-		$srok=$this->dop_data['srok'];
-		$tmpl->AddText("Срок поставки:<br><input type='text' name='srok' value='$srok'><br>");	
-		
-	}
-
-	function DopSave()
-	{
-		$srok=rcv('srok');
-		$doc=$this->doc;
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'srok','$srok')");
-
-	}
-	
-	function DopBody()
-	{
-		global $tmpl;
-		$srok=$this->dop_data['srok'];
-		$tmpl->AddText("<b>, cрок поставки:</b> $srok рабочих дней<br>");
-	}
-
 	function DocApply($silent=0)
 	{
 		$tim=time();
@@ -213,7 +189,8 @@ class doc_Specific extends doc_Nulltype
 		
 		if($CONFIG['site']['doc_header'])
 		{
-			$pdf->Image($CONFIG['site']['doc_header'],8,10, 190);	
+			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
+			$pdf->Image($header_img,8,10, 190);	
 			$pdf->Sety(54);
 		}
 		
@@ -343,17 +320,16 @@ class doc_Specific extends doc_Nulltype
 		$allsum_p = sprintf("%01.2f", $allsum);
 		$str="Общая сумма спецификации N {$this->doc_data[9]} с учетом НДС составляет $allsum_p рублей.";
 		$str = iconv('UTF-8', 'windows-1251', $str);	
-		$pdf->Cell(0,5,$str,0,1,'C',0);	
+		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 		$nds_sum_p = sprintf("%01.2f", $nds_sum);
 		$str="Сумма НДС составляет $nds_sum_p рублей.";
 		$str = iconv('UTF-8', 'windows-1251', $str);	
-		$pdf->Cell(0,5,$str,0,1,'C',0);		
-		$str="Срок поставки - в течение {$this->dop_data['srok']} рабочих дней с момента поступления товара на склад поставщика.";
-		$str = iconv('UTF-8', 'windows-1251', $str);	
-		$pdf->Cell(0,5,$str,0,1,'C',0);
-		$str="Условия оплаты - согласно договору.";
-		$str = iconv('UTF-8', 'windows-1251', $str);	
-		$pdf->Cell(0,5,$str,0,1,'C',0);
+		$pdf->MultiCell(0,5,$str,0,1,'L',0);		
+		$pdf->Ln(7);
+		
+		$str = iconv('UTF-8', 'windows-1251', str_replace("<br>",", ",unhtmlentities($this->doc_data[4])));	
+		$pdf->MultiCell(0,5,$str,0,1,'L',0);
+		
 		$pdf->Ln(10);
 		
 		$pdf->SetFont('','',16);
@@ -372,7 +348,7 @@ class doc_Specific extends doc_Nulltype
 		
 		$agent_info=mysql_fetch_array($res);
 		
-		$str=unhtmlentities("$agent_info[1]\n$agent_info[2], тел. $agent_info[3]\nИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]\nР/С $agent_info[8], в банке $agent_info[10]\nК/С $agent_info[9], БИК $agent_info[7]");
+		$str=unhtmlentities("$agent_info[1]\n$agent_info[2], тел. $agent_info[3]\nИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]\nР/С $agent_info[8], в банке $agent_info[10]\nК/С $agent_info[9], БИК $agent_info[7]\n__________________ / _________________ /\n\n      М.П.");
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		
 		$y=$pdf->GetY();
@@ -381,7 +357,7 @@ class doc_Specific extends doc_Nulltype
 		$pdf->SetY($y);
 		$pdf->SetX(110);
 
-		$str=unhtmlentities("{$this->firm_vars['firm_name']}\n{$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}\nК/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}");
+		$str=unhtmlentities("{$this->firm_vars['firm_name']}\n{$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}\nК/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}\n__________________ / {$this->firm_vars['firm_director']} /\n\n      М.П.");
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,'L',0);
 		

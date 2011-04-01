@@ -32,19 +32,27 @@ class doc_PBank extends doc_Nulltype
 		$this->header_fields			='agent sum bank';
 		settype($this->doc,'int');
 	}
-
-	function body()
+	
+	function DopHead()
 	{
 		global $tmpl;
-		parent::body();
-		$res=@mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc` ='{$this->doc}' AND `param`='unique'");
-		if(!$res)			throw new MysqlException('Ошибка выборки дополнительных данных документа!');
-		if(mysql_num_rows($res))
-		{
-			$val=mysql_result($res,0,0);
-			$tmpl->AddText("<b>Номер из клиент-банка:</b> $val<br>");
-		}
+		$tmpl->AddText("Номер документа клиента банка:<br><input type='text' name='unique' value='{$this->dop_data['unique']}'><br>");
 	}
+
+	function DopSave()
+	{
+		$unique=rcv('unique');
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+		VALUES ( '{$this->doc}' ,'unique','$unique')");
+	}
+	
+	function DopBody()
+	{
+		global $tmpl;
+		if($this->dop_data['unique'])
+			$tmpl->AddText("<b>Номер документа клиента банка:</b> {$this->dop_data['unique']}");
+	}
+	
 	// Провести
 	function DocApply($silent=0)
 	{

@@ -320,7 +320,7 @@ else if($mode=='regs')
 		
 		if($img=='')
 			throw new RegException('Код подтверждения не введён','img');
-		if(strtoupper($_SESSION['captcha_keystring'])!=$img)
+		if(strtoupper($_SESSION['captcha_keystring'])!=strtoupper($img))
 			throw new RegException('Код подтверждения введён неверно','img');
 			
 			

@@ -71,11 +71,6 @@ class doc_Nulltype
 		$this->dop_menu_buttons			='';
 		$this->get_docdata();
 		
-		if($this->firm_vars['firm_skin'])
-		{
-			global $tmpl;
-			//$tmpl->LoadTemplate($this->firm_vars['firm_skin']);
-		}
 	}
 	
 	function head()

@@ -428,7 +428,8 @@ class doc_Predlojenie extends doc_Nulltype
 		
 		if($CONFIG['site']['doc_header'])
 		{
-			$pdf->Image($CONFIG['site']['doc_header'],8,10, 190);	
+			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
+			$pdf->Image($header_img,8,10, 190);	
 			$pdf->Sety(54);
 		}
 		
@@ -518,7 +519,8 @@ class doc_Predlojenie extends doc_Nulltype
 		
 		if($CONFIG['site']['doc_shtamp'])
 		{
-			$pdf->Image($CONFIG['site']['doc_shtamp'],4,$pdf->GetY()+$delta, 120);	
+			$shtamp_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
+			$pdf->Image($shtamp_img, 4,$pdf->GetY()+$delta, 120);	
 		}
 		
 		$pdf->SetFont('','',8);
