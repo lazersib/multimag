@@ -330,16 +330,56 @@ if($rights['read'])
 		else
 		{
 			$date=rcv('date');
-			$tovar_id=1;
-			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`
-			FROM `doc_list`
-			INNER JOIN `doc_list_pos` AS `pos` ON `doc_list`.`id`=`pos`.`doc` AND `pos`.`tovar`='$tovar_id`
-			WHERE `doc_list`.`date`<='$dt'");
-			while($nxt=mysql_fetch_row($res))
+			$dt=strtotime($date);
+			$sklady=array();	
+			$res_sklady=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список складов");
+			$sklad_cnt=mysql_num_rows($res_sklady);
+			while($nxt=mysql_fetch_row($res_sklady))
+				$sklady[$nxt[0]]=$nxt[1];
+			$tmpl->loadTemplate('print');
+			$tmpl->AddText("
+			<h1>Остатки товаров на складах на $date 00:00:00</h1>
+			<table width='100%'>
+			<tr><th rowspan='2'>id<th rowspan='2'>Код<th rowspan='2'>Наименование<th colspan='$sklad_cnt'>Остатки
+			<tr>");
+			foreach($sklady as $sklad_name)
+				$tmpl->AddText("<th>$sklad_name");
+			
+			$res_tov=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`
+			FROM `doc_base`
+			ORDER BY `doc_base`.`name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
+			while($tov_line=mysql_fetch_assoc($res_tov))
 			{
-			
-			
+				$tmpl->AddText("<tr><td>{$tov_line['id']}<td>{$tov_line['vc']}<td>{$tov_line['name']}/{$tov_line['proizv']}");
+				foreach($sklady as $sklad => $sklad_name)
+				{
+					$count=$i=$last_type=0;
+					$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `pos`.`cnt`, `doc_list`.`sklad`, `pos`.`page`
+					FROM `doc_list`
+					INNER JOIN `doc_list_pos` AS `pos` ON `doc_list`.`id`=`pos`.`doc` AND `pos`.`tovar`='{$tov_line['id']}'
+					LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list`.`id` AND `ns`.`param`='na_sklad'
+					WHERE `doc_list`.`date`<='$dt' AND (`doc_list`.`sklad`='$sklad' OR `ns`.`value`='$sklad')");
+					if(mysql_errno())	throw new MysqlException("Не удалось получить список документов движения");
+					while($nxt=mysql_fetch_row($res))
+					{
+						switch($nxt[1])
+						{
+							case 1:	$count+=$nxt[2];	break;
+							case 2:	$count-=$nxt[2];	break;
+							case 8:	if($nxt[3]==$sklad)	$count-=$nxt[2];
+								else $count+=$nxt[2];	break;
+							case 17:if($nxt[4]!=0)	$count-=$nxt[2];
+								else $count+=$nxt[2];	break;
+						}
+						$i++;
+					}
+					$tmpl->AddText("<td>$count");
+				}
+				
 			}
+			$tmpl->AddText("</table>");
 		}
 	}
 	else if($mode=='fin_otchet')
