@@ -19,9 +19,9 @@
 
 include_once("core.php");
 need_auth($tmpl);
-$tmpl->SetTitle("Дополнительные возможности");
-$tmpl->AddText("<h1>Дополнительные возможности</h1>$dsa
-<p class=text>На этой странице представлены дополнительные возможности, доступные только зарегистрированным пользователям. Разделы с пометкой 'В разработке' и 'Тестирование' размещены здесь только в целях тестирования и не являются полностью рабочими.");
+$tmpl->SetTitle("Личный кабинет");
+$tmpl->SetText("<h1 id='page-title'>Личный кабинет</h1>
+<p class=text>На этой странице представлены дополнительные возможности, доступные только зарегистрированным пользователям. Разделы с пометкой 'В разработке' и 'Тестирование' размещены здесь только в целях тестирования и не являются полностью рабочими.</p>");
 
 $tmpl->HideBlock('left');
 
@@ -30,7 +30,6 @@ if($mode=='')
 	$tmpl->AddText("<ul>");
 
 	//$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
-	
 
 	$rights=getright('doc_list',$uid);
 	if($rights['read'])
@@ -44,8 +43,12 @@ if($mode=='')
 		$tmpl->AddText("<li><a href='statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
 	}
 	
-	$tmpl->AddText("<li><a href='wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
-	
+	$rights=getright('wiki',$uid);
+	if($rights['read'])
+	{
+		$tmpl->AddText("<li><a href='wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
+	}
+
 	$rights=getright('cli',$uid);
 	if($rights['read'])
 	{
@@ -80,94 +83,177 @@ if($mode=='')
 	{
 		$tmpl->AddText("<li><a href='rights.php'>Привилегии доступа</a></li>");
 	}
+	
+		
+	$tmpl->AddText("<li><a href='/user.php?mode=user_data'>Личные данные</a></li>");
+	$tmpl->AddText("<li><a href='/user.php?mode=doc_hist'>История документов</a></li>");
+	
 	$tmpl->AddText("</ul>");
 }
-else if($mode=='frequest')
+else if($mode=='user_data')
 {
-        // create curl resource 
-        $ch = curl_init();
-        // set url 
-        curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/login");
-        //return the transfer as a string 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_USERPWD, "");
-        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        curl_setopt($ch, CURLOPT_HEADER, true);
-        
-        // $output contains the output string 
-        $data = curl_exec($ch);
-        $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
-	//$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
-	preg_match_all("/Set-Cookie: (.*?)=(.*?);/i",$header,$res);
-	$cookie='';
-	foreach ($res[1] as $key => $value)
-		$cookie.= $value.'='.$res[2][$key].'; ';
-        
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_COOKIE,$cookie);
-        curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
-        $output = curl_exec($ch);
-        // close curl resource to free up system resources 
-        curl_close($ch); 
-        
-        $_SESSION['trac_cookie']=$cookie;
-        
-        $doc = new DOMDocument();
-	$doc->loadHTML($output);
-	$doc->normalizeDocument ();
-	$form=$doc->getElementById('propertyform');
-	$elements=$form->getElementsByTagName("div");
-	$token_elem=$elements->item(0)->getElementsByTagName('input')->item(0);
-	$token=$token_elem->attributes->getNamedItem('value')->nodeValue;
+	$opt=rcv('opt');
+	$tmpl->SetText("<h1 id='page-title'>Личные данные</h1>");
+	if($opt=='save')
+	{
+		$rname=rcv('rname');
+		$tel=rcv('tel');
+		$adres=rcv('adres');
+		$subscribe=rcv('subscribe');
+		mysql_query("UPDATE `users` SET `subscribe`='$subscribe', `rname`='$rname', `tel`='$tel', `adres`='$adres' WHERE `id`='$uid'");
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
+		$jid=rcv('jid');
+		$icq=rcv('icq');
+		$skype=rcv('skype');
+		$mra=rcv('mra');
+		$site_name=rcv('site_name');
+		mysql_query("REPLACE INTO `users_data` (`uid`,`param`,`value`) VALUES
+		( '$uid' ,'jid','$jid'),
+		( '$uid' ,'icq','$icq'),
+		( '$uid' ,'skype','$skype'),
+		( '$uid' ,'mra','$mra'),
+		( '$uid' ,'site_name','$site_name') ");
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
+		$tmpl->msg("Данные обновлены!","ok");
+	}
 	
-	$type=$doc->getElementById('field-type');
-
-	$tmpl->SetText("<h1>Оформление запроса на доработку программы</h1>
-	Внимание! Данная страница в разработке. Вы можете воспользоваться старой версией, доступной по адресу: <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a>
-	<br><br>
-	<p class='text'>
 	
-	Внимательно заполните все поля. Если иное не написано рядом с полем, все поля являются обязательными для заполнения. Особое внимание стоит уделить полю *краткое содержание*. <b>ВНИМАНИЕ! Для удобства отслеживания исполнения задач (вашего и разработчиков) каждая задача должна быть отдельной задачей. Несоблюдение этого условия может привести к тому, что некоторые задачи окажутся незамеченными</b>. Все глобальные задания можно и нужно отслеживать через систему-треккер.
-	</p>
+	$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='$uid'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
+	$user_data=mysql_fetch_assoc($res);
+	$user_dopdata=array('kont_lico'=>'','tel'=>'','dop_info'=>'');
+	$res=mysql_query("SELECT `param`, `value` FROM `users_data` WHERE `uid`='$uid'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
+	while($line=mysql_fetch_row($res))	$user_dopdata[$line[0]]=$line[1];
 	
-	<form action='/user.php' method='post'>
-	<input type='hidden' name='token' value='$token'>
-	<input type='hidden' name='mode' value='sendrequest'>
-	<b>Краткое содержание</b>. Тема задачи. Максимально кратко (3-6 слов) и ёмко изложите суть поставленной задачи. Максимум 64 символа.<br>
-	<i><u>Пример</u>: Реализовать печатную форму: Товарный чек</i><br>
-	<input type='text' maxlength='64' name='summary' style='width:90%'><br>
-	<b>Подробное описание</b>. Максимально подробно изложите суть задачи. Описание должно являться дополнением краткого содержания. Не допускается писать несколько задач.<br>
-	<textarea name='description' rows='40' cols='6'></textarea><br>
-	Тип задачи:<br>
-	<select name='field_type'>
-	<option>Дефект (Bug)</option><option selected='selected'>Улучшение</option><option>Задача</option><option>Предложение</option>
-	</select><br>
-	Приоритет:<br>
-	<select name='field_priority'>
-	<option>Критический</option><option>Важный</option><option selected='selected'>Обычный</option><option>Неважный</option><option>Несущественный</option>
-	</select><br>
-	Срочность выполнения:<br>
-	<select name='field_milestone'>
-	<option></option>
-	<optgroup label='Open (by due date)'>
-	<option selected='selected'>0.1</option>
-	</optgroup><optgroup label='Open (no due date)'>
-	<option>0.2</option><option>0.9</option><option>1.0</option>
-	</optgroup>
-	</select><br>
-	Компонент:<br>
-	<select id='field-component' name='field_component'>
-	<option>CLI: Внешние обработчики</option><option>Wiki</option><option>Анализатор прайсов</option><option>Витрина и прайс-лист</option><option>Документы</option><option selected='selected'>Другое</option><option>Отчёты</option><option>Справочники</option><option>Ядро</option>
-	</select><br>
+	$subs_checked=$user_data['subscribe']?'checked':'';
 	
-	<button type='submit'>Сформировать задачу</button>
-	</form>
-	");
-
-
-
-
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='user_data'>
+	<input type='hidden' name='opt' value='save'>
+	<table border='0' width='500' class='list'>
+	<tr><th colspan='2'>Общие данные
+	<tr><td>Логин:<td>{$user_data['name']}
+	<tr><td>Дата регистрации:<td>{$user_data['date_reg']}
+	<tr><td>E-mail:<td>{$user_data['email']}<br><label><input type='checkbox' name='subscribe' value='1' $subs_checked> Подписка</label>
+	<tr><th colspan='2'>Данные физического лица
+	<tr><td>Фамилия И.О.<td><input type='text' name='rname' value='{$user_data['rname']}'>
+	<tr><td>Телефон<td><input type='text' name='tel' value='{$user_data['tel']}'>
+	<tr><td>Адрес доставки<td><input type='text' name='adres' value='{$user_data['adres']}'>
+	<tr><th colspan='2'>Дополнительные данные
+	<tr><td>Jabber ID<td><input type='text' name='jid' value='{$user_dopdata['jid']}'>
+	<tr><td>UIN ICQ<td><input type='text' name='icq' value='{$user_dopdata['icq']}'>
+	<tr><td>Skype-login<td><input type='text' name='skype' value='{$user_dopdata['skype']}'>
+	<tr><td>Mail-ru ID<td><input type='text' name='mra' value='{$user_dopdata['mra']}'>
+	<tr><td>Сайт<td><input type='text' name='site_name' value='{$user_dopdata['site_name']}'>
+	<tr><td><td><button type='submit'>Сохранить</button>
+	</table></form>");
 }
+else if($mode=='doc_hist')
+{
+	$tmpl->SetText("<h1 id='page-title'>Выписанные документы</h1>
+	<div class='content'>
+	<table width='100%' class='list' cellspacing='0'>
+	<tr class='title'><th>Номер<th>Дата<th>Документ<th>Подтверждён ?<th>Дата подтверждения<th>Сумма");
+	$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_types`.`name`, `doc_list`.`ok`, `doc_list`.`sum`
+	FROM `doc_list`
+	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+	WHERE `doc_list`.`user`='{$_SESSION['uid']}'
+	ORDER BY `date`");
+	$i=0;
+	while($nxt=mysql_fetch_array($res))
+	{
+		$date=date("Y-m-d H:i:s",$nxt['date']);
+		$ok=$nxt['ok']?'Да':'Нет';
+		$ok_date=$nxt['ok']?date("Y-m-d H:i:s",$nxt['ok']):'';
+		$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$date<td>$nxt[2]<td>$ok<td>$ok_date<td>$nxt[4]");
+		$i=1-$i;
+	}
+	$tmpl->AddText("</table></div>");
+	
+}
+// else if($mode=='frequest')
+// {
+//         // create curl resource 
+//         $ch = curl_init();
+//         // set url 
+//         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/login");
+//         //return the transfer as a string 
+//         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+//         curl_setopt($ch, CURLOPT_USERPWD, "");
+//         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+//         curl_setopt($ch, CURLOPT_HEADER, true);
+//         
+//         // $output contains the output string 
+//         $data = curl_exec($ch);
+//         $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+// 	//$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+// 	preg_match_all("/Set-Cookie: (.*?)=(.*?);/i",$header,$res);
+// 	$cookie='';
+// 	foreach ($res[1] as $key => $value)
+// 		$cookie.= $value.'='.$res[2][$key].'; ';
+//         
+//         curl_setopt($ch, CURLOPT_HEADER, false);
+//         curl_setopt($ch, CURLOPT_COOKIE,$cookie);
+//         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
+//         $output = curl_exec($ch);
+//         // close curl resource to free up system resources 
+//         curl_close($ch); 
+//         
+//         $_SESSION['trac_cookie']=$cookie;
+//         
+//         $doc = new DOMDocument();
+// 	$doc->loadHTML($output);
+// 	$doc->normalizeDocument ();
+// 	$form=$doc->getElementById('propertyform');
+// 	$elements=$form->getElementsByTagName("div");
+// 	$token_elem=$elements->item(0)->getElementsByTagName('input')->item(0);
+// 	$token=$token_elem->attributes->getNamedItem('value')->nodeValue;
+// 	
+// 	$type=$doc->getElementById('field-type');
+// 
+// 	$tmpl->SetText("<h1>Оформление запроса на доработку программы</h1>
+// 	Внимание! Данная страница в разработке. Вы можете воспользоваться старой версией, доступной по адресу: <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a>
+// 	<br><br>
+// 	<p class='text'>
+// 	
+// 	Внимательно заполните все поля. Если иное не написано рядом с полем, все поля являются обязательными для заполнения. Особое внимание стоит уделить полю *краткое содержание*. <b>ВНИМАНИЕ! Для удобства отслеживания исполнения задач (вашего и разработчиков) каждая задача должна быть отдельной задачей. Несоблюдение этого условия может привести к тому, что некоторые задачи окажутся незамеченными</b>. Все глобальные задания можно и нужно отслеживать через систему-треккер.
+// 	</p>
+// 	
+// 	<form action='/user.php' method='post'>
+// 	<input type='hidden' name='token' value='$token'>
+// 	<input type='hidden' name='mode' value='sendrequest'>
+// 	<b>Краткое содержание</b>. Тема задачи. Максимально кратко (3-6 слов) и ёмко изложите суть поставленной задачи. Максимум 64 символа.<br>
+// 	<i><u>Пример</u>: Реализовать печатную форму: Товарный чек</i><br>
+// 	<input type='text' maxlength='64' name='summary' style='width:90%'><br>
+// 	<b>Подробное описание</b>. Максимально подробно изложите суть задачи. Описание должно являться дополнением краткого содержания. Не допускается писать несколько задач.<br>
+// 	<textarea name='description' rows='40' cols='6'></textarea><br>
+// 	Тип задачи:<br>
+// 	<select name='field_type'>
+// 	<option>Дефект (Bug)</option><option selected='selected'>Улучшение</option><option>Задача</option><option>Предложение</option>
+// 	</select><br>
+// 	Приоритет:<br>
+// 	<select name='field_priority'>
+// 	<option>Критический</option><option>Важный</option><option selected='selected'>Обычный</option><option>Неважный</option><option>Несущественный</option>
+// 	</select><br>
+// 	Срочность выполнения:<br>
+// 	<select name='field_milestone'>
+// 	<option></option>
+// 	<optgroup label='Open (by due date)'>
+// 	<option selected='selected'>0.1</option>
+// 	</optgroup><optgroup label='Open (no due date)'>
+// 	<option>0.2</option><option>0.9</option><option>1.0</option>
+// 	</optgroup>
+// 	</select><br>
+// 	Компонент:<br>
+// 	<select id='field-component' name='field_component'>
+// 	<option>CLI: Внешние обработчики</option><option>Wiki</option><option>Анализатор прайсов</option><option>Витрина и прайс-лист</option><option>Документы</option><option selected='selected'>Другое</option><option>Отчёты</option><option>Справочники</option><option>Ядро</option>
+// 	</select><br>
+// 	
+// 	<button type='submit'>Сформировать задачу</button>
+// 	</form>
+// 	");
+// }
 else if($mode=="elog")
 {
 	$rights=getright('errorlog',$uid);

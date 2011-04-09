@@ -155,7 +155,7 @@ function ExecMode($mode)
 			$document=AutoDocument($doc);
 			$document->PrintForm($doc, 'schet_pdf');
 		}
-		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь, и оформите!");
+		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
 	}
 	else if($mode=='img')
 	{
@@ -527,10 +527,14 @@ protected function BuyMakeForm()
 	$users_data=array();
 	if($_SESSION['uid'])
 	{
+		$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
+		$user_data=mysql_fetch_assoc($res);
 		$rr=mysql_query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='".$_SESSION['uid']."'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
 		while($nn=mysql_fetch_row($rr))
 		{
-			$users_data["$nn[0]"]=$nn[1];
+			$user_dopdata["$nn[0]"]=$nn[1];
 		}
 		$str='Товар будет зарезервирован для Вас на 3 рабочих дня.';
 		//if( ($_SESSION['korz_sum']>20000) && $uid )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
@@ -550,13 +554,12 @@ protected function BuyMakeForm()
 	<form action='/vitrina.php' method='post'>
 	<input type='hidden' name='mode' value='makebuy'>
 	<div>
-	Организация:<br>
-	<input type='text' name='org' value='".$users_data['org']."'><br>
+	Фамилия И.О.<br>
+	<input type='text' name='rname' value='".$user_data['rname']."'><br>
 	Телефон:<br>
-	<input type='text' name='tel' value='".$users_data['tel']."'><br>
+	<input type='text' name='tel' value='".$user_data['tel']."'><br>
 	$email_field
-	Контактное лицо (Фамилия И.О.):<br>
-	<input type='text' name='kont' value='".$users_data['kont_lico']."'><br>
+	
 	Способ оплаты:<br>
 	<!--
 	<label><input type='radio' name='soplat' value='wmr' disabled >Webmoney WMR.
@@ -565,9 +568,10 @@ protected function BuyMakeForm()
 	<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня)</label><br>
 	<label><input type='radio' name='soplat' value='n'>Наличный расчет.
 	<b>Только самовывоз</b>, расчет при отгрузке. $str</label>
-	
+	<br>Адрес доставки:<br>
+	<textarea name='adres' rows='5' cols='15'>".$user_data['adres']."</textarea><br>
 	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='30'>".$users_data['dop_info']."</textarea><br>
+	<textarea name='dop' rows='5' cols='15'>".$user_dopdata['dop_info']."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
 	</form>");
@@ -577,23 +581,23 @@ protected function MakeBuy()
 {
 	global $tmpl, $CONFIG, $uid, $xmppclient;
 	$soplat=rcv('soplat');
-	$org=rcv('org');
+	$rname=rcv('rname');
 	$tel=rcv('tel');
+	$adres=rcv('adres');
 	$email=rcv('email');
-	$kont=rcv('kont');
 	$dop=rcv('dop');
 	if($_SESSION['uid'])
 	{
-		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'org', '$org') ");
-		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'tel', '$tel') ");
-		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'kont_lico', '$kont') ");
+		mysql_query("UPDATE `users` SET `rname`='$rname', `tel`='$tel', `adres`='$adres' WHERE `id`='$uid'");
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$dop') ");
-		if( $_SESSION['korz_sum']>20000)
-		{
-			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-2'");
-			$this->cost_id=mysql_result($res,0,0);
-			if(!$this->cost_id)	$this->cost_id=1;
-		}
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
+// 		if( $_SESSION['korz_sum']>20000)
+// 		{
+// 			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-2'");
+// 			$this->cost_id=mysql_result($res,0,0);
+// 			if(!$this->cost_id)	$this->cost_id=1;
+// 		}
 	}
 	else if(!$tel && !$email)
 	{

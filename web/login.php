@@ -303,7 +303,7 @@ else if($mode=='regs')
 			throw new RegException('login слишком короткий','login');
 		if(strlen($login)>24)
 			throw new RegException('login слишком длинный','login');
-		if( !preg_match('/^[a-z][a-z\d]*$/', $login))
+		if( !preg_match('/^[a-zA-Z][a-zA-Z\d]*$/', $login))
 			throw new RegException('login должен состоять из английских букв, цифр, начинаться с буквы','login');
 		
 		$res=mysql_query("SELECT `id` FROM `users` WHERE `name`='$login'");
@@ -331,7 +331,7 @@ else if($mode=='regs')
 		$msg=regMsg($login, $pass, $conf);
 
 	
-		if(mailto($email,"Registration on ".$CONFIG['site']['name'], $msg))
+		if(mailto($email,"Регистрация на ".$CONFIG['site']['name'], $msg))
 		{
 			$res=mysql_query("INSERT INTO `users` (`name`,`pass`,`email`,`date_reg`,`confirm`,`subscribe`)
 			VALUES ('$login', MD5('$pass'), '$email', NOW(),'$conf','$subs')  ");
@@ -340,8 +340,8 @@ else if($mode=='regs')
 			$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
 			<form action='/login.php'>
 			<input type='hidden' name='mode' value='conf'>
-			Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br>Для завершения регистрации введите полученный код:<br>
-			<input type='text' name='s'><button type='submit'>Продолжить</button><br>
+			Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br>Для завершения регистрации введите полученный код:<br><br>
+			<input type='text' name='s'><button type='submit'>Продолжить</button><br><br>
 			Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!
 			</form>");	
 		}

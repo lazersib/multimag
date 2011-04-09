@@ -106,10 +106,10 @@ function tableEnd($parser, $name)
 		$cost=str_replace(",",".",$cost);
 		settype($cost,"double");
 
-		//echo $line[$num_name].": $cost\n";
+		//echo "{$line[$num_name]}-{$line[$num_art]}: $cost<br>";
 		//var_dump($line);
 		//echo"\n";
-
+		//echo"<br>";
 		if($line[$num_name] && ($line[$num_nal] || $line[$num_cost]) )
 		{
 			$line_cnt++;

@@ -34,6 +34,24 @@ class doc_Postuplenie extends doc_Nulltype
 		$this->header_fields			='agent cena sklad';
 		settype($this->doc,'int');
 	}
+	function DopHead()
+	{
+		global $tmpl;
+		$tmpl->AddText("Номер входящего документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");	
+	}
+
+	function DopSave()
+	{
+		$input_doc=rcv('input_doc');
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+		VALUES ( '{$this->doc}' ,'input_doc','$input_doc')");
+	}
+	
+	function DopBody()
+	{
+		global $tmpl;
+		$tmpl->AddText("<br><b>Номер входящего документа:</b> {$this->dop_data['input_doc']}<br>");
+	}
 
 	protected function DocApply($silent=0)
 	{

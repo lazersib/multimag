@@ -73,23 +73,29 @@ class doc_Dogovor extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
-		//$tmpl->AddText("Текст договора:<br><textarea name='dog_text' style='height: 400px'>{$this->dop_data['dog_text']}</textarea><br>");	
-		
+		$checked=$this->dop_data['received']?'checked':'';
+		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");	
 	}
 
 	function DopSave()
 	{
-		$dog_text=rcv('dog_text');
-		$doc=$this->doc;
-// 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-// 		VALUES ( '{$this->doc}' ,'dog_text','$dog_text')");
-
+		$received=rcv('received');
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+		VALUES ( '{$this->doc}' ,'received','$received')");
+	}
+	
+	function DopBody()
+	{
+		global $tmpl;
+		
 	}
 	
 	function DopBody()
 	{
 		global $tmpl;
 		global $wikiparser;
+		if($this->dop_data['received'])
+			$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
 		if($this->doc_data[4])
 		{
 		$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`dir_fio`, `doc_agent`.`dir_fio_r`

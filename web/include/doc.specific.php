@@ -34,6 +34,26 @@ class doc_Specific extends doc_Nulltype
 		settype($this->doc,'int');
 	}
 	
+	function DopHead()
+	{
+		global $tmpl;
+		$checked=$this->dop_data['received']?'checked':'';
+		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");	
+	}
+
+	function DopSave()
+	{
+		$received=rcv('received');
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+		VALUES ( '{$this->doc}' ,'received','$received')");
+	}
+	
+	function DopBody()
+	{
+		global $tmpl;
+		if($this->dop_data['received'])
+			$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
+	}
 	function DocApply($silent=0)
 	{
 		$tim=time();

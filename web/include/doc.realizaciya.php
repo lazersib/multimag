@@ -37,6 +37,7 @@ class doc_Realizaciya extends doc_Nulltype
 		settype($this->doc,'int');
 	}
 
+
 	function DopHead()
 	{
 		global $tmpl;
@@ -107,20 +108,28 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		</script>
 		");	
-		
+		$checked=$this->dop_data['received']?'checked':'';
+		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");	
 	}
 
 	function DopSave()
 	{
 		$plat_id=rcv('plat_id');
 		$gruzop_id=rcv('gruzop_id');
+		$received=rcv('received');
 		
 		$doc=$this->doc;
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'), ( '{$this->doc}' ,'gruzop','$gruzop_id')");
-
+		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'), ( '{$this->doc}' ,'gruzop','$gruzop_id'),  ( '{$this->doc}' ,'received','$received')");
 	}
 	
+	function DopBody()
+	{
+		global $tmpl;
+		if($this->dop_data['received'])
+			$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
+	}
+
 	function DocApply($silent=0)
 	{
 		$tim=time();

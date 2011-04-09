@@ -771,8 +771,6 @@ class doc_Nulltype
 	{
 		global $tmpl, $CONFIG;
 		$tmpl->AddText('<h1>'.$this->doc_viewname."</h1>
-		<script type='text/javascript' src='css/jquery/jquery.date_input.js'></script>
-		<link rel='stylesheet' href='css/jquery/date_input.css' type='text/css'>
 		<form method='post' action=''>
 		<input type=hidden name=mode value='heads'>
 		<input type=hidden name=type value='".$this->doc_type."'>");
