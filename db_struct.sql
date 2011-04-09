@@ -1389,6 +1389,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `rname` varchar(32) NOT NULL,
   `tel` varchar(15) NOT NULL,
   `adres` varchar(100) NOT NULL,
+  `worker` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `passch` (`passch`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Spisok pol''zovatelei' AUTO_INCREMENT=2 ;
@@ -1429,7 +1430,7 @@ CREATE TABLE IF NOT EXISTS `users_bad_auth` (
 CREATE TABLE IF NOT EXISTS `users_data` (
   `uid` int(11) NOT NULL default '0',
   `param` varchar(25) NOT NULL,
-  `value` varchar(100) NOT NULL,
+  `value` varchar(128) NOT NULL,
   UNIQUE KEY `uid` (`uid`,`param`),
   KEY `value` (`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
