@@ -872,7 +872,6 @@ if($rights['read'])
 			$date_end=strtotime(rcv('date_end'))+60*60*24-1;
 			$agent_id=rcv('agent_id');
 			
-			
 			if($firm_id)
 			{
 				$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
@@ -911,14 +910,27 @@ if($rights['read'])
 			$pdf->Write(5,$str,'');
 			
 			$pdf->Ln(8);
-			
+			$y=$pdf->GetY();
+			$base_x=$pdf->GetX();
 			$pdf->SetLineWidth(0.5);
-			$t_width=array(15,50,15,15,15,50,15,0);
+			$t_width=array(17,44,17,17,17,44,17,0);
 			$t_text=array('Дата', 'Операция', 'Дебет', 'Кредит', 'Дата', 'Операция', 'Дебет', 'Кредит');
-			$str=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
-			$pdf->Cell($t_width[0]+$t_width[1]+$t_width[2]+$t_width[3],5,$str,1,0,'L',0);
-			$str=iconv('UTF-8', 'windows-1251', "По данным {$agent['fullname']}");
-			$pdf->Cell(0,5,$str,1,0,'L',0);
+			
+			$h_width=$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
+			$str1=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
+			$str2=iconv('UTF-8', 'windows-1251', "По данным {$agent['fullname']}");
+						
+			$pdf->MultiCell($h_width,5,$str1,0,'L',0);
+			$max_h=$pdf->GetY()-$y;
+			$pdf->SetY($y);
+			$pdf->SetX($base_x+$h_width);
+			$pdf->MultiCell(0,5,$str2,0,'L',0);
+			if( ($pdf->GetY()-$y) > $max_h)	$max_h=$pdf->GetY()-$y;
+			//$pdf->Cell(0,5,$str2,1,0,'L',0);
+			$pdf->SetY($y);
+			$pdf->SetX($base_x);
+			$pdf->Cell($h_width,$max_h,'',1,0,'L',0);
+			$pdf->Cell(0,$max_h,'',1,0,'L',0);
 			$pdf->Ln();
 			foreach($t_width as $i => $w)
 			{
@@ -962,8 +974,8 @@ if($rights['read'])
 					
 					$str=iconv('UTF-8', 'windows-1251', "Сальдо на начало периода");
 					$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
-					$pdf->Cell($t_width[2],4,$ras,1,0,'L',0);
-					$pdf->Cell($t_width[3],4,$pr,1,0,'L',0);
+					$pdf->Cell($t_width[2],4,$ras,1,0,'R',0);
+					$pdf->Cell($t_width[3],4,$pr,1,0,'R',0);
 					$pdf->Cell($t_width[4]+$t_width[5],4,'',1,0,'L',0);
 					$pdf->Cell($t_width[6],4,'',1,0,'L',0);
 					$pdf->Cell($t_width[7],4,'',1,0,'L',0);
@@ -1014,8 +1026,8 @@ if($rights['read'])
 					$str=iconv('UTF-8', 'windows-1251', "$nxt[5] N$nxt[4]");
 					$pdf->Cell($t_width[0],4,$dt,1,0,'L',0);
 					$pdf->Cell($t_width[1],4,$str,1,0,'L',0);
-					$pdf->Cell($t_width[2],4,$deb,1,0,'L',0);
-					$pdf->Cell($t_width[3],4,$kr,1,0,'L',0);
+					$pdf->Cell($t_width[2],4,$deb,1,0,'R',0);
+					$pdf->Cell($t_width[3],4,$kr,1,0,'R',0);
 					$pdf->Cell($t_width[4],4,'',1,0,'L',0);
 					$pdf->Cell($t_width[5],4,'',1,0,'L',0);
 					$pdf->Cell($t_width[6],4,'',1,0,'L',0);
@@ -1033,8 +1045,8 @@ if($rights['read'])
 
 			$str=iconv('UTF-8', 'windows-1251', "Обороты за период");
 			$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
-			$pdf->Cell($t_width[2],4,$ras,1,0,'L',0);
-			$pdf->Cell($t_width[3],4,$pr,1,0,'L',0);
+			$pdf->Cell($t_width[2],4,$ras,1,0,'R',0);
+			$pdf->Cell($t_width[3],4,$pr,1,0,'R',0);
 			$pdf->Cell($t_width[4]+$t_width[5],4,'',1,0,'L',0);
 			$pdf->Cell($t_width[6],4,'',1,0,'L',0);
 			$pdf->Cell($t_width[7],4,'',1,0,'L',0);
