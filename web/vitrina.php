@@ -611,6 +611,7 @@ protected function MakeBuy()
 	{
 		$subtype="site";
 		$agent=1;
+		if($_SESSION['uid'])	$agent=$_SESSION['uid'];
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype);
 		$ip=getenv("REMOTE_ADDR");
@@ -627,17 +628,28 @@ protected function MakeBuy()
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}')");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
+		$zakaz_items='';
 		foreach($_SESSION['korz_cnt'] as $item => $cnt)
 		{
 			$cena=GetCostPos($item, $this->cost_id);
-			$res=mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`sn`,`comm`,`cost`) VALUES ('$doc','$item','$cnt','','','$cena')");
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`sn`,`comm`,`cost`) VALUES ('$doc','$item','$cnt','','','$cena')");
+			if(mysql_errno())	throw new MysqlException("Не удалось добавить товар в заказ");
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost` FROM `doc_base`
+			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+			WHERE `doc_base`.`id`='$item'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о товаре");
+			$tov_info=mysql_fetch_row($res);
+			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt шт. - $cena руб.\n";
+			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt шт. - $cena руб. (базовая - $tov_info[5]р.)\n";
 		}
-		DocSumUpdate($doc);
+		$zakaz_sum=DocSumUpdate($doc);
 		$_SESSION['zakaz_docnum']=$doc;
 		
 		$text="На сайте {$CONFIG['site']['name']} оформлен новый заказ.\n";
 		$text.="Посмотреть можно по ссылке: http://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
 		if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
+		$text.="----------------------------------\n".$admin_items;
+		
 		
 		if($CONFIG['site']['doc_adm_jid'])
 		{
@@ -656,6 +668,22 @@ protected function MakeBuy()
 		}
 		if($CONFIG['site']['doc_adm_email'])
 			mailto($CONFIG['site']['doc_adm_email'],"Message from {$CONFIG['site']['name']}", $text);
+		
+		if($_SESSION['uid'])
+		{
+			$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
+			$user_data=mysql_fetch_assoc($res);
+			$user_msg="Доброго времени суток, {$user_data['name']}!\nНа сайте {$CONFIG['site']['name']} на Ваше имя оформлен заказ на сумму $zakaz_sum рублей\nЗаказано:\n";
+			$email=$user_data['email'];
+		}
+		else $user_msg="Доброго времени суток, $rname!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
+		$user_msg.="--------------------------------------\n$zakaz_items\n--------------------------------------\n";
+		$user_msg.="\n\n\nСообщение отправлено роботом. Не отвечайте на это письмо.";
+		
+		if($email)
+			mailto($email,"Message from {$CONFIG['site']['name']}", $user_msg);
+		
 		
 		$tmpl->AddText("<h1 id='page-title'>Заказ оформлен</h1>");
 		if($soplat=='bn')
