@@ -149,9 +149,7 @@ class doc_Doveren extends doc_Nulltype
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=dov'>Доверенность</a></li>
-			</ul>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=dov'\">Доверенность</div>");
 		}
 		else $this->PrintDov($doc);
 	}
@@ -162,14 +160,11 @@ class doc_Doveren extends doc_Nulltype
 		global $tmpl;
 		global $uid;
 		global $doc_data;
-
-
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=morphto&amp;doc=$doc&amp;tt=1'>Поступление товара</a></li>
-			</ul>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=1'\">
+			<li><a href=''>Поступление товара</div>");
 		}
 		else if($target_type==1)
 		{

@@ -66,7 +66,7 @@ function doc_menu($dop="")
 
     <img src='img/i_separator.png'>
 
-    <a href='' onclick=\"ShowPopupWin('/doc_service.php?mode=reports'); return false;\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border=0></a>
+    <a href='' onclick=\"MakeContextMen('/doc_service.php?mode=reports'); return false;\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border=0></a>
     <a href='doc_vars.php' title='Настройка'><img src='img/i_config.png' alt='Настройка' border=0></a>
 
     ";

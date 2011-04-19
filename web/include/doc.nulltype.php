@@ -942,11 +942,11 @@ class doc_Nulltype
 		}
 		$tmpl->AddText("</select><br>");
 		if($this->doc_data[12])
-			$tmpl->AddText("<label><input type=radio name=nds value=0>Выделять НДС</label><br>
-			<label><input type=radio name=nds value=1 checked>Включать НДС</label><br>");
+			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label><br>
+			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");
 		else
-			$tmpl->AddText("<label><input type=radio name=nds value=0 checked>Выделять НДС</label><br>
-			<label><input type=radio name=nds value=1>Включать НДС</label><br>");
+			$tmpl->AddText("<label><input type='radio' name='nds' value='0' checked>Выделять НДС</label><br>
+			<label><input type='radio' name='nds' value='1'>Включать НДС</label><br>");
 		$tmpl->AddText("<br>");
 	}
 
@@ -1012,8 +1012,8 @@ class doc_Nulltype
 			$ret.=$this->apply_buttons();
 				
 			$ret.="</span>
-			<a href='?mode=print&amp;doc={$this->doc}' onclick=\"ShowContextMenu('/doc.php?mode=print&amp;doc={$this->doc}'); return false;\" title='Печать накладной'><img src='img/i_print.png' alt='Печать'></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}' onclick=\"ShowContextMenu('/doc.php?mode=morphto&amp;doc={$this->doc}'); return false;\" title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
+			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=print&amp;doc={$this->doc}')\" title='Печать накладной'><img src='img/i_print.png' alt='Печать'></a>
+			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=morphto&amp;doc={$this->doc}')\" title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
 		}
 
     		if($this->dop_menu_buttons) $ret.=$this->dop_menu_buttons;

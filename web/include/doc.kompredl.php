@@ -91,13 +91,11 @@ class doc_Kompredl extends doc_Nulltype
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=print&amp;doc={$this->doc}&amp;opt=kom_pdf'>Коммерческое предложение</a></li>
-			<li><a href='?mode=print&amp;doc={$this->doc}&amp;opt=kom_all'>Коммерческое предложение (рассылка)</a></li>
-			<li><a href='?mode=print&amp;doc={$this->doc}&amp;opt=kom_pdf_cnt'>Коммерческое предложение (с количеством)</a></li>
-			<li><a href='?mode=print&amp;doc={$this->doc}&amp;opt=kom_email' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_email'); return false;\">Коммерческое предложение (email)</a></li>
-			<li><a href='?mode=print&amp;doc={$this->doc}&amp;opt=csv_export'>Экспорт в CSV</a></li>
-			</ul>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_pdf'\">Коммерческое предложение</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_all'\">Коммерческое предложение (рассылка)</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_pdf_cnt'\">Коммерческое предложение (с количеством)</div>
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_email')\">Коммерческое предложение (email)</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=csv_export'\">Экспорт в CSV</div>");
 		}
 		else if($opt=='kom_all')
 			$this->KomPredlRassilka();
@@ -119,8 +117,7 @@ class doc_Kompredl extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=3'><div>Заявка покупателя</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=3'\">Заявка покупателя</div>");
 		}
 		else if($target_type==3)
 		{
@@ -212,13 +209,13 @@ class doc_Kompredl extends doc_Nulltype
 			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
 			$email=mysql_result($res,0,0);
 			$tmpl->AddText("<form action=''>
-			<input type=hidden name=mode value='print'>
-			<input type=hidden name=doc value='{$this->doc}'>
-			<input type=hidden name=opt value='kom_email'>
-			email:<input type=text name=email value='$email'><br>
+			<input type='hidden' name='mode' value='print'>
+			<input type='hidden' name='doc' value='{$this->doc}'>
+			<input type='hidden' name='opt' value='kom_email'>
+			email:<input type='text' name='email' value='$email'><br>
 			Коментарий:<br>
 			<textarea name='comm'></textarea><br>
-			<input type=submit value='&gt;&gt;'>
+			<button type='submit'>&gt;&gt;</button>
 			</form>");	
 		}
 		else

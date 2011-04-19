@@ -201,12 +201,12 @@ class doc_Realizaciya extends doc_Nulltype
 			
 			$tmpl->ajax=1;
 			$tmpl->AddText("
-			<a href='?mode=print&amp;doc=$doc&amp;opt=nak'><div>Накладная</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=kop'><div>Копия чека</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=tg12'><div>Форма ТОРГ-12 (УСТАРЕЛО)</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=tg12_pdf'><div>Форма ТОРГ-12 (PDF)</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=sf_pdf'><div>Счёт - фактура</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=sf_email' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\"><div>Счёт - фактура по e-mail</div></a>");
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak'\">Накладная</div>			
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop'\">Копия чека</div>		
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12'\">Форма ТОРГ-12 (УСТАРЕЛО)</div>			
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Форма ТОРГ-12 (PDF)</div>			
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура (PDF)</div>			
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>");
 		}
 		//			<li><a href='?mode=print&amp;doc=$doc&amp;opt=sf'>Счёт - фактура (HTML)</a></li>
 		else if($opt=='tg12')
@@ -242,8 +242,8 @@ class doc_Realizaciya extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=6'><div>Приходный кассовый ордер</div></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=4'><div>Приход средств в банк</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>");
 		}
 		else if($target_type==6)
 		{

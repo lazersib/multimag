@@ -365,7 +365,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	<a href='docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='img/i_user.png' alt='Журнал агентов' border='0'></a>
 	<a href='docs.php?l=dov' title='Работа с доверенными лицами'><img src='img/i_users.png' alt='лица' border='0'></a>
 	<a href='docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='img/i_sklad.png' alt='Склад' border='0'></a>
-	<a href='docs.php?l=pran' onclick=\"ShowContextMenu('/priceload.php?mode=menu'); return false;\" title='Анализ прайсов' accesskey=\"S\"><img src='img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
+	<a href='docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
 	<img src='img/i_separator.png' alt=''>
 	
 	<a href='doc.php' title='Новый документ' accesskey=\"N\"><img src='img/i_new.png' alt='Новый' border='0'></a>
@@ -379,7 +379,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	
 	<img src='img/i_separator.png' alt=''>
 	
-	<a href='' onclick=\"ShowContextMenu('/doc_otchet.php?mode=pmenu'); return false;\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
+	<a href='' onclick=\"return ShowContextMenu(event, '/doc_otchet.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
 	<a href='doc_service.php' title='Служебные функции'><img src='img/i_config.png' alt='Служебные функции' border='0'></a>
 	<a href='doc_sc.php' title='Сценарии и операции'><img src='img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
 	if($dop) $tmpl->AddText("<img src='img/i_separator.png' alt=''>");

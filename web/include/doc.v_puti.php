@@ -143,8 +143,8 @@ class doc_v_puti extends doc_Nulltype
 			global $tmpl;
 			$tmpl->ajax=1;
 			$tmpl->AddText("
-			<a href='?mode=print&amp;doc=$doc&amp;opt=zayavka_pdf'><div>Заявка PDF</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=zayavka_email' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=zayavka_email'); return false;\"><div>Заявка PDF по e-mail</div></a>");
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=zayavka_pdf'\">Заявка PDF</div>
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=zayavka_email'); return false;\">Заявка PDF по e-mail</div>");
 		}
 		else if($opt=='zayavka_pdf')
 			$this->PrintPDF($doc);
@@ -163,7 +163,7 @@ class doc_v_puti extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=morphto&amp;doc=$doc&amp;tt=1'><div>Поступление</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=1'\">Поступление</div>");
 		}
 		else if($target_type==1)
 		{

@@ -166,13 +166,11 @@ class doc_Realiz_op extends doc_Nulltype
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=nak'>Накладная</a></li>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=kop'>Копия чека</a></li>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=tg12'>Форма ТОРГ-12</a></li>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=sf_pdf'>Счёт - фактура</a></li>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=sf_email' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</a></li>
-			</ul>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak'\">Накладная</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop'\">Копия чека</div>		
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12'\">Форма ТОРГ-12</div>		
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура</div>		
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>");
 		}
 		//			<li><a href='?mode=print&amp;doc=$doc&amp;opt=sf'>Счёт - фактура (HTML)</a></li>
 		else if($opt=='tg12')
@@ -197,10 +195,8 @@ class doc_Realiz_op extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=6'>Приходный кассовый ордер</a></li>
-			<li><a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=4'>Приход средств в банк</a></li>
-			</ul>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>			
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>");
 		}
 		else if($target_type==6)
 		{

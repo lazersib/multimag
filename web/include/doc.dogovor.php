@@ -230,10 +230,10 @@ $agent_info[2], тел. $agent_info[3]<br>
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=print&amp;doc={$this->doc}&amp;opt=pdf'>Договор PDF</a></li>
-			<li><a href='?mode=print&amp;doc={$this->doc}&amp;opt=html'>Договор HTML</a></li>
-			</ul>");
+			$tmpl->AddText("
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=pdf'\">Договор PDF</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=html'\">Договор HTML</div>
+			");
 		}
 		else if($opt=='pdf')
 			$this->DogovorPDF();
@@ -253,7 +253,7 @@ $agent_info[2], тел. $agent_info[3]<br>
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=16'><div>Спецификация</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->doc}&amp;tt=16'\">Спецификация</div>");
 		}
 		else if($target_type==16)
 		{

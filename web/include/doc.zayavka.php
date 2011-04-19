@@ -152,11 +152,12 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=print&amp;doc=$doc&amp;opt=komplekt'><div>Накладная на комплектацию</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=schet_pdf'><div>Счёт</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=schet_email' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_email'); return false;\"><div>Счёт PDF по e-mail</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=schet_ue' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_ue'); return false;\"><div>Счёт в у.е.</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=csv_export'><div>Экспорт в CSV</div></a>");
+			$tmpl->AddText("
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=komplekt'\">Накладная на комплектацию</div>			
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_pdf'\">Счёт</div>		
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_email'); return false;\">Счёт PDF по e-mail</div>			
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_ue'); return false;\">Счёт в у.е.</div>	
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=csv_export'\">Экспорт в CSV</div>");
 		}
 		else if($opt=='schet')
 			$this->PrintSchet($doc);
@@ -165,11 +166,11 @@ class doc_Zayavka extends doc_Nulltype
 			global $tmpl;
 			$tmpl->ajax=1;
 			$tmpl->AddText("<form action=''>
-			<input type=hidden name=mode value='print'>
-			<input type=hidden name=doc value='$doc'>
-			<input type=hidden name=opt value='schet_ue_p'>
-			1 рубль = <input type=text name=c value=1> у.е.
-			<input type=submit value='&gt;&gt;'>
+			<input type='hidden' name='mode' value='print'>
+			<input type='hidden' name='doc' value='$doc'>
+			<input type='hidden' name='opt' value='schet_ue_p'>
+			1 рубль = <input type='text' name='c' value='1'> у.е.
+			<input type='submit' value='&gt;&gt;'>
 			</form>");
 		}
 		else if($opt=='schet_ue_p')
@@ -198,9 +199,9 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$tmpl->ajax=1;
 			$tmpl->AddText("
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=2'><div>Реализация</div></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=6'><div>Приходный кассовый ордер</div></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=4'><div>Приход средств в банк</div></a>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=2'\">Реализация</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>");
 		}
 		else if($target_type==2)
 		{

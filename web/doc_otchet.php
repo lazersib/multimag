@@ -26,28 +26,44 @@ $tmpl->SetTitle('Отчёты');
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->HideBlock('left');
 
+function get_otch_links()
+{
+	return array(
+	'doc_otchet.php?mode=bezprodaj' => 'Агенты без продаж',
+	'doc_otchet.php?mode=sverka' => 'Акт сверки',
+	'doc_otchet.php?mode=balance' => 'Балланс',
+	'doc_otchet.php?mode=dolgi' => 'Долги: партнёров',
+	'doc_otchet.php?mode=dolgi&amp;opt=1' => 'Долги: наши',
+	'doc_otchet.php?mode=kassday' => 'Кассовый отчёт за день',
+	'doc_otchet.php?mode=ostatki' => 'Остатки на складе',
+	'doc_otchet.php?mode=ostatki_d' => 'Остатки на складе на дату',
+	'doc_otchet.php?mode=agent_otchet' => 'Отчет по агенту',
+	'doc_otchet.php?mode=img_otchet' => 'Отчет по изображениям',
+	'doc_otchet.php?mode=komplekt' => 'Отчет по комплектующим',
+	'doc_otchet.php?mode=proplaty' => 'Отчет по проплатам',
+	'doc_otchet.php?mode=prod' => 'Отчёт по продажам',
+	'doc_otchet.php?mode=bezprodaj' => 'Отчёт по товарам без продаж',
+	'doc_otchet.php?mode=doc_reestr' => 'Реестр документов',
+	'doc_otchet.php?mode=fin_otchet' => 'Сводный финансовый отчёт',
+	'doc_otchet.php?mode=bank_comp' => 'Сверка банка',	
+	'doc_otchet.php' => 'Другие отчёты');
+}
+
 function otch_list()
 {
-	return "
-	<a href='doc_otchet.php?mode=bezprodaj'><div>Агенты без продаж</div></a>
-	<a href='doc_otchet.php?mode=sverka'><div>Акт сверки</div></a>
-	<a href='doc_otchet.php?mode=balance'><div>Балланс</div></a>
-	<a href='doc_otchet.php?mode=dolgi'><div>Долги: партнёров</div></a>
-	<a href='doc_otchet.php?mode=dolgi&amp;opt=1'><div>Долги: наши</div></a>
-	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день</div></a>
-	<a href='doc_otchet.php?mode=ostatki'><div>Остатки на складе</div></a>
-	<a href='doc_otchet.php?mode=ostatki_d'><div>Остатки на складе на дату</div></a>
-	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
-	<a href='doc_otchet.php?mode=img_otchet'><div>Отчет по изображениям</div></a>
-	<a href='doc_otchet.php?mode=komplekt'><div>Отчет по комплектующим</div></a>
-	<a href='doc_otchet.php?mode=proplaty'><div>Отчет по проплатам</div></a>
-	<a href='doc_otchet.php?mode=prod'><div>Отчёт по продажам</div></a>
-	<a href='doc_otchet.php?mode=bezprodaj'><div>Отчёт по товарам без продаж</div></a>
-	<a href='doc_otchet.php?mode=doc_reestr'><div>Реестр документов</div></a>
-	<a href='doc_otchet.php?mode=fin_otchet'><div>Сводный финансовый отчёт</div></a>
-	<a href='doc_otchet.php?mode=bank_comp'><div>Сверка банка</div></a>	
-	<hr>
-	<a href='doc_otchet.php'><div>Другие отчёты</div></a>";
+	$str='<ul>';
+	foreach(get_otch_links() as $link => $text)
+		$str.="<li><a href='$link'>$text</a></li>";
+	$str.="</ul>";
+	return $str;
+}
+
+function otch_divs()
+{
+	$str='';
+	foreach(get_otch_links() as $link => $text)
+		$str.="<div onclick='window.location=\"$link\"'>$text</div>";
+	return $str;
 }
 
 $rights=getright('doc_otchet',$uid);
@@ -64,7 +80,7 @@ if($rights['read'])
 	else if($mode=='pmenu')
 	{
 		$tmpl->ajax=1;
-		$tmpl->AddText(otch_list());
+		$tmpl->AddText(otch_divs());
 	}
 	else if($mode=='balance')
 	{

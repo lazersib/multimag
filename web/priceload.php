@@ -798,14 +798,14 @@ if($rights['read'])
 	{
 		$tmpl->ajax=1;
 		$tmpl->SetText("
-		<a href='/docs.php?l=pran'><div>Результаты анализа</div></a>
-		<a href='/priceload.php'><div>Редактор организаций</div></a>
-		<a href='/priceload.php?mode=load'><div>Загрузить прайс</div></a>
-		<a href='/priceload.php?mode=viewall'><div>Просмотреть общий список</div></a>
-		<a href='/priceload.php?mode=search'><div>Поиск</div></a>
-		<a href='/priceload.php?mode=replaces'><div>Подстановки</div></a>
-		<a href='/priceload.php?mode=r_noparsed'><div>Ошибки: необработанные</div></a>
-		<a href='/priceload.php?mode=r_multiparsed'><div>Ошибки: дублирующиеся</div></a>");	
+		<div onclick=\"window.location='/docs.php?l=pran'\">Результаты анализа</div>
+		<div onclick=\"window.location='/priceload.php'\">Редактор организаций</div>
+		<div onclick=\"window.location='/priceload.php?mode=load'\">Загрузить прайс</div>
+		<div onclick=\"window.location='/priceload.php?mode=viewall'\">Просмотреть общий список</div>
+		<div onclick=\"window.location='/priceload.php?mode=search'\">Поиск</div>
+		<div onclick=\"window.location='/priceload.php?mode=replaces'\">Подстановки</div>
+		<div onclick=\"window.location='/priceload.php?mode=r_noparsed'\">Ошибки: необработанные</div>
+		<div onclick=\"window.location='/priceload.php?mode=r_multiparsed'\">Ошибки: дублирующиеся</div>");	
 	}
 	else $tmpl->logger('Запрошен неверный режим! Возможно, вы указали неверные параметры, или же ссылка, по которой Вы обратились, неверна.');
 }

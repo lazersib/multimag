@@ -89,7 +89,7 @@ class doc_Specific extends doc_Nulltype
 		if($opt=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=print&amp;doc={$this->doc}&amp;opt=print_pdf'><div>Спецификация (PDF)</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=print_pdf'\">Спецификация (PDF)</div>");
 		}
 		else if($opt=='print_pdf')
 			$this->PrintPDF();
@@ -103,8 +103,7 @@ class doc_Specific extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=3'><div>Заявка покупателя</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=3'\">Заявка покупателя</div>");
 		}
 		else if($target_type==3)
 		{
