@@ -30,7 +30,7 @@ function doc_poslist($doc)
 	else $sklad=1;
 	if(!$doc_data[6])	$refcost="<a href='' title='Сбросить' onclick=\"EditThis('/doc.php?mode=srv&opt=rc&doc=$doc','poslist'); return false;\"><img src='/img/i_reload.png' alt='Сбросить'></a>";
 	else			$refcost='';
-	$tmpl->AddText("<div id=poslist><table width=100% cellspacing=1 cellpadding=2>
+	$tmpl->AddText("<div id='poslist'><table width='100%' cellspacing='1' cellpadding='2'>
 	<tr><th align=left>№<th>Наименование<th title='Выбранная цена по прайсу'>Выбр. цена<th>Цена $refcost<th width='60px'>Кол-во<th>Стоимость<th title='Остаток товара на складе'>Остаток<th>Место");
 	if(@$CONFIG['site']['sn_enable'] && $doc_data[1]<3)	$tmpl->AddText("<th>SN");
 	$res=mysql_query("SELECT `doc_base`.`name`, `doc_base`.`cost`, `doc_base_cnt`.`cnt`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`sn`, `doc_list_pos`.`cost`, `doc_list_pos`.`comm`, `doc_list_pos`.`id`, `doc_base_cnt`.`mesto`, `doc_base`.`cost_date`, `doc_base`.`pos_type`, `doc_base`.`id`
@@ -67,7 +67,7 @@ function doc_poslist($doc)
 		if( ($nxt[2]<$nxt[4]) && (!$doc_data[6]) && ($doc_data[1]!=1) &&(!$nxt[11]) ) $cl.=' f_red';
 		if($nxt[11])	$nxt[2]='Услуга';
 
-		$tmpl->AddText("<tr class='$cl'  align=right><td>");
+		$tmpl->AddText("<tr class='$cl' align=right  oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[12]')\"><td>");
 		if(!$doc_data[6]) $tmpl->AddText("$ii
 		<a href='' title='Удалить' onclick=\"EditThis('/doc.php?mode=srv&opt=del&doc=$doc&pos=$nxt[8]','poslist'); return false;\">
 		<img src='/img/i_del.png' alt='Удалить'></a>
@@ -319,7 +319,7 @@ function DrawSkladTable($res,$s,$doc,$limit=0)
 		$cost_p=$dop_data['cena']?GetCostPos($nxt[0], $dop_data['cena']):$nxt[5];
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		
-		$tmpl->AddText("<tr class='lin$i pointer'
+		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')
 		ondblclick=\"EditThis('/doc.php?mode=srv&opt=pos&doc=$doc&pos=$nxt[0]','poslist'); return false;\">
 		<td>$nxt[0]
 		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
