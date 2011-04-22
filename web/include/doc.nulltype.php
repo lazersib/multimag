@@ -282,6 +282,7 @@ class doc_Nulltype
 		if($this->sklad_editor_enable)
 		{
 			if($this->doc_data[6])	$hide="style='display: none;'";
+			else			$hide='';
 			$tmpl->AddText("
 			<script type=\"text/javascript\">
 			window.document.onkeydown = OnEnterBlur; 
@@ -534,7 +535,7 @@ class doc_Nulltype
 			}
 			else if($this->doc_data[6])
 				$tmpl->msg("Операция не допускается для проведённого документа!","err");
-			else if($doc_data[14])
+			else if($this->doc_data[14])
 				$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
 			// Добавление позиции
 			else if($opt=='pos')

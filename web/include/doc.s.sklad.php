@@ -98,9 +98,9 @@ class doc_s_Sklad
 // 			$tov=mysql_result($res,0,0).":".mysql_result($res,0,1);
 			$dend=date("Y-m-d");
 			$tmpl->AddText("
-			<a href='' onclick=\"ShowPopupWin('/docs.php?l=pran&mode=srv&opt=ceni&pos=$pos'); return false;\" ><div>Где и по чём</a></div>
-			<a href='/docj.php?mode=filter&opt=fsn&tov_id=$pos&tov_name=$pos&date_to=$dend'><div>Товар в журнале</div></a>
-			<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$pos'><div>Редактирование позиции</div></a>");
+			<div onclick=\"ShowPopupWin('/docs.php?l=pran&mode=srv&opt=ceni&pos=$pos'); return false;\" >Где и по чём</div>
+			<div onclick=\"window.location='/docj.php?mode=filter&opt=fsn&tov_id=$pos&tov_name=$pos&date_to=$dend'\">Товар в журнале</div>
+			<div onclick=\"window.location='/docs.php?mode=srv&amp;opt=ep&amp;pos=$pos'\">Редактирование позиции</div>");
 		}
 		else if($opt=='ac')
 		{

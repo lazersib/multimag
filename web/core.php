@@ -62,6 +62,7 @@ $qq=$_SERVER['QUERY_STRING'];
 $ff=$_SERVER['REQUEST_URI'];
 $tim=time();
 $skidka="";
+$ncnt=rcv('ncnt');
 if(!$ncnt) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 
 function exception_handler($exception)

@@ -201,12 +201,31 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=2'\">Реализация</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=15'\">Оперативная реализация</div>");
 		}
+		// Реализация
 		else if($target_type==2)
 		{
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($this->doc);
+			$base=$this->Otgruzka($target_typec);
+			if(!$base)
+			{
+				mysql_query("ROLLBACK");
+				$tmpl->msg("Не удалось создать подчинённый документ!","err");
+			}
+			else
+			{
+				mysql_query("COMMIT");
+				$ref="Location: doc.php?mode=body&doc=$base";
+				header($ref);
+			}
+		}
+		// Оперативная реализация
+		else if($target_type==15)
+		{
+			mysql_query("START TRANSACTION");
+			$base=$this->Otgruzka($target_type);
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");
@@ -313,11 +332,9 @@ class doc_Zayavka extends doc_Nulltype
 		parent::_Service($opt,$pos);
 	}
 //	================== Функции только этого класса ======================================================
-	function Otgruzka()
+	function Otgruzka($target_type)
 	{
-		$target_type=2;
-		global $tmpl;
-		global $uid;
+		global $tmpl, $uid;
 
 		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `type`='$target_type'");
 		@$r_id=mysql_result($res,0,0);

@@ -71,7 +71,7 @@ function doc_poslist($doc)
 		if(!$doc_data[6]) $tmpl->AddText("$ii
 		<a href='' title='Удалить' onclick=\"EditThis('/doc.php?mode=srv&opt=del&doc=$doc&pos=$nxt[8]','poslist'); return false;\">
 		<img src='/img/i_del.png' alt='Удалить'></a>
-		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=$doc&pos=$nxt[12]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>");
+		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=$doc&pos=$nxt[12]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>");
 		else $tmpl->AddText("$ii");
 		$tmpl->AddText("<td align=left>$nxt[0] / $nxt[3]<td $cc>$bcen<td id='cost$nxt[8]'>");
 		
@@ -148,7 +148,7 @@ function doc_groups($doc)
 {
 	global $tmpl;
 	$tmpl->AddText("<div onclick='tree_toggle(arguments[0])'>
-	<div><a href='' title='$nxt[2]' onclick=\"EditThis('/doc.php?mode=srv&opt=sklad&doc=$doc&group=0','sklad'); return false;\">Группы</a></div>
+	<div><a href='' title='Каталог' onclick=\"EditThis('/doc.php?mode=srv&opt=sklad&doc=$doc&group=0','sklad'); return false;\">Группы</a></div>
 	<ul class='Container'>".draw_group_level($doc,0)."</ul></div>
 	Или отбор:<input type=text id=sklsearch onkeydown=\"DelayedSave('/doc.php?mode=srv&opt=sklad&doc=$doc','sklad', 'sklsearch'); return true;\">");
 
@@ -322,7 +322,7 @@ function DrawSkladTable($res,$s,$doc,$limit=0)
 		$tmpl->AddText("<tr class='lin$i pointer'
 		ondblclick=\"EditThis('/doc.php?mode=srv&opt=pos&doc=$doc&pos=$nxt[0]','poslist'); return false;\">
 		<td>$nxt[0]
-		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
+		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
 		<td align=left>$nxt[2]<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 		$cnt++;
 		if( $limit && ( $cnt>= $limit))	break;
