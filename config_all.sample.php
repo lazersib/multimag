@@ -1,5 +1,6 @@
 <?php
 // Системные настройки
+$CONFIG['site']['admin_name']	= '';
 $CONFIG['site']['admin_email']	= '';
 $CONFIG['site']['doc_adm_email']= '';
 $CONFIG['site']['doc_adm_jid']	= '';

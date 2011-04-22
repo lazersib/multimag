@@ -155,23 +155,56 @@ else if($mode=='doc_hist')
 	<div class='content'>
 	<table width='100%' class='list' cellspacing='0'>
 	<tr class='title'><th>Номер<th>Дата<th>Документ<th>Подтверждён ?<th>Дата подтверждения<th>Сумма");
-	$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_types`.`name`, `doc_list`.`ok`, `doc_list`.`sum`
+	$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_types`.`name`, `doc_list`.`ok`, `doc_list`.`sum`, `doc_list`.`type`
 	FROM `doc_list`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	WHERE `doc_list`.`user`='{$_SESSION['uid']}'
 	ORDER BY `date`");
 	$i=0;
+
+	
 	while($nxt=mysql_fetch_array($res))
 	{
 		$date=date("Y-m-d H:i:s",$nxt['date']);
 		$ok=$nxt['ok']?'Да':'Нет';
 		$ok_date=$nxt['ok']?date("Y-m-d H:i:s",$nxt['ok']):'';
-		$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$date<td>$nxt[2]<td>$ok<td>$ok_date<td>$nxt[4]");
+		$lnum=$nxt[0];
+		if($nxt['type']==2 || $nxt['type']==3)	$lnum="<a href='/user.php?mode=doc_view&amp;doc=$nxt[0]'>$nxt[0]</a>";
+		$tmpl->AddText("<tr class='lin$i'><td>$lnum<td>$date<td>$nxt[2]<td>$ok<td>$ok_date<td>$nxt[4]");
 		$i=1-$i;
 	}
 	$tmpl->AddText("</table></div>");
-	
 }
+else if($mode=='doc_view')
+{
+	try
+	{
+		include_once("include/doc.core.php");
+		include_once("include/doc.nulltype.php");
+		$doc=rcv('doc');
+		if($doc)
+		{
+			$res=mysql_query("SELECT `id`, `type`, `user` FROM `doc_list` WHERE `id`='$doc'");
+			if(mysql_errno())		throw new Exception("Документ не выбран");
+			$doc_data=mysql_fetch_assoc($res);
+			if(!$doc_data)				throw new Exception("Документ не найден!");
+			if($doc_data['user']!=$uid)		throw new Exception("Документ не найден");
+			
+			$document=AutoDocumentType($doc_data['type'], $doc);
+			if($doc_data['type']==3)		$document->PrintForm($doc, 'schet_pdf');
+			else if($doc_data['type']==2)		$document->PrintForm($doc, 'sf_pdf');
+			else					throw new Exception("Способ просмотра не задан!");
+		}
+		else 	throw new Exception("Документ не указан");
+	}
+	catch(Exception $e)
+	{
+		mysql_query("ROLLBACK");
+		$tmpl->AddText("<br><br>");
+		$tmpl->logger($e->getMessage());
+	}
+}
+
 // else if($mode=='frequest')
 // {
 //         // create curl resource 
