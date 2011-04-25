@@ -157,19 +157,6 @@ function ExecMode($mode)
 		}
 		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
 	}
-	else if($mode=='img')
-	{
-		$sql="SELECT `doc_base`.`id`, `doc_img`.`id`, `doc_img`.`type`
-		FROM `doc_base`
-		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-		WHERE `doc_base`.`id`='$p'";
-		$res=mysql_query($sql);
-		if($nxt=mysql_fetch_row($res))
-		{
-			img_resize($nxt[1],'pos',$nxt[2]);	
-		}
-	}
 	else throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
 }
 
@@ -203,7 +190,7 @@ protected function ProductList($group, $page)
 	global $tmpl, $CONFIG;
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
-	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type`, `doc_units`.`printname` AS `units`
+	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_units`.`printname` AS `units`
 	FROM `doc_base`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -235,7 +222,7 @@ protected function ProductCard($product)
 	global $tmpl, $CONFIG, $wikiparser;
 	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type`, `doc_base_dop_type`.`name` AS `dop_name`, `doc_units`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`
+	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `doc_units`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`
 	FROM `doc_base`
 	LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -253,9 +240,15 @@ protected function ProductCard($product)
 		$tmpl->SetTitle("{$nxt['group_printname']} {$nxt['name']}");
 		$tmpl->AddText("<table cellpadding='1' cellspacing='0'>
 		<tr valign='top'><td rowspan='15' width='150'>");
-	
-		if($nxt[12]) $tmpl->AddText("<a href='/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=2500' rel='prettyPhoto'><img src='/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=200' alt='{$nxt['name']}'></a>");
-		else $tmpl->AddText("<img src='/img/no_photo.png' alt='no photo'>");
+		if($nxt['img_id']) 
+		{
+			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+			$miniimg->SetX(200);
+			$fullimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
+		}
+		else $img="<img src='/img/no_photo.png' alt='no photo'><br>";
+		
 		$tmpl->AddText("<td><b>Название:</b><td>{$nxt['group_printname']} {$nxt['name']}");
 		if($nxt[2])
 		{
@@ -458,8 +451,14 @@ protected function TovList_ImageList($res, $lim)
 		$dcc=strtotime($nxt['cost_date']);
 		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
 		$cost=GetCostPos($nxt['id'], $this->cost_id);		
-		if($nxt['img_id']) 	$img="<img src='/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=135&amp;y=180' style='float: left; margin-right: 10px;' alt='photo'>";
-		else 		$img="<img src='/img/no_photo.png' style='float: left; margin-right: 10px;' alt='no photo'>";
+		if($nxt['img_id']) 
+		{
+			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+			$miniimg->SetX(135);
+			$miniimg->SetY(180);
+			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='{$nxt['name']}'>";
+		}
+		else $img="<img src='/no_photo.png' alt='no photo' style='float: left; margin-right: 10px;' alt='no photo'>";
 		$desc=$nxt['desc'];
 		if(strpos($desc,'.')!==false)
 		{

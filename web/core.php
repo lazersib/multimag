@@ -494,7 +494,7 @@ global $uid;
 global $mode;
 $tmpl=new BETemplate;
 $mode=rcv('mode');
-$uid=$_SESSION['uid'];
+if(isset($_SESSION['uid']))	$uid=$_SESSION['uid'];
 if($uid=='') $uid=0;
 
 require_once("include/wikiparser.php");
