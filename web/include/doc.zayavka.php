@@ -208,7 +208,7 @@ class doc_Zayavka extends doc_Nulltype
 		else if($target_type==2)
 		{
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($target_typec);
+			$base=$this->Otgruzka($target_type);
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");
@@ -242,7 +242,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($this->doc);
+			$base=$this->Otgruzka($target_type);
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");
@@ -274,7 +274,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($this->doc);
+			$base=$this->Otgruzka($target_type);
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");

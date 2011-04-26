@@ -319,7 +319,7 @@ function DrawSkladTable($res,$s,$doc,$limit=0)
 		$cost_p=$dop_data['cena']?GetCostPos($nxt[0], $dop_data['cena']):$nxt[5];
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		
-		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')
+		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\"
 		ondblclick=\"EditThis('/doc.php?mode=srv&opt=pos&doc=$doc&pos=$nxt[0]','poslist'); return false;\">
 		<td>$nxt[0]
 		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>

@@ -87,12 +87,6 @@ class doc_Dogovor extends doc_Nulltype
 	function DopBody()
 	{
 		global $tmpl;
-		
-	}
-	
-	function DopBody()
-	{
-		global $tmpl;
 		global $wikiparser;
 		if($this->dop_data['received'])
 			$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
