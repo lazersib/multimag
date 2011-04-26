@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS `doc_agent` (
   `no_mail` tinyint(4) NOT NULL,
   `responsible` int(11) NOT NULL,
   `data_sverki` date NOT NULL,
+  `dishonest` tinyint(4) NOT NULL COMMENT='Недобросовестный',
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `uniq_name` (`group`,`name`),
   KEY `name` (`name`),

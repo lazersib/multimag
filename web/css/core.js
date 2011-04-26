@@ -34,9 +34,9 @@ function getOffset(elem) {
 }
 
 // Создать контекстное автоубирающееся меню по данному событию мыши
-function CreateContextMenu(e)
+function CreateContextMenu()
 {
-	e = e || window.event
+	e = event || window.event
 	var menu=document.createElement('div')
 	menu.className='contextmenu'
 	menu.innerHTML='<img src="/img/icon_load.gif" alt="Загрузка">'
@@ -69,9 +69,9 @@ function CreateContextMenu(e)
 	return menu
 }
 
-function ShowContextMenu(event, url)
+function ShowContextMenu(url)
 {
-	var menu=CreateContextMenu(event)
+	var menu=CreateContextMenu()
 	$.ajax({ 
 		type:   'GET', 
 	        url:    url, 

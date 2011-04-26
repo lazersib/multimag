@@ -705,8 +705,7 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->SetFont('Arial','',10);
 		$pdf->SetFillColor(255);
 		
-		if(isset($CONFIG['site']['doc_header']))
-		if(is_array($CONFIG['site']['doc_header']))
+		if(@$CONFIG['site']['doc_header'])
 		{
 			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
 			$pdf->Image($header_img,8,10, 190);	

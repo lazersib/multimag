@@ -99,8 +99,8 @@ class doc_s_Sklad
 			$dend=date("Y-m-d");
 			$tmpl->AddText("
 			<div onclick=\"ShowPopupWin('/docs.php?l=pran&mode=srv&opt=ceni&pos=$pos'); return false;\" >Где и по чём</div>
-			<div onclick=\"window.location='/docj.php?mode=filter&opt=fsn&tov_id=$pos&tov_name=$pos&date_to=$dend'\">Товар в журнале</div>
-			<div onclick=\"window.location='/docs.php?mode=srv&amp;opt=ep&amp;pos=$pos'\">Редактирование позиции</div>");
+			<div onclick=\"window.open('/docj.php?mode=filter&opt=fsn&tov_id=$pos&tov_name=$pos&date_to=$dend')\">Товар в журнале</div>
+			<div onclick=\"window.open('/docs.php?mode=srv&amp;opt=ep&amp;pos=$pos')\">Редактирование позиции</div>");
 		}
 		else if($opt=='ac')
 		{
@@ -1494,8 +1494,8 @@ function DrawSkladTable($res,$s)
 		$cost_p=sprintf("%0.2f",$nxt[5]);
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		
-		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
-		<td><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a> <a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> 
+		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu( '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
+		<td><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a> <a href='' onclick=\"return ShowContextMenu('/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> 
 		<td align=left>$nxt[2]<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 	}	
 }

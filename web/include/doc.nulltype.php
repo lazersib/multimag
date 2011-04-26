@@ -214,11 +214,14 @@ class doc_Nulltype
 	{
 		global $tmpl, $uid;
 		doc_menu($this->dop_buttons());
-		
 		$doc_altnum=$this->doc_data[9].$this->doc_data[10];
 		$dt=date("d.m.Y H:i:s",$this->doc_data[5]);
-		
 		$tmpl->AddText("<h1>{$this->doc_viewname} N$doc_altnum</h1>");
+
+		if($this->doc_data['agent_dishonest'])
+		{
+			$tmpl->msg($this->doc_data['agent_comment'],'err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
+		}
 
 		$res=mysql_query("SELECT `doc_cost`.`name` FROM `doc_cost` WHERE `doc_cost`.`id`='{$this->dop_data['cena']}'");
         	$cena=@mysql_result($res,0,0);
@@ -957,7 +960,7 @@ class doc_Nulltype
 		if($this->doc_data) return;	
 		if($this->doc)
 		{
-			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`
+			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`
 			FROM `doc_list` AS `a`
 			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
 			WHERE `a`.`id`='".$this->doc."'");
