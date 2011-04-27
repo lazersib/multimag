@@ -319,10 +319,10 @@ function DrawSkladTable($res,$s,$doc,$limit=0)
 		$cost_p=$dop_data['cena']?GetCostPos($nxt[0], $dop_data['cena']):$nxt[5];
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		
-		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\"
+		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\"
 		ondblclick=\"EditThis('/doc.php?mode=srv&opt=pos&doc=$doc&pos=$nxt[0]','poslist'); return false;\">
 		<td>$nxt[0]
-		<a href='' onclick=\"return ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
+		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
 		<td align=left>$nxt[2]<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 		$cnt++;
 		if( $limit && ( $cnt>= $limit))	break;

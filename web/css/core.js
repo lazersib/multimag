@@ -34,9 +34,9 @@ function getOffset(elem) {
 }
 
 // Создать контекстное автоубирающееся меню по данному событию мыши
-function CreateContextMenu()
+function CreateContextMenu(e)
 {
-	e = event || window.event
+	e = e || window.event
 	var menu=document.createElement('div')
 	menu.className='contextmenu'
 	menu.innerHTML='<img src="/img/icon_load.gif" alt="Загрузка">'
@@ -46,7 +46,7 @@ function CreateContextMenu()
 	menu.style.top=(e.clientY+scrollTop)+'px'
 	document.getElementsByTagName('body')[0].appendChild(menu)
 	
-	menu.onmouseover=function() { if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer) }
+	menu.onmouseover=function() { if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer); menu.waitHideTimer=window.setTimeout(AnimateHideMenu, 5000) }
 	menu.onmouseout=ContextMenuOut	
 	menu.waitHideTimer=window.setTimeout(AnimateHideMenu, 5000)
 	menu.opacity=1
@@ -69,9 +69,9 @@ function CreateContextMenu()
 	return menu
 }
 
-function ShowContextMenu(url)
+function ShowContextMenu(event, url)
 {
-	var menu=CreateContextMenu()
+	var menu=CreateContextMenu(event)
 	$.ajax({ 
 		type:   'GET', 
 	        url:    url, 
