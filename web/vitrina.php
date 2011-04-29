@@ -205,8 +205,9 @@ protected function ProductList($group, $page)
 	$rows=mysql_num_rows($res);	
         if($rows)
         {
-        	//$tmpl->AddText("<h2>Товары в категории</h2><div class='page-info'>$lim товаров на страницу, $rows всего</div>");        
-		$this->PageBar($group, $rows, $lim, $page);		
+  
+		$this->PageBar($group, $rows, $lim, $page);
+		
 		if(($lim<$rows) && $page )	mysql_data_seek($res, $lim*($page-1));
 		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$this->TovList_ImageList($res, $lim);
 //		else if($CONFIG['site']['vitrina_plstyle']=='tilelist')		$this->TovList_TileList($res);
@@ -249,7 +250,7 @@ protected function ProductCard($product)
 		}
 		else $img="<img src='/img/no_photo.png' alt='no photo'><br>";
 		
-		$tmpl->AddText("<td><b>Название:</b><td>{$nxt['group_printname']} {$nxt['name']}");
+		$tmpl->AddText("$img<td><b>Название:</b><td>{$nxt['group_printname']} {$nxt['name']}");
 		if($nxt[2])
 		{
 			$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));

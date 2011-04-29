@@ -136,6 +136,11 @@ class ImageProductor
 			
 			$rs=1;
 		}
+		else
+		{
+			$this->dim_x=$sz[0];
+			$this->dim_y=$sz[1];
+		}
 		
 		
 		if($this->type=='jpg')
