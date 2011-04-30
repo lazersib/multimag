@@ -599,7 +599,7 @@ class doc_Nulltype
 					$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
 					FROM `doc_list_pos`
 					INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-					INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
+					LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 					WHERE `doc_list_pos`.`id`='$pos_line'");
 					if(mysql_errno())	throw MysqlException("Не удалось получить строку документа");
 					$line=mysql_fetch_assoc($res);
@@ -672,6 +672,19 @@ class doc_Nulltype
 				}
 				else $tmpl->SetText("{ response: '0', message: 'value: $value, type:$type, line_id:$line_id'}");
 			}
+			// Получение номенклатуры выбранной группы
+			else if($opt=='jsklad')
+			{
+				$group_id=rcv('group_id');
+				$poseditor=new PosEditor('doc_list_pos',$this->doc);
+				$poseditor->cost_id=$this->dop_data['cena'];
+				$poseditor->sklad_id=$this->doc_data['sklad'];
+				$str="{ response: 'sklad_list', group: '$group_id',  content: [".$poseditor->GetSkladList($group_id)."] }";			
+				$tmpl->SetText($str);	
+			
+			}
+			
+			// Не-json обработчики
 			// Добавление позиции
 			else if($opt=='pos')
 			{

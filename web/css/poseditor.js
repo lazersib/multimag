@@ -1,8 +1,9 @@
 function PosEditorInit(doc)
 {
-	var poslist=document.getElementById('poslist');
+	var poslist=document.getElementById('poslist')
 	var p_sum=document.getElementById('sum')
-	poslist.doc_id=doc;
+	poslist.doc_id=doc
+	SkladViewInit(doc)
 	
 	$.ajax({ 
 		type:   'POST', 
@@ -175,44 +176,7 @@ function PosEditorInit(doc)
 	}
 }
 
-function SkladViewInit(doc)
-{
-	var skladview=document.getElementById('sklad_view');
-	var skladlist=document.getElementById('sklad_list');
-	
-	skladlist.getGroupData=function (group)
-	{
-		$.ajax({ 
-			type:   'POST', 
-		       url:    '/doc.php', 
-		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jsklad&group_id='+group, 
-		       success: function(msg) { rcvDataSuccess(msg); }, 
-		       error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
-		});
-	}
-	
-	function rcvDataSuccess(msg)
-	{
-		try
-		{
-			var json=eval('('+msg+')');
-			if(json.response==0)
-				jAlert(json.message,"Ошибка", {}, 'icon_err');
-			else if(json.response==6)
-			{
-				skladlist.innerHTML="<table width='100%'></table>";
-			}
-			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Вставка строки в документ", null,  'icon_err');
-		}
-		catch(e)
-		{
-			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
-		}	
-	}
-}
-
-
+// Строка быстрого добавления наименований
 function PladdInit()
 {
 	var poslist=document.getElementById('poslist');
@@ -430,6 +394,104 @@ function PladdInit()
 	pos_cost.onkeyup=KeyUp
 	pos_cnt.onkeyup=KeyUp
 	pladd.Reset()
+}
+
+// Блок со списком складской номенклатуры
+function SkladViewInit(doc)
+{
+	var poslist=document.getElementById('poslist');
+	var skladview=document.getElementById('sklad_view');
+	var skladlist=document.getElementById('sklad_list');
+	var p_sum=document.getElementById('sum')
+	var groupdata_cache=new Array()
+	
+	skladlist.getGroupData=function (group)
+	{
+		skladlist.innerHTML="<tr><td colspan='20' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'></td></tr>"
+		if(groupdata_cache[group])	rcvDataSuccess(groupdata_cache[group])
+		$.ajax({ 
+			type:   'POST', 
+		       url:    '/doc.php', 
+		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jsklad&group_id='+group, 
+		       success: function(msg) { groupdata_cache[group]=msg;rcvDataSuccess(msg); }, 
+		       error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
+		});
+		return false
+	}
+	
+	skladlist.AddLine=function(data)
+	{
+		var row_cnt=skladlist.rows.length
+		var row=skladlist.insertRow(row_cnt)
+		row.lineIndex=data.id
+		row.id='skladrow'+data.id
+		row.onclick=function() {AddData(data)}
+		row.oncontextmenu=function(){ ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
+		row.innerHTML="<td>"+data.id+"</td><td>"+data.vc+"</td><td>"+data.name+"</td><td>"+data.vendor+"</td><td>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td><td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td><td>"+data.reserve+"</td><td>"+data.offer+"</td><td>"+data.transit+"</td><td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
+		
+// 		var inputs=row.getElementsByTagName('input')
+// 		for(var i=0;i<inputs.length;i++)
+// 		{
+// 			//alert(inputs[i].name)
+// 			inputs[i].onkeydown=poslist.doInputKeyDown
+// 			inputs[i].onblur=poslist.doInputBlur
+// 			inputs[i].old_value=inputs[i].value
+// 		}
+// 		
+// 		var img_del=document.getElementById('del'+data.line_id)
+// 		img_del.onclick=poslist.doDeleteLine
+	}
+	
+	
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			var json=eval('('+msg+')');
+			if(json.response==0)
+				jAlert(json.message,"Ошибка", {}, 'icon_err');
+			else if(json.response=='sklad_list')
+			{
+				skladlist.innerHTML=''
+				for(var i=0;i<json.content.length;i++)
+				{
+					skladlist.AddLine(json.content[i])
+				}
+			}
+			else if(json.response==1)	// Вставка строки
+			{
+				poslist.AddLine(json.add)				
+				p_sum.innerHTML='Итого: <b>'+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
+			}
+			else if(json.response==4)
+			{
+				poslist.UpdateLine(json.update)
+			}
+			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+		}
+		catch(e)
+		{
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+		}	
+	}
+	
+	function AddData(data)
+	{
+		$.ajax({ 
+			type:   'POST', 
+			url:    '/doc.php', 
+			data:   'doc='+poslist.doc_id+'&mode=srv&opt=jadd&pos='+data.id+'&cnt=1&cost='+data.cost, 
+			success: function(msg) { rcvDataSuccess(msg); }, 
+		        error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); }, 
+		});
+	}
+}
+
+function getSkladList(group)
+{
+	var skladlist=document.getElementById('sklad_list');
+	return skladlist.getGroupData(group)	
 }
 
 $(document).ready(function(){

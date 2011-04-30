@@ -34,6 +34,7 @@
 	text-align:	left;
 }
 
+
 /* edited line - строки, ожидающие сохранения на сервер */
 #poslist tbody .el, #poslist tbody .el input
 {
@@ -140,4 +141,14 @@
 	border:		2px #88f solid;
 	border-spacing:	0px;
 	margin-top:	5px;
+}
+
+#sklad_list tr:nth-child(odd)
+{
+	background:	#f0f8ff;
+}
+
+#sklad_list tr:nth-child(even)
+{
+	background:	#e0f0ff;
 }

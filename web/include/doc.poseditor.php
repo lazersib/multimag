@@ -82,10 +82,20 @@ function Show($param='')
 	
 	$ret.="
 	<table id='sklad_view'>
-	<tr><td id='groups_list' width=200 valign='top' class='lin0>";
+	<tr><td id='groups_list' width='200' valign='top' class='lin0>";
 	$ret.=$this->getGroupsTree();
 	$ret.="</td>
-	<td id='sklad_list' valign='top' class='lin1'>
+	<td valign='top' class='lin1'>
+	
+	<table width='100%' cellspacing='1' cellpadding='2'>
+	<tr>
+	<thead>
+	<th>№<th>Код<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
+	<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Предложений'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место
+	</thead>
+	<tbody id='sklad_list'>
+	</tbody>
+	</table>
 	</td></tr>
 	</table>
 	";
@@ -116,7 +126,7 @@ function getGroupLevel($level)
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($nxt[0]==0) continue;
-		$item="<a href='' title='$nxt[2]' onclick=\"EditThis('/doc.php?mode=srv&opt=sklad&doc={$this->doc}&group=$nxt[0]','sklad_list'); return false;\" >$nxt[1]</a>";
+		$item="<a href='' title='$nxt[2]' onclick=\"return getSkladList('$nxt[0]')\" >$nxt[1]</a>";
 		if($i>=($cnt-1)) $r.=" IsLast";
 		$tmp=$this->getGroupLevel($nxt[0]); // рекурсия
 		if($tmp)
@@ -128,7 +138,7 @@ function getGroupLevel($level)
 	return $ret;
 }
 
-
+// Получить весь текущий список товаров (документа)
 function GetAllContent()
 {
 	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
@@ -191,34 +201,86 @@ function ShowPosContent($param='')
 	return $ret;
 }
 
-// Используется для добавления/изменения/удаления строки
-// Возвращает json информацию необходимых изменений на клиенте
-function Modify()
+function GetSkladList($group)
 {
-	$line_id=rcv('lid');
-	$action=rcv('a');
-	$doc=rcv('doc');
-	$pid=rcv('pid');
-	if($action=='add')
+	$ret='';
+	$sql="SELECT `doc_base`.`id`,`doc_base`.`vc`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
+	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
+	`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` , (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`
+	FROM `doc_base`
+	LEFT JOIN `doc_base_cnt`  ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+	WHERE `doc_base`.`group`='$group'
+	ORDER BY `doc_base`.`name`";
+	$res=mysql_query($sql);
+	if(mysql_errno())	throw new MysqlException("Не удалось получить списока номенклатуры группы $group, склада {$this->sklad_id}");
+
+	if(mysql_num_rows($res))
 	{
-		return $this->ActionAdd($doc, $pid);
+		global $dop_data;
+		$i=0;
+		$cnt=0;
+		while($nxt=mysql_fetch_assoc($res))
+		{
+// 			{
+// 				// Дата цены $nxt[5]
+// 				$dcc=strtotime($nxt[6]);
+// 				$cc="";
+// 				if($dcc>(time()-60*60*24*30*3)) $cc="class=f_green";
+// 				else if($dcc>(time()-60*60*24*30*6)) $cc="class=f_purple";
+// 				else if($dcc>(time()-60*60*24*30*9)) $cc="class=f_brown";
+// 				else if($dcc>(time()-60*60*24*30*12)) $cc="class=f_more";
+// 			}
+// 			$end=date("Y-m-d");
+// 						
+// 			$nxt[2]=SearchHilight($nxt[2],$s);
+// 			$nxt[8]=SearchHilight($nxt[8],$s);	
+// 			$i=1-$i;
+
+			// Новый код
+			$reserve=DocRezerv($nxt['id'],$doc);
+			$offer=DocPodZakaz($nxt['id'],$doc);
+			$transit=DocVPuti($nxt['id'],$doc);
+			
+			$cost=$this->cost_id?GetCostPos($nxt['id'], $this->cost_id):$nxt['cost'];
+			$rcost=sprintf("%0.2f",$nxt['koncost']);
+			
+			if($ret)	$ret.=', ';
+			$ret.="{ id: '{$nxt['id']}', name: '{$nxt['name']}', vc: '{$nxt['vc']}', vendor: '{$nxt['proizv']}', liquidity: '{$nxt['likvid']}', cost: '$cost', rcost: '$rcost', analog: '{$nxt['analog']}', type: '{$nxt['type']}', d_int: '{$nxt['d-int']}', d_ext: '{$nxt['d_ext']}', size: '{$nxt['size']}', mass: '{$nxt['mass']}', place: '{$nxt['mesto']}', cnt: '{$nxt['cnt']}', allcnt: '{$nxt['allcnt']}', reserve: '$reserve', offer: '$offer', transit: '$transit' }";
+			$cnt++;
+		}	
 	}
-	else return "{ \"response\": \"err\", \"errmsg\": \"Неизвестное действие ($action). Вероятно, произошла ошибка в программе.\" }";
+	return $ret;
 }
 
-// Внутренние функции
-function ActionAdd($doc, $pid)
-{
-	mysql_query("INSERT INTO `{$this->table}` (`{$this->columns['doc']}`, `{$this->columns['pos']}`, `{$this->columns['cost']}`, `{$this->columns['cnt']}`) VALUES ('$doc', '$pid', '1', '1')");
-	if(mysql_errno())	throw new MysqlException("Ошибка вставки строки");
-	$line_id=mysql_insert_id();
-	$res=mysql_query("SELECT `name` FROM `doc_base` WHERE `id`='$pid'");
-	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
-	$nxt=mysql_fetch_row($res);
-	
-	return "{ \"response\": \"add\", \"line_id\": \"$line_id\", \"name\": \"$nxt[0]\"}"; 
-}
-
+// // Используется для добавления/изменения/удаления строки
+// // Возвращает json информацию необходимых изменений на клиенте
+// function Modify()
+// {
+// 	$line_id=rcv('lid');
+// 	$action=rcv('a');
+// 	$doc=rcv('doc');
+// 	$pid=rcv('pid');
+// 	if($action=='add')
+// 	{
+// 		return $this->ActionAdd($doc, $pid);
+// 	}
+// 	else return "{ \"response\": \"err\", \"errmsg\": \"Неизвестное действие ($action). Вероятно, произошла ошибка в программе.\" }";
+// }
+// 
+// // Внутренние функции
+// function ActionAdd($doc, $pid)
+// {
+// 	mysql_query("INSERT INTO `{$this->table}` (`{$this->columns['doc']}`, `{$this->columns['pos']}`, `{$this->columns['cost']}`, `{$this->columns['cnt']}`) VALUES ('$doc', '$pid', '1', '1')");
+// 	if(mysql_errno())	throw new MysqlException("Ошибка вставки строки");
+// 	$line_id=mysql_insert_id();
+// 	$res=mysql_query("SELECT `name` FROM `doc_base` WHERE `id`='$pid'");
+// 	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
+// 	$nxt=mysql_fetch_row($res);
+// 	
+// 	return "{ \"response\": \"add\", \"line_id\": \"$line_id\", \"name\": \"$nxt[0]\"}"; 
+// }
+// 
 
 
 

@@ -352,7 +352,7 @@ class doc_s_Sklad
 			<input type='hidden' name='param' value='i'>
 			<table cellpadding='0' width='50%'>
 			<tr class='lin1'><td>Файл картнки:
-			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='6000000'><input name='userfile' type='file'>
 			<tr class='lin0'><td>Название картинки:
 			<td><input type='text' name='nm' value='photo_$pos'><br>
 			Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
@@ -856,9 +856,9 @@ class doc_s_Sklad
 		else if($param=='i')
 		{
 			$id=0;
-			$max_size=500;
-			$min_pix=50;
-			$max_pix=800;
+			$max_size=5000;
+			$min_pix=100;
+			$max_pix=6000;
 			global $CONFIG;
 			$nm=rcv('nm');
 			$set_def=rcv('set_def');
@@ -1050,7 +1050,7 @@ class doc_s_Sklad
 							throw new Exception("Не удалось записать изображение. Проверьте права доступа к директории {$CONFIG['site']['var_data_fs']}/category/");
 				}
 			}
-			$tmpl->msg("Сохранено!");
+			$tmpl->msg("Сохранено! {$CONFIG['site']['var_data_fs']}/category/$group.jpg");
 		}
 		else if($param=='gid')
 		{

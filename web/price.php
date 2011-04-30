@@ -241,11 +241,11 @@ class PriceWriterXLS
 		$this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count-1);
 		$this->line++;
 
-		$str = 'При заказе через сайт предоставляется скидка!';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$this->worksheet->write($this->line, 0, $str, $format_info);
-		$this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count-1);	
-		$this->line++;
+//		$str = 'При заказе через сайт предоставляется скидка!';
+//		$str = iconv('UTF-8', 'windows-1251', $str);
+//		$this->worksheet->write($this->line, 0, $str, $format_info);
+//		$this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count-1);	
+//		$this->line++;
 		
 		$dt=date("d.m.Y");
 		$str = 'Цены действительны на дату: '.$dt.'. Цены, выделенные серым цветом, необходимо уточнять.';
@@ -883,9 +883,9 @@ else if($mode=="get")
 		$pdf->Cell(0,6,$str,0,1,'C',0,'http://'.$CONFIG['site']['name']);
 		$pdf->SetFont('','',10);
 		$pdf->SetTextColor(0);
-		$str = 'При заказе через сайт предоставляется скидка!';
-		$str = iconv('UTF-8', 'windows-1251', $str);		
-		$pdf->Cell(0,5,$str,0,1,'C');
+//		$str = 'При заказе через сайт предоставляется скидка!';
+//		$str = iconv('UTF-8', 'windows-1251', $str);		
+//		$pdf->Cell(0,5,$str,0,1,'C');
 		
 		$dt=date("d.m.Y");
 		$str = 'Цены действительны на дату: '.$dt.'. Цены, выделенные серым цветом, необходимо уточнять.';
