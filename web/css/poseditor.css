@@ -163,9 +163,30 @@
 	text-align:	left;
 }
 
+/* Подстветка для кликабельных ячеек */
 .reserve:hover, .offer:hover, .transit:hover
 {
 	cursor:		pointer;
 	background:	#ffb;
 	text-decoration:underline;
 }
+
+/*группы актуальности цен */
+#sklad_list td.c1
+{
+	color: #0c0;
+}
+#sklad_list td.c2
+{
+	color: #c0c;
+}
+#sklad_list td.c3
+{
+	color: #730;
+}
+#sklad_list td.c4
+{
+	color: #3a8;
+}
+
+

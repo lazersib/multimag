@@ -571,65 +571,21 @@ class doc_Nulltype
 			else if($opt=='jadd')
 			{
 				$pos=rcv('pos');
-				$cnt=rcv('cnt');
-				$cost=rcv('cost');
-				$add=0;
-					
-				$res=mysql_query("SELECT `id`, `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `tovar`='$pos'");
-				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
-				if(mysql_num_rows($res)==0)
-				{
-					mysql_query("INSERT INTO doc_list_pos (`doc`,`tovar`,`cnt`,`cost`) VALUES ('{$this->doc}','$pos','$cnt','$cost')");
-					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку в документ!");
-					$pos_line=mysql_insert_id();
-					doc_log("UPDATE {$this->doc_name}","add pos: pos:$pos",'doc',$this->doc);
-					doc_log("UPDATE {$this->doc_name}","add pos: pos:$pos",'pos',$pos);
-					$add=1;
-				}
-				else
-				{
-					$nxt=mysql_fetch_row($res);
-					$pos_line=$nxt[0];
-					mysql_query("UPDATE `doc_list_pos` SET `cnt`='$cnt', `cost`='$cost' WHERE `id`='$nxt[0]'");
-					if(mysql_errno())	throw MysqlException("Не удалось вставить строку в документ!");
-					doc_log("UPDATE {$this->doc_name}","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1",'doc',$this->doc);
-					doc_log("UPDATE {$this->doc_name}","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1, doc:$doc",'pos',$nxt[1]);
-				}	
-				$doc_sum=DocSumUpdate($this->doc);
-				
-				if($add)
-				{
-					$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
-					FROM `doc_list_pos`
-					INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-					LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
-					WHERE `doc_list_pos`.`id`='$pos_line'");
-					if(mysql_errno())	throw MysqlException("Не удалось получить строку документа");
-					$line=mysql_fetch_assoc($res);
-					$cost=GetCostPos($pos, $this->dop_data['cena']);
-					$tmpl->SetText("{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '{$line['mesto']}' }, sum: '$doc_sum' }");
-				}
-				else
-				{
-					$cost=sprintf("%0.2f",$cost);
-					$tmpl->SetText("{ response: '4', update: { line_id: '$pos_line', cnt: '{$cnt}', cost: '{$cost}'}, sum: '$doc_sum' }");
-				}
+				include_once('doc.poseditor.php');
+				$poseditor=new PosEditor('doc_list_pos',$this->doc);
+				$poseditor->cost_id=$this->dop_data['cena'];
+				$poseditor->sklad_id=$this->doc_data['sklad'];
+				$tmpl->SetText($poseditor->AddPos($pos));
 			}
 			// Json вариант удаления строки
 			else if($opt=='jdel')
 			{
 				$line_id=rcv('line_id');
-				$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `doc` FROM `doc_list_pos` WHERE `id`='$line_id'");
-				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
-				$nxt=mysql_fetch_row($res);
-				if(!$nxt)		throw new Exception("Строка $line_id не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-				if($nxt[3]!=$this->doc)	throw new Exception("Строка отностися к другому документу. Удаление невозможно.");
-				$res=mysql_query("DELETE FROM `doc_list_pos` WHERE `id`='$line_id'");
-				$doc_sum=DocSumUpdate($this->doc);
-				
-				doc_log("UPDATE {$this->doc_name}","del line: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1], cost:$nxt[2]",'doc',$this->doc);
-				doc_log("UPDATE {$this->doc_name}","del line: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1], cost:$nxt[2]",'pos',$nxt[0]);
-				$tmpl->SetText("{ response: '5', remove: { line_id: '$line_id' }, sum: '$doc_sum' }");
+				include_once('doc.poseditor.php');
+				$poseditor=new PosEditor('doc_list_pos',$this->doc);
+				$poseditor->cost_id=$this->dop_data['cena'];
+				$poseditor->sklad_id=$this->doc_data['sklad'];
+				$tmpl->SetText($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
 			else if($opt=='jup')
@@ -686,7 +642,17 @@ class doc_Nulltype
 				$tmpl->SetText($str);	
 			
 			}
+			// Поиск по подстроке по складу
+			else if($opt=='jsklads')
+			{
+				$s=rcv('s');
+				$poseditor=new PosEditor('doc_list_pos',$this->doc);
+				$poseditor->cost_id=$this->dop_data['cena'];
+				$poseditor->sklad_id=$this->doc_data['sklad'];
+				$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";			
+				$tmpl->SetText($str);	
 			
+			}
 			// Не-json обработчики
 			// Добавление позиции
 			else if($opt=='pos')

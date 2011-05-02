@@ -87,8 +87,8 @@ function PosEditorInit(doc)
 		row.lineIndex=data.line_id
 		row.id='posrow'+data.line_id
 		var sum=(data.cost*data.cnt).toFixed(2)
-		row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.pos_id); return false }
-		row.innerHTML="<td>"+(row_cnt+1)+"<img src='/img/i_del.png' alt='Удалить' id='del"+row.lineIndex+"'></td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td><input type='text' name='cost' value='"+data.cost+"'></td><td><input type='text' name='cnt' value='"+data.cnt+"'></td><td><input type='text' name='sum' value='"+sum+"'></td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
+		row.ondblclick=row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.pos_id); return false }
+		row.innerHTML="<td>"+(row_cnt+1)+"<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'></td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td><input type='text' name='cost' value='"+data.cost+"'></td><td><input type='text' name='cnt' value='"+data.cnt+"'></td><td><input type='text' name='sum' value='"+sum+"'></td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
 		
 		var inputs=row.getElementsByTagName('input')
 		for(var i=0;i<inputs.length;i++)
@@ -400,14 +400,30 @@ function PladdInit()
 // Блок со списком складской номенклатуры
 function SkladViewInit(doc)
 {
-	var poslist=document.getElementById('poslist');
-	var skladview=document.getElementById('sklad_view');
-	var skladlist=document.getElementById('sklad_list');
+	var poslist=document.getElementById('poslist')
+	var skladview=document.getElementById('sklad_view')
+	var skladlist=document.getElementById('sklad_list')
 	var p_sum=document.getElementById('sum')
+	var sklsearch=document.getElementById('sklsearch')
 	var groupdata_cache=new Array()
+	var old_hl=0
+	sklsearch.timer=0
+	skladlist.needDialog=0
 	
-	skladlist.getGroupData=function (group)
+	sklsearch.onkeydown=function(event)
 	{
+		if(sklsearch.timer)	window.clearTimeout(sklsearch.timer)
+		sklsearch.timer=window.setTimeout(function(){skladlist.getSearchResult(event)}, 1000)
+	
+	
+	}
+	
+	
+	skladlist.getGroupData=function (event,group)
+	{
+		if(old_hl)	old_hl.style.backgroundColor=''
+		event.target.parentNode.style.backgroundColor='#ffb'
+		old_hl=event.target.parentNode
 		skladlist.innerHTML="<tr><td colspan='20' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'></td></tr>"
 		if(groupdata_cache[group])	rcvDataSuccess(groupdata_cache[group])
 		$.ajax({ 
@@ -415,6 +431,23 @@ function SkladViewInit(doc)
 		       url:    '/doc.php', 
 		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jsklad&group_id='+group, 
 		       success: function(msg) { groupdata_cache[group]=msg;rcvDataSuccess(msg); }, 
+		       error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
+		});
+		return false
+	}
+	
+	skladlist.getSearchResult=function (event)
+	{
+		if(old_hl)	old_hl.style.backgroundColor=''
+		old_hl=0
+		s_str=event.target.value
+		if(s_str=='')	return
+		skladlist.innerHTML="<tr><td colspan='20' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'></td></tr>"
+		$.ajax({ 
+			type:   'POST', 
+		       url:    '/doc.php', 
+		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jsklads&s='+encodeURIComponent(s_str), 
+		       success: function(msg) { rcvDataSuccess(msg); }, 
 		       error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
 		});
 		return false
@@ -431,17 +464,8 @@ function SkladViewInit(doc)
 		//row.onclick=function() {AddData(data)}
 		row.onclick=skladlist.clickRow
 		row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
-		row.innerHTML="<td>"+data.id+"</td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td><td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td><td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td><td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
+		row.innerHTML="<td>"+data.id+"</td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td><td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td><td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td><td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
 		
-// 		var inputs=row.getElementsByTagName('input')
-// 		for(var i=0;i<inputs.length;i++)
-// 		{
-// 			//alert(inputs[i].name)
-// 			inputs[i].onkeydown=poslist.doInputKeyDown
-// 			inputs[i].onblur=poslist.doInputBlur
-// 			inputs[i].old_value=inputs[i].value
-// 		}
-// 		
 // 		var img_del=document.getElementById('del'+data.line_id)
 // 		img_del.onclick=poslist.doDeleteLine
 	}
@@ -451,8 +475,22 @@ function SkladViewInit(doc)
 		if(event.target.className=='reserve')		OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos='+this.data.id)
 		else if(event.target.className=='offer')	ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos='+this.data.id)
 		else if(event.target.className=='transit')	ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos='+this.data.id);
-		else						AddToPosList(this.data)
-
+		else
+		{
+			if(skladlist.needDialog)
+			{
+			var s="<table width='200px'><tr><td>Цена:</td><td><input type='text' id='pop_cost' value='"+event.target.parentNode.data.cost+"'></td></tr><tr><td>Количество:</td><td><input type='text' id='pop_cnt' value='1'></td></tr></table>"
+			jDialog(s,'Укажите цену и количество',function()
+				{
+					var data=event.target.parentNode.data
+					data.cost=document.getElementById('pop_cost').value			
+					AddToPosList(data, document.getElementById('pop_cnt').value)			
+				},'icon-confirm')
+			var pop_cost=document.getElementById('pop_cost')
+			pop_cost.focus()	
+			}
+			else AddToPosList(this.data)
+		}
 	}
 	
 	function rcvDataSuccess(msg)
@@ -488,22 +526,24 @@ function SkladViewInit(doc)
 		}	
 	}
 	
-	function AddToPosList(data)
+	function AddToPosList(data, cnt)
 	{
+		if(!cnt)	cnt=1
 		$.ajax({ 
 			type:   'POST', 
 			url:    '/doc.php', 
-			data:   'doc='+poslist.doc_id+'&mode=srv&opt=jadd&pos='+data.id+'&cnt=1&cost='+data.cost, 
+			data:   'doc='+poslist.doc_id+'&mode=srv&opt=jadd&pos='+data.id+'&cost='+data.cost+'&cnt='+cnt, 
 			success: function(msg) { rcvDataSuccess(msg); }, 
 		        error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); }, 
 		});
 	}
 }
 
-function getSkladList(group)
+
+function getSkladList(event, group)
 {
 	var skladlist=document.getElementById('sklad_list');
-	return skladlist.getGroupData(group)	
+	return skladlist.getGroupData(event, group)	
 }
 
 $(document).ready(function(){
