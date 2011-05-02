@@ -77,12 +77,13 @@ function exception_handler($exception)
 	$s=mysql_real_escape_string($exception->getMessage());
 	$ag=mysql_real_escape_string($ag);
 	$rf=mysql_real_escape_string($rf);
-	$qq=mysql_real_escape_string($qq);
 	$ff=mysql_real_escape_string($ff);
 	mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
 	('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
 	header("500 Internal error");
-	echo"<h1>500 Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору";
+	echo"<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><title>Error 500: Необработанная внутренняя ошибка</title>
+	<style type='text/css'>body{color: #0f0; background-color: #000; text-align: center;}</style></head><body>
+	<h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
   
 } 
 set_exception_handler('exception_handler');
