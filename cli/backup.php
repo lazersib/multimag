@@ -66,7 +66,9 @@ if($CONFIG['backup']['mysql'])
 		echo"Done!\n";
 	}
 	echo"Zipping mysql dump...";
-	`zip $archiv_dir/$yy/$tm/mysql.zip -r /tmp/mysql_dump/ -$zip_level`;
+	if($CONFIG['backup']['archiver']=='7z')
+		`7zr a -ssc -mx=$zip_level $archiv_dir/$yy/$tm/mysql.7z /tmp/mysql_dump/`;
+	else	`zip $archiv_dir/$yy/$tm/mysql.zip -r /tmp/mysql_dump/ -$zip_level`;
 	echo"Done!\n";
 }
 
@@ -74,7 +76,9 @@ if(is_array($CONFIG['backup']['dirs']))
 foreach($CONFIG['backup']['dirs'] as $arch => $path)
 {
 	echo"Zipping $path => $arch...";
-	`zip $archiv_dir/$yy/$tm/$arch.zip -r $path -$zip_level`;
+	if($CONFIG['backup']['archiver']=='7z')
+		`7zr a -ssc -mx=$zip_level $archiv_dir/$yy/$tm/$arch.7z $path`;
+	else	`zip $archiv_dir/$yy/$tm/$arch.zip -r $path -$zip_level`;
 	echo"Done!\n";
 }
 
@@ -133,9 +137,6 @@ if ((!$conn_id) || (!$login_result))
 else
 {
 	echo "Connected to {$CONFIG['backup']['ftp_host']}\n";
-	$destination_file="/mysql.zip";
-	$source_file="/home/backup/mysql.zip";
-
 	if($handle = opendir("$archiv_dir/$yy/$tm"))
 	{
 		@ftp_mkdir ( $conn_id , "/{$CONFIG['site']['name']}");

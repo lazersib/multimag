@@ -860,7 +860,8 @@ else if($mode=="get")
 		
 		if($CONFIG['site']['doc_header'])
 		{
-			$pdf->Image($CONFIG['site']['doc_header'],8,10, 190);	
+			$header_img=str_replace('{FN}', $CONFIG['site']['default_firm'], $CONFIG['site']['doc_header']);
+			$pdf->Image($header_img,8,10, 190);	
 			$pdf->Sety(54);
 		}
 		

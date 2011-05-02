@@ -87,6 +87,7 @@ function PosEditorInit(doc)
 		row.lineIndex=data.line_id
 		row.id='posrow'+data.line_id
 		var sum=(data.cost*data.cnt).toFixed(2)
+		row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.pos_id); return false }
 		row.innerHTML="<td>"+(row_cnt+1)+"<img src='/img/i_del.png' alt='Удалить' id='del"+row.lineIndex+"'></td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td><input type='text' name='cost' value='"+data.cost+"'></td><td><input type='text' name='cnt' value='"+data.cnt+"'></td><td><input type='text' name='sum' value='"+sum+"'></td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
 		
 		var inputs=row.getElementsByTagName('input')
@@ -425,9 +426,12 @@ function SkladViewInit(doc)
 		var row=skladlist.insertRow(row_cnt)
 		row.lineIndex=data.id
 		row.id='skladrow'+data.id
-		row.onclick=function() {AddData(data)}
-		row.oncontextmenu=function(){ ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
-		row.innerHTML="<td>"+data.id+"</td><td>"+data.vc+"</td><td>"+data.name+"</td><td>"+data.vendor+"</td><td>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td><td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td><td>"+data.reserve+"</td><td>"+data.offer+"</td><td>"+data.transit+"</td><td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
+		row.data=data
+		row.className='pointer'
+		//row.onclick=function() {AddData(data)}
+		row.onclick=skladlist.clickRow
+		row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
+		row.innerHTML="<td>"+data.id+"</td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td><td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td><td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td><td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
 		
 // 		var inputs=row.getElementsByTagName('input')
 // 		for(var i=0;i<inputs.length;i++)
@@ -442,6 +446,14 @@ function SkladViewInit(doc)
 // 		img_del.onclick=poslist.doDeleteLine
 	}
 	
+	skladlist.clickRow=function(event)
+	{
+		if(event.target.className=='reserve')		OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos='+this.data.id)
+		else if(event.target.className=='offer')	ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos='+this.data.id)
+		else if(event.target.className=='transit')	ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos='+this.data.id);
+		else						AddToPosList(this.data)
+
+	}
 	
 	function rcvDataSuccess(msg)
 	{
@@ -476,7 +488,7 @@ function SkladViewInit(doc)
 		}	
 	}
 	
-	function AddData(data)
+	function AddToPosList(data)
 	{
 		$.ajax({ 
 			type:   'POST', 

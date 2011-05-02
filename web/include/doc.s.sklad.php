@@ -31,7 +31,7 @@ class doc_s_Sklad
 		$sklad=rcv('sklad');
 		settype($sklad,'int');
 		if($sklad) $_SESSION['sklad_num']=$sklad;
-		if(!$_SESSION['sklad_num']) $_SESSION['sklad_num']=1;
+		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=1;
 		$sklad=$_SESSION['sklad_num'];
 		
 		$tmpl->AddText("<table width='100%'><tr><td width='300'><h1>Склад</h1>
@@ -98,9 +98,9 @@ class doc_s_Sklad
 // 			$tov=mysql_result($res,0,0).":".mysql_result($res,0,1);
 			$dend=date("Y-m-d");
 			$tmpl->AddText("
-			<a href='' onclick=\"ShowPopupWin('/docs.php?l=pran&mode=srv&opt=ceni&pos=$pos'); return false;\" ><div>Где и по чём</a></div>
-			<a href='/docj.php?mode=filter&opt=fsn&tov_id=$pos&tov_name=$pos&date_to=$dend'><div>Товар в журнале</div></a>
-			<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$pos'><div>Редактирование позиции</div></a>");
+			<div onclick=\"ShowPopupWin('/docs.php?l=pran&mode=srv&opt=ceni&pos=$pos'); return false;\" >Где и по чём</div>
+			<div onclick=\"window.open('/docj.php?mode=filter&opt=fsn&tov_id=$pos&tov_name=$pos&date_to=$dend')\">Товар в журнале</div>
+			<div onclick=\"window.open('/docs.php?mode=srv&amp;opt=ep&amp;pos=$pos')\">Редактирование позиции</div>");
 		}
 		else if($opt=='ac')
 		{
@@ -150,7 +150,7 @@ class doc_s_Sklad
 // Служебные функции класса
 	function Edit()
 	{
-		global $tmpl, $CONFIG;
+		global $tmpl, $CONFIG, $uid;
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -165,15 +165,15 @@ class doc_s_Sklad
 		
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`
+			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 			WHERE `doc_base`.`id`='$pos'");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о товаре");
-			$nxt=@mysql_fetch_row($res);
+			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о наименовании");
+			$nxt=@mysql_fetch_array($res);
 			$cc='';
-			if($nxt[6]) $cc="<td rowspan='8'><img src='{$CONFIG['site']['var_data_web']}/pos/$nxt[6].$nxt[7]' alt='$nxt[1]'>";
+			if($nxt[6]) $cc="<td rowspan='8'><img src='{$CONFIG['site']['var_data_web']}/pos/$nxt[6].$nxt[7]' alt='$nxt[1]' style='max-width: 350px; max-height: 350px;'>";
 			if(!$nxt) 
 			{
 				$tmpl->AddText("<h3>Новая позиция</h3>");
@@ -215,8 +215,10 @@ class doc_s_Sklad
 			$i='';
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
 			
-			if($nxt[9])	$hid_check='checked';
-			if($nxt[12])	$stock_check='checked';
+			$hid_check=$nxt[9]?'checked':'';
+			$stock_check=$nxt[12]?'checked':'';
+			$wt0_check=(!$nxt['warranty_type'])?'checked':'';
+			$wt1_check=($nxt['warranty_type'])?'checked':'';
 			
 			$tmpl->AddText("</select>
 			<tr class='lin0'><td align='right'>Код изготовителя<td><input type='text' name='vc' value='$nxt[11]'>
@@ -232,8 +234,10 @@ class doc_s_Sklad
 			$tmpl->AddText("</select>
 			<tr class='lin1'><td align='right'>Актуальная цена поступления:<td><b>$act_cost</b>
 			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]%</b>
-			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</a>
-			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</a>
+			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</label>
+			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</label>
+			<tr class='lin1'><td align='right'>Гарантия:<td><label><input type='radio' name='warr_type' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='warr_type' value='1' $wt1_check>От производителя</label>
+			<tr class='lin0'><td align='right'>Гарантийный срок:<td><input type='text' name='warranty' value='{$nxt['warranty']}'> мес.
 			<tr class='lin1'><td align='right'>Описание<td colspan='2'><textarea name='desc'>$nxt[2]</textarea>");
 			if($pos!=0)
 				$tmpl->AddText("<tr class='lin0'><td align='right'>Режим записи:<td>
@@ -566,6 +570,8 @@ class doc_s_Sklad
 		// Правка описания группы
 		else if($param=='g')
 		{
+			$rights=getright('doc_sklad_groups',$uid);
+			if(!$rights['read'])	throw new AccessException('Нет прав для просмотра группы');
 			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname` 
 			FROM `doc_group`
 			WHERE `id`='$group'");
@@ -676,7 +682,7 @@ class doc_s_Sklad
 	}
 	function ESave()
 	{
-		global $tmpl, $CONFIG;		
+		global $tmpl, $CONFIG, $uid;		
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -700,13 +706,15 @@ class doc_s_Sklad
 			$hid=rcv('hid');
 			$unit=rcv('unit');
 			$vc=rcv('vc');
+			$warranty=rcv('warranty');
+			$warranty_type=rcv('warr_type');
 			if(!$hid)	$hid=0;
 			if(!$stock)	$stock=0;
 			$cc='Цена осталась прежняя!';
 			if( ($pos)&&(!$sr) )
 			{
 				$sql_add=$log_add='';
-				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock` FROM `doc_base` WHERE `id`='$pos'");
+				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type` FROM `doc_base` WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить старые свойства позиции!");
 				$old_data=mysql_fetch_assoc($res);
 				if($old_data['name']!=$pos_name)
@@ -765,16 +773,25 @@ class doc_s_Sklad
 					$sql_add.=", `vc`='$vc'";
 					$log_add.=", vc:({$old_data['vc']} => $vc)";
 				}
-				
+				if($old_data['warranty']!=$warranty)
+				{
+					$sql_add.=", `warranty`='$warranty'";
+					$log_add.=", warranty:({$old_data['warranty']} => $warranty)";
+				}
+				if($old_data['warranty_type']!=$warranty_type)
+				{
+					$sql_add.=", `warranty_type`='$warranty_type'";
+					$log_add.=", warranty_type:({$old_data['warranty_type']} => $warranty_type)";
+				}				
 				$res=mysql_query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось обновить свойства позиции!");
 				$tmpl->msg("Данные обновлены! $cc");
-				doc_log("UPDATE pos","1 $log_add", 'pos', $pos);
+				doc_log("UPDATE","$log_add", 'pos', $pos);
 			}
 			else
 			{	
-				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`)
-				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit')");
+				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`)
+				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type')");
 				$opos=$pos;
 				$pos=mysql_insert_id();
 				if($opos)
@@ -1022,11 +1039,18 @@ class doc_s_Sklad
 			$pid=rcv('pid');
 			$hid=rcv('hid');
 			$pname=rcv('pname');
+			$rights=getright('doc_sklad_groups',$uid);
 			if($group)
+			{
+				if(!$rights['edit'])	throw new AccessException('Нет прав для редактирования группы');
 				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname' WHERE `id` = '$group'");
+			}
 			else 
+			{
+				if(!$rights['write'])	throw new AccessException('Нет прав для создания группы');
 				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`)
 				VALUES ('$name', '$desc', '$pid', '$hid', '$pname')"); 
+			}
 			if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию группы");
 				
 			if($_FILES['userfile']['size']>0)
@@ -1164,7 +1188,7 @@ class doc_s_Sklad
 		global $tmpl;
 		$tmpl->AddText("
 		<div onclick='tree_toggle(arguments[0])'>
-		<div><a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=0','sklad'); return false;\" >Группы</a>  (<a href='/docs.php?l=sklad&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
+		<div><a href='' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=0','sklad'); return false;\" >Группы</a>  (<a href='/docs.php?l=sklad&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
 		<ul class='Container'>".$this->draw_level($select,0)."</ul></div>
 		Или отбор:<input type='text' id='sklsearch' onkeydown=\"DelayedSave('/docs.php?mode=srv&amp;opt=pl','sklad', 'sklsearch'); return true;\" >
 		");
@@ -1449,9 +1473,9 @@ function DrawSkladTable($res,$s)
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		$rezerv=DocRezerv($nxt[0],$doc);
-		$pod_zakaz=DocPodZakaz($nxt[0],$doc);
-		$v_puti=DocVPuti($nxt[0],$doc);
+		$rezerv=DocRezerv($nxt[0],0);
+		$pod_zakaz=DocPodZakaz($nxt[0],0);
+		$v_puti=DocVPuti($nxt[0],0);
 		
 		if($rezerv)	$rezerv="<a onclick=\"OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$rezerv</a>";
 	
@@ -1484,8 +1508,8 @@ function DrawSkladTable($res,$s)
 		$cost_p=sprintf("%0.2f",$nxt[5]);
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		
-		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
-		<td><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a> <a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> 
+		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
+		<td><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a> <a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> 
 		<td align=left>$nxt[2]<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 	}	
 }
@@ -1513,7 +1537,7 @@ function DrawSkladTable($res,$s)
 	function PosMenu($pos, $param, $pos_name='')
 	{
 		global $tmpl;
-		$sel=array();
+		$sel=array('v'=>'','d'=>'','a'=>'','s'=>'','i'=>'','c'=>'','k'=>'','l'=>'','h'=>'',);
 		if($param=='')	$param='v';
 		$sel[$param]="class='selected'";
 		

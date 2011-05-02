@@ -155,20 +155,7 @@ function ExecMode($mode)
 			$document=AutoDocument($doc);
 			$document->PrintForm($doc, 'schet_pdf');
 		}
-		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь, и оформите!");
-	}
-	else if($mode=='img')
-	{
-		$sql="SELECT `doc_base`.`id`, `doc_img`.`id`, `doc_img`.`type`
-		FROM `doc_base`
-		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-		WHERE `doc_base`.`id`='$p'";
-		$res=mysql_query($sql);
-		if($nxt=mysql_fetch_row($res))
-		{
-			img_resize($nxt[1],'pos',$nxt[2]);	
-		}
+		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
 	}
 	else throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
 }
@@ -178,7 +165,7 @@ function ExecMode($mode)
 /// Список групп / подгрупп
 protected function ViewGroup($group, $page)
 {
-	global $tmpl, $CONFIG;
+	global $tmpl, $CONFIG, $wikiparser;
 	settype($group,'int');
 	$res=mysql_query("SELECT `name`, `pid`, `desc` FROM `doc_group` WHERE `id`='$group'");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать информацию о группе');
@@ -201,9 +188,9 @@ protected function ViewGroup($group, $page)
 protected function ProductList($group, $page)
 {
 	global $tmpl, $CONFIG;
-	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`,
+	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
-	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type`, `doc_units`.`printname` AS `units`
+	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_units`.`printname` AS `units`
 	FROM `doc_base`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -218,8 +205,9 @@ protected function ProductList($group, $page)
 	$rows=mysql_num_rows($res);	
         if($rows)
         {
-        	//$tmpl->AddText("<h2>Товары в категории</h2><div class='page-info'>$lim товаров на страницу, $rows всего</div>");        
-		$this->PageBar($group, $rows, $lim, $page);		
+  
+		$this->PageBar($group, $rows, $lim, $page);
+		
 		if(($lim<$rows) && $page )	mysql_data_seek($res, $lim*($page-1));
 		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$this->TovList_ImageList($res, $lim);
 //		else if($CONFIG['site']['vitrina_plstyle']=='tilelist')		$this->TovList_TileList($res);
@@ -235,7 +223,7 @@ protected function ProductCard($product)
 	global $tmpl, $CONFIG, $wikiparser;
 	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type`, `doc_base_dop_type`.`name` AS `dop_name`, `doc_units`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`
+	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `doc_units`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`
 	FROM `doc_base`
 	LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -253,10 +241,16 @@ protected function ProductCard($product)
 		$tmpl->SetTitle("{$nxt['group_printname']} {$nxt['name']}");
 		$tmpl->AddText("<table cellpadding='1' cellspacing='0'>
 		<tr valign='top'><td rowspan='15' width='150'>");
-	
-		if($nxt[12]) $tmpl->AddText("<a href='/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=2500' rel='prettyPhoto'><img src='/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=200' alt='{$nxt['name']}'></a>");
-		else $tmpl->AddText("<img src='/img/no_photo.png' alt='no photo'>");
-		$tmpl->AddText("<td><b>Название:</b><td>{$nxt['group_printname']} {$nxt['name']}");
+		if($nxt['img_id']) 
+		{
+			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+			$miniimg->SetX(200);
+			$fullimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
+		}
+		else $img="<img src='/img/no_photo.png' alt='no photo'><br>";
+		
+		$tmpl->AddText("$img<td><b>Название:</b><td>{$nxt['group_printname']} {$nxt['name']}");
 		if($nxt[2])
 		{
 			$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
@@ -458,8 +452,14 @@ protected function TovList_ImageList($res, $lim)
 		$dcc=strtotime($nxt['cost_date']);
 		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
 		$cost=GetCostPos($nxt['id'], $this->cost_id);		
-		if($nxt['img_id']) 	$img="<img src='/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=135&amp;y=180' style='float: left; margin-right: 10px;' alt='photo'>";
-		else 		$img="<img src='/img/no_photo.png' style='float: left; margin-right: 10px;' alt='no photo'>";
+		if($nxt['img_id']) 
+		{
+			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+			$miniimg->SetX(135);
+			$miniimg->SetY(180);
+			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='{$nxt['name']}'>";
+		}
+		else $img="<img src='/no_photo.png' alt='no photo' style='float: left; margin-right: 10px;' alt='no photo'>";
 		$desc=$nxt['desc'];
 		if(strpos($desc,'.')!==false)
 		{
@@ -527,26 +527,39 @@ protected function BuyMakeForm()
 	$users_data=array();
 	if($_SESSION['uid'])
 	{
+		$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
+		$user_data=mysql_fetch_assoc($res);
 		$rr=mysql_query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='".$_SESSION['uid']."'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
 		while($nn=mysql_fetch_row($rr))
 		{
-			$users_data["$nn[0]"]=$nn[1];
+			$user_dopdata["$nn[0]"]=$nn[1];
 		}
 		$str='Товар будет зарезервирован для Вас на 3 рабочих дня.';
 		//if( ($_SESSION['korz_sum']>20000) && $uid )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
 	}
-	else $str='Для незарегистрированных пользователей наличие товара на складе не гарантируется.';
+	else
+	{
+		$str='<b>Для незарегистрированных пользователей наличие товара на складе не гарантируется.</b>';
+		$email_field="e-mail:<br>
+		<input type='text' name='email' value=''><br>
+		Необходимо заполнить телефон или e-mail<br>";
+	}
+	
+	if(rcv('cwarn'))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
+	
 	$tmpl->AddText("
 	<h4>Для оформления заказа требуется следующая информация</h4>
 	<form action='/vitrina.php' method='post'>
 	<input type='hidden' name='mode' value='makebuy'>
 	<div>
-	Организация:<br>
-	<input type='text' name='org' value='".$users_data['org']."'><br>
+	Фамилия И.О.<br>
+	<input type='text' name='rname' value='".$user_data['rname']."'><br>
 	Телефон:<br>
-	<input type='text' name='tel' value='".$users_data['tel']."'><br>
-	Контактное лицо (Фамилия И.О.):<br>
-	<input type='text' name='kont' value='".$users_data['kont_lico']."'><br>
+	<input type='text' name='tel' value='".$user_data['tel']."'><br>
+	$email_field
+	
 	Способ оплаты:<br>
 	<!--
 	<label><input type='radio' name='soplat' value='wmr' disabled >Webmoney WMR.
@@ -554,12 +567,11 @@ protected function BuyMakeForm()
 	<label><input type='radio' name='soplat' value='bn' checked>Безналичный перевод.
 	<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня)</label><br>
 	<label><input type='radio' name='soplat' value='n'>Наличный расчет.
-	<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>
-	<label><input type='radio' name='soplat' value='z'>Только заказ.
-	<b>Только самовывоз</b>, расчет при отгрузке. Используется для сообщения информации оператору. Наличие товара на складе не гарантируется.</label><br>
-	
+	<b>Только самовывоз</b>, расчет при отгрузке. $str</label>
+	<br>Адрес доставки:<br>
+	<textarea name='adres' rows='5' cols='15'>".$user_data['adres']."</textarea><br>
 	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='30'>".$users_data['dop_info']."</textarea><br>
+	<textarea name='dop' rows='5' cols='15'>".$user_dopdata['dop_info']."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
 	</form>");
@@ -567,51 +579,117 @@ protected function BuyMakeForm()
 /// Сделать покупку
 protected function MakeBuy()
 {
-	global $tmpl, $CONFIG;
+	global $tmpl, $CONFIG, $uid, $xmppclient;
 	$soplat=rcv('soplat');
-	$org=rcv('org');
+	$rname=rcv('rname');
 	$tel=rcv('tel');
-	$kont=rcv('kont');
+	$adres=rcv('adres');
+	$email=rcv('email');
 	$dop=rcv('dop');
 	if($_SESSION['uid'])
 	{
-		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'org', '$org') ");
-		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'tel', '$tel') ");
-		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'kont_lico', '$kont') ");
+		mysql_query("UPDATE `users` SET `rname`='$rname', `tel`='$tel', `adres`='$adres' WHERE `id`='$uid'");
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$dop') ");
-		if( $_SESSION['korz_sum']>20000)
-		{
-			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-2'");
-			$this->cost_id=mysql_result($res,0,0);
-			if(!$this->cost_id)	$this->cost_id=1;
-		}
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
+// 		if( $_SESSION['korz_sum']>20000)
+// 		{
+// 			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-2'");
+// 			$this->cost_id=mysql_result($res,0,0);
+// 			if(!$this->cost_id)	$this->cost_id=1;
+// 		}
 	}
+	else if(!$tel && !$email)
+	{
+		header("Location: /vitrina.php?mode=buy&step=1&cwarn=1");
+		return;
+	}
+	
+	
+	
 	if($_SESSION['korz_cnt'])
 	{
 		$subtype="site";
 		$agent=1;
+		if($_SESSION['uid'])	$agent=$_SESSION['uid'];
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype);
 		$ip=getenv("REMOTE_ADDR");
 		$comm="Организация: $org<br>Телефон: $tel<br>Контактное лицо: $kont<br>IP: $ip<br>Другая информация:<br>$dop";
-	
-		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`) VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','1','1')");
+		if(!$uid)	$comm="e-mail: $email<br>".$comm;
+		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
+		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");
+		$bank=mysql_result($res,0,0);
+		
+		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`) 
+		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','{$CONFIG['site']['default_firm']}','$bank')");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ заявки");
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}')");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
+		$zakaz_items='';
 		foreach($_SESSION['korz_cnt'] as $item => $cnt)
 		{
 			$cena=GetCostPos($item, $this->cost_id);
-			$res=mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`sn`,`comm`,`cost`) VALUES ('$doc','$item','$cnt','','','$cena')");
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`sn`,`comm`,`cost`) VALUES ('$doc','$item','$cnt','','','$cena')");
+			if(mysql_errno())	throw new MysqlException("Не удалось добавить товар в заказ");
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost` FROM `doc_base`
+			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+			WHERE `doc_base`.`id`='$item'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о товаре");
+			$tov_info=mysql_fetch_row($res);
+			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt шт. - $cena руб.\n";
+			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt шт. - $cena руб. (базовая - $tov_info[5]р.)\n";
 		}
-		DocSumUpdate($doc);
+		$zakaz_sum=DocSumUpdate($doc);
 		$_SESSION['zakaz_docnum']=$doc;
+		
+		$text="На сайте {$CONFIG['site']['name']} оформлен новый заказ.\n";
+		$text.="Посмотреть можно по ссылке: http://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
+		if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
+		$text.="----------------------------------\n".$admin_items;
+		
+		
+		if($CONFIG['site']['doc_adm_jid'])
+		{
+			try 
+			{
+				$xmppclient->connect();
+				$xmppclient->processUntil('session_start');
+				$xmppclient->presence();
+				$xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
+				$xmppclient->disconnect();
+			} 
+			catch(XMPPHP_Exception $e) 
+			{
+				$tmpl->logger("Невозможно отправить сообщение XMPP!","err");
+			}
+		}
+		if($CONFIG['site']['doc_adm_email'])
+			mailto($CONFIG['site']['doc_adm_email'],"Message from {$CONFIG['site']['name']}", $text);
+		
+		if($_SESSION['uid'])
+		{
+			$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
+			$user_data=mysql_fetch_assoc($res);
+			$user_msg="Доброго времени суток, {$user_data['name']}!\nНа сайте {$CONFIG['site']['name']} на Ваше имя оформлен заказ на сумму $zakaz_sum рублей\nЗаказано:\n";
+			$email=$user_data['email'];
+		}
+		else $user_msg="Доброго времени суток, $rname!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
+		$user_msg.="--------------------------------------\n$zakaz_items\n--------------------------------------\n";
+		$user_msg.="\n\n\nСообщение отправлено роботом. Не отвечайте на это письмо.";
+		
+		if($email)
+			mailto($email,"Message from {$CONFIG['site']['name']}", $user_msg);
+		
+		
 		$tmpl->AddText("<h1 id='page-title'>Заказ оформлен</h1>");
 		if($soplat=='bn')
 		{
 			$tmpl->msg("Ваш заказ оформлен! Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>выписать счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
-			//$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
+			$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
 		}
 		else $tmpl->msg("Ваш заказ оформлен! Вам перезвонят в ближайшее время для уточнения деталей!");
 	}

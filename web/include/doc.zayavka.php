@@ -152,11 +152,12 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=print&amp;doc=$doc&amp;opt=komplekt'><div>Накладная на комплектацию</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=schet_pdf'><div>Счёт</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=schet_email' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_email'); return false;\"><div>Счёт PDF по e-mail</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=schet_ue' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_ue'); return false;\"><div>Счёт в у.е.</div></a>
-			<a href='?mode=print&amp;doc=$doc&amp;opt=csv_export'><div>Экспорт в CSV</div></a>");
+			$tmpl->AddText("
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=komplekt'\">Накладная на комплектацию</div>			
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_pdf'\">Счёт</div>		
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_email'); return false;\">Счёт PDF по e-mail</div>			
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_ue'); return false;\">Счёт в у.е.</div>	
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=csv_export'\">Экспорт в CSV</div>");
 		}
 		else if($opt=='schet')
 			$this->PrintSchet($doc);
@@ -165,11 +166,11 @@ class doc_Zayavka extends doc_Nulltype
 			global $tmpl;
 			$tmpl->ajax=1;
 			$tmpl->AddText("<form action=''>
-			<input type=hidden name=mode value='print'>
-			<input type=hidden name=doc value='$doc'>
-			<input type=hidden name=opt value='schet_ue_p'>
-			1 рубль = <input type=text name=c value=1> у.е.
-			<input type=submit value='&gt;&gt;'>
+			<input type='hidden' name='mode' value='print'>
+			<input type='hidden' name='doc' value='$doc'>
+			<input type='hidden' name='opt' value='schet_ue_p'>
+			1 рубль = <input type='text' name='c' value='1'> у.е.
+			<input type='submit' value='&gt;&gt;'>
 			</form>");
 		}
 		else if($opt=='schet_ue_p')
@@ -198,14 +199,33 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$tmpl->ajax=1;
 			$tmpl->AddText("
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=2'><div>Реализация</div></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=6'><div>Приходный кассовый ордер</div></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=4'><div>Приход средств в банк</div></a>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=2'\">Реализация</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=15'\">Оперативная реализация</div>");
 		}
+		// Реализация
 		else if($target_type==2)
 		{
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($this->doc);
+			$base=$this->Otgruzka($target_type);
+			if(!$base)
+			{
+				mysql_query("ROLLBACK");
+				$tmpl->msg("Не удалось создать подчинённый документ!","err");
+			}
+			else
+			{
+				mysql_query("COMMIT");
+				$ref="Location: doc.php?mode=body&doc=$base";
+				header($ref);
+			}
+		}
+		// Оперативная реализация
+		else if($target_type==15)
+		{
+			mysql_query("START TRANSACTION");
+			$base=$this->Otgruzka($target_type);
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");
@@ -222,7 +242,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($this->doc);
+			$base=$this->Otgruzka($target_type);
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");
@@ -254,7 +274,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($this->doc);
+			$base=$this->Otgruzka($target_type);
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");
@@ -312,11 +332,9 @@ class doc_Zayavka extends doc_Nulltype
 		parent::_Service($opt,$pos);
 	}
 //	================== Функции только этого класса ======================================================
-	function Otgruzka()
+	function Otgruzka($target_type)
 	{
-		$target_type=2;
-		global $tmpl;
-		global $uid;
+		global $tmpl, $uid;
 
 		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `type`='$target_type'");
 		@$r_id=mysql_result($res,0,0);
@@ -674,21 +692,23 @@ class doc_Zayavka extends doc_Nulltype
 		
 		$dt=date("d.m.Y",$this->doc_data[5]);
 		
+		if(!isset($coeff))	$coeff=1;
 		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
 		
 		$pdf=new FPDF('P');
 		$pdf->Open();
-		$pdf->SetAutoPageBreak(1,12);
+		$pdf->SetAutoPageBreak(0,10);
 		$pdf->AddFont('Arial','','arial.php');
 		$pdf->tMargin=5;
 		$pdf->AddPage();
 		$pdf->SetFont('Arial','',10);
 		$pdf->SetFillColor(255);
 		
-		if($CONFIG['site']['doc_header'])
+		if(@$CONFIG['site']['doc_header'])
 		{
-			$pdf->Image($CONFIG['site']['doc_header'],8,10, 190);	
+			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
+			$pdf->Image($header_img,8,10, 190);	
 			$pdf->Sety(54);
 		}
 		
@@ -803,7 +823,7 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->Cell($t_width[4],5,$str,1,0,'C',0);
 		$pdf->Ln();
 		
-		$pdf->SetFont('','',10);
+		$pdf->SetFont('','',9);
 		
 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`
 		FROM `doc_list_pos`
@@ -821,18 +841,37 @@ class doc_Zayavka extends doc_Nulltype
 			$summass+=$nxt[5]*$nxt[3];
 			$cost = sprintf("%01.2f р.", $nxt[4]);
 			$smcost = sprintf("%01.2f р.", $sm);
+			
+			$name=$nxt[0].' '.$nxt[1];
+			if($nxt[2]) $name.='('.$nxt[2].')';
+			$name = iconv('UTF-8', 'windows-1251', unhtmlentities($name));
 
-			$pdf->Cell($t_width[0],5,$i,1,0,'R',0);
-			$str=$nxt[0].' '.$nxt[1];
-			if($nxt[2]) $str.='('.$nxt[2].')';
-			$str = iconv('UTF-8', 'windows-1251', $str);	
-			$pdf->Cell($t_width[1],5,$str,1,0,'L',0);
-			$pdf->Cell($t_width[2],5,$nxt[3],1,0,'C',0);
+			$rough_lines=ceil($pdf->GetStringWidth($name)/$t_width[1]);
+
+			if( $pdf->h <= ($pdf->GetY()+15 + $rough_lines*5 ) ) $pdf->AddPage();			
+
+			
+			// Вывод наименования и расчёт отступов
+			$old_x=$pdf->GetX();
+			$old_y=$pdf->GetY();
+			$pdf->SetX($pdf->GetX()+$t_width[0]);			
+			$pdf->MultiCell($t_width[1],5,$name,1,'L');
+			$line_height=$pdf->GetY()-$old_y;
+			$pdf->SetX($old_x);
+			$pdf->SetY($old_y);
+			
+			
+
+			$pdf->Cell($t_width[0],$line_height,$i,1,0,'R');
+			$pdf->Cell($t_width[1],5,'',0,0,'L');
+			//if($pdf->GetStringWidth($str)>$t_width[1])
+			//$pdf->MultiCell($t_width[1],5,$str,1,'L');
+			$pdf->Cell($t_width[2],$line_height,$nxt[3],1,0,'C');
 			$str = iconv('UTF-8', 'windows-1251', $cost);	
-			$pdf->Cell($t_width[3],5,$str,1,0,'R',0);
+			$pdf->Cell($t_width[3],$line_height,$str,1,0,'R');
 			$str = iconv('UTF-8', 'windows-1251', $smcost);	
-			$pdf->Cell($t_width[4],5,$str,1,0,'R',0);
-			$pdf->Ln();
+			$pdf->Cell($t_width[4],$line_height,$str,1,0,'R');
+			$pdf->Ln($line_height);
 		}
 		
 		$cost = num2str($sum);
@@ -847,7 +886,8 @@ class doc_Zayavka extends doc_Nulltype
 		
 		if($CONFIG['site']['doc_shtamp'])
 		{
-			$pdf->Image($CONFIG['site']['doc_shtamp'],4,$pdf->GetY()+$delta, 120);	
+			$shtamp_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
+			$pdf->Image($shtamp_img, 4,$pdf->GetY()+$delta, 120);	
 		}
 		
 		$pdf->SetFont('','',8);

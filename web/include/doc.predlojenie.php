@@ -119,11 +119,8 @@ class doc_Predlojenie extends doc_Nulltype
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=zayavka_pdf'>Заявка PDF</a></li>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=zayavka_email' onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=zayavka_email'); return false;\">Заявка PDF по e-mail</a></li>
-			
-			</ul>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=zayavka_pdf'\">Заявка PDF</div>
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=zayavka_email'); return false;\">Заявка PDF по e-mail</div>");
 		}
 		else if($opt=='zayavka_pdf')
 			$this->PrintPDF($doc);
@@ -142,10 +139,8 @@ class doc_Predlojenie extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=morphto&amp;doc=$doc&amp;tt=1'>Поступление</a></li>
-			<li><a href='?mode=morphto&amp;doc=$doc&amp;tt=12'>Товар в пути</a></li>
-			</ul>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=1'\">Поступление</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=12'\">Товар в пути</div>");
 		}
 		else if($target_type==1)
 		{
@@ -428,7 +423,8 @@ class doc_Predlojenie extends doc_Nulltype
 		
 		if($CONFIG['site']['doc_header'])
 		{
-			$pdf->Image($CONFIG['site']['doc_header'],8,10, 190);	
+			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
+			$pdf->Image($header_img,8,10, 190);	
 			$pdf->Sety(54);
 		}
 		
@@ -518,7 +514,8 @@ class doc_Predlojenie extends doc_Nulltype
 		
 		if($CONFIG['site']['doc_shtamp'])
 		{
-			$pdf->Image($CONFIG['site']['doc_shtamp'],4,$pdf->GetY()+$delta, 120);	
+			$shtamp_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
+			$pdf->Image($shtamp_img, 4,$pdf->GetY()+$delta, 120);	
 		}
 		
 		$pdf->SetFont('','',8);

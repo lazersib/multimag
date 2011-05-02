@@ -17,6 +17,8 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+define("MULTIMAG_VERSION", "0.0.1r206");
+
 if(!function_exists('mysql_connect'))
 {
 	header("500 Internal Server Error");
@@ -59,9 +61,10 @@ $ip=getenv("REMOTE_ADDR");
 $ag=getenv("HTTP_USER_AGENT");
 $rf=getenv("HTTP_REFERER");
 $qq=$_SERVER['QUERY_STRING'];
-$ff=$_SERVER['PHP_SELF'];
+$ff=$_SERVER['REQUEST_URI'];
 $tim=time();
 $skidka="";
+$ncnt=rcv('ncnt');
 if(!$ncnt) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 
 function exception_handler($exception)
@@ -69,8 +72,7 @@ function exception_handler($exception)
 	$ip=getenv("REMOTE_ADDR");
 	$ag=getenv("HTTP_USER_AGENT");
 	$rf=getenv("HTTP_REFERER");
-	$qq=$_SERVER['QUERY_STRING'];
-	$ff=$_SERVER['PHP_SELF'];
+	$ff=$_SERVER['REQUEST_URI'];
 	$uid=$_SESSION['uid'];
 	$s=mysql_real_escape_string($exception->getMessage());
 	$ag=mysql_real_escape_string($ag);
@@ -78,7 +80,7 @@ function exception_handler($exception)
 	$qq=mysql_real_escape_string($qq);
 	$ff=mysql_real_escape_string($ff);
 	mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-	('$ff $qq','$rf','$s',NOW(),'$ip','$ag', '$uid')");
+	('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
 	header("500 Internal error");
 	echo"<h1>500 Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору";
   
@@ -469,8 +471,7 @@ class BETemplate
         $ip=getenv("REMOTE_ADDR");
         $ag=getenv("HTTP_USER_AGENT");
         $rf=getenv("HTTP_REFERER");
-        $qq=$_SERVER['QUERY_STRING'];
-        $ff=$_SERVER['PHP_SELF'];
+        $ff=$_SERVER['REQUEST_URI'];
         $uid=$_SESSION['uid'];
         $s=mysql_real_escape_string($s);
         $hidden_data=mysql_real_escape_string($hidden_data);
@@ -479,7 +480,7 @@ class BETemplate
         $qq=mysql_real_escape_string($qq);
         $ff=mysql_real_escape_string($ff);
         mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-        ('$ff $qq','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
+        ('$ff','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
 
         if(!$silent)
         $this->msg("$s<br>Страница:$ff<br>Сообщение об ошибке передано администратору","err","Внутренняя ошибка!");
@@ -493,7 +494,7 @@ global $uid;
 global $mode;
 $tmpl=new BETemplate;
 $mode=rcv('mode');
-$uid=$_SESSION['uid'];
+if(isset($_SESSION['uid']))	$uid=$_SESSION['uid'];
 if($uid=='') $uid=0;
 
 require_once("include/wikiparser.php");

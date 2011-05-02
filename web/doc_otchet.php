@@ -26,6 +26,29 @@ $tmpl->SetTitle('Отчёты');
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->HideBlock('left');
 
+function get_otch_links()
+{
+	return array(
+	'doc_otchet.php?mode=bezprodaj' => 'Агенты без продаж',
+	'doc_otchet.php?mode=sverka' => 'Акт сверки',
+	'doc_otchet.php?mode=balance' => 'Балланс',
+	'doc_otchet.php?mode=dolgi' => 'Долги: партнёров',
+	'doc_otchet.php?mode=dolgi&amp;opt=1' => 'Долги: наши',
+	'doc_otchet.php?mode=kassday' => 'Кассовый отчёт за день',
+	'doc_otchet.php?mode=ostatki' => 'Остатки на складе',
+	'doc_otchet.php?mode=ostatki_d' => 'Остатки на складе на дату',
+	'doc_otchet.php?mode=agent_otchet' => 'Отчет по агенту',
+	'doc_otchet.php?mode=img_otchet' => 'Отчет по изображениям',
+	'doc_otchet.php?mode=komplekt' => 'Отчет по комплектующим',
+	'doc_otchet.php?mode=proplaty' => 'Отчет по проплатам',
+	'doc_otchet.php?mode=prod' => 'Отчёт по продажам',
+	'doc_otchet.php?mode=bezprodaj' => 'Отчёт по товарам без продаж',
+	'doc_otchet.php?mode=doc_reestr' => 'Реестр документов',
+	'doc_otchet.php?mode=fin_otchet' => 'Сводный финансовый отчёт',
+	'doc_otchet.php?mode=bank_comp' => 'Сверка банка',	
+	'doc_otchet.php' => 'Другие отчёты');
+}
+
 function otch_list()
 {
 	return "
@@ -50,6 +73,14 @@ function otch_list()
 	<a href='doc_otchet.php'><div>Другие отчёты</div></a>";
 }
 
+function otch_divs()
+{
+	$str='';
+	foreach(get_otch_links() as $link => $text)
+		$str.="<div onclick='window.location=\"$link\"'>$text</div>";
+	return $str;
+}
+
 $rights=getright('doc_otchet',$uid);
 if($rights['read'])
 {
@@ -64,7 +95,7 @@ if($rights['read'])
 	else if($mode=='pmenu')
 	{
 		$tmpl->ajax=1;
-		$tmpl->AddText(otch_list());
+		$tmpl->AddText(otch_divs());
 	}
 	else if($mode=='balance')
 	{
@@ -656,191 +687,496 @@ if($rights['read'])
 	}
 	else if($mode=='sverka')
 	{
-		doc_menu();
-		$tmpl->SetTitle("Акт сверки");
-		$dat=date("Y-m-d");
-		
-		$tmpl->AddText("<h1><b>Акт сверки</b></h1>
-		<form action='' method='post'>
-		<input type=hidden name=mode value='sverka_g'>
-		<div class=group300>
-		Задание начальных условий:
-		<div>
-		Агент-партнёр:<br>
-		<input type=text id='aga' name='ag' value='$av' onkeydown=\"return AutoFill('/docj.php?mode=filter&opt=ags','aga','dda')\">
-		<a onclick=\"ClearText('aga'); return false;\" href=''><img src='img/icon_del.gif'></a>
-		<div id='dda' class='dd'></div><br>
-		<br>
-		<p class='datetime'>
-		Дата от:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_st' size='10' value='1970-01-01' maxlength='10' /><br>
-		до:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_end' size='10' value='$dat' maxlength='10' /></p><br>
-		Организация:<br><select name='firm_id'>
-		<option value='0'>--- Любая ---</option>");
-		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-		while($nx=mysql_fetch_row($rs))
+		global $CONFIG;
+		$opt=rcv('opt');
+		if($opt=='')
 		{
-			if($_SESSION['firm']==$nx[0]) $s=' selected'; else $s='';
-			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");		
-		}		
-		$tmpl->AddText("</select><br>
-		Подтип документа (оставьте пустым, если учитывать не требуется):<br>
-		<input type='text' name='subtype'><br>
-		<input type=submit value='Сделать сверку!'>
-		</div>
-		</div>
-		</form>");	
-	}
-	else if($mode=="sverka_g")
-	{
-		$firm_id=rcv('firm_id');
-		$subtype=rcv('subtype');
-		
-		$date_st=strtotime(rcv('date_st'));
-		$date_end=strtotime(rcv('date_end'))+60*60*24-1;
-		$ag=rcv('ag');
-		
-		if($firm_id)
-		{
-			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
-			$dv=mysql_fetch_assoc($res);
-		}
-		if(!$date_end) $date_end=time();
-		$tmpl->LoadTemplate('print');
-
-		$res=mysql_query("SELECT `id`, `fullname` FROM `doc_agent` WHERE `name`='$ag'");
-		$agent=mysql_result($res,0,0);
-		$fn=mysql_result($res,0,1);
-	
-		$tmpl->AddText("<center>Акт сверки<br>
-		взаимных расчетов<br>".$dv['firm_name']."<br>
-		c ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end)."
-		$fn</center>
-		Мы, нижеподписавшиеся, директор ".$dv['firm_name']." ".$dv['firm_director']."
-		c одной стороны, и _____________ $fn ____________________ с другой стороны,
-		составили настоящий акт сверки в том, что состояние взаимных расчетов по
-		данным учёта следующее:<br><br>");
-	
-		$sql_add='';
-		if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
-		if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
-		
-		$res=mysql_query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`,
-		`doc_list`.`altnum`, `doc_types`.`name`
-		FROM `doc_list`
-		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`agent`='$agent' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' ".$sql_add." ORDER BY `doc_list`.`date`" );
-
-		$tmpl->AddText("<table width=100%>
-		<tr>
-		<td colspan=4 width='50%'>по данным ".$dv['firm_name']."
-		<td colspan=4 width='50%'>по данным $fn
-		<tr>
-		<th>Дата<th>Операция<th>Дебет<th>Кредит
-		<th>Дата<th>Операция<th>Дебет<th>Кредит");
-		$pr=$ras=0;
-		$f_print=false;
-		while($nxt=mysql_fetch_row($res))
-		{
-			$deb=$kr="";
+			doc_menu();
+			$tmpl->SetTitle("Акт сверки");
+			$dat=date("Y-m-d");		
+			$tmpl->AddText("
+			<script src='/css/jquery/jquery.js' type='text/javascript'></script>
+			<script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
+			<link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen' />
+			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+			<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
+			<script src='/css/jquery/ui/jquery.ui.core.js'></script>
+			<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
+			<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
+			<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
+			<h1><b>Акт сверки</b></h1>
+			<form action='' method='post'>
+			<input type='hidden' name='mode' value='sverka'>
+			Агент-партнёр:<br>
+			<input type='hidden' name='agent_id' id='agent_id' value=''>
+			<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>		
+			<p class='datetime'>
+			Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10' /><br>
+			Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$dat' maxlength='10' /></p><br>
+			Организация:<br><select name='firm_id'>
+			<option value='0'>--- Любая ---</option>");
+			$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
+			while($nx=mysql_fetch_row($rs))
+			{
+				if($CONFIG['site']['default_firm']==$nx[0]) $s=' selected'; else $s='';
+				$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");		
+			}		
+			$tmpl->AddText("</select><br>
+			Подтип документа (оставьте пустым, если учитывать не требуется):<br>
+			<input type='text' name='subtype'><br>
+			<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
+			<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>		
+			<input type=submit value='Сделать сверку!'>
+			</form>
 			
-			if( ($nxt[2]>=$date_st) && (!$f_print) )
+			<script type='text/javascript'>
+			
+			function DtCheck(t)
 			{
-				$f_print=true;
-				if($pr>$ras)
+				var dn=new Array();
+				$doc_names
+				var popup=document.getElementById('doc_sel_popup');
+				var list=popup.getElementsByTagName('input');
+				var str='';
+				for(var i=0; i<list.length; i++)
 				{
-					$pr-=$ras;
-					$ras='';
+					if(list[i].checked)
+						str+=dn[list[i].value]+'; ';
 				}
-				else if($pr<$ras)
+				document.getElementById('doc_sel').innerHTML=str;
+			}
+
+			$(document).ready(function(){
+				$(\"#ag\").autocomplete(\"/docs.php\", {
+				delay:300,
+				minChars:1,
+				matchSubset:1,
+				autoFill:false,
+				selectFirst:true,
+				matchContains:1,
+				cacheLength:10,
+				maxItemsToShow:15, 	 
+				formatItem:agliFormat,
+				onItemSelect:agselectItem,
+				extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+				});
+				$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
+				
+				$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
+				$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+				$( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
+				$( '#datepicker_t' ).datepicker({showButtonPanel: true	});
+				$( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+				$( '#datepicker_t' ).datepicker( 'setDate' , '$dat' );
+			});
+			function agliFormat (row, i, num) {
+				var result = row[0] + \"<em class='qnt'>тел. \" +
+				row[2] + \"</em> \";
+				return result;
+			}
+			function agselectItem(li) {
+				if( li == null ) var sValue = \"Ничего не выбрано!\";
+				if( !!li.extra ) var sValue = li.extra[0];
+				else var sValue = li.selectValue;
+				document.getElementById('agent_id').value=sValue;
+			}
+			
+			</script>");
+		}
+		else if($opt=='html')
+		{
+			$firm_id=rcv('firm_id');
+			$subtype=rcv('subtype');
+			
+			$date_st=strtotime(rcv('date_st'));
+			$date_end=strtotime(rcv('date_end'))+60*60*24-1;
+			$ag=rcv('agent_id');
+			
+			if($firm_id)
+			{
+				$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
+				$dv=mysql_fetch_assoc($res);
+			}
+			if(!$date_end) $date_end=time();
+			$tmpl->LoadTemplate('print');
+
+			$res=mysql_query("SELECT `id`, `fullname` FROM `doc_agent` WHERE `name`='$ag'");
+			$agent=mysql_result($res,0,0);
+			$fn=mysql_result($res,0,1);
+		
+			$tmpl->SetText("<center>Акт сверки<br>
+			взаимных расчетов<br>".$dv['firm_name']."<br>
+			c ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end)."
+			$fn</center>
+			Мы, нижеподписавшиеся, директор ".$dv['firm_name']." ".$dv['firm_director']."
+			c одной стороны, и _____________ $fn ____________________ с другой стороны,
+			составили настоящий акт сверки в том, что состояние взаимных расчетов по
+			данным учёта следующее:<br><br>");
+		
+			$sql_add='';
+			if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
+			if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
+			
+			$res=mysql_query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`,
+			`doc_list`.`altnum`, `doc_types`.`name`
+			FROM `doc_list`
+			LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+			WHERE `doc_list`.`agent`='$agent' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' ".$sql_add." ORDER BY `doc_list`.`date`" );
+
+			$tmpl->AddText("<table width=100%>
+			<tr>
+			<td colspan=4 width='50%'>по данным ".$dv['firm_name']."
+			<td colspan=4 width='50%'>по данным $fn
+			<tr>
+			<th>Дата<th>Операция<th>Дебет<th>Кредит
+			<th>Дата<th>Операция<th>Дебет<th>Кредит");
+			$pr=$ras=0;
+			$f_print=false;
+			while($nxt=mysql_fetch_row($res))
+			{
+				$deb=$kr="";
+				
+				if( ($nxt[2]>=$date_st) && (!$f_print) )
 				{
-					$ras-=$pr;
-					$pr='';
+					$f_print=true;
+					if($pr>$ras)
+					{
+						$pr-=$ras;
+						$ras='';
+					}
+					else if($pr<$ras)
+					{
+						$ras-=$pr;
+						$pr='';
+					}
+					else  $pr=$ras='';
+					if($pr)	$pr=sprintf("%01.2f", $pr);
+					if($ras)$ras=sprintf("%01.2f", $ras);
+					$tmpl->AddText("<tr><td colspan=2>Сальдо на начало периода<td>$ras<td>$pr<td><td><td><td>");
 				}
-				else  $pr=$ras='';
-				if($pr)	$pr=sprintf("%01.2f", $pr);
-				if($ras)$ras=sprintf("%01.2f", $ras);
-				$tmpl->AddText("<tr><td colspan=2>Сальдо на начало периода<td>$ras<td>$pr<td><td><td><td>");
+
+				if($nxt[1]==1)
+				{
+					$pr+=$nxt[3];
+					$kr=$nxt[3];
+				}
+				else if($nxt[1]==2)
+				{
+					$ras+=$nxt[3];
+					$deb=$nxt[3];
+				}
+				if( ($nxt[1]==3) || ($nxt[1]==12))
+				{
+					continue;
+				}
+				if($nxt[1]==4)
+				{
+					$pr+=$nxt[3];
+					$kr=$nxt[3];
+				}
+				if($nxt[1]==5)
+				{
+					$ras+=$nxt[3];
+					$deb=$nxt[3];
+				}
+				if($nxt[1]==6)
+				{
+					$pr+=$nxt[3];
+					$kr=$nxt[3];
+				}
+				if($nxt[1]==7)
+				{
+					$ras+=$nxt[3];
+					$deb=$nxt[3];
+				}
+
+				if($f_print)
+				{
+					if(!$nxt[4]) $nxt[4]=$nxt[0];
+					if($deb) $deb=sprintf("%01.2f", $deb);
+					if($kr) $kr=sprintf("%01.2f", $kr);
+					$dt=date("d.m.Y",$nxt[2]);
+					$tmpl->AddText("<tr><td>$dt<td>$nxt[5] N$nxt[4]<td>$deb<td>$kr<td><td><td><td>");
+				}
 			}
 
-			if($nxt[1]==1)
-			{
-				$pr+=$nxt[3];
-				$kr=$nxt[3];
-			}
-			else if($nxt[1]==2)
-			{
-				$ras+=$nxt[3];
-				$deb=$nxt[3];
-			}
-			if( ($nxt[1]==3) || ($nxt[1]==12))
-			{
-				continue;
-			}
-			if($nxt[1]==4)
-			{
-				$pr+=$nxt[3];
-				$kr=$nxt[3];
-			}
-			if($nxt[1]==5)
-			{
-				$ras+=$nxt[3];
-				$deb=$nxt[3];
-			}
-			if($nxt[1]==6)
-			{
-				$pr+=$nxt[3];
-				$kr=$nxt[3];
-			}
-			if($nxt[1]==7)
-			{
-				$ras+=$nxt[3];
-				$deb=$nxt[3];
-			}
+			$razn=$pr-$ras;
+			$razn_p=abs($razn);
+			$razn_p=sprintf("%01.2f", $razn_p);
+			
+			$pr=sprintf("%01.2f", $pr);
+			$ras=sprintf("%01.2f", $ras);
 
-			if($f_print)
+			$tmpl->AddText("<tr><td colspan=2>Обороты за период<td>$ras<td>$pr<td><td><td><td>");
+			if($pr>$ras)
 			{
-				if(!$nxt[4]) $nxt[4]=$nxt[0];
-				if($deb) $deb=sprintf("%01.2f", $deb);
-				if($kr) $kr=sprintf("%01.2f", $kr);
-				$dt=date("d.m.Y",$nxt[2]);
-				$tmpl->AddText("<tr><td>$dt<td>$nxt[5] N$nxt[4]<td>$deb<td>$kr<td><td><td><td>");
+				$pr-=$ras;
+				$ras='';
 			}
+			else if($pr<$ras)
+			{
+				$ras-=$pr;
+				$pr='';
+			}
+			else  $pr=$ras='';
+			if($pr)	$pr=sprintf("%01.2f", $pr);
+			if($ras)$ras=sprintf("%01.2f", $ras);
+			
+			$tmpl->AddText("<tr><td colspan=2>Сальдо на конец периода<td>$ras<td>$pr<td colspan=4>
+			<tr><td colspan=4>");
+			if($razn>0)		$tmpl->AddText("переплата в пользу ".$dv['firm_name']." $razn_p руб.");
+			else	if($razn<0) 	$tmpl->AddText("задолженность в пользу ".$dv['firm_name']." $razn_p руб.");
+			else			$tmpl->AddText("$razn переплат и задолженностей нет!");
+
+			$tmpl->AddText("<td colspan=4>
+			<tr><td colspan=4>От ".$dv['firm_name']."<br>
+			директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
+			<td colspan=4>От $fn<br>
+			директор<br> ____________________________ (_____________)<br><br>м.п.<br>
+			</table>");		
 		}
-
-		$razn=$pr-$ras;
-		$razn_p=abs($razn);
-		$razn_p=sprintf("%01.2f", $razn_p);
-		
-		$pr=sprintf("%01.2f", $pr);
-		$ras=sprintf("%01.2f", $ras);
-
-		$tmpl->AddText("<tr><td colspan=2>Обороты за период<td>$ras<td>$pr<td><td><td><td>");
-		if($pr>$ras)
+		else if($opt=='pdf')
 		{
-			$pr-=$ras;
-			$ras='';
-		}
-		else if($pr<$ras)
-		{
-			$ras-=$pr;
-			$pr='';
-		}
-		else  $pr=$ras='';
-		if($pr)	$pr=sprintf("%01.2f", $pr);
-		if($ras)$ras=sprintf("%01.2f", $ras);
-		
-		$tmpl->AddText("<tr><td colspan=2>Сальдо на конец периода<td>$ras<td>$pr<td colspan=4>
-		<tr><td colspan=4>");
-		if($razn>0)		$tmpl->AddText("переплата в пользу ".$dv['firm_name']." $razn_p руб.");
-		else	if($razn<0) 	$tmpl->AddText("задолженность в пользу ".$dv['firm_name']." $razn_p руб.");
-		else			$tmpl->AddText("$razn переплат и задолженностей нет!");
+			$firm_id=rcv('firm_id');
+			$subtype=rcv('subtype');			
+			$date_st=strtotime(rcv('date_st'));
+			$date_end=strtotime(rcv('date_end'))+60*60*24-1;
+			$agent_id=rcv('agent_id');
+			
+			if($firm_id)
+			{
+				$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
+				if(mysql_errno())	throw new Exception("Не удалось выбрать данные фирмы");
+				$firm_vars=mysql_fetch_assoc($res);
+			}
+			if(!$date_end) $date_end=time();
 
- 		$tmpl->AddText("<td colspan=4>
- 		<tr><td colspan=4>От ".$dv['firm_name']."<br>
-		директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
-		<td colspan=4>От $fn<br>
-		директор<br> ____________________________ (_____________)<br><br>м.п.<br>
-		</table>");
+			$res=mysql_query("SELECT `id`, `fullname`, `pdol`, `pfio` FROM `doc_agent` WHERE `id`='$agent_id'");
+			if(mysql_errno())	throw new Exception("Не удалось выбрать агента");
+			$agent=mysql_fetch_assoc($res);
+			
+			$firm_vars['firm_name']=unhtmlentities($firm_vars['firm_name']);
+			$agent['fullname']=unhtmlentities($agent['fullname']);			
+			
+			define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
+			require('fpdf/fpdf.php');
+			$pdf=new FPDF('P');
+			$pdf->Open();
+			$pdf->SetAutoPageBreak(1,12);
+			$pdf->AddFont('Arial','','arial.php');
+			$pdf->tMargin=10;
+			$pdf->AddPage('P');
+
+			$pdf->SetFont('Arial','',16);
+			$str = iconv('UTF-8', 'windows-1251', "Акт сверки взаимных расчетов");
+			$pdf->Cell(0,6,$str,0,1,'C',0);			
+			
+			$str="от {$firm_vars['firm_name']}\nза период с ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end);
+			$pdf->SetFont('Arial','',10);
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->MultiCell(0,4,$str,0,'C',0);
+			$pdf->Ln(2);
+			$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и              {$agent['fullname']}                 , с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
+			$str = iconv('UTF-8', 'windows-1251', $str);	
+			$pdf->Write(5,$str,'');
+			
+			$pdf->Ln(8);
+			$y=$pdf->GetY();
+			$base_x=$pdf->GetX();
+			$pdf->SetLineWidth(0.5);
+			$t_width=array(17,44,17,17,17,44,17,0);
+			$t_text=array('Дата', 'Операция', 'Дебет', 'Кредит', 'Дата', 'Операция', 'Дебет', 'Кредит');
+			
+			$h_width=$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
+			$str1=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
+			$str2=iconv('UTF-8', 'windows-1251', "По данным {$agent['fullname']}");
+						
+			$pdf->MultiCell($h_width,5,$str1,0,'L',0);
+			$max_h=$pdf->GetY()-$y;
+			$pdf->SetY($y);
+			$pdf->SetX($base_x+$h_width);
+			$pdf->MultiCell(0,5,$str2,0,'L',0);
+			if( ($pdf->GetY()-$y) > $max_h)	$max_h=$pdf->GetY()-$y;
+			//$pdf->Cell(0,5,$str2,1,0,'L',0);
+			$pdf->SetY($y);
+			$pdf->SetX($base_x);
+			$pdf->Cell($h_width,$max_h,'',1,0,'L',0);
+			$pdf->Cell(0,$max_h,'',1,0,'L',0);
+			$pdf->Ln();
+			foreach($t_width as $i => $w)
+			{
+				$str = iconv('UTF-8', 'windows-1251', $t_text[$i]);
+				$pdf->Cell($w,5,$str,1,0,'C',0);
+			}
+			$pdf->SetLineWidth(0.2);
+			$pdf->Ln();
+			$pdf->SetFont('','',8);
+			$pr=$ras=0;
+			$f_print=false;
+			
+			$sql_add='';
+			if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
+			if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
+			
+			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`date`, `doc_list`.`sum`,
+			`doc_list`.`altnum`, `doc_types`.`name`
+			FROM `doc_list`
+			LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+			WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`<'8' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
+			while($nxt=mysql_fetch_array($res))
+			{
+				$deb=$kr="";				
+				if( ($nxt[2]>=$date_st) && (!$f_print) )
+				{
+					$f_print=true;
+					if($pr>$ras)
+					{
+						$pr-=$ras;
+						$ras='';
+					}
+					else if($pr<$ras)
+					{
+						$ras-=$pr;
+						$pr='';
+					}
+					else  $pr=$ras='';
+					if($pr)	$pr=sprintf("%01.2f", $pr);
+					if($ras)$ras=sprintf("%01.2f", $ras);
+					
+					$str=iconv('UTF-8', 'windows-1251', "Сальдо на начало периода");
+					$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
+					$pdf->Cell($t_width[2],4,$ras,1,0,'R',0);
+					$pdf->Cell($t_width[3],4,$pr,1,0,'R',0);
+					$pdf->Cell($t_width[4]+$t_width[5],4,'',1,0,'L',0);
+					$pdf->Cell($t_width[6],4,'',1,0,'L',0);
+					$pdf->Cell($t_width[7],4,'',1,0,'L',0);
+					$pdf->Ln();
+				}
+
+				if($nxt[1]==1)
+				{
+					$pr+=$nxt[3];
+					$kr=$nxt[3];
+				}
+				else if($nxt[1]==2)
+				{
+					$ras+=$nxt[3];
+					$deb=$nxt[3];
+				}
+				if( ($nxt[1]==3) || ($nxt[1]==12))
+				{
+					continue;
+				}
+				if($nxt[1]==4)
+				{
+					$pr+=$nxt[3];
+					$kr=$nxt[3];
+				}
+				if($nxt[1]==5)
+				{
+					$ras+=$nxt[3];
+					$deb=$nxt[3];
+				}
+				if($nxt[1]==6)
+				{
+					$pr+=$nxt[3];
+					$kr=$nxt[3];
+				}
+				if($nxt[1]==7)
+				{
+					$ras+=$nxt[3];
+					$deb=$nxt[3];
+				}
+
+				if($f_print)
+				{
+					if(!$nxt[4]) $nxt[4]=$nxt[0];
+					if($deb) $deb=sprintf("%01.2f", $deb);
+					if($kr) $kr=sprintf("%01.2f", $kr);
+					$dt=date("d.m.Y",$nxt[2]);
+					$str=iconv('UTF-8', 'windows-1251', "$nxt[5] N$nxt[4]");
+					$pdf->Cell($t_width[0],4,$dt,1,0,'L',0);
+					$pdf->Cell($t_width[1],4,$str,1,0,'L',0);
+					$pdf->Cell($t_width[2],4,$deb,1,0,'R',0);
+					$pdf->Cell($t_width[3],4,$kr,1,0,'R',0);
+					$pdf->Cell($t_width[4],4,'',1,0,'L',0);
+					$pdf->Cell($t_width[5],4,'',1,0,'L',0);
+					$pdf->Cell($t_width[6],4,'',1,0,'L',0);
+					$pdf->Cell($t_width[7],4,'',1,0,'L',0);
+					$pdf->Ln();
+				}
+			}
+			
+			$razn=$pr-$ras;
+			$razn_p=abs($razn);
+			$razn_p=sprintf("%01.2f", $razn_p);
+			
+			$pr=sprintf("%01.2f", $pr);
+			$ras=sprintf("%01.2f", $ras);
+
+			$str=iconv('UTF-8', 'windows-1251', "Обороты за период");
+			$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
+			$pdf->Cell($t_width[2],4,$ras,1,0,'R',0);
+			$pdf->Cell($t_width[3],4,$pr,1,0,'R',0);
+			$pdf->Cell($t_width[4]+$t_width[5],4,'',1,0,'L',0);
+			$pdf->Cell($t_width[6],4,'',1,0,'L',0);
+			$pdf->Cell($t_width[7],4,'',1,0,'L',0);
+			$pdf->Ln();
+
+			if($pr>$ras)
+			{
+				$pr-=$ras;
+				$ras='';
+			}
+			else if($pr<$ras)
+			{
+				$ras-=$pr;
+				$pr='';
+			}
+			else  $pr=$ras='';
+			if($pr)	$pr=sprintf("%01.2f", $pr);
+			if($ras)$ras=sprintf("%01.2f", $ras);
+			
+			$str=iconv('UTF-8', 'windows-1251', "Сальдо на конец периода");
+			$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
+			$pdf->Cell($t_width[2],4,$ras,1,0,'L',0);
+			$pdf->Cell($t_width[3],4,$pr,1,0,'L',0);
+			$pdf->Cell($t_width[4]+$t_width[5],4,'',1,0,'L',0);
+			$pdf->Cell($t_width[6],4,'',1,0,'L',0);
+			$pdf->Cell($t_width[7],4,'',1,0,'L',0);
+			$pdf->Ln(7);
+			
+			$str=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']} на ".date("d.m.Y",$date_end));
+			$pdf->Write(4,$str);
+			$pdf->Ln();
+			if($razn>0)		$str="переплата в пользу ".$firm_vars['firm_name']." $razn_p руб.";
+			else	if($razn<0) 	$str="задолженность в пользу ".$firm_vars['firm_name']." $razn_p руб.";
+			else			$str="переплат и задолженностей нет!";
+			
+			$str=iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Write(4,$str);
+			$pdf->Ln(7);
+			$x=$pdf->getX()+$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
+			$y=$pdf->getY();
+			$str=iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
+			$pdf->MultiCell($t_width[0]+$t_width[1]+$t_width[2]+$t_width[3],5,$str,0,'L',0);
+			$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n\n           ____________________________ (                )\n\n           м.п.");
+			$pdf->lMargin=$x;
+			$pdf->setX($x);
+			
+			$pdf->setY($y);
+			$pdf->MultiCell(0,5,$str,0,'L',0);
+			$pdf->Ln();
+			
+// 			$tmpl->AddText("<td colspan=4>
+// 			<tr><td colspan=4>От ".$dv['firm_name']."<br>
+// 			директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
+// 			<td colspan=4>От $fn<br>
+// 			директор<br> ____________________________ (_____________)<br><br>м.п.<br>
+// 			</table>");
+			
+			$pdf->Output('akt_sverki.pdf','I');
+		}		
 	}
 	else if($mode=='agent_otchet')
 	{
@@ -908,6 +1244,27 @@ if($rights['read'])
 			$tmpl->AddText("<tr><td>".$doc_types[$nxt[1]]." N$nxt[3]$nxt[4] ($nxt[0])<br>от $dt $tovar<td>$prix_p<td>$rasx_p<td>$sum_p");
 		}
 		$tmpl->AddText("</table>");
+	}
+	else if($mode=='img_otchet')
+	{
+		$tmpl->LoadTemplate('print');
+		$tmpl->SetText("<h1>Отчёт по изображениям</h1>");
+		$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`name`, `doc_img`.`type`, `doc_base_img`.`default`, `doc_base_img`.`pos_id`, `doc_base`.`name` AS `pos_name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_group`.`printname`
+		FROM `doc_base_img`
+		INNER JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_img`.`pos_id`
+		INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		ORDER BY `doc_base_img`.`img_id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список изображений");
+	
+		$tmpl->AddText("<table width='100%'>
+		<tr><th>ID<th>Изображение<th>Умолч.<th>ID товара<th>Код<th>Наименование / произв.");
+		while($nxt=mysql_fetch_array($res))
+		{
+			$tmpl->AddText("<tr><td>{$nxt['img_id']}<td>{$nxt['name']} ({$nxt['type']})<td>{$nxt['default']}<td>{$nxt['pos_id']}<td>{$nxt['vc']}<td>{$nxt['printname']} {$nxt['pos_name']} / {$nxt['proizv']}");
+		}
+		$tmpl->AddText("</table>");
+		
 	}
 	else if($mode=='prod')
 	{

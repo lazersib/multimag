@@ -236,10 +236,8 @@ class doc_Peremeshenie extends doc_Nulltype
 		if($opt=='')
 		{
 			global $tmpl;
-			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=print&amp;doc=$doc&amp;opt=nak'>Накладная</a></li>
-			</ul>");
+			$tmpl->ajax=1;                                                                                                     в
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=prn'\">Накладная</div>");
 		}
  		else $this->PrintNakl($doc);
 

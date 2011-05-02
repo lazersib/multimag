@@ -34,6 +34,24 @@ class doc_Postuplenie extends doc_Nulltype
 		$this->header_fields			='agent cena sklad';
 		settype($this->doc,'int');
 	}
+	function DopHead()
+	{
+		global $tmpl;
+		$tmpl->AddText("Номер входящего документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");	
+	}
+
+	function DopSave()
+	{
+		$input_doc=rcv('input_doc');
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+		VALUES ( '{$this->doc}' ,'input_doc','$input_doc')");
+	}
+	
+	function DopBody()
+	{
+		global $tmpl;
+		$tmpl->AddText("<br><b>Номер входящего документа:</b> {$this->dop_data['input_doc']}<br>");
+	}
 
 	protected function DocApply($silent=0)
 	{
@@ -231,9 +249,8 @@ class doc_Postuplenie extends doc_Nulltype
 		if($opt=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("
-			<a href='?mode=print&amp;doc=".$this->doc."&amp;opt=nak'><div>Накладная</div></a>
-			<a href='?mode=print&amp;doc=".$this->doc."&amp;opt=nac'><div>Наценки</div></a>
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak'\">Накладная</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nac'\">Наценки</div>
 			");
 		}
 		else if($opt=='nac')	$this->PrintNacenki($this->doc);
@@ -377,8 +394,8 @@ class doc_Postuplenie extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=morphto&amp;doc=$doc&amp;tt=2'><div>Реализация</div></a>");
-			$tmpl->AddText("<a href='?mode=morphto&amp;doc=$doc&amp;tt=7'><div>Расходный кассовый ордер</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=2'\">Реализация</div>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=7'\">Расходный кассовый ордер</div>");
 		}
 		else if($target_type==2)
 		{

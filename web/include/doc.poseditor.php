@@ -78,11 +78,11 @@ function Show($param='')
 	<tr><td colspan='9' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'>
  	</tbody>
 	</table>
-	<p align='right' id='sum'>Итого: $ii позиций на сумму $sum_p руб.</p>";
+	<p align='right' id='sum'></p>";
 	
 	$ret.="
 	<table id='sklad_view'>
-	<tr><td id='groups_list' width='200' valign='top' class='lin0>";
+	<tr><td id='groups_list' width='200' valign='top' class='lin0'>";
 	$ret.=$this->getGroupsTree();
 	$ret.="</td>
 	<td valign='top' class='lin1'>
@@ -111,7 +111,8 @@ function getGroupsTree()
 {
 	return "<div onclick='tree_toggle(arguments[0])'>
 	<div><a href='' onclick=\"\">Группы</a></div>
-	<ul class='Container'>".$this->getGroupLevel(0)."</ul></div>
+	<ul class='Container'>".$this->getGroupLevel(0)."</ul>
+	</div>
 	Или отбор:<input type='text' id='sklsearch' onkeydown=\"DelayedSave('/doc.php?mode=srv&opt=sklad&doc={$this->doc}','sklad_list', 'sklsearch'); return true;\">";
 }
 
@@ -130,9 +131,9 @@ function getGroupLevel($level)
 		if($i>=($cnt-1)) $r.=" IsLast";
 		$tmp=$this->getGroupLevel($nxt[0]); // рекурсия
 		if($tmp)
-			$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>$tmp</ul></li>";
+			$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>$tmp</ul></li>\n";
         	else
-        		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
+        		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>\n";
 		$i++;
 	}
 	return $ret;
@@ -238,15 +239,15 @@ function GetSkladList($group)
 // 			$i=1-$i;
 
 			// Новый код
-			$reserve=DocRezerv($nxt['id'],$doc);
-			$offer=DocPodZakaz($nxt['id'],$doc);
-			$transit=DocVPuti($nxt['id'],$doc);
+			$reserve=DocRezerv($nxt['id'],$this->doc);
+			$offer=DocPodZakaz($nxt['id'],$this->doc);
+			$transit=DocVPuti($nxt['id'],$this->doc);
 			
 			$cost=$this->cost_id?GetCostPos($nxt['id'], $this->cost_id):$nxt['cost'];
 			$rcost=sprintf("%0.2f",$nxt['koncost']);
 			
 			if($ret)	$ret.=', ';
-			$ret.="{ id: '{$nxt['id']}', name: '{$nxt['name']}', vc: '{$nxt['vc']}', vendor: '{$nxt['proizv']}', liquidity: '{$nxt['likvid']}', cost: '$cost', rcost: '$rcost', analog: '{$nxt['analog']}', type: '{$nxt['type']}', d_int: '{$nxt['d-int']}', d_ext: '{$nxt['d_ext']}', size: '{$nxt['size']}', mass: '{$nxt['mass']}', place: '{$nxt['mesto']}', cnt: '{$nxt['cnt']}', allcnt: '{$nxt['allcnt']}', reserve: '$reserve', offer: '$offer', transit: '$transit' }";
+			$ret.="{ id: '{$nxt['id']}', name: '{$nxt['name']}', vc: '{$nxt['vc']}', vendor: '{$nxt['proizv']}', liquidity: '{$nxt['likvid']}', cost: '$cost', rcost: '$rcost', analog: '{$nxt['analog']}', type: '{$nxt['type']}', d_int: '{$nxt['d_int']}', d_ext: '{$nxt['d_ext']}', size: '{$nxt['size']}', mass: '{$nxt['mass']}', place: '{$nxt['mesto']}', cnt: '{$nxt['cnt']}', allcnt: '{$nxt['allcnt']}', reserve: '$reserve', offer: '$offer', transit: '$transit' }";
 			$cnt++;
 		}	
 	}

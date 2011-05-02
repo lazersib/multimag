@@ -152,3 +152,20 @@
 {
 	background:	#e0f0ff;
 }
+
+#sklad_list td
+{
+	text-align:	right;
+}
+
+#sklad_list td.la
+{
+	text-align:	left;
+}
+
+.reserve:hover, .offer:hover, .transit:hover
+{
+	cursor:		pointer;
+	background:	#ffb;
+	text-decoration:underline;
+}

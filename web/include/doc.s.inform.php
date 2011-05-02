@@ -30,10 +30,12 @@ class doc_s_Inform
 	{
 		global $tmpl;
 		$opt=rcv('opt');
+		$pos=rcv('pos');
+		$doc=rcv('doc');
 		$tmpl->ajax=1;
 		if($opt=='p_zak')
 		{
-			$pos=rcv('pos');
+			
 			$rt=time()-60*60*24*365;
 			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_agent`.`name`
 			FROM `doc_list_pos`
@@ -58,8 +60,6 @@ class doc_s_Inform
 		}
 		else if($opt=='vputi')
 		{
-			$pos=rcv('pos');
-			
 			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_agent`.`name`, `doc_dopdata`.`value`
 			FROM `doc_list_pos`
 			INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
@@ -85,7 +85,6 @@ class doc_s_Inform
 		}
 		else if($opt=='rezerv')
 		{
-			$pos=rcv('pos');
 			$rt=time()-60*60*24*30;
 			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_agent`.`name`
 			FROM `doc_list_pos`

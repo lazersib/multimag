@@ -62,7 +62,7 @@ else if($mode=='send')
 	$nm=rcv('nm');
 	$backadr=rcv('backadr');
 	$text=rcv('text');
-	$text="Сообщение от $nm($backadr) с сайта {$CONFIG['site']['name']}\n-------------------\n$text\n";
+	$text="Нам написал сообщение $nm($backadr)с сайта {$CONFIG['site']['name']}\n-------------------\n$text\n";
 	$text.="-------------------\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
 	if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
 	
@@ -84,7 +84,7 @@ else if($mode=='send')
 	}
 	else
 	{
-		if(mailto($to,"Message from {$CONFIG['site']['name']}", $text))
+		if(mailto($to,"Site message from {$CONFIG['site']['name']}", $text))
 			$tmpl->msg("Сообщение было отправлено!","ok");
 		else	$tmpl->logger("Не удалось отправить сообщение электронной почты! ".$mail->ErrorInfo);
 	}

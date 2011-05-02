@@ -195,7 +195,8 @@ class doc_Rko extends doc_Nulltype
 	function MorphTo($doc, $target_type)
 	{
 		global $tmpl;
-        $tmpl->AddText("Не поддерживается для данного типа документа");
+		$tmpl->ajax=1;
+		$tmpl->AddText("<div class='disabled'>Не поддерживается для</div><div class='disabled'>данного типа документа</div>");
 	}
 	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function DelExec($doc)

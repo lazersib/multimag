@@ -29,7 +29,7 @@ function rusdate($fstr,$rtime=-1)
 
 function skin_render($page,$tpl)
 {
-	global $tmpl;
+	global $tmpl, $CONFIG;
 	
 	if($_SESSION['uid'])
 	{
@@ -44,7 +44,7 @@ function skin_render($page,$tpl)
 	}
 	
 	$rr=$ll='';
-	if($_SESSION['korz_cnt']) 
+	if(isset($_SESSION['korz_cnt'])) 
 	{
 		$rr="style='background-color: #f94;'";
 		$ll="style='color: #fff; font-weight: bold;'";

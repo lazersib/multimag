@@ -20,25 +20,236 @@
 
 include_once("core.php");
 
+// Используется для централизованного получения изображений из хранилища
+class ImageProductor
+{
+	protected $id;
+	protected $storage;
+	protected $type;
+	protected $storages=array('p'=>'pos', 'w'=>'wikiphoto', 'f'=>'galery','g'=>'group');
+	protected $types=array('jpg','png', 'gif');
+	protected $source_file=null;
+	protected $source_exist=null;
+	protected $cached=null;
+	protected $cache_fclosure='';
+	// Требуемое качество
+	protected $quality=70;
+	// Требуемый размер по x
+	protected $dim_x=0;
+	// Требуемый размер по y
+	protected $dim_y=0;
+	// Не изменять соотношение сторон (иначе - дополнять фоном)
+	protected $fix_aspect=1;
+	// Не увеличивать изображение
+	protected $no_enlarge=1;
+	
+	
+	
+	public function __construct($img_id, $img_stroage, $type='jpg')
+	{
+		global $CONFIG;
+		settype($img_id,'int');
+		if(!$img_id)	throw new ImageException('ID изображения не задан!');
+		$this->id=$img_id;
+		if(!array_key_exists($img_stroage,$this->storages))	throw new ImageException('Хранилище изображения не задано, либо не существует!');
+		$this->storage=$img_stroage;
+		if(!in_array($type,$this->types))	throw new ImageException('Запрошенный тип изображений не поддерживается');
+		$this->type=$type;
+		//$this->source_file="{$CONFIG['site']['var_data_fs']}/{$this->storages[$this->storage]}/{$this->id}.{$this->type}";
+		//$this->source_exist=file_exists($this->source_file);
+	}
+
+	public function SetX($x)
+	{
+		$this->dim_x=$x;
+	}
+	
+	public function SetY($y)
+	{
+		$this->dim_y=$y;
+	}
+	
+	public function SetQuality($quality)
+	{
+		if($quality>0)	$this->quality=$quality;
+	}
+
+	/// Возвращает URI изображения. Если изображение есть в кеше - возвращает его. Иначе - возвращает адрес скрипта конвертирования
+	public function GetURI()
+	{
+		global $CONFIG;
+		if($this->cached==null)	$this->CacheProbe();
+		if($this->cached)	return "{$CONFIG['site']['var_data_web']}/{$this->cache_fclosure}";
+		else			return "/images.php?i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}&amp;f={$this->fix_aspect}&amp;n={$this->no_enlarge}";
+	}
+	
+	// Есть ли изображение в кеше 
+	protected function CacheProbe()
+	{
+		global $CONFIG;
+		$this->cache_fclosure="cache/{$this->storages[$this->storage]}/{$this->id}-{$this->dim_x}-{$this->dim_y}-{$this->quality}.{$this->type}";
+		return $this->cached=file_exists($CONFIG['site']['var_data_fs'].'/'.$this->cache_fclosure);
+	}
+	// Сделать изображение и сохранить в кеш
+	public function MakeAndStore()
+	{
+		global $CONFIG;
+		$font_name='ttf-dejavu/DejaVuSansCondensed-Bold.ttf';
+	
+		$rs=0;
+		$this->cache_fclosure="cache/{$this->storages[$this->storage]}/{$this->id}-{$this->dim_x}-{$this->dim_y}-{$this->quality}.{$this->type}";
+		$cname="{$CONFIG['site']['var_data_fs']}/{$this->cache_fclosure}";
+		$icname="{$CONFIG['site']['var_data_web']}/{$this->cache_fclosure}";
+
+		$this->source_file="{$CONFIG['site']['var_data_fs']}/{$this->storages[$this->storage]}/{$this->id}.{$this->type}";
+			
+		@mkdir("{$CONFIG['site']['var_data_fs']}/cache/{$this->storages[$this->storage]}/",0755);
+		
+		$dx=$dy=0;
+
+		$sz=getimagesize($this->source_file);
+		$sx=$sz[0];
+		$sy=$sz[1];
+		$stype=$sz[2];
+		
+		if($this->dim_x || $this->dim_y)
+		{
+		// Жёстко заданные размеры
+			$aspect=$sx/$sy;
+			if($this->dim_y&&(!$this->dim_x))
+			{
+				if($this->dim_y>$sy)	$this->dim_y=$sy;
+				$this->dim_x=round($aspect*$this->dim_y);
+			}
+			else if($this->dim_x&&(!$this->dim_y))
+			{
+				if($this->dim_x>$sx)	$this->dim_x=$sx;
+				$this->dim_y=round($this->dim_x/$aspect);
+			}
+			$naspect=$this->dim_x/$this->dim_y;
+			$nx=$this->dim_x;
+			$ny=$this->dim_y;
+			if($aspect<$naspect)	$nx=round($aspect*$this->dim_y);
+			else			$ny=round($this->dim_x/$aspect);
+			$lx=($this->dim_x-$nx)/2;
+			$ly=($this->dim_y-$ny)/2;
+			
+			$rs=1;
+		}
+		else
+		{
+			$this->dim_x=$sz[0];
+			$this->dim_y=$sz[1];
+		}
+		
+		
+		if($this->type=='jpg')
+		{
+			if(function_exists('imagecreatefromjpeg'))	$im=imagecreatefromjpeg($this->source_file);
+			else		throw new ImageException($this->type.' не поддерживается вашей версией PHP!');
+		}
+		else if($this->type=='png')
+		{
+			if(function_exists('imagecreatefrompng'))	$im=imagecreatefrompng($this->source_file);
+			else		throw new ImageException($this->type.' не поддерживается вашей версией PHP!');
+		}
+		else if($this->type=='gif')
+		{
+			if(function_exists('imagecreatefromgif'))	$im=imagecreatefromgif($this->source_file);
+			else		throw new ImageException($this->type.' не поддерживается вашей версией PHP!');
+		}
+		else throw new ImageException($this->type.' не поддерживается обработчиком!');
+			
+		if($rs)
+		{
+			$im2=imagecreatetruecolor($this->dim_x,$this->dim_y);
+			imagefill($im2, 0, 0, imagecolorallocate($im2, 255, 255, 255));
+			imagecopyresampled($im2, $im, $lx, $ly, 0, 0, $nx, $ny, $sx, $sy);
+			imagedestroy($im);
+			$im=$im2;
+		}
+		if( $this->dim_x>=300 || $this->dim_y>=300)	imageinterlace($im, 1);
+		$bg_c = imagecolorallocatealpha ($im, 64,64, 64, 96);
+		$text_c = imagecolorallocatealpha ($im, 192,192, 192, 96);
+		if($this->dim_x<$this->dim_y)	$font_size=$this->dim_x/10;
+		else				$font_size=$this->dim_y/10;
+
+		$text_bbox=imageftbbox ( $font_size , 45 , $font_name , $CONFIG['site']['name'] );
+		
+		$min_x=$max_x=$text_bbox[0];
+		$min_y=$max_y=$text_bbox[0];
+		for($i=0;$i<8;$i+=2)
+		{
+			if($text_bbox[$i]<$min_x)	$min_x=$text_bbox[$i];
+			if($text_bbox[$i]>$max_x)	$max_x=$text_bbox[$i];
+			if($text_bbox[$i+1]<$min_y)	$min_y=$text_bbox[$i+1];
+			if($text_bbox[$i+1]>$max_y)	$max_y=$text_bbox[$i+1];
+		}
+		$delta_x=$this->dim_x-$max_x+$min_x;
+		$delta_y=$this->dim_y-$min_y+$max_y;
+		
+		imagefttext ( $im , $font_size , 45 , $delta_x/1.9, $delta_y/2 , $bg_c , $font_name , $CONFIG['site']['name'] );
+		imagefttext ( $im , $font_size , 45 , $delta_x/1.9+2, $delta_y/2+2 , $text_c , $font_name , $CONFIG['site']['name'] );
+		
+// 		header("Content-type: image/jpg");
+// 		imagejpeg($im,"",$this->quality);
+		
+		if($this->type=='jpg')		imagejpeg($im,$cname,$this->quality);
+		else if($this->type=='gif')	imagegif($im,$cname,$this->quality);
+		else 				imagepng($im,$cname,9);
+		
+		header("Location: $icname");
+		//exit();
+	
+	}
+};
+
+
+class ImageException extends Exception
+{
+	function __construct($text='')
+	{
+		parent::__construct($text);	
+		$this->WriteLog();
+	}
+	
+	protected function WriteLog()
+	{
+	        $ip=getenv("REMOTE_ADDR");
+		$ag=getenv("HTTP_USER_AGENT");
+		$rf=getenv("HTTP_REFERER");
+		$qq=$_SERVER['QUERY_STRING'];
+		$ff=$_SERVER['PHP_SELF'];
+		$uid=$_SESSION['uid'];
+		$s=mysql_real_escape_string($this->message);
+		$ag=mysql_real_escape_string($ag);
+		$rf=mysql_real_escape_string($rf);
+		$qq=mysql_real_escape_string($qq);
+		$ff=mysql_real_escape_string($ff);
+		@mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
+		('$ff $qq','$rf','IMAGE: $s',NOW(),'$ip','$ag', '$uid')");	
+	}
+};
+
+
 function img_resize($n, $imgdir, $ext='jpg')
 {
 	global $CONFIG;
 	settype($n,"integer");
 	// Качество
-	$q=$_GET['q'];
+	$q=isset($_GET['q'])?$_GET['q']:75;
 	settype($q,"integer");
 	// Размер X
-	$x=$_GET['x'];
+	$x=isset($_GET['x'])?$_GET['x']:0;
 	settype($n,"integer");
 	// Размер Y
-	$y=$_GET['y'];
+	$y=isset($_GET['y'])?$_GET['y']:0;
 	settype($y,"integer");
 	// ??
-	$nrs=$_GET['nrs'];
+	$nrs=isset($_GET['nrs'])?$_GET['nrs']:0;
 	settype($nrs,"integer");
-	$u=$_GET['u'];
+	$u=isset($_GET['u'])?$_GET['u']:0;
 	settype($u,"integer");
-	if(!$q) $q=75;
 	
 	if( (!$x) && (!$y) )	$x=300;
 	

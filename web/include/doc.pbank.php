@@ -32,19 +32,27 @@ class doc_PBank extends doc_Nulltype
 		$this->header_fields			='agent sum bank';
 		settype($this->doc,'int');
 	}
-
-	function body()
+	
+	function DopHead()
 	{
 		global $tmpl;
-		parent::body();
-		$res=@mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc` ='{$this->doc}' AND `param`='unique'");
-		if(!$res)			throw new MysqlException('Ошибка выборки дополнительных данных документа!');
-		if(mysql_num_rows($res))
-		{
-			$val=mysql_result($res,0,0);
-			$tmpl->AddText("<b>Номер из клиент-банка:</b> $val<br>");
-		}
+		$tmpl->AddText("Номер документа клиента банка:<br><input type='text' name='unique' value='{$this->dop_data['unique']}'><br>");
 	}
+
+	function DopSave()
+	{
+		$unique=rcv('unique');
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+		VALUES ( '{$this->doc}' ,'unique','$unique')");
+	}
+	
+	function DopBody()
+	{
+		global $tmpl;
+		if($this->dop_data['unique'])
+			$tmpl->AddText("<b>Номер документа клиента банка:</b> {$this->dop_data['unique']}");
+	}
+	
 	// Провести
 	function DocApply($silent=0)
 	{
@@ -159,29 +167,32 @@ class doc_PBank extends doc_Nulltype
 	// Печать документа
 	function Printform($doc, $opt='')
 	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-		global $dop_data;
-		global $dv;
-
-		if(!$doc_data[6])
+		global $tmpl, $uid;
+		$opt=rcv('opt');
+		
+		if(!$this->doc_data[6])
 		{
-			doc_menu(0,0);
-			$tmpl->AddText("<h1>Строка выписки банка - приход</h1>");
+			$tmpl->ajax=1;
 			$tmpl->msg("Сначала нужно провести документ!","err");
 		}
 		else
 		{
-			$tmpl->LoadTemplate('print');
-			$dt=date("d.m.Y",$doc_data[5]);
-			$sum_p=sprintf("%0.2f руб.",$doc_data[11]);
-			$sump_p=num2str($doc_data[11]);
-			$tmpl->AddText("<h1>Строка выписки банка - приход N $doc_data[9], от $dt </h1>
-			<b>Поступило от от: </b>$doc_data[3]<br>
-			<b>Сумма:</b> $sum_p ($sump_p)<br>
-			<b>Получатель средств: </b>".$dv['firm_name']);
+			if($opt=='')
+			{
+				$tmpl->ajax=1;
+				$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=prn'\">Выписка</div>");
+			}
+			else
+			{
+				$tmpl->LoadTemplate('print');
+				$dt=date("d.m.Y",$this->doc_data[5]);
+				$sum_p=sprintf("%0.2f руб.",$this->doc_data[11]);
+				$sump_p=num2str($this->doc_data[11]);
+				$tmpl->AddText("<h1>Строка выписки банка - приход N {$this->doc_data[9]}, от $dt </h1>
+				<b>Поступило от от: </b>{$this->doc_data[3]}<br>
+				<b>Сумма:</b> $sum_p ($sump_p)<br>
+				<b>Получатель средств: </b>".$this->firm_vars['firm_name']);
+			}
 		}
 	}
 	// Формирование другого документа на основании текущего

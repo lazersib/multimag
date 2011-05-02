@@ -175,19 +175,23 @@ function doc_process($params)
 	if(!$params['unique'])	echo"UINQUE IS NULL!\n";
 	if(($i==0) && ($type==4))
 	{
+			$res=mysql_query("SELECT `num`, `firm_id` FROM `doc_kassa` WHERE `ids`='bank' AND `rs`='{$params['schet']}'");
+			$b_data=mysql_fetch_row($res);
+			if(!$b_data[0])	$b_data[0]=1;
+			if(!$b_data[1])	$b_data[1]=1;
+			
 			$tm=time();
 			$res=mysql_query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' ORDER BY `id` DESC");
 			@$p_doc=mysql_result($res,0,0);
 			@$agent=mysql_result($res,0,1);
 			if(!$agent) $agent=1;
 			$desc=mysql_escape_string($params['desc']);
- 			mysql_query("INSERT INTO `doc_list` ( `type`, `agent`, `comment`, `date`, `altnum`, `subtype`, `sum`, `p_doc`, `sklad`, `bank`)
- 			VALUES ('4', '$agent', '$desc', '$tm', '".$params['docnum']."', 'auto', '$sum', '$p_doc' , '1', '1')");
- 			$new_id=mysql_insert_id();
- 			echo "insert_id: $new_id\n".mysql_error();
- 			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-						VALUES ('$new_id','unique','".$params['unique']."')");
- 			
+			mysql_query("INSERT INTO `doc_list` ( `type`, `agent`, `comment`, `date`, `altnum`, `subtype`, `sum`, `p_doc`, `sklad`, `bank`, `firm_id`)
+			VALUES ('4', '$agent', '$desc', '$tm', '".$params['docnum']."', 'auto', '$sum', '$p_doc' , '1', '$b_data[0]', '$b_data[1]')");
+			$new_id=mysql_insert_id();
+			echo "insert_id: $new_id\n".mysql_error();
+			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+			VALUES ('$new_id','unique','".$params['unique']."')");
 	}
 	
 	echo"\n";

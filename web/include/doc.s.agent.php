@@ -117,7 +117,7 @@ class doc_s_Agent
 		
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`
+			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`
 			FROM `doc_agent`
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Выборка информации об агенте не удалась");
@@ -193,9 +193,10 @@ class doc_s_Agent
 				if($nxt[21]==$nx[0])	$s='selected';
 				$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");				
 			}
-			
+			$dish_checked=$nxt[25]?'checked':'';
 			$tmpl->AddText("</select>
-			<tr class=lin0><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
+			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросоветсный агент</label>
+			<tr class=lin1><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
 
 			<tr class=lin0><td><td><input type=submit value='Сохранить'>
 			
@@ -292,7 +293,7 @@ class doc_s_Agent
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`
+			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dishonest`
 			FROM `doc_agent`
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_error())	throw new Exception("Невозможно получить данные агента!");
@@ -326,6 +327,9 @@ class doc_s_Agent
 			$comment=rcv('comment');
 			$responsible=rcv('responsible');
 			$data_sverki=rcv('data_sverki');
+			$dishonest=rcv('dishonest');
+			
+			settype($dishonest,'int');
 			
 			if($pos_name!=$ag_info['name'])		$log_text.="name: ( {$ag_info['name']} => $pos_name ), ";
 			if($type!=$ag_info['type'])		$log_text.="type: ( {$ag_info['type']} => $type ), ";
@@ -350,6 +354,7 @@ class doc_s_Agent
 			if($pasp_date!=$ag_info['pasp_date'])	$log_text.="pasp_date: ( {$ag_info['pasp_date']} => $pasp_date ), ";
 			if($pasp_kem!=$ag_info['pasp_kem'])	$log_text.="pasp_kem: ( {$ag_info['pasp_kem']} => $pasp_kem ), ";
 			if($comment!=$ag_info['comment'])	$log_text.="comment: ( {$ag_info['comment']} => $comment ), ";
+			if($dishonest!=$ag_info['dishonest'])	$log_text.="dishonest: ( {$ag_info['dishonest']} => $dishonest ), ";
 			
 			if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $email)) && ($email!='') )
 			{
@@ -368,7 +373,7 @@ class doc_s_Agent
 					if($data_sverki!=$ag_info['data_sverki'])	$log_text.="data_sverki: ( {$ag_info['data_sverki']} => $data_sverki ), ";
 				}
 				
-				$res=mysql_query("UPDATE `doc_agent` SET `name`='$pos_name', `type`='$type', `group`='$g', `email`='$email', `fullname`='$fullname', `tel`='$tel', `adres`='$adres', `gruzopol`='$gruzopol', `inn`='$inn', `rs`='$rs', `ks`='$ks', `okevd`='$okevd', `okpo`='$okpo', `bank`='$bank', `bik`='$bik', `pfio`='$pfio', `pdol`='$pdol', `pasp_num`='$pasp_num', `pasp_date`='$pasp_date', `pasp_kem`='$pasp_kem', `comment`='$comment', `dir_fio`='$dir_fio', `dir_fio_r`='$dir_fio_r' $sql_add  WHERE `id`='$pos'");
+				$res=mysql_query("UPDATE `doc_agent` SET `name`='$pos_name', `type`='$type', `group`='$g', `email`='$email', `fullname`='$fullname', `tel`='$tel', `adres`='$adres', `gruzopol`='$gruzopol', `inn`='$inn', `rs`='$rs', `ks`='$ks', `okevd`='$okevd', `okpo`='$okpo', `bank`='$bank', `bik`='$bik', `pfio`='$pfio', `pdol`='$pdol', `pasp_num`='$pasp_num', `pasp_date`='$pasp_date', `pasp_kem`='$pasp_kem', `comment`='$comment', `dishonest`='$dishonest', `dir_fio`='$dir_fio', `dir_fio_r`='$dir_fio_r' $sql_add  WHERE `id`='$pos'");
 				if($res) $tmpl->msg("Данные обновлены! $cc");
 				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
 			}
@@ -385,7 +390,7 @@ class doc_s_Agent
 					$sql_v=", '$data_sverki'";
 				}
 			
-				$res=mysql_query("INSERT INTO `doc_agent` (`name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible` $sql_c  ) VALUES ( '$pos_name', '$fullname', '$tel', '$adres', '$gruzopol', '$inn', '$dir_fio', '$dir_fio_r', '$pfio', '$pdol', '$okevd', '$okpo', '$rs', '$bank', '$ks', '$bik', '$group', '$email', '$type', '$pasp_num', '$pasp_date', '$pasp_kem', '$comment', '$uid' $sql_v )");
+				$res=mysql_query("INSERT INTO `doc_agent` (`name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `dishonest` $sql_c  ) VALUES ( '$pos_name', '$fullname', '$tel', '$adres', '$gruzopol', '$inn', '$dir_fio', '$dir_fio_r', '$pfio', '$pdol', '$okevd', '$okpo', '$rs', '$bank', '$ks', '$bik', '$group', '$email', '$type', '$pasp_num', '$pasp_date', '$pasp_kem', '$comment', '$uid', '$dishonest' $sql_v )");
 				$pos=mysql_insert_id();
 				$this->PosMenu($pos, '');
 				if($res)
@@ -515,7 +520,7 @@ class doc_s_Agent
 			if($g_desc) $tmpl->AddText("<h4>$g_desc</h4>");
 		}
         
-		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`
+		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest` 
 		FROM `doc_agent`
 		LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
 		WHERE `doc_agent`.`group`='$group'
@@ -574,7 +579,7 @@ class doc_s_Agent
 		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Название<th>Телефон<th>e-mail<th>Дополнительно");
 		        
-		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio` FROM `doc_agent`";
+		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `doc_agent`.`dishonest` FROM `doc_agent`";
 
         	$sqla=$sql."WHERE `doc_agent`.`name` LIKE '$s%' OR `doc_agent`.`fullname` LIKE '$s%' ORDER BY `doc_agent`.`name` LIMIT 30";
 		$res=mysql_query($sqla);
@@ -684,16 +689,16 @@ class doc_s_Agent
 	{
 		global $tmpl;
 		$i=1;
-		while($nxt=mysql_fetch_row($res))
+		while($nxt=mysql_fetch_array($res))
 		{
 			$nxt[2]=SearchHilight($nxt[2],$s);
 			$i=1-$i;		
 			if($nxt[5]) $info=$nxt[7];
 			else $info=$nxt[6];
 			$info=SearchHilight($info,$s);
-
+			$red=$nxt['dishonest']?"style='color: #f00;'":'';
 			if($nxt[4]) $nxt[4]="<a href='mailto:$nxt[4]'>$nxt[4]</a>";
-			$tmpl->AddText("<tr class='lin$i pointer' align=right>
+			$tmpl->AddText("<tr class='lin$i pointer' align='right' $red>
 			<td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a><td align=left>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$info<td>$nxt[8]");
 		}	
 	}

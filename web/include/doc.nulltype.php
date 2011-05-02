@@ -28,7 +28,7 @@ function __autoload($class_name)
 	global $CONFIG;
 	$class_name= strtolower($class_name);
 	$nm2=split('_',$class_name,2);
-	if($nm2[1]) $class_name=$nm2[1];
+	if(@$nm2[1]) $class_name=@$nm2[1];
 	@include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
 	@include_once $CONFIG['site']['location']."/gate/include/doc.s.".$class_name.'.php';
 	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
@@ -213,11 +213,14 @@ class doc_Nulltype
 	{
 		global $tmpl, $uid;
 		doc_menu($this->dop_buttons());
-		
 		$doc_altnum=$this->doc_data[9].$this->doc_data[10];
 		$dt=date("d.m.Y H:i:s",$this->doc_data[5]);
-		
 		$tmpl->AddText("<h1>{$this->doc_viewname} N$doc_altnum</h1>");
+
+		if($this->doc_data['agent_dishonest'])
+		{
+			$tmpl->msg($this->doc_data['agent_comment'].' ', 'err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
+		}
 
 		$res=mysql_query("SELECT `doc_cost`.`name` FROM `doc_cost` WHERE `doc_cost`.`id`='{$this->dop_data['cena']}'");
         	$cena=@mysql_result($res,0,0);
@@ -552,7 +555,7 @@ class doc_Nulltype
 			}
 			else if($this->doc_data[6])
 				$tmpl->msg("Операция не допускается для проведённого документа!","err");
-			else if($doc_data[14])
+			else if($this->doc_data[14])
 				$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
 			// Получение данных наименования
 			else if($opt=='jgpi')
@@ -918,10 +921,8 @@ class doc_Nulltype
 	// Служебные методы формирования документа
 	protected function DrawHeadformStart()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$tmpl->AddText('<h1>'.$this->doc_viewname."</h1>
-		<script type='text/javascript' src='css/jquery/jquery.date_input.js'></script>
-		<link rel='stylesheet' href='css/jquery/date_input.css' type='text/css'>
 		<form method='post' action=''>
 		<input type=hidden name=mode value='heads'>
 		<input type=hidden name=type value='".$this->doc_type."'>");
@@ -937,7 +938,7 @@ class doc_Nulltype
 		Организация:<br><select name='firm'>");
 		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 			
-		if($this->doc_data[17]==0) $this->doc_data[17]=$_SESSION['j_select_firm'];
+		if($this->doc_data[17]==0) $this->doc_data[17]=$CONFIG['site']['default_firm'];
 		
 		while($nx=mysql_fetch_row($rs))
 		{
@@ -1099,11 +1100,11 @@ class doc_Nulltype
 		}
 		$tmpl->AddText("</select><br>");
 		if($this->doc_data[12])
-			$tmpl->AddText("<label><input type=radio name=nds value=0>Выделять НДС</label><br>
-			<label><input type=radio name=nds value=1 checked>Включать НДС</label><br>");
+			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label><br>
+			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");
 		else
-			$tmpl->AddText("<label><input type=radio name=nds value=0 checked>Выделять НДС</label><br>
-			<label><input type=radio name=nds value=1>Включать НДС</label><br>");
+			$tmpl->AddText("<label><input type='radio' name='nds' value='0' checked>Выделять НДС</label><br>
+			<label><input type='radio' name='nds' value='1'>Включать НДС</label><br>");
 		$tmpl->AddText("<br>");
 	}
 
@@ -1113,10 +1114,11 @@ class doc_Nulltype
 		if($this->doc_data) return;	
 		if($this->doc)
 		{
-			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`
+			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`
 			FROM `doc_list` AS `a`
 			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
 			WHERE `a`.`id`='".$this->doc."'");
+			if(mysql_errno())	throw new MysqlException('Не удалось получить основные данные документа');
 			$this->doc_data=mysql_fetch_array($res);
 			$rr=mysql_query("SELECT `param`,`value` FROM `doc_dopdata` WHERE `doc`='".$this->doc."'");
 			while($nn=mysql_fetch_row($rr))
@@ -1169,8 +1171,8 @@ class doc_Nulltype
 			$ret.=$this->apply_buttons();
 				
 			$ret.="</span>
-			<a href='?mode=print&amp;doc={$this->doc}' onclick=\"ShowContextMenu('/doc.php?mode=print&amp;doc={$this->doc}'); return false;\" title='Печать накладной'><img src='img/i_print.png' alt='Печать'></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}' onclick=\"ShowContextMenu('/doc.php?mode=morphto&amp;doc={$this->doc}'); return false;\" title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
+			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=print&amp;doc={$this->doc}')\" title='Печать накладной'><img src='img/i_print.png' alt='Печать'></a>
+			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=morphto&amp;doc={$this->doc}')\" title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
 		}
 
     		if($this->dop_menu_buttons) $ret.=$this->dop_menu_buttons;

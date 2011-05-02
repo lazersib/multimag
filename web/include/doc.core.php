@@ -365,7 +365,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	<a href='docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='img/i_user.png' alt='Журнал агентов' border='0'></a>
 	<a href='docs.php?l=dov' title='Работа с доверенными лицами'><img src='img/i_users.png' alt='лица' border='0'></a>
 	<a href='docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='img/i_sklad.png' alt='Склад' border='0'></a>
-	<a href='docs.php?l=pran' onclick=\"ShowContextMenu('/priceload.php?mode=menu'); return false;\" title='Анализ прайсов' accesskey=\"S\"><img src='img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
+	<a href='docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
 	<img src='img/i_separator.png' alt=''>
 	
 	<a href='doc.php' title='Новый документ' accesskey=\"N\"><img src='img/i_new.png' alt='Новый' border='0'></a>
@@ -379,7 +379,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	
 	<img src='img/i_separator.png' alt=''>
 	
-	<a href='' onclick=\"ShowContextMenu('/doc_otchet.php?mode=pmenu'); return false;\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
+	<a href='' onclick=\"return ShowContextMenu(event, '/doc_otchet.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
 	<a href='doc_service.php' title='Служебные функции'><img src='img/i_config.png' alt='Служебные функции' border='0'></a>
 	<a href='doc_sc.php' title='Сценарии и операции'><img src='img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
 	if($dop) $tmpl->AddText("<img src='img/i_separator.png' alt=''>");
@@ -549,17 +549,19 @@ function DocCalcDolg($agent, $print=0)
 }
 
 // Расчёт актуальной входящей цены
-function GetInCost($pos_id)
+function GetInCost($pos_id, $limit_date=0)
 {
 	$cnt=$cost=0;
+	$sql_add='';
+	if($limit_date)	$sql_add="AND `doc_list`.`date`<='$limit_date'";
 	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type` FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2')
-	WHERE `doc_list_pos`.`tovar`='$pos_id' ORDER BY `doc_list`.`date`");
-	echo mysql_error();
+	WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' $sql_add ORDER BY `doc_list`.`date`");
+	
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($nxt[2]==2)	$nxt[0]=$nxt[0]*(-1);
-		if( ($cnt+$nxt[0])==0)	$cost=0;
+		if( ($cnt+$nxt[0])==0)	{}
 		else if($nxt[0]>0)
 			$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
 		$cnt+=$nxt[0];	

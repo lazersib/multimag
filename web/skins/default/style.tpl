@@ -5,7 +5,9 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title><!--site-title--></title>
 <link rel='stylesheet' type='text/css' href='/css/global.css'>
+
 <script type='text/javascript' src='/css/comm.js'></script>
+<script type='text/javascript' src='/css/core.js'></script>
 <script type="text/javascript" src="/css/jquery/jquery.js"></script>
 <script src="/css/jquery/jquery.prettyPhoto.js" type="text/javascript"></script>
 <link rel="stylesheet" type="text/css" href="/css/jquery/prettyPhoto.css">
@@ -17,6 +19,7 @@
 
 <link rel='stylesheet' type='text/css' href='/skins/default/basic.css'>
 <link rel='stylesheet' type='text/css' href='/skins/default/layout.css'>
+<link rel='stylesheet' type='text/css' href='/skins/default/user.css'>
 <style type='text/css'>
 <!--
 <!--site-style-->

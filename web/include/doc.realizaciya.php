@@ -37,6 +37,7 @@ class doc_Realizaciya extends doc_Nulltype
 		settype($this->doc,'int');
 	}
 
+
 	function DopHead()
 	{
 		global $tmpl;
@@ -107,20 +108,28 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		</script>
 		");	
-		
+		$checked=$this->dop_data['received']?'checked':'';
+		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");	
 	}
 
 	function DopSave()
 	{
 		$plat_id=rcv('plat_id');
 		$gruzop_id=rcv('gruzop_id');
+		$received=rcv('received');
 		
 		$doc=$this->doc;
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'), ( '{$this->doc}' ,'gruzop','$gruzop_id')");
-
+		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'), ( '{$this->doc}' ,'gruzop','$gruzop_id'),  ( '{$this->doc}' ,'received','$received')");
 	}
 	
+	function DopBody()
+	{
+		global $tmpl;
+		if($this->dop_data['received'])
+			$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
+	}
+
 	function DocApply($silent=0)
 	{
 		$tim=time();
@@ -236,8 +245,8 @@ class doc_Realizaciya extends doc_Nulltype
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=6'><div>Приходный кассовый ордер</div></a>
-			<a href='?mode=morphto&amp;doc={$this->doc}&amp;tt=4'><div>Приход средств в банк</div></a>");
+			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>");
 		}
 		else if($target_type==6)
 		{
@@ -1651,7 +1660,24 @@ function SfakPDF($doc, $to_str=0)
 	
 	$dt=date("d.m.Y",$this->doc_data[5]);
 
-	$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn` FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
+	$res=mysql_query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`
+	FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->dop_data['gruzop']}'	");
+	if(mysql_errno())		throw new MysqlException("Невозможно получить данные грузополучателя!");	
+	$gruzop_info=mysql_fetch_array($res);
+	if(!$gruzop_info)		$gruzop_info=array();
+	$gruzop='';
+	if($gruzop_info['fullname'])	$gruzop.=$gruzop_info['fullname'];
+	else				$gruzop.=$gruzop_info['name'];
+	if($gruzop_info['adres'])	$gruzop.=', адрес '.$gruzop_info['adres'];
+	if($gruzop_info['tel'])		$gruzop.=', тел. '.$gruzop_info['tel'];
+	if($gruzop_info['inn'])		$gruzop.=', ИНН/КПП '.$gruzop_info['inn'];
+	if($gruzop_info['okevd'])	$gruzop.=', ОКВЭД '.$gruzop_info['okevd'];
+	if($gruzop_info['rs'])		$gruzop.=', Р/С '.$gruzop_info['rs'];
+	if($gruzop_info['bank'])	$gruzop.=', в банке '.$gruzop_info['bank'];
+	if($gruzop_info['bik'])		$gruzop.=', БИК '.$gruzop_info['bik'];
+	if($gruzop_info['ks'])		$gruzop.=', К/С '.$gruzop_info['ks'];
+
+	$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn` FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
 
 	$nx=@mysql_fetch_row($res);	
 	if($this->doc_data[13])
@@ -1693,7 +1719,7 @@ function SfakPDF($doc, $to_str=0)
 	$pdf->Cell(0,$step,$str,0,1,'L');
 	$str = iconv('UTF-8', 'windows-1251', "Грузоотправитель и его адрес: ".unhtmlentities($this->firm_vars['firm_gruzootpr']));
 	$pdf->MultiCell(0,$step,$str,0,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Грузополучатель и его адрес: ".unhtmlentities(unhtmlentities($nx[0])));
+	$str = iconv('UTF-8', 'windows-1251', "Грузополучатель и его адрес: ".unhtmlentities($gruzop));
 	$pdf->MultiCell(0,$step,$str,0,'L');
 	$str = iconv('UTF-8', 'windows-1251', "К платёжно-расчётному документу № $pp, от $ppdt");
 	$pdf->Cell(0,$step,$str,0,1,'L');

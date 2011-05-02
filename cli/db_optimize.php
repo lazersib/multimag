@@ -37,7 +37,7 @@ include_once($CONFIG['site']['location']."/include/doc.perkas.php");
   
 $mail->FromName = $CONFIG['site']['name'].' - Site Service System';  
 $mail->CharSet  = "UTF-8";
-$mail->AddAddress('all@'.$CONFIG['site']['name'], 'all@'.$CONFIG['site']['name'] );  
+$mail->AddAddress($CONFIG['site']['doc_adm_email'], $CONFIG['site']['doc_adm_email'] );  
 $mail->Subject="DB Check report";
 
 $mail_text='';
