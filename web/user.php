@@ -31,57 +31,68 @@ if($mode=='')
 
 	//$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
 
-	$rights=getright('doc_list',$uid);
-	if($rights['read'])
+	//$rights=getright('doc_list',$uid);
+	//if($rights['read'])
+	if(isAccess('doc_list','view'))
 	{
-		$tmpl->AddText("<li><a href='docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
+		$tmpl->AddText("<li><a href='/docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
 	}
 	
-	$rights=getright('statistic',$uid);
-	if($rights['read'])
+	//$rights=getright('statistic',$uid);
+	//if($rights['read'])
+	if(isAccess('statictics_browser','view'))
 	{
-		$tmpl->AddText("<li><a href='statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
+		$tmpl->AddText("<li><a href='/statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
 	}
 	
-	$rights=getright('wiki',$uid);
-	if($rights['read'])
+	//$rights=getright('wiki',$uid);
+	//if($rights['read'])
+	if(isAccess('articles','read'))
 	{
-		$tmpl->AddText("<li><a href='wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
+		$tmpl->AddText("<li><a href='/wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
 	}
 
-	$rights=getright('cli',$uid);
-	if($rights['read'])
+	//$rights=getright('cli',$uid);
+	//if($rights['read'])
+	if(isAccess('cli','read'))
 	{
 		$tmpl->AddText("<li><a href='?mode=cli_status' title=''>Статус внешних обработчиков</a></li>");
 	}
-	$rights=getright('tickets',$uid);
-	if($rights['read'])
+	
+	//$rights=getright('tickets',$uid);
+	//if($rights['read'])
+	if(isAccess('tickets','view'))
 	{
 		$tmpl->AddText("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");
 	}
 
 
-	$rights=getright('errorlog',$uid);
-	if($rights['read'])
+	//$rights=getright('errorlog',$uid);
+	//if($rights['read'])
+	if(isAccess('log_error','view'))
 	{
 		$tmpl->AddText("<li><a href='?mode=elog' accesskey='e' title='Ошибки'>Журнал ошибок (E)</a></li>");
 	}
 
-	$rights=getright('counterlog',$uid);
-	if($rights['read'])
+	//$rights=getright('counterlog',$uid);
+	//if($rights['read'])
+	if(isAccess('log_access','view'))
 	{
 		$tmpl->AddText("<li><a href='?mode=clog'>Журнал посещений</a></li>");
 	}
 
-	$rights=getright('deny_ip',$uid);
-	if($rights['read'])
+	//$rights=getright('deny_ip',$uid);
+	//if($rights['read'])
+	if(isAccess('ip-blacklist','read'))
 	{
-		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные сайты</a></li>");
+		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
 	}
-	$rights=getright('rights',$uid);
-	if($rights['write'])
+	
+	//$rights=getright('rights',$uid);
+	//if($rights['write'])
+	if(isAccess('acl_control','read'))
 	{
-		$tmpl->AddText("<li><a href='rights.php'>Привилегии доступа</a></li>");
+		$tmpl->AddText("<li><a href='/rights.php'>Привилегии доступа</a></li>");
 	}
 	
 		

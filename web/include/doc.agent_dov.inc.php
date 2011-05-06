@@ -17,7 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-//require_once("functions.inc.php");
 require_once("include/doc.core.php");
 
 // Работа с доверенными лицами агентов

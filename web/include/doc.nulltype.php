@@ -220,7 +220,7 @@ class doc_Nulltype
 
 		if($this->doc_data['agent_dishonest'])
 		{
-			$tmpl->msg($this->doc_data['agent_comment'].' ', 'err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
+			$tmpl->msg($this->doc_data['agent_comment'].' ','err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
 		}
 
 		$res=mysql_query("SELECT `doc_cost`.`name` FROM `doc_cost` WHERE `doc_cost`.`id`='{$this->dop_data['cena']}'");
