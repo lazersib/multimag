@@ -98,14 +98,38 @@ function ExecMode($mode)
 	else if($mode=='korz_add')
 	{
 		$cnt=rcv('cnt');
+		$j=rcv('j');
 		if($p)
 		{
-			$_SESSION['korz_cnt'][$p]+=$cnt;
-			if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
+			@$_SESSION['korz_cnt'][$p]+=$cnt;
 			$tmpl->ajax=1;
-			$tmpl->msg("Товар добавлен в корзину!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+			if(!$j)
+			{
+				if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
+				$tmpl->msg("Товар добавлен в корзину!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+			}
+			else
+			{
+				$korz_cnt=count(@$_SESSION['korz_cnt']);
+				$sum=0;
+				if(@$_SESSION['uid'])
+					$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
+				else
+					$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
+				$c_cena_id=@mysql_result($res,0,0);
+				if(!$c_cena_id)	$c_cena_id=1;
+				if(is_array($_SESSION['korz_cnt']))
+				foreach(@$_SESSION['korz_cnt'] as $item => $cnt)
+				{
+					$res=mysql_query("SELECT `id`, `name`, `cost` FROM `doc_base` WHERE `id`='$item'");
+					$nx=mysql_fetch_row($res);
+					$cena=GetCostPos($nx[0], 1);
+					$sum+=$cena*$cnt;
+				}
+				$tmpl->AddText("Товаров: $korz_cnt на $sum руб.");
+			}
 		}
-		else	$tmpl->msg("Номер товара зе задан!","err","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+		else	$tmpl->msg("Номер товара не задан!","err","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 	}
 	else if($mode=='korz_adj')
 	{
@@ -615,7 +639,7 @@ protected function MakeBuy()
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype);
 		$ip=getenv("REMOTE_ADDR");
-		$comm="Организация: $org<br>Телефон: $tel<br>Контактное лицо: $kont<br>IP: $ip<br>Другая информация:<br>$dop";
+		$comm="Организация: $org<br>Телефон: $tel<br>Контактное лицо: $kont<br>IP: $ip<br>Адрес: $adres<br>Другая информация:<br>$dop";
 		if(!$uid)	$comm="e-mail: $email<br>".$comm;
 		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");

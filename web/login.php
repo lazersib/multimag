@@ -113,8 +113,8 @@ function RegForm($err_target='', $err_msg='')
 	$tmpl->AddText("<p id='text'>
 	Для использования всех возможностей этого сайта, необходимо пройти процедуру регистрации. Регистрация не сложная,
 	и займёт всего несколько минут. Все зарегистрированные пользователи автоматически получают возможность приобретать товар по специальным ценам!</p>
+	<form method='post' id='reg-form'>
 	<h2>Для регистрации заполните следующую форму:</h2>
-	<form method='post'>
 	<input type='hidden' name='mode' value='regs'>
 	<table>
 	<tr><td width='50%'>
@@ -139,10 +139,6 @@ function RegForm($err_target='', $err_msg='')
 	<button type='submit'>Далее &gt;&gt;</button>
 	</form>
 	</table>");
-
-
-
-
 }
 
 if($mode=='')
@@ -240,9 +236,10 @@ if($mode=='')
 			<input type='text' name='img'>";
 		else $m='';
 		
-		$tmpl->AddText("<form method='post' action='login.php'>
+		$tmpl->AddText("
+		<form method='post' action='login.php' id='login-form'>
 		<input type='hidden' name='opt' value='login'>
-		<table>
+		<table id='login-table'>
 		<tr><th colspan='2'>
 		Введите данные:
 		<tr><td colspan='2'>

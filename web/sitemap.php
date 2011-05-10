@@ -69,6 +69,7 @@ $tmpl->AddText("</ul>");
 
 $tmpl->AddText("</ul></li>
 <li><a href='/golos.php'>Голосования</a></li>
+<li><a href='/news.php'>Новости</a></li>
 <li><a href='/photogalery.php'>Фотогалерея</a></li>
 <li><a href='/message.php'>Отправить сообщение</a></li>
 </ul>");

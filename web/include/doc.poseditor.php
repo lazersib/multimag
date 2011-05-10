@@ -320,7 +320,7 @@ function AddPos($pos)
 		WHERE `doc_list_pos`.`id`='$pos_line'");
 		if(mysql_errno())	throw MysqlException("Не удалось получить строку документа");
 		$line=mysql_fetch_assoc($res);
-		$cost=GetCostPos($pos, $this->dop_data['cena']);
+		$cost=$this->cost_id?GetCostPos($line['id'], $this->cost_id):$line['cost'];
 		$ret="{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '{$line['mesto']}' }, sum: '$doc_sum' }";
 	}
 	else

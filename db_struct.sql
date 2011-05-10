@@ -956,13 +956,19 @@ CREATE TABLE IF NOT EXISTS `loginfo` (
 --
 
 CREATE TABLE IF NOT EXISTS `news` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` varchar(8) NOT NULL,
   `title` varchar(64) NOT NULL,
-  `text` text  NOT NULL,
+  `text` text NOT NULL,
   `date` datetime NOT NULL,
-  `owner` int(11) NOT NULL,
-  UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+  `autor` int(11) NOT NULL,
+  `ex_date` date NOT NULL,
+  `img_ext` varchar(4) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `type` (`type`),
+  KEY `ex_date` (`ex_date`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+
 
 --
 -- Дамп данных таблицы `news`
@@ -1519,12 +1525,13 @@ INSERT INTO `users_groups` (`id`, `uid`, `gid`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `wiki` (
-  `name` varchar(50) NOT NULL,
+  `name` varchar(64) NOT NULL,
   `date` datetime NOT NULL,
   `autor` int(11) NOT NULL,
   `changed` datetime NOT NULL,
   `changeautor` int(11) NOT NULL,
   `text` text NOT NULL,
+  `img_ext` varchar(4) NOT NULL,
   UNIQUE KEY `name` (`name`),
   KEY `date` (`date`),
   KEY `autor` (`autor`),
@@ -1548,7 +1555,7 @@ INSERT INTO `wiki` (`name`, `date`, `autor`, `changed`, `changeautor`, `text`) V
 CREATE TABLE IF NOT EXISTS `wikiphoto` (
   `id` int(11) NOT NULL auto_increment,
   `uid` int(11) NOT NULL default '0',
-  `comment` varchar(50) NOT NULL,
+  `comment` varchar(64) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
