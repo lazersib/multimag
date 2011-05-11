@@ -19,6 +19,8 @@
 
 include_once("core.php");
 
+$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена', 'create'=>'Создание', 'delete'=>'Удаление');
+
 if($mode=='upl')
 {
 	$s=$_GET['s'];
@@ -45,96 +47,133 @@ if($mode=='')
 	$res=mysql_query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr><td>$nxt[0]<a href='?mode=gre&amp;g=$nxt[0]'><img src='/img/i_edit.png' alt='Изменить'></a> <td><a href='?mode=group&amp;g=$nxt[0]'>$nxt[1]</a><td>$nxt[2]");
+		$tmpl->AddText("<tr><td>$nxt[0]<a href='?mode=gre&amp;g=$nxt[0]'><img src='/img/i_edit.png' alt='Изменить'></a> <td><a href='?mode=group_acl&amp;g=$nxt[0]'>$nxt[1]</a><td>$nxt[2]");
 	}
 	$tmpl->AddText("</table><a href='?mode=gre'>Новая группа</a>");
 }
-else if($mode=='group')
+else if($mode=='group_acl')
 {
 	$g=rcv('g');
-	$tmpl->AddText("<h2>Группа $g</h2> <h3>Привилегии группы</h3>");
-	$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'cancel'=>'Отмена', 'create'=>'Создание', 'delete'=>'Удаление');
+	$tmpl->AddText("<h2>Группа $g: привилегии группы</h2>");
+
 	
 	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions`
 	FROM `users_objects`
 	ORDER BY `object`, `actions`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить ACL группы");
-	$tmpl->AddText("<table><tr><th>ID<th>Объект<th>Действие");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список объектов");
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='group_acl_save'>
+	<input type='hidden' name='g' value='$g'>
+	<table width='100%' class='list'><tr><th>Объект");
+	
+	$actions_show=array();
+	$object_actions=array();
+	$objects=array();
+	
 	while($nxt=mysql_fetch_array($res))
 	{
-		if($nxt['actions']=='')	$tmpl->AddText("<tr><th colspan='3'>{$nxt['desc']}");
-		else
+		$objects[$nxt['object']]=$nxt['desc'];
+		if($nxt['actions']!='')	//	$tmpl->AddText("<tr><th colspan='3'>{$nxt['desc']}");
+		//else
 		{
-			$tmpl->AddText("<tr><td>{$nxt['id']}<td>{$nxt['desc']}<td>");
 			$act_line=explode(',',$nxt['actions']);	
 			foreach($act_line as $action)
 			{
-				if(!$actions[$action])	$actions[$action]=$action;
-				$tmpl->AddText("<label><input type='checkbox' name='acl[{$nxt['object']}][$action]' value='1' >{$actions[$action]}</label><br>");
+				$object_actions[$nxt['object']][$action]='';				
+				$actions_show[$action]='1';				
 			}
 		}
 	}
 	
-	
-	
-	
-	$tmpl->AddText("</table><a href='?mode=obje&amp;g=$g'>Добавить объект</a>");
-
-	$tmpl->AddText("<h3>Пользователи в группе</h3><ul>");
-	$res=mysql_query("SELECT `users_groups`.`id`, `users_groups`.`uid`, `users`.`name` FROM `users_groups`
-	LEFT JOIN `users` ON `users`.`id` = `users_groups`.`uid`
+	$res=mysql_query("SELECT `gid`, `object`, `action` FROM `users_groups_acl`
 	WHERE `gid`='$g'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить ACL группы");
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<li>$nxt[2] (uid:$nxt[1]) - <a href='?mode=ud&amp;g=$g&amp;us_id=$nxt[1]'><img src='/img/i_del.png'></a></li>");
+		$object_actions[$nxt[1]][$nxt[2]]="style='border: #0f0 1px solid;' checked";
 	}
-	$tmpl->AddText("</ul>
-	<form action='' method=post>
-	<h3>Добавить пользователя</h3>
-	<input type='hidden' name='mode' value='us'>
-	<input type='hidden' name='g' value='$g'>
-	<input type='hidden' name='us_id' value='0' id='sid' >
-	<script type='text/javascript' src='/css/jquery/jquery.js'></script>
-	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
-	<input type='hidden' name='us_id' id='user_id' value='0'>
-	<input type='text' id='user_nm'  style='width: 450px;' value=''><br>
+	foreach($actions_show as $action => $v)
+	{
+		$tmpl->AddText("<th>{$actions[$action]}");
+	}
+	$colspan=count($actions_show)+1;
+	foreach($objects as $obj_name => $obj_desc)
+	{
+		$tmpl->AddText("<tr>");
+		if(array_key_exists($obj_name, $object_actions))
+		{
+			$tmpl->AddText("<td>$obj_desc");
+			foreach($actions_show as $action => $v)
+			{
+				$tmpl->AddText("<td>");
+				if(array_key_exists($action, $object_actions[$obj_name]))
+				{
+					$tmpl->AddText("<label><input type='checkbox' name='c_{$obj_name}_{$action}' value='1' {$object_actions[$obj_name][$action]}>Разрешить</label>");
+				}
+			}
+		}
+		else
+		{
+			$tmpl->AddText("<th colspan='$colspan'>$obj_desc");
+		}
+	}
+	$tmpl->AddText("</table>
+	<button type='submit'>Сохранить</button>
+	</form>");
+	//$tmpl->AddText("<a href='?mode=obje&amp;g=$g'>Добавить объект</a>");
+}
+else if($mode=='group_acl_save')
+{
+	$g=rcv('g');
+	$tmpl->AddText("<h2>Группа $g: сохранение привилегий группы</h2>");
+	if(!isAccess('acl_control','edit'))	throw new AccessException("Недостаточно привилегий");
+	
+	
+	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions` FROM `users_objects`
+	ORDER BY `object`, `actions`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список объектов");
+	
+	$actions_show=array();
+	$object_actions=array();
+	$objects=array();
+	
+	while($nxt=mysql_fetch_array($res))
+	{
+		$objects[$nxt['object']]=$nxt['desc'];
+		if($nxt['actions']!='')
+		{
+			$act_line=explode(',',$nxt['actions']);	
+			foreach($act_line as $action)
+			{
+				$object_actions[$nxt['object']][$action]='';				
+				$actions_show[$action]='1';				
+			}
+		}
+	}
+	
+// 	$res=mysql_query("SELECT `gid`, `object`, `action` FROM `users_groups_acl`
+// 	WHERE `gid`='$g'");
+// 	if(mysql_errno())	throw new MysqlException("Не удалось получить ACL группы");
+// 	while($nxt=mysql_fetch_row($res))
+// 	{
+// 		$object_actions[$nxt[1]][$nxt[2]]="style='border: #0f0 1px solid;' checked";
+// 	}
+	mysql_query("DELETE FROM `users_groups_acl` WHERE `gid`='$g'");
 
-	<script type=\"text/javascript\">
-	$(document).ready(function(){
-		$(\"#user_nm\").autocomplete(\"/rights.php\", {
-			delay:300,
-			minChars:1,
-			matchSubset:1,
-			autoFill:false,
-			selectFirst:true,
-			matchContains:1,
-			cacheLength:10,
-			maxItemsToShow:15, 
-			formatItem:usliFormat,
-			onItemSelect:usselectItem,
-			extraParams:{'mode':'upl'}
-		});
-	});
-	
-	function usliFormat (row, i, num) {
-		var result = row[0] + \"<em class='qnt'>email: \" +
-		row[2] + \"</em> \";
-		return result;
+	foreach($objects as $obj_name => $obj_desc)
+	{
+		if(array_key_exists($obj_name, $object_actions))
+		{
+			foreach($actions_show as $action => $v)
+			{
+				$var=rcv("c_{$obj_name}_{$action}");
+				if($var)
+					mysql_query("INSERT INTO `users_groups_acl` (`gid`, `object`, `action`)
+					VALUES ('$g', '$obj_name', '$action')");
+			}
+		}
 	}
 	
-	
-	function usselectItem(li) {
-		if( li == null ) var sValue = \"Ничего не выбрано!\";
-		if( !!li.extra ) var sValue = li.extra[0];
-		else var sValue = li.selectValue;
-		document.getElementById('user_id').value=sValue;
-	}
-	</script>
-		
-	<input type='submit' value='Записать'>
-	</form>
-	<br><br><br>
-	");
 }
 else if($mode=='obje')
 {
