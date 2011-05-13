@@ -145,8 +145,6 @@ $agent_info[2], тел. $agent_info[3]<br>
 	{
 		global $uid;
 		$tim=time();
-		$rights=getright('doc_'.$this->doc_name,$uid);		
-		if(!$rights['edit'])	throw new AccessException('');
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");		
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
@@ -156,69 +154,6 @@ $agent_info[2], тел. $agent_info[3]<br>
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 	}
 	
-	function Cancel()
-	{
-		global $tmpl;
-		global $uid;
-		
-		$tmpl->ajax=1;
-
-		mysql_query("START TRANSACTION");
-		mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base` READ ");
-		$err='';
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if($nx=@mysql_fetch_row($res))
-		{
-			if($nx[4])
-			{
-			
-				$rights=getright('doc_'.$this->doc_name,$uid);
-				$dd=date_day(time());
-				if(($rights['edit'])||($dd<$nx[1]))
-				{
-				
-					$tim=time();
-					$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
-					if($res)
-					{
-						if(!$err)
-							$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-					}
-					else $err="Ошибка отмены проведения, ошибка установки флага";
-				}
-				else
-				{
-					$tmpl->AddText("<form action='/message.php' method='post'>
-					<input type='hidden' name='mode' value='petition'>
-					<input type='hidden' name='doc' value='{$this->doc}'>
-					<fieldset><label>Запрос на отмену документа</label>
-					Опишите причину необходимости отмены документа:<br>
-					<textarea name='comment'></textarea><br>
-					<input type='submit' value='Послать запрос'>
-					</fieldset></form>");
-				}
-			}
-			else $err="Докумен НЕ проведён!";
-		}
-		else $err="Ошибка отмены проведения, ошибка выборки";
-
-		if(!$err)
-		{
-			mysql_query("COMMIT");
-			doc_log("Cancel kompredl","doc:{$this->doc}");
-		}
-		else
-		{
-			mysql_query("ROLLBACK");
-			doc_log("ERROR: Cancel kompredl - $err","doc:{$this->doc}");
-			$tmpl->AddText("<h3>$err</h3>");
-		}
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-
-	}
-
-
 	function PrintForm($doc, $opt='')
 	{
 		if($opt=='')

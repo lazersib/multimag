@@ -32,7 +32,7 @@ class doc_s_Agent
 		if($sklad) $_SESSION['sklad_num']=$sklad;
 		if(!$_SESSION['sklad_num']) $_SESSION['sklad_num']=1;
 		$sklad=$_SESSION['sklad_num'];
-		
+		if(!isAccess('list_agent','view'))	throw new AccessException("");
 		$tmpl->AddText("<h1>Агенты</h1><table width=100%><tr><td id='groups' width='200' valign='top' class='lin0'>");
 		$this->draw_groups(0);
 		$tmpl->AddText("<td id='list' valign='top'  class='lin1'>");
@@ -107,7 +107,7 @@ class doc_s_Agent
 		$pos=rcv('pos');
 		$param=rcv('param');
 		$group=rcv('g');
-
+		if(!isAccess('list_agent','view'))	throw new AccessException("");
 		if(($pos==0)&&($param!='g')) $param='';
 
 		if($pos!=0)
@@ -372,7 +372,7 @@ class doc_s_Agent
 					if($responsible!=$ag_info['responsible'])	$log_text.="responsible: ( {$ag_info['responsible']} => $responsible ), ";
 					if($data_sverki!=$ag_info['data_sverki'])	$log_text.="data_sverki: ( {$ag_info['data_sverki']} => $data_sverki ), ";
 				}
-				
+				if(!isAccess('list_agent','edit'))	throw new AccessException("");
 				$res=mysql_query("UPDATE `doc_agent` SET `name`='$pos_name', `type`='$type', `group`='$g', `email`='$email', `fullname`='$fullname', `tel`='$tel', `adres`='$adres', `gruzopol`='$gruzopol', `inn`='$inn', `rs`='$rs', `ks`='$ks', `okevd`='$okevd', `okpo`='$okpo', `bank`='$bank', `bik`='$bik', `pfio`='$pfio', `pdol`='$pdol', `pasp_num`='$pasp_num', `pasp_date`='$pasp_date', `pasp_kem`='$pasp_kem', `comment`='$comment', `dishonest`='$dishonest', `dir_fio`='$dir_fio', `dir_fio_r`='$dir_fio_r' $sql_add  WHERE `id`='$pos'");
 				if($res) $tmpl->msg("Данные обновлены! $cc");
 				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
@@ -389,7 +389,7 @@ class doc_s_Agent
 					$sql_c=", `data_sverki`";
 					$sql_v=", '$data_sverki'";
 				}
-			
+				if(!isAccess('list_agent','create'))	throw new AccessException("");
 				$res=mysql_query("INSERT INTO `doc_agent` (`name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `dishonest` $sql_c  ) VALUES ( '$pos_name', '$fullname', '$tel', '$adres', '$gruzopol', '$inn', '$dir_fio', '$dir_fio_r', '$pfio', '$pdol', '$okevd', '$okpo', '$rs', '$bank', '$ks', '$bik', '$group', '$email', '$type', '$pasp_num', '$pasp_date', '$pasp_kem', '$comment', '$uid', '$dishonest' $sql_v )");
 				$pos=mysql_insert_id();
 				$this->PosMenu($pos, '');
@@ -408,6 +408,7 @@ class doc_s_Agent
 			$max_pix=800;
 			$nm=rcv('nm');
 			$set_def=rcv('set_def');
+			if(!isAccess('list_agent','edit'))	throw new AccessException("");
 			$res=mysql_query("SELECT `id` FROM `doc_img` WHERE `name`='$nm'");
 			if(mysql_num_rows($res))
 			{
@@ -457,7 +458,7 @@ class doc_s_Agent
 			$name=rcv('name');
 			$desc=rcv('desc');
 			$pid=rcv('pid');
-
+			if(!isAccess('list_agent','edit'))	throw new AccessException("");
 			if($group)
 				$res=mysql_query("UPDATE `doc_agent_group` SET `name`='$name', `desc`='$desc', `pid`='$pid' WHERE `id` = '$group'");
 			else 

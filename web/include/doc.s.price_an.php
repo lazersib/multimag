@@ -24,6 +24,7 @@ class doc_s_Price_an
 	{
 		global $tmpl;
 		doc_menu(0,0);
+		if(!isAccess('list_price_an','view'))	throw new AccessException("");
 		$tmpl->AddStyle("
 		.tlist{border: 1px solid #bbb; width: 100%; border-collapse: collapse;}
 		.tlist tr:nth-child(2n) {background: #e0f0ff; } 
@@ -221,7 +222,7 @@ class doc_s_Price_an
 		$pos=rcv('pos');
 		$param=rcv('param');
 		$group=rcv('g');
-
+		if(!isAccess('list_price_an','edit'))	throw new AccessException("");
 		if($pos!=0)
 		{
 			$this->PosMenu($pos, $param);

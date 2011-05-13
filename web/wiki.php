@@ -28,8 +28,6 @@ if(!$p)
 	$p=urldecode(urldecode($arr[0]));
 }
 
-$rights=getright('wiki',$uid);
-
 function wiki_form($p,$text='')
 {
 	global $tmpl;
@@ -84,13 +82,13 @@ else
 			if(@$_SESSION['uid'])
 			{
 				$tmpl->AddText("<div id='page-info'>Создал: $nxt[1], date: $nxt[2] $ch");
-				if($rights['write'])	$tmpl->AddText(", <a href='/wiki.php?p=$p&amp;mode=edit'>Исправить</a>");
+				if(isAccess('articles','edit'))	$tmpl->AddText(", <a href='/wiki.php?p=$p&amp;mode=edit'>Исправить</a>");
 				$tmpl->AddText("</div>");
 			}
 			$tmpl->AddText("$text<br><br>");
 			
 		}
-		else if($rights['write'])
+		if(isAccess('articles','edit'))
 		{
 			if($mode=='edit')
 			{

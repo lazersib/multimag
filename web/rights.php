@@ -19,7 +19,7 @@
 
 include_once("core.php");
 
-$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена', 'create'=>'Создание', 'delete'=>'Удаление');
+$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение');
 
 if($mode=='upl')
 {
@@ -36,7 +36,7 @@ if($mode=='upl')
 	exit();
 }
 
-if(!isAccess('acl_control','edit'))	throw new AccessException("Недостаточно привилегий");
+if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
 
 $tmpl->SetText("<h1 id='page-title'>Настройка привилегий</h1>");
 $tmpl->SetTitle("Настройка привилегий");
@@ -54,12 +54,9 @@ if($mode=='')
 else if($mode=='group_acl')
 {
 	$g=rcv('g');
-	$tmpl->AddText("<h2>Группа $g: привилегии группы</h2>");
-
-	
+	$tmpl->AddText("<h2>Привилегии группы</h2>");	
 	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions`
-	FROM `users_objects`
-	ORDER BY `object`, `actions`");
+	FROM `users_objects` ORDER BY `object`, `actions`");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список объектов");
 	$tmpl->AddText("<form action='' method='post'>
 	<input type='hidden' name='mode' value='group_acl_save'>
@@ -73,8 +70,7 @@ else if($mode=='group_acl')
 	while($nxt=mysql_fetch_array($res))
 	{
 		$objects[$nxt['object']]=$nxt['desc'];
-		if($nxt['actions']!='')	//	$tmpl->AddText("<tr><th colspan='3'>{$nxt['desc']}");
-		//else
+		if($nxt['actions']!='')
 		{
 			$act_line=explode(',',$nxt['actions']);	
 			foreach($act_line as $action)
@@ -119,14 +115,65 @@ else if($mode=='group_acl')
 	}
 	$tmpl->AddText("</table>
 	<button type='submit'>Сохранить</button>
-	</form>");
-	//$tmpl->AddText("<a href='?mode=obje&amp;g=$g'>Добавить объект</a>");
+	</form>
+	<h2>Пользователи в группе</h2>
+	<form action='' method='post'>
+	<input type='hidden' name='mode' value='us'>
+	<input type='hidden' name='g' value='$g'>
+	<input type='hidden' name='us_id' value='-1' id='sid' >
+	<script type='text/javascript' src='/css/jquery/jquery.js'></script>
+	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+	<input type='hidden' name='us_id' id='user_id' value='0'>
+	<input type='text' id='user_nm'  style='width: 450px;' value=''><br>
+	
+	<script type=\"text/javascript\">
+	$(document).ready(function(){
+		$(\"#user_nm\").autocomplete(\"/rights.php\", {
+			delay:300,
+			minChars:1,
+			matchSubset:1,
+			autoFill:false,
+			selectFirst:true,
+			matchContains:1,
+			cacheLength:10,
+			maxItemsToShow:15, 
+			formatItem:usliFormat,
+			onItemSelect:usselectItem,
+			extraParams:{'mode':'upl'}
+		});
+	});
+	
+	function usliFormat (row, i, num) {
+		var result = row[0] + \"<em class='qnt'>email: \" +
+		row[2] + \"</em> \";
+		return result;
+	}		
+	function usselectItem(li) {
+		if( li == null ) var sValue = \"Ничего не выбрано!\";
+		if( !!li.extra ) var sValue = li.extra[0];
+		else var sValue = li.selectValue;
+		document.getElementById('user_id').value=sValue;
+	}
+	</script>		
+	<input type='submit' value='Записать'>
+	</form>
+	");
+	
+	$res=mysql_query("SELECT `users_in_group`.`uid`, `users`.`name`
+	FROM `users_in_group`
+	LEFT JOIN `users` ON `users_in_group`.`uid`=`users`.`id`
+	WHERE `users_in_group`.`gid`='$g'");
+	while($nxt=mysql_fetch_row($res))
+	{
+		$tmpl->AddText("<a href='?mode=ud&amp;us_id=$nxt[0]&amp;g=$g'><img src='/img/i_del.png' alt='Удалить'></a> - $nxt[1]<br>");
+	}
+	
 }
 else if($mode=='group_acl_save')
 {
 	$g=rcv('g');
 	$tmpl->AddText("<h2>Группа $g: сохранение привилегий группы</h2>");
-	if(!isAccess('acl_control','edit'))	throw new AccessException("Недостаточно привилегий");
+	if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
 	
 	
 	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions` FROM `users_objects`
@@ -151,15 +198,7 @@ else if($mode=='group_acl_save')
 		}
 	}
 	
-// 	$res=mysql_query("SELECT `gid`, `object`, `action` FROM `users_groups_acl`
-// 	WHERE `gid`='$g'");
-// 	if(mysql_errno())	throw new MysqlException("Не удалось получить ACL группы");
-// 	while($nxt=mysql_fetch_row($res))
-// 	{
-// 		$object_actions[$nxt[1]][$nxt[2]]="style='border: #0f0 1px solid;' checked";
-// 	}
 	mysql_query("DELETE FROM `users_groups_acl` WHERE `gid`='$g'");
-
 	foreach($objects as $obj_name => $obj_desc)
 	{
 		if(array_key_exists($obj_name, $object_actions))
@@ -172,57 +211,6 @@ else if($mode=='group_acl_save')
 					VALUES ('$g', '$obj_name', '$action')");
 			}
 		}
-	}
-	
-}
-else if($mode=='obje')
-{
-	$o=rcv('o');
-	$g=rcv('g');
-	$res=mysql_query("SELECT `id`, `object`, `a_read`, `a_write`, `a_edit`, `a_delete`
-	FROM `users_grouprights` WHERE `object`='$o' AND `gid`='$g'");
-	@$nxt=mysql_fetch_row($res);
-
-	for($i=2;$i<6;$i++)	if($nxt[$i]) $nxt[$i]='checked';
-
-	$tmpl->AddText("<h2>Объект $g</h2>
-	<form action='' method='post'>
-	<input type='hidden' name='mode' value='objs'>
-	<input type='hidden' name='g' value='$g'>
-	Имя объекта:<br>
-	<input type='text' name='o' value='$nxt[1]'><br>
-	Привилегии:<br>
-	<label><input type='checkbox' name='a_read' value='1' $nxt[2]>Чтение</label><br>
-	<label><input type='checkbox' name='a_write' value='1' $nxt[3]>Запись</label><br>
-	<label><input type='checkbox' name='a_edit' value=1 $nxt[4]>Изменение</label><br>
-	<label><input type='checkbox' name='a_delete' value=1 $nxt[5]>Удаление</label><br>
-	<input type='submit' value='Записать'>
-	</form>");
-}
-else if($mode=='objs')
-{
-	if(!isAccess('acl','read'))
-	$o=rcv('o');
-	$g=rcv('g');
-	$a_read=rcv('a_read');
-	$a_write=rcv('a_write');
-	$a_edit=rcv('a_edit');
-	$a_delete=rcv('a_delete');
-	$res=mysql_query("SELECT `id`, `object`, `a_read`, `a_write`, `a_edit`, `a_delete`
-	FROM `users_grouprights` WHERE `object`='$o' AND `gid`='$g'");
-	if(mysql_num_rows($res))
-	{
-		$res=mysql_query("UPDATE `users_grouprights` SET `a_read`='$a_read', `a_write`='$a_write', `a_edit`='$a_edit', `a_delete`='$a_delete' WHERE `gid`='$g' AND `object`='$o'");
-		if($res) $tmpl->msg("Привилегии обновлены","ok");
-		else $tmpl->msg("Привилегии НЕ обновлены","err");
-	}
-	else
-	{
-		$res=mysql_query("INSERT INTO `users_grouprights`
-		(`gid`, `object`, `a_read`, `a_write`, `a_edit`, `a_delete`) VALUES
-		('$g', '$o', '$a_read', '$a_write', '$a_edit', '$a_delete' ) ");
-		if($res) $tmpl->msg("Привилегии добавлены","ok");
-		else $tmpl->msg("Привилегии НЕ добавлены","err");
 	}
 }
 else if($mode=='gre')
@@ -265,23 +253,22 @@ else if($mode=='us')
 {
 	$g=rcv('g');
 	$us_id=rcv('us_id');
-	if($us_id==0) $tmpl->msg("Пользовательне выбран!");
+	if($us_id<0) $tmpl->msg("Пользователь не выбран!","err");
 	else
 	{
-	$res=mysql_query("INSERT INTO `users_groups`
-	( `uid`, `gid`) VALUES ('$us_id', '$g')");
-	if($res) $tmpl->msg("Пользователь добавлен","ok");
-	else $tmpl->msg("Пользователь НЕ добавлен","err");
+		$res=mysql_query("INSERT INTO `users_in_group` ( `uid`, `gid`) VALUES ('$us_id', '$g')");
+		if(mysql_errno())	throw new MysqlException("Пользователь не добавлен");
+		$tmpl->msg("Пользователь добавлен","ok");
 	}
 }
 else if($mode=='ud')
 {
 	$g=rcv('g');
 	$us_id=rcv('us_id');
-	if($us_id==0) $tmpl->msg("Пользователь не выбран!");
-			else
+	if($us_id<0) $tmpl->msg("Пользователь не выбран!");
+	else
 	{
-		$res=mysql_query("DELETE FROM `users_groups` WHERE `uid`='$us_id' AND `gid`='$g'");
+		$res=mysql_query("DELETE FROM `users_in_group` WHERE `uid`='$us_id' AND `gid`='$g'");
 		if($res) $tmpl->msg("Пользователь удалён","ok");
 		else $tmpl->msg("Пользователь НЕ удалён","err");
 	}

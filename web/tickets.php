@@ -99,14 +99,7 @@ function ShowTicket($n)
 	}
 }
 
-$uid=@$_SESSION['uid'];
-$rights=getright('tickets',$uid);
-if(!$rights['read'])
-{
-	$tmpl->msg("У Вас недостаточно привилегий!","err");
-	$tmpl->write();
-	exit();	
-}
+if(!isAccess('generic_tickets','view'))	throw new AccessException("Недостаточно привилегий");
 
 if($mode=='')
 {

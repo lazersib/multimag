@@ -76,7 +76,6 @@ class doc_Nulltype
 	function head()
 	{
 		global $tmpl;
-
 		if($this->doc_type==0)
 			$tmpl->msg("Невозможно создать документ без типа!",'err');
 		else
@@ -84,31 +83,26 @@ class doc_Nulltype
 			$uid=@$_SESSION['uid'];
 			if($this->doc_name) $object='doc_'.$this->doc_name;
 			else $object='doc';
-			$rights=getright($object,$uid);
-			if($rights['read'])
+			if(!isAccess($object,'view'))	throw new AccessException("view");
+			doc_menu($this->dop_buttons());
+			$this->DrawHeadformStart();
+			$this->DrawDTFields();
+			$fields=split(' ',$this->header_fields);
+			foreach($fields as $f)
 			{
-				doc_menu($this->dop_buttons());
-				$this->DrawHeadformStart();
-				$this->DrawDTFields();
-				$fields=split(' ',$this->header_fields);
-				foreach($fields as $f)
+				switch($f)
 				{
-					switch($f)
-					{
-						case 'agent':	$this->DrawAgentField(); break;
-						case 'sklad':	$this->DrawSkladField(); break;
-						case 'kassa':	$this->DrawKassaField();  break;
-						case 'bank':	$this->DrawBankField();  break;
-						case 'cena':	$this->DrawCenaField();  break;
-						case 'sum':	$this->DrawSumField();  break;
-					}
+					case 'agent':	$this->DrawAgentField(); break;
+					case 'sklad':	$this->DrawSkladField(); break;
+					case 'kassa':	$this->DrawKassaField();  break;
+					case 'bank':	$this->DrawBankField();  break;
+					case 'cena':	$this->DrawCenaField();  break;
+					case 'sum':	$this->DrawSumField();  break;
 				}
-				if(method_exists($this,'DopHead'))
-					$this->DopHead();
-				
-				$this->DrawHeadformEnd();
 			}
-			else $tmpl->logger("Недостаточно привелегий read для $object");
+			if(method_exists($this,'DopHead'))	$this->DopHead();
+			
+			$this->DrawHeadformEnd();
 		}
 	}
 	// Применить изменения редактирования
@@ -119,6 +113,9 @@ class doc_Nulltype
 		
 		$doc=$this->doc;
 		$type=$this->doc_type;
+		
+		if($this->doc_name) $object='doc_'.$this->doc_name;
+		else $object='doc';
 		
 		$firm_id=rcv('firm');
 		settype($firm_id,'int');
@@ -179,32 +176,25 @@ class doc_Nulltype
 			
 			if($doc)
 			{
+				if(!isAccess($object,'edit'))	throw new AccessException("");
 				$res=mysql_query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='$doc'");
-				
-				if($res)
-				{
-					$link="/doc.php?doc=$doc&mode=body";
-					doc_log("UPDATE {$this->doc_name}","$sqlupdate",'doc',$doc);
-				}
-				else $tmpl->msg("Документ НЕ сохранён!","err");
+				if(mysql_errno())	throw new MysqlException("Документ не сохранён");
+				$link="/doc.php?doc=$doc&mode=body";
+				doc_log("UPDATE {$this->doc_name}","$sqlupdate",'doc',$doc);
 			}
 			else
 			{
-				$res=mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys)
-				VALUES	($sqlinsert_value)");
-				echo mysql_error();
+				if(!isAccess($object,'create'))	throw new AccessException("");
+				$res=mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
+				if(mysql_errno())	throw new MysqlException("Документ не сохранён");
 				$this->doc=$doc= mysql_insert_id();
-				
-				if($res)
-				{
-					$link="/doc.php?doc=$doc&mode=body";
-					doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$doc);
-				}
-				else $tmpl->logger("Документ НЕ создан! ($sqlinsert_keys) - ($sqlinsert_value)",0,mysql_error());
+				$link="/doc.php?doc=$doc&mode=body";
+				doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$doc);
 			}
 			
 			if(method_exists($this,'DopSave'))	$this->DopSave();
 			if($cena_update)	mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','$cena')");
+			if(mysql_errno())	throw new MysqlException("Цена не сохранена");
 			if($link) header("Location: $link");
 		}
 		return $this->doc=$doc;
@@ -213,6 +203,11 @@ class doc_Nulltype
 	function body()
 	{
 		global $tmpl, $uid;
+		
+		if($this->doc_name) $object='doc_'.$this->doc_name;
+		else $object='doc';
+		if(!isAccess($object,'view'))	throw new AccessException("");
+		
 		doc_menu($this->dop_buttons());
 		$doc_altnum=$this->doc_data[9].$this->doc_data[10];
 		$dt=date("d.m.Y H:i:s",$this->doc_data[5]);
@@ -304,55 +299,6 @@ class doc_Nulltype
 		$tmpl->AddText("</div>");
 		$tmpl->AddText("<br><br>");
 	}
-
-	function Apply($doc=0, $silent=0)
-	{
-		global $tmpl;
-		global $uid;
-		$tmpl->ajax=1;
-		$cnt=0;
-		$tim=time();
-		
-		try
-		{
-			mysql_query("START TRANSACTION");
-			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
-				
-			if(method_exists($this,'DocApply'))	$this->DocApply($silent);
-			else	throw new Exception("Метод проведения данного документа не определён!");
-		}
-		catch(MysqlException $e)
-		{
-			mysql_query("ROLLBACK");
-			if(!$silent)
-			{
-				$tmpl->AddText("<h3>".$e->getMessage()."</h3>");
-				doc_log("ERROR APPLY {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
-			}
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-			return $e->getMessage().$e->sql_error;
-		}
-		catch( Exception $e)
-		{
-			mysql_query("ROLLBACK");
-			if(!$silent)
-			{
-				$tmpl->AddText("<h3>".$e->getMessage()."</h3>");
-				doc_log("ERROR APPLY {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
-			}
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-			return $e->getMessage();
-		}
-		
-		mysql_query("COMMIT");
-		if(!$silent)
-		{
-			doc_log("APPLY {$this->doc_name}", '', 'doc', $this->doc);
-			$tmpl->AddText("<h3>Докумен успешно проведён!</h3>");
-		}
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-		return;
-	}
 	
 	function ApplyJson()
 	{
@@ -361,6 +307,9 @@ class doc_Nulltype
 		
 		try
 		{
+			if($this->doc_name) $object='doc_'.$this->doc_name;
+			else $object='doc';
+			if(!isAccess($object,'apply'))	throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
 			if(method_exists($this,'DocApply'))	$this->DocApply($silent);
@@ -393,9 +342,16 @@ class doc_Nulltype
 	{
 		global $uid;
 		$tim=time();
+		$dd=date_day($tim);
+		if($this->doc_name) $object='doc_'.$this->doc_name;
+		else $object='doc';
 		
 		try
 		{	
+			
+			if( !isAccess($object,'cancel') )
+				if( (!isAccess($object,'cancel')) && ($dd>$this->doc_data['date']) )
+					throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
 			$this->get_docdata();
@@ -422,9 +378,8 @@ class doc_Nulltype
 		{
 			mysql_query("ROLLBACK");
 			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-			$rights=getright('doc_error_create',$uid);
 			$msg='';
-			if($rights['write'])
+			if( isAccess($object,'forcecancel') )
 				$msg="<br>Вы можете <a href='/doc.php?mode=forcecancel&amp;doc={$this->doc}'>принудительно снять проведение</a>.";
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage().$msg."\" }";	
 			return $json;
@@ -449,29 +404,26 @@ class doc_Nulltype
 	{
 		global $tmpl, $uid;
 		
-		$rights=getright('doc_error_create',$uid);
-		if(!$rights['write'])
+		if($this->doc_name) $object='doc_'.$this->doc_name;
+		else $object='doc';
+		if(!isAccess($object,'forcecancel'))	throw new AccessException("");
+		
+		$opt=rcv('opt');
+		if($opt=='')
 		{
-			$tmpl->AddText("<h3>Недостаточно привилегий для того, чтобы испортить базу!</h3>");
+			$tmpl->AddText("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
+			<center>
+			<a href='/docj.php' style='color: #0b0'>Нет</a> |
+			<a href='/doc.php?mode=forcecancel&amp;opt=yes&amp;doc={$this->doc}' style='color: #f00'>Да</a>
+			</center>");
 		}
 		else
 		{
-			$opt=rcv('opt');
-			if($opt=='')
-			{
-				$tmpl->AddText("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
-				<center>
-				<a href='/docj.php' style='color: #0b0'>Нет</a> |
-				<a href='/doc.php?mode=forcecancel&amp;opt=yes&amp;doc={$this->doc}' style='color: #f00'>Да</a>
-				</center>");
-			}
-			else
-			{
-				doc_log("FORCE CANCEL {$this->doc_name}",'', 'doc', $this->doc);
-				$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
-				$tmpl->msg("Всё, сделано.","err","Снятие отметки проведения");
-			}
+			doc_log("FORCE CANCEL {$this->doc_name}",'', 'doc', $this->doc);
+			$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
+			$tmpl->msg("Всё, сделано.","err","Снятие отметки проведения");
 		}
+		
 	}
 	
 	// Печать документа
@@ -497,7 +449,10 @@ class doc_Nulltype
    	function Connect($p_doc)
    	{
    		if($this->doc_data[6])	throw new Exception("Операция не допускается для проведённого документа!");
-   		mysql_query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
+		if($this->doc_name) $object='doc_'.$this->doc_name;
+		else $object='doc';
+		if(!isAccess($object,'edit'))	throw new AccessException("");
+		mysql_query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
    		if(mysql_errno())	throw new MysqlException("Не удалось обновить докумнет!");	
    	}
    	
@@ -517,7 +472,6 @@ class doc_Nulltype
 	// Служебные опции
 	function _Service($opt, $pos)
 	{
-	
 		if(!$this->sklad_editor_enable) return 0;
 		global $tmpl;
 		global $uid;
@@ -526,8 +480,7 @@ class doc_Nulltype
 		
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
-		$rights=getright($object,$uid);
-		if($rights['write'])
+		if( !isAccess($object,'edit') )
 		{
 			$this->get_docdata();
 			
@@ -1033,8 +986,6 @@ class doc_Nulltype
 	protected function cancel_buttons()
 	{
 // 		$a='';
-// 		$rights=getright('doc_error_create',$uid);
-// 		if($rights['write'])	$a="
 		return "<a title='Отменить проводку' onclick='CancelDoc({$this->doc}); return false;'><img src='img/i_revert.png' alt='Отменить' /></a>";
 	}
 	// Вычисление, можно ли отменить кассовый документ

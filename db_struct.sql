@@ -1536,6 +1536,68 @@ INSERT INTO `users_in_group` (`id`, `uid`, `gid`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `users_objects`
+--
+
+CREATE TABLE IF NOT EXISTS `users_objects` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `object` varchar(32) NOT NULL,
+  `desc` varchar(128) NOT NULL,
+  `actions` varchar(128) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `object` (`object`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=45;
+
+--
+-- Дамп данных таблицы `users_objects`
+--
+
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
+(1, 'doc', 'Документы', ''),
+(2, 'doc_list', 'Журнал документов', 'view,delete'),
+(3, 'doc_postuplenie', 'Поступление', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(4, 'generic_articles', 'Доступ к статьям', 'view,edit,create,delete'),
+(5, 'sys', 'Системные объекты', ''),
+(6, 'generic', 'Общие объекты', ''),
+(7, 'sys_acl', 'Управление привилегиями', 'view,edit'),
+(8, 'doc_realiz', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(9, 'doc_zayavka', 'Документ заявки', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(10, 'doc_kompredl', 'Коммерческое предложение', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(11, 'doc_dogovor', 'Договор', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(12, 'doc_doveren', 'Доверенность', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(13, 'doc_pbank', 'Приход средств в банк', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(14, 'doc_pertemeshenie', 'Перемещение товара', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(15, 'doc_perkas', 'Перемещение средств в кассе', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(16, 'doc_predlojenie', 'Предложение поставщика', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(17, 'doc_rbank', 'Расход средств из банка', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(18, 'doc_realiz_op', 'Оперативная реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(19, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(20, 'doc_sborka', 'Сборка изделия', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(21, 'doc_specific', 'Спецификация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(22, 'doc_v_puti', 'Товар в пути', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(23, 'list', 'Списки', ''),
+(24, 'list_agent', 'Агенты', 'create,edit,view'),
+(25, 'list_sklad', 'Склад', 'create,edit,view'),
+(26, 'list_price_an', 'Анализатор прайсов', 'create,edit,view,delete'),
+(27, 'list_agent_dov', 'Доверенные лица', 'create,edit,view'),
+(28, 'report', 'Отчёты', ''),
+(29, 'report_cash', 'Кассовый отчёт', 'view'),
+(30, 'generic_news', 'Новости', 'view,create,edit,delete'),
+(31, 'doc_service', 'Служебные функции', 'view'),
+(32, 'doc_scropts', 'Сценарии и операции', 'view,exec'),
+(33, 'log', 'Системные журналы', ''),
+(34, 'log_browser', 'Статистирка броузеров', 'view'),
+(35, 'log_error', 'Журнал ошибок', 'view'),
+(36, 'log_access', 'Журнал посещений', 'view'),
+(37, 'sys_async_task', 'Ассинхронные задачи', 'view,exec'),
+(38, 'sys_ip-blacklist', 'Чёрный список IP адресов', 'view,create,delete'),
+(39, 'sys_ip-log', 'Журнал обращений к ip адресам', 'view'),
+(40, 'generic_price_an', 'Анализатор прайсов', 'view'),
+(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete');
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `wiki`
 --
 

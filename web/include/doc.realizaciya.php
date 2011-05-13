@@ -165,7 +165,6 @@ class doc_Realizaciya extends doc_Nulltype
 	{
 		global $uid;	
 		$tmpl->ajax=1;
-		$rights=getright('doc_'.$this->doc_name,$uid);
 		$tim=time();
 		$dd=date_day($tim);
 
@@ -178,7 +177,6 @@ class doc_Realizaciya extends doc_Nulltype
 		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `ok`>'0'");
 		if(!$res)				throw new MysqlException('Ошибка выборки потомков документов!');	
 		if(mysql_num_rows($res))		throw new Exception('Документ оплачен! Нельзя отменять!');
-		if((!$rights['edit'])&&($dd>$nx[1]))	throw new AccessException('');
 
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
@@ -322,8 +320,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$opt=rcv('opt');
 		$pos=rcv('pos');
 
-		$rights=getright('doc_'.$this->doc_name,$uid);
-		if($rights['write'])
+		if(isAccess('doc_'.$this->doc_name,'write'))
 		{
 			if(parent::_Service($opt,$pos))	{}
 			else if($opt=='dov')

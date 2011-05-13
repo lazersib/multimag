@@ -75,73 +75,15 @@ class doc_Doveren extends doc_Nulltype
 		global $uid;
 		$tim=time();
 		$dd=date_day($tim);
-		$rights=getright('doc_doverennost',$uid);
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
 		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');	
 		if(! $nx[4])				throw new Exception('Документ НЕ проведён!');
-		if((!$rights['edit'])&&($dd>$nx[1]))	throw new AccessException('');
 		
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 	}
-
-	function Cancel($doc)
-	{
-	    global $tmpl;
-	    global $uid;
-
-	    $tmpl->ajax=1;
-	    
-		$rights=getright('doc_doverennost',$uid);
-
-		mysql_query("START TRANSACTION");
-		mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt` READ ");
-		$err='';
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='$doc'");
-		if($nx=@mysql_fetch_row($res))
-		{
-			if($nx[4])
-			{
-				$dd=date_day(time());
-				if(($rights['edit'])||($dd<$nx[1]))
-				{
-			
-					$tim=time();
-					$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='$doc'");
-					if($res)
-					{
-						if(!$err)
-						{
-							$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-							$tmpl->AddText(but_provodka($doc,0));
-						}
-					}
-					else $err="Ошибка отмены проведения, ошибка установки флага";
-				}
-				else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
-			}
-			else $err="Докумен НЕ проведён!";
-		}
-		else $err="Ошибка отмены проведения, ошибка выборки";
-
-		if(!$err)
-		{
-			mysql_query("COMMIT");
-			doc_log("Cancel doverennost","doc:$doc");
-		}
-		else
-		{
-			mysql_query("ROLLBACK");
-			doc_log("ERROR: Cancel doverennost - $err","doc:$doc");
-			$tmpl->AddText("<h3>$err</h3>");
-
-		}
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-	}
-
 
 	function PrintForm($doc, $opt='')
 	{
@@ -222,7 +164,8 @@ class doc_Doveren extends doc_Nulltype
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
-
+		
+		/// TODO: Разобраться с этим кодом
 		$rights=getright('doc_realizaciya',$uid);
 		if($rights['write'])
 		{

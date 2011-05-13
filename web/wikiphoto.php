@@ -106,11 +106,7 @@ if($mode==""||$mode=='view')
 		LIMIT $sl,$lim");
 
 	}
-	$rights=getright('wikiphoto',$uid);
-	if($rights['write'])
-	{
-		$tmpl->AddText("<br><a href='?mode=add'>Добавить</a>");
-	}
+	$tmpl->AddText("<br><a href='?mode=add'>Добавить</a>");
 }
 else if($mode=='viewall')
 {
@@ -122,9 +118,8 @@ else if($mode=='viewall')
 }
 else if($mode=="add")
 {
-	$rights=getright('wiki',$uid);
-	if($rights['write'])
-	{
+	if(!isAccess('articles','edit'))	throw new AccessException("Недостаточно привилегий");
+
 		$tmpl->AddText("<h3>Добавить фотографию</h3>");
 		$tmpl->AddText("Фотографии в данный разделе используются для последующего отображения в вики-статьях. После добавления Вы получите код фотографии.<br>
 		<form method=post action='wikiphoto.php' enctype='multipart/form-data'>
@@ -136,16 +131,13 @@ else if($mode=="add")
 		<input type=text name=comm><br>
 		<input type=submit value='Сохранить'>
 		</form>");
-	}
-	else $tmpl->msg("Недостаточто прав!");
 }
 else if($mode=="addo")
 {
 	$tmpl->AddText("<h3>Сохранение фотографии</h3>");
 	$comm=rcv('comm');
-	$rights=getright('wiki',$uid);
-	if($rights['write'])
-	{
+	if(!isAccess('articles','edit'))	throw new AccessException("Недостаточно привилегий");
+
 	$an=" Фотография не установлена!";
 	if(strlen($comm)>1)
 	{
@@ -182,8 +174,7 @@ else if($mode=="addo")
 	else $tmpl->msg("Не передан файл!$an","err");
 	}
 	else $tmpl->msg("Необходимо написать комментарий!","err");
-	}
-	else $tmpl->msg("Недостаточто прав!");
+
 }
 else $tmpl->msg("Ты сюда не ходи!","info");
 

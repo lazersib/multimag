@@ -85,82 +85,6 @@ class doc_Realiz_op extends doc_Nulltype
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
 	}
 
-	function Cancel($doc)
-	{
-		global $tmpl;
-		global $uid;
-	
-		$tmpl->ajax=1;
-		$rights=getright('doc_'.$this->doc_name,$uid);
-
-		mysql_query("START TRANSACTION");
-		mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt` READ ");
-		$err='';
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='$doc'");
-		if($nx=@mysql_fetch_row($res))
-		{
-			if($nx[4])
-			{
-				$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$doc' AND `ok`>'0'");
-				if(mysql_num_rows($res)) // Если есть проведённые потомки - нельзя отменять
-				{
-					$err="Документ оплачен! Нельзя отменять!";
-				}
-				else
-				{
-					$dd=date_day(time());
-					if(($rights['edit'])||($dd<$nx[1]))
-					{
-				
-						$tim=time();
-						$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='$doc'");
-						if($res)
-						{
-							$sc="";
-							if($nx[3]==2) $sc=2;
-
-							if(!$err)
-							{
-								$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-								$tmpl->AddText(but_provodka($doc,0));
-							}
-						}
-						else $err="Ошибка отмены проведения, ошибка установки флага";
-					}
-					else 
-					{
-						$tmpl->AddText("<form action='/message.php' method='post'>
-						<input type='hidden' name='mode' value='petition'>
-						<input type='hidden' name='doc' value='$doc'>
-						<fieldset><label>Запрос на отмену документа</label>
-						Опишите причину необходимости отмены документа:<br>
-						<textarea name='comment'></textarea><br>
-						<input type='submit' value='Послать запрос'>
-						</fieldset></form>");
-						$err="Докумен НЕ отменён!";
-					}
-				}
-			}
-			else $err="Докумен НЕ проведён!";
-		}
-		else $err="Ошибка отмены проведения, ошибка выборки";
-
-		if(!$err)
-		{
-			mysql_query("COMMIT");
-			doc_log("Cancel realizaciya","doc:$doc", 'doc', $this->doc);
-		}
-		else
-		{
-			mysql_query("ROLLBACK");
-			doc_log("ERROR: Cancel realizaciya", $err, 'doc', $this->doc);
-			$tmpl->AddText("<h3>$err</h3>");
-
-		}
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-	}
-
 	function PrintForm($doc, $opt='')
 	{
 		if($opt=='')
@@ -278,9 +202,7 @@ class doc_Realiz_op extends doc_Nulltype
 		$opt=rcv('opt');
 		$pos=rcv('pos');
 
-		$rights=getright('doc_realizaciya',$uid);
-		if($rights['write'])
-		{
+
 			if($doc_data[6])
 				$tmpl->msg("Операция не допускается для проведённого документа!","err");
 			else if($doc_data[14])
@@ -442,8 +364,7 @@ class doc_Realiz_op extends doc_Nulltype
 				doc_log("Add doverennost","doc:$doc, dov:$dov, dov_agent:$dov_agent, dov_data:$dov_data");
 			}
 			else $tmpl->msg("Неизвестная опция!");
-		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
+
 	}
 //	================== Функции только этого класса ======================================================
 

@@ -27,7 +27,7 @@ class doc_s_Sklad
 	{
 		global $tmpl;
 		doc_menu(0,0);
-		
+		if(!isAccess('list_sklad','view'))	throw new AccessException("");
 		$sklad=rcv('sklad');
 		settype($sklad,'int');
 		if($sklad) $_SESSION['sklad_num']=$sklad;
@@ -141,7 +141,7 @@ class doc_s_Sklad
 		$pos=rcv('pos');
 		$param=rcv('param');
 		$group=rcv('g');
-
+		if(!isAccess('list_sklad','view'))	throw new AccessException("");
 		if(($pos==0)&&($param!='g')) $param='';
 
 		if($pos!=0)
@@ -556,8 +556,6 @@ class doc_s_Sklad
 		// Правка описания группы
 		else if($param=='g')
 		{
-			$rights=getright('doc_sklad_groups',$uid);
-			if(!$rights['read'])	throw new AccessException('Нет прав для просмотра группы');
 			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname` 
 			FROM `doc_group`
 			WHERE `id`='$group'");
@@ -699,6 +697,7 @@ class doc_s_Sklad
 			$cc='Цена осталась прежняя!';
 			if( ($pos)&&(!$sr) )
 			{
+				if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 				$sql_add=$log_add='';
 				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type` FROM `doc_base` WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить старые свойства позиции!");
@@ -776,6 +775,7 @@ class doc_s_Sklad
 			}
 			else
 			{	
+				if(!isAccess('list_sklad','create'))	throw new AccessException("");
 				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`)
 				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type')");
 				$opos=$pos;
@@ -813,7 +813,7 @@ class doc_s_Sklad
 			$mass=rcv('mass');
 			$strana=rcv('strana');
 			$ntd=rcv('ntd');
-			
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			// ЭТОГ ЧТО ТАКОЕ?
 			//$res=mysql_query("UPDATE `doc_base` SET `analog`='$analog', `koncost`='$koncost', `type`='$type', `d_int`='$d_int', `d_ext`='$d_ext', `size`='$size', `mass`='$mass', `strana`='$strana' $i WHERE `id`='$pos'");
 			
@@ -841,6 +841,7 @@ class doc_s_Sklad
 		}
 		else if($param=='s')
 		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			$res=mysql_query("SELECT `doc_sklady`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`,  `doc_base_cnt`.`mesto`, `doc_base_cnt`.`sklad`
 			FROM `doc_base_cnt`
 			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id` = `doc_base_cnt`.`sklad`
@@ -865,6 +866,7 @@ class doc_s_Sklad
 			global $CONFIG;
 			$nm=rcv('nm');
 			$set_def=rcv('set_def');
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			$res=mysql_query("SELECT `id` FROM `doc_img` WHERE `name`='$nm'");
 			if(mysql_num_rows($res))
 			{
@@ -919,6 +921,7 @@ class doc_s_Sklad
 		}
 		else if($param=='i_d')
 		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			$img=rcv('img');
 			mysql_query("DELETE FROM `doc_base_img` WHERE `pos_id`='$pos' AND `img_id`='$img'");
 			if(mysql_errno())	throw new MysqlException("Не удалось удалить ассоциацию");
@@ -928,6 +931,7 @@ class doc_s_Sklad
 		}
 		else if($param=='c')
 		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			$res=mysql_query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`
 			FROM `doc_cost`
 			LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`='$pos'");
@@ -996,6 +1000,7 @@ class doc_s_Sklad
 		}
 		else if($param=='k')
 		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			$zp=rcv('zp');
 			$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 			LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
@@ -1019,21 +1024,19 @@ class doc_s_Sklad
 		}
 		else if($param=='g')
 		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			$max_size=100;
 			$name=rcv('name');
 			$desc=rcv('desc');
 			$pid=rcv('pid');
 			$hid=rcv('hid');
 			$pname=rcv('pname');
-			$rights=getright('doc_sklad_groups',$uid);
 			if($group)
 			{
-				if(!$rights['edit'])	throw new AccessException('Нет прав для редактирования группы');
 				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname' WHERE `id` = '$group'");
 			}
 			else 
 			{
-				if(!$rights['write'])	throw new AccessException('Нет прав для создания группы');
 				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`)
 				VALUES ('$name', '$desc', '$pid', '$hid', '$pname')"); 
 			}
@@ -1064,6 +1067,7 @@ class doc_s_Sklad
 		}
 		else if($param=='gid')
 		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			if(!file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				throw new Exception("Изображение не найдено");
 			if(!unlink("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
@@ -1072,6 +1076,7 @@ class doc_s_Sklad
 		}
 		else if($param=='gc')
 		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			$res=mysql_query("SELECT `doc_cost`.`id`, `doc_group_cost`.`id`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
 			FROM `doc_cost`
 			LEFT JOIN `doc_group_cost` ON `doc_cost`.`id`=`doc_group_cost`.`cost_id` AND `doc_group_cost`.`group_id`='$group'");

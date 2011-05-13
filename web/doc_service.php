@@ -23,19 +23,12 @@ need_auth();
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
 $uid=@$_SESSION['uid'];
-$rights=getright('doc_service',$uid);
-if(!$rights['read'])
-{
-	$tmpl->msg("У Вас недостаточно привилегий!","err");
-	$tmpl->write();
-	exit();	
-}
+if(!isAccess('doc_service','view'))	throw new AccessException("Недостаточно привилегий");
 
 try
 {
 $uid=@$_SESSION['uid'];
-$rights=getright('doc_service',$uid);
-if(!$rights['read'])	throw new AccessException("Нет доступа к странице!");
+if(!isAccess('doc_service','view'))	throw new AccessException("Нет доступа к странице");
 
 if($mode=='')
 {

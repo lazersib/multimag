@@ -71,9 +71,6 @@ class doc_Specific extends doc_Nulltype
 	function DocCancel()
 	{
 		global $uid;
-		$tim=time();
-		$rights=getright('doc_'.$this->doc_name,$uid);		
-		if(!$rights['edit'])			throw new AccessException('');
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");		
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');

@@ -26,7 +26,7 @@ class doc_s_Agent_dov
 	{
 		global $tmpl;
 		doc_menu(0,0);
-		
+		if(!isAccess('list_agent_dov','view'))	throw new AccessException("");
 		$tmpl->AddText("<table width=100%>
 		<tr><td><h1>Доверенные лица</h1>
 		<td align=right>Отбор:<input type='text' id='f_search' onkeydown=\"DelayedSave('/docs.php?l=dov&mode=srv&opt=pl','list', 'f_search'); return true;\" >
@@ -86,7 +86,7 @@ class doc_s_Agent_dov
 		$pos=rcv('pos');
 		$ag_id=rcv('ag_id');
 		$param=rcv('param');
-
+		if(!isAccess('list_agent_dov','view'))	throw new AccessException("");
 		if(($pos==0)&&($param!='g')) $param='';
 
 		if($pos!=0)
@@ -172,12 +172,14 @@ class doc_s_Agent_dov
 			
 			if($pos)
 			{
+				if(!isAccess('list_agent_dov','edit'))	throw new AccessException("");
 				$res=mysql_query("UPDATE `doc_agent_dov` SET `ag_id`='$ag_id', `name`='$name', `name2`='$name2', `surname`='$surname', `range`='$range', `pasp_ser`='$pasp_ser', `pasp_num`='$pasp_num', `pasp_data`='$pasp_data', `pasp_kem`='$pasp_kem' WHERE `id`='$pos'");
 				if($res) $tmpl->msg("Данные обновлены! $cc");
 				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
 			}
 			else
 			{	
+				if(!isAccess('list_agent_dov','create'))	throw new AccessException("");
 				$res=mysql_query("INSERT INTO `doc_agent_dov` ( `ag_id`, `name`, `name2`, `surname`, `range`, `pasp_ser`, `pasp_num`, `pasp_data`, `pasp_kem` ) VALUES ( '$ag_id', '$name', '$name2', '$surname', '$range', '$pasp_ser', '$pasp_num', '$pasp_date', '$pasp_kem')");
 				$pos=mysql_insert_id();
 				if($res)
