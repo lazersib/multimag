@@ -181,6 +181,21 @@ function ExecMode($mode)
 		}
 		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
 	}
+	else if($mode=='comm_add')
+	{
+		require_once("include/comments.inc.php");
+		$p=@$_POST['p'];
+		if(!@$_SESSION['uid'])
+		{
+			$img=rcv('img');
+			if( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper($img)) || ($_SESSION['captcha_keystring']=='') )
+				throw new Exception("Защитный код введён неверно!");
+		}
+		$cd=new CommentDispatcher('product',$p);
+		$cd->WriteComment(@$_POST['text'], rcv('rate'), rcv('autor_name'), rcv('autor_email'));
+				
+		$tmpl->msg("Коментарий добавлен!","ok");
+	}
 	else throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
 }
 
