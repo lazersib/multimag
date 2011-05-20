@@ -39,120 +39,92 @@ $tmpl->AddTMenu("
 <link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen' />
 ");
 
-try
-{
 
-$rights=getright('doc',$uid);
-if($rights['read'])
+if($mode=="")
 {
-	if($mode=="")
+	doc_menu();
+	$tmpl->AddText("<h1>Создание нового документа</h1><h3>Выберите тип документа</h3><ul>");
+	$res=mysql_query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
+	while($nxt=mysql_fetch_row($res))
 	{
-		doc_menu();
-		$tmpl->AddText("<h1>Создание нового документа</h1><h3>Выберите тип документа</h3><ul>");
-		$res=mysql_query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
-		while($nxt=mysql_fetch_row($res))
-		{
-			$tmpl->AddText("<li><a href='?mode=new&amp;type=$nxt[0]'>$nxt[1]</a></li>");
-		}
-		$tmpl->AddText("</ul>");
+		$tmpl->AddText("<li><a href='?mode=new&amp;type=$nxt[0]'>$nxt[1]</a></li>");
 	}
-	else if($mode=='new')
+	$tmpl->AddText("</ul>");
+}
+else if($mode=='new')
+{
+	$type=rcv('type');
+	$document=AutoDocumentType($type, 0);
+	$document->head();
+}
+else if($mode=="heads")
+{
+	if(!$doc)
 	{
 		$type=rcv('type');
 		$document=AutoDocumentType($type, 0);
-		$document->head();
 	}
-	else if($mode=="heads")
-	{
-		if(!$doc)
-		{
-			$type=rcv('type');
-    			$document=AutoDocumentType($type, 0);
-		}
-		$document->head_submit($doc);
-	}
-	else if($mode=="ehead")
-	{
-		$document->head($doc);
-	}
-	else if($mode=="body")
-	{
-		$document->body($doc);
-	}
-	else if($mode=="srv")
-	{
-		$document->Service($doc);
-	}
-	else if($mode=='apply')
-	{
-		$document->Apply($doc);
-	}
-	else if($mode=='applyj')
-	{
-		$tmpl->ajax=1;
-		$tmpl->SetText($document->ApplyJson());
-	}
-	else if($mode=='cancel')
-	{
-		$document->Cancel($doc);
-	}
-	else if($mode=='cancelj')
-	{
-		$tmpl->ajax=1;
-		$tmpl->SetText($document->CancelJson());
-	}
-	else if($mode=='conn')
-	{
-		$tmpl->ajax=1;
-		$p_doc=rcv('p_doc');
-		$tmpl->SetText($document->ConnectJson($p_doc));
-	}
-	else if($mode=='forcecancel')
-	{
-		$document->ForceCancel();
-	}
-	else if($mode=='print')
-	{
-		$opt=rcv('opt');
-		$document->PrintForm($doc, $opt);
-	}
-	else if($mode=='morphto')
-	{
-		$target_type=rcv('tt');
-		$document->MorphTo($doc, $target_type);
-	}
-	// Это переделать !!!!!!!!!!!!!!!!!!
-	else if($mode=="incnum")
-	{
-		$tmpl->ajax=1;
-		$type=rcv('type');
-		$subtype=rcv('s');
-		if($doc)
-		{
-			$res=mysql_query("SELECT `type`,`subtype`,`altnum` FROM `doc_list` WHERE `id`='$doc'");
-			$nxt=mysql_fetch_row($res);
-			$type=$nxt[0];
-		}
-		$altnum=GetNextAltNum($type,$subtype,$nxt[2]);
-		echo "$altnum";
-		exit(0);
-	}
-	else $tmpl->msg("ERROR $mode","err");
+	$document->head_submit($doc);
 }
-else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
-
-}
-catch(MysqlException $e)
+else if($mode=="ehead")
 {
-	mysql_query("ROLLBACK");
-	$tmpl->msg($e->getMessage(),'err','Ошибка в базе данных');
+	$document->head($doc);
 }
-catch( Exception $e)
+else if($mode=="body")
 {
-	mysql_query("ROLLBACK");
-	$tmpl->msg($e->getMessage(),'err');
+	$document->body($doc);
 }
-
+else if($mode=="srv")
+{
+	$document->Service($doc);
+}
+else if($mode=='applyj')
+{
+	$tmpl->ajax=1;
+	$tmpl->SetText($document->ApplyJson());
+}
+else if($mode=='cancelj')
+{
+	$tmpl->ajax=1;
+	$tmpl->SetText($document->CancelJson());
+}
+else if($mode=='conn')
+{
+	$tmpl->ajax=1;
+	$p_doc=rcv('p_doc');
+	$tmpl->SetText($document->ConnectJson($p_doc));
+}
+else if($mode=='forcecancel')
+{
+	$document->ForceCancel();
+}
+else if($mode=='print')
+{
+	$opt=rcv('opt');
+	$document->PrintForm($doc, $opt);
+}
+else if($mode=='morphto')
+{
+	$target_type=rcv('tt');
+	$document->MorphTo($doc, $target_type);
+}
+// Это переделать !!!!!!!!!!!!!!!!!!
+else if($mode=="incnum")
+{
+	$tmpl->ajax=1;
+	$type=rcv('type');
+	$subtype=rcv('s');
+	if($doc)
+	{
+		$res=mysql_query("SELECT `type`,`subtype`,`altnum` FROM `doc_list` WHERE `id`='$doc'");
+		$nxt=mysql_fetch_row($res);
+		$type=$nxt[0];
+	}
+	$altnum=GetNextAltNum($type,$subtype,$nxt[2]);
+	echo "$altnum";
+	exit(0);
+}
+else $tmpl->msg("ERROR $mode","err");
 
 
 $tmpl->write();

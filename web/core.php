@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_VERSION", "0.0.1r206");
+define("MULTIMAG_VERSION", "0.0.1r221");
 
 if(!function_exists('mysql_connect'))
 {
@@ -26,6 +26,7 @@ if(!function_exists('mysql_connect'))
 	exit();
 }
 
+$time_start = microtime(true);
 session_start();
 
 $c=explode('/',__FILE__);$base_path='';
@@ -49,8 +50,6 @@ if(!@mysql_select_db($CONFIG['mysql']['db']))
     echo"Невозможно активизировать базу данных! Возможно, база данных повреждена. Попробуйте подключиться через 5 минут. Если проблема сохранится - пожалуйста, напишите письмо по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
     exit();
 }
-
-$time_start = microtime(true);
 
 mysql_query("SET CHARACTER SET UTF8");
 mysql_query("SET character_set_client = UTF8");
@@ -88,19 +87,6 @@ function exception_handler($exception)
 } 
 set_exception_handler('exception_handler');
 
-
-// ==== Это убрать отсюда =========================================
-function ParseCost($cost)
-{
-    global $skidka;
-    if($skidka=="")
-    {
-        if($_SESSION['uid']) $skidka=7.5;
-    }
-    return sprintf("%01.2f руб.",($cost*(100/(100+$skidka))));
-
-}
-
 // =================================== Подсветка найденного текста ====================================
 function SearchHilight($str,$substr)
 {
@@ -116,57 +102,57 @@ function SearchHilight($str,$substr)
 }
 
 // ====================================== Генератор кодов ==================================================
-// ==== Это тоже убрать отсюда =========================================
 function keygen_unique($num=0, $minlen=5, $maxlen=12)
 {
-   if($minlen<1) $minlen=5;
-   if($maxlen>10000) $maxlen=10000;
-   if($maxlen<$minlen) $maxlen=$minlen;
-   if(!$num)
-   {
-      $sstr="bcdfghjklmnprstvwxz";
-      $gstr="aeiouy1234567890aeiouy";
-      $rstr="aeiouy1234567890aeiouybcdfghjklmnprstvwxz";
-      $sln=18; // +1
-      $gln=21; // +1
-      $rln=40; //+1
-   }
-   else
-   {
-      $sstr="135790";
-      $gstr="24680";
-      $rstr="1234567890";
-      $sln=5; // +1
-      $gln=4; // +1
-      $rln=9; //+1
-   }
-   $r=rand(0,$rln);
-   $s=$rstr[$r];
-   $ln=rand($minlen,$maxlen);
-   $sig=0;
-   for($i=1;$i<$ln;$i++)
-   {
-      if(eregi($s[$i-1],$sstr))
-      {
-         $r=rand(0,$gln);
-         $s.=$gstr[$r];
-      }
-      else
-      {
-         $r=rand(0,$sln);
-         $s.=$sstr[$r];
-      }
-   }
-   return $s;
+	if($minlen<1) $minlen=5;
+	if($maxlen>10000) $maxlen=10000;
+	if($maxlen<$minlen) $maxlen=$minlen;
+	if(!$num)
+	{
+		$sstr="bcdfghjklmnprstvwxz";
+		$gstr="aeiouy1234567890aeiouy";
+		$rstr="aeiouy1234567890aeiouybcdfghjklmnprstvwxz";
+		$sln=18; // +1
+		$gln=21; // +1
+		$rln=40; //+1
+	}
+	else
+	{
+		$sstr="135790";
+		$gstr="24680";
+		$rstr="1234567890";
+		$sln=5; // +1
+		$gln=4; // +1
+		$rln=9; //+1
+	}
+	$r=rand(0,$rln);
+	$s=$rstr[$r];
+	$ln=rand($minlen,$maxlen);
+	$sig=0;
+	for($i=1;$i<$ln;$i++)
+	{
+		if(eregi($s[$i-1],$sstr))
+		{
+			$r=rand(0,$gln);
+			$s.=$gstr[$r];
+		}
+		else
+		{
+			$r=rand(0,$sln);
+			$s.=$sstr[$r];
+		}
+	}
+	return $s;
 }
 
 // ======================================= Обработчики ввода переменных ====================================
+/// Переделать: cохранить безопасность записи данных в базу, но убрать преобразование в html-символы
 function rcv($varname,$def="")
 {
-    $dt=htmlentities(@$_POST[$varname],ENT_QUOTES,"UTF-8");
-    if($dt=="") $dt=htmlentities(@$_GET[$varname],ENT_QUOTES,"UTF-8");
-    if($dt) return $dt;
-    else return $def;
+	$dt=htmlentities(@$_POST[$varname],ENT_QUOTES,"UTF-8");
+	if($dt=="") $dt=htmlentities(@$_GET[$varname],ENT_QUOTES,"UTF-8");
+	if($dt) return $dt;
+	else return $def;
 }
 
 function unhtmlentities ($string)
@@ -174,30 +160,32 @@ function unhtmlentities ($string)
 	return html_entity_decode ($string,ENT_QUOTES,"UTF-8");
 }
 
-// ======================================== Авторизация =====================================================
+// =================================== Аутентификация и контроль привилегий ============================================
+// Требование аутентификации
 function need_auth()
 {
-    global $tmpl;
-    if(!auth())
-    {
-        $SESSION['last_page']=$ff.$qq;
-        $_SESSION['cook_test']='data';
-        header('Location: login.php');
-        $tmpl->msg("Для продолжения необходимо авторизоваться!","notify","Требуется авторизация");
-        $tmpl->write();
-        exit();
-    }
-    return 1;
+	global $tmpl;
+	if(!auth())
+	{
+		$SESSION['last_page']=$ff.$qq;
+		$_SESSION['cook_test']='data';
+		header('Location: login.php');
+		$tmpl->msg("Для продолжения необходимо выполнить вход!","info","Требуется аутентификация");
+		$tmpl->write();
+		exit();
+	}
+	return 1;
 }
 
-
+// Проверка аутентификации
 function auth()
 {
-   if($_SESSION['uid']==0) return 0;
-
-   return 1;
+	return (@$_SESSION['uid']==0)?0:1;
 }
 
+// Получить привилегии (read, write, edit, delete) доступа к указанному объекту.
+// Не используется для остальных
+// Не рекомендуется к использованию с версии 0.0.1r221
 function getright($object,$uid)
 {
 	if($uid==1)
@@ -217,6 +205,23 @@ function getright($object,$uid)
 	GROUP BY `users_grouprights`.`object`");
 	$nxt=mysql_fetch_assoc($res);
 	return $nxt;
+}
+
+// Есть ли право доступа к указанному объекту для указанной операции
+function isAccess($object, $action)
+{
+	$uid=@$_SESSION['uid'];
+	if($uid==1)	return true;
+	$res=mysql_query("(
+	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action'
+	) UNION (
+	SELECT `users_groups_acl`.`id` FROM `users_groups_acl`
+	INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`
+	WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action')");
+	if(mysql_errno())	throw new MysqlException("Выборка привилегий не удалась");
+	$access=(mysql_num_rows($res)>0)?true:false;
+	if((!$uid) && (!$access))	need_auth();
+	return $access;
 }
 
 // ==================================== Рассылка ===================================================
@@ -273,13 +278,6 @@ function SafeLoadTemplate($template)
 	global $tmpl, $CONFIG;
 	if($template)	$tmpl->LoadTemplate($template);	
 }
-
-// Удалить!
-function MysqlAssert($str='')
-{
-	if(mysql_errno())	throw new MysqlException($str);
-}
-
 
 class MysqlException extends Exception
 {

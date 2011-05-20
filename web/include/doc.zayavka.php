@@ -37,7 +37,7 @@ class doc_Zayavka extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
-		$klad_id=$this->dop_data['kladovshik'];
+		$klad_id=@$this->dop_data['kladovshik'];
 		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
 		$tmpl->AddText("Кладовщик:<br><select name='kladovshik'>");	
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
@@ -60,7 +60,7 @@ class doc_Zayavka extends doc_Nulltype
 	function DopBody()
 	{
 		global $tmpl;
-		$klad_id=$this->dop_data['kladovshik'];
+		$klad_id=@$this->dop_data['kladovshik'];
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `id`='$klad_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		$nxt=mysql_fetch_row($res);
@@ -95,55 +95,6 @@ class doc_Zayavka extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага отмены!');
 	}
-
-	function Cancel($doc)
-	{
-	    global $tmpl;
-	    global $uid;
-
-	    $tmpl->ajax=1;
-
-		$rights=getright('doc_zayavka',$uid);
-		if($rights['edit'])
-		{
-			mysql_query("START TRANSACTION");
-			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base` READ ");
-			$err='';
-			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-			FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-			if($nx=@mysql_fetch_row($res))
-			{
-				if($nx[4])
-				{
-					$tim=time();
-					$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
-					if($res)
-					{
-						if(!$err)
-							$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-					}
-					else $err="Ошибка отмены проведения, ошибка установки флага";
-				}
-				else $err="Докумен НЕ проведён!";
-			}
-			else $err="Ошибка отмены проведения, ошибка выборки";
-
-			if(!$err)
-			{
-				mysql_query("COMMIT");
-				doc_log("Cancel zayavka","doc:{$this->doc}");
-			}
-			else
-			{
-				mysql_query("ROLLBACK");
-				doc_log("ERROR: Cancel zayavka - $err","doc:{$this->doc}");
-				$tmpl->AddText("<h3>$err</h3>");
-			}
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
-	}
-
 
 	function PrintForm($doc, $opt='')
 	{

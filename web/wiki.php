@@ -28,8 +28,6 @@ if(!$p)
 	$p=urldecode(urldecode($arr[0]));
 }
 
-$rights=getright('wiki',$uid);
-
 function wiki_form($p,$text='')
 {
 	global $tmpl;
@@ -45,134 +43,127 @@ function wiki_form($p,$text='')
 
 if($p=="")
 {
-	if($rights['read'])
+	if(!isAccess('articles','view'))	throw new AccessException("");
+	$tmpl->SetText("<h1 id='page-title'>Статьи</h1>Здесь собранны различные статьи, которые могут пригодиться посетителям сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях. Раздел постоянно наполняется. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
+	$tmpl->SetTitle("Статьи");
+	$res=mysql_query("SELECT * FROM `wiki` ORDER BY `name`");
+	$tmpl->AddText("<ul>");
+	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->SetText("<h1 id='page-title'>Статьи</h1>Здесь собранны различные статьи, которые могут пригодиться посетителям сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях. Раздел постоянно наполняется. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
-		$tmpl->SetTitle("Статьи");
-		$res=mysql_query("SELECT * FROM `wiki` ORDER BY `name`");
-		$tmpl->AddText("<ul>");
-		while($nxt=mysql_fetch_row($res))
-		{
-			$h=$wikiparser->unwiki_link($nxt[0]);
-			$tmpl->AddText("<li><a class='wiki' href='/wiki/$nxt[0].html'>$h</a></li>");
-		}
-		$tmpl->AddText("</ul>");
+		$h=$wikiparser->unwiki_link($nxt[0]);
+		$tmpl->AddText("<li><a class='wiki' href='/wiki/$nxt[0].html'>$h</a></li>");
 	}
-	else $tmpl->msg("У Вас нет прав!");
+	$tmpl->AddText("</ul>");
 }
 else
 {
-	if($rights['read'])
+	if(!isAccess('articles','view'))	throw new AccessException("");
+	$res=mysql_query("SELECT `wiki`.`name`, a.`name`, `wiki`.`date`, `wiki`.`changed`, `b`.`name`, `wiki`.`text`
+	FROM `wiki`
+	LEFT JOIN `users` AS `a` ON `a`.`id`=`wiki`.`autor`
+	LEFT JOIN `users` AS `b` ON `b`.`id`=`wiki`.`changeautor`
+	WHERE `wiki`.`name` LIKE '$p'");
+	if(@$nxt=mysql_fetch_row($res))
 	{
-		$res=mysql_query("SELECT `wiki`.`name`, a.`name`, `wiki`.`date`, `wiki`.`changed`, `b`.`name`, `wiki`.`text`
-		FROM `wiki`
-		LEFT JOIN `users` AS `a` ON `a`.`id`=`wiki`.`autor`
-		LEFT JOIN `users` AS `b` ON `b`.`id`=`wiki`.`changeautor`
-		WHERE `wiki`.`name` LIKE '$p'");
-		if(@$nxt=mysql_fetch_row($res))
+		$text=$wikiparser->parse(html_entity_decode($nxt[5],ENT_QUOTES,"UTF-8"));
+		$h=$wikiparser->title;
+		if(!$h)
 		{
-			$text=$wikiparser->parse(html_entity_decode($nxt[5],ENT_QUOTES,"UTF-8"));
-			$h=$wikiparser->title;
-			if(!$h)
+			$h=explode(":",$p,2);
+			if($h[1])
+				$h=$wikiparser->unwiki_link($h[1]);
+			else $h=$wikiparser->unwiki_link($p);
+		}
+		//else $h=$wikiparser->unwiki_link($nxt[0]);
+		if($mode=='')
+		{
+			$tmpl->SetTitle($h);
+			if($nxt[4]) $ch=", последнее изменение - $nxt[4], date $nxt[3]";
+			else $ch="";
+			$tmpl->AddText("<h2 id='page-title'>$h</h2>");
+			if(@$_SESSION['uid'])
 			{
-				$h=explode(":",$p,2);
-				if($h[1])
-					$h=$wikiparser->unwiki_link($h[1]);
-				else $h=$wikiparser->unwiki_link($p);
+				$tmpl->AddText("<div id='page-info'>Создал: $nxt[1], date: $nxt[2] $ch");
+				if(isAccess('articles','edit'))	$tmpl->AddText(", <a href='/wiki.php?p=$p&amp;mode=edit'>Исправить</a>");
+				$tmpl->AddText("</div>");
 			}
-			//else $h=$wikiparser->unwiki_link($nxt[0]);
-			if($mode=='')
-			{
-				$tmpl->SetTitle($h);
-				if($nxt[4]) $ch=", последнее изменение - $nxt[4], date $nxt[3]";
-				else $ch="";
-				$tmpl->AddText("<h2 id='page-title'>$h</h2>");
-				if(@$_SESSION['uid'])
-				{
-					$tmpl->AddText("<div id='page-info'>Создал: $nxt[1], date: $nxt[2] $ch");
-					if($rights['write'])	$tmpl->AddText(", <a href='/wiki.php?p=$p&amp;mode=edit'>Исправить</a>");
-					$tmpl->AddText("</div>");
-				}
-				$tmpl->AddText("$text<br><br>");
-				
-			}
-			else if($rights['write'])
-			{
-				if($mode=='edit')
-				{
-					$tmpl->AddText("<h1>Правим $h</h1>
-					<h2>=== Оригинальный текст ===</h2>$text<h2>=== Конец оригинального текста ===</h2>");
-					wiki_form($p,$nxt[5]);
-				}
-				else if($mode=='save')
-				{
-					$text=rcv('text');
-					$res=mysql_query("UPDATE `wiki` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text'
-					WHERE `name` LIKE '$p'");
-					//echo mysql_error();
-					if($res)
-					{
-						header("Location: /wiki.php?p=".$p);
-						exit();
-					}
-					else $tmpl->msg("Не удалось сохранить!");
-	
-				}
-			}
-			else $tmpl->msg("У Вас нет прав!");
+			$tmpl->AddText("$text<br><br>");
+			
 		}
 		else
 		{
-			if($mode=='')
+			if($mode=='edit')
 			{
-				$res=mysql_query("SELECT * FROM `wiki` WHERE `name` LIKE '$p:%' ORDER BY `name`");
-				if(mysql_num_rows($res))
-				{
-					$tmpl->SetText("<h1>Раздел $p</h1>");
-					$tmpl->SetTitle($p);
-					$tmpl->AddText("<ul>");
-					while($nxt=mysql_fetch_row($res))
-					{
-						$h=explode(":",$nxt[0],2);
-						$h=$wikiparser->unwiki_link($h[1]);
-						$tmpl->AddText("<li><a href='/wiki/$nxt[0].html'>$h</a></li>");
-					}
-					$tmpl->AddText("</ul>");
-				}
-				else
-				{		
-					$tmpl->msg("Извините, данная страница не найдена ($p)!","info");
-					if($rights['write'])
-						$tmpl->AddText("<a href='/wiki.php?p=$p&amp;mode=edit'>Создать</a>");
-				}
+				$tmpl->AddText("<h1>Правим $h</h1>
+				<h2>=== Оригинальный текст ===</h2>$text<h2>=== Конец оригинального текста ===</h2>");
+				wiki_form($p,$nxt[5]);
 			}
-			else if($rights['write'])
+			else if($mode=='save')
 			{
-				if($mode=='edit')
+				if(!isAccess('articles','edit'))	throw new AccessException("");
+				$text=rcv('text');
+				$res=mysql_query("UPDATE `wiki` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text'
+				WHERE `name` LIKE '$p'");
+				//echo mysql_error();
+				if($res)
 				{
-					$h=$wikiparser->unwiki_link($p);
-					$tmpl->AddText("<h1>Создаём $h</h1>");
-					wiki_form($p);
+					header("Location: /wiki.php?p=".$p);
+					exit();
 				}
-				else if($mode=='save')
-				{
-					$text=rcv('text');
-					$res=mysql_query("INSERT INTO `wiki` (`name`,`autor`,`date`,`text`)
-					VALUES ('$p','$uid', NOW(), '$text')");
-					if($res)
-					{
-						header("Location: wiki.php?p=".$p);
-						exit();
-					}
-					else $tmpl->msg("Не удалось сохранить!");
-	
-				}
+				else $tmpl->msg("Не удалось сохранить!");
+
 			}
-			else $tmpl->msg("У Вас нет прав!");
 		}
 	}
-	else $tmpl->msg("У Вас нет прав!");
+	else
+	{
+		if($mode=='')
+		{
+			$res=mysql_query("SELECT * FROM `wiki` WHERE `name` LIKE '$p:%' ORDER BY `name`");
+			if(mysql_num_rows($res))
+			{
+				$tmpl->SetText("<h1>Раздел $p</h1>");
+				$tmpl->SetTitle($p);
+				$tmpl->AddText("<ul>");
+				while($nxt=mysql_fetch_row($res))
+				{
+					$h=explode(":",$nxt[0],2);
+					$h=$wikiparser->unwiki_link($h[1]);
+					$tmpl->AddText("<li><a href='/wiki/$nxt[0].html'>$h</a></li>");
+				}
+				$tmpl->AddText("</ul>");
+			}
+			else
+			{		
+				$tmpl->msg("Извините, данная страница не найдена ($p)!","info");
+				if(isAccess('articles','create'))
+					$tmpl->AddText("<a href='/wiki.php?p=$p&amp;mode=edit'>Создать</a>");
+			}
+		}
+		else
+		{
+			if($mode=='edit')
+			{
+				$h=$wikiparser->unwiki_link($p);
+				$tmpl->AddText("<h1>Создаём $h</h1>");
+				wiki_form($p);
+			}
+			else if($mode=='save')
+			{
+				if(!isAccess('articles','create'))	throw new AccessException("");
+				$text=rcv('text');
+				$res=mysql_query("INSERT INTO `wiki` (`name`,`autor`,`date`,`text`)
+				VALUES ('$p','$uid', NOW(), '$text')");
+				if(!mysql_errno())
+				{
+					header("Location: wiki.php?p=".$p);
+					exit();
+				}
+				else throw new MysqlException("Не удалось создать статью!");
 
+			}
+		}
+	}
 }
 
 $tmpl->write();

@@ -89,14 +89,10 @@ class doc_RBank extends doc_Nulltype
 	function DocCancel()
 	{
 		global $uid;
-		$tim=time();
-		$rights=getright('doc_'.$this->doc_name,$uid);
-		$dd=date_day($tim);
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`ok`, `doc_list`.`sum`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
 		if(!($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
-		if((!$rights['edit'])&&($dd>$nx[1]))	throw new AccessException('');		
 		if(!$nx[3])				throw new Exception('Документ не проведён!');
 		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'$nx[4]'
 		WHERE `ids`='bank' AND `num`='$nx[2]'");

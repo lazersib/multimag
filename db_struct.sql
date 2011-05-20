@@ -3,9 +3,9 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Янв 24 2011 г., 12:29
--- Версия сервера: 5.0.51
--- Версия PHP: 5.2.6-1+lenny9
+-- Время создания: Май 06 2011 г., 13:44
+-- Версия сервера: 5.1.49
+-- Версия PHP: 5.3.3-7
 
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 
@@ -26,24 +26,25 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 --
 
 CREATE TABLE IF NOT EXISTS `counter` (
-  `id` int(11) NOT NULL auto_increment,
-  `date` bigint(20) NOT NULL default '0',
-  `ip` varchar(32) NOT NULL default '',
-  `agent` varchar(128) NOT NULL default '',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `date` bigint(20) NOT NULL DEFAULT '0',
+  `ip` varchar(32) NOT NULL DEFAULT '',
+  `agent` varchar(128) NOT NULL DEFAULT '',
   `refer` varchar(128) NOT NULL,
-  `file` varchar(32) NOT NULL default '',
-  `query` varchar(128) NOT NULL default '',
+  `file` varchar(32) NOT NULL DEFAULT '',
+  `query` varchar(128) NOT NULL DEFAULT '',
   UNIQUE KEY `id` (`id`),
   KEY `time` (`date`),
   KEY `ip` (`ip`),
   KEY `agent` (`agent`),
   KEY `refer` (`refer`),
   KEY `file` (`file`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=64 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
 
 --
 -- Дамп данных таблицы `counter`
 --
+
 
 -- --------------------------------------------------------
 
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `counter` (
 --
 
 CREATE TABLE IF NOT EXISTS `currency` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(8) NOT NULL,
   `coeff` decimal(8,4) NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -71,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `currency` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_agent` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `group` int(11) NOT NULL,
   `name` varchar(128) NOT NULL,
   `fullname` varchar(256) NOT NULL,
@@ -90,7 +91,7 @@ CREATE TABLE IF NOT EXISTS `doc_agent` (
   `ks` varchar(32) NOT NULL,
   `bik` int(11) NOT NULL,
   `email` varchar(64) NOT NULL,
-  `type` tinyint(4) NOT NULL default '1',
+  `type` tinyint(4) NOT NULL DEFAULT '1',
   `pasp_num` varchar(12) NOT NULL,
   `pasp_date` date NOT NULL,
   `pasp_kem` varchar(64) NOT NULL,
@@ -98,11 +99,11 @@ CREATE TABLE IF NOT EXISTS `doc_agent` (
   `no_mail` tinyint(4) NOT NULL,
   `responsible` int(11) NOT NULL,
   `data_sverki` date NOT NULL,
-  `dishonest` tinyint(4) NOT NULL COMMENT='Недобросовестный',
+  `dishonest` tinyint(4) NOT NULL COMMENT 'Недобросовестный',
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `uniq_name` (`group`,`name`),
   KEY `name` (`name`),
-  KEY `fullname` (`fullname`),
+  KEY `fullname` (`fullname`(255)),
   KEY `tel` (`tel`),
   KEY `inn` (`inn`),
   KEY `type` (`type`),
@@ -114,9 +115,9 @@ CREATE TABLE IF NOT EXISTS `doc_agent` (
 -- Дамп данных таблицы `doc_agent`
 --
 
-INSERT INTO `doc_agent` (`id`, `group`, `name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `no_mail`, `responsible`, `data_sverki`) VALUES
-(1, 1, 'ЧЛ', 'Частное Лицо', '+12561126', 'г. Малый, ул. Большая, д.6', 'г. Малый, ул. Зелёная, д.124', '123456', 'Иванов И.И.', 'Иванова Ивана Игоревича', '', '', '52727', '3873838738', '9852183838383873', 'ЗАО Надёжный банк', '383838938389383838', '873838', 'cl@example.com', 1, '22872788937', '1970-01-01', 'УФМС г. Малый', '', 1, 0, '0000-00-00'),
-(2, 1, 'Ещё Один', 'Ещё Один Агент', '', '', '1564653', '', '', '', '', '', '', 'regre', '', '', '', '', 'user@example.com', 1, '', '0000-00-00', '', 'dfgreg', 0, 1, '0000-00-00');
+INSERT INTO `doc_agent` (`id`, `group`, `name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `no_mail`, `responsible`, `data_sverki`, `dishonest`) VALUES
+(1, 1, 'ЧЛ', 'Частное Лицо', '+12561126', 'г. Малый, ул. Большая, д.6', 'г. Малый, ул. Зелёная, д.124', '123456', 'Иванов И.И.', 'Иванова Ивана Игоревича', '', '', '52727', '3873838738', '9852183838383873', 'ЗАО Надёжный банк', '383838938389383838', 873838, 'cl@example.com', 1, '22872788937', '1970-01-01', 'УФМС г. Малый', '', 1, 0, '0000-00-00', 0),
+(2, 1, 'Ещё Один', 'Ещё Один Агент', '', '', '1564653', '', '', '', '', '', '', 'regre', '', '', '', 0, 'user@example.com', 1, '', '0000-00-00', '', 'dfgreg', 0, 1, '0000-00-00', 0);
 
 -- --------------------------------------------------------
 
@@ -125,7 +126,7 @@ INSERT INTO `doc_agent` (`id`, `group`, `name`, `fullname`, `tel`, `adres`, `gru
 --
 
 CREATE TABLE IF NOT EXISTS `doc_agent_dov` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `ag_id` int(11) NOT NULL,
   `name` varchar(64) NOT NULL,
   `name2` varchar(64) NOT NULL,
@@ -163,7 +164,7 @@ INSERT INTO `doc_agent_dov` (`id`, `ag_id`, `name`, `name2`, `surname`, `range`,
 --
 
 CREATE TABLE IF NOT EXISTS `doc_agent_group` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) NOT NULL,
   `pid` int(11) NOT NULL,
   `desc` varchar(128) NOT NULL,
@@ -186,15 +187,15 @@ INSERT INTO `doc_agent_group` (`id`, `name`, `pid`, `desc`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `doc_base` (
-  `id` int(11) NOT NULL auto_increment,
-  `group` int(11) NOT NULL default '0' COMMENT 'ID группы',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `group` int(11) NOT NULL DEFAULT '0' COMMENT 'ID группы',
   `name` varchar(128) NOT NULL COMMENT 'Наименование',
   `vc` varchar(32) NOT NULL COMMENT 'Код изготовителя',
   `desc` text NOT NULL COMMENT 'Описание',
-  `cost` double(10,2) NOT NULL default '0.00' COMMENT 'Цена',
-  `stock` tinyint(1) NOT NULL default '0' COMMENT 'Распродажа',
+  `cost` double(10,2) NOT NULL DEFAULT '0.00' COMMENT 'Цена',
+  `stock` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Распродажа',
   `proizv` varchar(24) NOT NULL COMMENT 'Производитель',
-  `likvid` decimal(6,2) NOT NULL default '0.00' COMMENT 'Ликвидность',
+  `likvid` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT 'Ликвидность',
   `cost_date` datetime NOT NULL COMMENT 'Дата изменения цены',
   `pos_type` tinyint(4) NOT NULL COMMENT 'Товар - услуга',
   `hidden` tinyint(4) NOT NULL COMMENT 'Индекс сокрытия',
@@ -209,15 +210,15 @@ CREATE TABLE IF NOT EXISTS `doc_base` (
   KEY `hidden` (`hidden`),
   KEY `unit` (`unit`),
   KEY `vc` (`vc`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
 
 --
 -- Дамп данных таблицы `doc_base`
 --
 
-INSERT INTO `doc_base` (`id`, `group`, `name`, `vc`, `desc`, `cost`, `proizv`, `likvid`, `cost_date`, `pos_type`, `hidden`, `unit`) VALUES
-(1, 1, 'Товар', '', '', 100.00, '', 0.00, '2010-07-13 16:48:01', 0, 0, 1),
-(2, 1, 'Товар ещё один', '', '', 0.00, '', 0.00, '2010-06-09 16:44:09', 0, 0, 1);
+INSERT INTO `doc_base` (`id`, `group`, `name`, `vc`, `desc`, `cost`, `stock`, `proizv`, `likvid`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`) VALUES
+(1, 1, 'Товар', '', '', 100.00, 0, '', 0.00, '2010-07-13 16:48:01', 0, 0, 1, 0, 0),
+(2, 1, 'Товар ещё один', '', '', 0.00, 0, '', 0.00, '2010-06-09 16:44:09', 0, 0, 1, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -231,7 +232,7 @@ CREATE TABLE IF NOT EXISTS `doc_base_cnt` (
   `cnt` double NOT NULL,
   `mesto` int(11) NOT NULL,
   `mincnt` int(11) NOT NULL,
-  PRIMARY KEY  (`id`,`sklad`),
+  PRIMARY KEY (`id`,`sklad`),
   KEY `cnt` (`cnt`),
   KEY `mesto` (`mesto`),
   KEY `mincnt` (`mincnt`),
@@ -252,7 +253,7 @@ INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`, `mesto`, `mincnt`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `doc_base_cost` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `pos_id` int(11) NOT NULL,
   `cost_id` int(11) NOT NULL,
   `type` varchar(5) NOT NULL,
@@ -279,14 +280,14 @@ CREATE TABLE IF NOT EXISTS `doc_base_cost` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_base_dop` (
-  `id` int(11) NOT NULL auto_increment,
-  `type` int(11) NOT NULL default '0',
-  `d_int` double NOT NULL default '0',
-  `d_ext` double NOT NULL default '0',
-  `size` double NOT NULL default '0',
-  `mass` double NOT NULL default '0',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` int(11) NOT NULL DEFAULT '0',
+  `d_int` double NOT NULL DEFAULT '0',
+  `d_ext` double NOT NULL DEFAULT '0',
+  `size` double NOT NULL DEFAULT '0',
+  `mass` double NOT NULL DEFAULT '0',
   `analog` varchar(20) NOT NULL,
-  `koncost` double NOT NULL default '0',
+  `koncost` double NOT NULL DEFAULT '0',
   `strana` varchar(20) NOT NULL,
   `tranzit` tinyint(4) NOT NULL,
   `ntd` varchar(32) NOT NULL,
@@ -353,7 +354,7 @@ CREATE TABLE IF NOT EXISTS `doc_base_img` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_base_kompl` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `pos_id` int(11) NOT NULL COMMENT 'id наименования',
   `kompl_id` int(11) NOT NULL COMMENT 'id комплектующего',
   `cnt` int(11) NOT NULL COMMENT 'количество',
@@ -375,7 +376,7 @@ CREATE TABLE IF NOT EXISTS `doc_base_kompl` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_base_params` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `param` varchar(32) NOT NULL,
   `type` varchar(8) NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -424,7 +425,7 @@ INSERT INTO `doc_base_values` (`id`, `param_id`, `value`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `doc_cost` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(25) NOT NULL,
   `type` varchar(5) NOT NULL,
   `value` decimal(8,2) NOT NULL COMMENT 'Значение цены',
@@ -470,7 +471,7 @@ CREATE TABLE IF NOT EXISTS `doc_dopdata` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_group` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) NOT NULL,
   `desc` text NOT NULL,
   `pid` int(11) NOT NULL,
@@ -497,7 +498,7 @@ INSERT INTO `doc_group` (`id`, `name`, `desc`, `pid`, `hidelevel`, `printname`) 
 --
 
 CREATE TABLE IF NOT EXISTS `doc_group_cost` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_id` int(11) NOT NULL,
   `cost_id` int(11) NOT NULL,
   `type` varchar(5) NOT NULL,
@@ -524,7 +525,7 @@ CREATE TABLE IF NOT EXISTS `doc_group_cost` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_img` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `type` varchar(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -543,7 +544,7 @@ CREATE TABLE IF NOT EXISTS `doc_img` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_kassa` (
-  `ids` varchar(50) character set latin1 NOT NULL,
+  `ids` varchar(50) CHARACTER SET latin1 NOT NULL,
   `num` int(11) NOT NULL,
   `name` varchar(50) NOT NULL,
   `ballance` decimal(10,2) NOT NULL,
@@ -569,23 +570,23 @@ INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `ballance`, `bik`, `rs`, `ks`, `f
 --
 
 CREATE TABLE IF NOT EXISTS `doc_list` (
-  `id` int(11) NOT NULL auto_increment,
-  `type` tinyint(4) NOT NULL default '0',
-  `agent` int(11) NOT NULL default '0',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` tinyint(4) NOT NULL DEFAULT '0',
+  `agent` int(11) NOT NULL DEFAULT '0',
   `comment` text NOT NULL,
-  `date` bigint(20) NOT NULL default '0',
-  `ok` bigint(20) NOT NULL default '0',
-  `sklad` tinyint(4) NOT NULL default '0',
-  `kassa` tinyint(4) NOT NULL default '0',
-  `bank` tinyint(4) NOT NULL default '0',
-  `user` int(11) NOT NULL default '0',
+  `date` bigint(20) NOT NULL DEFAULT '0',
+  `ok` bigint(20) NOT NULL DEFAULT '0',
+  `sklad` tinyint(4) NOT NULL DEFAULT '0',
+  `kassa` tinyint(4) NOT NULL DEFAULT '0',
+  `bank` tinyint(4) NOT NULL DEFAULT '0',
+  `user` int(11) NOT NULL DEFAULT '0',
   `altnum` int(11) NOT NULL,
   `subtype` varchar(5) NOT NULL,
-  `sum` decimal(10,2) NOT NULL default '0.00',
-  `nds` int(11) NOT NULL default '0',
+  `sum` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `nds` int(11) NOT NULL DEFAULT '0',
   `p_doc` int(11) NOT NULL,
   `mark_del` bigint(20) NOT NULL,
-  `firm_id` int(11) NOT NULL default '1',
+  `firm_id` int(11) NOT NULL DEFAULT '1',
   UNIQUE KEY `id` (`id`),
   KEY `type` (`type`),
   KEY `fio` (`agent`),
@@ -613,14 +614,14 @@ CREATE TABLE IF NOT EXISTS `doc_list` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_list_pos` (
-  `id` int(11) NOT NULL auto_increment,
-  `doc` int(11) NOT NULL default '0',
-  `tovar` int(11) NOT NULL default '0',
-  `cnt` int(11) NOT NULL default '0',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `doc` int(11) NOT NULL DEFAULT '0',
+  `tovar` int(11) NOT NULL DEFAULT '0',
+  `cnt` int(11) NOT NULL DEFAULT '0',
   `sn` varchar(15) NOT NULL,
   `comm` varchar(50) NOT NULL,
-  `cost` double NOT NULL default '0',
-  `page` int(11) NOT NULL default '0',
+  `cost` double NOT NULL DEFAULT '0',
+  `page` int(11) NOT NULL DEFAULT '0',
   KEY `id` (`id`),
   KEY `doc` (`doc`),
   KEY `tovar` (`tovar`),
@@ -639,11 +640,11 @@ CREATE TABLE IF NOT EXISTS `doc_list_pos` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_list_sn` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `pos_id` int(11) NOT NULL COMMENT 'ID товара',
   `num` varchar(64) NOT NULL COMMENT 'Серийный номер',
   `prix_list_pos` int(11) NOT NULL COMMENT 'Строка поступления',
-  `rasx_list_pos` int(11) default NULL COMMENT 'Строка реализации',
+  `rasx_list_pos` int(11) DEFAULT NULL COMMENT 'Строка реализации',
   UNIQUE KEY `id` (`id`),
   KEY `pos_id` (`pos_id`),
   KEY `num` (`num`),
@@ -663,7 +664,7 @@ CREATE TABLE IF NOT EXISTS `doc_list_sn` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_log` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user` int(11) NOT NULL,
   `ip` varchar(20) NOT NULL,
   `object` varchar(20) NOT NULL,
@@ -691,7 +692,7 @@ CREATE TABLE IF NOT EXISTS `doc_log` (
 --
 
 CREATE TABLE IF NOT EXISTS `doc_rasxodi` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `adm` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -727,7 +728,7 @@ INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `doc_sklady` (
-  `id` tinyint(4) NOT NULL auto_increment,
+  `id` tinyint(4) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `comment` text NOT NULL,
   KEY `id` (`id`),
@@ -749,7 +750,7 @@ INSERT INTO `doc_sklady` (`id`, `name`, `comment`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `doc_types` (
-  `id` tinyint(4) NOT NULL auto_increment,
+  `id` tinyint(4) NOT NULL AUTO_INCREMENT,
   `name` varchar(30) NOT NULL,
   KEY `id` (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=18 ;
@@ -784,7 +785,7 @@ INSERT INTO `doc_types` (`id`, `name`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `doc_units` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(16) NOT NULL,
   `printname` varchar(8) NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -812,7 +813,7 @@ INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `doc_vars` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm_name` varchar(150) NOT NULL,
   `firm_director` varchar(100) NOT NULL,
   `firm_director_r` varchar(100) NOT NULL,
@@ -830,7 +831,7 @@ CREATE TABLE IF NOT EXISTS `doc_vars` (
   `firm_gruzootpr` varchar(300) NOT NULL,
   `firm_telefon` varchar(60) NOT NULL,
   `firm_okpo` varchar(10) NOT NULL,
-  `param_nds` double NOT NULL default '0',
+  `param_nds` double NOT NULL DEFAULT '0',
   `firm_skin` varchar(16) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
@@ -849,7 +850,7 @@ INSERT INTO `doc_vars` (`id`, `firm_name`, `firm_director`, `firm_director_r`, `
 --
 
 CREATE TABLE IF NOT EXISTS `errorlog` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `page` varchar(128) NOT NULL,
   `referer` varchar(128) NOT NULL,
   `agent` varchar(128) NOT NULL,
@@ -876,13 +877,13 @@ CREATE TABLE IF NOT EXISTS `errorlog` (
 --
 
 CREATE TABLE IF NOT EXISTS `firm_info` (
-  `id` int(11) NOT NULL auto_increment,
-  `name` varchar(100) NOT NULL default '',
-  `signature` varchar(200) NOT NULL default '' COMMENT 'Сигнатура для определения принадлежности прайса',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL DEFAULT '',
+  `signature` varchar(200) NOT NULL DEFAULT '' COMMENT 'Сигнатура для определения принадлежности прайса',
   `currency` tinyint(4) NOT NULL,
   `coeff` decimal(10,3) NOT NULL,
   `last_update` datetime NOT NULL,
-  PRIMARY KEY  (`id`),
+  PRIMARY KEY (`id`),
   KEY `name` (`name`),
   KEY `sign` (`signature`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
@@ -901,7 +902,7 @@ INSERT INTO `firm_info` (`id`, `name`, `signature`, `currency`, `coeff`, `last_u
 --
 
 CREATE TABLE IF NOT EXISTS `firm_info_struct` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm_id` int(11) NOT NULL COMMENT 'Номер фирмы',
   `table_name` varchar(50) NOT NULL COMMENT 'Название листа прайса',
   `name` mediumint(9) NOT NULL COMMENT 'N колонки наименований',
@@ -927,7 +928,7 @@ INSERT INTO `firm_info_struct` (`id`, `firm_id`, `table_name`, `name`, `cost`, `
 --
 
 CREATE TABLE IF NOT EXISTS `loginfo` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` datetime NOT NULL,
   `page` varchar(100) NOT NULL,
   `query` varchar(100) NOT NULL,
@@ -982,7 +983,7 @@ CREATE TABLE IF NOT EXISTS `news` (
 --
 
 CREATE TABLE IF NOT EXISTS `notes` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user` int(11) NOT NULL,
   `sender` int(11) NOT NULL,
   `head` varchar(50) NOT NULL,
@@ -1010,13 +1011,13 @@ CREATE TABLE IF NOT EXISTS `notes` (
 --
 
 CREATE TABLE IF NOT EXISTS `parsed_price` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm` int(11) NOT NULL,
   `pos` int(11) NOT NULL,
   `cost` decimal(10,2) NOT NULL,
   `nal` varchar(10) NOT NULL,
   `from` int(11) NOT NULL,
-  PRIMARY KEY  (`id`),
+  PRIMARY KEY (`id`),
   KEY `firm` (`firm`),
   KEY `pos` (`pos`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
@@ -1033,8 +1034,8 @@ CREATE TABLE IF NOT EXISTS `parsed_price` (
 --
 
 CREATE TABLE IF NOT EXISTS `photogalery` (
-  `id` int(11) NOT NULL auto_increment,
-  `uid` int(11) NOT NULL default '0',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` int(11) NOT NULL DEFAULT '0',
   `comment` varchar(50) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `uid` (`uid`)
@@ -1052,13 +1053,13 @@ CREATE TABLE IF NOT EXISTS `photogalery` (
 --
 
 CREATE TABLE IF NOT EXISTS `price` (
-  `id` int(11) NOT NULL auto_increment,
-  `name` varchar(200) NOT NULL default '',
-  `cost` double NOT NULL default '0',
-  `firm` int(11) NOT NULL default '0',
-  `art` varchar(20) NOT NULL default '',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL DEFAULT '',
+  `cost` double NOT NULL DEFAULT '0',
+  `firm` int(11) NOT NULL DEFAULT '0',
+  `art` varchar(20) NOT NULL DEFAULT '',
   `nal` varchar(20) NOT NULL,
-  `date` datetime NOT NULL default '0000-00-00 00:00:00',
+  `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `seeked` int(11) NOT NULL,
   KEY `name` (`name`),
   KEY `cost` (`cost`),
@@ -1080,10 +1081,10 @@ CREATE TABLE IF NOT EXISTS `price` (
 --
 
 CREATE TABLE IF NOT EXISTS `prices_replaces` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `search_str` varchar(16) NOT NULL,
   `replace_str` varchar(512) NOT NULL,
-  PRIMARY KEY  (`id`),
+  PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `search_str` (`search_str`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Список замен для регулярных выражений анализатора прайсов' AUTO_INCREMENT=1 ;
@@ -1100,7 +1101,7 @@ CREATE TABLE IF NOT EXISTS `prices_replaces` (
 --
 
 CREATE TABLE IF NOT EXISTS `questions` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `text` varchar(200) NOT NULL,
   `mode` int(11) NOT NULL,
   UNIQUE KEY `id` (`id`)
@@ -1118,7 +1119,7 @@ CREATE TABLE IF NOT EXISTS `questions` (
 --
 
 CREATE TABLE IF NOT EXISTS `question_answ` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `q_id` int(11) NOT NULL,
   `answer` varchar(500) NOT NULL,
   `uid` int(11) NOT NULL,
@@ -1158,7 +1159,7 @@ CREATE TABLE IF NOT EXISTS `question_ip` (
 --
 
 CREATE TABLE IF NOT EXISTS `question_vars` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `q_id` int(11) NOT NULL,
   `var_id` int(11) NOT NULL,
   `text` varchar(500) NOT NULL,
@@ -1178,7 +1179,7 @@ CREATE TABLE IF NOT EXISTS `question_vars` (
 --
 
 CREATE TABLE IF NOT EXISTS `seekdata` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
   `sql` varchar(200) NOT NULL,
   `regex` varchar(200) NOT NULL,
@@ -1202,7 +1203,7 @@ CREATE TABLE IF NOT EXISTS `seekdata` (
 --
 
 CREATE TABLE IF NOT EXISTS `sys_cli_status` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `script` varchar(64) NOT NULL,
   `status` text NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -1221,7 +1222,7 @@ CREATE TABLE IF NOT EXISTS `sys_cli_status` (
 --
 
 CREATE TABLE IF NOT EXISTS `tickets` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` datetime NOT NULL,
   `autor` int(11) NOT NULL,
   `priority` tinyint(4) NOT NULL,
@@ -1250,7 +1251,7 @@ CREATE TABLE IF NOT EXISTS `tickets` (
 --
 
 CREATE TABLE IF NOT EXISTS `tickets_log` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL,
   `ticket` int(11) NOT NULL,
   `date` datetime NOT NULL,
@@ -1308,7 +1309,7 @@ CREATE TABLE IF NOT EXISTS `tickets_state` (
 --
 
 CREATE TABLE IF NOT EXISTS `traffic_denyip` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip` varchar(20) NOT NULL,
   `host` varchar(50) NOT NULL,
   UNIQUE KEY `id_2` (`id`),
@@ -1327,48 +1328,48 @@ CREATE TABLE IF NOT EXISTS `traffic_denyip` (
 --
 
 CREATE TABLE IF NOT EXISTS `ulog` (
-  `id` bigint(20) unsigned NOT NULL auto_increment,
-  `raw_mac` varchar(80) default NULL,
-  `oob_time_sec` int(10) unsigned default NULL,
-  `oob_time_usec` int(10) unsigned default NULL,
-  `oob_prefix` varchar(32) default NULL,
-  `oob_mark` int(10) unsigned default NULL,
-  `oob_in` varchar(32) default NULL,
-  `oob_out` varchar(32) default NULL,
-  `ip_saddr` varchar(15) default NULL,
-  `ip_daddr` varchar(15) default NULL,
-  `ip_protocol` tinyint(3) unsigned default NULL,
-  `ip_tos` tinyint(3) unsigned default NULL,
-  `ip_ttl` tinyint(3) unsigned default NULL,
-  `ip_totlen` smallint(5) unsigned default NULL,
-  `ip_ihl` tinyint(3) unsigned default NULL,
-  `ip_csum` smallint(5) unsigned default NULL,
-  `ip_id` smallint(5) unsigned default NULL,
-  `ip_fragoff` smallint(5) unsigned default NULL,
-  `tcp_sport` smallint(5) unsigned default NULL,
-  `tcp_dport` smallint(5) unsigned default NULL,
-  `tcp_seq` int(10) unsigned default NULL,
-  `tcp_ackseq` int(10) unsigned default NULL,
-  `tcp_window` smallint(5) unsigned default NULL,
-  `tcp_urg` tinyint(4) default NULL,
-  `tcp_urgp` smallint(5) unsigned default NULL,
-  `tcp_ack` tinyint(4) default NULL,
-  `tcp_psh` tinyint(4) default NULL,
-  `tcp_rst` tinyint(4) default NULL,
-  `tcp_syn` tinyint(4) default NULL,
-  `tcp_fin` tinyint(4) default NULL,
-  `udp_sport` smallint(5) unsigned default NULL,
-  `udp_dport` smallint(5) unsigned default NULL,
-  `udp_len` smallint(5) unsigned default NULL,
-  `icmp_type` tinyint(3) unsigned default NULL,
-  `icmp_code` tinyint(3) unsigned default NULL,
-  `icmp_echoid` smallint(5) unsigned default NULL,
-  `icmp_echoseq` smallint(5) unsigned default NULL,
-  `icmp_gateway` int(10) unsigned default NULL,
-  `icmp_fragmtu` smallint(5) unsigned default NULL,
-  `pwsniff_user` varchar(30) default NULL,
-  `pwsniff_pass` varchar(30) default NULL,
-  `ahesp_spi` int(10) unsigned default NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `raw_mac` varchar(80) DEFAULT NULL,
+  `oob_time_sec` int(10) unsigned DEFAULT NULL,
+  `oob_time_usec` int(10) unsigned DEFAULT NULL,
+  `oob_prefix` varchar(32) DEFAULT NULL,
+  `oob_mark` int(10) unsigned DEFAULT NULL,
+  `oob_in` varchar(32) DEFAULT NULL,
+  `oob_out` varchar(32) DEFAULT NULL,
+  `ip_saddr` varchar(15) DEFAULT NULL,
+  `ip_daddr` varchar(15) DEFAULT NULL,
+  `ip_protocol` tinyint(3) unsigned DEFAULT NULL,
+  `ip_tos` tinyint(3) unsigned DEFAULT NULL,
+  `ip_ttl` tinyint(3) unsigned DEFAULT NULL,
+  `ip_totlen` smallint(5) unsigned DEFAULT NULL,
+  `ip_ihl` tinyint(3) unsigned DEFAULT NULL,
+  `ip_csum` smallint(5) unsigned DEFAULT NULL,
+  `ip_id` smallint(5) unsigned DEFAULT NULL,
+  `ip_fragoff` smallint(5) unsigned DEFAULT NULL,
+  `tcp_sport` smallint(5) unsigned DEFAULT NULL,
+  `tcp_dport` smallint(5) unsigned DEFAULT NULL,
+  `tcp_seq` int(10) unsigned DEFAULT NULL,
+  `tcp_ackseq` int(10) unsigned DEFAULT NULL,
+  `tcp_window` smallint(5) unsigned DEFAULT NULL,
+  `tcp_urg` tinyint(4) DEFAULT NULL,
+  `tcp_urgp` smallint(5) unsigned DEFAULT NULL,
+  `tcp_ack` tinyint(4) DEFAULT NULL,
+  `tcp_psh` tinyint(4) DEFAULT NULL,
+  `tcp_rst` tinyint(4) DEFAULT NULL,
+  `tcp_syn` tinyint(4) DEFAULT NULL,
+  `tcp_fin` tinyint(4) DEFAULT NULL,
+  `udp_sport` smallint(5) unsigned DEFAULT NULL,
+  `udp_dport` smallint(5) unsigned DEFAULT NULL,
+  `udp_len` smallint(5) unsigned DEFAULT NULL,
+  `icmp_type` tinyint(3) unsigned DEFAULT NULL,
+  `icmp_code` tinyint(3) unsigned DEFAULT NULL,
+  `icmp_echoid` smallint(5) unsigned DEFAULT NULL,
+  `icmp_echoseq` smallint(5) unsigned DEFAULT NULL,
+  `icmp_gateway` int(10) unsigned DEFAULT NULL,
+  `icmp_fragmtu` smallint(5) unsigned DEFAULT NULL,
+  `pwsniff_user` varchar(30) DEFAULT NULL,
+  `pwsniff_pass` varchar(30) DEFAULT NULL,
+  `ahesp_spi` int(10) unsigned DEFAULT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `ip_daddr` (`ip_daddr`),
   KEY `ip_saddr` (`ip_saddr`)
@@ -1386,18 +1387,18 @@ CREATE TABLE IF NOT EXISTS `ulog` (
 --
 
 CREATE TABLE IF NOT EXISTS `users` (
-  `id` int(11) NOT NULL auto_increment,
-  `name` varchar(30) NOT NULL,
-  `pass` varchar(35) NOT NULL,
-  `passch` varchar(35) NOT NULL,
-  `email` varchar(50) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) NOT NULL,
+  `pass` varchar(32) NOT NULL,
+  `passch` varchar(32) NOT NULL,
+  `email` varchar(64) NOT NULL,
   `date_reg` datetime NOT NULL,
   `confirm` varchar(32) NOT NULL,
   `subscribe` int(11) NOT NULL COMMENT 'Podpiska na novosti i dr informaciy',
   `lastlogin` datetime NOT NULL,
   `rname` varchar(32) NOT NULL,
-  `tel` varchar(15) NOT NULL,
-  `adres` varchar(100) NOT NULL,
+  `tel` varchar(16) NOT NULL,
+  `adres` varchar(128) NOT NULL,
   `worker` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `passch` (`passch`)
@@ -1407,8 +1408,31 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- Дамп данных таблицы `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `pass`, `passch`, `email`, `date_reg`, `confirm`, `subscribe`, `lastlogin`, `rname`, `tel`, `adres`) VALUES
-(1, 'root', '63a9f0ea7bb98050796b649e85481845', '', '', '0000-00-00 00:00:00', '0', 0, '2011-01-24 12:23:30', '', '', '');
+INSERT INTO `users` (`id`, `name`, `pass`, `passch`, `email`, `date_reg`, `confirm`, `subscribe`, `lastlogin`, `rname`, `tel`, `adres`, `worker`) VALUES
+(0, 'anonymous', 'NULL', '', '', '0000-00-00 00:00:00', '0', 0, '0000-00-00 00:00:00', 'anonymous', '', 'nothing', 0),
+(1, 'root', '63a9f0ea7bb98050796b649e85481845', '', '', '0000-00-00 00:00:00', '0', 0, '2011-01-24 12:23:30', '', '', '', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `users_acl`
+--
+
+CREATE TABLE IF NOT EXISTS `users_acl` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` int(11) NOT NULL,
+  `object` varchar(64) NOT NULL,
+  `action` varchar(16) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `uid` (`uid`),
+  KEY `object` (`object`),
+  KEY `action` (`action`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+--
+-- Дамп данных таблицы `users_acl`
+--
+
 
 -- --------------------------------------------------------
 
@@ -1417,7 +1441,7 @@ INSERT INTO `users` (`id`, `name`, `pass`, `passch`, `email`, `date_reg`, `confi
 --
 
 CREATE TABLE IF NOT EXISTS `users_bad_auth` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip` varchar(24) NOT NULL,
   `time` double NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -1437,7 +1461,7 @@ CREATE TABLE IF NOT EXISTS `users_bad_auth` (
 --
 
 CREATE TABLE IF NOT EXISTS `users_data` (
-  `uid` int(11) NOT NULL default '0',
+  `uid` int(11) NOT NULL DEFAULT '0',
   `param` varchar(25) NOT NULL,
   `value` varchar(128) NOT NULL,
   UNIQUE KEY `uid` (`uid`,`param`),
@@ -1447,8 +1471,6 @@ CREATE TABLE IF NOT EXISTS `users_data` (
 --
 -- Дамп данных таблицы `users_data`
 --
-
-
 -- --------------------------------------------------------
 
 --
@@ -1456,7 +1478,7 @@ CREATE TABLE IF NOT EXISTS `users_data` (
 --
 
 CREATE TABLE IF NOT EXISTS `users_grouplist` (
-  `id` int(11) NOT NULL auto_increment,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `comment` text NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -1473,50 +1495,109 @@ INSERT INTO `users_grouplist` (`id`, `name`, `comment`) VALUES
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `users_grouprights`
+-- Структура таблицы `users_groups_acl`
 --
 
-CREATE TABLE IF NOT EXISTS `users_grouprights` (
-  `id` int(11) NOT NULL auto_increment,
+CREATE TABLE IF NOT EXISTS `users_groups_acl` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `gid` int(11) NOT NULL,
-  `object` varchar(50) NOT NULL,
-  `a_read` tinyint(4) NOT NULL,
-  `a_write` tinyint(4) NOT NULL,
-  `a_edit` tinyint(4) NOT NULL,
-  `a_delete` tinyint(4) NOT NULL,
+  `object` varchar(64) NOT NULL,
+  `action` varchar(16) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `gid` (`gid`),
   KEY `object` (`object`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 COMMENT='Prava grupp na dostup k objectam' AUTO_INCREMENT=2 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 COMMENT='Привилегии групп' AUTO_INCREMENT=2 ;
 
 --
--- Дамп данных таблицы `users_grouprights`
+-- Дамп данных таблицы `users_groups_acl`
 --
 
-INSERT INTO `users_grouprights` (`id`, `gid`, `object`, `a_read`, `a_write`, `a_edit`, `a_delete`) VALUES
-(1, 1, 'doc_list', 1, 1, 1, 0);
+INSERT INTO `users_groups_acl` (`id`, `gid`, `object`, `action`) VALUES
+(1, 1, 'doc_list', '');
 
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `users_groups`
+-- Структура таблицы `users_in_group`
 --
 
-CREATE TABLE IF NOT EXISTS `users_groups` (
-  `id` int(11) NOT NULL auto_increment,
+CREATE TABLE IF NOT EXISTS `users_in_group` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL,
   `gid` int(11) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `uid` (`uid`),
   KEY `gid` (`gid`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 COMMENT='Sootvetstvie grupp i pol''zovatelei' AUTO_INCREMENT=3 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 COMMENT='Соответствие групп и пользователей' AUTO_INCREMENT=2 ;
 
 --
--- Дамп данных таблицы `users_groups`
+-- Дамп данных таблицы `users_in_group`
 --
 
-INSERT INTO `users_groups` (`id`, `uid`, `gid`) VALUES
-(2, 1, 1);
+INSERT INTO `users_in_group` (`id`, `uid`, `gid`) VALUES
+(1, 1, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `users_objects`
+--
+
+CREATE TABLE IF NOT EXISTS `users_objects` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `object` varchar(32) NOT NULL,
+  `desc` varchar(128) NOT NULL,
+  `actions` varchar(128) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `object` (`object`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=45;
+
+--
+-- Дамп данных таблицы `users_objects`
+--
+
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
+(1, 'doc', 'Документы', ''),
+(2, 'doc_list', 'Журнал документов', 'view,delete'),
+(3, 'doc_postuplenie', 'Поступление', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(4, 'generic_articles', 'Доступ к статьям', 'view,edit,create,delete'),
+(5, 'sys', 'Системные объекты', ''),
+(6, 'generic', 'Общие объекты', ''),
+(7, 'sys_acl', 'Управление привилегиями', 'view,edit'),
+(8, 'doc_realiz', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(9, 'doc_zayavka', 'Документ заявки', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(10, 'doc_kompredl', 'Коммерческое предложение', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(11, 'doc_dogovor', 'Договор', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(12, 'doc_doveren', 'Доверенность', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(13, 'doc_pbank', 'Приход средств в банк', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(14, 'doc_pertemeshenie', 'Перемещение товара', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(15, 'doc_perkas', 'Перемещение средств в кассе', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(16, 'doc_predlojenie', 'Предложение поставщика', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(17, 'doc_rbank', 'Расход средств из банка', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(18, 'doc_realiz_op', 'Оперативная реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(19, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(20, 'doc_sborka', 'Сборка изделия', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(21, 'doc_specific', 'Спецификация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(22, 'doc_v_puti', 'Товар в пути', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(23, 'list', 'Списки', ''),
+(24, 'list_agent', 'Агенты', 'create,edit,view'),
+(25, 'list_sklad', 'Склад', 'create,edit,view'),
+(26, 'list_price_an', 'Анализатор прайсов', 'create,edit,view,delete'),
+(27, 'list_agent_dov', 'Доверенные лица', 'create,edit,view'),
+(28, 'report', 'Отчёты', ''),
+(29, 'report_cash', 'Кассовый отчёт', 'view'),
+(30, 'generic_news', 'Новости', 'view,create,edit,delete'),
+(31, 'doc_service', 'Служебные функции', 'view'),
+(32, 'doc_scropts', 'Сценарии и операции', 'view,exec'),
+(33, 'log', 'Системные журналы', ''),
+(34, 'log_browser', 'Статистирка броузеров', 'view'),
+(35, 'log_error', 'Журнал ошибок', 'view'),
+(36, 'log_access', 'Журнал посещений', 'view'),
+(37, 'sys_async_task', 'Ассинхронные задачи', 'view,exec'),
+(38, 'sys_ip-blacklist', 'Чёрный список IP адресов', 'view,create,delete'),
+(39, 'sys_ip-log', 'Журнал обращений к ip адресам', 'view'),
+(40, 'generic_price_an', 'Анализатор прайсов', 'view'),
+(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete');
 
 -- --------------------------------------------------------
 
@@ -1553,8 +1634,8 @@ INSERT INTO `wiki` (`name`, `date`, `autor`, `changed`, `changeautor`, `text`) V
 --
 
 CREATE TABLE IF NOT EXISTS `wikiphoto` (
-  `id` int(11) NOT NULL auto_increment,
-  `uid` int(11) NOT NULL default '0',
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` int(11) NOT NULL DEFAULT '0',
   `comment` varchar(64) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
@@ -1705,23 +1786,29 @@ ALTER TABLE `tickets`
   ADD CONSTRAINT `tickets_ibfk_1` FOREIGN KEY (`autor`) REFERENCES `users` (`id`);
 
 --
+-- Ограничения внешнего ключа таблицы `users_acl`
+--
+ALTER TABLE `users_acl`
+  ADD CONSTRAINT `users_acl_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
 -- Ограничения внешнего ключа таблицы `users_data`
 --
 ALTER TABLE `users_data`
   ADD CONSTRAINT `users_data_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
--- Ограничения внешнего ключа таблицы `users_grouprights`
+-- Ограничения внешнего ключа таблицы `users_groups_acl`
 --
-ALTER TABLE `users_grouprights`
-  ADD CONSTRAINT `users_grouprights_ibfk_1` FOREIGN KEY (`gid`) REFERENCES `users` (`id`);
+ALTER TABLE `users_groups_acl`
+  ADD CONSTRAINT `users_groups_acl_ibfk_1` FOREIGN KEY (`gid`) REFERENCES `users` (`id`);
 
 --
--- Ограничения внешнего ключа таблицы `users_groups`
+-- Ограничения внешнего ключа таблицы `users_in_group`
 --
-ALTER TABLE `users_groups`
-  ADD CONSTRAINT `users_groups_ibfk_2` FOREIGN KEY (`gid`) REFERENCES `users_grouplist` (`id`),
-  ADD CONSTRAINT `users_groups_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`id`);
+ALTER TABLE `users_in_group`
+  ADD CONSTRAINT `users_in_group_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `users_in_group_ibfk_2` FOREIGN KEY (`gid`) REFERENCES `users_grouplist` (`id`);
 
 --
 -- Ограничения внешнего ключа таблицы `wiki`

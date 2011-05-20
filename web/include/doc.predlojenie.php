@@ -52,8 +52,6 @@ class doc_Predlojenie extends doc_Nulltype
 	{
 		global $uid;
 		$tim=time();
-		$rights=getright('doc_predlojenie',$uid);
-		if(!$rights['edit']) 		throw new AccessException('');
 		
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
@@ -63,55 +61,6 @@ class doc_Predlojenie extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 	}
-
-	function Cancel($doc)
-	{
-		global $tmpl;
-		global $uid;
-
-		$tmpl->ajax=1;
-
-		$rights=getright('doc_predlojenie',$uid);
-		if($rights['edit'])
-		{
-			mysql_query("START TRANSACTION");
-			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base` READ ");
-			$err='';
-			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-			FROM `doc_list` WHERE `doc_list`.`id`='$doc'");
-			if($nx=@mysql_fetch_row($res))
-			{
-				if($nx[4])
-				{
-					$tim=time();
-					$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='$doc'");
-					if($res)
-					{
-						if(!$err)
-							$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-					}
-					else $err="Ошибка отмены проведения, ошибка установки флага";
-				}
-				else $err="Докумен НЕ проведён!";
-			}
-			else $err="Ошибка отмены проведения, ошибка выборки";
-
-			if(!$err)
-			{
-				mysql_query("COMMIT");
-				doc_log("Cancel predlojenie","doc:$doc");
-			}
-			else
-			{
-				mysql_query("ROLLBACK");
-				doc_log("ERROR: Cancel predlojenie - $err","doc:$doc");
-				$tmpl->AddText("<h3>$err</h3>");
-			}
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
-	}
-
 
 	function PrintForm($doc, $opt='')
 	{

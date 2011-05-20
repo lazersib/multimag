@@ -114,8 +114,6 @@ class doc_Peremeshenie extends doc_Nulltype
 		global $uid;
 		$tim=time();
 		$nasklad=$this->dop_data['na_sklad'];
-		$rights=getright('doc_peremeshenie',$uid);
-		if(!$rights['edit'])			throw new AccessException();
 		
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
@@ -143,93 +141,6 @@ class doc_Peremeshenie extends doc_Nulltype
 // 			VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
 		}
 	}
-
-	function Cancel($doc)
-	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-		global $dop_data;
-
-		$nasklad=$dop_data['na_sklad'];
-
-	    $tmpl->ajax=1;
-
-		$rights=getright('doc_peremeshenie',$uid);
-		if($rights['edit'])
-		{
-			mysql_query("START TRANSACTION");
-			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base` READ ");
-			$err='';
-			$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-			FROM `doc_list` WHERE `doc_list`.`id`='$doc'");
-			if($nx=@mysql_fetch_row($res))
-			{
-				if($nx[4])
-				{
-					$tim=time();
-					$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='$doc'");
-					if($res)
-					{
-                    $res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`
-                    FROM `doc_list_pos`
-                    LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-                    LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$nx[3]'
-                    WHERE `doc_list_pos`.`doc`='$doc'");
-                    while($nxt=mysql_fetch_row($res))
-                    {
-						
-						$budet=CheckMinus($nxt[0], $nx[3]);
-						if($budet<0)
-						{
-							$err="Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]' !";
-							$badpos=$nxt[0];
-							break;
-						}
-                        
-                        mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
-                        if(mysql_error())
-                        {
-                        	$err="Ошибка проведения, ошибка изменения количества!";
-                        	break;
-                        }
-                        
-                        mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
-                        if(mysql_error())
-                        {
-                        	$err="Ошибка проведения, ошибка изменения количества!";
-                        	break;
-                        }
-                        // Если это первое поступление
-                         if(mysql_affected_rows()==0) mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)
-                         	VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
-                    }
-						if(!$err)
-							$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-					}
-					else $err="Ошибка отмены проведения, ошибка установки флага";
-				}
-				else $err="Докумен НЕ проведён!";
-			}
-			else $err="Ошибка отмены проведения, ошибка выборки";
-
-			if(!$err)
-			{
-				mysql_query("COMMIT");
-				doc_log("Cancel peremeshenie","$doc");
-			}
-			else
-			{
-				mysql_query("ROLLBACK");
-				doc_log("ERROR: Cancel peremeshenie - $err","$doc");
-				$tmpl->AddText("<h3>$err</h3>");
-			}
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
-		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
-	}
-
 
 	function PrintForm($doc, $opt='')
 	{

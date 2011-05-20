@@ -80,15 +80,13 @@ class doc_Sborka extends doc_Nulltype
 		$dd=date_day(time());
 		$tim=time();
 
-		$rights=getright('doc_'.$this->doc_name,$uid);
 
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException("Ошибка получения данных документа!");
 		if(!($nx=@mysql_fetch_row($res)))	throw new Exception("Документ {$this->doc} не найден!");
 		if(!$nx[4])				throw new Exception("Документ ещё не проведён!");
-		if( (!$rights['delete']) && (! ($rights['edit']&& ($dd<$nx[1]) )) )
-							throw new AccessException('');
+
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException("Ошибка установки даты проведения!");
 

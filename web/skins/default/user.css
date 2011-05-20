@@ -52,3 +52,24 @@ div.context_menu a:hover
 {
 	text-decoration:	none;
 }
+
+table.list tr
+{
+	background-color:	#f0f8ff;
+}
+
+table.list tr td
+{
+	border-right:		#e0f0ff 1px solid;
+	padding:		1px 3px 1px 3px;
+}
+
+table.list tr:nth-child(odd)
+{
+	background-color:	#e0f0ff;
+}
+
+table.list tr:nth-child(odd) td
+{
+    border-right: #fff 1px solid;
+}

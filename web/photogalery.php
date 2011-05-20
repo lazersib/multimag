@@ -107,11 +107,8 @@ if($mode==""||$mode=='view')
 		LIMIT $sl,$lim");
 
 	}
-	$rights=getright('photogalery',$uid);
-	if($rights['write'])
-	{
+	if(isAccess('generic_galery','edit'))
 		$tmpl->AddText("<br><a href='?mode=add'>Добавить</a>");
-	}
 }
 else if($mode=='viewall')
 {
@@ -123,8 +120,7 @@ else if($mode=='viewall')
 }
 else if($mode=="add")
 {
-	$rights=getright('photogalery',$uid);
-	if($rights['write'])
+	if(isAccess('generic_galery','create'))
 	{
 		$tmpl->AddText("<h3>Добавить фотографию</h3>");
 		$tmpl->AddText("При добавлении фотографии не забывайте про <a href='wiki/правила_фотогалереи'>правила</a>!
@@ -145,8 +141,7 @@ else if($mode=="addo")
 {
 	$tmpl->AddText("<h3>Сохранение фотографии</h3>");
 	$comm=rcv('comm');
-	$rights=getright('photogalery',$uid);
-	if($rights['write'])
+	if(isAccess('generic_galery','create'))
 	{
 	$an=" Фотография не установлена!";
 	if(strlen($comm)>5)

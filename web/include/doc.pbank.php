@@ -78,13 +78,11 @@ class doc_PBank extends doc_Nulltype
 	{
 		$uid=@$_SESSION['uid'];
 		$tim=time();
-		$rights=getright('doc_'.$this->doc_name,$uid);
 		$dd=date_day($tim);
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`ok`, `doc_list`.`sum`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
 		if(!($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
-		if((!$rights['edit'])&&($dd>$nx[1]))	throw new AccessException('');		
 		if(!$nx[3])				throw new Exception('Документ не проведён!');
 		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'$nx[4]'
 		WHERE `ids`='bank' AND `num`='$nx[2]'");
@@ -92,78 +90,7 @@ class doc_PBank extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага отмены!');
 	}
-	
-	function Cancel($doc)
-	{
-		global $tmpl;
-		global $uid;
 
-		$tmpl->ajax=1;
-
-		mysql_query("START TRANSACTION");
-		mysql_query("LOCK TABLE `doc_list`, `doc_kassa` READ ");
-		$err='';
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`ok`, `doc_list`.`sum`
-		FROM `doc_list` WHERE `doc_list`.`id`='$doc'");
-		if($nx=@mysql_fetch_row($res))
-		{
-			$rights=getright('doc_'.$this->doc_name,$uid);
-			$dd=date_day(time());
-			if(($rights['edit'])||($dd<$nx[1]))
-			{
-				if(($nx[3])||$silent)
-				{
-					$tim=time();
-					$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'$nx[4]'
-					WHERE `ids`='bank' AND `num`='$nx[2]'");
-					if(mysql_affected_rows())
-					{
-						$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='$doc'");
-						if(!$res)
-							$err="Ошибка обновления 2!";
-					}
-					else $err="Ошибка обновления 1!";
-				}
-				else $err="Документ НЕ проведён!";
-				
-			}
-			else 
-			{
-				$tmpl->AddText("<form action='/message.php' method='post'>
-				<input type='hidden' name='mode' value='petition'>
-				<input type='hidden' name='doc' value='$doc'>
-				<fieldset><label>Запрос на отмену документа</label>
-				Опишите причину необходимости отмены документа:<br>
-				<textarea name='comment'></textarea><br>
-				<input type='submit' value='Послать запрос'>
-				</fieldset></form>");
-				$err="Докумен НЕ отменён!";	
-			}
-				
-		}
-		if(!$err)
-		{
-			mysql_query("COMMIT");
-			if(!$silent)
-			{
-				doc_log("Cancel {$this->doc_name}","doc:$doc");
-				$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-			}
-		}
-		else
-		{
-			mysql_query("ROLLBACK");
-			if(!$silent)
-			{
-				doc_log("ERROR: Cancel {$this->doc_name} - $err","doc:$doc");
-				$tmpl->AddText("<h3>$err</h3>");
-			}
-		}
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_kassa`");
-	
-			
-		return $err;
-	}
 	// Печать документа
 	function Printform($doc, $opt='')
 	{

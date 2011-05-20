@@ -1,8 +1,10 @@
-function PosEditorInit(doc)
+function PosEditorInit(doc,editable)
 {
 	var poslist=document.getElementById('poslist')
 	var p_sum=document.getElementById('sum')
 	poslist.doc_id=doc
+	poslist.editable=editable
+	poslist.show_column=new Array();
 	SkladViewInit(doc)
 	
 	$.ajax({ 
@@ -88,19 +90,35 @@ function PosEditorInit(doc)
 		row.id='posrow'+data.line_id
 		var sum=(data.cost*data.cnt).toFixed(2)
 		row.ondblclick=row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.pos_id); return false }
-		row.innerHTML="<td>"+(row_cnt+1)+"<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'></td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td><input type='text' name='cost' value='"+data.cost+"'></td><td><input type='text' name='cnt' value='"+data.cnt+"'></td><td><input type='text' name='sum' value='"+sum+"'></td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
+		var linehtml="<td>"+(row_cnt+1)
+		if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>"
+		linehtml+="</td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td>"
+		if(poslist.editable)	linehtml+="<input type='text' name='cost' value='"+data.cost+"'>"
+		else			linehtml+=data.cost
+		linehtml+="</td><td>"
+		if(poslist.editable)	linehtml+="<input type='text' name='cnt' value='"+data.cnt+"'>"
+		else			linehtml+=data.cnt
+		linehtml+="</td><td>"
+		if(poslist.editable)	linehtml+="<input type='text' name='sum' value='"+sum+"'>"
+		else			linehtml+=sum
+		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
+		if(poslist.show_column['sn']>0)	linehtml+="<td>"+data.sn+"</td>"
+		row.innerHTML=linehtml
 		
-		var inputs=row.getElementsByTagName('input')
-		for(var i=0;i<inputs.length;i++)
+		if(poslist.editable)
 		{
-			//alert(inputs[i].name)
-			inputs[i].onkeydown=poslist.doInputKeyDown
-			inputs[i].onblur=poslist.doInputBlur
-			inputs[i].old_value=inputs[i].value
+			var inputs=row.getElementsByTagName('input')
+			for(var i=0;i<inputs.length;i++)
+			{
+				//alert(inputs[i].name)
+				inputs[i].onkeydown=poslist.doInputKeyDown
+				inputs[i].onblur=poslist.doInputBlur
+				inputs[i].old_value=inputs[i].value
+			}
+			
+			var img_del=document.getElementById('del'+data.line_id)
+			img_del.onclick=poslist.doDeleteLine
 		}
-		
-		var img_del=document.getElementById('del'+data.line_id)
-		img_del.onclick=poslist.doDeleteLine
 	}
 	
 	poslist.UpdateLine=function(data)
@@ -175,6 +193,8 @@ function PosEditorInit(doc)
 			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
 		}	
 	}
+	
+	return poslist
 }
 
 // Строка быстрого добавления наименований
@@ -182,7 +202,11 @@ function PladdInit()
 {
 	var poslist=document.getElementById('poslist');
 	var pladd=document.getElementById('pladd');
-
+	if(!poslist.editable)
+	{
+		pladd.innerHTML=''
+		return
+	}
 	
 	//pladd.style.backgroundColor='#000';	
 	var pos_id=document.getElementById('pos_id');
@@ -407,6 +431,7 @@ function SkladViewInit(doc)
 	var sklsearch=document.getElementById('sklsearch')
 	var groupdata_cache=new Array()
 	var old_hl=0
+	skladview.show_column=new Array();
 	sklsearch.timer=0
 	skladlist.needDialog=0
 	
@@ -462,10 +487,15 @@ function SkladViewInit(doc)
 		row.data=data
 		row.className='pointer'
 		//row.onclick=function() {AddData(data)}
-		row.onclick=skladlist.clickRow
+		if(poslist.editable)	row.onclick=skladlist.clickRow
 		row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
-		row.innerHTML="<td>"+data.id+"</td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td><td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td><td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td><td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
-		
+		var linehtml="<td>"+data.id+"</td>"
+		if(skladview.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
+		linehtml+="<td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td>"
+		if(skladview.show_column['tdb']>0)	linehtml+="<td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td>"
+		if(skladview.show_column['rto']>0)	linehtml+="<td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td>"
+		linehtml+="<td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
+		row.innerHTML=linehtml
 // 		var img_del=document.getElementById('del'+data.line_id)
 // 		img_del.onclick=poslist.doDeleteLine
 	}

@@ -31,57 +31,49 @@ if($mode=='')
 
 	//$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
 
-	$rights=getright('doc_list',$uid);
-	if($rights['read'])
+	if(isAccess('doc_list','view'))
 	{
-		$tmpl->AddText("<li><a href='docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
-	}
-	
-	$rights=getright('statistic',$uid);
-	if($rights['read'])
-	{
-		$tmpl->AddText("<li><a href='statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
-	}
-	
-	$rights=getright('wiki',$uid);
-	if($rights['read'])
-	{
-		$tmpl->AddText("<li><a href='wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
+		$tmpl->AddText("<li><a href='/docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
 	}
 
-	$rights=getright('cli',$uid);
-	if($rights['read'])
+	if(isAccess('generic_articles','read'))
 	{
-		$tmpl->AddText("<li><a href='?mode=cli_status' title=''>Статус внешних обработчиков</a></li>");
+		$tmpl->AddText("<li><a href='/wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
 	}
-	$rights=getright('tickets',$uid);
-	if($rights['read'])
+
+	if(isAccess('generic_tickets','view'))
 	{
 		$tmpl->AddText("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");
 	}
 
+	if(isAccess('log_browser','view'))
+	{
+		$tmpl->AddText("<li><a href='/statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
+	}
 
-	$rights=getright('errorlog',$uid);
-	if($rights['read'])
+	if(isAccess('log_error','view'))
 	{
 		$tmpl->AddText("<li><a href='?mode=elog' accesskey='e' title='Ошибки'>Журнал ошибок (E)</a></li>");
 	}
 
-	$rights=getright('counterlog',$uid);
-	if($rights['read'])
+	if(isAccess('log_access','view'))
 	{
 		$tmpl->AddText("<li><a href='?mode=clog'>Журнал посещений</a></li>");
 	}
 
-	$rights=getright('deny_ip',$uid);
-	if($rights['read'])
+	if(isAccess('sys_async_task','read'))
 	{
-		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные сайты</a></li>");
+		$tmpl->AddText("<li><a href='?mode=async_task' title=''>Статус ассинхронных обработчиков</a></li>");
 	}
-	$rights=getright('rights',$uid);
-	if($rights['write'])
+
+	if(isAccess('sys_ip-blacklist','read'))
 	{
-		$tmpl->AddText("<li><a href='rights.php'>Привилегии доступа</a></li>");
+		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
+	}
+	
+	if(isAccess('sys_acl','read'))
+	{
+		$tmpl->AddText("<li><a href='/rights.php'>Привилегии доступа</a></li>");
 	}
 	
 		
@@ -289,50 +281,46 @@ else if($mode=='doc_view')
 // }
 else if($mode=="elog")
 {
-	$rights=getright('errorlog',$uid);
-	if($rights['read'])
+	if(!isAccess('log_error','view'))	throw new AccessException("Недостаточно привилегий");
+
+	$tmpl->AddText("<h1>Журнал ошибок</h1>");
+	$res=mysql_query("SELECT `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC");
+	$tmpl->AddText("<table width=100%>
+	<tr><th>ID<th>Page<th>Referer<th>Msg<th>Date<th>IP<th>Agent<th>UID");
+	$i=0;
+	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<h1>Журнал ошибок</h1>");
-		$res=mysql_query("SELECT `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC");
-		$tmpl->AddText("<table width=100%>
-		<tr><th>ID<th>Page<th>Referer<th>Msg<th>Date<th>IP<th>Agent<th>UID");
-		$i=0;
-		while($nxt=mysql_fetch_row($res))
-		{
-			$i=1-$i;
-			$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]<td>$nxt[7]");
-		}
-		$tmpl->AddText("</table>");
+		$i=1-$i;
+		$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]<td>$nxt[7]");
 	}
-	else $tmpl->logger("У Вас недостаточно прав!");
+	$tmpl->AddText("</table>");
+
 }
 else if($mode=="clog")
 {
 	$m=rcv('m');
-	$rights=getright('counterlog',$uid);
-	if($rights['read'])
+	if(!isAccess('log_access','view'))	throw new AccessException("Недостаточно привилегий");
+
+	$tmpl->AddText("<h1>Журнал посещений</h1>");
+	if($m=="")
 	{
-		$tmpl->AddText("<h1>Журнал посещений</h1>");
-		if($m=="")
-		{
 		$g=" GROUP BY `ip`";
 		$tmpl->AddText("<a href='?mode=clog&m=ng'>Без группировки</a><br><br>");
-		}
-	
-		$res=mysql_query("SELECT * FROM `counter` $g ORDER BY `date` DESC");
-		$tmpl->AddText("<table width=100%>
-		<tr><th>IP<th>Страница<th>Ссылка<th>UserAgent<th>Дата");
-			while($nxt=mysql_fetch_row($res))
-			{
-			$dt=date("Y.M.D H:i:s",$nxt[1]);
-				$tmpl->AddText("<tr><td>$nxt[2]<td>$nxt[5]<td>$nxt[4]<td>$nxt[3]<td>$dt");
-			}
-			$tmpl->AddText("</table>");
 	}
-	else $tmpl->logger("У Вас недостаточно прав!");
+
+	$res=mysql_query("SELECT * FROM `counter` $g ORDER BY `date` DESC");
+	$tmpl->AddText("<table width=100%>
+	<tr><th>IP<th>Страница<th>Ссылка<th>UserAgent<th>Дата");
+	while($nxt=mysql_fetch_row($res))
+	{
+		$dt=date("Y.M.D H:i:s",$nxt[1]);
+		$tmpl->AddText("<tr><td>$nxt[2]<td>$nxt[5]<td>$nxt[4]<td>$nxt[3]<td>$dt");
+	}
+	$tmpl->AddText("</table>");
 }
-else if($mode=='cli_status')
+else if($mode=='async_task')
 {
+	if(!isAccess('sys_async_task','view'))	throw new AccessException("Недостаточно привилегий");
 	$tmpl->AddText("<h1>Статус внешних обработчиков</h1>
 	<table><tr><th>ID<th>Скрипт<th>Состояние");
 	$res=mysql_query("SELECT `id`, `script`, `status` FROM `sys_cli_status` ORDER BY `script`");
@@ -343,37 +331,11 @@ else if($mode=='cli_status')
 	$tmpl->AddText("</table>");
 
 }
-else if($mode=="oldhid")
-{
-	$tim=time()-60*60*24;
-	$rights=getright('base_items',$uid);
-	if($rights['edit'])
-	{
-		$res=mysql_query("UPDATE `base_items` SET `exist`='1' WHERE `date_update`<'$tim' AND `exist`>'1'");
-		if($res) $tmpl->msg("Сделано!");
-		else $tmpl->msg("Ошибка!","err");
-	}
-	else $tmpl->logger("У Вас недостаточно прав!");
-}
-else if($mode=="nexhid")
-{
-	$tim=time()-60*60*24;
-	$rights=getright('base_items',$uid);
-	if($rights['edit'])
-	{
-		$res=mysql_query("UPDATE `base_items` SET `exist`='0' WHERE `date_update`<'$tim' AND `exist`='1'");
-		if($res) $tmpl->msg("Сделано!");
-		else $tmpl->msg("Ошибка!","err");
-	}
-	else $tmpl->logger("У Вас недостаточно прав!");
-}
-
 else if($mode=="denyip")
 {
 	$tmpl->AddText("<h1>Заблокированные ресурсы</h1>
 	<a href='?mode=iplog'>Часто посещаемые ресурсы</a>");
-	$rights=getright('deny_ip',$uid);
-	if($rights['read'])
+	if(isAccess('ip-blacklist','read'))
 	{
 		$tmpl->AddText("<table border=1><tr><th>ID<th>IP<th>host<th>Действия");
 		$res=mysql_query("SELECT * FROM `traffic_denyip`");
@@ -393,8 +355,7 @@ else if($mode=="denyip")
 }
 else if($mode=='denyipa')
 {
-	$rights=getright('deny_ip',$uid);
-	if($rights['edit'])
+	if(isAccess('sys_ip-blacklist','create'))
 	{
 		$host=rcv('host');
 		$ipl=gethostbynamel($host);
@@ -410,8 +371,7 @@ else if($mode=='denyipa')
 }
 else if($mode=="denyipd")
 {
-	$rights=getright('deny_ip',$uid);
-	if($rights['delete'])
+	if(isAccess('sys_ip-blacklist','delete'))
 	{
 		$n=rcv('n');
 		$res=mysql_query("DELETE FROM `traffic_denyip` WHERE `id`='$n'");
@@ -421,7 +381,7 @@ else if($mode=="denyipd")
 }
 else if($mode=='iplog')
 {
-	$rights=getright('deny_ip',$uid);
+	if(isAccess('sys_ip-log','view'))
 	if($rights['read'])
 	{
 	$tmpl->AddText("<h1>25 часто используемых адресов</h1>");
