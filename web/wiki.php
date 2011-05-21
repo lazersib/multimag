@@ -43,7 +43,7 @@ function wiki_form($p,$text='')
 
 if($p=="")
 {
-	if(!isAccess('articles','view'))	throw new AccessException("");
+	if(!isAccess('generic_articles','view'))	throw new AccessException("");
 	$tmpl->SetText("<h1 id='page-title'>Статьи</h1>Здесь собранны различные статьи, которые могут пригодиться посетителям сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях. Раздел постоянно наполняется. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
 	$tmpl->SetTitle("Статьи");
 	$res=mysql_query("SELECT * FROM `wiki` ORDER BY `name`");
@@ -57,7 +57,7 @@ if($p=="")
 }
 else
 {
-	if(!isAccess('articles','view'))	throw new AccessException("");
+	if(!isAccess('generic_articles','view'))	throw new AccessException("");
 	$res=mysql_query("SELECT `wiki`.`name`, a.`name`, `wiki`.`date`, `wiki`.`changed`, `b`.`name`, `wiki`.`text`
 	FROM `wiki`
 	LEFT JOIN `users` AS `a` ON `a`.`id`=`wiki`.`autor`
@@ -84,7 +84,7 @@ else
 			if(@$_SESSION['uid'])
 			{
 				$tmpl->AddText("<div id='page-info'>Создал: $nxt[1], date: $nxt[2] $ch");
-				if(isAccess('articles','edit'))	$tmpl->AddText(", <a href='/wiki.php?p=$p&amp;mode=edit'>Исправить</a>");
+				if(isAccess('generic_articles','edit'))	$tmpl->AddText(", <a href='/wiki.php?p=$p&amp;mode=edit'>Исправить</a>");
 				$tmpl->AddText("</div>");
 			}
 			$tmpl->AddText("$text<br><br>");
@@ -100,7 +100,7 @@ else
 			}
 			else if($mode=='save')
 			{
-				if(!isAccess('articles','edit'))	throw new AccessException("");
+				if(!isAccess('generic_articles','edit'))	throw new AccessException("");
 				$text=rcv('text');
 				$res=mysql_query("UPDATE `wiki` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text'
 				WHERE `name` LIKE '$p'");
@@ -136,7 +136,7 @@ else
 			else
 			{		
 				$tmpl->msg("Извините, данная страница не найдена ($p)!","info");
-				if(isAccess('articles','create'))
+				if(isAccess('generic_articles','create'))
 					$tmpl->AddText("<a href='/wiki.php?p=$p&amp;mode=edit'>Создать</a>");
 			}
 		}
@@ -150,7 +150,7 @@ else
 			}
 			else if($mode=='save')
 			{
-				if(!isAccess('articles','create'))	throw new AccessException("");
+				if(!isAccess('generic_articles','create'))	throw new AccessException("");
 				$text=rcv('text');
 				$res=mysql_query("INSERT INTO `wiki` (`name`,`autor`,`date`,`text`)
 				VALUES ('$p','$uid', NOW(), '$text')");

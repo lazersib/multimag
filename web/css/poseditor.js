@@ -102,7 +102,7 @@ function PosEditorInit(doc,editable)
 		if(poslist.editable)	linehtml+="<input type='text' name='sum' value='"+sum+"'>"
 		else			linehtml+=sum
 		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
-		if(poslist.show_column['sn']>0)	linehtml+="<td>"+data.sn+"</td>"
+		if(poslist.show_column['sn']>0)	linehtml+="<td id='sn"+row.lineIndex+"'>"+data.sn+"</td>"
 		row.innerHTML=linehtml
 		
 		if(poslist.editable)
@@ -118,6 +118,11 @@ function PosEditorInit(doc,editable)
 			
 			var img_del=document.getElementById('del'+data.line_id)
 			img_del.onclick=poslist.doDeleteLine
+			if(poslist.show_column['sn']>0)
+			{
+				var sn_cell=document.getElementById('sn'+data.line_id)
+				sn_cell.onclick=poslist.showSnEditor
+			}
 		}
 	}
 	
@@ -134,6 +139,7 @@ function PosEditorInit(doc,editable)
 			else if(inputs[i].name=='sum')	inputs[i].value=(data.cost*data.cnt).toFixed(2)
 			inputs[i].old_value=inputs[i].value
 		}
+		
 		line.className='hl'		
 		window.setTimeout(function(){line.className='';}, 2000)
 	}
@@ -193,6 +199,133 @@ function PosEditorInit(doc,editable)
 			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
 		}	
 	}
+	
+	// Редактор серийных номеров
+	poslist.showSnEditor=function (event)
+	{
+		var poslist_line=event.target.parentNode
+		var line=poslist_line.lineIndex
+		var sn_cnt=0
+		$.ajax({ 
+			type:   'GET', 
+			url:    '/doc.php', 
+			data:   'doc='+doc+'&mode=srv&opt=jsn&a=l&line='+line,
+			success: function(msg) { ShowSnEditorSuccess(msg); }, 
+			error:   function() { jAlert('Ошибка!','Редактор серийного номера',{},'icon_err'); }, 
+		});
+
+		function ShowSnEditorSuccess(msg)
+		{
+			var json=eval('('+msg+')')
+			if(json.response=='sn_list')
+			{
+				var dialog="<div style='width: 300px; height: 200px; border: 1px solid #ccc; overflow: auto;'><table width='100%' id='sn_list'><tr><td style='width: 20px'><td>"
+				for(var i=0;i<json.list.length;i++)
+				{
+					if(! json.list[i])	continue
+					dialog+="<tr id='snl"+json.list[i].id+"'><td><img src='/img/i_del.png' alt='Удалить' id='sndel|"+json.list[i].id+"'></td><td>"+json.list[i].sn+"</td></tr>"
+					sn_cnt++;
+				}
+				dialog+="</table></div><input type='text' name='sn' id='sn'><button type='button' id='btn_sn_add' onclick='DocSnAdd("+doc+","+line+");'>&gt;&gt;</button>"
+				
+				jAlert(dialog,"Редактор серийных номеров", function() { 
+					var sn_cell=document.getElementById('sn'+line)
+					sn_cell.innerHTML=sn_cnt
+				
+				});
+				
+				for(var i=0;i<json.list.length;i++)
+				{
+					if(! json.list[i])	continue
+					var img_del=document.getElementById('sndel|'+json.list[i].id)
+					img_del.onclick=SnDel
+				}
+				
+				document.getElementById('btn_sn_add').onclick=snAdd
+				
+				
+				$("#sn").autocomplete("/doc.php", {
+					delay:300,
+					minChars:1,
+					matchSubset:1,
+					autoFill:false,
+					selectFirst:true,
+					matchContains:1,
+					cacheLength:10,
+					maxItemsToShow:15, 
+					extraParams:{'mode':'srv','opt':'snp', 'doc': doc, 'pos': line}
+				});
+			}
+			else	jAlert(json.message,"Ошибка", {}, 'icon_err')
+		}
+
+		function SnDel(event)
+		{
+			var line=this.id.split('|')
+			line=line[1]
+			var row_to_remove=this.parentNode.parentNode
+			
+			$.ajax({ 
+				type:   'GET', 
+				url:    '/doc.php', 
+				data:   'doc='+doc+'&mode=srv&opt=jsn&a=d&line='+line,
+				success: function(msg) { 
+					var json=eval('('+msg+')')
+					if(json.response=='deleted')
+					{
+						row_to_remove.parentNode.removeChild(row_to_remove)
+						sn_cnt--;
+					}
+					else
+					{
+						alert(json.message)
+					}
+				}, 
+				error:   function() { jAlert('Ошибка!','Редактор серийного номера',{},'icon_err'); }, 
+			});
+			
+		}
+
+		function snAdd(event)
+		{
+			var sn=document.getElementById("sn");
+			$.ajax({ 
+				type:   'GET', 
+				url:    '/doc.php', 
+				data:   'doc='+doc+'&mode=srv&opt=sns&doc='+doc+'&pos='+line+'&sn='+sn.value, 
+				success: function(msg) { DocAddSnSuccess(msg); }, 
+				error:   function() { jAlert('Ошибка!','Добавление серийного номера',{},'icon_err'); }, 
+			});
+
+		}
+
+		function DocAddSnSuccess(msg)
+		{
+			try
+			{
+				var json=eval('('+msg+')')
+				if(json.response==0)
+					jAlert(json.message,"Ошибка", {}, 'icon_err')
+				else if(json.response==1)	// Добавлено
+				{
+					var sn_list=document.getElementById("sn_list")
+					var row=document.createElement('tr')
+					row.id='snl'+json.sn_id
+					row.innerHTML="<td><img src='/img/i_del.png'  id='sndel|"+json.sn_id+"'></td><td>"+json.sn+"</td>"
+					sn_list.appendChild(row)
+					var img_del=document.getElementById('sndel|'+json.sn_id)
+					img_del.onclick=SnDel
+					sn_cnt++;
+				}	
+			}
+			catch(e)
+			{
+				jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+				"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message, "Добавление серийного номера",function() {},  'icon_err');
+			}
+		}
+	}
+	
 	
 	return poslist
 }

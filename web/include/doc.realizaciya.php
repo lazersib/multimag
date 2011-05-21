@@ -132,6 +132,7 @@ class doc_Realizaciya extends doc_Nulltype
 
 	function DocApply($silent=0)
 	{
+		global $CONFIG;
 		$tim=time();
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
@@ -140,7 +141,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
 		
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$nx[3]'
@@ -155,6 +156,13 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
 			if(mysql_error())	throw new MysqlException('Ошибка проведения, ошибка изменения количества!');
+			
+			if($CONFIG['site']['sn_restrict'])
+			{
+				$r=mysql_query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
+				$sn_cnt=mysql_result($r,0,0);
+				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
+			}
 		}
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
@@ -323,7 +331,6 @@ class doc_Realizaciya extends doc_Nulltype
 		$opt=rcv('opt');
 		$pos=rcv('pos');
 
-		if(isAccess('doc_'.$this->doc_name,'write'))
 		{
 			if(parent::_Service($opt,$pos))	{}
 			else if($opt=='dov')
@@ -360,6 +367,7 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 			else if($opt=="dovs")
 			{
+				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
 				$dov=rcv('dov');
 				$dov_agent=rcv('dov_agent');
 				$dov_data=rcv('dov_data');
@@ -372,7 +380,6 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 			else $tmpl->msg("Неизвестная опция $opt!");
 		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
 	}
 //	================== Функции только этого класса ======================================================
 

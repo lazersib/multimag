@@ -145,71 +145,7 @@ function DocConnectProcess(msg)
 
 }
 
-// Редактор серийных номеров
-function ShowSnEditor(doc, line)
-{
-	$.ajax({ 
-		type:   'GET', 
-		url:    '/doc.php', 
-		data:   'doc='+doc+'&mode=srv&opt=sn&doc='+doc+'&pos='+line,
-		success: function(msg) { ShowSnEditorSuccess(msg, doc, line); }, 
-		error:   function() { jAlert('Ошибка!','Редактор серийного номера',{},'icon_err'); }, 
-	});
-}
 
-function ShowSnEditorSuccess(msg, doc, line)
-{
-	jAlert(msg,"Редактор серийных номеров", function() { EditThis('/doc.php?mode=srv&opt=poslist&doc='+doc,'poslist'); });
-	
-	$("#sn").autocomplete("/doc.php", {
-		delay:300,
-		minChars:1,
-		matchSubset:1,
-		autoFill:false,
-		selectFirst:true,
-		matchContains:1,
-		cacheLength:10,
-		maxItemsToShow:15, 
-		extraParams:{'mode':'srv','opt':'sns', 'doc': doc, 'pos': line}
-	});
-
-}
-
-function DocSnAdd(doc,pos_id)
-{
-	var sn=document.getElementById("sn");
-	$.ajax({ 
-		type:   'GET', 
-		url:    '/doc.php', 
-		data:   'doc='+doc+'&mode=srv&opt=sns&doc='+doc+'&pos='+pos_id+'&sn='+sn.value, 
-		success: function(msg) { DocAddSnSuccess(msg); }, 
-		error:   function() { jAlert('Ошибка!','Добавление серийного номера',{},'icon_err'); }, 
-	});
-
-}
-
-function DocAddSnSuccess(msg)
-{
-	try
-	{
-		var json=eval('('+msg+')')
-		if(json.response==0)
-			jAlert(json.message,"Ошибка", {}, 'icon_err')
-		else if(json.response==1)	// Добавлено
-		{
-			var sn_list=document.getElementById("sn_list")
-			var row=document.createElement('tr')
-			row.id='snl'+json.sn_id
-			row.innerHTML="<td><img src='/img/i_del.png' alt='"+json.sn_id+"'></td><td>"+json.sn+"</td>"
-			sn_list.appendChild(row)
-		}	
-	}
-	catch(e)
-	{
-		jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-		"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message, "Добавление серийного номера", {},  'icon_err');
-	}
-}
 
 
 // Сообщения

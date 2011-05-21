@@ -37,6 +37,7 @@ class doc_Postuplenie extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
+		if(!$this->dop_data['input_doc'])	$this->dop_data['input_doc']='';
 		$tmpl->AddText("Номер входящего документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");	
 	}
 
@@ -50,15 +51,13 @@ class doc_Postuplenie extends doc_Nulltype
 	function DopBody()
 	{
 		global $tmpl;
-		$tmpl->AddText("<br><b>Номер входящего документа:</b> {$this->dop_data['input_doc']}<br>");
+		if(@$this->dop_data['input_doc'])	$tmpl->AddText("<br><b>Номер входящего документа:</b> {$this->dop_data['input_doc']}<br>");
 	}
 
 	protected function DocApply($silent=0)
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $uid, $CONFIG;
 		$tim=time();
-		
 		
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
@@ -68,7 +67,7 @@ class doc_Postuplenie extends doc_Nulltype
 		if( $nx[4] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 
 
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
@@ -82,6 +81,12 @@ class doc_Postuplenie extends doc_Nulltype
 			{
 				$rs=mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
 				if(!$rs)	throw new MysqlException("Ошибка записи количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
+			}
+			if($CONFIG['site']['sn_restrict'])
+			{
+				$r=mysql_query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `prix_list_pos`='$nxt[3]'");
+				$sn_cnt=mysql_result($r,0,0);
+				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
 			}
 		}
 		if($silent)	return;

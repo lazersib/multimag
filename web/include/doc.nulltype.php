@@ -72,6 +72,21 @@ class doc_Nulltype
 		$this->get_docdata();
 	}
 	
+	public function getDocNum()
+	{
+		return $this->doc;
+	}
+	
+	public function getDocData()
+	{
+		return $this->doc_data;
+	}
+	
+	public function getDopData()
+	{
+		return $this->dop_data;
+	}
+	
 	function head()
 	{
 		global $tmpl;
@@ -205,7 +220,7 @@ class doc_Nulltype
 		
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
-		if(!isAccess($object,'view'))	throw new AccessException("");
+		if(!isAccess($object,'view'))	throw new AccessException("$object");
 		
 		doc_menu($this->dop_buttons());
 		$doc_altnum=$this->doc_data[9].$this->doc_data[10];
@@ -272,7 +287,7 @@ class doc_Nulltype
 		if($this->doc_data[4]) $tmpl->AddText("<br><b>Примечание:</b> ".$this->doc_data[4]."<br>");
 		
 		include_once('doc.poseditor.php');
-		$poseditor=new DocPosEditor($this->doc);
+		$poseditor=new DocPosEditor($this);
 		$poseditor->SetColumn('pos', 'tovar');
 		$poseditor->cost_id=$this->dop_data['cena'];
 		$poseditor->sklad_id=$this->doc_data['sklad'];
@@ -285,6 +300,55 @@ class doc_Nulltype
 		$tmpl->AddText("<br><br>");
 	}
 	
+	function Apply($doc=0, $silent=0)
+	{
+		global $tmpl;
+		global $uid;
+		$tmpl->ajax=1;
+		$cnt=0;
+		$tim=time();
+		
+		try
+		{
+			mysql_query("START TRANSACTION");
+			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
+				
+			if(method_exists($this,'DocApply'))     $this->DocApply($silent);
+			else    throw new Exception("Метод проведения данного документа не определён!");
+		}
+		catch(MysqlException $e)
+		{
+			mysql_query("ROLLBACK");
+			if(!$silent)
+			{
+				$tmpl->AddText("<h3>".$e->getMessage()."</h3>");
+				doc_log("ERROR APPLY {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
+			}
+			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			return $e->getMessage().$e->sql_error;
+		}
+		catch( Exception $e)
+		{
+			mysql_query("ROLLBACK");
+			if(!$silent)
+			{
+				$tmpl->AddText("<h3>".$e->getMessage()."</h3>");
+				doc_log("ERROR APPLY {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
+			}
+			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			return $e->getMessage();
+		}
+		
+		mysql_query("COMMIT");
+		if(!$silent)
+		{
+			doc_log("APPLY {$this->doc_name}", '', 'doc', $this->doc);
+			$tmpl->AddText("<h3>Докумен успешно проведён!</h3>");
+		}
+		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+		return;
+	}
+
 	function ApplyJson()
 	{
 		global $uid;
@@ -297,7 +361,7 @@ class doc_Nulltype
 			if(!isAccess($object,'apply'))	throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
-			if(method_exists($this,'DocApply'))	$this->DocApply($silent);
+			if(method_exists($this,'DocApply'))	$this->DocApply(0);
 			else	throw new Exception("Метод проведения данного документа не определён!");
 		}
 		catch(MysqlException $e)
@@ -464,7 +528,7 @@ class doc_Nulltype
 		$tmpl->ajax=1;
 		$doc=$this->doc;
 		include_once('doc.poseditor.php');
-		$poseditor=new DocPosEditor($this->doc);
+		$poseditor=new DocPosEditor($this);
 		$poseditor->cost_id=$this->dop_data['cena'];
 		$poseditor->sklad_id=$this->doc_data['sklad'];		
 		
@@ -525,6 +589,13 @@ class doc_Nulltype
 				$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";			
 				$tmpl->SetText($str);			
 			}
+			else if($opt=='jsn')
+			{
+				$action=rcv('a');
+				$line_id=rcv('line');
+				$data=rcv('data');
+				$tmpl->SetText($poseditor->SerialNum($action, $line_id, $data) );	
+			}
 			// Не-json обработчики
 			// Сброс цен
 			else if($opt=='rc')
@@ -540,7 +611,8 @@ class doc_Nulltype
 				else if($this->doc_type==2)	$column='rasx_list_pos';
 				else				throw new Exception("В данном документе серийные номера не используются!");
 				$res=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='$pos'");
-				$tmpl->AddText("<div style='width: 300px; height: 200px; border: 1px solid #ccc; overflow: auto;'><table width='100%' id='sn_list'>");
+				$tmpl->AddText("<div style='width: 300px; height: 200px; border: 1px solid #ccc; overflow: auto;'><table width='100%' id='sn_list'>
+				<tr><td style='width: 20px'><td>");
 				while($nxt=mysql_fetch_row($res))
 				{
 					$tmpl->AddText("<tr id='snl$nxt[0]'><td><img src='/img/i_del.png' alt='Удалить'><td>$nxt[1]");
@@ -583,6 +655,7 @@ class doc_Nulltype
 					$pos_id=mysql_result($res,0,0);
 					if($this->doc_type==1)
 					{
+						if($sn=='')		throw new Exception("Серийный номер не заполнен");
 						$res=mysql_query("INSERT INTO `doc_list_sn` (`num`, `pos_id`, `prix_list_pos`) VALUES ('$sn', '$pos_id', '$pos')");
 						if(mysql_errno())	throw new MysqlException("Не удалось добавить серийный номер");
 						$ins_id=mysql_insert_id();

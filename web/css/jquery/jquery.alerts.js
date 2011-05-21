@@ -92,7 +92,7 @@
 			
 			$("#popup_container").css({
 				position: pos,
-				zIndex: 99999,
+				zIndex: 99991,
 				padding: 0,
 				margin: 0
 			});
@@ -193,7 +193,7 @@
 					$("BODY").append('<div id="popup_overlay"></div>');
 					$("#popup_overlay").css({
 						position: 'absolute',
-						zIndex: 99998,
+						zIndex: 99990,
 						top: '0px',
 						left: '0px',
 						width: '100%',

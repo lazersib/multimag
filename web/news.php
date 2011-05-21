@@ -24,7 +24,7 @@ $tmpl->SetText("<h1 id='page-title'>Новости сайта</h1>");
 
 $rights=getright('news',$uid);
 $tmpl->SetTitle("Новости сайта - ".$CONFIG['site']['name']);
-if($rights['write'])
+if(isAccess('generic_news','create'))
 {
 	if($mode=='')	$tmpl->AddText("<a href='?mode=add'>Добавить новость</a><br>");
 	else if($mode=='add')
@@ -94,7 +94,7 @@ if($rights['write'])
 	}
 }
 
-if($rights['read'])
+if(isAccess('generic_news','view'))
 {
 	if($mode=='')
 	{
@@ -116,7 +116,7 @@ if($rights['read'])
 					$miniimg->SetY(48);
 					$tmpl->AddText("<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt=''>");
 				}
-				$tmpl->AddText("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br><a href='/forum.php'>Комментарии: 0</a></p></div>");
+				$tmpl->AddText("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><!--<br><a href='/forum.php'>Комментарии: 0</a>--></p></div>");
 			}
 		}
 		else $tmpl->msg("Новости отсутствуют");

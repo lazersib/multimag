@@ -22,9 +22,6 @@
 class PosEditor
 {
 	var $editable;	// Разрешено ли редактирование и показ складского блока
-	var $table;	// Таблица БД для хранения данных
-	var $columns;	// Наименования столбцов в БД
-	var $doc;	// Документ
 	var $cost_id;	// id выбранной цены. 0 - базовая
 	var $sklad_id;  // id склада
 	var $show_vc;	// Показывать код производителя
@@ -61,11 +58,13 @@ function Show($param='')
 
 class DocPosEditor extends PosEditor
 {
-
+	var $doc;	// Id документа
+	var $doc_obj;	// Объект - документ
 function __construct($doc)
 {
-	parent::__construct();
-	$this->doc=$doc;
+	parent::__construct();	
+	$this->doc=$doc->getDocNum();
+	$this->doc_obj=$doc;
 }
 
 function Show($param='')
@@ -203,20 +202,15 @@ function GetAllContent()
 		$ret.="{
 		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}'";
 		
-// 		if($this->show_sn)
-// 		{
-// 			if($doc_data[1]==1)		$column='prix_list_pos';
-// 			else if($doc_data[1]==2)	$column='rasx_list_pos';
-// 			$rs=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='$nxt[8]'");
-// 			$sn_str='';
-// 			while($nx=mysql_fetch_row($rs))
-// 			{
-// 				$sn_str.=$nx[1].', ';
-// 			}
-// 		
-// 			if(!$doc_data[6])	$tmpl->AddText("<td onclick=\"ShowSnEditor($doc,$nxt[8]); return false;\" >$sn_str");
-// 			else		$tmpl->AddText("<td>$sn_str");
-// 		}
+		if($this->show_sn)
+		{
+			$doc_data=$this->doc_obj->getDocData();
+			if($doc_data[1]==1)		$column='prix_list_pos';
+			else if($doc_data[1]==2)	$column='rasx_list_pos';
+			else				throw new Exception("Документ не поддерживает работу с серийными номерами");
+			$rs=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='{$nxt['line_id']}'");
+			$ret.=", sn: '".mysql_num_rows($rs)."'";
+		}
 		$ret.="}";
 
 	}
@@ -448,6 +442,33 @@ function UpdateLine($line_id, $type, $value)
 	else return "{ response: '0', message: 'value: $value, type:$type, line_id:$line_id'}";
 }
 
+function SerialNum($action, $line_id, $data)
+{
+	$doc_data=$this->doc_obj->getDocData();
+	if($action=='l')	// List
+	{
+		if($doc_data[1]==1)		$column='prix_list_pos';
+		else if($doc_data[1]==2)	$column='rasx_list_pos';
+		else				throw new Exception("В данном документе серийные номера не используются!");
+		$res=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='$line_id'");
+		$ret='';
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($ret)	$ret.=', ';
+			$ret.="{ id: '$nxt[0]', sn: '$nxt[1]' }";
+		}
+		return "{response: 'sn_list', list: [ $ret ]}";
+	}
+	else if($action=='d')	// delete
+	{
+		if($doc_data[1]==1)		mysql_query("DELETE FROM `doc_list_sn` WHERE `id`='$line_id' AND  `rasx_list_pos` IS NULL");
+		else if($doc_data[1]==2)	mysql_query("UPDATE `doc_list_sn` SET `rasx_list_pos`=NULL  WHERE `id`='$line_id'");
+		else				throw new Exception("В данном документе серийные номера не используются!");
+		if(mysql_errno())		throw new MysqlException("Не удалось удалить номер");
+		if(mysql_affected_rows())	return "{response: 'deleted' }";
+		else				return "{response: 'not_deleted', message: 'Номер уже удалён, или используется в реализации' }";
+	}
+}
 
 };
 
