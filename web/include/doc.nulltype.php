@@ -232,7 +232,7 @@ class doc_Nulltype
 			$tmpl->msg($this->doc_data['agent_comment'].' ','err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
 		}
 
-		$res=mysql_query("SELECT `doc_cost`.`name` FROM `doc_cost` WHERE `doc_cost`.`id`='{$this->dop_data['cena']}'");
+		$res=@mysql_query("SELECT `doc_cost`.`name` FROM `doc_cost` WHERE `doc_cost`.`id`='{$this->dop_data['cena']}'");
         	$cena=@mysql_result($res,0,0);
         	
         	$res=mysql_query("SELECT `doc_sklady`.`name` FROM `doc_sklady` WHERE `doc_sklady`.`id`='{$this->doc_data[7]}'");
@@ -285,15 +285,15 @@ class doc_Nulltype
 		if($pod)	$tmpl->AddText("<br><b>Зависящие документы:</b> $pod");
 		
 		if($this->doc_data[4]) $tmpl->AddText("<br><b>Примечание:</b> ".$this->doc_data[4]."<br>");
-		
-		include_once('doc.poseditor.php');
-		$poseditor=new DocPosEditor($this);
-		$poseditor->SetColumn('pos', 'tovar');
-		$poseditor->cost_id=$this->dop_data['cena'];
-		$poseditor->sklad_id=$this->doc_data['sklad'];
-		$poseditor->SetEditable($this->doc_data[6]?0:1);
-		$tmpl->AddText($poseditor->Show());
-		
+		if($this->sklad_editor_enable)
+		{
+			include_once('doc.poseditor.php');
+			$poseditor=new DocPosEditor($this);
+			$poseditor->cost_id=$this->dop_data['cena'];
+			$poseditor->sklad_id=$this->doc_data['sklad'];
+			$poseditor->SetEditable($this->doc_data[6]?0:1);
+			$tmpl->AddText($poseditor->Show());
+		}
 		$tmpl->AddText("<div id='statusblock'>");
 		if($this->doc_data[6])$tmpl->AddText("<b>Дата проведения:</b> ".date("d.m.Y H:i:s",$this->doc_data[6]));
 		$tmpl->AddText("</div>");
@@ -382,7 +382,7 @@ class doc_Nulltype
 		
 		mysql_query("COMMIT");
 		doc_log("APPLY {$this->doc_name}", '', 'doc', $this->doc);
-		$json=' { "response": "1", "message": "Документ успешно проведён!", "buttons": "'.$this->cancel_buttons().'", "sklad_editor": "hide", "statusblock": "Дата проведения: '.date("Y-m-d H:i:s").'", "poslist": "refresh" }';
+		$json=' { "response": "1", "message": "Документ успешно проведён!", "buttons": "'.$this->cancel_buttons().'", "sklad_view": "hide", "statusblock": "Дата проведения: '.date("Y-m-d H:i:s").'", "poslist": "refresh" }';
 		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
 		return $json;
 	}
@@ -436,7 +436,7 @@ class doc_Nulltype
 		
 		mysql_query("COMMIT");
 		doc_log("CANCEL {$this->doc_name}", '', 'doc', $this->doc);
-		$json=' { "response": "1", "message": "Документ успешно отменен!", "buttons": "'.$this->apply_buttons().'", "sklad_editor": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
+		$json=' { "response": "1", "message": "Документ успешно отменен!", "buttons": "'.$this->apply_buttons().'", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
 		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
 		return $json;
 	}

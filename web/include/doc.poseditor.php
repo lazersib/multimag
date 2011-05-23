@@ -34,7 +34,6 @@ function __construct()
 	$this->show_vc=0;
 	$this->show_tdb=0;
 	$this->show_rto=0;
-	$this->show_sn=0;
 }
 
 function SetEditable($editable)
@@ -42,10 +41,42 @@ function SetEditable($editable)
 	$this->editable=$editable;
 }
 
-function SetColumn($name, $value)
+
+function SetVC($vc)
 {
-	$this->columns[$name]=$value;
+	$this->show_vc=$vc;
 }
+
+function getGroupsTree()
+{
+	return "Отбор:<input type='text' id='sklsearch'><br>
+	<div onclick='tree_toggle(arguments[0])'>
+	<div><a href='' onclick=\"\">Группы</a></div>
+	<ul class='Container'>".$this->getGroupLevel(0)."</ul>
+	</div>";
+}
+
+function getGroupLevel($level)
+{
+	$ret='';
+	$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
+	$i=0;
+	$r='';
+	if($level==0) $r='IsRoot';
+	$cnt=mysql_num_rows($res);
+	while($nxt=mysql_fetch_row($res))
+	{
+		if($nxt[0]==0) continue;
+		$item="<a href='' title='$nxt[2]' onclick=\"return getSkladList(event, '$nxt[0]')\" >$nxt[1]</a>";
+		if($i>=($cnt-1)) $r.=" IsLast";
+		$tmp=$this->getGroupLevel($nxt[0]); // рекурсия
+		if($tmp)	$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>$tmp</ul></li>\n";
+        	else   		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>\n";
+		$i++;
+	}
+	return $ret;
+}
+
 
 function Show($param='')
 {
@@ -60,11 +91,16 @@ class DocPosEditor extends PosEditor
 {
 	var $doc;	// Id документа
 	var $doc_obj;	// Объект - документ
+	var $show_sn;	// Показать серийные номера
+
 function __construct($doc)
 {
 	parent::__construct();	
 	$this->doc=$doc->getDocNum();
+	$this->show_sn=0;
 	$this->doc_obj=$doc;
+	$doc_data=$this->doc_obj->getDocData();
+	if($doc_data['type']==1 || $doc_data['type']==2)	$this->show_sn=1;
 }
 
 function Show($param='')
@@ -78,9 +114,9 @@ function Show($param='')
 	<script src='/css/poseditor.js' type='text/javascript'></script>
 	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
 	<table width='100%' id='poslist'><thead><tr>
-	<th width='60px' align='left'>№</th>
-	<th width='90px' align='left' title='Код изготовителя'>Код</th>
-	<th>Наименование</th>
+	<th width='60px' align='left'>№</th>";
+	if($this->show_vc>0)	$ret.="<th width='90px' align='left' title='Код изготовителя'>Код</th>";
+	$ret.="<th>Наименование</th>
 	<th width='90px' title='Выбранная цена'>Выбр. цена</th>
 	<th width='90px'>Цена</th>
 	<th width='60px'>Кол-во</th>
@@ -93,9 +129,9 @@ function Show($param='')
 	</thead>
 	<tfoot>
 	<tr id='pladd'>
-	<td><input type='text' id='pos_id' autocomplete='off' tabindex='1'></td>
-	<td><input type='text' id='pos_vc' autocomplete='off' tabindex='2'></td>
-	<td><input type='text' id='pos_name' autocomplete='off' tabindex='3'></td>
+	<td><input type='text' id='pos_id' autocomplete='off' tabindex='1'></td>";
+	if($this->show_vc>0)	$ret.="<td><input type='text' id='pos_vc' autocomplete='off' tabindex='2'></td>";
+	$ret.="<td><input type='text' id='pos_name' autocomplete='off' tabindex='3'></td>
 	<td id='pos_scost'></td>
 	<td><input type='text' id='pos_cost' autocomplete='off' tabindex='4'></td>
 	<td><input type='text' id='pos_cnt' autocomplete='off' tabindex='5'></td>
@@ -139,46 +175,17 @@ function Show($param='')
 	";
 	
 	$ret.="	<script type=\"text/javascript\">
-	PosEditorInit({$this->doc},{$this->editable})
+	var poslist=PosEditorInit('/doc.php?doc={$this->doc}&mode=srv',{$this->editable})
+	poslist.show_column['sn']='{$this->show_sn}'
+	
 	var skladview=document.getElementById('sklad_view')
-	var poslist=document.getElementById('poslist')
 	skladview.show_column['vc']='{$this->show_vc}'
 	skladview.show_column['tdb']='{$this->show_tdb}'
 	skladview.show_column['rto']='{$this->show_rto}'
-	poslist.show_column['sn']='{$this->show_sn}'
+	
 	skladlist=document.getElementById('sklad_list').needDialog='{$CONFIG['poseditor']['need_dialog']}'
 	</script>";	
 	
-	return $ret;
-}
-
-function getGroupsTree()
-{
-	return "Отбор:<input type='text' id='sklsearch'><br>
-	<div onclick='tree_toggle(arguments[0])'>
-	<div><a href='' onclick=\"\">Группы</a></div>
-	<ul class='Container'>".$this->getGroupLevel(0)."</ul>
-	</div>";
-}
-
-function getGroupLevel($level)
-{
-	$ret='';
-	$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
-	$i=0;
-	$r='';
-	if($level==0) $r='IsRoot';
-	$cnt=mysql_num_rows($res);
-	while($nxt=mysql_fetch_row($res))
-	{
-		if($nxt[0]==0) continue;
-		$item="<a href='' title='$nxt[2]' onclick=\"return getSkladList(event, '$nxt[0]')\" >$nxt[1]</a>";
-		if($i>=($cnt-1)) $r.=" IsLast";
-		$tmp=$this->getGroupLevel($nxt[0]); // рекурсия
-		if($tmp)	$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>$tmp</ul></li>\n";
-        	else   		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>\n";
-		$i++;
-	}
 	return $ret;
 }
 

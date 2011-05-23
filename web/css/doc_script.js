@@ -64,27 +64,37 @@ function DocProcessRequest(httpRequest, doc)
 				}
 				else if(json.response==1)	// Проведение
 				{
-					if(json.message)	jAlert(json.message,"Сделано!", {});
+					if(json.message)	jAlert(json.message,"Сделано!", function() {});
 					if(json.buttons)	provodki.innerHTML=json.buttons;
 					else			provodki.innerHTML=old_provodki;
 					
-					if(json.sklad_editor)
+					if(json.sklad_view)
 					{
 						
-						var sklad_editor=document.getElementById("sklad_editor");
-						if(sklad_editor)
+						var sklad_view=document.getElementById("sklad_view")
+						var poslist=document.getElementById('poslist')
+						var pladd=document.getElementById('pladd')
+						if(sklad_view)
 						{
-							if(json.sklad_editor=='show')	sklad_editor.style.display='table';
-							else				sklad_editor.style.display='none';	
+							if(json.sklad_view=='show')
+							{
+								sklad_view.style.display='table'
+								poslist.editable=1
+								poslist.refresh()
+								pladd.style.display='table-row'
+							}
+							else
+							{
+								sklad_view.style.display='none'
+								pladd.style.display='none'
+								poslist.editable=0
+								poslist.refresh()
+							}
 						}
 					}
 					var statusblock=document.getElementById("statusblock");
 					if( json.statusblock && statusblock) statusblock.innerHTML=json.statusblock;
-					
-					// заглушка.
-					var poslist=document.getElementById("poslist");
-					if(json.poslist == 'refresh' && poslist)
-						EditThis('/doc.php?mode=srv&opt=poslist&doc='+doc+'&pos=0','poslist');
+
 					
 				}
 				else provodki.innerHTML=old_provodki;

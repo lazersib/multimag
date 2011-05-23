@@ -1,19 +1,31 @@
-function PosEditorInit(doc,editable)
+function PosEditorInit(base_url, editable)
 {
 	var poslist=document.getElementById('poslist')
 	var p_sum=document.getElementById('sum')
-	poslist.doc_id=doc
+	//poslist.doc_id=doc
+	poslist.base_url=base_url
 	poslist.editable=editable
-	poslist.show_column=new Array();
-	SkladViewInit(doc)
+	poslist.show_column=new Array()
+	var skladview=SkladViewInit(/*doc*/)
+	PladdInit()
 	
-	$.ajax({ 
-		type:   'POST', 
-	       url:    '/doc.php', 
-	       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jget', 
-	       success: function(msg) { poslist.tBodies[0].innerHTML=''; rcvDataSuccess(msg); }, 
-	       error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); }, 
-	});
+	if(!poslist.editable)
+	{
+		skladview.style.display='none'
+	}
+	
+	poslist.refresh=function()
+	{
+		$.ajax({ 
+			type:   'GET', 
+			url:    base_url, 
+			data:   'opt=jget', 
+			success: function(msg) { poslist.tBodies[0].innerHTML=''; rcvDataSuccess(msg); }, 
+			error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); }, 
+		});
+	}
+	
+	poslist.refresh()
 	
 	poslist.doInputKeyDown=function(e)
 	{
@@ -74,9 +86,9 @@ function PosEditorInit(doc,editable)
 		var line=this.parentNode.parentNode
 		line.className='el'
 		$.ajax({ 
-			type:   'POST', 
-		       url:    '/doc.php', 
-		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jup&type='+this.name+'&value='+this.value+'&line_id='+line.lineIndex, 
+			type:   'GET', 
+		       url:    base_url, 
+		       data:   'opt=jup&type='+this.name+'&value='+this.value+'&line_id='+line.lineIndex, 
 		       success: function(msg) { rcvDataSuccess(msg); }, 
 		       error:   function() { jAlert('Ошибка соединения!','Обновление данных',function() {},'icon_err'); }, 
 		});
@@ -92,7 +104,9 @@ function PosEditorInit(doc,editable)
 		row.ondblclick=row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.pos_id); return false }
 		var linehtml="<td>"+(row_cnt+1)
 		if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>"
-		linehtml+="</td><td>"+data.vc+"</td><td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td>"
+		linehtml+="</td>"
+		if(poslist.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
+		linehtml+="<td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td>"
 		if(poslist.editable)	linehtml+="<input type='text' name='cost' value='"+data.cost+"'>"
 		else			linehtml+=data.cost
 		linehtml+="</td><td>"
@@ -110,7 +124,6 @@ function PosEditorInit(doc,editable)
 			var inputs=row.getElementsByTagName('input')
 			for(var i=0;i<inputs.length;i++)
 			{
-				//alert(inputs[i].name)
 				inputs[i].onkeydown=poslist.doInputKeyDown
 				inputs[i].onblur=poslist.doInputBlur
 				inputs[i].old_value=inputs[i].value
@@ -128,7 +141,6 @@ function PosEditorInit(doc,editable)
 	
 	poslist.UpdateLine=function(data)
 	{
-		//alert('posrow'+data.line_id)
 		var line=document.getElementById('posrow'+data.line_id)
 		var inputs=line.getElementsByTagName('input')
 		for(var i=0;i<inputs.length;i++)
@@ -155,14 +167,12 @@ function PosEditorInit(doc,editable)
 		var line=this.parentNode.parentNode;
 		$('#'+line.id).addClass('dl')
 		$.ajax({ 
-			type:   'POST', 
-		       url:    '/doc.php', 
-		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jdel&line_id='+line.lineIndex, 
-		       success: function(msg) { rcvDataSuccess(msg); }, 
-		       error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); }, 
+			type:   'GET', 
+			url:    base_url, 
+			data:   'opt=jdel&line_id='+line.lineIndex, 
+			success: function(msg) { rcvDataSuccess(msg); }, 
+			error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); }, 
 		});
-		
-		//window.setTimeout(function(){line.parentNode.removeChild(line)}, 2000)
 	}
 	
 	function rcvDataSuccess(msg)
@@ -179,7 +189,6 @@ function PosEditorInit(doc,editable)
 					poslist.AddLine(json.content[i])
 				}
 				p_sum.innerHTML='Итого: <b>'+(poslist.tBodies[0].rows.length)+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
-				//p_sum.innerHTML='Итого: <b>'+(i)+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
 			}
 			else if(json.response==4)
 			{
@@ -208,8 +217,8 @@ function PosEditorInit(doc,editable)
 		var sn_cnt=0
 		$.ajax({ 
 			type:   'GET', 
-			url:    '/doc.php', 
-			data:   'doc='+doc+'&mode=srv&opt=jsn&a=l&line='+line,
+			url:    base_url, 
+			data:   'opt=jsn&a=l&line='+line,
 			success: function(msg) { ShowSnEditorSuccess(msg); }, 
 			error:   function() { jAlert('Ошибка!','Редактор серийного номера',{},'icon_err'); }, 
 		});
@@ -226,7 +235,7 @@ function PosEditorInit(doc,editable)
 					dialog+="<tr id='snl"+json.list[i].id+"'><td><img src='/img/i_del.png' alt='Удалить' id='sndel|"+json.list[i].id+"'></td><td>"+json.list[i].sn+"</td></tr>"
 					sn_cnt++;
 				}
-				dialog+="</table></div><input type='text' name='sn' id='sn'><button type='button' id='btn_sn_add' onclick='DocSnAdd("+doc+","+line+");'>&gt;&gt;</button>"
+				dialog+="</table></div><input type='text' name='sn' id='sn'><button type='button' id='btn_sn_add'>&gt;&gt;</button>"
 				
 				jAlert(dialog,"Редактор серийных номеров", function() { 
 					var sn_cell=document.getElementById('sn'+line)
@@ -243,7 +252,7 @@ function PosEditorInit(doc,editable)
 				
 				document.getElementById('btn_sn_add').onclick=snAdd
 				
-				
+				// ??????????????????????????????????????????????????????????????????????????????????????????
 				$("#sn").autocomplete("/doc.php", {
 					delay:300,
 					minChars:1,
@@ -267,8 +276,8 @@ function PosEditorInit(doc,editable)
 			
 			$.ajax({ 
 				type:   'GET', 
-				url:    '/doc.php', 
-				data:   'doc='+doc+'&mode=srv&opt=jsn&a=d&line='+line,
+				url:    base_url, 
+				data:   'opt=jsn&a=d&line='+line,
 				success: function(msg) { 
 					var json=eval('('+msg+')')
 					if(json.response=='deleted')
@@ -291,8 +300,8 @@ function PosEditorInit(doc,editable)
 			var sn=document.getElementById("sn");
 			$.ajax({ 
 				type:   'GET', 
-				url:    '/doc.php', 
-				data:   'doc='+doc+'&mode=srv&opt=sns&doc='+doc+'&pos='+line+'&sn='+sn.value, 
+				url:    base_url, 
+				data:   'opt=sns&pos='+line+'&sn='+sn.value, 
 				success: function(msg) { DocAddSnSuccess(msg); }, 
 				error:   function() { jAlert('Ошибка!','Добавление серийного номера',{},'icon_err'); }, 
 			});
@@ -325,7 +334,7 @@ function PosEditorInit(doc,editable)
 			}
 		}
 	}
-	
+
 	
 	return poslist
 }
@@ -337,8 +346,7 @@ function PladdInit()
 	var pladd=document.getElementById('pladd');
 	if(!poslist.editable)
 	{
-		pladd.innerHTML=''
-		return
+		pladd.style.display='none'
 	}
 	
 	//pladd.style.backgroundColor='#000';	
@@ -368,20 +376,22 @@ function PladdInit()
 		extraParams:{'l':'sklad','mode':'srv','opt':'ac'}
 	});
 	
-	$("#pos_vc").autocomplete("/docs.php", {
-		delay:300,
-		minChars:1,
-		matchSubset:1,
-		autoFill:false,
-		selectFirst:false,
-		matchContains:1,
-		cacheLength:10,
-		maxItemsToShow:20, 
-		formatItem:vcFormat,
-		onItemSelect:vcselectItem,
-		extraParams:{'l':'sklad','mode':'srv','opt':'acv'}
-	});
-	
+	if(pos_vc)
+	{
+		$("#pos_vc").autocomplete("/docs.php", {
+			delay:300,
+			minChars:1,
+			matchSubset:1,
+			autoFill:false,
+			selectFirst:false,
+			matchContains:1,
+			cacheLength:10,
+			maxItemsToShow:20, 
+			formatItem:vcFormat,
+			onItemSelect:vcselectItem,
+			extraParams:{'l':'sklad','mode':'srv','opt':'acv'}
+		});
+	}
 	function nameFormat (row, i, num) {
 		var result = row[0] + "<em class='qnt'>произв. " +
 		row[2] + ", код: "+ row[3] + "</em> ";
@@ -425,9 +435,9 @@ function PladdInit()
 	function AddData()
 	{
 		$.ajax({ 
-			type:   'POST', 
-			url:    '/doc.php', 
-			data:   'doc='+poslist.doc_id+'&mode=srv&opt=jadd&pos='+pos_id.value+'&cnt='+pos_cnt.value+'&cost='+pos_cost.value, 
+			type:   'GET', 
+			url:    poslist.base_url, 
+			data:   'opt=jadd&pos='+pos_id.value+'&cnt='+pos_cnt.value+'&cost='+pos_cost.value, 
 			success: function(msg) { AddDataSuccess(msg); }, 
 		        error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); }, 
 		});
@@ -464,7 +474,7 @@ function PladdInit()
 	pladd.Reset=function()
 	{
 		pos_id.value=''
-		pos_vc.value=''
+		if(pos_vc)	pos_vc.value=''
 		pos_name.value=''
 		pos_scost.innerHTML=''
 		pos_cost.value=''
@@ -483,11 +493,11 @@ function PladdInit()
 		$('#pladd').addClass('process')
 		$('#pladd').removeClass('error')
 		$.ajax({ 
-			type:   'POST', 
-		       url:    '/doc.php', 
-		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jgpi&pos='+parseInt(pos_id.value), 
-		       success: function(msg) { pladd.doRefreshSuccess(msg); }, 
-		       error:   function() { jAlert('Ошибка соединения!','Автодополнение по коду',null,'icon_err'); $('#pladd').removeClass('process'); }, 
+			type:   'GET', 
+			url:    poslist.base_url, 
+			data:   'opt=jgpi&pos='+parseInt(pos_id.value), 
+			success: function(msg) { pladd.doRefreshSuccess(msg); }, 
+			error:   function() { jAlert('Ошибка соединения!','Автодополнение по коду',null,'icon_err'); $('#pladd').removeClass('process'); }, 
 		});
 		
 	}
@@ -515,7 +525,7 @@ function PladdInit()
 	
 	pladd.Refresh=function(data)
 	{
-		pos_vc.value=data.vc
+		if(pos_vc)	pos_vc.value=data.vc
 		pos_name.value=data.name
 		pos_scost.innerHTML=data.scost
 		pos_cost.value=data.cost
@@ -567,15 +577,13 @@ function SkladViewInit(doc)
 	skladview.show_column=new Array();
 	sklsearch.timer=0
 	skladlist.needDialog=0
+
 	
 	sklsearch.onkeydown=function(event)
 	{
 		if(sklsearch.timer)	window.clearTimeout(sklsearch.timer)
-		sklsearch.timer=window.setTimeout(function(){skladlist.getSearchResult(event)}, 1000)
-	
-	
+		sklsearch.timer=window.setTimeout(function(){skladlist.getSearchResult(event)}, 1000)	
 	}
-	
 	
 	skladlist.getGroupData=function (event,group)
 	{
@@ -585,11 +593,11 @@ function SkladViewInit(doc)
 		skladlist.innerHTML="<tr><td colspan='20' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'></td></tr>"
 		if(groupdata_cache[group])	rcvDataSuccess(groupdata_cache[group])
 		$.ajax({ 
-			type:   'POST', 
-		       url:    '/doc.php', 
-		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jsklad&group_id='+group, 
-		       success: function(msg) { groupdata_cache[group]=msg;rcvDataSuccess(msg); }, 
-		       error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
+			type:   'GET', 
+			url:    poslist.base_url, 
+			data:   'opt=jsklad&group_id='+group, 
+			success: function(msg) { groupdata_cache[group]=msg;rcvDataSuccess(msg); }, 
+			error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
 		});
 		return false
 	}
@@ -602,11 +610,11 @@ function SkladViewInit(doc)
 		if(s_str=='')	return
 		skladlist.innerHTML="<tr><td colspan='20' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'></td></tr>"
 		$.ajax({ 
-			type:   'POST', 
-		       url:    '/doc.php', 
-		       data:   'doc='+poslist.doc_id+'&mode=srv&opt=jsklads&s='+encodeURIComponent(s_str), 
-		       success: function(msg) { rcvDataSuccess(msg); }, 
-		       error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
+			type:   'GET', 
+			url:    poslist.base_url, 
+			data:   'opt=jsklads&s='+encodeURIComponent(s_str), 
+			success: function(msg) { rcvDataSuccess(msg); }, 
+			error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); }, 
 		});
 		return false
 	}
@@ -693,13 +701,14 @@ function SkladViewInit(doc)
 	{
 		if(!cnt)	cnt=1
 		$.ajax({ 
-			type:   'POST', 
-			url:    '/doc.php', 
-			data:   'doc='+poslist.doc_id+'&mode=srv&opt=jadd&pos='+data.id+'&cost='+data.cost+'&cnt='+cnt, 
+			type:   'GET', 
+			url:    poslist.base_url, 
+			data:   'opt=jadd&pos='+data.id+'&cost='+data.cost+'&cnt='+cnt, 
 			success: function(msg) { rcvDataSuccess(msg); }, 
 		        error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); }, 
 		});
 	}
+	return skladview
 }
 
 
@@ -708,8 +717,3 @@ function getSkladList(event, group)
 	var skladlist=document.getElementById('sklad_list');
 	return skladlist.getGroupData(event, group)	
 }
-
-$(document).ready(function(){
-	PladdInit();	
-	
-});
