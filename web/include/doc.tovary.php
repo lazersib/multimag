@@ -225,7 +225,7 @@ function ViewSklad($doc, $group, $s, $sklad)
 		$tmpl->AddText("$pagebar<br><table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 		<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-		DrawSkladTable($res,$s,$doc,$lim);
+		DrawSklad1Table($res,$s,$doc,$lim);
 		$tmpl->AddText("</table>$pagebar<br><a href='/docs.php?mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
 	}
 	else $tmpl->msg("В выбранной группе товаров не найдено!");
@@ -334,10 +334,9 @@ function DrawSkladTable($res,$s,$doc,$limit=0)
 function CheckMinus($pos, $sklad)
 {
 	$cnt=0;
-	$sql_add=$to_date?" AND `doc_list`.`date`<'$to_date'":'';
 	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos' $sql_add
+	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos'
 	ORDER BY `doc_list`.`date`");
 	if(mysql_errno())	throw new MysqlExceprion("Не удалось запросить список документов с товаром ID:$pos при проверке на отрицательные остатки");
 	while($nxt=mysql_fetch_row($res))

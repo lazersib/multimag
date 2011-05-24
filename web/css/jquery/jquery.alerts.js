@@ -63,6 +63,13 @@
 			});
 		},
 		
+		dialog: function(message, title, callback, icon) {
+			if( title == null ) title = 'dialog';
+			$.alerts._show(title, message, null, 'dialog', icon, function(result) {
+				if( callback ) callback(result);
+			});
+		},
+		
 		// Private methods
 		
 		_show: function(title, msg, value, type, icon, callback) {
@@ -85,7 +92,7 @@
 			
 			$("#popup_container").css({
 				position: pos,
-				zIndex: 99999,
+				zIndex: 99991,
 				padding: 0,
 				margin: 0
 			});
@@ -152,6 +159,16 @@
 					if( value ) $("#popup_prompt").val(value);
 					$("#popup_prompt").focus().select();
 				break;
+				case 'dialog':
+					$("#popup_message").after('<div id="popup_panel"><input type="button" value="' + $.alerts.okButton + '" id="popup_ok" /></div>');
+					$("#popup_ok").click( function() {
+						callback(true);
+						$.alerts._hide();
+					});
+					$("#popup_ok").focus().keypress( function(e) {
+						if( e.keyCode == 13 || e.keyCode == 27 ) $("#popup_ok").trigger('click');
+					});
+				break;
 			}
 			
 			// Make draggable
@@ -176,7 +193,7 @@
 					$("BODY").append('<div id="popup_overlay"></div>');
 					$("#popup_overlay").css({
 						position: 'absolute',
-						zIndex: 99998,
+						zIndex: 99990,
 						top: '0px',
 						left: '0px',
 						width: '100%',
@@ -233,6 +250,10 @@
 		
 	jPrompt = function(message, value, title, callback, icon) {
 		$.alerts.prompt(message, value, title, callback, icon);
+	};
+	
+	jDialog = function(message, title, callback, icon) {
+		$.alerts.dialog(message, title, callback, icon);
 	};
 	
 })(jQuery);

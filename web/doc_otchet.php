@@ -29,7 +29,7 @@ $tmpl->HideBlock('left');
 function get_otch_links()
 {
 	return array(
-	'doc_otchet.php?mode=bezprodaj' => 'Агенты без продаж',
+	'doc_otchet.php?mode=agent_bez_prodaj' => 'Агенты без продаж',
 	'doc_otchet.php?mode=sverka' => 'Акт сверки',
 	'doc_otchet.php?mode=balance' => 'Балланс',
 	'doc_otchet.php?mode=dolgi' => 'Долги: партнёров',
@@ -51,11 +51,26 @@ function get_otch_links()
 
 function otch_list()
 {
-	$str='<ul>';
-	foreach(get_otch_links() as $link => $text)
-		$str.="<li><a href='$link'>$text</a></li>";
-	$str.="</ul>";
-	return $str;
+	return "
+	<a href='doc_otchet.php?mode=bezprodaj'><div>Агенты без продаж</div></a>
+	<a href='doc_otchet.php?mode=sverka'><div>Акт сверки</div></a>
+	<a href='doc_otchet.php?mode=balance'><div>Балланс</div></a>
+	<a href='doc_otchet.php?mode=dolgi'><div>Долги: партнёров</div></a>
+	<a href='doc_otchet.php?mode=dolgi&amp;opt=1'><div>Долги: наши</div></a>
+	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день</div></a>
+	<a href='doc_otchet.php?mode=ostatki'><div>Остатки на складе</div></a>
+	<a href='doc_otchet.php?mode=ostatki_d'><div>Остатки на складе на дату</div></a>
+	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
+	<a href='doc_otchet.php?mode=komplekt'><div>Отчет по комплектующим</div></a>
+	<a href='doc_otchet.php?mode=prod'><div>Отчёт по продажам</div></a>
+	<a href='doc_otchet.php?mode=proplaty'><div>Отчет по проплатам</div></a>
+	<a href='doc_otchet.php?mode=bezprodaj'><div>Отчёт по товарам без продаж</div></a>
+	<a href='doc_otchet.php?mode=cost'><div>Отчёт по ценам</div></a>
+	<a href='doc_otchet.php?mode=doc_reestr'><div>Реестр документов</div></a>
+	<a href='doc_otchet.php?mode=fin_otchet'><div>Сводный финансовый отчёт</div></a>
+	<a href='doc_otchet.php?mode=bank_comp'><div>Сверка банка</div></a>	
+	<hr>
+	<a href='doc_otchet.php'><div>Другие отчёты</div></a>";
 }
 
 function otch_divs()
@@ -437,12 +452,57 @@ else if($mode=='fin_otchet_g')
 		}
 		else if($nxt[1]==7)	// Кассовый расход
 		{
-			$vid=$dopdata['rasxodi'];
-			if(!$vid) $vid=0;
-			$rasxody_nal[$vid]+=$nxt[3];
-			if($vid==12) $podotchet+=$nxt[3];
-			if($vid==0)	$doc_null.="касса:$nxt[0], ";
-			if($vid==12)	$doc_otchet.="касса:$nxt[0], ";
+			$date=rcv('date');
+			$dt=strtotime($date);
+			$sklady=array();	
+			$res_sklady=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список складов");
+			$sklad_cnt=mysql_num_rows($res_sklady);
+			while($nxt=mysql_fetch_row($res_sklady))
+				$sklady[$nxt[0]]=$nxt[1];
+			$tmpl->loadTemplate('print');
+			$tmpl->AddText("
+			<h1>Остатки товаров на складах на $date 00:00:00</h1>
+			<table width='100%'>
+			<tr><th rowspan='2'>id<th rowspan='2'>Код<th rowspan='2'>Наименование<th colspan='$sklad_cnt'>Остатки
+			<tr>");
+			foreach($sklady as $sklad_name)
+				$tmpl->AddText("<th>$sklad_name");
+			
+			$res_tov=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`
+			FROM `doc_base`
+			ORDER BY `doc_base`.`name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
+			while($tov_line=mysql_fetch_assoc($res_tov))
+			{
+				$tmpl->AddText("<tr><td>{$tov_line['id']}<td>{$tov_line['vc']}<td>{$tov_line['name']}/{$tov_line['proizv']}");
+				foreach($sklady as $sklad => $sklad_name)
+				{
+					$count=$i=$last_type=0;
+					$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `pos`.`cnt`, `doc_list`.`sklad`, `pos`.`page`
+					FROM `doc_list`
+					INNER JOIN `doc_list_pos` AS `pos` ON `doc_list`.`id`=`pos`.`doc` AND `pos`.`tovar`='{$tov_line['id']}'
+					LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list`.`id` AND `ns`.`param`='na_sklad'
+					WHERE `doc_list`.`date`<='$dt' AND (`doc_list`.`sklad`='$sklad' OR `ns`.`value`='$sklad')");
+					if(mysql_errno())	throw new MysqlException("Не удалось получить список документов движения");
+					while($nxt=mysql_fetch_row($res))
+					{
+						switch($nxt[1])
+						{
+							case 1:	$count+=$nxt[2];	break;
+							case 2:	$count-=$nxt[2];	break;
+							case 8:	if($nxt[3]==$sklad)	$count-=$nxt[2];
+								else $count+=$nxt[2];	break;
+							case 17:if($nxt[4]!=0)	$count-=$nxt[2];
+								else $count+=$nxt[2];	break;
+						}
+						$i++;
+					}
+					$tmpl->AddText("<td>$count");
+				}
+				
+			}
+			$tmpl->AddText("</table>");
 		}
 	}
 
@@ -1370,17 +1430,73 @@ else if($mode=='doc_reestr')
 		DocReestrPDF('',$dt_f, $dt_t, $doc_type, $firm_id, $subtype);
 	}
 }
-else if($mode=='bezprodaj')
+else if($mode=='cost')
+{
+	$tmpl->SetTitle("Отчёт по ценам");
+	$opt=rcv('opt');
+	if($opt=='')
+	{
+		$tmpl->AddText("<h1>Отчёт по ценам</h1>
+		<form action='' method='post'>
+		<input type='hidden' name='mode' value='cost'>
+		<input type='hidden' name='opt' value='get'>
+		Отображать следующие расчётные цены:<br>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список цен");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<label><input type='checkbox' name='cost$nxt[0]' value='1' checked>$nxt[1]</label><br>");			
+		}
+		$tmpl->AddText("<button type='submit'>Сформировать отчёт</button>
+		</form>
+		");
+	}
+	else
+	{
+		$tmpl->LoadTemplate('print');
+		$tmpl->AddText("<h1>Отчёт по ценам</h1>");
+		$costs=array();
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список цен");
+		$cost_cnt=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			if(!rcv('cost'.$nxt[0]))	continue;
+			$costs[$nxt[0]]=$nxt[1];
+			$cost_cnt++;
+		}
+		
+		$tmpl->AddText("<table width='100%'>
+		<tr><th rowspan='2'>N<th rowspan='2'>Код<th rowspan='2'>Наименование<th rowspan='2'>Базовая цена<th rowspan='2'>АЦП<th colspan='$cost_cnt'>Расчётные цены
+		<tr>");
+		foreach($costs as $cost_name)
+			$tmpl->AddText("<th>$cost_name");
+		
+		$res=mysql_query("SELECT `id`, `vc`, `name`, `proizv`, `cost` FROM `doc_base`
+		ORDER BY `name`");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список позиций");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$act_cost=sprintf('%0.2f',GetInCost($nxt[0]));
+			$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2] / $nxt[3]<td align='right'>$nxt[4]<td align='right'>$act_cost");
+			foreach($costs as $cost_id => $cost_name)
+			{
+				$cost=GetCostPos($nxt[0], $cost_id);
+				$tmpl->AddText("<td align='right'>$cost");
+			}
+		}
+		
+		$tmpl->AddText("</table>");
+	}
+}
+else if($mode=='agent_bez_prodaj')
 {
 	$opt=rcv('opt');
-	$date=date("Y-m-d",time()-60*60*24*90);
-	$dt_f=rcv('dt_f');
-	$dt_sql=strtotime($dt_f);
 	if($opt=='')
 	{
 		$tmpl->AddText("<h1>Агенты без продаж за заданный период</h1>
 		<form action='' method='post'>
-		<input type='hidden' name='mode' value='bezprodaj'>
+		<input type='hidden' name='mode' value='agent_bez_prodaj'>
 		<input type='hidden' name='opt' value='html'>
 		<p class='datetime'>
 		<fieldset><legend>Дата</legend>
@@ -1615,5 +1731,4 @@ function DocReestrPDF($to_str='', $from_date=0, $to_date=0, $doc_type=0, $firm_i
 
 
 ?>
-
 

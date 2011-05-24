@@ -23,8 +23,8 @@ $actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сох�
 
 if($mode=='upl')
 {
-	$s=$_GET['s'];
-	$s=mysql_escape_string($s);
+	$s=@$_GET['s'];
+	$s=mysql_real_escape_string($s);
 	$res=mysql_query("SELECT `id`,`name`, `email` FROM `users` WHERE `name` LIKE '%$s%'");
 	$i=0;
 	$row=mysql_numrows($res);

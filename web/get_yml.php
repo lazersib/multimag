@@ -40,7 +40,7 @@ echo"<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <!DOCTYPE yml_catalog SYSTEM \"shops.dtd\">
 <yml_catalog date=\"$yml_now\">
 <shop>
-<name>{$CONFIG['site']['name']}</name>
+<name>{$CONFIG['site']['display_name']}</name>
 <company>{$firm_vars['firm_name']}</company>
 <url>http://{$CONFIG['site']['name']}/</url>
 <platform>MultiMag</platform>

@@ -76,12 +76,13 @@ function exception_handler($exception)
 	$s=mysql_real_escape_string($exception->getMessage());
 	$ag=mysql_real_escape_string($ag);
 	$rf=mysql_real_escape_string($rf);
-	$qq=mysql_real_escape_string($qq);
 	$ff=mysql_real_escape_string($ff);
 	mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
 	('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
 	header("500 Internal error");
-	echo"<h1>500 Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору";
+	echo"<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><title>Error 500: Необработанная внутренняя ошибка</title>
+	<style type='text/css'>body{color: #0f0; background-color: #000; text-align: center;}</style></head><body>
+	<h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
   
 } 
 set_exception_handler('exception_handler');
@@ -227,10 +228,18 @@ function isAccess($object, $action)
 function SendSubscribe($tema,$msg)
 {
 	global $CONFIG;
-	$res=mysql_query("SELECT `name`,`email` FROM `users` WHERE `subscribe`='1' AND `confirm`='0'");
+	$res=mysql_query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
+	if(mysql_errno())	throw new MysqlException("Ошибка получения наименования организации");
+	$firm_name=mysql_result($res,0,0);
+	$res=mysql_query("(SELECT `name`, `email`, `rname` FROM `users` WHERE `subscribe`='1' AND `confirm`='0')
+	UNION
+	(SELECT `name`, `email`, `fullname` AS `rname` FROM `doc_agent` WHERE `no_mail`!='0' AND `email`!='')
+	");
+	if(mysql_errno())	throw new MysqlException("Ошибка получения списка подписчиков");
 	while($nxt=mysql_fetch_row($res))
 	{
-        $txt="
+		if($nxt[2])	$nxt[0]="$nxt[2] ($nxt[0])";
+        	$txt="
 Здравствуйте, $nxt[0]!
 
 $tema
@@ -240,11 +249,11 @@ $msg
 
 ------------------------------------------
 
-Вы получили это сообщение потому, что выполнили подписку.
-Если вы хотите отписаться, отправьте пустое сообщение на адрес
-{$CONFIG['site']['admin_email']} с темой UNSUBSCRIBE:{$CONFIG['site']['name']}";
-        mail($nxt[1],$tema." - {$CONFIG['site']['name']}", $txt ,"Content-type: text/plain; charset=UTF-8\nFrom: {$CONFIG['site']['name']} <{$CONFIG['site']['admin_email']}>");
-    }
+Вы получили это письмо потому что подписаны на рассылку сайта http://{$CONFIG['site']['name']}, либо являетесь клиентом $firm_name.
+Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email=$nxt[1]
+";
+		mail($nxt[1],$tema." - {$CONFIG['site']['name']}", $txt ,"Content-type: text/plain; charset=UTF-8\nFrom: {$CONFIG['site']['name']} <{$CONFIG['site']['admin_email']}>");
+	}
 }
 
 function mailto($email,$tema,$msg,$from="")

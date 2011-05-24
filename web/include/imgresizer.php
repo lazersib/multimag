@@ -26,7 +26,7 @@ class ImageProductor
 	protected $id;
 	protected $storage;
 	protected $type;
-	protected $storages=array('p'=>'pos', 'w'=>'wikiphoto', 'f'=>'galery','g'=>'group');
+	protected $storages=array('p'=>'pos', 'w'=>'wikiphoto', 'f'=>'galery','g'=>'group','n'=>'news', 'a'=>'article');
 	protected $types=array('jpg','png', 'gif');
 	protected $source_file=null;
 	protected $source_exist=null;
@@ -48,7 +48,6 @@ class ImageProductor
 	public function __construct($img_id, $img_stroage, $type='jpg')
 	{
 		global $CONFIG;
-		settype($img_id,'int');
 		if(!$img_id)	throw new ImageException('ID изображения не задан!');
 		$this->id=$img_id;
 		if(!array_key_exists($img_stroage,$this->storages))	throw new ImageException('Хранилище изображения не задано, либо не существует!');

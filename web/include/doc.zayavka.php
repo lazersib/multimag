@@ -37,7 +37,7 @@ class doc_Zayavka extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
-		$klad_id=$this->dop_data['kladovshik'];
+		$klad_id=@$this->dop_data['kladovshik'];
 		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
 		$tmpl->AddText("Кладовщик:<br><select name='kladovshik'>");	
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
@@ -60,7 +60,7 @@ class doc_Zayavka extends doc_Nulltype
 	function DopBody()
 	{
 		global $tmpl;
-		$klad_id=$this->dop_data['kladovshik'];
+		$klad_id=@$this->dop_data['kladovshik'];
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `id`='$klad_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		$nxt=mysql_fetch_row($res);

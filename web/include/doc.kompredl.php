@@ -271,9 +271,8 @@ class doc_Kompredl extends doc_Nulltype
 			<input type=hidden name='ok' value='ok'>
 			<table width='100%'><tr><th>!<th>Название<th>Полное название<th>e-mail</tr>");
 			
-			$res=mysql_query("SELECT `users`.`name`, `a`.`value`, `b`.`value`, `email` FROM `users`
+			$res=mysql_query("SELECT `users`.`name`, `a`.`value`, `users`.`rname`, `users`.`email` FROM `users`
 			LEFT JOIN `users_data` AS `a` ON `a`.`uid`=`users`.`id` AND `a`.`param`='org'
-			LEFT JOIN `users_data` AS `b` ON `b`.`uid`=`users`.`id` AND `a`.`param`='kont_lico'
 			WHERE `users`.`subscribe`='1' AND `users`.`confirm`='0'");
 			
 			$tmpl->AddText("<tr><th colspan='4'>Пользователи, выразившие желание получать рассылки");

@@ -958,12 +958,18 @@ CREATE TABLE IF NOT EXISTS `loginfo` (
 
 CREATE TABLE IF NOT EXISTS `news` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` varchar(8) NOT NULL,
   `title` varchar(64) NOT NULL,
   `text` text NOT NULL,
   `date` datetime NOT NULL,
-  `owner` int(11) NOT NULL,
-  UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+  `autor` int(11) NOT NULL,
+  `ex_date` date NOT NULL,
+  `img_ext` varchar(4) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `type` (`type`),
+  KEY `ex_date` (`ex_date`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+
 
 --
 -- Дамп данных таблицы `news`
@@ -1077,7 +1083,7 @@ CREATE TABLE IF NOT EXISTS `price` (
 CREATE TABLE IF NOT EXISTS `prices_replaces` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `search_str` varchar(16) NOT NULL,
-  `replace_str` varchar(256) NOT NULL,
+  `replace_str` varchar(512) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `search_str` (`search_str`)
@@ -1382,17 +1388,17 @@ CREATE TABLE IF NOT EXISTS `ulog` (
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(30) NOT NULL,
-  `pass` varchar(35) NOT NULL,
-  `passch` varchar(35) NOT NULL,
-  `email` varchar(50) NOT NULL,
+  `name` varchar(32) NOT NULL,
+  `pass` varchar(32) NOT NULL,
+  `passch` varchar(32) NOT NULL,
+  `email` varchar(64) NOT NULL,
   `date_reg` datetime NOT NULL,
   `confirm` varchar(32) NOT NULL,
   `subscribe` int(11) NOT NULL COMMENT 'Podpiska na novosti i dr informaciy',
   `lastlogin` datetime NOT NULL,
   `rname` varchar(32) NOT NULL,
-  `tel` varchar(15) NOT NULL,
-  `adres` varchar(100) NOT NULL,
+  `tel` varchar(16) NOT NULL,
+  `adres` varchar(128) NOT NULL,
   `worker` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `passch` (`passch`)
@@ -1465,8 +1471,6 @@ CREATE TABLE IF NOT EXISTS `users_data` (
 --
 -- Дамп данных таблицы `users_data`
 --
-
-
 -- --------------------------------------------------------
 
 --
@@ -1560,7 +1564,7 @@ INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
 (5, 'sys', 'Системные объекты', ''),
 (6, 'generic', 'Общие объекты', ''),
 (7, 'sys_acl', 'Управление привилегиями', 'view,edit'),
-(8, 'doc_realiz', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(8, 'doc_realizaciya', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
 (9, 'doc_zayavka', 'Документ заявки', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
 (10, 'doc_kompredl', 'Коммерческое предложение', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
 (11, 'doc_dogovor', 'Договор', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
@@ -1602,12 +1606,13 @@ INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
 --
 
 CREATE TABLE IF NOT EXISTS `wiki` (
-  `name` varchar(50) NOT NULL,
+  `name` varchar(64) NOT NULL,
   `date` datetime NOT NULL,
   `autor` int(11) NOT NULL,
   `changed` datetime NOT NULL,
   `changeautor` int(11) NOT NULL,
   `text` text NOT NULL,
+  `img_ext` varchar(4) NOT NULL,
   UNIQUE KEY `name` (`name`),
   KEY `date` (`date`),
   KEY `autor` (`autor`),
@@ -1631,7 +1636,7 @@ INSERT INTO `wiki` (`name`, `date`, `autor`, `changed`, `changeautor`, `text`) V
 CREATE TABLE IF NOT EXISTS `wikiphoto` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL DEFAULT '0',
-  `comment` varchar(50) NOT NULL,
+  `comment` varchar(64) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 

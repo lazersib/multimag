@@ -36,7 +36,7 @@ if($mode=='')
 		$tmpl->AddText("<li><a href='/docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
 	}
 
-	if(isAccess('generic_articles','read'))
+	if(isAccess('generic_articles','view'))
 	{
 		$tmpl->AddText("<li><a href='/wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
 	}
@@ -61,17 +61,18 @@ if($mode=='')
 		$tmpl->AddText("<li><a href='?mode=clog'>Журнал посещений</a></li>");
 	}
 
-	if(isAccess('sys_async_task','read'))
+	if(isAccess('sys_async_task','view'))
 	{
 		$tmpl->AddText("<li><a href='?mode=async_task' title=''>Статус ассинхронных обработчиков</a></li>");
 	}
 
-	if(isAccess('sys_ip-blacklist','read'))
+
+	if(isAccess('sys_ip-blacklist','view'))
 	{
 		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
 	}
 	
-	if(isAccess('sys_acl','read'))
+	if(isAccess('sys_acl','view'))
 	{
 		$tmpl->AddText("<li><a href='/rights.php'>Привилегии доступа</a></li>");
 	}

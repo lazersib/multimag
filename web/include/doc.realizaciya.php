@@ -132,6 +132,7 @@ class doc_Realizaciya extends doc_Nulltype
 
 	function DocApply($silent=0)
 	{
+		global $CONFIG;
 		$tim=time();
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
@@ -140,7 +141,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
 		
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$nx[3]'
@@ -155,6 +156,13 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
 			if(mysql_error())	throw new MysqlException('Ошибка проведения, ошибка изменения количества!');
+			
+			if($CONFIG['site']['sn_restrict'])
+			{
+				$r=mysql_query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
+				$sn_cnt=mysql_result($r,0,0);
+				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
+			}
 		}
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
@@ -228,6 +236,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->SfakEmail($doc);
 		else if($opt=='kop')
 			$this->PrintKopia($doc);
+		else if($opt=='tc')
+			$this->PrintTovCheck($doc);
 		else
 			$this->PrintNakl($doc);
 	}
@@ -320,7 +330,6 @@ class doc_Realizaciya extends doc_Nulltype
 		$opt=rcv('opt');
 		$pos=rcv('pos');
 
-		if(isAccess('doc_'.$this->doc_name,'write'))
 		{
 			if(parent::_Service($opt,$pos))	{}
 			else if($opt=='dov')
@@ -357,6 +366,7 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 			else if($opt=="dovs")
 			{
+				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
 				$dov=rcv('dov');
 				$dov_agent=rcv('dov_agent');
 				$dov_data=rcv('dov_data');
@@ -369,7 +379,6 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 			else $tmpl->msg("Неизвестная опция $opt!");
 		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
 	}
 //	================== Функции только этого класса ======================================================
 
@@ -434,10 +443,9 @@ class doc_Realizaciya extends doc_Nulltype
 		$prop
 		<p>Поставщик:_____________________________________</p>
 		<p>Покупатель: ____________________________________</p>");
-
 	}
 	
-	// -- Обычная накладная --------------
+	// -- Копия чека --------------
 	function PrintKopia($doc)
 	{
 		global $tmpl;
@@ -478,7 +486,56 @@ class doc_Realizaciya extends doc_Nulltype
 		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>
 		<p>Поставщик:_____________________________________</p>
 		<br><br><p align=right>Место печати</p>");
+	}
+	
+		// -- Обычная накладная --------------
+	function PrintTovCheck()
+	{
+		global $tmpl;
+		global $uid;
 
+		$tmpl->LoadTemplate('print');
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$tmpl->AddText("<h1>Товарный чек N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt</h1>
+		".$this->firm_vars['firm_name']."<br>
+		ИНН: ".$this->firm_vars['firm_inn']."<br>
+		Содержание хозяйственной операции: продажа товаров за наличный расчёт
+		<br><br>");
+
+		$tmpl->AddText("
+		<table width=800 cellspacing=0 cellpadding=0>
+		<tr><th>N пор.</th><th width=450>Наименование товара<th>Ед. изм.<th>Цена<th>Кол-во<th>Сумма</tr>");
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_units`.`printname`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		$i=0;
+		$ii=1;
+		$sum=$cnt=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f", $nxt[4]);
+			$cost2 = sprintf("%01.2f", $sm);
+			if($nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[5]<td>$cost<td>$nxt[3]<td>$cost2");
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+			$cnt+=$nxt[3];
+		}
+		$ii--;
+		$cost = sprintf("%01.2f", $sum);
+		$sum_p=num2str($sum);
+		$tmpl->AddText("
+		<tr><td><td colspan='3'><b>Итого:</b><td>$cnt<td>$cost
+		</table>
+		<p>Всего отпущено и оплачено наличными денежными средствами $ii товаров на сумму:<br>$sum_p</p>
+		<p>{$this->firm_vars['firm_name']}: _____________________________________</p>
+		");
 	}
 
 // -- Накладная торг 12 -------------------
