@@ -27,6 +27,9 @@ $CONFIG['site']['vitrina_pcnt_limit']	= array(1,10,100);	// Лимиты для 
 $CONFIG['site']['recode_enable']	= false;// Разрешить "красивые" ссылки. Необходим mod_recode.
 
 $CONFIG['poseditor']['need_dialog']	= 0;	// Показывать диалог с запросом цены и количества при добавлении позиции 
+$CONFIG['poseditor']['vc']		= 0;	// Показывать код производителя
+$CONFIG['poseditor']['tdb']		= 0;	// Показывать размеры
+$CONFIG['poseditor']['rto']		= 0;	// Показывать резервы/транзиты/заявки
 
 // Расположение изменяемых доступных данных - изображения, итп 
 $CONFIG['site']['var_data_web']		= '/share/var';		// по отношению к корню сайта

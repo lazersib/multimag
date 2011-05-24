@@ -30,10 +30,11 @@ class PosEditor
 	
 function __construct()
 {
+	global $CONFIG;
 	$this->editable=0;
-	$this->show_vc=0;
-	$this->show_tdb=0;
-	$this->show_rto=0;
+	$this->show_vc=@$CONFIG['poseditor']['vc'];
+	$this->show_tdb=@$CONFIG['poseditor']['tdb'];
+	$this->show_rto=@$CONFIG['poseditor']['rto'];
 }
 
 function SetEditable($editable)

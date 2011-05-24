@@ -26,7 +26,7 @@ class doc_Rko extends doc_Nulltype
 	{
 		parent::__construct($doc);
 		$this->doc_type				=7;
-		$this->doc_name				='pko';
+		$this->doc_name				='rko';
 		$this->doc_viewname			='Расходный кассовый ордер';
 		$this->sklad_editor_enable		=false;
 		$this->ksaas_modify			=-1;
