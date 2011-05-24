@@ -101,6 +101,7 @@ function PosEditorInit(base_url, editable)
 		row.lineIndex=data.line_id
 		row.id='posrow'+data.line_id
 		var sum=(data.cost*data.cnt).toFixed(2)
+		row.sklad_cnt=Number(data.sklad_cnt)
 		row.ondblclick=row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.pos_id); return false }
 		var linehtml="<td>"+(row_cnt+1)
 		if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>"
@@ -121,6 +122,7 @@ function PosEditorInit(base_url, editable)
 		
 		if(poslist.editable)
 		{
+			if(Number(data.cnt)>Number(data.sklad_cnt))	row.style.color="#f00";
 			var inputs=row.getElementsByTagName('input')
 			for(var i=0;i<inputs.length;i++)
 			{
@@ -148,12 +150,14 @@ function PosEditorInit(base_url, editable)
 			//alert(inputs[i].name)
 			if(inputs[i].name=='cnt')	inputs[i].value=data.cnt
 			else if(inputs[i].name=='cost')	inputs[i].value=Number(data.cost).toFixed(2)
-			else if(inputs[i].name=='sum')	inputs[i].value=(data.cost*data.cnt).toFixed(2)
+			else if(inputs[i].name=='sum')	inputs[i].value=Number(data.cost*data.cnt).toFixed(2)
 			inputs[i].old_value=inputs[i].value
 		}
-		
-		line.className='hl'		
-		window.setTimeout(function(){line.className='';}, 2000)
+		if(Number(data.cnt)>Number(line.sklad_cnt))	line.style.color="#f00";
+		else						line.style.color="inherit";
+		line.className='hl'
+		if(line.timeout)	window.clearTimeout(line.timeout)
+		line.timeout=window.setTimeout(function(){line.className='';}, 2000)
 	}
 	
 	poslist.RemoveLine=function(line_id)
@@ -623,19 +627,31 @@ function SkladViewInit(doc)
 	{
 		var row_cnt=skladlist.rows.length
 		var row=skladlist.insertRow(row_cnt)
-		row.lineIndex=data.id
-		row.id='skladrow'+data.id
-		row.data=data
-		row.className='pointer'
-		//row.onclick=function() {AddData(data)}
-		if(poslist.editable)	row.onclick=skladlist.clickRow
-		row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
-		var linehtml="<td>"+data.id+"</td>"
-		if(skladview.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
-		linehtml+="<td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td>"
-		if(skladview.show_column['tdb']>0)	linehtml+="<td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td>"
-		if(skladview.show_column['rto']>0)	linehtml+="<td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td>"
-		linehtml+="<td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
+		var linehtml=''
+		if(data.id!='header')
+		{
+			row.lineIndex=data.id
+			row.id='skladrow'+data.id
+			row.data=data
+			row.className='pointer'
+			//row.onclick=function() {AddData(data)}
+			if(poslist.editable)	row.onclick=skladlist.clickRow
+			row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
+			linehtml+="<td>"+data.id+"</td>"
+			if(skladview.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
+			linehtml+="<td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td>"
+			if(skladview.show_column['tdb']>0)	linehtml+="<td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td>"
+			if(skladview.show_column['rto']>0)	linehtml+="<td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td>"
+			linehtml+="<td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"		
+		}
+		else
+		{
+			var count=10;
+			if(skladview.show_column['vc']>0)	count++;
+			if(skladview.show_column['tdb']>0)	count+=5;
+			if(skladview.show_column['rto']>0)	count+=3;
+			linehtml+="<th colspan='"+count+"'>"+data.name+"</th>"
+		}
 		row.innerHTML=linehtml
 // 		var img_del=document.getElementById('del'+data.line_id)
 // 		img_del.onclick=poslist.doDeleteLine

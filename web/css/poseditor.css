@@ -17,11 +17,13 @@
 #poslist tbody tr:nth-child(odd), #poslist tbody tr:nth-child(odd) input
 {
 	background:	#f0f8ff;
+	color:		inherit;
 }
 
 #poslist tbody tr:nth-child(even), #poslist tbody tr:nth-child(even) input
 {
 	background:	#e0f0ff;
+	color:		inherit;
 }
 
 #poslist tbody td

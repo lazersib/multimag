@@ -295,23 +295,36 @@ function SearchSkladList($s)
 	WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 200";
 	$res=mysql_query($sqla);
 	if(mysql_errno())	throw new MysqlException("Ошибка поиска");
-	$ret=$this->FormatResult($res,$ret);
-	
+	if($cnt=mysql_num_rows($res))
+	{
+		if($ret!='')	$ret.=', ';
+		$ret.="{id: 'header', name: 'Поиск по названию, начинающемуся на $s - $cnt наименований найдено'}";
+		$ret=$this->FormatResult($res,$ret);
+	}
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE (`doc_base`.`name` LIKE '%$s%' OR `doc_base`.`vc` LIKE '%$s%') AND (`doc_base`.`name` NOT LIKE '$s%' OR `doc_base`.`vc` NOT LIKE '$s%') ORDER BY `doc_base`.`name` LIMIT 100";
+	WHERE (`doc_base`.`name` LIKE '%$s%' OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`name` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
 	$res=mysql_query($sqla);
 	if(mysql_errno())	throw new MysqlException("Ошибка поиска");
-	$ret=$this->FormatResult($res,$ret);
-	
+	if($cnt=mysql_num_rows($res))
+	{
+		if($ret!='')	$ret.=', ';
+		$ret.="{id: 'header', name: 'Поиск по названию, содержащему $s - $cnt наименований найдено'}";
+		$ret=$this->FormatResult($res,$ret);
+	}
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND (`doc_base`.`name` NOT LIKE '%$s%' OR `doc_base`.`vc` NOT LIKE '%$s%') ORDER BY `doc_base`.`name` LIMIT 100";
+	WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' AND `doc_base`.`vc` NOT LIKE '%$s%' ORDER BY `doc_base`.`name` LIMIT 100";
 	$res=mysql_query($sqla);
 	if(mysql_errno())	throw new MysqlException("Ошибка поиска");
-	$ret=$this->FormatResult($res,$ret);
+	if($cnt=mysql_num_rows($res))
+	{
+		if($ret!='')	$ret.=', ';
+		$ret.="{id: 'header', name: 'Поиск по аналогу($s) - $cnt наименований найдено'}";
+		$ret=$this->FormatResult($res,$ret);
+	}
 	
 	return $ret;
 }
