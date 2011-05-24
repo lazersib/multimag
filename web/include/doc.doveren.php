@@ -31,7 +31,7 @@ class doc_Doveren extends doc_Nulltype
 		$this->doc_viewname			='Доверенность';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
-		$this->header_fields			='agent';
+		$this->header_fields			='agent cena';
 		settype($this->doc,'int');
 	}
 
@@ -155,119 +155,10 @@ class doc_Doveren extends doc_Nulltype
    	}
 	function Service($doc)
 	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-		global $dop_data;
-
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
-		
-		/// TODO: Разобраться с этим кодом
-		$rights=getright('doc_realizaciya',$uid);
-		if($rights['write'])
-		{
-			if($doc_data[6])
-				$tmpl->msg("Операция не допускается для проведённого документа!","err");
-			else if($doc_data[14])
-				$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
-			// Количество
-			else if($opt=='cnt')
-			{
-				$res=mysql_query("SELECT `cnt` FROM `doc_list_pos` WHERE `id`='$pos'");
-				$nxt=mysql_fetch_row($res);
-
-				$tmpl->AddText("<form action='' onsubmit=\"EditThisSave('/doc.php?mode=srv&opt=cnts&doc=$doc&pos=$pos','poslist','val'); return false;\" ><input type=text class=mini id=val value='$nxt[0]'><input type=submit value='.'  class=hidden></form>");
-			}
-			else if($opt=='cnts')
-			{
-				$s=rcv('s');
-				//$tmpl->AddText("<a href='' onclick=\"EditThis('/doc.php?mode=srv&opt=cnt&doc=$doc&pos=$pos','cnt$pos'); return false;\" >$s</a>");
-				$res=mysql_query("UPDATE `doc_list_pos` SET `cnt`='$s' WHERE `doc`='$doc' AND `id`='$pos'");
-				DocSumUpdate($doc);
-				doc_poslist($doc);
-			}
-			// Комментарий
-			else if($opt=='com')
-			{
-				$res=mysql_query("SELECT `comm` FROM `doc_list_pos` WHERE `id`='$pos'");
-				$nxt=mysql_fetch_row($res);
-
-				$tmpl->AddText("<form action='' onsubmit=\"EditThisSave('/doc.php?mode=srv&opt=coms&doc=$doc&pos=$pos','poslist','val'); return false;\" ><input type=text id=val value='$nxt[0]'><input type=submit value='.'  class=hidden></form>");
-			}
-			else if($opt=='coms')
-			{
-				$s=rcv('s');
-				$res=mysql_query("UPDATE `doc_list_pos` SET `comm`='$s' WHERE `doc`='$doc' AND `id`='$pos'");
-				//DocSumUpdate($doc);	- Это не нужно при смене комментария
-				doc_poslist($doc);
-			}
-			// Цена
-			else if($opt=='cost')
-			{
-				$res=mysql_query("SELECT `cost` FROM `doc_list_pos` WHERE `id`='$pos'");
-				$nxt=mysql_fetch_row($res);
-
-				$tmpl->AddText("<form action='' onsubmit=\"EditThisSave('/doc.php?mode=srv&opt=costs&doc=$doc&pos=$pos','poslist','val'); return false;\" ><input type=text class=mini id=val value='$nxt[0]'><input type=submit value='.'  class=hidden></form>");
-			}
-			else if($opt=='costs')
-			{
-				$s=rcv('s');
-				$s_p=sprintf("%01.2f",$s);
-				if($s<0) $s=0;
-				//$tmpl->AddText("<a href='' onclick=\"EditThis('/doc.php?mode=srv&opt=cost&doc=$doc&pos=$pos','cost$pos'); return false;\" >$s_p</a>");
-				$res=mysql_query("UPDATE `doc_list_pos` SET `cost`='$s' WHERE `doc`='$doc' AND `id`='$pos'");
-				DocSumUpdate($doc);
-				doc_poslist($doc);
-			}
-			else if($opt=='sklad')
-			{
-				$group=rcv('group');
-				doc_sklad($doc, $group);
-			}
-			else if($opt=='pos')
-			{
-				$pos=rcv('pos');
-				$res=mysql_query("SELECT `cost` FROM `doc_base` WHERE `id`='$pos'");
-				$cost=mysql_result($res,0,0);
-				$res=mysql_query("SELECT `doc_ceni`.`coeff` FROM `doc_dopdata`
-				LEFT JOIN `doc_ceni` ON `doc_ceni`.`id`=`doc_dopdata`.`value`
-				WHERE `doc_dopdata`.`doc`='$doc' AND  `doc_dopdata`.`param`='cena' ");
-				$nx=mysql_fetch_row($res);
-				$coeff_ceni=$nx[0];
-				if(!$coeff_ceni) $coeff_ceni=1;
-				$cost*=$coeff_ceni;
-				
-				$res=mysql_query("SELECT `id` FROM `doc_list_pos` WHERE `doc`='$doc' AND `tovar`='$pos'");
-				if(mysql_num_rows($res)==0)
-					mysql_query("INSERT INTO doc_list_pos (`doc`,`tovar`,`cnt`,`sn`,`comm`,`cost`) VALUES ('$doc','$pos','1','','','$cost')");
-				else
-					mysql_query("UPDATE `doc_list_pos` SET `cnt`=`cnt`+'1' WHERE `doc`='$doc' AND `tovar`='$pos'");
-				if(mysql_error())
-				{
-					doc_log("ERROR: realizaciya - insert position - INSERT","$doc");
-					$tmpl->msg("Ошибка добавления!","err");
-				}
-				else
-				{
-					DocSumUpdate($doc);
-					doc_poslist($doc);
-					doc_log("Add position","doc:$doc, pos:$pos");
-				}
-
-			}
-			else if($opt=='del')
-			{
-				$res=mysql_query("DELETE FROM `doc_list_pos` WHERE `id`='$pos'");
-				DocSumUpdate($doc);
-				doc_poslist($doc);
-				doc_log("Del position","doc:$doc, pos:$pos");
-			}
-			else $tmpl->AddText("Invalid opt!");
-		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
+		parent::_Service($opt,$pos);
 	}
 //	================== Функции только этого класса ======================================================
 

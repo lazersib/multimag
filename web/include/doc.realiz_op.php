@@ -190,139 +190,22 @@ class doc_Realiz_op extends doc_Nulltype
 		}
 		return 1;
    	}
-	function Service($doc)
+function Service($doc)
 	{
 		get_docdata($doc);
 		global $tmpl;
 		global $uid;
-		global $doc_data;
-		global $dop_data;
 
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
 
-
-			if($doc_data[6])
-				$tmpl->msg("Операция не допускается для проведённого документа!","err");
-			else if($doc_data[14])
-				$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
-			// Количество
-			else if($opt=='cnt')
-			{
-				$res=mysql_query("SELECT `cnt` FROM `doc_list_pos` WHERE `id`='$pos'");
-				$nxt=mysql_fetch_row($res);
-
-				$tmpl->AddText("<input type=text class='tedit' id='val$nxt[0]' value='$nxt[0]' onblur=\"EditThisSave('/doc.php?mode=srv&opt=cnts&doc=$doc&pos=$pos','poslist','val$nxt[0]'); return false;\">");
-			}
-			else if($opt=='cnts')
-			{
-				$s=rcv('s');
-				$res=mysql_query("UPDATE `doc_list_pos` SET `cnt`='$s' WHERE `doc`='$doc' AND `id`='$pos'");
-				DocSumUpdate($doc);
-				doc_poslist($doc);
-			}
-			// Комментарий
-			else if($opt=='com')
-			{
-				$res=mysql_query("SELECT `comm` FROM `doc_list_pos` WHERE `id`='$pos'");
-				$nxt=mysql_fetch_row($res);
-
-				$tmpl->AddText("<form action='' onsubmit=\"EditThisSave('/doc.php?mode=srv&opt=coms&doc=$doc&pos=$pos','poslist','val'); return false;\" ><input type=text id=val value='$nxt[0]' onblur=\"EditThisSave('/doc.php?mode=srv&opt=coms&doc=$doc&pos=$pos','poslist','val'); return false;\"><input type=submit value='.'  class=hidden></form>");
-			}
-			else if($opt=='coms')
-			{
-				$s=rcv('s');
-				$res=mysql_query("UPDATE `doc_list_pos` SET `comm`='$s' WHERE `doc`='$doc' AND `id`='$pos'");
-				//DocSumUpdate($doc);	- Это не нужно при смене комментария
-				doc_poslist($doc);
-			}
-			// Цена
-			else if($opt=='cost')
-			{
-				$res=mysql_query("SELECT `cost` FROM `doc_list_pos` WHERE `id`='$pos'");
-				$nxt=mysql_fetch_row($res);
-
-				$tmpl->AddText("<form action='' onsubmit=\"EditThisSave('/doc.php?mode=srv&opt=costs&doc=$doc&pos=$pos','poslist','val'); return false;\" ><input type=text class=mini id=val value='$nxt[0]'><input type=submit value='.'  class=hidden></form>");
-			}
-			else if($opt=='costs')
-			{
-				$s=rcv('s');
-				$s_p=sprintf("%01.2f",$s);
-				if($s<0) $s=0;
-				//$tmpl->AddText("<a href='' onclick=\"EditThis('/doc.php?mode=srv&opt=cost&doc=$doc&pos=$pos','cost$pos'); return false;\" >$s_p</a>");
-				$res=mysql_query("UPDATE `doc_list_pos` SET `cost`='$s' WHERE `doc`='$doc' AND `id`='$pos'");
-				DocSumUpdate($doc);
-				doc_poslist($doc);
-			}
-			// Серийный номер / номер декларации
-			else if($opt=='sn')
-			{
-				$res=mysql_query("SELECT `sn` FROM `doc_list_pos` WHERE `id`='$pos'");
-				$nxt=mysql_fetch_row($res);
-				if($nxt)
-					$tmpl->AddText("<form action='' onsubmit=\"EditThisSave('/doc.php?mode=srv&opt=sns&doc=$doc&pos=$pos','poslist','val'); return false;\" ><input type=text class=mini id=val value='$nxt[0]' onblur=\"EditThisSave('/doc.php?mode=srv&opt=cnts&doc=$doc&pos=$pos','poslist','val'); return false;\" ><input type=submit value='.'  class=hidden></form>");
-				else $tmpl->logger("Change cost",0,"doc:$doc, type:".$this->doc_name.", opt:$opt, pos:$pos, mysql:".mysql_error());
-			}
-			else if($opt=='sns')
-			{
-				$s=rcv('s');
-				$s_p=sprintf("%01.2f",$s);
-				if($s<0) $s=0;
-				$res=mysql_query("UPDATE `doc_list_pos` SET `sn`='$s' WHERE `doc`='$doc' AND `id`='$pos'");
-				if(!mysql_errno())
-				{
-					doc_poslist($doc);
-				}
-				else $tmpl->logger("Save cost",0,"doc:$doc, type:".$this->doc_name.", opt:$opt, pos:$pos, mysql:".mysql_error());
-			}
-			else if($opt=='sklad')
-			{
-				$group=rcv('group');
-				doc_sklad($doc, $group);
-			}
-			else if($opt=='pos')
-			{
-				$pos=rcv('pos');
-				$res=mysql_query("SELECT `cost` FROM `doc_base` WHERE `id`='$pos'");
-				$cost=mysql_result($res,0,0);
-				$res=mysql_query("SELECT `doc_ceni`.`coeff` FROM `doc_dopdata`
-				LEFT JOIN `doc_ceni` ON `doc_ceni`.`id`=`doc_dopdata`.`value`
-				WHERE `doc_dopdata`.`doc`='$doc' AND  `doc_dopdata`.`param`='cena' ");
-				$nx=mysql_fetch_row($res);
-				$coeff_ceni=$nx[0];
-				if(!$coeff_ceni) $coeff_ceni=1;
-				$cost*=$coeff_ceni;
-				
-				$res=mysql_query("SELECT `id` FROM `doc_list_pos` WHERE `doc`='$doc' AND `tovar`='$pos'");
-				if(mysql_num_rows($res)==0)
-					mysql_query("INSERT INTO doc_list_pos (`doc`,`tovar`,`cnt`,`sn`,`comm`,`cost`) VALUES ('$doc','$pos','1','','','$cost')");
-				else
-					mysql_query("UPDATE `doc_list_pos` SET `cnt`=`cnt`+'1' WHERE `doc`='$doc' AND `tovar`='$pos'");
-				if(mysql_error())
-				{
-					doc_log("ERROR: realizaciya - insert position - INSERT","$doc");
-					$tmpl->msg("Ошибка добавления!","err");
-				}
-				else
-				{
-					DocSumUpdate($doc);
-					doc_poslist($doc);
-					doc_log("Add position","doc:$doc, pos:$pos");
-				}
-
-			}
-			else if($opt=='del')
-			{
-				$res=mysql_query("DELETE FROM `doc_list_pos` WHERE `id`='$pos'");
-				DocSumUpdate($doc);
-				doc_poslist($doc);
-				doc_log("Del position","doc:$doc, pos:$pos");
-			}
+		{
+			if(parent::_Service($opt,$pos))	{}
 			else if($opt=='dov')
 			{
 				$rr=mysql_query("SELECT `name`,`surname` FROM `doc_agent_dov`
-				WHERE `id`='".$dop_data['dov_agent']."'");
+				WHERE `id`='".$this->dop_data['dov_agent']."'");
 				if(mysql_numrows($rr))
 					$agn=mysql_result($rr,0,0)." ".mysql_result($rr,0,1);
 				else
@@ -333,18 +216,18 @@ class doc_Realiz_op extends doc_Nulltype
 <input type=hidden name='opt' value='dovs'>
 <input type=hidden name='doc' value='$doc'>
 <table>
-<tr><th>Доверенное лицо (<a href='docs.php?l=dov&mode=edit&ag_id=$doc_data[2]' title='Добавить'><img border=0 src='img/i_add.gif' alt='add'></a>)
-<tr><td><input type=hidden name=dov_agent value='".$dop_data['dov_agent']."' id='sid' ><input type=text id='sdata' value='$agn' onkeydown=\"return RequestData('/docs.php?l=dov&mode=srv&opt=popup&ag=$doc_data[2]')\">
+<tr><th>Доверенное лицо (<a href='docs.php?l=dov&mode=edit&ag_id={$this->doc_data[2]}' title='Добавить'><img border=0 src='img/i_add.png' alt='add'></a>)
+<tr><td><input type=hidden name=dov_agent value='".$this->dop_data['dov_agent']."' id='sid' ><input type=text id='sdata' value='$agn' onkeydown=\"return RequestData('/docs.php?l=dov&mode=srv&opt=popup&ag={$this->doc_data[2]}')\">
 		<div id='popup'></div>
 		<div id=status></div>
 
 <tr><th class=mini>Номер доверенности
-<tr><td><input type=text name=dov value='".$dop_data['dov']."' class=text>
+<tr><td><input type=text name=dov value='".$this->dop_data['dov']."' class=text>
 
 <tr><th>Дата выдачи
 <tr><td>
 <p class='datetime'>
-<input type=text name=dov_data value='".$dop_data['dov_data']."' id='id_pub_date_date'  class='vDateField required text' >
+<input type=text name=dov_data value='".$this->dop_data['dov_data']."' id='id_pub_date_date'  class='vDateField required text' >
 </p>
 
 </table>
@@ -353,6 +236,7 @@ class doc_Realiz_op extends doc_Nulltype
 			}
 			else if($opt=="dovs")
 			{
+				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
 				$dov=rcv('dov');
 				$dov_agent=rcv('dov_agent');
 				$dov_data=rcv('dov_data');
@@ -361,10 +245,10 @@ class doc_Realiz_op extends doc_Nulltype
 				mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)  VALUES ('$doc','dov_data','$dov_data')");
 				$ref="Location: doc.php?mode=body&doc=$doc";
 				header($ref);
-				doc_log("Add doverennost","doc:$doc, dov:$dov, dov_agent:$dov_agent, dov_data:$dov_data");
+				doc_log("Add doverennost","dov:$dov, dov_agent:$dov_agent, dov_data:$dov_data",'doc', $doc);
 			}
-			else $tmpl->msg("Неизвестная опция!");
-
+			else $tmpl->msg("Неизвестная опция $opt!");
+		}
 	}
 //	================== Функции только этого класса ======================================================
 
