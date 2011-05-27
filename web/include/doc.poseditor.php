@@ -119,9 +119,9 @@ function Show($param='')
 	if($this->show_vc>0)	$ret.="<th width='90px' align='left' title='Код изготовителя'>Код</th>";
 	$ret.="<th>Наименование</th>
 	<th width='90px' title='Выбранная цена'>Выбр. цена</th>
-	<th width='90px'>Цена</th>
-	<th width='60px'>Кол-во</th>
-	<th width='90px'>Стоимость</th>
+	<th width='90px' class='hl'>Цена</th>
+	<th width='60px' class='hl'>Кол-во</th>
+	<th width='90px' class='hl'>Стоимость</th>
 	<th width='60px' title='Остаток товара на складе'>Остаток</th>
 	<th width='90px'>Место</th>";
 	if($this->show_sn)	$ret.="<th>SN</th>";
@@ -175,7 +175,7 @@ function Show($param='')
 	</table>
 	";
 	
-	$ret.="	<script type=\"text/javascript\">
+	$ret.=@"	<script type=\"text/javascript\">
 	var poslist=PosEditorInit('/doc.php?doc={$this->doc}&mode=srv',{$this->editable})
 	poslist.show_column['sn']='{$this->show_sn}'
 	

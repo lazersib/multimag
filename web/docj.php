@@ -111,7 +111,7 @@ function FilterMenu()
 	$tmpl->AddStyle("
 		#doc_sel
 		{
-			width:	330px;
+			width:	280px;
 			height:	17px;
 			border:	1px solid #ccc;
 			background: url('img/win/droplist.png') no-repeat right;
@@ -123,7 +123,7 @@ function FilterMenu()
 		
 		#doc_sel_popup
 		{
-			width:	330px;
+			width:	280px;
 			border:	1px solid #ccc;
 			display:none;
 			background: #fefefe;
@@ -185,7 +185,7 @@ function FilterMenu()
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($_SESSION['j_select_sklad']==$nxt[0])
+			if(@$_SESSION['j_select_sklad']==$nxt[0])
 			{
 				$ss='selected';
 				$_SESSION['j_select_sklad_name']=$nxt[1];
@@ -197,7 +197,7 @@ function FilterMenu()
 		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank' ORDER BY `num`");
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($_SESSION['j_select_bank']==$nxt[0])
+			if(@$_SESSION['j_select_bank']==$nxt[0])
 			{
 				$ss='selected';
 				$_SESSION['j_select_bank_name']=$nxt[1];
@@ -209,7 +209,7 @@ function FilterMenu()
 		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `num`");
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($_SESSION['j_select_kassa']==$nxt[0])
+			if(@$_SESSION['j_select_kassa']==$nxt[0])
 			{
 				$ss='selected';
 				$_SESSION['j_select_kassa_name']=$nxt[1];
@@ -221,7 +221,7 @@ function FilterMenu()
 		$res=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($_SESSION['j_select_firm']==$nxt[0])
+			if(@$_SESSION['j_select_firm']==$nxt[0])
 			{
 				$ss='selected';
 				$_SESSION['j_select_firm_name']=$nxt[1];
@@ -232,10 +232,13 @@ function FilterMenu()
 		
 		$date_f=$date_t=date("Y-m-d");
 
-		$tmpl->AddTMenu("
+		@$tmpl->AddTMenu("
 		
 		</td><td align='right'>
-		Подтип:<br>
+		Альт.н.<br>
+		<input type='text' name='altnum' style='width: 50px;' value='{$_SESSION['j_select_altnum']}'><br>
+		</td><td align='right'>
+		Подтип<br>
 		<input type='text' name='subtype' style='width: 50px;' value='{$_SESSION['j_select_subtype']}'><br>
 		</td></tr>
 		</table>
@@ -448,7 +451,7 @@ if($mode=="")
 	
 	$info.='<b>С</b> '.$_SESSION['j_date_from'].' <b>по</b> '.$_SESSION['j_date_to'];
 	
-	$asel=$_SESSION['j_agent'];
+	$asel=@$_SESSION['j_agent'];
 	settype($asel,"int");
 	if($asel)
 	{
@@ -456,7 +459,7 @@ if($mode=="")
 		$info.=", <b>агент:</b> {$_SESSION['j_agent_name']}";
 	}
 	
-	if(is_array($_SESSION['j_need_doctypes']))
+	if(is_array(@$_SESSION['j_need_doctypes']))
 	{
 		$info.=", <b>док-ты:</b> ";
 		$ts='';
@@ -468,27 +471,32 @@ if($mode=="")
 		}
 		$ds.=" AND ($ts) ";
 	}
-	if($_SESSION['j_select_subtype'])
+	if(@$_SESSION['j_select_subtype'])
 	{
 		$ds.=" AND `doc_list`.`subtype`='{$_SESSION['j_select_subtype']}'";
 		$info.=", <b>подтип:</b> {$_SESSION['j_select_subtype']}";
 	}
-	if($_SESSION['j_select_sklad'])
+	if(@$_SESSION['j_select_altnum'])
+	{
+		$ds.=" AND `doc_list`.`altnum`='{$_SESSION['j_select_altnum']}'";
+		$info.=", <b>альт.номер:</b> {$_SESSION['j_select_altnum']}";
+	}
+	if(@$_SESSION['j_select_sklad'])
 	{
 		$ds.="AND `doc_list`.`sklad`='{$_SESSION['j_select_sklad']}'";
 		$info.=", <b>склад:</b> {$_SESSION['j_select_sklad_name']}";
 	}
-	if($_SESSION['j_select_bank'])
+	if(@$_SESSION['j_select_bank'])
 	{
 		$ds.="AND `doc_list`.`bank`='{$_SESSION['j_select_bank']}'";
 		$info.=", <b>банк:</b> {$_SESSION['j_select_bank_name']}";
 	}
-	if($_SESSION['j_select_kassa'])
+	if(@$_SESSION['j_select_kassa'])
 	{
 		$ds.="AND `doc_list`.`kassa`='{$_SESSION['j_select_kassa']}'";
 		$info.=", <b>касса:</b> {$_SESSION['j_select_kassa_name']}";
 	}
-	if($_SESSION['j_select_firm'])
+	if(@$_SESSION['j_select_firm'])
 	{
 		$ds.="AND `doc_list`.`firm_id`='{$_SESSION['j_select_firm']}'";
 		$info.=", <b>организация:</b> {$_SESSION['j_select_firm_name']}";
@@ -498,15 +506,15 @@ if($mode=="")
 		if($firm_vars['firm_skin'])
 			$tmpl->LoadTemplate($firm_vars['firm_skin']);	
 	}
-	if($_SESSION['j_select_autor_id'])
+	if(@$_SESSION['j_select_autor_id'])
 	{
 		$ds.="AND `doc_list`.`user`='{$_SESSION['j_select_autor_id']}'";
 		$info.=", <b>автор:</b> {$_SESSION['j_select_autor_name']}";
 		
 	}
 	
-	$sel=$_SESSION['j_select_tov'];
-	if($sel==0)
+	$sel=@$_SESSION['j_select_tov'];
+	if(!$sel)
 	{
 		$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name`, `users`.`name`, `doc_types`.`name`, `doc_list`.`p_doc`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`
 		FROM `doc_list`
@@ -839,8 +847,8 @@ else if($mode=="filter")
 		$date_to=rcv('date_to');
 		$_SESSION['j_date_to']=date("Y-m-d",strtotime($date_to)+(24*60*60-1));
 	
-		$subtype=rcv('subtype');
-		$_SESSION['j_select_subtype']=$subtype;
+		$_SESSION['j_select_altnum']=rcv('altnum');
+		$_SESSION['j_select_subtype']=rcv('subtype');
 		
 		$agent_id=rcv('agent_id');
 		$agent_name=rcv('agent_name');

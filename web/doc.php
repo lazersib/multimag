@@ -39,7 +39,8 @@ $tmpl->AddTMenu("
 <link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen' />
 ");
 
-
+try
+{
 if($mode=="")
 {
 	doc_menu();
@@ -125,7 +126,19 @@ else if($mode=="incnum")
 	exit(0);
 }
 else $tmpl->msg("ERROR $mode","err");
-
+}
+catch(AccessException $e)
+{
+	$tmpl->msg($e,'err',"Нет доступа");
+}
+catch(MysqlException $e)
+{
+	$tmpl->msg($e."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+}
+catch (Exception $e)
+{
+	$tmpl->msg($e,'err',"Общая ошибка");
+}
 
 $tmpl->write();
 ?>

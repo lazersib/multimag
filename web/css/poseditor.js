@@ -581,7 +581,6 @@ function SkladViewInit(doc)
 	skladview.show_column=new Array();
 	sklsearch.timer=0
 	skladlist.needDialog=0
-
 	
 	sklsearch.onkeydown=function(event)
 	{

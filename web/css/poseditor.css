@@ -1,17 +1,22 @@
 #poslist
 {
-	width:		100%;
-	border:		2px #88f solid;
-	border-spacing:	0px;
-	margin-top:	5px;
+	width:			100%;
+	border:			2px #88f solid;
+	border-spacing:		0px;
+	margin-top:		5px;
 }
 
 #poslist td, #poslist th
 {
-	border-right:	#fff 1px solid;
-	padding:	1px;
-	padding-left:	3px;
-	padding-right:	3px;
+	border-right:		#fff 1px solid;
+	padding:		1px;
+	padding-left:		3px;
+	padding-right:		3px;
+}
+
+#poslist th.hl
+{
+	background-color:	#7DBBDC;
 }
 
 #poslist tbody tr:nth-child(odd), #poslist tbody tr:nth-child(odd) input
@@ -36,7 +41,6 @@
 	text-align:	left;
 }
 
-
 /* edited line - строки, ожидающие сохранения на сервер */
 #poslist tbody .el, #poslist tbody .el input
 {
@@ -54,7 +58,6 @@
 	background-color:	#eee !important;
 	color:			#fff !important;
 }
-
 
 #poslist tbody input
 {
@@ -80,7 +83,6 @@
 	margin:			2px 3px 0px 3px;
 }
 
-
 #pladd
 {
 	background-color:	#ffc;
@@ -91,7 +93,6 @@
 	padding:	2px;
 	text-align:	right;
 }
-
 
 #pladd input
 {
@@ -166,9 +167,14 @@
 }
 
 /* Подстветка для кликабельных ячеек */
-.reserve:hover, .offer:hover, .transit:hover
+.reserve, .offer, .transit
 {
 	cursor:		pointer;
+	color:		#CEE3F8;
+}
+
+.reserve:hover, .offer:hover, .transit:hover
+{
 	background:	#ffb;
 	text-decoration:underline;
 }
