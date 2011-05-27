@@ -170,7 +170,7 @@
 .reserve, .offer, .transit
 {
 	cursor:		pointer;
-	color:		#CEE3F8;
+	color:		#06C;
 }
 
 .reserve:hover, .offer:hover, .transit:hover
