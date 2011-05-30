@@ -157,7 +157,7 @@ class doc_Realizaciya extends doc_Nulltype
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
 			if(mysql_error())	throw new MysqlException('Ошибка проведения, ошибка изменения количества!');
 			
-			if($CONFIG['site']['sn_restrict'])
+			if(@$CONFIG['poseditor']['sn_restrict'])
 			{
 				$r=mysql_query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
 				$sn_cnt=mysql_result($r,0,0);

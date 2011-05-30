@@ -85,7 +85,7 @@ class doc_Postuplenie extends doc_Nulltype
 				$rs=mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
 				if(!$rs)	throw new MysqlException("Ошибка записи количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
 			}
-			if($CONFIG['site']['sn_restrict'])
+			if(@$CONFIG['poseditor']['sn_restrict'])
 			{
 				$r=mysql_query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `prix_list_pos`='$nxt[3]'");
 				$sn_cnt=mysql_result($r,0,0);

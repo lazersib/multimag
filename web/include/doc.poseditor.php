@@ -78,13 +78,6 @@ function getGroupLevel($level)
 	return $ret;
 }
 
-
-function Show($param='')
-{
-
-
-}
-
 };
 
 
@@ -93,15 +86,18 @@ class DocPosEditor extends PosEditor
 	var $doc;	// Id документа
 	var $doc_obj;	// Объект - документ
 	var $show_sn;	// Показать серийные номера
+	var $show_gtd;	// Показывать номер ГТД в поступлении
 
 function __construct($doc)
 {
+	global $CONFIG;
 	parent::__construct();	
 	$this->doc=$doc->getDocNum();
 	$this->show_sn=0;
 	$this->doc_obj=$doc;
 	$doc_data=$this->doc_obj->getDocData();
-	if($doc_data['type']==1 || $doc_data['type']==2)	$this->show_sn=1;
+	if( @$CONFIG['poseditor']['sn_enable'] && ($doc_data['type']==1 || $doc_data['type']==2))	$this->show_sn=1;
+	if( @$CONFIG['poseditor']['true_gtd'] && $doc_data['type']==1)					$this->show_gtd=1;
 }
 
 function Show($param='')

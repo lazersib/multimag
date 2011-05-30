@@ -266,7 +266,7 @@ function PosEditorInit(base_url, editable)
 					matchContains:1,
 					cacheLength:10,
 					maxItemsToShow:15, 
-					extraParams:{'mode':'srv','opt':'snp', 'doc': doc, 'pos': line}
+					extraParams:{'mode':'srv','opt':'snp', 'doc': '1', 'pos': line}
 				});
 			}
 			else	jAlert(json.message,"Ошибка", {}, 'icon_err')

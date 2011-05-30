@@ -628,23 +628,22 @@ class doc_Nulltype
 				$pos=rcv('pos');
 				$sn=rcv('sn');
 				$tmpl->ajax=1;
-				if($this->doc_type==2)
+
+				$tmpl->SetText("");
+				$res=mysql_query("SELECT `tovar` FROM `doc_list_pos` WHERE `id`='$pos'");
+				if(mysql_errno())	throw new MysqlException("Не удалось получить строку докумнета!");
+				$pos_id=mysql_result($res,0,0);
+				$res=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` 
+				INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`prix_list_pos`
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`ok`>'0'
+				WHERE `pos_id`='$pos_id'  AND `rasx_list_pos` IS NULL");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать номер");
+				while($nxt=mysql_fetch_row($res))
 				{
-					$tmpl->SetText("");
-					$res=mysql_query("SELECT `tovar` FROM `doc_list_pos` WHERE `id`='$pos'");
-					if(mysql_errno())	throw new MysqlException("Не удалось получить строку докумнета!");
-					$pos_id=mysql_result($res,0,0);
-					$res=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` 
-					INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`prix_list_pos`
-					INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`ok`>'0'
-					WHERE `pos_id`='$pos_id'  AND `rasx_list_pos` IS NULL");
-					if(mysql_errno())	throw new MysqlException("Не удалось выбрать номер");
-					while($nxt=mysql_fetch_row($res))
-					{
-						$nxt[1]=unhtmlentities($nxt[1]);
-						$tmpl->AddText("$nxt[1]|$nxt[0]\n");
-					}
+					$nxt[1]=unhtmlentities($nxt[1]);
+					$tmpl->AddText("$nxt[1]|$nxt[0]\n");
 				}
+
 			}
 			else if($opt=='sns')
 			{
