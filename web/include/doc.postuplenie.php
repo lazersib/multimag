@@ -304,7 +304,7 @@ class doc_Postuplenie extends doc_Nulltype
 		else if($target_type==2)
 		{
 			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka($this->doc);
+			$base=$this->Otgruzka();
 			if(!$base)
 			{
 				mysql_query("ROLLBACK");
@@ -313,8 +313,7 @@ class doc_Postuplenie extends doc_Nulltype
 			else
 			{
 				mysql_query("COMMIT");
-				$ref="Location: doc.php?mode=body&doc=$base";
-				header($ref);
+				header("Location: doc.php?mode=body&doc=$base");
 			}
 		}
 		else if($target_type==7)

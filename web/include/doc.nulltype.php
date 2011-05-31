@@ -72,22 +72,39 @@ class doc_Nulltype
 		$this->get_docdata();
 	}
 	
-	public function getDocNum()
+	public function getDocNum()	{return $this->doc;}	
+	public function getDocData()	{return $this->doc_data;}
+	public function getDopData()	{return $this->dop_data;}
+	
+	public function Create($doc_data)
 	{
-		return $this->doc;
+		global $uid;
+		$sqlinsert_keys="`date`, `firm_id`, `type`, `user`";
+		$sqlinsert_value="'$date', '$firm_id', '".$this->doc_type."', '$uid'";
+		foreach($fields as $f)
+		{
+			if($f=='cena')
+			{
+				$cena_update=true;
+				$sqlupdate.=", `nds`='$nds'";
+				$sqlinsert_keys.=", `nds`";
+				$sqlinsert_value.=", '$nds'";
+			}
+			else
+			{
+				$sqlupdate.=", `$f`='${$f}'";
+				$sqlinsert_keys.=", `$f`";
+				$sqlinsert_value.=", '${$f}'";
+			}
+		}
+	}
+
+	public function CreateFrom($doc_obj)
+	{
+		
 	}
 	
-	public function getDocData()
-	{
-		return $this->doc_data;
-	}
-	
-	public function getDopData()
-	{
-		return $this->dop_data;
-	}
-	
-	function head()
+	public function head()
 	{
 		global $tmpl;
 		if($this->doc_type==0)
@@ -120,7 +137,7 @@ class doc_Nulltype
 		}
 	}
 	// Применить изменения редактирования
-	function head_submit()
+	public function head_submit()
 	{
 		global $tmpl;
 		global $uid;
@@ -159,7 +176,7 @@ class doc_Nulltype
 		
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
-		$sqlinsert_value="'$tim', '0', '$firm_id', '".$this->doc_type."', '$comment', '$uid', '$altnum', '$subtype'";
+		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$comment', '$uid', '$altnum', '$subtype'";
 		
 		doc_menu($this->dop_buttons());
 
@@ -214,7 +231,7 @@ class doc_Nulltype
 		return $this->doc=$doc;
 	}
 	// Редактирование тела докумнета
-	function body()
+	public function body()
 	{
 		global $tmpl, $uid;
 		
@@ -303,7 +320,7 @@ class doc_Nulltype
 		$tmpl->AddText("<br><br>");
 	}
 
-	function Apply($doc=0, $silent=0)
+	public function Apply($doc=0, $silent=0)
 	{
 		global $tmpl;
 		global $uid;
@@ -352,7 +369,7 @@ class doc_Nulltype
 		return;
 	}
 
-	function ApplyJson()
+	public function ApplyJson()
 	{
 		global $uid;
 		$tim=time();
@@ -390,7 +407,7 @@ class doc_Nulltype
 		return $json;
 	}
 	
-	function CancelJson()
+	public function CancelJson()
 	{
 		global $uid;
 		$tim=time();

@@ -509,13 +509,13 @@ function AutoDocumentType($doc_type, $doc)
 function DocSumUpdate($doc)
 {
 	$sum=0;
-	$res=mysql_query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc'");
-	echo mysql_error();
+	$res=mysql_query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc' AND `page`='0'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
 	while($nxt=mysql_fetch_row($res))
 		$sum+=$nxt[0]*$nxt[1];
 	if($sum!=0)
 		mysql_query("UPDATE `doc_list` SET `sum`='$sum' WHERE `id`='$doc'");
-	echo mysql_error();
+	if(mysql_errno())	throw new MysqlException("Не удалось обновить сумму документа");
 	return $sum;
 }
 
