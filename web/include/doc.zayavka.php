@@ -150,10 +150,17 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$tmpl->ajax=1;
 			$tmpl->AddText("
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=t2'\">Реализация (экспериментально)</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=2'\">Реализация</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=15'\">Оперативная реализация</div>");
+		}
+		else if($target_type=='t2')
+		{
+			$new_doc=new doc_Realizaciya();
+			$dd=$new_doc->CreateFrom($this);
+			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		// Реализация
 		else if($target_type==2)

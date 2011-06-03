@@ -134,8 +134,7 @@ function Show($param='')
 	<td><input type='text' id='pos_cnt' autocomplete='off' tabindex='5'></td>
 	<td id='pos_sum'></td>
 	<td id='pos_sklad_cnt'></td>
-	<td id='pos_mesto'></td>
-	";
+	<td id='pos_mesto'></td>";
 	if($this->show_sn)	$ret.="<td></td>";
 	
 	$ret.="
@@ -151,12 +150,9 @@ function Show($param='')
 	<table id='sklad_view'>
 	<tr><td id='groups_list' width='200' valign='top' class='lin0'>";
 	$ret.=$this->getGroupsTree();
-	$ret.="</td>
-	<td valign='top' class='lin1'>
-	
+	$ret.="</td><td valign='top' class='lin1'>	
 	<table width='100%' cellspacing='1' cellpadding='2'>
-	<tr>
-	<thead>
+	<tr><thead>
 	<th>№";
 	if($this->show_vc>0)	$ret.="<th>Код";
 	$ret.="<th>Наименование<th>Марка<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог";
@@ -168,9 +164,9 @@ function Show($param='')
 	</tbody>
 	</table>
 	</td></tr>
-	</table>
-	";
-	
+	</table>";
+	if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
+	else						$CONFIG['poseditor']['need_dialog']=1;
 	$ret.=@"	<script type=\"text/javascript\">
 	var poslist=PosEditorInit('/doc.php?doc={$this->doc}&mode=srv',{$this->editable})
 	poslist.show_column['sn']='{$this->show_sn}'
@@ -180,7 +176,7 @@ function Show($param='')
 	skladview.show_column['tdb']='{$this->show_tdb}'
 	skladview.show_column['rto']='{$this->show_rto}'
 	
-	skladlist=document.getElementById('sklad_list').needDialog='{$CONFIG['poseditor']['need_dialog']}'
+	skladlist=document.getElementById('sklad_list').needDialog={$CONFIG['poseditor']['need_dialog']};
 	</script>";	
 	
 	return $ret;

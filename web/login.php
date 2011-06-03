@@ -21,7 +21,6 @@
 include_once("core.php");
 $login=@htmlentities($_POST['login'],ENT_QUOTES);
 $pass=@htmlentities($_POST['pass'],ENT_QUOTES);
-session_start();
 
 function attack_test()
 {

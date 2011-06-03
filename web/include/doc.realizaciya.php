@@ -456,7 +456,8 @@ class doc_Realizaciya extends doc_Nulltype
 
 		$tmpl->AddText("<h1>Копия чека N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt</h1>
 		<b>Поставщик: </b>".$this->firm_vars['firm_name'].", ".$this->firm_vars['firm_adres'].", ".$this->firm_vars['firm_telefon']."<br>
-		<br /><br />");
+		<b>Покупатель: </b>{$this->doc_data[3]}<br>
+		<br><br>");
 
 		$tmpl->AddText("
 		<table width=800 cellspacing=0 cellpadding=0>
