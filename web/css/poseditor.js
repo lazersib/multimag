@@ -118,6 +118,7 @@ function PosEditorInit(base_url, editable)
 		else			linehtml+=sum
 		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
 		if(poslist.show_column['sn']>0)	linehtml+="<td id='sn"+row.lineIndex+"'>"+data.sn+"</td>"
+		if(poslist.show_column['gtd']>0)linehtml+="<td id='gtd"+row.lineIndex+"'>"+data.gtd+"</td>"
 		row.innerHTML=linehtml
 		
 		if(poslist.editable)
@@ -137,6 +138,11 @@ function PosEditorInit(base_url, editable)
 			{
 				var sn_cell=document.getElementById('sn'+data.line_id)
 				sn_cell.onclick=poslist.showSnEditor
+			}
+			if(poslist.show_column['gtd']>0)
+			{
+				var gtd_cell=document.getElementById('gtd'+data.line_id)
+				gtd_cell.onclick=poslist.showGTDEditor
 			}
 		}
 	}
@@ -213,8 +219,27 @@ function PosEditorInit(base_url, editable)
 		}	
 	}
 	
+	// Окно ввода ГТД
+	poslist.showGTDEditor=function(event)
+	{
+		var poslist_line=event.target.parentNode
+		var line=poslist_line.lineIndex
+		jPrompt("Введите номер ГТД", event.target.innerHTML, "Редактирование документа", function(val)
+		{
+			event.target.innerHTML=val
+			line.className='el'
+			$.ajax({ 
+				type:   'GET', 
+				url:    base_url, 
+				data:   'opt=jup&type=gtd&value='+val+'&line_id='+line, 
+				success: function(msg) { rcvDataSuccess(msg); }, 
+				error:   function() { jAlert('Ошибка соединения!','Обновление данных',function() {},'icon_err'); }, 
+			});
+		})
+	}
+	
 	// Редактор серийных номеров
-	poslist.showSnEditor=function (event)
+	poslist.showSnEditor=function(event)
 	{
 		var poslist_line=event.target.parentNode
 		var line=poslist_line.lineIndex

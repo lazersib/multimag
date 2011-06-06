@@ -1659,7 +1659,6 @@ function SfakPDF($doc, $to_str=0)
 	require('fpdf/fpdf_mysql.php');
 	global $tmpl, $uid;
 	
-	if($coeff==0) $coeff=1;
 	if(!$to_str) $tmpl->ajax=1;
 	
 	$dt=date("d.m.Y",$this->doc_data[5]);
@@ -1694,7 +1693,7 @@ function SfakPDF($doc, $to_str=0)
 		$ppdt=@date("d.m.Y",mysql_result($rs,0,2));
 		if(!$pp) $pp=@mysql_result($rs,0,0);
 	}
-	if(!$pp) $pp=$ppdt="__________";	
+	if(!@$pp) $pp=$ppdt="__________";	
 	
 	$pdf=new FPDF('P');
 	$pdf->Open();
@@ -1805,7 +1804,7 @@ function SfakPDF($doc, $to_str=0)
 		$offset+=$w;
 	}
 	
-	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`sn`, `doc_base_dop`.`strana`, `doc_base_dop`.`ntd`, `doc_units`.`printname`
+	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `doc_base_dop`.`strana`, `doc_base_dop`.`ntd`, `doc_units`.`printname`, `doc_list_pos`.`tovar`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -1848,6 +1847,25 @@ function SfakPDF($doc, $to_str=0)
 	
 		$sum+=$snalogom;
 		$sumnaloga+=$nalog;
+		
+		$gtd='';
+		if(@$CONFIG['poseditor']['true_gtd'])
+		{
+			$gtd_array=array();
+			$gres=mysql_query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
+			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`<='2' AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
+			WHERE `doc_list_pos`.`tovar`='$nxt[9]' ORDER BY `doc_list`.`id`");
+			if(mysql_errno())	throw MysqlException("Выборка документов не удалась");
+			while($line=mysql_fetch_row($gres))
+			{
+				if($line[0]==1)
+					for($i=0;$i<$line[2];$i++)	$gtd_array[]=$line[1];
+				else
+					for($i=0;$i<$line[2];$i++)	array_shift($gtd_array);
+			}
+			$gtd=array_shift($gtd_array);
+		}
+		else	$gtd=$nxt[7];
 	
 		$y=$pdf->GetY();
 		$step=5;
@@ -1867,7 +1885,7 @@ function SfakPDF($doc, $to_str=0)
 		$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
 		$pdf->SetFont('','',6);
 		$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
-		$pdf->Cell($t_width[10],$step,$nxt[7],1,0,'R',0);
+		$pdf->Cell($t_width[10],$step,$gtd,1,0,'R',0);
 		$pdf->Ln();
 	}
 	

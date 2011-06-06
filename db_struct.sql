@@ -618,7 +618,7 @@ CREATE TABLE IF NOT EXISTS `doc_list_pos` (
   `doc` int(11) NOT NULL DEFAULT '0',
   `tovar` int(11) NOT NULL DEFAULT '0',
   `cnt` int(11) NOT NULL DEFAULT '0',
-  `sn` varchar(15) NOT NULL,
+  `gtd` varchar(32) NOT NULL,
   `comm` varchar(50) NOT NULL,
   `cost` double NOT NULL DEFAULT '0',
   `page` int(11) NOT NULL DEFAULT '0',

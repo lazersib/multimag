@@ -121,7 +121,7 @@ function Show($param='')
 	<th width='60px' title='Остаток товара на складе'>Остаток</th>
 	<th width='90px'>Место</th>";
 	if($this->show_sn)	$ret.="<th>SN</th>";
-	
+	if($this->show_gtd)	$ret.="<th>ГТД</th>";
 	$ret.="</tr>
 	</thead>
 	<tfoot>
@@ -136,6 +136,7 @@ function Show($param='')
 	<td id='pos_sklad_cnt'></td>
 	<td id='pos_mesto'></td>";
 	if($this->show_sn)	$ret.="<td></td>";
+	if($this->show_gtd)	$ret.="<td></td>";
 	
 	$ret.="
 	</tr>
@@ -167,9 +168,10 @@ function Show($param='')
 	</table>";
 	if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
 	else						$CONFIG['poseditor']['need_dialog']=1;
-	$ret.=@"	<script type=\"text/javascript\">
+	$ret.=@"<script type=\"text/javascript\">
 	var poslist=PosEditorInit('/doc.php?doc={$this->doc}&mode=srv',{$this->editable})
 	poslist.show_column['sn']='{$this->show_sn}'
+	poslist.show_column['gtd']='{$this->show_gtd}'
 	
 	var skladview=document.getElementById('sklad_view')
 	skladview.show_column['vc']='{$this->show_vc}'
@@ -185,7 +187,7 @@ function Show($param='')
 // Получить весь текущий список товаров (документа)
 function GetAllContent()
 {
-	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
+	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_list_pos`.`gtd`
 	FROM `doc_list_pos`
 	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
@@ -200,7 +202,7 @@ function GetAllContent()
 		if($ret)	$ret.=', ';
 		
 		$ret.="{
-		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}'";
+		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}', gtd: '{$nxt['gtd']}'";
 		
 		if($this->show_sn)
 		{
@@ -221,7 +223,7 @@ function GetPosInfo($pos)
 {
 	$ret='{response: 0}';
 
-	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
+	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_list_pos`.`gtd`
 	FROM `doc_base`
 	LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
@@ -236,7 +238,7 @@ function GetPosInfo($pos)
 		if(!$nxt['cost'])	$nxt['cost']=$scost;
 		$nxt['cost']=		sprintf("%0.2f",$nxt['cost']);
 		$ret="{response: 3, data: {
-		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}'
+		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}', gtd: '{$nxt['gtd']}'
 		} }";
 	}
 
@@ -386,7 +388,7 @@ function AddPos($pos)
 		if(mysql_errno())	throw MysqlException("Не удалось получить строку документа");
 		$line=mysql_fetch_assoc($res);
 		$cost=$this->cost_id?GetCostPos($line['id'], $this->cost_id):$line['cost'];
-		$ret="{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '{$line['mesto']}' }, sum: '$doc_sum' }";
+		$ret="{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '{$line['mesto']}', gtd: '' }, sum: '$doc_sum' }";
 	}
 	else
 	{
@@ -417,7 +419,7 @@ function RemoveLine($line_id)
 function UpdateLine($line_id, $type, $value)
 {
 	if($value<=0) $value=1;
-	$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `doc` FROM `doc_list_pos` WHERE `id`='$line_id'");
+	$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `doc`, `gtd` FROM `doc_list_pos` WHERE `id`='$line_id'");
 	if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
 	$nxt=mysql_fetch_row($res);
 	if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
@@ -430,7 +432,7 @@ function UpdateLine($line_id, $type, $value)
 		$doc_sum=DocSumUpdate($this->doc);
 		doc_log("UPDATE","change cnt: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1] => $value",'doc',$this->doc);
 		doc_log("UPDATE","change cnt: pos:$nxt[0], line_id:$line_id, cnt:$nxt[1] => $value",'pos',$nxt[0]);
-		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$value}', cost: '{$nxt[2]}' }, sum: '$doc_sum' }";
+		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$value}', cost: '{$nxt[2]}', gtd: '{$nxt[4]}'}, sum: '$doc_sum' }";
 	}
 	else if($type=='cost' && $value!=$nxt[2])
 	{
@@ -440,7 +442,7 @@ function UpdateLine($line_id, $type, $value)
 		doc_log("UPDATE","change cost: pos:$nxt[0], line_id:$line_id, cost:$nxt[2] => $value",'doc',$this->doc);
 		doc_log("UPDATE","change cost: pos:$nxt[0], line_id:$line_id, cost:$nxt[2] => $value",'pos',$nxt[0]);
 		$value=sprintf('%0.2f',$value);
-		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$value}'}, sum: '$doc_sum' }";
+		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$value}', gtd: '{$nxt[4]}'}, sum: '$doc_sum' }";
 	}
 	else if($type=='sum' && $value!=($nxt[1]*$nxt[2]))
 	{
@@ -450,7 +452,16 @@ function UpdateLine($line_id, $type, $value)
 		$doc_sum=DocSumUpdate($this->doc);
 		doc_log("UPDATE","change cost: pos:$nxt[0], line_id:$line_id, cost:$nxt[2] => $value",'doc',$this->doc);
 		doc_log("UPDATE","change cost: pos:$nxt[0], line_id:$line_id, cost:$nxt[2] => $value",'pos',$nxt[0]);
-		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$value}'}, sum: '$doc_sum' }";
+		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$value}', gtd: '{$nxt[4]}'}, sum: '$doc_sum' }";
+	}
+	else if($type=='gtd' && $value!=$nxt[4])
+	{
+		$res=mysql_query("UPDATE `doc_list_pos` SET `gtd`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить ГТД в строке документа");
+		$doc_sum=DocSumUpdate($this->doc);
+		doc_log("UPDATE","change gtd: pos:$nxt[0], line_id:$line_id, gtd:$nxt[4] => $value",'doc',$this->doc);
+		doc_log("UPDATE","change gtd: pos:$nxt[0], line_id:$line_id, gtd:$nxt[4] => $value",'pos',$nxt[0]);
+		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$nxt[2]}', gtd: '{$value}'}, sum: '$doc_sum' }";
 	}
 	else return "{ response: '0', message: 'value: $value, type:$type, line_id:$line_id'}";
 }

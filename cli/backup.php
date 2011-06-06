@@ -27,8 +27,6 @@ $zip_level=$CONFIG['backup']['ziplevel'];
 $minspace=$CONFIG['backup']['min_free_space'];
 
 
-
-
 // Check free disk space
 if($minspace)
 if(disk_free_space($archiv_dir)<=($minspace*1024*1024) )
@@ -64,12 +62,12 @@ if($CONFIG['backup']['mysql'])
 		echo"Dumping $nxt[0]...";
 		`mysqldump -u {$CONFIG['mysql']['login']} -p{$CONFIG['mysql']['pass']} -R -l --hex-blob -q -Q $nxt[0] > /tmp/mysql_dump/$nxt[0].dump`;
 		echo"Done!\n";
+		echo"Zipping mysql dump $nxt[0]...";
+		if(@$CONFIG['backup']['archiver']=='7z')
+			`7zr a -ssc -mx=$zip_level $archiv_dir/$yy/$tm/mysql_$nxt[0].7z /tmp/mysql_dump/$nxt[0].dump`;
+		else	`zip $archiv_dir/$yy/$tm/mysql_$nxt[0].zip -r /tmp/mysql_dump/$nxt[0].dump -$zip_level -j`;
+		echo"Done!\n";
 	}
-	echo"Zipping mysql dump...";
-	if($CONFIG['backup']['archiver']=='7z')
-		`7zr a -ssc -mx=$zip_level $archiv_dir/$yy/$tm/mysql.7z /tmp/mysql_dump/`;
-	else	`zip $archiv_dir/$yy/$tm/mysql.zip -r /tmp/mysql_dump/ -$zip_level`;
-	echo"Done!\n";
 }
 
 if(is_array($CONFIG['backup']['dirs']))

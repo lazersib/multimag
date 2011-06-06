@@ -25,6 +25,10 @@ include_once("$base_path/config_cli.php");
 set_time_limit(60*120);	// Выполнять не более 15 минут
 $start_time=microtime(TRUE);
 
+if(!$CONFIG['price']['dir'])	exit(0);
+
+$mail_text='';
+
 $c=explode('/',__FILE__);
 mysql_query("INSERT INTO `sys_cli_status` (`script`, `status`) VALUES ('".$c[count($c)-1]."', 'Start')");
 $status_id=mysql_insert_id();
@@ -65,44 +69,56 @@ function log_write($dir, $msg)
 }
 
 
-
-
-$dh  = opendir($CONFIG['price']['dir']);
-while (false !== ($filename = readdir($dh)))
+try
 {
-	$msg='';
-	if(!strpos($filename,'.ods'))
-		continue;
-	$msg.="$filename - ";
+	if(!file_exists($CONFIG['price']['dir']))	throw new Exception("Каталог с прайсами ({$CONFIG['price']['dir']}) не существует");
+	if(!is_dir($CONFIG['price']['dir']))		throw new Exception("Каталог с прайсами ({$CONFIG['price']['dir']}) не является каталогом");
+	$dh  = opendir($CONFIG['price']['dir']);
+	if(!$dh)					throw new Exception("Не удалось открыть каталог с прайсами ({$CONFIG['price']['dir']})");
+	while (false !== ($filename = readdir($dh)))
+	{
+		$msg='';
+		if(!strpos($filename,'.ods'))
+			continue;
+		$msg.="$filename - ";
+	
+		$zip = new ZipArchive;
+		$zip->open($CONFIG['price']['dir'].'/'.$filename,ZIPARCHIVE::CREATE);
+		$xml = $zip->getFromName("content.xml");
+		$zip->close();
+		
+		SetStatus('Loading prices');
+		
+		if(detect_firm($xml,1))
+		{
+			$p=parse($xml);
+			if($p)
+			{	
+				$msg.="Parsed!";	
+				unlink($CONFIG['price']['dir']	.'/'.$filename);
+			}
+			else $msg.="PARSE ERROR!";
+		}
+		else $msg.="NOT DETECTED!";
+		
+		if($msg)
+		{
+			log_write($CONFIG['price']['dir'], $msg);
+			$mail_text.="Анализ прайсов: $msg\n";
+		}
+	}
 
-	$zip = new ZipArchive;
-	$zip->open($CONFIG['price']['dir'].'/'.$filename,ZIPARCHIVE::CREATE);
-	$xml = $zip->getFromName("content.xml");
-	$zip->close();
-	
-	SetStatus('Loading prices');
-	
-	if(detect_firm($xml,1))
-	{
-		$p=parse($xml);
-		if($p)
-		{	
-			$msg.="Parsed!";	
- 			unlink($CONFIG['price']['dir']	.'/'.$filename);
- 		}
- 		else $msg.="PARSE ERROR!";
-	}
-	else $msg.="NOT DETECTED!";
-	
-	if($msg)
-	{
-		log_write($CONFIG['price']['dir'], $msg);
-		$mail_text.="Анализ прайсов: $msg\n";
-	}
+}
+catch(Exception $e)
+{
+	$txt="Ошибка: ".$e->getMessage()."\n";
+	echo $txt;
+	$mail_text.=$txt;
 }
 
 // Выборка
-
+$mail_text.="Начинаем анализ...\n";
+echo "Начинаем анализ...\n";
 mysql_query("UPDATE `price` SET `seeked`='0'");
 mysql_query("CREATE TABLE IF NOT EXISTS `parsed_price_tmp` (
   `id` int(11) NOT NULL auto_increment,
@@ -121,7 +137,6 @@ LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
 LEFT JOIN `doc_base` ON `doc_base`.`id`=`seekdata`.`id`");
 $row=mysql_num_rows($res);
 $old_p=$i=0;
-// if(0)
 while($nxt=mysql_fetch_row($res))
 {
 	$i++;
@@ -189,7 +204,7 @@ mysql_query("RENAME TABLE `parsed_price_tmp` TO `parsed_price` ;");
 if(mysql_errno())	echo mysql_error();
 
 $mail_text.="Анализ прайсов завершен успешно!";
-
+echo	"Анализ прайсов завершен успешно!";
 // ====================== ОБНОВЛЕНИЕ ЦЕН =============================================================
 $res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`cost`, `doc_base`.`name`, (
 SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`group`
