@@ -76,7 +76,8 @@ class doc_Nulltype
 	public function getDocData()	{return $this->doc_data;}
 	public function getDopData()	{return $this->dop_data;}
 	
-	public function Create($doc_data)
+	// Создать документ с заданными данными
+	public function Create($doc_data, $from='')
 	{
 		global $uid, $CONFIG;
 		if(!isAccess('doc_'.$this->doc_name,'create'))	throw new AccessException("");
@@ -88,7 +89,7 @@ class doc_Nulltype
 		$col_array=array();
 		for ($i = 0; $i < $columns; $i++)	$col_array[mysql_field_name($fields, $i)]=mysql_field_name($fields, $i);
 		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user']);
-		
+		$col_array['altnum']=GetNextAltNum($this->doc_type ,$col_array['subtype']);
 		$sqlinsert_keys="`date`, `type`, `user`";
 		$sqlinsert_value="'$date', '".$this->doc_type."', '$uid'";
 		
@@ -101,12 +102,34 @@ class doc_Nulltype
 			}
 		}
 		mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES ($sqlinsert_value)");
-		if(mysql_errno())	throw new MysqlException("Не удалось создать документ INSERT INTO `doc_list` ($sqlinsert_keys) VALUES ($sqlinsert_value)");
+		if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
 		$this->doc=mysql_insert_id();
+		doc_log("CREATE", "FROM {$doc_data['p_doc'} {$from}", 'doc', $this->doc);
 		$this->get_docdata();
 		return $this->doc;
 	}
+	// Создать документ на основе данных другого документа
 	public function CreateFrom($doc_obj)
+	{
+		$doc_data=$doc_obj->doc_data;
+		$doc_data['p_doc']=$doc_obj->doc;
+		$this->Create($doc_data);
+		if($this->sklad_editor_enable)
+		{
+			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
+			while($nxt=mysql_fetch_row($res))
+			{
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
+				VALUES ('{$this->doc}', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
+				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
+			}
+			$this->doc_data['sum']=DocSumUpdate($this->doc);
+		}
+		return $this->doc;
+	}
+	// Создать документ с товарными остатками на основе другого документа
+	public function CreateRemFrom($doc_obj)
 	{
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=$doc_obj->doc;
