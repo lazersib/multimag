@@ -40,6 +40,8 @@ if(! @ include_once("$base_path/config_site.php"))
 	exit();
 }
 
+if(!isset($CONFIG['site']['display_name']))	$CONFIG['site']['display_name']=$CONFIG['site']['name'];
+
 if(!@mysql_connect($CONFIG['mysql']['host'],$CONFIG['mysql']['login'],$CONFIG['mysql']['pass']))
 {
 	header("503 Service temporary unavariable");
@@ -250,10 +252,10 @@ $msg
 
 ------------------------------------------
 
-Вы получили это письмо потому что подписаны на рассылку сайта http://{$CONFIG['site']['name']}, либо являетесь клиентом $firm_name.
+Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']} ), либо являетесь клиентом $firm_name.
 Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email=$nxt[1]
 ";
-		mail($nxt[1],$tema." - {$CONFIG['site']['name']}", $txt ,"Content-type: text/plain; charset=UTF-8\nFrom: {$CONFIG['site']['name']} <{$CONFIG['site']['admin_email']}>");
+		mail($nxt[1],$tema." - {$CONFIG['site']['name']}", $txt ,"Content-type: text/plain; charset=UTF-8\nFrom: {$CONFIG['site']['display_name']} <{$CONFIG['site']['admin_email']}>");
 	}
 }
 

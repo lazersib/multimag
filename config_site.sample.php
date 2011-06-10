@@ -34,6 +34,11 @@ $CONFIG['poseditor']['tdb']		= 0;	// Показывать размеры
 $CONFIG['poseditor']['rto']		= 0;	// Показывать резервы/транзиты/заявки
 $CONFIG['poseditor']['true_gtd']	= 0;	// Использовать 'правильную' схему учёта ГТД. Иначе - берётся из доп. свойств наименования
 
+$CONFIG['images']['show_watermark']	= 1;	// Показывать ли название сайта поверх изображений. Ещё варианты:
+						// $CONFIG['images']['show_watermark']=array('w'=>0,'p'=>'1','g'=>'1');
+$CONFIG['images']['font_watermark']	= '';	// Шрифт текста, накладываемого на изображение
+$CONFIG['images']['quality']		= 70;	// Качество (по уровню сжатия) изображений
+
 // Расположение изменяемых доступных данных - изображения, итп 
 $CONFIG['site']['var_data_web']		= '/share/var';		// по отношению к корню сайта
 $CONFIG['site']['var_data_fs']		= $CONFIG['site']['location'].$CONFIG['site']['var_data_web'];	// по отношению к корню файловой системы

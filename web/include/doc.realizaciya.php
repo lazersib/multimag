@@ -1863,30 +1863,61 @@ function SfakPDF($doc, $to_str=0)
 				else
 					for($i=0;$i<$line[2];$i++)	array_shift($gtd_array);
 			}
-			$gtd=array_shift($gtd_array);
+			//$gtd=array_shift($gtd_array);
+			
+			$unigtd=array();
+			for($i=0;$i<$nxt[3];$i++)
+			{
+				@$unigtd[array_shift($gtd_array)]++;
+			}
+			
+			foreach($unigtd as $gtd => $cnt)
+			{
+				$y=$pdf->GetY();
+				$step=5;
+				$pdf->SetFont('','',9);
+				$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
+				$pdf->Cell($t_width[0],$step,$str,1,0,'L',0);
+				$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
+				$pdf->Cell($t_width[1],$step,$str,1,0,'R',0);
+				$str = iconv('UTF-8', 'windows-1251', $cnt );
+				$pdf->Cell($t_width[2],$step,$str,1,0,'R',0);		
+				$pdf->Cell($t_width[3],$step,$cena,1,0,'R',0);
+				$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',0);
+				$pdf->Cell($t_width[5],$step,'--',1,0,'C',0);		
+				$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',0);
+				$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',0);						
+				$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',0);
+				$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
+				$pdf->SetFont('','',6);
+				$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
+				$pdf->Cell($t_width[10],$step,$gtd,1,0,'R',0);
+				$pdf->Ln();
+			}
 		}
-		else	$gtd=$nxt[7];
-	
-		$y=$pdf->GetY();
-		$step=5;
-		$pdf->SetFont('','',9);
-		$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-		$pdf->Cell($t_width[0],$step,$str,1,0,'L',0);
-		$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
-		$pdf->Cell($t_width[1],$step,$str,1,0,'R',0);
-		$str = iconv('UTF-8', 'windows-1251', $nxt[3] );
-		$pdf->Cell($t_width[2],$step,$str,1,0,'R',0);		
-		$pdf->Cell($t_width[3],$step,$cena,1,0,'R',0);
-		$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',0);
-		$pdf->Cell($t_width[5],$step,'--',1,0,'C',0);		
-		$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',0);
-		$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',0);						
-		$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',0);
-		$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
-		$pdf->SetFont('','',6);
-		$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
-		$pdf->Cell($t_width[10],$step,$gtd,1,0,'R',0);
-		$pdf->Ln();
+		else
+		{
+			$y=$pdf->GetY();
+			$step=5;
+			$pdf->SetFont('','',9);
+			$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
+			$pdf->Cell($t_width[0],$step,$str,1,0,'L',0);
+			$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
+			$pdf->Cell($t_width[1],$step,$str,1,0,'R',0);
+			$str = iconv('UTF-8', 'windows-1251', $nxt[3] );
+			$pdf->Cell($t_width[2],$step,$str,1,0,'R',0);		
+			$pdf->Cell($t_width[3],$step,$cena,1,0,'R',0);
+			$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',0);
+			$pdf->Cell($t_width[5],$step,'--',1,0,'C',0);		
+			$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',0);
+			$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',0);						
+			$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',0);
+			$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
+			$pdf->SetFont('','',6);
+			$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
+			$pdf->Cell($t_width[10],$step,$nxt[7],1,0,'R',0);
+			$pdf->Ln();
+		}
 	}
 	
 	if($pdf->h<=($pdf->GetY()+60)) $pdf->AddPage('L');		

@@ -42,8 +42,10 @@ class ImageProductor
 	protected $fix_aspect=1;
 	// Не увеличивать изображение
 	protected $no_enlarge=1;
-	
-	
+	// Показывать наименование магазина поверх изображения
+	protected $show_watermark=1;
+	// Путь к шрифту для отображения наименования
+	protected $font_watermark='ttf-dejavu/DejaVuSansCondensed-Bold.ttf';
 	
 	public function __construct($img_id, $img_stroage, $type='jpg')
 	{
@@ -56,6 +58,7 @@ class ImageProductor
 		$this->type=$type;
 		//$this->source_file="{$CONFIG['site']['var_data_fs']}/{$this->storages[$this->storage]}/{$this->id}.{$this->type}";
 		//$this->source_exist=file_exists($this->source_file);
+		if(@$CONFIG['images']['quality'])	$this->quality=$CONFIG['images']['quality'];
 	}
 
 	public function SetX($x)
@@ -93,8 +96,17 @@ class ImageProductor
 	public function MakeAndStore()
 	{
 		global $CONFIG;
-		$font_name='ttf-dejavu/DejaVuSansCondensed-Bold.ttf';
-	
+		
+		if(@isset($CONFIG['images']['watermark']))
+		{
+			if(is_array($CONFIG['images']['watermark']))
+			{
+				if(@isset($CONFIG['images']['watermark'][$img_stroage]))	$this->show_watermark=$CONFIG['images']['watermark'][$img_stroage];
+			}
+			else	$this->show_watermark=$CONFIG['images']['watermark'];
+		}
+		if(@$CONFIG['images']['font_watermark'])	$this->font_watermark=$CONFIG['images']['font_watermark'];
+		
 		$rs=0;
 		$this->cache_fclosure="cache/{$this->storages[$this->storage]}/{$this->id}-{$this->dim_x}-{$this->dim_y}-{$this->quality}.{$this->type}";
 		$cname="{$CONFIG['site']['var_data_fs']}/{$this->cache_fclosure}";
@@ -167,29 +179,32 @@ class ImageProductor
 			imagedestroy($im);
 			$im=$im2;
 		}
+		// Оптимизировать большие изображения
 		if( $this->dim_x>=300 || $this->dim_y>=300)	imageinterlace($im, 1);
-		$bg_c = imagecolorallocatealpha ($im, 64,64, 64, 96);
-		$text_c = imagecolorallocatealpha ($im, 192,192, 192, 96);
-		if($this->dim_x<$this->dim_y)	$font_size=$this->dim_x/10;
-		else				$font_size=$this->dim_y/10;
-
-		$text_bbox=imageftbbox ( $font_size , 45 , $font_name , $CONFIG['site']['name'] );
 		
-		$min_x=$max_x=$text_bbox[0];
-		$min_y=$max_y=$text_bbox[0];
-		for($i=0;$i<8;$i+=2)
+		if($this->show_watermark)
 		{
-			if($text_bbox[$i]<$min_x)	$min_x=$text_bbox[$i];
-			if($text_bbox[$i]>$max_x)	$max_x=$text_bbox[$i];
-			if($text_bbox[$i+1]<$min_y)	$min_y=$text_bbox[$i+1];
-			if($text_bbox[$i+1]>$max_y)	$max_y=$text_bbox[$i+1];
+			$bg_c = imagecolorallocatealpha ($im, 64,64, 64, 96);
+			$text_c = imagecolorallocatealpha ($im, 192,192, 192, 96);
+			if($this->dim_x<$this->dim_y)	$font_size=$this->dim_x/10;
+			else				$font_size=$this->dim_y/10;
+			$text_bbox=imageftbbox ( $font_size , 45 , $this->font_watermark , $CONFIG['site']['display_name'] );
+			
+			$min_x=$max_x=$text_bbox[0];
+			$min_y=$max_y=$text_bbox[0];
+			for($i=0;$i<8;$i+=2)
+			{
+				if($text_bbox[$i]<$min_x)	$min_x=$text_bbox[$i];
+				if($text_bbox[$i]>$max_x)	$max_x=$text_bbox[$i];
+				if($text_bbox[$i+1]<$min_y)	$min_y=$text_bbox[$i+1];
+				if($text_bbox[$i+1]>$max_y)	$max_y=$text_bbox[$i+1];
+			}
+			$delta_x=$this->dim_x-$max_x+$min_x;
+			$delta_y=$this->dim_y-$min_y+$max_y;
+			
+			imagefttext ( $im , $font_size , 45 , $delta_x/1.9, $delta_y/2 , $bg_c , $this->font_watermark , $CONFIG['site']['display_name'] );
+			imagefttext ( $im , $font_size , 45 , $delta_x/1.9+2, $delta_y/2+2 , $text_c , $this->font_watermark , $CONFIG['site']['display_name'] );
 		}
-		$delta_x=$this->dim_x-$max_x+$min_x;
-		$delta_y=$this->dim_y-$min_y+$max_y;
-		
-		imagefttext ( $im , $font_size , 45 , $delta_x/1.9, $delta_y/2 , $bg_c , $font_name , $CONFIG['site']['name'] );
-		imagefttext ( $im , $font_size , 45 , $delta_x/1.9+2, $delta_y/2+2 , $text_c , $font_name , $CONFIG['site']['name'] );
-		
 // 		header("Content-type: image/jpg");
 // 		imagejpeg($im,"",$this->quality);
 		

@@ -118,9 +118,10 @@ while($nxt=mysql_fetch_assoc($res))
     <vendor>{$nxt['proizv']}</vendor>
     <vendorCode>{$nxt['vc']}</vendorCode>
     <manufacturer_warranty>{$nxt['warranty_type']}</manufacturer_warranty>
-    <description>{$nxt['desc']}</description>
+
     $coo
 </offer>\n";
+//    <description>{$nxt['desc']}</description>
 }
 echo"</offers>
 </shop>

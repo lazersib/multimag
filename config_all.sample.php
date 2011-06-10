@@ -5,6 +5,7 @@ $CONFIG['site']['admin_email']	= '';
 $CONFIG['site']['doc_adm_email']= '';
 $CONFIG['site']['doc_adm_jid']	= '';
 $CONFIG['site']['name']		= 'multimag';
+$CONFIG['site']['display_name']	= 'Magazine';
 $CONFIG['site']['default_firm']	= 1;				// Организация по умолчанию для работы сайта
 $CONFIG['location']		= '/usr/share/multimag';
 $CONFIG['site']['location']	= $CONFIG['location'].'/web';
