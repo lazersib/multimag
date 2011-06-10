@@ -104,7 +104,7 @@ class doc_Nulltype
 		mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES ($sqlinsert_value)");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
 		$this->doc=mysql_insert_id();
-		doc_log("CREATE", "FROM {$doc_data['p_doc'} {$from}", 'doc', $this->doc);
+		doc_log("CREATE", "FROM {$doc_data['p_doc']} {$from}", 'doc', $this->doc);
 		$this->get_docdata();
 		return $this->doc;
 	}

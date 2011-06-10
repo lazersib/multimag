@@ -672,7 +672,7 @@ protected function MakeBuy()
 		foreach($_SESSION['korz_cnt'] as $item => $cnt)
 		{
 			$cena=GetCostPos($item, $this->cost_id);
-			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`sn`,`comm`,`cost`) VALUES ('$doc','$item','$cnt','','','$cena')");
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`) VALUES ('$doc','$item','$cnt','$cena')");
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить товар в заказ");
 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
