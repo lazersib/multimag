@@ -47,13 +47,13 @@ class ImageProductor
 	// Путь к шрифту для отображения наименования
 	protected $font_watermark='ttf-dejavu/DejaVuSansCondensed-Bold.ttf';
 	
-	public function __construct($img_id, $img_stroage, $type='jpg')
+	public function __construct($img_id, $img_storage, $type='jpg')
 	{
 		global $CONFIG;
 		if(!$img_id)	throw new ImageException('ID изображения не задан!');
 		$this->id=$img_id;
-		if(!array_key_exists($img_stroage,$this->storages))	throw new ImageException('Хранилище изображения не задано, либо не существует!');
-		$this->storage=$img_stroage;
+		if(!array_key_exists($img_storage,$this->storages))	throw new ImageException($img_storage.'Хранилище изображения не задано, либо не существует!');
+		$this->storage=$img_storage;
 		if(!in_array($type,$this->types))	throw new ImageException('Запрошенный тип изображений не поддерживается');
 		$this->type=$type;
 		//$this->source_file="{$CONFIG['site']['var_data_fs']}/{$this->storages[$this->storage]}/{$this->id}.{$this->type}";
@@ -82,7 +82,7 @@ class ImageProductor
 		global $CONFIG;
 		if($this->cached==null)	$this->CacheProbe();
 		if($this->cached)	return "{$CONFIG['site']['var_data_web']}/{$this->cache_fclosure}";
-		else			return "/images.php?i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}&amp;f={$this->fix_aspect}&amp;n={$this->no_enlarge}";
+		else			return "/images.php?i={$this->id}&s={$this->storage}&x={$this->dim_x}&y={$this->dim_y}&q={$this->quality}&t={$this->type}&f={$this->fix_aspect}&n={$this->no_enlarge}";
 	}
 	
 	// Есть ли изображение в кеше 

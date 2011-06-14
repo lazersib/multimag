@@ -165,7 +165,7 @@ class doc_s_Sklad
 		
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`
+			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
@@ -216,6 +216,7 @@ class doc_s_Sklad
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
 			
 			$hid_check=$nxt[9]?'checked':'';
+			$yml_check=$nxt['no_export_yml']?'checked':'';
 			$stock_check=$nxt[12]?'checked':'';
 			$wt0_check=(!$nxt['warranty_type'])?'checked':'';
 			$wt1_check=($nxt['warranty_type'])?'checked':'';
@@ -234,7 +235,8 @@ class doc_s_Sklad
 			$tmpl->AddText("</select>
 			<tr class='lin1'><td align='right'>Актуальная цена поступления:<td><b>$act_cost</b>
 			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]%</b>
-			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</label>
+			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</label><br>
+									<input type='checkbox' name='no_export_yml' value='1' $yml_check>Не экспортировать в YML</label>
 			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</label>
 			<tr class='lin1'><td align='right'>Гарантия:<td><label><input type='radio' name='warr_type' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='warr_type' value='1' $wt1_check>От производителя</label>
 			<tr class='lin0'><td align='right'>Гарантийный срок:<td><input type='text' name='warranty' value='{$nxt['warranty']}'> мес.
@@ -570,7 +572,7 @@ class doc_s_Sklad
 		// Правка описания группы
 		else if($param=='g')
 		{
-			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname` 
+			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname`, `no_export_yml` 
 			FROM `doc_group`
 			WHERE `id`='$group'");
 			@$nxt=mysql_fetch_row($res);
@@ -604,10 +606,14 @@ class doc_s_Sklad
 			if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img="<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$nxt[0]&amp;param=gid'>Удалить изображение</a>";
 			
+			$hid_check=$nxt[4]?'checked':'';
+			$yml_check=$nxt[6]?'checked':'';
+			
 			$tmpl->AddText("</select>
 			<tr class='lin1'>
-			<td>Индекс сокрытия:
-			<td><input type='text' name='hid' value='$nxt[4]'>
+			<td>Скрытие:
+			<td><label><input type='checkbox' name='hid' value='3' $hid_check>Не отображать на витрине и в прайсах</label><br>
+			<label><input type='checkbox' name='hid' value='3' $yml_check>Не экспортировать в YML</label><br>
 			<tr class='lin0'>
 			<td>Печатное название:
 			<td><input type='text' name='pname' value='$nxt[5]'>
@@ -617,7 +623,7 @@ class doc_s_Sklad
 			<td>Описание:
 			<td><textarea name='desc'>$nxt[2]</textarea>
 			<tr class='lin1'><td colspan='2' align='center'>        	
-			<input type='submit' value='Сохранить'>
+			<button type='submit'>Сохранить</button>
 			</table>
 			</form>");
 			if($nxt[0])
@@ -706,6 +712,7 @@ class doc_s_Sklad
 			$vc=rcv('vc');
 			$warranty=rcv('warranty');
 			$warranty_type=rcv('warr_type');
+			$no_export_yml=rcv('no_export_yml');
 			if(!$hid)	$hid=0;
 			if(!$stock)	$stock=0;
 			$cc='Цена осталась прежняя!';
@@ -713,7 +720,7 @@ class doc_s_Sklad
 			{
 				if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 				$sql_add=$log_add='';
-				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type` FROM `doc_base` WHERE `id`='$pos'");
+				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type`, `no_export_yml` FROM `doc_base` WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить старые свойства позиции!");
 				$old_data=mysql_fetch_assoc($res);
 				if($old_data['name']!=$pos_name)
@@ -757,6 +764,11 @@ class doc_s_Sklad
 					$sql_add.=", `hidden`='$hid'";
 					$log_add.=", hidden:({$old_data['hidden']} => $hid)";
 				}
+				if($old_data['no_export_yml']!=$no_export_yml)
+				{
+					$sql_add.=", `no_export_yml`='$no_export_yml'";
+					$log_add.=", no_export_yml:({$old_data['no_export_yml']} => $no_export_yml)";
+				}
 				if($old_data['stock']!=$stock)
 				{
 					$sql_add.=", `stock`='$stock'";
@@ -790,8 +802,8 @@ class doc_s_Sklad
 			else
 			{	
 				if(!isAccess('list_sklad','create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`)
-				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type')");
+				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`)
+				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml')");
 				$opos=$pos;
 				$pos=mysql_insert_id();
 				if($opos)
@@ -1045,14 +1057,15 @@ class doc_s_Sklad
 			$pid=rcv('pid');
 			$hid=rcv('hid');
 			$pname=rcv('pname');
+			$no_export_yml=rcv('no_export_yml');
 			if($group)
 			{
-				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname' WHERE `id` = '$group'");
+				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname', `no_export_yml`='$no_export_yml' WHERE `id` = '$group'");
 			}
 			else 
 			{
-				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`)
-				VALUES ('$name', '$desc', '$pid', '$hid', '$pname')"); 
+				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`, `no_export_yml`)
+				VALUES ('$name', '$desc', '$pid', '$hid', '$pname', '$no_export_yml')"); 
 			}
 			if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию группы");
 				

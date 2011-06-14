@@ -19,6 +19,7 @@
 
 include_once("core.php");
 include_once("include/doc.core.php");
+include_once("include/imgresizer.php");
 
 $tmpl->ajax=1;
 
@@ -52,7 +53,7 @@ echo"<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <currency id=\"RUR\" rate=\"1\"/>
 </currencies>
 <categories>\n";
-$res=mysql_query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `hidelevel`='0' ORDER BY `id`");
+$res=mysql_query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `hidelevel`='0' AND `no_export_yml`='0' ORDER BY `id`");
 if(mysql_errno())	throw new MysqlException("Не удалось получить список групп!");
 while($nxt=mysql_fetch_row($res))
 {
@@ -64,13 +65,13 @@ while($nxt=mysql_fetch_row($res))
 echo"</categories>
 <local_delivery_cost>{$CONFIG['ymarket']['local_delivery_cost']}</local_delivery_cost>
 <offers>";
-$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`
+$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`, `doc_img`.`type` AS `img_type`
 FROM `doc_base`
 INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-WHERE `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'");
+WHERE `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND `doc_base`.`no_export_yml`='0' AND `doc_group`.`no_export_yml`='0'");
 if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 while($nxt=mysql_fetch_assoc($res))
 {
@@ -80,8 +81,15 @@ while($nxt=mysql_fetch_assoc($res))
 	$cost=GetCostPos($nxt['id'], $cost_id);
 	if($nxt['cost']==0)	continue;
 	if($cost==0)		continue;
-	$picture=($nxt['img_id'])?"<picture>http://{$CONFIG['site']['name']}/vitrina.php?mode=img&amp;p={$nxt['id']}&amp;x=200</picture>":'';
-
+	if($nxt['img_id']) 
+	{
+		$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+		$miniimg->SetX(200);
+		
+		$picture="<picture>http://{$CONFIG['site']['name']}".str_replace($finds, $replaces, $miniimg->GetURI())."</picture>";
+	}
+	else	$picture='';
+	
 	$nxt['name']=html_entity_decode($nxt['name'],ENT_QUOTES,"UTF-8");
 	$nxt['name']=str_replace($finds, $replaces, $nxt['name']);
 	$nxt['proizv']=html_entity_decode($nxt['proizv'],ENT_QUOTES,"UTF-8");
