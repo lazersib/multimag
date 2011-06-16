@@ -172,7 +172,7 @@ function need_auth()
 	{
 		$SESSION['last_page']=$ff.$qq;
 		$_SESSION['cook_test']='data';
-		header('Location: login.php');
+		header('Location: /login.php');
 		$tmpl->msg("Для продолжения необходимо выполнить вход!","info","Требуется аутентификация");
 		$tmpl->write();
 		exit();
@@ -220,7 +220,13 @@ function isAccess($object, $action)
 	) UNION (
 	SELECT `users_groups_acl`.`id` FROM `users_groups_acl`
 	INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`
-	WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action')");
+	WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action')
+	UNION (
+	SELECT `users_groups_acl`.`id` FROM `users_groups_acl`
+	INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`
+	WHERE `uid`='0' AND `object`='$object' AND `action`='$action')
+	UNION(
+	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='0' AND `object`='$object' AND `action`='$action')");
 	if(mysql_errno())	throw new MysqlException("Выборка привилегий не удалась");
 	$access=(mysql_num_rows($res)>0)?true:false;
 	if((!$uid) && (!$access))	need_auth();
