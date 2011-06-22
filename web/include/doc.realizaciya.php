@@ -208,7 +208,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$tmpl->ajax=1;
 			$tmpl->AddText("
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak'\">Накладная</div>			
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop'\">Копия чека</div>		
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop'\">Копия чека</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nac'\">Наценки</div>	
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12'\">Форма ТОРГ-12 (УСТАРЕЛО)</div>			
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Форма ТОРГ-12 (PDF)</div>			
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура (PDF)</div>			
@@ -227,7 +228,9 @@ class doc_Realizaciya extends doc_Nulltype
 // 			}
 // 			else 
 			$this->PrintTg12PDF();
-		}	
+		}
+		else if($opt=='nac')
+			$this->Nacenki();
 		else if($opt=='sf')
 			$this->PrintSfak($doc);
 		else if($opt=='sf_pdf')
@@ -445,6 +448,68 @@ class doc_Realizaciya extends doc_Nulltype
 		<p>Покупатель: ____________________________________</p>");
 	}
 	
+// -- Обычная накладная --------------
+	function Nacenki()
+	{
+		global $tmpl;
+		global $uid;
+
+		$tmpl->LoadTemplate('print');
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$tmpl->AddText("<h1>Наценки N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
+		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
+		<b>Покупатель: </b>{$this->doc_data[3]}<br><br>");
+
+		$tmpl->AddText("
+		<table width=800 cellspacing=0 cellpadding=0>
+		<tr><th>№</th><th width=450>Наименование<th>Кол-во<th>Стоимость<th>Сумма<th>АЦП<th>Наценка<th>Сумма наценки<th>П/закуп<th>Разница<th>Сумма разницы</tr>");
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_units`.`printname` AS `units`, `doc_list_pos`.`tovar`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		$i=0;
+		$ii=1;
+		$sum=$snac=$srazn=$cnt=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f", $nxt[4]);
+			$cost2 = sprintf("%01.2f", $sm);
+			$act_cost=sprintf('%0.2f',GetInCost($nxt[6]));
+			$nac=sprintf('%0.2f',$cost-$act_cost);
+			$sum_nac=sprintf('%0.2f',$nac*$nxt[3]);
+			$snac+=$sum_nac;
+			
+			$r=mysql_query("SELECT `doc_list`.`date`, `doc_list_pos`.`cost` FROM `doc_list_pos`
+			LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+			WHERE `doc_list`.`ok`>'0' AND `doc_list`.`type`='1' AND `doc_list_pos`.`tovar`='$nxt[6]'
+			ORDER BY `doc_list`.`date` DESC");
+			echo mysql_error();
+			$zakup=sprintf('%0.2f',mysql_result($r,0,1));
+			$razn=sprintf('%0.2f',$cost-$zakup);
+			$sum_razn=sprintf('%0.2f',$razn*$nxt[3]);
+			$srazn+=$sum_razn;
+			
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3] $nxt[5]<td>$cost<td>$cost2<td>$act_cost<td>$nac<td>$sum_nac<td>$zakup<td>$razn<td>$sum_razn");
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+			$cnt+=$nxt[3];
+		}
+		$ii--;
+		$cost = sprintf("%01.2f", $sum);
+		$srazn = sprintf("%01.2f", $srazn);
+		$snac = sprintf("%01.2f", $snac);
+		
+		$tmpl->AddText("<tr>
+		<td colspan='2'><b>ИТОГО:</b><td>$cnt<td><td>$cost<td><td><td>$snac<td><td><td>$srazn
+		</table>
+		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>
+		");
+	}	
 	// -- Копия чека --------------
 	function PrintKopia($doc)
 	{
