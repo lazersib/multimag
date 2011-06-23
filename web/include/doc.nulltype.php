@@ -79,6 +79,7 @@ class doc_Nulltype
 	// Создать документ с заданными данными
 	public function Create($doc_data, $from='')
 	{
+		//var_dump($doc_data);
 		global $uid, $CONFIG;
 		if(!isAccess('doc_'.$this->doc_name,'create'))	throw new AccessException("");
 		$date=time();
@@ -88,11 +89,12 @@ class doc_Nulltype
 		$columns = mysql_num_fields($fields);
 		$col_array=array();
 		for ($i = 0; $i < $columns; $i++)	$col_array[mysql_field_name($fields, $i)]=mysql_field_name($fields, $i);
-		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user']);
-		$col_array['altnum']=GetNextAltNum($this->doc_type ,$col_array['subtype']);
+		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user'],$col_array['ok']);
+		$doc_data['altnum']=GetNextAltNum($this->doc_type ,$col_array['subtype']);
 		$sqlinsert_keys="`date`, `type`, `user`";
 		$sqlinsert_value="'$date', '".$this->doc_type."', '$uid'";
-		
+// 		echo"<br>";
+// 		var_dump($col_array);
 		foreach($col_array as $key)
 		{
 			if(isset($doc_data[$key]))
