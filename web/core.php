@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_VERSION", "0.0.1r245");
+define("MULTIMAG_VERSION", "0.0.1r249");
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))
@@ -211,7 +211,7 @@ function getright($object,$uid)
 }
 
 // Есть ли право доступа к указанному объекту для указанной операции
-function isAccess($object, $action)
+function isAccess($object, $action,$no_redirect=0)
 {
 	$uid=@$_SESSION['uid'];
 	if($uid==1)	return true;
@@ -229,7 +229,7 @@ function isAccess($object, $action)
 	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='0' AND `object`='$object' AND `action`='$action')");
 	if(mysql_errno())	throw new MysqlException("Выборка привилегий не удалась");
 	$access=(mysql_num_rows($res)>0)?true:false;
-	if((!$uid) && (!$access))	need_auth();
+	if((!$uid) && (!$access) && (!$no_redirect))	need_auth();
 	return $access;
 }
 

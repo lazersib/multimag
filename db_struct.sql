@@ -22,6 +22,32 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `comments`
+--
+
+CREATE TABLE IF NOT EXISTS `comments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `date` datetime NOT NULL,
+  `object_name` varchar(16) NOT NULL COMMENT 'Имя(тип) объекта комментирования',
+  `object_id` int(11) NOT NULL COMMENT 'ID объекта комментирования',
+  `autor_name` varchar(16) NOT NULL COMMENT 'Имя автора (анонимного)',
+  `autor_email` varchar(32) NOT NULL COMMENT 'Электронная почта анонимного автора',
+  `autor_id` int(11) NOT NULL COMMENT 'UID автора',
+  `text` text NOT NULL COMMENT 'Текст коментария',
+  `rate` tinyint(4) NOT NULL COMMENT 'Оценка объекта (0-5)',
+  `ip` varchar(16) NOT NULL,
+  `user_agent` varchar(128) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `object_name` (`object_name`),
+  KEY `object_id` (`object_id`),
+  KEY `rate` (`rate`),
+  KEY `date` (`date`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Коментарии к товарам, новостям, статьям и пр.';
+
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `counter`
 --
 

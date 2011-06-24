@@ -188,7 +188,7 @@ class ImageProductor
 			$text_c = imagecolorallocatealpha ($im, 192,192, 192, 96);
 			if($this->dim_x<$this->dim_y)	$font_size=$this->dim_x/10;
 			else				$font_size=$this->dim_y/10;
-			$text_bbox=imageftbbox ( $font_size , 45 , $this->font_watermark , $CONFIG['site']['display_name'] );
+			$text_bbox=imageftbbox ( $font_size , 45 , $this->font_watermark , $CONFIG['site']['name'] );
 			
 			$min_x=$max_x=$text_bbox[0];
 			$min_y=$max_y=$text_bbox[0];
@@ -202,8 +202,8 @@ class ImageProductor
 			$delta_x=$this->dim_x-$max_x+$min_x;
 			$delta_y=$this->dim_y-$min_y+$max_y;
 			
-			imagefttext ( $im , $font_size , 45 , $delta_x/1.9, $delta_y/2 , $bg_c , $this->font_watermark , $CONFIG['site']['display_name'] );
-			imagefttext ( $im , $font_size , 45 , $delta_x/1.9+2, $delta_y/2+2 , $text_c , $this->font_watermark , $CONFIG['site']['display_name'] );
+			imagefttext ( $im , $font_size , 45 , $delta_x/1.9, $delta_y/2 , $bg_c , $this->font_watermark , $CONFIG['site']['name'] );
+			imagefttext ( $im , $font_size , 45 , $delta_x/1.9+2, $delta_y/2+2 , $text_c , $this->font_watermark , $CONFIG['site']['name'] );
 		}
 // 		header("Content-type: image/jpg");
 // 		imagejpeg($im,"",$this->quality);

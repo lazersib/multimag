@@ -25,7 +25,7 @@ try
 	$tmpl->SetText("<h1 id='page-title'>Новости сайта</h1>");
 
 	$tmpl->SetTitle("Новости сайта - ".$CONFIG['site']['display_name']);
-	if(isAccess('generic_news','create'))
+	if(isAccess('generic_news','create',1))
 	{
 		if($mode=='')	$tmpl->AddText("<a href='?mode=add'>Добавить новость</a><br>");
 		else if($mode=='add')

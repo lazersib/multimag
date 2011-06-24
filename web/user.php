@@ -383,7 +383,6 @@ else if($mode=="denyipd")
 else if($mode=='iplog')
 {
 	if(isAccess('sys_ip-log','view'))
-	if($rights['read'])
 	{
 	$tmpl->AddText("<h1>25 часто используемых адресов</h1>");
 	$res=mysql_query("SELECT `ip_daddr`, COUNT(`ip_daddr`) AS `cnt`, SUM(`ip_totlen`) AS `traf` FROM `ulog` GROUP BY `ip_daddr` ORDER BY `traf` DESC LIMIT 25");

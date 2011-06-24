@@ -171,8 +171,9 @@ function Show($param='')
 	$ret.=@"<script type=\"text/javascript\">
 	var poslist=PosEditorInit('/doc.php?doc={$this->doc}&mode=srv',{$this->editable})
 	poslist.show_column['sn']='{$this->show_sn}'
+	poslist.show_column['vc']='{$this->show_vc}'
 	poslist.show_column['gtd']='{$this->show_gtd}'
-	
+
 	var skladview=document.getElementById('sklad_view')
 	skladview.show_column['vc']='{$this->show_vc}'
 	skladview.show_column['tdb']='{$this->show_tdb}'
