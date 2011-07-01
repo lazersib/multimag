@@ -36,7 +36,7 @@ function wiki_form($p,$text='')
 	<input type=hidden name='mode' value='save'>
 	<input type=hidden name='p' value='$p'>
 	<textarea class='e_msg' name='text' rows='8' cols='30'>$text</textarea><br>
-	<input type=submit value='Сохранить'>
+	<button type='submit'>Сохранить</button>
 	</form><br><a href='/wikiphoto.php'>Галерея изображений</a>");
 }
 

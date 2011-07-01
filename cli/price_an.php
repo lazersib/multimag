@@ -233,7 +233,7 @@ while($nxt=mysql_fetch_row($res))
 	echo mysql_error();
 	while($nx=mysql_fetch_row($rs))
 	{
-		if(($nx[1]==1 || $nx[2]!='') && $mincost>$nx[0])	$mincost=$nx[0];
+		if(($nx[1]==1 || ($nx[1]==2 &&  $nx[2]!='')) && $mincost>$nx[0])	$mincost=$nx[0];
 	
 	}
 	

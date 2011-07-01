@@ -73,3 +73,25 @@ table.list tr:nth-child(odd) td
 {
     border-right: #fff 1px solid;
 }
+
+.searchblock
+{
+	background-color: #e0f0ff;
+	width:	95%;
+	height:	100px;
+	margin:	10px;
+	padding:5px;
+	border: 1px rgb(39,78,144) solid;
+}
+
+.searchblock h1
+{
+	margin: 4px;
+	margin-left: 10px;
+	padding: 0px;
+}
+
+.searchblock .sp
+{
+	width: 90%;
+}

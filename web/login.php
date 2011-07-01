@@ -165,7 +165,7 @@ if($mode=='')
 	$cont=rcv('cont');
 	$tmpl->AddText("<h1 id='page-title'>Аутенитфикация</h1>");
 	$tmpl->SetTitle("Аутенитфикация");
-	if($cont)	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти авторизацию.</div>");
+	if($cont)	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутенитфикацию.</div>");
 
 	//$_SESSION['c_str']=strtoupper(keygen_unique(0,5,7));
 	$ip=getenv("REMOTE_ADDR");

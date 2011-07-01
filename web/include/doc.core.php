@@ -500,6 +500,8 @@ function AutoDocumentType($doc_type, $doc)
 			return new doc_Specific($doc);
 		case 17:
 			return new doc_Sborka($doc);
+		case 18:
+			return new doc_Kordolga($doc);
 		default:
 			return new doc_Nulltype();
 	}
@@ -534,6 +536,7 @@ function DocCalcDolg($agent, $print=0)
 			case 5: $dolg+=$nxt[1]; break;
 			case 6: $dolg-=$nxt[1]; break;
 			case 7: $dolg+=$nxt[1]; break;
+			case 18: $dolg+=$nxt[1]; break;
 		}
 	}
 
