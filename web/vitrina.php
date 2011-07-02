@@ -650,7 +650,8 @@ protected function MakeBuy()
 	{
 		$subtype="site";
 		$agent=1;
-		if($_SESSION['uid'])	$agent=$_SESSION['uid'];
+		
+		//if($_SESSION['uid'])	$agent=$_SESSION['uid'];	// ?????????????????????????/
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype);
 		$ip=getenv("REMOTE_ADDR");

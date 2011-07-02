@@ -92,7 +92,7 @@ function Row($data, $divider=0, $cost_id=1)
 				$str=$cost;
 			} else $cce=0;  
 			
-			$str = iconv('UTF-8', 'windows-1251', $str);
+			$str = iconv('UTF-8', 'windows-1251',html_entity_decode ($str, ENT_QUOTES,"UTF-8") );
 			$this->SetTextColor($cce);
 			$this->Cell($col['w'],4,$str,1,0,$col['a'],$fill);
 		}
