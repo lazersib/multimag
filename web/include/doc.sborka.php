@@ -34,6 +34,16 @@ class doc_Sborka extends doc_Nulltype
 		$this->header_fields			='agent cena sklad';
 		settype($this->doc,'int');
 	}
+	
+	function head()
+	{
+		throw new Exception("Создание данного документа не поддерживается!");
+	}
+
+	function body()
+	{
+		throw new Exception("Просмотр данного документа не поддерживается!");
+	}
 
 	protected function DocApply($silent=0)
 	{

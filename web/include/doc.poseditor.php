@@ -192,7 +192,7 @@ function GetAllContent()
 	FROM `doc_list_pos`
 	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-	WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+	WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'");
 	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
 	$ret='';
 	while($nxt=mysql_fetch_assoc($res))
