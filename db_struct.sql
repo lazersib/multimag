@@ -805,7 +805,8 @@ INSERT INTO `doc_types` (`id`, `name`) VALUES
 (14, 'Договор'),
 (15, 'Реализация (оперативная)'),
 (16, 'Спецификация'),
-(17, 'Сборка изделия');
+(17, 'Сборка изделия'),
+(18, 'Корректировка долга');
 
 -- --------------------------------------------------------
 
@@ -1626,7 +1627,9 @@ INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
 (38, 'sys_ip-blacklist', 'Чёрный список IP адресов', 'view,create,delete'),
 (39, 'sys_ip-log', 'Журнал обращений к ip адресам', 'view'),
 (40, 'generic_price_an', 'Анализатор прайсов', 'view'),
-(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete');
+(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete'),
+(42, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(43, 'doc_kordolga', 'Корректировка долга', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
 
 -- --------------------------------------------------------
 

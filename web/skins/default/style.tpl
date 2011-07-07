@@ -49,7 +49,7 @@
 
 <div id='wiki-info' class='wiki-info'>
 <div  id='info-left' ><ul>
-<li class='noborder'><a class='urllink' href='/wiki/main'>Главная</a></li>
+<li class='noborder'><a class='urllink' href='/'>Главная</a></li>
 <li><a title='Поиск продукции по параметрам' href='/search.php'>Поиск</a></li>
 <li><a title='Выбрать и купить' href='/vitrina.php'>Витрина</a></li>
 <li><a title='Скачать или распечатать прайс-лист' href='/price.php'>Прайс</a></li>

@@ -323,8 +323,8 @@ class doc_Postuplenie extends doc_Nulltype
 			$tm=time();
 			$altnum=GetNextAltNum($target_type ,$doc_data[10]);
 			$res=mysql_query("INSERT INTO `doc_list`
-			(`type`, `agent`, `date`, `sklad`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`)
-			VALUES ('$target_type', '$doc_data[2]', '$tm', '1', '1', '$uid', '$altnum', '$doc_data[10]', '$doc', '$sum')");
+			(`type`, `agent`, `date`, `sklad`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
+			VALUES ('$target_type', '{$doc_data['agent']}', '$tm', '1', '1', '$uid', '$altnum', '{$doc_data['subtype']}', '$doc', '$sum', '{$doc_data['firm_id']}')");
 			if(mysql_errno())	throw new MysqlException("Не удалось создать подчинённый документ");
 			$ndoc= mysql_insert_id();
 			// Вид расхода - закуп товара на продажу

@@ -235,19 +235,19 @@ class doc_v_puti extends doc_Nulltype
 			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('$r_id','cena','$cena')");
 
-			$res=mysql_query("SELECT `tovar`, `cnt`, `sn`, `comm`, `cost` FROM `doc_list_pos`
+			$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
 			WHERE `doc_list_pos`.`doc`='$doc'");
 			while($nxt=mysql_fetch_row($res))
 			{
-				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
-				VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+				VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
 
 			}
 		}
 		else
 		{
 			$new_id=0;
-			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`sn`, `a`.`comm`, `a`.`cost`,
+			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
 			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'	
 			  WHERE `b`.`tovar`=`a`.`tovar` )
@@ -256,7 +256,7 @@ class doc_v_puti extends doc_Nulltype
 			echo mysql_error();
 			while($nxt=mysql_fetch_row($res))
 			{
-				if($nxt[5]<$nxt[1])
+				if($nxt[4]<$nxt[1])
 				{
 					if(!$new_id)
 					{
@@ -272,9 +272,9 @@ class doc_v_puti extends doc_Nulltype
 						mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 						VALUES ('$new_id','cena','$cena')");
 					}
-					$n_cnt=$nxt[1]-$nxt[5];
-					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
- 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+					$n_cnt=$nxt[1]-$nxt[4];
+					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+ 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
 				
 				}
 			}

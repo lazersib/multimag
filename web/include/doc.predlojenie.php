@@ -153,7 +153,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$pos=rcv('pos');
 		parent::_Service($opt,$pos);
 	}
-//	================== Функции только этого класса ======================================================
+// ================== Функции только этого класса ======================================================
 	function Postup($doc)
 	{
 		$target_type=1;
@@ -179,28 +179,27 @@ class doc_Predlojenie extends doc_Nulltype
 			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('$r_id','cena','$cena')");
 
-			$res=mysql_query("SELECT `tovar`, `cnt`, `sn`, `comm`, `cost` FROM `doc_list_pos`
+			$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
 			WHERE `doc_list_pos`.`doc`='$doc'");
 			while($nxt=mysql_fetch_row($res))
 			{
-				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
-				VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
-
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+				VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]' )");
 			}
 		}
 		else
 		{
 			$new_id=0;
-			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`sn`, `a`.`comm`, `a`.`cost`,
+			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
 			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'	
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
 			WHERE `a`.`doc`='$doc'");
-			echo mysql_error();
+			if(mysql_errno())	throw new MysqlException("Не удалось получить товары документа");
 			while($nxt=mysql_fetch_row($res))
 			{
-				if($nxt[5]<$nxt[1])
+				if($nxt[4]<$nxt[1])
 				{
 					if(!$new_id)
 					{
@@ -208,23 +207,22 @@ class doc_Predlojenie extends doc_Nulltype
 						$tm=time();
 						$sum=DocSumUpdate($doc);
 						$rs=mysql_query("INSERT INTO `doc_list`
-						(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`)
-						VALUES ('$target_type', '$doc_data[2]', '$tm', '1', '$uid', '$altnum', '$doc_data[10]', '$doc', '$sum')");
+						(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
+						VALUES ('$target_type', '$doc_data[2]', '$tm', '1', '$uid', '$altnum', '{$this->doc_data[10]}', '$doc', '$sum', '{$this->doc_data['firm_id']}')");
 						$new_id= mysql_insert_id();
 
 						$cena=$dop_data['cena'];
 						mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 						VALUES ('$new_id','cena','$cena')");
 					}
-					$n_cnt=$nxt[1]-$nxt[5];
-					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
- 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+					$n_cnt=$nxt[1]-$nxt[4];
+					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+ 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
 				
 				}
 			}
 			if($new_id) $r_id=$new_id;
 		}
-
 		return $r_id;
 	}
 	
@@ -241,12 +239,12 @@ class doc_Predlojenie extends doc_Nulltype
 		@$r_id=mysql_result($res,0,0);
 		if(!$r_id)
 		{
-			$altnum=GetNextAltNum($target_type, $doc_data[10]);
+			$altnum=GetNextAltNum($target_type, $this->doc_data[10]);
 			$tm=time();
 			$sum=DocSumUpdate($doc);
 			$res=mysql_query("INSERT INTO `doc_list`
 			(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`)
-			VALUES ('$target_type', '$doc_data[2]', '$tm', '1', '$uid', '$altnum', '$doc_data[10]', '$doc', '$sum')");
+			VALUES ('$target_type', '{$this->doc_data['agent']}', '$tm', '1', '$uid', '$altnum', '{$this->doc_data['subtype']}', '$doc', '$sum')");
 			$r_id= mysql_insert_id();
 
 			if(!$r_id) return 0;
@@ -254,32 +252,31 @@ class doc_Predlojenie extends doc_Nulltype
 			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('$r_id','cena','$cena')");
 
-			$res=mysql_query("SELECT `tovar`, `cnt`, `sn`, `comm`, `cost` FROM `doc_list_pos`
+			$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
 			WHERE `doc_list_pos`.`doc`='$doc'");
 			while($nxt=mysql_fetch_row($res))
 			{
-				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
-				VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
-
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+				VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]' )");
 			}
 		}
 		else
 		{
 			$new_id=0;
-			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`sn`, `a`.`comm`, `a`.`cost`,
+			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
 			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'	
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
 			WHERE `a`.`doc`='$doc'");
-			echo mysql_error();
+			if(mysql_errno())	throw new MysqlException("Не удалось получить товары документа");
 			while($nxt=mysql_fetch_row($res))
 			{
-				if($nxt[5]<$nxt[1])
+				if($nxt[4]<$nxt[1])
 				{
 					if(!$new_id)
 					{
-						$altnum=GetNextAltNum($target_type, $doc_data[10]);
+						$altnum=GetNextAltNum($target_type, $this->doc_data[10]);
 						$tm=time();
 						$sum=DocSumUpdate($doc);
 						$rs=mysql_query("INSERT INTO `doc_list`
@@ -291,9 +288,9 @@ class doc_Predlojenie extends doc_Nulltype
 						mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 						VALUES ('$new_id','cena','$cena')");
 					}
-					$n_cnt=$nxt[1]-$nxt[5];
-					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
- 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+					$n_cnt=$nxt[1]-$nxt[4];
+					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+ 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
 				
 				}
 			}
