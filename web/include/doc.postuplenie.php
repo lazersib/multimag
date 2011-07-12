@@ -57,7 +57,7 @@ class doc_Postuplenie extends doc_Nulltype
 		if(@$this->dop_data['input_doc'])	$tmpl->AddText("<br><b>Номер входящего документа:</b> {$this->dop_data['input_doc']}<br>");
 	}
 
-	protected function DocApply($silent=0)
+	public function DocApply($silent=0)
 	{
 		global $tmpl, $uid, $CONFIG;
 		$tim=time();

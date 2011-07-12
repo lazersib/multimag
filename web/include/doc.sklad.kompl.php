@@ -75,7 +75,7 @@ function kompl_draw_group_level($pos,$level)
 		//doc.s.sklad.php?mode=srv&opt=sklad&vpos=$vpos&group=$nxt[0]
 		$item="<a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=$nxt[0]&pos=$pos','sklad'); return false;\" >$nxt[1]</a>";
 		if($i>=($cnt-1)) $r.=" IsLast";
-		$tmp=kompl_draw_group_level($doc,$nxt[0]); // рекурсия
+		$tmp=kompl_draw_group_level($pos,$nxt[0]); // рекурсия
 		if($tmp)
 			$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>".$tmp.'</ul></li>';
         	else
@@ -90,9 +90,9 @@ function kompl_groups($pos)
 {
 	global $tmpl;
 	$tmpl->AddText("<div onclick='tree_toggle(arguments[0])'>
-	<div><a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=0&pos=$pos','sklad'); return false;\">Группы</a></div>
+	<div><a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&plm=sg&group=0&pos=$pos','sklad'); return false;\">Группы</a></div>
 	<ul class='Container'>".kompl_draw_group_level($pos,0)."</ul></div>
-	Или отбор:<input type=text id=sklsearch onkeydown=\"DelayedSave('/doc.s.sklad.php?mode=srv&opt=sklad&pos=$pos','sklad', 'sklsearch'); return true;\">");
+	Или отбор:<input type=text id=sklsearch onkeydown=\"DelayedSave('/docs.php?mode=srv&opt=ep&param=k&pos=$pos','sklad', 'sklsearch'); return true;\">");
 
 }
 
@@ -172,7 +172,8 @@ function kompl_ViewSkladS($doc, $group, $s)
 {
 	global $tmpl;
 	$sf=0;
-	$tmpl->AddText("<b>Показаны наименования изо всех групп!</b><br>");
+	$tmpl->ajax=1;
+	$tmpl->SetText("<b>Показаны наименования изо всех групп!</b><br>");
 	$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 	<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 	<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");

@@ -101,7 +101,7 @@ function DocProcessRequest(httpRequest, doc)
 			}
 			else
 			{
-				jAlert("Документ не проведён!","Ошибка "+httpRequest.status, {}, 'icon_err');
+				jAlert("Документ не проведён!"+httpRequest.responseText,"Ошибка "+httpRequest.status, {}, 'icon_err');
 				provodki.innerHTML=old_provodki;
 			}
 		}

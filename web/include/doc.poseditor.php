@@ -356,6 +356,8 @@ function AddPos($pos)
 	$cost=rcv('cost');
 	$add=0;
 	$ret='';
+	
+	if(!$pos)	throw new Exception("ID позиции не задан!");
 		
 	$res=mysql_query("SELECT `id`, `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `tovar`='$pos'");
 	if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");

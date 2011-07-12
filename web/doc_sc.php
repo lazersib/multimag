@@ -37,7 +37,7 @@ $tmpl->AddTMenu("<script type='text/javascript' src='/css/doc_script.js'></scrip
 
 $dir=$CONFIG['site']['location'].'/include/doc_scripts/';
 
-if(isAccess('doc_script','view'))
+if(isAccess('doc_scripts','view'))
 {
 	doc_menu();
 	$tmpl->SetTitle("Сценарии и операции");

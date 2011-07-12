@@ -613,7 +613,7 @@ class doc_s_Sklad
 			<tr class='lin1'>
 			<td>Скрытие:
 			<td><label><input type='checkbox' name='hid' value='3' $hid_check>Не отображать на витрине и в прайсах</label><br>
-			<label><input type='checkbox' name='hid' value='3' $yml_check>Не экспортировать в YML</label><br>
+			<label><input type='checkbox' name='no_export_yml' value='3' $yml_check>Не экспортировать в YML</label><br>
 			<tr class='lin0'>
 			<td>Печатное название:
 			<td><input type='text' name='pname' value='$nxt[5]'>
@@ -802,8 +802,8 @@ class doc_s_Sklad
 			else
 			{	
 				if(!isAccess('list_sklad','create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_base` (`name`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`)
-				VALUES	('$pos_name', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml')");
+				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`)
+				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml')");
 				$opos=$pos;
 				$pos=mysql_insert_id();
 				if($opos)

@@ -35,7 +35,7 @@ $mail = new PHPMailer();
 
 $mail->Sender	= $CONFIG['site']['admin_email'];  
 $mail->From	= $CONFIG['site']['admin_email'];  
-$mail->FromName	= 'Site '.$CONFIG['site']['name'];  
+$mail->FromName	= $CONFIG['site']['display_name'];  
 $mail->Mailer	= "mail";  
 $mail->CharSet	= "UTF-8";
 

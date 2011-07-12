@@ -33,9 +33,9 @@ function get_otch_links()
 	'doc_otchet.php?mode=sverka' => 'Акт сверки',
 	'doc_otchet.php?mode=sverka_op' => 'Акт сверки (оперативный)',
 	'doc_otchet.php?mode=balance' => 'Балланс',
-	'doc_otchet.php?mode=dolgi' => 'Долги: партнёров',
-	'doc_otchet.php?mode=dolgi&amp;opt=1' => 'Долги: наши',
+	'doc_otchet.php?mode=dolgi' => 'Долги',
 	'doc_otchet.php?mode=kassday' => 'Кассовый отчёт за день',
+	'doc_otchet.php?mode=kassday2' => 'Кассовый отчёт за день (2)',
 	'doc_otchet.php?mode=ostatki' => 'Остатки на складе',
 	'doc_otchet.php?mode=ostatki_d' => 'Остатки на складе на дату',
 	'doc_otchet.php?mode=agent_otchet' => 'Отчет по агенту',
@@ -56,9 +56,9 @@ function otch_list()
 	<a href='doc_otchet.php?mode=bezprodaj'><div>Агенты без продаж</div></a>
 	<a href='doc_otchet.php?mode=sverka'><div>Акт сверки</div></a>
 	<a href='doc_otchet.php?mode=balance'><div>Балланс</div></a>
-	<a href='doc_otchet.php?mode=dolgi'><div>Долги: партнёров</div></a>
-	<a href='doc_otchet.php?mode=dolgi&amp;opt=1'><div>Долги: наши</div></a>
+	<a href='doc_otchet.php?mode=dolgi'><div>Долги</div></a>
 	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день</div></a>
+	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день (2)</div></a>
 	<a href='doc_otchet.php?mode=ostatki'><div>Остатки на складе</div></a>
 	<a href='doc_otchet.php?mode=ostatki_d'><div>Остатки на складе на дату</div></a>
 	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
@@ -254,6 +254,175 @@ class Report_Store
 	}
 };
 
+class Report_KassDay2
+{
+	function Form()
+	{
+		global $tmpl;
+		$curdate=date("Y-m-d");
+		$tmpl->AddText("<h1>Отчёт по кассе за текущий день (вариант 2)</h1>
+		<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
+		<script src='/css/jquery/ui/jquery.ui.core.js'></script>
+		<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
+		<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
+		<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
+		<form action=''>
+		<input type='hidden' name='mode' value='kassday2'>
+		<input type='hidden' name='opt' value='ok'>
+		Выберите кассу:<br>
+		<select name='kass'>");
+		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'  ORDER BY `num`");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+		}
+		$tmpl->AddText("</select><br>
+		Выберите дату:<br>
+		<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
+		<button type='submit'>Сформировать</button></form>");
+	}
+	
+	function MakeHTML()
+	{
+		global $tmpl;
+		$tmpl->LoadTemplate('print');
+		$dt=rcv('date');
+		$kass=rcv('kass');
+		$tmpl->AddText("<h1>Отчёт по кассе за $dt (вариант 2)</h1>");		
+		$daystart=strtotime("$dt 00:00:00");
+		$dayend=strtotime("$dt 23:59:59");
+		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход");			
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`		
+		FROM `doc_list`
+		INNER JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
+		INNER JOIN `doc_types`		ON `doc_types`.`id` = `doc_list`.`type`
+		LEFT JOIN `doc_list` AS `p`	ON `p`.`id`=`doc_list`.`p_doc`
+		LEFT JOIN `doc_types` AS `t`	ON `t`.`id` = `p`.`type`		
+		WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7') AND `doc_list`.`kassa`='$kass'
+		ORDER BY `doc_list`.`date`");
+		$sum=$daysum=$prix=$rasx=0;
+		$flag=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$csum_p=$csum_r='';
+			if( !$flag && $nxt[3]>=$daystart && $nxt[3]<=$dayend)
+			{
+				$flag=1;
+				$sum_p=sprintf("%0.2f руб.",$sum);
+				$tmpl->AddText("<tr><td>-<td>-<td><b>На начало дня</b><td align='right' colspan='2'><b>$sum_p</b>");
+			}
+			if($nxt[1]==6)		$sum+=$nxt[2];
+			else 			$sum-=$nxt[2];
+			if($nxt[3]>=$daystart && $nxt[3]<=$dayend)
+			{
+				if($nxt[1]==6)
+				{
+					$daysum+=$nxt[2];
+					$prix+=$nxt[2];
+					$csum_p=sprintf("%0.2f руб.",$nxt[2]);
+				}
+				else
+				{
+					$daysum-=$nxt[2];
+					$rasx+=$nxt[2];
+					$csum_r=sprintf("%0.2f руб.",$nxt[2]);
+				}
+				if($nxt[8])	$sadd="<br><i>к $nxt[9] N$nxt[10]$nxt[11] от ".date("d-m-Y H:i:s",$nxt[12])." на сумму ".sprintf("%0.2f руб",$nxt[13])."</i>";
+				else		$sadd='';
+				$dt=date("H:i:s",$nxt[3]);
+				$sum_p=sprintf("%0.2f руб.",$sum);
+				
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5] $sadd<br>от $nxt[7]<td align='right'>$csum_p<td align='right'>$csum_r");	
+			}
+		}
+		$dsum_p=sprintf("%0.2f руб.",$daysum);
+		$psum_p=sprintf("%0.2f руб.",$prix);
+		$rsum_p=sprintf("%0.2f руб.",$rasx);
+		$tmpl->AddText("<tr><td>-<td>-<td><b>На конец дня</b><td align='right' colspan='2'><b>$sum_p</b>");
+// 		$tmpl->AddText("<tr><td>-<td>-<td><b>Приход за смену</b><td>-<td align='right'><b>$psum_p</b>");
+// 		if($rasx)
+// 		{
+// 			$tmpl->AddText("<tr><td>-<td>-<td><b>Расход за смену</b><td>-<td align='right'><b>$rsum_p</b>");
+// 			$tmpl->AddText("<tr><td>-<td>-<td><b>Разница за смену</b><td>-<td align='right'><b>$dsum_p</b>");
+// 		}
+// 		
+// 		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='$uid'");
+// 		$nm=mysql_result($res,0,0);
+// 		
+// 		$tmpl->AddText("</table><br><br>
+// 		Cоответствие суммы подтверждаю ___________________ ($nm)");
+	}
+	
+	function Run($opt)
+	{
+		if($opt=='')	$this->Form();
+		else		$this->MakeHTML();	
+	}
+};
+
+class Report_Dolgi
+{
+	function Form()
+	{
+		global $tmpl;
+		$curdate=date("Y-m-d");
+		$tmpl->AddText("<h1>Отчёт по долгам</h1>
+		<form action=''>
+		<input type='hidden' name='mode' value='dolgi'>
+		<input type='hidden' name='opt' value='ok'>
+		Группа агентов:<br>
+		<select name='agroup'>
+		<option value='0'>--все--</option>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+		}
+		$tmpl->AddText("</select><br>
+		<fieldset><legend>Вид задолженности</legend>
+		<label><input type='radio' name='vdolga' value='1' checked>Нам должны</label><br>
+		<label><input type='radio' name='vdolga' value='2'>Мы должны</label>
+		</fieldset>
+		<button type='submit'>Сформировать</button></form>");
+	}
+	
+	function MakeHTML($vdolga)
+	{
+		global $tmpl;
+		$vdolga=rcv('vdolga');
+		$agroup=rcv('agroup');
+		$tmpl->LoadTemplate('print');
+		if($vdolga==2) $tmpl->SetText("<h1>Мы должны (от ".date('d.m.Y').")</h1>");
+		else $tmpl->SetText("<h1>Долги партнёров (от ".date('d.m.Y').")</h1>");
+		$tmpl->AddText("<table width=100%><tr><th>N<th>Агент - партнер<th>Дата сверки<th>Сумма");
+		$sql_add=$agroup?"WHERE `group`='$agroup'":'';
+		$res=mysql_query("SELECT `id`, `name`, `data_sverki` FROM `doc_agent` $sql_add ORDER BY `name`");
+		$i=0;
+		$sum_dolga=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$dolg=DocCalcDolg($nxt[0],0);
+			if( (($dolg>0)&&($vdolga==1))|| (($dolg<0)&&($vdolga==2)) )
+			{
+				$i++;
+				$dolg=abs($dolg);
+				$sum_dolga+=$dolg;
+				$dolg=sprintf("%0.2f",$dolg);
+				$tmpl->AddText("<tr><td>$i<td>$nxt[1]<td>$nxt[2]<td align='right'>$dolg руб.");
+				
+			}
+		}
+		$tmpl->AddText("</table>
+		<p>Итого: $i должников с общей суммой долга $sum_dolga  руб.<br> (".num2str($sum_dolga).")</p>");
+	}
+	
+	function Run($opt)
+	{
+		if($opt=='')	$this->Form();
+		else		$this->MakeHTML();	
+	}
+};
+
 
 
 if($mode=='')
@@ -263,6 +432,12 @@ if($mode=='')
 	<p>Внимание! Отчёты создают высокую нагрузку на сервер, поэтому не рекомендуеся генерировать отчёты во время интенсивной работы с базой данных, а так же не рекомендуется частое использование генератора отчётов по этой же причине!</p>
 	<h3>Доступные виды отчётов</h3>
 	".otch_list()."<br><br><br><br><br>");
+}
+else if($mode=='kassday2')
+{
+	$opt=rcv('opt');
+	$otchet=new Report_KassDay2();
+	$otchet->Run($opt);
 }
 else if($mode=='pmenu')
 {
@@ -371,29 +546,8 @@ else if($mode=='balcal')
 else if($mode=='dolgi')
 {
 	$opt=rcv('opt');
-	$tmpl->LoadTemplate('print');
-	if($opt) $tmpl->SetText("<h1>Мы должны (от ".date('d.m.Y').")</h1>");
-	else $tmpl->SetText("<h1>Долги партнёров (от ".date('d.m.Y').")</h1>");
-	$tmpl->AddText("<table width=100%><tr><th>N<th>Агент - партнер<th>Дата сверки<th>Сумма");
-	$res=mysql_query("SELECT `id`, `name`, `data_sverki` FROM `doc_agent` ORDER BY `name`");
-	$i=0;
-	$sum_dolga=0;
-	while($nxt=mysql_fetch_row($res))
-	{
-		$dolg=DocCalcDolg($nxt[0],0);
-		if( (($dolg>0)&&(!$opt))|| (($dolg<0)&&($opt)) )
-		{
-			$i++;
-			$dolg=abs($dolg);
-			$sum_dolga+=$dolg;
-			$dolg=sprintf("%0.2f",$dolg);
-			$tmpl->AddText("<tr><td>$i<td>$nxt[1]<td>$nxt[2]<td align='right'>$dolg руб.");
-			
-		}
-	}
-	$tmpl->AddText("</table>
-	<p>Итого: $i должников с общей суммой долга $sum_dolga  руб.<br> (".num2str($sum_dolga).")</p>");
-
+	$otchet=new Report_Dolgi();
+	$otchet->Run($opt);
 }
 else if($mode=='komplekt')
 {
@@ -997,6 +1151,11 @@ else if($mode=='sverka')
 				$ras+=$nxt[3];
 				$deb=$nxt[3];
 			}
+			if($nxt[1]==18)
+			{
+				$pr+=$nxt[3];
+				$kr=$nxt[3];
+			}
 
 			if($f_print)
 			{
@@ -1130,7 +1289,7 @@ else if($mode=='sverka')
 		`doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`<'8' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
+		WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
 		while($nxt=mysql_fetch_array($res))
 		{
 			$deb=$kr="";				
@@ -1194,6 +1353,20 @@ else if($mode=='sverka')
 			{
 				$ras+=$nxt[3];
 				$deb=$nxt[3];
+			}
+
+			if($nxt[1]==18)
+			{
+				if($nxt[3]>0)
+				{
+					$ras+=$nxt[3];
+					$deb=$nxt[3];
+				}
+				else
+				{
+					$pr+=abs($nxt[3]);
+					$kr=abs($nxt[3]);
+				}
 			}
 
 			if($f_print)

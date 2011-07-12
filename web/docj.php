@@ -516,7 +516,7 @@ if($mode=="")
 	$sel=@$_SESSION['j_select_tov'];
 	if(!$sel)
 	{
-		$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name`, `users`.`name`, `doc_types`.`name`, `doc_list`.`p_doc`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`
+		$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name`, `users`.`name`, `doc_types`.`name`, `doc_list`.`p_doc`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`, `doc_list`.`err_flag`
 		FROM `doc_list`
 		LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
@@ -526,7 +526,7 @@ if($mode=="")
 	}
 	else
 	{
-		$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name`, `users`.`name`, `doc_types`.`name`, `doc_list`.`p_doc`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`
+		$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name`, `users`.`name`, `doc_types`.`name`, `doc_list`.`p_doc`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`, `doc_list`.`err_flag`
 		FROM `doc_list`
 		LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
@@ -573,36 +573,39 @@ if($mode=="")
 		// Доп. информация
 		switch($nxt['type'])
 		{
-			case '1':
-			case '2':
-			case '3':
-			case '8':
-			case '12':
-			case '15':
+			case 1:
+			case 2:
+			case 3:
+			case 8:
+			case 12:
+			case 15:
+			case 17:
 			{
 				$r=mysql_query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$nxt['sklad']}'");
 				$data=mysql_fetch_row($r);
 				$dop="Склад: $data[1] /$data[0]";
 			}	break; 
-			case '4':
-			case '5':
+			case 4:
+			case 5:
 			{
 				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['bank']}' AND `ids`='bank'");
 				$data=mysql_fetch_row($r);
 				$dop="Банк: $data[1] /$data[0]";
 			}	break;
-			case '6':
-			case '7':
-			case '9':
+			case 6:
+			case 7:
+			case 9:
 			{
 				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['kassa']}' AND `ids`='kassa'");
 				$data=mysql_fetch_row($r);
 				$dop="Касса: $data[1] /$data[0]";
 			}	break;
-			case '10':
-			case '11':
-			case '13':
-			case '14':
+			case 10:
+			case 11:
+			case 13:
+			case 14:
+				break;
+			
 		}
 		
 
@@ -612,8 +615,9 @@ if($mode=="")
 			else if($nxt[1]==2)	$ras+=$nxt[7];
 			else if($nxt[1]==4)	$pr+=$nxt[7];
 			else if($nxt[1]==5)	$ras+=$nxt[7];
-			else if($nxt[1]==6) $pr+=$nxt[7];
-			else if($nxt[1]==7) $ras+=$nxt[7];
+			else if($nxt[1]==6) 	$pr+=$nxt[7];
+			else if($nxt[1]==7) 	$ras+=$nxt[7];
+			else if($nxt[1]==18) 	$ras+=$nxt[7];
 		}
 
 		// Проплаты
@@ -655,7 +659,8 @@ if($mode=="")
 			$sm=sprintf("%0.2f",$sm);
 			$dp="<td>$nxt[13]<td>$nxt[14]<td>$sm";
 		}
-		else if($nxt[8]) $motions="<a href='' title='На удаление' onclick=\"EditThis('/docj.php?mode=undel&_id=$nxt[0]','mo$nxt[0]'); return false;\"><img src='/img/i_alert.png' alt='На удаление'></a>";
+		
+		if($nxt[8]) $motions="<a href='' title='На удаление' onclick=\"EditThis('/docj.php?mode=undel&_id=$nxt[0]','mo$nxt[0]'); return false;\"><img src='/img/i_alert.png' alt='На удаление'></a>";
 		if($nxt[2]) $motions.=" <img src='/img/i_suc.png' alt='Проведен'>";
 		if(!$motions) $motions="<a href='' title='Удалить' onclick=\"EditThis('/docj.php?mode=del&_id=$nxt[0]','mo$nxt[0]'); return false;\"> <img src='/img/i_del.png' alt='Удалить'></a>";
 
@@ -666,7 +671,8 @@ if($mode=="")
 		if(@$uid==$nxt[6])	$cc.='1';
 		
 		// Подсветка site
-		if($nxt[5]=='site')	$cc.=' f_green';
+		if($nxt['err_flag'])	$cc.=' f_red';
+		else if($nxt[5]=='site')	$cc.=' f_green';
 		
 		
 		$deflink="doc.php?mode=body&amp;doc=$nxt[0]";
@@ -687,7 +693,7 @@ if($mode=="")
 		$razn=sprintf("%0.2f руб.",$razn);
 
 	$tmpl->AddText("Итого: приход: $pr, расход: $ras. Баланс: $razn<br>
-	Легенда: <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span>
+	<b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span>, номер - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span>
 	");
 
 }

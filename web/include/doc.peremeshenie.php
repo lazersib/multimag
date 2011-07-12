@@ -136,9 +136,6 @@ class doc_Peremeshenie extends doc_Nulltype
 			if(mysql_error())		throw new Exception("Ошибка проведения, ошибка изменения количества на складе $nasklad!");
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
 			if(mysql_error())		throw new Exception("Ошибка проведения, ошибка изменения количества на складе $nx[3]!");
-			// Если это первое поступление ????????????????? НАФИГА ЭТО?
-// 			if(mysql_affected_rows()==0) mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)
-// 			VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
 		}
 	}
 

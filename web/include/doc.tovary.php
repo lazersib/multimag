@@ -334,7 +334,7 @@ function DrawSkladTable($res,$s,$doc,$limit=0)
 function CheckMinus($pos, $sklad)
 {
 	$cnt=0;
-	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id` FROM `doc_list_pos`
+	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos'
 	ORDER BY `doc_list`.`date`");
@@ -363,14 +363,10 @@ function CheckMinus($pos, $sklad)
 		}
 		else if($nxt[1]==17)
 		{
-			if($nxt[2]==$sklad)	$cnt-=$nxt[0];
-			else
+			if($nxt[2]==$sklad)
 			{
-				$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[3]' AND `param`='na_sklad'");
-				if(mysql_errno())	throw new MysqlExceprion("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
-				$nasklad=mysql_result($rr,0,0);
-				if(!$nasklad)		throw new Exceprion("Не удалось получить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
-				if($nasklad==$sklad)	$cnt+=$nxt[0];
+				if($nxt[4]==0)	$cnt+=$nxt[0];
+				else		$cnt+=$nxt[0];
 			}
 		}
 		if($cnt<0) break;

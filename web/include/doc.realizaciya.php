@@ -213,7 +213,8 @@ class doc_Realizaciya extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12'\">Форма ТОРГ-12 (УСТАРЕЛО)</div>			
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Форма ТОРГ-12 (PDF)</div>			
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура (PDF)</div>			
-			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>");
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nvco'\">Накладная c сорт. по коду</div>	");
 		}
 		//			<li><a href='?mode=print&amp;doc=$doc&amp;opt=sf'>Счёт - фактура (HTML)</a></li>
 		else if($opt=='tg12')
@@ -241,6 +242,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->PrintKopia($doc);
 		else if($opt=='tc')
 			$this->PrintTovCheck($doc);
+		else if($opt=='nvco')
+			$this->PrintNaklVCOrdered();
 		else
 			$this->PrintNakl($doc);
 	}
@@ -447,6 +450,71 @@ class doc_Realizaciya extends doc_Nulltype
 		<p>Поставщик:_____________________________________</p>
 		<p>Покупатель: ____________________________________</p>");
 	}
+
+// -- Накладная с сортировкой по коду--------------
+	function PrintNaklVCOrdered()
+	{
+		global $tmpl;
+		global $uid;
+
+		$tmpl->LoadTemplate('print');
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$tmpl->AddText("<h1>Накладная N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
+		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
+		<b>Покупатель: </b>{$this->doc_data[3]}<br><br>");
+
+		$tmpl->AddText("
+		<table width=800 cellspacing=0 cellpadding=0>
+		<tr><th>№</th><th>Код</th><th width=450>Наименование<th>Место<th>Кол-во<th>Стоимость<th>Сумма</tr>");
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `doc_units`.`printname` AS `units`, `doc_base`.`vc`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
+		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_base`.`vc`");
+		$i=0;
+		$ii=1;
+		$sum=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f руб.", $nxt[4]);
+			$cost2 = sprintf("%01.2f руб.", $sm);
+			$tmpl->AddText("<tr align=right><td>$ii</td><td>$nxt[7]</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+		}
+		$ii--;
+		$cost = sprintf("%01.2f руб.", $sum);
+		
+		$prop='';
+		if($sum>0)
+		{
+			$add='';
+			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
+			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE 
+			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			$add
+			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if(@$prop=mysql_result($rs,0,0))
+			{
+				$prop=sprintf("<p><b>Оплачено</b> %0.2f руб.</p>",$prop);
+			}	
+		}
+		
+
+		$tmpl->AddText("</table>
+		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>
+		<p class=mini>Товар получил, претензий к качеству товара и внешнему виду не имею.</p>
+		$prop
+		<p>Поставщик:_____________________________________</p>
+		<p>Покупатель: ____________________________________</p>");
+	}
+
 	
 // -- накладная с наценками --------------
 	function Nacenki()
@@ -1353,7 +1421,7 @@ function PrintTg12PDF($to_str=0)
 	
 	$y=$pdf->GetY();
 	
-	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_units`.`printname`, `doc_base_dop`.`mass`
+	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_units`.`printname`, `doc_base_dop`.`mass`, `doc_base`.`vc`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -1406,7 +1474,8 @@ function PrintTg12PDF($to_str=0)
 		$pdf->Cell($t_all_width[0],$line_height, $ii ,1,0,'R',0);
 		$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
 		$pdf->Cell($t_all_width[1],$line_height, $str ,1,0,'L',0);
-		$pdf->Cell($t_all_width[2],$line_height, '-' ,1,0,'C',0);
+		$str = iconv('UTF-8', 'windows-1251', $nxt[7] );
+		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'C',0);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[5] );
 		$pdf->Cell($t_all_width[3],$line_height, $str ,1,0,'C',0);
 		$pdf->Cell($t_all_width[4],$line_height, '-' ,1,0,'C',0);

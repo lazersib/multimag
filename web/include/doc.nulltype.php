@@ -76,6 +76,30 @@ class doc_Nulltype
 	public function getDocData()	{return $this->doc_data;}
 	public function getDopData()	{return $this->dop_data;}
 	
+	public function SetDocData($name, $value)
+	{
+		if($this->doc)
+		{
+			$_name=mysql_real_escape_string($name);
+			$_value=mysql_real_escape_string($value);
+			mysql_query("UPDATE `doc_list` SET `$_name`='$_value' WHERE `id`='{$this->doc}'");
+			if(mysql_errno())		throw new MysqlException("Не удалось сохранить основной параметр документа");
+		}
+		$this->doc_data[$name]=$value;
+	}
+	
+	public function SetDopData($name, $value)
+	{
+		if($this->doc)
+		{
+			$_name=mysql_real_escape_string($name);
+			$_value=mysql_real_escape_string($value);
+			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'$_name','$_value')");
+			if(mysql_errno())		throw new MysqlException("Не удалось сохранить дополнительный параметр документа");
+		}
+		$this->dop_data[$name]=$value;
+	}
+	
 	// Создать документ с заданными данными
 	public function Create($doc_data, $from='')
 	{
@@ -116,22 +140,10 @@ class doc_Nulltype
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=$doc_obj->doc;
 		$this->Create($doc_data);
-		if($this->sklad_editor_enable)
-		{
-			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}'");
-			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
-			while($nxt=mysql_fetch_row($res))
-			{
-				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
-				VALUES ('{$this->doc}', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
-				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
-			}
-			$this->doc_data['sum']=DocSumUpdate($this->doc);
-		}
 		return $this->doc;
 	}
 	// Создать документ с товарными остатками на основе другого документа
-	public function CreateRemFrom($doc_obj)
+	public function CreateFromP($doc_obj)
 	{
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=$doc_obj->doc;
@@ -143,7 +155,7 @@ class doc_Nulltype
 			while($nxt=mysql_fetch_row($res))
 			{
 				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
-				VALUES ('{$this->doc}', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
+				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
 				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
 			}
 		}
@@ -380,6 +392,7 @@ class doc_Nulltype
 				
 			if(method_exists($this,'DocApply'))     $this->DocApply($silent);
 			else    throw new Exception("Метод проведения данного документа не определён!");
+			mysql_query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
 		catch(MysqlException $e)
 		{
@@ -428,6 +441,7 @@ class doc_Nulltype
 			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
 			if(method_exists($this,'DocApply'))	$this->DocApply(0);
 			else	throw new Exception("Метод проведения данного документа не определён!");
+			mysql_query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
 		catch(MysqlException $e)
 		{
@@ -471,6 +485,7 @@ class doc_Nulltype
 			$this->get_docdata();
 			if(method_exists($this,'DocCancel'))	$this->DocCancel();
 			else	throw new Exception("Метод отмены данного документа не определён!");
+			mysql_query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
 		catch(MysqlException $e)
 		{
@@ -534,7 +549,8 @@ class doc_Nulltype
 		else
 		{
 			doc_log("FORCE CANCEL {$this->doc_name}",'', 'doc', $this->doc);
-			$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
+			$res=mysql_query("UPDATE `doc_list` SET `ok`='0', `err_flag`='1' WHERE `id`='{$this->doc}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось установить флаги!");
 			$tmpl->msg("Всё, сделано.","err","Снятие отметки проведения");
 		}
 		

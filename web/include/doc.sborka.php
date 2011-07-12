@@ -30,57 +30,65 @@ class doc_Sborka extends doc_Nulltype
 		$this->doc_name				='sborka';
 		$this->doc_viewname			='Сборка изделия';
 		$this->sklad_editor_enable		=true;
-		$this->sklad_modify			=1;
+		//$this->sklad_modify			=1;
 		$this->header_fields			='agent cena sklad';
 		settype($this->doc,'int');
 	}
 	
-	function head()
-	{
-		throw new Exception("Создание данного документа не поддерживается!");
-	}
+// 	function head()
+// 	{
+// 		throw new Exception("Создание данного документа не поддерживается!");
+// 	}
 
-	function body()
-	{
-		throw new Exception("Просмотр данного документа не поддерживается!");
-	}
 
-	protected function DocApply($silent=0)
+	public function DocApply($silent=0)
 	{
 		global $tmpl;
 		global $uid;
 		$tim=time();
-		//throw new Exception('Проведение документа не реализовано!');
+		
 		
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(!$res)	throw new MysqlException('Ошибка выборки данных документа при проведении!');
-		$nx=@mysql_fetch_row($res);
-		if(!$nx)	throw new Exception("Документ {$this->doc} не найден!");
-		if( $nx[4] && (!$silent) )	throw new Exception('Документ уже был проведён!');
+		if(mysql_errno())			throw new MysqlException('Ошибка выборки данных документа при проведении!');
+		$doc_info=mysql_fetch_array($res);
+		if(!$doc_info)				throw new Exception("Документ {$this->doc} не найден!");
+		if( $doc_info['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 
-
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`page`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
-		if(!$res)	throw new MysqlException('Ошибка выборки номенклатуры документа при проведении!');
-		while($nxt=mysql_fetch_row($res))
+
+		if(mysql_errno())			throw new MysqlException('Ошибка выборки номенклатуры документа при проведении!');
+		while($doc_line=mysql_fetch_array($res))
 		{
-			$sign=$nxt[3]?'-':'+';
+			$sign=$doc_line['page']?'-':'+';
 			
-			$rs=mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt` $sign '$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
-			if(!$rs)	throw new MysqlException("Ошибка изменения количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
+			if($doc_line['page'])
+			{
+				if($doc_line[1]>$doc_line[2])	throw new Exception("Недостаточно ($doc_line[1]) товара '$doc_line[3]:$doc_line[4]($doc_line[0])': на складе только $doc_line[2] шт!");
+				if(!$silent)
+				{
+					$budet=CheckMinus($doc_line[0], $doc_info['sklad']);
+					if( $budet<0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$doc_line[3]:$doc_line[4]($doc_line[0])'!");
+				}
+			}
+			
+			$r=mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt` $sign '{$doc_line['cnt']}' WHERE `id`='{$doc_line['tovar']}' AND `sklad`='{$doc_info['sklad']}'");
+			if(!$r)	throw new MysqlException("S1 Ошибка изменения количества товара $doc_line[0] ($doc_line[1]) на складе $doc_info[3] при проведении!");
 			// Если это первое поступление
 			if(mysql_affected_rows()==0) 
 			{
-				$rs=mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
-				if(!$rs)	throw new MysqlException("Ошибка записи количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
+				$rs=mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$doc_line[0]', '$doc_info[3]', '{$doc_line['cnt']}')");
+				if(!$rs)	throw new MysqlException("S2 Ошибка записи количества товара $doc_line[0] ({$doc_line['cnt']}) на складе $doc_info[3] при проведении!");
 			}
 		}
 		if($silent)	return;
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim', `sum`='0' WHERE `id`='{$this->doc}'");
-		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
+		mysql_query("UPDATE `doc_list` SET `ok`='$tim', `sum`='0' WHERE `id`='{$this->doc}'");
+		if(mysql_errno())		throw new MysqlException('Ошибка установки даты проведения документа!');
+		
 	}
 	
 	function DocCancel()

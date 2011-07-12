@@ -103,7 +103,7 @@ function GetAllContent()
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 		if(mysql_num_rows($rs))
 		{
-			$zp=mysql_result($rs,0,1);
+			$zp=sprintf("%0.2f", mysql_result($rs,0,1));
 		}
 		else $zp='НЕТ';
 		
@@ -142,7 +142,7 @@ function GetPosInfo($pos)
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 		if(mysql_num_rows($rs))
 		{
-			$zp=mysql_result($rs,0,1);
+			$zp=sprintf("%0.2f", mysql_result($rs,0,1));
 		}
 		else $zp='НЕТ';
 		
@@ -201,7 +201,7 @@ function AddPos($pos)
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 		if(mysql_num_rows($rs))
 		{
-			$zp=mysql_result($rs,0,1);
+			$zp=sprintf("%0.2f", mysql_result($rs,0,1));
 		}
 		else 
 		$zp='НЕТ';
@@ -258,6 +258,16 @@ function Run($mode)
 		Услуга начисления зарплаты:<br>
 		<input type='hidden' name='tov_id' id='tov_id' value=''>
 		<input type='text' id='tov'  style='width: 400px;' value=''><br>
+		Переместить готовый товар на склад:<br>
+		<select name='nasklad'>
+		<option value='0' selected>--не требуется--</option>");
+		$res=mysql_query("SELECT `id`,`name` FROM `doc_sklady` ORDER BY `id`");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+		}
+		$tmpl->AddText("</select><br>
+		
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
 			$(\"#agent_nm\").autocomplete(\"/docs.php\", {
@@ -328,6 +338,7 @@ function Run($mode)
 		$tmpl->AddText("<h1>".$this->getname()."</h1>");
 		$agent=rcv('agent');
 		$sklad=rcv('sklad');
+		$nasklad=rcv('nasklad');
 		$firm=rcv('firm');
 		$tov_id=rcv('tov_id');
 		$tim=time();
@@ -336,7 +347,7 @@ function Run($mode)
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1')");
-		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm");
+		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad");
 	}
 	else if($mode=='edit')
 	{
@@ -345,11 +356,12 @@ function Run($mode)
 		$agent=rcv('agent');
 		$sklad=rcv('sklad');
 		$firm=rcv('firm');
+		$nasklad=rcv('nasklad');
 		$this->ReCalcPosCost($doc,$tov_id);
 		$zp=$this->CalcZP($doc);
 		$tmpl->AddText("<h1>".$this->getname()."</h1>
 		Необходимо выбрать товары, которые будут скомплектованы. Устанавливать цену не требуется - при проведении документа она будет выставлена автоматически исходя из стоимости затраченных ресурсов. Для того, чтобы узнать цены - обновите страницу. После выполнения сценария выбранные товары будут оприходованы на склад, а соответствующее им количество ресурсов, использованных для сборки, будет списано. Попытка провести через этот сценарий товары, не содержащие ресурсов, вызовет ошибку. Если это указано в свойствах товара, от агента-сборщика будет оприходована выбранная услуга для последующей выдачи заработной платы (на данный момент в размере $zp руб.).<br>
-		<a href='/doc_sc.php?mode=exec&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm'>Выполнить необходимые действия</a>
+		<a href='/doc_sc.php?mode=exec&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad'>Выполнить необходимые действия</a>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>");
 		
 		$document=new doc_Sborka($doc);		
@@ -368,9 +380,10 @@ function Run($mode)
 		$agent=rcv('agent');
 		$sklad=rcv('sklad');
 		$firm=rcv('firm');
+		$nasklad=rcv('nasklad');
 		$this->ReCalcPosCost($doc,$tov_id);
 		$document=AutoDocument($doc);
-		$document->ApplyJson();
+		$document->DocApply();
 		$zp=$this->CalcZP($doc);
 		$tim=time();
 		mysql_query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
@@ -380,8 +393,26 @@ function Run($mode)
 		mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$doc2', '$tov_id', '1', '$zp')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить услугу");
 		$document2=AutoDocument($doc2);
-		$document2->ApplyJson();
+		$document2->DocApply();
 		mysql_query("UPDATE `doc_list` SET `sum`='$zp' WHERE `id`='$doc2'");
+		
+		if( ($sklad!=$nasklad) && $nasklad)
+		{
+			$perem_doc=new doc_Peremeshenie();
+			$perem_doc->CreateFrom($document);
+			$perem_doc->SetDopData('na_sklad',$nasklad);
+			$docnum=$perem_doc->getDocNum();
+			$res=mysql_query("SELECT `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc' AND `page`='0'");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
+			while($nxt=mysql_fetch_row($res))
+			{
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
+				VALUES ('$docnum', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
+				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
+			}
+			$perem_doc->DocApply();
+		}
+		
 		$tmpl->ajax=0;
 		$tmpl->msg("Все операции выполнены успешно. Размер зарплаты: $zp");
 	}
@@ -414,21 +445,21 @@ function Run($mode)
 		// Json вариант добавления позиции
 		else if($opt=='jadd')
 		{
-			if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
+			if(!isAccess('doc_sborka','edit'))	throw new AccessException("Недостаточно привилегий");
 			$pos=rcv('pos');
 			$tmpl->SetText($poseditor->AddPos($pos));
 		}
 		// Json вариант удаления строки
 		else if($opt=='jdel')
 		{
-			if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
+			if(!isAccess('doc_sborka','edit'))	throw new AccessException("Недостаточно привилегий");
 			$line_id=rcv('line_id');
 			$tmpl->SetText($poseditor->Removeline($line_id));
 		}
 		// Json вариант обновления
 		else if($opt=='jup')
 		{
-			if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
+			if(!isAccess('doc_sborka','edit'))	throw new AccessException("Недостаточно привилегий");
 			$line_id=rcv('line_id');
 			$value=rcv('value');
 			$type=rcv('type');
@@ -466,6 +497,7 @@ function ReCalcPosCost($doc, $tov_id)
 	$res=mysql_query("SELECT `id`, `tovar`, `cnt` FROM `doc_list_pos`
 	WHERE `doc`='$doc' AND `page`='0'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров документа");
+
 	while($nxt=mysql_fetch_row($res))
 	{
 		$cost=0;
@@ -476,12 +508,14 @@ function ReCalcPosCost($doc, $tov_id)
 		if(mysql_num_rows($rs)==0)	throw new Exception("У товара $nxt[1] не заданы комплектующие");
 		while($nx=mysql_fetch_row($rs))
 		{
-			$acp=GetInCost($nxt[1]);
+			$acp=GetInCost($nx[0]);
 			if($acp>0)	$cost+=$nx[1]*$acp;
-			else		$cost+=$nx[1]*$nx[2];
+			else		
+			$cost+=$nx[1]*$nx[2];
 			$cntc=$nxt[2]*$nx[1];
-			if($acp>0)	mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`) VALUES ('$doc', '$nx[0]', '$cntc', '$nx[2]', '$nxt[1]')");
-			else		mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`) VALUES ('$doc', '$nx[0]', '$cntc', '$acp', '$nxt[1]')");
+			if($acp>0)	mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`) VALUES ('$doc', '$nx[0]', '$cntc', '$acp', '$nxt[1]')");
+			else		
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`) VALUES ('$doc', '$nx[0]', '$cntc', '$nx[2]', '$nxt[1]')");
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить ресурс в документ");
 		}
 		
@@ -501,6 +535,7 @@ function ReCalcPosCost($doc, $tov_id)
 		
 		mysql_query("UPDATE `doc_list_pos` SET `cost`='$cost' WHERE `id`='$nxt[0]'");
 	}
+	DocSumUpdate($doc);
 }
 
 function CalcZP($doc)

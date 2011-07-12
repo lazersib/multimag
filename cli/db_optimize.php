@@ -33,8 +33,9 @@ include_once($CONFIG['site']['location']."/include/doc.rko.php");
 include_once($CONFIG['site']['location']."/include/doc.pko.php");
 include_once($CONFIG['site']['location']."/include/doc.peremeshenie.php");
 include_once($CONFIG['site']['location']."/include/doc.perkas.php");
+include_once($CONFIG['site']['location']."/include/doc.sborka.php");
+include_once($CONFIG['site']['location']."/include/doc.kordolga.php");
 
-  
 $mail->FromName = $CONFIG['site']['name'].' - Site Service System';  
 $mail->CharSet  = "UTF-8";
 $mail->AddAddress($CONFIG['site']['doc_adm_email'], $CONFIG['site']['doc_adm_email'] );  
@@ -112,7 +113,7 @@ function seek_and_up($date,$pos)
 
 
 // ================================ Перепроводка документов с коррекцией сумм ============================
-echo"Перепроводка документов...";
+echo"Перепроводка документов...\n\n";
 $i=0;
 $res=mysql_query("UPDATE `doc_kassa` SET `ballance`='0'");
 $res=mysql_query("UPDATE `doc_base_cnt` SET `cnt`='0'");
@@ -126,7 +127,8 @@ while($nxt=mysql_fetch_row($res))
 	$document=AutoDocumentType($nxt[1],$nxt[0]);
 	if($err=$document->Apply($nxt[0],1))
 	{
-		$text="$nxt[0]($typename): Списание в минус! ($err) ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ НЕВЕРНЫ!\n";
+		mysql_query("UPDATE `doc_list` SET `err_flag`='1' WHERE `id`='$nxt[0]'");
+		$text="$nxt[0]($typename): $err ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ НЕВЕРНЫ!\n";
 		echo $text;
 		$mail_text.=$text;
 		//echo " ---------- ".seek_and_up($nxt[3],$badpos)."\n";
@@ -145,7 +147,7 @@ if($i)
 else echo"Ошибки последовательности документов не найдены!\n";
 echo "Удаление помеченных на удаление...\n";
 // ============================= Удаление помеченных на удаление =========================================
-$tim_minus=time()-60*60*24*7;
+$tim_minus=time()-60*60*24*$CONFIG['auto']['doc_del_days'];
 $res=mysql_query("SELECT `id`, `type` FROM `doc_list` WHERE `mark_del`<'$tim_minus' AND `mark_del`>'0'");
 while($nxt=mysql_fetch_row($res))
 {
