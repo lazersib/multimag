@@ -23,17 +23,6 @@ include_once($CONFIG['site']['location']."/include/doc.core.php");
 include_once($CONFIG['site']['location']."/include/doc.predlojenie.php");
 include_once($CONFIG['site']['location']."/include/doc.v_puti.php");
 
-function __autoload($class_name)
-{
-	global $CONFIG;
-	$class_name= strtolower($class_name);
-	$nm2=split('_',$class_name,2);
-	if(@$nm2[1]) $class_name=@$nm2[1];
-	@include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
-	@include_once $CONFIG['site']['location']."/gate/include/doc.s.".$class_name.'.php';
-	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
-}
-
 $doc_types[0]="Неопределённый документ";
 
 class doc_Nulltype

@@ -52,7 +52,7 @@ mysql_query("REPAIR TABLE `doc_base`");
 mysql_query("REPAIR TABLE `doc_list`");
 mysql_query("REPAIR TABLE `doc_list_pos`");
 
-echo"Сброс остатков\n";
+echo"Сброс остатков...";
 $res=mysql_query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0'
 AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
@@ -61,14 +61,14 @@ while($nxt=mysql_fetch_row($res))
 {
     mysql_query("UPDATE `doc_list_pos` SET `tranzit`='$nxt[1]' WHERE `id`='$nxt[0]'");
 }
-
+echo" готово!\n";
 
 
 
 
 // ============== Расчет ликвидности ===================================================
 echo"Расчет ликвидности...";
-$res=mysql_query("SELECT `doc_list_pos`.`tovar`,(SUM(`doc_list_pos`.`tovar`)/`doc_list_pos`.`tovar`) AS `aa`
+$res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`) AS `aa`
 FROM `doc_list_pos`, `doc_list`
 WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND `doc_list`.`type`>'1' AND `doc_list`.`date`>'$dtim'
 GROUP BY `doc_list_pos`.`tovar`
@@ -76,21 +76,22 @@ GROUP BY `doc_list_pos`.`tovar`
 $nxt=mysql_fetch_row($res);
 $max=$nxt[1]/100;
 //echo"$max\n";
-
+$time_start = microtime(true);
 $rs=mysql_query("UPDATE `doc_base` SET `likvid`='0'");
-$res=mysql_query("SELECT `doc_list_pos`.`tovar`,(SUM(`doc_list_pos`.`tovar`)/`doc_list_pos`.`tovar`)
+$res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`)
 FROM `doc_list_pos`, `doc_list`
-WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND `doc_list`.`type`>'1' AND `doc_list`.`date`>'$dtim'
+WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND (`doc_list`.`type`='2' OR `doc_list`.`type`='3') AND `doc_list`.`date`>'$dtim'
 GROUP BY `doc_list_pos`.`tovar`");
 while($nxt=mysql_fetch_row($res))
 {
  	$l=$nxt[1]/$max;
  	//if($l>100) $l=100;
- 	$rs=mysql_query("UPDATE `doc_base` SET `likvid`='$l' WHERE `id`='$nxt[0]'");
- 	$ar=mysql_affected_rows();
- 	//echo"$nxt[0] - $nxt[1] - $l - $ar\n";
+ 	mysql_unbuffered_query("UPDATE `doc_base` SET `likvid`='$l' WHERE `id`='$nxt[0]'");
+ 	//$ar=mysql_affected_rows();
+ 	//echo"$nxt[0] - $nxt[1] - $l\n";
 }
-echo" готово!\n";
+$time = microtime(true) - $time_start;
+echo" готово ($time сек)!\n";
 global $badpos;
 
 

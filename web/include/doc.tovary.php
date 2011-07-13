@@ -331,12 +331,20 @@ function DrawSkladTable($res,$s,$doc,$limit=0)
 
 // Проверка, не уходило ли когда-либо количество какого-либо товара в минус
 // Используется при отмене документов, уменьшающих остатки на складе, напр. реализаций и перемещений
+/// TODO: Устарело. Заменить везде, где используется на getStoreCntOnDate
 function CheckMinus($pos, $sklad)
 {
+	return getStoreCntOnDate($pos, $sklad);
+}
+
+// Получить количество товара на складе на заданную дату
+function getStoreCntOnDate($pos, $sklad, $unixtime=0)
+{
 	$cnt=0;
+	$sql_add=$unixtime?"AND `doc_list`.`date`<='$unixtime'":'';
 	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos'
+	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos' $sql_add
 	ORDER BY `doc_list`.`date`");
 	if(mysql_errno())	throw new MysqlExceprion("Не удалось запросить список документов с товаром ID:$pos при проверке на отрицательные остатки");
 	while($nxt=mysql_fetch_row($res))

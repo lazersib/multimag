@@ -20,6 +20,22 @@
 include_once($CONFIG['site']['location']."/include/doc.tovary.php");
 include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
+function __autoload($class_name)
+{
+	global $CONFIG;
+	
+	$class_name= strtolower($class_name);
+	$nm2=split('_',$class_name,2);
+	if(is_array($nm2))
+	{
+		list($class_type, $class_name)=$nm2;
+		if($class_type=='doc')		include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
+		else if($class_type=='report')	include_once $CONFIG['site']['location']."/include/reports/".$class_name.'.php';	
+	}
+	@include_once $CONFIG['site']['location']."/gate/include/doc.s.".$class_name.'.php';
+	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
+	
+}
 
 function num2str_semantic($i,&$words,&$fem,$f)
 {
@@ -570,7 +586,7 @@ function GetInCost($pos_id, $limit_date=0)
 			$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
 		$cnt+=$nxt[0];	
 	}
-	return $cost;
+	return round($cost,2);
 }
 
 // Кол-во товара в резерве

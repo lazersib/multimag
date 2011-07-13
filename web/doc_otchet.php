@@ -37,7 +37,7 @@ function get_otch_links()
 	'doc_otchet.php?mode=kassday' => 'Кассовый отчёт за день',
 	'doc_otchet.php?mode=kassday2' => 'Кассовый отчёт за день (2)',
 	'doc_otchet.php?mode=ostatki' => 'Остатки на складе',
-	'doc_otchet.php?mode=ostatki_d' => 'Остатки на складе на дату',
+	'doc_otchet.php?mode=ostatkinadatu' => 'Остатки на складе на дату',
 	'doc_otchet.php?mode=agent_otchet' => 'Отчет по агенту',
 	'doc_otchet.php?mode=img_otchet' => 'Отчет по изображениям',
 	'doc_otchet.php?mode=komplekt' => 'Отчет по комплектующим',
@@ -60,7 +60,7 @@ function otch_list()
 	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день</div></a>
 	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день (2)</div></a>
 	<a href='doc_otchet.php?mode=ostatki'><div>Остатки на складе</div></a>
-	<a href='doc_otchet.php?mode=ostatki_d'><div>Остатки на складе на дату</div></a>
+	<a href='doc_otchet.php?mode=ostatkinadatu'><div>Остатки на складе на дату</div></a>
 	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
 	<a href='doc_otchet.php?mode=komplekt'><div>Отчет по комплектующим</div></a>
 	<a href='doc_otchet.php?mode=prod'><div>Отчёт по продажам</div></a>
@@ -433,16 +433,34 @@ if($mode=='')
 	<h3>Доступные виды отчётов</h3>
 	".otch_list()."<br><br><br><br><br>");
 }
+else if($mode=='pmenu')
+{
+	$tmpl->ajax=1;
+	$tmpl->AddText(otch_divs());
+}
 else if($mode=='kassday2')
 {
 	$opt=rcv('opt');
 	$otchet=new Report_KassDay2();
 	$otchet->Run($opt);
 }
-else if($mode=='pmenu')
+else if($mode=='ostatki')
 {
-	$tmpl->ajax=1;
-	$tmpl->AddText(otch_divs());
+	$opt=rcv('opt');
+	$otchet=new Report_Store();
+	$otchet->Run($opt);
+}
+else if($mode=='ostatkinadatu')
+{
+	$opt=rcv('opt');
+	$otchet=new Report_OstatkiNaDatu();	// Ext
+	$otchet->Run($opt);
+}
+else if($mode=='dolgi')
+{
+	$opt=rcv('opt');
+	$otchet=new Report_Dolgi();
+	$otchet->Run($opt);
 }
 else if($mode=='balance')
 {
@@ -542,13 +560,6 @@ else if($mode=='balcal')
 	<tr class=lin0><td>Кассы (все)<td>$kassa_p<td>$kassa_r<td>$kassa
 	</table>");
 }
-
-else if($mode=='dolgi')
-{
-	$opt=rcv('opt');
-	$otchet=new Report_Dolgi();
-	$otchet->Run($opt);
-}
 else if($mode=='komplekt')
 {
 	$opt=rcv('opt');
@@ -626,53 +637,6 @@ else if($mode=='komplekt')
 		<tr><td colspan='3'><b>Итого:</b><td>$zp_sum<td colspan='4'><td>$kompl_sum<td>$all_sum
 		</table>");
 		
-	}
-}
-else if($mode=='ostatki')
-{
-	$opt=rcv('opt');
-	$otchet=new Report_Store();
-	$otchet->Run($opt);
-}
-else if($mode=='ostatki_d')
-{
-	$opt=rcv('opt');
-	if($opt=='')
-	{
-		$curdate=date("Y-m-d");
-		$tmpl->AddText("
-		<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
-		<script src='/css/jquery/ui/jquery.ui.core.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
-		<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
-		<form action='' method='post'>
-		<input type='hidden' name='opt' value='gen'>
-		Выберите дату:<br>
-		<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
-		<button type='submit'>Выполнить</button>
-		</form>
-		<script type='text/javascript'>
-		$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
-		
-		$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
-		$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-		$( '#datepicker_f' ).datepicker( 'setDate' , '$curdate' );
-		</script>");
-	}
-	else
-	{
-		$date=rcv('date');
-		$tovar_id=1;
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`
-		FROM `doc_list`
-		INNER JOIN `doc_list_pos` AS `pos` ON `doc_list`.`id`=`pos`.`doc` AND `pos`.`tovar`='$tovar_id`
-		WHERE `doc_list`.`date`<='$dt'");
-		while($nxt=mysql_fetch_row($res))
-		{
-		
-		
-		}
 	}
 }
 else if($mode=='fin_otchet')

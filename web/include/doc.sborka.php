@@ -55,7 +55,7 @@ class doc_Sborka extends doc_Nulltype
 		if(!$doc_info)				throw new Exception("Документ {$this->doc} не найден!");
 		if( $doc_info['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`page`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
@@ -77,12 +77,12 @@ class doc_Sborka extends doc_Nulltype
 			}
 			
 			$r=mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt` $sign '{$doc_line['cnt']}' WHERE `id`='{$doc_line['tovar']}' AND `sklad`='{$doc_info['sklad']}'");
-			if(!$r)	throw new MysqlException("S1 Ошибка изменения количества товара $doc_line[0] ($doc_line[1]) на складе $doc_info[3] при проведении!");
+			if(!$r)	throw new MysqlException("Ошибка изменения количества товара $doc_line[0] ($doc_line[1]) на складе $doc_info[3] при проведении!");
 			// Если это первое поступление
 			if(mysql_affected_rows()==0) 
 			{
 				$rs=mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$doc_line[0]', '$doc_info[3]', '{$doc_line['cnt']}')");
-				if(!$rs)	throw new MysqlException("S2 Ошибка записи количества товара $doc_line[0] ({$doc_line['cnt']}) на складе $doc_info[3] при проведении!");
+				if(!$rs)	throw new MysqlException("Ошибка записи количества товара $doc_line[0] ({$doc_line['cnt']}) на складе $doc_info[3] при проведении!");
 			}
 		}
 		if($silent)	return;
