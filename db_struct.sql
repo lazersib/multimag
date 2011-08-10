@@ -1630,7 +1630,10 @@ INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
 (40, 'generic_price_an', 'Анализатор прайсов', 'view'),
 (41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete'),
 (42, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
-(43, 'doc_kordolga', 'Корректировка долга', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+(43, 'doc_kordolga', 'Корректировка долга', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(44, 'adm', 'Администрирование', ''),
+(45, 'adm_users', 'Администррирование пользователей', 'view,edit,delete'),
+(44, 'adm_comments', 'Администрирование коментариев', 'view,delete');
 
 -- --------------------------------------------------------
 

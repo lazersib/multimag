@@ -32,51 +32,36 @@ if($mode=='')
 	//$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
 
 	if(isAccess('doc_list','view'))
-	{
 		$tmpl->AddText("<li><a href='/docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
-	}
 
 	if(isAccess('generic_articles','view'))
-	{
 		$tmpl->AddText("<li><a href='/wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
-	}
 
 	if(isAccess('generic_tickets','view'))
-	{
 		$tmpl->AddText("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");
-	}
 
 	if(isAccess('log_browser','view'))
-	{
 		$tmpl->AddText("<li><a href='/statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
-	}
 
 	if(isAccess('log_error','view'))
-	{
 		$tmpl->AddText("<li><a href='?mode=elog' accesskey='e' title='Ошибки'>Журнал ошибок (E)</a></li>");
-	}
 
 	if(isAccess('log_access','view'))
-	{
 		$tmpl->AddText("<li><a href='?mode=clog'>Журнал посещений</a></li>");
-	}
 
 	if(isAccess('sys_async_task','view'))
-	{
 		$tmpl->AddText("<li><a href='?mode=async_task' title=''>Статус ассинхронных обработчиков</a></li>");
-	}
-
 
 	if(isAccess('sys_ip-blacklist','view'))
-	{
 		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
-	}
 	
 	if(isAccess('sys_acl','view'))
-	{
 		$tmpl->AddText("<li><a href='/rights.php'>Привилегии доступа</a></li>");
-	}
 	
+	if(isAccess('admin_comments','view'))
+		$tmpl->AddText("<li><a href='/adm_comments.php'>Администрирование коментариев</a></li>");
+	if(isAccess('admin_users','view'))
+		$tmpl->AddText("<li><a href='/adm_users.php'>Администрирование пользователей (в разработке)</a></li>");
 		
 	$tmpl->AddText("<li><a href='/user.php?mode=user_data'>Личные данные</a></li>");
 	$tmpl->AddText("<li><a href='/user.php?mode=doc_hist'>История документов</a></li>");

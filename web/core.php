@@ -16,8 +16,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
-define("MULTIMAG_VERSION", "0.0.1r255");
+define("MULTIMAG_VERSION", "0.0.1r257");
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))
@@ -38,6 +37,12 @@ if(! @ include_once("$base_path/config_site.php"))
 	header("500 Internal Server Error");
 	echo"<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Обратитесь к администратору по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
 	exit();
+}
+
+if($CONFIG['site']['force_https'])
+{
+	header('Status-Code: 301');
+	header('Location: https://'.$_SERVER["HTTP_HOST"].$_SERVER['REQUEST_URI']);
 }
 
 if(!isset($CONFIG['site']['display_name']))	$CONFIG['site']['display_name']=$CONFIG['site']['name'];
@@ -63,7 +68,7 @@ $ip=getenv("REMOTE_ADDR");
 $ag=getenv("HTTP_USER_AGENT");
 $rf=getenv("HTTP_REFERER");
 $qq=$_SERVER['QUERY_STRING'];
-$ff=$_SERVER['REQUEST_URI'];
+$ff=$_SERVER['SCRIPT_NAME'];
 $tim=time();
 $skidka="";
 $ncnt=rcv('ncnt');

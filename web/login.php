@@ -62,10 +62,12 @@ function attack_test()
 
 function regMsg($login, $pass, $conf)
 {
-global $CONFIG;
+	global $CONFIG;
+	$proto='http';
+	if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
 return "Вы получили это письмо потому, что в заявке на регистрацию на сайте http://{$CONFIG['site']['name']} был указан Ваш адрес электронной почты. Для продолжения регистрации введите следующий код подтверждения:
 $conf
-или перейдите по ссылке http://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .
+или перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .
 Если не переходить по ссылке (например, если заявка подана не Вами), то регистрационные данные будут автоматически удалены через неделю.
 Ваш аккаунт:
 Логин: $login
@@ -77,7 +79,7 @@ $conf
 
 You have received this letter because in the form of registration in a site http://{$CONFIG['site']['name']} your e-mail address has been entered. For continuation of registration enter this key:
 $conf
-or pass under the link http://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .  If not going under the reference (for example if the form is submitted not by you) registration data will be automatically removed after a week.
+or pass under the link $proto://{$CONFIG['site']['name']}/login.php?mode=conf&s=$conf .  If not going under the reference (for example if the form is submitted not by you) registration data will be automatically removed after a week.
 Your account:
 login: $login
 pass: $pass
@@ -102,17 +104,26 @@ class RegException extends Exception
 
 function RegForm($err_target='', $err_msg='')
 {
-	global $tmpl;
+	global $CONFIG, $tmpl;
 	$login=rcv('login');
 	$email=rcv('email');
 	
 	$err_msgs=array('login'=>'', 'email'=>'','img'=>'');
 	$err_msgs[$err_target]="<div style='color: #c00'>$err_msg</div>";
+	
+	$form_action='/login.php';
+	if($CONFIG['site']['force_https_login'])
+	{
+		$host=$_SERVER['HTTP_HOST'];
+		$qs=explode('/',$query);
+		$form_action='https://'.$host.'/login.php';
+	}
 
 	$tmpl->AddText("<p id='text'>
 	Для использования всех возможностей этого сайта, необходимо пройти процедуру регистрации. Регистрация не сложная,
 	и займёт всего несколько минут. Все зарегистрированные пользователи автоматически получают возможность приобретать товар по специальным ценам!</p>
-	<form method='post' id='reg-form'>
+	<p>Регистрируясь, Вы даёте согласие на хранение, обработку и публикацию своей персональной информации, в соответствии с законом &quot;О персональных данных&quot;.</p>
+	<form action='$form_action' method='post' id='reg-form'>
 	<h2>Для регистрации заполните следующую форму:</h2>
 	<input type='hidden' name='mode' value='regs'>
 	<table>
@@ -157,8 +168,8 @@ if($mode=='')
 	if($from)
 	{
 		$froma=explode("/",$from);
-		if( ($froma[2]!=$CONFIG['site']['name']) || ($froma[3]=='login.php') || ($froma[3]=='') )	$from="http://".$CONFIG['site']['name'];
-		
+		$proto=$_SERVER['HTTPS']?'https':'http';
+		if( ($froma[2]!=$_SERVER['HTTP_HOST']) || ($froma[3]=='login.php') || ($froma[3]=='') )	$from="$proto://".$_SERVER['HTTP_HOST'];		
 	}
 	$_SESSION['redir_to']=$from;	
 	
@@ -235,8 +246,15 @@ if($mode=='')
 			<input type='text' name='img'>";
 		else $m='';
 		
+		$form_action='/login.php';
+		if($CONFIG['site']['force_https_login'])
+		{
+			$host=$_SERVER['HTTP_HOST'];
+			$qs=explode('/',$query);
+			$form_action='https://'.$host.'/login.php';
+		}
 		$tmpl->AddText("
-		<form method='post' action='login.php' id='login-form'>
+		<form method='post' action='$form_action' id='login-form'>
 		<input type='hidden' name='opt' value='login'>
 		<table id='login-table'>
 		<tr><th colspan='2'>
@@ -398,9 +416,12 @@ else if($mode=='rems')
 	if(@$nxt=mysql_fetch_row($res))
 	{
 		$key=md5($nxt[0].$nxt[1].$nxt[2].$nxt[4].time());
+		$proto='http';
+		if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
+
 		mysql_query("UPDATE `users` SET `passch`='$key' WHERE `id`='$nxt[0]'");
 		$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта $nxt[1].
-Если Вы действительно хотите сменить пароль, перейдите по ссылке http://{$CONFIG['site']['name']}/login.php?mode=remn&s=$key
+Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&s=$key
 Если Вы не давали запрос на смену пароля, обязательно отмените этот запрос, авторизовавшись на сайте!
 ----------------------------------------
 Сообщение сгенерировано автоматически, отвечать на него не нужно!";

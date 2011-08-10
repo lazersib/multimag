@@ -538,6 +538,7 @@ if($mode=="")
 		$info.=", <b>товар:</b> {$_SESSION['j_select_tov_name']}";
 	}
 	$res=mysql_query($sql);
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список документов!".mysql_error());
 	$row=mysql_num_rows($res);
 
 	$i=0;
@@ -681,7 +682,7 @@ if($mode=="")
 		<td align='right' onclick='' class='$cl'>$nxt[4]$nxt[5]<a href='docj.php?mode=tree&amp;doc=$nxt[0]' title='Связи'><img src='img/i_tree.png' alt='Связи'></a>
 		<td><a href='$deflink' title='Изменить'><img src='img/i_edit.png' alt='Изменить'></a>
 		<td align='center' id='mo$nxt[0]'>$motions<td>$nxt[11]<td>$dop $dp<td>$nxt[9]<td align='right'>$nxt[7]<td>$dt<td>
-		<a href='docj.php?mode=log&amp;doc=$nxt[0]'>$nxt[10]</a>");
+		<a href='/adm_users.php?mode=view&amp;id=$nxt[6]'>$nxt[10]</a>");
 	}
 	$tmpl->AddText("</table>");
 	$razn=$pr-$ras;
