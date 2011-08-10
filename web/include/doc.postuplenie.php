@@ -289,11 +289,7 @@ class doc_Postuplenie extends doc_Nulltype
 	// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
 	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-
+		global $tmpl, $uid;
 
 		if($target_type=='')
 		{
@@ -324,7 +320,7 @@ class doc_Postuplenie extends doc_Nulltype
 			$altnum=GetNextAltNum($target_type ,$doc_data[10]);
 			$res=mysql_query("INSERT INTO `doc_list`
 			(`type`, `agent`, `date`, `sklad`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
-			VALUES ('$target_type', '{$doc_data['agent']}', '$tm', '1', '1', '$uid', '$altnum', '{$doc_data['subtype']}', '$doc', '$sum', '{$doc_data['firm_id']}')");
+			VALUES ('$target_type', '{$this->doc_data['agent']}', '$tm', '1', '1', '$uid', '$altnum', '{$this->doc_data['subtype']}', '$doc', '$sum', '{$this->doc_data['firm_id']}')");
 			if(mysql_errno())	throw new MysqlException("Не удалось создать подчинённый документ");
 			$ndoc= mysql_insert_id();
 			// Вид расхода - закуп товара на продажу
