@@ -174,9 +174,9 @@ if($mode=='')
 	$_SESSION['redir_to']=$from;	
 	
 	$cont=rcv('cont');
-	$tmpl->AddText("<h1 id='page-title'>Аутенитфикация</h1>");
-	$tmpl->SetTitle("Аутенитфикация");
-	if($cont)	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутенитфикацию.</div>");
+	$tmpl->AddText("<h1 id='page-title'>Аутентификация</h1>");
+	$tmpl->SetTitle("Аутентификация");
+	if($cont)	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутентификацию.</div>");
 
 	//$_SESSION['c_str']=strtoupper(keygen_unique(0,5,7));
 	$ip=getenv("REMOTE_ADDR");

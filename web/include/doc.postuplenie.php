@@ -317,7 +317,7 @@ class doc_Postuplenie extends doc_Nulltype
 			$sum=DocSumUpdate($doc);
 			mysql_query("START TRANSACTION");
 			$tm=time();
-			$altnum=GetNextAltNum($target_type ,$doc_data[10]);
+			$altnum=GetNextAltNum($target_type ,$this->doc_data['subtype']);
 			$res=mysql_query("INSERT INTO `doc_list`
 			(`type`, `agent`, `date`, `sklad`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
 			VALUES ('$target_type', '{$this->doc_data['agent']}', '$tm', '1', '1', '$uid', '$altnum', '{$this->doc_data['subtype']}', '$doc', '$sum', '{$this->doc_data['firm_id']}')");

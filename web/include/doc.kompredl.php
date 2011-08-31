@@ -160,7 +160,7 @@ class doc_Kompredl extends doc_Nulltype
 		global $tmpl;
 		global $uid;
 
-		$altnum=GetNextAltNum($target_type, $this->doc_data[10]);
+		$altnum=GetNextAltNum($target_type, $this->doc_data['subtype']);
 		$tm=time();
 		$sum=DocSumUpdate($this->doc);
 		$res=mysql_query("INSERT INTO `doc_list`
@@ -176,12 +176,12 @@ class doc_Kompredl extends doc_Nulltype
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ('$r_id','cena','{$this->dop_data['cena']}')");
 
-		$res=mysql_query("SELECT `tovar`, `cnt`, `sn`, `comm`, `cost` FROM `doc_list_pos`
+		$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
 		while($nxt=mysql_fetch_row($res))
 		{
-			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
-			VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+			VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]' )");
 		}
 
 		return $r_id;

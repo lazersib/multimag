@@ -32,7 +32,7 @@ function get_otch_links()
 	'doc_otchet.php?mode=agent_bez_prodaj' => 'Агенты без продаж',
 	'doc_otchet.php?mode=sverka' => 'Акт сверки',
 	'doc_otchet.php?mode=sverka_op' => 'Акт сверки (оперативный)',
-	'doc_otchet.php?mode=balance' => 'Балланс',
+	'doc_otchet.php?mode=balance' => 'Баланс',
 	'doc_otchet.php?mode=dolgi' => 'Долги',
 	'doc_otchet.php?mode=kassday' => 'Кассовый отчёт за день',
 	'doc_otchet.php?mode=kassday2' => 'Кассовый отчёт за день (2)',
@@ -55,7 +55,7 @@ function otch_list()
 	return "
 	<a href='doc_otchet.php?mode=bezprodaj'><div>Агенты без продаж</div></a>
 	<a href='doc_otchet.php?mode=sverka'><div>Акт сверки</div></a>
-	<a href='doc_otchet.php?mode=balance'><div>Балланс</div></a>
+	<a href='doc_otchet.php?mode=balance'><div>Баланс</div></a>
 	<a href='doc_otchet.php?mode=dolgi'><div>Долги</div></a>
 	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день</div></a>
 	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день (2)</div></a>
