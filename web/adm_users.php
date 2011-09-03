@@ -83,7 +83,7 @@ else if($mode=='view')
 	$tmpl->AddText("</table>");
 }
 
-$tmpl->write();
+
 
 }
 catch(Exception $e)
@@ -92,5 +92,7 @@ catch(Exception $e)
 	$tmpl->AddText("<br><br>");
 	$tmpl->logger($e->getMessage());
 }
+
+$tmpl->write();
 
 ?>

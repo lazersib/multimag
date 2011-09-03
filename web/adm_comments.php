@@ -59,7 +59,7 @@ else if($mode=='rm')
 	$tmpl->msg("Строка удалена.<br><a href='/adm_comments.php'>Назад</a>","ok");
 }
 
-$tmpl->write();
+
 
 }
 catch(Exception $e)
@@ -68,5 +68,7 @@ catch(Exception $e)
 	$tmpl->AddText("<br><br>");
 	$tmpl->logger($e->getMessage());
 }
+
+$tmpl->write();
 
 ?>

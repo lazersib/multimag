@@ -89,17 +89,16 @@ try
 		
 		SetStatus('Loading prices');
 		
-		if(detect_firm($xml,1))
+		$loader=new ODFContentLoader($xml);
+		if($firm=$loader->detectFirm())
 		{
-			$p=parse($xml);
-			if($p)
-			{	
-				$msg.="Parsed!";	
-				unlink($CONFIG['price']['dir']	.'/'.$filename);
-			}
-			else $msg.="PARSE ERROR!";
+			$loader->setInsertToDatabase();
+			$count=$loader->Run();
+			$msg.="Parsed ($count items)!";	
+			unlink($CONFIG['price']['dir']	.'/'.$filename);
 		}
 		else $msg.="NOT DETECTED!";
+		
 		
 		if($msg)
 		{

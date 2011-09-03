@@ -292,12 +292,14 @@ else if($mode=='load')
 	<input type='hidden' name='MAX_FILE_SIZE' value='2000000'>
 	<input name='file' type='file'><br>
 	Организация будет выбрана автоматически на основе списка сигнатур. Если организации нет в списке, Вам будет предложено её добавить.<br>
+	<label><input type='checkbox' name='bhtml' value='1'>Показать загруженные таблицы</label><br>
 	<input type=submit value='Загрузить'>
 	</form>
 	<p><b>Важно!</b> Загруженный прайс заменит уже существующую информацию в базе по соответствующей организации. Загрузка будет выполнена немедленно, но проанализированны данные будут при следующем запуске анализатора (обычно в течение одного часа).</p>");
 }
 else if($mode=="parse")
 {
+	$bhtml=rcv('bhtml');
 	if(is_uploaded_file($_FILES['file']['tmp_name']))
 	{
 		if($_FILES['file']['size']<(2000*1024))
@@ -305,9 +307,28 @@ else if($mode=="parse")
 			$zip = new ZipArchive;
 			$zip->open($_FILES['file']['tmp_name'],ZIPARCHIVE::CREATE);
 			$xml = $zip->getFromName("content.xml");
-
-			if(detect_firm($xml))
-				parse($xml);
+			$loader=new ODFContentLoader($xml);
+			if($firm=$loader->detectFirm())
+			{
+				$loader->setInsertToDatabase();
+				if($bhtml)	$loader->setBuildHTMLData();
+				$count=$loader->Run();
+				$tmpl->msg("Успешно обработано $count строк фирмы $firm","ok");
+				if($bhtml)	$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
+			}
+			else
+			{
+				$tmpl->msg("Фирма не определена!","info");
+				if($bhtml)
+				{
+					$loader->setBuildHTMLData();
+					$loader->Run();
+					$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
+				}
+				
+				firmAddForm();
+			}
+			
 
 		}
 		else $tmpl->msg("Слишком большой файл!",'err');
