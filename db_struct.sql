@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `rate` tinyint(4) NOT NULL COMMENT 'Оценка объекта (0-5)',
   `ip` varchar(16) NOT NULL,
   `user_agent` varchar(128) NOT NULL,
+  `response` varchar(512) NOT NULL COMMENT 'Ответ администрации',
+  `responser` int(11) NOT NULL COMMENT 'Автор ответа',
   PRIMARY KEY (`id`),
   KEY `object_name` (`object_name`),
   KEY `object_id` (`object_id`),
