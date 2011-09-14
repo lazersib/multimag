@@ -16,7 +16,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-define("MULTIMAG_VERSION", "0.0.1r257");
+define("MULTIMAG_VERSION", "0.0.1r261");
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))
@@ -485,6 +485,7 @@ class BETemplate
 		$time = microtime(true) - $time_start;
 		if($time>=3)
 			$this->logger("Exec time: $time",1);
+		echo"Страница сгенерирована за $time секунд";
 	}
 
     function logger($s, $silent=0, $hidden_data='')

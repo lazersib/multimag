@@ -157,7 +157,7 @@ if($mode=='')
 	$img=rcv('img');
 	$login=rcv('login');
 	$pass=rcv('pass');
-	if($_SESSION['uid'])
+	if(@$_SESSION['uid'])
 	{
 		include("user.php");
 		exit();
@@ -168,7 +168,7 @@ if($mode=='')
 	if($from)
 	{
 		$froma=explode("/",$from);
-		$proto=$_SERVER['HTTPS']?'https':'http';
+		$proto=@$_SERVER['HTTPS']?'https':'http';
 		if( ($froma[2]!=$_SERVER['HTTP_HOST']) || ($froma[3]=='login.php') || ($froma[3]=='') )	$from="$proto://".$_SERVER['HTTP_HOST'];		
 	}
 	$_SESSION['redir_to']=$from;	

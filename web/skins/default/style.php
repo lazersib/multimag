@@ -31,7 +31,7 @@ function skin_render($page,$tpl)
 {
 	global $tmpl, $CONFIG;
 	
-	if($_SESSION['uid'])
+	if(@$_SESSION['uid'])
 	{
 		$tmpl->AddRMenu("<li class='noborder'><a href='/login.php?mode=logout' title='Покинуть сайт'>Выход</a></li>");
 		$tmpl->AddLMenu("<p class='vspace sidehead'><a>{$_SESSION['name']}:</a></p>

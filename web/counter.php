@@ -40,7 +40,7 @@ $qq=$_SERVER['QUERY_STRING'];
 $ff=$_SERVER['PHP_SELF'];
 $tim=time();
 $skidka="";
-if(!$ncnt) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
+
 $cc=$_GET['cc'];
 $im=imagecreatefrompng("img/counterbg.png");
 $bg_c = imagecolorallocate ($im, 150,255, 150);
@@ -58,7 +58,7 @@ $ww=mysql_num_rows($res);
 $res=mysql_query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
 $aw=mysql_num_rows($res);
 
-mysql_query("DELETE FROM `counter` WHERE `date` < '$tt'");
+
 
 imagestring ($im,1,5,5,"Week: $aw/$ww", $text_c);
 imagestring ($im,1,5,12,"Day:  $all/$pip", $text_c);

@@ -611,7 +611,7 @@ function DocPodZakaz($pos,$doc=0)
 	// $doc - номер исключенного документа
 	$rt=time()-60*60*24*365;
 	$rs=mysql_query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
-	INNER JOIN `doc_list` ON `doc_list`.`type`='11' AND `doc_list`.`ok`>'0' AND `doc_list`.`date`>'$rt' AND `doc_list`.`id`!='$doc'	AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
+	INNER JOIN `doc_list` ON `doc_list`.`type`='11' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!='$doc' AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
 	WHERE `doc_list_pos`.`tovar`='$pos'
 	GROUP BY `doc_list_pos`.`tovar`");
 	return @$rezerv=mysql_result($rs,0,0);

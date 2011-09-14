@@ -568,9 +568,10 @@ if($mode=="")
 	<th width='75'>№<th width='20'>&nbsp;<th width='20'>&nbsp;<th>Тип<th>Доп.$dp<th>Агент<th>Сумма<th>Дата<th>Автор");
 	while($nxt=mysql_fetch_array($res))
 	{
-		$dop='';
+		$dop=$cl='';
 		$dt=date("d.m.Y H:i:s",$nxt[3]);
-		
+		$cc="lin$i";
+		if(@$uid==$nxt[6])	$cc.='1';
 		// Доп. информация
 		switch($nxt['type'])
 		{
@@ -581,32 +582,64 @@ if($mode=="")
 			case 12:
 			case 15:
 			case 17:
-			{
 				$r=mysql_query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$nxt['sklad']}'");
 				$data=mysql_fetch_row($r);
+				mysql_free_result($r);
 				$dop="Склад: $data[1] /$data[0]";
-			}	break; 
+				break; 
 			case 4:
 			case 5:
-			{
 				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['bank']}' AND `ids`='bank'");
 				$data=mysql_fetch_row($r);
+				mysql_free_result($r);
 				$dop="Банк: $data[1] /$data[0]";
-			}	break;
+				break;
 			case 6:
 			case 7:
 			case 9:
-			{
 				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['kassa']}' AND `ids`='kassa'");
 				$data=mysql_fetch_row($r);
+				mysql_free_result($r);
 				$dop="Касса: $data[1] /$data[0]";
-			}	break;
+				break;
 			case 10:
 			case 11:
 			case 13:
 			case 14:
-				break;
-			
+				break;			
+		}
+		
+		switch($nxt['type'])
+		{
+			case 3:
+				$r=mysql_query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+				INNER JOIN `doc_list` ON `doc_list_pos`.`doc`=`doc_list`.`id`
+				WHERE `doc_list_pos`.`tovar`=`pos_id` AND `doc_list`.`p_doc`=`doc_id` AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
+				) AS `r_cnt`
+				FROM `doc_list_pos`
+				WHERE `doc_list_pos`.`doc`='$nxt[0]'");
+				$f=0;
+				while($nx=mysql_fetch_row($r))
+				{
+					if($nx[3]<=0)	continue;
+					$f=1;
+					if($nx[2]>$nx[3])
+					{
+						$f=2;
+						break;
+					}
+				}
+				if($f==1)	$cl='f_green';
+				if($f==2)	$cl='f_brown';
+				mysql_free_result($r);
+				break;				
+			case 8:
+				$r=mysql_query("SELECT `doc_sklady`.`name` FROM `doc_dopdata`
+				LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_dopdata`.`value`
+				WHERE `doc_dopdata`.`doc`='$nxt[0]' AND `doc_dopdata`.`param`='na_sklad'");
+				$nxt[9]="На ".@mysql_result($r,0,0);
+				mysql_free_result($r);
+				break;	
 		}
 		
 
@@ -622,7 +655,6 @@ if($mode=="")
 		}
 
 		// Проплаты
-		$cl='';
 		
 		if(($nxt[1]==2)&&($nxt[7]>0))
 		{
@@ -640,15 +672,6 @@ if($mode=="")
 				else $cl='f_brown';
 			}
 			else $cl='f_red';	
-		}
-		// Перемещения
-		if($nxt[1]==8)
-		{
-			$rr=mysql_query("SELECT `doc_sklady`.`name` FROM `doc_dopdata`
-			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_dopdata`.`value`
-			WHERE `doc_dopdata`.`doc`='$nxt[0]' AND `doc_dopdata`.`param`='na_sklad'");
-			$nxt[9]="На ".@mysql_result($rr,0,0);
-			mysql_free_result($rr);
 		}
 
 
@@ -668,8 +691,6 @@ if($mode=="")
 		$nxt[7]=sprintf("%01.2f", $nxt[7]);	
 		
 		if(!$nxt[4]) $nxt[4]=$nxt[0];
-		$cc="lin$i";
-		if(@$uid==$nxt[6])	$cc.='1';
 		
 		// Подсветка site
 		if($nxt['err_flag'])	$cc.=' f_red';
@@ -694,7 +715,8 @@ if($mode=="")
 		$razn=sprintf("%0.2f руб.",$razn);
 
 	$tmpl->AddText("Итого: приход: $pr, расход: $ras. Баланс: $razn<br>
-	<b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span>, номер - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span>
+	<b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
+	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
 	");
 
 }
@@ -784,38 +806,6 @@ else if($mode=="filter")
 	}
 	else if($opt=='fs')
 	{
-// 			$date_st=rcv('date_st');
-// 			$_SESSION['j_date_st']=date("Y-m-d",strtotime($date_st));
-// 
-// 			$date_end=rcv('date_end');
-// 			$_SESSION['j_date_end']=date("Y-m-d",strtotime($date_end)+(24*60*60-1));
-// 			
-// 			$dsel=rcv('doc_types');
-// 			$_SESSION['j_select_doc']=$dsel;
-// 			
-// 			$tsel=rcv('ptip');
-// 			$_SESSION['j_select_subtype']=$tsel;
-// 			
-// 			
-// 			$ag=rcv('ag');
-// 			if($ag)
-// 			{
-// 				$res=mysql_query("SELECT `id` FROM `doc_agent` WHERE `name`='$ag'");
-// 				@$ag=mysql_result($res,0,0);
-// 			}
-// 			else $ag=0;
-// 			$_SESSION['j_agent']=$ag;
-// 			
-// 			$tov=rcv('tov');
-// 			if(($tov)&&($tov!=':'))
-// 			{
-// 				$tov=split(':',$tov);
-// 				$res=mysql_query("SELECT `id` FROM `doc_base` WHERE `name`='$tov[0]' AND `proizv`='$tov[1]'");
-// 				@$tov=mysql_result($res,0,0);
-// 			}
-// 			else $tov=0;
-// 			$_SESSION['j_select_tov']=$tov;
-		
 		$tov=rcv('tov');
 		if($tov)
 		{

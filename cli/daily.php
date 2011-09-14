@@ -16,11 +16,17 @@ if($CONFIG['auto']['user_del_days']>0)
 	$res=mysql_query("DELETE FROM `users` WHERE `date_reg`<'$dtim' AND `confirm`!='0' AND `confirm`!=''");
 }
 
-// Перемещение непроведённых реализаций на конец дня
+// Перемещение непроведённых реализаций на начало
 if($CONFIG['auto']['move_nr_to_end']==true)
 {
 	$end_day=strtotime(date("Y-m-d 00:00:01"));
 	$res=mysql_query("UPDATE `doc_list` SET `date`='$end_day' WHERE `type`='2' AND `ok`='0'");
 }
+
+
+// Очистка счётчика посещений от старых данных
+$tt=time()-60*60*24*7;
+mysql_query("DELETE FROM `counter` WHERE `date` < '$tt'");
+
 
 ?>
