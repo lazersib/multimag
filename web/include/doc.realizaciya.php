@@ -1804,7 +1804,7 @@ function SfakPDF($doc, $to_str=0)
 	$gruzop='';
 	if($gruzop_info['fullname'])	$gruzop.=$gruzop_info['fullname'];
 	else				$gruzop.=$gruzop_info['name'];
-	if($gruzop_info['adres'])	$gruzop.=', адрес '.$gruzop_info['adres'];
+	if($gruzop_info['adres'])	$gruzop.=', '.$gruzop_info['adres'];
 
 	$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn` FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
 

@@ -299,18 +299,9 @@ class doc_Postuplenie extends doc_Nulltype
 		}
 		else if($target_type==2)
 		{
-			mysql_query("START TRANSACTION");
-			$base=$this->Otgruzka();
-			if(!$base)
-			{
-				mysql_query("ROLLBACK");
-				$tmpl->msg("Не удалось создать подчинённый документ!","err");
-			}
-			else
-			{
-				mysql_query("COMMIT");
-				header("Location: doc.php?mode=body&doc=$base");
-			}
+			$new_doc=new doc_Realizaciya();
+			$dd=$new_doc->CreateFromP($this);
+			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type==7)
 		{
