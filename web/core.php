@@ -311,7 +311,7 @@ class MysqlException extends Exception
 		$rf=getenv("HTTP_REFERER");
 		$qq=$_SERVER['QUERY_STRING'];
 		$ff=$_SERVER['PHP_SELF'];
-		$uid=$_SESSION['uid'];
+		$uid=@$_SESSION['uid'];
 		$s=mysql_real_escape_string($this->message);
 		$hidden_data=mysql_real_escape_string($this->sql_error);
 		$ag=mysql_real_escape_string($ag);
@@ -485,7 +485,7 @@ class BETemplate
 		$time = microtime(true) - $time_start;
 		if($time>=3)
 			$this->logger("Exec time: $time",1);
-		echo"Страница сгенерирована за $time секунд";
+		//echo"Страница сгенерирована за $time секунд";
 	}
 
     function logger($s, $silent=0, $hidden_data='')

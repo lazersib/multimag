@@ -1351,9 +1351,28 @@ class doc_s_Sklad
 	{
 		global $tmpl;
 		$opt=rcv("opt");
-		if($opt=='')
+		$name=rcv('name');
+		$analog=rcv('analog');
+		$proizv=rcv('proizv');
+		$mesto=rcv('mesto');
+		$di_min=rcv('di_min');
+		$di_max=rcv('di_max');
+		$de_min=rcv('de_min');
+		$de_max=rcv('de_max');
+		$size_min=rcv('size_min');
+		$size_max=rcv('size_max');
+		$m_min=rcv('m_min');
+		$m_max=rcv('m_max');
+		$cost_min=rcv('cost_min');
+		$cost_max=rcv('cost_max');
+		$li_min=rcv('li_min');
+		$li_max=rcv('li_max');
+		$type=rcv('type');
+		
+		if($opt=='' || $opt=='s')
 		{
 			doc_menu();
+			$analog_checked=$analog?'checked':'';
 			$tmpl->AddText("<h1>Расширенный поиск</h1>
 			<form action='docs.php' method='post'>
 			<input type='hidden' name='mode' value='search'>
@@ -1365,21 +1384,21 @@ class doc_s_Sklad
 			<th>Тип
 			<th>Место на складе
 			<tr class='lin1'>
-			<td><input type='text' name='name'><br><label><input type='checkbox' name='analog' value='1'>И аналог</label>
-			<td>От: <input type='text' name='li_min'><br>до: <input type='text' name='li_max'>
-			<td><input type='text' id='proizv' name='proizv' value='' onkeydown=\"return AutoFill('/docs.php?mode=search&amp;opt=pop_proizv','proizv','proizv_p')\"><br>
+			<td><input type='text' name='name' value='$name'><br><label><input type='checkbox' name='analog' value='1' $analog_checked>И аналог</label>
+			<td>От: <input type='text' name='li_min' value='$li_min'><br>до: <input type='text' name='li_max' value='$li_max'>
+			<td><input type='text' id='proizv' name='proizv' value='$proizv' onkeydown=\"return AutoFill('/docs.php?mode=search&amp;opt=pop_proizv','proizv','proizv_p')\"><br>
 			<div id='proizv_p' class='dd'></div>
 			<td><select name='type' id='pos_type'>");
 			$res=mysql_query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$ii="";
-				if($nx[0]==0) $ii=" selected";
+				if($nx[0]==$type) $ii=" selected";
 				$tmpl->AddText("<option value='$nx[0]' $ii>$nx[0] - $nx[1]</option>");
 			}
 
 			$tmpl->AddText("</select>
-			<td><input type='text' name='mesto'>
+			<td><input type='text' name='mesto' value='$mesto'>
 			
 			<tr>
 			<th>Внутренний диаметр
@@ -1388,24 +1407,24 @@ class doc_s_Sklad
 			<th>Масса
 			<th>Цена
 			<tr class='lin1'>
-			<td>От: <input type='text' name='di_min'><br>до: <input type='text' name='di_max'>
-			<td>От: <input type='text' name='de_min'><br>до: <input type='text' name='de_max'>
-			<td>От: <input type='text' name='size_min'><br>до: <input type='text' name='size_max'>
-			<td>От: <input type='text' name='m_min'><br>до: <input type='text' name='m_max'>
-			<td>От: <input type='text' name='cost_min'><br>до: <input type='text' name='cost_max'>
+			<td>От: <input type='text' name='di_min' value='$di_min'><br>до: <input type='text' name='di_max' value='$di_max'>
+			<td>От: <input type='text' name='de_min' value='$de_min'><br>до: <input type='text' name='de_max' value='$de_max'>
+			<td>От: <input type='text' name='size_min' value='$size_min'><br>до: <input type='text' name='size_max' value='$size_max'>
+			<td>От: <input type='text' name='m_min' value='$m_min'><br>до: <input type='text' name='m_max' value='$m_max'>
+			<td>От: <input type='text' name='cost_min' value='$cost_min'><br>до: <input type='text' name='cost_max' value='$cost_max'>
 			
 			<tr>
 			<td colspan='5' align='center'><input type='submit' value='Найти'>
 			</table>
 			</form>");
 		}
-		else if($opt=='pop_proizv')
+		if($opt=='pop_proizv')
 		{
 			$tmpl->ajax=1;
 			$s=rcv('s');
 			$res=mysql_query("SELECT `proizv` FROM `doc_base` WHERE LOWER(`proizv`) LIKE LOWER('%$s%') GROUP BY `proizv`  ORDER BY `proizv`LIMIT 20");
 			$row=mysql_numrows($res);
-			$tmpl->AddText("<div class='pointer' onclick=\"return AutoFillClick('proizv','','proizv_p');\">-- Убрать --</div>");
+			$tmpl->SetText("<div class='pointer' onclick=\"return AutoFillClick('proizv','','proizv_p');\">-- Убрать --</div>");
 			while($nxt=mysql_fetch_row($res))
 			{
 				$i=1;
@@ -1415,25 +1434,7 @@ class doc_s_Sklad
 		}	
 		else if($opt=='s')
 		{
-			doc_menu();
 			$tmpl->AddText("<h1>Результаты</h1>");
-			$name=rcv('name');
-			$analog=rcv('analog');
-			$proizv=rcv('proizv');
-			$mesto=rcv('mesto');
-			$di_min=rcv('di_min');
-			$di_max=rcv('di_max');
-			$de_min=rcv('de_min');
-			$de_max=rcv('de_max');
-			$size_min=rcv('size_min');
-			$size_max=rcv('size_max');
-			$m_min=rcv('m_min');
-			$m_max=rcv('m_max');
-			$cost_min=rcv('cost_min');
-			$cost_max=rcv('cost_max');
-			$li_min=rcv('li_min');
-			$li_max=rcv('li_max');
-			$type=rcv('type');
 			$sklad=$_SESSION['sklad_num'];
 			
 			$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,

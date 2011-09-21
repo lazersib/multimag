@@ -1463,7 +1463,6 @@ function PrintTg12PDF($to_str=0)
 		$nalog = 	sprintf("%01.2f", $nalog);
 		$snalogom =	sprintf("%01.2f", $snalogom);
 		$mass = 	sprintf("%01.3f", $mass);
-		$mass1 = 	sprintf("%01.3f", $nxt[5]);
 		$summass+=$mass;
 		$list_summass+=$mass;
 		$sum+=$snalogom;
@@ -1482,7 +1481,7 @@ function PrintTg12PDF($to_str=0)
 		$pdf->Cell($t_all_width[5],$line_height, '-' ,1,0,'C',0);
 		$pdf->Cell($t_all_width[6],$line_height, '-' ,1,0,'C',0);
 		$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[8],$line_height, $mass1 ,1,0,'C',0);
+		$pdf->Cell($t_all_width[8],$line_height, $mass ,1,0,'C',0);
 		$pdf->Cell($t_all_width[9],$line_height, "$nxt[3] / $mass" ,1,0,'C',0);
 		
 		$pdf->Cell($t_all_width[10],$line_height, $cena ,1,0,'C',0);
@@ -1795,9 +1794,9 @@ function SfakPDF($doc, $to_str=0)
 	
 	if(!$to_str) $tmpl->ajax=1;
 	
-	$dt=date("d.m.Y",$this->doc_data[5]);
+	$dt=date("d.m.Y",$this->doc_data['date']);
 
-	$res=mysql_query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`
+	$res=mysql_query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`adres`
 	FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->dop_data['gruzop']}'	");
 	if(mysql_errno())		throw new MysqlException("Невозможно получить данные грузополучателя!");	
 	$gruzop_info=mysql_fetch_array($res);
@@ -1806,13 +1805,6 @@ function SfakPDF($doc, $to_str=0)
 	if($gruzop_info['fullname'])	$gruzop.=$gruzop_info['fullname'];
 	else				$gruzop.=$gruzop_info['name'];
 	if($gruzop_info['adres'])	$gruzop.=', адрес '.$gruzop_info['adres'];
-	if($gruzop_info['tel'])		$gruzop.=', тел. '.$gruzop_info['tel'];
-	if($gruzop_info['inn'])		$gruzop.=', ИНН/КПП '.$gruzop_info['inn'];
-	if($gruzop_info['okevd'])	$gruzop.=', ОКВЭД '.$gruzop_info['okevd'];
-	if($gruzop_info['rs'])		$gruzop.=', Р/С '.$gruzop_info['rs'];
-	if($gruzop_info['bank'])	$gruzop.=', в банке '.$gruzop_info['bank'];
-	if($gruzop_info['bik'])		$gruzop.=', БИК '.$gruzop_info['bik'];
-	if($gruzop_info['ks'])		$gruzop.=', К/С '.$gruzop_info['ks'];
 
 	$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn` FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
 
@@ -1820,8 +1812,8 @@ function SfakPDF($doc, $to_str=0)
 	if($this->doc_data[13])
 	{
 		$rs=@mysql_query("SELECT `id`, `altnum`, `date` FROM `doc_list` WHERE 
-		(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6')) OR
-		(`p_doc`='{$this->doc_data[13]}' AND (`type`='4' OR `type`='6'))
+		(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6') AND `date`<='{$this->doc_data['date']}' ) OR
+		(`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6') AND `date`<='{$this->doc_data['date']}')
 		AND `ok`>'0' AND `p_doc`!='0' GROUP BY `p_doc`");
 		$pp=@mysql_result($rs,0,1);
 		$ppdt=@date("d.m.Y",mysql_result($rs,0,2));

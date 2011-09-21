@@ -59,6 +59,7 @@ else
 	");
 	
 	$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news` LIMIT 1");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
 	if(mysql_num_rows($res))
 	{
 		$tmpl->AddText("<table class='index-nsr'><tr><td>

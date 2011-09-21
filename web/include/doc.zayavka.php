@@ -17,7 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
 $doc_types[3]="Заявка покупателя";
 
 class doc_Zayavka extends doc_Nulltype
