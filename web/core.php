@@ -16,7 +16,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-define("MULTIMAG_VERSION", "0.0.1r261");
+define("MULTIMAG_VERSION", "0.0.1r265");
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))
@@ -287,6 +287,32 @@ function mailto($email,$tema,$msg,$from="")
 	if($from) $mail->From = $from;  
 	return $mail->Send();
 }
+
+function sendAdmMessage($text,$subject='')
+{
+	global $CONFIG;
+	if($subject=='')	$subject="Admin mail from {$CONFIG['site']}";
+	
+	if($CONFIG['site']['doc_adm_email'])
+		mailto($CONFIG['site']['doc_adm_email'],$subject ,$text, $from);
+
+	if($CONFIG['site']['doc_adm_jid'])
+	{
+		try 
+		{
+			$xmppclient->connect();
+			$xmppclient->processUntil('session_start');
+			$xmppclient->presence();
+			$xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
+			$xmppclient->disconnect();
+		} 
+		catch(XMPPHP_Exception $e) 
+		{
+			$tmpl->logger("Невозможно отправить сообщение по XMPP!","err");
+		}
+	}
+}
+
 
 function date_day($date)
 {

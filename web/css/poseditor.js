@@ -396,7 +396,7 @@ function PladdInit()
 		minChars:1,
 		matchSubset:1,
 		autoFill:false,
-		selectFirst:false,
+		selectFirst:true,
 		matchContains:1,
 		cacheLength:10,
 		maxItemsToShow:20, 
@@ -412,7 +412,7 @@ function PladdInit()
 			minChars:1,
 			matchSubset:1,
 			autoFill:false,
-			selectFirst:false,
+			selectFirst:true,
 			matchContains:1,
 			cacheLength:10,
 			maxItemsToShow:20, 
@@ -511,7 +511,8 @@ function PladdInit()
 		pos_sum.innerHTML=''
 		pos_sklad_cnt.innerHTML=''
 		pos_mesto.innerHTML=''
-		pos_id.focus();
+		if(pos_vc)	pos_vc.focus()
+		else		pos_id.focus();
 		$('#pladd').removeClass('process')
 		$('#pladd').removeClass('error')
 	}
@@ -568,11 +569,32 @@ function PladdInit()
 	function KeyUp(e)
 	{
 		var e = e||window.event;
-		if(e.keyCode==13)	AddData();
-		if( this.id=='pos_cost' || this.id=='pos_cnt' )
+		if(e.keyCode==13)	
 		{
-			pos_sum.innerHTML=parseFloat(pos_cost.value)*parseFloat(pos_cnt.value)
+			if(this.id=='pos_cnt')	AddData()
+			else
+			{
+				var td=this.parentNode.nextSibling
+				while(td.nextSibling)
+				{
+					if(td.nodeType!=1)
+					{
+						td=td.nextSibling
+						continue
+					}
+					if(td.firstChild.tagName=='INPUT')
+					{
+						td.firstChild.focus()
+						td.firstChild.select()
+						return
+					}
+					td=td.nextSibling
+				}
+			}
 		}
+		//	AddData();
+		if( this.id=='pos_cost' || this.id=='pos_cnt' )
+			pos_sum.innerHTML=parseFloat(pos_cost.value)*parseFloat(pos_cnt.value)
 		if( this.id=='pos_id')
 		{
 			if(parseInt(pos_id.value)!=pos_id.old_value )
@@ -583,13 +605,20 @@ function PladdInit()
 		}
 	}
 	
+	function KeyDown(e)
+	{
+		var e = e||window.event;		
+		if(e.keyCode==9 && this.id=='pos_cnt') return false	
+	}
+	
 	pos_id.old_value=0
 	
 	pos_id.onkeyup=KeyUp
-	//pos_vc.onkeydown=KeyDown
-	//pos_name.onkeydown=KeyDown
+	pos_vc.onkeyup=KeyUp
+	pos_name.onkeyup=KeyUp
 	pos_cost.onkeyup=KeyUp
 	pos_cnt.onkeyup=KeyUp
+	pos_cnt.onkeydown=KeyDown
 	pladd.Reset()
 }
 

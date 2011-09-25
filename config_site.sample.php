@@ -1,8 +1,8 @@
 <?php
 require_once("config_all.php"); 
 
-$CONFIG['site']['skin']			= '';		// default по умолчанию
-$CONFIG['site']['inner_skin']		= 'default';	// по умолчанию = предыдущему
+$CONFIG['site']['skin']			= 'default';		// default по умолчанию
+$CONFIG['site']['inner_skin']		= 'inner';	// по умолчанию = предыдущему
 
 // Настройки прайса
 $CONFIG['site']['price_col_cnt']	= 0;	// 2 по умолчанию
@@ -43,6 +43,8 @@ $CONFIG['images']['watermark']		= 1;	// Показывать ли названи
 						// $CONFIG['images']['show_watermark']=array('w'=>0,'p'=>'1','g'=>'1');
 $CONFIG['images']['font_watermark']	= '';	// Шрифт текста, накладываемого на изображение
 $CONFIG['images']['quality']		= 70;	// Качество (по уровню сжатия) изображений
+
+$CONFIG['noify']['comments']		= true;	// Оповещать о коментариях
 
 // Расположение изменяемых доступных данных - изображения, итп 
 $CONFIG['site']['var_data_web']		= '/share/var';		// по отношению к корню сайта

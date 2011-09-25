@@ -36,6 +36,7 @@ class CommentDispatcher
 	
 	function WriteComment($text, $rate, $autor_name='', $autor_email='')
 	{
+		global $CONFIG;
 		$uid=@$_SESSION['uid'];
 		settype($uid, 'int');
 		settype($rate, 'int');
@@ -43,6 +44,13 @@ class CommentDispatcher
 		if($rate>5)	$rate=5;
 		if($uid>0)	$autor_name=$autor_email='';
 		else		$uid=0;
+		
+		if($CONFIG['noify']['comments'])
+		{
+			$text="Object: {$this->object_name}|{$this->object_id}\nAuthor: $autor_name <$autor_email>\nUID: $uid\nRate:$rate\nText: $text";		
+			sendAdmMessage($text,'New comments');
+		}		
+		
 		$ip=getenv("REMOTE_ADDR");
 		$ua=getenv("HTTP_USER_AGENT");
 		$text=mysql_real_escape_string($text);

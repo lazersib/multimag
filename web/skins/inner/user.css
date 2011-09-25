@@ -1,0 +1,97 @@
+div.contextmenu
+{
+	background-color:	#f5f5f5;
+	color:			#000;
+	border:			1px #bbb solid;
+	min-width:		200px;
+	position: 		absolute;  
+	display: 		block;
+	padding:		4px;
+	min-width:		200px;
+	text-align:		left;
+}
+
+div.contextmenu div
+{
+	margin:			1px;
+	padding:		3px;
+	padding-left:		8px;
+	border:			0px none;
+	background-color:	#f5f5f5;
+	color:			#000;
+	height:			18px;
+	border:			1px #f5f5f5 solid;
+	text-align:		left;
+	vertical-align:		middle;
+	text-decoration:	none;
+	cursor:			pointer;
+	list-style-type:	none;
+}
+
+div.contextmenu div:hover
+{
+	border:			1px #9af solid;
+	background-color:	#def;
+	text-decoration:	none;
+}
+
+div.contextmenu div.disabled
+{
+	cursor:			default;
+	border:			0px none;
+	color:			#aaa;
+}
+
+div.contextmenu div.disabled:hover
+{
+	background-color:	#f5f5f5;
+	
+}
+
+div.context_menu a:hover
+{
+	text-decoration:	none;
+}
+
+table.list tr
+{
+	background-color:	#f0f8ff;
+}
+
+table.list tr td
+{
+	border-right:		#e0f0ff 1px solid;
+	padding:		1px 3px 1px 3px;
+}
+
+table.list tr:nth-child(odd)
+{
+	background-color:	#e0f0ff;
+}
+
+table.list tr:nth-child(odd) td
+{
+    border-right: #fff 1px solid;
+}
+
+.searchblock
+{
+	background-color: #e0f0ff;
+	width:	95%;
+	height:	100px;
+	margin:	10px;
+	padding:5px;
+	border: 1px rgb(39,78,144) solid;
+}
+
+.searchblock h1
+{
+	margin: 4px;
+	margin-left: 10px;
+	padding: 0px;
+}
+
+.searchblock .sp
+{
+	width: 90%;
+}
