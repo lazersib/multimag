@@ -168,6 +168,13 @@ function unhtmlentities ($string)
 	return html_entity_decode ($string,ENT_QUOTES,"UTF-8");
 }
 
+function getpost($varname,$def="")
+{
+	if(isset($_POST[$varname]))	return $_POST[$varname];
+	if(isset($_GET[$varname]))	return $_GET[$varname];
+	return $def;
+}
+
 // =================================== Аутентификация и контроль привилегий ============================================
 // Требование аутентификации
 function need_auth()

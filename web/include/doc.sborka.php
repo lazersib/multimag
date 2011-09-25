@@ -33,6 +33,7 @@ class doc_Sborka extends doc_Nulltype
 		//$this->sklad_modify			=1;
 		$this->header_fields			='agent cena sklad';
 		settype($this->doc,'int');
+		$this->dop_menu_buttons			="<a href='/doc_sc.php?mode=reopen&sn=sborka_zap&amp;doc=$doc&amp;' title='Передать в сценарий'><img src='img/i_launch.png' alt='users'></a>";
 	}
 	
 // 	function head()
@@ -44,13 +45,13 @@ class doc_Sborka extends doc_Nulltype
 	public function DocApply($silent=0)
 	{
 		global $tmpl;
-		global $uid;
-		$tim=time();
+		$tim=time();		
 		
-		
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(mysql_errno())			throw new MysqlException('Ошибка выборки данных документа при проведении!');
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+		FROM `doc_list`
+		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+		WHERE `doc_list`.`id`='{$this->doc}'");
+		if(mysql_errno())			throw new MysqlException('Ошибка выборки данных документа при проведении!'.mysql_error());
 		$doc_info=mysql_fetch_array($res);
 		if(!$doc_info)				throw new Exception("Документ {$this->doc} не найден!");
 		if( $doc_info['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
@@ -71,7 +72,7 @@ class doc_Sborka extends doc_Nulltype
 				if($doc_line[1]>$doc_line[2])	throw new Exception("Недостаточно ($doc_line[1]) товара '$doc_line[3]:$doc_line[4]($doc_line[0])': на складе только $doc_line[2] шт!");
 				if(!$silent)
 				{
-					$budet=CheckMinus($doc_line[0], $doc_info['sklad']);
+					$budet=getStoreCntOnDate($doc_line[0], $doc_info['sklad']);
 					if( $budet<0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$doc_line[3]:$doc_line[4]($doc_line[0])'!");
 				}
 			}
@@ -88,19 +89,16 @@ class doc_Sborka extends doc_Nulltype
 		if($silent)	return;
 		mysql_query("UPDATE `doc_list` SET `ok`='$tim', `sum`='0' WHERE `id`='{$this->doc}'");
 		if(mysql_errno())		throw new MysqlException('Ошибка установки даты проведения документа!');
-		
 	}
 	
 	function DocCancel()
 	{
 		global $tmpl;
-		global $uid;
-		$dd=date_day(time());
-		$tim=time();
 
-
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+		FROM `doc_list`
+		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+		WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException("Ошибка получения данных документа!");
 		if(!($nx=@mysql_fetch_row($res)))	throw new Exception("Документ {$this->doc} не найден!");
 		if(!$nx[4])				throw new Exception("Документ ещё не проведён!");
@@ -135,186 +133,11 @@ class doc_Sborka extends doc_Nulltype
 		if($opt=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->AddText("<ul>
-			<li><a href='?mode=print&amp;doc=".$this->doc."&amp;opt=nak'>Накладная</a></li>
-			<li><a href='?mode=print&amp;doc=".$this->doc."&amp;opt=nac'>Наценки</a></li>
-			</ul>");
-		}
-		else if($opt=='nac')	$this->PrintNacenki($this->doc);
-		else $this->PrintNakl($this->doc);
-	}
-	
-	function PrintNakl($doc)
-	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-		global $dop_data;
-		global $dv;
-
-		if(!$doc_data[6])
-		{
-			doc_menu(0,0);
-			$tmpl->AddText("<h1>Поступление товара на склад</h1>");
-
-			$tmpl->msg("Сначала нужно провести документ!","err");
-		}
-		else
-		{
-			$tmpl->LoadTemplate('print');
-			$dt=date("d.m.Y",$doc_data[5]);
-
-			$tmpl->AddText("<h1>Накладная N $doc_data[9], от $dt </h1>
-			<b>Поставщик: </b>$doc_data[3]<br>
-			<b>Покупатель: </b>".$dv['firm_name']."<br><br>");
-
-			$tmpl->AddText("
-			<table width=800 cellspacing=0 cellpadding=0>
-			<tr><th>№</th><th width=450>Наименование<th>Место<th width=80>Масса<th>Кол-во<th>Стоимость<th width=75>Сумма</tr>");
-			$res=mysql_query("SELECT `doc_group`.`printname`,`doc_base`.`name`,`doc_base`.`proizv` ,`doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `doc_base_dop`.`mass`
-			FROM `doc_list_pos`
-			LEFT JOIN `doc_base`  ON `doc_list_pos`.`tovar`=`doc_base`.`id`
-			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$doc_data[7]'
-			WHERE `doc_list_pos`.`doc`='$doc'");
-			$i=0;
-			$ii=1;
-			$sum=$summass=0;
-			while($nxt=mysql_fetch_row($res))
-			{
-				$sm=$nxt[3]*$nxt[4];
-				$cost = sprintf("%01.2f р.", $nxt[4]);
-				$cost2 = sprintf("%01.2f р.", $sm);
-				$mass = sprintf("%0.3f кг.", $nxt[6]);
-				
-				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$mass<td>$nxt[3]<td>$cost<td>$cost2");
-				$i=1-$i;
-				$ii++;
-				$sum+=$sm;
-				$summass+=$nxt[6]*$nxt[3];
-			}
-			$ii--;
-			$cost = sprintf("%01.2f руб.", $sum);
-
-			$tmpl->AddText("</table>
-			<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b> массой <b>$summass</b> кг.</p>
-			<p class=mini>Товар получил, претензий к качеству товара и внешнему виду не имею.</p>
-			<p>Поставщик:_____________________________________</p>
-			<p>Покупатель: ____________________________________</p>");
-			doc_log("PRINT {$this->doc_name}",'Накладная','doc',$doc);
+			$tmpl->AddText("Не реализовано");
 		}
 	}
 	
-	function PrintNacenki($doc)
-	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-		global $dop_data;
-		global $dv;
 
-		if(!$doc_data[6])
-		{
-			doc_menu(0,0);
-			$tmpl->AddText("<h1>Поступление товара на склад</h1>");
-
-			$tmpl->msg("Сначала нужно провести документ!","err");
-		}
-		else
-		{
-			$tmpl->LoadTemplate('print');
-			$dt=date("d.m.Y",$doc_data[5]);
-
-			$tmpl->AddText("<h1>Наценки для поступления N $doc_data[9], от $dt </h1>
-			<b>Поставщик: </b>$doc_data[3]<br>
-			<b>Покупатель: </b>".$dv['firm_name']."<br><br>");
-
-			$tmpl->AddText("
-			<table width=800 cellspacing=0 cellpadding=0>
-			<tr><th>№</th><th width=450>Наименование<th>Кол-во<th>Стоимость<th>Базовая цена<th>Наценка<th width=75>Сумма</tr>");
-			$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base`.`cost`
-			FROM `doc_list_pos`
-			LEFT JOIN `doc_base`  ON `doc_list_pos`.`tovar`=`doc_base`.`id`
-			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$doc_data[7]'
-			WHERE `doc_list_pos`.`doc`='$doc'");
-			$i=0;
-			$ii=1;
-			$sum=$sumnac=0;
-			while($nxt=mysql_fetch_row($res))
-			{
-				$sm=$nxt[3]*$nxt[4];
-				$cost = sprintf("%01.2f р.", $nxt[4]);
-				$bcost = sprintf("%01.2f р.", $nxt[5]);
-				$nac = sprintf("%01.2f р.", $nxt[5]-$nxt[4]);
-				$cost2 = sprintf("%01.2f р.", $sm);
-				
-				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3]<td>$cost<td>$bcost<td>$nac<td>$cost2");
-				$i=1-$i;
-				$ii++;
-				$sum+=$sm;
-				$sumnac+=($nxt[5]-$nxt[4]);
-			}
-			$ii--;
-			$cost = sprintf("%01.2f руб.", $sum);
-			$nac = sprintf("%01.2f руб.", $sumnac);
-
-			$tmpl->AddText("</table>
-			<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b><br>
-			Наценка по документу: $nac</p>
-			");
-			doc_log("PRINT {$this->doc_name}",'Наценки','doc',$doc);
-		}
-	}
-	// Формирование другого документа на основании текущего
-	function MorphTo($doc, $target_type)
-	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-
-
-		if($target_type=='')
-		{
-			$tmpl->ajax=1;
-			$tmpl->AddText("<ul><li><a href='?mode=morphto&amp;doc=$doc&amp;tt=7'>Расходный кассовый ордер</a></li>
-			</ul>");
-		}
-		else if($target_type==7)
-		{
-			$sum=DocSumUpdate($doc);
-			mysql_query("START TRANSACTION");
-			$tm=time();
-			$altnum=GetNextAltNum($target_type ,$doc_data[10]);
-			$res=mysql_query("INSERT INTO `doc_list`
-			(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`)
-			VALUES ('$target_type', '$doc_data[2]', '$tm', '1', '$uid', '$altnum', '$doc_data[10]', '$doc', '$sum')");
-			$ndoc= mysql_insert_id();
-			// Вид расхода - закуп товара на продажу
-			mysql_query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)
-			VALUES ('$ndoc','rasxodi','6')");
-
-			if($res)
-			{
-				mysql_query("COMMIT");
-				$ref="Location: doc.php?mode=body&doc=$ndoc";
-				header($ref);
-			}
-			else
-			{
-				mysql_query("ROLLBACK");
-				$tmpl->msg("Не удалось создать подчинённый документ!","err");
-			}
-		}
-		else
-		{
-			$tmpl->msg("В разработке","info");
-		}
-	}
 	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function DelExec($doc)
 	{
@@ -336,10 +159,77 @@ class doc_Sborka extends doc_Nulltype
    	
 	function Service($doc)
 	{
+		global $tmpl,$uid;
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
-		parent::_Service($opt,$pos);
+		include_once('include/doc.zapposeditor.php');
+		$doc=$this->doc;
+		$poseditor=new SZapPosEditor($this);
+		$poseditor->cost_id=$this->dop_data['cena'];
+		$poseditor->sklad_id=$this->doc_data['sklad'];		
+		
+		if( isAccess('doc_'.$this->doc_name,'view') )
+		{
+
+			// Json-вариант списка товаров
+			if($opt=='jget')
+			{				
+				$doc_sum=DocSumUpdate($doc);
+				$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";			
+				$tmpl->AddText($str);			
+			}
+			// Получение данных наименования
+			else if($opt=='jgpi')
+			{
+				$pos=rcv('pos');
+				$tmpl->AddText($poseditor->GetPosInfo($pos));
+			}
+			// Json вариант добавления позиции
+			else if($opt=='jadd')
+			{
+				if(!isAccess('doc_sborka','edit'))	throw new AccessException("Недостаточно привилегий");
+				$pos=rcv('pos');
+				$tmpl->SetText($poseditor->AddPos($pos));
+			}
+			// Json вариант удаления строки
+			else if($opt=='jdel')
+			{
+				if(!isAccess('doc_sborka','edit'))	throw new AccessException("Недостаточно привилегий");
+				$line_id=rcv('line_id');
+				$tmpl->SetText($poseditor->Removeline($line_id));
+			}
+			// Json вариант обновления
+			else if($opt=='jup')
+			{
+				if(!isAccess('doc_sborka','edit'))	throw new AccessException("Недостаточно привилегий");
+				$line_id=rcv('line_id');
+				$value=rcv('value');
+				$type=rcv('type');
+				$tmpl->SetText($poseditor->UpdateLine($line_id, $type, $value));
+			}
+			// Получение номенклатуры выбранной группы
+			else if($opt=='jsklad')
+			{
+				$group_id=rcv('group_id');
+				$str="{ response: 'sklad_list', group: '$group_id',  content: [".$poseditor->GetSkladList($group_id)."] }";		
+				$tmpl->SetText($str);			
+			}
+			// Поиск по подстроке по складу
+			else if($opt=='jsklads')
+			{
+				$s=rcv('s');
+				$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";			
+				$tmpl->SetText($str);			
+			}
+			else if($opt=='jsn')
+			{
+				$action=rcv('a');
+				$line_id=rcv('line');
+				$data=rcv('data');
+				$tmpl->SetText($poseditor->SerialNum($action, $line_id, $data) );	
+			}
+		}
 	}
 
 };

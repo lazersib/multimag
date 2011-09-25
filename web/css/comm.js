@@ -372,14 +372,14 @@ function ShowPopupWin(url)
     if (window.XMLHttpRequest)  {
         httpRequest = new XMLHttpRequest(); }
 
-    if (!httpRequest) { return false; }
+    if (!httpRequest) { return true; }
 
     var popup=MakePopup("<img src='/img/icon_load.gif'> Загрузка...");
 
-    //httpRequest.onreadystatechange = function() { procReqWin(httpRequest,id); };
     httpRequest.onreadystatechange = function() { popupReqWin(httpRequest,popup); };
     httpRequest.open('GET', url, true);
     httpRequest.send(null);
+    return false;
 }
 
 function popupReqWin(httpRequest,popup)
@@ -613,8 +613,10 @@ function PriceRegTestEx(url)
 }
 
 function getCoor( event ) {
-	mousX = event.clientX;
-	mousY = event.clientY;
+	if(!event)		return;
+	if(event=='undefined')	return;
+	if(event.clientX)	mousX = event.clientX;
+	if(event.clientX)	mousY = event.clientY;
 }
 
 document.onmousemove = getCoor;

@@ -134,28 +134,34 @@ class doc_Realizaciya extends doc_Nulltype
 	{
 		global $CONFIG;
 		$tim=time();
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if( !($nx=@mysql_fetch_row($res) ) )	throw new MysqlException('Ошибка выборки данных документа при проведении!');		
-		if( $nx[4] && ( !$silent) )		throw new Exception('Документ уже был проведён!');		
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+		FROM `doc_list`
+		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+		WHERE `doc_list`.`id`='{$this->doc}'");
+		if( !($nx=@mysql_fetch_assoc($res) ) )	throw new MysqlException('Ошибка выборки данных документа при проведении!');		
+		if( $nx['ok'] && ( !$silent) )		throw new Exception('Документ уже был проведён!');		
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
 		
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$nx[3]'
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]($nxt[0])': на складе только $nxt[2] шт!");
-			if(!$silent)
+			if(!$nx['dnc'])
 			{
-				$budet=CheckMinus($nxt[0], $nx[3]);
+				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]($nxt[0])': на складе только $nxt[2] шт!");
+			}
+			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
+			if(mysql_error())	throw new MysqlException('Ошибка проведения, ошибка изменения количества!');
+			
+			if(!$nx['dnc'] && (!$silent))
+			{
+				$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
 				if( $budet<0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]($nxt[0])'!");
 			}
-			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
-			if(mysql_error())	throw new MysqlException('Ошибка проведения, ошибка изменения количества!');
 			
 			if(@$CONFIG['poseditor']['sn_restrict'])
 			{

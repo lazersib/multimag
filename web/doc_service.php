@@ -18,6 +18,7 @@
 //
 
 include_once("core.php");
+include_once("include/doc.core.php");
 need_auth();
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
@@ -39,6 +40,7 @@ if($mode=='')
 	<li><a href='?mode=cost'>Управление ценами</a></li>
 	<li><a href='?mode=firm'>Настройки организаций</a></li>
 	<li><a href='?mode=vrasx'>Настройки видов расходов</a></li>
+	<li><a href='?mode=store'>Настройки складов</a></li>
 	</ul>");
 }
 else if($mode=='merge_agent')
@@ -406,6 +408,45 @@ else if($mode=='vrasx')
 	
 	$tmpl->AddText("</table>
 	<button type='submit'>Записать</button>
+	</form>");
+}
+else if($mode=='store')
+{
+	if(rcv('opt'))
+	{
+		$res=mysql_query("SELECT `id`, `name`, `dont_control` FROM `doc_sklady`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список складов");
+		while($nxt=mysql_fetch_row($res))
+		{
+			if(!isset($_POST['sname'][$nxt[0]]))	continue;
+			$name=mysql_real_escape_string($_POST['sname'][$nxt[0]]);
+			$dnc=isset($_POST['dnc'][$nxt[0]])?1:0;
+			$desc='';
+			if($_POST['sname'][$nxt[0]]!=$nxt[1])	$desc.="name:(".mysql_real_escape_string($nxt[1])." => $name), ";
+			if($dnc!=$nxt[2])			$desc.="dont_control: ($nxt[2] => $dnc)";
+			if($desc=='')	continue;			
+			
+			mysql_query("UPDATE `doc_sklady` SET `name`='$name', `dont_control`='$dnc' WHERE `id`='$nxt[0]'");
+			doc_log('UPDATE',$desc,'sklad',$nxt[0]);
+		}
+		$tmpl->msg("Данные обновлены","ok");
+	}
+	
+	$tmpl->AddText("<h1>Редактор складов</h1>
+	<form action='' method='post'>
+	<input type='hidden' name='mode' value='store'>
+	<input type='hidden' name='opt' value='save'>
+	<table><tr><th>N</th><th>Наименование</th><th>Не контролировать остатки</th></tr>");
+	$res=mysql_query("SELECT `id`, `name`, `dont_control` FROM `doc_sklady` ORDER BY `id`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список складов");
+	while($line=mysql_fetch_row($res))
+	{
+		$c=$line[2]?'checked':'';
+		$tmpl->AddText("<tr><td>$line[0]</td><td><input type='text' name='sname[$line[0]]' value='$line[1]'></td><td><input type='checkbox' name='dnc[$line[0]]' value='1' $c></td></tr>");
+	}
+	$tmpl->AddText("<tr><td>Новый</td><td><input type='text' name='sname[0]' value=''></td><td><input type='checkbox' name='dnc[0]' value='1'></td></tr>
+	</table>
+	<button>Сохранить</button>
 	</form>");
 }
 else $tmpl->logger("Запрошена несуществующая опция!");

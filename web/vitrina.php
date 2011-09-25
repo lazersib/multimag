@@ -455,7 +455,7 @@ protected function TovList_SimpleTable($res, $lim)
 		$cost=GetCostPos($nxt['id'], $this->cost_id);	
 		$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a>
 		<td>{$nxt['proizv']}<td>$nal<td $cce>$cost
-		<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin'); return false;\" rel='nofollow'>
+		<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
 		<img src='/img/i_korz.png' alt='В корзину!'></a></tr>");
 		$sf++;
 		$i++;
@@ -511,7 +511,7 @@ protected function TovList_ImageList($res, $lim)
 		{$nxt['name']}<br>
 		<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
 		<b>Кол-во:</b> $nal<br>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin'); return false;\" rel='nowollow'>В корзину!</a>
+		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>
 		</div>");
 		
 		$sf++;
@@ -538,7 +538,7 @@ protected function TovList_ExTable($res, $lim)
 		$cost=GetCostPos($nxt['id'], $this->cost_id);	
 		$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a><td>{$nxt['proizv']}<td>$nal
 		<td $cce>$cost<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='/img/i_korz.png' alt='В корзину!'></a>");
+		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='/img/i_korz.png' alt='В корзину!'></a>");
 		$sf++;
 		$cc=1-$cc;
 	}

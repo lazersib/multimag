@@ -344,10 +344,9 @@ function GetCostPos($pos_id, $cost_id)
 // =========== Запись событий документов в лог ======================
 function doc_log($motion,$desc,$object='',$object_id=0)
 {
-	global $tmpl;
-	$uid=mysql_escape_string(@$_SESSION['uid']);
-	$motion=mysql_escape_string($motion);
-	$desc=mysql_escape_string($desc);
+	$uid=mysql_real_escape_string(@$_SESSION['uid']);
+	$motion=mysql_real_escape_string($motion);
+	$desc=mysql_real_escape_string($desc);
 	$ip=getenv("REMOTE_ADDR");
 	mysql_query("INSERT INTO `doc_log` (`user`, `ip`, `time`,`motion`,`desc`, `object`, `object_id`)
 	VALUES ('$uid', '$ip', NOW(),'$motion','$desc', '$object', '$object_id')");

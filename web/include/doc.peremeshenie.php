@@ -73,28 +73,29 @@ class doc_Peremeshenie extends doc_Nulltype
 	{
 		$tim=time();
 		$nasklad=$this->dop_data['na_sklad'];
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");		
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+		FROM `doc_list`
+		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+		WHERE `doc_list`.`id`='{$this->doc}'");		
 		if(!$res)	throw new MysqlException('Ошибка выборки данных документа при проведении!');
-		$nx=@mysql_fetch_row($res);
+		$nx=@mysql_fetch_assoc($res);
 		if(!$nx)	throw new Exception('Документ не найден!');
-		if( $nx[4] && (!$silent) )	throw new Exception('Документ уже был проведён!');
+		if( $nx['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$nx[3]'
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка получения списка товара в документе!');
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($nxt[5]>0)		throw new Exception("Перемещение услуги '$nxt[3]:$nxt[4]' недопустимо!");		
-			if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]' на складе($nxt[2])!");			
-			$budet=CheckMinus($nxt[0], $nx[3]);
-			if($budet<0)	
-				throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
-		
-			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
+			if($nxt[5]>0)		throw new Exception("Перемещение услуги '$nxt[3]:$nxt[4]' недопустимо!");
+			if(!$nx['dnc'])
+			{
+				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]' на складе($nxt[2])!");			
+			}
+			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
 			if(mysql_error()) 	throw new MysqlException('Ошибка изменения количества на исходном складе!');
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
 			if(mysql_error()) 	throw new MysqlException('Ошибка изменения количества на складе назначения!');
@@ -102,6 +103,14 @@ class doc_Peremeshenie extends doc_Nulltype
 			if(mysql_affected_rows()==0) mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)
 			VALUES ('$nxt[0]', '$nasklad', '$nxt[1]')");
 			if(mysql_error()) 	throw new MysqlException('Ошибка изменения количества на складе назначения!');
+			
+			if( (!$nx['dnc']) && (!$silent))
+			{
+				$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
+				if($budet<0)	
+					throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
+			}
+			
 		}
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
@@ -115,27 +124,32 @@ class doc_Peremeshenie extends doc_Nulltype
 		$tim=time();
 		$nasklad=$this->dop_data['na_sklad'];
 		
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+		FROM `doc_list`
+		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
-		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
-		if(!$nx[4])				throw new Exception('Документ не проведён!');	
+		if(! ($nx=@mysql_fetch_assoc($res)))	throw new Exception('Документ не найден!');
+		if(!$nx['ok'])				throw new Exception('Документ не проведён!');	
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$nx[3]'
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки товаров документа!');
 		while($nxt=mysql_fetch_row($res))
 		{
-			$budet=CheckMinus($nxt[0], $nx[3]);
-			if($budet<0)			throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]' !");
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
 			if(mysql_error())		throw new Exception("Ошибка проведения, ошибка изменения количества на складе $nasklad!");
-			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
-			if(mysql_error())		throw new Exception("Ошибка проведения, ошибка изменения количества на складе $nx[3]!");
+			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
+			if(mysql_error())		throw new Exception("Ошибка проведения, ошибка изменения количества на складе {$nx['sklad']}!");
+			if(!$nx['dnc'])
+			{
+				$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
+				if($budet<0)			throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]' !");
+			}
 		}
 	}
 

@@ -232,8 +232,7 @@ function FilterMenu()
 		
 		$date_f=$date_t=date("Y-m-d");
 
-		@$tmpl->AddTMenu("
-		
+		@$tmpl->AddTMenu("		
 		</td><td align='right'>
 		Альт.н.<br>
 		<input type='text' name='altnum' style='width: 50px;' value='{$_SESSION['j_select_altnum']}'><br>
