@@ -35,7 +35,6 @@ function get_otch_links()
 	'doc_otchet.php?mode=balance' => 'Баланс',
 	'doc_otchet.php?mode=dolgi' => 'Долги',
 	'doc_otchet.php?mode=kassday' => 'Кассовый отчёт за день',
-	'doc_otchet.php?mode=kassday2' => 'Кассовый отчёт за день (2)',
 	'doc_otchet.php?mode=ostatki' => 'Остатки на складе',
 	'doc_otchet.php?mode=ostatkinadatu' => 'Остатки на складе на дату',
 	'doc_otchet.php?mode=agent_otchet' => 'Отчет по агенту',
@@ -58,7 +57,6 @@ function otch_list()
 	<a href='doc_otchet.php?mode=balance'><div>Баланс</div></a>
 	<a href='doc_otchet.php?mode=dolgi'><div>Долги</div></a>
 	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день</div></a>
-	<a href='doc_otchet.php?mode=kassday'><div>Кассовый отчёт за день (2)</div></a>
 	<a href='doc_otchet.php?mode=ostatki'><div>Остатки на складе</div></a>
 	<a href='doc_otchet.php?mode=ostatkinadatu'><div>Остатки на складе на дату</div></a>
 	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
@@ -254,7 +252,7 @@ class Report_Store
 	}
 };
 
-class Report_KassDay2
+class Report_KassDay
 {
 	function Form()
 	{
@@ -267,7 +265,7 @@ class Report_KassDay2
 		<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
 		<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
 		<form action=''>
-		<input type='hidden' name='mode' value='kassday2'>
+		<input type='hidden' name='mode' value='kassday'>
 		<input type='hidden' name='opt' value='ok'>
 		Выберите кассу:<br>
 		<select name='kass'>");
@@ -291,7 +289,7 @@ class Report_KassDay2
 		$tmpl->AddText("<h1>Отчёт по кассе за $dt (вариант 2)</h1>");		
 		$daystart=strtotime("$dt 00:00:00");
 		$dayend=strtotime("$dt 23:59:59");
-		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход");			
+		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход<th>В кассе");			
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`		
 		FROM `doc_list`
 		INNER JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
@@ -309,7 +307,7 @@ class Report_KassDay2
 			{
 				$flag=1;
 				$sum_p=sprintf("%0.2f руб.",$sum);
-				$tmpl->AddText("<tr><td>-<td>-<td><b>На начало дня</b><td align='right' colspan='2'><b>$sum_p</b>");
+				$tmpl->AddText("<tr><td colspan=5><b>На начало дня</b><td align='right'><b>$sum_p</b>");
 			}
 			if($nxt[1]==6)		$sum+=$nxt[2];
 			else 			$sum-=$nxt[2];
@@ -332,25 +330,21 @@ class Report_KassDay2
 				$dt=date("H:i:s",$nxt[3]);
 				$sum_p=sprintf("%0.2f руб.",$sum);
 				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5] $sadd<br>от $nxt[7]<td align='right'>$csum_p<td align='right'>$csum_r");	
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5] $sadd<br>от $nxt[7]<td align='right'>$csum_p<td align='right'>$csum_r<td align='right'>$sum_p</tr>");	
 			}
 		}
 		$dsum_p=sprintf("%0.2f руб.",$daysum);
 		$psum_p=sprintf("%0.2f руб.",$prix);
 		$rsum_p=sprintf("%0.2f руб.",$rasx);
-		$tmpl->AddText("<tr><td>-<td>-<td><b>На конец дня</b><td align='right' colspan='2'><b>$sum_p</b>");
-// 		$tmpl->AddText("<tr><td>-<td>-<td><b>Приход за смену</b><td>-<td align='right'><b>$psum_p</b>");
-// 		if($rasx)
-// 		{
-// 			$tmpl->AddText("<tr><td>-<td>-<td><b>Расход за смену</b><td>-<td align='right'><b>$rsum_p</b>");
-// 			$tmpl->AddText("<tr><td>-<td>-<td><b>Разница за смену</b><td>-<td align='right'><b>$dsum_p</b>");
-// 		}
-// 		
-// 		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='$uid'");
-// 		$nm=mysql_result($res,0,0);
-// 		
-// 		$tmpl->AddText("</table><br><br>
-// 		Cоответствие суммы подтверждаю ___________________ ($nm)");
+		$tmpl->AddText("<tr><td>-<td>-<td><b>На конец дня</b><td align='right'><b>$psum_p</b><td align='right'><b>$rsum_p</b><td align='right'><b>$sum_p</b>");
+ 		$tmpl->AddText("<tr><td>-<td>-<td><b>Разница за смену</b><td align='right' colspan=3><b>$dsum_p</b>");
+ 		
+ 		
+ 		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+ 		$nm=mysql_result($res,0,0);
+ 		
+ 		$tmpl->AddText("</table><br><br>
+ 		Cоответствие сумм подтверждаю ___________________ ($nm)");
 	}
 	
 	function Run($opt)
@@ -370,6 +364,15 @@ class Report_Dolgi
 		<form action=''>
 		<input type='hidden' name='mode' value='dolgi'>
 		<input type='hidden' name='opt' value='ok'>
+		Организация:<br>
+		<select name='firm_id'>
+		<option value='0'>--все--</option>");
+		$res=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+		}
+		$tmpl->AddText("</select><br>
 		Группа агентов:<br>
 		<select name='agroup'>
 		<option value='0'>--все--</option>");
@@ -391,6 +394,7 @@ class Report_Dolgi
 		global $tmpl;
 		$vdolga=rcv('vdolga');
 		$agroup=rcv('agroup');
+		$firm_id=rcv('firm_id');
 		$tmpl->LoadTemplate('print');
 		if($vdolga==2) $tmpl->SetText("<h1>Мы должны (от ".date('d.m.Y').")</h1>");
 		else $tmpl->SetText("<h1>Долги партнёров (от ".date('d.m.Y').")</h1>");
@@ -401,7 +405,7 @@ class Report_Dolgi
 		$sum_dolga=0;
 		while($nxt=mysql_fetch_row($res))
 		{
-			$dolg=DocCalcDolg($nxt[0],0);
+			$dolg=DocCalcDolg($nxt[0],0,$firm_id);
 			if( (($dolg>0)&&($vdolga==1))|| (($dolg<0)&&($vdolga==2)) )
 			{
 				$i++;
@@ -438,10 +442,10 @@ else if($mode=='pmenu')
 	$tmpl->ajax=1;
 	$tmpl->AddText(otch_divs());
 }
-else if($mode=='kassday2')
+else if($mode=='kassday')
 {
 	$opt=rcv('opt');
-	$otchet=new Report_KassDay2();
+	$otchet=new Report_KassDay();
 	$otchet->Run($opt);
 }
 else if($mode=='ostatki')
@@ -453,7 +457,8 @@ else if($mode=='ostatki')
 else if($mode=='ostatkinadatu')
 {
 	$opt=rcv('opt');
-	$otchet=new Report_OstatkiNaDatu();	// Ext
+
+$otchet=new Report_OstatkiNaDatu();	// Ext
 	$otchet->Run($opt);
 }
 else if($mode=='dolgi')
@@ -1026,16 +1031,17 @@ else if($mode=='sverka')
 		if(!$date_end) $date_end=time();
 		$tmpl->LoadTemplate('print');
 
-		$res=mysql_query("SELECT `id`, `fullname` FROM `doc_agent` WHERE `name`='$ag'");
-		$agent=mysql_result($res,0,0);
-		$fn=mysql_result($res,0,1);
-	
+		$res=mysql_query("SELECT `id`, `fullname`, `dir_fio` FROM `doc_agent` WHERE `id`='$ag'");
+		if(mysql_errno())		throw new MysqlException("Не удалось получить данные агента");
+		if(mysql_num_rows($res)==0)	throw new Exception("Не указан агент!");
+		list($agent, $fn, $dir_fio)=mysql_fetch_row($res);
+
 		$tmpl->SetText("<center>Акт сверки<br>
 		взаимных расчетов<br>".$dv['firm_name']."<br>
 		c ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end)."
 		$fn</center>
 		Мы, нижеподписавшиеся, директор ".$dv['firm_name']." ".$dv['firm_director']."
-		c одной стороны, и _____________ $fn ____________________ с другой стороны,
+		c одной стороны, и директор $fn $dir_fio с другой стороны,
 		составили настоящий акт сверки в том, что состояние взаимных расчетов по
 		данным учёта следующее:<br><br>");
 	
@@ -1163,7 +1169,7 @@ else if($mode=='sverka')
 		<tr><td colspan=4>От ".$dv['firm_name']."<br>
 		директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
 		<td colspan=4>От $fn<br>
-		директор<br> ____________________________ (_____________)<br><br>м.п.<br>
+		директор<br> ____________________________ ($dir_fio)<br><br>м.п.<br>
 		</table>");		
 	}
 	else if($opt=='pdf')
@@ -1182,9 +1188,10 @@ else if($mode=='sverka')
 		}
 		if(!$date_end) $date_end=time();
 
-		$res=mysql_query("SELECT `id`, `fullname`, `pdol`, `pfio` FROM `doc_agent` WHERE `id`='$agent_id'");
-		if(mysql_errno())	throw new Exception("Не удалось выбрать агента");
-		$agent=mysql_fetch_assoc($res);
+		$res=mysql_query("SELECT `id`, `fullname`, `dir_fio` FROM `doc_agent` WHERE `id`='$agent_id'");
+		if(mysql_errno())		throw new MysqlException("Не удалось получить данные агента");
+		if(mysql_num_rows($res)==0)	throw new Exception("Не указан агент $agent_id!");
+		list($agent, $fn, $dir_fio)=mysql_fetch_row($res);
 		
 		$firm_vars['firm_name']=unhtmlentities($firm_vars['firm_name']);
 		$agent['fullname']=unhtmlentities($agent['fullname']);			
@@ -1207,7 +1214,7 @@ else if($mode=='sverka')
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,4,$str,0,'C',0);
 		$pdf->Ln(2);
-		$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и              {$agent['fullname']}                 , с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
+		$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и директор $fn $dir_fio, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
 		$str = iconv('UTF-8', 'windows-1251', $str);	
 		$pdf->Write(5,$str,'');
 		
@@ -1405,7 +1412,7 @@ else if($mode=='sverka')
 		$y=$pdf->getY();
 		$str=iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
 		$pdf->MultiCell($t_width[0]+$t_width[1]+$t_width[2]+$t_width[3],5,$str,0,'L',0);
-		$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n\n           ____________________________ (                )\n\n           м.п.");
+		$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
 		$pdf->lMargin=$x;
 		$pdf->setX($x);
 		
@@ -2253,100 +2260,6 @@ else if($mode=='agent_bez_prodaj')
 			$tmpl->AddText("<li>id:$nxt[0] - $nxt[1] ($nxt[3], id:$nxt[2])</li>");
 		}
 		$tmpl->AddText("</ul>");
-	}
-}
-else if($mode=='kassday')
-{
-	$opt=rcv('opt');
-	if($opt=='')
-	{
-		$curdate=date("Y-m-d");
-		$tmpl->AddText("<h1>Отчёт по кассе за текущий день</h1>
-		<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
-		<script src='/css/jquery/ui/jquery.ui.core.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
-		<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
-		<form action=''>
-		<input type='hidden' name='mode' value='kassday'>
-		<input type='hidden' name='opt' value='ok'>
-		Выберите кассу:<br>
-		<select name='kass'>");
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'  ORDER BY `num`");
-		while($nxt=mysql_fetch_row($res))
-		{
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
-		}
-		$tmpl->AddText("</select><br>
-		Выберите дату:<br>
-		<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
-		<button type='submit'>Сформировать</button></form>");
-	}
-	else
-	{
-		$tmpl->LoadTemplate('print');
-		$dt=rcv('date');
-		$kass=rcv('kass');
-		$tmpl->AddText("<h1>Отчёт по кассе за $dt</h1>");		
-		$daystart=strtotime("$dt 00:00:00");
-		$dayend=strtotime("$dt 23:59:59");
-		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Сумма документа<th>В кассе");			
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`		
-		FROM `doc_list`
-		INNER JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
-		INNER JOIN `doc_types`		ON `doc_types`.`id` = `doc_list`.`type`
-		LEFT JOIN `doc_list` AS `p`	ON `p`.`id`=`doc_list`.`p_doc`
-		LEFT JOIN `doc_types` AS `t`	ON `t`.`id` = `p`.`type`		
-		WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7') AND `doc_list`.`kassa`='$kass'
-		ORDER BY `doc_list`.`date`");
-		$sum=$daysum=$prix=$rasx=0;
-		$flag=0;
-		while($nxt=mysql_fetch_row($res))
-		{
-			if( !$flag && $nxt[3]>=$daystart && $nxt[3]<=$dayend)
-			{
-				$flag=1;
-				$sum_p=sprintf("%0.2f руб.",$sum);
-				$tmpl->AddText("<tr><td>-<td>-<td><b>На начало дня</b><td>-<td align='right'><b>$sum_p</b>");
-			}
-			if($nxt[1]==6)		$sum+=$nxt[2];
-			else 			$sum-=$nxt[2];
-			if($nxt[3]>=$daystart && $nxt[3]<=$dayend)
-			{
-				if($nxt[1]==6)
-				{
-					$daysum+=$nxt[2];
-					$prix+=$nxt[2];
-				}
-				else
-				{
-					$daysum-=$nxt[2];
-					$rasx+=$nxt[2];
-				}
-				if($nxt[8])	$sadd="<br><i>к $nxt[9] N$nxt[10]$nxt[11] от ".date("d-m-Y H:i:s",$nxt[12])." на сумму ".sprintf("%0.2f руб",$nxt[13])."</i>";
-				else		$sadd='';
-				$dt=date("H:i:s",$nxt[3]);
-				$sum_p=sprintf("%0.2f руб.",$sum);
-				$csum_p=sprintf("%0.2f руб.",$nxt[2]);
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5] $sadd<br>от $nxt[7]<td align='right'>$csum_p<td align='right'>$sum_p");	
-			}
-		}
-		$dsum_p=sprintf("%0.2f руб.",$daysum);
-		$psum_p=sprintf("%0.2f руб.",$prix);
-		$rsum_p=sprintf("%0.2f руб.",$rasx);
-		$tmpl->AddText("<tr><td>-<td>-<td><b>На конец дня</b><td>-<td align='right'><b>$sum_p</b>");
-		$tmpl->AddText("<tr><td>-<td>-<td><b>Приход за смену</b><td>-<td align='right'><b>$psum_p</b>");
-		if($rasx)
-		{
-			$tmpl->AddText("<tr><td>-<td>-<td><b>Расход за смену</b><td>-<td align='right'><b>$rsum_p</b>");
-			$tmpl->AddText("<tr><td>-<td>-<td><b>Разница за смену</b><td>-<td align='right'><b>$dsum_p</b>");
-		}
-		
-		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='$uid'");
-		$nm=mysql_result($res,0,0);
-		
-		$tmpl->AddText("</table><br><br>
-		Cоответствие суммы подтверждаю ___________________ ($nm)");
 	}
 }
 else $tmpl->msg("ERROR $mode","err");

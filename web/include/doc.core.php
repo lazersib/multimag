@@ -536,11 +536,12 @@ function DocSumUpdate($doc)
 	return $sum;
 }
 
-function DocCalcDolg($agent, $print=0)
+function DocCalcDolg($agent, $print=0, $firm_id=0)
 {
 	global $tmpl;
 	$dolg=0;
-	$res=mysql_query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent' AND `mark_del`='0'");
+	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
+	$res=mysql_query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent' AND `mark_del`='0' $sql_add");
 	while($nxt=mysql_fetch_row($res))
 	{
 		switch($nxt[0])
@@ -556,13 +557,6 @@ function DocCalcDolg($agent, $print=0)
 	}
 
 	$dolg=sprintf("%0.2f", $dolg);
-	if($print)
-	{
-		if($dolg>0)
-			$tmpl->AddText("<b>Долг агента:</b> <b class=f_red>$dolg</b> рублей<br>");
-		else if($dolg<0)
-			$tmpl->AddText("<b>Наш долг:</b> $dolg рублей<br>");
-	}
 	return $dolg;
 }
 

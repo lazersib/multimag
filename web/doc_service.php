@@ -414,7 +414,7 @@ else if($mode=='store')
 {
 	if(rcv('opt'))
 	{
-		$res=mysql_query("SELECT `id`, `name`, `dont_control` FROM `doc_sklady`");
+		$res=mysql_query("SELECT `id`, `name`, `dnc` FROM `doc_sklady`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список складов");
 		while($nxt=mysql_fetch_row($res))
 		{
@@ -423,10 +423,10 @@ else if($mode=='store')
 			$dnc=isset($_POST['dnc'][$nxt[0]])?1:0;
 			$desc='';
 			if($_POST['sname'][$nxt[0]]!=$nxt[1])	$desc.="name:(".mysql_real_escape_string($nxt[1])." => $name), ";
-			if($dnc!=$nxt[2])			$desc.="dont_control: ($nxt[2] => $dnc)";
+			if($dnc!=$nxt[2])			$desc.="dnc: ($nxt[2] => $dnc)";
 			if($desc=='')	continue;			
 			
-			mysql_query("UPDATE `doc_sklady` SET `name`='$name', `dont_control`='$dnc' WHERE `id`='$nxt[0]'");
+			mysql_query("UPDATE `doc_sklady` SET `name`='$name', `dnc`='$dnc' WHERE `id`='$nxt[0]'");
 			doc_log('UPDATE',$desc,'sklad',$nxt[0]);
 		}
 		$tmpl->msg("Данные обновлены","ok");
@@ -437,7 +437,7 @@ else if($mode=='store')
 	<input type='hidden' name='mode' value='store'>
 	<input type='hidden' name='opt' value='save'>
 	<table><tr><th>N</th><th>Наименование</th><th>Не контролировать остатки</th></tr>");
-	$res=mysql_query("SELECT `id`, `name`, `dont_control` FROM `doc_sklady` ORDER BY `id`");
+	$res=mysql_query("SELECT `id`, `name`, `dnc` FROM `doc_sklady` ORDER BY `id`");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список складов");
 	while($line=mysql_fetch_row($res))
 	{

@@ -327,7 +327,12 @@ class doc_Nulltype
 		if(strstr($this->header_fields, 'agent'))
 		{
 			$tmpl->AddText("<b>Агент-партнер:</b> ".$this->doc_data[3].", ");
-			DocCalcDolg($this->doc_data[2],1);		
+			$dolg=DocCalcDolg($this->doc_data[2]);
+			if($dolg>0)
+				$tmpl->AddText("<b>Общий долг агента:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'><b class=f_red>$dolg</b> рублей</a><br>");
+			else if($dolg<0)
+				$tmpl->AddText("<b>Наш общий долг:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'>$dolg рублей</a><br>");
+
 		}
 		
 		if(method_exists($this,'DopBody'))

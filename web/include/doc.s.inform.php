@@ -112,6 +112,17 @@ class doc_s_Inform
 			else $tmpl->msg("Не найдено!");
 		
 		}
+		else if($opt=='dolgi')
+		{
+			$agent=rcv('agent');
+			$res=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список организаций");
+			while($nxt=mysql_fetch_row($res))
+			{
+				$dolg=DocCalcDolg($agent,0,$nxt[0]);
+				$tmpl->AddText("<div>Долг перед $nxt[1]: <b>$dolg</b> руб.</div>");
+			}
+		}
 	}
 		
 // Служебные функции класса
