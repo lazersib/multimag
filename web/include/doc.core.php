@@ -372,7 +372,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	$context="<a href=\'/index.php\'><div>Главная</div></a><a href=\'/vitrina.php\'><div>Витрина</div></a>";
 
 	$tmpl->AddText("<table width='100%' style='background-color: #e0f0ff; border: 0;' ><tr><td>
-	<a href='' title='Назад' onclick=\"history.go(-1);\"><img src='img/i_back.png' alt='Журнал документов' border='0'></a>
+	<a href='' title='Назад' onclick=\"history.go(-1);\"><img src='img/i_back.png' alt='Назад' border='0'></a>
 	
 	<img src='img/i_separator.png' alt=''>
 	

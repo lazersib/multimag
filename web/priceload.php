@@ -212,7 +212,7 @@ function firmAddForm($id=0)
 		$tmpl->AddText("<h2>Структура прайса</h2>
 		<table>
 		<thead>Номера колонок
-		<tr><th>Имя листа<th>С артикулами<th>С названиями<th>С ценами<th>С наличием
+		<tr><th>Имя листа<th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием
 		<tr><td><input type='text' name='table_name'>
 		<td><input type='text' name='col_art'>
 		<td><input type='text' name='col_name'>
@@ -231,7 +231,7 @@ function firmAddForm($id=0)
 		<input type='hidden' name='line_id' value='0' id='line_id'>
 		<table>
 		<tr><th rowspan='2'>Имя листа<th colspan='4'>Номера колонок
-		<tr><th>С артикулами<th>С названиями<th>С ценами<th>С наличием");
+		<tr><th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием");
 		$res=mysql_query("SELECT `table_name`, `art`, `name`, `cost`, `nal`, `id` FROM `firm_info_struct`
 		WHERE `firm_id`='$nxt[0]'");
 		while($nx=mysql_fetch_row($res))
@@ -679,25 +679,101 @@ else if($mode=='regvs')
 else if($mode=='r_noparsed')
 {
 	$f=rcv('f');
-	$tmpl->AddText("<h1>Отчёт по необработаным позициям</h1>");
-	if($f) $f=" AND `price`.`firm`='$f'";
-	$res=mysql_query("SELECT `price`.`id`, `price`.`name`, `price`.`art`, `firm_info`.`name`
+	$s1=rcv('s1');
+	$s2=rcv('s2');
+	$s3=rcv('s3');
+	$tmpl->AddText("<h1 id='page-title'>Необработанные позиции</h1>
+	<div id='page-info'>Отметьте галочками нужные, и добавте на склад. Можно воспользоваться фильтром.</div>");
+	if($f) 	$sql_add=" AND `price`.`firm`='$f'";
+	else	$sql_add='';
+	if($s1)	$sql_add.="AND `price`.`name` LIKE '%$s1%'";
+	if($s2)	$sql_add.="AND `price`.`name` LIKE '%$s2%'";
+	if($s3)	$sql_add.="AND `price`.`name` LIKE '%$s3%'";
+	$res=mysql_query("SELECT `price`.`id`, `price`.`art`, `price`.`name`, `firm_info`.`name`
 	FROM `price`
 	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
-	WHERE `seeked`='0' $f
+	WHERE `seeked`='0' $sql_add
 	LIMIT 100000");
 	if(mysql_num_rows($res))
 	{
 		$i=0;
-		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Наименование<th>Артикул<th>Фирма");
+		$tmpl->AddText("
+		<form action='' method='get'>
+		<input type='hidden' name='mode' value='r_noparsed'>
+		<input type='hidden' name='f' value='$f'>
+		<input type='text' name='s1' value='$s1'> - <input type='text' name='s2' value='$s2'> - <input type='text' name='s3' value='$s3'>
+		<button>Отфильтровать</button>
+		</form>
+		<form action='' method='post'>
+		<input type='hidden' name='mode' value='adding'>
+		<table width='100%'><tr><th>ID<th>Код произв.<th>Наименование<th>Фирма");
 		while($nxt=mysql_fetch_row($res))
 		{
 			$i=1-$i;
-			$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+			$tmpl->AddText("<tr class='lin$i'><td><label><input type='checkbox' name='p[]' value='$nxt[0]'>$nxt[0]</label><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
 		}
-		$tmpl->AddText("</table>");
+		$tmpl->AddText("</table><button type='submit'>Далее</button></form>");
 	}
 	else $tmpl->msg("Необработанных позиций не обнаружено!");	
+}
+else if($mode=='adding')
+{
+	$tmpl->AddText("<h1 id='page-title'>Добавление позиций на склад</h1>
+	<div id='page-info'>Назовите позиции так, как они должны называться в вашем прайсе</div>");
+	$p=@$_POST['p'];
+	if(!is_array($p))	throw new Exception("Список позиций не получен");
+	$res=mysql_query("SELECT `price`.`id`, `price`.`art`, `price`.`name`
+	FROM `price`
+	WHERE `seeked`='0'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные прайсов");
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='adding_s'>
+	<table width='100%'><tr><th>N<th>Код произв.<th>Оригинальное наименование<th style='width: 50%'>Наше наименование");
+	$i=0;
+	while($nxt=mysql_fetch_row($res))
+	{
+		if(!in_array($nxt[0],$p))	continue;
+		$i++;
+		$nxt[1]=trim($nxt[1]);
+		$nxt[2]=trim($nxt[2]);
+		$tmpl->AddText("<tr class='lin$i'><td>$i<td><input type='text' name='vc[$nxt[0]]' value='$nxt[1]'><td>$nxt[2]<td><input type='text' name='n[$nxt[0]]' value='$nxt[2]' style='width: 95%'>");
+	}
+	$tmpl->AddText("</table>Группа:<br><select name='group'>");
+	$res=mysql_query("SELECT `id`, `name` FROM `doc_group`");
+	while($nxt=mysql_fetch_row($res))
+	{
+		$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[0])</option>");
+	}
+	$tmpl->AddText("</select><br>Единицы измерения:<br><select name='units'>");
+	$res=mysql_query("SELECT `id`, `name`, `printname` FROM `doc_units`");
+	while($nxt=mysql_fetch_row($res))
+	{
+		$tmpl->AddText("<option value='$nxt[0]'>$nxt[2] ($nxt[1])</option>");
+	}
+	$tmpl->AddText("</select><br><button type='submit'>Добавить</button></form>");
+}
+else if($mode=='adding_s')
+{
+	$group=rcv('group');
+	$units=rcv('units');
+	$tmpl->AddText("<h1 id='page-title'>Добавление позиций на склад - сохранение</h1>");
+	$n=@$_POST['n'];
+	if(!is_array($n))	throw new Exception("Список позиций не получен");
+	foreach($n as $id => $value)
+	{
+		$vc=mysql_real_escape_string(@$_POST['vc'][$id]);
+		$value=mysql_real_escape_string($value);
+		mysql_query("INSERT INTO `doc_base` (`group`, `name`, `vc`, `unit`) VALUES ('$group', '$value', '$vc', '$units')");
+		if(mysql_errno())	throw new MysqlException("Не удалось добавить наименование $value");
+		$pos_id=mysql_insert_id();
+		$tmpl->AddText("Добавлено $pos_id: $vc - $value<br>");
+		if($vc)
+		{
+			mysql_query("INSERT INTO `seekdata` (`id`, `sql`) VALUES ('$pos_id', '$vc')");
+			if(mysql_errno())	throw new MysqlException("Не удалось добавить данные анализатора для наименования $value");
+		}
+	}
+	$tmpl->msg("Все операции выполнены!","ok");
 }
 else if($mode=='r_parsed')
 {
