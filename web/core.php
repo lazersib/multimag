@@ -16,7 +16,8 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-define("MULTIMAG_VERSION", "0.0.1r265");
+define("MULTIMAG_REV", "269");
+define("MULTIMAG_VERSION", "0.0.1r".MULTIMAG_REV);
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))

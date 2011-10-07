@@ -312,6 +312,7 @@ class doc_Postuplenie extends doc_Nulltype
 		}
 		else if($target_type==7)
 		{
+			if(!isAccess('doc_rko','create'))	throw new AccessException("");
 			$sum=DocSumUpdate($doc);
 			mysql_query("START TRANSACTION");
 			$tm=time();

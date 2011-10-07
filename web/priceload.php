@@ -79,6 +79,7 @@ function firmAddForm($id=0)
 	if($id)
 	{
 		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type` FROM `firm_info` WHERE `id`='$id'");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные фирмы");
 		$nxt=mysql_fetch_row($res);
 	}
 	
@@ -698,6 +699,20 @@ else if($mode=='r_noparsed')
 	{
 		$i=0;
 		$tmpl->AddText("
+		<script type='text/javascript'>
+		
+		function SelAll(flag)
+		{
+			var elems = document.getElementsByName('p[]');
+			var l = elems.length;
+			for(var i=0; i<l; i++)
+			{
+				elems[i].checked=flag;
+				if(flag)	elems[i].disabled = false;
+			}
+		}
+		
+		</script>
 		<form action='' method='get'>
 		<input type='hidden' name='mode' value='r_noparsed'>
 		<input type='hidden' name='f' value='$f'>
@@ -706,6 +721,7 @@ else if($mode=='r_noparsed')
 		</form>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='adding'>
+		<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
 		<table width='100%'><tr><th>ID<th>Код произв.<th>Наименование<th>Фирма");
 		while($nxt=mysql_fetch_row($res))
 		{

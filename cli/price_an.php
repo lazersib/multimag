@@ -162,11 +162,22 @@ while($nxt=mysql_fetch_row($res))
 		continue;
 	}
 
+	$str_array=preg_split("/( OR | AND )/",$nxt[1],-1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+	$i=1;
+	$sql_add='';
+	$conn='';
+	foreach($str_array as $str_l)
+	{
+		if($i)	$sql_add.=" $conn (`price`.`name` LIKE '%$str_l%' OR `price`.`art` LIKE '%$str_l%')";
+		else	$conn=$str_l;
+		$i=1-$i;
+	}
+
 	$costar=array();
 	$rs=mysql_query("SELECT `price`.`id`, `price`.`name`, `price`.`cost`, `price`.`firm`, `price`.`nal`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`art` FROM `price`
 	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
 	LEFT JOIN `currency` ON `currency`.`id`=`firm_info`.`currency`
-	WHERE `price`.`name` LIKE '%$nxt[1]%' OR `price`.`art` LIKE '%$nxt[1]%'");
+	WHERE $sql_add");
 	echo mysql_error();
 	while($nx=mysql_fetch_row($rs))
 	{

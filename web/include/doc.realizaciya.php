@@ -267,6 +267,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else if($target_type==6)
 		{
+			if(!isAccess('doc_pko','create'))	throw new AccessException("");
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$tm=time();
@@ -290,6 +291,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else if($target_type==4)
 		{
+			if(!isAccess('doc_pbank','create'))	throw new AccessException("");
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$tm=time();

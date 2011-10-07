@@ -182,7 +182,7 @@ class ODFContentLoader
 					$nal=mysql_real_escape_string(@$this->line[$this->firm_cols['nal']]);
 					mysql_query("INSERT INTO `price`
 					(`name`,`cost`,`firm`,`art`,`date`, `nal`) VALUES 
-					('$name', '$cost', '{$this->firm_id}', '$name', NOW(), '$name' )");
+					('$name', '$cost', '{$this->firm_id}', '$art', NOW(), '$nal' )");
 					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку прайса в базу!");
 				}
 			}

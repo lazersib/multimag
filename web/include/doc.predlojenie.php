@@ -93,6 +93,7 @@ class doc_Predlojenie extends doc_Nulltype
 		}
 		else if($target_type==1)
 		{
+			if(!isAccess('doc_zayavka','create'))	throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			$base=$this->Postup($doc);
 			if(!$base)
@@ -109,6 +110,7 @@ class doc_Predlojenie extends doc_Nulltype
 		}
 		else if($target_type==12)
 		{
+			if(!isAccess('doc_vputi','create'))	throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			$base=$this->Vputi($doc);
 			if(!$base)

@@ -151,9 +151,21 @@ class doc_s_Price_an
 			else
 			{
 				$costar=array();
+				
+				$str_array=preg_split("/( OR | AND )/",$str,-1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+				$i=1;
+				$sql_add='';
+				$conn='';
+				foreach($str_array as $str_l)
+				{
+					if($i)	$sql_add.=" $conn (`price`.`name` LIKE '%$str_l%' OR `price`.`art` LIKE '%$str_l%')";
+					else	$conn=$str_l;
+					$i=1-$i;
+				}
+
 				$res=@mysql_query("SELECT `price`.`id`, `price`.`name`, `firm_info`.`name`, `price`.`cost`, `price`.`art` FROM `price`
 				LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
-				WHERE `price`.`name` LIKE '%$str%' OR `price`.`art` LIKE '%$str%'");
+				WHERE $sql_add");
 				$cnt=mysql_num_rows($res);
 				echo mysql_error();
 				

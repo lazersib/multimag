@@ -164,6 +164,7 @@ class doc_Zayavka extends doc_Nulltype
 		// Реализация
 		else if($target_type==2)
 		{
+			if(!isAccess('doc_realizaciya','create'))	throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			$base=$this->Otgruzka($target_type);
 			if(!$base)
@@ -187,6 +188,7 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else if($target_type==6)
 		{
+			if(!isAccess('doc_pko','create'))	throw new AccessException("");
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$base=$this->Otgruzka(2);
@@ -219,6 +221,7 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else if($target_type==4)
 		{
+			if(!isAccess('doc_pbank','create'))	throw new AccessException("");
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$base=$this->Otgruzka(2);
