@@ -621,8 +621,18 @@ class doc_s_Sklad
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>$img
 			<tr class='lin0'>
 			<td>Описание:
-			<td><textarea name='desc'>$nxt[2]</textarea>
-			<tr class='lin1'><td colspan='2' align='center'>        	
+			<td><textarea name='desc'>$nxt[2]</textarea>			
+			<tr class='lin0'><td>Дополнительные свойства по умолчанию для склада и фильтров<td>");
+			$r=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`id` FROM `doc_base_params`
+			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+			ORDER BY `doc_base_params`.`id`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о дополнительных свойствах");
+			while($p=mysql_fetch_row($r))
+			{
+				$checked=$p[2]?'checked':'';
+				$tmpl->AddText("<label><input type='checkbox' name='' value='1' $checked>$p[1]</label><br>");
+			}
+			$tmpl->AddText("<tr class='lin1'><td colspan='2' align='center'>
 			<button type='submit'>Сохранить</button>
 			</table>
 			</form>");

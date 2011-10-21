@@ -217,7 +217,7 @@ protected function ViewGroup($group, $page)
 	{
 		$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
 		$tmpl->AddText("<div class='group-description'>$text</div><br>");
-	}		
+	}
 	if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle($group);
 	else						$this->GroupList_ImageStyle($group);
 	/// TODO: сделать возможность выбора вида отображения списка товаров посетителем
@@ -227,6 +227,8 @@ protected function ViewGroup($group, $page)
 protected function ProductList($group, $page)
 {
 	global $tmpl, $CONFIG;
+	
+
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
 	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_units`.`printname` AS `units`
@@ -404,6 +406,7 @@ protected function Buy()
 protected function GroupList_ItemStyle($group)
 {
 	global $tmpl, $CONFIG;
+	
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать список групп');
 	$tmpl->AddStyle(".vitem { width: 250px; float: left; font-size:	14px; } .vitem:before{content: '\\203A \\0020' ; } hr.clear{border: 0 none; margin: 0;}");
@@ -417,6 +420,7 @@ protected function GroupList_ItemStyle($group)
 protected function GroupList_ImageStyle($group)
 {
 	global $tmpl, $CONFIG;
+	
 	$res=mysql_query("SELECT * FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group'  ORDER BY `id`");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать список групп');
 	$tmpl->AddStyle(".vitem { width: 360px; float: left; font-size:	14px; margin: 10px;} .vitem img {float: left; padding-right: 8px;} hr.clear{border: 0 none; margin: 0;}");
