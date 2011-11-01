@@ -442,6 +442,7 @@ protected function GroupList_ImageStyle($group)
 	}
 	$tmpl->AddText("<hr class='clear'>");
 }
+
 /// Простая таблица товаров
 protected function TovList_SimpleTable($res, $lim)
 {
@@ -451,23 +452,23 @@ protected function TovList_SimpleTable($res, $lim)
 	$cl="lin0";
 	while($nxt=mysql_fetch_assoc($res))
 	{
-		$nal=$this->GetCountInfo($nxt['count'], $nxt['tranzit']);
+		$nal=$this->GetCountInfo($nxt['count'], @$nxt['tranzit']);
 		$link=$this->GetProductLink($nxt['id'], $nxt['name']);	
 		$cce='';
 		$dcc=strtotime($nxt['cost_date']);
 		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
 		$cost=GetCostPos($nxt['id'], $this->cost_id);	
-		$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a>
+		@$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a>
 		<td>{$nxt['proizv']}<td>$nal<td $cce>$cost
 		<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
 		<img src='/img/i_korz.png' alt='В корзину!'></a></tr>");
-		$sf++;
 		$i++;
 		$cc=1-$cc;
 		if($i>=$lim)	break;
 	}
 	$tmpl->AddText("</table>");
 }
+
 /// Список товаров в виде изображений
 protected function TovList_ImageList($res, $lim)
 {

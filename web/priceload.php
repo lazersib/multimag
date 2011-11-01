@@ -76,6 +76,7 @@ function draw_groups_tree($level, $firm)
 function firmAddForm($id=0)
 {
 	global $tmpl;
+	$nxt=array();
 	if($id)
 	{
 		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type` FROM `firm_info` WHERE `id`='$id'");
@@ -181,14 +182,15 @@ function firmAddForm($id=0)
 		}
 	}
 	
-	function FillTextBoxes(t_name, c_art,c_name,c_cost,c_nal,l_id)
+	function FillTextBoxes(l_id, t_name, c_art, c_name, c_cost, c_nal, c_curr)
 	{
+		document.getElementById('line_id').value=l_id;
 		document.getElementById('table_name').value=t_name;
 		document.getElementById('col_art').value=c_art;
 		document.getElementById('col_name').value=c_name;
 		document.getElementById('col_cost').value=c_cost;
 		document.getElementById('col_nal').value=c_nal;
-		document.getElementById('line_id').value=l_id;
+		document.getElementById('col_curr').value=c_curr;
 	}
 	
 	</script><br>
@@ -219,6 +221,7 @@ function firmAddForm($id=0)
 		<td><input type='text' name='col_name'>
 		<td><input type='text' name='col_cost'>
 		<td><input type='text' name='col_nal'>
+		<td><input type='text' name='col_curr'>
 		</table>");
 	
 	}
@@ -231,23 +234,24 @@ function firmAddForm($id=0)
 		<input type='hidden' name='firm_id' value='$nxt[0]'>
 		<input type='hidden' name='line_id' value='0' id='line_id'>
 		<table>
-		<tr><th rowspan='2'>Имя листа<th colspan='4'>Номера колонок
-		<tr><th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием");
-		$res=mysql_query("SELECT `table_name`, `art`, `name`, `cost`, `nal`, `id` FROM `firm_info_struct`
+		<tr><th rowspan='2'>Имя листа<th colspan='5'>Номера колонок
+		<tr><th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием<th>С валютой");
+		$res=mysql_query("SELECT `id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency` FROM `firm_info_struct`
 		WHERE `firm_id`='$nxt[0]'");
 		while($nx=mysql_fetch_row($res))
 		{
 			$tmpl->AddText("<tr><td>
-			<a href='?mode=firmsd&p=$nx[5]'><img src='/img/i_del.png' alt='Удалить'></a>
-			<a onclick=\"FillTextBoxes('$nx[0]', '$nx[1]', '$nx[2]', '$nx[3]', '$nx[4]', '$nx[5]');\"><img src='/img/i_edit.png'  alt='Правка'></a>
-			$nx[0]<td>$nx[1]<td>$nx[2]<td>$nx[3]<td>$nx[4]");		
+			<a href='?mode=firmsd&p=$nx[0]'><img src='/img/i_del.png' alt='Удалить'></a>
+			<a onclick=\"FillTextBoxes('$nx[0]', '$nx[1]', '$nx[2]', '$nx[3]', '$nx[4]', '$nx[5]', '$nx[6]');\"><img src='/img/i_edit.png'  alt='Правка'></a>
+			$nx[1]<td>$nx[2]<td>$nx[3]<td>$nx[4]<td>$nx[5]<td>$nx[6]");		
 		}		
-		$tmpl->AddText("<tr><th colspan='5'>Новый лист<tr>
+		$tmpl->AddText("<tr><th colspan='6'>Новый лист<tr>
 		<td><input type='text' name='table_name' id='table_name'>
 		<td><input type='text' name='col_art' id='col_art'>
 		<td><input type='text' name='col_name' id='col_name'>
 		<td><input type='text' name='col_cost' id='col_cost'>
 		<td><input type='text' name='col_nal' id='col_nal'>
+		<td><input type='text' name='col_curr' id='col_curr'>
 		</table>
 		<input type=submit value='Записать!'></form>");
 	
@@ -356,13 +360,15 @@ else if($mode=='firms')
 		$col_name=rcv('col_name');
 		$col_cost=rcv('col_cost');
 		$col_nal=rcv('col_nal');
+		$col_nal=rcv('col_nal');
+		$col_curr=rcv('col_curr');
 		$res=mysql_query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`)
 		VALUES ('$nm', '$sign', '$curr', '$coeff', '$type')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить новую фирму");
 
 		$firm_id=mysql_insert_id();
-		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`)
-		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal')");
+		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`)
+		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить структуру прайса");
 		$tmpl->msg("Фирма добавлена!",'ok');
 	}
@@ -394,15 +400,16 @@ else if($mode=='firmss')
 	$col_name=rcv('col_name');
 	$col_cost=rcv('col_cost');
 	$col_nal=rcv('col_nal');
+	$col_curr=rcv('col_curr');
 	if(!$line_id)
 	{
-		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`)
-		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal')");
+		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`)
+		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr')");
 		if(mysql_errno())	throw new MysqlException("Не удалось вставить строку");
 	}
 	else
 	{
-		mysql_query("UPDATE `firm_info_struct` SET `table_name`='$table_name', `art`='$col_art', `name`='$col_name', `cost`='$col_cost', `nal`='$col_nal' WHERE `id`='$line_id'");
+		mysql_query("UPDATE `firm_info_struct` SET `table_name`='$table_name', `art`='$col_art', `name`='$col_name', `cost`='$col_cost', `nal`='$col_nal', `currency`='$col_curr' WHERE `id`='$line_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить данные");
 		if(mysql_affected_rows()==0)	$tmpl->msg("Ничего не изменено","info");
 	}

@@ -38,6 +38,8 @@ class ODFContentLoader
 	private $line_pos;		// ID текущей ячейки
 	private $inc_lines;		// Смещение после текущей ячейки (её ширина в столбцах)
 	private $firm_cols=array();	// Номера требуемых колонок прайса
+	private $def_currency;		// Валюта по умолчанию
+	private $currencies=array();	// Массив валют
 	
 	// Выходные данные
 	private $html='';		// HTML - представление таблиц (опция build_html_data)
@@ -54,11 +56,15 @@ class ODFContentLoader
 	/// Определение принадлежности прайс-листа по сигнатуре
 	public function detectFirm()
 	{
-		$res=mysql_query("SELECT `id`, `name`, `signature` FROM `firm_info`");
+		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency` FROM `firm_info`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить данные фирмы");
 		while($nxt=mysql_fetch_row($res))
 		{
-			if(stripos($this->xml,$nxt[2])) return	$this->firm_id=$nxt[0];
+			if(stripos($this->xml,$nxt[2]))
+			{
+				$this->currency=$nxt[3];
+				return	$this->firm_id=$nxt[0];
+			}
 		}
 		return false;
 	}
@@ -79,6 +85,13 @@ class ODFContentLoader
 			if(mysql_errno())	throw new MysqlException("Не удалось удалить старый прайс фирмы {$this->firm_id}");
 			mysql_query("UPDATE `firm_info` SET `last_update`=NOW() WHERE `id`='{$this->firm_id}'");
 			if(mysql_errno())	throw new MysqlException("Не удалось установить дату обновления прайса фирмы {$this->firm_id}");
+			$res=mysql_query("SELECT `id`, `name` FROM `currency`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список валют");
+			$this->currencies=array();
+			while($nxt=mysql_fetch_row($res))
+				$this->currencies[$nxt[1]]=$nxt[0];
+				
+			
 		}
 		
 		$xml_parser = xml_parser_create();
@@ -101,11 +114,11 @@ class ODFContentLoader
 			if($this->insert_to_database)
 			{
 				$sql_table_name=mysql_real_escape_string($attrs['TABLE:NAME']);
-				$res=mysql_query("SELECT `art`, `name`, `cost`, `nal` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` LIKE '$sql_table_name'");
+				$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` LIKE '$sql_table_name'");
 				if(mysql_errno())	throw new MysqlException("Ошибка получения данных фирмы для листа *$sql_table_name*");
 				if(!mysql_num_rows($res))
 				{
-					$res=mysql_query("SELECT `art`, `name`, `cost`, `nal` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` = ''");
+					$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` = ''");
 					if(mysql_errno())	throw new MysqlException("Ошибка получения данных фирмы для листа по умолчанию");
 				}
 				if(!mysql_num_rows($res))	
@@ -180,9 +193,12 @@ class ODFContentLoader
 					$name=mysql_real_escape_string(@$this->line[$this->firm_cols['name']]);
 					$art=mysql_real_escape_string(@$this->line[$this->firm_cols['art']]);
 					$nal=mysql_real_escape_string(@$this->line[$this->firm_cols['nal']]);
+					$curr=trim(@$this->line[$this->firm_cols['currency']]);
+					if(isset($this->currencies[$curr]))	$curr=$this->currencies[$curr];
+					else					$curr=$this->def_currency;
 					mysql_query("INSERT INTO `price`
-					(`name`,`cost`,`firm`,`art`,`date`, `nal`) VALUES 
-					('$name', '$cost', '{$this->firm_id}', '$art', NOW(), '$nal' )");
+					(`name`,`cost`,`firm`,`art`,`date`, `nal`, `currency`) VALUES 
+					('$name', '$cost', '{$this->firm_id}', '$art', NOW(), '$nal', '$curr')");
 					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку прайса в базу!");
 				}
 			}

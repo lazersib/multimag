@@ -4,6 +4,31 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
 
 -- -----------------------------------------------------
+-- Table `users`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `users` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `name` VARCHAR(32) NOT NULL ,
+  `pass` VARCHAR(32) NOT NULL ,
+  `passch` VARCHAR(32) NOT NULL ,
+  `email` VARCHAR(64) NOT NULL ,
+  `date_reg` DATETIME NOT NULL ,
+  `confirm` VARCHAR(32) NOT NULL ,
+  `subscribe` INT(11) NOT NULL COMMENT 'Podpiska na novosti i dr informaciy' ,
+  `lastlogin` DATETIME NOT NULL ,
+  `rname` VARCHAR(32) NOT NULL ,
+  `tel` VARCHAR(16) NOT NULL ,
+  `adres` VARCHAR(128) NOT NULL ,
+  `worker` TINYINT(4) NOT NULL ,
+  UNIQUE INDEX `id` (`id` ASC) ,
+  INDEX `passch` (`passch` ASC) )
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Список пользователей' ;
+
+
+-- -----------------------------------------------------
 -- Table `comments`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `comments` (
@@ -19,14 +44,26 @@ CREATE  TABLE IF NOT EXISTS `comments` (
   `ip` VARCHAR(16) NOT NULL ,
   `user_agent` VARCHAR(128) NOT NULL ,
   `response` VARCHAR(512) NOT NULL COMMENT 'Ответ администрации' ,
-  `responser` INT(11) NOT NULL COMMENT 'Автор ответа' ,
+  `responser` INT(11) NULL COMMENT 'Автор ответа' ,
   PRIMARY KEY (`id`) ,
   INDEX `object_name` (`object_name` ASC) ,
   INDEX `object_id` (`object_id` ASC) ,
   INDEX `rate` (`rate` ASC) ,
-  INDEX `date` (`date` ASC) )
+  INDEX `date` (`date` ASC) ,
+  INDEX `fk_comments_users1` (`autor_id` ASC) ,
+  INDEX `fk_comments_users2` (`responser` ASC) ,
+  CONSTRAINT `fk_comments_users1`
+    FOREIGN KEY (`autor_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_comments_users2`
+    FOREIGN KEY (`responser` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8
+DEFAULT CHARACTER SET = utf8, 
 COMMENT = 'Коментарии к товарам, новостям, статьям и пр.' ;
 
 
@@ -48,7 +85,9 @@ CREATE  TABLE IF NOT EXISTS `counter` (
   INDEX `refer` (`refer` ASC) ,
   INDEX `file` (`file` ASC) )
 ENGINE = MyISAM
-DEFAULT CHARACTER SET = latin1;
+DEFAULT CHARACTER SET = utf8
+COLLATE = utf8_general_ci, 
+COMMENT = 'Журнал посещений' ;
 
 
 -- -----------------------------------------------------
@@ -60,9 +99,10 @@ CREATE  TABLE IF NOT EXISTS `currency` (
   `coeff` DECIMAL(8,4) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   UNIQUE INDEX `name` (`name` ASC) )
-ENGINE = MyISAM
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Курсы валют' ;
 
 
 -- -----------------------------------------------------
@@ -77,7 +117,8 @@ CREATE  TABLE IF NOT EXISTS `doc_agent_group` (
   INDEX `pid` (`pid` ASC) )
 ENGINE = InnoDB
 AUTO_INCREMENT = 3
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Список групп агентов' ;
 
 
 -- -----------------------------------------------------
@@ -109,7 +150,7 @@ CREATE  TABLE IF NOT EXISTS `doc_agent` (
   `pasp_kem` VARCHAR(64) NOT NULL ,
   `comment` TEXT NOT NULL ,
   `no_mail` TINYINT(4) NOT NULL ,
-  `responsible` INT(11) NOT NULL ,
+  `responsible` INT(11) NULL ,
   `data_sverki` DATE NOT NULL ,
   `dishonest` TINYINT(4) NOT NULL COMMENT 'Недобросовестный' ,
   UNIQUE INDEX `id` (`id` ASC) ,
@@ -121,16 +162,22 @@ CREATE  TABLE IF NOT EXISTS `doc_agent` (
   INDEX `type` (`type` ASC) ,
   INDEX `pasp_num` (`pasp_num` ASC, `pasp_date` ASC, `pasp_kem` ASC) ,
   INDEX `group` (`group` ASC) ,
+  INDEX `fk_doc_agent_users1` (`responsible` ASC) ,
   CONSTRAINT `doc_agent_ibfk_1`
     FOREIGN KEY (`group` )
     REFERENCES `doc_agent_group` (`id` ),
   CONSTRAINT `doc_agent_ibfk_1`
     FOREIGN KEY (`group` )
-    REFERENCES `doc_agent_group` (`id` ))
+    REFERENCES `doc_agent_group` (`id` ),
+  CONSTRAINT `fk_doc_agent_users1`
+    FOREIGN KEY (`responsible` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB
 AUTO_INCREMENT = 3
 DEFAULT CHARACTER SET = utf8, 
-COMMENT = 'pcomment - printable comment' ;
+COMMENT = 'Список агентов' ;
 
 
 -- -----------------------------------------------------
@@ -167,7 +214,8 @@ CREATE  TABLE IF NOT EXISTS `doc_agent_dov` (
     REFERENCES `doc_agent` (`id` ))
 ENGINE = InnoDB
 AUTO_INCREMENT = 2
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Список доверенных лиц' ;
 
 
 -- -----------------------------------------------------
@@ -179,10 +227,12 @@ CREATE  TABLE IF NOT EXISTS `doc_units` (
   `printname` VARCHAR(8) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `name` (`name` ASC) ,
-  INDEX `printname` (`printname` ASC) )
+  INDEX `printname` (`printname` ASC) ,
+  PRIMARY KEY (`id`) )
 ENGINE = InnoDB
-AUTO_INCREMENT = 8
-DEFAULT CHARACTER SET = utf8;
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Единицы измерения' ;
 
 
 -- -----------------------------------------------------
@@ -196,7 +246,6 @@ CREATE  TABLE IF NOT EXISTS `doc_group` (
   `hidelevel` TINYINT(4) NOT NULL ,
   `printname` VARCHAR(64) NOT NULL ,
   `no_export_yml` TINYINT(4) NOT NULL COMMENT 'Не экспортировать в YML' ,
-  UNIQUE INDEX `id` (`id` ASC) ,
   UNIQUE INDEX `name` (`name` ASC) ,
   INDEX `pid` (`pid` ASC) ,
   INDEX `hidelevel` (`hidelevel` ASC) )
@@ -234,6 +283,7 @@ CREATE  TABLE IF NOT EXISTS `doc_base` (
   INDEX `hidden` (`hidden` ASC) ,
   INDEX `unit` (`unit` ASC) ,
   INDEX `vc` (`vc` ASC) ,
+  PRIMARY KEY (`id`) ,
   CONSTRAINT `doc_base_ibfk_2`
     FOREIGN KEY (`unit` )
     REFERENCES `doc_units` (`id` )
@@ -264,14 +314,14 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_sklady` (
   `id` TINYINT(4) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(100) NOT NULL ,
+  `name` VARCHAR(64) NOT NULL ,
   `comment` TEXT NOT NULL ,
   `dnc` TINYINT(4) NOT NULL COMMENT 'Не контролоировать остатки' ,
   INDEX `id` (`id` ASC) ,
   INDEX `name` (`name` ASC) ,
   INDEX `dnc` (`dnc` ASC) )
 ENGINE = InnoDB
-AUTO_INCREMENT = 3
+AUTO_INCREMENT = 2
 DEFAULT CHARACTER SET = utf8;
 
 
@@ -284,7 +334,7 @@ CREATE  TABLE IF NOT EXISTS `doc_base_cnt` (
   `cnt` DOUBLE NOT NULL ,
   `mesto` INT(11) NOT NULL ,
   `mincnt` INT(11) NOT NULL ,
-  PRIMARY KEY (`id`, `sklad`) ,
+  PRIMARY KEY (`id`) ,
   INDEX `cnt` (`cnt` ASC) ,
   INDEX `mesto` (`mesto` ASC) ,
   INDEX `mincnt` (`mincnt` ASC) ,
@@ -310,8 +360,8 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_cost` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(25) NOT NULL ,
-  `type` VARCHAR(5) NOT NULL ,
+  `name` VARCHAR(24) NOT NULL ,
+  `type` VARCHAR(4) NOT NULL ,
   `value` DECIMAL(8,2) NOT NULL COMMENT 'Значение цены' ,
   `vid` TINYINT(4) NOT NULL COMMENT 'Вид цены определяет места её использования' ,
   `accuracy` TINYINT(4) NOT NULL COMMENT 'Точность для округления' ,
@@ -329,7 +379,7 @@ CREATE  TABLE IF NOT EXISTS `doc_base_cost` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `pos_id` INT(11) NOT NULL ,
   `cost_id` INT(11) NOT NULL ,
-  `type` VARCHAR(5) NOT NULL ,
+  `type` VARCHAR(8) NOT NULL ,
   `value` DECIMAL(8,2) NOT NULL ,
   `accuracy` TINYINT(4) NOT NULL ,
   `direction` TINYINT(4) NOT NULL ,
@@ -374,9 +424,9 @@ CREATE  TABLE IF NOT EXISTS `doc_base_dop` (
   `d_ext` DOUBLE NOT NULL DEFAULT '0' ,
   `size` DOUBLE NOT NULL DEFAULT '0' ,
   `mass` DOUBLE NOT NULL DEFAULT '0' ,
-  `analog` VARCHAR(20) NOT NULL ,
+  `analog` VARCHAR(24) NOT NULL ,
   `koncost` DOUBLE NOT NULL DEFAULT '0' ,
-  `strana` VARCHAR(20) NOT NULL ,
+  `strana` VARCHAR(24) NOT NULL ,
   `tranzit` TINYINT(4) NOT NULL ,
   `ntd` VARCHAR(32) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
@@ -403,7 +453,7 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_base_dop_type` (
   `id` INT(11) NOT NULL ,
-  `name` VARCHAR(70) NOT NULL ,
+  `name` VARCHAR(64) NOT NULL ,
   `desc` TEXT NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `name` (`name` ASC) ,
@@ -422,7 +472,7 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_img` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(100) NOT NULL ,
+  `name` VARCHAR(128) NOT NULL ,
   `type` VARCHAR(4) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   UNIQUE INDEX `name` (`name` ASC) )
@@ -435,8 +485,8 @@ DEFAULT CHARACTER SET = utf8;
 -- Table `doc_base_img`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_base_img` (
-  `pos_id` INT(11) NOT NULL ,
   `img_id` INT(11) NOT NULL ,
+  `pos_id` INT(11) NOT NULL ,
   `default` TINYINT(4) NOT NULL ,
   UNIQUE INDEX `pos_id` (`pos_id` ASC, `img_id` ASC) ,
   INDEX `default` (`default` ASC) ,
@@ -496,14 +546,33 @@ COMMENT = 'Комплектующие - из чего состоит эта по
 
 
 -- -----------------------------------------------------
+-- Table `doc_base_gparams`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `doc_base_gparams` (
+  `id` INT NOT NULL ,
+  `name` VARCHAR(64) NULL ,
+  PRIMARY KEY (`id`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8
+COLLATE = utf8_general_ci;
+
+
+-- -----------------------------------------------------
 -- Table `doc_base_params`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_base_params` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `pgroup_id` INT(11) NOT NULL ,
   `param` VARCHAR(32) NOT NULL ,
   `type` VARCHAR(8) NOT NULL ,
-  UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `param` (`param` ASC) )
+  INDEX `param` (`param` ASC) ,
+  PRIMARY KEY (`id`) ,
+  INDEX `pgroup` (`pgroup_id` ASC) ,
+  CONSTRAINT `fk_doc_base_params_doc_base_gparams1`
+    FOREIGN KEY (`pgroup_id` )
+    REFERENCES `doc_base_gparams` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB
 AUTO_INCREMENT = 6
 DEFAULT CHARACTER SET = utf8;
@@ -549,36 +618,13 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_types` (
   `id` TINYINT(4) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(30) NOT NULL ,
-  INDEX `id` (`id` ASC) )
+  `name` VARCHAR(32) NOT NULL ,
+  INDEX `id` (`id` ASC) ,
+  PRIMARY KEY (`id`) )
 ENGINE = InnoDB
 AUTO_INCREMENT = 18
-DEFAULT CHARACTER SET = utf8;
-
-
--- -----------------------------------------------------
--- Table `users`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `users` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(32) NOT NULL ,
-  `pass` VARCHAR(32) NOT NULL ,
-  `passch` VARCHAR(32) NOT NULL ,
-  `email` VARCHAR(64) NOT NULL ,
-  `date_reg` DATETIME NOT NULL ,
-  `confirm` VARCHAR(32) NOT NULL ,
-  `subscribe` INT(11) NOT NULL COMMENT 'Podpiska na novosti i dr informaciy' ,
-  `lastlogin` DATETIME NOT NULL ,
-  `rname` VARCHAR(32) NOT NULL ,
-  `tel` VARCHAR(16) NOT NULL ,
-  `adres` VARCHAR(128) NOT NULL ,
-  `worker` TINYINT(4) NOT NULL ,
-  UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `passch` (`passch` ASC) )
-ENGINE = InnoDB
-AUTO_INCREMENT = 2
 DEFAULT CHARACTER SET = utf8, 
-COMMENT = 'Список пользователей' ;
+COMMENT = 'Типы документов' ;
 
 
 -- -----------------------------------------------------
@@ -586,23 +632,23 @@ COMMENT = 'Список пользователей' ;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_vars` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `firm_name` VARCHAR(150) NOT NULL ,
-  `firm_director` VARCHAR(100) NOT NULL ,
-  `firm_director_r` VARCHAR(100) NOT NULL ,
-  `firm_manager` VARCHAR(100) NOT NULL ,
-  `firm_buhgalter` VARCHAR(100) NOT NULL ,
-  `firm_kladovshik` VARCHAR(100) NOT NULL ,
+  `firm_name` VARCHAR(192) NOT NULL ,
+  `firm_director` VARCHAR(128) NOT NULL ,
+  `firm_director_r` VARCHAR(128) NOT NULL ,
+  `firm_manager` VARCHAR(128) NOT NULL ,
+  `firm_buhgalter` VARCHAR(128) NOT NULL ,
+  `firm_kladovshik` VARCHAR(128) NOT NULL ,
   `firm_kladovshik_id` INT(11) NOT NULL ,
-  `firm_bank` VARCHAR(100) NOT NULL ,
-  `firm_bank_kor_s` VARCHAR(25) NOT NULL ,
-  `firm_bik` VARCHAR(15) NOT NULL ,
-  `firm_schet` VARCHAR(25) NOT NULL ,
-  `firm_inn` VARCHAR(25) NOT NULL ,
-  `firm_adres` VARCHAR(150) NOT NULL ,
-  `firm_realadres` VARCHAR(150) NOT NULL ,
-  `firm_gruzootpr` VARCHAR(300) NOT NULL ,
-  `firm_telefon` VARCHAR(60) NOT NULL ,
-  `firm_okpo` VARCHAR(10) NOT NULL ,
+  `firm_bank` VARCHAR(128) NOT NULL ,
+  `firm_bank_kor_s` VARCHAR(32) NOT NULL ,
+  `firm_bik` VARCHAR(16) NOT NULL ,
+  `firm_schet` VARCHAR(32) NOT NULL ,
+  `firm_inn` VARCHAR(32) NOT NULL ,
+  `firm_adres` VARCHAR(192) NOT NULL ,
+  `firm_realadres` VARCHAR(192) NOT NULL ,
+  `firm_gruzootpr` VARCHAR(256) NOT NULL ,
+  `firm_telefon` VARCHAR(64) NOT NULL ,
+  `firm_okpo` VARCHAR(16) NOT NULL ,
   `param_nds` DOUBLE NOT NULL DEFAULT '0' ,
   `firm_skin` VARCHAR(16) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) )
@@ -626,7 +672,7 @@ CREATE  TABLE IF NOT EXISTS `doc_list` (
   `bank` TINYINT(4) NOT NULL DEFAULT '0' ,
   `user` INT(11) NOT NULL DEFAULT '0' ,
   `altnum` INT(11) NOT NULL ,
-  `subtype` VARCHAR(5) NOT NULL ,
+  `subtype` VARCHAR(4) NOT NULL ,
   `sum` DECIMAL(10,2) NOT NULL DEFAULT '0.00' ,
   `nds` INT(11) NOT NULL DEFAULT '0' ,
   `p_doc` INT(11) NOT NULL ,
@@ -686,8 +732,8 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_dopdata` (
   `doc` INT(11) NOT NULL ,
-  `param` VARCHAR(20) NOT NULL ,
-  `value` VARCHAR(150) NOT NULL ,
+  `param` VARCHAR(24) NOT NULL ,
+  `value` VARCHAR(192) NOT NULL ,
   UNIQUE INDEX `doc` (`doc` ASC, `param` ASC) ,
   INDEX `value` (`value` ASC) ,
   CONSTRAINT `doc_dopdata_ibfk_1`
@@ -697,7 +743,8 @@ CREATE  TABLE IF NOT EXISTS `doc_dopdata` (
     FOREIGN KEY (`doc` )
     REFERENCES `doc_list` (`id` ))
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Дополнительные поля документов' ;
 
 
 -- -----------------------------------------------------
@@ -748,15 +795,28 @@ DEFAULT CHARACTER SET = utf8;
 CREATE  TABLE IF NOT EXISTS `doc_kassa` (
   `ids` VARCHAR(50) CHARACTER SET 'latin1' NOT NULL ,
   `num` INT(11) NOT NULL ,
-  `name` VARCHAR(50) NOT NULL ,
+  `name` VARCHAR(64) NOT NULL ,
   `ballance` DECIMAL(10,2) NOT NULL ,
-  `bik` VARCHAR(20) NOT NULL ,
-  `rs` VARCHAR(30) NOT NULL ,
-  `ks` VARCHAR(30) NOT NULL ,
+  `bik` VARCHAR(24) NOT NULL ,
+  `rs` VARCHAR(32) NOT NULL ,
+  `ks` VARCHAR(32) NOT NULL ,
   `firm_id` INT(11) NOT NULL ,
-  UNIQUE INDEX `ids` (`ids` ASC, `num` ASC) )
+  UNIQUE INDEX `ids` (`ids` ASC, `num` ASC) ,
+  INDEX `fk_doc_kassa_doc_vars1` (`firm_id` ASC) ,
+  INDEX `fk_doc_kassa_doc_list1` (`num` ASC) ,
+  CONSTRAINT `fk_doc_kassa_doc_vars1`
+    FOREIGN KEY (`firm_id` )
+    REFERENCES `doc_vars` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_doc_kassa_doc_list1`
+    FOREIGN KEY (`num` )
+    REFERENCES `doc_list` (`kassa` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Список касс и банков' ;
 
 
 -- -----------------------------------------------------
@@ -851,18 +911,24 @@ CREATE  TABLE IF NOT EXISTS `doc_log` (
   `ip` VARCHAR(20) NOT NULL ,
   `object` VARCHAR(20) NOT NULL ,
   `object_id` INT(11) NOT NULL ,
-  `motion` VARCHAR(100) NOT NULL ,
-  `desc` VARCHAR(500) NOT NULL ,
+  `motion` VARCHAR(128) NOT NULL ,
+  `desc` VARCHAR(512) NOT NULL ,
   `time` DATETIME NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `user` (`user` ASC) ,
   INDEX `motion` (`motion` ASC) ,
   INDEX `time` (`time` ASC) ,
   INDEX `desc` (`desc`(333) ASC) ,
-  INDEX `ip` (`ip` ASC) )
+  INDEX `ip` (`ip` ASC) ,
+  CONSTRAINT `fk_doc_log_users1`
+    FOREIGN KEY (`user` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = MyISAM
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Журнал изменений объектов документооборота' ;
 
 
 -- -----------------------------------------------------
@@ -870,13 +936,13 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `doc_rasxodi` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(50) NOT NULL ,
+  `name` VARCHAR(64) NOT NULL ,
   `adm` TINYINT(4) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `name` (`name` ASC) ,
   INDEX `adm` (`adm` ASC) )
 ENGINE = MyISAM
-AUTO_INCREMENT = 15
+AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8, 
 COMMENT = 'Статьи расходов' ;
 
@@ -889,7 +955,7 @@ CREATE  TABLE IF NOT EXISTS `errorlog` (
   `page` VARCHAR(128) NOT NULL ,
   `referer` VARCHAR(128) NOT NULL ,
   `agent` VARCHAR(128) NOT NULL ,
-  `ip` VARCHAR(18) NOT NULL ,
+  `ip` VARCHAR(24) NOT NULL ,
   `msg` TEXT NOT NULL ,
   `date` DATETIME NOT NULL ,
   `uid` INT(11) NOT NULL ,
@@ -900,7 +966,8 @@ CREATE  TABLE IF NOT EXISTS `errorlog` (
   INDEX `agent` (`agent` ASC, `ip` ASC) )
 ENGINE = MyISAM
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Журнал ошибок' ;
 
 
 -- -----------------------------------------------------
@@ -908,17 +975,25 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `firm_info` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(100) NOT NULL DEFAULT '' ,
-  `signature` VARCHAR(200) NOT NULL DEFAULT '' COMMENT 'Сигнатура для определения принадлежности прайса' ,
+  `name` VARCHAR(128) NOT NULL DEFAULT '' ,
+  `signature` VARCHAR(256) NOT NULL DEFAULT '' COMMENT 'Сигнатура для определения принадлежности прайса' ,
   `currency` TINYINT(4) NOT NULL ,
   `coeff` DECIMAL(10,3) NOT NULL ,
   `last_update` DATETIME NOT NULL ,
+  `type` INT(11) NULL COMMENT 'Как интерпретировать прайс фирмы' ,
   PRIMARY KEY (`id`) ,
   INDEX `name` (`name` ASC) ,
-  INDEX `sign` (`signature` ASC) )
+  INDEX `sign` (`signature` ASC) ,
+  INDEX `fk_firm_info_currency1` (`currency` ASC) ,
+  CONSTRAINT `fk_firm_info_currency1`
+    FOREIGN KEY (`currency` )
+    REFERENCES `currency` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB
 AUTO_INCREMENT = 2
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Информация об организации - источнике прайса' ;
 
 
 -- -----------------------------------------------------
@@ -927,11 +1002,12 @@ DEFAULT CHARACTER SET = utf8;
 CREATE  TABLE IF NOT EXISTS `firm_info_struct` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `firm_id` INT(11) NOT NULL COMMENT 'Номер фирмы' ,
-  `table_name` VARCHAR(50) NOT NULL COMMENT 'Название листа прайса' ,
+  `table_name` VARCHAR(64) NOT NULL COMMENT 'Название листа прайса' ,
   `name` MEDIUMINT(9) NOT NULL COMMENT 'N колонки наименований' ,
   `cost` MEDIUMINT(9) NOT NULL ,
   `art` MEDIUMINT(9) NOT NULL ,
   `nal` MEDIUMINT(9) NOT NULL ,
+  `currency` MEDIUMINT(9) NOT NULL COMMENT 'Столбец с валютой' ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `firm_id` (`firm_id` ASC) ,
   INDEX `table_name` (`table_name` ASC) ,
@@ -943,7 +1019,8 @@ CREATE  TABLE IF NOT EXISTS `firm_info_struct` (
     REFERENCES `firm_info` (`id` ))
 ENGINE = InnoDB
 AUTO_INCREMENT = 2
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Информация о структуре прайсов организаций' ;
 
 
 -- -----------------------------------------------------
@@ -967,7 +1044,8 @@ CREATE  TABLE IF NOT EXISTS `loginfo` (
   INDEX `user` (`user` ASC) )
 ENGINE = MyISAM
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = latin1;
+DEFAULT CHARACTER SET = utf8
+COLLATE = utf8_general_ci;
 
 
 -- -----------------------------------------------------
@@ -984,9 +1062,16 @@ CREATE  TABLE IF NOT EXISTS `news` (
   `img_ext` VARCHAR(4) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `type` (`type` ASC) ,
-  INDEX `ex_date` (`ex_date` ASC) )
-ENGINE = MyISAM
-DEFAULT CHARACTER SET = utf8;
+  INDEX `ex_date` (`ex_date` ASC) ,
+  INDEX `fk_news_users1` (`autor` ASC) ,
+  CONSTRAINT `fk_news_users1`
+    FOREIGN KEY (`autor` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Новости, акции, итп' ;
 
 
 -- -----------------------------------------------------
@@ -996,7 +1081,7 @@ CREATE  TABLE IF NOT EXISTS `notes` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `user` INT(11) NOT NULL ,
   `sender` INT(11) NOT NULL ,
-  `head` VARCHAR(50) NOT NULL ,
+  `head` VARCHAR(64) NOT NULL ,
   `msg` TEXT NOT NULL ,
   `senddate` DATETIME NOT NULL ,
   `enddate` DATETIME NOT NULL ,
@@ -1006,10 +1091,21 @@ CREATE  TABLE IF NOT EXISTS `notes` (
   INDEX `user` (`user` ASC) ,
   INDEX `sender` (`sender` ASC) ,
   INDEX `senddate` (`senddate` ASC) ,
-  INDEX `enddate` (`enddate` ASC) )
-ENGINE = MyISAM
+  INDEX `enddate` (`enddate` ASC) ,
+  CONSTRAINT `fk_notes_users1`
+    FOREIGN KEY (`user` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_notes_users2`
+    FOREIGN KEY (`sender` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Заметки и уведомления' ;
 
 
 -- -----------------------------------------------------
@@ -1017,11 +1113,12 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `price` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(200) NOT NULL DEFAULT '' ,
+  `name` VARCHAR(256) NOT NULL DEFAULT '' ,
   `cost` DOUBLE NOT NULL DEFAULT '0' ,
   `firm` INT(11) NOT NULL DEFAULT '0' ,
-  `art` VARCHAR(20) NOT NULL DEFAULT '' ,
-  `nal` VARCHAR(20) NOT NULL ,
+  `art` VARCHAR(32) NOT NULL DEFAULT '' ,
+  `nal` VARCHAR(16) NOT NULL ,
+  `currency` INT(11) NULL ,
   `date` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00' ,
   `seeked` INT(11) NOT NULL ,
   INDEX `name` (`name` ASC) ,
@@ -1038,7 +1135,8 @@ CREATE  TABLE IF NOT EXISTS `price` (
     REFERENCES `firm_info` (`id` ))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Загруженные наименования прайс - листов' ;
 
 
 -- -----------------------------------------------------
@@ -1049,7 +1147,7 @@ CREATE  TABLE IF NOT EXISTS `parsed_price` (
   `firm` INT(11) NOT NULL ,
   `pos` INT(11) NOT NULL ,
   `cost` DECIMAL(10,2) NOT NULL ,
-  `nal` VARCHAR(10) NOT NULL ,
+  `nal` VARCHAR(16) NOT NULL ,
   `from` INT(11) NOT NULL ,
   PRIMARY KEY (`id`) ,
   INDEX `firm` (`firm` ASC) ,
@@ -1068,7 +1166,8 @@ CREATE  TABLE IF NOT EXISTS `parsed_price` (
     REFERENCES `firm_info` (`id` ))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Соответствия между наименованиями прайс-листов и складом' ;
 
 
 -- -----------------------------------------------------
@@ -1077,7 +1176,7 @@ DEFAULT CHARACTER SET = utf8;
 CREATE  TABLE IF NOT EXISTS `photogalery` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `uid` INT(11) NOT NULL DEFAULT '0' ,
-  `comment` VARCHAR(50) NOT NULL ,
+  `comment` VARCHAR(64) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `uid` (`uid` ASC) ,
   CONSTRAINT `photogalery_ibfk_1`
@@ -1088,7 +1187,8 @@ CREATE  TABLE IF NOT EXISTS `photogalery` (
     REFERENCES `users` (`id` ))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'ОписанИЯ фотографий галереи' ;
 
 
 -- -----------------------------------------------------
@@ -1101,7 +1201,7 @@ CREATE  TABLE IF NOT EXISTS `prices_replaces` (
   PRIMARY KEY (`id`) ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `search_str` (`search_str` ASC) )
-ENGINE = MyISAM
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8, 
 COMMENT = 'Список замен для регулярных выражений анализатора прайсов' ;
@@ -1112,10 +1212,10 @@ COMMENT = 'Список замен для регулярных выражени�
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `questions` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `text` VARCHAR(200) NOT NULL ,
+  `text` VARCHAR(256) NOT NULL ,
   `mode` INT(11) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) )
-ENGINE = MyISAM
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
 
@@ -1132,8 +1232,18 @@ CREATE  TABLE IF NOT EXISTS `question_answ` (
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `q_id` (`q_id` ASC) ,
   INDEX `uid` (`uid` ASC) ,
-  INDEX `ip` (`ip` ASC) )
-ENGINE = MyISAM
+  INDEX `ip` (`ip` ASC) ,
+  CONSTRAINT `fk_question_answ_users1`
+    FOREIGN KEY (`uid` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_question_answ_questions1`
+    FOREIGN KEY (`q_id` )
+    REFERENCES `questions` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
 
@@ -1158,8 +1268,14 @@ CREATE  TABLE IF NOT EXISTS `question_vars` (
   `var_id` INT(11) NOT NULL ,
   `text` VARCHAR(500) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `q_id` (`q_id` ASC, `var_id` ASC) )
-ENGINE = MyISAM
+  INDEX `q_id` (`q_id` ASC, `var_id` ASC) ,
+  INDEX `fk_question_vars_questions1` (`q_id` ASC) ,
+  CONSTRAINT `fk_question_vars_questions1`
+    FOREIGN KEY (`q_id` )
+    REFERENCES `questions` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
 
@@ -1169,18 +1285,22 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `seekdata` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(200) NOT NULL ,
-  `sql` VARCHAR(200) NOT NULL ,
-  `regex` VARCHAR(200) NOT NULL ,
-  `group` INT(11) NOT NULL ,
+  `sql` VARCHAR(256) NOT NULL ,
+  `regex` VARCHAR(256) NOT NULL ,
   `regex_neg` VARCHAR(256) NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `name` (`name` ASC) ,
   INDEX `sql` (`sql` ASC) ,
-  INDEX `regex` (`regex` ASC) )
-ENGINE = MyISAM
+  INDEX `regex` (`regex` ASC) ,
+  PRIMARY KEY (`id`) ,
+  CONSTRAINT `fk_seekdata_doc_base1`
+    FOREIGN KEY (`id` )
+    REFERENCES `doc_base` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Данные для поиска анлизатором прайсов' ;
 
 
 -- -----------------------------------------------------
@@ -1195,6 +1315,32 @@ CREATE  TABLE IF NOT EXISTS `sys_cli_status` (
 ENGINE = MyISAM
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `tickets_state`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `tickets_state` (
+  `id` INT(11) NOT NULL ,
+  `name` VARCHAR(32) NOT NULL ,
+  UNIQUE INDEX `id` (`id` ASC) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `tickets_priority`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `tickets_priority` (
+  `id` TINYINT(4) NOT NULL ,
+  `name` VARCHAR(64) NOT NULL ,
+  `color` VARCHAR(8) NOT NULL ,
+  `comment` VARCHAR(256) NOT NULL ,
+  UNIQUE INDEX `id` (`id` ASC) ,
+  INDEX `name` (`name` ASC) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Описания приоритетов задач' ;
 
 
 -- -----------------------------------------------------
@@ -1216,6 +1362,8 @@ CREATE  TABLE IF NOT EXISTS `tickets` (
   INDEX `theme` (`theme` ASC) ,
   INDEX `to_uid` (`to_uid` ASC) ,
   INDEX `to_date` (`to_date` ASC) ,
+  INDEX `fk_tickets_tickets_state1` (`state` ASC) ,
+  INDEX `fk_tickets_tickets_priority1` (`priority` ASC) ,
   CONSTRAINT `tickets_ibfk_2`
     FOREIGN KEY (`to_uid` )
     REFERENCES `users` (`id` ),
@@ -1227,7 +1375,17 @@ CREATE  TABLE IF NOT EXISTS `tickets` (
     REFERENCES `users` (`id` ),
   CONSTRAINT `tickets_ibfk_1`
     FOREIGN KEY (`autor` )
-    REFERENCES `users` (`id` ))
+    REFERENCES `users` (`id` ),
+  CONSTRAINT `fk_tickets_tickets_state1`
+    FOREIGN KEY (`state` )
+    REFERENCES `tickets_state` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_tickets_tickets_priority1`
+    FOREIGN KEY (`priority` )
+    REFERENCES `tickets_priority` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
@@ -1243,34 +1401,21 @@ CREATE  TABLE IF NOT EXISTS `tickets_log` (
   `date` DATETIME NOT NULL ,
   `text` TEXT NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `uid` (`uid` ASC, `ticket` ASC, `date` ASC) )
+  INDEX `uid` (`uid` ASC, `ticket` ASC, `date` ASC) ,
+  INDEX `fk_tickets_log_tickets1` (`ticket` ASC) ,
+  INDEX `fk_tickets_log_users1` (`uid` ASC) ,
+  CONSTRAINT `fk_tickets_log_tickets1`
+    FOREIGN KEY (`ticket` )
+    REFERENCES `tickets` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_tickets_log_users1`
+    FOREIGN KEY (`uid` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = MyISAM
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
-
-
--- -----------------------------------------------------
--- Table `tickets_priority`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `tickets_priority` (
-  `id` TINYINT(4) NOT NULL ,
-  `name` VARCHAR(50) NOT NULL ,
-  `color` VARCHAR(6) NOT NULL ,
-  `comment` VARCHAR(200) NOT NULL ,
-  UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `name` (`name` ASC) )
-ENGINE = MyISAM
-DEFAULT CHARACTER SET = utf8;
-
-
--- -----------------------------------------------------
--- Table `tickets_state`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `tickets_state` (
-  `id` INT(11) NOT NULL ,
-  `name` VARCHAR(30) NOT NULL ,
-  UNIQUE INDEX `id` (`id` ASC) )
-ENGINE = MyISAM
 DEFAULT CHARACTER SET = utf8;
 
 
@@ -1344,6 +1489,27 @@ DEFAULT CHARACTER SET = utf8;
 
 
 -- -----------------------------------------------------
+-- Table `users_objects`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `users_objects` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `object` VARCHAR(64) NOT NULL ,
+  `desc` VARCHAR(128) NOT NULL ,
+  `actions` VARCHAR(128) NOT NULL ,
+  UNIQUE INDEX `id` (`id` ASC) ,
+  INDEX `object` (`object` ASC) ,
+  CONSTRAINT `fk_users_objects_users1`
+    FOREIGN KEY (`id` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
+AUTO_INCREMENT = 0
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Объекты контроля привилегий доступа' ;
+
+
+-- -----------------------------------------------------
 -- Table `users_acl`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `users_acl` (
@@ -1364,10 +1530,16 @@ CREATE  TABLE IF NOT EXISTS `users_acl` (
     FOREIGN KEY (`uid` )
     REFERENCES `users` (`id` )
     ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_users_acl_users_objects1`
+    FOREIGN KEY (`object` )
+    REFERENCES `users_objects` (`object` )
+    ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Привилегии пользователей' ;
 
 
 -- -----------------------------------------------------
@@ -1379,10 +1551,16 @@ CREATE  TABLE IF NOT EXISTS `users_bad_auth` (
   `time` DOUBLE NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `ip` (`ip` ASC) ,
-  INDEX `date` (`time` ASC) )
-ENGINE = MyISAM
+  INDEX `date` (`time` ASC) ,
+  CONSTRAINT `fk_users_bad_auth_users1`
+    FOREIGN KEY (`id` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = latin1;
+DEFAULT CHARACTER SET = latin1, 
+COMMENT = 'Журнал ошибочных аутентификаций' ;
 
 
 -- -----------------------------------------------------
@@ -1390,7 +1568,7 @@ DEFAULT CHARACTER SET = latin1;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `users_data` (
   `uid` INT(11) NOT NULL DEFAULT '0' ,
-  `param` VARCHAR(25) NOT NULL ,
+  `param` VARCHAR(24) NOT NULL ,
   `value` VARCHAR(128) NOT NULL ,
   UNIQUE INDEX `uid` (`uid` ASC, `param` ASC) ,
   INDEX `value` (`value` ASC) ,
@@ -1405,7 +1583,8 @@ CREATE  TABLE IF NOT EXISTS `users_data` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Дополнительная информация о пользователях' ;
 
 
 -- -----------------------------------------------------
@@ -1413,14 +1592,14 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `users_grouplist` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(50) NOT NULL ,
+  `name` VARCHAR(64) NOT NULL ,
   `comment` TEXT NOT NULL ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `name` (`name` ASC) )
 ENGINE = InnoDB
 AUTO_INCREMENT = 2
 DEFAULT CHARACTER SET = latin1, 
-COMMENT = 'Spisok grupp' 
+COMMENT = 'Список групп пользователей' 
 PACK_KEYS = 0;
 
 
@@ -1440,7 +1619,12 @@ CREATE  TABLE IF NOT EXISTS `users_groups_acl` (
     REFERENCES `users` (`id` ),
   CONSTRAINT `users_groups_acl_ibfk_1`
     FOREIGN KEY (`gid` )
-    REFERENCES `users` (`id` ))
+    REFERENCES `users` (`id` ),
+  CONSTRAINT `fk_users_groups_acl_users_objects1`
+    FOREIGN KEY (`object` )
+    REFERENCES `users_objects` (`object` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB
 AUTO_INCREMENT = 2
 DEFAULT CHARACTER SET = latin1, 
@@ -1476,21 +1660,6 @@ COMMENT = 'Соответствие групп и пользователей' ;
 
 
 -- -----------------------------------------------------
--- Table `users_objects`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `users_objects` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `object` VARCHAR(32) NOT NULL ,
-  `desc` VARCHAR(128) NOT NULL ,
-  `actions` VARCHAR(128) NOT NULL ,
-  UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `object` (`object` ASC) )
-ENGINE = InnoDB
-AUTO_INCREMENT = 45
-DEFAULT CHARACTER SET = utf8;
-
-
--- -----------------------------------------------------
 -- Table `wiki`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `wiki` (
@@ -1513,7 +1682,8 @@ CREATE  TABLE IF NOT EXISTS `wiki` (
     FOREIGN KEY (`autor` )
     REFERENCES `users` (`id` ))
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Статьи' ;
 
 
 -- -----------------------------------------------------
@@ -1523,13 +1693,156 @@ CREATE  TABLE IF NOT EXISTS `wikiphoto` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `uid` INT(11) NOT NULL DEFAULT '0' ,
   `comment` VARCHAR(64) NOT NULL ,
-  UNIQUE INDEX `id` (`id` ASC) )
-ENGINE = MyISAM
+  UNIQUE INDEX `id` (`id` ASC) ,
+  INDEX `fk_wikiphoto_users1` (`uid` ASC) ,
+  CONSTRAINT `fk_wikiphoto_users1`
+    FOREIGN KEY (`uid` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
 AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
+DEFAULT CHARACTER SET = utf8, 
+COMMENT = 'Фотографии к статьям' ;
+
+
+-- -----------------------------------------------------
+-- Table `db_version`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `db_version` (
+  `version` INT NOT NULL )
+ENGINE = MyISAM
+DEFAULT CHARACTER SET = utf8
+COLLATE = utf8_general_ci, 
+COMMENT = 'Текущая версия базы данных' ;
+
+
+-- -----------------------------------------------------
+-- Table `doc_group_params`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `doc_group_params` (
+  `id` INT NOT NULL ,
+  `group_id` INT(11) NULL ,
+  `param_id` INT(11) NULL ,
+  `show_in_filter` TINYINT NOT NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_doc_group_params_doc_group1` (`group_id` ASC) ,
+  INDEX `fk_doc_group_params_doc_base_params1` (`param_id` ASC) ,
+  INDEX `show_in_filter` (`show_in_filter` ASC) ,
+  CONSTRAINT `fk_doc_group_params_doc_group1`
+    FOREIGN KEY (`group_id` )
+    REFERENCES `doc_group` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_doc_group_params_doc_base_params1`
+    FOREIGN KEY (`param_id` )
+    REFERENCES `doc_base_params` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
 
 
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+-- -----------------------------------------------------
+-- Data for table `users`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `users` (`id`, `name`, `pass`, `passch`, `email`, `date_reg`, `confirm`, `subscribe`, `lastlogin`, `rname`, `tel`, `adres`, `worker`) VALUES (0, 'anonymous', '-', NULL, NULL, NULL, '0', 0, NULL, NULL, NULL, NULL, NULL);
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `doc_units`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES (1, 'Штука', 'шт.');
+INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES (2, 'Килограмм', 'кг.');
+INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES (3, 'Грамм', 'гр.');
+INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES (4, 'Литр', 'л.');
+INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES (5, 'Метр', 'м.');
+INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES (6, 'Милиметр', 'мм.');
+INSERT INTO `doc_units` (`id`, `name`, `printname`) VALUES (7, 'Упаковка', 'уп.');
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `doc_sklady`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `doc_sklady` (`id`, `name`, `comment`, `dnc`) VALUES (1, 'Основной склад', NULL, NULL);
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `doc_cost`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `doc_cost` (`id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES (1, 'Основная', NULL, NULL, NULL, NULL, NULL);
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `doc_types`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `doc_types` (`id`, `name`) VALUES (1, 'Поступление');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (2, 'Реализация');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (3, 'Заявка покупателя');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (4, 'Банк - приход');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (5, 'Банк - расход');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (6, 'Касса - приход');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (7, 'Касса - расход');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (8, 'Перемещение товара');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (9, 'Перемещение средств (касса)');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (10, 'Доверенность');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (11, 'Предложение поставщика');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (12, 'Товар в пути');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (13, 'Коммерческое предложение');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (14, 'Договор');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (15, 'Реазизация опер');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (16, 'Спецификация');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (17, 'Сборка изделия');
+INSERT INTO `doc_types` (`id`, `name`) VALUES (18, 'Корректировка долга');
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `doc_vars`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `doc_vars` (`id`, `firm_name`, `firm_director`, `firm_director_r`, `firm_manager`, `firm_buhgalter`, `firm_kladovshik`, `firm_kladovshik_id`, `firm_bank`, `firm_bank_kor_s`, `firm_bik`, `firm_schet`, `firm_inn`, `firm_adres`, `firm_realadres`, `firm_gruzootpr`, `firm_telefon`, `firm_okpo`, `param_nds`, `firm_skin`) VALUES (1, 'ООО Наша фирма', 'Ктотов И.И.', 'Ктотов И.И.', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `doc_rasxodi`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (0, 'Прочие расходы', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (1, 'Аренда офиса, склада', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (2, 'Зарплата, премии, надбавки', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (3, 'Канцелярские товары, расходные материалы', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (4, 'Представительские расходы', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (5, 'Другие (банковские) платежи', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (6, 'Закупка товара на склад', 0);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (7, 'Закупка товара на продажу', 0);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (8, 'Транспортные расходы', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (9, 'Расходы на связь', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (10, 'Оплата товара на реализации', 0);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (11, 'Налоги и сборы', 1);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (12, 'Средства под отчёт', 0);
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (13, 'Расходы на рекламу', 1);
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `db_version`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `db_version` (`version`) VALUES (269);
+
+COMMIT;

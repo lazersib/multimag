@@ -107,13 +107,7 @@ try
 		}
 	}
 
-}
-catch(Exception $e)
-{
-	$txt="Ошибка: ".$e->getMessage()."\n";
-	echo $txt;
-	$mail_text.=$txt;
-}
+
 
 // Выборка
 $mail_text.="Начинаем анализ...\n";
@@ -174,11 +168,12 @@ while($nxt=mysql_fetch_row($res))
 	}
 
 	$costar=array();
-	$rs=mysql_query("SELECT `price`.`id`, `price`.`name`, `price`.`cost`, `price`.`firm`, `price`.`nal`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`art` FROM `price`
+	$rs=mysql_query("SELECT `price`.`id`, `price`.`name`, `price`.`cost`, `price`.`firm`, `price`.`nal`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`art`, `price`.`currency`
+	FROM `price`
 	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
-	LEFT JOIN `currency` ON `currency`.`id`=`firm_info`.`currency`
+	LEFT JOIN `currency` ON `currency`.`id`=`price`.`currency`
 	WHERE $sql_add");
-	echo mysql_error();
+	if(mysql_errno())		throw new Exception("Не удалось выбрать прайс-лист из базы данных: ".mysql_error());
 	while($nx=mysql_fetch_row($rs))
 	{
 		$a=preg_match("/$nxt[2]/",$nx[1]);
@@ -257,7 +252,13 @@ while($nxt=mysql_fetch_row($res))
 		$mail_text.=$txt;	
 	}
 }
-
+}
+catch(Exception $e)
+{
+	$txt="Ошибка: ".$e->getMessage()."\n";
+	echo $txt;
+	$mail_text.=$txt;
+}
 
 // ===================== ОТПРАВКА ПОЧТЫ =============================================================== 
 if($mail_text)

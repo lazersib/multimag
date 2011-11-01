@@ -270,17 +270,50 @@ class doc_s_Sklad
 		// Дополнительные свойства
 		else if($param=='d')
 		{
-			$res=mysql_query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_dop`.`strana`, `doc_base_dop`.`ntd`
-			FROM `doc_base_dop`
-			WHERE `doc_base_dop`.`id`='$pos'");
-			$nxt=@mysql_fetch_row($res);
-
-			$tmpl->AddText("<form action='' method='post'>
-			<table cellpadding='0' width='100%'>	
+			$res=mysql_query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_dop`.`strana`, `doc_base_dop`.`ntd`, `doc_base`.`group`
+			FROM `doc_base`
+			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`='$pos'
+			WHERE `doc_base`.`id`='$pos'");
+			$nxt=mysql_fetch_row($res);
+			$tmpl->AddText("
+			<script type=\"text/javascript\">
+			function rmLine(t)
+			{
+				var line=t.parentNode.parentNode
+				line.parentNode.removeChild(line)
+			}
+			
+			function addLine()
+			{
+				var fgtab=document.getElementById('fg_table').tBodies[0]
+				var sel=document.getElementById('fg_select')
+				var newrow=fgtab.insertRow(fgtab.rows.length)
+				var lineid=sel.value
+				var ctext = sel.selectedIndex !== -1 ? sel.options[sel.selectedIndex].text : ''
+				var text=document.getElementById('value_add').value
+				newrow.innerHTML=\"<td align='right'>\"+ctext+\"</td><td><input type='text' name='par[\"+lineid+\"]' value='\"+text+\"'></td>\"
+			}
+			
+			</script>
+			<form action='' method='post'>
 			<input type='hidden' name='mode' value='esave'>
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='pos' value='$pos'>
 			<input type='hidden' name='param' value='d'>
+			<table cellpadding='0' width='100%' id='fg_table'>
+			<tfoot>
+			<tr><td align='right'><select name='pp' id='fg_select'>");
+			$r=mysql_query("SELECT `id`, `param`, `type` FROM `doc_base_params` ORDER BY `param`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о дополнительных свойствах");
+			while($p=mysql_fetch_row($r))
+			{
+				$tmpl->AddText("<option value='$p[0]'>$p[1]</option>");
+			}
+			$tmpl->AddText("</select></td><td><input type='text' id='value_add'><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
+			</td></tr>
+			<tr class='lin$i'><td><td><input type='submit' value='Сохранить'>
+			</tfoot>
+			<tbody>
 			<tr class='lin0'><td align='right'>Аналог<td><input type='text' name='analog' value='$nxt[1]' id='pos_analog'>
 			<tr class='lin1'><td align='right'>Рыночная цена<td><input type='text' name='koncost' value='$nxt[2]' id='pos_koncost'>
 			<tr class='lin0'><td align='right'>Тип<td><select name='type' id='pos_type' >");
@@ -299,24 +332,29 @@ class doc_s_Sklad
 			<tr class='lin1'><td align='right'>Высота (B)<td><input type='text' name='size' value='$nxt[5]' id='pos_size'></td></tr>
 			<tr class='lin0'><td align='right'>Масса<td><input type='text' name='mass' value='$nxt[6]' id='pos_mass'>
 			<tr class='lin1'><td align='right'>Страна происхождения<td><input type='text' name='strana' value='$nxt[7]'>
-			<tr class='lin1'><td align='right'>Номер таможенной декларации<td><input type='text' name='ntd' value='$nxt[8]'>");
+			<tr class='lin0'><td align='right'>Номер таможенной декларации<td><input type='text' name='ntd' value='$nxt[8]'>");
 			$res=mysql_query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
 			WHERE `doc_base_values`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные свойства!");
+			$i=1;
 			while($nx=mysql_fetch_row($res))
 			{
-				$tmpl->AddText("<tr><td align='right'>$nx[1]<td><input type='text' name='par[$nx[0]]' value='$nx[2]'>");	
+				$tmpl->AddText("<tr class='lin$i'><td align='right'>$nx[1]<td><input type='text' name='par[$nx[0]]' value='$nx[2]'>");
+				$i=1-$i;
 			}
-			$tmpl->AddText("<tr class='lin0'><td align='right'><select name='par_add'><option value='0' selected>-- выберите --</option>");
-			$res=mysql_query("SELECT `id`, `param` FROM `doc_base_params` ORDER BY `param`");
+			$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
+			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+			WHERE  `doc_group_params`.`group_id`='$nxt[9]' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
+			ORDER BY `doc_base_params`.`id`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные свойства группы!");
 			while($nx=mysql_fetch_row($res))
 			{
-				$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
+				$tmpl->AddText("<tr class='lin$i'><td align='right'>$nx[1]<td><input type='text' name='par[$nx[0]]' value=''>");
+				$i=1-$i;
 			}
-			$tmpl->AddText("</select><td><input type='text' name='value_add'>");
-			$tmpl->AddText("<tr class='lin0'><td><td><input type='submit' value='Сохранить'>
-			</table></form>");
+
+			$tmpl->AddText("</tbody></table></form>");
 		}
 		// Складские свойства
 		else if($param=='s')
@@ -564,10 +602,8 @@ class doc_s_Sklad
 			{
 				$i=1-$i;
 				$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
-			
 			}
 			$tmpl->AddText("</table>");
-		
 		}
 		// Правка описания группы
 		else if($param=='g')
@@ -577,6 +613,29 @@ class doc_s_Sklad
 			WHERE `id`='$group'");
 			@$nxt=mysql_fetch_row($res);
 			$tmpl->AddText("<h1>Описание группы</h1>
+			<script type=\"text/javascript\">
+			function rmLine(t)
+			{
+				var line=t.parentNode.parentNode
+				line.parentNode.removeChild(line)
+			}
+			
+			function addLine()
+			{
+				var fgtab=document.getElementById('fg_table').tBodies[0]
+				var sel=document.getElementById('fg_select')
+				var newrow=fgtab.insertRow(fgtab.rows.length)
+				var lineid=sel.value
+				var checked=(document.getElementById('fg_check').checked)?'checked':''
+				
+				var ctext = sel.selectedIndex !== -1 ? sel.options[sel.selectedIndex].text : ''
+				
+				newrow.innerHTML=\"<td><input type='hidden' name='fn[\"+lineid+\"]' value='1'>\"+
+				\"<input type='checkbox' name='fc[\"+lineid+\"]' value='1' \"+checked+\"></td><td>\"+ctext+\"</td><td>\"+
+				\"<img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td>\"
+			}
+			
+			</script>
 			<form action='docs.php' method='post' enctype='multipart/form-data'>
 			<input type='hidden' name='mode' value='esave'>
 			<input type='hidden' name='l' value='sklad'>
@@ -605,6 +664,7 @@ class doc_s_Sklad
 			
 			if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img="<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$nxt[0]&amp;param=gid'>Удалить изображение</a>";
+			else $img='';
 			
 			$hid_check=$nxt[4]?'checked':'';
 			$yml_check=$nxt[6]?'checked':'';
@@ -621,21 +681,44 @@ class doc_s_Sklad
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>$img
 			<tr class='lin0'>
 			<td>Описание:
-			<td><textarea name='desc'>$nxt[2]</textarea>			
-			<tr class='lin0'><td>Дополнительные свойства по умолчанию для склада и фильтров<td>");
-			$r=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`id` FROM `doc_base_params`
+			<td><textarea name='desc'>$nxt[2]</textarea>
+			<tr class='lin0'><td>	Статические дополнительные свойства товаров группы
+			<td>
+			<table width='100%' id='fg_table' class='list'>
+			<thead>
+			<tr><th><img src='/img/i_filter.png' alt='Отображать в фильтрах'></th><th>Название параметра</th><th>&nbsp;</th></tr>
+			</thead>
+			<tfoot>
+			<tr><td><input type='checkbox' id='fg_check'><td><select name='pp' id='fg_select'>");
+			$r=mysql_query("SELECT `id`, `param`, `type` FROM `doc_base_params` ORDER BY `param`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о дополнительных свойствах");
+			while($p=mysql_fetch_row($r))
+			{
+				$tmpl->AddText("<option value='$p[0]'>$p[1]</option>");
+			}
+			$tmpl->AddText("</select></td><td><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
+			</td></tr></tfoot>
+			<tbody>");
+			
+			$r=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
 			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+			WHERE  `doc_group_params`.`group_id`='$group'
 			ORDER BY `doc_base_params`.`id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о дополнительных свойствах");
 			while($p=mysql_fetch_row($r))
 			{
 				$checked=$p[2]?'checked':'';
-				$tmpl->AddText("<label><input type='checkbox' name='' value='1' $checked>$p[1]</label><br>");
+				$tmpl->AddText("<tr><td><input type='hidden' name='fn[$p[0]]' value='1'>
+				<input type='checkbox' name='fc[$p[0]]' value='1' $checked></td><td>$p[1]</td>
+				<td><img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td></tr>");
 			}
-			$tmpl->AddText("<tr class='lin1'><td colspan='2' align='center'>
+			
+			$tmpl->AddText("</tbody></table>
+			<tr class='lin1'><td colspan='2' align='center'>
 			<button type='submit'>Сохранить</button>
-			</table>
-			</form>");
+			</table></form>");
+			
+			
 			if($nxt[0])
 			{
 				$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
@@ -1078,6 +1161,18 @@ class doc_s_Sklad
 				VALUES ('$name', '$desc', '$pid', '$hid', '$pname', '$no_export_yml')"); 
 			}
 			if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию группы");
+			
+			mysql_query("DELETE FROM `doc_group_params` WHERE `group_id`='$group'");
+			$fn=@$_POST['fn'];
+			if(is_array($fn))
+			{
+				foreach($fn as $id => $val)
+				{
+					settype($id,'int');
+					$show=(@$_POST['fc'][$id])?'1':'0';
+					mysql_query("INSERT INTO `doc_group_params` (`group_id`, `param_id`, `show_in_filter`) VALUES ('$group', '$id', '$show')");
+				}
+			}
 				
 			if($_FILES['userfile']['size']>0)
 			{
