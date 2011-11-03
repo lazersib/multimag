@@ -42,6 +42,8 @@ class WikiParser {
 		$this->image_uri = '';
 		$this->ignore_images = true;
 		$this->variables=array();
+		$this->preformat=false;
+		$this->emphasis=array();
 	}
 	
 	function AddVariable($var, $value)
@@ -76,11 +78,13 @@ class WikiParser {
 		$output = "";
 
 		$newlevel = ($close) ? 0 : strlen($matches[1]);
-
+		
 		while ($this->list_level!=$newlevel) {
-			$listchar = substr($matches[1],-1);
-			$listtype = $listtypes[$listchar];
-
+			if(!$close)
+			{
+				$listchar = substr($matches[1],-1);
+				$listtype = $listtypes[$listchar];
+			}
 			//$output .= "[".$this->list_level."->".$newlevel."]";
 
 			if ($this->list_level>$newlevel) {
@@ -207,7 +211,7 @@ class WikiParser {
 		$nolink = false;
 
 		$href = $matches[4];
-		$title = $matches[6] ? $matches[6] : $href.$matches[7];
+		$title = isset($matches[6]) ? $matches[6] : $href.@$matches[7];
 		$namespace = $matches[3];
 
 		if ($namespace=='Image') {
@@ -233,9 +237,8 @@ class WikiParser {
 		if ($nolink) return $title;
 
 		return sprintf(
-			'<a class=\'wiki\' href="%s"%s>%s</a>',
+			'<a class=\'wiki\' href="%s">%s</a>',
 			$href,
-			($newwindow?' target="_blank"':''),
 			$title
 		);
 	}
@@ -244,8 +247,9 @@ class WikiParser {
 		//var_dump($matches);
 		$nolink = false;
 
-		$href = $matches[4];
-		$title = $matches[6] ? $matches[6] : $href.$matches[7];
+		$title = $matches[4];
+		//$href = $matches[4];
+		//$title = $matches[6] ? $matches[6] : $href.$matches[7];
 		$namespace = $matches[3];
 
 		$title = preg_replace('/\(.*?\)/','',$title);
@@ -253,7 +257,7 @@ class WikiParser {
 
 		if($namespace=='title')
 		{
-			$this->title=$href;
+			$this->title=$title;
 		}
 
 		return '';
@@ -288,11 +292,11 @@ class WikiParser {
 
 		// handle cases where emphasized phrases end in an apostrophe, eg: ''somethin'''
 		// should read <em>somethin'</em> rather than <em>somethin<strong>
-		if ( (!$this->emphasis[$amount]) && ($this->emphasis[$amount-1]) ) {
+		if ( (!@$this->emphasis[$amount]) && (@$this->emphasis[$amount-1]) ) {
 			$amount--;
 			$output = "'";
 		}
-
+		if(!isset($this->emphasis[$amount]))	$this->emphasis[$amount]=0;
 		$output .= $amounts[$amount][(int) $this->emphasis[$amount]];
 
 		$this->emphasis[$amount] = !$this->emphasis[$amount];
@@ -402,12 +406,12 @@ class WikiParser {
 		$isline = strlen(trim($line))>0;
 
 		// if this wasn't a list item, and we are in a list, close the list tag(s)
-		if (($this->list_level>0) && !$called['list']) $line = $this->handle_list(false,true) . $line;
-		if ($this->deflist && !$called['definitionlist']) $line = $this->handle_definitionlist(false,true) . $line;
-		if ($this->preformat && !$called['preformat']) $line = $this->handle_preformat(false,true) . $line;
+		if (($this->list_level>0) && !isset($called['list'])) $line = $this->handle_list(false,true) . $line;
+		if ($this->deflist && !isset($called['definitionlist'])) $line = $this->handle_definitionlist(false,true) . $line;
+		if ($this->preformat && !isset($called['preformat'])) $line = $this->handle_preformat(false,true) . $line;
 
 		// suppress linebreaks for the next line if we just displayed one; otherwise re-enable them
-		if ($isline) $this->suppress_linebreaks = ($called['newline'] || $called['sections']);
+		if ($isline) $this->suppress_linebreaks = (isset($called['newline']) || isset($called['sections']));
 
 		return $line;
 	}

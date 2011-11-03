@@ -858,7 +858,8 @@ else if($mode=="get")
 		$pdf->tMargin=5;
 		$pdf->AddPage();
 		
-		if($CONFIG['site']['doc_header'])
+		
+		if(@$CONFIG['site']['doc_header'])
 		{
 			$header_img=str_replace('{FN}', $CONFIG['site']['default_firm'], $CONFIG['site']['doc_header']);
 			$pdf->Image($header_img,8,10, 190);	

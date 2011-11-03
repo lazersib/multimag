@@ -1149,6 +1149,7 @@ CREATE  TABLE IF NOT EXISTS `parsed_price` (
   `cost` DECIMAL(10,2) NOT NULL ,
   `nal` VARCHAR(16) NOT NULL ,
   `from` INT(11) NOT NULL ,
+  `selected` TINYINT(4) NULL ,
   PRIMARY KEY (`id`) ,
   INDEX `firm` (`firm` ASC) ,
   INDEX `pos` (`pos` ASC) ,
@@ -1843,6 +1844,6 @@ COMMIT;
 -- Data for table `db_version`
 -- -----------------------------------------------------
 START TRANSACTION;
-INSERT INTO `db_version` (`version`) VALUES (269);
+INSERT INTO `db_version` (`version`) VALUES (272);
 
 COMMIT;

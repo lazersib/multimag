@@ -80,7 +80,7 @@ function Row($data, $divider=0, $cost_id=1)
 			$this->SetFillColor($this->RowColors[$ci][0],$this->RowColors[$ci][1],$this->RowColors[$ci][2]);
 		foreach($this->aCols as $col)
 		{
-			$str=$data[$col['f']];
+			$str=@$data[$col['f']];
 			if(($col['f']=='name')&&($data['proizv']!='')) $str.=' ('.$data['proizv'].')';
 			
 			if($col['f']=='cost')

@@ -80,4 +80,3 @@ function ShowContextMenu(event, url)
 	});
 	return false
 }
-

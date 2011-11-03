@@ -144,6 +144,53 @@ class doc_s_Sklad
 				$tmpl->AddText("$nxt[1]|$nxt[0]\n");
 			}
 		}
+		else if($opt=='go')
+		{
+			$to_group=rcv('to_group');
+			
+			$up_data=array();
+			switch(@$_GET['sale_flag'])
+			{
+				case 'set':	$up_data[]="`stock`='1'";	break;
+				case 'unset':	$up_data[]="`stock`='0'";	break;
+			}
+			switch(@$_GET['hidden_flag'])
+			{
+				case 'set':	$up_data[]="`hidden`='1'";	break;
+				case 'unset':	$up_data[]="`hidden`='0'";	break;
+			}
+			switch(@$_GET['yml_flag'])
+			{
+				case 'set':	$up_data[]="`no_export_yml`='1'";	break;
+				case 'unset':	$up_data[]="`no_export_yml`='0'";	break;
+			}
+			if($to_group>0)		$up_data[]="`group`='".((int)$to_group)."'";
+			$up_query='';
+			foreach($up_data as $line)
+			{
+				if($up_query)	$up_query.=", ";
+				$up_query.=$line;
+			}
+			$pos=@$_GET['pos'];
+			if($up_query)
+			{
+				if(is_array($pos))
+				{
+					$c=0;
+					$a=0;
+					foreach($pos as $id=>$value)
+					{
+						settype($id,'int');
+						mysql_query("UPDATE `doc_base` SET $up_query WHERE `id`='$id'");
+						if(mysql_errno())	throw new MysqlException("Не удалось обновить строку!");
+						$c++;
+						$a+=mysql_affected_rows();
+					}
+					$tmpl->msg("Успешно обновлено $a строк. ".($c-$a)." из $c выбранных строк остались неизменёнными.","ok");
+				}	else $tmpl->msg("Не выбраны позиции для обновления!",'err');
+			}	else $tmpl->msg("Не выбрано действие!",'err');
+			
+		}
 		else $tmpl->msg("Неверный режим!");
 	}
 		
@@ -1323,13 +1370,60 @@ class doc_s_Sklad
 		global $tmpl, $CONFIG;
 		
 		$sklad=$_SESSION['sklad_num'];
-		
-		if($group)
+		$go=rcv('go');
+		$lim=200;
+		if($group && !$go)
 		{
+			$tmpl->AddText("
+			<a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
+			<a href='/docs.php?l=sklad&amp;mode=edit&amp;param=g&amp;g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
+			<a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a> |
+			<a href='#' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=$group&amp;go=1','sklad'); return false;\" ><img src='/img/i_reload.png' alt=''> Групповые операции</a>");
 			$res=mysql_query("SELECT `desc` FROM `doc_group` WHERE `id`='$group'");
 			$g_desc=mysql_result($res,0,0);		
 			if($g_desc) $tmpl->AddText("<h4>$g_desc</h4>");
 		}
+		else if($go)
+		{
+			$tmpl->AddText("<form action='' method='get'>
+			<input type='hidden' name='l' value='sklad'>
+			<input type='hidden' name='mode' value='srv'>
+			<input type='hidden' name='opt' value='go'>
+			
+			<div class='sklad-go'>
+			<table width='100%'>
+			<tr><td width='25%'><fieldset><legend>Поместить в спецпредложения</legend>
+			<label><input type='radio' name='sale_flag' value='' checked>Не менять</label><br>
+			<label><input type='radio' name='sale_flag' value='set'>Установить</label><br>
+			<label><input type='radio' name='sale_flag' value='unset'>Снять</label>
+			</fieldset></td>
+			<td width='25%'><fieldset><legend>Не отображать на витрине</legend>
+			<label><input type='radio' name='hidden_flag' value='' checked>Не менять</label><br>
+			<label><input type='radio' name='hidden_flag' value='set'>Установить</label><br>
+			<label><input type='radio' name='hidden_flag' value='unset'>Снять</label>
+			</fieldset></td>
+			<td width='25%'><fieldset><legend>Не экспортировать в YML</legend>
+			<label><input type='radio' name='yml_flag' value='' checked>Не менять</label><br>
+			<label><input type='radio' name='yml_flag' value='set'>Установить</label><br>
+			<label><input type='radio' name='yml_flag' value='unset'>Снять</label>
+			</fieldset></td>
+			<td width='25%'><fieldset><legend>Переместить в группу</legend>
+			<select name='to_group'>");
+			$tmpl->AddText("<option value='0'>--не менять--</option>");
+			
+			$res=mysql_query("SELECT * FROM `doc_group`");
+			while($nx=mysql_fetch_row($res))
+			{
+				$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
+			}			
+			$tmpl->AddText("</select>
+			</fieldset></td>
+			</table>
+			<br><button type='submit'>Выполнить</button>
+			</div>");
+			$lim=5000000;
+		}
+		
         
 		$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
@@ -1341,7 +1435,7 @@ class doc_s_Sklad
 		WHERE `doc_base`.`group`='$group'
 		ORDER BY `doc_base`.`name`";
 
-		$lim=50;
+		
 		$page=rcv('p');
 		$res=mysql_query($sql);
 		$row=mysql_num_rows($res);
@@ -1386,7 +1480,8 @@ class doc_s_Sklad
 
 		}
 		else $tmpl->msg("В выбранной группе товаров не найдено!");
-		$tmpl->AddText("
+		if($go)	$tmpl->AddText("</form>");
+		else	$tmpl->AddText("
 		<a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
 		<a href='/docs.php?l=sklad&amp;mode=edit&amp;param=g&amp;g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
 		<a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
@@ -1413,7 +1508,7 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
+		WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE `$s%` ORDER BY `doc_base`.`name` LIMIT 100";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
@@ -1425,7 +1520,7 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 30";
+		WHERE (`doc_base`.`name` LIKE '%$s%'  OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`vc` NOT LIKE '$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 30";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
@@ -1599,6 +1694,7 @@ function DrawSkladTable($res,$s)
 {
 	global $tmpl, $CONFIG;
 	$i=0;
+	$go=rcv('go');
 	while($nxt=mysql_fetch_array($res))
 	{
 		$rezerv=DocRezerv($nxt[0],0);
@@ -1638,8 +1734,11 @@ function DrawSkladTable($res,$s)
 		$cost_p=sprintf("%0.2f",$nxt[5]);
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		$vc_add=$CONFIG['poseditor']['vc']?"<td>{$nxt['vc']}</th>":'';
+		$cb=$go?"<input type='checkbox' name='pos[$nxt[0]]' value='1'>":'';
 		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
-		<td><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a> <a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> $vc_add
+		<td>$cb
+		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a>
+		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> $vc_add
 		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 	}	
 }

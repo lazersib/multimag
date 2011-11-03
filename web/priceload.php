@@ -79,7 +79,7 @@ function firmAddForm($id=0)
 	$nxt=array();
 	if($id)
 	{
-		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type` FROM `firm_info` WHERE `id`='$id'");
+		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type`, `delivery_info` FROM `firm_info` WHERE `id`='$id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные фирмы");
 		$nxt=mysql_fetch_row($res);
 	}
@@ -122,13 +122,13 @@ function firmAddForm($id=0)
 	");
 	
 	$tmpl->AddText("<h1>Данные фирмы</h1>
-	<form action='' method=post>
-	<input type=hidden name=mode value='firms'>");
+	<form action='' method='post'>
+	<input type='hidden' name=mode value='firms'>");
 	if($id) $tmpl->AddText("<input type=hidden name=id value='$nxt[0]'>");
 	$tmpl->AddText("Наименование:<br>
-	<input type=text name=nm value='$nxt[1]'><br>
+	<input type='text' name='nm' value='$nxt[1]'><br>
 	Сигнатура:<br>
-	<input type=text name=sign value='$nxt[2]'><br>
+	<input type='text' name='sign' value='$nxt[2]'><br>
 	Валюта:<br>
 	<select name='curr'>");
 	$res=mysql_query("SELECT `id`, `name`, `coeff` FROM `currency` ORDER BY `id`");
@@ -145,7 +145,9 @@ function firmAddForm($id=0)
 	
 	$tmpl->AddText("</select><br>
 	Валютный коэффициент:<br>
-	<input type=text name=coeff value='$nxt[4]'><br>
+	<input type='text' name='coeff' value='$nxt[4]'><br>
+	Информация о доставке:<br>
+	<input type='text' name='delivery_info' value='$nxt[6]'><br>
 	
 	<script type='text/javascript'>
 	function gstoggle()
@@ -354,6 +356,7 @@ else if($mode=='firms')
 	$coeff=rcv('coeff');
 	$type=rcv('type');
 	$table_name=rcv('table_name');
+	$delivery_info=rcv('delivery_info');
 	if(!$id)
 	{
 		$col_art=rcv('col_art');
@@ -362,8 +365,8 @@ else if($mode=='firms')
 		$col_nal=rcv('col_nal');
 		$col_nal=rcv('col_nal');
 		$col_curr=rcv('col_curr');
-		$res=mysql_query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`)
-		VALUES ('$nm', '$sign', '$curr', '$coeff', '$type')");
+		$res=mysql_query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`)
+		VALUES ('$nm', '$sign', '$curr', '$coeff', '$type', '$delivery_info')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить новую фирму");
 
 		$firm_id=mysql_insert_id();
@@ -374,7 +377,7 @@ else if($mode=='firms')
 	}
 	else
 	{
-		$res=mysql_query("UPDATE `firm_info` SET `name`='$nm', `signature`='$sign', `currency`='$curr', `coeff`='$coeff', `type`='$type' WHERE `id`='$id'");
+		$res=mysql_query("UPDATE `firm_info` SET `name`='$nm', `signature`='$sign', `currency`='$curr', `coeff`='$coeff', `type`='$type', `delivery_info`='$delivery_info' WHERE `id`='$id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить данные фирмы");
 		$tmpl->msg("Фирма обновлена!",'ok');
 	}

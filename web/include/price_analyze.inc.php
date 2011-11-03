@@ -62,7 +62,7 @@ class ODFContentLoader
 		{
 			if(stripos($this->xml,$nxt[2]))
 			{
-				$this->currency=$nxt[3];
+				$this->def_currency=$nxt[3];
 				return	$this->firm_id=$nxt[0];
 			}
 		}

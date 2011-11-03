@@ -271,7 +271,7 @@ else if($mode=="elog")
 
 	$tmpl->AddText("<h1>Журнал ошибок</h1>");
 	$res=mysql_query("SELECT `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC");
-	$tmpl->AddText("<table width=100%>
+	$tmpl->AddText("<table width='100%' class='list'>
 	<tr><th>ID<th>Page<th>Referer<th>Msg<th>Date<th>IP<th>Agent<th>UID");
 	$i=0;
 	while($nxt=mysql_fetch_row($res))

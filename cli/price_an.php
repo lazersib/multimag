@@ -120,7 +120,9 @@ mysql_query("CREATE TABLE IF NOT EXISTS `parsed_price_tmp` (
   `cost` decimal(10,2) NOT NULL,
   `nal` varchar(10) NOT NULL,
   `from` int(11) NOT NULL,
-  UNIQUE KEY `id` (`id`)
+  `selected` TINYINT(4) NOT NULL ,
+  UNIQUE KEY `id` (`id`),
+  KEY `selected` ( `selected` )
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
 echo mysql_error();
 
@@ -230,26 +232,38 @@ while($nxt=mysql_fetch_row($res))
 	settype($nxt[3],'int');
 	
 	$mincost=99999999;
-	$rs=mysql_query("SELECT `parsed_price`.`cost`,`firm_info`.`type`, `firm_info_group`.`id`
+	$ok_line=0;
+	$rs=mysql_query("SELECT `parsed_price`.`cost`,`firm_info`.`type`, `firm_info_group`.`id`, `parsed_price`.`id`
 	FROM  `parsed_price` 
 	LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm` 
 	LEFT JOIN `firm_info_group` ON `firm_info_group`.`firm_id`=`parsed_price`.`firm` AND `firm_info_group`.`group_id`='$nxt[4]'
 	WHERE `parsed_price`.`pos`='$nxt[0]' AND `parsed_price`.`cost`>'0'");
-	echo mysql_error();
+	if(mysql_errno())	throw new Exception(mysql_error());
 	while($nx=mysql_fetch_row($rs))
 	{
-		if(($nx[1]==1 || ($nx[1]==2 &&  $nx[2]!='')) && $mincost>$nx[0])	$mincost=$nx[0];
+		if(($nx[1]==1 || ($nx[1]==2 &&  $nx[2]!='')) && $mincost>$nx[0])
+		{
+			$mincost=$nx[0];
+			$ok_line=$nx[3];
+		}
 	
 	}
 	
+	if($ok_line==0)	$mincost=0;
 	
-	if( ($nxt[3]==0) && ($nxt[1]!=$mincost) && ($mincost>0) )
+	if( $nxt[3]==0 )
 	{
-		if($mincost==99999999)	$mincost=0;
-		$txt="У наименования ID:$nxt[0] изменена цена с $nxt[1] на $mincost. Наименование: $nxt[2]\n";
-		mysql_query("UPDATE `doc_base` SET `cost`='$mincost', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
-		echo $txt;
-		$mail_text.=$txt;	
+		mysql_query("UPDATE `parsed_price` SET `selected`='1' WHERE `id`='$ok_line'");
+		if(mysql_errno())	throw new Exception(mysql_error());
+		if($nxt[1]!=$mincost)
+		{
+			$txt="У наименования ID:$nxt[0] изменена цена с $nxt[1] на $mincost. Наименование: $nxt[2]\n";
+			mysql_query("UPDATE `doc_base` SET `cost`='$mincost', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
+			if(mysql_errno())	throw new Exception(mysql_error());
+
+			echo $txt;
+			$mail_text.=$txt;
+		}
 	}
 }
 }
@@ -295,7 +309,6 @@ if($mail_text)
 	{
 		$mail->Subject="Price analyzer";
 		$mail_text="При анализе прайс-листов произошло следующее:\n****\n\n".$mail_text."\n\n****\nЕсли произошла ошибка, её необходимо срочно исправить!\n\nСкрипт выполнен за $text_time";
-		echo $mail_text;
 		$mail->Body=$mail_text;
 		if($mail->Send())
 			echo "\n\nПочта отправлена!\n";

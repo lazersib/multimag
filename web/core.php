@@ -16,7 +16,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-define("MULTIMAG_REV", "270");
+define("MULTIMAG_REV", "272");
 define("MULTIMAG_VERSION", "0.0.1r".MULTIMAG_REV);
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
@@ -557,9 +557,8 @@ if($uid=='') $uid=0;
 require_once("include/wikiparser.php");
 
 $wikiparser=new WikiParser();
-
-$wikiparser->reference_wiki	= "http://{$CONFIG['site']['name']}/wiki/";
-$wikiparser->reference_site	= "http://{$CONFIG['site']['name']}/";
+$wikiparser->reference_wiki	= "/wiki/";
+$wikiparser->reference_site	= @$_SERVER['HTTPS']?'https':'http'."://{$_SERVER['HTTP_HOST']}/";
 $wikiparser->image_uri		= "/share/var/wikiphoto/";
 $wikiparser->ignore_images	= false;
 
