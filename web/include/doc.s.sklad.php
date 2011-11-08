@@ -147,7 +147,7 @@ class doc_s_Sklad
 		else if($opt=='go')
 		{
 			$to_group=rcv('to_group');
-			
+			doc_menu(0,0);
 			$up_data=array();
 			switch(@$_GET['sale_flag'])
 			{

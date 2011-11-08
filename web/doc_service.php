@@ -175,9 +175,10 @@ else if($mode=='doc_log')
 }
 else if($mode=='cost')
 {
+	doc_menu(0,0);
 	$tmpl->AddText("<h1>Управление ценами</h1>");
 	$res=mysql_query("SELECT `id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction` FROM `doc_cost`");
-	if(mysql_errno())	throw new MysqlException("Не удалось список цен");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
 	
 	$tmpl->AddText("<table><tr><th>ID<th>Наименование<th>Тип<th>Значение<th>Вид<th>Точность<th>Округление<th>Действие");
 	$vidi=array('-2' => 'Интернет-цена (объём)', '-1' => 'Интернет-цена', '0' => 'Обычная', '1' => 'По умолчанию' );
@@ -262,7 +263,6 @@ else if($mode=='cost')
 }
 else if($mode=='costs')
 {
-	if(!$rights['edit'])	throw new AccessException("Недостаточно привилегий!");
 	$n=rcv('n');
 	$nm=rcv('nm');
 	$cost_type=rcv('cost_type');
@@ -272,11 +272,13 @@ else if($mode=='costs')
 	$vid=rcv('vid');
 	if($n)
 	{
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
 		mysql_query("UPDATE `doc_cost` SET `name`='$nm', `type`='$cost_type', `value`='$coeff', `vid`='$vid', `accuracy`='$accur', `direction`='$direct' WHERE `id`='$n'");
 	}
 	else
 	{
-		mysql_query("INSERT INTO `doc_cost` (`name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES ('$nm', '$type', '$coeff', '$vid', '$accur', '$direct')");
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
+		mysql_query("INSERT INTO `doc_cost` (`name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES ('$nm', '$cost_type', '$coeff', '$vid', '$accur', '$direct')");
 	}
 	if(mysql_errno())	throw new MysqlException("Не удалось сохранить цену!");
 	header("Location: doc_service.php?mode=cost");

@@ -337,8 +337,10 @@ function GetCostPos($pos_id, $cost_id)
 	{
 		return sprintf("%0.2f",round($cena+$direction,$nxt[8]));
 	}
-	else return "Уточняйте";
-
+	else
+	{
+		return "Уточняйте";
+	}
 }
 
 // =========== Запись событий документов в лог ======================
