@@ -89,7 +89,7 @@ class ODFContentLoader
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список валют");
 			$this->currencies=array();
 			while($nxt=mysql_fetch_row($res))
-				$this->currencies[$nxt[1]]=$nxt[0];
+				$this->currencies[$nxt[1]]=strtoupper($nxt[0]);
 				
 			
 		}
@@ -193,7 +193,7 @@ class ODFContentLoader
 					$name=mysql_real_escape_string(@$this->line[$this->firm_cols['name']]);
 					$art=mysql_real_escape_string(@$this->line[$this->firm_cols['art']]);
 					$nal=mysql_real_escape_string(@$this->line[$this->firm_cols['nal']]);
-					$curr=trim(@$this->line[$this->firm_cols['currency']]);
+					$curr=strtoupper(trim(@$this->line[$this->firm_cols['currency']]));
 					if(isset($this->currencies[$curr]))	$curr=$this->currencies[$curr];
 					else					$curr=$this->def_currency;
 					mysql_query("INSERT INTO `price`

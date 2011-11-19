@@ -418,8 +418,6 @@ function FilterMenu()
 		}
 		
 		</script>");
-
-
 }
 
 need_auth();
@@ -440,8 +438,8 @@ if($mode=="")
 	$tmpl->SetTitle("Список документов");
 	doc_menu("<a onclick=\"ShowJournalFilter(this); return false;\" href='' title='Фильтр'><img src='img/i_filter.png' alt='Фильтр документов' border='0'></a>");
 
-	if(!$_SESSION['j_date_from'])	$_SESSION['j_date_from']=date("Y-m-d");
-	if(!$_SESSION['j_date_to'])	$_SESSION['j_date_to']=date("Y-m-d");
+	if(!@$_SESSION['j_date_from'])	$_SESSION['j_date_from']=date("Y-m-d");
+	if(!@$_SESSION['j_date_to'])	$_SESSION['j_date_to']=date("Y-m-d");
 
 	FilterMenu();
 	

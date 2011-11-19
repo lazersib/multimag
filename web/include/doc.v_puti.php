@@ -165,7 +165,7 @@ class doc_v_puti extends doc_Nulltype
 		}
 		else if($target_type==1)
 		{
-			if(!isAccess('doc_zayavka','create'))	throw new AccessException("");
+			if(!isAccess('doc_postuplenie','create'))	throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			$base=$this->Postup($doc);
 			if(!$base)

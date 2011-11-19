@@ -34,7 +34,24 @@ class doc_s_Sklad
 		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=1;
 		$sklad=$_SESSION['sklad_num'];
 		
-		$tmpl->AddText("<table width='100%'><tr><td width='300'><h1>Склад</h1>
+		$tmpl->AddText("
+		<script type='text/javascript'>
+		function SelAll(_this)
+		{
+			var flag=_this.checked
+			var node=document.getElementById('sklad')
+			var elems = node.getElementsByClassName('pos_ch')
+			
+			//var elems = node.getElementsByName('pos[]');
+			var l = elems.length;
+			for(var i=0; i<l; i++)
+			{
+				elems[i].checked=flag;
+				//if(flag)	elems[i].disabled = false;
+			}
+		}
+		</script>
+		<table width='100%'><tr><td width='300'><h1>Склад</h1>
 		<td align='right'>
 		<form action='' method='post'>
 		<input type='hidden' name='l' value='sklad'>
@@ -1372,6 +1389,7 @@ class doc_s_Sklad
 		$sklad=$_SESSION['sklad_num'];
 		$go=rcv('go');
 		$lim=200;
+		$vc_add='';
 		if($group && !$go)
 		{
 			$tmpl->AddText("
@@ -1389,7 +1407,7 @@ class doc_s_Sklad
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='mode' value='srv'>
 			<input type='hidden' name='opt' value='go'>
-			
+
 			<div class='sklad-go'>
 			<table width='100%'>
 			<tr><td width='25%'><fieldset><legend>Поместить в спецпредложения</legend>
@@ -1422,6 +1440,7 @@ class doc_s_Sklad
 			<br><button type='submit'>Выполнить</button>
 			</div>");
 			$lim=5000000;
+			$vc_add.="<input type='checkbox' id='selall' onclick='return SelAll(this);'>";
 		}
 		
         
@@ -1470,7 +1489,7 @@ class doc_s_Sklad
 
 		if(mysql_num_rows($res))
 		{
-			$vc_add=$CONFIG['poseditor']['vc']?'<th>Код</th>':'';
+			if($CONFIG['poseditor']['vc'])		$vc_add.='<th>Код</th>';
 			$tmpl->AddText("$pagebar<table width='100%' cellspacing='1' cellpadding='2'><tr>
 			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
@@ -1734,7 +1753,7 @@ function DrawSkladTable($res,$s)
 		$cost_p=sprintf("%0.2f",$nxt[5]);
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		$vc_add=$CONFIG['poseditor']['vc']?"<td>{$nxt['vc']}</th>":'';
-		$cb=$go?"<input type='checkbox' name='pos[$nxt[0]]' value='1'>":'';
+		$cb=$go?"<input type='checkbox' name='pos[$nxt[0]]' class='pos_ch' value='1'>":'';
 		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
 		<td>$cb
 		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a>
