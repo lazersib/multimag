@@ -554,6 +554,7 @@ $mode=rcv('mode');
 if(isset($_SESSION['uid']))	$uid=$_SESSION['uid'];
 if($uid=='') $uid=0;
 
+require_once("include/imgresizer.php");
 require_once("include/wikiparser.php");
 
 $wikiparser=new WikiParser();

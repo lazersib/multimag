@@ -22,7 +22,7 @@
 include_once("core.php");
 include_once("include/imgresizer.php");
 
-// URI: i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}
+// URI: i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}&f={$this->fix_aspect}&n={$this->no_enlarge}
 
 
 
@@ -32,6 +32,8 @@ $x=@$_GET['x'];
 $y=@$_GET['y'];
 $q=@$_GET['q'];
 $t=@$_GET['t'];
+$n=@$_GET['n'];
+$f=@$_GET['f'];
 
 settype($i,"integer");
 settype($x,"integer");
@@ -42,6 +44,8 @@ $img=new ImageProductor($i,$s,$t);
 $img->SetX($x);
 $img->SetY($y);
 $img->SetQuality($q);
+$img->SetNoEnlarge($n);
+$img->SetFixAspect($f);
 $img->MakeAndStore();
 
 ?>

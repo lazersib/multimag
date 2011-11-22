@@ -41,7 +41,7 @@ class ImageProductor
 	// Не изменять соотношение сторон (иначе - дополнять фоном)
 	protected $fix_aspect=1;
 	// Не увеличивать изображение
-	protected $no_enlarge=1;
+	protected $no_enlarge=0;
 	// Показывать наименование магазина поверх изображения
 	protected $show_watermark=1;
 	// Путь к шрифту для отображения наименования
@@ -75,7 +75,18 @@ class ImageProductor
 	{
 		if($quality>0)	$this->quality=$quality;
 	}
+	
+	public function SetNoEnlarge($flag)
+	{
+		$this->no_enlarge=$flag;
+	}
 
+
+	public function SetFixAspect($flag)
+	{
+		$this->fix_aspect=$flag;
+	}
+	
 	/// Возвращает URI изображения. Если изображение есть в кеше - возвращает его. Иначе - возвращает адрес скрипта конвертирования
 	public function GetURI()
 	{
@@ -153,7 +164,8 @@ class ImageProductor
 			$this->dim_y=$sz[1];
 		}
 		
-		
+		if( ($this->dim_x>$sx || $this->dim_y>$sy) && $this->no_enlarge)	$rs=0;
+
 		if($this->type=='jpg')
 		{
 			if(function_exists('imagecreatefromjpeg'))	$im=imagecreatefromjpeg($this->source_file);
