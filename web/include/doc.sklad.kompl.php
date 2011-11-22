@@ -37,6 +37,7 @@ function kompl_poslist($pos)
 
 	while($nxt=mysql_fetch_array($res))
 	{
+		$nxt['cost']=GetInCost($nxt[0]);
 		$sumline=$nxt['cost']*$nxt['cnt'];
 		$sum+=$sumline;
 		$sumline_p=sprintf("%01.2f",$sumline);

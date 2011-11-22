@@ -192,6 +192,14 @@ class Report_Store
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='ostatki'>
 		<input type='hidden' name='opt' value='make'>
+		<fieldset><legend>Отобразить цены</legend>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<label><input type='checkbox' name='cost[$nxt[0]]' value='$nxt[0]'>$nxt[1]</label><br>");
+		}
+		$tmpl->AddText("</fieldset><br>
 		Группа товаров:<br>");
 		GroupSelBlock();
 		$tmpl->AddText("<button type='submit'>Создать отчет</button></form>");	
@@ -202,9 +210,23 @@ class Report_Store
 		global $tmpl;
 		$gs=rcv('gs');
 		$g=@$_POST['g'];
+		$cost=@$_POST['cost'];
 		$tmpl->LoadTemplate('print');
 		$tmpl->SetText("<h1>Остатки товара на складе</h1>
 		<table width=100%><tr><th>N<th>Наименование<th>Количество<th>Актуальная цена<br>поступления<th>Базовая цена<th>Наценка<th>Сумма по АЦП<th>Сумма по базовой");
+		$col_count=8;
+		if(is_array($cost))
+		{
+			$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
+			$costs=array();
+			while($nxt=mysql_fetch_row($res))	$costs[$nxt[0]]=$nxt[1];
+			foreach($cost as $id => $value)
+			{
+				$tmpl->AddText("<th>".$costs[$id]);
+				$col_count++;
+			}
+		}
 		$sum=$bsum=$summass=0;
 		$res_group=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 		while($group_line=mysql_fetch_assoc($res_group))
@@ -212,7 +234,7 @@ class Report_Store
 			if($gs && is_array($g))
 				if(!in_array($group_line['id'],$g))	continue;
 			
-			$tmpl->AddText("<tr><td colspan='8' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
+			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
 		
 		
 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`,
@@ -222,7 +244,7 @@ class Report_Store
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY `doc_base`.`name`");
-			echo mysql_error();
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			
 			while($nxt=mysql_fetch_row($res))
 			{
@@ -236,9 +258,16 @@ class Report_Store
 				if($nxt[3]<0) $nxt[3]='<b>'.$nxt[3].'</b/>';
 				$summass+=$nxt[3]*$nxt[4];
 				
-				$nac=sprintf("%0.2f",($cost_p/$act_cost)*100-100);
+				$nac=sprintf("%0.2f р. (%0.2f%%)",$cost_p-$act_cost,($cost_p/$act_cost)*100-100);
 				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[3]<td>$act_cost р.<td>$cost_p р.<td>$nac %<td>$sum_p р.<td>$bsum_p р.");
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[3]<td>$act_cost р.<td>$cost_p р.<td>$nac<td>$sum_p р.<td>$bsum_p р.");
+				if(is_array($cost))
+				{
+					foreach($cost as $id => $value)
+					{
+						$tmpl->AddText("<td>".GetCostPos($nxt[0], $id));
+					}
+				}
 			}
 		}
 		$tmpl->AddText("<tr><td colspan='6'><b>Итого:</b><td>$sum р.<td>$bsum р.
@@ -1227,7 +1256,7 @@ else if($mode=='sverka')
 		
 		$h_width=$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
 		$str1=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
-		$str2=iconv('UTF-8', 'windows-1251', "По данным {$agent['fullname']}");
+		$str2=iconv('UTF-8', 'windows-1251', "По данным $fn");
 					
 		$pdf->MultiCell($h_width,5,$str1,0,'L',0);
 		$max_h=$pdf->GetY()-$y;
@@ -1260,7 +1289,7 @@ else if($mode=='sverka')
 		`doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
+		WHERE `doc_list`.`agent`='$agent' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
 		while($nxt=mysql_fetch_array($res))
 		{
 			$deb=$kr="";				
@@ -1412,7 +1441,7 @@ else if($mode=='sverka')
 		$y=$pdf->getY();
 		$str=iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
 		$pdf->MultiCell($t_width[0]+$t_width[1]+$t_width[2]+$t_width[3],5,$str,0,'L',0);
-		$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
+		$str=iconv('UTF-8', 'windows-1251', "От $fn\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
 		$pdf->lMargin=$x;
 		$pdf->setX($x);
 		
