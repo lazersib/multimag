@@ -45,7 +45,6 @@ function get_otch_links()
 	'doc_otchet.php?mode=bezprodaj' => 'Отчёт по товарам без продаж',
 	'doc_otchet.php?mode=doc_reestr' => 'Реестр документов',
 	'doc_otchet.php?mode=fin_otchet' => 'Сводный финансовый отчёт',
-	'doc_otchet.php?mode=bank_comp' => 'Сверка банка',	
 	'doc_otchet.php' => 'Другие отчёты');
 }
 
@@ -67,7 +66,6 @@ function otch_list()
 	<a href='doc_otchet.php?mode=cost'><div>Отчёт по ценам</div></a>
 	<a href='doc_otchet.php?mode=doc_reestr'><div>Реестр документов</div></a>
 	<a href='doc_otchet.php?mode=fin_otchet'><div>Сводный финансовый отчёт</div></a>
-	<a href='doc_otchet.php?mode=bank_comp'><div>Сверка банка</div></a>	
 	<hr>
 	<a href='doc_otchet.php'><div>Другие отчёты</div></a>";
 }
@@ -2194,7 +2192,7 @@ else if($mode=='doc_reestr')
 	else
 	{
 		$dt_f=strtotime(rcv('dt_f'));
-		$dt_t=strtotime(rcv('dt_t'));
+		$dt_t=strtotime(rcv('dt_t')." 23:59:59");
 		$firm_id=rcv('firm_id');
 		$doc_type=rcv('doc_type');
 		$subtype=rcv('subtype');

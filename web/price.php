@@ -910,7 +910,7 @@ else if($mode=="get")
 		
 		global $CONFIG;
 		if(!$CONFIG['site']['price_col_cnt'])		$CONFIG['site']['price_col_cnt']=2;
-		if(!$CONFIG['site']['price_width_cost'])	$CONFIG['site']['price_width_cost']=12;
+		if(!$CONFIG['site']['price_width_cost'])	$CONFIG['site']['price_width_cost']=16;
 		if(!$CONFIG['site']['price_width_name'])
 		{
 			$CONFIG['site']['price_width_name']=(194-$CONFIG['site']['price_width_cost']*$CONFIG['site']['price_col_cnt']-$CONFIG['site']['price_col_cnt']*2)/$CONFIG['site']['price_col_cnt'];
@@ -940,8 +940,10 @@ else if($mode=="get")
 		if($proizv) $proizv='`doc_base`.`proizv`';
 		else $proizv="''";
 		
-		$pdf->Table("SELECT `doc_base`.`name`, $proizv, (`doc_base`.`id`) AS `pos_id` , `doc_base`.`cost_date` 
-		FROM `doc_base`",$prop);
+		$pdf->Table("SELECT `doc_base`.`name`, $proizv, (`doc_base`.`id`) AS `pos_id` , `doc_base`.`cost_date`, `doc_units`.`printname` AS `units_name`
+		FROM `doc_base`
+		LEFT JOIN `doc_units` ON `doc_units`.`id`=`doc_base`.`unit`
+		",$prop);
 
 
 

@@ -1428,7 +1428,7 @@ function PrintTg12PDF($to_str=0)
 	$pdf->Ln();
 	
 	$y=$pdf->GetY();
-	
+	$pdf->SetFillColor(255,255,255);
 	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_units`.`printname`, `doc_base_dop`.`mass`, `doc_base`.`vc`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
@@ -1478,25 +1478,25 @@ function PrintTg12PDF($to_str=0)
 		$sumnaloga+=$nalog;
 		$list_sumnaloga+=$nalog;
 		
-		$pdf->Cell($t_all_width[0],$line_height, $ii ,1,0,'R',0);
+		$pdf->Cell($t_all_width[0],$line_height, $ii ,1,0,'R',1);
 		$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-		$pdf->Cell($t_all_width[1],$line_height, $str ,1,0,'L',0);
+		$pdf->Cell($t_all_width[1],$line_height, $str ,1,0,'L',1);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[7] );
-		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'C',0);
+		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'C',1);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[5] );
-		$pdf->Cell($t_all_width[3],$line_height, $str ,1,0,'C',0);
-		$pdf->Cell($t_all_width[4],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[5],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[6],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[8],$line_height, $mass ,1,0,'C',0);
-		$pdf->Cell($t_all_width[9],$line_height, "$nxt[3] / $mass" ,1,0,'C',0);
+		$pdf->Cell($t_all_width[3],$line_height, $str ,1,0,'C',1);
+		$pdf->Cell($t_all_width[4],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[5],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[6],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[8],$line_height, $mass ,1,0,'C',1);
+		$pdf->Cell($t_all_width[9],$line_height, "$nxt[3] / $mass" ,1,0,'C',1);
 		
-		$pdf->Cell($t_all_width[10],$line_height, $cena ,1,0,'C',0);
-		$pdf->Cell($t_all_width[11],$line_height, $stoimost ,1,0,'C',0);
-		$pdf->Cell($t_all_width[12],$line_height, "$ndsp%" ,1,0,'C',0);
-		$pdf->Cell($t_all_width[13],$line_height, $nalog ,1,0,'R',0);
-		$pdf->Cell($t_all_width[14],$line_height, $snalogom ,1,0,'R',0);
+		$pdf->Cell($t_all_width[10],$line_height, $cena ,1,0,'C',1);
+		$pdf->Cell($t_all_width[11],$line_height, $stoimost ,1,0,'C',1);
+		$pdf->Cell($t_all_width[12],$line_height, "$ndsp%" ,1,0,'C',1);
+		$pdf->Cell($t_all_width[13],$line_height, $nalog ,1,0,'R',1);
+		$pdf->Cell($t_all_width[14],$line_height, $snalogom ,1,0,'R',1);
 		$pdf->Ln();
 		
 		if($pdf->GetY()>190)

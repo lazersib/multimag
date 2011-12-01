@@ -215,6 +215,7 @@ class doc_Nulltype
 		$kassa=rcv('kassa');
 
 		$cena=rcv('cena');
+		$cost_recalc=rcv('cost_recalc');
 		
 		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type,$subtype);
 		
@@ -242,6 +243,18 @@ class doc_Nulltype
 					$sqlupdate.=", `nds`='$nds'";
 					$sqlinsert_keys.=", `nds`";
 					$sqlinsert_value.=", '$nds'";
+					if($cost_recalc)
+					{
+						$r=mysql_query("SELECT `id`, `tovar` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+						if(mysql_errno())	throw new MysqlException("Не удалось выбрать список наименований документа");
+						while($l=mysql_fetch_row($r))
+						{
+							$newcost=GetCostPos($l[1], $cena);
+							mysql_query("UPDATE `doc_list_pos` SET `cost`='$newcost' WHERE `id`='$l[0]'");
+							if(mysql_errno())	throw new MysqlException("Не удалось обновть цену строки документа");
+						}
+						DocSumUpdate($this->doc);
+					}
 				}
 				else
 				{
@@ -949,7 +962,7 @@ class doc_Nulltype
 			else $s='';
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->AddText("</select><label><input type='checkbox' name='cost_recalc' value='1'>Переустановить цены в документе</label><br>");
 		if($this->doc_data[12])
 			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label><br>
 			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");

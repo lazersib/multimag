@@ -89,6 +89,7 @@ function Row($data, $divider=0, $cost_id=1)
 				if( ($dcc<(time()-60*60*24*30*6))|| ($cost==0) ) $cce=128;
 				else $cce=0;
 				if(!$cost) $cost='Звоните!';
+				else	$cost.=" за ".$data['units_name'];
 				$str=$cost;
 			} else $cce=0;  
 			

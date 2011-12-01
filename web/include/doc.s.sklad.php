@@ -1537,7 +1537,7 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE `$s%` ORDER BY `doc_base`.`name` LIMIT 100";
+		WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
