@@ -1,7 +1,6 @@
 #poslist
 {
 	width:			100%;
-	border:			2px #88f solid;
 	border-spacing:		0px;
 	margin-top:		5px;
 }
@@ -141,7 +140,6 @@
 #sklad_view
 {
 	width:		100%;
-	border:		2px #88f solid;
 	border-spacing:	0px;
 	margin-top:	5px;
 }

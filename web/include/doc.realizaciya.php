@@ -59,10 +59,10 @@ class doc_Realizaciya extends doc_Nulltype
 		$tmpl->AddText("<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		Плательщик:<br>
 		<input type='hidden' name='plat_id' id='plat_id' value='{$this->dop_data['platelshik']}'>
-		<input type='text' id='plat'  style='width: 450px;' value='$plat_name'><br>
+		<input type='text' id='plat'  style='width: 100%;' value='$plat_name'><br>
 		Грузополучатель:<br>
 		<input type='hidden' name='gruzop_id' id='gruzop_id' value='{$this->dop_data['gruzop']}'>
-		<input type='text' id='gruzop'  style='width: 450px;' value='$gruzop_name'><br>
+		<input type='text' id='gruzop'  style='width: 100%;' value='$gruzop_name'><br>
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
 			$(\"#plat\").autocomplete(\"/docs.php\", {

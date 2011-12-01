@@ -67,6 +67,15 @@ else if($mode=="heads")
 	}
 	$document->head_submit($doc);
 }
+else if($mode=="jheads")
+{
+	if(!$doc)
+	{
+		$type=rcv('type');
+		$document=AutoDocumentType($type, 0);
+	}
+	$document->json_head_submit($doc);
+}
 else if($mode=="ehead")
 {
 	$document->head($doc);

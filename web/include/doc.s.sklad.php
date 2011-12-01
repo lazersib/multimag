@@ -198,7 +198,7 @@ class doc_s_Sklad
 					foreach($pos as $id=>$value)
 					{
 						settype($id,'int');
-						mysql_query("UPDATE `doc_base` SET $up_query WHERE `id`='$id'");
+						mysql_query("UPDATE `doc_base` SET $up_query WHERE `id`='$id'сделано автосоздание кеша");
 						if(mysql_errno())	throw new MysqlException("Не удалось обновить строку!");
 						$c++;
 						$a+=mysql_affected_rows();
@@ -649,7 +649,84 @@ class doc_s_Sklad
 		// Связанные товары
 		else if($param=='l')
 		{
-			$tmpl->msg("Здесь будет возможность задать связи данного наименования с другими. Это будет отражено на витрине, как связанные товары. Так-же можно использовать для заданя аналогов.");
+			$plm=rcv('plm');
+			include_once("include/doc.sklad.link.php");
+			if($plm=='')
+			{
+				link_poslist($pos);
+				$tmpl->AddText("<table width=100% id='sklad_editor'>
+				<tr><td id='groups' width=200 valign='top' class='lin0>'");
+				link_groups($pos);
+				$tmpl->AddText("<td id='sklad' valign='top' class='lin1'>");
+				link_sklad($pos,0);
+				$tmpl->AddText("</table>");
+			}
+			else if($plm=='sg')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$group=rcv('group');
+				link_sklad($pos, $group);
+			}
+			else if($plm=='pos')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$vpos=rcv('vpos');
+					
+				$res=mysql_query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
+				if(mysql_num_rows($res)==0)
+				{
+					mysql_query("INSERT INTO `doc_base_kompl` (`pos_id`,`kompl_id`,`cnt`) VALUES ('$pos','$vpos','1')");
+					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку!");
+					doc_log("UPDATE komplekt","add kompl: pos_id:$vpos",'pos',$pos);
+				}
+				else
+				{
+					$nxt=mysql_fetch_row($res);
+					mysql_query("UPDATE `doc_base_kompl` SET `cnt`=`cnt`+'1' WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
+					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку!");
+					doc_log("UPDATE komplekt","change cnt: kompl_id:$nxt[1], cnt:$nxt[2]+1",'pos',$nxt[1]);
+				}	
+				
+				link_poslist($pos);
+			}
+			else if($plm=='cc')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$s=rcv('s');
+				$vpos=rcv('vpos');
+				if($s<=0) $s=1;
+				$res=mysql_query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
+				if(mysql_errno())	throw MysqlException("Не удалось выбрать строку!");
+				$nxt=mysql_fetch_row($res);
+				if(!$nxt)		throw new Exception("Строка $vpos не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+				if($s!=$nxt[1])
+				{
+					$res=mysql_query("UPDATE `doc_base_kompl` SET `cnt`='$s' WHERE `pos_id`='$pos' AND `id`='$vpos'");
+					if(mysql_errno())	throw MysqlException("Не удалось обновить количество в строке");
+					kompl_poslist($pos);
+					doc_log("UPDATE komplekt","change cnt: kompl_id:$nxt[1], cnt:$nxt[1] => $s",'pos',$nxt[1]);
+				}
+				else link_poslist($pos);
+			}
+			else if($plm='d')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$vpos=rcv('vpos');
+				$res=mysql_query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
+				$nxt=mysql_fetch_row($res);
+				if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+				
+				$res=mysql_query("DELETE FROM `doc_base_kompl` WHERE `id`='$vpos'");
+				doc_log("UPDATE komplekt","del kompl: kompl_id:$nxt[0], doc_list_pos:$pos, cnt:$nxt[1], cost:$nxt[2]",'pos',$pos);
+
+				link_poslist($pos);
+			}
 		}
 		// История изменений
 		else if($param=='h')

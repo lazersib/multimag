@@ -29,7 +29,7 @@ class doc_Zayavka extends doc_Nulltype
 		$this->doc_viewname			='Заявка покупателя';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
-		$this->header_fields			='agent cena sklad bank';
+		$this->header_fields			='bank sklad separator agent cena';
 		settype($this->doc,'int');
 	}
 	
@@ -56,23 +56,9 @@ class doc_Zayavka extends doc_Nulltype
 		VALUES ( '{$this->doc}' ,'kladovshik','$kladovshik')");
 	}
 	
-	function DopBody()
-	{
-		global $tmpl;
-		$klad_id=@$this->dop_data['kladovshik'];
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `id`='$klad_id'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
-		$nxt=mysql_fetch_row($res);
-		if($nxt)
-		{
-			$tmpl->AddText(", <b>Кладовщик:</b> $nxt[1] ($nxt[2]) ");
-		}
-	}
-	
 	function DocApply($silent=0)
 	{
 		$tim=time();
-		
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if( !($nx=@mysql_fetch_row($res) ) )	throw new MysqlException('Ошибка выборки данных документа при проведении!');	

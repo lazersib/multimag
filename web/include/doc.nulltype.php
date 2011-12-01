@@ -163,7 +163,6 @@ class doc_Nulltype
 			if(!isAccess($object,'view'))	throw new AccessException("view");
 			doc_menu($this->dop_buttons());
 			$this->DrawHeadformStart();
-			$this->DrawDTFields();
 			$fields=split(' ',$this->header_fields);
 			foreach($fields as $f)
 			{
@@ -175,6 +174,7 @@ class doc_Nulltype
 					case 'bank':	$this->DrawBankField();  break;
 					case 'cena':	$this->DrawCenaField();  break;
 					case 'sum':	$this->DrawSumField();  break;
+					case 'separator':	$tmpl->AddText("<hr>");  break;
 				}
 			}
 			if(method_exists($this,'DopHead'))	$this->DopHead();
@@ -202,9 +202,7 @@ class doc_Nulltype
 		$agent=rcv('agent');
 		$comment=rcv('comment');
 
-		$date=rcv('date');
-		$time=rcv('time');
-		@$date=strtotime("$date $time");
+		@$date=strtotime(rcv('datetime'));
 		
 		$sklad=rcv('sklad');
 		$subtype=rcv('subtype');
@@ -236,6 +234,7 @@ class doc_Nulltype
 			$cena_update=false;
 			foreach($fields as $f)
 			{
+				if($f=='separator')	continue;
 				if($f=='cena')
 				{
 					$cena_update=true;
@@ -276,6 +275,95 @@ class doc_Nulltype
 		}
 		return $this->doc=$doc;
 	}
+	// Сохранение заголовка документа и возврат результата в json формате
+	public function json_head_submit()
+	{
+		global $uid, $tmpl;
+		if($this->doc_name) $object='doc_'.$this->doc_name;
+		else $object='doc';
+		@$date=strtotime(rcv('datetime'));
+		
+		$firm_id=rcv('firm');
+		settype($firm_id,'int');
+		if($firm_id<=0) $firm_id=1;
+		$tim=time();
+
+		$agent=rcv('agent');
+		$comment=rcv('comment');
+		$sklad=rcv('sklad');
+		$subtype=rcv('subtype');
+		$altnum=rcv('altnum');
+		$nds=rcv('nds');
+		$sum=rcv('sum');
+		$bank=rcv('bank');
+		$kassa=rcv('kassa');
+		$cena=rcv('cena');
+		
+		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type,$subtype);
+		if($date<=0)	$date=time();
+		
+		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
+		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
+		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$comment', '$uid', '$altnum', '$subtype'";
+		
+		$tmpl->ajax=1;
+		try
+		{
+			if($this->doc_data[6])		throw new Exception('Операция не допускается для проведённого документа');
+			else if($this->doc_data[14])	throw new Exception('Операция не допускается для документа, отмеченного для удаления!');
+			else
+			{
+				$fields=split(' ',$this->header_fields);
+				$cena_update=false;
+				foreach($fields as $f)
+				{
+					if($f=='separator')	continue;
+					if($f=='cena')
+					{
+						$cena_update=true;
+						$sqlupdate.=", `nds`='$nds'";
+						$sqlinsert_keys.=", `nds`";
+						$sqlinsert_value.=", '$nds'";
+					}
+					else
+					{
+						$sqlupdate.=", `$f`='${$f}'";
+						$sqlinsert_keys.=", `$f`";
+						$sqlinsert_value.=", '${$f}'";
+					}
+				}
+				
+				if($this->doc)
+				{
+					if(!isAccess($object,'edit'))	throw new AccessException("");
+					$res=mysql_query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->doc}'");
+					if(mysql_errno())	throw new MysqlException("Документ не сохранён");
+					$link="/doc.php?doc={$this->doc}&mode=body";
+					doc_log("UPDATE {$this->doc_name}","$sqlupdate",'doc',$this->doc);
+				}
+				else
+				{
+					if(!isAccess($object,'create'))	throw new AccessException("");
+					$res=mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
+					if(mysql_errno())	throw new MysqlException("Документ не сохранён");
+					$this->doc= mysql_insert_id();
+					$link="/doc.php?doc={$this->doc}&mode=body";
+					doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$this->doc);
+				}
+				
+				if(method_exists($this,'DopSave'))	$this->DopSave();
+				if($cena_update)	mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->doc}','cena','$cena')");
+				if(mysql_errno())	throw new MysqlException("Цена не сохранена");
+				$b=DocCalcDolg($this->doc_data[2]);
+				$tmpl->SetText("{response: 'ok', agent_balance: '$b'}");
+			}
+		}
+		catch( Exception $e)
+		{
+			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
+		}
+		
+	}
 	// Редактирование тела докумнета
 	public function body()
 	{
@@ -284,13 +372,66 @@ class doc_Nulltype
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 		if(!isAccess($object,'view'))	throw new AccessException("");
-	
-		doc_menu($this->dop_buttons());
-
 		$doc_altnum=$this->doc_data[9].$this->doc_data[10];
-		$dt=date("d.m.Y H:i:s",$this->doc_data[5]);
-		$tmpl->AddText("<h1>{$this->doc_viewname} N$doc_altnum</h1>");
-
+		$dt=date("Y-m-d H:i:s",$this->doc_data[5]);	
+		doc_menu($this->dop_buttons());
+		$tmpl->AddText("<div id='doc_container'>
+		<div id='doc_left_block'>");
+		$tmpl->AddText("<h1>{$this->doc_viewname} N{$this->doc}</h1>");
+	
+		$this->DrawHeadformStart();
+		$fields=split(' ',$this->header_fields);
+		foreach($fields as $f)
+		{
+			switch($f)
+			{
+				case 'agent':	$this->DrawAgentField(); break;
+				case 'sklad':	$this->DrawSkladField(); break;
+				case 'kassa':	$this->DrawKassaField();  break;
+				case 'bank':	$this->DrawBankField();  break;
+				case 'cena':	$this->DrawCenaField();  break;
+				case 'sum':	$this->DrawSumField();  break;
+				case 'separator':	$tmpl->AddText("<hr>");  break;
+			}
+		}
+		if(method_exists($this,'DopHead'))	$this->DopHead();
+		
+		$this->DrawHeadformEnd();
+		
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
+		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+		WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные документа-основания");
+		if(@$nxt=mysql_fetch_row($res))
+		{
+			if($nxt[5]) $r='Проведённый';
+			else $r='Непроведённый';
+			$dt=date("d.m.Y H:i:s",$nxt[4]);
+			$tmpl->AddText("<b>Относится к:</b><br>$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt");
+		}
+		
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
+		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+		WHERE `doc_list`.`p_doc`='{$this->doc}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные подчинённых документов");
+		$pod='';
+		while(@$nxt=mysql_fetch_row($res))
+		{
+			if($nxt[5]) $r='Проведённый';
+			else $r='Непроведённый';
+			$dt=date("d.m.Y H:i:s",$nxt[4]);
+			//if($pod!='')	$pod.=', ';
+			$pod.="$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt<br>";
+		}
+		if($pod)	$tmpl->AddText("<br><b>Зависящие документы:</b><br>$pod");
+		
+		
+		$tmpl->AddText("</div>
+		<script type=\"text/javascript\">
+		DocHeadInit()
+		</script>
+		<div id='doc_main_block'>");
+		
 		if($this->doc_data['agent_dishonest'])
 		{
 			$tmpl->msg($this->doc_data['agent_comment'].' ','err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
@@ -309,50 +450,35 @@ class doc_Nulltype
         	$res=@mysql_query("SELECT `doc_kassa`.`name` FROM `doc_kassa` WHERE `doc_kassa`.`ids`='kassa' AND `doc_kassa`.`num`='{$this->doc_data[15]}'");
         	$kassa=@mysql_result($res,0,0);
 
-		$tmpl->AddText("<b>Дата:</b> $dt, ");
-		
-		$fields=split(' ',$this->header_fields);
-		foreach($fields as $f)
-		{
-			switch($f)
-			{
-				case 'sklad':	$tmpl->AddText("<b>Склад:</b> $sklad, "); break;
-				case 'cena':	$tmpl->AddText("<b>Цена:</b> $cena, ");  break;
-				case 'bank':	$tmpl->AddText("<b>банк:</b> $bank, ");  break;
-				case 'kassa':	$tmpl->AddText("<b>касса:</b> $kassa, ");  break;
-				case 'sum':	$tmpl->AddText("<b>сумма:</b> ".$this->doc_data[11].", ");  break;
-			}
-		}
+// 		$tmpl->AddText("<b>Дата:</b> $dt, ");
+// 		
+// 		$fields=split(' ',$this->header_fields);
+// 		foreach($fields as $f)
+// 		{
+// 			switch($f)
+// 			{
+// 				case 'sklad':	$tmpl->AddText("<b>Склад:</b> $sklad, "); break;
+// 				case 'cena':	$tmpl->AddText("<b>Цена:</b> $cena, ");  break;
+// 				case 'bank':	$tmpl->AddText("<b>банк:</b> $bank, ");  break;
+// 				case 'kassa':	$tmpl->AddText("<b>касса:</b> $kassa, ");  break;
+// 				case 'sum':	$tmpl->AddText("<b>сумма:</b> ".$this->doc_data[11].", ");  break;
+// 			}
+// 		}
+		$tmpl->AddText("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'>");
 		$tmpl->AddText('<br>');
 		if(strstr($this->header_fields, 'agent'))
 		{
-			$tmpl->AddText("<b>Агент-партнер:</b> ".$this->doc_data[3].", ");
+			//$tmpl->AddText("<b>Агент-партнер:</b> ".$this->doc_data[3].", ");
 			$dolg=DocCalcDolg($this->doc_data[2]);
 			if($dolg>0)
 				$tmpl->AddText("<b>Общий долг агента:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'><b class=f_red>$dolg</b> рублей</a><br>");
 			else if($dolg<0)
 				$tmpl->AddText("<b>Наш общий долг:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'>$dolg рублей</a><br>");
+		}
+		
+// 		if(method_exists($this,'DopBody'))
+// 			$this->DopBody();
 
-		}
-		
-		if(method_exists($this,'DopBody'))
-			$this->DopBody();
-		
-		$tmpl->AddText(DocInfo($this->doc_data[13]));
-		
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
-		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`p_doc`='{$this->doc}'");
-		$pod='';
-		if(@$nxt=mysql_fetch_row($res))
-		{
-			if($nxt[5]) $r='Проведённый';
-			else $r='Непроведённый';
-			$dt=date("d.m.Y H:i:s",$nxt[4]);
-			if($pod!='')	$pod.=', ';
-			$pod.="$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt";
-		}
-		if($pod)	$tmpl->AddText("<br><b>Зависящие документы:</b> $pod");
 		
 		if($this->doc_data[4]) $tmpl->AddText("<br><b>Примечание:</b> ".$this->doc_data[4]."<br>");
 		if($this->sklad_editor_enable)
@@ -368,7 +494,8 @@ class doc_Nulltype
 		$tmpl->AddText("<div id='statusblock'>");
 		if($this->doc_data[6])$tmpl->AddText("<b>Дата проведения:</b> ".date("d.m.Y H:i:s",$this->doc_data[6]));
 		$tmpl->AddText("</div>");
-		$tmpl->AddText("<br><br>");
+		$tmpl->AddText("<br><br>
+		</div></div>");
 	}
 
 	public function Apply($doc=0, $silent=0)
@@ -773,19 +900,23 @@ class doc_Nulltype
 	protected function DrawHeadformStart()
 	{
 		global $tmpl, $CONFIG;
-		$tmpl->AddText('<h1>'.$this->doc_viewname."</h1>
-		<form method='post' action=''>
-		<input type=hidden name=mode value='heads'>
-		<input type=hidden name=type value='".$this->doc_type."'>");
+		$dt=date("Y-m-d H:i:s",$this->doc_data[5]);
+		$tmpl->AddText("<form method='post' action='' id='doc_head_form'>
+		<input type='hidden' name='mode' value='jheads'>
+		<input type='hidden' name='type' value='".$this->doc_type."'>");
 		if($this->doc_data[0])
-			$tmpl->AddText("<input type=hidden name=doc value='".$this->doc_data[0]."'>");
+			$tmpl->AddText("<input type='hidden' name='doc' value='".$this->doc_data[0]."'>");
 		if($this->doc_data[14]) $tmpl->AddText("<h3>Документ помечен на удаление!</h3>");
 		$tmpl->AddText("
-		Подтип:<br>
-		<input type=text name=subtype value='".$this->doc_data[10]."' id='sudata'><br>
-		Альтернативный номер:<br>
-		<input type=text name=altnum value='".$this->doc_data[9]."' id='anum'>
-		<a onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."','anum','sudata')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a><br>
+		<table id='doc_head_main'>
+		<tr><td class='altnum'>А. номер</td><td class='subtype'>Подтип</td><td class='datetime'>Дата и время</td><tr>
+		<tr class='inputs'>
+		<td class='altnum'><input type='text' name='altnum' value='".$this->doc_data[9]."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."','anum','sudata')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
+		<td class='subtype'><input type='text' name='subtype' value='".$this->doc_data[10]."' id='sudata'></td>
+		<td class='datetime'><input type='text' name='datetime' value='$dt'>
+		<img src='/img/icon_calendar.gif' alt=''></td>
+		</tr>
+		</table>
 		Организация:<br><select name='firm'>");
 		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 			
@@ -805,34 +936,22 @@ class doc_Nulltype
 		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data[4]}</textarea><br>
 		<input type=submit value='Записать'></form>");
 	}
-	
-	protected function DrawDTFields()
-	{
-		global $tmpl;
-		if($this->doc_data[0])
-		{
-			$dt=date("Y-m-d",$this->doc_data[5]);
-			$tm=date("H:i:s",$this->doc_data[5]);
-		}
-		else
-		{
-			$dt=date("Y-m-d");
-			$tm=date("H:i:s");
-		}
-		$tmpl->AddText("<fieldset style='height: 70px; width: 350px;'><legend>Дата</legend>
-		<input type=text name='date' value='$dt' class='vDateField'>
-		<input type=text name='time' value='$tm' class='vTimeField'>
-		<script type='text/javascript'>$($.date_input.initialize);</script>
-		</fieldset>");
-	}
 
 	protected function DrawAgentField()
 	{
 		global $tmpl;
+		$b=DocCalcDolg($this->doc_data[2]);
 		$tmpl->AddText("
-		Агент:<br>
+		<div>
+		<div style='float: right;' id='agent_balance_info'>$b</div>
+		Агент:
+		<a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data[2]}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>
+		<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a>
+		</div>
 		<input type='hidden' name='agent' id='agent_id' value='{$this->doc_data[2]}'>
-		<input type='text' id='agent_nm'  style='width: 450px;' value='{$this->doc_data[3]}'><br>
+		<input type='text' id='agent_nm'  style='width: 100%;' value='{$this->doc_data[3]}'>
+		<div id='agent_info'></div>
+		<br>
 		
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
@@ -861,7 +980,9 @@ class doc_Nulltype
 			if( li == null ) var sValue = \"Ничего не выбрано!\";
 			if( !!li.extra ) var sValue = li.extra[0];
 			else var sValue = li.selectValue;
-			document.getElementById('agent_id').value=sValue;");
+			document.getElementById('agent_id').value=sValue;
+			document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+sValue;
+			");
 		if(!$this->doc)		$tmpl->AddText("	
 			var plat_id=document.getElementById('plat_id');
 			if(plat_id)	plat_id.value=li.extra[0];
@@ -939,7 +1060,7 @@ class doc_Nulltype
 	protected function DrawCenaField()
 	{
 		global $tmpl;
-		$tmpl->AddText("Цена:<br>
+		$tmpl->AddText("Цена:<a href='#'><img src='/img/i_reload.png'></a><br>
 		<select name='cena'>");
 		$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` ORDER BY `name`");
 		if(mysql_errno())	throw new Exception("Не удалось выбрать список цен");
@@ -951,10 +1072,10 @@ class doc_Nulltype
 		}
 		$tmpl->AddText("</select><br>");
 		if($this->doc_data[12])
-			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label><br>
+			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label>&nbsp;&nbsp;
 			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");
 		else
-			$tmpl->AddText("<label><input type='radio' name='nds' value='0' checked>Выделять НДС</label><br>
+			$tmpl->AddText("<label><input type='radio' name='nds' value='0' checked>Выделять НДС</label>&nbsp;&nbsp;
 			<label><input type='radio' name='nds' value='1'>Включать НДС</label><br>");
 		$tmpl->AddText("<br>");
 	}

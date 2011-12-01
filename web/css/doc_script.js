@@ -155,7 +155,116 @@ function DocConnectProcess(msg)
 
 }
 
+function DocHeadInit()
+{
+	var doc_left_block=document.getElementById("doc_left_block")
+	
+	doc_left_block.doSave=function()
+	{
+		if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+		doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 2000)
+	}
+	
+	doc_left_block.Save=function()
+	{
+		doc_left_block.style.backgroundColor='#ff0'
+		$.ajax({ 
+			type:   'GET', 
+			url:    '/doc.php', 
+			data:   $('#doc_head_form').serialize(), 
+			success: function(msg) { rcvDataSuccess(msg); }, 
+			error:   function() { jAlert('Ошибка соединения!','Сохранение данных',null,'icon_err'); }, 
+		});
+	}
+	
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			
+			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+			doc_left_block.timeout=window.setTimeout(function(){doc_left_block.style.backgroundColor=''}, 2000)
+ 			var json=eval('('+msg+')');
+			if(json.response=='err')
+			{
+				doc_left_block.style.backgroundColor='#f00'
+				jAlert(json.message,"Ошибка", {}, 'icon_err');
+			}
+			else if(json.response=='ok')
+			{
+				doc_left_block.style.backgroundColor='#0f0'
+				document.getElementById("agent_balance_info").innerHTML=json.agent_balance
+			}
+			else
+			{
+				doc_left_block.style.backgroundColor='#f00'
+				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Изменение списка товаров", null,  'icon_err');
+			}
+		}
+		catch(e)
+		{
+			doc_left_block.style.backgroundColor='#f00'
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+		}	
+	}
+	
+	function DocHeadFieldClick()
+	{
+		doc_left_block.doSave()
 
+	}
+	
+	function SetEvents(obj)
+	{
+		obj.onclick=function(event)
+		{
+			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+		}
+		obj.onblur=function(event)
+		{
+			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 500)
+		}
+		obj.onсhange=function(event)
+		{
+			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 100)
+		}
+		obj.onkeyup=function(event)
+		{
+			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 5000)
+		}
+	}
+	
+	var fields=doc_left_block.getElementsByTagName('input')
+	for(var i=0; i<fields.length; i++)	SetEvents(fields[i])
+	var fields=doc_left_block.getElementsByTagName('select')
+	for(var i=0; i<fields.length; i++)	SetEvents(fields[i])
+	var fields=doc_left_block.getElementsByTagName('textarea')
+	for(var i=0; i<fields.length; i++)	SetEvents(fields[i])
+}
+
+function DocLeftToggle(_this)
+{
+	var doc_left_block=document.getElementById("doc_left_block")
+	var doc_main_block=document.getElementById("doc_main_block")
+	var doc_left_arrow=document.getElementById("doc_left_arrow")
+	if(doc_left_block.style.display!='none')
+	{
+		doc_left_block.style.display='none'
+		doc_main_block.oldmargin=doc_main_block.style.marginLeft
+		doc_main_block.style.marginLeft=0
+		doc_left_arrow.src='/img/i_rightarrow.png'
+	}
+	else
+	{
+		doc_left_block.style.display=''
+		doc_main_block.style.marginLeft=doc_main_block.oldmargin
+		doc_left_arrow.src='/img/i_leftarrow.png'
+	}
+}
 
 
 // Сообщения
