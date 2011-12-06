@@ -220,7 +220,8 @@ class doc_Realizaciya extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Форма ТОРГ-12 (PDF)</div>			
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура (PDF)</div>			
 			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nvco'\">Накладная c сорт. по коду</div>	");
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nvco'\">Накладная c сорт. по коду</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=arab'\">Акт оказаннх услуг</div>");
 		}
 		//			<li><a href='?mode=print&amp;doc=$doc&amp;opt=sf'>Счёт - фактура (HTML)</a></li>
 		else if($opt=='tg12')
@@ -250,6 +251,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->PrintTovCheck($doc);
 		else if($opt=='nvco')
 			$this->PrintNaklVCOrdered();
+		else if($opt=='arab')
+			$this->PrintActRabot();
 		else
 			$this->PrintNakl($doc);
 	}
@@ -457,6 +460,69 @@ class doc_Realizaciya extends doc_Nulltype
 		$prop
 		<p>Поставщик:_____________________________________</p>
 		<p>Покупатель: ____________________________________</p>");
+	}
+
+	// -- Акт выполненных работ --------------
+	function PrintActRabot()
+	{
+		global $tmpl;
+		global $uid;
+
+		$tmpl->LoadTemplate('print');
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$tmpl->AddText("<h1>Акт об оказанных услугах, работах N {$this->doc_data[9]}, от $dt </h1>
+		<b>Исполнитель: </b>{$this->firm_vars['firm_name']}<br>
+		<b>Заказчик: </b>{$this->doc_data[3]}<br><br>");
+
+		$tmpl->AddText("
+		<table width='800' cellspacing='0' cellpadding='0'>
+		<tr><th>№</th><th width=450>Наименование работ, услуг<th>Место<th>Кол-во<th>Стоимость<th>Сумма</tr>");
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `doc_units`.`printname` AS `units`
+		FROM `doc_list_pos`
+		INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
+		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='1'");
+		$i=0;
+		$ii=1;
+		$sum=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f руб.", $nxt[4]);
+			$cost2 = sprintf("%01.2f руб.", $sm);
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+		}
+		$ii--;
+		$cost = sprintf("%01.2f руб.", $sum);
+		
+		$prop='';
+		if($sum>0)
+		{
+			$add='';
+			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
+			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE 
+			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			$add
+			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if(@$prop=mysql_result($rs,0,0))
+			{
+				$prop=sprintf("<p><b>Оплачено</b> %0.2f руб.</p>",$prop);
+			}	
+		}
+		
+
+		$tmpl->AddText("</table>
+		<p>Всего оказанно услуг <b>$ii</b> на сумму <b>$cost</b></p>
+		<p class=mini>Вышеперечисленные услуги выполнены полностью и в срок. Заказчик претензий по объёму, качеству и срокам оказания услуг не имеет.</p>
+		$prop
+		<p>Исполнитель:_____________________________________</p>
+		<p>Заказчик: ____________________________________</p>");
 	}
 
 // -- Накладная с сортировкой по коду--------------
@@ -802,7 +868,7 @@ function PrintTg12()
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
-		WHERE `doc_list_pos`.`doc`='$doc' ");
+		WHERE `doc_list_pos`.`doc`='$doc'  AND `doc_base`.`pos_type`='0'");
                 $i=0;
                 $ii=0;
 
@@ -1123,17 +1189,21 @@ function PrintTg12PDF($to_str=0)
 	if($platelshik_info['ks'])		$platelshik.=', К/С '.$platelshik_info['ks'];
 	
 	$str = unhtmlentities("{$platelshik_info['fullname']}, адрес {$platelshik_info['adres']}, тел. {$platelshik_info['tel']}, ИНН/КПП {$platelshik_info['inn']}, ОКПО {$platelshik_info['okpo']},  ОКВЭД {$platelshik_info['okevd']}, БИК {$platelshik_info['bik']}, Р/С {$platelshik_info['rs']}, К/С {$platelshik_info['ks']}, банк {$platelshik_info['bank']}");
-
-	$rr=mysql_query("SELECT `surname`,`name`,`name2`,`range` FROM `doc_agent_dov`
-	WHERE `id`='{$this->dop_data['dov_agent']}'");
-	if(mysql_errno())		throw new MysqlException("Невозможно получить данные доверенного лица!");
-	if($nn=@mysql_fetch_row($rr))
+	
+	if(isset($this->dop_data['dov_agent']))
 	{
-		$dov_agn="$nn[0] $nn[1] $nn[2]";
-		$dov_agr=$nn[3];
+		$rr=mysql_query("SELECT `surname`,`name`,`name2`,`range` FROM `doc_agent_dov`
+		WHERE `id`='{$this->dop_data['dov_agent']}'");
+		if(mysql_errno())		throw new MysqlException("Невозможно получить данные доверенного лица!");
+		if($nn=@mysql_fetch_row($rr))
+		{
+			$dov_agn="$nn[0] $nn[1] $nn[2]";
+			$dov_agr=$nn[3];
+		}
+		else	$dov_agn=$dov_agr="";
 	}
-	else	$dov_agn=$dov_agr="";
-		
+	else	$dov_agn=$dov_agr="";	
+	
 	if($this->doc_data['p_doc'])
 	{
 		$res=mysql_query("SELECT `doc_list`.`sklad`, `doc_kassa`.`name`, `doc_kassa`.`bik`, `doc_kassa`.`rs` FROM `doc_list` 
@@ -1435,7 +1505,7 @@ function PrintTg12PDF($to_str=0)
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
-	WHERE `doc_list_pos`.`doc`='{$this->doc}' ");
+	WHERE `doc_list_pos`.`doc`='{$this->doc}'  AND `doc_base`.`pos_type`='0'");
 	$i=0;
 	$ii=0;
 	$line_height=4;
@@ -1478,25 +1548,25 @@ function PrintTg12PDF($to_str=0)
 		$sumnaloga+=$nalog;
 		$list_sumnaloga+=$nalog;
 		
-		$pdf->Cell($t_all_width[0],$line_height, $ii ,1,0,'R',0);
+		$pdf->Cell($t_all_width[0],$line_height, $ii ,1,0,'R',1);
 		$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-		$pdf->Cell($t_all_width[1],$line_height, $str ,1,0,'L',0);
+		$pdf->Cell($t_all_width[1],$line_height, $str ,1,0,'L',1);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[7] );
-		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'C',0);
+		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'C',1);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[5] );
-		$pdf->Cell($t_all_width[3],$line_height, $str ,1,0,'C',0);
-		$pdf->Cell($t_all_width[4],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[5],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[6],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',0);
-		$pdf->Cell($t_all_width[8],$line_height, $mass ,1,0,'C',0);
-		$pdf->Cell($t_all_width[9],$line_height, "$nxt[3] / $mass" ,1,0,'C',0);
+		$pdf->Cell($t_all_width[3],$line_height, $str ,1,0,'C',1);
+		$pdf->Cell($t_all_width[4],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[5],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[6],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',1);
+		$pdf->Cell($t_all_width[8],$line_height, $mass ,1,0,'C',1);
+		$pdf->Cell($t_all_width[9],$line_height, "$nxt[3] / $mass" ,1,0,'C',1);
 		
-		$pdf->Cell($t_all_width[10],$line_height, $cena ,1,0,'C',0);
-		$pdf->Cell($t_all_width[11],$line_height, $stoimost ,1,0,'C',0);
-		$pdf->Cell($t_all_width[12],$line_height, "$ndsp%" ,1,0,'C',0);
-		$pdf->Cell($t_all_width[13],$line_height, $nalog ,1,0,'R',0);
-		$pdf->Cell($t_all_width[14],$line_height, $snalogom ,1,0,'R',0);
+		$pdf->Cell($t_all_width[10],$line_height, $cena ,1,0,'C',1);
+		$pdf->Cell($t_all_width[11],$line_height, $stoimost ,1,0,'C',1);
+		$pdf->Cell($t_all_width[12],$line_height, "$ndsp%" ,1,0,'C',1);
+		$pdf->Cell($t_all_width[13],$line_height, $nalog ,1,0,'R',1);
+		$pdf->Cell($t_all_width[14],$line_height, $snalogom ,1,0,'R',1);
 		$pdf->Ln();
 		
 		if($pdf->GetY()>190)
@@ -1515,16 +1585,16 @@ function PrintTg12PDF($to_str=0)
 			$w=0;
 			for($i=0;$i<7;$i++)	$w+=$t_all_width[$i];
 			$str = iconv('UTF-8', 'windows-1251', "Всего" );
-			$pdf->Cell($w,$line_height, $str ,0,0,'R',0);
-			$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',0);
-			$pdf->Cell($t_all_width[8],$line_height, $list_summass ,1,0,'C',0);
-			$pdf->Cell($t_all_width[9],$line_height, "$list_cnt / $list_summass" ,1,0,'C',0);
+			$pdf->Cell($w,$line_height, $str ,0,0,'R',1);
+			$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',1);
+			$pdf->Cell($t_all_width[8],$line_height, $list_summass ,1,0,'C',1);
+			$pdf->Cell($t_all_width[9],$line_height, "$list_cnt / $list_summass" ,1,0,'C',1);
 			
-			$pdf->Cell($t_all_width[10],$line_height, '' ,1,0,'C',0);
-			$pdf->Cell($t_all_width[11],$line_height, $list_sumbeznaloga ,1,0,'C',0);
-			$pdf->Cell($t_all_width[12],$line_height, "-" ,1,0,'C',0);
-			$pdf->Cell($t_all_width[13],$line_height, $list_sumnaloga ,1,0,'R',0);
-			$pdf->Cell($t_all_width[14],$line_height, $list_sum ,1,0,'R',0);
+			$pdf->Cell($t_all_width[10],$line_height, '' ,1,0,'C',1);
+			$pdf->Cell($t_all_width[11],$line_height, $list_sumbeznaloga ,1,0,'C',1);
+			$pdf->Cell($t_all_width[12],$line_height, "-" ,1,0,'C',1);
+			$pdf->Cell($t_all_width[13],$line_height, $list_sumnaloga ,1,0,'R',1);
+			$pdf->Cell($t_all_width[14],$line_height, $list_sum ,1,0,'R',1);
 			$pdf->Ln();
 			
 			$pdf->AddPage('L');
@@ -1719,7 +1789,7 @@ function PrintTg12PDF($to_str=0)
 	
 	$str = iconv('UTF-8', 'windows-1251', "По доверенности №" );
 	$pdf->Cell($s[0],$line_height, $str ,0,0,'L',0);
-	$str = iconv('UTF-8', 'windows-1251', $this->dop_data['dov']." от ".$this->dop_data['dov_data'] );
+	$str = @iconv('UTF-8', 'windows-1251', $this->dop_data['dov']." от ".$this->dop_data['dov_data'] );
 	$pdf->Cell(0,$line_height, $str ,0,1,'L',0);
 	
 	$pdf->SetFont('','',6);

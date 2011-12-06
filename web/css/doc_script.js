@@ -169,7 +169,7 @@ function DocHeadInit()
 	{
 		doc_left_block.style.backgroundColor='#ff0'
 		$.ajax({ 
-			type:   'GET', 
+			type:   'POST', 
 			url:    '/doc.php', 
 			data:   $('#doc_head_form').serialize(), 
 			success: function(msg) { rcvDataSuccess(msg); }, 
@@ -193,7 +193,11 @@ function DocHeadInit()
 			else if(json.response=='ok')
 			{
 				doc_left_block.style.backgroundColor='#0f0'
-				document.getElementById("agent_balance_info").innerHTML=json.agent_balance
+				var agent_balance_info=document.getElementById("agent_balance_info")
+				agent_balance_info.innerHTML=json.agent_balance
+				if(json.agent_balance>0)	agent_balance_info.style.color='#f00'
+				else if(json.agent_balance<0)	agent_balance_info.style.color='#080'
+				else 	agent_balance_info.style.color=''
 			}
 			else
 			{
@@ -266,6 +270,16 @@ function DocLeftToggle(_this)
 	}
 }
 
+function ResetCost(doc)
+{
+	$.ajax({ 
+		type:   'GET', 
+		url:    '/doc.php', 
+		data:   'mode=srv&opt=jrc&doc='+doc, 
+		success: function(msg) { document.getElementById('poslist').refresh() }, 
+		error:   function() { jAlert('Ошибка соединения!','Сохранение данных',null,'icon_err'); }, 
+	});
+}
 
 // Сообщения
 

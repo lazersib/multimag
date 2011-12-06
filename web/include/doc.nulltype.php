@@ -354,7 +354,7 @@ class doc_Nulltype
 				if(method_exists($this,'DopSave'))	$this->DopSave();
 				if($cena_update)	mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->doc}','cena','$cena')");
 				if(mysql_errno())	throw new MysqlException("Цена не сохранена");
-				$b=DocCalcDolg($this->doc_data[2]);
+				$b=DocCalcDolg($agent);
 				$tmpl->SetText("{response: 'ok', agent_balance: '$b'}");
 			}
 		}
@@ -379,7 +379,7 @@ class doc_Nulltype
 		<div id='doc_left_block'>");
 		$tmpl->AddText("<h1>{$this->doc_viewname} N{$this->doc}</h1>");
 	
-		$this->DrawHeadformStart();
+		$this->DrawLHeadformStart();
 		$fields=split(' ',$this->header_fields);
 		foreach($fields as $f)
 		{
@@ -464,8 +464,7 @@ class doc_Nulltype
 // 				case 'sum':	$tmpl->AddText("<b>сумма:</b> ".$this->doc_data[11].", ");  break;
 // 			}
 // 		}
-		$tmpl->AddText("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'>");
-		$tmpl->AddText('<br>');
+		$tmpl->AddText("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'><br>");
 		if(strstr($this->header_fields, 'agent'))
 		{
 			//$tmpl->AddText("<b>Агент-партнер:</b> ".$this->doc_data[3].", ");
@@ -480,7 +479,7 @@ class doc_Nulltype
 // 			$this->DopBody();
 
 		
-		if($this->doc_data[4]) $tmpl->AddText("<br><b>Примечание:</b> ".$this->doc_data[4]."<br>");
+		if($this->doc_data[4]) $tmpl->AddText("<b>Примечание:</b> ".$this->doc_data[4]."<br>");
 		if($this->sklad_editor_enable)
 		{
 			include_once('doc.poseditor.php');
@@ -798,14 +797,13 @@ class doc_Nulltype
 				$data=rcv('data');
 				$tmpl->SetText($poseditor->SerialNum($action, $line_id, $data) );	
 			}
-			// Не-json обработчики
 			// Сброс цен
-			else if($opt=='rc')
+			else if($opt=='jrc')
 			{
 				$this->ResetCost();
 				DocSumUpdate($this->doc);
-				doc_poslist($this->doc);	
 			}
+			// Не-json обработчики
 			// Серийный номер
 			else if($opt=='sn')
 			{
@@ -896,13 +894,18 @@ class doc_Nulltype
 		else $tmpl->msg("Недостаточно привилегий для $uid выполнения операции над $object!","err");
 	}
 	
+	protected function DrawLHeadformStart()
+	{
+		$this->DrawHeadformStart('j');
+	}
 	// Служебные методы формирования документа
-	protected function DrawHeadformStart()
+	protected function DrawHeadformStart($alt='')
 	{
 		global $tmpl, $CONFIG;
-		$dt=date("Y-m-d H:i:s",$this->doc_data[5]);
+		if($this->doc_data[5])	$dt=date("Y-m-d H:i:s",$this->doc_data[5]);
+		else			$dt=date("Y-m-d H:i:s");
 		$tmpl->AddText("<form method='post' action='' id='doc_head_form'>
-		<input type='hidden' name='mode' value='jheads'>
+		<input type='hidden' name='mode' value='{$alt}heads'>
 		<input type='hidden' name='type' value='".$this->doc_type."'>");
 		if($this->doc_data[0])
 			$tmpl->AddText("<input type='hidden' name='doc' value='".$this->doc_data[0]."'>");
@@ -933,17 +936,18 @@ class doc_Nulltype
 	protected function DrawHeadformEnd()
 	{
 		global $tmpl;
-		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data[4]}</textarea><br>
-		<input type=submit value='Записать'></form>");
+		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data[4]}</textarea><br><input type=submit value='Записать'></form>");
 	}
 
 	protected function DrawAgentField()
 	{
 		global $tmpl;
 		$b=DocCalcDolg($this->doc_data[2]);
+		if($b>0)	$col="color: #f00; font-weight: bold;";
+		if($b<0)	$col="color: #f08; font-weight: bold;";
 		$tmpl->AddText("
 		<div>
-		<div style='float: right;' id='agent_balance_info'>$b</div>
+		<div style='float: right; $col' id='agent_balance_info'>$b</div>
 		Агент:
 		<a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data[2]}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>
 		<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a>
@@ -1060,7 +1064,7 @@ class doc_Nulltype
 	protected function DrawCenaField()
 	{
 		global $tmpl;
-		$tmpl->AddText("Цена:<a href='#'><img src='/img/i_reload.png'></a><br>
+		$tmpl->AddText("Цена:<a onclick='ResetCost(\"{$this->doc}\"); return false;'><img src='/img/i_reload.png'></a><br>
 		<select name='cena'>");
 		$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` ORDER BY `name`");
 		if(mysql_errno())	throw new Exception("Не удалось выбрать список цен");
