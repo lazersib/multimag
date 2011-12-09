@@ -127,7 +127,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
+		WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
 		if(! ($nx=@mysql_fetch_assoc($res)))	throw new Exception('Документ не найден!');
 		if(!$nx['ok'])				throw new Exception('Документ не проведён!');	
@@ -206,23 +206,20 @@ class doc_Peremeshenie extends doc_Nulltype
 		get_docdata($doc);
 		global $tmpl;
 		global $uid;
-		global $doc_data;
-		global $dop_data;
-		global $dv;
 
 		$tmpl->LoadTemplate('print');
-		$dt=date("d.m.Y",$doc_data[5]);
+		$dt=date("d.m.Y",$this->doc_data[5]);
 
-		$tmpl->AddText("<h1>Накладная N $doc_data[9]$doc_data[10], от $dt </h1>
-		<b>Поставщик: </b>".$dv['firm_name']."<br>
-		<b>Покупатель: </b>$doc_data[3]<br><br>");
+		$tmpl->AddText("<h1>Накладная перемещения N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
+		<b>Поставщик: </b>".$this->firm_vars['firm_name']."<br><br>");
 
 		$tmpl->AddText("
 		<table width=800 cellspacing=0 cellpadding=0>
-		<tr><th>№</th><th width=450>Наименование<th>Место<th>Кол-во<th>Стоимость<th>Сумма</tr>");
-		$res=mysql_query("SELECT `doc_group`.`name`,`doc_base`.`name`,`doc_base`.`proizv` ,`doc_list_pos`.`cnt`,`doc_list_pos`.`cost`, `doc_base`.`mesto`
+		<tr><th>№</th><th width=450>Наименование<th>Кол-во<th>Стоимость<th>Сумма</tr>");
+		$res=mysql_query("SELECT `doc_group`.`name`,`doc_base`.`name`,`doc_base`.`proizv` ,`doc_list_pos`.`cnt`,`doc_list_pos`.`cost`
 		FROM `doc_list_pos`,`doc_base`,`doc_group`
-		WHERE `doc_list_pos`.`doc`='$doc' AND `doc_list_pos`.`tovar`=`doc_base`.`id` AND `doc_group`.`id`=`doc_base`.`group`");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`tovar`=`doc_base`.`id` AND `doc_group`.`id`=`doc_base`.`group`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 		$i=0;
 		$ii=1;
 		$sum=0;
@@ -231,7 +228,7 @@ class doc_Peremeshenie extends doc_Nulltype
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$nxt[3]<td>$cost<td>$cost2");
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3]<td>$cost<td>$cost2");
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
@@ -242,8 +239,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		$tmpl->AddText("</table>
 		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>
 		<p class=mini>Товар получил, претензий к качеству товара и внешнему виду не имею.</p>
-		<p>Поставщик:_____________________________________</p>
-		<p>Покупатель: ____________________________________</p>");
+		<p>Кладовщик:_____________________________________</p>");
 
 	}
 

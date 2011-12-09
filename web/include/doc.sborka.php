@@ -53,6 +53,7 @@ class doc_Sborka extends doc_Nulltype
 		WHERE `doc_list`.`id`='{$this->doc}'");
 		if(mysql_errno())			throw new MysqlException('Ошибка выборки данных документа при проведении!'.mysql_error());
 		$doc_info=mysql_fetch_array($res);
+
 		if(!$doc_info)				throw new Exception("Документ {$this->doc} не найден!");
 		if( $doc_info['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 

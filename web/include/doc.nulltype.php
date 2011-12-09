@@ -1059,8 +1059,9 @@ class doc_Nulltype
 	{
 		$sum=0;
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`kassa` FROM `doc_list`
-		WHERE  `doc_list`.`ok`>'0'
+		WHERE  `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7' OR `doc_list`.`type`='9')
 		ORDER BY `doc_list`.`date`");
+		$i=0;
 		while($nxt=mysql_fetch_row($res))
 		{
 			if($nxt[1]==6)
@@ -1076,14 +1077,15 @@ class doc_Nulltype
 				if($nxt[3]==$this->doc_data[15])	$sum-=$nxt[2];
 				else
 				{
-					$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$doc' AND `param`='v_kassu'");
-					$vkassu=mysql_result($res,0,0);
+					$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[0]' AND `param`='v_kassu'");
+					$vkassu=mysql_result($rr,0,0);
 					if($vkassu==$this->doc_data[15])$sum+=$nxt[2];
 				}
 			}
 
 			$sum = sprintf("%01.2f", $sum);
 			if($sum<0) break;
+			$i++;
 		}
 		mysql_free_result($res);
 		return $sum;

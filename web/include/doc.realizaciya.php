@@ -263,7 +263,8 @@ class doc_Realizaciya extends doc_Nulltype
 		{
 			$tmpl->ajax=1;
 			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=18'\">Корректировка долга</div>");
 		}
 		else if($target_type==6)
 		{
@@ -311,6 +312,13 @@ class doc_Realizaciya extends doc_Nulltype
 				mysql_query("ROLLBACK");
 				$tmpl->msg("Не удалось создать подчинённый документ!","err");
 			}
+		}
+		else if($target_type==18)
+		{
+			$new_doc=new doc_Kordolga();
+			$dd=$new_doc->CreateFrom($this);
+			$new_doc->SetDocData('sum', $this->doc_data['sum']*(-1));
+			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else
 		{
@@ -401,7 +409,6 @@ class doc_Realizaciya extends doc_Nulltype
 	{
 		global $tmpl;
 		global $uid;
-
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
 

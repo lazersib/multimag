@@ -313,21 +313,27 @@ class Report_KassDay
 		$tmpl->LoadTemplate('print');
 		$dt=rcv('date');
 		$kass=rcv('kass');
-		$tmpl->AddText("<h1>Отчёт по кассе за $dt (вариант 2)</h1>");		
+		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список касс");
+		$kass_list=array();
+		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt[1];
+		$tmpl->AddText("<h1>Отчёт по кассе {$kass_list[$kass]} за $dt</h1>");		
 		$daystart=strtotime("$dt 00:00:00");
 		$dayend=strtotime("$dt 23:59:59");
 		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход<th>В кассе");			
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`		
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`, `doc_list`.`kassa`, `doc_dopdata`.`value` AS `vk_value`
 		FROM `doc_list`
-		INNER JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
+		LEFT JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
 		INNER JOIN `doc_types`		ON `doc_types`.`id` = `doc_list`.`type`
 		LEFT JOIN `doc_list` AS `p`	ON `p`.`id`=`doc_list`.`p_doc`
-		LEFT JOIN `doc_types` AS `t`	ON `t`.`id` = `p`.`type`		
-		WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7') AND `doc_list`.`kassa`='$kass'
+		LEFT JOIN `doc_types` AS `t`	ON `t`.`id` = `p`.`type`
+		LEFT JOIN `doc_dopdata`		ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='v_kassu'
+		WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7' OR `doc_list`.`type`='9')
+		AND (`doc_list`.`kassa`='$kass' OR `doc_dopdata`.`value`='$kass')
 		ORDER BY `doc_list`.`date`");
 		$sum=$daysum=$prix=$rasx=0;
 		$flag=0;
-		while($nxt=mysql_fetch_row($res))
+		while($nxt=mysql_fetch_array($res))
 		{
 			$csum_p=$csum_r='';
 			if( !$flag && $nxt[3]>=$daystart && $nxt[3]<=$dayend)
@@ -337,7 +343,13 @@ class Report_KassDay
 				$tmpl->AddText("<tr><td colspan=5><b>На начало дня</b><td align='right'><b>$sum_p</b>");
 			}
 			if($nxt[1]==6)		$sum+=$nxt[2];
-			else 			$sum-=$nxt[2];
+			else if($nxt[1]==7)	$sum-=$nxt[2];
+			else if($nxt[1]==9)
+			{
+				if($nxt['kassa']==$kass)
+					$sum-=$nxt[2];
+				else	$sum+=$nxt[2];
+			}
 			if($nxt[3]>=$daystart && $nxt[3]<=$dayend)
 			{
 				if($nxt[1]==6)
@@ -346,18 +358,40 @@ class Report_KassDay
 					$prix+=$nxt[2];
 					$csum_p=sprintf("%0.2f руб.",$nxt[2]);
 				}
-				else
+				else if($nxt[1]==7)
 				{
 					$daysum-=$nxt[2];
 					$rasx+=$nxt[2];
 					$csum_r=sprintf("%0.2f руб.",$nxt[2]);
 				}
+				else
+				{
+					if($nxt['kassa']==$kass)
+					{
+						$daysum-=$nxt[2];
+						$rasx+=$nxt[2];
+						$csum_r=sprintf("%0.2f руб.",$nxt[2]);
+					}
+					else
+					{
+						$daysum+=$nxt[2];
+						$prix+=$nxt[2];
+						$csum_p=sprintf("%0.2f руб.",$nxt[2]);
+					}
+				}
 				if($nxt[8])	$sadd="<br><i>к $nxt[9] N$nxt[10]$nxt[11] от ".date("d-m-Y H:i:s",$nxt[12])." на сумму ".sprintf("%0.2f руб",$nxt[13])."</i>";
 				else		$sadd='';
+				if($nxt[1]==6)		$sadd.="<br>от $nxt[7]";
+				else if($nxt[1]==7)	$sadd.="<br>для $nxt[7]";
+				else if($nxt[1]==9)
+				{
+					if($nxt['kassa']==$kass)	$sadd.="<br>в кассу {$kass_list[$nxt['vk_value']]}";
+					else				$sadd.="<br>из кассы {$kass_list[$nxt['kassa']]}";
+				}
 				$dt=date("H:i:s",$nxt[3]);
 				$sum_p=sprintf("%0.2f руб.",$sum);
 				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5] $sadd<br>от $nxt[7]<td align='right'>$csum_p<td align='right'>$csum_r<td align='right'>$sum_p</tr>");	
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5]   $sadd<td align='right'>$csum_p<td align='right'>$csum_r<td align='right'>$sum_p</tr>");	
 			}
 		}
 		$dsum_p=sprintf("%0.2f руб.",$daysum);
@@ -651,10 +685,11 @@ else if($mode=='komplekt')
 			while($nx=mysql_fetch_row($rs))
 			{
 				$cnt++;
-				$cc=$nx[2]*$nx[3];
+				$cost=sprintf("%0.2f",GetInCost($nx[0]));
+				$cc=$cost*$nx[3];
 				$sum+=$cc;
-				if(!$kompl_data1)	$kompl_data1="<td>$nx[1]<td>$nx[2]<td>$nx[3]<td>$cc";
-				else			$kompl_data.="<tr><td>$nx[1]<td>$nx[2]<td>$nx[3]<td>$cc";
+				if(!$kompl_data1)	$kompl_data1="<td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
+				else			$kompl_data.="<tr><td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
 			}
 			$span=($cnt>1)?"rowspan='$cnt'":'';
 			if(!$kompl_data1)	$kompl_data1="<td><td><td><td>";
