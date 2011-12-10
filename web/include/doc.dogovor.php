@@ -30,7 +30,7 @@ class doc_Dogovor extends doc_Nulltype
 		$this->doc_name				='dogovor';
 		$this->doc_viewname			='Договор';
 		$this->sklad_editor_enable		=false;
-		$this->header_fields			='agent';
+		$this->header_fields			='separator agent';
 		settype($this->doc,'int');
 		if(!$doc)
 		{

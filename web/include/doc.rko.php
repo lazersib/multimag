@@ -30,7 +30,7 @@ class doc_Rko extends doc_Nulltype
 		$this->doc_viewname			='Расходный кассовый ордер';
 		$this->sklad_editor_enable		=false;
 		$this->ksaas_modify			=-1;
-		$this->header_fields			='agent sum kassa';
+		$this->header_fields			='kassa sum separator agent';
 		settype($this->doc,'int');
 	}
 	

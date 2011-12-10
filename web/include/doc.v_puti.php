@@ -30,7 +30,7 @@ class doc_v_puti extends doc_Nulltype
 		$this->doc_name				='v_puti';
 		$this->doc_viewname			='Товары в пути';
 		$this->sklad_editor_enable		=true;
-		$this->header_fields			='agent sklad cena';
+		$this->header_fields			='sklad cena separator agent';
 		settype($this->doc,'int');
 	}
 	
@@ -53,7 +53,7 @@ class doc_v_puti extends doc_Nulltype
 		$tmpl->AddText("<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		<br>Транспортная компания:<br>
 		<input type='hidden' name='transkom_id' id='transkom_id' value='{$this->dop_data['transkom']}'>
-		<input type='text' id='transkom'  style='width: 450px;' value='$transkom_name'><br>
+		<input type='text' id='transkom'  style='width: 100%;' value='$transkom_name'><br>
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
 			$(\"#transkom\").autocomplete(\"/docs.php\", {

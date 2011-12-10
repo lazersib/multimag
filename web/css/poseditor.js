@@ -347,6 +347,7 @@ function PosEditorInit(base_url, editable)
 				else if(json.response==1)	// Добавлено
 				{
 					var sn_list=document.getElementById("sn_list")
+					var sn=document.getElementById("sn")
 					var row=document.createElement('tr')
 					row.id='snl'+json.sn_id
 					row.innerHTML="<td><img src='/img/i_del.png'  id='sndel|"+json.sn_id+"'></td><td>"+json.sn+"</td>"
@@ -354,6 +355,7 @@ function PosEditorInit(base_url, editable)
 					var img_del=document.getElementById('sndel|'+json.sn_id)
 					img_del.onclick=SnDel
 					sn_cnt++;
+					sn.value=''
 				}	
 			}
 			catch(e)

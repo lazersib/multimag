@@ -335,7 +335,7 @@ class doc_Nulltype
 				
 				if($this->doc)
 				{
-					if(!isAccess($object,'edit'))	throw new AccessException("");
+					if(!isAccess($object,'edit'))	throw new AccessException("Недостаточно прав");
 					$res=mysql_query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->doc}'");
 					if(mysql_errno())	throw new MysqlException("Документ не сохранён");
 					$link="/doc.php?doc={$this->doc}&mode=body";
@@ -343,7 +343,7 @@ class doc_Nulltype
 				}
 				else
 				{
-					if(!isAccess($object,'create'))	throw new AccessException("");
+					if(!isAccess($object,'create'))	throw new AccessException("Недостаточно прав");
 					$res=mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
 					if(mysql_errno())	throw new MysqlException("Документ не сохранён");
 					$this->doc= mysql_insert_id();
@@ -396,7 +396,7 @@ class doc_Nulltype
 		}
 		if(method_exists($this,'DopHead'))	$this->DopHead();
 		
-		$this->DrawHeadformEnd();
+		$this->DrawLHeadformEnd();
 		
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
@@ -933,6 +933,12 @@ class doc_Nulltype
 		$tmpl->AddText("</select><br>");
 	}
 	
+	protected function DrawLHeadformEnd()
+	{
+		global $tmpl;
+		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data[4]}</textarea></form>");
+	}
+	
 	protected function DrawHeadformEnd()
 	{
 		global $tmpl;
@@ -943,6 +949,7 @@ class doc_Nulltype
 	{
 		global $tmpl;
 		$b=DocCalcDolg($this->doc_data[2]);
+		$col='';
 		if($b>0)	$col="color: #f00; font-weight: bold;";
 		if($b<0)	$col="color: #f08; font-weight: bold;";
 		$tmpl->AddText("
@@ -1042,7 +1049,7 @@ class doc_Nulltype
 		global $tmpl;
 		$tmpl->AddText("Касса:<br>
 		<select name='kassa'>");
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND (`firm_id`='0' OR `num`='{$this->doc_data[16]}' OR `firm_id`='{$_SESSION['firm']}') ORDER BY `num`");
+		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND `firm_id`='0' OR `num`='{$this->doc_data[16]}' ORDER BY `num`");
 		if(mysql_errno())	throw new Exception("Не удалось выбрать список касс");
 		while($nxt=mysql_fetch_row($res))
 		{
@@ -1058,7 +1065,7 @@ class doc_Nulltype
 	{
 		global $tmpl;
 		$tmpl->AddText("Сумма:<br>
-		<input type='text' name='sum' value='{$this->doc_data[11]}'><br>");
+		<input type='text' name='sum' value='{$this->doc_data[11]}'><img src='/img/i_+-.png'><br>");
 	}
 	
 	protected function DrawCenaField()

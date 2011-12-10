@@ -30,7 +30,7 @@ class doc_Kompredl extends doc_Nulltype
 		$this->doc_name				= 'kompredl';
 		$this->doc_viewname			= 'Коммерческое предложение';
 		$this->sklad_editor_enable		= true;
-		$this->header_fields			= 'agent cena sklad bank';
+		$this->header_fields			= 'bank sklad separator agent cena';
 		settype($this->doc,'int');
 	}
 

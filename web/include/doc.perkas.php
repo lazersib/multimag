@@ -31,7 +31,7 @@ class doc_PerKas extends doc_Nulltype
 		$this->doc_viewname			='Перемещение средств (касса)';
 		$this->sklad_editor_enable		=false;
 		$this->kassa_modify			=0;
-		$this->header_fields			='agent sum kassa';
+		$this->header_fields			='sum separator kassa';
 		settype($this->doc,'int');
 	}
 

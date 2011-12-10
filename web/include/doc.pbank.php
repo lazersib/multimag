@@ -29,7 +29,7 @@ class doc_PBank extends doc_Nulltype
 		$this->doc_viewname			='Приход средств в банк';
 		$this->sklad_editor_enable		=false;
 		$this->bank_modify			=1;
-		$this->header_fields			='agent sum bank';
+		$this->header_fields			='bank sum separator agent';
 		settype($this->doc,'int');
 	}
 	

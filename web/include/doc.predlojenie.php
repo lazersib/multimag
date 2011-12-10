@@ -30,7 +30,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$this->doc_name				='predlojenie';
 		$this->doc_viewname			='Предложение поставщика';
 		$this->sklad_editor_enable		=true;
-		$this->header_fields			='agent sklad cena';
+		$this->header_fields			='sklad cena separator agent';
 		settype($this->doc,'int');
 	}
 

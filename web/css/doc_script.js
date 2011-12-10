@@ -188,7 +188,7 @@ function DocHeadInit()
 			if(json.response=='err')
 			{
 				doc_left_block.style.backgroundColor='#f00'
-				jAlert(json.message,"Ошибка", {}, 'icon_err');
+				jAlert(json.text,"Ошибка", {}, 'icon_err');
 			}
 			else if(json.response=='ok')
 			{

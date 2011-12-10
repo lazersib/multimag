@@ -38,6 +38,8 @@ class doc_Zayavka extends doc_Nulltype
 		global $tmpl;
 		$klad_id=@$this->dop_data['kladovshik'];
 		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
+		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
+		$delivery_checked=@$this->dop_data['delivery']?'checked':'';
 		$tmpl->AddText("Кладовщик:<br><select name='kladovshik'>");	
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
@@ -46,14 +48,26 @@ class doc_Zayavka extends doc_Nulltype
 			$s=($klad_id==$nxt[0])?'selected':'';
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->AddText("</select><hr>
+		<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
+		Желаемая дата:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'>
+		<hr>");
 	}
 
 	function DopSave()
 	{
 		$kladovshik=rcv('kladovshik');
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'kladovshik','$kladovshik')");
+		$delivery=rcv('delivery');
+		$delivery_date=rcv('delivery_date');
+		
+		settype($kladovshik, 'int');
+		$delivery=$delivery?'1':'0';
+		if($delivery_date)	$delivery_date=date('Y-m-d H:i:s',strtotime($delivery_date));
+		else			$delivery_date='';
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES
+		( '{$this->doc}' ,'kladovshik','$kladovshik'),
+		( '{$this->doc}' ,'delivery','$delivery'),
+		( '{$this->doc}' ,'delivery_date','$delivery_date')");
 	}
 	
 	function DocApply($silent=0)

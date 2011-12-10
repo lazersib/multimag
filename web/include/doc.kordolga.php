@@ -30,7 +30,7 @@ class doc_Kordolga extends doc_Nulltype
 		$this->doc_name				='kordolga';
 		$this->doc_viewname			='Корректировка долга';
 		$this->sklad_editor_enable		=false;
-		$this->header_fields			='agent sum';
+		$this->header_fields			='separator agent sum';
 		settype($this->doc,'int');
 	}
 	

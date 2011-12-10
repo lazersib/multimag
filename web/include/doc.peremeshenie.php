@@ -31,7 +31,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		$this->doc_viewname			='Перемещение товара со склада на склад';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
-		$this->header_fields			='sklad cena';
+		$this->header_fields			='cena separator sklad';
 		settype($this->doc,'int');
 	}
 	
