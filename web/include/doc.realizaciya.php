@@ -266,7 +266,8 @@ class doc_Realizaciya extends doc_Nulltype
 		{
 			$tmpl->ajax=1;
 			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=18'\">Корректировка долга</div>");
 		}
 		else if($target_type==6)
 		{
@@ -314,6 +315,13 @@ class doc_Realizaciya extends doc_Nulltype
 				mysql_query("ROLLBACK");
 				$tmpl->msg("Не удалось создать подчинённый документ!","err");
 			}
+		}
+		else if($target_type==18)
+		{
+			$new_doc=new doc_Kordolga();
+			$dd=$new_doc->CreateFrom($this);
+			$new_doc->SetDocData('sum', $this->doc_data['sum']*(-1));
+			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else
 		{
@@ -404,7 +412,6 @@ class doc_Realizaciya extends doc_Nulltype
 	{
 		global $tmpl;
 		global $uid;
-
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
@@ -1498,7 +1505,7 @@ function PrintTg12PDF($to_str=0)
 	$pdf->Ln();
 	
 	$y=$pdf->GetY();
-	
+	$pdf->SetFillColor(255,255,255);
 	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_units`.`printname`, `doc_base_dop`.`mass`, `doc_base`.`vc`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`

@@ -490,8 +490,8 @@ class doc_s_Sklad
 			
 			
 			$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
-			$direct=array(0=>'Вниз', 1=>'K ближайшему', 2=>'Вверх');
-			$res=mysql_query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`
+			$direct=array((-1)=>'Вниз', 0=>'K ближайшему', 1=>'Вверх');
+			$res=mysql_query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
 			FROM `doc_cost`
 			LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
@@ -512,7 +512,14 @@ class doc_s_Sklad
 				else if($cn[3]=='fix')	$def_val="(= $cn[4] руб.)";
 				else			$def_val="({$sig}$cn[4] XX)";
 				
-				$checked=$cn[1]?'checked':'';	
+				$checked=$cn[1]?'checked':'';
+				if(!$cn[1])
+				{
+					$cn[5]=$cn[3];
+					$cn[6]=$cn[4];
+					$cn[7]=$cn[9];
+					$cn[8]=$cn[10];
+				}
 				
 				$tmpl->AddText("<tr><td><label><input type='checkbox' name='ch$cn[0]' value='1' $checked>$cn[2] $def_val</label>
 				<td><select name='cost_type$cn[0]'>");
@@ -521,10 +528,6 @@ class doc_s_Sklad
 					$sel=($id==$cn[5])?' selected':'';
 					$tmpl->AddText("<option value='$id'$sel>$type</option>");
 				}
-				if(!$cn[1])	$cn[6]=$cn[4];
-				
-				
-				$result=GetCostPos($pos, $cn[0]);
 				
 				$tmpl->AddText("</select>
 				<td><input type='text' name='val$cn[0]' value='$cn[6]'>
@@ -537,11 +540,12 @@ class doc_s_Sklad
 				}
 				$tmpl->AddText("</select>
 				<td><select name='direct$cn[0]'>");
-				for($i=0;$i<3;$i++)
+				for($i=(-1);$i<2;$i++)
 				{
 					$sel=$cn[8]==$i?'selected':'';
 					$tmpl->AddText("<option value='$i' $sel>{$direct[$i]}</option>");
 				}
+				$result=GetCostPos($pos, $cn[0]);
 				$tmpl->AddText("</select><td>$result руб.");	
 			}
 			$tmpl->AddText("</table>
@@ -863,8 +867,8 @@ class doc_s_Sklad
 			if($nxt[0])
 			{
 				$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
-				$direct=array(0=>'Вниз', 1=>'K ближайшему', 2=>'Вверх');
-				$res=mysql_query("SELECT `doc_cost`.`id`, `doc_group_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
+				$direct=array((-1)=>'Вниз', 0=>'K ближайшему', 1=>'Вверх');
+				$res=mysql_query("SELECT `doc_cost`.`id`, `doc_group_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
 				FROM `doc_cost`
 				LEFT JOIN `doc_group_cost` ON `doc_cost`.`id`=`doc_group_cost`.`cost_id` AND `doc_group_cost`.`group_id`='$nxt[0]'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
@@ -893,7 +897,13 @@ class doc_s_Sklad
 						$sel=($id==$cn[5])?' selected':'';
 						$tmpl->AddText("<option value='$id'$sel>$type</option>");
 					}
-					if(!$cn[1])	$cn[6]=$cn[4];
+					if(!$cn[1])
+					{
+						$cn[5]=$cn[3];
+						$cn[6]=$cn[4];
+						$cn[7]=$cn[9];
+						$cn[8]=$cn[10];
+					}
 					$tmpl->AddText("</select>
 					<td><input type='text' name='val$cn[0]' value='$cn[6]'>
 					<td><select name='accur$cn[0]'>");
@@ -905,7 +915,7 @@ class doc_s_Sklad
 					}
 					$tmpl->AddText("</select>
 					<td><select name='direct$cn[0]'>");
-					for($i=0;$i<3;$i++)
+					for($i=(-1);$i<2;$i++)
 					{
 						$sel=$cn[8]==$i?'selected':'';
 						$tmpl->AddText("<option value='$i' $sel>{$direct[$i]}</option>");
@@ -1604,7 +1614,7 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE `$s%` ORDER BY `doc_base`.`name` LIMIT 100";
+		WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{

@@ -169,9 +169,11 @@ class WikiParser {
 		if (!$this->image_uri) return $title;
 
 		//$href = $this->image_uri . $href;
-		$imagetag = sprintf(
-			'<a href=\'/wikiphoto.php?mode=viewall&n=%s\'><img src="/wikiphotos.php?n=%s" alt="%s" /></a>',
-			$href,$href,$title);
+		$img_id=round($href);
+		$img=new ImageProductor($img_id,'w', 'jpg');
+		$img->SetX(250);
+		$imagetag = sprintf('<a href=\'/wikiphoto.php?mode=viewall&n=%s\'><img src="%s" alt="%s" /></a>',
+			$href,$img->GetURI(),$title);
 		foreach ($options as $k=>$option) {
 			switch($option) {
 				case 'frame':

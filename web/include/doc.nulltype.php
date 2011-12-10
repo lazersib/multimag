@@ -213,6 +213,7 @@ class doc_Nulltype
 		$kassa=rcv('kassa');
 
 		$cena=rcv('cena');
+		$cost_recalc=rcv('cost_recalc');
 		
 		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type,$subtype);
 		
@@ -241,6 +242,18 @@ class doc_Nulltype
 					$sqlupdate.=", `nds`='$nds'";
 					$sqlinsert_keys.=", `nds`";
 					$sqlinsert_value.=", '$nds'";
+					if($cost_recalc)
+					{
+						$r=mysql_query("SELECT `id`, `tovar` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+						if(mysql_errno())	throw new MysqlException("Не удалось выбрать список наименований документа");
+						while($l=mysql_fetch_row($r))
+						{
+							$newcost=GetCostPos($l[1], $cena);
+							mysql_query("UPDATE `doc_list_pos` SET `cost`='$newcost' WHERE `id`='$l[0]'");
+							if(mysql_errno())	throw new MysqlException("Не удалось обновть цену строки документа");
+						}
+						DocSumUpdate($this->doc);
+					}
 				}
 				else
 				{
@@ -1081,7 +1094,7 @@ class doc_Nulltype
 			else $s='';
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->AddText("</select><label><input type='checkbox' name='cost_recalc' value='1'>Переустановить цены в документе</label><br>");
 		if($this->doc_data[12])
 			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label>&nbsp;&nbsp;
 			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");
@@ -1178,8 +1191,9 @@ class doc_Nulltype
 	{
 		$sum=0;
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`kassa` FROM `doc_list`
-		WHERE  `doc_list`.`ok`>'0'
+		WHERE  `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7' OR `doc_list`.`type`='9')
 		ORDER BY `doc_list`.`date`");
+		$i=0;
 		while($nxt=mysql_fetch_row($res))
 		{
 			if($nxt[1]==6)
@@ -1195,14 +1209,15 @@ class doc_Nulltype
 				if($nxt[3]==$this->doc_data[15])	$sum-=$nxt[2];
 				else
 				{
-					$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$doc' AND `param`='v_kassu'");
-					$vkassu=mysql_result($res,0,0);
+					$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[0]' AND `param`='v_kassu'");
+					$vkassu=mysql_result($rr,0,0);
 					if($vkassu==$this->doc_data[15])$sum+=$nxt[2];
 				}
 			}
 
 			$sum = sprintf("%01.2f", $sum);
 			if($sum<0) break;
+			$i++;
 		}
 		mysql_free_result($res);
 		return $sum;

@@ -17,19 +17,19 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// Это временное решение для работы с комплектацией товаров
+// Это временное решение для работы со связями товаров
 
-function kompl_poslist($pos)
+function link_poslist($pos)
 {
 	global $tmpl;
 	global $dop_data;
 
 	$tmpl->AddText("<div id='poslist'><table width='100%' cellspacing='1' cellpadding='2'>
-	<tr><th align='left'>№<th>Наименование<th>Цена<th width='80px'>Кол-во<th>Стоимость");
-	$res=mysql_query("SELECT `doc_base_kompl`.`id`, `doc_base`.`name`, `doc_base`.`cost`, `doc_base_kompl`.`cnt`, `doc_base`.`proizv`, `doc_base`.`id`
-	FROM `doc_base_kompl`
-	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
-	WHERE `doc_base_kompl`.`pos_id`='$pos'");
+	<tr><th align='left'>№<th>Наименование<th>Цена");
+	$res=mysql_query("SELECT `doc_base_kompl`.`id`, `doc_base`.`name`, `doc_base`.`cost`, `doc_base`.`proizv`, `doc_base`.`id`
+	FROM `doc_base_link`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_link`.`pos2_id`
+	WHERE `doc_base_link`.`pos1_id`='$pos'");
 
 	$i=0;
 	$ii=1;
@@ -37,7 +37,7 @@ function kompl_poslist($pos)
 
 	while($nxt=mysql_fetch_array($res))
 	{
-		$nxt['cost']=GetInCost($nxt[5]);
+		$nxt['cost']=GetInCost($nxt[0]);
 		$sumline=$nxt['cost']*$nxt['cnt'];
 		$sum+=$sumline;
 		$sumline_p=sprintf("%01.2f",$sumline);
@@ -46,12 +46,11 @@ function kompl_poslist($pos)
 		$cl='lin'.$i;
 
 		$tmpl->AddText("<tr class='$cl'  align=right><td>$ii
-		<a href='' title='Удалить' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&plm=d&pos=$pos&vpos=$nxt[0]','poslist'); return false;\"><img src='/img/i_del.png' alt='Удалить'></a>
+		<a href='' title='Удалить' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=l&plm=d&pos=$pos&vpos=$nxt[0]','poslist'); return false;\"><img src='/img/i_del.png' alt='Удалить'></a>
 		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=$doc&pos=$nxt[5]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
 		<td align=left>{$nxt['name']} / {$nxt['proizv']}<td>$cost_p
-		<td><input type=text class='tedit $cl' id='val$nxt[0]t' value='{$nxt['cnt']}' onblur=\"EditThisSave('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=cc&pos=$pos&vpos=$nxt[0]','poslist','val$nxt[0]t'); return false;\">
+		<td><input type=text class='tedit $cl' id='val$nxt[0]t' value='{$nxt['cnt']}' onblur=\"EditThisSave('/docs.php?l=sklad&mode=srv&opt=ep&param=l&pos=1&plm=cc&pos=$pos&vpos=$nxt[0]','poslist','val$nxt[0]t'); return false;\">
 		<td>$sumline_p");
-		//doc.s.sklad.php?mode=srv&opt=cnts&doc=$doc&pos=$nxt[8]
 		$i=1-$i;
 		$ii++;
 	}
@@ -61,7 +60,7 @@ function kompl_poslist($pos)
 	$tmpl->AddText("</table><p align=right id=sum>Итого: $ii позиций на сумму $sum_p руб.</p></div>");
 }
 
-function kompl_draw_group_level($pos,$level)
+function link_draw_group_level($pos,$level)
 {
 	$ret='';
 	$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
@@ -72,11 +71,9 @@ function kompl_draw_group_level($pos,$level)
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($nxt[0]==0) continue;
-		//docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=$nxt[0]&vpos=$vpos
-		//doc.s.sklad.php?mode=srv&opt=sklad&vpos=$vpos&group=$nxt[0]
-		$item="<a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=$nxt[0]&pos=$pos','sklad'); return false;\" >$nxt[1]</a>";
+		$item="<a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=l&pos=1&plm=sg&group=$nxt[0]&pos=$pos','sklad'); return false;\" >$nxt[1]</a>";
 		if($i>=($cnt-1)) $r.=" IsLast";
-		$tmp=kompl_draw_group_level($pos,$nxt[0]); // рекурсия
+		$tmp=link_draw_group_level($pos,$nxt[0]); // рекурсия
 		if($tmp)
 			$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>".$tmp.'</ul></li>';
         	else
@@ -87,35 +84,35 @@ function kompl_draw_group_level($pos,$level)
 }
 
 
-function kompl_groups($pos)
+function link_groups($pos)
 {
 	global $tmpl;
 	$tmpl->AddText("<div onclick='tree_toggle(arguments[0])'>
-	<div><a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&plm=sg&group=0&pos=$pos','sklad'); return false;\">Группы</a></div>
-	<ul class='Container'>".kompl_draw_group_level($pos,0)."</ul></div>
-	Или отбор:<input type=text id=sklsearch onkeydown=\"DelayedSave('/docs.php?mode=srv&opt=ep&param=k&pos=$pos','sklad', 'sklsearch'); return true;\">");
+	<div><a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=l&plm=sg&group=0&pos=$pos','sklad'); return false;\">Группы</a></div>
+	<ul class='Container'>".link_draw_group_level($pos,0)."</ul></div>
+	Или отбор:<input type=text id=sklsearch onkeydown=\"DelayedSave('/docs.php?mode=srv&opt=ep&param=l&pos=$pos','sklad', 'sklsearch'); return true;\">");
 
 }
 
-function kompl_link_sklad($pos, $link, $text)
+function link_link_sklad($pos, $link, $text)
 {
 	global $tmpl;
 	$tmpl->AddText("<a title='$link' href='' onclick=\"EditThis('/doc.s.sklad.php?mode=srv&opt=sklad&vpos=$vpos&$link','sklad'); return false;\" >$text</a> ");
 }
 
-function kompl_sklad($pos, $group, $sklad=1)
+function link_sklad($pos, $group, $sklad=1)
 {
 	global $tmpl;
 
 	$s=rcv('s');
 	if($s)
-		kompl_ViewSkladS($pos, $group, $s);
+		link_ViewSkladS($pos, $group, $s);
 	else
-		kompl_ViewSklad($pos, $group);
+		link_ViewSklad($pos, $group);
 	return;
 }
 
-function kompl_ViewSklad($pos, $group)
+function link_ViewSklad($pos, $group)
 {
 	global $tmpl;
 	
@@ -139,7 +136,7 @@ function kompl_ViewSklad($pos, $group)
 		if($page>1)
 		{
 			$i=$page-1;
-			kompl_link_sklad($doc, "$dop&p=$i","&lt;&lt;");
+			link_link_sklad($doc, "$dop&p=$i","&lt;&lt;");
 		}
 		$cp=$row/$lim;
 		for($i=1;$i<($cp+1);$i++)
@@ -163,13 +160,13 @@ function kompl_ViewSklad($pos, $group)
 		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 		<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-		kompl_DrawSkladTable($res,$s,$pos);
+		link_DrawSkladTable($res,$s,$pos);
 		$tmpl->AddText("</table><a href='/docs.php?mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
 	}
 	else $tmpl->msg("В выбранной группе товаров не найдено!");
 }
 
-function kompl_ViewSkladS($doc, $group, $s)
+function link_ViewSkladS($doc, $group, $s)
 {
 	global $tmpl;
 	$sf=0;
@@ -191,7 +188,7 @@ function kompl_ViewSkladS($doc, $group, $s)
 	if($cnt=mysql_num_rows($res))
 	{
 		$tmpl->AddText("<tr class=lin0><th colspan=18 align=center>Поиск по названию, начинающемуся на $s: найдено $cnt");
-		kompl_DrawSkladTable($res,$s,$doc);
+		link_DrawSkladTable($res,$s,$doc);
 		$sf=1;
 	}
 	
@@ -203,7 +200,7 @@ function kompl_ViewSkladS($doc, $group, $s)
 	if($cnt=mysql_num_rows($res))
 	{
 		$tmpl->AddText("<tr class=lin0><th colspan=18 align=center>Поиск по названию, содержащему $s: найдено $cnt");
-		kompl_DrawSkladTable($res,$s,$doc);
+		link_DrawSkladTable($res,$s,$doc);
 		$sf=1;
 	}
 	
@@ -216,7 +213,7 @@ function kompl_ViewSkladS($doc, $group, $s)
 	if($cnt=mysql_num_rows($res))
 	{
 		$tmpl->AddText("<tr class=lin0><th colspan=18 align=center>Поиск аналога, для $s: найдено $cnt");
-		kompl_DrawSkladTable($res,$s,$doc);
+		link_DrawSkladTable($res,$s,$doc);
 		$sf=1;
 	}
 	
@@ -225,7 +222,7 @@ function kompl_ViewSkladS($doc, $group, $s)
 	if($sf==0)	$tmpl->msg("По данным критериям товаров не найдено!");
 }
 
-function kompl_DrawSkladTable($res,$s,$pos)
+function link_DrawSkladTable($res,$s,$pos)
 {
 	global $tmpl, $dop_data;
 	$i=0;

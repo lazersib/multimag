@@ -649,18 +649,15 @@ protected function MakeBuy()
 		return;
 	}
 	
-	
-	
 	if($_SESSION['korz_cnt'])
 	{
 		$subtype="site";
 		$agent=1;
-		
 		//if($_SESSION['uid'])	$agent=$_SESSION['uid'];	// ?????????????????????????/
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype);
 		$ip=getenv("REMOTE_ADDR");
-		$comm="Организация: $org, телефон: $tel, контактное лицо: $kont, IP: $ip, адрес доставки: $adres<br>Другая информация: $dop";
+		$comm="ФИО: $rname, телефон: $tel, IP: $ip, адрес доставки: $adres<br>Другая информация: $dop";
 		if(!$uid)	$comm="e-mail: $email<br>".$comm;
 		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
@@ -696,7 +693,6 @@ protected function MakeBuy()
 		if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
 		$text.="----------------------------------\n".$admin_items;
 		
-		
 		if($CONFIG['site']['doc_adm_jid'])
 		{
 			try 
@@ -730,14 +726,13 @@ protected function MakeBuy()
 		if($email)
 			mailto($email,"Message from {$CONFIG['site']['name']}", $user_msg);
 		
-		
 		$tmpl->AddText("<h1 id='page-title'>Заказ оформлен</h1>");
 		if($soplat=='bn')
 		{
 			$tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>выписать счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
 			$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
 		}
-		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. Вам перезвонят в ближайшее время для уточнения деталей!");
+		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
 	}
 	else $tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?","err");
 

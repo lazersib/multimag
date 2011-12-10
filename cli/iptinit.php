@@ -189,7 +189,12 @@ if($CONFIG['route']['transparent_proxy'])
 `$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5005 -j DNAT --to-destination 192.168.0.202:5005`;
 `$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5090 -j DNAT --to-destination 192.168.0.202:5090`;
 `$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 23 -j DNAT --to-destination 192.168.0.202:23`;
-
+//video
+`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 4550 -j DNAT --to-destination 192.168.0.222`;
+`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5550 -j DNAT --to-destination 192.168.0.222`;
+`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 6550 -j DNAT --to-destination 192.168.0.222`;
+`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 8866 -j DNAT --to-destination 192.168.0.222`;
+`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5511 -j DNAT --to-destination 192.168.0.222`;
 
 `$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} -d ! {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['ext_iface']} -j SNAT --to-source {$CONFIG['route']['ext_ip']}`;
 

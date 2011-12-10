@@ -45,7 +45,6 @@ function get_otch_links()
 	'doc_otchet.php?mode=bezprodaj' => 'Отчёт по товарам без продаж',
 	'doc_otchet.php?mode=doc_reestr' => 'Реестр документов',
 	'doc_otchet.php?mode=fin_otchet' => 'Сводный финансовый отчёт',
-	'doc_otchet.php?mode=bank_comp' => 'Сверка банка',	
 	'doc_otchet.php' => 'Другие отчёты');
 }
 
@@ -67,7 +66,6 @@ function otch_list()
 	<a href='doc_otchet.php?mode=cost'><div>Отчёт по ценам</div></a>
 	<a href='doc_otchet.php?mode=doc_reestr'><div>Реестр документов</div></a>
 	<a href='doc_otchet.php?mode=fin_otchet'><div>Сводный финансовый отчёт</div></a>
-	<a href='doc_otchet.php?mode=bank_comp'><div>Сверка банка</div></a>	
 	<hr>
 	<a href='doc_otchet.php'><div>Другие отчёты</div></a>";
 }
@@ -192,6 +190,14 @@ class Report_Store
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='ostatki'>
 		<input type='hidden' name='opt' value='make'>
+		<fieldset><legend>Отобразить цены</legend>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<label><input type='checkbox' name='cost[$nxt[0]]' value='$nxt[0]'>$nxt[1]</label><br>");
+		}
+		$tmpl->AddText("</fieldset><br>
 		Группа товаров:<br>");
 		GroupSelBlock();
 		$tmpl->AddText("<button type='submit'>Создать отчет</button></form>");	
@@ -202,9 +208,23 @@ class Report_Store
 		global $tmpl;
 		$gs=rcv('gs');
 		$g=@$_POST['g'];
+		$cost=@$_POST['cost'];
 		$tmpl->LoadTemplate('print');
 		$tmpl->SetText("<h1>Остатки товара на складе</h1>
 		<table width=100%><tr><th>N<th>Наименование<th>Количество<th>Актуальная цена<br>поступления<th>Базовая цена<th>Наценка<th>Сумма по АЦП<th>Сумма по базовой");
+		$col_count=8;
+		if(is_array($cost))
+		{
+			$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
+			$costs=array();
+			while($nxt=mysql_fetch_row($res))	$costs[$nxt[0]]=$nxt[1];
+			foreach($cost as $id => $value)
+			{
+				$tmpl->AddText("<th>".$costs[$id]);
+				$col_count++;
+			}
+		}
 		$sum=$bsum=$summass=0;
 		$res_group=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 		while($group_line=mysql_fetch_assoc($res_group))
@@ -212,7 +232,7 @@ class Report_Store
 			if($gs && is_array($g))
 				if(!in_array($group_line['id'],$g))	continue;
 			
-			$tmpl->AddText("<tr><td colspan='8' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
+			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
 		
 		
 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`,
@@ -222,7 +242,7 @@ class Report_Store
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY `doc_base`.`name`");
-			echo mysql_error();
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			
 			while($nxt=mysql_fetch_row($res))
 			{
@@ -236,9 +256,16 @@ class Report_Store
 				if($nxt[3]<0) $nxt[3]='<b>'.$nxt[3].'</b/>';
 				$summass+=$nxt[3]*$nxt[4];
 				
-				$nac=sprintf("%0.2f",($cost_p/$act_cost)*100-100);
+				$nac=sprintf("%0.2f р. (%0.2f%%)",$cost_p-$act_cost,($cost_p/$act_cost)*100-100);
 				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[3]<td>$act_cost р.<td>$cost_p р.<td>$nac %<td>$sum_p р.<td>$bsum_p р.");
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[3]<td>$act_cost р.<td>$cost_p р.<td>$nac<td>$sum_p р.<td>$bsum_p р.");
+				if(is_array($cost))
+				{
+					foreach($cost as $id => $value)
+					{
+						$tmpl->AddText("<td>".GetCostPos($nxt[0], $id));
+					}
+				}
 			}
 		}
 		$tmpl->AddText("<tr><td colspan='6'><b>Итого:</b><td>$sum р.<td>$bsum р.
@@ -286,21 +313,27 @@ class Report_KassDay
 		$tmpl->LoadTemplate('print');
 		$dt=rcv('date');
 		$kass=rcv('kass');
-		$tmpl->AddText("<h1>Отчёт по кассе за $dt (вариант 2)</h1>");		
+		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список касс");
+		$kass_list=array();
+		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt[1];
+		$tmpl->AddText("<h1>Отчёт по кассе {$kass_list[$kass]} за $dt</h1>");		
 		$daystart=strtotime("$dt 00:00:00");
 		$dayend=strtotime("$dt 23:59:59");
 		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход<th>В кассе");			
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`		
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`, `doc_list`.`kassa`, `doc_dopdata`.`value` AS `vk_value`
 		FROM `doc_list`
-		INNER JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
+		LEFT JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
 		INNER JOIN `doc_types`		ON `doc_types`.`id` = `doc_list`.`type`
 		LEFT JOIN `doc_list` AS `p`	ON `p`.`id`=`doc_list`.`p_doc`
-		LEFT JOIN `doc_types` AS `t`	ON `t`.`id` = `p`.`type`		
-		WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7') AND `doc_list`.`kassa`='$kass'
+		LEFT JOIN `doc_types` AS `t`	ON `t`.`id` = `p`.`type`
+		LEFT JOIN `doc_dopdata`		ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='v_kassu'
+		WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7' OR `doc_list`.`type`='9')
+		AND (`doc_list`.`kassa`='$kass' OR `doc_dopdata`.`value`='$kass')
 		ORDER BY `doc_list`.`date`");
 		$sum=$daysum=$prix=$rasx=0;
 		$flag=0;
-		while($nxt=mysql_fetch_row($res))
+		while($nxt=mysql_fetch_array($res))
 		{
 			$csum_p=$csum_r='';
 			if( !$flag && $nxt[3]>=$daystart && $nxt[3]<=$dayend)
@@ -310,7 +343,13 @@ class Report_KassDay
 				$tmpl->AddText("<tr><td colspan=5><b>На начало дня</b><td align='right'><b>$sum_p</b>");
 			}
 			if($nxt[1]==6)		$sum+=$nxt[2];
-			else 			$sum-=$nxt[2];
+			else if($nxt[1]==7)	$sum-=$nxt[2];
+			else if($nxt[1]==9)
+			{
+				if($nxt['kassa']==$kass)
+					$sum-=$nxt[2];
+				else	$sum+=$nxt[2];
+			}
 			if($nxt[3]>=$daystart && $nxt[3]<=$dayend)
 			{
 				if($nxt[1]==6)
@@ -319,18 +358,40 @@ class Report_KassDay
 					$prix+=$nxt[2];
 					$csum_p=sprintf("%0.2f руб.",$nxt[2]);
 				}
-				else
+				else if($nxt[1]==7)
 				{
 					$daysum-=$nxt[2];
 					$rasx+=$nxt[2];
 					$csum_r=sprintf("%0.2f руб.",$nxt[2]);
 				}
+				else
+				{
+					if($nxt['kassa']==$kass)
+					{
+						$daysum-=$nxt[2];
+						$rasx+=$nxt[2];
+						$csum_r=sprintf("%0.2f руб.",$nxt[2]);
+					}
+					else
+					{
+						$daysum+=$nxt[2];
+						$prix+=$nxt[2];
+						$csum_p=sprintf("%0.2f руб.",$nxt[2]);
+					}
+				}
 				if($nxt[8])	$sadd="<br><i>к $nxt[9] N$nxt[10]$nxt[11] от ".date("d-m-Y H:i:s",$nxt[12])." на сумму ".sprintf("%0.2f руб",$nxt[13])."</i>";
 				else		$sadd='';
+				if($nxt[1]==6)		$sadd.="<br>от $nxt[7]";
+				else if($nxt[1]==7)	$sadd.="<br>для $nxt[7]";
+				else if($nxt[1]==9)
+				{
+					if($nxt['kassa']==$kass)	$sadd.="<br>в кассу {$kass_list[$nxt['vk_value']]}";
+					else				$sadd.="<br>из кассы {$kass_list[$nxt['kassa']]}";
+				}
 				$dt=date("H:i:s",$nxt[3]);
 				$sum_p=sprintf("%0.2f руб.",$sum);
 				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5] $sadd<br>от $nxt[7]<td align='right'>$csum_p<td align='right'>$csum_r<td align='right'>$sum_p</tr>");	
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5]   $sadd<td align='right'>$csum_p<td align='right'>$csum_r<td align='right'>$sum_p</tr>");	
 			}
 		}
 		$dsum_p=sprintf("%0.2f руб.",$daysum);
@@ -624,10 +685,11 @@ else if($mode=='komplekt')
 			while($nx=mysql_fetch_row($rs))
 			{
 				$cnt++;
-				$cc=$nx[2]*$nx[3];
+				$cost=sprintf("%0.2f",GetInCost($nx[0]));
+				$cc=$cost*$nx[3];
 				$sum+=$cc;
-				if(!$kompl_data1)	$kompl_data1="<td>$nx[1]<td>$nx[2]<td>$nx[3]<td>$cc";
-				else			$kompl_data.="<tr><td>$nx[1]<td>$nx[2]<td>$nx[3]<td>$cc";
+				if(!$kompl_data1)	$kompl_data1="<td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
+				else			$kompl_data.="<tr><td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
 			}
 			$span=($cnt>1)?"rowspan='$cnt'":'';
 			if(!$kompl_data1)	$kompl_data1="<td><td><td><td>";
@@ -1227,7 +1289,7 @@ else if($mode=='sverka')
 		
 		$h_width=$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
 		$str1=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
-		$str2=iconv('UTF-8', 'windows-1251', "По данным {$agent['fullname']}");
+		$str2=iconv('UTF-8', 'windows-1251', "По данным $fn");
 					
 		$pdf->MultiCell($h_width,5,$str1,0,'L',0);
 		$max_h=$pdf->GetY()-$y;
@@ -1260,7 +1322,7 @@ else if($mode=='sverka')
 		`doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
+		WHERE `doc_list`.`agent`='$agent' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
 		while($nxt=mysql_fetch_array($res))
 		{
 			$deb=$kr="";				
@@ -1412,7 +1474,7 @@ else if($mode=='sverka')
 		$y=$pdf->getY();
 		$str=iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
 		$pdf->MultiCell($t_width[0]+$t_width[1]+$t_width[2]+$t_width[3],5,$str,0,'L',0);
-		$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
+		$str=iconv('UTF-8', 'windows-1251', "От $fn\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
 		$pdf->lMargin=$x;
 		$pdf->setX($x);
 		
@@ -2165,7 +2227,7 @@ else if($mode=='doc_reestr')
 	else
 	{
 		$dt_f=strtotime(rcv('dt_f'));
-		$dt_t=strtotime(rcv('dt_t'));
+		$dt_t=strtotime(rcv('dt_t')." 23:59:59");
 		$firm_id=rcv('firm_id');
 		$doc_type=rcv('doc_type');
 		$subtype=rcv('subtype');

@@ -183,7 +183,7 @@ else if($mode=='cost')
 	$tmpl->AddText("<table><tr><th>ID<th>Наименование<th>Тип<th>Значение<th>Вид<th>Точность<th>Округление<th>Действие");
 	$vidi=array('-2' => 'Интернет-цена (объём)', '-1' => 'Интернет-цена', '0' => 'Обычная', '1' => 'По умолчанию' );
 	$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
-	$direct=array(0=>'Вниз', 1=>'K ближайшему', 2=>'Вверх');
+	$direct=array(-1=>'Вниз', 0=>'K ближайшему', 1=>'Вверх');
 	while($nxt=mysql_fetch_row($res))
 	{
 		$tmpl->AddText("<form><input type='hidden' name='mode' value='costs'><input type='hidden' name='n' value='$nxt[0]'>
@@ -212,7 +212,7 @@ else if($mode=='cost')
 		}
 		$tmpl->AddText("</select>
 		<td><select name='direct'>");
-		for($i=0;$i<3;$i++)
+		for($i=(-1);$i<2;$i++)
 		{
 			$sel=$nxt[6]==$i?'selected':'';
 			$tmpl->AddText("<option value='$i' $sel>{$direct[$i]}</option>");

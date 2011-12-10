@@ -53,6 +53,7 @@ class doc_Sborka extends doc_Nulltype
 		WHERE `doc_list`.`id`='{$this->doc}'");
 		if(mysql_errno())			throw new MysqlException('Ошибка выборки данных документа при проведении!'.mysql_error());
 		$doc_info=mysql_fetch_array($res);
+
 		if(!$doc_info)				throw new Exception("Документ {$this->doc} не найден!");
 		if( $doc_info['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 
@@ -69,8 +70,9 @@ class doc_Sborka extends doc_Nulltype
 			
 			if($doc_line['page'])
 			{
-				if($doc_line[1]>$doc_line[2])	throw new Exception("Недостаточно ($doc_line[1]) товара '$doc_line[3]:$doc_line[4]($doc_line[0])': на складе только $doc_line[2] шт!");
-				if(!$silent)
+				if(!$doc_info['dnc'])
+					if($doc_line[1]>$doc_line[2])	throw new Exception("Недостаточно ($doc_line[1]) товара '$doc_line[3]:$doc_line[4]($doc_line[0])': на складе только $doc_line[2] шт!");
+				if(!$doc_info['dnc'] && (!$silent))
 				{
 					$budet=getStoreCntOnDate($doc_line[0], $doc_info['sklad']);
 					if( $budet<0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$doc_line[3]:$doc_line[4]($doc_line[0])'!");

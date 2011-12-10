@@ -46,18 +46,18 @@ if($mode==""||$mode=='view')
 		if($page>1)
 		{
 		$i=$page-1;
-		$tmpl->AddText(" <a href='wikiphoto.php?mode=view&p=$i&$pp'>&lt&lt</a> ");
+		$tmpl->AddText(" <a href='/wikiphoto.php?mode=view&p=$i&$pp'>&lt&lt</a> ");
 		}
 		$cp=$row/$lim;
 		for($i=1;$i<($cp+1);$i++)
 		{
 		if($i==$page) $tmpl->AddText(" $i ");
-		else $tmpl->AddText(" <a href='wikiphoto.php?mode=view&p=$i&$pp'>$i</a> ");
+		else $tmpl->AddText(" <a href='/wikiphoto.php?mode=view&p=$i&$pp'>$i</a> ");
 		}
 		if($page<$cp)
 		{
 		$i=$page+1;
-		$tmpl->AddText(" <a href='wikiphoto.php?mode=view&p=$i&$pp'>&gt&gt</a> ");
+		$tmpl->AddText(" <a href='/wikiphoto.php?mode=view&p=$i&$pp'>&gt&gt</a> ");
 		}
 		$tmpl->AddText("<br>");
 		$sl=($page-1)*$lim;
@@ -72,7 +72,12 @@ if($mode==""||$mode=='view')
 	$tmpl->AddText("");
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<div class='photomini'><a href='wikiphoto.php?mode=viewall&n=$nxt[0]' title='Увеличить'><img src='/wikiphotos.php?n=$nxt[0]&x=150' alt='Увеличить'></a></div>");
+		$img=new ImageProductor($nxt[0],'w', 'jpg');
+		$img->SetX(150);
+		$img->SetY(112);
+		$img->SetFixAspect(1);
+		$img->SetNoEnlarge(0);
+		$tmpl->AddText("<div class='photomini'><a href='/wikiphoto.php?mode=viewall&n=$nxt[0]' title='Увеличить'><img src='".$img->GetURI()."' alt='Увеличить'></a></div>");
 	}
 	$tmpl->AddText("<div class='nofloat'>-</div>");
 
@@ -84,18 +89,18 @@ if($mode==""||$mode=='view')
 		if($page>1)
 		{
 		$i=$page-1;
-		$tmpl->AddText(" <a href='/wikiphotos.php?mode=view&p=$i&$pp'>&lt&lt</a> ");
+		$tmpl->AddText(" <a href='/wikiphoto.php?mode=view&p=$i&$pp'>&lt&lt</a> ");
 		}
 		$cp=$row/$lim;
 		for($i=1;$i<($cp+1);$i++)
 		{
 		if($i==$page) $tmpl->AddText(" $i ");
-		else $tmpl->AddText(" <a href='/wikiphotos.php?mode=view&p=$i&$pp'>$i</a> ");
+		else $tmpl->AddText(" <a href='/wikiphoto.php?mode=view&p=$i&$pp'>$i</a> ");
 		}
 		if($page<$cp)
 		{
 		$i=$page+1;
-		$tmpl->AddText(" <a href='/wikiphotos.php?mode=view&p=$i&$pp'>&gt&gt</a> ");
+		$tmpl->AddText(" <a href='/wikiphoto.php?mode=view&p=$i&$pp'>&gt&gt</a> ");
 		}
 		$tmpl->AddText("<br>");
 		$sl=($page-1)*$lim;
@@ -111,8 +116,37 @@ if($mode==""||$mode=='view')
 else if($mode=='viewall')
 {
 	$n=rcv('n');
-	$tmpl->AddText("<a href='/wikiphotos.php?n=$n&x=10240&q=95' title='Показать максимальный размер'><img src='/wikiphotos.php?n=$n&x=700' alt='Показать максимальный размер'></a><br>
-	<b>Открыть с разрешением<sup>*</sup>:</b> <a href='/wikiphoto.php?n=$n&x=800&y=600'>800x600</a>, <a href='photo.php?n=$n&x=1024&y=768'>1024x768</a>, <a href='/wikiphotos.php?n=$n&x=1280&y=1024'>1280x1024</a>, <a href='/wikiphotos.php?n=$n&x=1600&y=1200&q=85'>1600x1200</a>, <a href='/wikiphotos.php?n=$n&x=100000&q=95'>Максимум</a><br>
+	settype($n,'int');
+	$pageimg=new ImageProductor($n,'w', 'jpg');
+	$pageimg->SetX(700);
+	$pageimg->SetNoEnlarge(1);
+	
+	$fullimg=new ImageProductor($n,'w', 'jpg');
+	$fullimg->SetQuality(100);
+	
+	$img800=new ImageProductor($n,'w', 'jpg');
+	$img800->SetX(800);
+	$img800->SetY(600);
+	$img800->SetNoEnlarge(1);
+	
+	$img1024=new ImageProductor($n,'w', 'jpg');
+	$img1024->SetX(1024);
+	$img1024->SetY(768);
+	$img1024->SetNoEnlarge(1);
+	
+	$img1280=new ImageProductor($n,'w', 'jpg');
+	$img1280->SetX(1280);
+	$img1280->SetY(1024);
+	$img1280->SetNoEnlarge(1);
+	
+	$img1600=new ImageProductor($n,'w', 'jpg');
+	$img1600->SetX(1600);
+	$img1600->SetY(1200);
+	$img1600->SetNoEnlarge(1);
+	
+	
+	$tmpl->AddText("<a href='".$fullimg->GetURI()."' title='Максимальный размер и качество'><img src='".$pageimg->GetURI()."' alt='Максимальный размер и качество'></a><br>
+	<b>Открыть с разрешением<sup>*</sup>:</b> <a href='".$img800->GetURI()."'>800x600</a>, <a href='".$img1024->GetURI()."'>1024x768</a>, <a href='".$img1280->GetURI()."'>1280x1024</a>, <a href='".$img1600->GetURI()."'>1600x1200</a>, <a href='".$fullimg->GetURI()."'>Максимум</a><br>
 	* Примечание: если оригинал изображения имеет разрешение, меньшее, чем запрошено, изображение будет показано в оригинальном размере.");
 
 }

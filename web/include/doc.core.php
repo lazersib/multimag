@@ -270,6 +270,17 @@ global $dv;
 $res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
 $dv=mysql_fetch_assoc($res);
 
+function roundDirect($number, $precision = 0, $direction = 0)
+{   
+	if ($direction==0 )	return round($number, $precision);
+	else
+	{
+		$factor = pow(10, -1 * $precision);
+		return ($direction<0)
+			? floor($number / $factor) * $factor
+			: ceil($number / $factor) * $factor;
+	}
+} 
 
 function GetCostPos($pos_id, $cost_id)
 {
@@ -293,12 +304,8 @@ function GetCostPos($pos_id, $cost_id)
 		else if($nxt[4]=='fix')	$cena= $nxt[5];
 		else			$cena= 0;
 		
-		$direction=pow(10,$nxt[6]*(-1))*0.4999*$nxt[7];		
-		if($cena)
-		{
-			return sprintf("%0.2f",round($cena+$direction,$nxt[6]));
-		}
-		else return "Уточняйте";
+		if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[6],$nxt[7]));
+		else 		return "Уточняйте";
 	}
 	
 	while($base_group)
@@ -317,12 +324,8 @@ function GetCostPos($pos_id, $cost_id)
 			else if($gdata[2]=='fix')	$cena= $gdata[3];
 			else				$cena= 0;
 			
-			$direction=pow(10,$gdata[5]*(-1))*0.4999*$gdata[6];	
-			if($cena)
-			{
-				return sprintf("%0.2f",round($cena+$direction,$gdata[5]));
-			}
-			else return "Уточняйте";
+			if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$gdata[5],$gdata[6]));
+			else 		return "Уточняйте";
 		}
 		$base_group=$gdata[4];
 	}
@@ -332,15 +335,8 @@ function GetCostPos($pos_id, $cost_id)
 	else if($nxt[2]=='fix')	$cena= $nxt[3];
 	else			$cena= 0;
 	
-	$direction=pow(10,$nxt[8]*(-1))*0.4999*$nxt[9];		
-	if($cena)
-	{
-		return sprintf("%0.2f",round($cena+$direction,$nxt[8]));
-	}
-	else
-	{
-		return "Уточняйте";
-	}
+	if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[8],$nxt[9]));
+	else 		return "Уточняйте";
 }
 
 // =========== Запись событий документов в лог ======================
