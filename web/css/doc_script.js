@@ -155,7 +155,28 @@ function DocConnectProcess(msg)
 
 }
 
-
+function hlThisRow(event)
+{
+	var obj=event.target
+	while(obj!='undefined' && obj!='null')
+	{
+		if(obj.tagName=='TR')
+		{
+			if(!obj.marked)	
+			{
+				obj.style.backgroundColor='#8f8'
+				obj.marked=1
+			}
+			else
+			{
+				obj.style.backgroundColor=''
+				obj.marked=0
+			}
+			return
+		}
+		obj=obj.parentNode
+	}
+}
 
 
 // Сообщения

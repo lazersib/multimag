@@ -85,7 +85,7 @@ else if($mode=='merge_agent_ok')
 else if($mode=='merge_tovar')
 {
 	$tmpl->AddText("<h1>Группировка складской номенклатуры</h1>
-	Данная функция перепривязывает всю номенклатуру в документах от объекта с большим ID на объект с меньшим ID. После этого, имя объекта с большим ID получает префикс old, и объекта перемещается в указанную группу.<h2 style='color: #f00'>ВНИМАНИЕ! Данное действие необратимо, и может привести к ошибкам в документах! Перед выполнением убедитесь в том, что у Вас есть резервная копия базы данных! После выполнения действия ОБЯЗАТЕЛЬНО выполнить процедуру оптимизации, иначе остатки на складе будут неверны!</h2>
+	Данная функция перепривязывает всю номенклатуру в документах и комплектующих от объекта с большим ID на объект с меньшим ID. После этого, имя объекта с большим ID получает префикс old, и объекта перемещается в указанную группу.<h2 style='color: #f00'>ВНИМАНИЕ! Данное действие необратимо, и может привести к ошибкам в документах и на складе! Перед выполнением убедитесь в том, что Вы осознаёте, что делаете, и что у Вас есть резервная копия базы данных! После выполнения действия ОБЯЗАТЕЛЬНО выполнить процедуру оптимизации, иначе остатки на складе будут неверны!</h2>
 	<form method='post'><input type='hidden' name='mode' value='merge_tovar_ok'>
 	<fieldset><legend>Данные, необходимые для объединения</legend>
 	ID первого объекта:<br><input type='text' name='tov1'><br>
@@ -108,12 +108,21 @@ else if($mode=='merge_tovar_ok')
 	if( ($tov1==0) || ($tov2==0) )	throw new Exception("не указан ID объекта!");
 	if($tov1==$tov2)		throw new Exception("ID объектов должны быть разные!");
 	if($tov2<$tov1)	{$tov=$tov1;$tov1=$tov2;$tov2=$tov;}
+	// Меняем товары в документах
 	mysql_query("UPDATE `doc_list_pos` SET `tovar`='$tov1' WHERE `tovar`='$tov2'");
 	if(mysql_error())		throw new MysqlException("Не удалось перенести документы на указанный объект!");
 	$af_doc=mysql_affected_rows();
+	// Меняем информацию в комплектующих
+	mysql_query("UPDATE `doc_base_kompl` SET `pos_id`='$tov1' WHERE `pos_id`='$tov2'");
+	if(mysql_error())		throw new MysqlException("Не удалось перенести комплектующие на указанный объект!");
+	$af_cb=mysql_affected_rows();	
+	mysql_query("UPDATE `doc_base_kompl` SET `kompl_id`='$tov1' WHERE `kompl_id`='$tov2'");
+	if(mysql_error())		throw new MysqlException("Не удалось перенести указанный объект в комплектующих!");
+	$af_cc=mysql_affected_rows();	
+	
 	mysql_query("UPDATE `doc_base` SET `name`=CONCAT('old ',`name`), `group`='$gr' WHERE `id`='$tov2'");
 	if(mysql_error())		throw new MysqlException("Не удалось обновить данные товара!");
-	$tmpl->msg("Операция выполнена - обновлено $af_doc документов","ok");
+	$tmpl->msg("Операция выполнена - обновлено $af_doc документов, $af_cb / $af_cc комплектующих","ok");
 	
 	mysql_query("COMMIT");
 }

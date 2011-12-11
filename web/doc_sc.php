@@ -37,6 +37,9 @@ $tmpl->AddTMenu("<script type='text/javascript' src='/css/doc_script.js'></scrip
 
 $dir=$CONFIG['site']['location'].'/include/doc_scripts/';
 
+try
+{
+
 if(isAccess('doc_scripts','view'))
 {
 	doc_menu();
@@ -82,6 +85,21 @@ if(isAccess('doc_scripts','view'))
 	}
 }
 else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
+
+}
+catch(AccessException $e)
+{
+	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
+}
+catch(MysqlException $e)
+{
+	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+}
+catch (Exception $e)
+{
+	$tmpl->msg($e->getMessage(),'err',"Общая ошибка");
+}
+
 
 $tmpl->write();
 ?>

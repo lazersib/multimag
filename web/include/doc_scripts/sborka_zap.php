@@ -127,7 +127,7 @@ function Run($mode)
 				VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
 		$doc=mysql_insert_id();
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1')");
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id')");
 		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad");
 	}
 	else if($mode=='reopen')
@@ -141,12 +141,19 @@ function Run($mode)
 		$agent=$nxt['agent'];
 		$sklad=$nxt['sklad'];
 		$firm=$nxt['firm'];
-		
-		//$nasklad=rcv('nasklad');
-		//$tov_id=rcv('tov_id');
+		$res=mysql_query("SELECT `doc`,`param`,`value` FROM `doc_dopdata` WHERE `doc`='$doc'");
+		if(mysql_errno())			throw new MysqlException("Не удалось получить дополниьтельные свойства документа");
+		$no_mark=true;
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($nxt[1]=='script_mark' && $nxt[2]=='ds_sborka_zap')	$no_mark=false;
+			else if($nxt[1]=='nasklad')	$nasklad=$nxt[2];
+			else if($nxt[1]=='tov_id')	$tov_id=$nxt[2];
+		}
+		if($no_mark)	throw new Exception("Этот документ создан вручную, а не через сценарий. Недостаточно информации для редактирования документа через сценарий.");
 
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1')");
-		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&agent=$agent&sklad=$sklad&firm=$firm");
+		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad");
 	}
 	else if($mode=='edit')
 	{

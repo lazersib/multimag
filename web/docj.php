@@ -561,7 +561,7 @@ if($mode=="")
 // 		<input type='submit' value='Выбрать'>
 // 		</form></table>");
 	
-	$tmpl->AddText("<table width='100%' cellspacing='1'><tr>
+	$tmpl->AddText("<table width='100%' cellspacing='1' onclick='hlThisRow(event)'><tr>
 	<th width='75'>№<th width='20'>&nbsp;<th width='20'>&nbsp;<th>Тип<th>Доп.$dp<th>Агент<th>Сумма<th>Дата<th>Автор");
 	while($nxt=mysql_fetch_array($res))
 	{
