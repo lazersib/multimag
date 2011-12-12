@@ -138,15 +138,15 @@ else $tmpl->msg("ERROR $mode","err");
 }
 catch(AccessException $e)
 {
-	$tmpl->msg($e,'err',"Нет доступа");
+	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
 }
 catch(MysqlException $e)
 {
-	$tmpl->msg($e."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
 }
 catch (Exception $e)
 {
-	$tmpl->msg($e,'err',"Общая ошибка");
+	$tmpl->msg($e->getMessage(),'err',"Общая ошибка");
 }
 
 $tmpl->write();

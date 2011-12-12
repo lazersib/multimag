@@ -414,15 +414,20 @@ class doc_Realizaciya extends doc_Nulltype
 		global $uid;
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
+		
+		$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить цену по умолчанию");
+		$def_cost=mysql_result($res,0,0);
+		if(!$def_cost)		throw new Exception("Цена по умолчанию не определена!");
 
 		$tmpl->AddText("<h1>Накладная N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
 		<b>Покупатель: </b>{$this->doc_data[3]}<br><br>");
 
 		$tmpl->AddText("
-		<table width=800 cellspacing=0 cellpadding=0>
+		<table width='800' cellspacing='0' cellpadding='0'>
 		<tr><th>№</th><th width=450>Наименование<th>Место<th>Кол-во<th>Стоимость<th>Сумма</tr>");
-		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `doc_units`.`printname` AS `units`
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `doc_units`.`printname` AS `units`, `doc_base`.`id`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -432,6 +437,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$i=0;
 		$ii=1;
 		$sum=0;
+		$skid_sum=0;
 		while($nxt=mysql_fetch_row($res))
 		{
 			$sm=$nxt[3]*$nxt[4];
@@ -441,6 +447,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
+			$skid_sum+=GetCostPos($nxt[7], $def_cost)*$nxt[3];
 		}
 		$ii--;
 		$cost = sprintf("%01.2f руб.", $sum);
@@ -462,8 +469,13 @@ class doc_Realizaciya extends doc_Nulltype
 		
 
 		$tmpl->AddText("</table>
-		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>
-		<p class=mini>Товар получил, претензий к качеству товара и внешнему виду не имею.</p>
+		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>");
+		if($sum!=$skid_sum)
+		{
+			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
+			$tmpl->AddText("<p>Скидка: <b>$cost</b></p>");
+		}
+		$tmpl->AddText("<p class=mini>Товар получил, претензий к качеству товара и внешнему виду не имею.</p>
 		$prop
 		<p>Поставщик:_____________________________________</p>
 		<p>Покупатель: ____________________________________</p>");
