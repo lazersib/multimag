@@ -1094,7 +1094,6 @@ class doc_Nulltype
 			else $s='';
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
 		}
-		$tmpl->AddText("</select><label><input type='checkbox' name='cost_recalc' value='1'>Переустановить цены в документе</label><br>");
 		if($this->doc_data[12])
 			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label>&nbsp;&nbsp;
 			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");

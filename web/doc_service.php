@@ -379,7 +379,7 @@ else if($mode=='vrasx')
 	$opt=rcv('opt');
 	if($opt!='')
 	{
-		if(!$rights['edit'])	throw new AccessException("Недостаточно привилегий!");
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
 		$res=mysql_query("SELECT `id`, `name`, `adm` FROM `doc_rasxodi` ORDER BY `id`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список расходов");
 		while($nxt=mysql_fetch_row($res))
@@ -426,6 +426,7 @@ else if($mode=='store')
 {
 	if(rcv('opt'))
 	{
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
 		$res=mysql_query("SELECT `id`, `name`, `dnc` FROM `doc_sklady`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список складов");
 		while($nxt=mysql_fetch_row($res))
@@ -468,6 +469,7 @@ else if($mode=='params')
 	$opt=rcv('opt');
 	if($opt=='save')
 	{
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
 		$res=mysql_query("SELECT `id`, `param`, `type`, `pgroup_id` FROM `doc_base_params`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
 		while($nxt=mysql_fetch_row($res))
