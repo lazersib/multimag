@@ -31,8 +31,14 @@ class doc_s_Sklad
 		$sklad=rcv('sklad');
 		settype($sklad,'int');
 		if($sklad) $_SESSION['sklad_num']=$sklad;
-		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=1;
+		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=-1;
 		$sklad=$_SESSION['sklad_num'];
+		
+		$cost=rcv('cost');
+		settype($cost,'int');
+		if($cost) $_SESSION['sklad_cost']=$cost;
+		if(!isset($_SESSION['sklad_cost'])) $_SESSION['sklad_cost']=1;
+		$cost=$_SESSION['sklad_cost'];
 		
 		$tmpl->AddText("
 		<script type='text/javascript'>
@@ -55,6 +61,16 @@ class doc_s_Sklad
 		<td align='right'>
 		<form action='' method='post'>
 		<input type='hidden' name='l' value='sklad'>
+		<select name='cost'>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `name`");
+		$tmpl->AddText("<option value='-1'>-- не выбрано --</option>");	
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($cost==$nxt[0]) $s=' selected'; else $s='';
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");		
+		}		
+		$tmpl->AddText("</select>
+		
 		<select name='sklad'>");
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
 		
@@ -1577,8 +1593,9 @@ class doc_s_Sklad
 		if(mysql_num_rows($res))
 		{
 			if($CONFIG['poseditor']['vc'])		$vc_add.='<th>Код</th>';
+			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 			$tmpl->AddText("$pagebar<table width='100%' cellspacing='1' cellpadding='2'><tr>
-			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
+			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
 			$i=0;
 			$this->DrawSkladTable($res,$s);
@@ -1600,8 +1617,9 @@ class doc_s_Sklad
 		$sklad=$_SESSION['sklad_num'];
 		$tmpl->AddText("<b>Показаны наименования изо всех групп!</b><br>");
 		$vc_add=$CONFIG['poseditor']['vc']?'<th>Код</th>':'';
+		$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 		$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
-		<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог
+		<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог
 		<th>Тип<th>d<th>D<th>B<th>Масса
 		<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>
 		<th>Склад<th>Всего<th>Место");
@@ -1777,12 +1795,14 @@ class doc_s_Sklad
 			$sql.="ORDER BY `doc_base`.`name`";
 			
 			
+			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
+			//$nheader_add=$_SESSION['sklad_cost']?'<th>Выб. цена':'';
 			$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
-			<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
+			<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
 			
 			$res=mysql_query($sql);
-			echo mysql_error();
+			if(!mysql_errno())	throw new MysqlException("Не удалось получить информацию!");
 			if($cnt=mysql_num_rows($res))
 			{
 				$tmpl->AddText("<tr class='lin0'><th colspan='16' align='center'>Параметрический поиск, найдено $cnt");
@@ -1841,11 +1861,13 @@ function DrawSkladTable($res,$s)
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		$vc_add=$CONFIG['poseditor']['vc']?"<td>{$nxt['vc']}</th>":'';
 		$cb=$go?"<input type='checkbox' name='pos[$nxt[0]]' class='pos_ch' value='1'>":'';
+		$cadd=($_SESSION['sklad_cost']>0)?('<td>'.GetCostPos($nxt[0],$_SESSION['sklad_cost'])):'';
+		
 		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
 		<td>$cb
 		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a>
 		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> $vc_add
-		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
+		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r{$cadd}<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 	}	
 }
 	

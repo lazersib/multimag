@@ -141,7 +141,7 @@ function ExecMode($mode)
 			$tmpl->AddText("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 			//echo"Товар добавлен в корзину!<br><a class='urllink' href='vitrina.php?mode=basket'>Ваша корзина</a>";
 		}
-		else	$tmpl->AddText("Номер товара зе задан!");
+		else	$tmpl->AddText("Номер товара не задан!");
 		//exit();
 	}
 	else if($mode=='korz_del')

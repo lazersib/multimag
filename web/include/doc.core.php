@@ -305,7 +305,7 @@ function GetCostPos($pos_id, $cost_id)
 		else			$cena= 0;
 		
 		if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[6],$nxt[7]));
-		else 		return "Уточняйте";
+		else 		return 0;
 	}
 	
 	while($base_group)
@@ -325,7 +325,7 @@ function GetCostPos($pos_id, $cost_id)
 			else				$cena= 0;
 			
 			if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$gdata[5],$gdata[6]));
-			else 		return "Уточняйте";
+			else 		return 0;
 		}
 		$base_group=$gdata[4];
 	}
@@ -336,7 +336,7 @@ function GetCostPos($pos_id, $cost_id)
 	else			$cena= 0;
 	
 	if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[8],$nxt[9]));
-	else 		return "Уточняйте";
+	else 		return 0;
 }
 
 // =========== Запись событий документов в лог ======================
@@ -630,7 +630,7 @@ function AutoDocument($doc)
 	get_docdata($doc);
 	global $doc_data;
 	global $dop_data;
-	return AutoDocumentType($doc_data[1], $doc);
+	return AutoDocumentType(@$doc_data[1], $doc);
 }
 
 

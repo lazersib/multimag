@@ -522,26 +522,24 @@ class BETemplate
 		//echo"Страница сгенерирована за $time секунд";
 	}
 
-    function logger($s, $silent=0, $hidden_data='')
-    {
-    	
-        $ip=getenv("REMOTE_ADDR");
-        $ag=getenv("HTTP_USER_AGENT");
-        $rf=getenv("HTTP_REFERER");
-        $ff=$_SERVER['REQUEST_URI'];
-        $uid=$_SESSION['uid'];
-        $s=mysql_real_escape_string($s);
-        $hidden_data=mysql_real_escape_string($hidden_data);
-        $ag=mysql_real_escape_string($ag);
-        $rf=mysql_real_escape_string($rf);
-        $qq=mysql_real_escape_string($qq);
-        $ff=mysql_real_escape_string($ff);
-        mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-        ('$ff','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
+	function logger($s, $silent=0, $hidden_data='')
+	{
+		$ip=getenv("REMOTE_ADDR");
+		$ag=getenv("HTTP_USER_AGENT");
+		$rf=getenv("HTTP_REFERER");
+		$ff=$_SERVER['REQUEST_URI'];
+		$uid=@$_SESSION['uid'];
+		$s=mysql_real_escape_string($s);
+		$hidden_data=mysql_real_escape_string($hidden_data);
+		$ag=mysql_real_escape_string($ag);
+		$rf=mysql_real_escape_string($rf);
+		$ff=mysql_real_escape_string($ff);
+		mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
+		('$ff','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
 
-        if(!$silent)
-        $this->msg("$s<br>Страница:$ff<br>Сообщение об ошибке передано администратору","err","Внутренняя ошибка!");
-    }
+		if(!$silent)
+		$this->msg("$s<br>Страница:$ff<br>Сообщение об ошибке передано администратору","err","Внутренняя ошибка!");
+	}
 };
 
 
