@@ -30,7 +30,7 @@ function rusdate($fstr,$rtime=-1)
 function skin_render($page,$tpl)
 {
 	global $tmpl, $CONFIG;
-	
+
 	if(@$_SESSION['uid'])
 	{
 		$tmpl->AddRMenu("<li class='noborder'><a href='/login.php?mode=logout' title='Покинуть сайт'>Выход</a></li>");
@@ -42,14 +42,14 @@ function skin_render($page,$tpl)
 		$tmpl->AddRMenu("<li class='noborder'><a href='/login.php' title='Войти на сайт'>Вход</a></li>");
 		$tmpl->AddLMenu("<ul><li><a href='/login.php' accesskey='l' title='Войти на сайт'>Вход на сайт</a></li><li><a href='/login.php?mode=reg'>Регистрация</a></li></ul>");
 	}
-	
+
 	$rr=$ll='';
-	if(isset($_SESSION['korz_cnt'])) 
+	if(isset($_SESSION['korz_cnt']))
 	{
 		$rr="style='background-color: #f94;'";
 		$ll="style='color: #fff; font-weight: bold;'";
 	}
-	
+
 	$tmpl->AddLMenu("<p class='vspace sidehead'><a class='wikilink' >Навигация</a></p>
 	<ul>
 	<li><a class='selflink' href='/index.php'>Домашняя страница</a></li>
@@ -63,6 +63,7 @@ function skin_render($page,$tpl)
 	<ul>
 	<li><a class='wikilink' href='/wiki/Zakaz.html'>Как заказать</a></li>
 	<li><a class='wikilink' href='/wiki/Delivery.html'>Доставка</a></li>
+	<li><a class='wikilink' href='/wiki/Payment.html'>Оплата</a></li>
 	</ul>
 	<p class='vspace sidehead'> <a class='wikilink' href='/index.php?n=Main.Links'>Наши друзья</a></p>
 	<ul>
@@ -71,9 +72,9 @@ function skin_render($page,$tpl)
 	<li><a class='urllink' href='http://magnoliasib.ru'>magnoliasib.ru</a></li>
 	<li><a class='urllink' href='http://tndproject.org'>tndproject.org</a></li>
 	</ul>");
-	
+
 	$page=$tmpl->page;
-	
+
 	ksort($page);
 	$sign=array("<!--site-text-->","<!--site-tmenu-->","<!--site-rmenu-->","<!--site-title-->","<!--site-style-->",
 	"<!--site-lmenu-->","<!--site-notes-->");

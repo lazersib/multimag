@@ -45,18 +45,18 @@ class doc_Predlojenie extends doc_Nulltype
 		if( $nx[1] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');	
+		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');
 	}
-	
+
 	function DocCancel()
 	{
 		global $uid;
 		$tim=time();
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
-		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');	
+		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
 		if(! $nx[4])				throw new Exception('Документ НЕ проведён!');
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
@@ -110,7 +110,7 @@ class doc_Predlojenie extends doc_Nulltype
 		}
 		else if($target_type==12)
 		{
-			if(!isAccess('doc_vputi','create'))	throw new AccessException("");
+			if(!isAccess('doc_v_puti','create'))	throw new AccessException("");
 			mysql_query("START TRANSACTION");
 			$base=$this->Vputi($doc);
 			if(!$base)
@@ -147,7 +147,7 @@ class doc_Predlojenie extends doc_Nulltype
 		}
 		return 1;
    	}
-   	
+
 	function Service($doc)
 	{
 		$tmpl->ajax=1;
@@ -194,7 +194,7 @@ class doc_Predlojenie extends doc_Nulltype
 			$new_id=0;
 			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
-			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'	
+			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
 			WHERE `a`.`doc`='$doc'");
@@ -220,14 +220,14 @@ class doc_Predlojenie extends doc_Nulltype
 					$n_cnt=$nxt[1]-$nxt[4];
 					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
  					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
-				
+
 				}
 			}
 			if($new_id) $r_id=$new_id;
 		}
 		return $r_id;
 	}
-	
+
 	//	================== Функции только этого класса ======================================================
 	function VPuti($doc)
 	{
@@ -267,7 +267,7 @@ class doc_Predlojenie extends doc_Nulltype
 			$new_id=0;
 			$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
-			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'	
+			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
 			WHERE `a`.`doc`='$doc'");
@@ -293,7 +293,7 @@ class doc_Predlojenie extends doc_Nulltype
 					$n_cnt=$nxt[1]-$nxt[4];
 					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
  					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
-				
+
 				}
 			}
 			if($new_id) $r_id=$new_id;
@@ -307,7 +307,7 @@ class doc_Predlojenie extends doc_Nulltype
 		global $tmpl;
 		if(!$email)
 			$email=rcv('email');
-		
+
 		if($email=='')
 		{
 			$tmpl->ajax=1;
@@ -321,27 +321,27 @@ class doc_Predlojenie extends doc_Nulltype
 			<input type=hidden name=opt value='zayavka_email'>
 			email:<input type=text name=email value='$email'>
 			<input type=submit value='&gt;&gt;'>
-			</form>");	
+			</form>");
 		}
 		else
 		{
 			global $mail;
 			$mail->Body = "Доброго времени суток!
-			Прошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}. Подробная информация во вложении.";  
+			Прошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}. Подробная информация во вложении.";
 			//$mail->ContentType='text/plain';
-			$mail->AddAddress($email, $email );  
+			$mail->AddAddress($email, $email );
 			$mail->Subject='Order from '.$CONFIG['site']['name'];
-			
-			$mail->AddStringAttachment($this->PrintPDF($doc, 1), "zakaz.pdf");  
+
+			$mail->AddStringAttachment($this->PrintPDF($doc, 1), "zakaz.pdf");
 			if($mail->Send())
 				$tmpl->msg("Сообщение отправлено!","ok");
 			else
 				$tmpl->msg("Ошибка отправки сообщения!",'err');
     }
-		
+
 	}
-	
-	
+
+
 	function PrintPDF($doc, $to_str=0)
 	{
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
@@ -350,76 +350,76 @@ class doc_Predlojenie extends doc_Nulltype
 		global $tmpl;
 		global $uid;
 		global $CONFIG;
-		
+
 		$res=mysql_query("SELECT `adres`, `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
 		$agent_data=mysql_fetch_row($res);
-		
+
 		$dt=date("d.m.Y",$this->doc_data[5]);
-		
+
 		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
-		
+
 		$pdf=new FPDF('P');
 		$pdf->Open();
 		$pdf->SetAutoPageBreak(1,12);
 		$pdf->AddFont('Arial','','arial.php');
 		$pdf->tMargin=5;
 		$pdf->AddPage();
-		
+
 		$pdf->SetFont('Arial','',10);
 		$pdf->SetFillColor(255);
-		
+
 		if($CONFIG['site']['doc_header'])
 		{
 			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
-			$pdf->Image($header_img,8,10, 190);	
+			$pdf->Image($header_img,8,10, 190);
 			$pdf->Sety(54);
 		}
-		
+
 		$str = 'Просим рассмотреть возможность поставки следующей продукции:';
 		$pdf->SetFont('','U',14);
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'C',0);
-		
+
 		$old_x=$pdf->GetX();
 		$old_y=$pdf->GetY();
 		$old_margin=$pdf->lMargin;
 		$table_c=110;
 		$table_c2=15;
-		
+
 		$pdf->SetFont('','',16);
 		$str='Заявка поставщику № '.$this->doc_data[9].', от '.$dt;
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'L',0);
 		$pdf->SetFont('','',8);
 		$str='Заказчик: '.unhtmlentities($this->firm_vars['firm_name'].', '.$this->firm_vars['firm_adres'].', тел:'.$this->firm_vars['firm_telefon']);
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 		$str="Поставщик: ".unhtmlentities($this->doc_data[3].", адрес: $agent_data[0], телефон: $agent_data[1]");
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
-		
+
 		$t_width=array(8,110,20,25,0);
 		$pdf->SetFont('','',12);
 		$str='№';
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[0],5,$str,1,0,'C',0);
 		$str='Наименование';
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[1],5,$str,1,0,'C',0);
 		$str='Кол-во';
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[2],5,$str,1,0,'C',0);
 		$str='Цена';
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[3],5,$str,1,0,'C',0);
 		$str='Сумма';
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[4],5,$str,1,0,'C',0);
 		$pdf->Ln();
-		
+
 		$pdf->SetFont('','',8);
-		
+
 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -440,47 +440,47 @@ class doc_Predlojenie extends doc_Nulltype
 			$pdf->Cell($t_width[0],5,$i,1,0,'R',0);
 			$str=$nxt[0].' '.$nxt[1];
 			if($nxt[2]) $str.='('.$nxt[2].')';
-			$str = iconv('UTF-8', 'windows-1251', $str);	
+			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->Cell($t_width[1],5,$str,1,0,'L',0);
 			$pdf->Cell($t_width[2],5,$nxt[3],1,0,'C',0);
-			$str = iconv('UTF-8', 'windows-1251', $cost);	
+			$str = iconv('UTF-8', 'windows-1251', $cost);
 			$pdf->Cell($t_width[3],5,$str,1,0,'R',0);
-			$str = iconv('UTF-8', 'windows-1251', $smcost);	
+			$str = iconv('UTF-8', 'windows-1251', $smcost);
 			$pdf->Cell($t_width[4],5,$str,1,0,'R',0);
 			$pdf->Ln();
 		}
-		
+
 		$cost = num2str($sum);
 		$sumcost = sprintf("%01.2f", $sum);
 		$summass = sprintf("%01.3f", $summass);
-	
-		
+
+
 		if($pdf->h<=($pdf->GetY()+60)) $pdf->AddPage();
-		
+
 		$delta=$pdf->h-($pdf->GetY()+55);
 		if($delta>7) $delta=7;
-		
+
 		if($CONFIG['site']['doc_shtamp'])
 		{
 			$shtamp_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
-			$pdf->Image($shtamp_img, 4,$pdf->GetY()+$delta, 120);	
+			$pdf->Image($shtamp_img, 4,$pdf->GetY()+$delta, 120);
 		}
-		
+
 		$pdf->SetFont('','',8);
 		$str="Масса товара: $summass кг.";
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,6,$str,0,0,'L',0);
-		
+
 		$nds=$sum/(100+$this->firm_vars['param_nds'])*$this->firm_vars['param_nds'];
 		$nds = sprintf("%01.2f", $nds);
 		$pdf->SetFont('','',12);
 		$str="Итого: $sumcost руб.";
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,7,$str,0,1,'R',0);
-		
+
 		$pdf->SetFont('','',8);
 		$str="Всего $i наименований, на сумму $sumcost руб. ($cost)";
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,4,$str,0,1,'L',0);
 
 

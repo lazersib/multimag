@@ -108,15 +108,15 @@ function GroupSelBlock()
 	$tmpl->AddStyle(".scroll_block
 	{
 		max-height:		250px;
-		overflow:		auto;	
+		overflow:		auto;
 	}
-	
+
 	div#sb
 	{
 		display:		none;
 		border:			1px solid #888;
 	}
-	
+
 	.selmenu
 	{
 		background-color:	#888;
@@ -124,20 +124,20 @@ function GroupSelBlock()
 		font-weight:		bold;
 		padding-left:		20px;
 	}
-	
+
 	.selmenu a
 	{
 		color:			#fff;
-		cursor:			pointer;	
+		cursor:			pointer;
 	}
-	
+
 	.cb
 	{
 		width:			14px;
 		height:			14px;
 		border:			1px solid #ccc;
 	}
-	
+
 	");
 	$tmpl->AddText("<script type='text/javascript'>
 	function gstoggle()
@@ -147,7 +147,7 @@ function GroupSelBlock()
 			document.getElementById('sb').style.display='block';
 		else	document.getElementById('sb').style.display='none';
 	}
-	
+
 	function SelAll(flag)
 	{
 		var elems = document.getElementsByName('g[]');
@@ -158,7 +158,7 @@ function GroupSelBlock()
 			if(flag)	elems[i].disabled = false;
 		}
 	}
-	
+
 	function CheckCheck(ids)
 	{
 		var cb = document.getElementById('cb'+ids);
@@ -172,7 +172,7 @@ function GroupSelBlock()
 			elems[i].disabled =! cb.checked;
 		}
 	}
-	
+
 	</script>
 	<label><input type=checkbox name='gs' id='cgs' value='1' onclick='gstoggle()'>Выбрать группы</label><br>
 	<div class='scroll_block' id='sb'>
@@ -200,9 +200,9 @@ class Report_Store
 		$tmpl->AddText("</fieldset><br>
 		Группа товаров:<br>");
 		GroupSelBlock();
-		$tmpl->AddText("<button type='submit'>Создать отчет</button></form>");	
+		$tmpl->AddText("<button type='submit'>Создать отчет</button></form>");
 	}
-	
+
 	function MakeHTML()
 	{
 		global $tmpl;
@@ -231,10 +231,10 @@ class Report_Store
 		{
 			if($gs && is_array($g))
 				if(!in_array($group_line['id'],$g))	continue;
-			
+
 			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
-		
-		
+
+
 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`,
 			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `count`,
 			`doc_base_dop`.`mass`
@@ -243,7 +243,7 @@ class Report_Store
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY `doc_base`.`name`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
-			
+
 			while($nxt=mysql_fetch_row($res))
 			{
 				if($nxt[3]<=0) continue;
@@ -255,9 +255,9 @@ class Report_Store
 				$bsum+=$nxt[2]*$nxt[3];
 				if($nxt[3]<0) $nxt[3]='<b>'.$nxt[3].'</b/>';
 				$summass+=$nxt[3]*$nxt[4];
-				
+
 				$nac=sprintf("%0.2f р. (%0.2f%%)",$cost_p-$act_cost,($cost_p/$act_cost)*100-100);
-				
+
 				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[3]<td>$act_cost р.<td>$cost_p р.<td>$nac<td>$sum_p р.<td>$bsum_p р.");
 				if(is_array($cost))
 				{
@@ -271,11 +271,11 @@ class Report_Store
 		$tmpl->AddText("<tr><td colspan='6'><b>Итого:</b><td>$sum р.<td>$bsum р.
 		</table><h3>Общая масса склада: $summass кг.</h3>");
 	}
-	
+
 	function Run($opt)
 	{
 		if($opt=='')	$this->Form();
-		else		$this->MakeHTML();	
+		else		$this->MakeHTML();
 	}
 };
 
@@ -306,7 +306,7 @@ class Report_KassDay
 		<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
 		<button type='submit'>Сформировать</button></form>");
 	}
-	
+
 	function MakeHTML()
 	{
 		global $tmpl;
@@ -317,10 +317,10 @@ class Report_KassDay
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список касс");
 		$kass_list=array();
 		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt[1];
-		$tmpl->AddText("<h1>Отчёт по кассе {$kass_list[$kass]} за $dt</h1>");		
+		$tmpl->AddText("<h1>Отчёт по кассе {$kass_list[$kass]} за $dt</h1>");
 		$daystart=strtotime("$dt 00:00:00");
 		$dayend=strtotime("$dt 23:59:59");
-		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход<th>В кассе");			
+		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход<th>В кассе");
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`, `doc_list`.`kassa`, `doc_dopdata`.`value` AS `vk_value`
 		FROM `doc_list`
 		LEFT JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
@@ -390,8 +390,8 @@ class Report_KassDay
 				}
 				$dt=date("H:i:s",$nxt[3]);
 				$sum_p=sprintf("%0.2f руб.",$sum);
-				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5]   $sadd<td align='right'>$csum_p<td align='right'>$csum_r<td align='right'>$sum_p</tr>");	
+
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$dt<td>$nxt[6] N$nxt[4]$nxt[5]   $sadd<td align='right'>$csum_p<td align='right'>$csum_r<td align='right'>$sum_p</tr>");
 			}
 		}
 		$dsum_p=sprintf("%0.2f руб.",$daysum);
@@ -399,19 +399,19 @@ class Report_KassDay
 		$rsum_p=sprintf("%0.2f руб.",$rasx);
 		$tmpl->AddText("<tr><td>-<td>-<td><b>На конец дня</b><td align='right'><b>$psum_p</b><td align='right'><b>$rsum_p</b><td align='right'><b>$sum_p</b>");
  		$tmpl->AddText("<tr><td>-<td>-<td><b>Разница за смену</b><td align='right' colspan=3><b>$dsum_p</b>");
- 		
- 		
+
+
  		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
  		$nm=mysql_result($res,0,0);
- 		
+
  		$tmpl->AddText("</table><br><br>
  		Cоответствие сумм подтверждаю ___________________ ($nm)");
 	}
-	
+
 	function Run($opt)
 	{
 		if($opt=='')	$this->Form();
-		else		$this->MakeHTML();	
+		else		$this->MakeHTML();
 	}
 };
 
@@ -449,7 +449,7 @@ class Report_Dolgi
 		</fieldset>
 		<button type='submit'>Сформировать</button></form>");
 	}
-	
+
 	function MakeHTML($vdolga)
 	{
 		global $tmpl;
@@ -474,17 +474,17 @@ class Report_Dolgi
 				$sum_dolga+=$dolg;
 				$dolg=sprintf("%0.2f",$dolg);
 				$tmpl->AddText("<tr><td>$i<td>$nxt[1]<td>$nxt[2]<td align='right'>$dolg руб.");
-				
+
 			}
 		}
 		$tmpl->AddText("</table>
 		<p>Итого: $i должников с общей суммой долга $sum_dolga  руб.<br> (".num2str($sum_dolga).")</p>");
 	}
-	
+
 	function Run($opt)
 	{
 		if($opt=='')	$this->Form();
-		else		$this->MakeHTML();	
+		else		$this->MakeHTML();
 	}
 };
 
@@ -599,7 +599,7 @@ else if($mode=='balcal')
 	$dt=rcv('dt');
 	$v=rcv('v');
 	doc_menu();
-	
+
 	$tm=strtotime($dt);
 	if($v) $tm+=60*60*24-1;
 	$tt=date("d.m.Y H:i:s",$tm);
@@ -612,14 +612,14 @@ else if($mode=='balcal')
 	$kassa_p=mysql_result($res,0,0);
 		$res=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE `type`='7' AND `ok`>'0' AND `date`>'$tm'");
 	$kassa_r=mysql_result($res,0,0);
-	
+
 	$res=mysql_query("SELECT SUM(`ballance`) FROM `doc_kassa` WHERE `ids`='bank'");
 	$bank_m=mysql_result($res,0,0);
-	
+
 	$bank=$bank_m-($bank_p-$bank_r);
 	$kassa=$kassa_p-$kassa_r;
-	
-	
+
+
 	$tmpl->AddText("<table width=50% cellspacing=0 cellpadding=0 border=0>
 	<tr><th>Тип<th>Приход<th>Расход<th>Балланс
 	<tr class=lin1><td>Банки (все)<td>$bank_p<td>$bank_r<td>$bank ($bank_m)
@@ -659,7 +659,7 @@ else if($mode=='komplekt')
 		if(mysql_errno())	throw new MysqlException("Не удалось получить выборку доп.информации");
 		if(mysql_num_rows($res)==0)	throw new Exception("Данные о зарплате за сборку в базе не найдены. Необходим дополнительный параметр 'ZP'");
 		$zp_id=mysql_result($res,0,0);
-		
+
 		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base_values`.`value` AS `zp`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -703,7 +703,7 @@ else if($mode=='komplekt')
 		$tmpl->AddText("
 		<tr><td colspan='3'><b>Итого:</b><td>$zp_sum<td colspan='4'><td>$kompl_sum<td>$all_sum
 		</table>");
-		
+
 	}
 }
 else if($mode=='fin_otchet')
@@ -757,7 +757,7 @@ else if($mode=='fin_otchet_g')
 	`doc_list`.`altnum`
 	FROM `doc_list`
 	WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_st' AND `doc_list`.`date`<='$date_end'");
-	
+
 	while($nxt=mysql_fetch_row($res))
 	{
 		$dopdata="";
@@ -778,8 +778,8 @@ else if($mode=='fin_otchet_g')
 			$rasxody_bn[$vid]+=$nxt[3];
 			if($vid==12) $podotchet+=$nxt[3];
 			if($vid==0)	$doc_null.="банк:$nxt[0], ";
-			
-			
+
+
 		}
 		else if($nxt[1]==6) // Кассовый приход
 		{
@@ -787,11 +787,11 @@ else if($mode=='fin_otchet_g')
 		}
 		else if($nxt[1]==7)	// Кассовый расход
 		{
-                        $vid=$dopdata['rasxodi']; 
-                        if(!$vid) $vid=0; 
-                        $rasxody_nal[$vid]+=$nxt[3]; 
-                        if($vid==12) $podotchet+=$nxt[3]; 
-                        if($vid==0)     $doc_null.="касса:$nxt[0], "; 
+                        $vid=$dopdata['rasxodi'];
+                        if(!$vid) $vid=0;
+                        $rasxody_nal[$vid]+=$nxt[3];
+                        if($vid==12) $podotchet+=$nxt[3];
+                        if($vid==0)     $doc_null.="касса:$nxt[0], ";
                         if($vid==12)    $doc_otchet.="касса:$nxt[0], ";
 		}
 	}
@@ -805,11 +805,11 @@ else if($mode=='fin_otchet_g')
 	$nal_prn=sprintf("%01.2f", $prixody_nal);
 	$bn_prn=sprintf("%01.2f", $prixody_bn);
 	$sum_prn=sprintf("%01.2f", $sum_prixod);
-	
+
 	$pod_prn=sprintf("%01.2f",(-1)*$podotchet);
 	$nalsum_prn=sprintf("%01.2f", $prixody_nal-$podotchet);
-	
-	
+
+
 	$tmpl->AddText("
 	<h4>Движения денежных средств</h4>
 	<table class=right_align>
@@ -888,7 +888,7 @@ else if($mode=='proplaty_g')
 
 	$tmpl->AddText("<h1>Отчет по проплатам</h1>
 	c ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end));
-	
+
 	$res=mysql_query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`,
 	`doc_list`.`altnum`, `doc_agent`.`name`
 	FROM `doc_list`
@@ -901,7 +901,7 @@ else if($mode=='proplaty_g')
 	while($nxt=mysql_fetch_row($res))
 	{
 		$deb=$kr="";
-	
+
 		if($nxt[1]==1)
 		{
 			$tp="Поступление";
@@ -986,7 +986,7 @@ else if($mode=='sverka')
 	{
 		doc_menu();
 		$tmpl->SetTitle("Акт сверки");
-		$dat=date("Y-m-d");		
+		$dat=date("Y-m-d");
 		$tmpl->AddText("
 		<script src='/css/jquery/jquery.js' type='text/javascript'></script>
 		<script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
@@ -1002,7 +1002,7 @@ else if($mode=='sverka')
 		<input type='hidden' name='mode' value='sverka'>
 		Агент-партнёр:<br>
 		<input type='hidden' name='agent_id' id='agent_id' value=''>
-		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>		
+		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
 		<p class='datetime'>
 		Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10' /><br>
 		Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$dat' maxlength='10' /></p><br>
@@ -1012,18 +1012,18 @@ else if($mode=='sverka')
 		while($nx=mysql_fetch_row($rs))
 		{
 			if($CONFIG['site']['default_firm']==$nx[0]) $s=' selected'; else $s='';
-			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");		
-		}		
+			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");
+		}
 		$tmpl->AddText("</select><br>
 		Подтип документа (оставьте пустым, если учитывать не требуется):<br>
 		<input type='text' name='subtype'><br>
 		<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
-		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>		
+		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>
 		<input type=submit value='Сделать сверку!'>
 		</form>
-		
+
 		<script type='text/javascript'>
-		
+
 		function DtCheck(t)
 		{
 			var dn=new Array();
@@ -1048,13 +1048,13 @@ else if($mode=='sverka')
 			selectFirst:true,
 			matchContains:1,
 			cacheLength:10,
-			maxItemsToShow:15, 	 
+			maxItemsToShow:15,
 			formatItem:agliFormat,
 			onItemSelect:agselectItem,
 			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
 			});
 			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
-			
+
 			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
 			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
 			$( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
@@ -1073,18 +1073,18 @@ else if($mode=='sverka')
 			else var sValue = li.selectValue;
 			document.getElementById('agent_id').value=sValue;
 		}
-		
+
 		</script>");
 	}
 	else if($opt=='html')
 	{
 		$firm_id=rcv('firm_id');
 		$subtype=rcv('subtype');
-		
+
 		$date_st=strtotime(rcv('date_st'));
 		$date_end=strtotime(rcv('date_end'))+60*60*24-1;
 		$ag=rcv('agent_id');
-		
+
 		if($firm_id)
 		{
 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
@@ -1106,11 +1106,11 @@ else if($mode=='sverka')
 		c одной стороны, и директор $fn $dir_fio с другой стороны,
 		составили настоящий акт сверки в том, что состояние взаимных расчетов по
 		данным учёта следующее:<br><br>");
-	
+
 		$sql_add='';
 		if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
 		if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`,
 		`doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
@@ -1129,7 +1129,7 @@ else if($mode=='sverka')
 		while($nxt=mysql_fetch_row($res))
 		{
 			$deb=$kr="";
-			
+
 			if( ($nxt[2]>=$date_st) && (!$f_print) )
 			{
 				$f_print=true;
@@ -1202,7 +1202,7 @@ else if($mode=='sverka')
 		$razn=$pr-$ras;
 		$razn_p=abs($razn);
 		$razn_p=sprintf("%01.2f", $razn_p);
-		
+
 		$pr=sprintf("%01.2f", $pr);
 		$ras=sprintf("%01.2f", $ras);
 
@@ -1220,7 +1220,7 @@ else if($mode=='sverka')
 		else  $pr=$ras='';
 		if($pr)	$pr=sprintf("%01.2f", $pr);
 		if($ras)$ras=sprintf("%01.2f", $ras);
-		
+
 		$tmpl->AddText("<tr><td colspan=2>Сальдо на конец периода<td>$ras<td>$pr<td colspan=4>
 		<tr><td colspan=4>");
 		if($razn>0)		$tmpl->AddText("переплата в пользу ".$dv['firm_name']." $razn_p руб.");
@@ -1232,16 +1232,16 @@ else if($mode=='sverka')
 		директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
 		<td colspan=4>От $fn<br>
 		директор<br> ____________________________ ($dir_fio)<br><br>м.п.<br>
-		</table>");		
+		</table>");
 	}
 	else if($opt=='pdf')
 	{
 		$firm_id=rcv('firm_id');
-		$subtype=rcv('subtype');			
+		$subtype=rcv('subtype');
 		$date_st=strtotime(rcv('date_st'));
 		$date_end=strtotime(rcv('date_end'))+60*60*24-1;
 		$agent_id=rcv('agent_id');
-		
+
 		if($firm_id)
 		{
 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
@@ -1254,10 +1254,10 @@ else if($mode=='sverka')
 		if(mysql_errno())		throw new MysqlException("Не удалось получить данные агента");
 		if(mysql_num_rows($res)==0)	throw new Exception("Не указан агент $agent_id!");
 		list($agent, $fn, $dir_fio)=mysql_fetch_row($res);
-		
+
 		$firm_vars['firm_name']=unhtmlentities($firm_vars['firm_name']);
-		$agent['fullname']=unhtmlentities($agent['fullname']);			
-		
+		$agent['fullname']=unhtmlentities($agent['fullname']);
+
 		define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
 		require('fpdf/fpdf.php');
 		$pdf=new FPDF('P');
@@ -1269,28 +1269,28 @@ else if($mode=='sverka')
 
 		$pdf->SetFont('Arial','',16);
 		$str = iconv('UTF-8', 'windows-1251', "Акт сверки взаимных расчетов");
-		$pdf->Cell(0,6,$str,0,1,'C',0);			
-		
+		$pdf->Cell(0,6,$str,0,1,'C',0);
+
 		$str="от {$firm_vars['firm_name']}\nза период с ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end);
 		$pdf->SetFont('Arial','',10);
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,4,$str,0,'C',0);
 		$pdf->Ln(2);
-		$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и директор $fn $dir_fio, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и директор $fn $dir_fio, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Write(5,$str,'');
-		
+
 		$pdf->Ln(8);
 		$y=$pdf->GetY();
 		$base_x=$pdf->GetX();
 		$pdf->SetLineWidth(0.5);
 		$t_width=array(17,44,17,17,17,44,17,0);
 		$t_text=array('Дата', 'Операция', 'Дебет', 'Кредит', 'Дата', 'Операция', 'Дебет', 'Кредит');
-		
+
 		$h_width=$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
 		$str1=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
 		$str2=iconv('UTF-8', 'windows-1251', "По данным $fn");
-					
+
 		$pdf->MultiCell($h_width,5,$str1,0,'L',0);
 		$max_h=$pdf->GetY()-$y;
 		$pdf->SetY($y);
@@ -1313,11 +1313,11 @@ else if($mode=='sverka')
 		$pdf->SetFont('','',8);
 		$pr=$ras=0;
 		$f_print=false;
-		
+
 		$sql_add='';
 		if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
 		if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`date`, `doc_list`.`sum`,
 		`doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
@@ -1325,7 +1325,7 @@ else if($mode=='sverka')
 		WHERE `doc_list`.`agent`='$agent' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
 		while($nxt=mysql_fetch_array($res))
 		{
-			$deb=$kr="";				
+			$deb=$kr="";
 			if( ($nxt[2]>=$date_st) && (!$f_print) )
 			{
 				$f_print=true;
@@ -1342,7 +1342,7 @@ else if($mode=='sverka')
 				else  $pr=$ras='';
 				if($pr)	$pr=sprintf("%01.2f", $pr);
 				if($ras)$ras=sprintf("%01.2f", $ras);
-				
+
 				$str=iconv('UTF-8', 'windows-1251', "Сальдо на начало периода");
 				$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
 				$pdf->Cell($t_width[2],4,$ras,1,0,'R',0);
@@ -1420,11 +1420,11 @@ else if($mode=='sverka')
 				$pdf->Ln();
 			}
 		}
-		
+
 		$razn=$pr-$ras;
 		$razn_p=abs($razn);
 		$razn_p=sprintf("%01.2f", $razn_p);
-		
+
 		$pr=sprintf("%01.2f", $pr);
 		$ras=sprintf("%01.2f", $ras);
 
@@ -1450,7 +1450,7 @@ else if($mode=='sverka')
 		else  $pr=$ras='';
 		if($pr)	$pr=sprintf("%01.2f", $pr);
 		if($ras)$ras=sprintf("%01.2f", $ras);
-		
+
 		$str=iconv('UTF-8', 'windows-1251', "Сальдо на конец периода");
 		$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
 		$pdf->Cell($t_width[2],4,$ras,1,0,'L',0);
@@ -1459,14 +1459,14 @@ else if($mode=='sverka')
 		$pdf->Cell($t_width[6],4,'',1,0,'L',0);
 		$pdf->Cell($t_width[7],4,'',1,0,'L',0);
 		$pdf->Ln(7);
-		
+
 		$str=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']} на ".date("d.m.Y",$date_end));
 		$pdf->Write(4,$str);
 		$pdf->Ln();
 		if($razn>0)		$str="переплата в пользу ".$firm_vars['firm_name']." $razn_p руб.";
 		else	if($razn<0) 	$str="задолженность в пользу ".$firm_vars['firm_name']." $razn_p руб.";
 		else			$str="переплат и задолженностей нет!";
-		
+
 		$str=iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Write(4,$str);
 		$pdf->Ln(7);
@@ -1477,20 +1477,20 @@ else if($mode=='sverka')
 		$str=iconv('UTF-8', 'windows-1251', "От $fn\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
 		$pdf->lMargin=$x;
 		$pdf->setX($x);
-		
+
 		$pdf->setY($y);
 		$pdf->MultiCell(0,5,$str,0,'L',0);
 		$pdf->Ln();
-		
+
 // 			$tmpl->AddText("<td colspan=4>
 // 			<tr><td colspan=4>От ".$dv['firm_name']."<br>
 // 			директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
 // 			<td colspan=4>От $fn<br>
 // 			директор<br> ____________________________ (_____________)<br><br>м.п.<br>
 // 			</table>");
-		
+
 		$pdf->Output('akt_sverki.pdf','I');
-	}		
+	}
 }
 else if($mode=='sverka_op')
 {
@@ -1500,7 +1500,7 @@ else if($mode=='sverka_op')
 	{
 		doc_menu();
 		$tmpl->SetTitle("Акт сверки");
-		$dat=date("Y-m-d");		
+		$dat=date("Y-m-d");
 		$tmpl->AddText("
 		<script src='/css/jquery/jquery.js' type='text/javascript'></script>
 		<script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
@@ -1516,7 +1516,7 @@ else if($mode=='sverka_op')
 		<input type='hidden' name='mode' value='sverka_op'>
 		Агент-партнёр:<br>
 		<input type='hidden' name='agent_id' id='agent_id' value=''>
-		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>		
+		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
 		<p class='datetime'>
 		Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10' /><br>
 		Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$dat' maxlength='10' /></p><br>
@@ -1526,18 +1526,18 @@ else if($mode=='sverka_op')
 		while($nx=mysql_fetch_row($rs))
 		{
 			if($CONFIG['site']['default_firm']==$nx[0]) $s=' selected'; else $s='';
-			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");		
-		}		
+			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");
+		}
 		$tmpl->AddText("</select><br>
 		Подтип документа (оставьте пустым, если учитывать не требуется):<br>
 		<input type='text' name='subtype'><br>
 		<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
-		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>		
+		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>
 		<input type=submit value='Сделать сверку!'>
 		</form>
-		
+
 		<script type='text/javascript'>
-		
+
 		function DtCheck(t)
 		{
 			var dn=new Array();
@@ -1562,13 +1562,13 @@ else if($mode=='sverka_op')
 			selectFirst:true,
 			matchContains:1,
 			cacheLength:10,
-			maxItemsToShow:15, 	 
+			maxItemsToShow:15,
 			formatItem:agliFormat,
 			onItemSelect:agselectItem,
 			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
 			});
 			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
-			
+
 			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
 			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
 			$( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
@@ -1587,18 +1587,18 @@ else if($mode=='sverka_op')
 			else var sValue = li.selectValue;
 			document.getElementById('agent_id').value=sValue;
 		}
-		
+
 		</script>");
 	}
 	else if($opt=='html')
 	{
 		$firm_id=rcv('firm_id');
 		$subtype=rcv('subtype');
-		
+
 		$date_st=strtotime(rcv('date_st'));
 		$date_end=strtotime(rcv('date_end'))+60*60*24-1;
 		$ag=rcv('agent_id');
-		
+
 		if($firm_id)
 		{
 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
@@ -1610,7 +1610,7 @@ else if($mode=='sverka_op')
 		$res=mysql_query("SELECT `id`, `fullname` FROM `doc_agent` WHERE `name`='$ag'");
 		$agent=mysql_result($res,0,0);
 		$fn=mysql_result($res,0,1);
-	
+
 		$tmpl->SetText("<center>Акт сверки<br>
 		взаимных расчетов<br>".$dv['firm_name']."<br>
 		c ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end)."
@@ -1619,11 +1619,11 @@ else if($mode=='sverka_op')
 		c одной стороны, и _____________ $fn ____________________ с другой стороны,
 		составили настоящий акт сверки в том, что состояние взаимных расчетов по
 		данным учёта следующее:<br><br>");
-	
+
 		$sql_add='';
 		if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
 		if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`,
 		`doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
@@ -1642,7 +1642,7 @@ else if($mode=='sverka_op')
 		while($nxt=mysql_fetch_row($res))
 		{
 			$deb=$kr="";
-			
+
 			if( ($nxt[2]>=$date_st) && (!$f_print) )
 			{
 				$f_print=true;
@@ -1710,7 +1710,7 @@ else if($mode=='sverka_op')
 		$razn=$pr-$ras;
 		$razn_p=abs($razn);
 		$razn_p=sprintf("%01.2f", $razn_p);
-		
+
 		$pr=sprintf("%01.2f", $pr);
 		$ras=sprintf("%01.2f", $ras);
 
@@ -1728,7 +1728,7 @@ else if($mode=='sverka_op')
 		else  $pr=$ras='';
 		if($pr)	$pr=sprintf("%01.2f", $pr);
 		if($ras)$ras=sprintf("%01.2f", $ras);
-		
+
 		$tmpl->AddText("<tr><td colspan=2>Сальдо на конец периода<td>$ras<td>$pr<td colspan=4>
 		<tr><td colspan=4>");
 		if($razn>0)		$tmpl->AddText("переплата в пользу ".$dv['firm_name']." $razn_p руб.");
@@ -1740,16 +1740,16 @@ else if($mode=='sverka_op')
 		директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
 		<td colspan=4>От $fn<br>
 		директор<br> ____________________________ (_____________)<br><br>м.п.<br>
-		</table>");		
+		</table>");
 	}
 	else if($opt=='pdf')
 	{
 		$firm_id=rcv('firm_id');
-		$subtype=rcv('subtype');			
+		$subtype=rcv('subtype');
 		$date_st=strtotime(rcv('date_st'));
 		$date_end=strtotime(rcv('date_end'))+60*60*24-1;
 		$agent_id=rcv('agent_id');
-		
+
 		if($firm_id)
 		{
 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
@@ -1761,10 +1761,10 @@ else if($mode=='sverka_op')
 		$res=mysql_query("SELECT `id`, `fullname`, `pdol`, `pfio` FROM `doc_agent` WHERE `id`='$agent_id'");
 		if(mysql_errno())	throw new Exception("Не удалось выбрать агента");
 		$agent=mysql_fetch_assoc($res);
-		
+
 		$firm_vars['firm_name']=unhtmlentities($firm_vars['firm_name']);
-		$agent['fullname']=unhtmlentities($agent['fullname']);			
-		
+		$agent['fullname']=unhtmlentities($agent['fullname']);
+
 		define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
 		require('fpdf/fpdf.php');
 		$pdf=new FPDF('P');
@@ -1776,28 +1776,28 @@ else if($mode=='sverka_op')
 
 		$pdf->SetFont('Arial','',16);
 		$str = iconv('UTF-8', 'windows-1251', "Акт сверки взаимных расчетов");
-		$pdf->Cell(0,6,$str,0,1,'C',0);			
-		
+		$pdf->Cell(0,6,$str,0,1,'C',0);
+
 		$str="от {$firm_vars['firm_name']}\nза период с ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end);
 		$pdf->SetFont('Arial','',10);
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,4,$str,0,'C',0);
 		$pdf->Ln(2);
-		$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и              {$agent['fullname']}                 , с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
-		$str = iconv('UTF-8', 'windows-1251', $str);	
+		$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и              {$agent['fullname']}                 , с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Write(5,$str,'');
-		
+
 		$pdf->Ln(8);
 		$y=$pdf->GetY();
 		$base_x=$pdf->GetX();
 		$pdf->SetLineWidth(0.5);
 		$t_width=array(17,44,17,17,17,44,17,0);
 		$t_text=array('Дата', 'Операция', 'Дебет', 'Кредит', 'Дата', 'Операция', 'Дебет', 'Кредит');
-		
+
 		$h_width=$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
 		$str1=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
 		$str2=iconv('UTF-8', 'windows-1251', "По данным {$agent['fullname']}");
-					
+
 		$pdf->MultiCell($h_width,5,$str1,0,'L',0);
 		$max_h=$pdf->GetY()-$y;
 		$pdf->SetY($y);
@@ -1820,11 +1820,11 @@ else if($mode=='sverka_op')
 		$pdf->SetFont('','',8);
 		$pr=$ras=0;
 		$f_print=false;
-		
+
 		$sql_add='';
 		if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
 		if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`date`, `doc_list`.`sum`,
 		`doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
@@ -1832,7 +1832,7 @@ else if($mode=='sverka_op')
 		WHERE `doc_list`.`agent`='{$agent['id']}' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`type`<'8' AND `doc_list`.`type`!='3' ".$sql_add." ORDER BY `doc_list`.`date`" );
 		while($nxt=mysql_fetch_array($res))
 		{
-			$deb=$kr="";				
+			$deb=$kr="";
 			if( ($nxt[2]>=$date_st) && (!$f_print) )
 			{
 				$f_print=true;
@@ -1849,7 +1849,7 @@ else if($mode=='sverka_op')
 				else  $pr=$ras='';
 				if($pr)	$pr=sprintf("%01.2f", $pr);
 				if($ras)$ras=sprintf("%01.2f", $ras);
-				
+
 				$str=iconv('UTF-8', 'windows-1251', "Сальдо на начало периода");
 				$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
 				$pdf->Cell($t_width[2],4,$ras,1,0,'R',0);
@@ -1913,11 +1913,11 @@ else if($mode=='sverka_op')
 				$pdf->Ln();
 			}
 		}
-		
+
 		$razn=$pr-$ras;
 		$razn_p=abs($razn);
 		$razn_p=sprintf("%01.2f", $razn_p);
-		
+
 		$pr=sprintf("%01.2f", $pr);
 		$ras=sprintf("%01.2f", $ras);
 
@@ -1943,7 +1943,7 @@ else if($mode=='sverka_op')
 		else  $pr=$ras='';
 		if($pr)	$pr=sprintf("%01.2f", $pr);
 		if($ras)$ras=sprintf("%01.2f", $ras);
-		
+
 		$str=iconv('UTF-8', 'windows-1251', "Сальдо на конец периода");
 		$pdf->Cell($t_width[0]+$t_width[1],4,$str,1,0,'L',0);
 		$pdf->Cell($t_width[2],4,$ras,1,0,'L',0);
@@ -1952,14 +1952,14 @@ else if($mode=='sverka_op')
 		$pdf->Cell($t_width[6],4,'',1,0,'L',0);
 		$pdf->Cell($t_width[7],4,'',1,0,'L',0);
 		$pdf->Ln(7);
-		
+
 		$str=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']} на ".date("d.m.Y",$date_end));
 		$pdf->Write(4,$str);
 		$pdf->Ln();
 		if($razn>0)		$str="переплата в пользу ".$firm_vars['firm_name']." $razn_p руб.";
 		else	if($razn<0) 	$str="задолженность в пользу ".$firm_vars['firm_name']." $razn_p руб.";
 		else			$str="переплат и задолженностей нет!";
-		
+
 		$str=iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Write(4,$str);
 		$pdf->Ln(7);
@@ -1970,20 +1970,20 @@ else if($mode=='sverka_op')
 		$str=iconv('UTF-8', 'windows-1251', "От {$agent['fullname']}\n\n           ____________________________ (                )\n\n           м.п.");
 		$pdf->lMargin=$x;
 		$pdf->setX($x);
-		
+
 		$pdf->setY($y);
 		$pdf->MultiCell(0,5,$str,0,'L',0);
 		$pdf->Ln();
-		
+
 // 			$tmpl->AddText("<td colspan=4>
 // 			<tr><td colspan=4>От ".$dv['firm_name']."<br>
 // 			директор<br>____________________________ (".$dv['firm_director'].")<br><br>м.п.<br>
 // 			<td colspan=4>От $fn<br>
 // 			директор<br> ____________________________ (_____________)<br><br>м.п.<br>
 // 			</table>");
-		
+
 		$pdf->Output('akt_sverki.pdf','I');
-	}		
+	}
 }
 else if($mode=='agent_otchet')
 {
@@ -2031,7 +2031,7 @@ else if($mode=='agent_otchet_ex')
 		if($prix) $prix_p=sprintf("%0.2f",$prix);
 		if($rasx) $rasx_p=sprintf("%0.2f",$rasx);
 		$dt=date("d.m.Y H:i:s",$nxt[5]);
-		
+
 		if($tovar)
 		{
 			$tovar='';
@@ -2047,7 +2047,7 @@ else if($mode=='agent_otchet_ex')
 			$tovar="<br>Товары: $tovar";
 		}
 		else $tovar='';
-		
+
 		$tmpl->AddText("<tr><td>".$doc_types[$nxt[1]]." N$nxt[3]$nxt[4] ($nxt[0])<br>от $dt $tovar<td>$prix_p<td>$rasx_p<td>$sum_p");
 	}
 	$tmpl->AddText("</table>");
@@ -2071,7 +2071,7 @@ else if($mode=='img_otchet')
 		$tmpl->AddText("<tr><td>{$nxt['img_id']}<td>{$nxt['name']} ({$nxt['type']})<td>{$nxt['default']}<td>{$nxt['pos_id']}<td>{$nxt['vc']}<td>{$nxt['printname']} {$nxt['pos_name']} / {$nxt['proizv']}");
 	}
 	$tmpl->AddText("</table>");
-	
+
 }
 else if($mode=='prod')
 {
@@ -2090,6 +2090,12 @@ else if($mode=='prod')
 		С:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_f' value='$d_f'><br>
 		По:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_t' value='$d_t'>
 		</fieldset>
+		Фильтр по наименованию:<br>
+		<input type='text' name='f_name'><br>
+		Фильтр по производителю:<br>
+		<input type='text' name='f_proizv'><br>
+		Фильтр по коду:<br>
+		<input type='text' name='f_vc'><br>
 		</p>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>");
@@ -2099,13 +2105,22 @@ else if($mode=='prod')
 		$tmpl->LoadTemplate('print');
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t'));
+		$f_name=rcv('f_name');
+		$f_proizv=rcv('f_proizv');
+		$f_vc=rcv('f_vc');
+		$sql_add='';
+		if($f_name)	$sql_add.=" AND `doc_base`.`name` LIKE '%$f_name%' ";
+		if($f_proizv)	$sql_add.=" AND `doc_base`.`proizv` LIKE '%$f_proizv%' ";
+		if($f_vc)	$sql_add.=" AND `doc_base`.`vc` LIKE '%$f_vc%' ";
+		if($sql_add)	$sql_add="WHERE 1 ".$sql_add;
 		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`likvid`, SUM(`doc_list_pos`.`cnt`), SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`)
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
+		$sql_add
 		GROUP BY `doc_list_pos`.`tovar`
 		ORDER BY `doc_base`.`name`");
-		
+
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
 		$tmpl->AddText("
@@ -2163,7 +2178,7 @@ else if($mode=='bezprodaj')
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
 		)
 		ORDER BY `doc_base`.`name`");
-		
+
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
 		$tmpl->AddText("
@@ -2204,7 +2219,7 @@ else if($mode=='doc_reestr')
 		{
 			$ss='';
 			if($dsel==$nxt[0]) $ss='selected';
-			$tmpl->AddText("<option value='$nxt[0]' $ss>$nxt[1]</option>");	
+			$tmpl->AddText("<option value='$nxt[0]' $ss>$nxt[1]</option>");
 		}
 		$tmpl->AddText("
 		</select><br>
@@ -2216,7 +2231,7 @@ else if($mode=='doc_reestr')
 		{
 			$ss='';
 			if($dsel==$nxt[0]) $ss='selected';
-			$tmpl->AddText("<option value='$nxt[0]' $ss>$nxt[1]</option>");	
+			$tmpl->AddText("<option value='$nxt[0]' $ss>$nxt[1]</option>");
 		}
 		$tmpl->AddText("
 		</select><br>
@@ -2249,7 +2264,7 @@ else if($mode=='cost')
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список цен");
 		while($nxt=mysql_fetch_row($res))
 		{
-			$tmpl->AddText("<label><input type='checkbox' name='cost$nxt[0]' value='1' checked>$nxt[1]</label><br>");			
+			$tmpl->AddText("<label><input type='checkbox' name='cost$nxt[0]' value='1' checked>$nxt[1]</label><br>");
 		}
 		$tmpl->AddText("<button type='submit'>Сформировать отчёт</button>
 		</form>
@@ -2269,13 +2284,13 @@ else if($mode=='cost')
 			$costs[$nxt[0]]=$nxt[1];
 			$cost_cnt++;
 		}
-		
+
 		$tmpl->AddText("<table width='100%'>
 		<tr><th rowspan='2'>N<th rowspan='2'>Код<th rowspan='2'>Наименование<th rowspan='2'>Базовая цена<th rowspan='2'>АЦП<th colspan='$cost_cnt'>Расчётные цены
 		<tr>");
 		foreach($costs as $cost_name)
 			$tmpl->AddText("<th>$cost_name");
-		
+
 		$res=mysql_query("SELECT `id`, `vc`, `name`, `proizv`, `cost` FROM `doc_base`
 		ORDER BY `name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список позиций");
@@ -2289,7 +2304,7 @@ else if($mode=='cost')
 				$tmpl->AddText("<td align='right'>$cost");
 			}
 		}
-		
+
 		$tmpl->AddText("</table>");
 	}
 }
@@ -2313,7 +2328,7 @@ else if($mode=='agent_bez_prodaj')
 	{
 		$sql_add= (rcv('fix')==1) ? " AND `doc_agent`.`responsible`>'0' " : '';
 		$tmpl->AddText("<h1>Агенты без продаж с $dt_f по текущий момент</h1><ul>");
-		
+
 		$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`name`, `doc_agent`.`responsible`, `users`.`name` FROM `doc_agent`
 		LEFT JOIN `users` ON `users`.`id`=`doc_agent`.`responsible`
 		WHERE `doc_agent`.`id` NOT IN (SELECT `agent` FROM `doc_list` WHERE `date`>='$dt_sql' ) $sql_add");
@@ -2348,12 +2363,12 @@ function DocReestrPDF($to_str='', $from_date=0, $to_date=0, $doc_type=0, $firm_i
 	$pdf->tMargin=5;
 	$pdf->AddPage('L');
 	$pdf->SetFillColor(255);
-	
+
 	$pdf->SetFont('Arial','',16);
-	
+
 	$str = iconv('UTF-8', 'windows-1251', "Реестр документов");
 	$pdf->Cell(0,6,$str,0,1,'C');
-	
+
 	$str='Показаны';
 	if($doc_type)
 	{
@@ -2361,27 +2376,27 @@ function DocReestrPDF($to_str='', $from_date=0, $to_date=0, $doc_type=0, $firm_i
 		$doc_name=mysql_result($res,0,0);
 		$str.=' документы типа "'.$doc_name.'"';
 	}	else $str.=' все документы';
-	
+
 	$str.=' за период c '.date("Y-m-d",$from_date)." по ".date("Y-m-d",$to_date);
-	
+
 	if($firm_id)
 	{
 		$res=mysql_query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='$firm_id'");
 		$firm_name=mysql_result($res,0,0);
 		$str.=', по организации "'.$firm_name.'"';
 	}
-	
+
 	if($subtype)
 	{
-		$str.=", с подтипом $subtype";	
+		$str.=", с подтипом $subtype";
 	}
-	
-	$pdf->SetFont('Arial','',10);	
+
+	$pdf->SetFont('Arial','',10);
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$str=unhtmlentities($str);
 	$pdf->MultiCell(0,3,$str,0,'C');
 	$pdf->Ln(5);
-	
+
 	$pdf->SetFont('','',8);
 	$pdf->SetLineWidth(0.5);
 	$t_width=array(10,15,40,13,18,19,18,8,0);
@@ -2396,11 +2411,11 @@ function DocReestrPDF($to_str='', $from_date=0, $to_date=0, $doc_type=0, $firm_i
 	$step=4;
 	$pdf->SetFont('','',7);
 	$pdf->SetLineWidth(0.2);
-	
+
 	$sqla='';
 	if($doc_type)	$sqla.=" AND `doc_list`.`type`='$doc_type'";
 	if($firm_id)	$sqla.=" AND `doc_list`.`firm_id`='$firm_id'";
-	
+
 	$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_types`.`name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) , `users`.`name`, `doc_list`.`ok`, `doc_list`.`sum`, 'р', `doc_agent`.`name`
 	FROM `doc_list`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
@@ -2417,20 +2432,20 @@ function DocReestrPDF($to_str='', $from_date=0, $to_date=0, $doc_type=0, $firm_i
 		else		$status=iconv('UTF-8', 'windows-1251', 'Не проведен');
 		$nxt[6]=sprintf("%0.2f",$nxt[6]);
 		$nxt[8]=unhtmlentities($nxt[8]);
-		$pdf->Cell($t_width[0],$step,$i,1,0,'C',0);		
+		$pdf->Cell($t_width[0],$step,$i,1,0,'C',0);
 		$pdf->Cell($t_width[1],$step,$date_p,1,0,'C',0);
 		$pdf->Cell($t_width[2],$step,$nxt[2],1,0,'L',0);
 		$pdf->Cell($t_width[3],$step,$nxt[3],1,0,'R',0);
 		$pdf->Cell($t_width[4],$step,$nxt[4],1,0,'R',0);
-		$pdf->Cell($t_width[5],$step,$status,1,0,'R',0);		
+		$pdf->Cell($t_width[5],$step,$status,1,0,'R',0);
 		$pdf->Cell($t_width[6],$step,$nxt[6],1,0,'R',0);
 		$pdf->Cell($t_width[7],$step,$nxt[7],1,0,'C',0);
 		$pdf->Cell($t_width[8],$step,$nxt[8],1,0,'L',0);
 		$pdf->Ln();
 		$i++;
 	}
-	
-	
+
+
 	mysql_query("SET character_set_results = utf8");
 	if($to_str)
 		return $pdf->Output('doc_reestr.pdf','S');
