@@ -153,6 +153,7 @@ CREATE  TABLE IF NOT EXISTS `doc_agent` (
   `responsible` INT(11) NULL ,
   `data_sverki` DATE NOT NULL ,
   `dishonest` TINYINT(4) NOT NULL COMMENT 'Недобросовестный' ,
+  `p_agent` int(11) DEFAULT NULL COMMENT 'Подчинение другому агенту',
   UNIQUE INDEX `id` (`id` ASC) ,
   UNIQUE INDEX `uniq_name` (`group` ASC, `name` ASC) ,
   INDEX `name` (`name` ASC) ,
@@ -664,6 +665,7 @@ CREATE  TABLE IF NOT EXISTS `doc_list` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `type` TINYINT(4) NOT NULL DEFAULT '0' ,
   `agent` INT(11) NOT NULL DEFAULT '0' ,
+  `contract` INT(11) NULL DEFAULT NULL ,
   `comment` TEXT NOT NULL ,
   `date` BIGINT(20) NOT NULL DEFAULT '0' ,
   `ok` BIGINT(20) NOT NULL DEFAULT '0' ,
@@ -681,7 +683,8 @@ CREATE  TABLE IF NOT EXISTS `doc_list` (
   `err_flag` TINYINT(4) NOT NULL DEFAULT '0' ,
   UNIQUE INDEX `id` (`id` ASC) ,
   INDEX `type` (`type` ASC) ,
-  INDEX `fio` (`agent` ASC) ,
+  INDEX `agent` (`agent` ASC) ,
+  INDEX `contract` (`contract` ASC) ,
   INDEX `date` (`date` ASC) ,
   INDEX `altnum` (`altnum` ASC) ,
   INDEX `p_doc` (`p_doc` ASC) ,
@@ -1743,6 +1746,8 @@ CREATE  TABLE IF NOT EXISTS `doc_group_params` (
 ENGINE = InnoDB;
 
 
+ALTER TABLE `doc_agent` ADD CONSTRAINT `doc_agent_ibfk_1` FOREIGN KEY (`p_agent`) REFERENCES `doc_agent` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
@@ -1840,10 +1845,54 @@ INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES (13, 'Расходы на
 
 COMMIT;
 
+
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(1, 'doc', 'Документы', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(2, 'doc_list', 'Журнал документов', 'view,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(3, 'doc_postuplenie', 'Поступление', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(4, 'generic_articles', 'Доступ к статьям', 'view,edit,create,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(5, 'sys', 'Системные объекты', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(6, 'generic', 'Общие объекты', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(7, 'sys_acl', 'Управление привилегиями', 'view,edit');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(8, 'doc_realizaciya', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(9, 'doc_zayavka', 'Документ заявки', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(10, 'doc_kompredl', 'Коммерческое предложение', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(11, 'doc_dogovor', 'Договор', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(12, 'doc_doveren', 'Доверенность', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(13, 'doc_pbank', 'Приход средств в банк', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(14, 'doc_peremeshenie', 'Перемещение товара', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(15, 'doc_perkas', 'Перемещение средств в кассе', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(16, 'doc_predlojenie', 'Предложение поставщика', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(17, 'doc_rbank', 'Расход средств из банка', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(18, 'doc_realiz_op', 'Оперативная реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(19, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(20, 'doc_sborka', 'Сборка изделия', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(21, 'doc_specific', 'Спецификация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(22, 'doc_v_puti', 'Товар в пути', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(23, 'list', 'Списки', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(24, 'list_agent', 'Агенты', 'create,edit,view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(25, 'list_sklad', 'Склад', 'create,edit,view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(26, 'list_price_an', 'Анализатор прайсов', 'create,edit,view,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(27, 'list_agent_dov', 'Доверенные лица', 'create,edit,view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(28, 'report', 'Отчёты', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(29, 'report_cash', 'Кассовый отчёт', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(30, 'generic_news', 'Новости', 'view,create,edit,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(31, 'doc_service', 'Служебные функции', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(32, 'doc_scropts', 'Сценарии и операции', 'view,exec');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(33, 'log', 'Системные журналы', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(34, 'log_browser', 'Статистирка броузеров', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(35, 'log_error', 'Журнал ошибок', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(36, 'log_access', 'Журнал посещений', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(37, 'sys_async_task', 'Ассинхронные задачи', 'view,exec');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(38, 'sys_ip-blacklist', 'Чёрный список IP адресов', 'view,create,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(39, 'sys_ip-log', 'Журнал обращений к ip адресам', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(40, 'generic_price_an', 'Анализатор прайсов', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(42, 'doc_pko', 'Приходный кассовый ордер' 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+
 -- -----------------------------------------------------
 -- Data for table `db_version`
 -- -----------------------------------------------------
 START TRANSACTION;
-INSERT INTO `db_version` (`version`) VALUES (272);
+INSERT INTO `db_version` (`version`) VALUES (289);
 
 COMMIT;

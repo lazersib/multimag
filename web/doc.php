@@ -118,6 +118,10 @@ else if($mode=='morphto')
 	$target_type=rcv('tt');
 	$document->MorphTo($doc, $target_type);
 }
+else if($mode=='getinfo')
+{
+	$document->GetInfo();
+}
 // Это переделать !!!!!!!!!!!!!!!!!!
 else if($mode=="incnum")
 {
@@ -138,14 +142,17 @@ else $tmpl->msg("ERROR $mode","err");
 }
 catch(AccessException $e)
 {
+	$tmpl->ajax=0;
 	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
 }
 catch(MysqlException $e)
 {
+	$tmpl->ajax=0;
 	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
 }
 catch (Exception $e)
 {
+	$tmpl->ajax=0;
 	$tmpl->msg($e->getMessage(),'err',"Общая ошибка");
 }
 

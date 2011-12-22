@@ -33,7 +33,7 @@ session_start();
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 
-if(! @ include_once("$base_path/config_site.php"))
+if(! include_once("$base_path/config_site.php"))
 {
 	header("500 Internal Server Error");
 	echo"<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Обратитесь к администратору по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";

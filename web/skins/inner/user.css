@@ -102,6 +102,7 @@ table.list tr:nth-child(odd) td
 	background-color:	#e0f0ff;
 	width:			auto;
 	padding:		4px;
+	height:			25px;
 }
 
 #doc_menu_r

@@ -658,8 +658,15 @@ class doc_Zayavka extends doc_Nulltype
 		if(@$CONFIG['site']['doc_header'])
 		{
 			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
-			$pdf->Image($header_img,8,10, 190);	
-			$pdf->Sety(54);
+			$size=getimagesize($header_img);
+			if(!$size)			throw new Exception("Не удалось открыть файл изображения");
+			if($size[2]!=IMAGETYPE_JPEG)	throw new Exception("Файл изображения не в jpeg формате");
+			if($size[0]<800)		throw new Exception("Разрешение изображения слишком мало! Допустимя ширина - не менее 800px");
+			$width=190;				
+			$offset_y=($size[1]/$size[0]*$width)+14;
+			$pdf->Image($header_img,8,10, $width);	
+			$pdf->Sety($offset_y);
+
 		}
 		
 		$str = "Внимание! Оплата данного счёта означает согласие с условиями поставки товара. Уведомление об оплате обязательно, иначе не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с поставщика, самовывозом, при наличии доверенности и паспорта. Система интернет-заказов для постоянных клиентов доступна на нашем сайте http://{$CONFIG['site']['name']}.";

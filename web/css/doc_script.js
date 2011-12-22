@@ -158,6 +158,10 @@ function DocConnectProcess(msg)
 function DocHeadInit()
 {
 	var doc_left_block=document.getElementById("doc_left_block")
+	var doc_menu_container=document.getElementById("doc_menu_container")
+	var reset_cost=document.getElementById("reset_cost")
+	
+	doc_left_block.changing=0
 	
 	doc_left_block.doSave=function()
 	{
@@ -175,6 +179,20 @@ function DocHeadInit()
 			success: function(msg) { rcvDataSuccess(msg); }, 
 			error:   function() { jAlert('Ошибка соединения!','Сохранение данных',null,'icon_err'); }, 
 		});
+	}
+	
+	doc_left_block.StartEdit=function()
+	{
+		doc_left_block.changing=1
+		doc_menu_container.style.display='none'
+		if(reset_cost)	reset_cost.style.display='none'
+	}
+	
+	doc_left_block.FinistEdit=function()
+	{
+		doc_left_block.changing=0
+		doc_menu_container.style.display=''
+		if(reset_cost)	reset_cost.style.display=''
 	}
 	
 	function rcvDataSuccess(msg)
@@ -204,6 +222,7 @@ function DocHeadInit()
 				doc_left_block.style.backgroundColor='#f00'
 				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Изменение списка товаров", null,  'icon_err');
 			}
+			doc_left_block.FinistEdit()
 		}
 		catch(e)
 		{
@@ -213,17 +232,21 @@ function DocHeadInit()
 		}	
 	}
 	
-	function DocHeadFieldClick()
-	{
-		doc_left_block.doSave()
-
-	}
+// 	function DocHeadFieldClick()
+// 	{
+// 		doc_left_block.doSave()
+// 
+// 	}
+// 	
 	
-	function SetEvents(obj)
+	
+	doc_left_block.SetEvents=function(obj)
 	{
 		obj.onclick=function(event)
 		{
+			doc_left_block.StartEdit()
 			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 5000)
 		}
 		obj.onblur=function(event)
 		{
@@ -238,16 +261,16 @@ function DocHeadInit()
 		obj.onkeyup=function(event)
 		{
 			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
-			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 5000)
+			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 3000)
 		}
 	}
 	
 	var fields=doc_left_block.getElementsByTagName('input')
-	for(var i=0; i<fields.length; i++)	SetEvents(fields[i])
+	for(var i=0; i<fields.length; i++)	doc_left_block.SetEvents(fields[i])
 	var fields=doc_left_block.getElementsByTagName('select')
-	for(var i=0; i<fields.length; i++)	SetEvents(fields[i])
+	for(var i=0; i<fields.length; i++)	doc_left_block.SetEvents(fields[i])
 	var fields=doc_left_block.getElementsByTagName('textarea')
-	for(var i=0; i<fields.length; i++)	SetEvents(fields[i])
+	for(var i=0; i<fields.length; i++)	doc_left_block.SetEvents(fields[i])
 }
 
 function DocLeftToggle(_this)
@@ -276,7 +299,60 @@ function ResetCost(doc)
 		type:   'GET', 
 		url:    '/doc.php', 
 		data:   'mode=srv&opt=jrc&doc='+doc, 
-		success: function(msg) { document.getElementById('poslist').refresh() }, 
+		success: function(msg) { document.getElementById('poslist').refresh(); jAlert('Цены обновлены успешно!',"Сделано!", function() {}); }, 
+		error:   function() { jAlert('Ошибка соединения!','Сохранение данных',null,'icon_err'); }, 
+	});
+}
+
+function UpdateContractInfo(doc, agent_id)
+{
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+ 			var json=eval('('+msg+')');
+			if(json.response=='err')
+			{
+				doc_left_block.style.backgroundColor='#f00'
+				jAlert(json.text,"Ошибка", {}, 'icon_err');
+			}
+			else if(json.response=='contract_list')
+			{
+				var agent_contract=document.getElementById("agent_contract")
+				var str=''
+				var cnt=0
+				for(var i=0;i<json.content.length;i++)
+				{
+					str=str+"<option value='"+json.content[i].id+"'>N"+json.content[i].id+":"+json.content[i].name+"</option>"
+					cnt++
+				}
+				if(cnt)
+				{
+					agent_contract.innerHTML="Договор:<br><select name='contract' id='contract_select'>"+str+"</select>"
+					document.getElementById("doc_left_block").SetEvents(document.getElementById("contract_select"))
+				}
+				else agent_contract.innerHTML=''
+			}
+			else
+			{
+				doc_left_block.style.backgroundColor='#f00'
+				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Изменение списка товаров", null,  'icon_err');
+			}
+			doc_left_block.FinistEdit()
+		}
+		catch(e)
+		{
+			doc_left_block.style.backgroundColor='#f00'
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+		}	
+	}	
+	
+	$.ajax({ 
+		type:   'GET', 
+		url:    '/doc.php', 
+		data:   'mode=getinfo&opt=jgetcontracts&doc='+doc+'&agent='+agent_id, 
+		success: function(msg) { rcvDataSuccess(msg) }, 
 		error:   function() { jAlert('Ошибка соединения!','Сохранение данных',null,'icon_err'); }, 
 	});
 }

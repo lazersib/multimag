@@ -211,6 +211,7 @@ class doc_Nulltype
 		$sum=rcv('sum');
 		$bank=rcv('bank');
 		$kassa=rcv('kassa');
+		$contract=rcv('contract');
 
 		$cena=rcv('cena');
 		$cost_recalc=rcv('cost_recalc');
@@ -254,6 +255,12 @@ class doc_Nulltype
 						}
 						DocSumUpdate($this->doc);
 					}
+				}
+				else if($f=='agent')
+				{
+					$sqlupdate.=", `$f`='${$f}', `contract`='$contract'";
+					$sqlinsert_keys.=", `$f`, `contract`";
+					$sqlinsert_value.=", '${$f}', '$contract'";
 				}
 				else
 				{
@@ -311,6 +318,7 @@ class doc_Nulltype
 		$bank=rcv('bank');
 		$kassa=rcv('kassa');
 		$cena=rcv('cena');
+		$contract=rcv('contract');
 		
 		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type,$subtype);
 		if($date<=0)	$date=time();
@@ -337,6 +345,12 @@ class doc_Nulltype
 						$sqlupdate.=", `nds`='$nds'";
 						$sqlinsert_keys.=", `nds`";
 						$sqlinsert_value.=", '$nds'";
+					}
+					else if($f=='agent')
+					{
+						$sqlupdate.=", `$f`='${$f}', `contract`='$contract'";
+						$sqlinsert_keys.=", `$f`, `contract`";
+						$sqlinsert_value.=", '${$f}', '$contract'";
 					}
 					else
 					{
@@ -733,10 +747,41 @@ class doc_Nulltype
 		}
 	}
    	
+   	// Получение информации, не связанной со складом, и допустимых для проведённых докеументов
+   	function GetInfo()
+   	{
+		global $tmpl;
+		$opt=rcv('opt');
+		$tmpl->ajax=1;
+		if( isAccess('doc_'.$this->doc_name,'view') )
+		{
+				
+			if($opt=='jgetcontracts')
+			{
+					
+				$agent=rcv('agent');
+				$res=mysql_query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
+				FROM `doc_list`
+				LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
+				WHERE `agent`='$agent' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
+				if(mysql_errno())	throw new MysqlException("Не удаётся получить список договоров");
+				$list='';
+				while($nxt=mysql_fetch_row($res))
+				{
+					if($list)	$list.=", ";
+					$list.="{ id: '$nxt[0]', name: '$nxt[1]' }";
+				}
+				$str="{ response: 'contract_list', content: [ $list ] }";		
+				$tmpl->SetText($str);	
+			}
+		}
+		else	throw new AccessException('Недостаточно привилегий');
+   	}
+   	
 	// Служебные опции
 	function _Service($opt, $pos)
 	{
-		if(!$this->sklad_editor_enable) return 0;
+		//if(!$this->sklad_editor_enable) return 0;
 		global $tmpl;
 		global $uid;
 		$tmpl->ajax=1;
@@ -965,6 +1010,20 @@ class doc_Nulltype
 		$col='';
 		if($b>0)	$col="color: #f00; font-weight: bold;";
 		if($b<0)	$col="color: #f08; font-weight: bold;";
+		
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
+		FROM `doc_list`
+		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
+		WHERE `agent`='{$this->doc_data[2]}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
+		if(mysql_errno())	throw new MysqlException("Не удаётся получить список договоров");
+		$contr_content='';
+		while($nxt=mysql_fetch_row($res))
+		{
+			$selected=($this->doc_data['contract']==$nxt[0])?'selected':'';
+			$contr_content.="<option value='$nxt[0]' $selected>N$nxt[0]: $nxt[1]</option>";
+		}
+		if($contr_content)	$contr_content="Договор:<br><select name='contract'>$contr_content</select>";
+		
 		$tmpl->AddText("
 		<div>
 		<div style='float: right; $col' id='agent_balance_info'>$b</div>
@@ -974,7 +1033,7 @@ class doc_Nulltype
 		</div>
 		<input type='hidden' name='agent' id='agent_id' value='{$this->doc_data[2]}'>
 		<input type='text' id='agent_nm'  style='width: 100%;' value='{$this->doc_data[3]}'>
-		<div id='agent_info'></div>
+		<div id='agent_contract'>$contr_content</div>
 		<br>
 		
 		<script type=\"text/javascript\">
@@ -1006,6 +1065,7 @@ class doc_Nulltype
 			else var sValue = li.selectValue;
 			document.getElementById('agent_id').value=sValue;
 			document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+sValue;
+			UpdateContractInfo({$this->doc},sValue)
 			");
 		if(!$this->doc)		$tmpl->AddText("	
 			var plat_id=document.getElementById('plat_id');
@@ -1084,7 +1144,7 @@ class doc_Nulltype
 	protected function DrawCenaField()
 	{
 		global $tmpl;
-		$tmpl->AddText("Цена:<a onclick='ResetCost(\"{$this->doc}\"); return false;'><img src='/img/i_reload.png'></a><br>
+		$tmpl->AddText("Цена:<a onclick='ResetCost(\"{$this->doc}\"); return false;' id='reset_cost'><img src='/img/i_reload.png'></a><br>
 		<select name='cena'>");
 		$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` ORDER BY `name`");
 		if(mysql_errno())	throw new Exception("Не удалось выбрать список цен");
@@ -1109,7 +1169,7 @@ class doc_Nulltype
 		if($this->doc_data) return;	
 		if($this->doc)
 		{
-			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`
+			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`
 			FROM `doc_list` AS `a`
 			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
 			WHERE `a`.`id`='".$this->doc."'");

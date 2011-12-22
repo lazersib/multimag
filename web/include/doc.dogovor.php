@@ -30,7 +30,7 @@ class doc_Dogovor extends doc_Nulltype
 		$this->doc_name				='dogovor';
 		$this->doc_viewname			='Договор';
 		$this->sklad_editor_enable		=false;
-		$this->header_fields			='separator agent';
+		$this->header_fields			='separator agent cena';
 		settype($this->doc,'int');
 		if(!$doc)
 		{
@@ -60,10 +60,10 @@ class doc_Dogovor extends doc_Nulltype
 # Форс-мажор
 ## Ни одна из Сторон не будет нести ответственности за полное или частичное неисполнение любой из своих обязанностей, если неисполнение будет являться следствием таких обстоятельств как наводнение, пожар, землетрясение, война, военные действия, блокада, забастовки, акты или действия государственных органов, возникшие после заключения договора, которые прямо или косвенно повлияли на исполнение Сторонами своих обязательств по договору. При этом срок исполнения обязательств по настоящему договору соразмерно отодвигается на время действия таких обстоятельств.
 # Разрешение споров
-## Все споры между сторонами настоящего Договора, по этому договору или в связи с ним, в том числе, касающиеся его существования, действительности, изменения, исполнения, прекращения, в том числе по обязательствам, возникшим по настоящему Договору и договорам, обеспечивающим их исполнение, подлежат рассмотрению в Сибирском третейском суде (г. Новосибирск) в соответствии с его регламентом и действующим законодательством. Решение Сибирского третейского суда (г. Новосибирск) является окончательным.
+## Все споры между сторонами настоящего Договора, по этому договору или в связи с ним, в том числе, касающиеся его существования, действительности, изменения, исполнения, прекращения, в том числе по обязательствам, возникшим по настоящему Договору и договорам, обеспечивающим их исполнение, подлежат рассмотрению в арбитражном суде в соответствии с его регламентом и действующим законодательством. Решение арбитражного суда является окончательным.
 # Прочие условия
 ## Все изменения и дополнения к настоящему договору оформляются в виде дополнительных соглашений, подписываемых уполномоченными представителями сторон.
-## Настоящий договор вступает в силу с момента подписания и действует до 31 декабря 2011 г. Если за 30-дней до окончания срока действия настоящего договора ни одна из сторон не заявит о его прекращении, действие договора считается продленным на следующий календарный год.
+## Настоящий договор вступает в силу с момента подписания и действует до {{ENDDATE}}. Если за 30-дней до окончания срока действия настоящего договора ни одна из сторон не заявит о его прекращении, действие договора считается продленным на следующий календарный год.
 ## Окончание срока действия договора влечет за собой прекращение обязательств сторон по нему, но не освобождает стороны от ответственности за его нарушения, если таковые имели место.
 # Адреса и реквизиты сторон
 {{REKVIZITY}}
@@ -74,15 +74,35 @@ class doc_Dogovor extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
+		$name=@$this->dop_data['name'];
+		if($this->doc)	$end_date=@$this->dop_data['end_date'];
+		else		$end_date=date("Y-12-31");
+		$dchecked=@$this->dop_data['debt_control']?'checked':'';
+		$debt_size=@$this->dop_data['debt_size'];
+		$limit=@$this->dop_data['limit'];
 		$checked=$this->dop_data['received']?'checked':'';
-		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");	
+		$tmpl->AddText("
+		Отображаемое наименование:<br>
+		<input type='text' name='name' value='$name'><br>
+		Дата истечения:<br>
+		<input type='text' name='end_date' value='$end_date'><br>
+		<label><input type='checkbox' name='debt_control' value='1' $dchecked>Контроль задолженности</label><br>
+		<input type='text' name='debt_size' value='$debt_size'><br>
+		Лимит оборотов по договору:<br>
+		<input type='text' name='limit' value='$limit'><br>
+		<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");	
 	}
 
 	function DopSave()
 	{
 		$received=rcv('received');
+		$end_date=rcv('end_date');
+		$debt_control=rcv('debt_control');
+		$debt_size=rcv('debt_size');
+		$name=rcv('name');
+		$limit=rcv('limit');
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'received','$received')");
+		VALUES ( '{$this->doc}' ,'received','$received'), ( '{$this->doc}' ,'end_date','$end_date'), ( '{$this->doc}' ,'debt_control','$debt_control'), ( '{$this->doc}' ,'debt_size','$debt_size'), ( '{$this->doc}' ,'limit','$limit'), ( '{$this->doc}' ,'name','$name')");
 	}
 	
 	function DopBody()
@@ -120,6 +140,7 @@ $agent_info[2], тел. $agent_info[3]<br>
 			$wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
 			$wikiparser->AddVariable('FIRMNAME', unhtmlentities($this->firm_vars['firm_name']));
 			$wikiparser->AddVariable('FIRMDIRECTOR', unhtmlentities($this->firm_vars['firm_director_r']));
+			$wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
 			$text=$wikiparser->parse(html_entity_decode($this->doc_data[4],ENT_QUOTES,"UTF-8"));
 			$tmpl->AddText("<b>Текст договора (форматирование может отличаться от форматирования при печати):</b> <p>$text</p>");
 			$this->doc_data[4]='';
@@ -226,7 +247,13 @@ $agent_info[2], тел. $agent_info[3]<br>
 		}
 		return 1;
    	}
-
+	function Service($doc)
+	{
+		$tmpl->ajax=1;
+		$opt=rcv('opt');
+		$pos=rcv('pos');
+		parent::_Service($opt,$pos);
+	}
 //	================== Функции только этого класса ======================================================
 
 	function DogovorHTML($to_str=0)

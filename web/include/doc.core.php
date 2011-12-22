@@ -370,39 +370,41 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	$context="<a href=\'/index.php\'><div>Главная</div></a><a href=\'/vitrina.php\'><div>Витрина</div></a>";
 
 	$tmpl->AddText("<div id='doc_menu'>
+	<div id='doc_menu_container'>
 	<div id='doc_menu_r'>
+	<a href='/users.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>
 	<a href='/login.php?mode=logout' title='Выход'><img src='/img/i_logout.png' alt='Выход'></a>
 	</div>
 	<a href='/' title='Главная'><img src='/img/i_home.png' alt='Главная' border='0'></a>
 	
 	<img src='/img/i_separator.png' alt=''>
 	
-	<a href='docj.php' title='Журнал документов' accesskey=\"D\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
-	<a href='docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='/img/i_user.png' alt='Журнал агентов' border='0'></a>
-	<a href='docs.php?l=dov' title='Работа с доверенными лицами'><img src='/img/i_users.png' alt='лица' border='0'></a>
-	<a href='docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='/img/i_sklad.png' alt='Склад' border='0'></a>
-	<a href='docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
+	<a href='/docj.php' title='Журнал документов' accesskey=\"D\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
+	<a href='/docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='/img/i_user.png' alt='Журнал агентов' border='0'></a>
+	<a href='/docs.php?l=dov' title='Работа с доверенными лицами'><img src='/img/i_users.png' alt='лица' border='0'></a>
+	<a href='/docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='/img/i_sklad.png' alt='Склад' border='0'></a>
+	<a href='/docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='/img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
 	<img src='img/i_separator.png' alt=''>
 	
-	<a href='doc.php' title='Новый документ' accesskey=\"N\"><img src='/img/i_new.png' alt='Новый' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=1' title='Поступление товара на склад'><img src='/img/i_new_post.png' alt='Поступление товара на склад' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=2' title='Реализация товара' accesskey=\"R\"><img src='/img/i_new_real.png' alt='Реализация товара' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=3' title='Заявка покупателя' accesskey=\"Z\"><img src='/img/i_new_schet.png' alt='Заявка покупателя' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=4' title='Поступление средств в банк'><img src='/img/i_new_pbank.png' alt='Поступление средств в банк' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=5' title='Вывод средств из банка'><img src='/img/i_new_rbank.png' alt='Вывод средств из банка' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=6' title='Приходный кассовый ордер'><img src='/img/i_new_pko.png' alt='Приходный кассовый ордер' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=7' title='Расходный кассовый ордер'><img src='/img/i_new_rko.png' alt='Расходный кассовый ордер' border='0'></a>
+	<a href='/doc.php' title='Новый документ' accesskey=\"N\"><img src='/img/i_new.png' alt='Новый' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=1' title='Поступление товара на склад'><img src='/img/i_new_post.png' alt='Поступление товара на склад' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=2' title='Реализация товара' accesskey=\"R\"><img src='/img/i_new_real.png' alt='Реализация товара' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=3' title='Заявка покупателя' accesskey=\"Z\"><img src='/img/i_new_schet.png' alt='Заявка покупателя' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=4' title='Поступление средств в банк'><img src='/img/i_new_pbank.png' alt='Поступление средств в банк' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=5' title='Вывод средств из банка'><img src='/img/i_new_rbank.png' alt='Вывод средств из банка' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=6' title='Приходный кассовый ордер'><img src='/img/i_new_pko.png' alt='Приходный кассовый ордер' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=7' title='Расходный кассовый ордер'><img src='/img/i_new_rko.png' alt='Расходный кассовый ордер' border='0'></a>
 	
-	<img src='img/i_separator.png' alt=''>
+	<img src='/img/i_separator.png' alt=''>
 	
 	<a href='' onclick=\"return ShowContextMenu(event, '/doc_otchet.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
-	<a href='doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
-	<a href='doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
+	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
+	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
 	if($dop) $tmpl->AddText("<img src='/img/i_separator.png' alt=''>");
 	
 	if($dop) $tmpl->AddText($dop);
 	
-	$tmpl->AddText("</div>");
+	$tmpl->AddText("</div></div>");
 	
 	if(0)
 	//if($nd)
