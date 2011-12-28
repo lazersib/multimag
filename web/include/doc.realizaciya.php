@@ -37,6 +37,16 @@ class doc_Realizaciya extends doc_Nulltype
 		settype($this->doc,'int');
 	}
 
+	// Создать документ с товарными остатками на основе другого документа
+	public function CreateFromP($doc_obj)
+	{
+		parent::CreateFromP($doc_obj);
+		$this->SetDopData('platelshik', $doc_obj->doc_data['agent']);
+		$this->SetDopData('gruzop', $doc_obj->doc_data['agent']);
+		unset($this->doc_data);
+		$this->get_docdata();
+		return $this->doc;
+	}
 
 	function DopHead()
 	{
