@@ -24,7 +24,7 @@ need_auth();
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
-$GLOBALS['m_left']=0;
+$tmpl->HideBlock('left');
 $mode=rcv('mode');
 $doc=rcv("doc");
 $document=AutoDocument($doc);

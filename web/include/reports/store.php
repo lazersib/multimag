@@ -18,8 +18,9 @@
 //
 
 
-class Report_OstatkiNaDatu
+class Report_Store
 {
+
 	function draw_groups_tree($level)
 	{
 		$ret='';
@@ -126,27 +127,26 @@ class Report_OstatkiNaDatu
 	
 	function getName($short=0)
 	{
-		if($short)	return "Остатки на выбранную дату";
-		else		return "Остатки товара на складе на выбранную дату";
+		if($short)	return "Остатки на складе";
+		else		return "Остатки товара на складе";
 	}
 	
+
 	function Form()
 	{
 		global $tmpl;
-		$curdate=date("Y-m-d");
-		$tmpl->AddText("<h1>".$this->getName()."</h1>");
-		$tmpl->AddText("
+		$tmpl->SetText("<h1>Остатки товара на складе</h1>
 		<form action='' method='post'>
-		<input type='hidden' name='mode' value='ostatkinadatu'>
+		<input type='hidden' name='mode' value='store'>
 		<input type='hidden' name='opt' value='make'>
-		Дата:<br>
-		<input type='text' name='date' value='$curdate'><br>
-		Склад:<br>
-		<select name='sklad'>");
-		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady`");
+		<fieldset><legend>Отобразить цены</legend>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
 		while($nxt=mysql_fetch_row($res))
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
-		$tmpl->AddText("</select>
+		{
+			$tmpl->AddText("<label><input type='checkbox' name='cost[$nxt[0]]' value='$nxt[0]'>$nxt[1]</label><br>");
+		}
+		$tmpl->AddText("</fieldset><br>
 		Группа товаров:<br>");
 		$this->GroupSelBlock();
 		$tmpl->AddText("<button type='submit'>Создать отчет</button></form>");	
@@ -155,26 +155,38 @@ class Report_OstatkiNaDatu
 	function MakeHTML()
 	{
 		global $tmpl;
-		$sklad=rcv('sklad');
-		$date=rcv('date');
-		$unixtime=strtotime($date." 23:59:59");
-		$pdate=date("Y-m-d",$unixtime);
 		$gs=rcv('gs');
 		$g=@$_POST['g'];
+		$cost=@$_POST['cost'];
 		$tmpl->LoadTemplate('print');
-		$tmpl->SetText("<h1>Остатки товара на складе N$sklad на дату $pdate</h1>
-		<table width=100%><tr><th>N<th>Наименование<th>Количество<th>Базовая цена<th>Сумма по базовой");
-		$sum=$zeroflag=$bsum=$summass=0;
+		$tmpl->SetText("<h1>Остатки товара на складе</h1>
+		<table width=100%><tr><th>N<th>Наименование<th>Количество<th>Актуальная цена<br>поступления<th>Базовая цена<th>Наценка<th>Сумма по АЦП<th>Сумма по базовой");
+		$col_count=8;
+		if(is_array($cost))
+		{
+			$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список цен");
+			$costs=array();
+			while($nxt=mysql_fetch_row($res))	$costs[$nxt[0]]=$nxt[1];
+			foreach($cost as $id => $value)
+			{
+				$tmpl->AddText("<th>".$costs[$id]);
+				$col_count++;
+			}
+		}
+		$sum=$bsum=$summass=0;
 		$res_group=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить список групп");
 		while($group_line=mysql_fetch_assoc($res_group))
 		{
 			if($gs && is_array($g))
 				if(!in_array($group_line['id'],$g))	continue;
 			
-			$tmpl->AddText("<tr><td colspan='8' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");		
+			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
 		
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`,	`doc_base_dop`.`mass`
+		
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`,
+			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `count`,
+			`doc_base_dop`.`mass`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
@@ -183,21 +195,30 @@ class Report_OstatkiNaDatu
 			
 			while($nxt=mysql_fetch_row($res))
 			{
-				$count=getStoreCntOnDate($nxt[0], $sklad, $unixtime);
-				if($count==0) 	continue;
-				if($count<0)	$zeroflag=1;
+				if($nxt[3]<=0) continue;
+				$act_cost=sprintf('%0.2f',GetInCost($nxt[0]));
 				$cost_p=sprintf("%0.2f",$nxt[2]);
-				$bsum_p=sprintf("%0.2f",$nxt[2]*$count);
-				$bsum+=$nxt[2]*$count;
-				if($count<0) $count='<b>'.$count.'</b/>';
-				$summass+=$count*$nxt[3];
+				$sum_p=sprintf("%0.2f",$act_cost*$nxt[3]);
+				$bsum_p=sprintf("%0.2f",$nxt[2]*$nxt[3]);
+				$sum+=$act_cost*$nxt[3];
+				$bsum+=$nxt[2]*$nxt[3];
+				if($nxt[3]<0) $nxt[3]='<b>'.$nxt[3].'</b/>';
+				$summass+=$nxt[3]*$nxt[4];
 				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$count<td>$cost_p р.<td>$bsum_p р.");
+				$nac=sprintf("%0.2f р. (%0.2f%%)",$cost_p-$act_cost,($cost_p/$act_cost)*100-100);
+				
+				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[3]<td>$act_cost р.<td>$cost_p р.<td>$nac<td>$sum_p р.<td>$bsum_p р.");
+				if(is_array($cost))
+				{
+					foreach($cost as $id => $value)
+					{
+						$tmpl->AddText("<td>".GetCostPos($nxt[0], $id));
+					}
+				}
 			}
 		}
-		$tmpl->AddText("<tr><td colspan='4'><b>Итого:</b><td>$bsum р.</table>");
-		if(!$zeroflag)	$tmpl->AddText("<h3>Общая масса склада: $summass кг.</h3>");
-		else		$tmpl->AddText("<h3>Общая масса склада: невозможно определить из-за отрицательных остатков</h3>");
+		$tmpl->AddText("<tr><td colspan='6'><b>Итого:</b><td>$sum р.<td>$bsum р.
+		</table><h3>Общая масса склада: $summass кг.</h3>");
 	}
 	
 	function Run($opt)
@@ -207,5 +228,6 @@ class Report_OstatkiNaDatu
 	}
 };
 
+$active_report=new Report_Store();
 ?>
 
