@@ -27,8 +27,16 @@ if(!function_exists('mysql_connect'))
 	exit();
 }
 
+if(!function_exists('mb_internal_encoding'))
+{
+	header("500 Internal Server Error");
+	echo"<h1>500 Внутренняя ошибка сервера</h1>Расширение php-mbstring не найдено. Обратитесь к администратору по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
+	exit();
+}
+
 $time_start = microtime(true);
 session_start();
+mb_internal_encoding("UTF-8");
 
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
@@ -76,7 +84,7 @@ $ncnt=rcv('ncnt');
 if(!$ncnt) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 
 function exception_handler($exception)
-{ 
+{
 	$ip=getenv("REMOTE_ADDR");
 	$ag=getenv("HTTP_USER_AGENT");
 	$rf=getenv("HTTP_REFERER");
@@ -92,8 +100,8 @@ function exception_handler($exception)
 	echo"<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><title>Error 500: Необработанная внутренняя ошибка</title>
 	<style type='text/css'>body{color: #0f0; background-color: #000; text-align: center;}</style></head><body>
 	<h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
-  
-} 
+
+}
 set_exception_handler('exception_handler');
 
 // =================================== Подсветка найденного текста ====================================
@@ -283,9 +291,9 @@ function mailto($email,$tema,$msg,$from="")
 	global $mail;
 	$mail->Body = $msg;
 	$mail->ClearAddress();
-	$mail->AddAddress($email, $email );  
+	$mail->AddAddress($email, $email );
 	$mail->Subject=$tema;
-	if($from) $mail->From = $from;  
+	if($from) $mail->From = $from;
 	return $mail->Send();
 }
 
@@ -293,21 +301,21 @@ function sendAdmMessage($text,$subject='')
 {
 	global $CONFIG;
 	if($subject=='')	$subject="Admin mail from {$CONFIG['site']}";
-	
+
 	if($CONFIG['site']['doc_adm_email'])
 		mailto($CONFIG['site']['doc_adm_email'],$subject ,$text, $from);
 
 	if($CONFIG['site']['doc_adm_jid'])
 	{
-		try 
+		try
 		{
 			$xmppclient->connect();
 			$xmppclient->processUntil('session_start');
 			$xmppclient->presence();
 			$xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
 			$xmppclient->disconnect();
-		} 
-		catch(XMPPHP_Exception $e) 
+		}
+		catch(XMPPHP_Exception $e)
 		{
 			$tmpl->logger("Невозможно отправить сообщение по XMPP!","err");
 		}
@@ -325,7 +333,7 @@ function date_day($date)
 function SafeLoadTemplate($template)
 {
 	global $tmpl, $CONFIG;
-	if($template)	$tmpl->LoadTemplate($template);	
+	if($template)	$tmpl->LoadTemplate($template);
 }
 
 class MysqlException extends Exception
@@ -337,7 +345,7 @@ class MysqlException extends Exception
 		parent::__construct($text);
 		$this->WriteLog();
 	}
-	
+
 	function WriteLog()
 	{
 	        $ip=getenv("REMOTE_ADDR");
@@ -353,7 +361,7 @@ class MysqlException extends Exception
 		$qq=mysql_real_escape_string($qq);
 		$ff=mysql_real_escape_string($ff);
 		@mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-		('$ff $qq','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");	
+		('$ff $qq','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
 	}
 };
 
@@ -361,7 +369,7 @@ class AccessException extends Exception
 {
 	function __construct($text='')
 	{
-		parent::__construct($text);	
+		parent::__construct($text);
 	}
 };
 
@@ -395,17 +403,17 @@ class BETemplate
 				$this->tpl.=$item;
 		}
 	}
-		
+
 	function HideBlock($block)
 	{
 		$this->hide_blocks[$block]=true;
 	}
-	
+
 	function ShowBlock($block)
 	{
 		unset($this->hide_blocks[$block]);
 	}
-	
+
 // TOP
 	function SetTMenu($s)
 	{
@@ -503,14 +511,14 @@ class BETemplate
 				ksort($this->page);
 				$sign=array("<!--site-text-->","<!--site-tmenu-->","<!--site-rmenu-->","<!--site-title-->","<!--site-style-->",
 				"<!--site-lmenu-->","<!--site-notes-->");
-	
+
 				if(!isset($this->hide_blocks['left']))
 					$this->page[5]="<td class=lmenu>".$this->page[5]."<td class=fvbl>";
 				if(!isset($this->hide_blocks['right']))
 					$this->AddStyle(".rmenu { display: table-cell; }");
 				else
 					$this->AddStyle(".rmenu { display: none; }");
-	
+
 				$res=str_replace($sign,$this->page,$res);
 			}
 			echo"$res";
@@ -524,7 +532,7 @@ class BETemplate
 
     function logger($s, $silent=0, $hidden_data='')
     {
-    	
+
         $ip=getenv("REMOTE_ADDR");
         $ag=getenv("HTTP_USER_AGENT");
         $rf=getenv("HTTP_REFERER");

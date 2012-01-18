@@ -61,11 +61,11 @@ function ProbeRecode()
 	}
 	else if($arr[2]=='ng')	// Наименование группы
 	{
-	
+
 	}
 	else if($arr[2]=='np') // Наименование позиции
 	{
-	
+
 	}
 	return false;
 }
@@ -76,7 +76,7 @@ function ExecMode($mode)
 	$p=rcv('p');
 	if($mode=='')	// Верхний уровень. Никакая группа не выбрана.
 	{
-		$tmpl->AddText("<h1 id='page-title'>Витрина</h1>");
+		//$tmpl->AddText("<h1 id='page-title'>Витрина</h1>");
 		if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle(0);
 		else						$this->GroupList_ImageStyle(0);
 	}
@@ -193,7 +193,7 @@ function ExecMode($mode)
 		}
 		$cd=new CommentDispatcher('product',$p);
 		$cd->WriteComment(@$_POST['text'], rcv('rate'), rcv('autor_name'), rcv('autor_email'));
-				
+
 		$tmpl->msg("Коментарий добавлен!","ok");
 	}
 	else throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
@@ -227,7 +227,7 @@ protected function ViewGroup($group, $page)
 protected function ProductList($group, $page)
 {
 	global $tmpl, $CONFIG;
-	
+
 
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
@@ -243,12 +243,12 @@ protected function ProductList($group, $page)
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 	$lim=$CONFIG['site']['vitrina_limit'];
 	if($lim==0)	$lim=100;
-	$rows=mysql_num_rows($res);	
+	$rows=mysql_num_rows($res);
         if($rows)
         {
-  
+
 		$this->PageBar($group, $rows, $lim, $page);
-		
+
 		if(($lim<$rows) && $page )	mysql_data_seek($res, $lim*($page-1));
 		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$this->TovList_ImageList($res, $lim);
 //		else if($CONFIG['site']['vitrina_plstyle']=='tilelist')		$this->TovList_TileList($res);
@@ -282,7 +282,7 @@ protected function ProductCard($product)
 		$tmpl->SetTitle("{$nxt['group_printname']} {$nxt['name']}");
 		$tmpl->AddText("<table cellpadding='1' cellspacing='0'>
 		<tr valign='top'><td rowspan='15' width='150'>");
-		if($nxt['img_id']) 
+		if($nxt['img_id'])
 		{
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(200);
@@ -290,7 +290,7 @@ protected function ProductCard($product)
 			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
 		}
 		else $img="<img src='/img/no_photo.png' alt='no photo'><br>";
-		
+
 		$tmpl->AddText("$img<td><b>Название:</b><td>{$nxt['group_printname']} {$nxt['name']}");
 		if($nxt[2])
 		{
@@ -327,7 +327,7 @@ protected function ProductCard($product)
 		$i++;
 	}
 	if($_SESSION['korz_cnt'])  $tmpl->msg("<a class='selflink' href='/vitrina.php?mode=basket'>Ваша корзина</a>","info");
-	if($i==0) 
+	if($i==0)
 	{
 		$tmpl->AddText("<h1 id='page-title'>Информация о товаре</h1>");
 		$tmpl->msg("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
@@ -341,7 +341,7 @@ protected function Basket()
 	$cc=0;
 	$sum=0;
 	$exist=0;
-	
+
 	if($_SESSION['korz_cnt'])
 	foreach($_SESSION['korz_cnt'] as $item => $cnt)
 	{
@@ -369,7 +369,7 @@ protected function Basket()
 		<center>Итого: Товаров на сумму <b>$sum</b> рублей<br><a href='/vitrina.php?mode=buy'><b>Оформить заказ!</b></a><br>
 		<a href='/vitrina.php?mode=korz_clear'><b>Очистить корзину!</b></a><br>
 		</center><br><br>");
-		
+
 		$_SESSION['korz_sum']=$sum;
 		//if( ($_SESSION['korz_sum']>20000) )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
 		//else $tmpl->msg("Цены указаны со скидкой 3%. А при оформлении заказа на сумму более 20'000 рублей предоставляется скидка 6%","info");
@@ -406,7 +406,7 @@ protected function Buy()
 protected function GroupList_ItemStyle($group)
 {
 	global $tmpl, $CONFIG;
-	
+
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать список групп');
 	$tmpl->AddStyle(".vitem { width: 250px; float: left; font-size:	14px; } .vitem:before{content: '\\203A \\0020' ; } hr.clear{border: 0 none; margin: 0;}");
@@ -420,7 +420,7 @@ protected function GroupList_ItemStyle($group)
 protected function GroupList_ImageStyle($group)
 {
 	global $tmpl, $CONFIG;
-	
+
 	$res=mysql_query("SELECT * FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group'  ORDER BY `id`");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать список групп');
 	$tmpl->AddStyle(".vitem { width: 360px; float: left; font-size:	14px; margin: 10px;} .vitem img {float: left; padding-right: 8px;} hr.clear{border: 0 none; margin: 0;}");
@@ -436,7 +436,7 @@ protected function GroupList_ImageStyle($group)
 		{
 			$desc=split('\.',$nxt[2],2);
 			if($desc[0])	$tmpl->AddText($desc[0]);
-			else		$tmpl->AddText($nxt[2]);		
+			else		$tmpl->AddText($nxt[2]);
 		}
 		$tmpl->AddText("</a></div></div>");
 	}
@@ -450,18 +450,19 @@ protected function TovList_SimpleTable($res, $lim)
 	$tmpl->AddText("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена<th>Купить</tr>");
 	$cc=$i=0;
 	$cl="lin0";
+	$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
 	while($nxt=mysql_fetch_assoc($res))
 	{
 		$nal=$this->GetCountInfo($nxt['count'], @$nxt['tranzit']);
-		$link=$this->GetProductLink($nxt['id'], $nxt['name']);	
+		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
 		$cce='';
 		$dcc=strtotime($nxt['cost_date']);
 		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
-		$cost=GetCostPos($nxt['id'], $this->cost_id);	
+		$cost=GetCostPos($nxt['id'], $this->cost_id);
 		@$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a>
 		<td>{$nxt['proizv']}<td>$nal<td $cce>$cost
 		<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
-		<img src='/img/i_korz.png' alt='В корзину!'></a></tr>");
+		<img src='$basket_img' alt='В корзину!'></a></tr>");
 		$i++;
 		$cc=1-$cc;
 		if($i>=$lim)	break;
@@ -475,7 +476,7 @@ protected function TovList_ImageList($res, $lim)
 	global $tmpl, $CONFIG;
 	$cc=$i=0;
 	$cl="lin0";
-	
+
 	$tmpl->AddStyle(".pitem	{
 		float:			left;
 		width:			330px;
@@ -487,16 +488,16 @@ protected function TovList_ImageList($res, $lim)
 		border-radius:		10px;
 		-moz-border-radius:	10px;
 	}");
-	
+
 	while($nxt=mysql_fetch_assoc($res))
 	{
 		$nal=$this->GetCountInfo($nxt['count'], $nxt['tranzit']);
-		$link=$this->GetProductLink($nxt['id'], $nxt['name']);		
+		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
 		$cce='';
 		$dcc=strtotime($nxt['cost_date']);
 		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
-		$cost=GetCostPos($nxt['id'], $this->cost_id);		
-		if($nxt['img_id']) 
+		$cost=GetCostPos($nxt['id'], $this->cost_id);
+		if($nxt['img_id'])
 		{
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(135);
@@ -510,7 +511,7 @@ protected function TovList_ImageList($res, $lim)
 			$desc=explode('.',$desc,2);
 			$desc=$desc[0];
 		}
-		
+
 		$tmpl->AddText("<div class='pitem'>
 		<a href='$link'>$img</a>
 		{$nxt['name']}<br>
@@ -518,7 +519,7 @@ protected function TovList_ImageList($res, $lim)
 		<b>Кол-во:</b> $nal<br>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>
 		</div>");
-		
+
 		$sf++;
 		$i++;
 		$cc=1-$cc;
@@ -533,18 +534,18 @@ protected function TovList_ExTable($res, $lim)
 	$tmpl->AddText("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена <th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>Купить</tr>");
 	$cc=0;
 	$cl="lin0";
+	$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
 	while($nxt=mysql_fetch_array($res))
 	{
 		$nal=$this->GetCountInfo($nxt['count'], $nxt['tranzit']);
-		$link=$this->GetProductLink($nxt['id'], $nxt['name']);	
+		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
 		$cce='';
 		$dcc=strtotime($nxt['cost_date']);
 		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
-		$cost=GetCostPos($nxt['id'], $this->cost_id);	
+		$cost=GetCostPos($nxt['id'], $this->cost_id);
 		$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a><td>{$nxt['proizv']}<td>$nal
 		<td $cce>$cost<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='/img/i_korz.png' alt='В корзину!'></a>");
-		$sf++;
+		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
 		$cc=1-$cc;
 	}
 	$tmpl->AddText("</table>");
@@ -590,9 +591,9 @@ protected function BuyMakeForm()
 		<input type='text' name='email' value=''><br>
 		Необходимо заполнить телефон или e-mail<br>";
 	}
-	
+
 	if(rcv('cwarn'))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
-	
+
 	$tmpl->AddText("
 	<h4>Для оформления заказа требуется следующая информация</h4>
 	<form action='/vitrina.php' method='post'>
@@ -603,7 +604,7 @@ protected function BuyMakeForm()
 	Телефон:<br>
 	<input type='text' name='tel' value='".$user_data['tel']."'><br>
 	$email_field
-	
+
 	Способ оплаты:<br>
 	<!--
 	<label><input type='radio' name='soplat' value='wmr' disabled >Webmoney WMR.
@@ -648,7 +649,7 @@ protected function MakeBuy()
 		header("Location: /vitrina.php?mode=buy&step=1&cwarn=1");
 		return;
 	}
-	
+
 	if($_SESSION['korz_cnt'])
 	{
 		$subtype="site";
@@ -663,8 +664,8 @@ protected function MakeBuy()
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
 		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");
 		$bank=mysql_result($res,0,0);
-		
-		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`) 
+
+		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
 		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','{$CONFIG['site']['default_firm']}','$bank')");
 
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ заявки");
@@ -687,30 +688,30 @@ protected function MakeBuy()
 		}
 		$zakaz_sum=DocSumUpdate($doc);
 		$_SESSION['zakaz_docnum']=$doc;
-		
+
 		$text="На сайте {$CONFIG['site']['name']} оформлен новый заказ.\n";
 		$text.="Посмотреть можно по ссылке: http://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
 		if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
 		$text.="----------------------------------\n".$admin_items;
-		
+
 		if($CONFIG['site']['doc_adm_jid'])
 		{
-			try 
+			try
 			{
 				$xmppclient->connect();
 				$xmppclient->processUntil('session_start');
 				$xmppclient->presence();
 				$xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
 				$xmppclient->disconnect();
-			} 
-			catch(XMPPHP_Exception $e) 
+			}
+			catch(XMPPHP_Exception $e)
 			{
 				$tmpl->logger("Невозможно отправить сообщение XMPP!","err");
 			}
 		}
 		if($CONFIG['site']['doc_adm_email'])
 			mailto($CONFIG['site']['doc_adm_email'],"Message from {$CONFIG['site']['name']}", $text);
-		
+
 		if($_SESSION['uid'])
 		{
 			$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
@@ -722,10 +723,10 @@ protected function MakeBuy()
 		else $user_msg="Доброго времени суток, $rname!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\n Номер заказа: $doc/$altnum\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
 		$user_msg.="--------------------------------------\n$zakaz_items\n--------------------------------------\n";
 		$user_msg.="\n\n\nСообщение отправлено роботом. Не отвечайте на это письмо.";
-		
+
 		if($email)
 			mailto($email,"Message from {$CONFIG['site']['name']}", $user_msg);
-		
+
 		$tmpl->AddText("<h1 id='page-title'>Заказ оформлен</h1>");
 		if($soplat=='bn')
 		{
@@ -753,7 +754,7 @@ protected function PageBar($group, $item_count, $per_page, $cur_page)
 			$i=$cur_page-1;
 			$tmpl->AddText(" <a href='".$this->GetGroupLink($group, $i)."'>&lt;&lt;</a> ");
 		}	else	$tmpl->AddText(" &lt;&lt; ");
-		
+
 		for($i=1;$i<$pages_count+1;$i++)
 		{
 			if($i==$cur_page) $tmpl->AddText(" $i ");
@@ -790,10 +791,10 @@ protected function GetProductLink($product, $name)
 	if($CONFIG['site']['recode_enable'])	return "/vitrina/ip/$product.html";
 	else					return "/vitrina.php?mode=product&amp;p=$product";
 }
-/// Получить информации о количестве товара. Формат информации - в конфигурационном файле 
+/// Получить информации о количестве товара. Формат информации - в конфигурационном файле
 protected function GetCountInfo($count, $tranzit)
 {
-	global $CONFIG;	
+	global $CONFIG;
 	if(!isset($CONFIG['site']['vitrina_pcnt_limit']))	$CONFIG['site']['vitrina_pcnt_limit']	= array(1,10,100);
 	if($CONFIG['site']['vitrina_pcnt']==1)
 	{
@@ -840,7 +841,7 @@ protected function GetCountInfo($count, $tranzit)
 // 		if($pos)
 // 		{
 // 			$p=$pos;
-// 			$mode='info';		
+// 			$mode='info';
 // 		}
 // 		else $tmpl->msg("Выбранное наименование не найдено! Попробуйте поискать по каталогу!","info");
 // 	}
@@ -849,11 +850,11 @@ protected function GetCountInfo($count, $tranzit)
 try
 {
 	$tmpl->SetTitle("Интернет - витрина");
-	
+
 	if(file_exists( $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/vitrina.tpl.php' ) )
 		include_once($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/vitrina.tpl.php');
 	if(!isset($vitrina))	$vitrina=new Vitrina();
-	
+
 	if(! $vitrina->ProbeRecode() )
 	$vitrina->ExecMode($mode);
 }

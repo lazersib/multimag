@@ -33,7 +33,7 @@ class doc_s_Sklad
 		if($sklad) $_SESSION['sklad_num']=$sklad;
 		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=1;
 		$sklad=$_SESSION['sklad_num'];
-		
+
 		$tmpl->AddText("
 		<script type='text/javascript'>
 		function SelAll(_this)
@@ -41,7 +41,7 @@ class doc_s_Sklad
 			var flag=_this.checked
 			var node=document.getElementById('sklad')
 			var elems = node.getElementsByClassName('pos_ch')
-			
+
 			//var elems = node.getElementsByName('pos[]');
 			var l = elems.length;
 			for(var i=0; i<l; i++)
@@ -57,12 +57,12 @@ class doc_s_Sklad
 		<input type='hidden' name='l' value='sklad'>
 		<select name='sklad'>");
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
-		
+
 		while($nxt=mysql_fetch_row($res))
 		{
 			if($sklad==$nxt[0]) $s=' selected'; else $s='';
-			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");		
-		}		
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
+		}
 		$tmpl->AddText("</select>
 		<input type='submit' value='Выбрать'>
 		</form></table>
@@ -87,7 +87,7 @@ class doc_s_Sklad
 		}
 		else if($opt=='ep')
 		{
-			$this->Edit();			
+			$this->Edit();
 		}
 		else if($opt=='acost')
 		{
@@ -206,11 +206,11 @@ class doc_s_Sklad
 					$tmpl->msg("Успешно обновлено $a строк. ".($c-$a)." из $c выбранных строк остались неизменёнными.","ok");
 				}	else $tmpl->msg("Не выбраны позиции для обновления!",'err');
 			}	else $tmpl->msg("Не выбрано действие!",'err');
-			
+
 		}
 		else $tmpl->msg("Неверный режим!");
 	}
-		
+
 // Служебные функции класса
 	function Edit()
 	{
@@ -226,7 +226,7 @@ class doc_s_Sklad
 		{
 			$this->PosMenu($pos, $param);
 		}
-		
+
 		if($param=='')
 		{
 			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`
@@ -238,11 +238,11 @@ class doc_s_Sklad
 			$nxt=@mysql_fetch_array($res);
 			$cc='';
 			if($nxt[6]) $cc="<td rowspan='8'><img src='{$CONFIG['site']['var_data_web']}/pos/$nxt[6].$nxt[7]' alt='$nxt[1]' style='max-width: 350px; max-height: 350px;'>";
-			if(!$nxt) 
+			if(!$nxt)
 			{
 				$tmpl->AddText("<h3>Новая позиция</h3>");
 				$cc.="<tr class='lin1'><td align='right'>Вид:<td>
-				<label><input type='radio' name='pos_type' value='0' checked>Товар</label> 
+				<label><input type='radio' name='pos_type' value='0' checked>Товар</label>
 				<label><input type='radio' name='pos_type' value='1'>Услуга</label>";
 			}
 			else
@@ -261,30 +261,30 @@ class doc_s_Sklad
         		<tr class='lin0'><td align='right'>Производитель
 			<td><input type='text' name='proizv' value='$nxt[3]' id='proizv_nm' style='width: 95%'><br>
 			<div id='proizv_p' class='dd'></div>
-				
+
         		<tr class='lin1'><td align='right'>Группа
         		<td><select name='g'>");
 
 			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
 			$tmpl->AddText("<option value='0' $i>--</option>");
-			
+
 			$res=mysql_query("SELECT * FROM `doc_group`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$i="";
-				
+
 				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
 				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
 			}
 			$i='';
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
-			
+
 			$hid_check=$nxt[9]?'checked':'';
 			$yml_check=$nxt['no_export_yml']?'checked':'';
 			$stock_check=$nxt[12]?'checked':'';
 			$wt0_check=(!$nxt['warranty_type'])?'checked':'';
 			$wt1_check=($nxt['warranty_type'])?'checked':'';
-			
+
 			$tmpl->AddText("</select>
 			<tr class='lin0'><td align='right'>Код изготовителя<td><input type='text' name='vc' value='$nxt[11]'>
 			<tr class='lin1'><td align='right'>Базовая цена<td><input type='text' name='cost' value='$nxt[4]'>
@@ -312,7 +312,7 @@ class doc_s_Sklad
 			$tmpl->AddText("<tr class='lin1'><td><td><input type='submit' value='Сохранить'>
 			<script type='text/javascript' src='/css/jquery/jquery.js'></script>
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
-		
+
 			<script type=\"text/javascript\">
 			$(document).ready(function(){
 				$(\"#proizv_nm\").autocomplete(\"/docs.php\", {
@@ -323,7 +323,7 @@ class doc_s_Sklad
 					selectFirst:true,
 					matchContains:1,
 					cacheLength:20,
-					maxItemsToShow:15, 
+					maxItemsToShow:15,
 					extraParams:{'l':'sklad','mode':'srv','opt':'acp'}
 				});
 			});
@@ -346,7 +346,7 @@ class doc_s_Sklad
 				var line=t.parentNode.parentNode
 				line.parentNode.removeChild(line)
 			}
-			
+
 			function addLine()
 			{
 				var fgtab=document.getElementById('fg_table').tBodies[0]
@@ -357,7 +357,7 @@ class doc_s_Sklad
 				var text=document.getElementById('value_add').value
 				newrow.innerHTML=\"<td align='right'>\"+ctext+\"</td><td><input type='text' name='par[\"+lineid+\"]' value='\"+text+\"'></td>\"
 			}
-			
+
 			</script>
 			<form action='' method='post'>
 			<input type='hidden' name='mode' value='esave'>
@@ -381,7 +381,7 @@ class doc_s_Sklad
 			<tr class='lin0'><td align='right'>Аналог<td><input type='text' name='analog' value='$nxt[1]' id='pos_analog'>
 			<tr class='lin1'><td align='right'>Рыночная цена<td><input type='text' name='koncost' value='$nxt[2]' id='pos_koncost'>
 			<tr class='lin0'><td align='right'>Тип<td><select name='type' id='pos_type' >");
-		
+
 			$res=mysql_query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
 			while($nx=mysql_fetch_row($res))
 			{
@@ -448,7 +448,7 @@ class doc_s_Sklad
 			$tmpl->AddText("</table>
 			<input type='submit' value='Сохранить'>
 			</form>");
-		
+
 		}
 		// Изображения
 		else if($param=='i')
@@ -466,10 +466,10 @@ class doc_s_Sklad
 			Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
 			<tr class='lin1'><td>Дополнительно:
 				<td><label><input type='checkbox' name='set_def' value='1' checked>Установить по умолчанию</label>
-			<tr class='lin0'><td colspan='2' align='center'>        	
+			<tr class='lin0'><td colspan='2' align='center'>
 			<input type='submit' value='Сохранить'>
 			</table>
-			
+
 			</form><h2>Ассоциированные с товаром картинки</h2>");
 			$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
 			FROM `doc_base_img`
@@ -479,7 +479,7 @@ class doc_s_Sklad
 			{
 				$tmpl->AddText("<img src='{$CONFIG['site']['var_data_web']}/pos/$nxt[0].$nxt[1]'><br>
 				<a href='?mode=esave&amp;l=sklad&amp;param=i_d&amp;pos=$pos&amp;img=$nxt[0]'>Убрать ассоциацию</a><br><br>");
-			}			
+			}
 		}
 		// Цены
 		else if($param=='c')
@@ -487,8 +487,8 @@ class doc_s_Sklad
 			$res=mysql_query("SELECT `doc_base`.`cost` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить базовую цену товара");
 			$base_cost=mysql_result($res,0,0);
-			
-			
+
+
 			$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
 			$direct=array((-1)=>'Вниз', 0=>'K ближайшему', 1=>'Вверх');
 			$res=mysql_query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
@@ -511,7 +511,7 @@ class doc_s_Sklad
 				else if($cn[3]=='abs')	$def_val="({$sig}$cn[4] руб.)";
 				else if($cn[3]=='fix')	$def_val="(= $cn[4] руб.)";
 				else			$def_val="({$sig}$cn[4] XX)";
-				
+
 				$checked=$cn[1]?'checked':'';
 				if(!$cn[1])
 				{
@@ -520,7 +520,7 @@ class doc_s_Sklad
 					$cn[7]=$cn[9];
 					$cn[8]=$cn[10];
 				}
-				
+
 				$tmpl->AddText("<tr><td><label><input type='checkbox' name='ch$cn[0]' value='1' $checked>$cn[2] $def_val</label>
 				<td><select name='cost_type$cn[0]'>");
 				foreach($cost_types as $id => $type)
@@ -528,7 +528,7 @@ class doc_s_Sklad
 					$sel=($id==$cn[5])?' selected':'';
 					$tmpl->AddText("<option value='$id'$sel>$type</option>");
 				}
-				
+
 				$tmpl->AddText("</select>
 				<td><input type='text' name='val$cn[0]' value='$cn[6]'>
 				<td><select name='accur$cn[0]'>");
@@ -546,7 +546,7 @@ class doc_s_Sklad
 					$tmpl->AddText("<option value='$i' $sel>{$direct[$i]}</option>");
 				}
 				$result=GetCostPos($pos, $cn[0]);
-				$tmpl->AddText("</select><td>$result руб.");	
+				$tmpl->AddText("</select><td>$result руб.");
 			}
 			$tmpl->AddText("</table>
 			<button>Сохранить цены</button></form>");
@@ -563,11 +563,11 @@ class doc_s_Sklad
 				 WHERE `doc_base_params`.`param`='ZP'");
 				if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 				$nxt=@mysql_fetch_row($res);
-			
+
 				kompl_poslist($pos);
 				$tmpl->AddText("
 				<script type=\"text/javascript\">
-				window.document.onkeydown = OnEnterBlur; 
+				window.document.onkeydown = OnEnterBlur;
 				</script>
 				<form action='docs.php' method='post'>
 				<input type='hidden' name='mode' value='esave'>
@@ -595,7 +595,7 @@ class doc_s_Sklad
 				$tmpl->ajax=1;
 				$tmpl->SetText('');
 				$vpos=rcv('vpos');
-					
+
 				$res=mysql_query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
 				if(mysql_num_rows($res)==0)
@@ -610,8 +610,8 @@ class doc_s_Sklad
 					mysql_query("UPDATE `doc_base_kompl` SET `cnt`=`cnt`+'1' WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
 					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку!");
 					doc_log("UPDATE komplekt","change cnt: kompl_id:$nxt[1], cnt:$nxt[2]+1",'pos',$nxt[1]);
-				}	
-				
+				}
+
 				kompl_poslist($pos);
 			}
 			else if($plm=='cc')
@@ -643,7 +643,7 @@ class doc_s_Sklad
 				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
 				$nxt=mysql_fetch_row($res);
 				if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-				
+
 				$res=mysql_query("DELETE FROM `doc_base_kompl` WHERE `id`='$vpos'");
 				doc_log("UPDATE komplekt","del kompl: kompl_id:$nxt[0], doc_list_pos:$pos, cnt:$nxt[1], cost:$nxt[2]",'pos',$pos);
 
@@ -676,7 +676,7 @@ class doc_s_Sklad
 		// Правка описания группы
 		else if($param=='g')
 		{
-			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname`, `no_export_yml` 
+			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname`, `no_export_yml`
 			FROM `doc_group`
 			WHERE `id`='$group'");
 			@$nxt=mysql_fetch_row($res);
@@ -687,7 +687,7 @@ class doc_s_Sklad
 				var line=t.parentNode.parentNode
 				line.parentNode.removeChild(line)
 			}
-			
+
 			function addLine()
 			{
 				var fgtab=document.getElementById('fg_table').tBodies[0]
@@ -695,14 +695,14 @@ class doc_s_Sklad
 				var newrow=fgtab.insertRow(fgtab.rows.length)
 				var lineid=sel.value
 				var checked=(document.getElementById('fg_check').checked)?'checked':''
-				
+
 				var ctext = sel.selectedIndex !== -1 ? sel.options[sel.selectedIndex].text : ''
-				
+
 				newrow.innerHTML=\"<td><input type='hidden' name='fn[\"+lineid+\"]' value='1'>\"+
 				\"<input type='checkbox' name='fc[\"+lineid+\"]' value='1' \"+checked+\"></td><td>\"+ctext+\"</td><td>\"+
 				\"<img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td>\"
 			}
-			
+
 			</script>
 			<form action='docs.php' method='post' enctype='multipart/form-data'>
 			<input type='hidden' name='mode' value='esave'>
@@ -720,23 +720,23 @@ class doc_s_Sklad
 			$i='';
 			if($nxt[3]==0) $i=" selected";
 			$tmpl->AddText("<option value='0' $i>--</option>");
-			
+
 			$res=mysql_query("SELECT * FROM `doc_group`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$i="";
-				
+
 				if($nx[0]==$nxt[3]) $i=" selected";
 				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[0])</option>");
 			}
-			
+
 			if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img="<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$nxt[0]&amp;param=gid'>Удалить изображение</a>";
 			else $img='';
-			
+
 			$hid_check=$nxt[4]?'checked':'';
 			$yml_check=$nxt[6]?'checked':'';
-			
+
 			$tmpl->AddText("</select>
 			<tr class='lin1'>
 			<td>Скрытие:
@@ -745,7 +745,7 @@ class doc_s_Sklad
 			<tr class='lin0'>
 			<td>Печатное название:
 			<td><input type='text' name='pname' value='$nxt[5]'>
-			<tr class='lin1'><td>Изображение (jpg, до 100 кб, 50*50 - 150*150):
+			<tr class='lin1'><td>Изображение (jpg, до 100 кб, 50*50 - 200*200):
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>$img
 			<tr class='lin0'>
 			<td>Описание:
@@ -767,7 +767,7 @@ class doc_s_Sklad
 			$tmpl->AddText("</select></td><td><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
 			</td></tr></tfoot>
 			<tbody>");
-			
+
 			$r=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
 			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
 			WHERE  `doc_group_params`.`group_id`='$group'
@@ -780,13 +780,13 @@ class doc_s_Sklad
 				<input type='checkbox' name='fc[$p[0]]' value='1' $checked></td><td>$p[1]</td>
 				<td><img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td></tr>");
 			}
-			
+
 			$tmpl->AddText("</tbody></table>
 			<tr class='lin1'><td colspan='2' align='center'>
 			<button type='submit'>Сохранить</button>
 			</table></form>");
-			
-			
+
+
 			if($nxt[0])
 			{
 				$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
@@ -810,9 +810,9 @@ class doc_s_Sklad
 					else if($cn[3]=='abs')	$def_val="({$sig}$cn[4] руб.)";
 					else if($cn[3]=='fix')	$def_val="(= $cn[4] руб.)";
 					else			$def_val="({$sig}$cn[4] XX)";
-					
-					$checked=$cn[1]?'checked':'';	
-					
+
+					$checked=$cn[1]?'checked':'';
+
 					$tmpl->AddText("<tr><td><label><input type='checkbox' name='ch$cn[0]' value='1' $checked>$cn[2] $def_val</label>
 					<td><select name='cost_type$cn[0]'>");
 					foreach($cost_types as $id => $type)
@@ -843,7 +843,7 @@ class doc_s_Sklad
 						$sel=$cn[8]==$i?'selected':'';
 						$tmpl->AddText("<option value='$i' $sel>{$direct[$i]}</option>");
 					}
-					$tmpl->AddText("</select>");	
+					$tmpl->AddText("</select>");
 				}
 				$tmpl->AddText("</table>
 				<button>Сохранить цены</button></form>");
@@ -853,7 +853,7 @@ class doc_s_Sklad
 	}
 	function ESave()
 	{
-		global $tmpl, $CONFIG, $uid;		
+		global $tmpl, $CONFIG, $uid;
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -960,26 +960,26 @@ class doc_s_Sklad
 				{
 					$sql_add.=", `warranty_type`='$warranty_type'";
 					$log_add.=", warranty_type:({$old_data['warranty_type']} => $warranty_type)";
-				}				
+				}
 				$res=mysql_query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось обновить свойства позиции!");
 				$tmpl->msg("Данные обновлены! $cc");
 				doc_log("UPDATE","$log_add", 'pos', $pos);
 			}
 			else
-			{	
+			{
 				if(!isAccess('list_sklad','create'))	throw new AccessException("");
 				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`)
 				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml')");
 				$opos=$pos;
 				$pos=mysql_insert_id();
 				if($opos)
-				{				
+				{
 					$res=mysql_query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`
 					FROM `doc_base_dop`
 					WHERE `doc_base_dop`.`id`='$opos'");
 					$nxt=@mysql_fetch_row($res);
-					$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`) 
+					$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`)
 					VALUES ('$pos', '$nxt[1]', '0', '$nxt[0]', '$nxt[3]', '$nxt[4]', '$nxt[5]', '$nxt[6]')");
 					doc_log("INSERT pos","name:$pos_name, proizv:$proizv, group:$group, desc: $desc, hidden:$hid, cost:$cost",'pos',$pos);
 				}
@@ -992,7 +992,7 @@ class doc_s_Sklad
 						mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
 				}
 				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
-				
+
 			}
 		}
 		else if($param=='d')
@@ -1009,9 +1009,9 @@ class doc_s_Sklad
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			// ЭТОГ ЧТО ТАКОЕ?
 			//$res=mysql_query("UPDATE `doc_base` SET `analog`='$analog', `koncost`='$koncost', `type`='$type', `d_int`='$d_int', `d_ext`='$d_ext', `size`='$size', `mass`='$mass', `strana`='$strana' $i WHERE `id`='$pos'");
-			
+
 			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `strana`, `ntd`) VALUES ('$pos', '$analog', '$koncost', '$type', '$d_int', '$d_ext', '$size', '$mass', '$strana', '$ntd')");
-			
+
 			$par=@$_POST['par'];
 			if(is_array($par))
 			{
@@ -1021,7 +1021,7 @@ class doc_s_Sklad
 					if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");
 				}
 			}
-			
+
 			$par_add=rcv('par_add');
 			$value_add=rcv('value_add');
 			if($par_add && $value_add)
@@ -1047,8 +1047,8 @@ class doc_s_Sklad
 				if($r) $tmpl->msg("$nxt[0] - Сохранено","ok");
 				else $tmpl->msg("$nxt[0] - ошибка".mysql_error(),"err");
 			}
-			
-		
+
+
 		}
 		else if($param=='i')
 		{
@@ -1076,7 +1076,7 @@ class doc_s_Sklad
 						$tmpl->msg("Слишком большой файл! Допустимо не более $max_size кб!");
 					else
 					{
-						$iminfo=getimagesize($_FILES['userfile']['tmp_name']);						
+						$iminfo=getimagesize($_FILES['userfile']['tmp_name']);
 						switch ($iminfo[2])
 						{
 							case IMAGETYPE_JPEG: $imtype='jpg'; break;
@@ -1090,7 +1090,7 @@ class doc_s_Sklad
 						else if(($iminfo[0]>$max_pix)||($iminfo[1]>$max_pix))
 						$tmpl->msg("Слишком большая картинка! Максимальный размер - $max_pix пикселей!");
 						else
-						{	
+						{
 							mysql_query("START TRANSACTION");
 							mysql_query("INSERT INTO `doc_img` (`name`, `type`)	VALUES ('$nm', '$imtype')");
 							$img_id=mysql_insert_id();
@@ -1110,7 +1110,7 @@ class doc_s_Sklad
 				}
 			}
 			if($img_id)	mysql_query("INSERT INTO `doc_base_img` (`pos_id`, `img_id`, `default`) VALUES ('$pos', '$img_id', '$set_def')");
-		
+
 		}
 		else if($param=='i_d')
 		{
@@ -1119,8 +1119,8 @@ class doc_s_Sklad
 			mysql_query("DELETE FROM `doc_base_img` WHERE `pos_id`='$pos' AND `img_id`='$img'");
 			if(mysql_errno())	throw new MysqlException("Не удалось удалить ассоциацию");
 			$tmpl->msg("Ассоциация с изображением удалена! Для продолжения работы воспользуйтесь меню!","ok");
-			
-		
+
+
 		}
 		else if($param=='c')
 		{
@@ -1133,13 +1133,13 @@ class doc_s_Sklad
 			mysql_query("START TRANSACTION");
 			while($nxt=mysql_fetch_row($res))
 			{
-				
+
 				$ch=rcv('ch'.$nxt[0]);
 				$cost_type=rcv('cost_type'.$nxt[0]);
 				$val=rcv('val'.$nxt[0]);
 				$accur=round(rcv('accur'.$nxt[0]));
 				$direct=round(rcv('direct'.$nxt[0]));
-				
+
 				if($nxt[1] && (!$ch))
 				{
 					mysql_query("DELETE FROM `doc_base_cost` WHERE `id`='$nxt[1]'");
@@ -1148,7 +1148,7 @@ class doc_s_Sklad
 				}
 				else if($nxt[1] && $ch)
 				{
-					
+
 					$update=$changes='';
 					if($nxt[2]!=$cost_type)
 					{
@@ -1182,14 +1182,14 @@ class doc_s_Sklad
 					mysql_query("INSERT INTO `doc_base_cost` (`cost_id`, `pos_id`, `type`, `value`, `accuracy`, `direction`)
 					VALUES ('$nxt[0]', '$pos', '$cost_type', '$val', '$accur', '$direct')");
 					if(mysql_errno())	throw new MysqlException("Не удалось записать заданную цену");
-					$log.="INSERT cost ID:$nxt[0] - type:$cost_type, value:$val, accuracy:$accur, direction:$direct;";	
+					$log.="INSERT cost ID:$nxt[0] - type:$cost_type, value:$val, accuracy:$accur, direction:$direct;";
 				}
-				
-				
+
+
 			}
 			$tmpl->msg("Изменения сохранены!","ok");
 			if($log)	doc_log('UPDATE pos-ceni', $log, 'pos', $pos);
-			mysql_query("COMMIT");		
+			mysql_query("COMMIT");
 		}
 		else if($param=='k')
 		{
@@ -1209,7 +1209,7 @@ class doc_s_Sklad
 			if($zp!=$nxt[1])
 			{
 				mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$nxt[0]', '$zp')");
-				if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");			
+				if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");
 				doc_log("UPDATE pos","ZP: ($nxt[1] => $zp)", 'pos', $pos);
 				$tmpl->msg("Данные обновлены!","ok");
 			}
@@ -1229,13 +1229,13 @@ class doc_s_Sklad
 			{
 				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname', `no_export_yml`='$no_export_yml' WHERE `id` = '$group'");
 			}
-			else 
+			else
 			{
 				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`, `no_export_yml`)
-				VALUES ('$name', '$desc', '$pid', '$hid', '$pname', '$no_export_yml')"); 
+				VALUES ('$name', '$desc', '$pid', '$hid', '$pname', '$no_export_yml')");
 			}
 			if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию группы");
-			
+
 			mysql_query("DELETE FROM `doc_group_params` WHERE `group_id`='$group'");
 			$fn=@$_POST['fn'];
 			if(is_array($fn))
@@ -1247,14 +1247,14 @@ class doc_s_Sklad
 					mysql_query("INSERT INTO `doc_group_params` (`group_id`, `param_id`, `show_in_filter`) VALUES ('$group', '$id', '$show')");
 				}
 			}
-				
+
 			if($_FILES['userfile']['size']>0)
 			{
 				if($_FILES['userfile']['size']>$max_size*1024)
 					throw new Exception("Слишком большой файл! Допустимо не более $max_size кб!");
 				else
 				{
-					$iminfo=getimagesize($_FILES['userfile']['tmp_name']);						
+					$iminfo=getimagesize($_FILES['userfile']['tmp_name']);
 					switch ($iminfo[2])
 					{
 						case IMAGETYPE_JPEG: $imtype='jpg'; break;
@@ -1263,8 +1263,8 @@ class doc_s_Sklad
 					if(!$imtype) throw new Exception("Неверный формат файла! Допустимы только изображения в формате jpeg.");
 					else if(($iminfo[0]<50)||($iminfo[1]<50))
 					throw new Exception("Слишком мелкая картинка! Минимальный размер - 50*50 пикселей!");
-					else if(($iminfo[0]>150)||($iminfo[1]>150))
-					throw new Exception("Слишком большая картинка! Максимальный размер - 150*150 пикселей!");
+					else if(($iminfo[0]>200)||($iminfo[1]>200))
+					throw new Exception("Слишком большая картинка! Максимальный размер - 200*200 пикселей!");
 					if(!move_uploaded_file($_FILES['userfile']['tmp_name'], "{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 							throw new Exception("Не удалось записать изображение. Проверьте права доступа к директории {$CONFIG['site']['var_data_fs']}/category/");
 				}
@@ -1291,7 +1291,7 @@ class doc_s_Sklad
 			mysql_query("START TRANSACTION");
 			while($nxt=mysql_fetch_row($res))
 			{
-				
+
 				$ch=rcv('ch'.$nxt[0]);
 				$cost_type=rcv('cost_type'.$nxt[0]);
 				$val=rcv('val'.$nxt[0]);
@@ -1338,18 +1338,18 @@ class doc_s_Sklad
 					mysql_query("INSERT INTO `doc_group_cost` (`cost_id`, `group_id`, `type`, `value`, `accuracy`, `direction`)
 					VALUES ('$nxt[0]', '$group', '$cost_type', '$val', '$accur', '$direct')");
 					if(mysql_errno())	throw new MysqlException("Не удалось записать заданную цену");
-					$log.="INSERT cost ID:$nxt[0] - type:$cost_type, value:$val, accuracy:$accur, direction:$direct; ";	
+					$log.="INSERT cost ID:$nxt[0] - type:$cost_type, value:$val, accuracy:$accur, direction:$direct; ";
 				}
-				
-				
+
+
 			}
 			$tmpl->msg("Изменения сохранены!","ok");
 			if($log)	doc_log('UPDATE group-ceni', $log, 'group', $group);
 			mysql_query("COMMIT");
 		}
 		else $tmpl->msg("Неизвестная закладка");
-	}	
-	
+	}
+
 	function draw_level($select, $level)
 	{
 		$ret='';
@@ -1362,9 +1362,9 @@ class doc_s_Sklad
 		{
 			if($nxt[0]==0) continue;
 			$item="<a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=$nxt[0]','sklad'); return false;\" >$nxt[1]</a>";
-	
+
 			if($i>=($cnt-1)) $r.=" IsLast";
-	
+
 			$tmp=$this->draw_level($select, $nxt[0]); // рекурсия
 			if($tmp)
 				$ret.="
@@ -1378,8 +1378,8 @@ class doc_s_Sklad
 		}
 		return $ret;
 	}
-	
-	
+
+
 	function draw_groups($select)
 	{
 		global $tmpl;
@@ -1389,13 +1389,13 @@ class doc_s_Sklad
 		<ul class='Container'>".$this->draw_level($select,0)."</ul></div>
 		Или отбор:<input type='text' id='sklsearch' onkeydown=\"DelayedSave('/docs.php?mode=srv&amp;opt=pl','sklad', 'sklsearch'); return true;\" >
 		");
-	
+
 	}
 
 	function ViewSklad($group=0,$s='')
 	{
 		global $tmpl, $CONFIG;
-		
+
 		$sklad=$_SESSION['sklad_num'];
 		$go=rcv('go');
 		$lim=200;
@@ -1408,12 +1408,12 @@ class doc_s_Sklad
 			<a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a> |
 			<a href='#' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=$group&amp;go=1','sklad'); return false;\" ><img src='/img/i_reload.png' alt=''> Групповые операции</a>");
 			$res=mysql_query("SELECT `desc` FROM `doc_group` WHERE `id`='$group'");
-			$g_desc=mysql_result($res,0,0);		
+			$g_desc=mysql_result($res,0,0);
 			if($g_desc) $tmpl->AddText("<h4>$g_desc</h4>");
 		}
 		else if($go)
 		{
-			$tmpl->AddText("<form action='' method='get'>
+			$tmpl->AddText("<form action='' method='post'>
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='mode' value='srv'>
 			<input type='hidden' name='opt' value='go'>
@@ -1438,12 +1438,12 @@ class doc_s_Sklad
 			<td width='25%'><fieldset><legend>Переместить в группу</legend>
 			<select name='to_group'>");
 			$tmpl->AddText("<option value='0'>--не менять--</option>");
-			
+
 			$res=mysql_query("SELECT * FROM `doc_group`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
-			}			
+			}
 			$tmpl->AddText("</select>
 			</fieldset></td>
 			</table>
@@ -1452,11 +1452,11 @@ class doc_s_Sklad
 			$lim=5000000;
 			$vc_add.="<input type='checkbox' id='selall' onclick='return SelAll(this);'>";
 		}
-		
-        
+
+
 		$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
-		`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, 
+		`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
 		(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -1464,7 +1464,7 @@ class doc_s_Sklad
 		WHERE `doc_base`.`group`='$group'
 		ORDER BY `doc_base`.`name`";
 
-		
+
 		$page=rcv('p');
 		$res=mysql_query($sql);
 		$row=mysql_num_rows($res);
@@ -1515,7 +1515,7 @@ class doc_s_Sklad
 		<a href='/docs.php?l=sklad&amp;mode=edit&amp;param=g&amp;g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
 		<a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
 	}
-	
+
 	function ViewSkladS($group=0,$s)
 	{
 		global $tmpl, $CONFIG;
@@ -1528,12 +1528,12 @@ class doc_s_Sklad
 		<th>Тип<th>d<th>D<th>B<th>Масса
 		<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>
 		<th>Склад<th>Всего<th>Место");
-		
-        
+
+
 		$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 		`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`";
-        	 
+
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -1545,7 +1545,7 @@ class doc_s_Sklad
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
 		}
-		
+
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -1557,7 +1557,7 @@ class doc_s_Sklad
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
 		}
-		
+
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -1569,13 +1569,13 @@ class doc_s_Sklad
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
 		}
-		
+
 		$tmpl->AddText("</table><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.gif' alt=''> Добавить</a>");
-		
+
 		if($sf==0)
 			$tmpl->msg("По данным критериям товаров не найдено!");
 	}
-	
+
 	function Search()
 	{
 		global $tmpl;
@@ -1597,7 +1597,7 @@ class doc_s_Sklad
 		$li_min=rcv('li_min');
 		$li_max=rcv('li_max');
 		$type=rcv('type');
-		
+
 		if($opt=='' || $opt=='s')
 		{
 			doc_menu();
@@ -1628,7 +1628,7 @@ class doc_s_Sklad
 
 			$tmpl->AddText("</select>
 			<td><input type='text' name='mesto' value='$mesto'>
-			
+
 			<tr>
 			<th>Внутренний диаметр
 			<th>Внешний диаметр
@@ -1641,7 +1641,7 @@ class doc_s_Sklad
 			<td>От: <input type='text' name='size_min' value='$size_min'><br>до: <input type='text' name='size_max' value='$size_max'>
 			<td>От: <input type='text' name='m_min' value='$m_min'><br>до: <input type='text' name='m_max' value='$m_max'>
 			<td>От: <input type='text' name='cost_min' value='$cost_min'><br>до: <input type='text' name='cost_max' value='$cost_max'>
-			
+
 			<tr>
 			<td colspan='5' align='center'><input type='submit' value='Найти'>
 			</table>
@@ -1660,12 +1660,12 @@ class doc_s_Sklad
 				$tmpl->AddText("<div class='pointer' onclick=\"return AutoFillClick('proizv','$nxt[0]','proizv_p');\">$nxt[0]</div>");
 			}
 			if(!$i) $tmpl->AddText("<b>Искомая комбинация не найдена!");
-		}	
+		}
 		else if($opt=='s')
 		{
 			$tmpl->AddText("<h1>Результаты</h1>");
 			$sklad=$_SESSION['sklad_num'];
-			
+
 			$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 			`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 			`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`)
@@ -1673,12 +1673,12 @@ class doc_s_Sklad
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE 1 ";
-			
+
 			if($name)
-			{		
+			{
 				if(!$analog) 	$sql.="AND `doc_base`.`name` LIKE '%$name%'";
 				else $sql.="AND (`doc_base_dop`.`analog` LIKE '%$name%' OR `doc_base`.`name` LIKE '%$name%')";
-					
+
 			}
 			if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv%'";
 			if($mesto)		$sql.="AND `doc_base_cnt`.`mesto` LIKE '$mesto'";
@@ -1695,15 +1695,15 @@ class doc_s_Sklad
 			if($cost_min)	$sql.="AND `doc_base`.`cost` >= '$cost_min'";
 			if($cost_max)	$sql.="AND `doc_base`.`cost` <= '$cost_max'";
 			if($type)	$sql.="AND `doc_base_dop`.`type` = '$type'";
-			
+
 
 			$sql.="ORDER BY `doc_base`.`name`";
-			
-			
+
+
 			$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
 			<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-			
+
 			$res=mysql_query($sql);
 			echo mysql_error();
 			if($cnt=mysql_num_rows($res))
@@ -1713,11 +1713,11 @@ class doc_s_Sklad
 				$sf=1;
 			}
 			$tmpl->AddText("</table>");
-			
-		
+
+
 		}
 	}
-	
+
 
 function DrawSkladTable($res,$s)
 {
@@ -1729,18 +1729,18 @@ function DrawSkladTable($res,$s)
 		$rezerv=DocRezerv($nxt[0],0);
 		$pod_zakaz=DocPodZakaz($nxt[0],0);
 		$v_puti=DocVPuti($nxt[0],0);
-		
+
 		if($rezerv)	$rezerv="<a onclick=\"OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$rezerv</a>";
-	
+
 		if($pod_zakaz)	$pod_zakaz="<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$pod_zakaz</a>";
 
 		if($v_puti)	$v_puti="<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=vputi&pos=$nxt[0]'>$v_puti</a>";
-		
+
 		if($nxt[16]>0)
 		{
 			$nxt[16]="<a onclick=\"ShowPopupWin('/docs.php?mode=srv&opt=ost&pos=$nxt[0]'); return false;\" title='Отобразить все остатки'>$nxt[16]</a>";
 		}
-		
+
 		{
 			// Дата цены $nxt[5]
 			$dcc=strtotime($nxt[6]);
@@ -1751,14 +1751,14 @@ function DrawSkladTable($res,$s)
 			else if($dcc>(time()-60*60*24*30*12)) $cc="class=f_more";
 		}
 		$end=date("Y-m-d");
-		
+
 		$info='';
 		if($nxt['hidden'])		$info.='H';
 		if($nxt['no_export_yml'])	$info.='Y';
 		if($nxt['stock'])		$info.='S';
-		if($info)			$info="<span style='color: #f00; font-weight: bold'>$info</span>";			
-		$nxt[2]=SearchHilight($nxt[2],$s);				
-		$nxt[8]=SearchHilight($nxt[8],$s);	
+		if($info)			$info="<span style='color: #f00; font-weight: bold'>$info</span>";
+		$nxt[2]=SearchHilight($nxt[2],$s);
+		$nxt[8]=SearchHilight($nxt[8],$s);
 		$i=1-$i;
 		$cost_p=sprintf("%0.2f",$nxt[5]);
 		$cost_r=sprintf("%0.2f",$nxt[7]);
@@ -1769,9 +1769,9 @@ function DrawSkladTable($res,$s)
 		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a>
 		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> $vc_add
 		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
-	}	
+	}
 }
-	
+
 	// Вывод списка комплектующих позиции
 	function ViewKomplList($pos)
 	{
@@ -1786,19 +1786,19 @@ function DrawSkladTable($res,$s)
 		while($nxt=mysql_fetch_row($res))
 		{
 			$i++;
-			$sum_p+=$sum=$nxt[2]*$nxt[3];			
+			$sum_p+=$sum=$nxt[2]*$nxt[3];
 			$tmpl->AddText("<tr><td>$i<td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$sum");
 		}
 		$tmpl->AddText("</table><p align=right id=sum>Итого для сборки позиции используется $i позиций на сумму $sum_p руб.</p>");
 	}
-	
+
 	function PosMenu($pos, $param, $pos_name='')
 	{
 		global $tmpl;
 		$sel=array('v'=>'','d'=>'','a'=>'','s'=>'','i'=>'','c'=>'','k'=>'','l'=>'','h'=>'',);
 		if($param=='')	$param='v';
 		$sel[$param]="class='selected'";
-		
+
 		$res=mysql_query("SELECT `doc_base`.`name` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
 		if(mysql_errno())	throw new Exception("Не удалось получить наименование позиции!");
 		$pos_info=mysql_fetch_row($res);
@@ -1807,7 +1807,7 @@ function DrawSkladTable($res,$s)
 			$tmpl->SetTitle("Редактируем $pos_info[0]");
 			$tmpl->AddText("<h1>Редактируем  $pos_info[0]</h1>");
 		}
-		
+
 		$tmpl->AddText("
 		<ul class='tabs'>
 		<li><a {$sel['v']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Основные</a></li>
@@ -1821,7 +1821,7 @@ function DrawSkladTable($res,$s)
 		<li><a {$sel['h']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
 		</ul>");
 	}
-	
+
 };
 
 
