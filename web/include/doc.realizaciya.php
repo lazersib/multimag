@@ -341,23 +341,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$tmpl->msg("В разработке","info");
 		}
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
+
 	function Service($doc)
 	{
 		get_docdata($doc);
@@ -2106,7 +2090,7 @@ function SfakPDF($doc, $to_str=0)
 	
 	$pdf->SetLineWidth(0.2);
 	$pdf->SetY($y+16);
-	
+	$pdf->SetFillColor(255,255,255);
 	$i=0;
 	$ii=1;
 	$sum=$sumnaloga=0;
@@ -2169,21 +2153,21 @@ function SfakPDF($doc, $to_str=0)
 				$step=5;
 				$pdf->SetFont('','',9);
 				$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-				$pdf->Cell($t_width[0],$step,$str,1,0,'L',0);
+				$pdf->Cell($t_width[0],$step,$str,1,0,'L',1);
 				$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
-				$pdf->Cell($t_width[1],$step,$str,1,0,'R',0);
+				$pdf->Cell($t_width[1],$step,$str,1,0,'R',1);
 				$str = iconv('UTF-8', 'windows-1251', $cnt );
-				$pdf->Cell($t_width[2],$step,$str,1,0,'R',0);		
-				$pdf->Cell($t_width[3],$step,$cena,1,0,'R',0);
-				$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',0);
-				$pdf->Cell($t_width[5],$step,'--',1,0,'C',0);		
-				$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',0);
-				$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',0);						
-				$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',0);
+				$pdf->Cell($t_width[2],$step,$str,1,0,'R',1);		
+				$pdf->Cell($t_width[3],$step,$cena,1,0,'R',1);
+				$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',1);
+				$pdf->Cell($t_width[5],$step,'--',1,0,'C',1);		
+				$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',1);
+				$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',1);						
+				$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',1);
 				$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
 				$pdf->SetFont('','',6);
-				$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
-				$pdf->Cell($t_width[10],$step,$gtd,1,0,'R',0);
+				$pdf->Cell($t_width[9],$step,$str,1,0,'R',1);
+				$pdf->Cell($t_width[10],$step,$gtd,1,0,'R',1);
 				$pdf->Ln();
 			}
 		}
@@ -2193,21 +2177,21 @@ function SfakPDF($doc, $to_str=0)
 			$step=5;
 			$pdf->SetFont('','',9);
 			$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-			$pdf->Cell($t_width[0],$step,$str,1,0,'L',0);
+			$pdf->Cell($t_width[0],$step,$str,1,0,'L',1);
 			$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
-			$pdf->Cell($t_width[1],$step,$str,1,0,'R',0);
+			$pdf->Cell($t_width[1],$step,$str,1,0,'R',1);
 			$str = iconv('UTF-8', 'windows-1251', $nxt[3] );
-			$pdf->Cell($t_width[2],$step,$str,1,0,'R',0);		
-			$pdf->Cell($t_width[3],$step,$cena,1,0,'R',0);
-			$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',0);
-			$pdf->Cell($t_width[5],$step,'--',1,0,'C',0);		
-			$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',0);
-			$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',0);						
-			$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',0);
+			$pdf->Cell($t_width[2],$step,$str,1,0,'R',1);		
+			$pdf->Cell($t_width[3],$step,$cena,1,0,'R',1);
+			$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',1);
+			$pdf->Cell($t_width[5],$step,'--',1,0,'C',1);		
+			$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',1);
+			$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',1);						
+			$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',1);
 			$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
 			$pdf->SetFont('','',6);
-			$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
-			$pdf->Cell($t_width[10],$step,$nxt[7],1,0,'R',0);
+			$pdf->Cell($t_width[9],$step,$str,1,0,'R',1);
+			$pdf->Cell($t_width[10],$step,$nxt[7],1,0,'R',1);
 			$pdf->Ln();
 		}
 	}

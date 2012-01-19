@@ -76,23 +76,6 @@ class doc_Kordolga extends doc_Nulltype
 		$tmpl->AddText("Нечего создать");
 	}
 
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='{$this->doc}'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='{$this->doc}'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='{$this->doc}'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='{$this->doc}'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
 
 
 

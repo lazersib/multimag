@@ -214,7 +214,7 @@ class doc_s_Sklad
 					foreach($pos as $id=>$value)
 					{
 						settype($id,'int');
-						mysql_query("UPDATE `doc_base` SET $up_query WHERE `id`='$id'сделано автосоздание кеша");
+						mysql_query("UPDATE `doc_base` SET $up_query WHERE `id`='$id'");
 						if(mysql_errno())	throw new MysqlException("Не удалось обновить строку!");
 						$c++;
 						$a+=mysql_affected_rows();
@@ -314,7 +314,7 @@ class doc_s_Sklad
 			}
 			$tmpl->AddText("</select>
 			<tr class='lin1'><td align='right'>Актуальная цена поступления:<td><b>$act_cost</b>
-			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]%</b>
+			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]% <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b>
 			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</label><br>
 									<input type='checkbox' name='no_export_yml' value='1' $yml_check>Не экспортировать в YML</label>
 			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</label>

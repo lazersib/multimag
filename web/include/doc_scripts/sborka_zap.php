@@ -202,8 +202,9 @@ function Run($mode)
 		}
 		else
 		{
+			$altnum=GetNextAltNum(1,'auto');
 			mysql_query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
-			VALUES	('$tim', '$firm', '1', '$uid', '0', 'auto', '$sklad', '$agent', '$doc', '$zp')");
+			VALUES	('$tim', '$firm', '1', '$uid', '$altnum', 'auto', '$sklad', '$agent', '$doc', '$zp')");
 			if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
 			$post_doc=mysql_insert_id();
 			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$zp')");

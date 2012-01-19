@@ -60,6 +60,8 @@ if(!@mysql_select_db($CONFIG['mysql']['db']))
     exit();
 }
 
+include_once($CONFIG['location']."/common/core.common.php");
+
 mysql_query("SET CHARACTER SET UTF8");
 mysql_query("SET character_set_client = UTF8");
 mysql_query("SET character_set_results = UTF8");
@@ -328,43 +330,6 @@ function SafeLoadTemplate($template)
 	if($template)	$tmpl->LoadTemplate($template);	
 }
 
-class MysqlException extends Exception
-{
-	var $sql_error;
-	function __construct($text)
-	{
-		$this->sql_error=mysql_error();
-		parent::__construct($text);
-		$this->WriteLog();
-	}
-	
-	function WriteLog()
-	{
-	        $ip=getenv("REMOTE_ADDR");
-		$ag=getenv("HTTP_USER_AGENT");
-		$rf=getenv("HTTP_REFERER");
-		$qq=$_SERVER['QUERY_STRING'];
-		$ff=$_SERVER['PHP_SELF'];
-		$uid=@$_SESSION['uid'];
-		$s=mysql_real_escape_string($this->message);
-		$hidden_data=mysql_real_escape_string($this->sql_error);
-		$ag=mysql_real_escape_string($ag);
-		$rf=mysql_real_escape_string($rf);
-		$qq=mysql_real_escape_string($qq);
-		$ff=mysql_real_escape_string($ff);
-		@mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-		('$ff $qq','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");	
-	}
-};
-
-class AccessException extends Exception
-{
-	function __construct($text='')
-	{
-		parent::__construct($text);	
-	}
-};
-
 // ====================================== Шаблон страницы ===============================================
 class BETemplate
 {
@@ -543,6 +508,35 @@ class BETemplate
 };
 
 
+
+class MysqlException extends Exception
+{
+	var $sql_error;
+	function __construct($text)
+	{
+		$this->sql_error=mysql_error();
+		parent::__construct($text);
+		$this->WriteLog();
+	}
+	
+	function WriteLog()
+	{
+	        $ip=getenv("REMOTE_ADDR");
+		$ag=getenv("HTTP_USER_AGENT");
+		$rf=getenv("HTTP_REFERER");
+		$qq=$_SERVER['QUERY_STRING'];
+		$ff=$_SERVER['PHP_SELF'];
+		$uid=@$_SESSION['uid'];
+		$s=mysql_real_escape_string($this->message);
+		$hidden_data=mysql_real_escape_string($this->sql_error);
+		$ag=mysql_real_escape_string($ag);
+		$rf=mysql_real_escape_string($rf);
+		$qq=mysql_real_escape_string($qq);
+		$ff=mysql_real_escape_string($ff);
+		@mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
+		('$ff $qq','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");	
+	}
+};
 
 global $tmpl;
 global $uid;

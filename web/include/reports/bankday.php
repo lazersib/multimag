@@ -43,10 +43,10 @@ class Report_BankDay
 		<input type='hidden' name='opt' value='ok'>
 		Выберите кассу:<br>
 		<select name='kass'>");
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank'  ORDER BY `num`");
+		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank'  ORDER BY `num`");
 		while($nxt=mysql_fetch_row($res))
 		{
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[2])</option>");
 		}
 		$tmpl->AddText("</select><br>
 		Выберите дату:<br>
@@ -60,11 +60,11 @@ class Report_BankDay
 		$tmpl->LoadTemplate('print');
 		$dt=rcv('date');
 		$kass=rcv('kass');
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank'");
+		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список банок");
 		$kass_list=array();
-		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt[1];
-		$tmpl->SetText("<h1>Отчёт по банку {$kass_list[$kass]} за $dt</h1>");		
+		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt;
+		$tmpl->SetText("<h1>Отчёт по банку {$kass_list[$kass][1]} ({$kass_list[$kass][2]}) за $dt</h1>");	
 		$daystart=strtotime("$dt 00:00:00");
 		$dayend=strtotime("$dt 23:59:59");
 		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход<th>В банке");			

@@ -32,16 +32,14 @@ function get_otch_links()
 	'doc_otchet.php?mode=agent_bez_prodaj' => 'Агенты без продаж',
 	'doc_otchet.php?mode=sverka' => 'Акт сверки',
 	'doc_otchet.php?mode=sverka_op' => 'Акт сверки (оперативный)',
-	'doc_otchet.php?mode=balance' => 'Баланс',
 	'doc_otchet.php?mode=agent_otchet' => 'Отчет по агенту',
-	'doc_otchet.php?mode=img_otchet' => 'Отчет по изображениям',
 	'doc_otchet.php?mode=komplekt' => 'Отчет по комплектующим',
 	'doc_otchet.php?mode=proplaty' => 'Отчет по проплатам',
 	'doc_otchet.php?mode=prod' => 'Отчёт по продажам',
 	'doc_otchet.php?mode=bezprodaj' => 'Отчёт по товарам без продаж',
 	'doc_otchet.php?mode=doc_reestr' => 'Реестр документов',
 	'doc_otchet.php?mode=fin_otchet' => 'Сводный финансовый отчёт',
-	'doc_reports.php' => 'Другие отчёты');
+	'doc_reports.php' => 'Новые отчёты');
 }
 
 function otch_list()
@@ -49,7 +47,6 @@ function otch_list()
 	return "
 	<a href='doc_otchet.php?mode=bezprodaj'><div>Агенты без продаж</div></a>
 	<a href='doc_otchet.php?mode=sverka'><div>Акт сверки</div></a>
-	<a href='doc_otchet.php?mode=balance'><div>Баланс</div></a>
 	<a href='doc_otchet.php?mode=agent_otchet'><div>Отчет по агенту</div></a>
 	<a href='doc_otchet.php?mode=komplekt'><div>Отчет по комплектующим</div></a>
 	<a href='doc_otchet.php?mode=prod'><div>Отчёт по продажам</div></a>
@@ -59,7 +56,7 @@ function otch_list()
 	<a href='doc_otchet.php?mode=doc_reestr'><div>Реестр документов</div></a>
 	<a href='doc_otchet.php?mode=fin_otchet'><div>Сводный финансовый отчёт</div></a>
 	<hr>
-	<a href='doc_reports.php'><div>Другие отчёты</div></a>";
+	<a href='doc_reports.php'><div>Новые отчёты</div></a>";
 }
 
 function otch_divs()
@@ -175,8 +172,6 @@ function GroupSelBlock()
 
 
 
-
-
 if($mode=='')
 {
 	doc_menu();
@@ -189,135 +184,6 @@ else if($mode=='pmenu')
 {
 	$tmpl->ajax=1;
 	$tmpl->AddText(otch_divs());
-}
-else if($mode=='kassday')
-{
-	$opt=rcv('opt');
-	$otchet=new Report_KassDay();
-	$otchet->Run($opt);
-}
-else if($mode=='bankday')
-{
-	$opt=rcv('opt');
-	$otchet=new Report_BankDay();
-	$otchet->Run($opt);
-}
-else if($mode=='ostatki')
-{
-	$opt=rcv('opt');
-	$otchet=new Report_Store();
-	$otchet->Run($opt);
-}
-else if($mode=='ostatkinadatu')
-{
-	$opt=rcv('opt');
-
-	$otchet=new Report_OstatkiNaDatu();	// Ext
-	$otchet->Run($opt);
-}
-else if($mode=='dolgi')
-{
-	$opt=rcv('opt');
-	$otchet=new Report_Dolgi();
-	$otchet->Run($opt);
-}
-else if($mode=='balance')
-{
-	doc_menu();
-	$tmpl->AddText("<h2 id='page-title'>Балланс: состояние касс и банков</h2>
-		<div id='page-info'>Отображается текущее количество средств во всех кассах и банках</div>
-		<table width=50% cellspacing=0 cellpadding=0 border=0>
-	<tr><th>Тип<th>Название<th>Балланс");
-	$i=0;
-	$res=mysql_query("SELECT `ids`,`name`,`ballance` FROM `doc_kassa`");
-	while($nxt=mysql_fetch_row($res))
-	{
-		$i=1-$i;
-		$pr=sprintf("%0.2f руб.",$nxt[2]);
-		$tmpl->AddText("<tr class=lin$i><td>$nxt[0]<td>$nxt[1]<td align=right>$pr");
-	}
-	$dt=date("Y-m-d");
-	$tmpl->AddText("</table>
-	<form action='' method=post>
-	<input type=hidden name=mode value=balcalc>
-	Вычислить балланс на дату:
-	<input type=text id='id_pub_date_date' class='vDateField required' name='dt' value='$dt'><br>
-	<label><input type=checkbox name=v value=1>Считать на вечер</label><br>
-	<input type=submit value='Вычислить'>
-	</form>");
-}
-else if($mode=='balcalc')
-{
-	$dt=rcv('dt');
-	$v=rcv('v');
-	doc_menu();
-	$tmpl->AddText("<h1>Состояние счетов и касс на $dt</h1>");
-	$tm=strtotime($dt);
-	if($v) $tm+=60*60*24-1;
-	$res=mysql_query("SELECT SUM(`sum`), `bank` FROM `doc_list` WHERE `type`='4' AND `ok`>'0' AND `date`<'$tm' GROUP BY `bank`");
-	while($nxt=mysql_fetch_row($res))
-	$bank_p[$nxt[1]]=$nxt[0];
-	$res=mysql_query("SELECT SUM(`sum`), `bank` FROM `doc_list` WHERE `type`='5' AND `ok`>'0' AND `date`<'$tm' GROUP BY `bank`");
-	while($nxt=mysql_fetch_row($res))
-	$bank_r[$nxt[1]]=$nxt[0];
-	$res=mysql_query("SELECT SUM(`sum`), `kassa` FROM `doc_list` WHERE `type`='6' AND `ok`>'0' AND `date`<'$tm' GROUP BY `kassa`");
-	while($nxt=mysql_fetch_row($res))
-	$kassa_p[$nxt[1]]=$nxt[0];
-	$res=mysql_query("SELECT SUM(`sum`), `kassa` FROM `doc_list` WHERE `type`='7' AND `ok`>'0' AND `date`<'$tm' GROUP BY `kassa`");
-	while($nxt=mysql_fetch_row($res))
-	$kassa_r[$nxt[1]]=$nxt[0];
-
-//     	$bank=$bank_p-$bank_r;
-//     	$kassa=$kassa_p-$kassa_r;
-
-	$tmpl->AddText("<table width=50% cellspacing=0 cellpadding=0 border=0>
-	<tr><th>N<th>Приход<th>Расход<th>Балланс
-	<tr><th colspan=4>Банки (все)");
-	foreach($bank_p as $id => $v)
-	{
-		$sum=$v-$bank_r[$id];
-		$tmpl->AddText("<tr><td>$id<td>$v<td>$bank_r[$id]<td>$sum");
-	}
-	$tmpl->AddText("
-	<tr><th colspan=4>Кассы (все)");
-	foreach($kassa_p as $id => $v)
-	{
-		$sum=$v-$kassa_r[$id];
-		$tmpl->AddText("<tr><td>$id<td>$v<td>$kassa_r[$id]<td>$sum");
-	}
-	$tmpl->AddText("</table>");
-}
-else if($mode=='balcal')
-{
-	$dt=rcv('dt');
-	$v=rcv('v');
-	doc_menu();
-	
-	$tm=strtotime($dt);
-	if($v) $tm+=60*60*24-1;
-	$tt=date("d.m.Y H:i:s",$tm);
-	$tmpl->AddText("<h1>Состояние счетов и касс на $dt</h1> $tm $tt");
-	$res=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE `type`='4' AND `ok`>'0' AND `date`>'$tm'");
-	$bank_p=mysql_result($res,0,0);
-		$res=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE `type`='5' AND `ok`>'0' AND `date`>'$tm'");
-	$bank_r=mysql_result($res,0,0);
-		$res=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE `type`='6' AND `ok`>'0' AND `date`>'$tm'");
-	$kassa_p=mysql_result($res,0,0);
-		$res=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE `type`='7' AND `ok`>'0' AND `date`>'$tm'");
-	$kassa_r=mysql_result($res,0,0);
-	
-	$res=mysql_query("SELECT SUM(`ballance`) FROM `doc_kassa` WHERE `ids`='bank'");
-	$bank_m=mysql_result($res,0,0);
-	
-	$bank=$bank_m-($bank_p-$bank_r);
-	$kassa=$kassa_p-$kassa_r;
-	
-	
-	$tmpl->AddText("<table width=50% cellspacing=0 cellpadding=0 border=0>
-	<tr><th>Тип<th>Приход<th>Расход<th>Балланс
-	<tr class=lin1><td>Банки (все)<td>$bank_p<td>$bank_r<td>$bank ($bank_m)
-	<tr class=lin0><td>Кассы (все)<td>$kassa_p<td>$kassa_r<td>$kassa
-	</table>");
 }
 else if($mode=='komplekt')
 {
@@ -1744,27 +1610,6 @@ else if($mode=='agent_otchet_ex')
 		$tmpl->AddText("<tr><td>".$doc_types[$nxt[1]]." N$nxt[3]$nxt[4] ($nxt[0])<br>от $dt $tovar<td>$prix_p<td>$rasx_p<td>$sum_p");
 	}
 	$tmpl->AddText("</table>");
-}
-else if($mode=='img_otchet')
-{
-	$tmpl->LoadTemplate('print');
-	$tmpl->SetText("<h1>Отчёт по изображениям</h1>");
-	$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`name`, `doc_img`.`type`, `doc_base_img`.`default`, `doc_base_img`.`pos_id`, `doc_base`.`name` AS `pos_name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_group`.`printname`
-	FROM `doc_base_img`
-	INNER JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_img`.`pos_id`
-	INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-	ORDER BY `doc_base_img`.`img_id`");
-	if(mysql_errno())	throw new MysqlException("Не удалось выбрать список изображений");
-
-	$tmpl->AddText("<table width='100%'>
-	<tr><th>ID<th>Изображение<th>Умолч.<th>ID товара<th>Код<th>Наименование / произв.");
-	while($nxt=mysql_fetch_array($res))
-	{
-		$tmpl->AddText("<tr><td>{$nxt['img_id']}<td>{$nxt['name']} ({$nxt['type']})<td>{$nxt['default']}<td>{$nxt['pos_id']}<td>{$nxt['vc']}<td>{$nxt['printname']} {$nxt['pos_name']} / {$nxt['proizv']}");
-	}
-	$tmpl->AddText("</table>");
-	
 }
 else if($mode=='prod')
 {

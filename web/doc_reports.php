@@ -31,13 +31,11 @@ try
 {
 	if(isAccess('doc_reports','view'))
 	{
-		
-		doc_menu();
-		
-		$tmpl->SetTitle("Отчёты");
+			
 		if($mode=='')
 		{
-			
+			doc_menu();	
+			$tmpl->SetTitle("Отчёты");
 			$tmpl->AddText("<h1>Отчёты</h1>");
 			$tmpl->AddText("<ul>");
 			if (is_dir($dir))
@@ -61,8 +59,36 @@ try
 			}
 			$tmpl->AddText("</ul>");
 		}
+		else if($mode=='pmenu')
+		{
+			$tmpl->ajax=1;
+			$tmpl->SetText("");
+			if (is_dir($dir))
+			{
+				if ($dh = opendir($dir))
+				{
+					while (($file = readdir($dh)) !== false)
+					{
+						if( preg_match('/.php$/',$file) )
+						{
+							include_once("$dir/$file");
+							$cn=explode('.',$file);
+							$class_name='Report_'.$cn[0];
+							$class=new $class_name;
+							$nm=$class->getName(1);
+							$tmpl->AddText("<div onclick='window.location=\"/doc_reports.php?mode=$cn[0]\"'>$nm</div>");
+						}
+					}
+					closedir($dh);
+				}
+			}
+			$tmpl->AddText("<hr><div onclick='window.location=\"/doc_reports.php\"'>Эти же отчёты</div>");
+			$tmpl->AddText("<div onclick='window.location=\"/doc_otchet.php\"'>Старые отчёты</div>");
+		}
 		else
 		{
+			doc_menu();
+			$tmpl->SetTitle("Отчёты");
 			$opt=rcv('opt');
 			$fn=$dir.$mode.'.php';
 			if(file_exists($fn))
@@ -70,6 +96,7 @@ try
 				include_once($fn);
 				$class_name='Report_'.$mode;
 				$class=new $class_name;
+				$tmpl->SetTitle($class->getName());
 				$class->Run($opt);
 			}
 			else $tmpl->msg("Сценарий $fn не найден!","err");	

@@ -33,6 +33,10 @@ $CONFIG['route']['iplimit']['enable']	= true;			// Включить ограни
 $CONFIG['route']['iplimit']['hstart']	= 10;			// С (часов)
 $CONFIG['route']['iplimit']['hend']	= 18;			// По (часов)
 $CONFIG['route']['iplimit']['toport']	= 8123;			// Перенаправлять запросы на указанный порт (0-просто блокировать)
+$CONFIG['route']['allow_ext_tcp_ports']	= array(22,80,443);	// Внешние порты TCP, по которым разрешены подключения
+$CONFIG['route']['allow_ext_udp_ports']	= array(53);		// Внешние порты UDP, по которым разрешены подключения
+$CONFIG['route']['dnat_tcp']		= array(3389=>'192.168.1.2:3389');		// Проброс TCP портов через NAT
+$CONFIG['route']['dnat_udp']		= array();		// Проброс UDP портов через NAT
 
 // Снятие ответственного у агентов
 // 0 - не информировать

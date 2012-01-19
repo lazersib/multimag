@@ -103,11 +103,12 @@ class doc_Nulltype
 		$col_array=array();
 		for ($i = 0; $i < $columns; $i++)	$col_array[mysql_field_name($fields, $i)]=mysql_field_name($fields, $i);
 		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user'],$col_array['ok']);
-		$doc_data['altnum']=GetNextAltNum($this->doc_type ,$col_array['subtype']);
+// 		echo "{$this->doc_type}-{$doc_data['subtype']}<br>";
+		$doc_data['altnum']=GetNextAltNum($this->doc_type ,$doc_data['subtype']);
 		$sqlinsert_keys="`date`, `type`, `user`";
 		$sqlinsert_value="'$date', '".$this->doc_type."', '$uid'";
-// 		echo"<br>";
-// 		var_dump($col_array);
+//  		echo"<br>";
+//  		var_dump($col_array);
 		foreach($col_array as $key)
 		{
 			if(isset($doc_data[$key]))
@@ -718,8 +719,16 @@ class doc_Nulltype
 	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function DelExec($doc)
 	{
-		global $tmpl;
-		return 1;
+		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
+		if(mysql_result($res,0,0)) 	throw new Exception("Нельзя удалить проведённый документ");		
+		$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
+		if(mysql_num_rows($res)) 	throw new Exception("Нельзя удалить документ с неудалёнными потомками");		
+		mysql_query("DELETE FROM `doc_list_pos` WHERE `doc`='$doc'");
+		if(mysql_errno())		throw new MysqlException("Не удалось удалить товарные наименования");
+		mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
+		if(mysql_errno())		throw new MysqlException("Не удалось удалить дополнительные данные");
+		mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
+		if(mysql_errno())		throw new MysqlException("Не удалось удалить документ");
    	}
 
    	// Сделать документ потомком указанного документа
@@ -731,7 +740,7 @@ class doc_Nulltype
 		else $object='doc';
 		if(!isAccess($object,'edit'))	throw new AccessException("");
 		mysql_query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
-   		if(mysql_errno())	throw new MysqlException("Не удалось обновить докумнет!");	
+   		if(mysql_errno())	throw new MysqlException("Не удалось обновить документ!");	
    	}
    	
    	function ConnectJson($p_doc)

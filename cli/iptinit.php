@@ -55,23 +55,12 @@ if($CONFIG['route']['ulog']['ext_enable'])
 // TCP rules
 `$ipt -N tcp_packets`;
 
-// FTP
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 20 -j allowed`;
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 21 -j allowed`;
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 22 -j allowed`;	// SSH
-// `$ipt -A tcp_packets -p TCP -s 0/0 --dport 23 -j allowed`;	// TELNET
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 25 -j allowed`;	// SMTP
-//`$ipt -A tcp_packets -p TCP -s 0/0 --dport 53 -j allowed`;	// DNS
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 80 -j allowed`;	// HTTP
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 110 -j allowed`;	// POP3
-//`$ipt -A tcp_packets -p TCP -s 0/0 --dport 113 -j allowed`;	// ????
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 143 -j allowed`;	// IMAP
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 443 -j allowed`;	// HTTPS
-`$ipt -A tcp_packets -p TCP -s 0/0 --dport 2000 -j allowed`;	// SIEVE
-//`$ipt -A tcp_packets -p TCP -s 0/0 --dport 3128 -j allowed`;	// ????
-//`$ipt -A tcp_packets -p TCP -s 0/0 --dport 3306 -j allowed`;	// ????
-//`$ipt -A tcp_packets -p TCP -s 0/0 --dport 631 -j allowed`;	// CUPS Print
+foreach($CONFIG['route']['allow_ext_tcp_ports'] as $port)
+	`$ipt -A tcp_packets -p TCP -s 0/0 --dport $port -j allowed`;
+
 // local TCP rules
+
+
 `$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 135:139 -j allowed`;	// SAMBA-local
 `$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 445 -j allowed`;		// SAMBA-local
 `$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 631 -j allowed`;		// CUPS
@@ -81,10 +70,10 @@ if($CONFIG['route']['ulog']['ext_enable'])
 
 // UDP ports
 `$ipt -N udp_packets`;
-`$ipt -A udp_packets -p UDP -s 0/0 --destination-port 22 -j ACCEPT`;
-`$ipt -A udp_packets -p UDP -s 0/0 --destination-port 53 -j ACCEPT`;
-`$ipt -A udp_packets -p UDP -s 0/0 --destination-port 123 -j ACCEPT`;
-// Samba - local
+foreach($CONFIG['route']['allow_ext_udp_ports'] as $port)
+	`$ipt -A udp_packets -p UDP -s 0/0 --destination-port $port -j ACCEPT`;
+
+// local UDP rules
 `$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} --dport 135:139 -j ACCEPT`;
 `$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} --dport 445 -j ACCEPT`;
 `$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} -j ACCEPT`;
@@ -174,27 +163,12 @@ if($CONFIG['route']['transparent_proxy'])
     `$ipt -t nat -A PREROUTING -d ! {$CONFIG['route']['ext_ip']} -p tcp -m multiport --dport 80 -j REDIRECT --to-port 3128`;
 }
 
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 10012 -j DNAT --to-destination 192.168.1.12:10012`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p udp -m udp --dport 10012 -j DNAT --to-destination 192.168.1.12:10012`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 3389 -j DNAT --to-destination 192.168.1.2:3389`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 3390 -j DNAT --to-destination 192.168.1.45:3389`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 4000 -j DNAT --to-destination 192.168.1.45:4000`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 636 -j DNAT --to-destination 192.168.1.22:631`;
-//ATS
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5000 -j DNAT --to-destination 192.168.0.202:5000`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5001 -j DNAT --to-destination 192.168.0.202:5001`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5002 -j DNAT --to-destination 192.168.0.202:5002`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5003 -j DNAT --to-destination 192.168.0.202:5003`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5004 -j DNAT --to-destination 192.168.0.202:5004`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5005 -j DNAT --to-destination 192.168.0.202:5005`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5090 -j DNAT --to-destination 192.168.0.202:5090`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 23 -j DNAT --to-destination 192.168.0.202:23`;
-//video
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 4550 -j DNAT --to-destination 192.168.0.222`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5550 -j DNAT --to-destination 192.168.0.222`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 6550 -j DNAT --to-destination 192.168.0.222`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 8866 -j DNAT --to-destination 192.168.0.222`;
-`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport 5511 -j DNAT --to-destination 192.168.0.222`;
+
+// Проброс портов
+foreach($CONFIG['route']['dnat_tcp'] as $port => $ip)
+	`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport $port -j DNAT --to-destination $ip`;
+foreach($CONFIG['route']['dnat_udp'] as $port => $ip)
+	`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p udp -m udp --dport $port -j DNAT --to-destination $ip`;
 
 `$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} -d ! {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['ext_iface']} -j SNAT --to-source {$CONFIG['route']['ext_ip']}`;
 

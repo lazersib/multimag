@@ -397,7 +397,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	
 	<img src='/img/i_separator.png' alt=''>
 	
-	<a href='' onclick=\"return ShowContextMenu(event, '/doc_otchet.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
+	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
 	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
 	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
 	if($dop) $tmpl->AddText("<img src='/img/i_separator.png' alt=''>");
