@@ -39,7 +39,7 @@ else
 	$cost_id=		mysql_result($res,0,0);
 	if(!$cost_id)	$cost_id=1;
 
-	
+
 	$tmpl->AddStyle(".pitem	{
 		float:			left;
 		width:			330px;
@@ -57,7 +57,7 @@ else
 		font-size:		16px;
 	}
 	");
-	
+
 	$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news` LIMIT 1");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
 	if(mysql_num_rows($res))
@@ -150,22 +150,24 @@ else
 		}
 		$tmpl->AddText("</tr></table>");
 	}
-	
-	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_units`.`printname` AS `units` FROM `doc_base`
+
+	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_units`.`printname` AS `units`, `doc_group`.`printname` AS `group_name` FROM `doc_base`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
-	WHERE `hidden`='0' AND `stock`!='0'");
+	LEFT JOIN `doc_group` ON `doc_group.`id`=`doc_base`.`group`
+	WHERE `hidden`='0' AND `stock`!='0' LIMIT 12");
 	if(mysql_errno())	throw new MysqlException("Выборка спецпредложений не удалась!");
 	if(mysql_num_rows($res))
 	{
-		$tmpl->AddText("<h1>Спецпредложения</h1>");
-	
+		$tmpl->AddText("<h1>Спецпредложения</h1>
+		<div class='sales'>");
+
 		while($nxt=mysql_fetch_array($res))
 		{
 			if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 			else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
-			if($nxt['img_id']) 
+			if($nxt['img_id'])
 			{
 				$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 				$miniimg->SetX(135);
@@ -174,26 +176,27 @@ else
 			}
 			else $img="<img src='/img/no_photo.png' alt='no photo' style='float: left; margin-right: 10px;'>";
 			$cost=GetCostPos($nxt['id'], $cost_id);
-			
+
 			$tmpl->AddText("<div class='pitem'>
 			<a href='$link'>$img</a>
-			<h2>{$nxt['name']}</h2>
+			<h2>{$nxt['group_name']} {$nxt['name']}</h2>
 			<b>Цена:</b> $cost руб / {$nxt['units']}<br>
 			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>
-			</div>");		
+			</div>");
 		}
-		$tmpl->AddText("<br clear='all'>");
+		$tmpl->AddText("<br clear='all'>
+		</div>");
 	}
-	
+
 	$tmpl->AddText("<h1>Популярные товары</h1>");
 
 	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`, `doc_base`.`likvid`, `doc_img`.`type` AS `img_type`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`, `doc_units`.`printname` AS `units` FROM `doc_base`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id` 
+	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
 	WHERE `hidden`='0'
 	ORDER BY `likvid` DESC
-	LIMIT 20");
+	LIMIT 24");
 	if(mysql_errno())	throw new MysqlException("Выборка популярных товаров не удалась!");
 	$i=1;
 	while($nxt=mysql_fetch_array($res))
@@ -201,7 +204,7 @@ else
 		if($nxt['cost']==0)	continue;
 		if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 		else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
-		if($nxt['img_id']) 
+		if($nxt['img_id'])
 		{
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(135);
@@ -210,14 +213,14 @@ else
 		}
 		else $img="<img src='/img/no_photo.png' alt='no photo'  style='float: left; margin-right: 10px;'>";
 		$cost=GetCostPos($nxt['id'], $cost_id);
-		
+
 		$tmpl->AddText("<div class='pitem'>
 		<a href='$link'>$img</a>
 		<h2>{$nxt['name']}</h2>
 		<b>Цена:</b> $cost руб / {$nxt['units']}<br>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>
 		</div>");
-		
+
 		$i++;
 	}
 	$tmpl->AddText("<br clear='all'>");

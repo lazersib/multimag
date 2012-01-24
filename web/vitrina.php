@@ -211,7 +211,7 @@ protected function ViewGroup($group, $page)
 	$nxt=mysql_fetch_row($res);
 	if(!$nxt)		throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
-		$tmpl->AddText("<div class='rfloat'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
+		$tmpl->AddText("<div style='float: right'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
 	$tmpl->AddText('<h1>'.$this->GetVitPath($nxt[1])." / $nxt[0]</h1>");
 	if($nxt[2])
 	{
