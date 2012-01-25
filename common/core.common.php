@@ -19,14 +19,25 @@
 
 /// Файл содержит код, используемый как web, так и cli скриптами
 
-
-class AccessException extends Exception
+function mailto($email, $subject, $msg, $from="")
 {
-	function __construct($text='')
-	{
-		parent::__construct($text);	
-	}
-};
+	global $CONFIG;
+	require_once($CONFIG['location'].'/common/email_message.php');
+	
+	$email_message=new email_message_class();
+	$email_message->default_charset="UTF-8";
+	$email_message->SetEncodedEmailHeader("To", $email, $email);
+	$email_message->SetEncodedHeader("Subject", $subject);
+	if($from)	$email_message->SetEncodedEmailHeader("From", $from, $from);
+	else		$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
+	$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
+	$email_message->AddQuotedPrintableTextPart($msg);
+	$error=$email_message->Send();
+	
+	if(strcmp($error,""))	throw new Exception($error);
+	else			return 0;
+}
+
 
 
 

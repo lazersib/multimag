@@ -4,8 +4,8 @@ $CONFIG['site']['admin_name']	= '';
 $CONFIG['site']['admin_email']	= '';
 $CONFIG['site']['doc_adm_email']= '';
 $CONFIG['site']['doc_adm_jid']	= '';
-$CONFIG['site']['name']		= 'multimag';
-$CONFIG['site']['display_name']	= 'Magazine';
+$CONFIG['site']['name']		= 'example.com';
+$CONFIG['site']['display_name']	= 'Интернет-магазин';
 $CONFIG['site']['default_firm']	= 1;				// Организация по умолчанию для работы сайта
 $CONFIG['location']		= '/usr/share/multimag';
 $CONFIG['site']['location']	= $CONFIG['location'].'/web';
@@ -27,17 +27,7 @@ $CONFIG['xmpp']['pass']		= '';
 // Настройки для яндекс-маркет
 $CONFIG['ymarket']['local_delivery_cost']	= 150;
 
-require_once($CONFIG['location']."/common/class.phpmailer.php"); 
 require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
-
-
-$mail = new PHPMailer();  
-
-$mail->Sender	= $CONFIG['site']['admin_email'];  
-$mail->From	= $CONFIG['site']['admin_email'];  
-$mail->FromName	= $CONFIG['site']['display_name'];  
-$mail->Mailer	= "mail";  
-$mail->CharSet	= "UTF-8";
 
 $xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '', $printlog=false, $loglevel=XMPPHP_Log::LEVEL_INFO);
 

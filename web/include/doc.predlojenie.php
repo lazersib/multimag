@@ -308,18 +308,10 @@ class doc_Predlojenie extends doc_Nulltype
 		}
 		else
 		{
-			global $mail;
-			$mail->Body = "Доброго времени суток!
-			Прошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}. Подробная информация во вложении.";  
-			//$mail->ContentType='text/plain';
-			$mail->AddAddress($email, $email );  
-			$mail->Subject='Order from '.$CONFIG['site']['name'];
-			
-			$mail->AddStringAttachment($this->PrintPDF($doc, 1), "zakaz.pdf");  
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
+			$comm=rcv('comm');
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Заявка на поставку', $this->PrintPDF($doc, 1), "order.pdf", "Здравствуйте!\nПрошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}.\nПодробная информация во вложении.");
+			$tmpl->msg("Сообщение отправлено!","ok");
     }
 		
 	}
@@ -338,8 +330,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$agent_data=mysql_fetch_row($res);
 		
 		$dt=date("d.m.Y",$this->doc_data[5]);
-		
-		if($coeff==0) $coeff=1;
+
 		if(!$to_str) $tmpl->ajax=1;
 		
 		$pdf=new FPDF('P');

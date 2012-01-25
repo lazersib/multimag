@@ -131,7 +131,7 @@ class doc_Zayavka extends doc_Nulltype
 		else if($opt=='schet_pdf')
 			$this->PrintPDF($doc);
 		else if($opt=='schet_email')
-			$this->SendEmail($doc);
+			$this->SendEmail();
 		else if($opt=='komplekt')
 			$this->PrintKomplekt($doc);
 		else if($opt=='csv_export')
@@ -442,64 +442,38 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("<hr>");
 			if($CONFIG['site']['doc_shtamp'])
 				$tmpl->AddText("<img src='{$CONFIG['site']['doc_shtamp']}' alt='Место для печати'>");
-			$tmpl->AddText("<p align=right>Масса товара: <b>$summass</b> кг.<br></p>");
+			$tmpl->AddText("<p align='right'>Масса товара: <b>$summass</b> кг.<br></p>");
 		}		
 	}
 	
-	function SendEMail($doc, $email='')
+	function SendEMail()
 	{
 		global $tmpl;
-		global $mail;
 		global $CONFIG;
-		if(!$email)
-			$email=rcv('email');
+		$email=rcv('email');
 		
 		if($email=='')
 		{
 			$tmpl->ajax=1;
 			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
 			$email=mysql_result($res,0,0);
-			$tmpl->AddText("<form action=''>
-			<input type=hidden name=mode value='print'>
-			<input type=hidden name=doc value='$doc'>
-			<input type=hidden name=opt value='schet_email'>
-			email:<input type=text name=email value='$email'><br>
+			$tmpl->AddText("<form action='' method='post'>
+			<input type=hidden name='mode' value='print'>
+			<input type=hidden name='doc' value='{$this->doc}'>
+			<input type=hidden name='opt' value='schet_email'>
+			email:<input type='text' name='email' value='$email'><br>
 			Коментарий:<br>
 			<textarea name='comm'></textarea><br>
-			<input type=submit value='&gt;&gt;'>
+			<input type='submit' value='&gt;&gt;'>
 			</form>");	
 		}
 		else
 		{
 			$comm=rcv('comm');
-			$sender_name=$_SESSION['name'];
-			
-			$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-			$manager_name=@mysql_result($res,0,0);	
-			$manager_tel=@mysql_result($res,0,1);
-			$manager_email=@mysql_result($res,0,2);	
-			
-			if(!$manager_email)
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанный Вами счёт от {$CONFIG['site']['name']}\n\n$comm\n\nСообщение сгенерировано автоматически, отвечать на него не нужно! Для переписки используйте адрес, указанный на сайте http://{$CONFIG['site']['name']}!";
-			}
-			else
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанный Вами счёт от {$CONFIG['site']['name']}\n\n$comm\n\nИсполнительный менеджер $manager_name\nКонтактный телефон: $manager_tel\nЭлектронная почта (e-mail): $manager_email\nОтправитель: $sender_name";
- 				$mail->Sender   = $manager_email;  
- 				$mail->From     = $manager_email;  
- 				//$mail->FromName = "{$mail->FromName} ({$manager_name})";
-			}
-
-			$mail->AddAddress($email, $email );  
-			$mail->Subject="Счёт от {$CONFIG['site']['name']}";
-			
-			$mail->AddStringAttachment($this->PrintPDF($doc, 1), "schet.pdf");  
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
-    	}
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Счёт', $this->PrintPDF($doc, 1), "invoice.pdf");
+			$tmpl->msg("Сообщение отправлено!","ok");
+		}
 		
 	}
 	
@@ -655,7 +629,7 @@ class doc_Zayavka extends doc_Nulltype
 		
 		$str = "Внимание! Оплата данного счёта означает согласие с условиями поставки товара. Уведомление об оплате обязательно, иначе не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с поставщика, самовывозом, при наличии доверенности и паспорта. Система интернет-заказов для постоянных клиентов доступна на нашем сайте http://{$CONFIG['site']['name']}.";
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->MultiCell(0,5,$str,1,1,'c',0);
+		$pdf->MultiCell(0,5,$str,1,'C',0);
 		$pdf->y++;
 		$str='Счёт действителен в течение трёх банковских дней!';
 		$pdf->SetFont('','U',10);

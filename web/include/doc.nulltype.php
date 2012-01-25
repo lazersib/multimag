@@ -787,6 +787,55 @@ class doc_Nulltype
 		else	throw new AccessException('Недостаточно привилегий');
    	}
    	
+   	function SendDocEMail($email, $comment, $docname, $data, $filename, $body='')
+   	{
+		global $CONFIG;
+		require_once($CONFIG['location'].'/common/email_message.php');
+		
+		$res=mysql_query("SELECT `name`, `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data['user']}'");
+		$doc_autor=@mysql_fetch_assoc($res);
+		
+		$res=mysql_query("SELECT `name`, `fullname`, `email` FROM `doc_agent` WHERE `id`='{$this->doc_data['agent']}'");
+		$agent=@mysql_fetch_assoc($res);			
+		
+		$email_message=new email_message_class();
+		$email_message->default_charset="UTF-8";
+		if($agent['fullname'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['fullname']);
+		else if($agent['name'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['name']);
+		else			$email_message->SetEncodedEmailHeader("To", $email, $email);
+
+		$email_message->SetEncodedHeader("Subject", "$docname от {$CONFIG['site']['name']}");
+		
+		if(!@$doc_autor['email'])
+		{
+			$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
+			$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
+			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!\nДля переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
+		}
+		else
+		{
+			$email_message->SetEncodedEmailHeader("From", $doc_autor['email'], $doc_autor['rname']);
+			$email_message->SetHeader("Sender", $doc_autor['email']);
+			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\nОтветственный сотрудник: {$doc_autor['name']}\nКонтактный телефон: {$doc_autor['tel']}\nЭлектронная почта (e-mail): {$doc_autor['email']}";
+			if($_SESSION['name']!=$doc_autor['name'])	$text_message.="\nОтправитель: {$_SESSION['name']}";
+		}
+		if($body)	$email_message->AddQuotedPrintableTextPart($body);
+		else		$email_message->AddQuotedPrintableTextPart($text_message);
+		
+		$text_attachment=array(
+			"Data"=>$data,
+			"Name"=>$filename,
+			"Content-Type"=>"automatic/name",
+			"Disposition"=>"attachment"
+		);
+		$email_message->AddFilePart($text_attachment);
+		
+		$error=$email_message->Send();
+		
+		if(strcmp($error,""))	throw new Exception($error);
+		else			return 0;
+   	}
+   	
 	// Служебные опции
 	function _Service($opt, $pos)
 	{

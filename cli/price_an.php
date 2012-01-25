@@ -22,11 +22,16 @@ $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
 
-set_time_limit(60*120);	// Выполнять не более 15 минут
+require_once($CONFIG['cli']['location']."/core.cli.inc.php");
+
+set_time_limit(60*120);	// Выполнять не более 120 минут
 $start_time=microtime(TRUE);
 
-if(!$CONFIG['price']['dir'])	exit(0);
-
+if(!$CONFIG['price']['dir'])
+{
+	echo"Директория с прайсами не определена, завершаем работу...\n";
+	exit(0);
+}
 $mail_text='';
 
 $c=explode('/',__FILE__);
@@ -51,13 +56,17 @@ $tmpl=new Foo();
 include_once($CONFIG['site']['location'].'/include/price_analyze.inc.php');
 
 $file=file("http://export.rbc.ru/free/cb.0/free.fcgi?period=DAILY&lastdays=0&separator=%2C&data_format=BROWSER");
-foreach($file as $fl)
+if(!$file)
+{
+	$mail_text.="Не удалось получить курсы валют!\n";
+	echo "Не удалось получить курсы валют!\n";
+}
+else foreach($file as $fl)
 {
 	$fl=trim($fl);
 	$fa=explode(',',$fl);
 	mysql_query("UPDATE `currency` SET `coeff`='$fa[5]' WHERE `name`='$fa[0]'");
 }
-
 
 
 function log_write($dir, $msg)
@@ -75,6 +84,7 @@ try
 	if(!is_dir($CONFIG['price']['dir']))		throw new Exception("Каталог с прайсами ({$CONFIG['price']['dir']}) не является каталогом");
 	$dh  = opendir($CONFIG['price']['dir']);
 	if(!$dh)					throw new Exception("Не удалось открыть каталог с прайсами ({$CONFIG['price']['dir']})");
+	SetStatus('Loading prices');
 	while (false !== ($filename = readdir($dh)))
 	{
 		$msg='';
@@ -86,9 +96,7 @@ try
 		$zip->open($CONFIG['price']['dir'].'/'.$filename,ZIPARCHIVE::CREATE);
 		$xml = $zip->getFromName("content.xml");
 		$zip->close();
-		
-		SetStatus('Loading prices');
-		
+				
 		$loader=new ODFContentLoader($xml);
 		if($firm=$loader->detectFirm())
 		{
@@ -97,20 +105,15 @@ try
 			$msg.="Parsed ($count items)!";	
 			unlink($CONFIG['price']['dir']	.'/'.$filename);
 		}
-		else $msg.="NOT DETECTED!";
-		
-		
-		if($msg)
+		else
 		{
-			log_write($CONFIG['price']['dir'], $msg);
+			$msg.="соответствий не найдено. Прайс не обработан.";
 			$mail_text.="Анализ прайсов: $msg\n";
 		}
+		log_write($CONFIG['price']['dir'], $msg);
 	}
 
-
-
 // Выборка
-$mail_text.="Начинаем анализ...\n";
 echo "Начинаем анализ...\n";
 mysql_query("UPDATE `price` SET `seeked`='0'");
 mysql_query("CREATE TABLE IF NOT EXISTS `parsed_price_tmp` (
@@ -206,11 +209,21 @@ while($nxt=mysql_fetch_row($res))
 }
 
 mysql_query("DROP TABLE `parsed_price`");
-if(mysql_errno())	echo mysql_error();
+if(mysql_errno())
+{
+	$msg="Ошибка удаления старой таблицы с соответствиями: ".mysql_error()."\n";
+	echo $msg;
+	$mail_text.=$msg;
+}
+	
 mysql_query("RENAME TABLE `parsed_price_tmp` TO `parsed_price` ;");
-if(mysql_errno())	echo mysql_error();
+if(mysql_errno())
+{
+	$msg="Ошибка переименования таблицы с соответствиями: ".mysql_error()."\n";
+	echo $msg;
+	$mail_text.=$msg;
+}
 
-$mail_text.="Анализ прайсов завершен успешно!";
 echo	"Анализ прайсов завершен успешно!";
 // ====================== ОБНОВЛЕНИЕ ЦЕН =============================================================
 $res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`cost`, `doc_base`.`name`, (
@@ -260,9 +273,7 @@ while($nxt=mysql_fetch_row($res))
 			$txt="У наименования ID:$nxt[0] изменена цена с $nxt[1] на $mincost. Наименование: $nxt[2]\n";
 			mysql_query("UPDATE `doc_base` SET `cost`='$mincost', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
 			if(mysql_errno())	throw new Exception(mysql_error());
-
 			echo $txt;
-			$mail_text.=$txt;
 		}
 	}
 }
@@ -274,47 +285,48 @@ catch(Exception $e)
 	$mail_text.=$txt;
 }
 
+$work_time=microtime(TRUE)-$start_time;;
+
+$h=$m=0;
+$s=round($work_time*100)/100;
+if($s>60)
+{
+	$m=floor($s/60);
+	$s-=$m*60;
+}
+
+if($m>60)
+{
+	$h=floor($m/60);
+	$m-=$h*60;
+}
+
+$text_time='Скрипт выполнен за ';
+if($h)	$text_time.="$h часов ";
+if($m)	$text_time.="$m минут ";
+if($s)	$text_time.="$s секунд ";
+$text_time.=" (всего $work_time секунд)\n";
+
+echo $text_time;
+
 // ===================== ОТПРАВКА ПОЧТЫ =============================================================== 
 if($mail_text)
 {
-	$work_time=microtime(TRUE)-$start_time;;
-	$send=1;
-	
-	$h=$m=0;
-	$s=round($work_time*100)/100;
-	if($s>60)
+	try
+	{	
+		$mail_text="При анализе прайс-листов произошло следующее:\n****\n\n".$mail_text."\n\n****\nНайденные ошибки желательно исправить в кратчайший срок!!\n\n$text_time";
+		mailto($CONFIG['site']['admin_email'], "Price analyzer errors", $mail_text);
+		mailto($CONFIG['site']['doc_adm_email'], "Price analyzer errors", $mail_text);
+		echo "Почта отправлена!";
+	}
+	catch(Exception $e) 
 	{
-		$m=floor($s/60);
-		$s-=$m*60;
+		echo"Ошибка отправки почты!".$e->getMessage();
 	}
 	
-	if($m>60)
-	{
-		$h=floor($m/60);
-		$m-=$h*60;
-	}
 	
-	$text_time='';
-	if($h)	$text_time.="$h часов ";
-	if($m)	$text_time.="$m минут ";
-	if($s)	$text_time.="$s секунд ";
-	$text_time.=" (всего $work_time секунд)";
-	
-	if($CONFIG['site']['doc_adm_email'])
-		$mail->AddAddress($CONFIG['site']['doc_adm_email'], 'To document administrator' );
-	else if($CONFIG['site']['admin_email'])
-		$mail->AddAddress($CONFIG['site']['admin_email'], 'To site administrator' );
-	else $send=0;
-	if($send)
-	{
-		$mail->Subject="Price analyzer";
-		$mail_text="При анализе прайс-листов произошло следующее:\n****\n\n".$mail_text."\n\n****\nЕсли произошла ошибка, её необходимо срочно исправить!\n\nСкрипт выполнен за $text_time";
-		$mail->Body=$mail_text;
-		if($mail->Send())
-			echo "\n\nПочта отправлена!\n";
-		else echo"\n\nошибка почты!".$mail->ErrorInfo."\n";
-	}
 }
+else echo"Ошибок не найдено, не о чем оповещать!\n";
 
 mysql_query("DELETE FROM `sys_cli_status` WHERE `id`='$status_id'");
 

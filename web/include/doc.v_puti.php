@@ -141,13 +141,10 @@ class doc_v_puti extends doc_Nulltype
 			global $tmpl;
 			$tmpl->ajax=1;
 			$tmpl->AddText("
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=zayavka_pdf'\">Заявка PDF</div>
-			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=zayavka_email'); return false;\">Заявка PDF по e-mail</div>");
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=zayavka_pdf'\">Заявка PDF</div>");
 		}
 		else if($opt=='zayavka_pdf')
 			$this->PrintPDF($doc);
-		else if($opt=='zayavka_email')
-			$this->SendEmail($doc);
 	}
 	// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
@@ -285,47 +282,6 @@ class doc_v_puti extends doc_Nulltype
 		return $r_id;
 	}
 
-	function SendEMail($doc, $email='')
-	{
-		global $tmpl;
-		global $CONFIG;
-		if(!$email)
-			$email=rcv('email');
-		
-		if($email=='')
-		{
-			$tmpl->ajax=1;
-			get_docdata($doc);
-			global $doc_data;
-			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='$doc_data[2]'");
-			$email=mysql_result($res,0,0);
-			$tmpl->AddText("<form action=''>
-			<input type=hidden name=mode value='print'>
-			<input type=hidden name=doc value='$doc'>
-			<input type=hidden name=opt value='zayavka_email'>
-			email:<input type=text name=email value='$email'>
-			<input type=submit value='&gt;&gt;'>
-			</form>");	
-		}
-		else
-		{
-			global $mail;
-			$mail->Body = "Доброго времени суток!
-			Прошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}. Подробная информация во вложении.";  
-			//$mail->ContentType='text/plain';
-			$mail->AddAddress($email, $email );  
-			$mail->Subject='Order from '.$CONFIG['site']['name'];
-			
-			$mail->AddStringAttachment($this->PrintPDF($doc, 1), "zakaz.pdf");  
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
-    }
-		
-	}
-	
-	
 	function PrintPDF($doc, $to_str=0)
 	{
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');

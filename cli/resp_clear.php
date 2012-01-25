@@ -2,7 +2,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -23,14 +23,13 @@ $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
 
+require_once($CONFIG['cli']['location']."/core.cli.inc.php");
+
 $tim=time();
 $i_time=time()-60*60*24*$CONFIG['resp_clear']['info_time'];
 $c_time=time()-60*60*24*$CONFIG['resp_clear']['clear_time'];
 
 $info_mail='';
-
-$mail->CharSet  = "UTF-8";
-$mail->FromName = $CONFIG['site']['name'].' - Site Service System';  
 
 if($CONFIG['resp_clear']['info_time'])
 {
@@ -46,21 +45,29 @@ if($CONFIG['resp_clear']['info_time'])
 	while($nxt=mysql_fetch_row($res))
 	{
 		$info_mail.='id:'.str_pad($nxt[0], 6, ' ', STR_PAD_LEFT).' - '.$nxt[1]." (ответственный - $nxt[3] (id:$nxt[2])\n";
+		if(!isset($resp_info[$nxt[2]]))	$resp_info[$nxt[2]]='';
 		$resp_info[$nxt[2]].='id:'.str_pad($nxt[0], 6, ' ', STR_PAD_LEFT).' - '.$nxt[1]."\n";
 		$resp_mail[$nxt[2]]=$nxt[4];
 	}
 	
 	foreach($resp_info as $id => $resp)
 	{
-		$mail->ClearAddress();
-		$mail->AddAddress($resp_mail[$id], $resp_mail[$id]);  
-		$mail->Subject=$CONFIG['site']['name']." - Info for responsible manager";
-		
-		$mail->Body="По следующим агентам, для которых Вы назначены ответственным менеджером, , не было движения более {$CONFIG['resp_clear']['info_time']} дней:\n\n".$resp."\nЕсли Вы не примите меры, то через некоторое время Вы перестанете быть ответственным менеджером этого агента!\n\nВы получили это письмо, так как являетесь ответственным менеджером.\nЭто письмо сгенерированно автоматически системой оповещения сайта {$CONFIG['site']['name']}.\nОтвечать на него не нужно."; 
-		if($mail->Send())	echo "\nПочта отправлена на $resp_mail[$id]!";
-		else 			echo"\nошибка почты на $resp_mail[$id]! ".$mail->ErrorInfo;
+		$mail_text="По следующим агентам, для которых Вы назначены ответственным менеджером, , не было движения более {$CONFIG['resp_clear']['info_time']} дней:\n\n".$resp."\nЕсли Вы не примите меры, то через некоторое время Вы перестанете быть ответственным менеджером этого агента!\n\nВы получили это письмо, так как являетесь ответственным менеджером.\nЭто письмо сгенерированно автоматически системой оповещения сайта {$CONFIG['site']['name']}.\nОтвечать на него не нужно."; 
+				
+		try
+		{	
+			mailto($resp_mail[$id], $CONFIG['site']['name']." - Информация для ответственного сотрудника", $mail_text);
+			echo "Почта отправлена!";
+		}
+		catch(Exception $e) 
+		{
+			echo"Ошибка отправки почты!".$e->getMessage();
+		}
 	}
 }
+
+try
+{
 
 if($CONFIG['resp_clear']['clear_time'])
 {
@@ -78,16 +85,26 @@ if($CONFIG['resp_clear']['clear_time'])
 	}
 }
 
+}
+catch(Exception $e) 
+{
+	$info_mail.=$e->getMessage();
+	echo $e->getMessage();
+}
 
 if($info_mail)
 {
-	$mail->ClearAddress();
-	$mail->AddAddress($CONFIG['resp_clear']['info_mail'], $CONFIG['resp_clear']['info_mail']);  
-	$mail->Subject=$CONFIG['site']['name']." - Info about non-active client";
+	$mail_text=$info_mail."\n\nВы получили это письмо, так как ваш адрес указан в настройках сайта.\nЭто письмо сгенерированно автоматически системой оповещения сайта {$CONFIG['site']['name']}.\nОтвечать на него не нужно.";
 	
-	$mail->Body=$info_mail."\n\nВы получили это письмо, так как ваш адрес указан в настройках сайта.\nЭто письмо сгенерированно автоматически системой оповещения сайта {$CONFIG['site']['name']}.\nОтвечать на него не нужно.";
-	if($mail->Send())	echo "\nПочта отправлена на {$CONFIG['resp_clear']['info_mail']}!";
-	else 			echo"\nошибка почты на {$CONFIG['resp_clear']['info_mail']}! ".$mail->ErrorInfo;
+	try
+	{	
+		mailto($CONFIG['resp_clear']['info_mail'], $CONFIG['site']['name']." - Информация о неактивных клиентах", $mail_text);
+		echo "Почта отправлена!";
+	}
+	catch(Exception $e) 
+	{
+		echo"Ошибка отправки почты!".$e->getMessage();
+	}
 }
 
 ?>

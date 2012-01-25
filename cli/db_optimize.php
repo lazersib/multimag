@@ -38,13 +38,7 @@ include_once($CONFIG['site']['location']."/include/doc.perkas.php");
 include_once($CONFIG['site']['location']."/include/doc.sborka.php");
 include_once($CONFIG['site']['location']."/include/doc.kordolga.php");
 
-$mail->FromName = $CONFIG['site']['name'].' - Site Service System';  
-$mail->CharSet  = "UTF-8";
-$mail->AddAddress($CONFIG['site']['doc_adm_email'], $CONFIG['site']['doc_adm_email'] );  
-$mail->Subject="DB Check report";
-
 $mail_text='';
-
 
 $tim=time();
 $dtim=time()-60*60*24*365;
@@ -126,8 +120,6 @@ $res=mysql_query("UPDATE `doc_base_cnt` SET `cnt`='0'");
 $res=mysql_query("SELECT `id`, `type`, `altnum`, `date` FROM `doc_list` WHERE `ok`>'0' AND `type`!='3' AND `mark_del`='0' ORDER BY `date`");
 while($nxt=mysql_fetch_row($res))
 {
-	//if( ($nxt[1]>2) && ($nxt[1]!=8) && ($nxt[1]!=4) && ($nxt[1]!=5)  ) continue;
-	//DocSumUpdate($nxt[0]);
 	$dt=date("d.m.Y H:i:s",$nxt[3]);
 	$typename=$doc_types[$nxt[1]]."N $nxt[2] от $dt";;
 	$document=AutoDocumentType($nxt[1],$nxt[0]);
@@ -137,12 +129,8 @@ while($nxt=mysql_fetch_row($res))
 		$text="$nxt[0]($typename): $err ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ НЕВЕРНЫ!\n";
 		echo $text;
 		$mail_text.=$text;
-		//echo " ---------- ".seek_and_up($nxt[3],$badpos)."\n";
-		
 		$i++;
 	}
-	
-	//else echo "$nxt[0]($typename): ok!\n";
 }
 if($i)
 {
@@ -187,13 +175,17 @@ while($nxt=mysql_fetch_row($res))
 
 if($mail_text)
 {
-	$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$mail_text."\n\n****
-	Необходимо срочно исправить найденные ошибки!";
+	try
+	{
+		$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$mail_text."\n\n****\nНеобходимо исправить найденные ошибки!";
 
-	$mail->Body=$mail_text;
-	if($mail->Send())
+		mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
 		echo "Почта отправлена!";
-	else echo"ошибка почты!".$mail->ErrorInfo;
+	}
+	catch(Exception $e) 
+	{
+		echo"Ошибка отправки почты!".$e->getMessage();
+	}
 }
 else echo"Ошибок не найдено, не о чем оповещать!\n";
 

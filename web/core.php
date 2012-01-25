@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -16,8 +16,8 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-define("MULTIMAG_REV", "272");
-define("MULTIMAG_VERSION", "0.0.1r".MULTIMAG_REV);
+define("MULTIMAG_REV", "298");
+define("MULTIMAG_VERSION", "0.1r".MULTIMAG_REV);
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))
@@ -280,16 +280,6 @@ $msg
 	}
 }
 
-function mailto($email,$tema,$msg,$from="")
-{
-	global $mail;
-	$mail->Body = $msg;
-	$mail->ClearAddress();
-	$mail->AddAddress($email, $email );  
-	$mail->Subject=$tema;
-	if($from) $mail->From = $from;  
-	return $mail->Send();
-}
 
 function sendAdmMessage($text,$subject='')
 {
@@ -508,6 +498,13 @@ class BETemplate
 };
 
 
+class AccessException extends Exception
+{
+	function __construct($text='')
+	{
+		parent::__construct($text);	
+	}
+};
 
 class MysqlException extends Exception
 {

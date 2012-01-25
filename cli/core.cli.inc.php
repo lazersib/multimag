@@ -19,7 +19,6 @@
 
 include_once($CONFIG['location']."/common/core.common.php");
 
-
 class MysqlException extends Exception
 {
 	function __construct($text)

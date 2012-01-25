@@ -268,9 +268,14 @@ else if($mode=='doc_view')
 else if($mode=="elog")
 {
 	if(!isAccess('log_error','view'))	throw new AccessException("Недостаточно привилегий");
-
+	$p=rcv('p');
+	settype($p,'int');
+	if($p==0)	$p=1;
+	$lines=100;
+	$from=($p-1)*$lines;
 	$tmpl->AddText("<h1>Журнал ошибок</h1>");
-	$res=mysql_query("SELECT `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC");
+	$res=mysql_query("SELECT SQL_CALC_FOUND_ROWS `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC LIMIT $from, $lines");
+	list($total) = mysql_fetch_row(mysql_query('SELECT FOUND_ROWS()'));
 	$tmpl->AddText("<table width='100%' class='list'>
 	<tr><th>ID<th>Page<th>Referer<th>Msg<th>Date<th>IP<th>Agent<th>UID");
 	$i=0;
@@ -280,6 +285,18 @@ else if($mode=="elog")
 		$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]<td>$nxt[7]");
 	}
 	$tmpl->AddText("</table>");
+	
+	$pages_count = ceil($total/$lines);
+	if ($pages_count > 1)
+	{
+		$tmpl->AddText("<p>Страницы: ");
+		for ( $i = 1; $i <= $pages_count; ++$i )
+		{
+			if($i==$p)	$tmpl->AddText("<b>$i</b> ");
+			else		$tmpl->AddText("<a href='?mode=elog&amp;p=$i'>$i</a> ");
+		}
+	$tmpl->AddText("</p>");
+	}
 
 }
 else if($mode=="clog")

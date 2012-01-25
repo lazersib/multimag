@@ -1176,35 +1176,10 @@ function PrintTg12()
 		}
 		else
 		{
-			global $mail;
 			$comm=rcv('comm');
-			$sender_name=$_SESSION['name'];
-			
-			$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-			$manager_name=@mysql_result($res,0,0);	
-			$manager_tel=@mysql_result($res,0,1);
-			$manager_email=@mysql_result($res,0,2);	
-			
-			if(!$manager_email)
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанная Вами счёт-фактура от {$CONFIG['site']['name']}\n\n$comm\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
-			}
-			else
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанная Вами счёт-фактура от {$CONFIG['site']['name']}\n\n$comm\n\nИсполнительный менеджер $manager_name\nКонтактный телефон: $manager_tel\nЭлектронная почта (e-mail): $manager_email\nОтправитель: $sender_name";
- 				$mail->Sender   = $manager_email;  
- 				$mail->From     = $manager_email;  
- 				//$mail->FromName = "{$mail->FromName} ({$manager_name})";
-			}
-
-			$mail->AddAddress($email, $email );  
-			$mail->Subject="Счёт-фактура от {$CONFIG['site']['name']}";
-			
-			$mail->AddStringAttachment($this->SfakPDF($doc, 1), "schet_fak.pdf");  
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->SfakPDF($doc, 1), "schet-fakt.pdf");
+			$tmpl->msg("Сообщение отправлено!","ok");
     		}	
 	}
 

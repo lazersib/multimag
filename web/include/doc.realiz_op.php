@@ -699,34 +699,10 @@ function PrintTg12()
 		}
 		else
 		{
-			global $mail;
 			$comm=rcv('comm');
-			$sender_name=$_SESSION['name'];
-			
-			$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-			$manager_name=@mysql_result($res,0,0);	
-			$manager_tel=@mysql_result($res,0,1);
-			$manager_email=@mysql_result($res,0,2);	
-			
-			if(!$manager_email)
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанная Вами счёт-фактура от {$CONFIG['site']['name']}\n\n$comm\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
-			}
-			else
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанная Вами счёт-фактура от {$CONFIG['site']['name']}\n\n$comm\n\nИсполнительный менеджер $manager_name\nКонтактный телефон: $manager_tel\nЭлектронная почта (e-mail): $manager_email\nОтправитель: $sender_name";
- 				$mail->Sender   = $manager_email;  
- 				$mail->From     = $manager_email;  
-			}
-
-			$mail->AddAddress($email, $email );  
-			$mail->Subject="Счёт-фактура от {$CONFIG['site']['name']}";
-			
-			$mail->AddStringAttachment($this->SfakPDF($doc, 1), "schet_fak.pdf");  
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->SfakPDF($doc, 1), "schet-fakt.pdf");
+			$tmpl->msg("Сообщение отправлено!","ok");
     		}	
 	}
 
@@ -740,15 +716,15 @@ function SfakPDF($doc, $to_str=0)
 	global $doc_data;
 	global $dop_data;
 	global $dv;
-	
-	if($coeff==0) $coeff=1;
+
 	if(!$to_str) $tmpl->ajax=1;
 	
 	$dt=date("d.m.Y",$doc_data[5]);
 
 	$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn` FROM `doc_agent` WHERE `doc_agent`.`id`='$doc_data[2]'	");
 
-	$nx=@mysql_fetch_row($res);	
+	$nx=@mysql_fetch_row($res);
+	$pp='';
 	if($doc_data[13])
 	{
 		$rs=@mysql_query("SELECT `id`, `altnum`, `date` FROM `doc_list` WHERE 
@@ -833,12 +809,12 @@ function SfakPDF($doc, $to_str=0)
 		$offset+=$w;
 	}
 	
-	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`sn`, `doc_base_dop`.`strana`  FROM `doc_list_pos`
+	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`cnt`, `doc_base_dop`.`strana`  FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	WHERE `doc_list_pos`.`doc`='$doc'");
-	
+	if(mysql_errno())	throw new MysqlException("Ошибка выброки списка наименований документа");
 	$pdf->SetLineWidth(0.2);
 	$pdf->SetY($y+16);
 	
