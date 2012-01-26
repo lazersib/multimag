@@ -135,7 +135,7 @@ class Report_Store
 	function Form()
 	{
 		global $tmpl;
-		$tmpl->SetText("<h1>Остатки товара на складе</h1>
+		$tmpl->AddText("<h1>".$this->getName()."</h1>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='store'>
 		<input type='hidden' name='opt' value='make'>
@@ -159,7 +159,7 @@ class Report_Store
 		$g=@$_POST['g'];
 		$cost=@$_POST['cost'];
 		$tmpl->LoadTemplate('print');
-		$tmpl->SetText("<h1>Остатки товара на складе</h1>
+		$tmpl->SetText("<h1>".$this->getName()."</h1>
 		<table width=100%><tr><th>N<th>Наименование<th>Количество<th>Актуальная цена<br>поступления<th>Базовая цена<th>Наценка<th>Сумма по АЦП<th>Сумма по базовой");
 		$col_count=8;
 		if(is_array($cost))
@@ -228,6 +228,5 @@ class Report_Store
 	}
 };
 
-$active_report=new Report_Store();
 ?>
 
