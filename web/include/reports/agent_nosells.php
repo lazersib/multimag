@@ -18,7 +18,7 @@
 //
 
 
-class Report_Agent
+class Report_Agent_NoSells
 {
 	function getName($short=0)
 	{
@@ -34,7 +34,7 @@ class Report_Agent
 		$tmpl->AddText("<h1>".$this->getName()."</h1>
 		<h2>Отчёт не доделан!</h2>
 		<form action='' method='post'>
-		<input type='hidden' name='mode' value='agent'>
+		<input type='hidden' name='mode' value='agent_nosells'>
 		<input type='hidden' name='opt' value='make'>
 		<p class='datetime'>
 		<fieldset><legend>Дата отсчета</legend>

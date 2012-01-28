@@ -83,8 +83,7 @@ try
 					closedir($dh);
 				}
 			}
-			$tmpl->AddText("<hr><div onclick='window.location=\"/doc_reports.php\"'>Эти же отчёты</div>");
-			$tmpl->AddText("<div onclick='window.location=\"/doc_otchet.php\"'>Старые отчёты</div>");
+			$tmpl->AddText("<hr><div onclick='window.location=\"/doc_reports.php\"'>Подробнее</div>");
 		}
 		else
 		{

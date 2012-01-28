@@ -62,7 +62,7 @@ class Report_Revision_Act
 		<input type='text' name='subtype'><br>
 		<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
 		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>		
-		<button type='submit'>Создать отчет</button></form>
+		<button type='submit'>Сформировать отчет</button></form>
 		
 		<script type='text/javascript'>
 		
