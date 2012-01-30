@@ -425,6 +425,23 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	}
 }
 
+function getDocBaseGroupOptions($selected_id=0, $pid=0, $level=0)
+{
+	$ret='';
+	$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `id`");
+	while($nxt=mysql_fetch_row($res))
+	{
+		if($nxt[0]==0) continue;
+		$pref='';
+		for($i=0;$i<$level;$i++,$pref.='|&nbsp;&nbsp;&nbsp;&nbsp;');
+		$sel=($selected_id==$nxt[0])?'selected':'';
+		$sel.=sprintf(" style='background-color: #%x%x%x'",0xf-$level,0xf-$level,0xf-$level);
+		$ret.="<option value='$nxt[0]' $sel>{$pref}{$nxt[1]}</option>\n";
+		$ret.=getDocBaseGroupOptions($selected_id, $nxt[0], $level+1); // рекурсия
+	}
+	return $ret;
+}
+
 // ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ === ==========
 function GetNextAltNum($type,$subtype,$cur=0)
 {

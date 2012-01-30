@@ -69,8 +69,10 @@ class Report_DocReestr
 	
 	function MakePDF()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$tmpl->ajax=1;
+		$tmpl->SetText('');
+		ob_start();
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t')." 23:59:59");
 		$firm_id=rcv('firm_id');

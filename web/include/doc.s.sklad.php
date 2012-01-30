@@ -281,18 +281,10 @@ class doc_s_Sklad
         		<tr class='lin1'><td align='right'>Группа
         		<td><select name='g'>");
 
-			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
-			$tmpl->AddText("<option value='0' $i>--</option>");
-			
-			$res=mysql_query("SELECT * FROM `doc_group`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$i="";
-				
-				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
-				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
-			}
-			$i='';
+			if($pos==0)	$tmpl->AddText("<option value='0' selected disabled style='color: #fff; background-color: #f00'>--</option>");
+			if($pos!=0)	$selected=$nxt[0];
+			else		$selected=$group;
+			$tmpl->AddText(getDocBaseGroupOptions($selected));
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
 			
 			$hid_check=$nxt[9]?'checked':'';
@@ -811,17 +803,13 @@ class doc_s_Sklad
 			<td><select name='pid'>");
 
 			$i='';
-			if($nxt[3]==0) $i=" selected";
-			$tmpl->AddText("<option value='0' $i>--</option>");
+			if(@$nxt[3]==0) $i=" selected";
+			$tmpl->AddText("<option value='0' $i style='color: #fff; background-color: #000'>--</option>");
 			
-			$res=mysql_query("SELECT * FROM `doc_group`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$i="";
-				
-				if($nx[0]==$nxt[3]) $i=" selected";
-				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[0])</option>");
-			}
+
+			if($group==0 || @$nxt[3]==0)	$selected=0;
+			else				$selected=$nxt[3];
+			$tmpl->AddText(getDocBaseGroupOptions($selected));
 			
 			if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img="<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$nxt[0]&amp;param=gid'>Удалить изображение</a>";
