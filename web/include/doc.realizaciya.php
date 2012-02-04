@@ -555,20 +555,34 @@ class doc_Realizaciya extends doc_Nulltype
 
 		$tmpl->AddText("
 		<table width='800' cellspacing='0' cellpadding='0'>
-		<tr><th>№</th><th width=450>Наименование<th>Кол-во<th>Серийный номер<th>Гарантия</tr>");
-		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, COUNT(`doc_list_sn`.`num`), `doc_list_sn`.`num`, `doc_units`.`printname` AS `units`, `doc_base`.`warranty`
-		FROM `doc_list_sn`
-		INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`rasx_list_pos` AND  `doc_list_pos`.`doc`='{$this->doc}'
+		<tr><th>№</th><th width='450'>Наименование<th>Кол-во<th>Серийный номер<th>Гарантия</tr>");
+		
+		$rs=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_units`.`printname` AS `units`, `doc_base`.`warranty`
+		FROM `doc_list_pos`
 		INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
-		GROUP BY `doc_list_sn`.`num`
-		");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
 		$ii=1;
-		while($nxt=mysql_fetch_row($res))
+		while($line=mysql_fetch_row($rs))
 		{
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3] $nxt[5]<td>$nxt[4]<td>$nxt[6] мес.");
-			$ii++;
+			$res=mysql_query("SELECT COUNT(`doc_list_sn`.`num`), `doc_list_sn`.`num`
+			FROM `doc_list_sn`
+			INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`rasx_list_pos` AND  `doc_list_pos`.`doc`='{$this->doc}'
+			GROUP BY `doc_list_sn`.`num`");
+			$cnt=0;
+			while($nxt=mysql_fetch_row($res))
+			{
+				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$line[0] $line[1] / $line[2]<td>$nxt[0] $line[4]<td>$nxt[1]<td>$line[5] мес.");
+				$ii++;
+				$snt+=$nxt[0];
+			}
+			if($cnt<$line[3])
+			{
+				$cnt=$line[3]-$cnt;
+				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$line[0] $line[1] / $line[2]<td>$cnt $line[4]<td><td>$line[5] мес.");
+				$ii++;
+			}
 		}
 		$tmpl->AddText("</table>
 		<br>

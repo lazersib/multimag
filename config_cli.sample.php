@@ -10,10 +10,15 @@ $CONFIG['bank']['login']		= '';
 $CONFIG['bank']['pass']			= '';
 
 // Анализатор прайсов
-$CONFIG['price']['dir']			= '/home/ftp/price';
+$CONFIG['price']['dir']			= '/home/ftp/price';	// Путь к каталогу с прайс-листами в odf формате. Обрабатанные прайс-листы будут удалены!
+$CONFIG['price']['numproc']		= 2;			// Количество параллельных процессов анализа. Ускоряет обработку на много(ядерных|процессорных) системах
+$CONFIG['price']['mark_matched']	= false;		// Ставить отметку 'позиция обработана'
+$CONFIG['price']['mark_doubles']	= false;		// Ставить отметку 'позиция обработана несколько раз'
+								// Обработанная несколько раз позиция означает что есть некорректно составленные регулярные выражения
+								// Но поиск таких позиций значительно снижает быстрдействие
 
 // Архивация
-$CONFIG['backup']['archiver']		= 'zip';
+$CONFIG['backup']['archiver']		= 'zip';		// Варианты: zip, 7z
 $CONFIG['backup']['archiv_dir']		= '/mnt/backup';
 $CONFIG['backup']['ftp_host']		= '';
 $CONFIG['backup']['ftp_login']		= '';
