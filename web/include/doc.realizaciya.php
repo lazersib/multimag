@@ -2131,7 +2131,7 @@ function SfakPDF($doc, $to_str=0)
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
 	WHERE `doc_list_pos`.`doc`='{$this->doc}'");
-
+	if(mysql_errno())	throw new MysqlException("Не удалось выбрать список товаров");
 
 	$pdf->SetY($y+18);
 	$pdf->SetFillColor(255,255,255);
@@ -2142,6 +2142,8 @@ function SfakPDF($doc, $to_str=0)
 	$ndsp=$this->firm_vars['param_nds'];
 	while($nxt=mysql_fetch_row($res))
 	{
+		if(!$nxt[11])	throw new Exception("Не допускается печать счёта-фактуры без указания страны происхождения товара");
+
 		if($this->doc_data[12])
 		{
 			$cena = $nxt[4]/(1+$nds);
