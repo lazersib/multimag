@@ -10,10 +10,15 @@ $CONFIG['bank']['login']		= '';
 $CONFIG['bank']['pass']			= '';
 
 // Анализатор прайсов
-$CONFIG['price']['dir']			= '/home/ftp/price';
+$CONFIG['price']['dir']			= '/home/ftp/price';	// Путь к каталогу с прайс-листами в odf формате. Обрабатанные прайс-листы будут удалены!
+$CONFIG['price']['numproc']		= 2;			// Количество параллельных процессов анализа. Ускоряет обработку на много(ядерных|процессорных) системах
+$CONFIG['price']['mark_matched']	= false;		// Ставить отметку 'позиция обработана'
+$CONFIG['price']['mark_doubles']	= false;		// Ставить отметку 'позиция обработана несколько раз'
+								// Обработанная несколько раз позиция означает что есть некорректно составленные регулярные выражения
+								// Но поиск таких позиций значительно снижает быстрдействие
 
 // Архивация
-$CONFIG['backup']['archiver']		= 'zip';
+$CONFIG['backup']['archiver']		= 'zip';		// Варианты: zip, 7z
 $CONFIG['backup']['archiv_dir']		= '/mnt/backup';
 $CONFIG['backup']['ftp_host']		= '';
 $CONFIG['backup']['ftp_login']		= '';
@@ -33,6 +38,10 @@ $CONFIG['route']['iplimit']['enable']	= true;			// Включить ограни
 $CONFIG['route']['iplimit']['hstart']	= 10;			// С (часов)
 $CONFIG['route']['iplimit']['hend']	= 18;			// По (часов)
 $CONFIG['route']['iplimit']['toport']	= 8123;			// Перенаправлять запросы на указанный порт (0-просто блокировать)
+$CONFIG['route']['allow_ext_tcp_ports']	= array(22,80,443);	// Внешние порты TCP, по которым разрешены подключения
+$CONFIG['route']['allow_ext_udp_ports']	= array(53);		// Внешние порты UDP, по которым разрешены подключения
+$CONFIG['route']['dnat_tcp']		= array(3389=>'192.168.1.2:3389');		// Проброс TCP портов через NAT
+$CONFIG['route']['dnat_udp']		= array();		// Проброс UDP портов через NAT
 
 // Снятие ответственного у агентов
 // 0 - не информировать

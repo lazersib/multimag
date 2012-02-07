@@ -20,7 +20,9 @@
 
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
-include_once("$base_path/config_cli.php");
+require_once("$base_path/config_cli.php");
+
+require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
 include_once($CONFIG['site']['location']."/include/doc.core.php");
 include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
@@ -36,13 +38,7 @@ include_once($CONFIG['site']['location']."/include/doc.perkas.php");
 include_once($CONFIG['site']['location']."/include/doc.sborka.php");
 include_once($CONFIG['site']['location']."/include/doc.kordolga.php");
 
-$mail->FromName = $CONFIG['site']['name'].' - Site Service System';  
-$mail->CharSet  = "UTF-8";
-$mail->AddAddress($CONFIG['site']['doc_adm_email'], $CONFIG['site']['doc_adm_email'] );  
-$mail->Subject="DB Check report";
-
 $mail_text='';
-
 
 $tim=time();
 $dtim=time()-60*60*24*365;
@@ -51,6 +47,7 @@ mysql_query("REPAIR TABLE `doc_agent`");
 mysql_query("REPAIR TABLE `doc_base`");
 mysql_query("REPAIR TABLE `doc_list`");
 mysql_query("REPAIR TABLE `doc_list_pos`");
+
 
 echo"Сброс остатков...";
 $res=mysql_query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
@@ -63,37 +60,39 @@ while($nxt=mysql_fetch_row($res))
 }
 echo" готово!\n";
 
-
-
-
 // ============== Расчет ликвидности ===================================================
 echo"Расчет ликвидности...";
 $res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`) AS `aa`
 FROM `doc_list_pos`, `doc_list`
-WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND `doc_list`.`type`>'1' AND `doc_list`.`date`>'$dtim'
+WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND (`doc_list`.`type`='2' OR `doc_list`.`type`='3') AND `doc_list`.`date`>'$dtim'
 GROUP BY `doc_list_pos`.`tovar`
  ORDER BY `aa` DESC");
 $nxt=mysql_fetch_row($res);
 $max=$nxt[1]/100;
-//echo"$max\n";
-$time_start = microtime(true);
+mysql_query("CREATE TEMPORARY TABLE IF NOT EXISTS `doc_base_likv_update` (
+  `id` int(11) NOT NULL auto_increment,
+  `likvid` double NOT NULL,
+  UNIQUE KEY `id` (`id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
+echo mysql_error();
 $rs=mysql_query("UPDATE `doc_base` SET `likvid`='0'");
 $res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`)
 FROM `doc_list_pos`, `doc_list`
 WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND (`doc_list`.`type`='2' OR `doc_list`.`type`='3') AND `doc_list`.`date`>'$dtim'
 GROUP BY `doc_list_pos`.`tovar`");
+
 while($nxt=mysql_fetch_row($res))
 {
  	$l=$nxt[1]/$max;
- 	//if($l>100) $l=100;
- 	mysql_unbuffered_query("UPDATE `doc_base` SET `likvid`='$l' WHERE `id`='$nxt[0]'");
- 	//$ar=mysql_affected_rows();
- 	//echo"$nxt[0] - $nxt[1] - $l\n";
+ 	mysql_unbuffered_query("INSERT INTO `doc_base_likv_update` VALUES ( $nxt[0], $l)");
+ 	if(mysql_errno())	echo mysql_error();
 }
-$time = microtime(true) - $time_start;
-echo" готово ($time сек)!\n";
-global $badpos;
 
+mysql_unbuffered_query("UPDATE `doc_base`,`doc_base_likv_update` SET `doc_base`.`likvid`=`doc_base_likv_update`.`likvid`  WHERE `doc_base`.`id`=`doc_base_likv_update`.`id`");
+if(mysql_errno())	echo mysql_error();
+echo" сделано!\n";
+
+global $badpos;
 
 function seek_and_up($date,$pos)
 {
@@ -121,8 +120,6 @@ $res=mysql_query("UPDATE `doc_base_cnt` SET `cnt`='0'");
 $res=mysql_query("SELECT `id`, `type`, `altnum`, `date` FROM `doc_list` WHERE `ok`>'0' AND `type`!='3' AND `mark_del`='0' ORDER BY `date`");
 while($nxt=mysql_fetch_row($res))
 {
-	//if( ($nxt[1]>2) && ($nxt[1]!=8) && ($nxt[1]!=4) && ($nxt[1]!=5)  ) continue;
-	//DocSumUpdate($nxt[0]);
 	$dt=date("d.m.Y H:i:s",$nxt[3]);
 	$typename=$doc_types[$nxt[1]]."N $nxt[2] от $dt";;
 	$document=AutoDocumentType($nxt[1],$nxt[0]);
@@ -132,12 +129,8 @@ while($nxt=mysql_fetch_row($res))
 		$text="$nxt[0]($typename): $err ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ НЕВЕРНЫ!\n";
 		echo $text;
 		$mail_text.=$text;
-		//echo " ---------- ".seek_and_up($nxt[3],$badpos)."\n";
-		
 		$i++;
 	}
-	
-	//else echo "$nxt[0]($typename): ok!\n";
 }
 if($i)
 {
@@ -146,24 +139,24 @@ if($i)
 	$mail_text.=$text;
 }
 else echo"Ошибки последовательности документов не найдены!\n";
+
+
 echo "Удаление помеченных на удаление...\n";
 // ============================= Удаление помеченных на удаление =========================================
 $tim_minus=time()-60*60*24*$CONFIG['auto']['doc_del_days'];
 $res=mysql_query("SELECT `id`, `type` FROM `doc_list` WHERE `mark_del`<'$tim_minus' AND `mark_del`>'0'");
 while($nxt=mysql_fetch_row($res))
 {
-	$document=AutoDocumentType($nxt[1], $nxt[0]);
-	if($document->DelExec($nxt[0],1))
+	try
 	{
-		$text="$nxt[1] ID:$nxt[0], попытка удаления документа, имеющего не удалённые подчинённые документы!\n";
-		echo $text;
-		$mail_text.=$text;
+		$document=AutoDocumentType($nxt[1], $nxt[0]);
+		$document->DelExec($nxt[0]);
+		echo "Док. ID:$nxt[0],type:$nxt[1] удалён\n";
 	}
-	else
+	catch(Exception $e)
 	{
-		$text="$nxt[1] ID:$nxt[0] удалён!\n";
+		$text="Док. ID:$nxt[0],type:$nxt[1], ошибка удаления: ".$e->getMessage()."\n";
 		echo $text;
-		$mail_text.=$text;
 	}
 }
 
@@ -177,26 +170,24 @@ while($nxt=mysql_fetch_row($res))
 	$text="Поступление ID:$nxt[1], товар $nxt[0]($nxt[4]) - нулевая цена! Агент $nxt[2]\n";
 	echo $text;
 	$mail_text.=$text;
-
 }
 
 
-
-
-
-
-// if($mail->Send())
-
 if($mail_text)
+{
+	try
 	{
-	$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$mail_text."\n\n****
-	Необходимо срочно исправить найденные ошибки!";
-	
-	$mail->Body=$mail_text;
-	if($mail->Send())
+		$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$mail_text."\n\n****\nНеобходимо исправить найденные ошибки!";
+
+		mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
 		echo "Почта отправлена!";
-	else echo"ошибка почты!".$mail->ErrorInfo;
 	}
+	catch(Exception $e) 
+	{
+		echo"Ошибка отправки почты!".$e->getMessage();
+	}
+}
+else echo"Ошибок не найдено, не о чем оповещать!\n";
 
 
 ?>

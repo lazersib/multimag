@@ -29,7 +29,7 @@ class doc_RBank extends doc_Nulltype
 		$this->doc_viewname			='Расход средств из банка';
 		$this->sklad_editor_enable		=false;
 		$this->bank_modify			=-1;
-		$this->header_fields			='agent sum bank';
+		$this->header_fields			='bank sum separator agent';
 		settype($this->doc,'int');
 	}
 	
@@ -136,23 +136,7 @@ class doc_RBank extends doc_Nulltype
 		$tmpl->ajax=1;
 		$tmpl->AddText("<div class='disabled'>Не поддерживается для</div><div class='disabled'>данного типа документа</div>");
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
+
 };
 
 

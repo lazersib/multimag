@@ -30,7 +30,7 @@ class doc_Kompredl extends doc_Nulltype
 		$this->doc_name				= 'kompredl';
 		$this->doc_viewname			= 'Коммерческое предложение';
 		$this->sklad_editor_enable		= true;
-		$this->header_fields			= 'agent cena sklad bank';
+		$this->header_fields			= 'bank sklad separator agent cena';
 		settype($this->doc,'int');
 	}
 
@@ -221,35 +221,10 @@ class doc_Kompredl extends doc_Nulltype
 		}
 		else
 		{
-			global $mail;
 			$comm=rcv('comm');
-			$sender_name=$_SESSION['name'];
-
-			$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-			$manager_name=@mysql_result($res,0,0);
-			$manager_tel=@mysql_result($res,0,1);
-			$manager_email=@mysql_result($res,0,2);
-
-			if(!$manager_email)
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится запрошенное Вами коммерческое предложение от {$CONFIG['site']['name']}\n\n$comm\n\nСообщение сгенерировано автоматически, отвечать на него не нужно! Для переписки используйте адрес, указанный на сайте http://{$CONFIG['site']['name']}!";
-			}
-			else
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится запрошенное Вами коммерческое предложение от {$CONFIG['site']['name']}\n\n$comm\n\nИсполнительный менеджер $manager_name\nКонтактный телефон: $manager_tel\nЭлектронная почта (e-mail): $manager_email\nОтправитель: $sender_name";
- 				$mail->Sender   = $manager_email;
- 				$mail->From     = $manager_email;
- 				//$mail->FromName = "{$mail->FromName} ({$manager_name})";
-			}
-
-			$mail->AddAddress($email, $email );
-			$mail->Subject="Коммерческое предложение от {$CONFIG['site']['name']}";
-
-			$mail->AddStringAttachment($this->KomPredlPDF(1), "buissness_offer.pdf");
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Коммерческое предложение', $this->KomPredlPDF(1), "buissness_offer.pdf");
+			$tmpl->msg("Сообщение отправлено!","ok");
 		}
 	}
 
@@ -259,7 +234,6 @@ class doc_Kompredl extends doc_Nulltype
 	{
 		global $tmpl;
 		global $uid;
-		global $mail;
 		global $CONFIG;
 		$tmpl->ajax=0;
 		$ok=rcv('ok');
@@ -313,9 +287,28 @@ class doc_Kompredl extends doc_Nulltype
 		}
 		else
 		{
+			global $CONFIG;
+			require_once($CONFIG['location'].'/common/email_message.php');
+			$email_message=new email_message_class();
+			$email_message->SetBulkMail(1);
+			$email_message->default_charset="UTF-8";
+			$email_message->SetEncodedHeader("Subject", "Коммерческое предложение от {$CONFIG['site']['name']}");
+			$text_attachment=array(
+				"Data"=>$this->KomPredlPDF(1),
+				"Name"=>"buissness_offer.pdf",
+				"Content-Type"=>"automatic/name",
+				"Disposition"=>"attachment"
+			);
+			$email_message->AddFilePart($text_attachment);
+			$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
+			$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
+			$email_message->cache_body=0;
+			// Заглушка для тела письма
+			$email_message->CreateQuotedPrintableTextPart("","",$text_part);
+			$email_message->AddPart($text_part);
 
-			$msg="Доброго времени суток!\n Просим Вас рассмотреть возможность закупки следующей продукции:\n\n";
-
+			// Подготовка тела письма
+			$msg="Просим Вас рассмотреть возможность закупки следующей продукции:\n\n";
 			$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost`
 			FROM `doc_list_pos`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -325,27 +318,46 @@ class doc_Kompredl extends doc_Nulltype
 			{
 				$msg.="$nxt[0] $nxt[1] ($nxt[2]) - цена $nxt[3] руб.\n";
 			}
-			$msg.="\n\nВо вложении находится печатная версия этого предложения.\nЗаказать данную продукцию вы можете на нашем сайте http://{$CONFIG['site']['name']}. Так же с нашего сайта можно загрузить полный правйс-лист, или воспользоваться интернет-витриной. При заказе через сайт предоставляются скидки! Если для Вас по каким-либо причинам заказ через сайт не возможен, можно воспользоваться альтернативными способами связи:\nТелефоны: ".$this->firm_vars['firm_telefon']."\nЭлектронная почта: {$CONFIG['site']['doc_adm_email']}\nJabber(XMPP): {$CONFIG['site']['doc_adm_jid']}\n";
-			$msg.="\n-----------------------------------------------------\nВы получили это письмо потому что подписаны на рассылку сайта http://{$CONFIG['site']['name']}, либо являетесь клиентом {$this->firm_vars['firm_name']}, не отказавшимся от рассылки.\nОтказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email=";
-
-			global $mail;
-			//$mail->ContentType='text/plain';
-			$mail->Subject='Коммерческое предложение от '.$CONFIG['site']['name'];
-			$mail->AddStringAttachment($this->KomPredlPDF(1), "buissness_offer.pdf");
-			$mail->ClearAddress();
+			$msg.="\n\nВо вложении находится печатная версия этого предложения.\nЗаказать данную продукцию вы можете на нашем сайте http://{$CONFIG['site']['name']}.\nТак же с нашего сайта можно загрузить полный прайс-лист, или воспользоваться интернет-витриной.\nПри заказе через сайт предоставляются скидки!\nЕсли для Вас по каким-либо причинам заказ через сайт не возможен, можно воспользоваться альтернативными способами связи:\nТелефоны: ".$this->firm_vars['firm_telefon']."\nЭлектронная почта: {$CONFIG['site']['doc_adm_email']}\nJabber(XMPP): {$CONFIG['site']['doc_adm_jid']}\n";
+			$msg.="\n-----------------------------------------------------\nВы получили это письмо потому что подписаны на рассылку сайта http://{$CONFIG['site']['name']},\nлибо являетесь клиентом {$this->firm_vars['firm_name']}, не отказавшимся от рассылки.\nОтказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email=";
 
 			$email=@$_POST['email'];
 			foreach($email	as	$line)
 			{
-					$mail->Body = $msg.$line;
-					$mail->AddAddress($line, $line);
-					if($mail->Send())
-						$tmpl->msg("Сообщение для *$line* отправлено!","ok");
+				$res=mysql_query("SELECT `name`, `fullname` FROM `doc_agent` WHERE `email`='$line'");
+				$recipient=@mysql_fetch_assoc($res);
+				if(!$recipient)
+				{
+					$res=mysql_query("SELECT `name`, `rname` AS `fullname` FROM `users` WHERE `email`='$line'");
+					$recipient=@mysql_fetch_assoc($res);
+				}
+				if($recipient)
+				{
+					if($recipient['fullname'])
+					{
+						$email_message->SetEncodedEmailHeader("To", $line, $recipient['fullname']);
+						$body="Здравствуйте, {$recipient['fullname']}!\n".$msg."$line";
+					}
 					else
-						$tmpl->msg("Ошибка отправки сообщения!",'err');
-					$mail->ClearAddress();
+					{
+						$email_message->SetEncodedEmailHeader("To", $line, $recipient['name']);
+						$body="Здравствуйте, {$recipient['name']}!\n".$msg."$line";
+					}
+				}
+				else
+				{
+					$email_message->SetEncodedEmailHeader("To", $line, $line);
+					$body="Здравствуйте!\n".$msg."$line";
+				}
+				$email_message->CreateQuotedPrintableTextPart($body,"",$recipient_text_part);
+				$email_message->ReplacePart($text_part,$recipient_text_part);
+
+				$error=$email_message->Send();
+				if(strlen($error))	throw new Exception($error);
 			}
 
+			$email_message->SetBulkMail(0);
+			$tmpl->msg("Рассылка выполнена успешно!","ok");
  		}
 	}
 
@@ -357,7 +369,7 @@ class doc_Kompredl extends doc_Nulltype
 		global $tmpl, $uid, $CONFIG;
 
 		$dt=date("d.m.Y",$this->doc_data[5]);
-
+		if(@$coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
 
 		$pdf=new FPDF('P');

@@ -1,8 +1,8 @@
 <?php
 
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -84,9 +84,15 @@ else if($mode=='send')
 	}
 	else
 	{
-		if(mailto($to,"Site message from {$CONFIG['site']['name']}", $text))
+		try 
+		{
+			mailto($to,"Сообщение с сайта {$CONFIG['site']['name']}", $text);
 			$tmpl->msg("Сообщение было отправлено!","ok");
-		else	$tmpl->logger("Не удалось отправить сообщение электронной почты! ".$mail->ErrorInfo);
+		}
+		catch(Exception $e) 
+		{
+			$tmpl->logger("Невозможно отправить сообщение!","err");
+		}
 	}
 }
 else if($mode=='petition')
@@ -126,7 +132,7 @@ else if($mode=='petitions')
 		Пожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
 	
 		if($CONFIG['site']['doc_adm_email'])
-			mailto($CONFIG['site']['doc_adm_email'],'Request for document cancel' ,$txt, $from);
+			mailto($CONFIG['site']['doc_adm_email'], 'Запрос на отмену проведения документа' ,$txt, $from);
 	
 		if($CONFIG['site']['doc_adm_jid'])
 		{

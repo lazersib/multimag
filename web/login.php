@@ -337,29 +337,25 @@ else if($mode=='regs')
 		if(strtoupper($_SESSION['captcha_keystring'])!=strtoupper($img))
 			throw new RegException('Код подтверждения введён неверно','img');
 			
-			
-
 // 			header("Location: login.php?mode=reg".$l);
 		$conf=md5(time()+rand(0,1000000));
 		$pass=keygen_unique(0,6,9);
 		$msg=regMsg($login, $pass, $conf);
 
-	
-		if(mailto($email,"Регистрация на ".$CONFIG['site']['name'], $msg))
-		{
-			$res=mysql_query("INSERT INTO `users` (`name`,`pass`,`email`,`date_reg`,`confirm`,`subscribe`)
-			VALUES ('$login', MD5('$pass'), '$email', NOW(),'$conf','$subs')  ");
-			if(mysql_errno())	throw new MysqlException("Не удалось добвать пользователя! Попробуйте позднее!");
-			
-			$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
-			<form action='/login.php'>
-			<input type='hidden' name='mode' value='conf'>
-			Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br>Для завершения регистрации введите полученный код:<br><br>
-			<input type='text' name='s'><button type='submit'>Продолжить</button><br><br>
-			Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!
-			</form>");	
-		}
-		else throw new Exception('Не удалось отправить сообщение электронной почты. Попытайтесь позднее. Если проблема сохранится - убедительная просьба сообщить об этом администратору.','img');
+		mailto($email,"Регистрация на ".$CONFIG['site']['name'], $msg);
+
+		$res=mysql_query("INSERT INTO `users` (`name`,`pass`,`email`,`date_reg`,`confirm`,`subscribe`)
+		VALUES ('$login', MD5('$pass'), '$email', NOW(),'$conf','$subs')  ");
+		if(mysql_errno())	throw new MysqlException("Не удалось добвать пользователя! Попробуйте позднее!");
+		
+		$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
+		<form action='/login.php'>
+		<input type='hidden' name='mode' value='conf'>
+		Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br>Для завершения регистрации введите полученный код:<br><br>
+		<input type='text' name='s'><button type='submit'>Продолжить</button><br><br>
+		Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!
+		</form>");	
+
 	}
 	catch(RegException $e)
 	{

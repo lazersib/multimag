@@ -281,7 +281,6 @@ function PosEditorInit(base_url, editable)
 
 				document.getElementById('btn_sn_add').onclick=snAdd
 
-				// ??????????????????????????????????????????????????????????????????????????????????????????
 				$("#sn").autocomplete("/doc.php", {
 					delay:300,
 					minChars:1,
@@ -293,6 +292,15 @@ function PosEditorInit(base_url, editable)
 					maxItemsToShow:15,
 					extraParams:{'mode':'srv','opt':'snp', 'doc': '1', 'pos': line}
 				});
+
+				document.getElementById('sn').onkeyup=function(event)
+				{
+					if(event.keyCode==13)
+					{
+						snAdd(event)
+					}
+				}
+
 			}
 			else	jAlert(json.message,"Ошибка", {}, 'icon_err')
 		}
@@ -347,6 +355,7 @@ function PosEditorInit(base_url, editable)
 				else if(json.response==1)	// Добавлено
 				{
 					var sn_list=document.getElementById("sn_list")
+					var sn=document.getElementById("sn")
 					var row=document.createElement('tr')
 					row.id='snl'+json.sn_id
 					row.innerHTML="<td><img src='/img/i_del.png'  id='sndel|"+json.sn_id+"'></td><td>"+json.sn+"</td>"
@@ -354,6 +363,7 @@ function PosEditorInit(base_url, editable)
 					var img_del=document.getElementById('sndel|'+json.sn_id)
 					img_del.onclick=SnDel
 					sn_cnt++;
+					sn.value=''
 				}
 			}
 			catch(e)

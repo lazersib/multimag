@@ -117,13 +117,20 @@ class doc_s_Agent
 		
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`
+			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`
 			FROM `doc_agent`
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Выборка информации об агенте не удалась");
 			$nxt=@mysql_fetch_row($res);
 			
-			if(!$nxt) $tmpl->AddText("<h3>Новая запись</h3>");
+			$pagent_name='';
+			
+			if(!$nxt)	$tmpl->AddText("<h3>Новая запись</h3>");
+			else if($nxt[26]>0)
+			{
+				$r=mysql_query("SELECT  `name` FROM `doc_agent` WHERE `id`='$nxt[26]'");
+				$pagent_name=mysql_result($r,0,0);
+			}
 
 			$tmpl->AddText("<form action='' method=post><table cellpadding=0 width=100%>
 			<input type=hidden name=mode value=esave>
@@ -196,9 +203,44 @@ class doc_s_Agent
 			$dish_checked=$nxt[25]?'checked':'';
 			$tmpl->AddText("</select>
 			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросоветсный агент</label>
-			<tr class=lin1><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
+			<tr class='lin1'><td align='right'>Относится к<td>
+			<input type='hidden' name='p_agent' id='agent_id' value='$nxt[26]'>
+			<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 50%;' value='$pagent_name'>
+			<div id='agent_info'></div>
+			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+			<script type=\"text/javascript\">
+			$(document).ready(function(){
+				$(\"#agent_nm\").autocomplete(\"/docs.php\", {
+					delay:300,
+					minChars:1,
+					matchSubset:1,
+					autoFill:false,
+					selectFirst:true,
+					matchContains:1,
+					cacheLength:10,
+					maxItemsToShow:15, 
+					formatItem:agliFormat,
+					onItemSelect:agselectItem,
+					extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+				});
+			});
+			
+			function agliFormat (row, i, num) {
+				var result = row[0] + \"<em class='qnt'>тел. \" +
+				row[2] + \"</em> \";
+				return result;
+			}
+			
+			function agselectItem(li) {
+				if( li == null ) var sValue = \"Ничего не выбрано!\";
+				if( !!li.extra ) var sValue = li.extra[0];
+				else var sValue = li.selectValue;
+				document.getElementById('agent_id').value=sValue;
+			}
+			</script>
+			<tr class=lin0><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
 
-			<tr class=lin0><td><td><input type=submit value='Сохранить'>
+			<tr class=lin1><td><td><input type=submit value='Сохранить'>
 			
 			</table></form>");
 
@@ -293,8 +335,7 @@ class doc_s_Agent
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dishonest`
-			FROM `doc_agent`
+			$res=mysql_query("SELECT * FROM `doc_agent`
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_error())	throw new Exception("Невозможно получить данные агента!");
 			$ag_info=@mysql_fetch_assoc($res);
@@ -328,7 +369,16 @@ class doc_s_Agent
 			$responsible=rcv('responsible');
 			$data_sverki=rcv('data_sverki');
 			$dishonest=rcv('dishonest');
+			if(rcv('p_agent_nm'))
+			{
+				$p_agent=rcv('p_agent');
+				settype($p_agent,'int');
+			}
+			else $p_agent='NULL';
 			
+			settype($g,'int');
+			settype($bik,'int');
+			settype($responsible,'int');
 			settype($dishonest,'int');
 			
 			if($pos_name!=$ag_info['name'])		$log_text.="name: ( {$ag_info['name']} => $pos_name ), ";
@@ -355,6 +405,8 @@ class doc_s_Agent
 			if($pasp_kem!=$ag_info['pasp_kem'])	$log_text.="pasp_kem: ( {$ag_info['pasp_kem']} => $pasp_kem ), ";
 			if($comment!=$ag_info['comment'])	$log_text.="comment: ( {$ag_info['comment']} => $comment ), ";
 			if($dishonest!=$ag_info['dishonest'])	$log_text.="dishonest: ( {$ag_info['dishonest']} => $dishonest ), ";
+			if(!$ag_info['p_agent'])	$ag_info['p_agent']='NULL';
+			if($p_agent!=$ag_info['p_agent'])	$log_text.="p_agent: ( {$ag_info['p_agent']} => $p_agent ), ";
 			
 			if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $email)) && ($email!='') )
 			{
@@ -373,9 +425,9 @@ class doc_s_Agent
 					if($data_sverki!=$ag_info['data_sverki'])	$log_text.="data_sverki: ( {$ag_info['data_sverki']} => $data_sverki ), ";
 				}
 				if(!isAccess('list_agent','edit'))	throw new AccessException("");
-				$res=mysql_query("UPDATE `doc_agent` SET `name`='$pos_name', `type`='$type', `group`='$g', `email`='$email', `fullname`='$fullname', `tel`='$tel', `adres`='$adres', `gruzopol`='$gruzopol', `inn`='$inn', `rs`='$rs', `ks`='$ks', `okevd`='$okevd', `okpo`='$okpo', `bank`='$bank', `bik`='$bik', `pfio`='$pfio', `pdol`='$pdol', `pasp_num`='$pasp_num', `pasp_date`='$pasp_date', `pasp_kem`='$pasp_kem', `comment`='$comment', `dishonest`='$dishonest', `dir_fio`='$dir_fio', `dir_fio_r`='$dir_fio_r' $sql_add  WHERE `id`='$pos'");
-				if($res) $tmpl->msg("Данные обновлены! $cc");
-				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
+				$res=mysql_query("UPDATE `doc_agent` SET `name`='$pos_name', `type`='$type', `group`='$g', `email`='$email', `fullname`='$fullname', `tel`='$tel', `adres`='$adres', `gruzopol`='$gruzopol', `inn`='$inn', `rs`='$rs', `ks`='$ks', `okevd`='$okevd', `okpo`='$okpo', `bank`='$bank', `bik`='$bik', `pfio`='$pfio', `pdol`='$pdol', `pasp_num`='$pasp_num', `pasp_date`='$pasp_date', `pasp_kem`='$pasp_kem', `comment`='$comment', `dishonest`='$dishonest', `dir_fio`='$dir_fio', `dir_fio_r`='$dir_fio_r', `p_agent`= $p_agent $sql_add  WHERE `id`='$pos'");
+				if(mysql_errno())	throw new MysqlException("Ошибка сохранения данных агента");
+				$tmpl->msg("Данные обновлены!");
 			}
 			else
 			{	
@@ -390,7 +442,7 @@ class doc_s_Agent
 					$sql_v=", '$data_sverki'";
 				}
 				if(!isAccess('list_agent','create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_agent` (`name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `dishonest` $sql_c  ) VALUES ( '$pos_name', '$fullname', '$tel', '$adres', '$gruzopol', '$inn', '$dir_fio', '$dir_fio_r', '$pfio', '$pdol', '$okevd', '$okpo', '$rs', '$bank', '$ks', '$bik', '$group', '$email', '$type', '$pasp_num', '$pasp_date', '$pasp_kem', '$comment', '$uid', '$dishonest' $sql_v )");
+				$res=mysql_query("INSERT INTO `doc_agent` (`name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `dishonest`, `p_agent` $sql_c  ) VALUES ( '$pos_name', '$fullname', '$tel', '$adres', '$gruzopol', '$inn', '$dir_fio', '$dir_fio_r', '$pfio', '$pdol', '$okevd', '$okpo', '$rs', '$bank', '$ks', '$bik', '$group', '$email', '$type', '$pasp_num', '$pasp_date', '$pasp_kem', '$comment', '$uid', '$dishonest', $p_agent $sql_v )");
 				$pos=mysql_insert_id();
 				$this->PosMenu($pos, '');
 				if($res)
@@ -505,7 +557,7 @@ class doc_s_Agent
 		global $tmpl;
 		$tmpl->AddText("
 		<div onclick='tree_toggle(arguments[0])'>
-		<div><a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&g=0','list'); return false;\" >Группы</a> (<a href='/docs.php?l=agent&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
+		<div><a href='' title='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&g=0','list'); return false;\" >Группы</a> (<a href='/docs.php?l=agent&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
 		<ul class='Container'>".$this->draw_level($select,0)."</ul></div>
 		<br>
 		Отбор:<input type='text' id='f_search' onkeydown=\"DelayedSave('/docs.php?l=agent&mode=srv&opt=pl','list', 'f_search'); return true;\" >");
@@ -707,7 +759,7 @@ class doc_s_Agent
 	function PosMenu($pos, $param)
 	{
 		global $tmpl;
-		$sel=array();
+		$sel=array('v'=>'','h'=>'');
 		if($param=='')	$param='v';
 		$sel[$param]="class='selected'";
 		

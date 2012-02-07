@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -16,8 +16,8 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-define("MULTIMAG_REV", "272");
-define("MULTIMAG_VERSION", "0.0.1r".MULTIMAG_REV);
+define("MULTIMAG_REV", "298");
+define("MULTIMAG_VERSION", "0.1r".MULTIMAG_REV);
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))
@@ -41,7 +41,7 @@ mb_internal_encoding("UTF-8");
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 
-if(! @ include_once("$base_path/config_site.php"))
+if(! include_once("$base_path/config_site.php"))
 {
 	header("500 Internal Server Error");
 	echo"<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Обратитесь к администратору по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
@@ -67,6 +67,8 @@ if(!@mysql_select_db($CONFIG['mysql']['db']))
     echo"Невозможно активизировать базу данных! Возможно, база данных повреждена. Попробуйте подключиться через 5 минут. Если проблема сохранится - пожалуйста, напишите письмо по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
     exit();
 }
+
+include_once($CONFIG['location']."/common/core.common.php");
 
 mysql_query("SET CHARACTER SET UTF8");
 mysql_query("SET character_set_client = UTF8");
@@ -286,17 +288,6 @@ $msg
 	}
 }
 
-function mailto($email,$tema,$msg,$from="")
-{
-	global $mail;
-	$mail->Body = $msg;
-	$mail->ClearAddress();
-	$mail->AddAddress($email, $email );
-	$mail->Subject=$tema;
-	if($from) $mail->From = $from;
-	return $mail->Send();
-}
-
 function sendAdmMessage($text,$subject='')
 {
 	global $CONFIG;
@@ -335,43 +326,6 @@ function SafeLoadTemplate($template)
 	global $tmpl, $CONFIG;
 	if($template)	$tmpl->LoadTemplate($template);
 }
-
-class MysqlException extends Exception
-{
-	var $sql_error;
-	function __construct($text)
-	{
-		$this->sql_error=mysql_error();
-		parent::__construct($text);
-		$this->WriteLog();
-	}
-
-	function WriteLog()
-	{
-	        $ip=getenv("REMOTE_ADDR");
-		$ag=getenv("HTTP_USER_AGENT");
-		$rf=getenv("HTTP_REFERER");
-		$qq=$_SERVER['QUERY_STRING'];
-		$ff=$_SERVER['PHP_SELF'];
-		$uid=@$_SESSION['uid'];
-		$s=mysql_real_escape_string($this->message);
-		$hidden_data=mysql_real_escape_string($this->sql_error);
-		$ag=mysql_real_escape_string($ag);
-		$rf=mysql_real_escape_string($rf);
-		$qq=mysql_real_escape_string($qq);
-		$ff=mysql_real_escape_string($ff);
-		@mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-		('$ff $qq','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
-	}
-};
-
-class AccessException extends Exception
-{
-	function __construct($text='')
-	{
-		parent::__construct($text);
-	}
-};
 
 // ====================================== Шаблон страницы ===============================================
 class BETemplate
@@ -530,29 +484,63 @@ class BETemplate
 		//echo"Страница сгенерирована за $time секунд";
 	}
 
-    function logger($s, $silent=0, $hidden_data='')
-    {
+	function logger($s, $silent=0, $hidden_data='')
+	{
+		$ip=getenv("REMOTE_ADDR");
+		$ag=getenv("HTTP_USER_AGENT");
+		$rf=getenv("HTTP_REFERER");
+		$ff=$_SERVER['REQUEST_URI'];
+		$uid=@$_SESSION['uid'];
+		$s=mysql_real_escape_string($s);
+		$hidden_data=mysql_real_escape_string($hidden_data);
+		$ag=mysql_real_escape_string($ag);
+		$rf=mysql_real_escape_string($rf);
+		$ff=mysql_real_escape_string($ff);
+		mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
+		('$ff','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
 
-        $ip=getenv("REMOTE_ADDR");
-        $ag=getenv("HTTP_USER_AGENT");
-        $rf=getenv("HTTP_REFERER");
-        $ff=$_SERVER['REQUEST_URI'];
-        $uid=$_SESSION['uid'];
-        $s=mysql_real_escape_string($s);
-        $hidden_data=mysql_real_escape_string($hidden_data);
-        $ag=mysql_real_escape_string($ag);
-        $rf=mysql_real_escape_string($rf);
-        $qq=mysql_real_escape_string($qq);
-        $ff=mysql_real_escape_string($ff);
-        mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-        ('$ff','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
-
-        if(!$silent)
-        $this->msg("$s<br>Страница:$ff<br>Сообщение об ошибке передано администратору","err","Внутренняя ошибка!");
-    }
+		if(!$silent)
+		$this->msg("$s<br>Страница:$ff<br>Сообщение об ошибке передано администратору","err","Внутренняя ошибка!");
+	}
 };
 
 
+class AccessException extends Exception
+{
+	function __construct($text='')
+	{
+		parent::__construct($text);
+	}
+};
+
+class MysqlException extends Exception
+{
+	var $sql_error;
+	function __construct($text)
+	{
+		$this->sql_error=mysql_error();
+		parent::__construct($text);
+		$this->WriteLog();
+	}
+
+	function WriteLog()
+	{
+	        $ip=getenv("REMOTE_ADDR");
+		$ag=getenv("HTTP_USER_AGENT");
+		$rf=getenv("HTTP_REFERER");
+		$qq=$_SERVER['QUERY_STRING'];
+		$ff=$_SERVER['PHP_SELF'];
+		$uid=@$_SESSION['uid'];
+		$s=mysql_real_escape_string($this->message);
+		$hidden_data=mysql_real_escape_string($this->sql_error);
+		$ag=mysql_real_escape_string($ag);
+		$rf=mysql_real_escape_string($rf);
+		$qq=mysql_real_escape_string($qq);
+		$ff=mysql_real_escape_string($ff);
+		@mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
+		('$ff $qq','$rf','$s $hidden_data',NOW(),'$ip','$ag', '$uid')");
+	}
+};
 
 global $tmpl;
 global $uid;

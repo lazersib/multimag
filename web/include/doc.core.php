@@ -23,18 +23,18 @@ include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 function __autoload($class_name)
 {
 	global $CONFIG;
-	
+
 	$class_name= strtolower($class_name);
 	$nm2=split('_',$class_name,2);
 	if(is_array($nm2))
 	{
 		list($class_type, $class_name)=$nm2;
 		if($class_type=='doc')		include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
-		else if($class_type=='report')	include_once $CONFIG['site']['location']."/include/reports/".$class_name.'.php';	
+		else if($class_type=='report')	include_once $CONFIG['site']['location']."/include/reports/".$class_name.'.php';
 	}
 	@include_once $CONFIG['site']['location']."/gate/include/doc.s.".$class_name.'.php';
 	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
-	
+
 }
 
 function num2str_semantic($i,&$words,&$fem,$f)
@@ -171,7 +171,7 @@ function num2str($L, $ed='rub', $sot=2)
 			$kopeek[2]=" сотых";
 			$kopeek[3]=" сотых";
 		}
-		
+
 	}
 	else
 	{
@@ -271,7 +271,7 @@ $res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
 $dv=mysql_fetch_assoc($res);
 
 function roundDirect($number, $precision = 0, $direction = 0)
-{   
+{
 	if ($direction==0 )	return round($number, $precision);
 	else
 	{
@@ -280,7 +280,7 @@ function roundDirect($number, $precision = 0, $direction = 0)
 			? floor($number / $factor) * $factor
 			: ceil($number / $factor) * $factor;
 	}
-} 
+}
 
 function GetCostPos($pos_id, $cost_id)
 {
@@ -303,11 +303,11 @@ function GetCostPos($pos_id, $cost_id)
 		else if($nxt[4]=='abs')	$cena= $base_cost+$nxt[5];
 		else if($nxt[4]=='fix')	$cena= $nxt[5];
 		else			$cena= 0;
-		
+
 		if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[6],$nxt[7]));
-		else 		return "Уточняйте";
+		else 		return 0;
 	}
-	
+
 	while($base_group)
 	{
 		$res=mysql_query("SELECT `doc_group`.`id`, `doc_group_cost`.`id`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group`.`pid`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
@@ -323,20 +323,20 @@ function GetCostPos($pos_id, $cost_id)
 			else if($gdata[2]=='abs')	$cena= $base_cost+$gdata[3];
 			else if($gdata[2]=='fix')	$cena= $gdata[3];
 			else				$cena= 0;
-			
+
 			if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$gdata[5],$gdata[6]));
-			else 		return "Уточняйте";
+			else 		return 0;
 		}
 		$base_group=$gdata[4];
 	}
-	
+
 	if($nxt[2]=='pp')	$cena= $base_cost+$base_cost*$nxt[3]/100;
 	else if($nxt[2]=='abs')	$cena= $base_cost+$nxt[3];
 	else if($nxt[2]=='fix')	$cena= $nxt[3];
 	else			$cena= 0;
-	
+
 	if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[8],$nxt[9]));
-	else 		return "Уточняйте";
+	else 		return 0;
 }
 
 // =========== Запись событий документов в лог ======================
@@ -369,38 +369,43 @@ function doc_menu($dop="", $nd=1, $doc=0)
 
 	$context="<a href=\'/index.php\'><div>Главная</div></a><a href=\'/vitrina.php\'><div>Витрина</div></a>";
 
-	$tmpl->AddText("<table width='100%' style='background-color: #e0f0ff; border: 0;' ><tr><td>
-	<a href='' title='Назад' onclick=\"history.go(-1);\"><img src='img/i_back.png' alt='Назад' border='0'></a>
-	
+	$tmpl->AddText("<div id='doc_menu'>
+	<div id='doc_menu_container'>
+	<div id='doc_menu_r'>
+	<a href='/user.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>
+	<a href='/login.php?mode=logout' title='Выход'><img src='/img/i_logout.png' alt='Выход'></a>
+	</div>
+	<a href='/' title='Главная'><img src='/img/i_home.png' alt='Главная' border='0'></a>
+
+	<img src='/img/i_separator.png' alt=''>
+
+	<a href='/docj.php' title='Журнал документов' accesskey=\"D\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
+	<a href='/docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='/img/i_user.png' alt='Журнал агентов' border='0'></a>
+	<a href='/docs.php?l=dov' title='Работа с доверенными лицами'><img src='/img/i_users.png' alt='лица' border='0'></a>
+	<a href='/docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='/img/i_sklad.png' alt='Склад' border='0'></a>
+	<a href='/docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='/img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
 	<img src='img/i_separator.png' alt=''>
-	
-	<a href='docj.php' title='Журнал документов' accesskey=\"D\"><img src='img/i_journal.png' alt='Журнал документов' border='0'></a>
-	<a href='docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='img/i_user.png' alt='Журнал агентов' border='0'></a>
-	<a href='docs.php?l=dov' title='Работа с доверенными лицами'><img src='img/i_users.png' alt='лица' border='0'></a>
-	<a href='docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='img/i_sklad.png' alt='Склад' border='0'></a>
-	<a href='docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
-	<img src='img/i_separator.png' alt=''>
-	
-	<a href='doc.php' title='Новый документ' accesskey=\"N\"><img src='img/i_new.png' alt='Новый' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=1' title='Поступление товара на склад'><img src='img/i_new_post.png' alt='Поступление товара на склад' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=2' title='Реализация товара' accesskey=\"R\"><img src='img/i_new_real.png' alt='Реализация товара' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=3' title='Заявка покупателя' accesskey=\"Z\"><img src='img/i_new_schet.png' alt='Заявка покупателя' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=4' title='Поступление средств в банк'><img src='img/i_new_pbank.png' alt='Поступление средств в банк' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=5' title='Вывод средств из банка'><img src='img/i_new_rbank.png' alt='Вывод средств из банка' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=6' title='Приходный кассовый ордер'><img src='img/i_new_pko.png' alt='Приходный кассовый ордер' border='0'></a>
-	<a href='doc.php?mode=new&amp;type=7' title='Расходный кассовый ордер'><img src='img/i_new_rko.png' alt='Расходный кассовый ордер' border='0'></a>
-	
-	<img src='img/i_separator.png' alt=''>
-	
-	<a href='' onclick=\"return ShowContextMenu(event, '/doc_otchet.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
-	<a href='doc_service.php' title='Служебные функции'><img src='img/i_config.png' alt='Служебные функции' border='0'></a>
-	<a href='doc_sc.php' title='Сценарии и операции'><img src='img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
-	if($dop) $tmpl->AddText("<img src='img/i_separator.png' alt=''>");
-	
+
+	<a href='/doc.php' title='Новый документ' accesskey=\"N\"><img src='/img/i_new.png' alt='Новый' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=1' title='Поступление товара на склад'><img src='/img/i_new_post.png' alt='Поступление товара на склад' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=2' title='Реализация товара' accesskey=\"R\"><img src='/img/i_new_real.png' alt='Реализация товара' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=3' title='Заявка покупателя' accesskey=\"Z\"><img src='/img/i_new_schet.png' alt='Заявка покупателя' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=4' title='Поступление средств в банк'><img src='/img/i_new_pbank.png' alt='Поступление средств в банк' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=5' title='Вывод средств из банка'><img src='/img/i_new_rbank.png' alt='Вывод средств из банка' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=6' title='Приходный кассовый ордер'><img src='/img/i_new_pko.png' alt='Приходный кассовый ордер' border='0'></a>
+	<a href='/doc.php?mode=new&amp;type=7' title='Расходный кассовый ордер'><img src='/img/i_new_rko.png' alt='Расходный кассовый ордер' border='0'></a>
+
+	<img src='/img/i_separator.png' alt=''>
+
+	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
+	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
+	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
+	if($dop) $tmpl->AddText("<img src='/img/i_separator.png' alt=''>");
+
 	if($dop) $tmpl->AddText($dop);
-	
-	$tmpl->AddText("</table>");
-	
+
+	$tmpl->AddText("</div></div>");
+
 	if(0)
 	//if($nd)
 	{
@@ -418,6 +423,23 @@ function doc_menu($dop="", $nd=1, $doc=0)
 				$tmpl->msg("По крайней мере, у $row товаров, количество на складе меньше минимально рекомендуемого!<br>Например $nxt[0] на складе *$nxt[3]* $nxt[1], вместо $nxt[2] рекомендуемых!","err","Мало товара на складе!");
 			}
 	}
+}
+
+function getDocBaseGroupOptions($selected_id=0, $pid=0, $level=0)
+{
+	$ret='';
+	$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `id`");
+	while($nxt=mysql_fetch_row($res))
+	{
+		if($nxt[0]==0) continue;
+		$pref='';
+		for($i=0;$i<$level;$i++,$pref.='|&nbsp;&nbsp;&nbsp;&nbsp;');
+		$sel=($selected_id==$nxt[0])?'selected':'';
+		$sel.=sprintf(" style='background-color: #%x%x%x'",0xf-$level,0xf-$level,0xf-$level);
+		$ret.="<option value='$nxt[0]' $sel>{$pref}{$nxt[1]}</option>\n";
+		$ret.=getDocBaseGroupOptions($selected_id, $nxt[0], $level+1); // рекурсия
+	}
+	return $ret;
 }
 
 // ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ === ==========
@@ -534,6 +556,7 @@ function DocSumUpdate($doc)
 	return $sum;
 }
 
+// Расчёт баланса агента
 function DocCalcDolg($agent, $print=0, $firm_id=0)
 {
 	global $tmpl;
@@ -568,14 +591,14 @@ function GetInCost($pos_id, $limit_date=0)
 	FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
 	WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' $sql_add ORDER BY `doc_list`.`date`");
-	
+
 	while($nxt=mysql_fetch_row($res))
 	{
 		if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
 		if( ($cnt+$nxt[0])==0)	{}
 		else if($nxt[0]>0)
 			$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
-		$cnt+=$nxt[0];	
+		$cnt+=$nxt[0];
 	}
 	return round($cost,2);
 }
@@ -586,8 +609,8 @@ function DocRezerv($pos,$doc=0)
 	// $doc - номер исключенного документа
 
 	$rs=mysql_query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
-	INNER JOIN `doc_list` ON `doc_list`.`type`='3' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`=`doc_list_pos`.`doc` 
-	AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` 
+	INNER JOIN `doc_list` ON `doc_list`.`type`='3' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`=`doc_list_pos`.`doc`
+	AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list`
 	INNER JOIN `doc_list_pos` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE `ok` != '0' AND `type`='2' AND `doc_list_pos`.`tovar`='$pos' )
 	WHERE `doc_list_pos`.`tovar`='$pos'
@@ -626,7 +649,7 @@ function AutoDocument($doc)
 	get_docdata($doc);
 	global $doc_data;
 	global $dop_data;
-	return AutoDocumentType($doc_data[1], $doc);
+	return AutoDocumentType(@$doc_data[1], $doc);
 }
 
 

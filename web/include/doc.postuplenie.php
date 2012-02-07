@@ -31,7 +31,7 @@ class doc_Postuplenie extends doc_Nulltype
 		$this->doc_viewname			='Поступление товара на склад';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=1;
-		$this->header_fields			='agent cena sklad';
+		$this->header_fields			='sklad cena separator agent';
 		settype($this->doc,'int');
 	}
 
@@ -39,7 +39,7 @@ class doc_Postuplenie extends doc_Nulltype
 	{
 		global $tmpl;
 		if(!$this->dop_data['input_doc'])	$this->dop_data['input_doc']='';
-		$tmpl->AddText("Номер входящего документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");	
+		$tmpl->AddText("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");	
 	}
 
 
@@ -70,7 +70,7 @@ class doc_Postuplenie extends doc_Nulltype
 		if( $nx[4] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 
 
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`cost`, `doc_base`.`cost`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
@@ -82,8 +82,8 @@ class doc_Postuplenie extends doc_Nulltype
 			// Если это первое поступление
 			if(mysql_affected_rows()==0) 
 			{
-				$rs=mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
-				if(!$rs)	throw new MysqlException("Ошибка записи количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
+				mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
+				if(mysql_errno())	throw new MysqlException("Ошибка записи количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
 			}
 			if(@$CONFIG['poseditor']['sn_restrict'])
 			{
@@ -91,10 +91,38 @@ class doc_Postuplenie extends doc_Nulltype
 				$sn_cnt=mysql_result($r,0,0);
 				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
 			}
+			if(@$CONFIG['doc']['update_in_cost']==1 && (!$silent))
+			{
+				if($nxt[4]!=$nxt[5])
+				{
+					mysql_query("UPDATE `doc_base` SET `cost`='$nxt[4]', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
+					if(mysql_errno())	throw new MysqlException("Ошибка обновления базовой цены товара");
+					doc_log("UPDATE","cost:($nxt[4] => $nxt[5])", 'pos', $nxt[0]);
+				}
+			}
 		}
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
+		
+		if(@$CONFIG['doc']['update_in_cost']==2)
+		{
+			$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`cost`, `doc_base`.`cost`
+			FROM `doc_list_pos`
+			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+			if(!$res)	throw new MysqlException('Ошибка выборки номенклатуры документа для переустановки цен при проведении!');
+			while($nxt=mysql_fetch_row($res))
+			{
+				$acp=GetInCost($nxt[0]);
+				if($nxt[5]!=$acp)
+				{
+					mysql_query("UPDATE `doc_base` SET `cost`='$acp', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
+					if(mysql_errno())	throw new MysqlException("Ошибка обновления базовой цены товара");
+					doc_log("UPDATE","cost:($nxt[4] => $acp)", 'pos', $nxt[0]);
+				}
+			}
+		}
 	}
 	
 	function DocCancel()
@@ -415,25 +443,6 @@ class doc_Postuplenie extends doc_Nulltype
 		return $r_id;
 	}
 
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				doc_log("DELETE {$this->doc_name}",'','doc',$doc);
-				return 0;
-			}
-		}
-		return 1;
-   	}
-   	
 	function Service($doc)
 	{
 		$tmpl->ajax=1;

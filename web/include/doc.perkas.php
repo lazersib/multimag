@@ -31,7 +31,7 @@ class doc_PerKas extends doc_Nulltype
 		$this->doc_viewname			='Перемещение средств (касса)';
 		$this->sklad_editor_enable		=false;
 		$this->kassa_modify			=0;
-		$this->header_fields			='sum kassa';
+		$this->header_fields			='sum separator kassa';
 		settype($this->doc,'int');
 	}
 
@@ -49,7 +49,7 @@ class doc_PerKas extends doc_Nulltype
 			else
 				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($bal_p)</option>");
 		}
-		$tmpl->AddText("</select>");	
+		$tmpl->AddText("</select>");
 	}
 
 	function DopSave()
@@ -58,7 +58,7 @@ class doc_PerKas extends doc_Nulltype
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('{$this->doc}','v_kassu','$v_kassu')");
 	}
-	
+
 	function DopBody()
 	{
 		global $tmpl;
@@ -77,15 +77,15 @@ class doc_PerKas extends doc_Nulltype
 		$nx=@mysql_fetch_row($res);
 		if(!$nx)	throw new Exception('Документ не найден!');
 		if( $nx[3] && (!$silent) )	throw new Exception('Документ уже был проведён!');
-		
-		
+
+
 		$res=mysql_query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='$nx[2]'");
 		if(!$res)		throw new MysqlException('Ошибка запроса суммы кассы!');
 		$nxt=mysql_fetch_row($res);
 		if(!$nxt)		throw new Exception('Ошибка получения суммы кассы!');
 		if($nxt[0]<$nx[4])	throw new Exception("Не хватает денег в кассе N$nx[2] ($nxt[0]<$nx[4])!");
-		
-		
+
+
 		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'$nx[4]'
 		WHERE `ids`='kassa' AND `num`='$nx[2]'");
 		if(!$res)			throw new MysqlException('Ошибка обновления кассы-источника!');
@@ -97,9 +97,9 @@ class doc_PerKas extends doc_Nulltype
 		if(! mysql_affected_rows())	throw new Exception('Ошибка обновления кассы назначения!');
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');	
+		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');
 	}
-	
+
 	function DocCancel()
 	{
 		global $uid;
@@ -107,7 +107,7 @@ class doc_PerKas extends doc_Nulltype
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`sum`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
-		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');	
+		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
 		if(! $nx[3])				throw new Exception('Документ НЕ проведён!');
 
 		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'$nx[4]' WHERE `ids`='kassa' AND `num`='$nx[2]'");
@@ -117,7 +117,7 @@ class doc_PerKas extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 	}
-	
+
 	// Отменить проведение
 	function Cancel($doc)
 	{
@@ -223,23 +223,7 @@ class doc_PerKas extends doc_Nulltype
 		global $tmpl;
         $tmpl->AddText("Не поддерживается для данного типа документа");
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
+
 	// Служебные опции
 	function Service($doc)
 	{

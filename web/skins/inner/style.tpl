@@ -17,9 +17,9 @@
 <script type='text/javascript' src='/css/calendar.js'></script>
 <script type='text/javascript' src='/css/DateTime.js'></script>
 
-<link rel='stylesheet' type='text/css' href='/skins/default/basic.css'>
-<link rel='stylesheet' type='text/css' href='/skins/default/layout.css'>
-<link rel='stylesheet' type='text/css' href='/skins/default/user.css'>
+<link rel='stylesheet' type='text/css' href='/skins/inner/basic.css'>
+<link rel='stylesheet' type='text/css' href='/skins/inner/layout.css'>
+<link rel='stylesheet' type='text/css' href='/skins/inner/user.css'>
 <style type='text/css'>
 <!--
 <!--site-style-->
@@ -31,23 +31,11 @@
 <meta name='robots' content='index,follow'>
 </head>
 <body><div id='wiki-wrap' class='wiki-wrap'>
-
-<div id='wiki-info' class='wiki-info'>
-<div id='info-left' ><ul>
-<li class='noborder'><a class='urllink' href='/'>Главная</a></li>
-<li><a title='Поиск продукции по параметрам' href='/search.php'>Поиск</a></li>
-<li><a title='Выбрать и купить' href='/vitrina.php'>Витрина</a></li>
-<li><a title='Скачать или распечатать прайс-лист' href='/price.php'>Прайс</a></li>
-<li><a title='Как с нами связаться' href='/wiki/ContactInfo'>Контактная информация</a></li>
-<li><a title='Дополнительные возможности' href='/user.php'>Возможности</a></li>
 <!--site-tmenu-->
-</ul></div>
 <!--site-rmenu-->
-<p><br clear='all'></p>
-</div>
 <!--site-text-->
 <hr>
-<div class='hidebar'>Система <a href='http://multimag.tndproject.org'>MultiMag</a><br>Создано при поддержке <a href='http://tndproject.org'>TND team</a></div>
+<div>Система <a href='http://multimag.tndproject.org'>MultiMag</a><br>Создано при поддержке <a href='http://tndproject.org'>TND team</a></div>
 
 
 </div></body>

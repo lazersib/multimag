@@ -29,7 +29,7 @@ class doc_Zayavka extends doc_Nulltype
 		$this->doc_viewname			='Заявка покупателя';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
-		$this->header_fields			='agent cena sklad bank';
+		$this->header_fields			='bank sklad separator agent cena';
 		settype($this->doc,'int');
 	}
 	
@@ -38,6 +38,8 @@ class doc_Zayavka extends doc_Nulltype
 		global $tmpl;
 		$klad_id=@$this->dop_data['kladovshik'];
 		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
+		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
+		$delivery_checked=@$this->dop_data['delivery']?'checked':'';
 		$tmpl->AddText("Кладовщик:<br><select name='kladovshik'>");	
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
@@ -46,33 +48,31 @@ class doc_Zayavka extends doc_Nulltype
 			$s=($klad_id==$nxt[0])?'selected':'';
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->AddText("</select><hr>
+		<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
+		Желаемая дата:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'>
+		<hr>");
 	}
 
 	function DopSave()
 	{
 		$kladovshik=rcv('kladovshik');
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'kladovshik','$kladovshik')");
-	}
-	
-	function DopBody()
-	{
-		global $tmpl;
-		$klad_id=@$this->dop_data['kladovshik'];
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `id`='$klad_id'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
-		$nxt=mysql_fetch_row($res);
-		if($nxt)
-		{
-			$tmpl->AddText(", <b>Кладовщик:</b> $nxt[1] ($nxt[2]) ");
-		}
+		$delivery=rcv('delivery');
+		$delivery_date=rcv('delivery_date');
+		
+		settype($kladovshik, 'int');
+		$delivery=$delivery?'1':'0';
+		if($delivery_date)	$delivery_date=date('Y-m-d H:i:s',strtotime($delivery_date));
+		else			$delivery_date='';
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES
+		( '{$this->doc}' ,'kladovshik','$kladovshik'),
+		( '{$this->doc}' ,'delivery','$delivery'),
+		( '{$this->doc}' ,'delivery_date','$delivery_date')");
 	}
 	
 	function DocApply($silent=0)
 	{
 		$tim=time();
-		
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if( !($nx=@mysql_fetch_row($res) ) )	throw new MysqlException('Ошибка выборки данных документа при проведении!');	
@@ -131,7 +131,7 @@ class doc_Zayavka extends doc_Nulltype
 		else if($opt=='schet_pdf')
 			$this->PrintPDF($doc);
 		else if($opt=='schet_email')
-			$this->SendEmail($doc);
+			$this->SendEmail();
 		else if($opt=='komplekt')
 			$this->PrintKomplekt($doc);
 		else if($opt=='csv_export')
@@ -159,6 +159,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$new_doc=new doc_Realizaciya();
 			$dd=$new_doc->CreateFromP($this);
+			$new_doc->SetDopData('cena',$this->dop_data['cena']);
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		// Реализация
@@ -256,23 +257,6 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->msg("В разработке","info");
 		}
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
    	
 	function Service($doc)
 	{
@@ -458,64 +442,38 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("<hr>");
 			if($CONFIG['site']['doc_shtamp'])
 				$tmpl->AddText("<img src='{$CONFIG['site']['doc_shtamp']}' alt='Место для печати'>");
-			$tmpl->AddText("<p align=right>Масса товара: <b>$summass</b> кг.<br></p>");
+			$tmpl->AddText("<p align='right'>Масса товара: <b>$summass</b> кг.<br></p>");
 		}		
 	}
 	
-	function SendEMail($doc, $email='')
+	function SendEMail()
 	{
 		global $tmpl;
-		global $mail;
 		global $CONFIG;
-		if(!$email)
-			$email=rcv('email');
+		$email=rcv('email');
 		
 		if($email=='')
 		{
 			$tmpl->ajax=1;
 			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
 			$email=mysql_result($res,0,0);
-			$tmpl->AddText("<form action=''>
-			<input type=hidden name=mode value='print'>
-			<input type=hidden name=doc value='$doc'>
-			<input type=hidden name=opt value='schet_email'>
-			email:<input type=text name=email value='$email'><br>
+			$tmpl->AddText("<form action='' method='post'>
+			<input type=hidden name='mode' value='print'>
+			<input type=hidden name='doc' value='{$this->doc}'>
+			<input type=hidden name='opt' value='schet_email'>
+			email:<input type='text' name='email' value='$email'><br>
 			Коментарий:<br>
 			<textarea name='comm'></textarea><br>
-			<input type=submit value='&gt;&gt;'>
+			<input type='submit' value='&gt;&gt;'>
 			</form>");	
 		}
 		else
 		{
 			$comm=rcv('comm');
-			$sender_name=$_SESSION['name'];
-			
-			$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-			$manager_name=@mysql_result($res,0,0);	
-			$manager_tel=@mysql_result($res,0,1);
-			$manager_email=@mysql_result($res,0,2);	
-			
-			if(!$manager_email)
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанный Вами счёт от {$CONFIG['site']['name']}\n\n$comm\n\nСообщение сгенерировано автоматически, отвечать на него не нужно! Для переписки используйте адрес, указанный на сайте http://{$CONFIG['site']['name']}!";
-			}
-			else
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанный Вами счёт от {$CONFIG['site']['name']}\n\n$comm\n\nИсполнительный менеджер $manager_name\nКонтактный телефон: $manager_tel\nЭлектронная почта (e-mail): $manager_email\nОтправитель: $sender_name";
- 				$mail->Sender   = $manager_email;  
- 				$mail->From     = $manager_email;  
- 				//$mail->FromName = "{$mail->FromName} ({$manager_name})";
-			}
-
-			$mail->AddAddress($email, $email );  
-			$mail->Subject="Счёт от {$CONFIG['site']['name']}";
-			
-			$mail->AddStringAttachment($this->PrintPDF($doc, 1), "schet.pdf");  
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
-    	}
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Счёт', $this->PrintPDF($doc, 1), "invoice.pdf");
+			$tmpl->msg("Сообщение отправлено!","ok");
+		}
 		
 	}
 	
@@ -658,13 +616,20 @@ class doc_Zayavka extends doc_Nulltype
 		if(@$CONFIG['site']['doc_header'])
 		{
 			$header_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
-			$pdf->Image($header_img,8,10, 190);	
-			$pdf->Sety(54);
+			$size=getimagesize($header_img);
+			if(!$size)			throw new Exception("Не удалось открыть файл изображения");
+			if($size[2]!=IMAGETYPE_JPEG)	throw new Exception("Файл изображения не в jpeg формате");
+			if($size[0]<800)		throw new Exception("Разрешение изображения слишком мало! Допустимя ширина - не менее 800px");
+			$width=190;				
+			$offset_y=($size[1]/$size[0]*$width)+14;
+			$pdf->Image($header_img,8,10, $width);	
+			$pdf->Sety($offset_y);
+
 		}
 		
 		$str = "Внимание! Оплата данного счёта означает согласие с условиями поставки товара. Уведомление об оплате обязательно, иначе не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с поставщика, самовывозом, при наличии доверенности и паспорта. Система интернет-заказов для постоянных клиентов доступна на нашем сайте http://{$CONFIG['site']['name']}.";
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->MultiCell(0,5,$str,1,1,'c',0);
+		$pdf->MultiCell(0,5,$str,1,'C',0);
 		$pdf->y++;
 		$str='Счёт действителен в течение трёх банковских дней!';
 		$pdf->SetFont('','U',10);

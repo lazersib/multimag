@@ -69,13 +69,14 @@ class doc_s_Price_an
 		{
 			$pos=rcv('pos');
 			$tmpl->ajax=1;
-			$res=mysql_query("SELECT `firm_info`.`name`, `parsed_price`.`cost`, `parsed_price`.`nal` FROM `parsed_price`
+			$res=mysql_query("SELECT `firm_info`.`name`, `parsed_price`.`cost`, `parsed_price`.`nal`, `parsed_price`.`selected`, `firm_info`.`delivery_info` FROM `parsed_price`
 			LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm`
 			WHERE `pos`='$pos'");
-			$tmpl->AddText("<table width='100%'><tr><th>Фирма<th>Цена<th>наличие");
+			$tmpl->AddText("<table width='100%'><tr><th>Фирма<th>Цена<th>Наличие<th>Доставка");
 			while(@$nxt=mysql_fetch_row($res))
 			{
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]");
+				$sel=$nxt[3]?"style='background-color: #cfc'":'';
+				$tmpl->AddText("<tr $sel><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[4]");
 			}	
 			$tmpl->AddText("</table>");
 		}

@@ -30,7 +30,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$this->doc_name				='predlojenie';
 		$this->doc_viewname			='Предложение поставщика';
 		$this->sklad_editor_enable		=true;
-		$this->header_fields			='agent sklad cena';
+		$this->header_fields			='sklad cena separator agent';
 		settype($this->doc,'int');
 	}
 
@@ -130,23 +130,6 @@ class doc_Predlojenie extends doc_Nulltype
 			$tmpl->msg("В разработке","info");
 		}
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
 
 	function Service($doc)
 	{
@@ -325,18 +308,10 @@ class doc_Predlojenie extends doc_Nulltype
 		}
 		else
 		{
-			global $mail;
-			$mail->Body = "Доброго времени суток!
-			Прошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}. Подробная информация во вложении.";
-			//$mail->ContentType='text/plain';
-			$mail->AddAddress($email, $email );
-			$mail->Subject='Order from '.$CONFIG['site']['name'];
-
-			$mail->AddStringAttachment($this->PrintPDF($doc, 1), "zakaz.pdf");
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
+			$comm=rcv('comm');
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Заявка на поставку', $this->PrintPDF($doc, 1), "order.pdf", "Здравствуйте!\nПрошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}.\nПодробная информация во вложении.");
+			$tmpl->msg("Сообщение отправлено!","ok");
     }
 
 	}
@@ -356,7 +331,6 @@ class doc_Predlojenie extends doc_Nulltype
 
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
-		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
 
 		$pdf=new FPDF('P');

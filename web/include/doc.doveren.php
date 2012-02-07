@@ -31,7 +31,7 @@ class doc_Doveren extends doc_Nulltype
 		$this->doc_viewname			='Доверенность';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
-		$this->header_fields			='agent cena';
+		$this->header_fields			='separator agent cena';
 		settype($this->doc,'int');
 	}
 
@@ -136,23 +136,7 @@ class doc_Doveren extends doc_Nulltype
 			$tmpl->msg("В разработке","info");
 		}
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
+
 	function Service($doc)
 	{
 		$tmpl->ajax=1;

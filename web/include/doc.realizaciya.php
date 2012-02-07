@@ -32,11 +32,21 @@ class doc_Realizaciya extends doc_Nulltype
 		$this->doc_viewname			='Реализация товара';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=-1;
-		$this->header_fields			='agent cena sklad';
+		$this->header_fields			='sklad cena separator agent';
 		$this->dop_menu_buttons			="<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc=$doc'); return false;\" title='Доверенное лицо'><img src='img/i_users.png' alt='users'></a>";
 		settype($this->doc,'int');
 	}
 
+	// Создать документ с товарными остатками на основе другого документа
+	public function CreateFromP($doc_obj)
+	{
+		parent::CreateFromP($doc_obj);
+		$this->SetDopData('platelshik', $doc_obj->doc_data['agent']);
+		$this->SetDopData('gruzop', $doc_obj->doc_data['agent']);
+		unset($this->doc_data);
+		$this->get_docdata();
+		return $this->doc;
+	}
 
 	function DopHead()
 	{
@@ -59,10 +69,10 @@ class doc_Realizaciya extends doc_Nulltype
 		$tmpl->AddText("<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		Плательщик:<br>
 		<input type='hidden' name='plat_id' id='plat_id' value='{$this->dop_data['platelshik']}'>
-		<input type='text' id='plat'  style='width: 450px;' value='$plat_name'><br>
+		<input type='text' id='plat'  style='width: 100%;' value='$plat_name'><br>
 		Грузополучатель:<br>
 		<input type='hidden' name='gruzop_id' id='gruzop_id' value='{$this->dop_data['gruzop']}'>
-		<input type='text' id='gruzop'  style='width: 450px;' value='$gruzop_name'><br>
+		<input type='text' id='gruzop'  style='width: 100%;' value='$gruzop_name'><br>
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
 			$(\"#plat\").autocomplete(\"/docs.php\", {
@@ -220,20 +230,22 @@ class doc_Realizaciya extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Форма ТОРГ-12 (PDF)</div>			
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура (PDF)</div>			
 			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nvco'\">Накладная c сорт. по коду</div>	");
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nvco'\">Накладная c сорт. по коду</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=arab'\">Акт оказаннх услуг</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=warr'\">Гарантийный талон</div>");
 		}
 		//			<li><a href='?mode=print&amp;doc=$doc&amp;opt=sf'>Счёт - фактура (HTML)</a></li>
 		else if($opt=='tg12')
 			$this->PrintTg12($doc);
 		else if($opt=='tg12_pdf')
 		{	
-// 			if(!$this->doc_data[6])
-// 			{
-// 				doc_menu(0,0);
-// 				$tmpl->AddText("<h1>Реализация</h1>");
-// 				$tmpl->msg("Сначала нужно провести документ!","err");
-// 			}
-// 			else 
+			if(!$this->doc_data[6])
+			{
+				doc_menu(0,0);
+				$tmpl->AddText("<h1>Реализация</h1>");
+				$tmpl->msg("Сначала нужно провести документ!","err");
+			}
+			else 
 			$this->PrintTg12PDF();
 		}
 		else if($opt=='nac')
@@ -250,6 +262,10 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->PrintTovCheck($doc);
 		else if($opt=='nvco')
 			$this->PrintNaklVCOrdered();
+		else if($opt=='arab')
+			$this->PrintActRabot();
+		else if($opt=='warr')
+			$this->PrintWarantyList();
 		else
 			$this->PrintNakl($doc);
 	}
@@ -325,23 +341,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$tmpl->msg("В разработке","info");
 		}
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!mysql_result($res,0,0)) // Если проведён - нельзя удалять
-		{
-			$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-			if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-			{
-				mysql_query("DELETE FORM `doc_list_pos` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-				mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-				return 0;
-			}
-		}
-		return 1;
-   	}
+
 	function Service($doc)
 	{
 		get_docdata($doc);
@@ -477,6 +477,139 @@ class doc_Realizaciya extends doc_Nulltype
 		<p>Поставщик:_____________________________________</p>
 		<p>Покупатель: ____________________________________</p>");
 	}
+
+	// -- Акт выполненных работ --------------
+	function PrintActRabot()
+	{
+		global $tmpl;
+		global $uid;
+
+		$tmpl->LoadTemplate('print');
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$tmpl->AddText("<h1>Акт об оказанных услугах, работах N {$this->doc_data[9]}, от $dt </h1>
+		<b>Исполнитель: </b>{$this->firm_vars['firm_name']}<br>
+		<b>Заказчик: </b>{$this->doc_data[3]}<br><br>");
+
+		$tmpl->AddText("
+		<table width='800' cellspacing='0' cellpadding='0'>
+		<tr><th>№</th><th width=450>Наименование работ, услуг<th>Место<th>Кол-во<th>Стоимость<th>Сумма</tr>");
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `doc_units`.`printname` AS `units`
+		FROM `doc_list_pos`
+		INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
+		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='1'");
+		$i=0;
+		$ii=1;
+		$sum=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f руб.", $nxt[4]);
+			$cost2 = sprintf("%01.2f руб.", $sm);
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+		}
+		$ii--;
+		$cost = sprintf("%01.2f руб.", $sum);
+		
+		$prop='';
+		if($sum>0)
+		{
+			$add='';
+			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
+			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE 
+			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			$add
+			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if(@$prop=mysql_result($rs,0,0))
+			{
+				$prop=sprintf("<p><b>Оплачено</b> %0.2f руб.</p>",$prop);
+			}	
+		}
+		
+
+		$tmpl->AddText("</table>
+		<p>Всего оказанно услуг <b>$ii</b> на сумму <b>$cost</b></p>
+		<p class=mini>Вышеперечисленные услуги выполнены полностью и в срок. Заказчик претензий по объёму, качеству и срокам оказания услуг не имеет.</p>
+		$prop
+		<p>Исполнитель:_____________________________________</p>
+		<p>Заказчик: ____________________________________</p>");
+	}
+
+	// -- Гарантийный талон --------------
+	function PrintWarantyList()
+	{
+		global $tmpl;
+		global $uid;
+
+		$tmpl->LoadTemplate('print');
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$tmpl->AddText("<h2>{$this->firm_vars['firm_name']}</h2>
+		<h1>Гарантийный талон N {$this->doc_data[9]}, от $dt </h1>");
+
+		$tmpl->AddText("
+		<table width='800' cellspacing='0' cellpadding='0'>
+		<tr><th>№</th><th width='450'>Наименование<th>Кол-во<th>Серийный номер<th>Гарантия</tr>");
+		
+		$rs=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_units`.`printname` AS `units`, `doc_base`.`warranty`
+		FROM `doc_list_pos`
+		INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		$ii=1;
+		while($line=mysql_fetch_row($rs))
+		{
+			$res=mysql_query("SELECT COUNT(`doc_list_sn`.`num`), `doc_list_sn`.`num`
+			FROM `doc_list_sn`
+			INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`rasx_list_pos` AND  `doc_list_pos`.`doc`='{$this->doc}'
+			GROUP BY `doc_list_sn`.`num`");
+			$cnt=0;
+			while($nxt=mysql_fetch_row($res))
+			{
+				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$line[0] $line[1] / $line[2]<td>$nxt[0] $line[4]<td>$nxt[1]<td>$line[5] мес.");
+				$ii++;
+				$snt+=$nxt[0];
+			}
+			if($cnt<$line[3])
+			{
+				$cnt=$line[3]-$cnt;
+				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$line[0] $line[1] / $line[2]<td>$cnt $line[4]<td><td>$line[5] мес.");
+				$ii++;
+			}
+		}
+		$tmpl->AddText("</table>
+		<br>
+		<h3>Правила гарантийного обслуживания</h3>
+		<ol class='mini'>
+		<li>Гарантийное обслуживание мониторов, принтеров, копировальных аппаратов, источников бесперебойного питания и любого другого периферийного оборудования, гарантия на которое поддерживается производителем, производится в специализированных сервисных центрах, телефоны которых указанны ниже. Доставка оборудования на гарантийный ремонт осуществляется силами покупателя. Cроки гарантийного обслуживания устанавливаются производителем.</li>
+		<li>Гарантийному обслуживанию подлежат ТОЛЬКО товары в полной комплектации. При предъявлении претензии покупатель обязан предоставить коробки, упаковку, инструкции, гарантийные талоны, драйвера, соединительные кабели и пр. т.е. абсолютно все, что входило в комплект поставки. Отсутствие хотя бы одного элемента из состава комплекта поставки может являться основанием для отказа в гарантийном обслуживании. Прием оборудования  на гарантийное обслуживание осуществляется только в том случае, если оборудование предоставляется покупателем в ОРИГИНАЛЬНОЙ упаковке (серийные номера на изделии и упаковке идентичны). Несовпадение номеров может являться основанием для отказа в гарантийном обслуживании. Сильное загрязнение также может послужить причиной отказа в приеме изделия в ремонт.</li>
+		<li>Гарантийное обслуживание не распространяется на повреждения, вызванное неправильным подключением, эксплуатацией оборудования в нештатном режиме либо в условиях, не предусмотренных производителем, а также происшедшим вследствие действия сторонних обстоятельств (скачков напряжения, стихийных бедствий и т.д.). Гарантийное обслуживание не распространяется на устройства с механическими повреждениями, электрическими прожогами, а также неисправности, вызванные внесением покупателем конструктивных, программных или иных изменений (в. том числе прошивка  BIOS); повреждения процессора, материнской платы и т.д. вследствие &quot;разгона&quot; (работа на завышенных частотах и/или с повышенным напряжением питания).</li>
+		<li>Причину возникновения дефектов определяют специалисты гарантийного отдела {$this->firm_vars['firm_name']}. При несогласии покупателя с их заключением может быть проведена независимая экспертиза в соответствии с законом о Защите прав потребителя.</li>
+		<li>Неисправное оборудование, гарантийное обслуживание которого осуществляется за счет {$this->firm_vars['firm_name']}, принимается в ремонт на срок продолжительностью 20 (двадцать) рабочих дней. По истечении этого срока отремонтированное оборудование возвращается покупателю. В том случае, если дефекты оборудования носят неисправимый характер, покупателю выдается оборудование, аналогичное сданному в ремонт по цене, функциональности и потребительским качествам. Если принятое в ремонт оборудование уникально, по выбору покупателя:</li>
+		<ol type='a'>
+		<li>{$this->firm_vars['firm_name']} предоставляет ближайший аналог с компенсацией разницы по цене</li>
+		<li>Покупателю возвращаются деньги</li>
+		<li>В том случае, если за время нахождения изделия в ремонте произошло изменение розничных цен, {$this->firm_vars['firm_name']} оставляет за собой право зачесть неисправное оборудование по текущей цене прайс - листа.</li>
+		</ol>
+		<li>Неработоспособность точек экрана не более 4 (четырех) не является существенным недостатком жидкокристаллического дисплея.</li>
+		<li>{$this->firm_vars['firm_name']} не предоставляет гарантию на совместимость приобретаемого оборудования и оборудование потребителя. {$this->firm_vars['firm_name']} гарантирует работоспособность каждого из комплектующих в отдельности, но не несет ответственности за качество их совместного функционирования, кроме случаев, когда приобретается компьютер в сборе. В соответствии с Законом о защите прав потребителя в позднейшей редакции и постановлением Правительства Российской Федерации №55 от 19 января 1998 г. &quot;Перечень непродовольственных товаров надлежащего качества, не подлежащих возврату или обмену на аналогичный товар других размера, формы, габарита, фасона, расцветки или комплектации&quot; (с изменениями на 20 октября 1998года) {$this->firm_vars['firm_name']} не обязана принимать обратно исправное оборудование, если оно по каким-либо причинам не подошло покупателю.</li>
+		<li>Гарантийные претензии принимаются только при наличии гарантийного талона в рабочее время.</li>
+		<li>Совершение покупки означает согласие покупателя с данными правилами.</li>
+		</ol>
+		<p>С условиями гарантийного обслуживания ознакомлен. Исправность и комплектность проверена, следов механических и электрических повреждений нет, следов непромышленного ремонта нет.</p>
+
+		<p>Продавец:_____________________________________</p>
+		<p>Покупатель: ____________________________________</p>
+		<p>Настоящий гарантийный талон является документом, подтверждающим право на гарантийное обслуживание приобретённого в {$this->firm_vars['firm_name']} товара. В случае утери гарантийный талон не восстанавливается.<br>Ремонт и обслуживание техники производится по адресу:<br>{$this->firm_vars['firm_adres']}</p>");
+	}
+
 
 // -- Накладная с сортировкой по коду--------------
 	function PrintNaklVCOrdered()
@@ -821,7 +954,7 @@ function PrintTg12()
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
-		WHERE `doc_list_pos`.`doc`='$doc' ");
+		WHERE `doc_list_pos`.`doc`='$doc'  AND `doc_base`.`pos_type`='0'");
                 $i=0;
                 $ii=0;
 
@@ -1057,35 +1190,10 @@ function PrintTg12()
 		}
 		else
 		{
-			global $mail;
 			$comm=rcv('comm');
-			$sender_name=$_SESSION['name'];
-			
-			$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-			$manager_name=@mysql_result($res,0,0);	
-			$manager_tel=@mysql_result($res,0,1);
-			$manager_email=@mysql_result($res,0,2);	
-			
-			if(!$manager_email)
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанная Вами счёт-фактура от {$CONFIG['site']['name']}\n\n$comm\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
-			}
-			else
-			{
-				$mail->Body = "Доброго времени суток!\nВо вложении находится заказанная Вами счёт-фактура от {$CONFIG['site']['name']}\n\n$comm\n\nИсполнительный менеджер $manager_name\nКонтактный телефон: $manager_tel\nЭлектронная почта (e-mail): $manager_email\nОтправитель: $sender_name";
- 				$mail->Sender   = $manager_email;  
- 				$mail->From     = $manager_email;  
- 				//$mail->FromName = "{$mail->FromName} ({$manager_name})";
-			}
-
-			$mail->AddAddress($email, $email );  
-			$mail->Subject="Счёт-фактура от {$CONFIG['site']['name']}";
-			
-			$mail->AddStringAttachment($this->SfakPDF($doc, 1), "schet_fak.pdf");  
-			if($mail->Send())
-				$tmpl->msg("Сообщение отправлено!","ok");
-			else
-				$tmpl->msg("Ошибка отправки сообщения!",'err');
+			doc_menu();
+			$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->SfakPDF($doc, 1), "schet-fakt.pdf");
+			$tmpl->msg("Сообщение отправлено!","ok");
     		}	
 	}
 
@@ -1142,17 +1250,21 @@ function PrintTg12PDF($to_str=0)
 	if($platelshik_info['ks'])		$platelshik.=', К/С '.$platelshik_info['ks'];
 	
 	$str = unhtmlentities("{$platelshik_info['fullname']}, адрес {$platelshik_info['adres']}, тел. {$platelshik_info['tel']}, ИНН/КПП {$platelshik_info['inn']}, ОКПО {$platelshik_info['okpo']},  ОКВЭД {$platelshik_info['okevd']}, БИК {$platelshik_info['bik']}, Р/С {$platelshik_info['rs']}, К/С {$platelshik_info['ks']}, банк {$platelshik_info['bank']}");
-
-	$rr=mysql_query("SELECT `surname`,`name`,`name2`,`range` FROM `doc_agent_dov`
-	WHERE `id`='{$this->dop_data['dov_agent']}'");
-	if(mysql_errno())		throw new MysqlException("Невозможно получить данные доверенного лица!");
-	if($nn=@mysql_fetch_row($rr))
+	
+	if(isset($this->dop_data['dov_agent']))
 	{
-		$dov_agn="$nn[0] $nn[1] $nn[2]";
-		$dov_agr=$nn[3];
+		$rr=mysql_query("SELECT `surname`,`name`,`name2`,`range` FROM `doc_agent_dov`
+		WHERE `id`='{$this->dop_data['dov_agent']}'");
+		if(mysql_errno())		throw new MysqlException("Невозможно получить данные доверенного лица!");
+		if($nn=@mysql_fetch_row($rr))
+		{
+			$dov_agn="$nn[0] $nn[1] $nn[2]";
+			$dov_agr=$nn[3];
+		}
+		else	$dov_agn=$dov_agr="";
 	}
-	else	$dov_agn=$dov_agr="";
-		
+	else	$dov_agn=$dov_agr="";	
+	
 	if($this->doc_data['p_doc'])
 	{
 		$res=mysql_query("SELECT `doc_list`.`sklad`, `doc_kassa`.`name`, `doc_kassa`.`bik`, `doc_kassa`.`rs` FROM `doc_list` 
@@ -1454,7 +1566,7 @@ function PrintTg12PDF($to_str=0)
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
-	WHERE `doc_list_pos`.`doc`='{$this->doc}' ");
+	WHERE `doc_list_pos`.`doc`='{$this->doc}'  AND `doc_base`.`pos_type`='0'");
 	$i=0;
 	$ii=0;
 	$line_height=4;
@@ -1534,16 +1646,16 @@ function PrintTg12PDF($to_str=0)
 			$w=0;
 			for($i=0;$i<7;$i++)	$w+=$t_all_width[$i];
 			$str = iconv('UTF-8', 'windows-1251', "Всего" );
-			$pdf->Cell($w,$line_height, $str ,0,0,'R',0);
-			$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',0);
-			$pdf->Cell($t_all_width[8],$line_height, $list_summass ,1,0,'C',0);
-			$pdf->Cell($t_all_width[9],$line_height, "$list_cnt / $list_summass" ,1,0,'C',0);
+			$pdf->Cell($w,$line_height, $str ,0,0,'R',1);
+			$pdf->Cell($t_all_width[7],$line_height, '-' ,1,0,'C',1);
+			$pdf->Cell($t_all_width[8],$line_height, $list_summass ,1,0,'C',1);
+			$pdf->Cell($t_all_width[9],$line_height, "$list_cnt / $list_summass" ,1,0,'C',1);
 			
-			$pdf->Cell($t_all_width[10],$line_height, '' ,1,0,'C',0);
-			$pdf->Cell($t_all_width[11],$line_height, $list_sumbeznaloga ,1,0,'C',0);
-			$pdf->Cell($t_all_width[12],$line_height, "-" ,1,0,'C',0);
-			$pdf->Cell($t_all_width[13],$line_height, $list_sumnaloga ,1,0,'R',0);
-			$pdf->Cell($t_all_width[14],$line_height, $list_sum ,1,0,'R',0);
+			$pdf->Cell($t_all_width[10],$line_height, '' ,1,0,'C',1);
+			$pdf->Cell($t_all_width[11],$line_height, $list_sumbeznaloga ,1,0,'C',1);
+			$pdf->Cell($t_all_width[12],$line_height, "-" ,1,0,'C',1);
+			$pdf->Cell($t_all_width[13],$line_height, $list_sumnaloga ,1,0,'R',1);
+			$pdf->Cell($t_all_width[14],$line_height, $list_sum ,1,0,'R',1);
 			$pdf->Ln();
 			
 			$pdf->AddPage('L');
@@ -1738,7 +1850,7 @@ function PrintTg12PDF($to_str=0)
 	
 	$str = iconv('UTF-8', 'windows-1251', "По доверенности №" );
 	$pdf->Cell($s[0],$line_height, $str ,0,0,'L',0);
-	$str = iconv('UTF-8', 'windows-1251', $this->dop_data['dov']." от ".$this->dop_data['dov_data'] );
+	$str = @iconv('UTF-8', 'windows-1251', $this->dop_data['dov']." от ".$this->dop_data['dov_data'] );
 	$pdf->Cell(0,$line_height, $str ,0,1,'L',0);
 	
 	$pdf->SetFont('','',6);
@@ -1967,7 +2079,7 @@ function SfakPDF($doc, $to_str=0)
 	
 	$pdf->SetLineWidth(0.2);
 	$pdf->SetY($y+16);
-	
+	$pdf->SetFillColor(255,255,255);
 	$i=0;
 	$ii=1;
 	$sum=$sumnaloga=0;
@@ -2030,21 +2142,21 @@ function SfakPDF($doc, $to_str=0)
 				$step=5;
 				$pdf->SetFont('','',9);
 				$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-				$pdf->Cell($t_width[0],$step,$str,1,0,'L',0);
+				$pdf->Cell($t_width[0],$step,$str,1,0,'L',1);
 				$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
-				$pdf->Cell($t_width[1],$step,$str,1,0,'R',0);
+				$pdf->Cell($t_width[1],$step,$str,1,0,'R',1);
 				$str = iconv('UTF-8', 'windows-1251', $cnt );
-				$pdf->Cell($t_width[2],$step,$str,1,0,'R',0);		
-				$pdf->Cell($t_width[3],$step,$cena,1,0,'R',0);
-				$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',0);
-				$pdf->Cell($t_width[5],$step,'--',1,0,'C',0);		
-				$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',0);
-				$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',0);						
-				$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',0);
+				$pdf->Cell($t_width[2],$step,$str,1,0,'R',1);		
+				$pdf->Cell($t_width[3],$step,$cena,1,0,'R',1);
+				$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',1);
+				$pdf->Cell($t_width[5],$step,'--',1,0,'C',1);		
+				$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',1);
+				$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',1);						
+				$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',1);
 				$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
 				$pdf->SetFont('','',6);
-				$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
-				$pdf->Cell($t_width[10],$step,$gtd,1,0,'R',0);
+				$pdf->Cell($t_width[9],$step,$str,1,0,'R',1);
+				$pdf->Cell($t_width[10],$step,$gtd,1,0,'R',1);
 				$pdf->Ln();
 			}
 		}
@@ -2054,21 +2166,21 @@ function SfakPDF($doc, $to_str=0)
 			$step=5;
 			$pdf->SetFont('','',9);
 			$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-			$pdf->Cell($t_width[0],$step,$str,1,0,'L',0);
+			$pdf->Cell($t_width[0],$step,$str,1,0,'L',1);
 			$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
-			$pdf->Cell($t_width[1],$step,$str,1,0,'R',0);
+			$pdf->Cell($t_width[1],$step,$str,1,0,'R',1);
 			$str = iconv('UTF-8', 'windows-1251', $nxt[3] );
-			$pdf->Cell($t_width[2],$step,$str,1,0,'R',0);		
-			$pdf->Cell($t_width[3],$step,$cena,1,0,'R',0);
-			$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',0);
-			$pdf->Cell($t_width[5],$step,'--',1,0,'C',0);		
-			$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',0);
-			$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',0);						
-			$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',0);
+			$pdf->Cell($t_width[2],$step,$str,1,0,'R',1);		
+			$pdf->Cell($t_width[3],$step,$cena,1,0,'R',1);
+			$pdf->Cell($t_width[4],$step,$stoimost,1,0,'R',1);
+			$pdf->Cell($t_width[5],$step,'--',1,0,'C',1);		
+			$pdf->Cell($t_width[6],$step,"$ndsp%",1,0,'R',1);
+			$pdf->Cell($t_width[7],$step,$nalog,1,0,'R',1);						
+			$pdf->Cell($t_width[8],$step,$snalogom,1,0,'R',1);
 			$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
 			$pdf->SetFont('','',6);
-			$pdf->Cell($t_width[9],$step,$str,1,0,'R',0);
-			$pdf->Cell($t_width[10],$step,$nxt[7],1,0,'R',0);
+			$pdf->Cell($t_width[9],$step,$str,1,0,'R',1);
+			$pdf->Cell($t_width[10],$step,$nxt[7],1,0,'R',1);
 			$pdf->Ln();
 		}
 	}

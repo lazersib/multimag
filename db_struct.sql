@@ -90,9 +90,65 @@ CREATE TABLE `counter` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `counter`
---
+-- -----------------------------------------------------
+-- Table `doc_agent`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `doc_agent` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `group` INT(11) NOT NULL ,
+  `name` VARCHAR(128) NOT NULL ,
+  `fullname` VARCHAR(256) NOT NULL ,
+  `tel` VARCHAR(64) NOT NULL ,
+  `adres` VARCHAR(512) NOT NULL ,
+  `gruzopol` VARCHAR(512) NOT NULL ,
+  `inn` VARCHAR(24) NOT NULL ,
+  `dir_fio` VARCHAR(128) NOT NULL ,
+  `dir_fio_r` VARCHAR(128) NOT NULL ,
+  `pfio` VARCHAR(128) NOT NULL ,
+  `pdol` VARCHAR(128) NOT NULL ,
+  `okevd` VARCHAR(8) NOT NULL ,
+  `okpo` VARCHAR(16) NOT NULL ,
+  `rs` VARCHAR(32) NOT NULL ,
+  `bank` VARCHAR(64) NOT NULL ,
+  `ks` VARCHAR(32) NOT NULL ,
+  `bik` INT(11) NOT NULL ,
+  `email` VARCHAR(64) NOT NULL ,
+  `type` TINYINT(4) NOT NULL DEFAULT '1' ,
+  `pasp_num` VARCHAR(12) NOT NULL ,
+  `pasp_date` DATE NOT NULL ,
+  `pasp_kem` VARCHAR(64) NOT NULL ,
+  `comment` TEXT NOT NULL ,
+  `no_mail` TINYINT(4) NOT NULL ,
+  `responsible` INT(11) NULL ,
+  `data_sverki` DATE NOT NULL ,
+  `dishonest` TINYINT(4) NOT NULL COMMENT 'Недобросовестный' ,
+  `p_agent` int(11) DEFAULT NULL COMMENT 'Подчинение другому агенту',
+  UNIQUE INDEX `id` (`id` ASC) ,
+  UNIQUE INDEX `uniq_name` (`group` ASC, `name` ASC) ,
+  INDEX `name` (`name` ASC) ,
+  INDEX `fullname` (`fullname`(255) ASC) ,
+  INDEX `tel` (`tel` ASC) ,
+  INDEX `inn` (`inn` ASC) ,
+  INDEX `type` (`type` ASC) ,
+  INDEX `pasp_num` (`pasp_num` ASC, `pasp_date` ASC, `pasp_kem` ASC) ,
+  INDEX `group` (`group` ASC) ,
+  INDEX `fk_doc_agent_users1` (`responsible` ASC) ,
+  CONSTRAINT `doc_agent_ibfk_1`
+    FOREIGN KEY (`group` )
+    REFERENCES `doc_agent_group` (`id` ),
+  CONSTRAINT `doc_agent_ibfk_1`
+    FOREIGN KEY (`group` )
+    REFERENCES `doc_agent_group` (`id` ),
+  CONSTRAINT `fk_doc_agent_users1`
+    FOREIGN KEY (`responsible` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
+AUTO_INCREMENT = 3
+DEFAULT CHARACTER SET = utf8,
+COMMENT = 'Список агентов' ;
+
 
 LOCK TABLES `counter` WRITE;
 /*!40000 ALTER TABLE `counter` DISABLE KEYS */;
@@ -421,9 +477,78 @@ LOCK TABLES `doc_base_dop` WRITE;
 /*!40000 ALTER TABLE `doc_base_dop` ENABLE KEYS */;
 UNLOCK TABLES;
 
---
--- Table structure for table `doc_base_dop_type`
---
+
+-- -----------------------------------------------------
+-- Table `doc_list`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `doc_list` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `type` TINYINT(4) NOT NULL DEFAULT '0' ,
+  `agent` INT(11) NOT NULL DEFAULT '0' ,
+  `contract` INT(11) NULL DEFAULT NULL ,
+  `comment` TEXT NOT NULL ,
+  `date` BIGINT(20) NOT NULL DEFAULT '0' ,
+  `ok` BIGINT(20) NOT NULL DEFAULT '0' ,
+  `sklad` TINYINT(4) NOT NULL DEFAULT '0' ,
+  `kassa` TINYINT(4) NOT NULL DEFAULT '0' ,
+  `bank` TINYINT(4) NOT NULL DEFAULT '0' ,
+  `user` INT(11) NOT NULL DEFAULT '0' ,
+  `altnum` INT(11) NOT NULL ,
+  `subtype` VARCHAR(4) NOT NULL ,
+  `sum` DECIMAL(10,2) NOT NULL DEFAULT '0.00' ,
+  `nds` INT(11) NOT NULL DEFAULT '0' ,
+  `p_doc` INT(11) NOT NULL ,
+  `mark_del` BIGINT(20) NOT NULL ,
+  `firm_id` INT(11) NOT NULL DEFAULT '1' ,
+  `err_flag` TINYINT(4) NOT NULL DEFAULT '0' ,
+  UNIQUE INDEX `id` (`id` ASC) ,
+  INDEX `type` (`type` ASC) ,
+  INDEX `agent` (`agent` ASC) ,
+  INDEX `contract` (`contract` ASC) ,
+  INDEX `date` (`date` ASC) ,
+  INDEX `altnum` (`altnum` ASC) ,
+  INDEX `p_doc` (`p_doc` ASC) ,
+  INDEX `ok` (`ok` ASC) ,
+  INDEX `sklad` (`sklad` ASC) ,
+  INDEX `user` (`user` ASC) ,
+  INDEX `subtype` (`subtype` ASC) ,
+  INDEX `mark_del` (`mark_del` ASC) ,
+  INDEX `firm_id` (`firm_id` ASC) ,
+  INDEX `kassa` (`kassa` ASC, `bank` ASC) ,
+  CONSTRAINT `doc_list_ibfk_5`
+    FOREIGN KEY (`type` )
+    REFERENCES `doc_types` (`id` ),
+  CONSTRAINT `doc_list_ibfk_1`
+    FOREIGN KEY (`agent` )
+    REFERENCES `doc_agent` (`id` ),
+  CONSTRAINT `doc_list_ibfk_2`
+    FOREIGN KEY (`user` )
+    REFERENCES `users` (`id` ),
+  CONSTRAINT `doc_list_ibfk_3`
+    FOREIGN KEY (`sklad` )
+    REFERENCES `doc_sklady` (`id` ),
+  CONSTRAINT `doc_list_ibfk_4`
+    FOREIGN KEY (`firm_id` )
+    REFERENCES `doc_vars` (`id` ),
+  CONSTRAINT `doc_list_ibfk_5`
+    FOREIGN KEY (`type` )
+    REFERENCES `doc_types` (`id` ),
+  CONSTRAINT `doc_list_ibfk_1`
+    FOREIGN KEY (`agent` )
+    REFERENCES `doc_agent` (`id` ),
+  CONSTRAINT `doc_list_ibfk_2`
+    FOREIGN KEY (`user` )
+    REFERENCES `users` (`id` ),
+  CONSTRAINT `doc_list_ibfk_3`
+    FOREIGN KEY (`sklad` )
+    REFERENCES `doc_sklady` (`id` ),
+  CONSTRAINT `doc_list_ibfk_4`
+    FOREIGN KEY (`firm_id` )
+    REFERENCES `doc_vars` (`id` ))
+ENGINE = InnoDB
+AUTO_INCREMENT = 1
+DEFAULT CHARACTER SET = utf8;
+
 
 DROP TABLE IF EXISTS `doc_base_dop_type`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1041,14 +1166,21 @@ CREATE TABLE `errorlog` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `errorlog`
---
+
+ALTER TABLE `doc_agent` ADD CONSTRAINT `doc_agent_ibfk_1` FOREIGN KEY (`p_agent`) REFERENCES `doc_agent` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+
 
 LOCK TABLES `errorlog` WRITE;
 /*!40000 ALTER TABLE `errorlog` DISABLE KEYS */;
 /*!40000 ALTER TABLE `errorlog` ENABLE KEYS */;
 UNLOCK TABLES;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
 
 --
 -- Table structure for table `firm_info`
@@ -1168,9 +1300,61 @@ CREATE TABLE `news` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+
 --
 -- Dumping data for table `news`
 --
+
+
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(1, 'doc', 'Документы', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(2, 'doc_list', 'Журнал документов', 'view,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(3, 'doc_postuplenie', 'Поступление', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(4, 'generic_articles', 'Доступ к статьям', 'view,edit,create,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(5, 'sys', 'Системные объекты', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(6, 'generic', 'Общие объекты', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(7, 'sys_acl', 'Управление привилегиями', 'view,edit');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(8, 'doc_realizaciya', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(9, 'doc_zayavka', 'Документ заявки', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(10, 'doc_kompredl', 'Коммерческое предложение', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(11, 'doc_dogovor', 'Договор', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(12, 'doc_doveren', 'Доверенность', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(13, 'doc_pbank', 'Приход средств в банк', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(14, 'doc_peremeshenie', 'Перемещение товара', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(15, 'doc_perkas', 'Перемещение средств в кассе', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(16, 'doc_predlojenie', 'Предложение поставщика', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(17, 'doc_rbank', 'Расход средств из банка', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(18, 'doc_realiz_op', 'Оперативная реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(19, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(20, 'doc_sborka', 'Сборка изделия', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(21, 'doc_specific', 'Спецификация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(22, 'doc_v_puti', 'Товар в пути', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(23, 'list', 'Списки', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(24, 'list_agent', 'Агенты', 'create,edit,view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(25, 'list_sklad', 'Склад', 'create,edit,view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(26, 'list_price_an', 'Анализатор прайсов', 'create,edit,view,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(27, 'list_agent_dov', 'Доверенные лица', 'create,edit,view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(28, 'report', 'Отчёты', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(29, 'report_cash', 'Кассовый отчёт', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(30, 'generic_news', 'Новости', 'view,create,edit,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(31, 'doc_service', 'Служебные функции', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(32, 'doc_scropts', 'Сценарии и операции', 'view,exec');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(33, 'log', 'Системные журналы', '');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(34, 'log_browser', 'Статистирка броузеров', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(35, 'log_error', 'Журнал ошибок', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(36, 'log_access', 'Журнал посещений', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(37, 'sys_async_task', 'Ассинхронные задачи', 'view,exec');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(38, 'sys_ip-blacklist', 'Чёрный список IP адресов', 'view,create,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(39, 'sys_ip-log', 'Журнал обращений к ip адресам', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(40, 'generic_price_an', 'Анализатор прайсов', 'view');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(42, 'doc_pko', 'Приходный кассовый ордер' 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
+
+-- -----------------------------------------------------
+-- Data for table `db_version`
+-- -----------------------------------------------------
+START TRANSACTION;
+INSERT INTO `db_version` (`version`) VALUES (289);
+commit;
 
 LOCK TABLES `news` WRITE;
 /*!40000 ALTER TABLE `news` DISABLE KEYS */;

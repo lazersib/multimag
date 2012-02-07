@@ -1,8 +1,7 @@
 <?php
-
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -18,24 +17,15 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once("core.php");
-include_once("include/sitemap.inc.php");
-$tmpl->SetTitle("Карта сайта");
+include_once($CONFIG['location']."/common/core.common.php");
 
-if($mode=='xml')
+class MysqlException extends Exception
 {
-	$tmpl->ajax=1;
-	header("Content-type: text/xml");
-	$map=new SiteMap('xml');
-	$tmpl->SetText('');
-	$tmpl->AddText($map->getMap());
-}
-else
-{
-	$tmpl->SetText("<h1 id='page-title'>Карта сайта</h1>");
-	$map=new SiteMap();
-	$tmpl->AddText($map->getMap());
-	
-}
-$tmpl->write();
+	function __construct($text)
+	{
+		parent::__construct($text.':'.mysql_error());
+	}
+};
+
+
 ?>

@@ -31,8 +31,14 @@ class doc_s_Sklad
 		$sklad=rcv('sklad');
 		settype($sklad,'int');
 		if($sklad) $_SESSION['sklad_num']=$sklad;
-		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=1;
+		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=-1;
 		$sklad=$_SESSION['sklad_num'];
+
+		$cost=rcv('cost');
+		settype($cost,'int');
+		if($cost) $_SESSION['sklad_cost']=$cost;
+		if(!isset($_SESSION['sklad_cost'])) $_SESSION['sklad_cost']=1;
+		$cost=$_SESSION['sklad_cost'];
 
 		$tmpl->AddText("
 		<script type='text/javascript'>
@@ -55,6 +61,16 @@ class doc_s_Sklad
 		<td align='right'>
 		<form action='' method='post'>
 		<input type='hidden' name='l' value='sklad'>
+		<select name='cost'>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `name`");
+		$tmpl->AddText("<option value='-1'>-- не выбрано --</option>");
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($cost==$nxt[0]) $s=' selected'; else $s='';
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
+		}
+		$tmpl->AddText("</select>
+
 		<select name='sklad'>");
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
 
@@ -265,18 +281,11 @@ class doc_s_Sklad
         		<tr class='lin1'><td align='right'>Группа
         		<td><select name='g'>");
 
-			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
-			$tmpl->AddText("<option value='0' $i>--</option>");
+			if($pos==0)	$tmpl->AddText("<option value='0' selected disabled style='color: #fff; background-color: #f00'>--</option>");
+			if($pos!=0)	$selected=$nxt[0];
+			else		$selected=$group;
+			$tmpl->AddText(getDocBaseGroupOptions($selected));
 
-			$res=mysql_query("SELECT * FROM `doc_group`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$i="";
-
-				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
-				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
-			}
-			$i='';
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
 
 			$hid_check=$nxt[9]?'checked':'';
@@ -298,7 +307,7 @@ class doc_s_Sklad
 			}
 			$tmpl->AddText("</select>
 			<tr class='lin1'><td align='right'>Актуальная цена поступления:<td><b>$act_cost</b>
-			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]%</b>
+			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]% <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b>
 			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</label><br>
 									<input type='checkbox' name='no_export_yml' value='1' $yml_check>Не экспортировать в YML</label>
 			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</label>
@@ -653,7 +662,84 @@ class doc_s_Sklad
 		// Связанные товары
 		else if($param=='l')
 		{
-			$tmpl->msg("Здесь будет возможность задать связи данного наименования с другими. Это будет отражено на витрине, как связанные товары. Так-же можно использовать для заданя аналогов.");
+			$plm=rcv('plm');
+			include_once("include/doc.sklad.link.php");
+			if($plm=='')
+			{
+				link_poslist($pos);
+				$tmpl->AddText("<table width=100% id='sklad_editor'>
+				<tr><td id='groups' width=200 valign='top' class='lin0>'");
+				link_groups($pos);
+				$tmpl->AddText("<td id='sklad' valign='top' class='lin1'>");
+				link_sklad($pos,0);
+				$tmpl->AddText("</table>");
+			}
+			else if($plm=='sg')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$group=rcv('group');
+				link_sklad($pos, $group);
+			}
+			else if($plm=='pos')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$vpos=rcv('vpos');
+
+				$res=mysql_query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
+				if(mysql_num_rows($res)==0)
+				{
+					mysql_query("INSERT INTO `doc_base_kompl` (`pos_id`,`kompl_id`,`cnt`) VALUES ('$pos','$vpos','1')");
+					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку!");
+					doc_log("UPDATE komplekt","add kompl: pos_id:$vpos",'pos',$pos);
+				}
+				else
+				{
+					$nxt=mysql_fetch_row($res);
+					mysql_query("UPDATE `doc_base_kompl` SET `cnt`=`cnt`+'1' WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
+					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку!");
+					doc_log("UPDATE komplekt","change cnt: kompl_id:$nxt[1], cnt:$nxt[2]+1",'pos',$nxt[1]);
+				}
+
+				link_poslist($pos);
+			}
+			else if($plm=='cc')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$s=rcv('s');
+				$vpos=rcv('vpos');
+				if($s<=0) $s=1;
+				$res=mysql_query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
+				if(mysql_errno())	throw MysqlException("Не удалось выбрать строку!");
+				$nxt=mysql_fetch_row($res);
+				if(!$nxt)		throw new Exception("Строка $vpos не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+				if($s!=$nxt[1])
+				{
+					$res=mysql_query("UPDATE `doc_base_kompl` SET `cnt`='$s' WHERE `pos_id`='$pos' AND `id`='$vpos'");
+					if(mysql_errno())	throw MysqlException("Не удалось обновить количество в строке");
+					kompl_poslist($pos);
+					doc_log("UPDATE komplekt","change cnt: kompl_id:$nxt[1], cnt:$nxt[1] => $s",'pos',$nxt[1]);
+				}
+				else link_poslist($pos);
+			}
+			else if($plm='d')
+			{
+				$tmpl->ajax=1;
+				$tmpl->SetText('');
+				$vpos=rcv('vpos');
+				$res=mysql_query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
+				$nxt=mysql_fetch_row($res);
+				if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+
+				$res=mysql_query("DELETE FROM `doc_base_kompl` WHERE `id`='$vpos'");
+				doc_log("UPDATE komplekt","del kompl: kompl_id:$nxt[0], doc_list_pos:$pos, cnt:$nxt[1], cost:$nxt[2]",'pos',$pos);
+
+				link_poslist($pos);
+			}
 		}
 		// История изменений
 		else if($param=='h')
@@ -718,17 +804,12 @@ class doc_s_Sklad
 			<td><select name='pid'>");
 
 			$i='';
-			if($nxt[3]==0) $i=" selected";
-			$tmpl->AddText("<option value='0' $i>--</option>");
+			if(@$nxt[3]==0) $i=" selected";
+			$tmpl->AddText("<option value='0' $i style='color: #fff; background-color: #000'>--</option>");
 
-			$res=mysql_query("SELECT * FROM `doc_group`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$i="";
-
-				if($nx[0]==$nxt[3]) $i=" selected";
-				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[0])</option>");
-			}
+			if($group==0 || @$nxt[3]==0)	$selected=0;
+			else				$selected=$nxt[3];
+			$tmpl->AddText(getDocBaseGroupOptions($selected));
 
 			if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img="<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$nxt[0]&amp;param=gid'>Удалить изображение</a>";
@@ -1500,8 +1581,9 @@ class doc_s_Sklad
 		if(mysql_num_rows($res))
 		{
 			if($CONFIG['poseditor']['vc'])		$vc_add.='<th>Код</th>';
+			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 			$tmpl->AddText("$pagebar<table width='100%' cellspacing='1' cellpadding='2'><tr>
-			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
+			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
 			$i=0;
 			$this->DrawSkladTable($res,$s);
@@ -1523,8 +1605,9 @@ class doc_s_Sklad
 		$sklad=$_SESSION['sklad_num'];
 		$tmpl->AddText("<b>Показаны наименования изо всех групп!</b><br>");
 		$vc_add=$CONFIG['poseditor']['vc']?'<th>Код</th>':'';
+		$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 		$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
-		<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог
+		<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог
 		<th>Тип<th>d<th>D<th>B<th>Масса
 		<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>
 		<th>Склад<th>Всего<th>Место");
@@ -1700,12 +1783,14 @@ class doc_s_Sklad
 			$sql.="ORDER BY `doc_base`.`name`";
 
 
+			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
+			//$nheader_add=$_SESSION['sklad_cost']?'<th>Выб. цена':'';
 			$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
-			<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
+			<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
 
 			$res=mysql_query($sql);
-			echo mysql_error();
+			if(!mysql_errno())	throw new MysqlException("Не удалось получить информацию!");
 			if($cnt=mysql_num_rows($res))
 			{
 				$tmpl->AddText("<tr class='lin0'><th colspan='16' align='center'>Параметрический поиск, найдено $cnt");
@@ -1764,11 +1849,13 @@ function DrawSkladTable($res,$s)
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		$vc_add=$CONFIG['poseditor']['vc']?"<td>{$nxt['vc']}</th>":'';
 		$cb=$go?"<input type='checkbox' name='pos[$nxt[0]]' class='pos_ch' value='1'>":'';
+		$cadd=($_SESSION['sklad_cost']>0)?('<td>'.GetCostPos($nxt[0],$_SESSION['sklad_cost'])):'';
+
 		$tmpl->AddText("<tr class='lin$i pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\">
 		<td>$cb
 		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a>
 		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> $vc_add
-		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
+		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r{$cadd}<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 	}
 }
 
