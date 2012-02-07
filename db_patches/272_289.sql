@@ -3,7 +3,7 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
 ALTER TABLE `doc_agent` ADD `p_agent` INT NULL DEFAULT NULL COMMENT 'Подчинение другому агенту', ADD INDEX ( `p_agent` );
-ALTER TABLE `doc_agent` ADD FOREIGN KEY ( `p_agent` ) REFERENCES `site`.`doc_agent` (`id` ) ON DELETE NO ACTION ON UPDATE NO ACTION ;
+ALTER TABLE `doc_agent` ADD FOREIGN KEY ( `p_agent` ) REFERENCES `doc_agent` (`id` ) ON DELETE NO ACTION ON UPDATE NO ACTION ;
 
 ALTER TABLE `doc_list` ADD `contract` INT NULL COMMENT 'Номер договора' AFTER `agent` ,ADD INDEX ( `contract` )
 
