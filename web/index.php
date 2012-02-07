@@ -151,10 +151,10 @@ else
 		$tmpl->AddText("</tr></table>");
 	}
 
-	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_units`.`printname` AS `units`, `doc_group`.`printname` AS `group_name` FROM `doc_base`
+	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_group`.`printname` AS `group_name` FROM `doc_base`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-	LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	LEFT JOIN `doc_group` ON `doc_group.`id`=`doc_base`.`group`
 	WHERE `hidden`='0' AND `stock`!='0' LIMIT 12");
 	if(mysql_errno())	throw new MysqlException("Выборка спецпредложений не удалась!");
@@ -190,10 +190,10 @@ else
 
 	$tmpl->AddText("<h1>Популярные товары</h1>");
 
-	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`, `doc_base`.`likvid`, `doc_img`.`type` AS `img_type`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`, `doc_units`.`printname` AS `units` FROM `doc_base`
+	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`, `doc_base`.`likvid`, `doc_img`.`type` AS `img_type`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`, `class_unit`.`rus_name1` AS `units` FROM `doc_base`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-	LEFT JOIN `doc_units` ON `doc_base`.`unit`=`doc_units`.`id`
+	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	WHERE `hidden`='0'
 	ORDER BY `likvid` DESC
 	LIMIT 24");

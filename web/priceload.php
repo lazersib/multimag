@@ -83,21 +83,21 @@ function firmAddForm($id=0)
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные фирмы");
 		$nxt=mysql_fetch_row($res);
 	}
-	
+
 	$disp=$nxt[5]==2?'block':'none';
-	
+
 	$tmpl->AddStyle(".scroll_block
 	{
 		max-height:		250px;
-		overflow:		auto;	
+		overflow:		auto;
 	}
-	
+
 	div#sb
 	{
 		display:		$disp;
 		border:			1px solid #888;
 	}
-	
+
 	.selmenu
 	{
 		background-color:	#888;
@@ -105,22 +105,22 @@ function firmAddForm($id=0)
 		font-weight:		bold;
 		padding-left:		20px;
 	}
-	
+
 	.selmenu a
 	{
 		color:			#fff;
-		cursor:			pointer;	
+		cursor:			pointer;
 	}
-	
+
 	.cb
 	{
 		width:			14px;
 		height:			14px;
 		border:			1px solid #ccc;
 	}
-	
+
 	");
-	
+
 	$tmpl->AddText("<h1>Данные фирмы</h1>
 	<form action='' method='post'>
 	<input type='hidden' name=mode value='firms'>");
@@ -138,17 +138,17 @@ function firmAddForm($id=0)
 			$tmpl->AddText("<option style='background-color: #8f8;' selected value='$nx[0]'>$nx[1]</option>");
 		else
 			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
-	}    
-	
+	}
+
 	$typesel=array( 0=>'', 1=>'', 2=>'');
 	$typesel[$nxt[5]]='selected';
-	
+
 	$tmpl->AddText("</select><br>
 	Валютный коэффициент:<br>
 	<input type='text' name='coeff' value='$nxt[4]'><br>
 	Информация о доставке:<br>
 	<input type='text' name='delivery_info' value='$nxt[6]'><br>
-	
+
 	<script type='text/javascript'>
 	function gstoggle()
 	{
@@ -157,7 +157,7 @@ function firmAddForm($id=0)
 			document.getElementById('sb').style.display='block';
 		else	document.getElementById('sb').style.display='none';
 	}
-	
+
 	function SelAll(flag)
 	{
 		var elems = document.getElementsByName('g[]');
@@ -168,7 +168,7 @@ function firmAddForm($id=0)
 			if(flag)	elems[i].disabled = false;
 		}
 	}
-	
+
 	function CheckCheck(ids)
 	{
 		var cb = document.getElementById('cb'+ids);
@@ -183,7 +183,7 @@ function firmAddForm($id=0)
 			elems[i].disabled =! cb.checked;
 		}
 	}
-	
+
 	function FillTextBoxes(l_id, t_name, c_art, c_name, c_cost, c_nal, c_curr)
 	{
 		document.getElementById('line_id').value=l_id;
@@ -194,7 +194,7 @@ function firmAddForm($id=0)
 		document.getElementById('col_nal').value=c_nal;
 		document.getElementById('col_curr').value=c_curr;
 	}
-	
+
 	</script><br>
 	Результаты анализа:<br>
 	<select name='type' id='seltype' onchange='gstoggle()'>
@@ -202,15 +202,15 @@ function firmAddForm($id=0)
 	<option value='1' $typesel[1]>Меняют все цены</option>
 	<option value='2' $typesel[2]>Меняют цены выбранных групп товаров</option>
 	</select><br>
-	
-	
+
+
 	<div class='scroll_block' id='sb'>
 	<ul class='Container'>
 	<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
 	".draw_groups_tree(0,$id)."</ul>");
-	
-	
-	
+
+
+
 	$tmpl->AddText("</div>");
 	if(!$nxt)
 	{
@@ -225,7 +225,7 @@ function firmAddForm($id=0)
 		<td><input type='text' name='col_nal'>
 		<td><input type='text' name='col_curr'>
 		</table>");
-	
+
 	}
 	$tmpl->AddText("<input type=submit value='Записать!'></form>");
 	if($nxt)
@@ -245,8 +245,8 @@ function firmAddForm($id=0)
 			$tmpl->AddText("<tr><td>
 			<a href='?mode=firmsd&p=$nx[0]'><img src='/img/i_del.png' alt='Удалить'></a>
 			<a onclick=\"FillTextBoxes('$nx[0]', '$nx[1]', '$nx[2]', '$nx[3]', '$nx[4]', '$nx[5]', '$nx[6]');\"><img src='/img/i_edit.png'  alt='Правка'></a>
-			$nx[1]<td>$nx[2]<td>$nx[3]<td>$nx[4]<td>$nx[5]<td>$nx[6]");		
-		}		
+			$nx[1]<td>$nx[2]<td>$nx[3]<td>$nx[4]<td>$nx[5]<td>$nx[6]");
+		}
 		$tmpl->AddText("<tr><th colspan='6'>Новый лист<tr>
 		<td><input type='text' name='table_name' id='table_name'>
 		<td><input type='text' name='col_art' id='col_art'>
@@ -256,7 +256,7 @@ function firmAddForm($id=0)
 		<td><input type='text' name='col_curr' id='col_curr'>
 		</table>
 		<input type=submit value='Записать!'></form>");
-	
+
 	}
 }
 
@@ -265,7 +265,7 @@ if(!isAccess('generic_price_an','view'))	throw new AccessException("Недост
 topmenu();
 $tmpl->SetTitle("Анализатор прайсов");
 if($mode=='')
-{	
+{
 	$i=0;
 	$tmpl->AddText("
 	<h1>Редактор организаций</h1>
@@ -285,12 +285,12 @@ if($mode=='')
 		");
 		$i=1-$i;
 	}
-	
+
 	$tmpl->AddText("</table>");
 }
 else if($mode=='load')
 {
-	
+
 	$tmpl->AddText("
 	<form method=post enctype='multipart/form-data'>
 	<input type=hidden name=mode value='parse'>
@@ -332,10 +332,10 @@ else if($mode=="parse")
 					$loader->Run();
 					$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
 				}
-				
+
 				firmAddForm();
 			}
-			
+
 
 		}
 		else $tmpl->msg("Слишком большой файл!",'err');
@@ -390,7 +390,7 @@ else if($mode=='firms')
 		{
 			mysql_query("INSERT INTO `firm_info_group` (`firm_id`, `group_id`) VALUES ('$id', '$line')");
 			if(mysql_errno())	throw new MysqlException("Не удалось обновить привязки к группам");
-		}	
+		}
 		$tmpl->msg("Привязки к группам обновлены!",'ok');
 	}
 }
@@ -416,7 +416,7 @@ else if($mode=='firmss')
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить данные");
 		if(mysql_affected_rows()==0)	$tmpl->msg("Ничего не изменено","info");
 	}
-	
+
 	$tmpl->msg("Операция выполнена успешно!",'ok');
 }
 else if($mode=='firmsd')
@@ -478,7 +478,7 @@ else if($mode=='viewsort')
 		$header.="<th>$nxt[0]";
 
 	$tmpl->AddText("<table width=100%>$header");
-	$res=mysql_query("SELECT `seekdata`.`name`,`seekdata`.`sql`,`seekdata`.`regex`,`seekdata`.`id`, `doc_group`.`name` FROM `seekdata` 
+	$res=mysql_query("SELECT `seekdata`.`name`,`seekdata`.`sql`,`seekdata`.`regex`,`seekdata`.`id`, `doc_group`.`name` FROM `seekdata`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
 	ORDER BY `seekdata`.`name`");
 	$c=0;
@@ -526,7 +526,7 @@ else if($mode=='search')
 			$tmpl->AddText("<h3>Интересующие Вас товары найдены в группах:</h3>");
 			$res=mysql_query("SELECT `doc_group`.`id`, `doc_group`.`name` FROM `seekdata`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
-			WHERE `seekdata`.`name` LIKE '%$s%' 
+			WHERE `seekdata`.`name` LIKE '%$s%'
 			GROUP BY `seekdata`.`group`");
 			while($nxt=mysql_fetch_row($res))
 			{
@@ -537,7 +537,7 @@ else if($mode=='search')
 				}
 				$tmpl->AddText("<a href='?mode=search&amp;s=$s&amp;g=$nxt[0]'>$nxt[1]</a><br>");
 			}
-		
+
 		}
 		else
 		{
@@ -549,10 +549,10 @@ else if($mode=='search')
 			{
 				$tmpl->AddText("$nxt[1]<br>");
 			}
-		
-		
+
+
 		}
-		
+
 	}
 
 }
@@ -577,15 +577,15 @@ else if($mode=='regve')
 	<select name='group'>");
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
 	if(!$nxt[3])
-		$tmpl->AddText("<option style='background-color: #8f8;' selected disabled value='0'>--- не выбрана ---</option>");	
+		$tmpl->AddText("<option style='background-color: #8f8;' selected disabled value='0'>--- не выбрана ---</option>");
 	while($nx=mysql_fetch_row($res))
 	{
 		if($nx[0]==$nxt[3])
-			$tmpl->AddText("<option style='background-color: #8f8;' selected value='$nx[0]'>$nx[1] ($nx[0])</option>");	
+			$tmpl->AddText("<option style='background-color: #8f8;' selected value='$nx[0]'>$nx[1] ($nx[0])</option>");
 		else
-			$tmpl->AddText("<option value='$nx[0]'>$nx[1] ($nx[0])</option>");	
+			$tmpl->AddText("<option value='$nx[0]'>$nx[1] ($nx[0])</option>");
 	}
-	
+
 	$tmpl->AddText("</select>
 	Строка отбора (можно использовать символ %):<br>
 	<input type=text name=ss value='$nxt[1]'><br>
@@ -599,11 +599,11 @@ else if($mode=='regvt')
 {
 	$tmpl->ajax=1;
 	$s=@$_GET['s'];
-	if($s=='') 
+	if($s=='')
 	{
 		echo"Пустой запрос!";
 		exit();
-	
+
 	}
 	//$s='/'.$s.'/';
 
@@ -611,19 +611,19 @@ else if($mode=='regvt')
 	$rs=@mysql_query("SELECT `name`,`cost`,`firm` FROM `price`");
 	$cnt=mysql_num_rows($rs);
 	echo mysql_error();
-	
+
 	$tmpl->AddText("<h3>Результаты отбора $s ($cnt совпадений, 100 максимум):</h3>");
 	$tmpl->AddText("<table width=100%><tr>");
 	$res=mysql_query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
 	$f_max=mysql_num_rows($res);
 	while(@$nxt=mysql_fetch_row($res))
 		$tmpl->AddText("<th>$nxt[0]");
-	
+
 	while(@$nx=mysql_fetch_row($rs))
 	{
 		if($a=preg_match("/$s/",$nx[0]))
 		{
-			
+
 			if($costar[$nx[2]])
 				$costar[$nx[2]].="<hr>$nx[0] ($nx[1])";
 			else
@@ -657,20 +657,20 @@ else if($mode=='regvs')
 		if($res) $tmpl->msg("Данные обновлены!",'ok');
 		else $tmpl->msg("Данные НЕ обновлены!",'err');
 	}
-	
+
 	$costar=array();
 	$rs=@mysql_query("SELECT `name`,`cost`,`firm` FROM `price`
 	WHERE `name` LIKE '$ss' ORDER BY `cost` LIMIT 100");
 	$cnt=mysql_num_rows($rs);
 	echo mysql_error();
-	
+
 	$tmpl->AddText("<h3>Результаты отбора $rv ($cnt совпадений, 100 максимум):</h3>");
 	$tmpl->AddText("<table width=100%><tr>");
 	$res=mysql_query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
 	$f_max=mysql_num_rows($res);
 	while(@$nxt=mysql_fetch_row($res))
 		$tmpl->AddText("<th>$nxt[0]");
-	
+
 	while(@$nx=mysql_fetch_row($rs))
 	{
 		if(preg_match("/$rv/",$nx[0]))
@@ -710,7 +710,7 @@ else if($mode=='r_noparsed')
 		$i=0;
 		$tmpl->AddText("
 		<script type='text/javascript'>
-		
+
 		function SelAll(flag)
 		{
 			var elems = document.getElementsByName('p[]');
@@ -721,7 +721,7 @@ else if($mode=='r_noparsed')
 				if(flag)	elems[i].disabled = false;
 			}
 		}
-		
+
 		</script>
 		<form action='' method='get'>
 		<input type='hidden' name='mode' value='r_noparsed'>
@@ -740,7 +740,7 @@ else if($mode=='r_noparsed')
 		}
 		$tmpl->AddText("</table><button type='submit'>Далее</button></form>");
 	}
-	else $tmpl->msg("Необработанных позиций не обнаружено!");	
+	else $tmpl->msg("Необработанных позиций не обнаружено!");
 }
 else if($mode=='adding')
 {
@@ -771,10 +771,15 @@ else if($mode=='adding')
 		$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[0])</option>");
 	}
 	$tmpl->AddText("</select><br>Единицы измерения:<br><select name='units'>");
-	$res=mysql_query("SELECT `id`, `name`, `printname` FROM `doc_units`");
-	while($nxt=mysql_fetch_row($res))
+	$res2=mysql_query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
+	while($nx2=mysql_fetch_row($res2))
 	{
-		$tmpl->AddText("<option value='$nxt[0]'>$nxt[2] ($nxt[1])</option>");
+		$tmpl->AddText("<option disabled style='color:#fff; background-color:#000'>$nx2[1]</option>\n");
+		$res=mysql_query("SELECT `id`, `name`, `rus_name1` FROM `class_unit` WHERE `class_unit_group_id`='$nx2[0]'");
+		while($nx=mysql_fetch_row($res))
+		{
+			$tmpl->AddText("<option value='$nx[0]'>$nx[1] ($nx[2])</option>");
+		}
 	}
 	$tmpl->AddText("</select><br><button type='submit'>Добавить</button></form>");
 }
@@ -822,7 +827,7 @@ else if($mode=='r_parsed')
 		}
 		$tmpl->AddText("</table>");
 	}
-	else $tmpl->msg("Обработанных позиций не обнаружено!");	
+	else $tmpl->msg("Обработанных позиций не обнаружено!");
 }
 else if($mode=='r_multiparsed')
 {
@@ -872,7 +877,7 @@ else if($mode=='replaces')
 	if(mysql_errno())	throw new MysqlException('Не удалось получить список подстановок!');
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr><td><a href='?mode=replacese&amp;p=$nxt[0]'>$nxt[0]</a> <a href='?mode=replacesd&amp;p=$nxt[0]' title='Удалить'><img src='/img/i_del.png' alt='Удалить'></a><td>{{{$nxt[1]}}}<td>$nxt[2]");	
+		$tmpl->AddText("<tr><td><a href='?mode=replacese&amp;p=$nxt[0]'>$nxt[0]</a> <a href='?mode=replacesd&amp;p=$nxt[0]' title='Удалить'><img src='/img/i_del.png' alt='Удалить'></a><td>{{{$nxt[1]}}}<td>$nxt[2]");
 	}
 	$tmpl->AddText("</table><br>
 	<a href='?mode=replacese&amp;p=0'><img src='/img/i_add.png' alt='Добавить'> Добавить</a>");
@@ -890,16 +895,16 @@ else if($mode=='replacese')
 	Поиск:<br>
 	<input type='text' name='search_str' value='$nxt[1]'><br>
 	Замена:<br>
-	<input type='text' name='replace_str' value='$nxt[2]'><br>		
+	<input type='text' name='replace_str' value='$nxt[2]'><br>
 	<button>Сохранить</button>
-	</form>");		
+	</form>");
 }
 else if($mode=='replacess')
 {
 	$p=rcv('p');
 	$search_str=rcv('search_str');
 	$replace_str=rcv('replace_str');
-	
+
 	if($p=='')
 	{
 		mysql_query("INSERT INTO `prices_replaces` (`search_str`, `replace_str`) VALUES ('$search_str', '$replace_str')");
@@ -911,7 +916,7 @@ else if($mode=='replacess')
 		mysql_query("UPDATE `prices_replaces` SET `search_str`='$search_str', `replace_str`='$replace_str' WHERE `id`='$p'");
 		if(mysql_errno())	throw new MysqlException('Не удалось обновить данные подстановки!');
 	}
-	
+
 	$tmpl->msg("Выполнено!<br><a href='?mode=replaces'>Вернуться к таблице</a> | <a href='?mode=replacese&amp;p=$p'>Продолжить редактирование</a>","ok","Сохранение подстановки");
 }
 else if($mode=='menu')
@@ -925,7 +930,7 @@ else if($mode=='menu')
 	<div onclick=\"window.location='/priceload.php?mode=search'\">Поиск</div>
 	<div onclick=\"window.location='/priceload.php?mode=replaces'\">Подстановки</div>
 	<div onclick=\"window.location='/priceload.php?mode=r_noparsed'\">Ошибки: необработанные</div>
-	<div onclick=\"window.location='/priceload.php?mode=r_multiparsed'\">Ошибки: дублирующиеся</div>");	
+	<div onclick=\"window.location='/priceload.php?mode=r_multiparsed'\">Ошибки: дублирующиеся</div>");
 }
 else $tmpl->logger('Запрошен неверный режим! Возможно, вы указали неверные параметры, или же ссылка, по которой Вы обратились, неверна.');
 

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -245,7 +245,7 @@ class doc_s_Sklad
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`
+			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
@@ -281,11 +281,18 @@ class doc_s_Sklad
         		<tr class='lin1'><td align='right'>Группа
         		<td><select name='g'>");
 
-			if($pos==0)	$tmpl->AddText("<option value='0' selected disabled style='color: #fff; background-color: #f00'>--</option>");
-			if($pos!=0)	$selected=$nxt[0];
-			else		$selected=$group;
-			$tmpl->AddText(getDocBaseGroupOptions($selected));
+			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
+			$tmpl->AddText("<option value='0' $i>--</option>");
 
+			$res=mysql_query("SELECT * FROM `doc_group`");
+			while($nx=mysql_fetch_row($res))
+			{
+				$i="";
+
+				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
+				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
+			}
+			$i='';
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
 
 			$hid_check=$nxt[9]?'checked':'';
@@ -298,18 +305,33 @@ class doc_s_Sklad
 			<tr class='lin0'><td align='right'>Код изготовителя<td><input type='text' name='vc' value='$nxt[11]'>
 			<tr class='lin1'><td align='right'>Базовая цена<td><input type='text' name='cost' value='$nxt[4]'>
 			<tr class='lin0'><td align='right'>Единица измерения<td><select name='unit'>");
-			$res=mysql_query("SELECT `id`, `name`, `printname` FROM `doc_units`");
+
+			$res2=mysql_query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
+			while($nx2=mysql_fetch_row($res2))
+			{
+				$tmpl->AddText("<option disabled style='color:#fff; background-color:#000'>$nx2[1]</option>\n");
+				$res=mysql_query("SELECT `id`, `name`, `rus_name1` FROM `class_unit` WHERE `class_unit_group_id`='$nx2[0]'");
+				while($nx=mysql_fetch_row($res))
+				{
+					$i="";
+					if((($pos!=0)&&($nx[0]==$nxt[10]))||($group==$nx[0])) $i=" selected";
+					$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[2])</option>");
+				}
+			}
+			$tmpl->AddText("</select>
+			<tr class='lin0'><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small><td><select name='country'>");
+			$tmpl->AddText("<option value='0'>--не выбрана--</option>");
+			$res=mysql_query("SELECT `id`, `name` FROM `class_country` ORDER BY `name`");
 			while($nx=mysql_fetch_row($res))
 			{
-				$i="";
-				if((($pos!=0)&&($nx[0]==$nxt[10]))||($group==$nx[0])) $i=" selected";
-				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[2])</option>");
+				$selected=($group==$nx[0])||($nx[0]==$nxt[16])?'selected':'';
+				$tmpl->AddText("<option value='$nx[0]' $selected>$nx[1]</option>");
 			}
 			$tmpl->AddText("</select>
 			<tr class='lin1'><td align='right'>Актуальная цена поступления:<td><b>$act_cost</b>
 			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]% <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b>
 			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</label><br>
-									<input type='checkbox' name='no_export_yml' value='1' $yml_check>Не экспортировать в YML</label>
+			<input type='checkbox' name='no_export_yml' value='1' $yml_check>Не экспортировать в YML</label>
 			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</label>
 			<tr class='lin1'><td align='right'>Гарантия:<td><label><input type='radio' name='warr_type' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='warr_type' value='1' $wt1_check>От производителя</label>
 			<tr class='lin0'><td align='right'>Гарантийный срок:<td><input type='text' name='warranty' value='{$nxt['warranty']}'> мес.
@@ -343,7 +365,7 @@ class doc_s_Sklad
 		// Дополнительные свойства
 		else if($param=='d')
 		{
-			$res=mysql_query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_dop`.`strana`, `doc_base_dop`.`ntd`, `doc_base`.`group`
+			$res=mysql_query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_dop`.`ntd`, `doc_base`.`group`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`='$pos'
 			WHERE `doc_base`.`id`='$pos'");
@@ -384,7 +406,7 @@ class doc_s_Sklad
 			}
 			$tmpl->AddText("</select></td><td><input type='text' id='value_add'><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
 			</td></tr>
-			<tr class='lin$i'><td><td><input type='submit' value='Сохранить'>
+			<tr class='lin1'><td><td><input type='submit' value='Сохранить'>
 			</tfoot>
 			<tbody>
 			<tr class='lin0'><td align='right'>Аналог<td><input type='text' name='analog' value='$nxt[1]' id='pos_analog'>
@@ -400,17 +422,16 @@ class doc_s_Sklad
 			}
 
 			$tmpl->AddText("</select>
-			<tr class='lin1'><td align='right'>Внутренний размер (d)<td><input type='text' name='d_int' value='$nxt[3]' id='pos_d_int'>
-			<tr class='lin0'><td align='right'>Внешний размер (D)<td><input type='text' name='d_ext' value='$nxt[4]' id='pos_d_ext'>
+			<tr class='lin1'><td align='right'>Внутренний размер (d)<td><input type='text' name='d_int' value='$nxt[3]' id='pos_d_int'></td></tr>
+			<tr class='lin0'><td align='right'>Внешний размер (D)<td><input type='text' name='d_ext' value='$nxt[4]' id='pos_d_ext'></td></tr>
 			<tr class='lin1'><td align='right'>Высота (B)<td><input type='text' name='size' value='$nxt[5]' id='pos_size'></td></tr>
-			<tr class='lin0'><td align='right'>Масса<td><input type='text' name='mass' value='$nxt[6]' id='pos_mass'>
-			<tr class='lin1'><td align='right'>Страна происхождения<td><input type='text' name='strana' value='$nxt[7]'>
-			<tr class='lin0'><td align='right'>Номер таможенной декларации<td><input type='text' name='ntd' value='$nxt[8]'>");
+			<tr class='lin0'><td align='right'>Масса<td><input type='text' name='mass' value='$nxt[6]' id='pos_mass'></td></tr>
+			<tr class='lin1'><td align='right'>Номер таможенной декларации<td><input type='text' name='ntd' value='$nxt[7]'></td></tr>");
 			$res=mysql_query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
 			WHERE `doc_base_values`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные свойства!");
-			$i=1;
+			$i=0;
 			while($nx=mysql_fetch_row($res))
 			{
 				$tmpl->AddText("<tr class='lin$i'><td align='right'>$nx[1]<td><input type='text' name='par[$nx[0]]' value='$nx[2]'>");
@@ -418,7 +439,7 @@ class doc_s_Sklad
 			}
 			$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
 			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
-			WHERE  `doc_group_params`.`group_id`='$nxt[9]' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
+			WHERE  `doc_group_params`.`group_id`='$nxt[8]' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
 			ORDER BY `doc_base_params`.`id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные свойства группы!");
 			while($nx=mysql_fetch_row($res))
@@ -807,9 +828,14 @@ class doc_s_Sklad
 			if(@$nxt[3]==0) $i=" selected";
 			$tmpl->AddText("<option value='0' $i style='color: #fff; background-color: #000'>--</option>");
 
-			if($group==0 || @$nxt[3]==0)	$selected=0;
-			else				$selected=$nxt[3];
-			$tmpl->AddText(getDocBaseGroupOptions($selected));
+			$res=mysql_query("SELECT * FROM `doc_group`");
+			while($nx=mysql_fetch_row($res))
+			{
+				$i="";
+
+				if($nx[0]==$nxt[3]) $i=" selected";
+				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[0])</option>");
+			}
 
 			if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img="<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$nxt[0]&amp;param=gid'>Удалить изображение</a>";
@@ -958,9 +984,10 @@ class doc_s_Sklad
 			$hid=rcv('hid');
 			$unit=rcv('unit');
 			$vc=rcv('vc');
-			$warranty=rcv('warranty');
-			$warranty_type=rcv('warr_type');
-			$no_export_yml=rcv('no_export_yml');
+			$country=rcv('country');
+			$warranty=floor(rcv('warranty'));
+			$warranty_type=floor(rcv('warr_type'));
+			$no_export_yml=floor(rcv('no_export_yml'));
 			if(!$hid)	$hid=0;
 			if(!$stock)	$stock=0;
 			$cc='Цена осталась прежняя!';
@@ -968,7 +995,7 @@ class doc_s_Sklad
 			{
 				if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 				$sql_add=$log_add='';
-				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type`, `no_export_yml` FROM `doc_base` WHERE `id`='$pos'");
+				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type`, `no_export_yml`, `country` FROM `doc_base` WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить старые свойства позиции!");
 				$old_data=mysql_fetch_assoc($res);
 				if($old_data['name']!=$pos_name)
@@ -1031,6 +1058,13 @@ class doc_s_Sklad
 				{
 					$sql_add.=", `vc`='$vc'";
 					$log_add.=", vc:({$old_data['vc']} => $vc)";
+				}
+				if($old_data['country']!=$country)
+				{
+					settype($country,'int');
+					if($country==0)	$country='NULL';
+					$sql_add.=", `country`=$country";
+					$log_add.=", country:({$old_data['country']} => $country)";
 				}
 				if($old_data['warranty']!=$warranty)
 				{
