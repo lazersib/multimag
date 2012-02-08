@@ -239,13 +239,13 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->PrintTg12($doc);
 		else if($opt=='tg12_pdf')
 		{
-			if(!$this->doc_data[6])
-			{
-				doc_menu(0,0);
-				$tmpl->AddText("<h1>Реализация</h1>");
-				$tmpl->msg("Сначала нужно провести документ!","err");
-			}
-			else
+// 			if(!$this->doc_data[6])
+// 			{
+// 				doc_menu(0,0);
+// 				$tmpl->AddText("<h1>Реализация</h1>");
+// 				$tmpl->msg("Сначала нужно провести документ!","err");
+// 			}
+// 			else
 			$this->PrintTg12PDF();
 		}
 		else if($opt=='nac')
@@ -2020,7 +2020,7 @@ function SfakPDF($doc, $to_str=0)
 	}
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Валюта: наименование, код: Российский рубль, 810");
+	$str = iconv('UTF-8', 'windows-1251', "Валюта: наименование, код: Российский рубль, 643");
 	$pdf->Cell(0,$step,$str,0,1,'L');
 
 	$pdf->Ln(3);

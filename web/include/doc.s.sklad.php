@@ -31,13 +31,13 @@ class doc_s_Sklad
 		$sklad=rcv('sklad');
 		settype($sklad,'int');
 		if($sklad) $_SESSION['sklad_num']=$sklad;
-		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=-1;
+		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=1;
 		$sklad=$_SESSION['sklad_num'];
 
 		$cost=rcv('cost');
 		settype($cost,'int');
 		if($cost) $_SESSION['sklad_cost']=$cost;
-		if(!isset($_SESSION['sklad_cost'])) $_SESSION['sklad_cost']=1;
+		if(!isset($_SESSION['sklad_cost'])) $_SESSION['sklad_cost']=-1;
 		$cost=$_SESSION['sklad_cost'];
 
 		$tmpl->AddText("
@@ -1824,7 +1824,7 @@ class doc_s_Sklad
 			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
 
 			$res=mysql_query($sql);
-			if(!mysql_errno())	throw new MysqlException("Не удалось получить информацию!");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию!");
 			if($cnt=mysql_num_rows($res))
 			{
 				$tmpl->AddText("<tr class='lin0'><th colspan='16' align='center'>Параметрический поиск, найдено $cnt");
