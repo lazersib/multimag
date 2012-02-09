@@ -5,7 +5,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 DROP TABLE `doc_units`;
 
 CREATE TABLE class_country (
-  id smallint(6) NOT NULL auto_increment COMMENT 'pk',
+  id int(11) NOT NULL auto_increment COMMENT 'pk',
   `name` varchar(255) NOT NULL COMMENT 'Наименование страны',
   full_name varchar(255) default NULL COMMENT 'Полное наименование страны',
   number_code varchar(4) NOT NULL COMMENT 'Числовой код',
@@ -276,7 +276,7 @@ COMMIT;
 --
 
 CREATE TABLE class_unit (
-  id smallint(6) NOT NULL auto_increment COMMENT 'pk',
+  id int(11) NOT NULL auto_increment COMMENT 'pk',
   `name` varchar(255) NOT NULL COMMENT 'Наименование единицы измерения',
   number_code varchar(5) NOT NULL COMMENT 'Код',
   rus_name1 varchar(50) default NULL COMMENT 'Условное обозначение национальное',
@@ -817,7 +817,10 @@ ALTER TABLE `class_unit`
   ADD CONSTRAINT class_unit_ibfk_2 FOREIGN KEY (class_unit_type_id) REFERENCES class_unit_type (id),
   ADD CONSTRAINT class_unit_ibfk_1 FOREIGN KEY (class_unit_group_id) REFERENCES class_unit_group (id);
 
+ALTER TABLE `doc_base` ADD `country` INT NULL AFTER `vc` , ADD INDEX ( `country` );
 
+ALTER TABLE `doc_base` ADD FOREIGN KEY ( `unit` ) REFERENCES `class_unit` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION ;
+ALTER TABLE `doc_base` ADD FOREIGN KEY ( `country` ) REFERENCES `class_country` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION ;
 
 START TRANSACTION;
 TRUNCATE `db_version`;

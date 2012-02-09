@@ -155,7 +155,7 @@ else
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-	LEFT JOIN `doc_group` ON `doc_group.`id`=`doc_base`.`group`
+	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	WHERE `hidden`='0' AND `stock`!='0' LIMIT 12");
 	if(mysql_errno())	throw new MysqlException("Выборка спецпредложений не удалась!");
 	if(mysql_num_rows($res))

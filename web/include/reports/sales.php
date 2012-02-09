@@ -22,11 +22,113 @@ class Report_Sales
 {
 	function getName($short=0)
 	{
-		if($short)	return "По продажам";
-		else		return "Отчёт по продажам";
+		if($short)	return "По движению товара";
+		else		return "Отчёт по движению товара";
 	}
 	
+	function draw_groups_tree($level)
+	{
+		$ret='';
+		$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `name`");
+		$i=0;
+		$r='';
+		if($level==0) $r='IsRoot';
+		$cnt=mysql_num_rows($res);
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($nxt[0]==0) continue;
+			$item="<label><input type='checkbox' name='g[]' value='$nxt[0]' id='cb$nxt[0]' class='cb' checked onclick='CheckCheck($nxt[0])'>$nxt[1]</label>";
+			if($i>=($cnt-1)) $r.=" IsLast";
+			$tmp=$this->draw_groups_tree($nxt[0]); // рекурсия
+			if($tmp)
+				$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container' id='cont$nxt[0]'>".$tmp.'</ul></li>';
+			else
+				$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
+			$i++;
+		}
+		return $ret;
+	}
 
+
+	function GroupSelBlock()
+	{
+		global $tmpl;
+		$tmpl->AddStyle(".scroll_block
+		{
+			max-height:		250px;
+			overflow:		auto;	
+		}
+		
+		div#sb
+		{
+			display:		none;
+			border:			1px solid #888;
+		}
+		
+		.selmenu
+		{
+			background-color:	#888;
+			width:			auto;
+			font-weight:		bold;
+			padding-left:		20px;
+		}
+		
+		.selmenu a
+		{
+			color:			#fff;
+			cursor:			pointer;	
+		}
+		
+		.cb
+		{
+			width:			14px;
+			height:			14px;
+			border:			1px solid #ccc;
+		}
+		
+		");
+		$tmpl->AddText("<script type='text/javascript'>
+		function gstoggle()
+		{
+			var gs=document.getElementById('cgs').checked;
+			if(gs==true)
+				document.getElementById('sb').style.display='block';
+			else	document.getElementById('sb').style.display='none';
+		}
+		
+		function SelAll(flag)
+		{
+			var elems = document.getElementsByName('g[]');
+			var l = elems.length;
+			for(var i=0; i<l; i++)
+			{
+				elems[i].checked=flag;
+				if(flag)	elems[i].disabled = false;
+			}
+		}
+		
+		function CheckCheck(ids)
+		{
+			var cb = document.getElementById('cb'+ids);
+			var cont=document.getElementById('cont'+ids);
+			if(!cont)	return;
+			var elems=cont.getElementsByTagName('input');
+			var l = elems.length;
+			for(var i=0; i<l; i++)
+			{
+				if(!cb.checked)		elems[i].checked=false;
+				elems[i].disabled =! cb.checked;
+			}
+		}
+		
+		</script>
+		<label><input type=checkbox name='gs' id='cgs' value='1' onclick='gstoggle()'>Выбрать группы</label><br>
+		<div class='scroll_block' id='sb'>
+		<ul class='Container'>
+		<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
+		".$this->draw_groups_tree(0)."</ul></div>");
+	}
+	
 	function Form()
 	{
 		global $tmpl;
@@ -41,45 +143,90 @@ class Report_Sales
 		С:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_f' value='$d_f'><br>
 		По:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_t' value='$d_t'>
 		</fieldset>
-		</p>
+		</p><br>
+		Группа товаров:<br>");
+		$this->GroupSelBlock();
+		$tmpl->AddText("
 		<button type='submit'>Сформировать отчёт</button>
 		</form>");
 	}
 	
 	function MakeHTML()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$tmpl->LoadTemplate('print');
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t'));
-		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`likvid`, SUM(`doc_list_pos`.`cnt`), SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`)
-		FROM `doc_list_pos`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
-		GROUP BY `doc_list_pos`.`tovar`
-		ORDER BY `doc_base`.`name`");
+		$gs=rcv('gs');
+		$g=@$_POST['g'];
+		
+		$col_count=9;
 		
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
 		$tmpl->SetText("
-		<h1>Отчёт по продажам с $print_df по $print_dt</h1>
+		<h1>Отчёт по движению товара с $print_df по $print_dt</h1>
 		<table width='100%'>
-		<tr><th>ID<th>Наименование<th>Ликвидность<th>Кол-во проданного<th>Сумма по поступлениям<th>Сумма продаж<th>Прибыль");
-		$cntsum=$postsum=$prodsum=$pribsum=0;
-		while($nxt=mysql_fetch_row($res))
+		<tr><th>ID");
+		if($CONFIG['poseditor']['vc'])
 		{
-			$insum=sprintf('%0.2f.', GetInCost($nxt[0])*$nxt[3]);
-			$prib=sprintf('%0.2f', $nxt[4]-$insum);
-			$cntsum+=$nxt[3];
-			$postsum+=$insum;
-			$prodsum+=$nxt[4];
-			$pribsum+=$prib;
-			$prib_style=$prib<0?"style='color: #f00'":'';
-			$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2] %<td>$nxt[3]<td>$insum руб.<td>$nxt[4] руб.<td $prib_style>$prib руб.");
+			$tmpl->AddText("<th>Код");
+			$col_count++;
+		}
+		
+		$tmpl->AddText("<th>Наименование<th>Ликвидность<th>Приход (кол-во)<th>Расход (кол-во)<th>Сумма по приходам<th>Сумма продаж<th>Прибыль по АЦП");
+		$in_cntsum=$out_cntsum=$in_sumsum=$out_sumsum=$pribsum=0;
+		$res_group=mysql_query("SELECT `id`, `name`, `printname` FROM `doc_group` ORDER BY `id`");
+		while($group_line=mysql_fetch_assoc($res_group))
+		{
+			if($gs && is_array($g))
+				if(!in_array($group_line['id'],$g))	continue;
+			
+			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
+		
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_base`.`likvid`, 
+			( 	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos` 
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `in_cnt`,
+			( 	SELECT SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`) FROM `doc_list_pos` 
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `in_sum`,
+			( 	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos` 
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `out_cnt`,
+			( 	SELECT SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`) FROM `doc_list_pos` 
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `out_sum`
+			FROM `doc_base`
+			WHERE `doc_base`.`group`='{$group_line['id']}'
+			ORDER BY `doc_base`.`name`");
+			
+			while($nxt=mysql_fetch_assoc($res))
+			{
+				$prib=sprintf('%0.2f', $nxt['out_sum']-GetInCost($nxt['id'])*$nxt['out_cnt']);	
+				
+				$in_cntsum+=$nxt['in_cnt'];
+				$out_cntsum+=$nxt['out_cnt'];
+				$in_sumsum+=$nxt['in_sum'];
+				$out_sumsum+=$nxt['out_sum'];
+				
+				$nxt['in_sum']=sprintf('%0.2f',$nxt['in_sum']);
+				$nxt['out_sum']=sprintf('%0.2f',$nxt['out_sum']);
+
+				$pribsum+=$prib;
+				
+				$prib_style=$prib<0?"style='color: #f00'":'';
+				$tmpl->AddText("<tr align='right'><td>{$nxt['id']}");
+				if($CONFIG['poseditor']['vc'])
+				{
+					$tmpl->AddText("<td>{$nxt['vc']}");
+				}
+				$tmpl->AddText("<td align='left'>{$group_line['printname']} {$nxt['name']} / {$nxt['proizv']}<td>{$nxt['likvid']} %<td>{$nxt['in_cnt']}<td>{$nxt['out_cnt']}<td>{$nxt['in_sum']}<td>{$nxt['out_sum']}<td $prib_style>$prib");
+			}
 		}
 		$prib_style=$pribsum<0?"style='color: #f00'":'';
 		$tmpl->AddTExt("
-		<tr><td colspan='3'>Итого:<td>$cntsum<td>$postsum руб.<td>$prodsum руб.<td $prib_style>$pribsum руб.
+		<tr><td colspan='4'>Итого:<td>$in_cntsum<td>$out_cntsum<td>$in_sumsum<td>$out_sumsum<td $prib_style>$pribsum руб.
 		</table>");
 	}
 	
