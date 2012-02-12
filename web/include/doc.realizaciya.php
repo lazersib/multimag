@@ -1488,7 +1488,7 @@ function PrintTg12PDF($to_str=0)
 
         $t2_width=array(73, 12, 15, 14, 11, 11, 15, 14);
         $t2_start=array(1,1,2,2,4,4,9,9);
-        $t2_ydelta=array(2,4,2,2,1,3,3,3);
+        $t2_ydelta=array(4,4,2,2,1,3,3,3);
         $t2_text=array(
 	'наименование, характеристика, сорт, артикул товара',
 	'код',
@@ -1599,7 +1599,7 @@ function PrintTg12PDF($to_str=0)
 		$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
 		$pdf->Cell($t_all_width[1],$line_height, $str ,1,0,'L',1);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[7] );
-		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'C',1);
+		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'L',1);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[5] );
 		$pdf->Cell($t_all_width[3],$line_height, $str ,1,0,'C',1);
 		$pdf->Cell($t_all_width[4],$line_height, $nxt[8] ,1,0,'C',1);
@@ -1914,7 +1914,7 @@ function SfakPDF($doc, $to_str=0)
 {
 	global $CONFIG;
 	define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
-	require('fpdf/fpdf_mysql.php');
+	require('fpdf/fpdf_mc.php');
 	global $tmpl, $uid;
 
 	if(!$to_str) $tmpl->ajax=1;
@@ -1946,7 +1946,7 @@ function SfakPDF($doc, $to_str=0)
 	}
 	if(!@$pp) $pp=$ppdt="__________";
 
-	$pdf=new FPDF('P');
+	$pdf=new PDF_MC_Table('P');
 	$pdf->Open();
 	$pdf->SetAutoPageBreak(1,12);
 	$pdf->AddFont('Arial','','arial.php');
@@ -2034,7 +2034,7 @@ function SfakPDF($doc, $to_str=0)
         $t_all_offset=array();
 
 	$pdf->SetLineWidth(0.3);
-	$t_width=array(88,22,10,15,20,10,10,16,28,25,0);
+	$t_width=array(88,22,10,15,20,10,10,16,28,26,0);
 	$t_ydelta=array(7,0,5,5,0,6,6,7,3,0,7);
 	$t_text=array(
 	'Наименование товара (описание выполненных работ, оказанных услуг, имущественного права)',
@@ -2067,7 +2067,7 @@ function SfakPDF($doc, $to_str=0)
 		$offset+=$w;
 	}
 
-        $t2_width=array(6, 16, 6, 19);
+        $t2_width=array(7, 15, 7, 19);
         $t2_start=array(1,1,9,9);
         $t2_ydelta=array(2,1,2,3);
         $t2_text=array(
@@ -2114,14 +2114,24 @@ function SfakPDF($doc, $to_str=0)
 		$t_all_width[]=	$offset-$old_offset;
 		$old_offset=$offset;
 	}
-	$t_all_width[]=0;
+	$t_all_width[]=32;
 	$i=1;
 	foreach($t_all_width as $id => $w)
 	{
 		$pdf->Cell($w,4,$t3_text[$i-1],1,0,'C',0);
 		$i++;
 	}
-
+	
+	$pdf->SetWidths($t_all_width);
+	
+	$font_sizes=array();
+	$font_sizes[0]=8;
+	$font_sizes[11]=7;
+	$pdf->SetFSizes($font_sizes);
+	$pdf->SetHeight(4);
+	
+	$aligns=array('L','R','R','R','R','R','C','R','R','R','R','L','R');
+	$pdf->SetAligns($aligns);
 
 	$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name`, `doc_base_dop`.`ntd`, `class_unit`.`rus_name1`, `doc_list_pos`.`tovar`, `class_unit`.`number_code`, `class_country`.`number_code`
 	FROM `doc_list_pos`
@@ -2186,67 +2196,20 @@ function SfakPDF($doc, $to_str=0)
 				else
 					for($i=0;$i<$line[2];$i++)	array_shift($gtd_array);
 			}
-			//$gtd=array_shift($gtd_array);
 
 			$unigtd=array();
-			for($i=0;$i<$nxt[3];$i++)
-			{
-				@$unigtd[array_shift($gtd_array)]++;
-			}
+			for($i=0;$i<$nxt[3];$i++)	@$unigtd[array_shift($gtd_array)]++;
 
 			foreach($unigtd as $gtd => $cnt)
 			{
-				$y=$pdf->GetY();
-				$step=5;
-
-				$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-				$pdf->Cell($t_all_width[0],$step,$str,1,0,'L',1);
-				$pdf->SetFont('','',7);
-				$pdf->Cell($t_all_width[1],$step,$nxt[10],1,0,'R',1);
-				$pdf->SetFont('','',8);
-				$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
-				$pdf->Cell($t_all_width[2],$step,$str,1,0,'R',1);
-				$str = iconv('UTF-8', 'windows-1251', $cnt );
-				$pdf->Cell($t_all_width[3],$step,$str,1,0,'R',1);
-				$pdf->Cell($t_all_width[4],$step,$cena,1,0,'R',1);
-				$pdf->Cell($t_all_width[5],$step,$stoimost,1,0,'R',1);
-				$pdf->Cell($t_all_width[6],$step,'--',1,0,'C',1);
-				$pdf->Cell($t_all_width[7],$step,"$ndsp%",1,0,'R',1);
-				$pdf->Cell($t_all_width[8],$step,$nalog,1,0,'R',1);
-				$pdf->Cell($t_all_width[9],$step,$snalogom,1,0,'R',1);
-				$pdf->SetFont('','',6);
-				$pdf->Cell($t_all_width[10],$step,$nxt[11],1,0,'R',1);
-				$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
-				$pdf->Cell($t_all_width[11],$step,$str,1,0,'R',1);
-				$pdf->Cell($t_all_width[12],$step,$gtd,1,0,'R',1);
-				$pdf->Ln();
+				$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
+				$pdf->RowIconv($row);
 			}
 		}
 		else
 		{
-			$y=$pdf->GetY();
-			$step=5;
-			$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
-			$pdf->Cell($t_all_width[0],$step,$str,1,0,'L',1);
-			$pdf->SetFont('','',7);
-			$pdf->Cell($t_all_width[1],$step,$nxt[10],1,0,'R',1);
-			$pdf->SetFont('','',8);
-			$str = iconv('UTF-8', 'windows-1251', $nxt[8] );
-			$pdf->Cell($t_all_width[2],$step,$str,1,0,'R',1);
-			$str = iconv('UTF-8', 'windows-1251', $nxt[3] );
-			$pdf->Cell($t_all_width[3],$step,$str,1,0,'R',1);
-			$pdf->Cell($t_all_width[4],$step,$cena,1,0,'R',1);
-			$pdf->Cell($t_all_width[5],$step,$stoimost,1,0,'R',1);
-			$pdf->Cell($t_all_width[6],$step,'--',1,0,'C',1);
-			$pdf->Cell($t_all_width[7],$step,"$ndsp%",1,0,'R',1);
-			$pdf->Cell($t_all_width[8],$step,$nalog,1,0,'R',1);
-			$pdf->Cell($t_all_width[9],$step,$snalogom,1,0,'R',1);
-			$pdf->SetFont('','',6);
-			$pdf->Cell($t_all_width[10],$step,$nxt[11],1,0,'R',1);
-			$str = iconv('UTF-8', 'windows-1251', $nxt[6] );
-			$pdf->Cell($t_all_width[11],$step,$str,1,0,'R',1);
-			$pdf->Cell($t_all_width[12],$step,$nxt[7],1,0,'R',1);
-			$pdf->Ln();
+			$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
+			$pdf->RowIconv($row);
 		}
 	}
 

@@ -44,13 +44,7 @@ class CommentDispatcher
 		if($rate>5)	$rate=5;
 		if($uid>0)	$autor_name=$autor_email='';
 		else		$uid=0;
-		
-		if($CONFIG['noify']['comments'])
-		{
-			$text="Object: {$this->object_name}|{$this->object_id}\nAuthor: $autor_name <$autor_email>\nUID: $uid\nRate:$rate\nText: $text";		
-			sendAdmMessage($text,'New comments');
-		}		
-		
+
 		$ip=getenv("REMOTE_ADDR");
 		$ua=getenv("HTTP_USER_AGENT");
 		$text=mysql_real_escape_string($text);
@@ -60,6 +54,11 @@ class CommentDispatcher
 		mysql_query("INSERT INTO `comments` (`date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`)
 		VALUES (NOW(), '{$this->object_name}', '{$this->object_id}', '$autor_name', '$autor_email', '$uid', '$text', '$rate', '$ip', '$ua')");
 		if(mysql_errno())	throw new MysqlException("Не удалось сохранить коментарий!");
+		if($CONFIG['noify']['comments'])
+		{
+			$text="Object: {$this->object_name}|{$this->object_id}\nAuthor: $autor_name <$autor_email>\nUID: $uid\nRate:$rate\nText: $text";		
+			sendAdmMessage($text,'New comments');
+		}
 		return mysql_insert_id();
 	}
 	

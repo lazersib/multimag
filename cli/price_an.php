@@ -236,19 +236,20 @@ try
 	while (false !== ($filename = readdir($dh)))
 	{
 		$msg='';
-		if(!strpos($filename,'.ods'))
-			continue;
-		$msg.="$filename - ";
+		
+		require_once($CONFIG['location']."/common/priceloader.xls.php");
+		require_once($CONFIG['location']."/common/priceloader.ods.php");
 	
-		$zip = new ZipArchive;
-		$zip->open($CONFIG['price']['dir'].'/'.$filename,ZIPARCHIVE::CREATE);
-		$xml = $zip->getFromName("content.xml");
-		$zip->close();
-				
-		$loader=new ODFContentLoader($xml);
+		$path_info = pathinfo($filename);
+		$ext=strtolower($path_info['extension']);
+		if($ext=='xls')		$loader=new XLSPriceLoader($CONFIG['price']['dir'].'/'.$filename);
+		else if($ext=='ods')	$loader=new ODSPriceLoader($CONFIG['price']['dir'].'/'.$filename);
+		else continue;
+		
 		if($firm=$loader->detectFirm())
 		{
 			$loader->setInsertToDatabase();
+			$msg.="Firm_id: $firm, ";
 			$count=$loader->Run();
 			$msg.="Parsed ($count items)!";	
 			unlink($CONFIG['price']['dir']	.'/'.$filename);

@@ -296,10 +296,13 @@ function sendAdmMessage($text,$subject='')
 	if($CONFIG['site']['doc_adm_email'])
 		mailto($CONFIG['site']['doc_adm_email'],$subject ,$text, $from);
 
-	if($CONFIG['site']['doc_adm_jid'])
+	if($CONFIG['site']['doc_adm_jid'] && $CONFIG['xmpp']['host'])
 	{
 		try
 		{
+			require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
+
+			$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '', $printlog=false, $loglevel=XMPPHP_Log::LEVEL_INFO);
 			$xmppclient->connect();
 			$xmppclient->processUntil('session_start');
 			$xmppclient->presence();

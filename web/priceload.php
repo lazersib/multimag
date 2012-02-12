@@ -19,7 +19,7 @@
 
 include_once('core.php');
 include_once('include/doc.core.php');
-include_once('include/price_analyze.inc.php');
+
 set_time_limit(120);
 
 need_auth();
@@ -260,6 +260,8 @@ function firmAddForm($id=0)
 	}
 }
 
+try
+{
 
 if(!isAccess('generic_price_an','view'))	throw new AccessException("Недостаточно привилегий");
 topmenu();
@@ -295,8 +297,8 @@ else if($mode=='load')
 	<form method=post enctype='multipart/form-data'>
 	<input type=hidden name=mode value='parse'>
 	<h1>Загрузить прайс в базу</h1>
-	Файл прайса (таблица ODF, до 1000кб)<br>
-	<input type='hidden' name='MAX_FILE_SIZE' value='2000000'>
+	Файл прайса (таблица ODF или XLS, до 4000кб, файл должен иметь корректное расширение)<br>
+	<input type='hidden' name='MAX_FILE_SIZE' value='4000000'>
 	<input name='file' type='file'><br>
 	Организация будет выбрана автоматически на основе списка сигнатур. Если организации нет в списке, Вам будет предложено её добавить.<br>
 	<label><input type='checkbox' name='bhtml' value='1'>Показать загруженные таблицы</label><br>
@@ -307,40 +309,44 @@ else if($mode=='load')
 else if($mode=="parse")
 {
 	$bhtml=rcv('bhtml');
-	if(is_uploaded_file($_FILES['file']['tmp_name']))
+	if(!is_uploaded_file($_FILES['file']['tmp_name']))
+		throw new Exception("Файл не получен. Возможно, его забыли выбрать, либо он слишком большой.");
+	if($_FILES['file']['size']>(4000*1024))
+		throw new Exception("Слишком большой файл!");
+	
+	require_once($CONFIG['location']."/common/priceloader.xls.php");
+	require_once($CONFIG['location']."/common/priceloader.ods.php");
+	
+	$path_info = pathinfo($_FILES['file']['name']);
+	switch(strtolower($path_info['extension']))
 	{
-		if($_FILES['file']['size']<(2000*1024))
-		{
-			$zip = new ZipArchive;
-			$zip->open($_FILES['file']['tmp_name'],ZIPARCHIVE::CREATE);
-			$xml = $zip->getFromName("content.xml");
-			$loader=new ODFContentLoader($xml);
-			if($firm=$loader->detectFirm())
-			{
-				$loader->setInsertToDatabase();
-				if($bhtml)	$loader->setBuildHTMLData();
-				$count=$loader->Run();
-				$tmpl->msg("Успешно обработано $count строк фирмы $firm","ok");
-				if($bhtml)	$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
-			}
-			else
-			{
-				$tmpl->msg("Фирма не определена!","info");
-				if($bhtml)
-				{
-					$loader->setBuildHTMLData();
-					$loader->Run();
-					$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
-				}
-
-				firmAddForm();
-			}
-
-
-		}
-		else $tmpl->msg("Слишком большой файл!",'err');
+		case 'xls':	$loader=new XLSPriceLoader($_FILES['file']['tmp_name']);
+				break;
+		case 'ods':	$loader=new ODSPriceLoader($_FILES['file']['tmp_name']);
+				break;
+		default:	throw new Exception("Неверное расширение файла!");
 	}
-	else $tmpl->msg("Файл не передан или слишком большой!",'err');
+	
+	if($firm=$loader->detectFirm())
+	{
+		$loader->setInsertToDatabase();
+		if($bhtml)	$loader->setBuildHTMLData();
+		$count=$loader->Run();
+		$tmpl->msg("Успешно обработано $count строк фирмы $firm","ok");
+		if($bhtml)	$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
+	}
+	else
+	{
+		$tmpl->msg("Фирма не определена!","info");
+		if($bhtml)
+		{
+			$loader->setBuildHTMLData();
+			$loader->Run();
+			$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
+		}
+
+		firmAddForm();
+	}
 }
 else if($mode=='firme')
 {
@@ -933,6 +939,18 @@ else if($mode=='menu')
 	<div onclick=\"window.location='/priceload.php?mode=r_multiparsed'\">Ошибки: дублирующиеся</div>");
 }
 else $tmpl->logger('Запрошен неверный режим! Возможно, вы указали неверные параметры, или же ссылка, по которой Вы обратились, неверна.');
+
+
+}
+catch(MysqlException $e)
+{
+	$tmpl->ajax=0;
+	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+}
+catch(Exception $e)
+{
+	$tmpl->msg($e->getMessage(),'err');
+}
 
 $tmpl->write();
 ?>
