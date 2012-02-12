@@ -174,7 +174,7 @@ class Report_OstatkiNaDatu
 			
 			$tmpl->AddText("<tr><td colspan='8' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");		
 		
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`,	`doc_base_dop`.`mass`
+			$res=mysql_query("SELECT `doc_base`.`id`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` , `doc_base`.`cost`,	`doc_base_dop`.`mass`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'

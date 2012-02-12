@@ -1021,7 +1021,7 @@ else if($mode=='print')
 	$t_to=strtotime($_SESSION['j_date_to'])+60*60*24-1;
 
 	$info='<b>Параметры:</b> Только проведённые, <b>С</b> '.$_SESSION['j_date_from'].' <b>по</b> '.$_SESSION['j_date_to'];
-
+	$ds='';
 	$asel=@$_SESSION['j_agent'];
 	settype($asel,"int");
 	if($asel)
@@ -1029,7 +1029,7 @@ else if($mode=='print')
 		$ds.=" AND `doc_list`.`agent`='$asel'";
 		$info.=", <b>агент:</b> {$_SESSION['j_agent_name']}";
 	}
-	$ds='';
+	
 	if(is_array(@$_SESSION['j_need_doctypes']))
 	{
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_types` ORDER BY `id`");

@@ -340,7 +340,7 @@ function ReCalcPosCost($doc, $tov_id)
 		if(mysql_num_rows($rs)==0)	throw new Exception("У товара $nxt[1] не заданы комплектующие");
 		while($nx=mysql_fetch_row($rs))
 		{
-			$acp=GetInCost($nx[0]);
+			$acp=GetInCost($nx[0],0,true);
 			if($acp>0)	$cost+=$nx[1]*$acp;
 			else		
 			$cost+=$nx[1]*$nx[2];

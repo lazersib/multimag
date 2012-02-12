@@ -363,11 +363,7 @@ function but_provodka($doc,$ok)
 
 function doc_menu($dop="", $nd=1, $doc=0)
 {
-	global $tmpl;
-	global $doc_data;
-	if($doc)	get_docdata($doc);
-
-	$context="<a href=\'/index.php\'><div>Главная</div></a><a href=\'/vitrina.php\'><div>Витрина</div></a>";
+	global $tmpl, $CONFIG;
 
 	$tmpl->AddText("<div id='doc_menu'>
 	<div id='doc_menu_container'>
@@ -400,14 +396,11 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
 	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
 	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
-	if($dop) $tmpl->AddText("<img src='/img/i_separator.png' alt=''>");
-
-	if($dop) $tmpl->AddText($dop);
+	if($dop) $tmpl->AddText("<img src='/img/i_separator.png' alt=''> $dop");
 
 	$tmpl->AddText("</div></div>");
 
-	if(0)
-	//if($nd)
+	if($nd && @$CONFIG['doc']['mincount_info'])
 	{
 			$res=mysql_query("SELECT `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name` FROM `doc_base`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
@@ -582,10 +575,15 @@ function DocCalcDolg($agent, $print=0, $firm_id=0)
 }
 
 // Расчёт актуальной входящей цены
-function GetInCost($pos_id, $limit_date=0)
+function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 {
+	settype($pos_id,'int');
 	$cnt=$cost=0;
 	$sql_add='';
+	$res=mysql_query("SELECT `pos_type`, `cost` FROM `doc_base` WHERE `id`='$pos_id'");
+	list($type, $cost)=mysql_fetch_row($res);
+	if($type==1)	return $serv_mode?$cost:0;
+	
 	if($limit_date)	$sql_add="AND `doc_list`.`date`<='$limit_date'";
 	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`
 	FROM `doc_list_pos`

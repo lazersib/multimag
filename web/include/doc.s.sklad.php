@@ -1855,7 +1855,7 @@ function DrawSkladTable($res,$s)
 
 		if($v_puti)	$v_puti="<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=vputi&pos=$nxt[0]'>$v_puti</a>";
 
-		if($nxt[16]>0)
+		if($nxt[16]!=0)
 		{
 			$nxt[16]="<a onclick=\"ShowPopupWin('/docs.php?mode=srv&opt=ost&pos=$nxt[0]'); return false;\" title='Отобразить все остатки'>$nxt[16]</a>";
 		}
