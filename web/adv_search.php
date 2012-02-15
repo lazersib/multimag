@@ -52,7 +52,7 @@ include_once("core.php");
 include_once("include/doc.core.php");
 $analog=rcv('analog');
 $proizv=rcv('proizv');
-$mesto=rcv('mesto');
+$type=rcv('type');
 $di_min=rcv('di_min');
 $di_max=rcv('di_max');
 $de_min=rcv('de_min');
@@ -94,12 +94,12 @@ $tmpl->AddText("<h1>Поиск товаров</h1>
 <table width='100%' class='adv-search'>
 <tr><th colspan='2'>Наименование
 <th colspan='2'>Производитель
-<th>Место на складе
+<th>Тип
 <tr>
 <td colspan='2'><input type='text' name='name' value='$name'><br>
 <td colspan='2'>
 <input type=text name='proizv' value='$proizv'><br>
-<td><input type='text' name='mesto' value='$mesto'>
+<td><input type='text' name='type' value='$type'>
 <tr>
 <th>Внутренний диаметр
 <th>Внешний диаметр
@@ -131,7 +131,7 @@ if($mode)
 
 	}
 	if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv%'";
-	if($mesto)		$sql.="AND `doc_base_cnt`.`mesto` LIKE '$mesto'";
+	if($type)		$sql.="AND `doc_base_dop`.`type` = '$type'";
 	if($di_min)		$sql.="AND `doc_base_dop`.`d_int` >= '$di_min'";
 	if($di_max)		$sql.="AND `doc_base_dop`.`d_int` <= '$di_max'";
 	if($de_min)		$sql.="AND `doc_base_dop`.`d_ext` >= '$de_min'";
