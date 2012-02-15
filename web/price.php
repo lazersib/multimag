@@ -451,7 +451,7 @@ class PriceWriterCSV
 		global $CONFIG;
 		echo"\n\n\n\n\n";
 		$this->line+=5;
-		echo $this->shielder."Generated from MultiMag (http://multimag.tndproject.org) via PHPExcelWriter, for http://".$CONFIG['site']['name'].$this->shielder;
+		echo $this->shielder."Generated from MultiMag (http://multimag.tndproject.org), for http://".$CONFIG['site']['name'].$this->shielder;
 		$this->line++;
 		echo"\n";
 		echo $this->shielder."Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://".$CONFIG['site']['name'].$this->shielder;
@@ -604,7 +604,7 @@ tr:nth-child(odd) {background-color: #cff;}
 	function close()
 	{
 		global $CONFIG;
-		echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>) via PHPExcelWriter, for <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a><br>Прайс создан системой MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), специально для <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a></td></tr></table>";
+		echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), for <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a><br>Прайс создан системой MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), специально для <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a></td></tr></table>";
 	}
 
 	// Внутренние функции класса

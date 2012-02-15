@@ -129,7 +129,12 @@ function ExecMode($mode)
 				$tmpl->AddText("Товаров: $korz_cnt на $sum руб.");
 			}
 		}
-		else	$tmpl->msg("Номер товара не задан!","err","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+		else
+		{
+			header('HTTP/1.0 404 Not Found');
+			header('Status: 404 Not Found');
+			$tmpl->msg("Номер товара не задан!","err","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+		}
 	}
 	else if($mode=='korz_adj')
 	{
@@ -137,12 +142,16 @@ function ExecMode($mode)
 		$cnt=rcv('cnt');
 		if($p)
 		{
-			$_SESSION['korz_cnt'][$p]+=$cnt;
+			@$_SESSION['korz_cnt'][$p]+=$cnt;
 			$tmpl->AddText("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 			//echo"Товар добавлен в корзину!<br><a class='urllink' href='vitrina.php?mode=basket'>Ваша корзина</a>";
 		}
-		else	$tmpl->AddText("Номер товара не задан!");
-		//exit();
+		else
+		{
+			header('HTTP/1.0 404 Not Found');
+			header('Status: 404 Not Found');
+			$tmpl->AddText("Номер товара не задан!");
+		}
 	}
 	else if($mode=='korz_del')
 	{
@@ -196,7 +205,12 @@ function ExecMode($mode)
 
 		$tmpl->msg("Коментарий добавлен!","ok");
 	}
-	else throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
+	else
+	{
+		header('HTTP/1.0 404 Not Found');
+		header('Status: 404 Not Found');
+		throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
+	}
 }
 
 // ======== Приватные функции ========================
@@ -209,9 +223,15 @@ protected function ViewGroup($group, $page)
 	$res=mysql_query("SELECT `name`, `pid`, `desc` FROM `doc_group` WHERE `id`='$group'");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать информацию о группе');
 	$nxt=mysql_fetch_row($res);
-	if(!$nxt)		throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
+	if(!$nxt)
+	{
+		header('HTTP/1.0 404 Not Found');
+		header('Status: 404 Not Found');
+		throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
+	}
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 		$tmpl->AddText("<div style='float: right'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
+	$tmpl->SetTitle("$nxt[0]");
 	$tmpl->AddText('<h1>'.$this->GetVitPath($nxt[1])." / $nxt[0]</h1>");
 	if($nxt[2])
 	{
@@ -246,7 +266,6 @@ protected function ProductList($group, $page)
 	$rows=mysql_num_rows($res);
         if($rows)
         {
-
 		$this->PageBar($group, $rows, $lim, $page);
 
 		if(($lim<$rows) && $page )	mysql_data_seek($res, $lim*($page-1));
@@ -278,9 +297,9 @@ protected function ProductCard($product)
 	$i=0;
 	if($nxt=mysql_fetch_array($res))
 	{
-		$tmpl->AddText("<h1 id='page-title'>{$nxt['name']}</h1>");
+		$tmpl->AddText("<h1 id='page-title'>{$nxt['group_printname']} {$nxt['name']}</h1>");
 		$tmpl->SetTitle("{$nxt['group_printname']} {$nxt['name']}");
-		$tmpl->AddText("<table cellpadding='1' cellspacing='0'>
+		$tmpl->AddText("<table class='product-card'>
 		<tr valign='top'><td rowspan='15' width='150'>");
 		if($nxt['img_id'])
 		{
@@ -291,24 +310,53 @@ protected function ProductCard($product)
 		}
 		else $img="<img src='/img/no_photo.png' alt='no photo'><br>";
 
-		$tmpl->AddText("$img<td><b>Название:</b><td>{$nxt['group_printname']} {$nxt['name']}");
+		$tmpl->AddText("$img<td class='field'>Наименование:<td>{$nxt['name']}");
 		if($nxt[2])
 		{
 			$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
-			$tmpl->AddText("<tr><td valign='top'><b>Описание:</b><td>$text");
+			$tmpl->AddText("<tr><td valign='top' class='field'><b>Описание:</b><td>$text");
 		}
-		if($nxt[14]) $tmpl->AddText("<tr><td><b>Тип:</b><td>$nxt[14]");
+		if($nxt[14]) $tmpl->AddText("<tr><td class='field'>Тип:<td>$nxt[14]");
 		$cena=GetCostPos($nxt[0], $this->cost_id);
-		$tmpl->AddText("<tr><td><b>Цена:</b> <td>$cena<br>");
-		$tmpl->AddText("<tr><td><b>Единица измерения:</b> <td>$nxt[15]<br>");
-		if($nxt[11]) $tmpl->AddText("<tr><td><b>На складе:</b> <td><b>ЕСТЬ</b><br>");
-		else $tmpl->AddText("<tr><td><b>На складе:</b> <td>Под заказ<br>");
-		if($nxt[6]) $tmpl->AddText("<tr><td><b>Внутренний диаметр:</b> <td>$nxt[6] мм.<br>");
-		if($nxt[7]) $tmpl->AddText("<tr><td><b>Внешний диаметр:</b> <td>$nxt[7] мм.<br>");
-		if($nxt[8]) $tmpl->AddText("<tr><td><b>Высота:</b> <td>$nxt[8] мм.<br>");
-		if($nxt[9]) $tmpl->AddText("<tr><td><b>Масса:</b> <td>$nxt[9] кг.<br>");
-		if($nxt[10]) $tmpl->AddText("<tr><td><b>Аналог:</b> <td>$nxt[10]<br>");
-		if($nxt[5]) $tmpl->AddText("<tr><td><b>Производитель:</b> <td>$nxt[5]<br>");
+		$tmpl->AddText("<tr><td class='field'>Цена:<td>$cena<br>");
+		$tmpl->AddText("<tr><td class='field'>Единица измерения:<td>$nxt[15]<br>");
+		if($nxt[11]) $tmpl->AddText("<tr><td class='field'>Наличие: <td><b>ЕСТЬ</b><br>");
+		else $tmpl->AddText("<tr><td class='field'>Наличие:<td>Под заказ<br>");
+		if($nxt[6]) $tmpl->AddText("<tr><td class='field'>Внутренний диаметр: <td>$nxt[6] мм.<br>");
+		if($nxt[7]) $tmpl->AddText("<tr><td class='field'>Внешний диаметр: <td>$nxt[7] мм.<br>");
+		if($nxt[8]) $tmpl->AddText("<tr><td class='field'>Высота: <td>$nxt[8] мм.<br>");
+		if($nxt[9]) $tmpl->AddText("<tr><td class='field'>Масса: <td>$nxt[9] кг.<br>");
+		if($nxt[10]) $tmpl->AddText("<tr><td class='field'>Аналог: <td>$nxt[10]<br>");
+		if($nxt[5]) $tmpl->AddText("<tr><td class='field'>Производитель: <td>$nxt[5]<br>");
+
+		$param_res=mysql_query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
+		LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+		WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='0'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список свойств!");
+		while($params=mysql_fetch_row($param_res))
+		{
+			$tmpl->AddText("<tr><td class='field'>$params[0]:<td>$params[1]</tr>");
+		}
+
+		$resg=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams`");
+		if(mysql_errno())	throw new MysqlException("Не удалось параметры групп складской номенклатуры");
+		while($nxtg=mysql_fetch_row($resg))
+		{
+			$f=0;
+			$param_res=mysql_query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
+			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+			WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='$nxtg[0]'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список свойств!");
+			while($params=mysql_fetch_row($param_res))
+			{
+				if(!$f)
+				{
+					$f=1;
+					$tmpl->AddText("<tr><th colspan='2'>$nxtg[1]</th></tr>");
+				}
+				$tmpl->AddText("<tr><td class='field'>$params[0]:<td>$params[1]</tr>");
+			}
+		}
 		$tmpl->AddText("<tr><td colspan='3'>
 		<form action='/vitrina.php'>
 		<input type='hidden' name='mode' value='korz_add'>
@@ -326,10 +374,12 @@ protected function ProductCard($product)
 		</script>");
 		$i++;
 	}
-	if($_SESSION['korz_cnt'])  $tmpl->msg("<a class='selflink' href='/vitrina.php?mode=basket'>Ваша корзина</a>","info");
+
 	if($i==0)
 	{
 		$tmpl->AddText("<h1 id='page-title'>Информация о товаре</h1>");
+		header('HTTP/1.0 404 Not Found');
+		header('Status: 404 Not Found');
 		$tmpl->msg("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
 	}
 }
@@ -514,7 +564,7 @@ protected function TovList_ImageList($res, $lim)
 
 		$tmpl->AddText("<div class='pitem'>
 		<a href='$link'>$img</a>
-		{$nxt['name']}<br>
+		<a href='$link'>{$nxt['name']}</a><br>
 		<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
 		<b>Кол-во:</b> $nal<br>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>

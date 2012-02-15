@@ -54,18 +54,18 @@ if($mode=='')
 
 	if(isAccess('sys_ip-blacklist','view'))
 		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
-	
+
 	if(isAccess('sys_acl','view'))
 		$tmpl->AddText("<li><a href='/rights.php'>Привилегии доступа</a></li>");
-	
+
 	if(isAccess('admin_comments','view'))
 		$tmpl->AddText("<li><a href='/adm_comments.php'>Администрирование коментариев</a></li>");
 	if(isAccess('admin_users','view'))
 		$tmpl->AddText("<li><a href='/adm_users.php'>Администрирование пользователей (в разработке)</a></li>");
-		
+
 	$tmpl->AddText("<li><a href='/user.php?mode=user_data'>Личные данные</a></li>");
 	$tmpl->AddText("<li><a href='/user.php?mode=doc_hist'>История документов</a></li>");
-	
+
 	$tmpl->AddText("</ul>");
 }
 else if($mode=='user_data')
@@ -94,8 +94,8 @@ else if($mode=='user_data')
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
 		$tmpl->msg("Данные обновлены!","ok");
 	}
-	
-	
+
+
 	$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='$uid'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
 	$user_data=mysql_fetch_assoc($res);
@@ -103,9 +103,9 @@ else if($mode=='user_data')
 	$res=mysql_query("SELECT `param`, `value` FROM `users_data` WHERE `uid`='$uid'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
 	while($line=mysql_fetch_row($res))	$user_dopdata[$line[0]]=$line[1];
-	
+
 	$subs_checked=$user_data['subscribe']?'checked':'';
-	
+
 	$tmpl->AddText("<form action='' method='post'>
 	<input type='hidden' name='mode' value='user_data'>
 	<input type='hidden' name='opt' value='save'>
@@ -140,7 +140,7 @@ else if($mode=='doc_hist')
 	ORDER BY `date`");
 	$i=0;
 
-	
+
 	while($nxt=mysql_fetch_array($res))
 	{
 		$date=date("Y-m-d H:i:s",$nxt['date']);
@@ -167,7 +167,7 @@ else if($mode=='doc_view')
 			$doc_data=mysql_fetch_assoc($res);
 			if(!$doc_data)				throw new Exception("Документ не найден!");
 			if($doc_data['user']!=$uid)		throw new Exception("Документ не найден");
-			
+
 			$document=AutoDocumentType($doc_data['type'], $doc);
 			if($doc_data['type']==3)		$document->PrintForm($doc, 'schet_pdf');
 			else if($doc_data['type']==2)		$document->PrintForm($doc, 'sf_pdf');
@@ -185,17 +185,17 @@ else if($mode=='doc_view')
 
 // else if($mode=='frequest')
 // {
-//         // create curl resource 
+//         // create curl resource
 //         $ch = curl_init();
-//         // set url 
+//         // set url
 //         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/login");
-//         //return the transfer as a string 
+//         //return the transfer as a string
 //         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 //         curl_setopt($ch, CURLOPT_USERPWD, "");
 //         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 //         curl_setopt($ch, CURLOPT_HEADER, true);
-//         
-//         // $output contains the output string 
+//
+//         // $output contains the output string
 //         $data = curl_exec($ch);
 //         $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
 // 	//$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
@@ -203,16 +203,16 @@ else if($mode=='doc_view')
 // 	$cookie='';
 // 	foreach ($res[1] as $key => $value)
 // 		$cookie.= $value.'='.$res[2][$key].'; ';
-//         
+//
 //         curl_setopt($ch, CURLOPT_HEADER, false);
 //         curl_setopt($ch, CURLOPT_COOKIE,$cookie);
 //         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
 //         $output = curl_exec($ch);
-//         // close curl resource to free up system resources 
-//         curl_close($ch); 
-//         
+//         // close curl resource to free up system resources
+//         curl_close($ch);
+//
 //         $_SESSION['trac_cookie']=$cookie;
-//         
+//
 //         $doc = new DOMDocument();
 // 	$doc->loadHTML($output);
 // 	$doc->normalizeDocument ();
@@ -220,17 +220,17 @@ else if($mode=='doc_view')
 // 	$elements=$form->getElementsByTagName("div");
 // 	$token_elem=$elements->item(0)->getElementsByTagName('input')->item(0);
 // 	$token=$token_elem->attributes->getNamedItem('value')->nodeValue;
-// 	
+//
 // 	$type=$doc->getElementById('field-type');
-// 
+//
 // 	$tmpl->SetText("<h1>Оформление запроса на доработку программы</h1>
 // 	Внимание! Данная страница в разработке. Вы можете воспользоваться старой версией, доступной по адресу: <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a>
 // 	<br><br>
 // 	<p class='text'>
-// 	
+//
 // 	Внимательно заполните все поля. Если иное не написано рядом с полем, все поля являются обязательными для заполнения. Особое внимание стоит уделить полю *краткое содержание*. <b>ВНИМАНИЕ! Для удобства отслеживания исполнения задач (вашего и разработчиков) каждая задача должна быть отдельной задачей. Несоблюдение этого условия может привести к тому, что некоторые задачи окажутся незамеченными</b>. Все глобальные задания можно и нужно отслеживать через систему-треккер.
 // 	</p>
-// 	
+//
 // 	<form action='/user.php' method='post'>
 // 	<input type='hidden' name='token' value='$token'>
 // 	<input type='hidden' name='mode' value='sendrequest'>
@@ -260,7 +260,7 @@ else if($mode=='doc_view')
 // 	<select id='field-component' name='field_component'>
 // 	<option>CLI: Внешние обработчики</option><option>Wiki</option><option>Анализатор прайсов</option><option>Витрина и прайс-лист</option><option>Документы</option><option selected='selected'>Другое</option><option>Отчёты</option><option>Справочники</option><option>Ядро</option>
 // 	</select><br>
-// 	
+//
 // 	<button type='submit'>Сформировать задачу</button>
 // 	</form>
 // 	");
@@ -285,7 +285,7 @@ else if($mode=="elog")
 		$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]<td>$nxt[7]");
 	}
 	$tmpl->AddText("</table>");
-	
+
 	$pages_count = ceil($total/$lines);
 	if ($pages_count > 1)
 	{
@@ -310,22 +310,23 @@ else if($mode=="clog")
 		$g=" GROUP BY `ip`";
 		$tmpl->AddText("<a href='?mode=clog&m=ng'>Без группировки</a><br><br>");
 	}
+	else	$g='';
 
 	$res=mysql_query("SELECT * FROM `counter` $g ORDER BY `date` DESC");
-	$tmpl->AddText("<table width=100%>
-	<tr><th>IP<th>Страница<th>Ссылка<th>UserAgent<th>Дата");
+	$tmpl->AddText("<table class='list'>
+	<tr><th>IP<th>Страница<th>Ссылка (referer)<th>UserAgent<th>Дата");
 	while($nxt=mysql_fetch_row($res))
 	{
-		$dt=date("Y.M.D H:i:s",$nxt[1]);
-		$tmpl->AddText("<tr><td>$nxt[2]<td>$nxt[5]<td>$nxt[4]<td>$nxt[3]<td>$dt");
+		$dt=date("Y-m-d H:i:s",$nxt[1]);
+		$tmpl->AddText("<tr><td>$nxt[2]<td>$nxt[5]<br><small>$nxt[6]</small><td>$nxt[4]<td>$nxt[3]<td>$dt");
 	}
 	$tmpl->AddText("</table>");
 }
 else if($mode=='async_task')
 {
 	if(!isAccess('sys_async_task','view'))	throw new AccessException("Недостаточно привилегий");
-	$tmpl->AddText("<h1>Статус внешних обработчиков</h1>
-	<table><tr><th>ID<th>Скрипт<th>Состояние");
+	$tmpl->AddText("<h1>Статус ассинхронных обработчиков</h1>
+	<table class='list'><tr><th>ID<th>Скрипт<th>Состояние");
 	$res=mysql_query("SELECT `id`, `script`, `status` FROM `sys_cli_status` ORDER BY `script`");
 	while($nxt=mysql_fetch_row($res))
 	{
@@ -340,7 +341,7 @@ else if($mode=="denyip")
 	<a href='?mode=iplog'>Часто посещаемые ресурсы</a>");
 	if(isAccess('ip-blacklist','read'))
 	{
-		$tmpl->AddText("<table border=1><tr><th>ID<th>IP<th>host<th>Действия");
+		$tmpl->AddText("<table class='list'><tr><th>ID<th>IP<th>host<th>Действия");
 		$res=mysql_query("SELECT * FROM `traffic_denyip`");
 		while($nxt=mysql_fetch_row($res))
 		{
@@ -388,12 +389,12 @@ else if($mode=='iplog')
 	{
 	$tmpl->AddText("<h1>25 часто используемых адресов</h1>");
 	$res=mysql_query("SELECT `ip_daddr`, COUNT(`ip_daddr`) AS `cnt`, SUM(`ip_totlen`) AS `traf` FROM `ulog` GROUP BY `ip_daddr` ORDER BY `traf` DESC LIMIT 25");
-	$tmpl->AddText("<table><tr><th>Адрес<th>Возможное имя сервера<th>Количество обращений<th>Трафик запросов<th>Заблокировать");
+	$tmpl->AddText("<table class='list'><tr><th>Адрес<th>Возможное имя сервера<th>Количество обращений<th>Трафик запросов<th>Заблокировать");
 	while($nxt=mysql_fetch_row($res))
 	{
 		$ip=long2ip($nxt[0]);
 		$addr=gethostbyaddr($ip);
-		
+
 		$tmpl->AddText("<tr><td>$ip<td><a href='http://$addr'>$addr</a><td>$nxt[1]<td>$nxt[2]<td><a href='?mode=denyipa&host=$addr'>хост</a>, <a href='?mode=denyipa&host=$ip'>IP</a>");
 	}
 	$tmpl->AddText("</table>");

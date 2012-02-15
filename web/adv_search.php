@@ -19,7 +19,7 @@
 
 function GetCountInfo($count, $tranzit)
 {
-	global $CONFIG;	
+	global $CONFIG;
 	if(!isset($CONFIG['site']['vitrina_pcnt_limit']))	$CONFIG['site']['vitrina_pcnt_limit']	= array(1,10,100);
 	if($CONFIG['site']['vitrina_pcnt']==1)
 	{
@@ -66,7 +66,7 @@ $cost_max=rcv('cost_max');
 $name=rcv('name');
 
 if(!$name)
-{	
+{
 	$name=rcv('s');
 	if($name)
 	{
@@ -91,13 +91,13 @@ if($analog) $an_ch='checked'; else $an_ch='';
 $tmpl->AddText("<h1>Поиск товаров</h1>
 <form action='/adv_search.php' method='get'>
 <input type='hidden' name='mode' value='s'>
-<table width='100%'>
-<tr><th colspan=2>Наименование
-<th colspan=2>Производитель
+<table width='100%' class='adv-search'>
+<tr><th colspan='2'>Наименование
+<th colspan='2'>Производитель
 <th>Место на складе
-<tr class='lin1'>
-<td colspan=2><input type='text' name='name' value='$name'><br>
-<td colspan=2>
+<tr>
+<td colspan='2'><input type='text' name='name' value='$name'><br>
+<td colspan='2'>
 <input type=text name='proizv' value='$proizv'><br>
 <td><input type='text' name='mesto' value='$mesto'>
 <tr>
@@ -106,14 +106,14 @@ $tmpl->AddText("<h1>Поиск товаров</h1>
 <th>Высота
 <th>Масса
 <th>Цена
-<tr class='lin1'>
-<td>От: <input type='text' name='di_min' value='$di_min'><br>до: <input type='text' name='di_max' value='$di_max'>
-<td>От: <input type='text' name='de_min' value='$de_min'><br>до: <input type='text' name='de_max' value='$de_max'>
-<td>От: <input type='text' name='size_min' value='$size_min'><br>до: <input type='text' name='size_max' value='$size_max'>
-<td>От: <input type='text' name='m_min' value='$m_max'><br>до: <input type='text' name='m_max' value='$m_max'>
-<td>От: <input type='text' name='cost_min' value='$cost_min'><br>до: <input type='text' name='cost_max' value='$cost_max'>
 <tr>
-<td colspan=5 align='center'><input type='submit' value='Найти'>
+<td>От: <input type='text' name='di_min' value='$di_min' class='metric'><br>до: <input type='text' name='di_max' value='$di_max' class='metric'>
+<td>От: <input type='text' name='de_min' value='$de_min' class='metric'><br>до: <input type='text' name='de_max' value='$de_max' class='metric'>
+<td>От: <input type='text' name='size_min' value='$size_min' class='metric'><br>до: <input type='text' name='size_max' value='$size_max' class='metric'>
+<td>От: <input type='text' name='m_min' value='$m_max' class='metric'><br>до: <input type='text' name='m_max' value='$m_max' class='metric'>
+<td>От: <input type='text' name='cost_min' value='$cost_min' class='metric'><br>до: <input type='text' name='cost_max' value='$cost_max' class='metric'>
+<tr>
+<td colspan='5' class='sbutline'><button type='submit'>Найти</button>
 </table>
 </form>");
 
@@ -121,15 +121,14 @@ if($mode)
 {
 	$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base_dop`.`tranzit`
 	FROM `doc_base`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	WHERE 1 ";
-	
+
 	if($name)
-	{		
+	{
 		$sql.="AND (`doc_base_dop`.`analog` LIKE '%$name%' OR `doc_base`.`name` LIKE '%$name%' OR `doc_base`.`desc` LIKE '%$name%')";
-			
+
 	}
 	if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv%'";
 	if($mesto)		$sql.="AND `doc_base_cnt`.`mesto` LIKE '$mesto'";
@@ -152,28 +151,26 @@ if($mode)
 		$s="По запросу найдено $row товаров";
 		if($row>=1000) 	$s="Показаны только первые $row товаров, используйте более строгий запрос!";
 		$tmpl->AddText("<h1 id='page-title'>Результаты поиска</h1><div id='page-info'>$s</div>
-		<table width=100% cellspacing=0 border=0><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
+		<table class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
 		<th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>");
 		$i=0;
 		$cl="lin0";
+		$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
 		while($nxt=mysql_fetch_row($res))
 		{
 			if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 			else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
-			
+
 			$i=1-$i;
 			$cost=GetCostPos($nxt[0], $cost_id);
 			$nal=GetCountInfo($nxt[12], $nxt[13]);
-			
+
 			$dcc=strtotime($nxt[5]);
 			$cce='';
 			if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
-			$tmpl->AddText("<tr class=lin$i><td><a href='$link'>$nxt[1] $nxt[2]</a>
+			$tmpl->AddText("<tr><td><a href='$link'>$nxt[1] $nxt[2]</a>
 			<td>$nxt[3]<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
-			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='/img/i_korz.png' alt='В корзину!'></a>");
-			$sf++;
-			$cc=1-$cc;
-			$cl="lin".$cc;
+			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
 		}
 		$tmpl->AddText("</table><span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}

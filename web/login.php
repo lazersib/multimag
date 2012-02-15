@@ -27,37 +27,40 @@ function attack_test()
 	$lock=0;
 	$captcha=0;
 	$ip=getenv("REMOTE_ADDR");
+
 	$sql='SELECT `id` FROM `users_bad_auth`';
-	
+
 	$tm=time()-60*60*3;
 	$res=mysql_query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
-	
-	if(mysql_num_rows($res)>20)	return 2;	// Lock	
+
+	if(mysql_num_rows($res)>20)	return 2;	// Lock
 	$tm=time()-60*5;
 	$res=mysql_query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
 	if(mysql_num_rows($res)>2)	$captcha=1;
-	
+
 	$ip_a=explode(".",$ip);
-	
+	if(!is_array($ip_a))	return $captcha;
+	if(count($ip_a)<2)	return $captcha;
+
 	$tm=time()-60*60*3;
 	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
-	if(mysql_num_rows($res)>100)	return 3;	// Lock	
+	if(mysql_num_rows($res)>100)	return 3;	// Lock
 	$tm=time()-60*5;
 	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
 	if(mysql_num_rows($res)>6)	$captcha=1;
-	
+
 	$tm=time()-60*60*3;
 	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
-	if(mysql_num_rows($res)>500)	return 3;	// Lock	
+	if(mysql_num_rows($res)>500)	return 3;	// Lock
 	$tm=time()-60*5;
 	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
 	if(mysql_num_rows($res)>30)	$captcha=1;
-	
+
 	$tm=time()-60*5;
 	$res=mysql_query("$sql WHERE `time`>'$tm'");
 	if(mysql_num_rows($res)>100)	$captcha=1;
-	
-	return $captcha;	
+
+	return $captcha;
 }
 
 function regMsg($login, $pass, $conf)
@@ -96,7 +99,7 @@ class RegException extends Exception
 	var $target;
 	function __construct($text='', $target='')
 	{
-		parent::__construct($text);	
+		parent::__construct($text);
 		$this->target=$target;
 	}
 
@@ -107,10 +110,10 @@ function RegForm($err_target='', $err_msg='')
 	global $CONFIG, $tmpl;
 	$login=rcv('login');
 	$email=rcv('email');
-	
+
 	$err_msgs=array('login'=>'', 'email'=>'','img'=>'');
 	$err_msgs[$err_target]="<div style='color: #c00'>$err_msg</div>";
-	
+
 	$form_action='/login.php';
 	if($CONFIG['site']['force_https_login'])
 	{
@@ -162,17 +165,17 @@ if($mode=='')
 		include("user.php");
 		exit();
 	}
-	
+
 	// Куда переходить после авторизации
 	$from=getenv("HTTP_REFERER");
 	if($from)
 	{
 		$froma=explode("/",$from);
 		$proto=@$_SERVER['HTTPS']?'https':'http';
-		if( ($froma[2]!=$_SERVER['HTTP_HOST']) || ($froma[3]=='login.php') || ($froma[3]=='') )	$from="$proto://".$_SERVER['HTTP_HOST'];		
+		if( ($froma[2]!=$_SERVER['HTTP_HOST']) || ($froma[3]=='login.php') || ($froma[3]=='') )	$from="$proto://".$_SERVER['HTTP_HOST'];
 	}
-	$_SESSION['redir_to']=$from;	
-	
+	$_SESSION['redir_to']=$from;
+
 	$cont=rcv('cont');
 	$tmpl->AddText("<h1 id='page-title'>Аутентификация</h1>");
 	$tmpl->SetTitle("Аутентификация");
@@ -205,7 +208,7 @@ if($mode=='')
 				$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users`.`confirm`, `users_data`.`value` FROM `users`
 				LEFT JOIN `users_data` ON `users_data`.`uid`=`users`.`id` AND `users_data`.`param`='firm_id'
 				WHERE `name`='$login' AND `pass`=MD5('$pass')");
-			
+
 				if(@$nxt=mysql_fetch_row($res))
 				{
 					if( ($nxt[2]=='') || ($nxt[2]=='0') )
@@ -213,7 +216,7 @@ if($mode=='')
 						mysql_query("UPDATE `users` SET `lastlogin`=NOW(), `passch`='' WHERE `id`='$nxt[0]'");
 						$_SESSION['uid']=$nxt[0];
 						$_SESSION['name']=$nxt[1];
-						if($_SESSION['last_page'])	
+						if($_SESSION['last_page'])
 						{
 							$lp=$_SESSION['last_page'];
 							unset($_SESSION['last_page']);
@@ -233,19 +236,19 @@ if($mode=='')
 					mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
 					$tmpl->msg("Неверная пара логин / пароль! Попробуйте снова!","err","Авторизоваться не удалось");
 				}
-		
-		
+
+
 			}
 		}
 		$at=attack_test();
-		
+
 		if($at>0)
 			$m="<tr><td>
 			Введите код подтверждения, изображенный на картинке:<br>
 			<img src='kcaptcha/index.php' alt='Включите отображение картинок!'><td>
 			<input type='text' name='img'>";
 		else $m='';
-		
+
 		$form_action='/login.php';
 		if($CONFIG['site']['force_https_login'])
 		{
@@ -269,9 +272,9 @@ if($mode=='')
 		<tr><td><td>
 		<button type='submit'>Вход!</button> ( <a class='wiki' href='/login.php?mode=rem'>Забыли пароль?</a> )
 		</table></form>
-	
+
 		<script type=\"text/javascript\">
-		
+
 		function focusInput()
 		{
 		var input_name = document.getElementById('input_name');
@@ -279,7 +282,7 @@ if($mode=='')
 			input_name.focus();
 		return false;
 		}
-		
+
 		window.setTimeout('focusInput()', 300);
 		</script>");
 	}
@@ -310,7 +313,7 @@ else if($mode=='regs')
 		$img=strtoupper(rcv('img'));
 		$subs=rcv('subs');
 		if($subs!='0') $subs=1;
-		
+
 		if($login=='')
 			throw new RegException('Поле login не заполнено','login');
 		if(strlen($login)<3)
@@ -319,11 +322,11 @@ else if($mode=='regs')
 			throw new RegException('login слишком длинный','login');
 		if( !preg_match('/^[a-zA-Z][a-zA-Z\d]*$/', $login))
 			throw new RegException('login должен состоять из английских букв, цифр, начинаться с буквы','login');
-		
+
 		$res=mysql_query("SELECT `id` FROM `users` WHERE `name`='$login'");
 		if(mysql_num_rows($res))
 			throw new RegException('Такой login занят. Используйте другой.','login');
-		
+
 		if($email=='')
 			throw new RegException('Поле email не заполнено','email');
 		if( !preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $email))
@@ -331,12 +334,12 @@ else if($mode=='regs')
 		$res=mysql_query("SELECT `id` FROM `users` WHERE `email`='$email'");
 		if(mysql_num_rows($res))
 			throw new RegException('Пользователь с таким email уже зарегистрирован. Используйте другой.','email');
-		
+
 		if($img=='')
 			throw new RegException('Код подтверждения не введён','img');
 		if(strtoupper($_SESSION['captcha_keystring'])!=strtoupper($img))
 			throw new RegException('Код подтверждения введён неверно','img');
-			
+
 // 			header("Location: login.php?mode=reg".$l);
 		$conf=md5(time()+rand(0,1000000));
 		$pass=keygen_unique(0,6,9);
@@ -347,14 +350,14 @@ else if($mode=='regs')
 		$res=mysql_query("INSERT INTO `users` (`name`,`pass`,`email`,`date_reg`,`confirm`,`subscribe`)
 		VALUES ('$login', MD5('$pass'), '$email', NOW(),'$conf','$subs')  ");
 		if(mysql_errno())	throw new MysqlException("Не удалось добвать пользователя! Попробуйте позднее!");
-		
+
 		$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
 		<form action='/login.php'>
 		<input type='hidden' name='mode' value='conf'>
 		Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br>Для завершения регистрации введите полученный код:<br><br>
 		<input type='text' name='s'><button type='submit'>Продолжить</button><br><br>
 		Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!
-		</form>");	
+		</form>");
 
 	}
 	catch(RegException $e)
@@ -364,7 +367,7 @@ else if($mode=='regs')
 		$tmpl->SetText("<h1 id='page-title'>Регистрация</h1>");
 		$tmpl->msg("Проверьте данные! ".$e->getMessage(),"err","Неверный ввод!");
 		RegForm($e->target, $e->getMessage());
-		
+
 	}
 	catch(Exception $e)
 	{
@@ -384,7 +387,7 @@ else if($mode=='conf')
 		mysql_query("UPDATE `users` SET `lastlogin`=NOW(), `passch`='' WHERE `id`='$nxt[0]'");
 		$_SESSION['uid']=$nxt[0];
 		$_SESSION['name']=$nxt[1];
-		if($_SESSION['last_page'])	
+		if($_SESSION['last_page'])
 		{
 			$lp=$_SESSION['last_page'];
 			unset($_SESSION['last_page']);
@@ -468,7 +471,7 @@ else if($mode=='unsubscribe')
 		$tmpl->msg("Вы успешно отказались от автоматической рассылки!","ok");
 		$c=1;
 	}
-	
+
 	$res=mysql_query("UPDATE `doc_agent` SET `no_mail`='1' WHERE `email`='$email'");
 	echo mysql_error();
 	if(mysql_affected_rows())
@@ -476,7 +479,7 @@ else if($mode=='unsubscribe')
 		$tmpl->msg("В нашей клиентской базе Ваш адрес помечен, как нежелательный для рассылки.","ok");
 		$c=1;
 	}
-	
+
 	if(!$c)	$tmpl->msg("Ваш адрес не найден в наших базах рассылки! Возможно, Вы отказались от рассылки ранее, или не являетесь нашим зарегистрированным пользователем. За разяснением обратитесь по телефону или e-mail, указанному на странице <a class='wiki' href='/wiki/ContactInfo'>Контакты</a>, либо в письме, полученном от нас. Спасибо за понимание!","notify");
 }
 else $tmpl->logger("Uncorrect mode!");

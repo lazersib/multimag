@@ -179,12 +179,12 @@ else
 
 			$tmpl->AddText("<div class='pitem'>
 			<a href='$link'>$img</a>
-			<h2>{$nxt['group_name']} {$nxt['name']}</h2>
+			<h2><a href='$link'>{$nxt['group_name']} {$nxt['name']}</a></h2>
 			<b>Цена:</b> $cost руб / {$nxt['units']}<br>
-			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>
+			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
 			</div>");
 		}
-		$tmpl->AddText("<br clear='all'>
+		$tmpl->AddText("<div class='clear'><br></div>
 		</div>");
 	}
 
@@ -218,12 +218,12 @@ else
 		<a href='$link'>$img</a>
 		<h2>{$nxt['name']}</h2>
 		<b>Цена:</b> $cost руб / {$nxt['units']}<br>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>
+		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
 		</div>");
 
 		$i++;
 	}
-	$tmpl->AddText("<br clear='all'>");
+	$tmpl->AddText("<div class='clear'><br></div>");
 }
 
 }

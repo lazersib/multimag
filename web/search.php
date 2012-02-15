@@ -127,7 +127,6 @@ class SearchPage
 	function Exec()
 	{
 		global $tmpl;
-
 		$tmpl->AddText($this->SearchBlock());
 		if(strlen($this->search_str)>=2)
 		{
@@ -141,7 +140,7 @@ class SearchPage
 			if($str) $tmpl->AddText("<ol>$str</ol>");
 			else $tmpl->AddText("Не дал результатов");
 		}
-		else if($this->search_str)	$tmpl->msg("Поисковый запрос слишком короткий!");
+		else if($this->search_str)	$tmpl->msg("Поисковый запрос слишком короткий!",'info');
 	}
 
 	protected function GetCountInfo($count, $tranzit)

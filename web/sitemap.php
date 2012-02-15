@@ -30,12 +30,35 @@ if($mode=='xml')
 	$tmpl->SetText('');
 	$tmpl->AddText($map->getMap());
 }
+else if($mode=='robots')
+{
+	$tmpl->ajax=1;
+	header("Content-Type: text/plain");
+	echo"User-Agent: *
+Disallow: /adv_search
+Disallow: /img
+Disallow: /kcaptcha
+Disallow: /login
+Disallow: /search
+Disallow: /user
+Disallow: /fpdf
+Disallow: *basket
+Disallow: *korz
+Host: ".$CONFIG['site']['name'];
+	exit();
+}
+else if($mode=='favicon')
+{
+	header("HTTP/1.1 301 Moved Permanently");
+	header("Location: /skins/".$CONFIG['site']['skin']."/favicon.ico");
+	exit();
+}
 else
 {
 	$tmpl->SetText("<h1 id='page-title'>Карта сайта</h1>");
 	$map=new SiteMap();
 	$tmpl->AddText($map->getMap());
-	
+
 }
 $tmpl->write();
 ?>

@@ -85,6 +85,66 @@ $skidka="";
 $ncnt=rcv('ncnt');
 if(!$ncnt) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 
+class ipv6
+{
+	function is_ipv6($ip = "")
+	{
+		if($ip=='')	return false;
+		if (substr_count($ip,":") > 0 && substr_count($ip,".") == 0)
+			return true;
+		else	return false;
+	}
+
+	function is_ipv4($ip = "")
+	{
+		if($ip=='')	return false;
+		return !ipv6::is_ipv6($ip);
+	}
+
+	function get_ip()
+	{
+		return  getenv ("REMOTE_ADDR");
+	}
+
+	function uncompress_ipv6($ip ="")
+	{
+		if($ip=='')	return false;
+		if(strstr($ip,"::" ))
+		{
+			$e = explode(":", $ip);
+			$s = 8-sizeof($e)+1;
+			foreach($e as $key=>$val)
+			{
+				if ($val == "")
+					for($i==0;$i<=$s;$i++)		$newip[] = 0;
+				else	$newip[] = $val;
+			}
+			$ip = implode(":", $newip);
+		}
+		return $ip;
+	}
+
+	function compress_ipv6($ip ="")
+	{
+		if($ip=='')	return false;
+		if(!strstr($ip,"::" ))
+		{
+			$e = explode(":", $ip);
+			$zeros = array(0);
+			$result = array_intersect ($e, $zeros );
+			if (sizeof($result) >= 6)
+			{
+				if ($e[0]==0) $newip[] = "";
+				foreach($e as $key=>$val)
+					if ($val !=="0") $newip[] = $val;
+				$ip = implode("::", $newip);
+			}
+		}
+		return $ip;
+	}
+}
+
+
 function exception_handler($exception)
 {
 	$ip=getenv("REMOTE_ADDR");
@@ -234,7 +294,7 @@ function getright($object,$uid)
 }
 
 // Есть ли право доступа к указанному объекту для указанной операции
-function isAccess($object, $action,$no_redirect=0)
+function isAccess($object, $action,$no_redirect=false)
 {
 	$uid=@$_SESSION['uid'];
 	if($uid==1)	return true;

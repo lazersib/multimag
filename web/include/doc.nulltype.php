@@ -503,8 +503,8 @@ class doc_Nulltype
 				$tmpl->AddText("<b>Наш общий долг:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'>$dolg рублей</a><br>");
 		}
 
-// 		if(method_exists($this,'DopBody'))
-// 			$this->DopBody();
+ 		if(method_exists($this,'DopBody'))
+ 			$this->DopBody();
 
 
 		if($this->doc_data[4]) $tmpl->AddText("<b>Примечание:</b> ".$this->doc_data[4]."<br>");

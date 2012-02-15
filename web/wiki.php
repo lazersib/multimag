@@ -135,8 +135,10 @@ try
 				}
 				else
 				{
-					$tmpl->msg("Извините, данная страница не найдена ($p)!","info");
-					if(isAccess('generic_articles','create'))
+					$tmpl->msg("Извините, статья $p не найдена на нашем сайте. Возможно, вам дали неверную ссылку, либо статья была удалена или перемещена в другое место. Для того, чтобы найти интересующую Вас информацию, воспользуйтесь ","info");
+					header('HTTP/1.0 404 Not Found');
+					header('Status: 404 Not Found');
+					if(isAccess('generic_articles','create', true))
 						$tmpl->AddText("<a href='/wiki.php?p=$p&amp;mode=edit'>Создать</a>");
 				}
 			}
