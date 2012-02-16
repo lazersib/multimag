@@ -140,7 +140,7 @@ class doc_Nulltype
 		$this->Create($doc_data);
 		if($this->sklad_editor_enable)
 		{
-			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}'");
+			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
 			while($nxt=mysql_fetch_row($res))
 			{
@@ -906,6 +906,7 @@ class doc_Nulltype
 				$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";
 				$tmpl->SetText($str);
 			}
+			// Серийные номера
 			else if($opt=='jsn')
 			{
 				$action=rcv('a');
@@ -918,6 +919,12 @@ class doc_Nulltype
 			{
 				$this->ResetCost();
 				DocSumUpdate($this->doc);
+			}
+			// Сортировка наименований
+			else if($opt=='jorder')
+			{
+				$by=rcv('by');
+				$poseditor->reOrder($by);
 			}
 			// Не-json обработчики
 			// Серийный номер

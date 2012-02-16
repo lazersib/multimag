@@ -76,6 +76,21 @@
 	border:			2px #0f0 solid;
 }
 
+#poslist div.order_button {
+	width:			16px;
+	height:			16px;
+	padding:		0px;
+	color:			#6488DC;
+	background-image:	url('/img/arrows.png');
+	background-clip:	content-box;
+	background-origin: 	content-box;
+	background-position:	-48px -32px;
+	border:			0px none;
+	cursor:			pointer;
+	border-radius:		5px;
+	float:			left;
+}
+
 #poslist tbody img
 {
 	border:			0 none;

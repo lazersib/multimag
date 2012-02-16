@@ -373,7 +373,43 @@ function PosEditorInit(base_url, editable)
 			}
 		}
 	}
-
+	
+	if(poslist.show_column['vc'])
+	{
+		var order_vc=document.getElementById('pl_order_vc')
+		order_vc.onclick=function(event)
+		{
+			$.ajax({
+				type:   'GET',
+			url:    base_url,
+			data:   'opt=jorder&by=vc',
+			success: function(msg) { poslist.refresh() },
+			error:   function() { jAlert('Ошибка!','Сортировка наименований',{},'icon_err'); },
+			});
+		}
+	}
+	var order_name=document.getElementById('pl_order_name')
+	order_name.onclick=function(event)
+	{
+		$.ajax({
+			type:   'GET',
+		       url:    base_url,
+		       data:   'opt=jorder&by=name',
+		       success: function(msg) { poslist.refresh() },
+		       error:   function() { jAlert('Ошибка!','Сортировка наименований',{},'icon_err'); },
+		});
+	}
+	var order_cost=document.getElementById('pl_order_cost')
+	order_cost.onclick=function(event)
+	{
+		$.ajax({
+			type:   'GET',
+		       url:    base_url,
+		       data:   'opt=jorder&by=cost',
+		       success: function(msg) { poslist.refresh() },
+		       error:   function() { jAlert('Ошибка!','Сортировка наименований',{},'icon_err'); },
+		});
+	}
 
 	return poslist
 }

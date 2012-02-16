@@ -144,7 +144,8 @@ class doc_Specific extends doc_Nulltype
 		VALUES ('$r_id','cena','{$this->dop_data['cena']}')");
 
 		$res=mysql_query("SELECT `tovar`, `cnt`, `sn`, `comm`, `cost` FROM `doc_list_pos`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		while($nxt=mysql_fetch_row($res))
 		{
 			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
@@ -255,7 +256,8 @@ class doc_Specific extends doc_Nulltype
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=$allsum=$nds_sum=0;
 		while($nxt=mysql_fetch_row($res))
 		{

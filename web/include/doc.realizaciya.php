@@ -430,7 +430,8 @@ class doc_Realizaciya extends doc_Nulltype
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=0;
@@ -500,7 +501,8 @@ class doc_Realizaciya extends doc_Nulltype
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='1'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='1'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=0;
@@ -683,7 +685,8 @@ class doc_Realizaciya extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=$snac=$srazn=$cnt=0;
@@ -745,7 +748,8 @@ class doc_Realizaciya extends doc_Nulltype
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=0;
@@ -791,7 +795,8 @@ class doc_Realizaciya extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=$cnt=0;
@@ -940,7 +945,8 @@ function PrintTg12()
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
-		WHERE `doc_list_pos`.`doc`='$doc'  AND `doc_base`.`pos_type`='0'");
+		WHERE `doc_list_pos`.`doc`='$doc'  AND `doc_base`.`pos_type`='0'
+		ORDER BY `doc_list_pos`.`id`");
                 $i=0;
                 $ii=0;
 
@@ -1552,7 +1558,8 @@ function PrintTg12PDF($to_str=0)
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-	WHERE `doc_list_pos`.`doc`='{$this->doc}'  AND `doc_base`.`pos_type`='0'");
+	WHERE `doc_list_pos`.`doc`='{$this->doc}'  AND `doc_base`.`pos_type`='0'
+	ORDER BY `doc_list_pos`.`id`");
 	$i=0;
 	$ii=0;
 	$line_height=4;
@@ -2140,7 +2147,8 @@ function SfakPDF($doc, $to_str=0)
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
-	WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+	WHERE `doc_list_pos`.`doc`='{$this->doc}'
+	ORDER BY `doc_list_pos`.`id`");
 	if(mysql_errno())	throw new MysqlException("Не удалось выбрать список товаров");
 
 	$pdf->SetY($y+18);

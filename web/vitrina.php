@@ -314,7 +314,7 @@ protected function ProductCard($product)
 		if($nxt[2])
 		{
 			$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
-			$tmpl->AddText("<tr><td valign='top' class='field'><b>Описание:</b><td>$text");
+			$tmpl->AddText("<tr><td valign='top' class='field'>Описание:<td>$text");
 		}
 		if($nxt[14]) $tmpl->AddText("<tr><td class='field'>Тип:<td>$nxt[14]");
 		$cena=GetCostPos($nxt[0], $this->cost_id);
@@ -567,7 +567,7 @@ protected function TovList_ImageList($res, $lim)
 		<a href='$link'>{$nxt['name']}</a><br>
 		<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
 		<b>Кол-во:</b> $nal<br>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nowollow'>В корзину!</a>
+		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
 		</div>");
 
 		$sf++;

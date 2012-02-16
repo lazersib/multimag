@@ -112,10 +112,10 @@ function Show($param='')
 	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
 	<table width='100%' id='poslist'><thead><tr>
 	<th width='60px' align='left'>№</th>";
-	if($this->show_vc>0)	$ret.="<th width='90px' align='left' title='Код изготовителя'>Код</th>";
-	$ret.="<th>Наименование</th>
+	if($this->show_vc>0)	$ret.="<th width='90px' align='left' title='Код изготовителя'><div class='order_button' id='pl_order_vc'></div> Код</th>";
+	$ret.="<th><div class='order_button' id='pl_order_name'></div> Наименование</th>
 	<th width='90px' title='Выбранная цена'>Выбр. цена</th>
-	<th width='90px' class='hl'>Цена</th>
+	<th width='90px' class='hl'><div class='order_button' id='pl_order_cost'></div> Цена</th>
 	<th width='60px' class='hl'>Кол-во</th>
 	<th width='90px' class='hl'>Стоимость</th>
 	<th width='60px' title='Остаток товара на складе'>Остаток</th>
@@ -192,7 +192,8 @@ function GetAllContent()
 	FROM `doc_list_pos`
 	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-	WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'");
+	WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'
+	ORDER BY `doc_list_pos`.`id`");
 	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
 	$ret='';
 	while($nxt=mysql_fetch_assoc($res))
@@ -495,6 +496,28 @@ function SerialNum($action, $line_id, $data)
 		if(mysql_affected_rows())	return "{response: 'deleted' }";
 		else				return "{response: 'not_deleted', message: 'Номер уже удалён, или используется в реализации' }";
 	}
+}
+
+function reOrder($by='name')
+{
+	if($by!=='name' && $by!=='cost' && $by!=='vc')	$by='name';
+	mysql_query("START TRANSACTION");
+	$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc` 
+	FROM `doc_list_pos`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+	WHERE `doc_list_pos`.`doc`='{$this->doc}'
+	ORDER BY `$by`");
+	if(mysql_errno())		throw new MysqlException("Не удалось получить наименования");
+	mysql_query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+	if(mysql_errno())		throw new MysqlException("Не удалось удалить старые наименования");
+	while($nxt=mysql_fetch_row($res))
+	{
+		mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `gtd`, `comm`, `cost`, `page`)
+		VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]', '$nxt[5]')");
+		if(mysql_errno())		throw new MysqlException("Не удалось вставить наименования");
+	}
+	mysql_query("COMMIT");
+	doc_log("UPDATE","ORDER poslist BY $by",'doc',$this->doc);
 }
 
 };

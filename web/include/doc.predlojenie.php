@@ -165,7 +165,8 @@ class doc_Predlojenie extends doc_Nulltype
 			VALUES ('$r_id','cena','$cena')");
 
 			$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
-			WHERE `doc_list_pos`.`doc`='$doc'");
+			WHERE `doc_list_pos`.`doc`='$doc'
+			ORDER BY `doc_list_pos`.`id`");
 			while($nxt=mysql_fetch_row($res))
 			{
 				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
@@ -180,7 +181,8 @@ class doc_Predlojenie extends doc_Nulltype
 			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
-			WHERE `a`.`doc`='$doc'");
+			WHERE `a`.`doc`='$doc'
+			ORDER BY `doc_list_pos`.`id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить товары документа");
 			while($nxt=mysql_fetch_row($res))
 			{
@@ -238,7 +240,8 @@ class doc_Predlojenie extends doc_Nulltype
 			VALUES ('$r_id','cena','$cena')");
 
 			$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
-			WHERE `doc_list_pos`.`doc`='$doc'");
+			WHERE `doc_list_pos`.`doc`='$doc'
+			ORDER BY `doc_list_pos`.`id`");
 			while($nxt=mysql_fetch_row($res))
 			{
 				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
@@ -253,7 +256,8 @@ class doc_Predlojenie extends doc_Nulltype
 			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='$doc'
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
-			WHERE `a`.`doc`='$doc'");
+			WHERE `a`.`doc`='$doc'
+			ORDER BY `doc_list_pos`.`id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить товары документа");
 			while($nxt=mysql_fetch_row($res))
 			{
@@ -399,7 +403,8 @@ class doc_Predlojenie extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$sum=$summass=0;
 		while($nxt=mysql_fetch_row($res))

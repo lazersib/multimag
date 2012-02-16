@@ -223,8 +223,7 @@ class ImageProductor
 		if($this->type=='jpg')		imagejpeg($im,$cname,$this->quality);
 		else if($this->type=='gif')	imagegif($im,$cname,$this->quality);
 		else 				imagepng($im,$cname,9);
-		
-		header("Location: $icname");
+		header("Location: $icname",true,301);
 		//exit();
 	
 	}
@@ -356,7 +355,7 @@ function img_resize($n, $imgdir, $ext='jpg')
 		imagejpeg($im,"$cname",$q);
 		//imagejpeg($im,"",$q);
 	}
-	header("Location: $icname");
+	header("Location: $icname",true,301);
 	exit();
 }
 

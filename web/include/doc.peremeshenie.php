@@ -201,7 +201,8 @@ class doc_Peremeshenie extends doc_Nulltype
 		<tr><th>№</th><th width=450>Наименование<th>Кол-во<th>Стоимость<th>Сумма</tr>");
 		$res=mysql_query("SELECT `doc_group`.`name`,`doc_base`.`name`,`doc_base`.`proizv` ,`doc_list_pos`.`cnt`,`doc_list_pos`.`cost`
 		FROM `doc_list_pos`,`doc_base`,`doc_group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`tovar`=`doc_base`.`id` AND `doc_group`.`id`=`doc_base`.`group`");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`tovar`=`doc_base`.`id` AND `doc_group`.`id`=`doc_base`.`group`
+		ORDER BY `doc_list_pos`.`id`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 		$i=0;
 		$ii=1;

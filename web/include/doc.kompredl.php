@@ -180,7 +180,8 @@ class doc_Kompredl extends doc_Nulltype
 		VALUES ('$r_id','cena','{$this->dop_data['cena']}')");
 
 		$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		while($nxt=mysql_fetch_row($res))
 		{
 			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
@@ -313,7 +314,8 @@ class doc_Kompredl extends doc_Nulltype
 			FROM `doc_list_pos`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+			WHERE `doc_list_pos`.`doc`='{$this->doc}'
+			ORDER BY `doc_list_pos`.`id`");
 			while($nxt=mysql_fetch_row($res))
 			{
 				$msg.="$nxt[0] $nxt[1] ($nxt[2]) - цена $nxt[3] руб.\n";
@@ -488,7 +490,8 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		while($nxt=mysql_fetch_row($res))
 		{
@@ -694,7 +697,8 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		while($nxt=mysql_fetch_row($res))
 		{
@@ -899,7 +903,8 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		while($nxt=mysql_fetch_row($res))
 		{
@@ -990,7 +995,8 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$sum=$summass=0;
 		while($nxt=mysql_fetch_row($res))

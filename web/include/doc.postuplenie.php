@@ -230,7 +230,8 @@ class doc_Postuplenie extends doc_Nulltype
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$doc_data[7]'
-			WHERE `doc_list_pos`.`doc`='$doc'");
+			WHERE `doc_list_pos`.`doc`='$doc'
+			ORDER BY `doc_list_pos`.`id`");
 			$i=0;
 			$ii=1;
 			$sum=$summass=0;
@@ -292,7 +293,8 @@ class doc_Postuplenie extends doc_Nulltype
 			LEFT JOIN `doc_base`  ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$doc_data[7]'
-			WHERE `doc_list_pos`.`doc`='$doc'");
+			WHERE `doc_list_pos`.`doc`='$doc'
+			ORDER BY `doc_list_pos`.`id`");
 			$i=0;
 			$ii=1;
 			$sum=$sumnac=0;
@@ -392,7 +394,8 @@ class doc_Postuplenie extends doc_Nulltype
 			VALUES ('$r_id','cena','{$this->dop_data['cena']}')");
 
 			$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
-			WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+			WHERE `doc_list_pos`.`doc`='{$this->doc}'
+			ORDER BY `doc_list_pos`.`id`");
 			while($nxt=mysql_fetch_row($res))
 			{
 				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
@@ -407,7 +410,8 @@ class doc_Postuplenie extends doc_Nulltype
 			INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->doc}' AND `doc_list`.`mark_del`='0'
 			WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
-			WHERE `a`.`doc`='{$this->doc}'");
+			WHERE `a`.`doc`='{$this->doc}'
+			ORDER BY `doc_list_pos`.`id`");
 
 			while($nxt=mysql_fetch_row($res))
 			{

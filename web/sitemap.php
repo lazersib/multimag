@@ -42,6 +42,7 @@ Disallow: /login
 Disallow: /search
 Disallow: /user
 Disallow: /fpdf
+Disallow: /basket
 Disallow: *basket
 Disallow: *korz
 Host: ".$CONFIG['site']['name'];
@@ -49,8 +50,7 @@ Host: ".$CONFIG['site']['name'];
 }
 else if($mode=='favicon')
 {
-	header("HTTP/1.1 301 Moved Permanently");
-	header("Location: /skins/".$CONFIG['site']['skin']."/favicon.ico");
+	header("Location: /skins/".$CONFIG['site']['skin']."/favicon.ico", true, 301);
 	exit();
 }
 else

@@ -186,17 +186,17 @@ class Report_Sales
 		
 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_base`.`likvid`, 
 			( 	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos` 
-				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
-				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `in_cnt`,
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` AND `doc_list_pos`.`page`=0 ) AS `in_cnt`,
 			( 	SELECT SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`) FROM `doc_list_pos` 
-				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
-				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `in_sum`,
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id`  AND `doc_list_pos`.`page`=0) AS `in_sum`,
 			( 	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos` 
-				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
-				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `out_cnt`,
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=2 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` AND ( `doc_list_pos`.`page`=0 OR `doc_list`.`type`='2' )) AS `out_cnt`,
 			( 	SELECT SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`) FROM `doc_list_pos` 
-				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
-				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` ) AS `out_sum`
+				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=2 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
+				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` AND ( `doc_list_pos`.`page`=0 OR `doc_list`.`type`='2' )) AS `out_sum`
 			FROM `doc_base`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY `doc_base`.`name`");

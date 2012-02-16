@@ -248,7 +248,8 @@ class doc_Realiz_op extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='$doc_data[7]'
-		WHERE `doc_list_pos`.`doc`='$doc'");
+		WHERE `doc_list_pos`.`doc`='$doc'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=0;
@@ -297,7 +298,8 @@ class doc_Realiz_op extends doc_Nulltype
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='$doc'");
+		WHERE `doc_list_pos`.`doc`='$doc'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=0;
@@ -448,7 +450,8 @@ function PrintTg12()
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
-		WHERE `doc_list_pos`.`doc`='$doc' ");
+		WHERE `doc_list_pos`.`doc`='$doc'
+		ORDER BY `doc_list_pos`.`id`");
                 $i=0;
                 $ii=0;
 
@@ -800,7 +803,8 @@ function SfakPDF($doc, $to_str=0)
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-	WHERE `doc_list_pos`.`doc`='$doc'");
+	WHERE `doc_list_pos`.`doc`='$doc'
+	ORDER BY `doc_list_pos`.`id`");
 	if(mysql_errno())	throw new MysqlException("Ошибка выброки списка наименований документа");
 	$pdf->SetLineWidth(0.2);
 	$pdf->SetY($y+16);

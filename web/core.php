@@ -50,8 +50,7 @@ if(! include_once("$base_path/config_site.php"))
 
 if($CONFIG['site']['force_https'])
 {
-	header('Status-Code: 301');
-	header('Location: https://'.$_SERVER["HTTP_HOST"].$_SERVER['REQUEST_URI']);
+	header('Location: https://'.$_SERVER["HTTP_HOST"].$_SERVER['REQUEST_URI'], true, 301);
 }
 
 if(!isset($CONFIG['site']['display_name']))	$CONFIG['site']['display_name']=$CONFIG['site']['name'];
@@ -78,7 +77,7 @@ mysql_query("SET character_set_connection = UTF8");
 $ip=getenv("REMOTE_ADDR");
 $ag=getenv("HTTP_USER_AGENT");
 $rf=getenv("HTTP_REFERER");
-$qq=$_SERVER['QUERY_STRING'];
+$qq=$_SERVER['REQUEST_URI'].'?'.$_SERVER['QUERY_STRING'];
 $ff=$_SERVER['SCRIPT_NAME'];
 $tim=time();
 $skidka="";

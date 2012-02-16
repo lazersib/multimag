@@ -198,7 +198,8 @@ class doc_Doveren extends doc_Nulltype
 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='$doc'");
+		WHERE `doc_list_pos`.`doc`='$doc'
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=0;
