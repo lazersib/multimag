@@ -373,10 +373,10 @@ function PosEditorInit(base_url, editable)
 			}
 		}
 	}
-	
-	if(poslist.show_column['vc'])
+	var order_vc=document.getElementById('pl_order_vc')
+	if(order_vc)
 	{
-		var order_vc=document.getElementById('pl_order_vc')
+		
 		order_vc.onclick=function(event)
 		{
 			$.ajax({
