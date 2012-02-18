@@ -1,0 +1,159 @@
+div.calendar {
+	width:			210px;
+	height:			auto;
+	position:		absolute;
+	background-color:	#f0f8ff;
+	border:			2px solid #7DBBDC;
+	border-radius:		5px;
+	padding:		0px;
+	margin:			5px;
+	display:		none;
+}
+
+div.calendar div.header {
+	background-color:	#7DBBDC;
+	width:			auto;
+	height:			22px;
+	font-size:		14px;
+	font-weight:		bold;
+	text-align:		center;
+	padding:		2px;
+}
+
+
+div.calendar div.header div.button {
+	width:			16px;
+	height:			16px;
+	padding:		2px;
+	color:			#fff;
+	background-image:	url('/img/arrows.png');
+	background-clip:	content-box;
+	-moz-background-clip:	content-box;
+	background-origin: 	content-box;
+	-moz-background-origin: 	content-box;
+	background-position:	0px 0px;
+	border:			1px solid #7DBBDC;
+	cursor:			pointer;
+	border-radius:		5px;
+}
+
+div.calendar div.header div.button:hover {
+	border:			1px solid #fff;	
+}
+
+div.calendar div.header div.mback{
+	float:			left;
+	background-position:	0px 0px;
+}
+
+div.calendar div.header div.yback{
+	float:			left;
+	background-position:	0px -16px;
+}
+
+div.calendar div.header div.mfw{
+	float:			right;
+	background-position:	-16px 0px;
+}
+
+div.calendar div.header div.yfw{
+	float:			right;
+	background-position:	-16px -16px;
+}
+
+div.calendar table.main {
+	width:			100%;
+	border-collapse:	collapse;
+	border:			none;
+}
+
+div.calendar table.main th {
+	background-color:	#6488DC;
+	color:			#fff;
+	border:			1px solid #6488DC;
+}
+
+div.calendar table.main td {
+	height:			26px;
+	border:			1px solid #ccc;
+	cursor:			pointer;
+	text-align:		center;
+	vertical-align:		middle;
+	background:		#f0f8ff;
+}
+
+div.calendar table.main tbody td.now {
+	color:			#080;
+	background-color:	#cfc;
+	
+}
+
+div.calendar table.main tbody td.current {
+	color:			#880;
+	background-color:	#ffd;
+}
+
+div.calendar table.main tbody td.none {
+	background-color:	#ddd;
+	border-color:		#ddd;
+}
+
+div.calendar table.main tbody td:hover {
+	background-color:	#ff8;
+}
+
+div.calendar table.main tbody td.none:hover {
+	background-color:	#ddd;
+	border-color:		#ddd;
+}
+
+div.calendar table.time {
+	width:			100%;
+	border-collapse:	separate;
+	border:			none;
+}
+
+div.calendar table.time td {
+	height:			22px;
+	border:			1px solid #888;
+	cursor:			pointer;
+	text-align:		center;
+	vertical-align:		middle;
+	border-radius:		5px;
+	font-size:		11px;
+}
+
+div.calendar table.time td:hover {
+	border:			1px solid #000;
+}
+
+div.calendar div.footer {
+	border-top:		#ccc 1px solid;
+	padding:		3px;
+	text-align:		center;
+	height:			20px;
+	background-color:	#7DBBDC;
+}
+
+div.calendar div.footer div.button {
+	background-color:	#999;
+	color:			#fff;
+	border:			1px solid #999;
+	border-radius:		5px;
+	width:			50px;
+	padding:		2px;
+	text-align:		center;
+	cursor:			pointer;
+}
+
+div.calendar div.footer div.button:hover {
+	border:			1px solid #fff;	
+}
+
+div.calendar div.footer div.left {
+	float:			left;
+}
+
+div.calendar div.footer div.right {
+	float:			right;
+}

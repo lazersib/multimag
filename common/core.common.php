@@ -17,6 +17,11 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+define("MULTIMAG_REV", "313");
+define("MULTIMAG_VERSION", "0.1r".MULTIMAG_REV);
+header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
+
+
 /// Файл содержит код, используемый как web, так и cli скриптами
 
 function mailto($email, $subject, $msg, $from="")

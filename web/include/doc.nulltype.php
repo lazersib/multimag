@@ -452,11 +452,14 @@ class doc_Nulltype
 			$pod.="$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt<br>";
 		}
 		if($pod)	$tmpl->AddText("<br><b>Зависящие документы:</b><br>$pod");
-
+		$tmpl->AddText("<br>Документ создан: {$this->doc_data['created']}");
 
 		$tmpl->AddText("</div>
 		<script type=\"text/javascript\">
-		DocHeadInit()
+		
+		addEventListener('load',DocHeadInit,false)
+		
+		//DocHeadInit()
 		</script>
 		<div id='doc_main_block'>");
 
@@ -1039,8 +1042,7 @@ class doc_Nulltype
 		<tr class='inputs'>
 		<td class='altnum'><input type='text' name='altnum' value='".$this->doc_data[9]."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."','anum','sudata')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
 		<td class='subtype'><input type='text' name='subtype' value='".$this->doc_data[10]."' id='sudata'></td>
-		<td class='datetime'><input type='text' name='datetime' value='$dt'>
-		<img src='/img/icon_calendar.gif' alt=''></td>
+		<td class='datetime'><input type='text' name='datetime' value='$dt' id='datetime'></td>
 		</tr>
 		</table>
 		Организация:<br><select name='firm'>");
@@ -1235,7 +1237,7 @@ class doc_Nulltype
 		if($this->doc_data) return;
 		if($this->doc)
 		{
-			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`
+			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`
 			FROM `doc_list` AS `a`
 			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
 			WHERE `a`.`id`='".$this->doc."'");

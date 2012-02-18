@@ -16,9 +16,6 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-define("MULTIMAG_REV", "298");
-define("MULTIMAG_VERSION", "0.1r".MULTIMAG_REV);
-header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
 if(!function_exists('mysql_connect'))
 {
@@ -48,6 +45,8 @@ if(! include_once("$base_path/config_site.php"))
 	exit();
 }
 
+include_once($CONFIG['location']."/common/core.common.php");
+
 if($CONFIG['site']['force_https'])
 {
 	header('Location: https://'.$_SERVER["HTTP_HOST"].$_SERVER['REQUEST_URI'], true, 301);
@@ -66,8 +65,6 @@ if(!@mysql_select_db($CONFIG['mysql']['db']))
     echo"Невозможно активизировать базу данных! Возможно, база данных повреждена. Попробуйте подключиться через 5 минут. Если проблема сохранится - пожалуйста, напишите письмо по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
     exit();
 }
-
-include_once($CONFIG['location']."/common/core.common.php");
 
 mysql_query("SET CHARACTER SET UTF8");
 mysql_query("SET character_set_client = UTF8");

@@ -184,18 +184,15 @@ function DocHeadInit()
 	var doc_left_block=document.getElementById("doc_left_block")
 	var doc_menu_container=document.getElementById("doc_menu_container")
 	var reset_cost=document.getElementById("reset_cost")
-
+	
+	var lock_blur=0
+	var oldbg=doc_left_block.style.backgroundColor
+	
 	doc_left_block.changing=0
-
-	doc_left_block.doSave=function()
-	{
-		if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
-		doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 2000)
-	}
 
 	doc_left_block.Save=function()
 	{
-		doc_left_block.style.backgroundColor='#ff0'
+		doc_left_block.style.backgroundColor='#ff8'
 		$.ajax({
 			type:   'POST',
 			url:    '/doc.php',
@@ -210,6 +207,7 @@ function DocHeadInit()
 		doc_left_block.changing=1
 		doc_menu_container.style.display='none'
 		if(reset_cost)	reset_cost.style.display='none'
+		if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
 	}
 
 	doc_left_block.FinistEdit=function()
@@ -225,16 +223,21 @@ function DocHeadInit()
 		{
 
 			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+			var alfa=255
 			doc_left_block.timeout=window.setTimeout(function(){doc_left_block.style.backgroundColor=''}, 2000)
  			var json=eval('('+msg+')');
 			if(json.response=='err')
 			{
 				doc_left_block.style.backgroundColor='#f00'
-				jAlert(json.text,"Ошибка", {}, 'icon_err');
+				var errdiv=document.createElement('div')
+				doc_left_block.insertBefore(errdiv,doc_left_block.firstChild)
+				errdiv.className='err'
+				errdiv.style.backgroundColor='#000'
+				errdiv.innerHTML='<b>Ошибка сохранения</b><br>'+json.text
 			}
 			else if(json.response=='ok')
 			{
-				doc_left_block.style.backgroundColor='#0f0'
+				doc_left_block.style.backgroundColor='#bfa'
 				var agent_balance_info=document.getElementById("agent_balance_info")
 				agent_balance_info.innerHTML=json.agent_balance
 				if(json.agent_balance>0)	agent_balance_info.style.color='#f00'
@@ -256,37 +259,38 @@ function DocHeadInit()
 		}
 	}
 
-// 	function DocHeadFieldClick()
-// 	{
-// 		doc_left_block.doSave()
-//
-// 	}
-//
+	function obj_onclick(event)	{
+		doc_left_block.StartEdit()
+		doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 30000) // на всякий случай
+	}
 
+	function obj_onmousedown(event)
+	{
+		doc_left_block.StartEdit()
+		doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 30000) // на всякий случай
+		// Хак для предотвращения отправки формы по onblur, если фокус готовится быть переданным на select и др элемент
+		lock_blur=1
+		window.setTimeout(function() {lock_blur=0}, 60)
+	}
+	
+	obj_onblur=function(event)
+	{
+		if(lock_blur)	return
+		if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+		doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 500)
+	}
+	obj_onkeyup=function(event)
+	{
+		if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
+		//doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 3000)
+	}
 
 	doc_left_block.SetEvents=function(obj)
 	{
-		obj.onclick=function(event)
-		{
-			doc_left_block.StartEdit()
-			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
-			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 5000)
-		}
-		obj.onblur=function(event)
-		{
-			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
-			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 500)
-		}
-		obj.onсhange=function(event)
-		{
-			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
-			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 100)
-		}
-		obj.onkeyup=function(event)
-		{
-			if(doc_left_block.timeout)	window.clearTimeout(doc_left_block.timeout)
-			doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 3000)
-		}
+		obj.addEventListener( 'mousedown', obj_onmousedown, false)
+		obj.addEventListener( 'click', obj_onclick, false)
+		obj.addEventListener( 'blur', obj_onblur, false)
+		obj.addEventListener( 'keyup', obj_onkeyup, false)
 	}
 
 	var fields=doc_left_block.getElementsByTagName('input')
@@ -295,6 +299,22 @@ function DocHeadInit()
 	for(var i=0; i<fields.length; i++)	doc_left_block.SetEvents(fields[i])
 	var fields=doc_left_block.getElementsByTagName('textarea')
 	for(var i=0; i<fields.length; i++)	doc_left_block.SetEvents(fields[i])
+
+	initCalendar("datetime",true)
+	
+	if(supports_html5_storage())
+	{
+		if(localStorage['doc_left_block_hidden']=='hidden')
+		{
+			var doc_left_block=document.getElementById("doc_left_block")
+			var doc_main_block=document.getElementById("doc_main_block")
+			var doc_left_arrow=document.getElementById("doc_left_arrow")
+			doc_left_block.style.display='none'
+			doc_main_block.oldmargin=doc_main_block.style.marginLeft
+			doc_main_block.style.marginLeft=0
+			doc_left_arrow.src='/img/i_rightarrow.png'
+		}
+	}
 }
 
 function DocLeftToggle(_this)
@@ -302,18 +322,25 @@ function DocLeftToggle(_this)
 	var doc_left_block=document.getElementById("doc_left_block")
 	var doc_main_block=document.getElementById("doc_main_block")
 	var doc_left_arrow=document.getElementById("doc_left_arrow")
+	var state
 	if(doc_left_block.style.display!='none')
 	{
 		doc_left_block.style.display='none'
 		doc_main_block.oldmargin=doc_main_block.style.marginLeft
 		doc_main_block.style.marginLeft=0
 		doc_left_arrow.src='/img/i_rightarrow.png'
+		state='hidden'
 	}
 	else
 	{
 		doc_left_block.style.display=''
 		doc_main_block.style.marginLeft=doc_main_block.oldmargin
 		doc_left_arrow.src='/img/i_leftarrow.png'
+		state='show'
+	}
+	if(supports_html5_storage())
+	{
+		localStorage['doc_left_block_hidden']=state
 	}
 }
 

@@ -243,8 +243,8 @@ function FilterMenu()
 		</table>
 		<table width='400px'>
 		<tr><td>Дата от:</td><td align='right'>Дата до:</td></tr>
-		<tr><td><input type='text' name='date_from' id='datepicker_f' value=''></td>
-		<td align='right'><input type='text' name='date_to' id='datepicker_t' value=''></td></tr>
+		<tr><td><input type='text' name='date_from' id='datepicker_f' value='{$_SESSION['j_date_from']}'></td>
+		<td align='right'><input type='text' name='date_to' id='datepicker_t' value='{$_SESSION['j_date_to']}'></td></tr>
 		</table>
 		Агент:<br>
 		<input type='hidden' name='agent_id' id='agent_id' value='{$_SESSION['j_agent']}'>
@@ -331,14 +331,18 @@ function FilterMenu()
 			extraParams:{'mode':'upl'}
 			});
 
-			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
-
-			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
-			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-			$( '#datepicker_f' ).datepicker( 'setDate' , '{$_SESSION['j_date_from']}' );
-			$( '#datepicker_t' ).datepicker({showButtonPanel: true	});
-			$( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-			$( '#datepicker_t' ).datepicker( 'setDate' , '{$_SESSION['j_date_to']}' );
+// 			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
+// 
+// 			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
+// 			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+// 			$( '#datepicker_f' ).datepicker( 'setDate' , '{$_SESSION['j_date_from']}' );
+// 			$( '#datepicker_t' ).datepicker({showButtonPanel: true	});
+// 			$( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+// 			$( '#datepicker_t' ).datepicker( 'setDate' , '{$_SESSION['j_date_to']}' );
+			
+			
+			initCalendar('datepicker_f',false)
+			initCalendar('datepicker_t',false)
 		});
 
 		function agliFormat (row, i, num) {

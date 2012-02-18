@@ -2,6 +2,21 @@
 // После переработки javascript библиотеки все методы перенести сюда
 // В финальной версии убрать зависимость от jquery
 
+function supports_html5_storage() {
+	try {
+		return 'localStorage' in window && window['localStorage'] !== null;
+	} catch (e) {
+		return false;
+	}
+}
+
+function newElement(tagName, parent, className, innerHTML)	{
+	var element=document.createElement(tagName)
+	element.className=className
+	parent.appendChild(element)
+	if(innerHTML)	element.innerHTML=innerHTML
+		return element
+}
 
 // Получение координат элемента на странице
 function getOffset(elem) {
