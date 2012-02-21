@@ -48,6 +48,23 @@ mysql_query("REPAIR TABLE `doc_base`");
 mysql_query("REPAIR TABLE `doc_list`");
 mysql_query("REPAIR TABLE `doc_list_pos`");
 
+$res=mysql_query("SELECT `version` FROM `db_version`");
+if(mysql_errno())
+{
+	$text="Не удалось получить версию базы данных!\nЭто само по себе не является серьёзной ошибкой, но может указывать на нарушение целостности базы данных.\n";
+	$mail_text.=$text;
+	echo $text;
+}
+else
+{
+	$db_version=@mysql_result($res,0,0);
+	if($db_version!=MULTIMAG_REV)
+	{
+		$text="Версия базы данных не соответствует ревизии программы. Это может привести к ошибкам в работе. Версия базы: $db_version, ревизия программы: ".MULTIMAG_REV." (".MULTIMAG_VERSION.")\n";
+		$mail_text.=$text;
+		echo $text;
+	}
+}
 
 echo"Сброс остатков...";
 $res=mysql_query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`

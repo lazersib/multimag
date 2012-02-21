@@ -465,7 +465,7 @@ class doc_Zayavka extends doc_Nulltype
 			<input type=hidden name='doc' value='{$this->doc}'>
 			<input type=hidden name='opt' value='schet_email'>
 			email:<input type='text' name='email' value='$email'><br>
-			Коментарий:<br>
+			Комментарий:<br>
 			<textarea name='comm'></textarea><br>
 			<input type='submit' value='&gt;&gt;'>
 			</form>");	
@@ -917,9 +917,9 @@ class doc_Zayavka extends doc_Nulltype
 
 			<br><br>
 			<table width=800 cellspacing=0 cellpadding=0>
-			<tr><th>№<th width=450>Наименование<th>Кол-во<th>Остаток<th>Резерв<th>Масса<th>Место");
+			<tr><th>№<th width=450>Наименование<th>Цена<th>Кол-во<th>Остаток<th>Резерв<th>Масса<th>Место");
 
-			$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, `doc_list_pos`.`tovar`
+			$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`
 			FROM `doc_list_pos`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -942,7 +942,7 @@ class doc_Zayavka extends doc_Nulltype
 				$ostatok=$nxt[6];
 
 				$tmpl->AddText("<tr align=right>
-				<td>$i<td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3]<td>$ostatok<td>$rezerv<td>$mass<td>$nxt[5]");
+				<td>$i<td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[8]<td>$nxt[3]<td>$ostatok<td>$rezerv<td>$mass<td>$nxt[5]");
 
 
 			}

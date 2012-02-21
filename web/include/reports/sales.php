@@ -18,115 +18,12 @@
 //
 
 
-class Report_Sales
+class Report_Sales extends BaseGSReport
 {
 	function getName($short=0)
 	{
 		if($short)	return "По движению товара";
 		else		return "Отчёт по движению товара";
-	}
-	
-	function draw_groups_tree($level)
-	{
-		$ret='';
-		$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `name`");
-		$i=0;
-		$r='';
-		if($level==0) $r='IsRoot';
-		$cnt=mysql_num_rows($res);
-		while($nxt=mysql_fetch_row($res))
-		{
-			if($nxt[0]==0) continue;
-			$item="<label><input type='checkbox' name='g[]' value='$nxt[0]' id='cb$nxt[0]' class='cb' checked onclick='CheckCheck($nxt[0])'>$nxt[1]</label>";
-			if($i>=($cnt-1)) $r.=" IsLast";
-			$tmp=$this->draw_groups_tree($nxt[0]); // рекурсия
-			if($tmp)
-				$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container' id='cont$nxt[0]'>".$tmp.'</ul></li>';
-			else
-				$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
-			$i++;
-		}
-		return $ret;
-	}
-
-
-	function GroupSelBlock()
-	{
-		global $tmpl;
-		$tmpl->AddStyle(".scroll_block
-		{
-			max-height:		250px;
-			overflow:		auto;	
-		}
-		
-		div#sb
-		{
-			display:		none;
-			border:			1px solid #888;
-		}
-		
-		.selmenu
-		{
-			background-color:	#888;
-			width:			auto;
-			font-weight:		bold;
-			padding-left:		20px;
-		}
-		
-		.selmenu a
-		{
-			color:			#fff;
-			cursor:			pointer;	
-		}
-		
-		.cb
-		{
-			width:			14px;
-			height:			14px;
-			border:			1px solid #ccc;
-		}
-		
-		");
-		$tmpl->AddText("<script type='text/javascript'>
-		function gstoggle()
-		{
-			var gs=document.getElementById('cgs').checked;
-			if(gs==true)
-				document.getElementById('sb').style.display='block';
-			else	document.getElementById('sb').style.display='none';
-		}
-		
-		function SelAll(flag)
-		{
-			var elems = document.getElementsByName('g[]');
-			var l = elems.length;
-			for(var i=0; i<l; i++)
-			{
-				elems[i].checked=flag;
-				if(flag)	elems[i].disabled = false;
-			}
-		}
-		
-		function CheckCheck(ids)
-		{
-			var cb = document.getElementById('cb'+ids);
-			var cont=document.getElementById('cont'+ids);
-			if(!cont)	return;
-			var elems=cont.getElementsByTagName('input');
-			var l = elems.length;
-			for(var i=0; i<l; i++)
-			{
-				if(!cb.checked)		elems[i].checked=false;
-				elems[i].disabled =! cb.checked;
-			}
-		}
-		
-		</script>
-		<label><input type=checkbox name='gs' id='cgs' value='1' onclick='gstoggle()'>Выбрать группы</label><br>
-		<div class='scroll_block' id='sb'>
-		<ul class='Container'>
-		<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
-		".$this->draw_groups_tree(0)."</ul></div>");
 	}
 	
 	function Form()
@@ -135,15 +32,22 @@ class Report_Sales
 		$d_t=date("Y-m-d");
 		$d_f=date("Y-m-d",time()-60*60*24*31);
 		$tmpl->AddText("<h1>".$this->getName()."</h1>
+		<script type=\"text/javascript\">
+		function dtinit()
+		{
+			initCalendar('dt_f',false)
+			initCalendar('dt_t',false)
+		}
+		addEventListener('load',dtinit,false)	
+		</script>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='sales'>
 		<input type='hidden' name='opt' value='make'>
-		<p class='datetime'>
 		<fieldset><legend>Дата</legend>
-		С:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_f' value='$d_f'><br>
-		По:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_t' value='$d_t'>
+		С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
+		По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
 		</fieldset>
-		</p><br>
+		<br>
 		Группа товаров:<br>");
 		$this->GroupSelBlock();
 		$tmpl->AddText("

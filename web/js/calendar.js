@@ -98,6 +98,7 @@ function initCalendar(input_id, selectTime)
 			date.setDate(event.target.datevalue)
 			updateInput()
 			draw()
+			if(!selectTime)	calendar.style.display='none'
 		}
 		return false
 	}

@@ -308,7 +308,13 @@ protected function ProductCard($product)
 			$fullimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
 		}
-		else $img="<img src='/img/no_photo.png' alt='no photo'><br>";
+		else 
+		{
+			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
+				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
+			else	$img_url='/img/no_photo.png';
+			$img="<img src='$img_url' alt='no photo' style='width: 200px'><br>";
+		}
 
 		$tmpl->AddText("$img<td class='field'>Наименование:<td>{$nxt['name']}");
 		if($nxt[2])
@@ -480,7 +486,13 @@ protected function GroupList_ImageStyle($group)
 		$tmpl->AddText("<div class='vitem'><a href='$link'>");
 		if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$nxt[0].jpg"))
 				$tmpl->AddText("<img src='{$CONFIG['site']['var_data_web']}/category/$nxt[0].jpg' alt='$nxt[1]'>");
-		else		$tmpl->AddText("<img src='/img/no_photo.png' alt='Изображение не доступно'>");
+		else
+		{
+			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
+				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
+			else	$img_url='/img/no_photo.png';
+			$tmpl->AddText("<img src='$img_url' alt='Изображение не доступно'>");
+		}
 		$tmpl->AddText("</a><div><a href='$link'><b>$nxt[1]</b><br>");
 		if($nxt[2])
 		{
@@ -554,7 +566,13 @@ protected function TovList_ImageList($res, $lim)
 			$miniimg->SetY(180);
 			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='{$nxt['name']}'>";
 		}
-		else $img="<img src='/no_photo.png' alt='no photo' style='float: left; margin-right: 10px;' alt='no photo'>";
+		else
+		{
+			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
+				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
+			else	$img_url='/img/no_photo.png';
+			$img="<img src='$img_url' alt='no photo' style='float: left; margin-right: 10px; width: 135px;' alt='no photo'>";
+		}
 		$desc=$nxt['desc'];
 		if(strpos($desc,'.')!==false)
 		{

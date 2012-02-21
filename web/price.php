@@ -940,9 +940,9 @@ else if($mode=="get")
 		if($proizv) $proizv='`doc_base`.`proizv`';
 		else $proizv="''";
 
-		$pdf->Table("SELECT `doc_base`.`name`, $proizv, (`doc_base`.`id`) AS `pos_id` , `doc_base`.`cost_date`, `class_units`.`rus_name1` AS `units_name`
+		$pdf->Table("SELECT `doc_base`.`name`, $proizv, `doc_base`.`id` AS `pos_id` , `doc_base`.`cost_date`, `class_unit`.`rus_name1` AS `units_name`
 		FROM `doc_base`
-		LEFT JOIN `class_units` ON `class_units`.`id`=`doc_base`.`unit`
+		LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 		",$prop);
 
 

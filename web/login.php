@@ -156,15 +156,25 @@ function RegForm($err_target='', $err_msg='')
 
 if($mode=='')
 {
+	if(!isset($_SESSION['login_form']))
+	{
+		$_SESSION['login_form']=array();
+		$_SESSION['login_form']['login']=md5(keygen_unique(0,1,32));
+		$_SESSION['login_form']['pass']=md5(keygen_unique(0,1,32));
+		$_SESSION['login_form']['img']=md5(keygen_unique(0,1,32));
+	}
 	$opt=rcv('opt');
-	$img=rcv('img');
-	$login=rcv('login');
-	$pass=rcv('pass');
+	$img=rcv($_SESSION['login_form']['img']);
+	$login=rcv($_SESSION['login_form']['login']);
+	$pass=rcv($_SESSION['login_form']['pass']);
 	if(@$_SESSION['uid'])
 	{
 		include("user.php");
 		exit();
 	}
+	
+	
+	
 
 	// Куда переходить после авторизации
 	$from=getenv("HTTP_REFERER");
@@ -246,7 +256,7 @@ if($mode=='')
 			$m="<tr><td>
 			Введите код подтверждения, изображенный на картинке:<br>
 			<img src='kcaptcha/index.php' alt='Включите отображение картинок!'><td>
-			<input type='text' name='img'>";
+			<input type='text' name='{$_SESSION['login_form']['img']}'>";
 		else $m='';
 
 		$form_action='/login.php';
@@ -256,8 +266,12 @@ if($mode=='')
 			$qs=explode('/',$query);
 			$form_action='https://'.$host.'/login.php';
 		}
+		$s1=md5(keygen_unique(0,1,32));
+		$s2=md5(keygen_unique(0,1,32));
+		$s3=keygen_unique(0,1,32);
+		$s4=keygen_unique(0,1,32);
 		$tmpl->AddText("
-		<form method='post' action='$form_action' id='login-form'>
+		<form method='post' action='$form_action' id='login-form' name='fefe'>
 		<input type='hidden' name='opt' value='login'>
 		<table id='login-table'>
 		<tr><th colspan='2'>
@@ -266,9 +280,11 @@ if($mode=='')
 		Если у Вас их нет, вы можете <a class='wiki' href='/login.php?mode=reg'>зарегистрироваться</a>
 		<tr><td>
 		Имя:<td>
-		<input type='text' name='login' class='text' id='input_name' value='$login'><br>
+		<input type='text' name='{$_SESSION['login_form']['login']}' class='text' id='input_name' value='$login'>
+		<input type='text' name='$s1' value='$s3' style='display: none;'><br>
 		<tr><td>Пароль:<td>
-		<input type='password' name='pass' class='text'>(<a class='wiki' href='?mode=rem'>Сменить</a>)<br>$m
+		<input type='password' name='$s2' value='$s4' style='display: none;'>
+		<input type='password' name='{$_SESSION['login_form']['pass']}' class='text'>(<a class='wiki' href='?mode=rem'>Сменить</a>)<br>$m
 		<tr><td><td>
 		<button type='submit'>Вход!</button> ( <a class='wiki' href='/login.php?mode=rem'>Забыли пароль?</a> )
 		</table></form>

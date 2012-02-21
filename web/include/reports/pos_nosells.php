@@ -18,7 +18,7 @@
 //
 
 
-class Report_Pos_NoSells
+class Report_Pos_NoSells extends BaseGSReport
 {
 	function getName($short=0)
 	{
@@ -33,15 +33,21 @@ class Report_Pos_NoSells
 		$d_t=date("Y-m-d");
 		$d_f=date("Y-m-d",time()-60*60*24*31);
 		$tmpl->AddText("<h1>".$this->getName()."</h1>
+		<script type=\"text/javascript\">
+		function dtinit()
+		{
+			initCalendar('dt_f',false)
+			initCalendar('dt_t',false)
+		}
+		addEventListener('load',dtinit,false)	
+		</script>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='pos_nosells'>
 		<input type='hidden' name='opt' value='make'>
-		<p class='datetime'>
 		<fieldset><legend>Дата</legend>
-		С:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_f' value='$d_f'><br>
-		По:<input type=text id='id_pub_date_date' class='vDateField required' name='dt_t' value='$d_t'>
+		С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
+		По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
 		</fieldset>
-		</p>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>");
 	}

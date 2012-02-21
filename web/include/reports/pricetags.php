@@ -87,6 +87,45 @@ class Report_PriceTags
 		'country_fontsize'=> 5,
 		'country_align'	=> 'L'
 		);
+
+		$this->templates[]=array(
+		'name'		=> 'Увеличенный ценник',
+		'width'		=> 64,
+		'height'	=> 69,
+		'ident'		=>2,
+		'caption_height'=>6,
+		'caption_fontsize'=>10,
+		'vc_left'	=> 0,
+		'vc_top'	=> 9,
+		'vc_width'	=> 0,
+		'vc_lheight'	=> 8,
+		'vc_fontsize'	=> 26,
+		'vc_align'	=> 'C',
+		'name_left'	=> 0,
+		'name_top'	=> 27,
+		'name_width'	=> 0,
+		'name_lheight'	=> 6,
+		'name_fontsize'	=> 16,
+		'name_align'	=> 'C',
+		'price_left'	=> 0,
+		'price_top'	=> 56,
+		'price_width'	=> 0,
+		'price_lheight'	=> 7,
+		'price_fontsize'=> 24,
+		'price_align'	=> 'C',
+		'vendor_left'	=> 0,
+		'vendor_top'	=> 65,
+		'vendor_width'	=> 0,
+		'vendor_lheight'=> 4,
+		'vendor_fontsize'=> 5,
+		'vendor_align'	=> 'R',
+		'country_left'	=> 0,
+		'country_top'	=> 65,
+		'country_width'	=> 0,
+		'country_lheight'=> 4,
+		'country_fontsize'=> 5,
+		'country_align'	=> 'L'
+		);
 		
 		$this->templates[]=array(
 		'name'		=> 'Большой (для крупногабаритного товара)',

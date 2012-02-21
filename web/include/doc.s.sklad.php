@@ -490,7 +490,7 @@ class doc_s_Sklad
 			<input type='hidden' name='param' value='i'>
 			<table cellpadding='0' width='50%'>
 			<tr class='lin1'><td>Файл картнки:
-			<td><input type='hidden' name='MAX_FILE_SIZE' value='6000000'><input name='userfile' type='file'>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='8000000'><input name='userfile' type='file'>
 			<tr class='lin0'><td>Название картинки:
 			<td><input type='text' name='nm' value='photo_$pos'><br>
 			Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
@@ -1168,9 +1168,9 @@ class doc_s_Sklad
 		else if($param=='i')
 		{
 			$id=0;
-			$max_size=5000;
-			$min_pix=100;
-			$max_pix=6000;
+			$max_size=8000;
+			$min_pix=150;
+			$max_pix=10000;
 			global $CONFIG;
 			$nm=rcv('nm');
 			$set_def=rcv('set_def');
@@ -1687,7 +1687,7 @@ class doc_s_Sklad
 			$sf=1;
 		}
 
-		$tmpl->AddText("</table><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.gif' alt=''> Добавить</a>");
+		$tmpl->AddText("</table><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
 
 		if($sf==0)
 			$tmpl->msg("По данным критериям товаров не найдено!");

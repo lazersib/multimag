@@ -202,7 +202,7 @@ class doc_s_Agent
 			}
 			$dish_checked=$nxt[25]?'checked':'';
 			$tmpl->AddText("</select>
-			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросоветсный агент</label>
+			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
 			<tr class='lin1'><td align='right'>Относится к<td>
 			<input type='hidden' name='p_agent' id='agent_id' value='$nxt[26]'>
 			<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 50%;' value='$pagent_name'>
