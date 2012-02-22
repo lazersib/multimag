@@ -48,6 +48,7 @@ class SearchPage
 		$res=mysql_query($sql);
 		if(mysql_errno())	throw new MysqlException("Не удалось сделать выборку товаров");
 		$found_cnt=0;
+		$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
 		if($row=mysql_num_rows($res))
 		{
 			$ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
@@ -68,7 +69,7 @@ class SearchPage
 				if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
 				$ret.="<tr><td><a href='$link'>$nxt[1] $nxt[2]</a>
 				<td>$nxt[3]<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
-				<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='/img/i_korz.png' alt='В корзину!'></a>";
+				<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>";
 				$found_cnt++;
 			}
 			$ret.="</table><span style='color:#888'>Серая цена</span> требует уточнения<br>";

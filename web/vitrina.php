@@ -232,7 +232,8 @@ protected function ViewGroup($group, $page)
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 		$tmpl->AddText("<div style='float: right'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
 	$tmpl->SetTitle("$nxt[0]");
-	$tmpl->AddText('<h1>'.$this->GetVitPath($nxt[1])." / $nxt[0]</h1>");
+	$tmpl->AddText("<h1 id='page-title'>$nxt[0]</h1>");
+	$tmpl->AddText("<div class='breadcrumb'>".$this->GetVitPath($nxt[1])."</div>");
 	if($nxt[2])
 	{
 		$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
@@ -308,7 +309,7 @@ protected function ProductCard($product)
 			$fullimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
 		}
-		else 
+		else
 		{
 			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
 				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
