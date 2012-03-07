@@ -1713,7 +1713,7 @@ class doc_s_Sklad
 		$cost_max=rcv('cost_max');
 		$li_min=rcv('li_min');
 		$li_max=rcv('li_max');
-		$type=rcv('type');
+		$type=getpost('type');
 
 		if($opt=='' || $opt=='s')
 		{
@@ -1736,10 +1736,11 @@ class doc_s_Sklad
 			<div id='proizv_p' class='dd'></div>
 			<td><select name='type' id='pos_type'>");
 			$res=mysql_query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
+			$tmpl->AddText("<option value='null'>--не выбрано--</option>");
 			while($nx=mysql_fetch_row($res))
 			{
 				$ii="";
-				if($nx[0]==$type) $ii=" selected";
+				if($nx[0]===$type) $ii=" selected";
 				$tmpl->AddText("<option value='$nx[0]' $ii>$nx[0] - $nx[1]</option>");
 			}
 
@@ -1813,9 +1814,7 @@ class doc_s_Sklad
 			if($cost_max)	$sql.="AND `doc_base`.`cost` <= '$cost_max'";
 			if($type)	$sql.="AND `doc_base_dop`.`type` = '$type'";
 
-
 			$sql.="ORDER BY `doc_base`.`name`";
-
 
 			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 			//$nheader_add=$_SESSION['sklad_cost']?'<th>Выб. цена':'';
