@@ -1,0 +1,17 @@
+SET UNIQUE_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=0;
+SET SQL_MODE='TRADITIONAL';
+
+CREATE TABLE `site`.`attachments` (
+`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`original_filename` VARCHAR( 64 ) NOT NULL ,
+`comment` VARCHAR( 256 ) NOT NULL
+) ENGINE = InnoDB DEFAULT CHARSET=utf8 COMMENT = 'Прикреплённые файлы';
+
+
+
+START TRANSACTION;
+TRUNCATE `db_version`;
+INSERT INTO `db_version` (`version`) VALUES (322);
+
+COMMIT;

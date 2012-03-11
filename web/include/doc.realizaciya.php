@@ -2025,8 +2025,11 @@ function SfakPDF($doc, $to_str=0)
 			}
 		}
 	}
-	$str = iconv('UTF-8', 'windows-1251', $str);
-	$pdf->Cell(0,$step,$str,0,1,'L');
+	if($str)
+	{
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell(0,$step,$str,0,1,'L');
+	}
 	$str = iconv('UTF-8', 'windows-1251', "Валюта: наименование, код: Российский рубль, 643");
 	$pdf->Cell(0,$step,$str,0,1,'L');
 
@@ -2162,33 +2165,6 @@ function SfakPDF($doc, $to_str=0)
 	{
 		if(!$nxt[11])	throw new Exception("Не допускается печать счёта-фактуры без указания страны происхождения товара");
 
-		if($this->doc_data[12])
-		{
-			$cena = $nxt[4]/(1+$nds);
-			$stoimost = $cena*$nxt[3];
-			$nalog = ($nxt[4]*$nxt[3])-$stoimost;
-			$snalogom = $nxt[4]*$nxt[3];
-		}
-		else
-		{
-			$cena = $nxt[4];
-			$stoimost = $cena*$nxt[3];
-			$nalog = $stoimost*$nds;
-			$snalogom = $stoimost+$nalog;
-		}
-
-		$i=1-$i;
-		$ii++;
-
-		$cena =		sprintf("%01.2f", $cena);
-		$stoimost =	sprintf("%01.2f", $stoimost);
-		$nalog = 	sprintf("%01.2f", $nalog);
-		$snalogom =	sprintf("%01.2f", $snalogom);
-
-		$sum+=$snalogom;
-		$sumnaloga+=$nalog;
-
-		$gtd='';
 		$pdf->SetFont('','',8);
 		if(@$CONFIG['poseditor']['true_gtd'])
 		{
@@ -2210,12 +2186,65 @@ function SfakPDF($doc, $to_str=0)
 
 			foreach($unigtd as $gtd => $cnt)
 			{
-				$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
+				if($this->doc_data[12])
+				{
+					$cena = $nxt[4]/(1+$nds);
+					$stoimost = $cena*$cnt;
+					$nalog = ($nxt[4]*$cnt)-$stoimost;
+					$snalogom = $nxt[4]*$cnt;
+				}
+				else
+				{
+					$cena = $nxt[4];
+					$stoimost = $cena*$cnt;
+					$nalog = $stoimost*$nds;
+					$snalogom = $stoimost+$nalog;
+				}
+
+				$i=1-$i;
+				$ii++;
+
+				$cena =		sprintf("%01.2f", $cena);
+				$stoimost =	sprintf("%01.2f", $stoimost);
+				$nalog = 	sprintf("%01.2f", $nalog);
+				$snalogom =	sprintf("%01.2f", $snalogom);
+
+				$sum+=$snalogom;
+				$sumnaloga+=$nalog;
+				
+				
+				$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
 				$pdf->RowIconv($row);
 			}
 		}
 		else
 		{
+			if($this->doc_data[12])
+			{
+				$cena = $nxt[4]/(1+$nds);
+				$stoimost = $cena*$nxt[3];
+				$nalog = ($nxt[4]*$nxt[3])-$stoimost;
+				$snalogom = $nxt[4]*$nxt[3];
+			}
+			else
+			{
+				$cena = $nxt[4];
+				$stoimost = $cena*$nxt[3];
+				$nalog = $stoimost*$nds;
+				$snalogom = $stoimost+$nalog;
+			}
+
+			$i=1-$i;
+			$ii++;
+
+			$cena =		sprintf("%01.2f", $cena);
+			$stoimost =	sprintf("%01.2f", $stoimost);
+			$nalog = 	sprintf("%01.2f", $nalog);
+			$snalogom =	sprintf("%01.2f", $snalogom);
+
+			$sum+=$snalogom;
+			$sumnaloga+=$nalog;
+			
 			$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
 			$pdf->RowIconv($row);
 		}

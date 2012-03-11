@@ -97,7 +97,6 @@ class doc_Zayavka extends doc_Nulltype
 
 	function PrintForm($doc, $opt='')
 	{
-		$doc=$this->doc;
 		if($opt=='')
 		{
 			global $tmpl;
@@ -105,19 +104,19 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=komplekt'\">Накладная на комплектацию</div>			
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_pdf'\">Счёт</div>		
-			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_email'); return false;\">Счёт PDF по e-mail</div>			
-			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=schet_ue'); return false;\">Счёт в у.е.</div>	
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_email'); return false;\">Счёт PDF по e-mail</div>			
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_ue'); return false;\">Счёт в у.е.</div>	
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=csv_export'\">Экспорт в CSV</div>");
 		}
 		else if($opt=='schet')
-			$this->PrintSchet($doc);
+			$this->PrintSchet();
 		else if($opt=='schet_ue')
 		{
 			global $tmpl;
 			$tmpl->ajax=1;
 			$tmpl->AddText("<form action=''>
 			<input type='hidden' name='mode' value='print'>
-			<input type='hidden' name='doc' value='$doc'>
+			<input type='hidden' name='doc' value='{$this->doc}'>
 			<input type='hidden' name='opt' value='schet_ue_p'>
 			1 рубль = <input type='text' name='c' value='1'> у.е.
 			<input type='submit' value='&gt;&gt;'>
@@ -126,16 +125,16 @@ class doc_Zayavka extends doc_Nulltype
 		else if($opt=='schet_ue_p')
 		{
 			$coeff=rcv('c');
-			$this->PrintSchetUE($doc,$coeff);
+			$this->PrintSchetUE($coeff);
 		}
 		else if($opt=='schet_pdf')
-			$this->PrintPDF($doc);
+			$this->PrintPDF();
 		else if($opt=='schet_email')
 			$this->SendEmail();
 		else if($opt=='komplekt')
-			$this->PrintKomplekt($doc);
+			$this->PrintKomplekt();
 		else if($opt=='csv_export')
-			$this->CSVExport($doc);
+			$this->CSVExport();
 		else $tmpl->logger("Запрошена неизвестная опция!");
 	}
 	// Формирование другого документа на основании текущего
@@ -143,17 +142,16 @@ class doc_Zayavka extends doc_Nulltype
 	{
 		global $tmpl;
 		global $uid;
-		$doc=$this->doc;
 
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
 			$tmpl->AddText("
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=t2'\">Реализация</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=2'\">Реализация (старый метод)</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=15'\">Оперативная реализация</div>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=t2'\">Реализация</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=2'\">Реализация (старый метод)</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=15'\">Оперативная реализация</div>");
 		}
 		else if($target_type=='t2')
 		{
@@ -258,7 +256,7 @@ class doc_Zayavka extends doc_Nulltype
 		}
 	}
    	
-	function Service($doc)
+	function Service()
 	{
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
@@ -344,13 +342,12 @@ class doc_Zayavka extends doc_Nulltype
 		return $r_id;
 	}
 
-	function PrintSchet($doc)
+	function PrintSchet()
 	{
-		get_docdata($doc);
 		global $tmpl, $CONFIG, $uid;
 
 		if(0)
-		//if(!$doc_data[6])
+		//if(!$this->doc_data[6])
 		{
 			doc_menu(0,0);
 			$tmpl->AddText("<h1>Печать счёта</h1>");
@@ -397,7 +394,7 @@ class doc_Zayavka extends doc_Nulltype
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			WHERE `doc_list_pos`.`doc`='$doc'
+			WHERE `doc_list_pos`.`doc`='{$this->doc}'
 			ORDER BY `doc_list_pos`.`id`");
 			$i=0;
 			$sum=$summass=0;
@@ -474,21 +471,20 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$comm=rcv('comm');
 			doc_menu();
-			$this->SendDocEMail($email, $comm, 'Счёт', $this->PrintPDF($doc, 1), "invoice.pdf");
+			$this->SendDocEMail($email, $comm, 'Счёт', $this->PrintPDF(1), "invoice.pdf");
 			$tmpl->msg("Сообщение отправлено!","ok");
 		}
 		
 	}
 	
-	function PrintSchetUE($doc, $coeff)
+	function PrintSchetUE($coeff)
 	{
-		get_docdata($doc);
 		global $tmpl, $CONFIG, $uid;
 		
 		if($coeff==0) $coeff=1;
 
 		if(0)
-		//if(!$doc_data[6])
+		//if(!$this->doc_data[6])
 		{
 			doc_menu(0,0);
 			$tmpl->AddText("<h1>Печать счёта</h1>");
@@ -539,7 +535,7 @@ class doc_Zayavka extends doc_Nulltype
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			WHERE `doc_list_pos`.`doc`='$doc'
+			WHERE `doc_list_pos`.`doc`='{$this->doc}'
 			ORDER BY `doc_list_pos`.`id`");
 			$i=0;
 			$sum=$summass=0;
@@ -590,7 +586,7 @@ class doc_Zayavka extends doc_Nulltype
 		}		
 	}
 	
-	function PrintPDF($doc, $to_str=0)
+	function PrintPDF($to_str=0)
 	{
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
 		require('fpdf/fpdf_mysql.php');
@@ -749,7 +745,7 @@ class doc_Zayavka extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='$doc'
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$sum=$summass=0;
@@ -889,9 +885,8 @@ class doc_Zayavka extends doc_Nulltype
 	}
 
 
-	function PrintKomplekt($doc)
+	function PrintKomplekt()
 	{
-		get_docdata($doc);
 		global $tmpl;
 		global $uid;
 
@@ -925,7 +920,7 @@ class doc_Zayavka extends doc_Nulltype
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
-			WHERE `doc_list_pos`.`doc`='$doc'
+			WHERE `doc_list_pos`.`doc`='{$this->doc}'
 			ORDER BY `doc_list_pos`.`id`");
 			$i=0;
 			$summass=0;
@@ -937,7 +932,7 @@ class doc_Zayavka extends doc_Nulltype
 				$smcost = sprintf("%01.2f", $sm);
 				$mass=sprintf("%0.3f",$nxt[4]);
 
-				$rezerv=DocRezerv($nxt[7],$doc);
+				$rezerv=DocRezerv($nxt[7],$this->doc);
 
 				$ostatok=$nxt[6];
 
@@ -972,7 +967,7 @@ class doc_Zayavka extends doc_Nulltype
 		}
 	}
 	
-	function CSVExport($doc)
+	function CSVExport()
 	{
 		global $tmpl;
 		global $uid;
@@ -991,7 +986,7 @@ class doc_Zayavka extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='$doc'
+// 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$sum=$summass=0;

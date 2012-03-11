@@ -90,35 +90,35 @@ div.photomini
 
 div.err
 {
-    width: 93%;
-    BORDER: #ee0000 1px solid;
-    FONT-SIZE: 14px;
-    text-align: center;
-    vertical-align: middle;
-    color: #ee0000 ;
-    padding: 10px;
+	width: auto;
+	border: #ee0000 1px solid;
+	font-size: 14px;
+	text-align: center;
+	vertical-align: middle;
+	color: #ee0000 ;
+	padding: 10px;
 }
 
 div.ok
 {
-    width: 93%;
-    BORDER: #009900 1px solid;
-    FONT-SIZE: 14px;
-    text-align: center;
-    vertical-align: middle;
-    color: #009900 ;
-    padding: 10px;
+	width: auto;
+	border: #009900 1px solid;
+	font-size: 14px;
+	text-align: center;
+	vertical-align: middle;
+	color: #009900 ;
+	padding: 10px;
 }
 
 div.notify
 {
-    width: 93%;
-    BORDER: #999900 1px solid;
-    FONT-SIZE: 14px;
-    text-align: center;
-    vertical-align: middle;
-    color: #009900 ;
-    padding: 10px;
+	width: auto;
+	border: #999900 1px solid;
+	font-size: 14px;
+	text-align: center;
+	vertical-align: middle;
+	color: #009900 ;
+	padding: 10px;
 }
 
 #sdata

@@ -125,6 +125,7 @@ div.calendar table.time td {
 
 div.calendar table.time td:hover {
 	border:			1px solid #000;
+	background-color:	#ff8;
 }
 
 div.calendar div.footer {

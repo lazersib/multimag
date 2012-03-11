@@ -71,6 +71,8 @@ mysql_query("SET character_set_client = UTF8");
 mysql_query("SET character_set_results = UTF8");
 mysql_query("SET character_set_connection = UTF8");
 
+header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
+
 $ip=getenv("REMOTE_ADDR");
 $ag=getenv("HTTP_USER_AGENT");
 $rf=getenv("HTTP_REFERER");

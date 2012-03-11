@@ -52,9 +52,6 @@ class Foo
 
 $tmpl=new Foo();
 
-
-include_once($CONFIG['site']['location'].'/include/price_analyze.inc.php');
-
 $file=file("http://export.rbc.ru/free/cb.0/free.fcgi?period=DAILY&lastdays=0&separator=%2C&data_format=BROWSER");
 if(!$file)
 {

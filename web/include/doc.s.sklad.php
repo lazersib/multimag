@@ -507,7 +507,11 @@ class doc_s_Sklad
 			WHERE `doc_base_img`.`pos_id`='$pos'");
 			while($nxt=@mysql_fetch_row($res))
 			{
-				$tmpl->AddText("<img src='{$CONFIG['site']['var_data_web']}/pos/$nxt[0].$nxt[1]'><br>
+				$miniimg=new ImageProductor($nxt[0],'p', $nxt[1]);
+				$miniimg->SetX(175);
+				$img="<img src='".$miniimg->GetURI()."' width='175'>";
+				
+				$tmpl->AddText("$img<br>
 				<a href='?mode=esave&amp;l=sklad&amp;param=i_d&amp;pos=$pos&amp;img=$nxt[0]'>Убрать ассоциацию</a><br><br>");
 			}
 		}
@@ -1122,8 +1126,6 @@ class doc_s_Sklad
 			$strana=rcv('strana');
 			$ntd=rcv('ntd');
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
-			// ЭТОГ ЧТО ТАКОЕ?
-			//$res=mysql_query("UPDATE `doc_base` SET `analog`='$analog', `koncost`='$koncost', `type`='$type', `d_int`='$d_int', `d_ext`='$d_ext', `size`='$size', `mass`='$mass', `strana`='$strana' $i WHERE `id`='$pos'");
 
 			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `strana`, `ntd`) VALUES ('$pos', '$analog', '$koncost', '$type', '$d_int', '$d_ext', '$size', '$mass', '$strana', '$ntd')");
 
@@ -1499,10 +1501,11 @@ class doc_s_Sklad
 	{
 		global $tmpl;
 		$tmpl->AddText("
+		Отбор:<input type='text' id='sklsearch' onkeydown=\"DelayedSave('/docs.php?mode=srv&amp;opt=pl','sklad', 'sklsearch'); return true;\" >
 		<div onclick='tree_toggle(arguments[0])'>
 		<div><a href='' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=0','sklad'); return false;\" >Группы</a>  (<a href='/docs.php?l=sklad&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
 		<ul class='Container'>".$this->draw_level($select,0)."</ul></div>
-		Или отбор:<input type='text' id='sklsearch' onkeydown=\"DelayedSave('/docs.php?mode=srv&amp;opt=pl','sklad', 'sklsearch'); return true;\" >
+		
 		");
 
 	}
@@ -1934,7 +1937,7 @@ function DrawSkladTable($res,$s)
 		<li><a {$sel['d']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=d&amp;pos=$pos'>Дополнительные</a></li>
 		<li><a {$sel['a']} href='/docs.php?l=pran&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Анализатор</a></li>
 		<li><a {$sel['s']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=s&amp;pos=$pos'>Состояние складов</a></li>
-		<li><a {$sel['i']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=i&amp;pos=$pos'>Изображения</a></li>
+		<li><a {$sel['i']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=i&amp;pos=$pos'>Картинки и файлы</a></li>
 		<li><a {$sel['c']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=c&amp;pos=$pos'>Цены</a></li>
 		<li><a {$sel['k']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=k&amp;pos=$pos'>Комплектующие</a></li>
 		<li><a {$sel['l']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=l&amp;pos=$pos'>Связи</a></li>

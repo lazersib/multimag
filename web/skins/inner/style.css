@@ -1,3 +1,268 @@
+body
+{
+	margin: 0;
+	padding: 0;
+	font-family: verdana, arial, helvetica, sans-serif;
+	font-size: 80%;
+	color: #000;
+	background-color: #fff;
+}
+
+input
+{
+	vertical-align:middle;
+	padding:0.3ex;
+	margin:0.5ex;
+	border:	1px solid #ccc;
+	-moz-border-radius:	4px;
+	border-radius:		4px;
+}
+
+textarea
+{
+	border:	1px solid #ccc;
+	background-color:#fcfcfc;
+	margin:1ex;
+	padding:1ex;
+	width: 90%;
+	height: 100px;
+	-moz-border-radius:	4px;
+	border-radius:		4px;
+}
+
+select
+{
+	border:	1px solid #ccc;
+	-moz-border-radius:	4px;
+	border-radius:		4px;
+}
+
+form
+{
+	margin:1ex;
+	padding:0
+}
+
+hr
+{
+	height: 1px;
+	border-width: 1px 0 0 0;
+	border-style: solid;
+	border-color: #ccc;
+}
+
+a, a:link, a:visited, a:active
+{
+	color:#0066CC;
+	background:transparent;
+	text-decoration:none;
+}
+
+a:hover
+{
+	color:#0066CC;
+	background:transparent;
+	text-decoration:underline;
+}
+
+h1, h2, h3, h4, h5, h6
+{
+	margin: 1.2em 0em 1.2em 0em;
+	font-weight: normal;
+	color:rgb(39,78,144);
+	background-color:transparent;
+}
+
+h1
+{
+	font-size: 2.0em;
+	margin-top: 0em;
+	margin-bottom: 0em;
+}
+
+h2
+{
+	font-size: 1.7em;
+}
+
+h3
+{
+	font-size: 1.4em;
+}
+
+h4
+{
+	font-size: 1.2em;
+}
+
+h5
+{
+	font-size: 1.0em;
+}
+h6
+{
+	font-size: 0.8em;
+}
+
+ol, ul, li
+{
+	font-size: 1.0em;
+	line-height: 1.8em;
+	margin-top: 0.2em;
+	margin-bottom: 0.1em;
+}
+
+p
+{
+	font-size: 1.0em;
+	line-height: 1.8em;
+	margin: 1.2em 0em 1.2em 0em;
+}
+
+li > p
+{
+	margin-top: 0.2em;
+}
+
+dt, dd
+{
+	font-size: 1.0em;
+	line-height: 1.8em;
+	margin-top: 0.2em;
+	margin-bottom: 0.1em;
+}
+
+pre, code {
+	font-family: monospace;
+	font-size: 1.1em;
+	line-height:1.5em;
+}
+
+acronym, cite
+{
+	border-bottom: 1px dotted rgb(153,153,153);
+	cursor: help;
+	margin: 0;
+	padding: 0 0 0.4px 0;
+	white-space:normal;
+}
+
+strong, b
+{
+	font-weight: bold;
+}
+
+img
+{
+	border: none 0px #ffffff;
+}
+
+table th
+{
+	BACKGROUND-COLOR: #6488DC;
+	color: #fff;
+	text-align: center;
+	font-weight: bold;
+}
+
+
+/* My styles !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+div.err
+{
+	margin:	3px;
+	width: auto;
+	BORDER: #ee0000 1px solid;
+	FONT-SIZE: 14px;
+	text-align: center;
+	vertical-align: middle;
+	color: #ee0000 ;
+	padding: 10px;
+}
+
+div.ok
+{
+	margin:	3px;
+	width: auto;
+	BORDER: #009900 1px solid;
+	FONT-SIZE: 14px;
+	text-align: center;
+	vertical-align: middle;
+	color: #009900 ;
+	padding: 10px;
+}
+
+div.notify
+{
+	margin:	3px;
+	width: auto;
+	BORDER: #999900 1px solid;
+	FONT-SIZE: 14px;
+	text-align: center;
+	vertical-align: middle;
+	color: #009900 ;
+	padding: 10px;
+}
+
+.f_green
+{
+	font-weight: bold;
+	COLOR: #00cc00;
+}
+
+.f_purple
+{
+	font-weight: bold;
+	COLOR: #cc00cc;
+}
+
+.f_brown
+{
+	font-weight: bold;
+	COLOR: #773300;
+}
+
+.f_more
+{
+	font-weight: bold;
+	COLOR: #28a488;
+}
+
+.f_red
+{
+	font-weight: bold;
+	COLOR: #ff0000;
+}
+
+.f_blue
+{
+	font-weight: bold;
+	COLOR: #0000ff;
+}
+
+.b_green
+{
+	BACKGROUND-COLOR: #aaffaa;
+}
+
+.b_red
+{
+	BACKGROUND-COLOR: #ffaaaa;
+}
+
+.b_selection
+{
+	BACKGROUND-COLOR: #A9D1FF;
+}
+
+input.tedit
+{
+	width:			55px;
+	margin:			0px;
+	border:			0px none;
+	text-align:		right;
+}
+
 
 
 div#wiki-wrap {
@@ -397,3 +662,191 @@ ul.tabs li a.selected
 	box-shadow: 		2px -2px 5px rgba(0,0,0,0.4);
 	-moz-box-shadow:	2px -2px 5px rgba(0,0,0,0.4);
 }
+
+div.contextmenu
+{
+	background-color:	#f5f5f5;
+	color:			#000;
+	border:			1px #bbb solid;
+	min-width:		200px;
+	position: 		absolute;  
+	display: 		block;
+	padding:		4px;
+	min-width:		200px;
+	text-align:		left;
+}
+
+div.contextmenu div
+{
+	margin:			1px;
+	padding:		3px;
+	padding-left:		8px;
+	border:			0px none;
+	background-color:	#f5f5f5;
+	color:			#000;
+	height:			18px;
+	border:			1px #f5f5f5 solid;
+	text-align:		left;
+	vertical-align:		middle;
+	text-decoration:	none;
+	cursor:			pointer;
+	list-style-type:	none;
+}
+
+div.contextmenu div:hover
+{
+	border:			1px #9af solid;
+	background-color:	#def;
+	text-decoration:	none;
+}
+
+div.contextmenu div.disabled
+{
+	cursor:			default;
+	border:			0px none;
+	color:			#aaa;
+}
+
+div.contextmenu div.disabled:hover
+{
+	background-color:	#f5f5f5;
+	
+}
+
+div.context_menu a:hover
+{
+	text-decoration:	none;
+}
+
+table.list tr
+{
+	background-color:	#f0f8ff;
+}
+
+table.list tr td
+{
+	border-right:		#e0f0ff 1px solid;
+	padding:		1px 3px 1px 3px;
+}
+
+table.list tr:nth-child(odd)
+{
+	background-color:	#e0f0ff;
+}
+
+table.list tr:nth-child(odd) td
+{
+	border-right: #fff 1px solid;
+}
+
+.searchblock
+{
+	background-color: #e0f0ff;
+	width:	95%;
+	height:	100px;
+	margin:	10px;
+	padding:5px;
+	border: 1px rgb(39,78,144) solid;
+}
+
+.searchblock h1
+{
+	margin: 4px;
+	margin-left: 10px;
+	padding: 0px;
+}
+
+.searchblock .sp
+{
+	width: 90%;
+}
+
+/* Строка меню документов */
+#doc_menu
+{
+	background-color:	#e0f0ff;
+	width:			auto;
+	padding:		4px;
+	height:			25px;
+}
+
+#doc_menu_r
+{
+	float:			right;
+}
+/* Новый вид документов */
+
+#doc_left_block
+{
+	float:			left;
+	background-color:	#e0f0ff;
+	width:			310px;
+	padding:		5px;
+	font-size:		12px;
+}
+
+#doc_left_block  input[type=text]
+{
+	padding:	1px;
+	margin:		0px;
+}
+
+#doc_left_block select
+{
+	width:	100%;
+}
+
+#doc_head_main
+{
+	border-spacing: 0px;
+}
+
+
+
+#doc_head_main input
+{
+	border:			1px solid #ccc;
+	-moz-border-radius:	4px;
+	border-radius:		4px;
+	padding:		3px;
+}
+
+#doc_head_main .altnum
+{
+	width:	80px;
+}
+
+#doc_head_main .altnum input
+{
+	width:	50px;
+}
+
+#doc_head_main .subtype
+{
+	width:	70px;
+	text-align:	center;
+}
+
+#doc_head_main .subtype input
+{
+	width:	45px;
+}
+
+#doc_head_main .datetime
+{
+	width:	160px;
+	text-align:	right;
+}
+
+#doc_head_main .datetime input
+{
+	width:	150px;
+}
+
+
+#doc_main_block
+{
+	margin-left:		320px;
+	border-left:		1px solid #ccc;
+}
+
