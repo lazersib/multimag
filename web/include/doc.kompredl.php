@@ -707,11 +707,11 @@ class doc_Kompredl extends doc_Nulltype
 			//$pdf->Cell($t_width[0],5,$i,1,0,'R',0);
 			$name=$nxt[0].' '.$nxt[1];
 			if($nxt[2]) $name.='('.$nxt[2].')';
-			$name = iconv('UTF-8', 'windows-1251', $name);
+			$name = iconv('UTF-8', 'windows-1251', unhtmlentities($name));
 			//$pdf->Cell($t_width[1],5,$name,1,0,'L',0);
-			$analog = iconv('UTF-8', 'windows-1251', $nxt[4]);
+			$analog = iconv('UTF-8', 'windows-1251', unhtmlentities($nxt[4]));
 			//$pdf->Cell($t_width[2],5,$analog,1,0,'L',0);
-			$desc = iconv('UTF-8', 'windows-1251', $nxt[5]);
+			$desc = iconv('UTF-8', 'windows-1251', unhtmlentities($nxt[5]));
 			//$pdf->Cell($t_width[3],5,$desc,1,0,'L',0);
 			$cost = iconv('UTF-8', 'windows-1251', $cost);
 			//$pdf->Cell($t_width[4],5,$cost,1,0,'R',0);

@@ -25,7 +25,7 @@ class Report_Revision_Act
 		if($short)	return "Акт сверки";
 		else		return "Акт сверки взаимных расчетов";
 	}
-	
+
 
 	function Form()
 	{
@@ -45,7 +45,7 @@ class Report_Revision_Act
 		<input type='hidden' name='mode' value='revision_act'>
 		Агент-партнёр:<br>
 		<input type='hidden' name='agent_id' id='agent_id' value=''>
-		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>		
+		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
 		<p class='datetime'>
 		Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10'><br>
 		Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$date_end' maxlength='10'></p><br>
@@ -55,17 +55,17 @@ class Report_Revision_Act
 		while($nx=mysql_fetch_row($rs))
 		{
 			if($CONFIG['site']['default_firm']==$nx[0]) $s=' selected'; else $s='';
-			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");		
-		}		
+			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");
+		}
 		$tmpl->AddText("</select><br>
 		Подтип документа (оставьте пустым, если учитывать не требуется):<br>
 		<input type='text' name='subtype'><br>
 		<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
-		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>		
+		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>
 		<button type='submit'>Сформировать отчет</button></form>
-		
+
 		<script type='text/javascript'>
-		
+
 		$(document).ready(function(){
 			$(\"#ag\").autocomplete(\"/docs.php\", {
 			delay:300,
@@ -75,13 +75,13 @@ class Report_Revision_Act
 			selectFirst:true,
 			matchContains:1,
 			cacheLength:10,
-			maxItemsToShow:15, 	 
+			maxItemsToShow:15,
 			formatItem:agliFormat,
 			onItemSelect:agselectItem,
 			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
 			});
 			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
-			
+
 			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
 			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
 			$( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
@@ -100,10 +100,10 @@ class Report_Revision_Act
 			else var sValue = li.selectValue;
 			document.getElementById('agent_id').value=sValue;
 		}
-		
-		</script>");	
+
+		</script>");
 	}
-	
+
 	function Make($opt='html')
 	{
 		global $tmpl;
@@ -126,13 +126,13 @@ class Report_Revision_Act
 			$pdf->tMargin=10;
 			$pdf->AddPage('P');
 		}
-		
+
 		$firm_id=rcv('firm_id');
 		$subtype=rcv('subtype');
 		$date_st=strtotime(rcv('date_st'));
 		$date_end=strtotime(rcv('date_end'))+60*60*24-1;
 		$agent_id=rcv('agent_id');
-		
+
 		settype($firm_id,'int');
 		if($firm_id)
 		{
@@ -146,11 +146,11 @@ class Report_Revision_Act
 		if(mysql_errno())		throw new MysqlException("Не удалось получить данные агента");
 		if(mysql_num_rows($res)==0)	throw new Exception("Не указан агент $agent_id!");
 		list($agent, $fn, $dir_fio)=mysql_fetch_row($res);
-		
+
 		$sql_add='';
 		if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
 		if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`date`, `doc_list`.`sum`, `doc_list`.`altnum`, `doc_types`.`name`
 		FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
@@ -176,31 +176,33 @@ class Report_Revision_Act
 		else if($opt=='pdf')
 		{
 			$firm_vars['firm_name']=unhtmlentities($firm_vars['firm_name']);
-			$agent['fullname']=unhtmlentities($agent['fullname']);	
+			$agent['fullname']=unhtmlentities($agent['fullname']);
+			$fn=unhtmlentities($fn);
+			$dir_fio=unhtmlentities($dir_fio);
 			$pdf->SetFont('Arial','',16);
 			$str = iconv('UTF-8', 'windows-1251', $this->getName());
-			$pdf->Cell(0,6,$str,0,1,'C',0);			
-			
+			$pdf->Cell(0,6,$str,0,1,'C',0);
+
 			$str="от {$firm_vars['firm_name']}\nза период с ".date("d.m.Y",$date_st)." по ".date("d.m.Y",$date_end);
 			$pdf->SetFont('Arial','',10);
 			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->MultiCell(0,4,$str,0,'C',0);
 			$pdf->Ln(2);
-			$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и директор $fn $dir_fio, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";			
-			$str = iconv('UTF-8', 'windows-1251', $str);	
+			$str="Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и директор $fn $dir_fio, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";
+			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->Write(5,$str,'');
-			
+
 			$pdf->Ln(8);
 			$y=$pdf->GetY();
 			$base_x=$pdf->GetX();
 			$pdf->SetLineWidth(0.5);
 			$t_width=array(17,44,17,17,17,44,17,0);
 			$t_text=array('Дата', 'Операция', 'Дебет', 'Кредит', 'Дата', 'Операция', 'Дебет', 'Кредит');
-			
+
 			$h_width=$t_width[0]+$t_width[1]+$t_width[2]+$t_width[3];
 			$str1=iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
 			$str2=iconv('UTF-8', 'windows-1251', "По данным $fn");
-						
+
 			$pdf->MultiCell($h_width,5,$str1,0,'L',0);
 			$max_h=$pdf->GetY()-$y;
 			$pdf->SetY($y);
@@ -223,10 +225,10 @@ class Report_Revision_Act
 			$pdf->SetFont('','',8);
 		}
 		$pr=$ras=0;
-		$f_print=false;		
+		$f_print=false;
 		while($nxt=mysql_fetch_array($res))
 		{
-			$deb=$kr="";				
+			$deb=$kr="";
 			if( ($nxt[2]>=$date_st) && (!$f_print) )
 			{
 				$f_print=true;
@@ -243,7 +245,7 @@ class Report_Revision_Act
 				else  $pr=$ras='';
 				if($pr)	$pr=sprintf("%01.2f", $pr);
 				if($ras)$ras=sprintf("%01.2f", $ras);
-				
+
 				if($opt=='html')
 				{
 					$tmpl->AddText("<tr><td colspan=2>Сальдо на начало периода<td>$ras<td>$pr<td><td><td><td>");
@@ -312,7 +314,7 @@ class Report_Revision_Act
 				if($deb) $deb=sprintf("%01.2f", $deb);
 				if($kr) $kr=sprintf("%01.2f", $kr);
 				$dt=date("d.m.Y",$nxt[2]);
-				
+
 				if($opt=='html')	$tmpl->AddText("<tr><td>$dt<td>$nxt[5] N$nxt[4]<td>$deb<td>$kr<td><td><td><td>");
 				else if($opt=='pdf')
 				{
@@ -329,14 +331,14 @@ class Report_Revision_Act
 				}
 			}
 		}
-		
+
 		$razn=$pr-$ras;
 		$razn_p=abs($razn);
 		$razn_p=sprintf("%01.2f", $razn_p);
-		
+
 		$pr=sprintf("%01.2f", $pr);
 		$ras=sprintf("%01.2f", $ras);
-		
+
 		if($opt=='html')
 		{
 			$tmpl->AddText("<tr><td colspan=2>Обороты за период<td>$ras<td>$pr<td><td><td><td>");
@@ -352,7 +354,7 @@ class Report_Revision_Act
 			$pdf->Cell($t_width[7],4,'',1,0,'L',0);
 			$pdf->Ln();
 		}
-		
+
 		if($pr>$ras)
 		{
 			$pr-=$ras;
@@ -366,7 +368,7 @@ class Report_Revision_Act
 		else  $pr=$ras='';
 		if($pr)	$pr=sprintf("%01.2f", $pr);
 		if($ras)$ras=sprintf("%01.2f", $ras);
-		
+
 		if($opt=='html')
 		{
 			$tmpl->AddText("<tr><td colspan=2>Сальдо на конец периода<td>$ras<td>$pr<td colspan=4>
@@ -381,7 +383,7 @@ class Report_Revision_Act
 			<td colspan=4>От $fn<br>
 			директор<br> ____________________________ ($dir_fio)<br><br>м.п.<br>
 			</table>");
-			
+
 		}
 		else if($opt=='pdf')
 		{
@@ -399,7 +401,7 @@ class Report_Revision_Act
 			if($razn>0)		$str="переплата в пользу ".$firm_vars['firm_name']." $razn_p руб.";
 			else	if($razn<0) 	$str="задолженность в пользу ".$firm_vars['firm_name']." $razn_p руб.";
 			else			$str="переплат и задолженностей нет!";
-			
+
 			$str=iconv('UTF-8', 'windows-1251', $str);
 			$pdf->Write(4,$str);
 			$pdf->Ln(7);
@@ -410,20 +412,20 @@ class Report_Revision_Act
 			$str=iconv('UTF-8', 'windows-1251', "От $fn\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
 			$pdf->lMargin=$x;
 			$pdf->setX($x);
-			
+
 			$pdf->setY($y);
 			$pdf->MultiCell(0,5,$str,0,'L',0);
 			$pdf->Ln();
 			$pdf->Output('akt_sverki.pdf','I');
 		}
-		
-		
+
+
 	}
-	
+
 	function Run($opt)
 	{
 		if($opt=='')		$this->Form();
-		else if(($opt=='html')||($opt=='pdf'))	$this->Make($opt);	
+		else if(($opt=='html')||($opt=='pdf'))	$this->Make($opt);
 	}
 };
 

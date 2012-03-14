@@ -675,9 +675,22 @@ class doc_Realizaciya extends doc_Nulltype
 
 		$tmpl->AddText("<h1>Наценки N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
-		<b>Покупатель: </b>{$this->doc_data[3]}<br><br>");
+		<b>Покупатель: </b>{$this->doc_data[3]}<br>");
 
-		$tmpl->AddText("
+		$res=mysql_query("SELECT `users`.`name`, `users`.`rname` FROM `doc_list`
+		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+		WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}' AND `doc_list`.`type`='3'");
+		if(mysql_errno())			throw new MysqlException('Ошибка выбоки автора заявки');
+		if(mysql_num_rows($res))
+		{
+			list($aname, $arname)=mysql_fetch_row($res);
+			if($arname)	$arname.=' ('.$aname.')';
+			else		$arname=$aname;
+			$tmpl->AddText("<b>Автор заявки: </b>$arname<br>");
+		}
+		else echo $this->doc;
+
+		$tmpl->AddText("<br>
 		<table width=800 cellspacing=0 cellpadding=0>
 		<tr><th>№</th><th width=450>Наименование<th>Кол-во<th>Стоимость<th>Сумма<th>АЦП<th>Наценка<th>Сумма наценки<th>П/закуп<th>Разница<th>Сумма разницы</tr>");
 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `class_unit`.`rus_name1` AS `units`, `doc_list_pos`.`tovar`
@@ -687,6 +700,7 @@ class doc_Realizaciya extends doc_Nulltype
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
+		if(mysql_errno())			throw new MysqlException('Ошибка выбоки товаров документа!');
 		$i=0;
 		$ii=1;
 		$sum=$snac=$srazn=$cnt=0;
@@ -702,10 +716,11 @@ class doc_Realizaciya extends doc_Nulltype
 
 			$r=mysql_query("SELECT `doc_list`.`date`, `doc_list_pos`.`cost` FROM `doc_list_pos`
 			LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-			WHERE `doc_list`.`ok`>'0' AND `doc_list`.`type`='1' AND `doc_list_pos`.`tovar`='$nxt[6]'
+			WHERE `doc_list`.`ok`>'0' AND `doc_list`.`type`='1' AND `doc_list_pos`.`tovar`='$nxt[6]' AND `doc_list`.`date`<'{$this->doc_data['date']}'
 			ORDER BY `doc_list`.`date` DESC");
-			echo mysql_error();
-			$zakup=sprintf('%0.2f',mysql_result($r,0,1));
+			if(mysql_errno())			throw new MysqlException('Ошибка поиска поступления');
+			if(mysql_num_rows($r))		$zakup=sprintf('%0.2f',mysql_result($r,0,1));
+			else				$zakup=0;
 			$razn=sprintf('%0.2f',$cost-$zakup);
 			$sum_razn=sprintf('%0.2f',$razn*$nxt[3]);
 			$srazn+=$sum_razn;
@@ -2131,15 +2146,15 @@ function SfakPDF($doc, $to_str=0)
 		$pdf->Cell($w,4,$t3_text[$i-1],1,0,'C',0);
 		$i++;
 	}
-	
+
 	$pdf->SetWidths($t_all_width);
-	
+
 	$font_sizes=array();
 	$font_sizes[0]=8;
 	$font_sizes[11]=7;
 	$pdf->SetFSizes($font_sizes);
 	$pdf->SetHeight(4);
-	
+
 	$aligns=array('L','R','R','R','R','R','C','R','R','R','R','L','R');
 	$pdf->SetAligns($aligns);
 
@@ -2211,8 +2226,8 @@ function SfakPDF($doc, $to_str=0)
 
 				$sum+=$snalogom;
 				$sumnaloga+=$nalog;
-				
-				
+
+
 				$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
 				$pdf->RowIconv($row);
 			}
@@ -2244,7 +2259,7 @@ function SfakPDF($doc, $to_str=0)
 
 			$sum+=$snalogom;
 			$sumnaloga+=$nalog;
-			
+
 			$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
 			$pdf->RowIconv($row);
 		}

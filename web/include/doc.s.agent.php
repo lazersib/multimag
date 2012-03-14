@@ -26,7 +26,7 @@ class doc_s_Agent
 	{
 		global $tmpl;
 		doc_menu(0,0);
-		
+
 		$sklad=rcv('sklad');
 		settype($sklad,'int');
 		if($sklad) $_SESSION['sklad_num']=$sklad;
@@ -39,7 +39,7 @@ class doc_s_Agent
 		$this->ViewList();
 		$tmpl->AddText("</table>");
 	}
-	
+
 	function Service()
 	{
 		global $tmpl;
@@ -57,7 +57,7 @@ class doc_s_Agent
 		}
 		else if($opt=='ep')
 		{
-			$this->Edit();			
+			$this->Edit();
 		}
 		else if($opt=='acost')
 		{
@@ -98,11 +98,11 @@ class doc_s_Agent
 		}
 		else $tmpl->msg("Неверный режим!");
 	}
-		
+
 // Служебные функции класса
 	function Edit()
 	{
-		global $tmpl;		
+		global $tmpl;
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -114,7 +114,7 @@ class doc_s_Agent
 		{
 			$this->PosMenu($pos, $param);
 		}
-		
+
 		if($param=='')
 		{
 			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`
@@ -122,9 +122,9 @@ class doc_s_Agent
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Выборка информации об агенте не удалась");
 			$nxt=@mysql_fetch_row($res);
-			
+
 			$pagent_name='';
-			
+
 			if(!$nxt)	$tmpl->AddText("<h3>Новая запись</h3>");
 			else if($nxt[26]>0)
 			{
@@ -137,7 +137,7 @@ class doc_s_Agent
 			<input type=hidden name=l value=agent>
 			<input type=hidden name=pos value=$pos>
 			<tr class=lin0><td align=right width=20%>Наименование
-			<td><input type=text name='pos_name' value='$nxt[1]'> 
+			<td><input type=text name='pos_name' value='$nxt[1]'>
 			<tr class=lin1><td align=right>Тип:
 			<td>");
 			if($nxt[2]==0)
@@ -148,7 +148,7 @@ class doc_s_Agent
 			else
 			{
 				$tmpl->AddText("<label><input type='radio' name='type' value='0'>Физическое лицо</label><br>
-				<label><input type='radio' name='type' value='1' checked>Юридическое лицо</label>");	
+				<label><input type='radio' name='type' value='1' checked>Юридическое лицо</label>");
 			}
 			$tmpl->AddText("
 			<tr class=lin0><td align=right>Группа
@@ -156,20 +156,20 @@ class doc_s_Agent
 
 			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
 			$tmpl->AddText("<option value='0' $i>--</option>");
-			
+
 			$res=mysql_query("SELECT * FROM `doc_agent_group`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$i="";
-				
+
 				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
 				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
 			}
-			
+
 			$ext='';
 			$rights=getright('doc_agent_ext',@$_SESSION['uid']);
 			if(! $rights['write']) $ext='disabled';
-				
+
 			$tmpl->AddText("</select>
 			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='$nxt[3]'>
 			<tr class=lin0><td align=right>Полное название / ФИО:<td><input type=text name='fullname' value='$nxt[4]'>
@@ -198,7 +198,7 @@ class doc_s_Agent
 			{
 				$s='';
 				if($nxt[21]==$nx[0])	$s='selected';
-				$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");				
+				$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");
 			}
 			$dish_checked=$nxt[25]?'checked':'';
 			$tmpl->AddText("</select>
@@ -218,19 +218,19 @@ class doc_s_Agent
 					selectFirst:true,
 					matchContains:1,
 					cacheLength:10,
-					maxItemsToShow:15, 
+					maxItemsToShow:15,
 					formatItem:agliFormat,
 					onItemSelect:agselectItem,
 					extraParams:{'l':'agent','mode':'srv','opt':'ac'}
 				});
 			});
-			
+
 			function agliFormat (row, i, num) {
 				var result = row[0] + \"<em class='qnt'>тел. \" +
 				row[2] + \"</em> \";
 				return result;
 			}
-			
+
 			function agselectItem(li) {
 				if( li == null ) var sValue = \"Ничего не выбрано!\";
 				if( !!li.extra ) var sValue = li.extra[0];
@@ -241,7 +241,7 @@ class doc_s_Agent
 			<tr class=lin0><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
 
 			<tr class=lin1><td><td><input type=submit value='Сохранить'>
-			
+
 			</table></form>");
 
 		}
@@ -260,7 +260,7 @@ class doc_s_Agent
 			Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
 			<tr class=lin1><td>Дополнительно:
 			<td><label><input type='checkbox' name='set_def' value='1'>Установить по умолчанию</label>
-			<tr class=lin0><td colspan=2 align=center>        	
+			<tr class=lin0><td colspan=2 align=center>
 			<input type='submit' value='Сохранить'>
 			</table>
 			</form><h2>Ассоциированные с товаром картинки</h2>");
@@ -271,7 +271,7 @@ class doc_s_Agent
 			while($nxt=@mysql_fetch_row($res))
 			{
 				$tmpl->AddText("<img src='img/t/$nxt[0].$nxt[1]'><br>");
-			}			
+			}
 		}
 		else if($param=='h')
 		{
@@ -291,7 +291,7 @@ class doc_s_Agent
 		// Правка описания группы
 		else if($param=='g')
 		{
-			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` 
+			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid`
 			FROM `doc_agent_group`
 			WHERE `id`='$group'");
 			@$nxt=mysql_fetch_row($res);
@@ -311,17 +311,17 @@ class doc_s_Agent
 			<tr class=lin1>
 			<td>Описание:
 			<td><textarea name='desc'>$nxt[2]</textarea>
-			<tr class=lin0><td colspan=2 align=center>        	
+			<tr class=lin0><td colspan=2 align=center>
 			<input type='submit' value='Сохранить'>
 			</table>
 			</form>");
 		}
 		else $tmpl->msg("Неизвестная закладка");
-		
+
 	}
 	function ESave()
 	{
-		global $tmpl, $CONFIG;	
+		global $tmpl, $CONFIG;
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -330,7 +330,7 @@ class doc_s_Agent
 		if($pos!=0)
 		{
 			//$this->PosMenu($pos, $param);
-			
+
 		}
 
 		if($param=='')
@@ -339,10 +339,10 @@ class doc_s_Agent
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_error())	throw new Exception("Невозможно получить данные агента!");
 			$ag_info=@mysql_fetch_assoc($res);
-			
+
 			$log_text='';
 			$log_start='U_MOT';
-			
+
 			$pos_name=rcv('pos_name');
 			$type=rcv('type');
 			$g=rcv('g');
@@ -375,12 +375,11 @@ class doc_s_Agent
 				settype($p_agent,'int');
 			}
 			else $p_agent='NULL';
-			
+
 			settype($g,'int');
-			settype($bik,'int');
 			settype($responsible,'int');
 			settype($dishonest,'int');
-			
+
 			if($pos_name!=$ag_info['name'])		$log_text.="name: ( {$ag_info['name']} => $pos_name ), ";
 			if($type!=$ag_info['type'])		$log_text.="type: ( {$ag_info['type']} => $type ), ";
 			if($g!=$ag_info['group'])		$log_text.="group: ( {$ag_info['group']} => $g ), ";
@@ -391,7 +390,7 @@ class doc_s_Agent
 			if($gruzopol!=$ag_info['gruzopol'])	$log_text.="gruzopol: ( {$ag_info['gruzopol']} => $gruzopol ), ";
 			if($inn!=$ag_info['inn'])		$log_text.="inn: ( {$ag_info['inn']} => $inn ), ";
 			if($rs!=$ag_info['rs'])			$log_text.="rs: ( {$ag_info['rs']} => $rs ), ";
-			if($ks!=$ag_info['ks'])			$log_text.="ks: ( {$ag_info['ks']} => $ks ), ";			
+			if($ks!=$ag_info['ks'])			$log_text.="ks: ( {$ag_info['ks']} => $ks ), ";
 			if($okevd!=$ag_info['okevd'])		$log_text.="okevd: ( {$ag_info['okevd']} => $okevd ), ";
 			if($okpo!=$ag_info['okpo'])		$log_text.="okpo: ( {$ag_info['okpo']} => $okpo ), ";
 			if($bank!=$ag_info['bank'])		$log_text.="bank: ( {$ag_info['bank']} => $bank ), ";
@@ -407,15 +406,15 @@ class doc_s_Agent
 			if($dishonest!=$ag_info['dishonest'])	$log_text.="dishonest: ( {$ag_info['dishonest']} => $dishonest ), ";
 			if(!$ag_info['p_agent'])	$ag_info['p_agent']='NULL';
 			if($p_agent!=$ag_info['p_agent'])	$log_text.="p_agent: ( {$ag_info['p_agent']} => $p_agent ), ";
-			
+
 			if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $email)) && ($email!='') )
 			{
 				$tmpl->msg("Неверный e-mail! Данные не сохранены!","err");
-			}	
+			}
 			else if($pos)
 			{
 				$log_start='UPDATE';
-			
+
 				$sql_add='';
 				$rights=getright('doc_agent_ext',@$_SESSION['uid']);
 				if($rights['write'])
@@ -430,9 +429,9 @@ class doc_s_Agent
 				$tmpl->msg("Данные обновлены!");
 			}
 			else
-			{	
+			{
 				$log_start='CREATE';
-				
+
 				$sql_c=$sql_v='';
 				$rights=getright('doc_agent_ext',@$_SESSION['uid']);
 				$uid=@$_SESSION['uid'];
@@ -449,7 +448,7 @@ class doc_s_Agent
 					$tmpl->msg("Добавлена новая запись!");
 				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
 			}
-			
+
 			doc_log($log_start.' agent', $log_text, 'AGENT', $pos);
 		}
 		else if($param=='i')
@@ -477,7 +476,7 @@ class doc_s_Agent
 						$tmpl->msg("Слишком большой файл! Допустимо не более $max_size кб!");
 					else
 					{
-						$iminfo=getimagesize($_FILES['userfile']['tmp_name']);						
+						$iminfo=getimagesize($_FILES['userfile']['tmp_name']);
 						switch ($iminfo[2])
 						{
 							case IMAGETYPE_JPEG: $imtype='jpg'; break;
@@ -501,9 +500,9 @@ class doc_s_Agent
 					}
 				}
 			}
-			
+
 			//mysql_query("INSERT INTO `doc_base_img` (`pos_id`, `img_id`, `default`) VALUES ('$pos', '$img_id', '$set_def')");
-		
+
 		}
 		else if($param=='g')
 		{
@@ -513,15 +512,15 @@ class doc_s_Agent
 			if(!isAccess('list_agent','edit'))	throw new AccessException("");
 			if($group)
 				$res=mysql_query("UPDATE `doc_agent_group` SET `name`='$name', `desc`='$desc', `pid`='$pid' WHERE `id` = '$group'");
-			else 
+			else
 				$res=mysql_query("INSERT INTO `doc_agent_group` (`name`, `desc`, `pid`)
-				VALUES ('$name', '$desc', '$pid')"); 
+				VALUES ('$name', '$desc', '$pid')");
 			if($res) $tmpl->msg("Сохранено!");
 			else $tmpl->msg("Ошибка!".mysql_error(),"err");
 		}
 		else $tmpl->msg("Неизвестная закладка");
-	}	
-	
+	}
+
 	function draw_level($select, $level)
 	{
 		$ret='';
@@ -534,9 +533,9 @@ class doc_s_Agent
 		{
 			if($nxt[0]==0) continue;
 			$item="<a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&g=$nxt[0]','list'); return false;\" >$nxt[1]</a>";
-	
+
 			if($i>=($cnt-1)) $r.=" IsLast";
-	
+
 			$tmp=$this->draw_level($select, $nxt[0]); // рекурсия
 			if($tmp)
 				$ret.="
@@ -550,8 +549,8 @@ class doc_s_Agent
 		}
 		return $ret;
 	}
-	
-	
+
+
 	function draw_groups($select)
 	{
 		global $tmpl;
@@ -569,11 +568,11 @@ class doc_s_Agent
 		if($group)
 		{
 			$res=mysql_query("SELECT `desc` FROM `doc_agent_group` WHERE `id`='$group'");
-			$g_desc=mysql_result($res,0,0);		
+			$g_desc=mysql_result($res,0,0);
 			if($g_desc) $tmpl->AddText("<h4>$g_desc</h4>");
 		}
-        
-		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest` 
+
+		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest`
 		FROM `doc_agent`
 		LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
 		WHERE `doc_agent`.`group`='$group'
@@ -605,7 +604,7 @@ class doc_s_Agent
 			}
 			$tmpl->AddText("<br>");
 			$sl=($page-1)*$lim;
-	
+
 			$res=mysql_query("$sql LIMIT $sl,$lim");
 		}
 
@@ -623,7 +622,7 @@ class doc_s_Agent
 		<a href='/docs.php?l=agent&mode=edit&param=g&g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
 		<a href='/docs.php?l=agent&mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
 	}
-	
+
 	function ViewListS($group=0,$s)
 	{
 		global $tmpl;
@@ -631,7 +630,7 @@ class doc_s_Agent
 		$tmpl->AddText("<b>Показаны записи изо всех групп!</b><br>");
 		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Название<th>Телефон<th>e-mail<th>Дополнительно");
-		        
+
 		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `doc_agent`.`dishonest` FROM `doc_agent`";
 
         	$sqla=$sql."WHERE `doc_agent`.`name` LIKE '$s%' OR `doc_agent`.`fullname` LIKE '$s%' ORDER BY `doc_agent`.`name` LIMIT 30";
@@ -642,7 +641,7 @@ class doc_s_Agent
 			$this->DrawTable($res,$s);
 			$sf=1;
 		}
-		
+
 		$sqla=$sql."WHERE (`doc_agent`.`name` LIKE '%$s%' OR `doc_agent`.`fullname` LIKE '%$s%') AND (`doc_agent`.`name` NOT LIKE '$s%' AND `doc_agent`.`fullname` NOT LIKE '$s%') ORDER BY `doc_agent`.`name` LIMIT 30";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
@@ -651,13 +650,13 @@ class doc_s_Agent
 			$this->DrawTable($res,$s);
 			$sf=1;
 		}
-		
+
 		$tmpl->AddText("</table><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
-		
+
 		if($sf==0)
 			$tmpl->msg("По данным критериям записей не найдено!");
 	}
-	
+
 	function Search()
 	{
 		global $tmpl;
@@ -690,7 +689,7 @@ class doc_s_Agent
 			<td><input type=text name='rs'>
 			<td><input type=text name='kont'>
 			<td><input type=text name='pasp_num'>
-			
+
 			<tr>
 			<td colspan=5 align=center><input type='submit' value='Найти'>
 			</table>
@@ -708,10 +707,10 @@ class doc_s_Agent
 			$rs=rcv('rs');
 			$kont=rcv('kont');
 			$pasp_num=rcv('pasp_num');
-			
+
 			$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`
 			FROM `doc_agent` WHERE 1 ";
-			
+
 			if($name)	$sql.="AND (`doc_agent`.`name` LIKE '%$name%' OR `doc_agent`.`fullname` LIKE '%$name%')";
 			if($mail)	$sql.="AND `doc_agent`.`email` LIKE '%$mail%'";
 			if($inn)	$sql.="AND `doc_agent`.`inn` LIKE '%$inn%'";
@@ -722,10 +721,10 @@ class doc_s_Agent
 			if($pasp_num)	$sql.="AND `doc_base_dop`.`size` LIKE '%$pasp_num%'";
 
 			$sql.=" ORDER BY `doc_agent`.`name`";
-			
+
 			$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 			<th>№<th>Название<th>Телефон<th>e-mail<th>Дополнительно");
-			
+
 			$res=mysql_query($sql);
 			echo mysql_error();
 			if($cnt=mysql_num_rows($res))
@@ -737,7 +736,7 @@ class doc_s_Agent
 			$tmpl->AddText("</table>");
 		}
 	}
-	
+
 	function DrawTable($res,$s)
 	{
 		global $tmpl;
@@ -745,7 +744,7 @@ class doc_s_Agent
 		while($nxt=mysql_fetch_array($res))
 		{
 			$nxt[2]=SearchHilight($nxt[2],$s);
-			$i=1-$i;		
+			$i=1-$i;
 			if($nxt[5]) $info=$nxt[7];
 			else $info=$nxt[6];
 			$info=SearchHilight($info,$s);
@@ -753,23 +752,23 @@ class doc_s_Agent
 			if($nxt[4]) $nxt[4]="<a href='mailto:$nxt[4]'>$nxt[4]</a>";
 			$tmpl->AddText("<tr class='lin$i pointer' align='right' $red>
 			<td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a><td align=left>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$info<td>$nxt[8]");
-		}	
+		}
 	}
-	
+
 	function PosMenu($pos, $param)
 	{
 		global $tmpl;
 		$sel=array('v'=>'','h'=>'');
 		if($param=='')	$param='v';
 		$sel[$param]="class='selected'";
-		
+
 		$tmpl->AddText("<ul class='tabs'>
 		<li><a {$sel['v']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Основные</a></li>
 		<li><a {$sel['h']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
-		
+
 		</ul>");
 	}
-	
+
 };
 
 
