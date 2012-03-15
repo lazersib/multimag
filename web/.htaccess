@@ -11,6 +11,7 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^wiki(.*)$ wiki.php [L,QSA]
 RewriteRule ^vitrina(.*)$ vitrina.php [L,QSA]
+RewriteRule ^attachments(.*)$ attachments.php [L,QSA]
 RewriteRule ^sitemap.xml sitemap.php?mode=xml [L,QSA]
 RewriteRule ^robots.txt sitemap.php?mode=robots [L,QSA]
 RewriteRule ^favicon.ico sitemap.php?mode=favicon [L,QSA]

@@ -364,6 +364,23 @@ protected function ProductCard($product)
 				$tmpl->AddText("<tr><td class='field'>$params[0]:<td>$params[1]</tr>");
 			}
 		}
+		
+		$att_res=mysql_query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
+		FROM `doc_base_attachments`
+		LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
+		WHERE `doc_base_attachments`.`pos_id`='$product'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список прикреплённых файлов");
+		if(mysql_num_rows($att_res)>0)
+		{
+			$tmpl->AddText("<tr><th colspan='3'>Прикреплённые файлы</th></tr>");
+			while($anxt=@mysql_fetch_row($att_res))
+			{
+				if($CONFIG['site']['recode_enable'])	$link="/attachments/{$anxt[0]}/$anxt[1]";
+				else					$link="/attachments.php?att_id={$anxt[0]}";
+				$tmpl->AddText("<tr><td><a href='$link'>$anxt[1]</td></td><td>$anxt[2]</td></tr>");
+			}
+		}
+		
 		$tmpl->AddText("<tr><td colspan='3'>
 		<form action='/vitrina.php'>
 		<input type='hidden' name='mode' value='korz_add'>

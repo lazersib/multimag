@@ -142,6 +142,35 @@ class ipv6
 	}
 }
 
+function get_max_upload_filesize()
+{
+    $max_post = trim(ini_get('post_max_size'));
+    $last = strtolower($max_post[strlen($max_post)-1]);
+    switch($last) {
+        // The 'G' modifier is available since PHP 5.1.0
+        case 'g':
+            $max_post *= 1024;
+        case 'm':
+            $max_post *= 1024;
+        case 'k':
+            $max_post *= 1024;
+    }
+    
+    $max_fs = trim(ini_get('upload_max_filesize'));
+    $last = strtolower($max_fs[strlen($max_fs)-1]);
+    switch($last) {
+        // The 'G' modifier is available since PHP 5.1.0
+        case 'g':
+            $max_fs *= 1024;
+        case 'm':
+            $max_fs *= 1024;
+        case 'k':
+            $max_fs *= 1024;
+    }
+    
+
+    return min($max_fs, $max_post);
+}
 
 function exception_handler($exception)
 {

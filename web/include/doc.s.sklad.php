@@ -483,14 +483,28 @@ class doc_s_Sklad
 		// Изображения
 		else if($param=='i')
 		{
-			$tmpl->AddText("<form action='' method='post' enctype='multipart/form-data'>
+			$max_fs=get_max_upload_filesize();
+			$max_img_size=min(8*1024*1204,$max_fs);
+			if($max_img_size>1024*1024)	$max_img_size=($max_img_size/(1024*1024)).' Мб';
+			else if($max_img_size>1024)	$max_img_size=($max_img_size/(1024)).' Кб';
+			else				$max_img_size.='байт';
+			$max_fs_size=$max_fs;
+			if($max_fs_size>1024*1024)	$max_fs_size=($max_fs_size/(1024*1024)).' Мб';
+			else if($max_fs_size>1024)	$max_fs_size=($max_fs_size/(1024)).' Кб';
+			else				$max_fs_size.='байт';
+			
+			$tmpl->AddText("
+			<table>
+			<tr><th width='50%'>Изображения</th><th width='50%'>Прикреплённые файлы</th></tr>
+			<tr><td valign='top'>
+			<form action='' method='post' enctype='multipart/form-data'>
 			<input type='hidden' name='mode' value='esave'>
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='pos' value='$pos'>
 			<input type='hidden' name='param' value='i'>
-			<table cellpadding='0' width='50%'>
+			<table cellpadding='0'>
 			<tr class='lin1'><td>Файл картнки:
-			<td><input type='hidden' name='MAX_FILE_SIZE' value='8000000'><input name='userfile' type='file'>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br><small>Не более $max_img_size, разрешение от 150*150 до 10000*10000, форматы JPG, PNG, допустим, но не рекомендуется GIF</small>
 			<tr class='lin0'><td>Название картинки:
 			<td><input type='text' name='nm' value='photo_$pos'><br>
 			Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
@@ -514,6 +528,38 @@ class doc_s_Sklad
 				$tmpl->AddText("$img<br>
 				<a href='?mode=esave&amp;l=sklad&amp;param=i_d&amp;pos=$pos&amp;img=$nxt[0]'>Убрать ассоциацию</a><br><br>");
 			}
+			$tmpl->AddText("</td><td valign='top'>
+			<form action='' method='post' enctype='multipart/form-data'>
+			<input type='hidden' name='mode' value='esave'>
+			<input type='hidden' name='l' value='sklad'>
+			<input type='hidden' name='pos' value='$pos'>
+			<input type='hidden' name='param' value='i_a'>
+			<table cellpadding='0'>
+			<tr class='lin1'><td>Прикрепляемый файл:
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br><small>Не более $max_fs_size</small>
+			<tr class='lin0'><td>Описание файла (до 128 символов):
+			<td><input type='text' name='comment' value='Инструкция для $pos'><br>
+			<small>Если написать описание файла, которое уже есть в базе, то соответствующий файл и будет установлен, вне зависимости от того, передан он или нет.</small>
+			<tr class='lin1'><td colspan='2' align='center'>
+			<input type='submit' value='Сохранить'>
+			</table>
+			<table class='list' width='100%'>
+			<tr><th colspan='4'>Прикреплённые файлы</th></tr>
+			");
+			$res=mysql_query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
+			FROM `doc_base_attachments`
+			LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
+			WHERE `doc_base_attachments`.`pos_id`='$pos'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список прикреплённых файлов");
+			while($nxt=@mysql_fetch_row($res))
+			{
+				if($CONFIG['site']['recode_enable'])	$link="/attachments/{$nxt[0]}/$nxt[1]";
+				else					$link="/attachments.php?att_id={$nxt[0]}";
+				$tmpl->AddText("<tr><td>$nxt[0]</td><td><a href='$link'>$nxt[1]</td></td><td>$nxt[2]</td><td><a href='?mode=esave&amp;l=sklad&amp;param=i_ad&amp;pos=$pos&amp;att=$nxt[0]' title='Убрать ассоциацию'><img src='/img/i_del.png' alt='Убрать ассоциацию'></a></td></tr>");
+			}
+			$tmpl->AddText("
+			</table>
+			</td></tr></table>");
 		}
 		// Цены
 		else if($param=='c')
@@ -1170,7 +1216,8 @@ class doc_s_Sklad
 		else if($param=='i')
 		{
 			$id=0;
-			$max_size=8000;
+			$max_fs=get_max_upload_filesize();
+			$max_img_size=min(8*1024*1204,$max_fs);
 			$min_pix=150;
 			$max_pix=10000;
 			global $CONFIG;
@@ -1186,11 +1233,11 @@ class doc_s_Sklad
 			else
 			{
 				if($_FILES['userfile']['size']<=0)
-					$tmpl->msg("Забыли выбрать картинку?");
+					$tmpl->msg("Файл не получен. Возможно он не был выбран, либо его размер превышает максимально допустимый сервером.",'err');
 				else
 				{
-					if($_FILES['userfile']['size']>$max_size*1024)
-						$tmpl->msg("Слишком большой файл! Допустимо не более $max_size кб!");
+					if($_FILES['userfile']['size']>$max_img_size)
+						$tmpl->msg("Слишком большой файл! Допустимо не более $max_img_size байт!",'err');
 					else
 					{
 						$iminfo=getimagesize($_FILES['userfile']['tmp_name']);
@@ -1201,11 +1248,11 @@ class doc_s_Sklad
 							case IMAGETYPE_GIF: $imtype='gif'; break;
 							default: $imtype='';
 						}
-						if(!$imtype) $tmpl->msg("Файл - не картинка, или неверный формат файла. Рекомендуется PNG и JPG, допустим но не рекомендуется GIF.");
+						if(!$imtype) $tmpl->msg("Файл - не картинка, или неверный формат файла. Рекомендуется PNG и JPG, допустим но не рекомендуется GIF.",'err');
 						else if(($iminfo[0]<$min_pix)||($iminfo[1]<$min_pix))
-						$tmpl->msg("Слишком мелкая картинка! Минимальный размер - $min_pix пикселей!");
+						$tmpl->msg("Слишком мелкая картинка! Минимальный размер - $min_pix пикселей!",'err');
 						else if(($iminfo[0]>$max_pix)||($iminfo[1]>$max_pix))
-						$tmpl->msg("Слишком большая картинка! Максимальный размер - $max_pix пикселей!");
+						$tmpl->msg("Слишком большая картинка! Максимальный размер - $max_pix пикселей!",'err');
 						else
 						{
 							mysql_query("START TRANSACTION");
@@ -1226,7 +1273,67 @@ class doc_s_Sklad
 					}
 				}
 			}
-			if($img_id)	mysql_query("INSERT INTO `doc_base_img` (`pos_id`, `img_id`, `default`) VALUES ('$pos', '$img_id', '$set_def')");
+			if($img_id)
+			{
+				if($set_def)	mysql_query("UPDATE `doc_base_img` SET `default`='0' WHERE `pos_id`='$pos'");
+				mysql_query("INSERT INTO `doc_base_img` (`pos_id`, `img_id`, `default`) VALUES ('$pos', '$img_id', '$set_def')");
+				doc_log("UPDATE","Add image (id:$img_id)", 'pos', $pos);
+			}
+
+		}
+		else if($param=='i_a')
+		{
+			$attachment_id=0;
+			global $CONFIG;
+			$comment=rcv('comment');
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
+			mysql_query("START TRANSACTION");
+			$res=mysql_query("SELECT `id` FROM `attachments` WHERE `comment`='$comment'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить коментарии");
+			if(mysql_num_rows($res))
+			{
+				$attachment_id=mysql_result($res,0,0);
+				$tmpl->msg("Этот файл найден, N $attachment_id","info");
+			}
+			else
+			{
+				if($_FILES['userfile']['size']<=0)	throw new Exception("Файл не получен. Возможно он не был выбран, либо его размер превышает максимально допустимый сервером");
+				
+				$filename = $_FILES['userfile']['name'];
+				$filename = str_replace("#", "Hash.", $filename);
+				$filename = str_replace("$", "Dollar", $filename);
+				$filename = str_replace("%", "Percent", $filename);
+				$filename = str_replace("^", "", $filename);
+				$filename = str_replace("&", "and", $filename);
+				$filename = str_replace("*", "", $filename);
+				$filename = str_replace("?", "", $filename);
+				$filename = str_replace("'", "", $filename);
+				$filename = str_replace("\"", "", $filename);
+				$filename = str_replace(" ", "_", $filename);
+				$filename = mysql_real_escape_string($filename);
+				$comment = mysql_real_escape_string($comment);
+				mysql_query("INSERT INTO `attachments` (`original_filename`, `comment`)	VALUES ('$filename', '$comment')");
+				if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию о файле в базу данных");
+				$attachment_id=mysql_insert_id();
+				if(!$attachment_id)	throw new MysqlException("Не удалось получить ID строки");
+				if(!file_exists($CONFIG['site']['var_data_fs'].'/attachments/'))
+				{
+					if(!mkdir($CONFIG['site']['var_data_fs'].'/attachments/', 0777, true))	throw new Exception("Не удалось создать директорию для прикреплённых файлов. Вероятно, права доступа установлены неверно.");
+				}
+				else if(!is_dir($CONFIG['site']['var_data_fs'].'/attachments/'))	throw new Exception("Вместо директории для прикреплённых файлов обнаружен файл. Обратитесь к администратору.");
+				
+				if(!move_uploaded_file($_FILES['userfile']['tmp_name'], $CONFIG['site']['var_data_fs'].'/attachments/'.$attachment_id))
+					throw new Exception("Не удалось сохранить файл");
+				$tmpl->msg("Файл загружен, ID:$attachment_id","info");
+			}
+			if($attachment_id)
+			{
+				mysql_query("INSERT INTO `doc_base_attachments` (`pos_id`, `attachment_id`) VALUES ('$pos', '$attachment_id')");
+				if(mysql_errno())	throw new MysqlException("Не удалось внести запись о прикреплении файла");
+			}
+			
+			mysql_query("COMMIT");
+			doc_log("UPDATE","Add attachment (id:$attachment_id, $filename, $comment)", 'pos', $pos);
 
 		}
 		else if($param=='i_d')
@@ -1235,9 +1342,19 @@ class doc_s_Sklad
 			$img=rcv('img');
 			mysql_query("DELETE FROM `doc_base_img` WHERE `pos_id`='$pos' AND `img_id`='$img'");
 			if(mysql_errno())	throw new MysqlException("Не удалось удалить ассоциацию");
+			doc_log("UPDATE","delete image (id:$img)", 'pos', $pos);
 			$tmpl->msg("Ассоциация с изображением удалена! Для продолжения работы воспользуйтесь меню!","ok");
 
 
+		}
+		else if($param=='i_ad')
+		{
+			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
+			$att=rcv('att');
+			mysql_query("DELETE FROM `doc_base_attachments` WHERE `pos_id`='$pos' AND `attachment_id`='$att'");
+			if(mysql_errno())	throw new MysqlException("Не удалось удалить ассоциацию");
+			doc_log("UPDATE","delete attachment (id:$att)", 'pos', $pos);
+			$tmpl->msg("Ассоциация с присоединённым файлом удалена! Для продолжения работы воспользуйтесь меню!","ok");
 		}
 		else if($param=='c')
 		{
