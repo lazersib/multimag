@@ -136,11 +136,18 @@ class Report_OstatkiNaDatu
 		$curdate=date("Y-m-d");
 		$tmpl->AddText("<h1>".$this->getName()."</h1>");
 		$tmpl->AddText("
+		<script type=\"text/javascript\">
+		function dtinit()
+		{
+			initCalendar('dt',false)
+		}
+		addEventListener('load',dtinit,false)	
+		</script>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='ostatkinadatu'>
 		<input type='hidden' name='opt' value='make'>
 		Дата:<br>
-		<input type='text' name='date' value='$curdate'><br>
+		<input type='text' name='date' id='dt' value='$curdate'><br>
 		Склад:<br>
 		<select name='sklad'>");
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady`");

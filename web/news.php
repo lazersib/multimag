@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -117,7 +117,8 @@ try
 						$miniimg->SetY(48);
 						$tmpl->AddText("<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt=''>");
 					}
-					$tmpl->AddText("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><!--<br><a href='/forum.php'>Комментарии: 0</a>--></p></div>");
+					$tmpl->AddText("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i></p></div>");
+					// <!--<br><a href='/forum.php'>Комментарии: 0</a>-->
 				}
 			}
 			else $tmpl->msg("Новости отсутствуют");
@@ -135,7 +136,8 @@ try
 				{
 					$wikiparser->title='';
 					$text=$wikiparser->parse(html_entity_decode($nxt['text'],ENT_QUOTES,"UTF-8"));
-					$tmpl->SetText("<h1 id='page-title'>{$wikiparser->title}</h1><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br><a href='/forum.php'>Комментарии: 0</a></p>");
+					$tmpl->SetText("<h1 id='page-title'>{$wikiparser->title}</h1><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br></p>");
+					// <a href='/forum.php'>Комментарии: 0</a>
 				}
 			}
 			else $tmpl->msg("Новость не найдена!","err");

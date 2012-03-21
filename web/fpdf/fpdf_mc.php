@@ -70,7 +70,7 @@ class PDF_MC_Table extends FPDF
 			$x=$this->GetX();
 			$y=$this->GetY();
 			//Draw the border
-			$this->Rect($x,$y,$w,$h);
+			$this->Rect($x,$y,$w,$h,'DF');
 			//Print the text
 			$this->MultiCell($w,$this->line_height,$data[$i],0,$a);
 			//Put the position to the right of the cell

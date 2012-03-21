@@ -43,49 +43,68 @@ class Report_Pos_NoSells extends BaseGSReport
 		</script>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='pos_nosells'>
-		<input type='hidden' name='opt' value='make'>
 		<fieldset><legend>Дата</legend>
 		С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
 		По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
 		</fieldset>
+		Группа товаров:<br>");
+		$this->GroupSelBlock();
+		$tmpl->AddText("Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>");
 	}
 	
-	function MakeHTML()
+	function Make($engine)
 	{
-		global $tmpl;
-		$tmpl->LoadTemplate('print');
+		$this->loadEngine($engine);
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t'));
-		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`likvid`
-		FROM `doc_base`
-		WHERE `doc_base`.`id` NOT IN (
-		SELECT `doc_list_pos`.`tovar` FROM `doc_list_pos`
-		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
-		)
-		ORDER BY `doc_base`.`name`");
+		$gs=rcv('gs');
+		$g=@$_POST['g'];
 		
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
-		$tmpl->SetText("<h1>Отчёт по номенклатуре без продаж с $print_df по $print_dt</h1>
-		<table width='100%'>
-		<tr><th>ID<th>Наименование<th>Ликвидность");
+		$this->header("Отчёт по номенклатуре без продаж с $print_df по $print_dt");
+		$widths=array(10,70,20);
+		$this->tableBegin($widths);
+		$this->tableHeader(array('ID', 'Наименование', 'Ликвидность'));
 		$cnt=0;
-		while($nxt=mysql_fetch_row($res))
+		
+		$res_group=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список групп");
+		while($group_line=mysql_fetch_assoc($res_group))
 		{
-			$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2] %");
-			$cnt++;
+			if($gs && is_array($g))
+				if(!in_array($group_line['id'],$g))	continue;
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array(3),array($group_line['id'].': '.$group_line['name']));
+			$this->tableAltStyle(false);
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`likvid`
+			FROM `doc_base`
+			WHERE `doc_base`.`id` NOT IN (
+			SELECT `doc_list_pos`.`tovar` FROM `doc_list_pos`
+			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
+			) AND `doc_base`.`group`='{$group_line['id']}'
+			ORDER BY `doc_base`.`name`");
+			
+			while($nxt=mysql_fetch_row($res))
+			{
+				$nxt[2].=' %';
+				$this->tableRow($nxt);
+				$cnt++;
+			}
 		}
-		$tmpl->AddTExt("
-		<tr><td>Итого:<td colspan='2'>$cnt товаров без продаж
-		</table>");
+		$this->tableAltStyle();
+		$this->tableSpannedRow(array(1,2),array('Итого:', $cnt.' товаров без продаж'));
+		$this->tableEnd();
+		$this->output();
+		exit(0);
 	}
 	
 	function Run($opt)
 	{
 		if($opt=='')	$this->Form();
-		else		$this->MakeHTML();	
+		else		$this->Make($opt);	
 	}
 };
 
