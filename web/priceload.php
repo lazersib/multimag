@@ -184,7 +184,7 @@ function firmAddForm($id=0)
 		}
 	}
 
-	function FillTextBoxes(l_id, t_name, c_art, c_name, c_cost, c_nal, c_curr)
+	function FillTextBoxes(l_id, t_name, c_art, c_name, c_cost, c_nal, c_curr, c_info)
 	{
 		document.getElementById('line_id').value=l_id;
 		document.getElementById('table_name').value=t_name;
@@ -193,6 +193,7 @@ function firmAddForm($id=0)
 		document.getElementById('col_cost').value=c_cost;
 		document.getElementById('col_nal').value=c_nal;
 		document.getElementById('col_curr').value=c_curr;
+		document.getElementById('col_info').value=c_info;
 	}
 
 	</script><br>
@@ -224,6 +225,7 @@ function firmAddForm($id=0)
 		<td><input type='text' name='col_cost'>
 		<td><input type='text' name='col_nal'>
 		<td><input type='text' name='col_curr'>
+		<td><input type='text' name='col_info'>
 		</table>");
 
 	}
@@ -236,24 +238,26 @@ function firmAddForm($id=0)
 		<input type='hidden' name='firm_id' value='$nxt[0]'>
 		<input type='hidden' name='line_id' value='0' id='line_id'>
 		<table>
-		<tr><th rowspan='2'>Имя листа<th colspan='5'>Номера колонок
-		<tr><th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием<th>С валютой");
-		$res=mysql_query("SELECT `id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency` FROM `firm_info_struct`
+		<tr><th rowspan='2'>Имя листа<th colspan='6'>Номера колонок
+		<tr><th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием<th>С валютой<th>С информацией");
+		$res=mysql_query("SELECT `id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct`
 		WHERE `firm_id`='$nxt[0]'");
+		if(mysql_errno())	throw new MysqlException("не удалось получить настройки столбцов!");
 		while($nx=mysql_fetch_row($res))
 		{
 			$tmpl->AddText("<tr><td>
 			<a href='?mode=firmsd&p=$nx[0]'><img src='/img/i_del.png' alt='Удалить'></a>
-			<a onclick=\"FillTextBoxes('$nx[0]', '$nx[1]', '$nx[2]', '$nx[3]', '$nx[4]', '$nx[5]', '$nx[6]');\"><img src='/img/i_edit.png'  alt='Правка'></a>
-			$nx[1]<td>$nx[2]<td>$nx[3]<td>$nx[4]<td>$nx[5]<td>$nx[6]");
+			<a onclick=\"FillTextBoxes('$nx[0]', '$nx[1]', '$nx[2]', '$nx[3]', '$nx[4]', '$nx[5]', '$nx[6]', '$nx[7]');\"><img src='/img/i_edit.png'  alt='Правка'></a>
+			$nx[1]<td>$nx[2]<td>$nx[3]<td>$nx[4]<td>$nx[5]<td>$nx[6]<td>$nx[7]");
 		}
-		$tmpl->AddText("<tr><th colspan='6'>Новый лист<tr>
+		$tmpl->AddText("<tr><th colspan='7'>Новый лист<tr>
 		<td><input type='text' name='table_name' id='table_name'>
 		<td><input type='text' name='col_art' id='col_art'>
 		<td><input type='text' name='col_name' id='col_name'>
 		<td><input type='text' name='col_cost' id='col_cost'>
 		<td><input type='text' name='col_nal' id='col_nal'>
 		<td><input type='text' name='col_curr' id='col_curr'>
+		<td><input type='text' name='col_info' id='col_info'>
 		</table>
 		<input type=submit value='Записать!'></form>");
 
@@ -292,13 +296,13 @@ if($mode=='')
 }
 else if($mode=='load')
 {
-
+	$m_upl_size=get_max_upload_filesize();
 	$tmpl->AddText("
 	<form method=post enctype='multipart/form-data'>
 	<input type=hidden name=mode value='parse'>
 	<h1>Загрузить прайс в базу</h1>
-	Файл прайса (таблица ODF или XLS, до 4000кб, файл должен иметь корректное расширение)<br>
-	<input type='hidden' name='MAX_FILE_SIZE' value='4000000'>
+	Файл прайса (таблица ODF или XLS, до $m_upl_size байт, файл должен иметь корректное расширение)<br>
+	<input type='hidden' name='MAX_FILE_SIZE' value='$m_upl_size'>
 	<input name='file' type='file'><br>
 	Организация будет выбрана автоматически на основе списка сигнатур. Если организации нет в списке, Вам будет предложено её добавить.<br>
 	<label><input type='checkbox' name='bhtml' value='1'>Показать загруженные таблицы</label><br>
@@ -368,16 +372,16 @@ else if($mode=='firms')
 		$col_art=rcv('col_art');
 		$col_name=rcv('col_name');
 		$col_cost=rcv('col_cost');
-		$col_nal=rcv('col_nal');
-		$col_nal=rcv('col_nal');
+		$col_nal=rcv('col_nal');		
 		$col_curr=rcv('col_curr');
+		$col_info=rcv('col_info');
 		$res=mysql_query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`)
 		VALUES ('$nm', '$sign', '$curr', '$coeff', '$type', '$delivery_info')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить новую фирму");
 
 		$firm_id=mysql_insert_id();
-		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`)
-		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr')");
+		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info`)
+		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr', '$col_info')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить структуру прайса");
 		$tmpl->msg("Фирма добавлена!",'ok');
 	}
@@ -391,6 +395,7 @@ else if($mode=='firms')
 	{
 		$g=@$_POST['g'];
 		mysql_query("DELETE FROM `firm_info_group` WHERE `firm_id`='$id'");
+		if(mysql_errno())	throw new MysqlException("Не удалось удалить устаревшие данные");
 		if(is_array($g))
 		foreach($g as $line)
 		{
@@ -410,15 +415,16 @@ else if($mode=='firmss')
 	$col_cost=rcv('col_cost');
 	$col_nal=rcv('col_nal');
 	$col_curr=rcv('col_curr');
+	$col_info=rcv('col_info');
 	if(!$line_id)
 	{
-		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`)
-		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr')");
+		mysql_query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info`)
+		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr', '$col_info')");
 		if(mysql_errno())	throw new MysqlException("Не удалось вставить строку");
 	}
 	else
 	{
-		mysql_query("UPDATE `firm_info_struct` SET `table_name`='$table_name', `art`='$col_art', `name`='$col_name', `cost`='$col_cost', `nal`='$col_nal', `currency`='$col_curr' WHERE `id`='$line_id'");
+		mysql_query("UPDATE `firm_info_struct` SET `table_name`='$table_name', `art`='$col_art', `name`='$col_name', `cost`='$col_cost', `nal`='$col_nal', `currency`='$col_curr', `info`='$col_info' WHERE `id`='$line_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить данные");
 		if(mysql_affected_rows()==0)	$tmpl->msg("Ничего не изменено","info");
 	}
@@ -703,10 +709,10 @@ else if($mode=='r_noparsed')
 	<div id='page-info'>Отметьте галочками нужные, и добавте на склад. Можно воспользоваться фильтром.</div>");
 	if($f) 	$sql_add=" AND `price`.`firm`='$f'";
 	else	$sql_add='';
-	if($s1)	$sql_add.="AND `price`.`name` LIKE '%$s1%'";
-	if($s2)	$sql_add.="AND `price`.`name` LIKE '%$s2%'";
-	if($s3)	$sql_add.="AND `price`.`name` LIKE '%$s3%'";
-	$res=mysql_query("SELECT `price`.`id`, `price`.`art`, `price`.`name`, `firm_info`.`name`
+	if($s1)	$sql_add.="AND (`price`.`name` LIKE '%$s1%' OR `price`.`info` LIKE '%$s1%')";
+	if($s2)	$sql_add.="AND (`price`.`name` LIKE '%$s2%' OR `price`.`info` LIKE '%$s2%')";
+	if($s3)	$sql_add.="AND (`price`.`name` LIKE '%$s3%' OR `price`.`info` LIKE '%$s3%')";
+	$res=mysql_query("SELECT `price`.`id`, `price`.`art`, `price`.`name`, `firm_info`.`name`, `price`.`info`
 	FROM `price`
 	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
 	WHERE `seeked`='0' $sql_add
@@ -738,11 +744,11 @@ else if($mode=='r_noparsed')
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='adding'>
 		<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
-		<table width='100%'><tr><th>ID<th>Код произв.<th>Наименование<th>Фирма");
+		<table width='100%'><tr><th>ID<th>Код произв.<th>Наименование<th>Инфо<th>Фирма");
 		while($nxt=mysql_fetch_row($res))
 		{
 			$i=1-$i;
-			$tmpl->AddText("<tr class='lin$i'><td><label><input type='checkbox' name='p[]' value='$nxt[0]'>$nxt[0]</label><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+			$tmpl->AddText("<tr class='lin$i'><td><label><input type='checkbox' name='p[]' value='$nxt[0]'>$nxt[0]</label><td>$nxt[1]<td>$nxt[2]<td>$nxt[4]<td>$nxt[3]");
 		}
 		$tmpl->AddText("</table><button type='submit'>Далее</button></form>");
 	}

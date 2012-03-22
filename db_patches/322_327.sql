@@ -1,0 +1,13 @@
+SET UNIQUE_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=0;
+SET SQL_MODE='TRADITIONAL';
+
+ALTER TABLE `firm_info_struct` ADD `info` MEDIUMINT NOT NULL;
+ALTER TABLE `price` ADD `info` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL AFTER `nal`;
+ALTER TABLE `doc_vars` ADD `firm_kladovshik_doljn` VARCHAR( 128 ) NOT NULL AFTER `firm_buhgalter`;
+
+START TRANSACTION;
+TRUNCATE `db_version`;
+INSERT INTO `db_version` (`version`) VALUES (327);
+
+COMMIT;

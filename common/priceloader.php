@@ -108,11 +108,11 @@ abstract class PriceLoader
 		if($this->insert_to_database)
 		{
 			$sql_table_name=mysql_real_escape_string($table_name);
-			$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` LIKE '$sql_table_name'");
+			$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` LIKE '$sql_table_name'");
 			if(mysql_errno())	throw new MysqlException("Ошибка получения данных фирмы для листа *$sql_table_name*");
 			if(!mysql_num_rows($res))
 			{
-				$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` = ''");
+				$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` = ''");
 				if(mysql_errno())	throw new MysqlException("Ошибка получения данных фирмы для листа по умолчанию");
 			}
 			if(!mysql_num_rows($res))	
@@ -162,13 +162,14 @@ abstract class PriceLoader
 				$art=mysql_real_escape_string(@$this->line[$this->firm_cols['art']]);
 				$nal=mysql_real_escape_string(@$this->line[$this->firm_cols['nal']]);
 				$curr=strtoupper(trim(@$this->line[$this->firm_cols['currency']]));
+				$info=mysql_real_escape_string(@$this->line[$this->firm_cols['info']]);
 				if(strpos($curr, '$')!==false)		$curr='USD';
 				else if(stripos($curr, 'р')!==false)	$curr='RUR';	
 				if(isset($this->currencies[$curr]))	$curr=$this->currencies[$curr];
 				else					$curr=$this->def_currency;
 				mysql_query("INSERT INTO `price`
-				(`name`,`cost`,`firm`,`art`,`date`, `nal`, `currency`) VALUES 
-				('$name', '$cost', '{$this->firm_id}', '$art', NOW(), '$nal', '$curr')");
+				(`name`,`cost`,`firm`,`art`,`date`, `nal`, `currency`, `info`) VALUES 
+				('$name', '$cost', '{$this->firm_id}', '$art', NOW(), '$nal', '$curr', '$info')");
 				if(mysql_errno())	throw new MysqlException("Не удалось вставить строку прайса в базу!");
 			}
 		}

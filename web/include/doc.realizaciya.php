@@ -346,7 +346,6 @@ class doc_Realizaciya extends doc_Nulltype
 	{
 		get_docdata($doc);
 		global $tmpl;
-		global $uid;
 
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
@@ -408,7 +407,6 @@ class doc_Realizaciya extends doc_Nulltype
 	function PrintNakl($doc)
 	{
 		global $tmpl;
-		global $uid;
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
@@ -441,7 +439,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
@@ -482,8 +481,7 @@ class doc_Realizaciya extends doc_Nulltype
 	// -- Акт выполненных работ --------------
 	function PrintActRabot()
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $CONFIG;
 
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
@@ -511,7 +509,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
@@ -546,8 +545,7 @@ class doc_Realizaciya extends doc_Nulltype
 	// -- Гарантийный талон --------------
 	function PrintWarantyList()
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $CONFIG;
 
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
@@ -569,7 +567,8 @@ class doc_Realizaciya extends doc_Nulltype
 		$ii=1;
 		while($nxt=mysql_fetch_row($res))
 		{
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3] $nxt[5]<td>$nxt[4]<td>$nxt[6] мес.");
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[3] $nxt[5]<td>$nxt[4]<td>$nxt[6] мес.");
 			$ii++;
 		}
 		$tmpl->AddText("</table>
@@ -602,8 +601,7 @@ class doc_Realizaciya extends doc_Nulltype
 // -- Накладная с сортировкой по коду--------------
 	function PrintNaklVCOrdered()
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $CONFIG;
 
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
@@ -631,7 +629,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
-			$tmpl->AddText("<tr align=right><td>$ii</td><td>$nxt[7]</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td>$nxt[7]</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[5]<td>$nxt[3] $nxt[6]<td>$cost<td>$cost2");
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
@@ -667,8 +666,7 @@ class doc_Realizaciya extends doc_Nulltype
 // -- накладная с наценками --------------
 	function Nacenki()
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $CONFIG;
 
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
@@ -724,8 +722,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$razn=sprintf('%0.2f',$cost-$zakup);
 			$sum_razn=sprintf('%0.2f',$razn*$nxt[3]);
 			$srazn+=$sum_razn;
-
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3] $nxt[5]<td>$cost<td>$cost2<td>$act_cost<td>$nac<td>$sum_nac<td>$zakup<td>$razn<td>$sum_razn");
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[3] $nxt[5]<td>$cost<td>$cost2<td>$act_cost<td>$nac<td>$sum_nac<td>$zakup<td>$razn<td>$sum_razn");
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
@@ -745,8 +743,7 @@ class doc_Realizaciya extends doc_Nulltype
 	// -- Копия чека --------------
 	function PrintKopia($doc)
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $CONFIG;
 
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
@@ -773,7 +770,8 @@ class doc_Realizaciya extends doc_Nulltype
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3]<td>$cost<td>$cost2");
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[3]<td>$cost<td>$cost2");
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
@@ -790,8 +788,7 @@ class doc_Realizaciya extends doc_Nulltype
 		// -- Обычная накладная --------------
 	function PrintTovCheck()
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $CONFIG;
 
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
@@ -820,7 +817,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f", $nxt[4]);
 			$cost2 = sprintf("%01.2f", $sm);
-			if($nxt[2])	$nxt[1].=' / '.$nxt[2];
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
 			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[5]<td>$cost<td>$nxt[3]<td>$cost2");
 			$i=1-$i;
 			$ii++;
@@ -1000,10 +997,11 @@ function PrintTg12()
 			$mass1 = 	sprintf("%01.3f", $nxt[5]);
 			$sum+=$snalogom;
 			$sumnaloga+=$nalog;
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
 			$tmpl->AddText("
 <tr>
 <td>$ii
-<td id=bb>$nxt[0] $nxt[1] / $nxt[2]
+<td id=bb>$nxt[0] $nxt[1]
 <td id=bb><td id=bb>шт.
 <td>796<td><td><td id=bd><td>$mass1
 <td>$nxt[3] / $mass
@@ -1299,7 +1297,7 @@ function PrintTg12PDF($to_str=0)
 	$t2_y=$pdf->GetY();
 
 	$pdf->SetFont('','',8);
-	$str=unhtmlentities($this->firm_vars['firm_gruzootpr'].", тел.".$this->firm_vars['firm_telefon'].", счёт ".$this->firm_vars['firm_schet'].", БИК ".$this->firm_vars['firm_bik'].", банк ".$this->firm_vars['firm_bank']);
+	$str=unhtmlentities($this->firm_vars['firm_gruzootpr'].", тел.".$this->firm_vars['firm_telefon'].", счёт ".$this->firm_vars['firm_schet'].", БИК ".$this->firm_vars['firm_bik'].", банк ".$this->firm_vars['firm_bank'].", К/С {$this->firm_vars['firm_bank_kor_s']}, адрес: {$this->firm_vars['firm_adres']}");
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$pdf->MultiCell(230,4,$str,0,'L');
 	$y=$pdf->GetY();
@@ -1311,7 +1309,7 @@ function PrintTg12PDF($to_str=0)
 
 
 	$pdf->SetFont('','',8);
-	$str="-";
+	$str="";
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$pdf->Cell(0,4,$str,0,1,'L');
 	$pdf->Line(10, $pdf->GetY(), 230, $pdf->GetY());
@@ -1457,12 +1455,12 @@ function PrintTg12PDF($to_str=0)
 	$str='Дата составления';
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$pdf->Cell(25,4,$str,1,1,'C');
-	$pdf->SetX(40);
+	$pdf->SetX(50);
 	$pdf->SetLineWidth($bold_line);
 	$pdf->SetFont('','',10);
 	$str='ТОВАРНАЯ НАКЛАДНАЯ';
 	$str = iconv('UTF-8', 'windows-1251', $str);
-	$pdf->Cell(60,4,$str,0,0,'R');
+	$pdf->Cell(50,4,$str,0,0,'C');
 	$pdf->SetFont('','',7);
 	$pdf->Cell(25,4,$this->doc_data[9],1,0,'C');
 	$pdf->Cell(25,4,$dt,1,1,'C');
@@ -1618,7 +1616,8 @@ function PrintTg12PDF($to_str=0)
 		$list_sumnaloga+=$nalog;
 
 		$pdf->Cell($t_all_width[0],$line_height, $ii ,1,0,'R',1);
-		$str = iconv('UTF-8', 'windows-1251', "$nxt[0] $nxt[1] / $nxt[2]" );
+		if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+		$str = iconv('UTF-8', 'windows-1251', $nxt[0].' '.$nxt[1] );
 		$pdf->Cell($t_all_width[1],$line_height, $str ,1,0,'L',1);
 		$str = iconv('UTF-8', 'windows-1251', $nxt[7] );
 		$pdf->Cell($t_all_width[2],$line_height, $str ,1,0,'L',1);
@@ -1691,9 +1690,9 @@ function PrintTg12PDF($to_str=0)
 	$pdf->Cell($t_all_width[8],$line_height, $list_summass ,1,0,'C',0);
 	$pdf->Cell($t_all_width[9],$line_height, "$list_cnt / $list_summass" ,1,0,'C',0);
 
-	$pdf->Cell($t_all_width[10],$line_height, '' ,1,0,'C',0);
+	$pdf->Cell($t_all_width[10],$line_height, 'X' ,1,0,'C',0);
 	$pdf->Cell($t_all_width[11],$line_height, $list_sumbeznaloga ,1,0,'C',0);
-	$pdf->Cell($t_all_width[12],$line_height, "-" ,1,0,'C',0);
+	$pdf->Cell($t_all_width[12],$line_height, "X" ,1,0,'C',0);
 	$pdf->Cell($t_all_width[13],$line_height, $list_sumnaloga ,1,0,'R',0);
 	$pdf->Cell($t_all_width[14],$line_height, $list_sum ,1,0,'R',0);
 	$pdf->Ln();
@@ -1712,9 +1711,9 @@ function PrintTg12PDF($to_str=0)
 	$pdf->Cell($t_all_width[8],$line_height, $summass ,1,0,'C',0);
 	$pdf->Cell($t_all_width[9],$line_height, "$cnt / $summass" ,1,0,'C',0);
 
-	$pdf->Cell($t_all_width[10],$line_height, '' ,1,0,'C',0);
+	$pdf->Cell($t_all_width[10],$line_height, 'X' ,1,0,'C',0);
 	$pdf->Cell($t_all_width[11],$line_height, $sumbeznaloga ,1,0,'C',0);
-	$pdf->Cell($t_all_width[12],$line_height, "-" ,1,0,'C',0);
+	$pdf->Cell($t_all_width[12],$line_height, "X" ,1,0,'C',0);
 	$pdf->Cell($t_all_width[13],$line_height, $sumnaloga ,1,0,'R',0);
 	$pdf->Cell($t_all_width[14],$line_height, $sum ,1,0,'R',0);
         $pdf->Ln();
@@ -1796,7 +1795,7 @@ function PrintTg12PDF($to_str=0)
 	$pdf->SetFont('','',8);
 	$str = iconv('UTF-8', 'windows-1251', "Отпуск груза произвёл" );
 	$pdf->Cell($s[0],$line_height, $str ,0,0,'L',0);
-	$str = iconv('UTF-8', 'windows-1251', "Кладовщик" );
+	$str = iconv('UTF-8', 'windows-1251', $this->firm_vars['firm_kladovshik_doljn'] );
 	$pdf->Cell($s[1],$line_height, $str ,0,0,'L',0);
 	$str = iconv('UTF-8', 'windows-1251', $this->firm_vars['firm_kladovshik'] );
 	$pdf->Cell($s[5],$line_height, $str ,0,1,'R',0);
@@ -1937,7 +1936,7 @@ function SfakPDF($doc, $to_str=0)
 	global $CONFIG;
 	define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
 	require('fpdf/fpdf_mc.php');
-	global $tmpl, $uid;
+	global $tmpl;
 
 	if(!$to_str) $tmpl->ajax=1;
 
@@ -1985,9 +1984,9 @@ function SfakPDF($doc, $to_str=0)
 	$pdf->SetFont('','',16);
 	$step=4;
 	$str = iconv('UTF-8', 'windows-1251', "Счёт - фактура N {$this->doc_data[9]}, от $dt");
-	$pdf->Cell(0,6,$str,0,1,'C');
+	$pdf->Cell(0,6,$str,0,1,'L');
 	$str = iconv('UTF-8', 'windows-1251', "Исправление N ---- от --.--.----");
-	$pdf->Cell(0,6,$str,0,1,'C');
+	$pdf->Cell(0,6,$str,0,1,'L');
 	$pdf->Ln(5);
 	$pdf->SetFont('Arial','',10);
 	$str = iconv('UTF-8', 'windows-1251', "Продавец: ".unhtmlentities($this->firm_vars['firm_name']));
@@ -2227,8 +2226,8 @@ function SfakPDF($doc, $to_str=0)
 				$sum+=$snalogom;
 				$sumnaloga+=$nalog;
 
-
-				$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
+				if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+				$row=array( "$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
 				$pdf->RowIconv($row);
 			}
 		}
@@ -2265,7 +2264,7 @@ function SfakPDF($doc, $to_str=0)
 		}
 	}
 
-	if($pdf->h<=($pdf->GetY()+60)) $pdf->AddPage('L');
+	if($pdf->h<=($pdf->GetY()+65)) $pdf->AddPage('L');
 	$delta=$pdf->h-($pdf->GetY()+55);
 	if($delta>7) $delta=7;
 
@@ -2282,7 +2281,7 @@ function SfakPDF($doc, $to_str=0)
 
 	$pdf->Ln(10);
 
-	$pdf->SetFont('','',11);
+	$pdf->SetFont('','',10);
 	$str = iconv('UTF-8', 'windows-1251', "Руководитель организации:");
 	$pdf->Cell(50,$step,$str,0,0,'L',0);
 	$str='_____________________';
@@ -2299,14 +2298,20 @@ function SfakPDF($doc, $to_str=0)
 	$pdf->Ln(4);
 	$pdf->SetFont('','',7);
 	$str = iconv('UTF-8', 'windows-1251', "или иное уполномоченное лицо");
-	$pdf->Cell(140,$step,$str,0,0,'L',0);
+	$pdf->Cell(140,3,$str,0,0,'L',0);
 	$str = iconv('UTF-8', 'windows-1251', "или иное уполномоченное лицо");
-	$pdf->Cell(50,$step,$str,0,0,'L',0);
+	$pdf->Cell(50,3,$str,0,0,'L',0);
 	$pdf->Ln(8);
 
-	$pdf->SetFont('','',11);
+	$pdf->SetFont('','',10);
 	$str = iconv('UTF-8', 'windows-1251', "Индивидуальный предприниматель:______________________ / ____________________________/");
-	$pdf->Cell(0,$step,$str,0,1,'L',0);
+	$pdf->Cell(160,$step,$str,0,0,'L',0);
+	$pdf->Cell(0,$step,'____________________________________',0,1,'R',0);
+	
+	$pdf->SetFont('','',7);
+	$pdf->Cell(160,$step,'',0,0,'L',0);
+	$str = iconv('UTF-8', 'windows-1251', "реквизиты свидетельства о государственной регистрации ИП");
+	$pdf->Cell(0,3,$str,0,0,'R',0);
 
 
 	$pdf->Ln(10);
