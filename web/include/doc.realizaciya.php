@@ -1311,7 +1311,7 @@ function PrintTg12PDF($to_str=0)
 
 
 	$pdf->SetFont('','',8);
-	$str="< отсутствует >";
+	$str="-";
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$pdf->Cell(0,4,$str,0,1,'L');
 	$pdf->Line(10, $pdf->GetY(), 230, $pdf->GetY());
@@ -1333,7 +1333,7 @@ function PrintTg12PDF($to_str=0)
 	$str="Поставщик";
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$pdf->Cell(30,4,$str,0,0,'L');
-	$str = unhtmlentities("{$this->firm_vars['firm_name']}, {$this->firm_vars['firm_adres']}, ИНН/КПП {$this->firm_vars['firm_inn']}, кс {$this->firm_vars['firm_bank_kor_s']}, Р/С {$this->firm_vars['firm_schet']}, БИК {$this->firm_vars['firm_bik']}, в банке {$this->firm_vars['firm_bank']}");
+	$str = unhtmlentities("{$this->firm_vars['firm_name']}, {$this->firm_vars['firm_adres']}, ИНН/КПП {$this->firm_vars['firm_inn']}, К/С {$this->firm_vars['firm_bank_kor_s']}, Р/С {$this->firm_vars['firm_schet']}, БИК {$this->firm_vars['firm_bik']}, в банке {$this->firm_vars['firm_bank']}");
 	$str = iconv('UTF-8', 'windows-1251', $str);
 	$pdf->MultiCell(190,4,$str,0,'L');
 	$pdf->Line(40, $pdf->GetY(), 230, $pdf->GetY());
@@ -2228,7 +2228,7 @@ function SfakPDF($doc, $to_str=0)
 				$sumnaloga+=$nalog;
 
 
-				$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
+				$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
 				$pdf->RowIconv($row);
 			}
 		}
@@ -2260,7 +2260,7 @@ function SfakPDF($doc, $to_str=0)
 			$sum+=$snalogom;
 			$sumnaloga+=$nalog;
 
-			$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, '--', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
+			$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
 			$pdf->RowIconv($row);
 		}
 	}
