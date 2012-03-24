@@ -20,6 +20,10 @@
 
 class Report_Sales extends BaseGSReport
 {
+	var $sklad=0;	// ID склада
+	var $w_docs=0;	// Отображать документы
+	var $div_dt=0;	// Разделить приходы и расходы
+	
 	function GroupSelBlock()
 	{
 		global $tmpl;
@@ -89,8 +93,8 @@ class Report_Sales extends BaseGSReport
 
 	function getName($short=0)
 	{
-		if($short)	return "По движению товара (эксперим.)";
-		else		return "Отчёт по движению товара (экспериментальный)";
+		if($short)	return "По движению товара";
+		else		return "Отчёт по движению товара";
 	}
 	
 	function Form()
@@ -102,7 +106,6 @@ class Report_Sales extends BaseGSReport
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='sales'>
-		<input type='hidden' name='opt' value='make'>
 		<fieldset><legend>Дата</legend>
 		С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
 		По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
@@ -115,7 +118,7 @@ class Report_Sales extends BaseGSReport
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
 		$tmpl->AddText("</select><br>
 		<label><input type='checkbox' name='w_docs' value='1' checked>С документами</label><br>
-		<label><input type='checkbox' name='div_dt' value='1' checked disabled>Разделить по типам документов</label><br>
+		<label><input type='checkbox' name='div_dt' value='1' checked>Разделить по типам документов</label><br>
 		<br>
 		<fieldset><legend>Отчёт по</legend>
 		<select name='sel_type' id='sel_type'>
@@ -131,6 +134,7 @@ class Report_Sales extends BaseGSReport
 		<input type='text' id='posit' style='width: 400px;' value=''>
 		</div>
 		</fieldset>
+		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>
 		
@@ -186,13 +190,18 @@ class Report_Sales extends BaseGSReport
 		");
 	}
 	
-	function outPos($pos_id, $sklad, $w_docs, $div_dt, $dt_f, $dt_t)
+	function dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t)
 	{
-		global $tmpl;
-		$start_cnt=getStoreCntOnDate($pos_id, $sklad, $dt_f);
+		$start_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f);
 		
-		if($w_docs)	$tmpl->AddText("<tr><td><td>На начало периода:<td><td>$start_cnt<td><td><tr><th colspan='6' class='m1'>Приходы");
-		
+		if($this->w_docs)
+		{
+			$this->tableSpannedRow(array($this->col_cnt),array("$vc $name ($pos_id)"));
+			$this->tableRow(array('','На начало периода','',$start_cnt,'',''));
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array($this->col_cnt),array('Приходы'));
+			$this->tableAltStyle(false);
+		}
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
 		FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
@@ -201,9 +210,9 @@ class Report_Sales extends BaseGSReport
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
 		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
-		(`doc_list`.`type`='1' AND `doc_list`.`sklad`='$sklad') OR
-		(`doc_list`.`type`='8' AND `ns`.`value`='$sklad') OR
-		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='$sklad' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0");
+		(`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
+		(`doc_list`.`type`='8' AND `ns`.`value`='{$this->sklad}') OR
+		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$sum_cnt=$start_cnt;
 		$prix_cnt=$prix_sum=0;
@@ -214,15 +223,19 @@ class Report_Sales extends BaseGSReport
 			else if($nxt['type']==8)	$from=$nxt['sklad_name'];
 			$date=date("Y-m-d H:i:s",$nxt['date']);
 			$sumline=$nxt['cnt']*$nxt['cost'];
-			if($w_docs)	$tmpl->AddText("<tr><td>$date<td>{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})<td>$from<td>{$nxt['cnt']}<td>{$nxt['cost']}<td>$sumline");
+			if($this->w_docs)	$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
 			$prix_cnt+=$nxt['cnt'];
 			$prix_sum+=$sumline;
 		}
-		if($w_docs)	$tmpl->AddText("<tr><td><td>Всего приход:<td><td>$prix_cnt<td><td>$prix_sum");
+		if($this->w_docs)	$this->tableRow(array('', 'Всего приход:', '', $prix_cnt, '', $prix_sum));
 		$r_cnt=$r_sum=0;
 		
-		if($w_docs)	$tmpl->AddText("<tr><th colspan='6' class='m1'>Расходы
-				<tr><td colspan='6' class='m2'>Реализации");
+		if($this->w_docs)
+		{
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array($this->col_cnt),array('Реализации'));
+			$this->tableAltStyle(false);
+		}
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
 		FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
@@ -230,28 +243,34 @@ class Report_Sales extends BaseGSReport
 		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='$sklad' AND
+		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
 		`doc_list`.`type`='2' AND `doc_list`.`ok`>0");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$realiz_cnt=$sum=0;
 		while($nxt=mysql_fetch_assoc($res))
 		{
-			if($w_docs)
+			if($this->w_docs)
 			{
 				$from='Сборка';
 				if($nxt['type']==2)		$from=$nxt['agent_name'];
 				else if($nxt['type']==8)	$from=$nxt['sklad_name'];
 				$date=date("Y-m-d H:i:s",$nxt['date']);
 				$sumline=$nxt['cnt']*$nxt['cost'];
-				$tmpl->AddText("<tr><td>$date<td>{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})<td>$from<td>{$nxt['cnt']}<td>{$nxt['cost']}<td>$sumline");
+				
+				$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
 				$sum+=$sumline;
 			}
 			$realiz_cnt+=$nxt['cnt'];
 		}
-		if($w_docs)	$tmpl->AddText("<tr><td class='m4'><td class='m4'>По реализациям:<td class='m4'><td class='m4'>$realiz_cnt<td class='m4'><td class='m4'>$sum");
+		if($this->w_docs)	$this->tableRow(array('', 'По реализациям:', '', $realiz_cnt, '', $sum));
 		$r_cnt+=$realiz_cnt;
 		$r_sum+=$sum;
-		if($w_docs)	$tmpl->AddText("<tr><td colspan='6' class='m2'>Перемещения");
+		if($this->w_docs)	
+		{
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array($this->col_cnt),array('Перемещения'));
+			$this->tableAltStyle(false);
+		}
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
 		FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
@@ -259,27 +278,32 @@ class Report_Sales extends BaseGSReport
 		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='$sklad' AND `doc_list`.`type`='8' AND `doc_list`.`ok`>0");
+		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='8' AND `doc_list`.`ok`>0");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$perem_cnt=$sum=0;
 		while($nxt=mysql_fetch_assoc($res))
 		{
-			if($w_docs)
+			if($this->w_docs)
 			{
 				$from='Сборка';
 				if($nxt['type']==2)		$from=$nxt['agent_name'];
 				else if($nxt['type']==8)	$from=$nxt['sklad_name'];
 				$date=date("Y-m-d H:i:s",$nxt['date']);
 				$sumline=$nxt['cnt']*$nxt['cost'];
-				$tmpl->AddText("<tr><td>$date<td>{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})<td>$from<td>{$nxt['cnt']}<td>{$nxt['cost']}<td>$sumline");
+				$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
 				$sum+=$sumline;
 			}
 			$perem_cnt+=$nxt['cnt'];
 		}
-		if($w_docs)	$tmpl->AddText("<tr class='m4'><td class='m4'><td class='m4'>По перемещениям:<td class='m4'><td class='m4'>$perem_cnt<td class='m4'><td class='m4'>$sum");
+		if($this->w_docs)	$this->tableRow(array('', 'По перемещениям:', '', $perem_cnt, '', $sum));
 		$r_cnt+=$cnt;
 		$r_sum+=$sum;
-		if($w_docs)	$tmpl->AddText("<tr><td colspan='6' class='m2'>Сборки");
+		if($this->w_docs)	
+		{
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array($this->col_cnt),array('Сборки'));
+			$this->tableAltStyle(false);
+		}
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
 		FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
@@ -287,59 +311,152 @@ class Report_Sales extends BaseGSReport
 		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='$sklad' AND (`doc_list`.`type`='17' AND `doc_list_pos`.`page`!='0') AND `doc_list`.`ok`>0");
+		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND (`doc_list`.`type`='17' AND `doc_list_pos`.`page`!='0') AND `doc_list`.`ok`>0");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$sbor_cnt=$sum=0;
 		while($nxt=mysql_fetch_assoc($res))
 		{
-			if($w_docs)
+			if($this->w_docs)
 			{
 				$from='Сборка';
 				if($nxt['type']==2)		$from=$nxt['agent_name'];
 				else if($nxt['type']==8)	$from=$nxt['sklad_name'];
 				$date=date("Y-m-d H:i:s",$nxt['date']);
 				$sumline=$nxt['cnt']*$nxt['cost'];
-				$tmpl->AddText("<tr><td>$date<td>{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})<td>$from<td>{$nxt['cnt']}<td>{$nxt['cost']}<td>$sumline");
+								$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
 				$sum+=$sumline;
 			}
 			$sbor_cnt+=$nxt['cnt'];
 		}
 		$r_cnt+=$sbor_cnt;
-		if($w_docs)
+		if($this->w_docs)
 		{
-			$tmpl->AddText("<tr><td class='m4'><td class='m4'>По сборкам:<td class='m4'><td class='m4'>$sbor_cnt<td class='m4'><td class='m4'>$sum");			
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array($this->col_cnt),array(''));
+			$this->tableAltStyle(false);
+			$this->tableRow(array('', 'По сборкам:', '', $sbor_cnt, '', $sum));
+			
 			$r_sum+=$sum;
-			$tmpl->AddText("<tr><td><td>Всего расход:<td><td>$r_cnt<td><td>$r_sum");
-			
+			$this->tableRow(array('', 'Всего расход:', '', $r_cnt, '', $r_sum));
 			$end_cnt=$start_cnt+$p_cnt-$r_cnt;
-			
-			$tmpl->AddText("<tr><td><td>На конец периода:<td><td>$end_cnt<td><td>");
+			$this->tableRow(array('', 'На конец периода:', '', $end_cnt, '', ''));
 		}
 		else
 		{
 			$end_cnt=$start_cnt+$prix_cnt-$r_cnt;
-			$tmpl->AddText("<td>$start_cnt<td>$prix_cnt<td>$realiz_cnt<td>$perem_cnt<td>$sbor_cnt<td>$end_cnt");
+			$this->tableRow(array($pos_id, $vc, $name, $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt));
 		}
 	}
 	
-	function MakeHTML()
+	function serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t)
 	{
-		global $tmpl, $CONFIG;
-		$tmpl->LoadTemplate('print');
+		global $tmpl;
+		$cur_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f);
+		
+		if($this->w_docs)
+		{
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array($this->col_cnt),array("$vc $name ($pos_id)"));
+			$this->tableAltStyle(false);
+			$this->tableSpannedRow(array($this->col_cnt-1,1),array('На начало периода:',$cur_cnt));
+		}
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`page`,
+		`doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
+		FROM `doc_list_pos`
+		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+		INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+		LEFT JOIN `doc_sklady` AS `ds` ON `ds`.`id`=`doc_list`.`sklad`
+		LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
+		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
+		(`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
+		(`doc_list`.`type`='2' AND `doc_list`.`sklad`='{$this->sklad}') OR
+		(`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
+		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
+		ORDER BY `doc_list`.`date`");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы движения!");
+		$sp=$sr=0;
+		while($nxt=mysql_fetch_assoc($res))
+		{
+			$p=$r='';
+			$link='';
+			switch($nxt['type'])
+			{
+				case 1:	$p=$nxt['cnt'];
+					$link='От '.$nxt['agent_name'];
+					break;
+				case 2:	$r=$nxt['cnt'];
+					$link='Для '.$nxt['agent_name'];
+					break;
+				case 8:{if($nxt['sklad']==$this->sklad)	
+					{
+						$r=$nxt['cnt'];
+						$link='На '.$nxt['nasklad_name'];
+					}
+					else
+					{
+						$p=$nxt['cnt'];
+						$link='С '.$nxt['sklad_name'];
+					}
+					}break;
+				case 17:{if($nxt['page']==0)		$p=$nxt['cnt'];	else $r=$nxt['cnt'];}
+					break;
+				default:$p=$r='fff-'.$nxt['type'];
+			
+			}
+			$cur_cnt+=$p-$r;
+			$date=date("Y-m-d H:i:s",$nxt['date']);
+			$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']}", $link, $p, $r, $cur_cnt));
+			$sp+=$p;
+			$sr+=$r;
+		}
+		$this->tableSpannedRow(array($this->col_cnt-3,1,1,1),array('На конец периода:',$sp,$sr,$cur_cnt));
+	
+	}
+	
+	function outPos($pos_id, $vc, $name, $dt_f, $dt_t)
+	{
+		if($this->div_dt || !$this->w_docs)	$this->dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t);
+		else			$this->serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t);
+	}
+	
+	function Make($engine)
+	{
+		global $CONFIG;
+		$this->loadEngine($engine);		
+
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t'));
 		$g=@$_POST['g'];
 		$sel_type=rcv('sel_type');
-		$sklad=rcv('sklad');
-		$w_docs=rcv('w_docs');
-		$div_dt=rcv('div_dt');
+		$this->sklad=rcv('sklad');
+		$this->w_docs=rcv('w_docs');
+		$this->div_dt=rcv('div_dt');
 		
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
-		$tmpl->SetText("<h1>Отчёт по движению товара с $print_df по $print_dt</h1>
-		<table width='100%'>");
 		
-		if(!$w_docs)	$tmpl->AddText("<tr><th>ID<th>Код<th>Наименование<th>Начальное кол-во<th>Приход<th>Реализ.<th>Перем.<th>Сборка<th>Итог");
+		$this->header($this->getName()." с $print_df по $print_dt");
+		
+		if(!$this->w_docs)	
+		{
+			$widths=array(5,8,45, 7, 7, 7, 7, 7, 7);
+			$headers=array('ID','Код','Наименование','Нач. кол-во','Приход','Реализ.','Перем.','Сборка','Итог');
+		}
+		else if($this->div_dt)
+		{
+			$widths=array(15,25,40,7,7,7);
+			$headers=array('Дата','Документ','Источник','Кол-во','Цена','Сумма');
+		}
+		else 
+		{
+			$widths=array(15,21,40,8,8,8);
+			$headers=array('Дата','Документ','','Приход','Расход','Кол-во');
+		}
+		$this->col_cnt=count($widths);
+		$this->tableBegin($widths);
+		$this->tableHeader($headers);
 		
 		if($sel_type=='pos')
 		{
@@ -348,12 +465,7 @@ class Report_Sales extends BaseGSReport
 			if(mysql_errno())		throw MysqlException("Не удалось получить информацию о товаре");
 			if(mysql_num_rows($res)==0)	throw new Exception("Товар не выбран!");
 			$tov_data=mysql_fetch_row($res);
-			if(!$w_docs)
-			{
-				$tmpl->AddText("<tr><td>$tov_data[0]<td>$tov_data[1]");
-			}
-			if($w_docs)	$tmpl->AddText("<tr><th colspan='6'>$tov_data[0] $tov_data[1]</tr><tr><th>Дата<th>Документ<th>Источник<th>Кол-во<th>Цена<th>Сумма");
-			$this->outPos($pos_id, $sklad, $w_docs, $div_dt, $dt_f, $dt_t);
+			$this->outPos($pos_id, $tov_data[0], $tov_data[1], $dt_f, $dt_t);
 		}
 		else if($sel_type=='all')
 		{
@@ -362,10 +474,7 @@ class Report_Sales extends BaseGSReport
 
 			while($nxt=mysql_fetch_row($res))
 			{
-				if(!$w_docs)
-					$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]");
-				else	$tmpl->AddText("<tr><th colspan='6'>$nxt[1] $nxt[2]</tr><tr><th>Дата<th>Документ<th>Источник<th>Кол-во<th>Цена<th>Сумма");
-				$this->outPos($nxt[0], $sklad, $w_docs, $div_dt, $dt_f, $dt_t);
+				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t);
 			}
 		}
 		else if($sel_type=='group')
@@ -376,9 +485,10 @@ class Report_Sales extends BaseGSReport
 			{
 				if(is_array($g))
 					if(!in_array($group_line['id'],$g))	continue;
-				
-				$tmpl->AddText("<tr><td colspan='9' class='m3'>{$group_line['id']}. {$group_line['name']}</td></tr>");		
-			
+
+				$this->tableAltStyle();
+				$this->tableSpannedRow(array($this->col_cnt),array($group_line['id'].'. '.$group_line['name']));
+				$this->tableAltStyle(false);
 				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`
 				FROM `doc_base`
 				WHERE `doc_base`.`group`='{$group_line['id']}'
@@ -387,82 +497,19 @@ class Report_Sales extends BaseGSReport
 				
 				while($nxt=mysql_fetch_row($res))
 				{
-					if(!$w_docs)
-					$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]");
-					else	$tmpl->AddText("<tr><th colspan='6'>$nxt[1] $nxt[2]</tr><tr><th>Дата<th>Документ<th>Источник<th>Кол-во<th>Цена<th>Сумма");
-					$this->outPos($nxt[0], $sklad, $w_docs, $div_dt, $dt_f, $dt_t);
+					$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t);
 				}
 			}
 		}
-		
-		
-// 		$tmpl->AddText("<tr><th>ID");
-// 		if($CONFIG['poseditor']['vc'])
-// 		{
-// 			$tmpl->AddText("<th>Код");
-// 			$col_count++;
-// 		}
-// 		
-// 		$tmpl->AddText("<th>Наименование<th>Ликвидность<th>Приход (кол-во)<th>Расход (кол-во)<th>Сумма по приходам<th>Сумма продаж<th>Прибыль по АЦП");
-// 		$in_cntsum=$out_cntsum=$in_sumsum=$out_sumsum=$pribsum=0;
-// 		$res_group=mysql_query("SELECT `id`, `name`, `printname` FROM `doc_group` ORDER BY `id`");
-// 		while($group_line=mysql_fetch_assoc($res_group))
-// 		{
-// 			if($gs && is_array($g))
-// 				if(!in_array($group_line['id'],$g))	continue;
-// 			
-// 			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
-// 		
-// 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_base`.`likvid`, 
-// 			( 	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos` 
-// 				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
-// 				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` AND `doc_list_pos`.`page`=0 ) AS `in_cnt`,
-// 			( 	SELECT SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`) FROM `doc_list_pos` 
-// 				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
-// 				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id`  AND `doc_list_pos`.`page`=0) AS `in_sum`,
-// 			( 	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos` 
-// 				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=2 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
-// 				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` AND ( `doc_list_pos`.`page`=0 OR `doc_list`.`type`='2' )) AS `out_cnt`,
-// 			( 	SELECT SUM(`doc_list_pos`.`cnt`*`doc_list_pos`.`cost`) FROM `doc_list_pos` 
-// 				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND (`doc_list`.`type`=2 OR `doc_list`.`type`=17 ) AND `doc_list`.`ok`>'0'
-// 				WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` AND ( `doc_list_pos`.`page`=0 OR `doc_list`.`type`='2' )) AS `out_sum`
-// 			FROM `doc_base`
-// 			WHERE `doc_base`.`group`='{$group_line['id']}'
-// 			ORDER BY `doc_base`.`name`");
-// 			
-// 			while($nxt=mysql_fetch_assoc($res))
-// 			{
-// 				$prib=sprintf('%0.2f', $nxt['out_sum']-GetInCost($nxt['id'])*$nxt['out_cnt']);	
-// 				
-// 				$in_cntsum+=$nxt['in_cnt'];
-// 				$out_cntsum+=$nxt['out_cnt'];
-// 				$in_sumsum+=$nxt['in_sum'];
-// 				$out_sumsum+=$nxt['out_sum'];
-// 				
-// 				$nxt['in_sum']=sprintf('%0.2f',$nxt['in_sum']);
-// 				$nxt['out_sum']=sprintf('%0.2f',$nxt['out_sum']);
-// 
-// 				$pribsum+=$prib;
-// 				
-// 				$prib_style=$prib<0?"style='color: #f00'":'';
-// 				$tmpl->AddText("<tr align='right'><td>{$nxt['id']}");
-// 				if($CONFIG['poseditor']['vc'])
-// 				{
-// 					$tmpl->AddText("<td>{$nxt['vc']}");
-// 				}
-// 				$tmpl->AddText("<td align='left'>{$group_line['printname']} {$nxt['name']} / {$nxt['proizv']}<td>{$nxt['likvid']} %<td>{$nxt['in_cnt']}<td>{$nxt['out_cnt']}<td>{$nxt['in_sum']}<td>{$nxt['out_sum']}<td $prib_style>$prib");
-// 			}
-// 		}
-// 		$prib_style=$pribsum<0?"style='color: #f00'":'';
-// 		$tmpl->AddTExt("
-// 		<tr><td colspan='4'>Итого:<td>$in_cntsum<td>$out_cntsum<td>$in_sumsum<td>$out_sumsum<td $prib_style>$pribsum руб.
-		$tmpl->AddTExt("</table>");
+		$this->tableEnd();
+		$this->output();
+		exit(0);
 	}
 	
 	function Run($opt)
 	{
 		if($opt=='')	$this->Form();
-		else		$this->MakeHTML();	
+		else		$this->Make($opt);	
 	}
 };
 

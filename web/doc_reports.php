@@ -267,7 +267,7 @@ class BaseGSReport extends BaseReport
 	function draw_groups_tree($level)
 	{
 		$ret='';
-		$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `name`");
+		$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `name`");
 		$i=0;
 		$r='';
 		if($level==0) $r='IsRoot';
