@@ -182,17 +182,17 @@ class doc_s_Sklad
 			$to_group=rcv('to_group');
 			doc_menu(0,0);
 			$up_data=array();
-			switch(@$_GET['sale_flag'])
+			switch(@$_POST['sale_flag'])
 			{
 				case 'set':	$up_data[]="`stock`='1'";	break;
 				case 'unset':	$up_data[]="`stock`='0'";	break;
 			}
-			switch(@$_GET['hidden_flag'])
+			switch(@$_POST['hidden_flag'])
 			{
 				case 'set':	$up_data[]="`hidden`='1'";	break;
 				case 'unset':	$up_data[]="`hidden`='0'";	break;
 			}
-			switch(@$_GET['yml_flag'])
+			switch(@$_POST['yml_flag'])
 			{
 				case 'set':	$up_data[]="`no_export_yml`='1'";	break;
 				case 'unset':	$up_data[]="`no_export_yml`='0'";	break;
@@ -204,7 +204,7 @@ class doc_s_Sklad
 				if($up_query)	$up_query.=", ";
 				$up_query.=$line;
 			}
-			$pos=@$_GET['pos'];
+			$pos=@$_POST['pos'];
 			if($up_query)
 			{
 				if(is_array($pos))
@@ -220,9 +220,10 @@ class doc_s_Sklad
 						$a+=mysql_affected_rows();
 					}
 					$tmpl->msg("Успешно обновлено $a строк. ".($c-$a)." из $c выбранных строк остались неизменёнными.","ok");
-				}	else $tmpl->msg("Не выбраны позиции для обновления!",'err');
-			}	else $tmpl->msg("Не выбрано действие!",'err');
-
+				}
+				else $tmpl->msg("Не выбраны позиции для обновления!",'err');
+			}
+			else $tmpl->msg("Не выбрано действие!",'err');
 		}
 		else $tmpl->msg("Неверный режим!");
 	}
