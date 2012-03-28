@@ -122,13 +122,19 @@ else if($mode=="add")
 {
 	if(isAccess('generic_galery','create'))
 	{
+		$max_fs=get_max_upload_filesize();
+		$max_img_size=min(16*1024*1204,$max_fs);
+		if($max_img_size>1024*1024)	$max_img_size=($max_img_size/(1024*1024)).' Мб';
+		else if($max_img_size>1024)	$max_img_size=($max_img_size/(1024)).' Кб';
+		else				$max_img_size.='байт';
+
 		$tmpl->AddText("<h3>Добавить фотографию</h3>");
 		$tmpl->AddText("При добавлении фотографии не забывайте про <a href='wiki/правила_фотогалереи'>правила</a>!
 		Для особо непонятливых - фотогалерея это не место для хранения обоев и других подобных картинок. Да, это красиво, но не попадает в тематику.<br>
 		<form method=post action='photogalery.php' enctype='multipart/form-data'>
 		<input type=hidden name=mode value='addo'>
-		Фотография (JPEG, до 4 Мб, 300*400 - 5000*5000)<br>
-		<input type='hidden' name='MAX_FILE_SIZE' value='8000000'>
+		Фотография (JPEG, до $max_img_size, 300*400 - 10000*10000)<br>
+		<input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'>
 		<input name='fotofile' type='file'><br>
 		Подпись к фото<br>
 		<input type=text name=comm><br>
@@ -139,42 +145,44 @@ else if($mode=="add")
 }
 else if($mode=="addo")
 {
+	$max_fs=get_max_upload_filesize();
+	$max_img_size=min(16*1024*1204,$max_fs);
 	$tmpl->AddText("<h3>Сохранение фотографии</h3>");
 	$comm=rcv('comm');
-	if(isAccess('generic_galery','create'))
+	if(!isAccess('generic_galery','create'))
 	{
-	$an=" Фотография не установлена!";
-	if(strlen($comm)>5)
-	{
-	if(is_uploaded_file($_FILES['fotofile']['tmp_name']))
-	{
-		if($_FILES['fotofile']['size']>4000000)
-		$tmpl->msg("Слишком большой файл!$an","err");
-		else
+		$an=" Фотография не установлена!";
+		if(strlen($comm)>5)
 		{
-		$aa=getimagesize($_FILES['fotofile']['tmp_name']);
-		if(!$aa)
-		$tmpl->msg("Файл фотографии не является картинкой!$an","err");
-		else if(@$aa[2]!=2) $tmpl->msg("Даннная фотография не в формате JPG!$an","err");
-		else if((@$aa[0]<300)||(@$aa[1]<400)||(@$aa[0]>5000)||(@$aa[1]>5000)) $tmpl->msg("Некорректное разрешение (должно быть > 640*480 и < 2600*2600)!$an","err");
-		else
-		{
-			$res=mysql_query("INSERT INTO `photogalery` (`uid`,`comment`) VALUES ('$uid','$comm')");
-			if($res)
+			if(is_uploaded_file($_FILES['fotofile']['tmp_name']))
 			{
-				$fid=mysql_insert_id();
-	
-				$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], "$gpath/$fid.jpg");
-				if($m_ok) $tmpl->msg("Вроде бы фотография добавлена!","ok");
-				else $tmpl->msg("Не удалось записать файл!","err");
+				if($_FILES['fotofile']['size']>$max_img_size)
+				$tmpl->msg("Слишком большой файл!$an","err");
+				else
+				{
+					$aa=getimagesize($_FILES['fotofile']['tmp_name']);
+					if(!$aa)
+					$tmpl->msg("Файл фотографии не является картинкой!$an","err");
+					else if(@$aa[2]!=IMAGETYPE_JPEG) $tmpl->msg("Даннная фотография не в формате JPG!$an","err");
+					else if((@$aa[0]<300)||(@$aa[1]<400)||(@$aa[0]>10000)||(@$aa[1]>10000)) $tmpl->msg("Некорректное разрешение (должно быть > 300*400 и < 10000*10000)!$an","err");
+					else
+					{
+						$res=mysql_query("INSERT INTO `photogalery` (`uid`,`comment`) VALUES ('$uid','$comm')");
+						if($res)
+						{
+							$fid=mysql_insert_id();
+
+							$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], "$gpath/$fid.jpg");
+							if($m_ok) $tmpl->msg("Вроде бы фотография добавлена!","ok");
+							else $tmpl->msg("Не удалось записать файл!","err");
+						}
+						else $tmpl->msg("Ошибка базы данных!","err");
+					}
+				}
 			}
-			else $tmpl->msg("Ошибка базы данных!","err");
+			else $tmpl->msg("Не передан файл!$an","err");
 		}
-		}
-	}
-	else $tmpl->msg("Не передан файл!$an","err");
-	}
-	else $tmpl->msg("Необходимо написать комментарий!","err");
+		else $tmpl->msg("Необходимо написать комментарий!","err");
 	}
 	else $tmpl->msg("Недостаточто прав!");
 }

@@ -311,7 +311,7 @@ class doc_Specific extends doc_Nulltype
 		if($this->doc_data[4])
 		{
 			$pdf->SetFont('','',10);
-			$str = iconv('UTF-8', 'windows-1251', $this->doc_data[4]);
+			$str = iconv('UTF-8', 'windows-1251', str_replace("<br>",", ",unhtmlentities($this->doc_data[4])));
 			$pdf->MultiCell(0,5,$str,0,1,'R',0);
 			$pdf->ln(6);
 		}
@@ -326,11 +326,6 @@ class doc_Specific extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 		$pdf->Ln(7);
-
-		$str = iconv('UTF-8', 'windows-1251', str_replace("<br>",", ",unhtmlentities($this->doc_data[4])));
-		$pdf->MultiCell(0,5,$str,0,1,'L',0);
-
-		$pdf->Ln(10);
 
 		$pdf->SetFont('','',16);
 		$str="Покупатель";

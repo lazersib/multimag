@@ -493,7 +493,7 @@ class doc_s_Sklad
 			if($max_fs_size>1024*1024)	$max_fs_size=($max_fs_size/(1024*1024)).' Мб';
 			else if($max_fs_size>1024)	$max_fs_size=($max_fs_size/(1024)).' Кб';
 			else				$max_fs_size.='байт';
-			
+
 			$tmpl->AddText("
 			<table>
 			<tr><th width='50%'>Изображения</th><th width='50%'>Прикреплённые файлы</th></tr>
@@ -525,7 +525,7 @@ class doc_s_Sklad
 				$miniimg=new ImageProductor($nxt[0],'p', $nxt[1]);
 				$miniimg->SetX(175);
 				$img="<img src='".$miniimg->GetURI()."' width='175'>";
-				
+
 				$tmpl->AddText("$img<br>
 				<a href='?mode=esave&amp;l=sklad&amp;param=i_d&amp;pos=$pos&amp;img=$nxt[0]'>Убрать ассоциацию</a><br><br>");
 			}
@@ -568,7 +568,6 @@ class doc_s_Sklad
 			$res=mysql_query("SELECT `doc_base`.`cost` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить базовую цену товара");
 			$base_cost=mysql_result($res,0,0);
-
 
 			$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
 			$direct=array((-1)=>'Вниз', 0=>'K ближайшему', 1=>'Вверх');
@@ -944,7 +943,6 @@ class doc_s_Sklad
 			<button type='submit'>Сохранить</button>
 			</table></form>");
 
-
 			if($nxt[0])
 			{
 				$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
@@ -1211,8 +1209,6 @@ class doc_s_Sklad
 				if($r) $tmpl->msg("$nxt[0] - Сохранено","ok");
 				else $tmpl->msg("$nxt[0] - ошибка".mysql_error(),"err");
 			}
-
-
 		}
 		else if($param=='i')
 		{
@@ -1299,7 +1295,7 @@ class doc_s_Sklad
 			else
 			{
 				if($_FILES['userfile']['size']<=0)	throw new Exception("Файл не получен. Возможно он не был выбран, либо его размер превышает максимально допустимый сервером");
-				
+
 				$filename = $_FILES['userfile']['name'];
 				$filename = str_replace("#", "Hash.", $filename);
 				$filename = str_replace("$", "Dollar", $filename);
@@ -1322,7 +1318,7 @@ class doc_s_Sklad
 					if(!mkdir($CONFIG['site']['var_data_fs'].'/attachments/', 0777, true))	throw new Exception("Не удалось создать директорию для прикреплённых файлов. Вероятно, права доступа установлены неверно.");
 				}
 				else if(!is_dir($CONFIG['site']['var_data_fs'].'/attachments/'))	throw new Exception("Вместо директории для прикреплённых файлов обнаружен файл. Обратитесь к администратору.");
-				
+
 				if(!move_uploaded_file($_FILES['userfile']['tmp_name'], $CONFIG['site']['var_data_fs'].'/attachments/'.$attachment_id))
 					throw new Exception("Не удалось сохранить файл");
 				$tmpl->msg("Файл загружен, ID:$attachment_id","info");
@@ -1332,7 +1328,7 @@ class doc_s_Sklad
 				mysql_query("INSERT INTO `doc_base_attachments` (`pos_id`, `attachment_id`) VALUES ('$pos', '$attachment_id')");
 				if(mysql_errno())	throw new MysqlException("Не удалось внести запись о прикреплении файла");
 			}
-			
+
 			mysql_query("COMMIT");
 			doc_log("UPDATE","Add attachment (id:$attachment_id, $filename, $comment)", 'pos', $pos);
 
@@ -1623,7 +1619,7 @@ class doc_s_Sklad
 		<div onclick='tree_toggle(arguments[0])'>
 		<div><a href='' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=0','sklad'); return false;\" >Группы</a>  (<a href='/docs.php?l=sklad&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
 		<ul class='Container'>".$this->draw_level($select,0)."</ul></div>
-		
+
 		");
 
 	}
@@ -1907,7 +1903,7 @@ class doc_s_Sklad
 
 			$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 			`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
-			`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`)
+			`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -1927,13 +1923,13 @@ class doc_s_Sklad
 			if($li_max)		$sql.="AND `doc_base`.`likvid` <= '$li_max'";
 			if($de_min)		$sql.="AND `doc_base_dop`.`d_ext` >= '$de_min'";
 			if($de_max)		$sql.="AND `doc_base_dop`.`d_ext` <= '$de_max'";
-			if($size_min)	$sql.="AND `doc_base_dop`.`size` >= '$size_min'";
-			if($size_max)	$sql.="AND `doc_base_dop`.`size` <= '$size_max'";
+			if($size_min)		$sql.="AND `doc_base_dop`.`size` >= '$size_min'";
+			if($size_max)		$sql.="AND `doc_base_dop`.`size` <= '$size_max'";
 			if($m_min)		$sql.="AND `doc_base_dop`.`mass` >= '$m_min'";
 			if($m_max)		$sql.="AND `doc_base_dop`.`mass` <= '$m_max'";
-			if($cost_min)	$sql.="AND `doc_base`.`cost` >= '$cost_min'";
-			if($cost_max)	$sql.="AND `doc_base`.`cost` <= '$cost_max'";
-			if($type)	$sql.="AND `doc_base_dop`.`type` = '$type'";
+			if($cost_min)		$sql.="AND `doc_base`.`cost` >= '$cost_min'";
+			if($cost_max)		$sql.="AND `doc_base`.`cost` <= '$cost_max'";
+			if($type!='null')	$sql.="AND `doc_base_dop`.`type` = '$type'";
 
 			$sql.="ORDER BY `doc_base`.`name`";
 
