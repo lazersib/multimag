@@ -90,7 +90,7 @@ class doc_Dogovor extends doc_Nulltype
 		<input type='text' name='debt_size' value='$debt_size'><br>
 		Лимит оборотов по договору:<br>
 		<input type='text' name='limit' value='$limit'><br>
-		<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");	
+		<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
 	}
 
 	function DopSave()
@@ -104,7 +104,7 @@ class doc_Dogovor extends doc_Nulltype
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ( '{$this->doc}' ,'received','$received'), ( '{$this->doc}' ,'end_date','$end_date'), ( '{$this->doc}' ,'debt_control','$debt_control'), ( '{$this->doc}' ,'debt_size','$debt_size'), ( '{$this->doc}' ,'limit','$limit'), ( '{$this->doc}' ,'name','$name')");
 	}
-	
+
 	function DopBody()
 	{
 		global $tmpl;
@@ -116,9 +116,9 @@ class doc_Dogovor extends doc_Nulltype
 		$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`dir_fio`, `doc_agent`.`dir_fio_r`
 		FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
 		if(mysql_errno())		throw new MysqlException("Невозможно получить данные агента!");
-		
+
 		$agent_info=mysql_fetch_array($res);
-		
+
 $str="==== Покупатель: {$agent_info[1]} ====
 $agent_info[2], тел. $agent_info[3]<br>
 ИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]<br>
@@ -129,9 +129,9 @@ $agent_info[2], тел. $agent_info[3]<br>
 ИНН/КПП {$this->firm_vars['firm_inn']}<br>
 Р/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}<br>
 К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}";
-	
+
 			$rekv=$wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
-	
+
 			$wikiparser->AddVariable('REKVIZITY', $rekv);
 			$wikiparser->AddVariable('DOCNUM', $this->doc_data[9]);
 			$wikiparser->AddVariable('DOCDATE', date("d.m.Y",$this->doc_data[5]));
@@ -145,7 +145,7 @@ $agent_info[2], тел. $agent_info[3]<br>
 			$tmpl->AddText("<b>Текст договора (форматирование может отличаться от форматирования при печати):</b> <p>$text</p>");
 			$this->doc_data[4]='';
 		}
-		else 	$tmpl->AddText("<br><b style='color: #f00'>ВНИМАНИЕ! Текст договора не указан!</b><br>");	
+		else 	$tmpl->AddText("<br><b style='color: #f00'>ВНИМАНИЕ! Текст договора не указан!</b><br>");
 	}
 
 	function DocApply($silent=0)
@@ -159,7 +159,7 @@ $agent_info[2], тел. $agent_info[3]<br>
 		if( $nx[1] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');	
+		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');
 	}
 
 	function DocCancel($doc)
@@ -167,14 +167,14 @@ $agent_info[2], тел. $agent_info[3]<br>
 		global $uid;
 		$tim=time();
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");		
+		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
 		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
 		if(! $nx[4])				throw new Exception('Документ НЕ проведён!');
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 	}
-	
+
 	function PrintForm($doc, $opt='')
 	{
 		if($opt=='')
@@ -247,47 +247,47 @@ $agent_info[2], тел. $agent_info[3]<br>
 		global $wikiparser;
 		$rekv=$wikiparser->parse(html_entity_decode("''Поставщик: {$this->doc_data[3]}''",ENT_QUOTES,"UTF-8"));
 		$wikiparser->AddVariable('REKVIZITY', $rekv);
-		
+
 		$text=$wikiparser->parse(html_entity_decode($this->doc_data[4],ENT_QUOTES,"UTF-8"));
 		$tmpl->AddText("$text");
-	}	
+	}
 
 	function DogovorPDF($to_str=0)
 	{
 		global $CONFIG;
 		define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
 		require('fpdf/html2pdf.php');
-		
+
 		global $tmpl;
 		global $uid;
 		global $wikiparser;
-		
+
 		$dt=date("d.m.Y",$this->doc_data[5]);
-		
+
 		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
-		
+
 // 		$pdf=new FPDF('P');
 // 		$pdf->Open();
 // 		$pdf->SetAutoPageBreak(1,12);
 // 		$pdf->AddFont('Arial','','arial.php');
 // 		$pdf->tMargin=10;
 // 		$pdf->AddPage();
-// 
+//
 // 		$pdf->SetFont('Arial','',16);
 // 		$str = iconv('UTF-8', 'windows-1251', "Договор N {$this->doc_data[9]}");
 // 		$pdf->Cell(0,6,$str,0,1,'C',0);
-// 		
+//
 // 		$pdf->SetFont('Arial','',12);
-// 		$str = iconv('UTF-8', 'windows-1251', $this->doc_data[4]);	
+// 		$str = iconv('UTF-8', 'windows-1251', $this->doc_data[4]);
 // 		$pdf->Write(4,$str,'');
 
 		$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`dir_fio`, `doc_agent`.`dir_fio_r`
 		FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
 		if(mysql_errno())		throw new MysqlException("Невозможно получить данные агента!");
-		
+
 		$agent_info=mysql_fetch_array($res);
-		
+
 $str="==== Покупатель: {$agent_info[1]} ====
 $agent_info[2], тел. $agent_info[3]<br>
 ИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]<br>
@@ -311,13 +311,14 @@ $agent_info[2], тел. $agent_info[3]<br>
 		$wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
 		$wikiparser->AddVariable('FIRMNAME', unhtmlentities($this->firm_vars['firm_name']));
 		$wikiparser->AddVariable('FIRMDIRECTOR', unhtmlentities($this->firm_vars['firm_director_r']));
+		$wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
 
 		$text=$wikiparser->parse(html_entity_decode($this->doc_data[4],ENT_QUOTES,"UTF-8"));
 		$pdf=new createPDF($text,'','','','');
 
 		$pdf->run();
 
-		
+
 		if($to_str)
 			return $pdf->Output('dogovor.pdf','S');
 		else
