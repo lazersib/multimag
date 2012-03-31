@@ -1,3 +1,5 @@
+--- THIS SCRIPT IS BAD!
+
 -- MySQL dump 10.13  Distrib 5.1.49, for debian-linux-gnu (i486)
 --
 -- Host: localhost    Database: mmag_demo
