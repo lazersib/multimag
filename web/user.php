@@ -401,6 +401,141 @@ else if($mode=='iplog')
 	}
 	else $tmpl->logger("У Вас недостаточно прав!");
 }
+else if($mode=='psstat')
+{
+	if(isAccess('sys_ps-stat','view'))
+	{
+	
+	if(isset($_POST['date']))
+	
+	{
+		if(preg_match('/^(([0-9]{4})-([0-9]{2})-([0-9]{2}))$/',$_POST['date'],$data_post))
+		{
+			$data_post = mktime(0, 0, 0, $data_post[3], $data_post[4], $data_post[2]);
+			if ($data_post>time()) $data_post = time();
+		}
+		else $data_post = time();
+		
+		$data_post_1 = $data_post - (24*60*60);
+		$data_post_2 = $data_post_1 - (24*60*60);
+		$data_post_3 = $data_post_2 - (24*60*60);
+		$data_post_4 = $data_post_3 - (24*60*60);
+		$data_post_5 = $data_post_4 - (24*60*60);
+		$data_post_6 = $data_post_5 - (24*60*60);	
+		
+	
+	
+	$tmpl->AddText("<form action=\"\" method=\"post\">
+	Статистика за 7 дней, по дату <input name=\"date\" type=\"text\" value=\"".date('Y-m-d', $data_post)."\" maxlength=\"10\"> (YYYY-MM-DD) <input name=\"\" type=\"submit\" value=\"Получить данные\">
+	</form>
+	
+	<div style=\"width:100%; height:400px; overflow:auto;\">
+	<table border=\"1\" cellpadding=\"2\">
+	  <tr>
+	    <th scope=\"col\">Поисковый запрос</th>
+	    <th scope=\"col\">Всего:</th>
+	    <th scope=\"col\">".date("Y-m-d", $data_post_6)."</th>
+	    <th scope=\"col\">".date("Y-m-d", $data_post_5)."</th>
+	    <th scope=\"col\">".date("Y-m-d", $data_post_4)."</th>
+	    <th scope=\"col\">".date("Y-m-d", $data_post_3)."</th>
+	    <th scope=\"col\">".date("Y-m-d", $data_post_2)."</th>
+	    <th scope=\"col\">".date("Y-m-d", $data_post_1)."</th>
+	    <th scope=\"col\">".date("Y-m-d", $data_post)."</th>
+	  </tr>");
+		
+		$counter_data = "SELECT `ps_query`.`query`,
+	 sum(`main`.`counter`) as `counter`,
+	 `".date("Y-m-d", $data_post_6)."`.`counter` as `".date("Y-m-d", $data_post_6)."`,
+	 `".date("Y-m-d", $data_post_5)."`.`counter` as `".date("Y-m-d", $data_post_5)."`,
+	 `".date("Y-m-d", $data_post_4)."`.`counter` as `".date("Y-m-d", $data_post_4)."`,
+	 `".date("Y-m-d", $data_post_3)."`.`counter` as `".date("Y-m-d", $data_post_3)."`,
+	 `".date("Y-m-d", $data_post_2)."`.`counter` as `".date("Y-m-d", $data_post_2)."`,
+	 `".date("Y-m-d", $data_post_1)."`.`counter` as `".date("Y-m-d", $data_post_1)."`,
+	 `".date("Y-m-d", $data_post)."`.`counter` as `".date("Y-m-d", $data_post)."`
+	 from `ps_counter` as `main`
+	  left join `ps_query` on `ps_query`.`id` = `main`.`query`
+	  left join (
+	  SELECT `query`, sum(`counter`) as `counter` from `ps_counter` where `date` = '".date("Y-m-d", $data_post_6)."' group by `query`
+	  ) as `".date("Y-m-d", $data_post_6)."` on `".date("Y-m-d", $data_post_6)."`.`query` = `main`.`query`
+	  left join (
+	  SELECT `query`, sum(`counter`) as `counter` from `ps_counter` where `date` = '".date("Y-m-d", $data_post_5)."' group by `query`
+	  ) as `".date("Y-m-d", $data_post_5)."` on `".date("Y-m-d", $data_post_5)."`.`query` = `main`.`query`
+	  left join (
+	  SELECT `query`, sum(`counter`) as `counter` from `ps_counter` where `date` = '".date("Y-m-d", $data_post_4)."' group by `query`
+	  ) as `".date("Y-m-d", $data_post_4)."` on `".date("Y-m-d", $data_post_4)."`.`query` = `main`.`query`
+	  left join (
+	  SELECT `query`, sum(`counter`) as `counter` from `ps_counter` where `date` = '".date("Y-m-d", $data_post_3)."' group by `query`
+	  ) as `".date("Y-m-d", $data_post_3)."` on `".date("Y-m-d", $data_post_3)."`.`query` = `main`.`query`
+	  left join (
+	  SELECT `query`, sum(`counter`) as `counter` from `ps_counter` where `date` = '".date("Y-m-d", $data_post_2)."' group by `query`
+	  ) as `".date("Y-m-d", $data_post_2)."` on `".date("Y-m-d", $data_post_2)."`.`query` = `main`.`query`
+	  left join (
+	  SELECT `query`, sum(`counter`) as `counter` from `ps_counter` where `date` = '".date("Y-m-d", $data_post_1)."' group by `query`
+	  ) as `".date("Y-m-d", $data_post_1)."` on `".date("Y-m-d", $data_post_1)."`.`query` = `main`.`query`
+	  left join (
+	  SELECT `query`, sum(`counter`) as `counter` from `ps_counter` where `date` = '".date("Y-m-d", $data_post)."' group by `query`
+	  ) as `".date("Y-m-d", $data_post)."` on `".date("Y-m-d", $data_post)."`.`query` = `main`.`query`
+	   where `main`.`date` >= '".date("Y-m-d", $data_post_6)."' and `main`.`date` <= '".date("Y-m-d", $data_post)."'
+		 group by `main`.`query`
+		 order by `counter` DESC";
+		
+		
+		/*$counter_data = "SELECT `ps_query`.`query`,
+	 sum(`main`.`counter`) as `counter`,
+	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post_6)."` where `".date("Y-m-d", $data_post_6)."`.`date` = '".date("Y-m-d", $data_post_6)."' and `".date("Y-m-d", $data_post_6)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post_6)."`,
+	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post_5)."` where `".date("Y-m-d", $data_post_5)."`.`date` = '".date("Y-m-d", $data_post_5)."' and `".date("Y-m-d", $data_post_5)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post_5)."`,
+	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post_4)."` where `".date("Y-m-d", $data_post_4)."`.`date` = '".date("Y-m-d", $data_post_4)."' and `".date("Y-m-d", $data_post_4)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post_4)."`,
+	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post_3)."` where `".date("Y-m-d", $data_post_3)."`.`date` = '".date("Y-m-d", $data_post_3)."' and `".date("Y-m-d", $data_post_3)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post_3)."`,
+	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post_2)."` where `".date("Y-m-d", $data_post_2)."`.`date` = '".date("Y-m-d", $data_post_2)."' and `".date("Y-m-d", $data_post_2)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post_2)."`,
+	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post_1)."` where `".date("Y-m-d", $data_post_1)."`.`date` = '".date("Y-m-d", $data_post_1)."' and `".date("Y-m-d", $data_post_1)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post_1)."`,
+	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post)."` where `".date("Y-m-d", $data_post)."`.`date` = '".date("Y-m-d", $data_post)."' and `".date("Y-m-d", $data_post)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post)."`
+	 from `ps_counter` as `main`
+	  left join `ps_query` on `ps_query`.`id` = `main`.`query`
+	   where `main`.`date` >= '".date("Y-m-d", $data_post_6)."' and `main`.`date` <= '".date("Y-m-d", $data_post)."'
+		 group by `main`.`query`
+		 order by `counter` DESC";*/
+		
+		
+		if($counter_data = mysql_query($counter_data))
+		{
+			while ($counter_data_row = mysql_fetch_row($counter_data))
+			{
+				$tmpl->AddText("
+	  <tr>
+	    <td>". $counter_data_row[0] ."</td>
+	    <td>". $counter_data_row[1] ."</td>
+	    <td>". $counter_data_row[2] ."</td>
+	    <td>". $counter_data_row[3] ."</td>
+	    <td>". $counter_data_row[4] ."</td>
+	    <td>". $counter_data_row[5] ."</td>
+	    <td>". $counter_data_row[6] ."</td>
+	    <td>". $counter_data_row[7] ."</td>
+	    <td>". $counter_data_row[8] ."</td>
+	  </tr>
+				");
+			}
+		}
+		
+	$tmpl->AddText("
+	</table>
+	</div>
+	");
+		
+	} else {
+		
+	$tmpl->AddText("
+	
+	<form action=\"\" method=\"post\">
+	Статистика за 7 дней, по дату <input name=\"date\" type=\"text\" value=\"".date('Y-m-d')."\" maxlength=\"10\"> (YYYY-MM-DD) <input name=\"\" type=\"submit\" value=\"Получить данные\">
+	</form>
+	
+	");
+		
+	}
+	
+	}
+	else $tmpl->logger("У Вас недостаточно прав!");
+}
 else $tmpl->logger("Uncorrect mode!");
 
 
