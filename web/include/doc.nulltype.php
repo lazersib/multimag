@@ -17,7 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once($CONFIG['site']['location']."/include/doc.tovary.php");
 include_once($CONFIG['site']['location']."/include/doc.core.php");
 
 include_once($CONFIG['site']['location']."/include/doc.predlojenie.php");
@@ -27,7 +26,6 @@ $doc_types[0]="Неопределённый документ";
 
 class doc_Nulltype
 {
-	// Создание нового документа или редактирование заголовка старого
 	protected $doc;				// ID документа
 	protected $doc_type;			// ID типа документа
 	protected $doc_name;			// Наименование документа	(для контроля прав и пр.)
@@ -89,7 +87,7 @@ class doc_Nulltype
 		$this->dop_data[$name]=$value;
 	}
 
-	// Создать документ с заданными данными
+	/// Создать документ с заданными данными
 	public function Create($doc_data, $from='')
 	{
 		//var_dump($doc_data);

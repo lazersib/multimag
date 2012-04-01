@@ -399,7 +399,7 @@ class doc_s_Sklad
 			<table cellpadding='0' width='100%' id='fg_table'>
 			<tfoot>
 			<tr><td align='right'><select name='pp' id='fg_select'>");
-			$r=mysql_query("SELECT `id`, `param`, `type` FROM `doc_base_params` ORDER BY `param`");
+			$r=mysql_query("SELECT `id`, `param`, `type` FROM `doc_base_params` WHERE `system`='0' ORDER BY `param`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о дополнительных свойствах");
 			while($p=mysql_fetch_row($r))
 			{
@@ -440,7 +440,7 @@ class doc_s_Sklad
 			}
 			$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
 			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
-			WHERE  `doc_group_params`.`group_id`='$nxt[8]' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
+			WHERE  `doc_group_params`.`group_id`='$nxt[8]' AND `doc_base_params`.`system`='0' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
 			ORDER BY `doc_base_params`.`id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные свойства группы!");
 			while($nx=mysql_fetch_row($res))
@@ -733,83 +733,63 @@ class doc_s_Sklad
 		// Связанные товары
 		else if($param=='l')
 		{
-			$plm=rcv('plm');
-			include_once("include/doc.sklad.link.php");
-			if($plm=='')
-			{
-				link_poslist($pos);
-				$tmpl->AddText("<table width=100% id='sklad_editor'>
-				<tr><td id='groups' width=200 valign='top' class='lin0>'");
-				link_groups($pos);
-				$tmpl->AddText("<td id='sklad' valign='top' class='lin1'>");
-				link_sklad($pos,0);
-				$tmpl->AddText("</table>");
+			$jparam=rcv('jparam');
+			require_once("include/doc.sklad.link.php");
+			$poseditor=new LinkPosList($pos);
+			$poseditor->SetEditable(1);
+			if($jparam=='')
+			{			
+				$tmpl->AddText($poseditor->Show());
 			}
-			else if($plm=='sg')
+			else
 			{
 				$tmpl->ajax=1;
-				$tmpl->SetText('');
-				$group=rcv('group');
-				link_sklad($pos, $group);
-			}
-			else if($plm=='pos')
-			{
-				$tmpl->ajax=1;
-				$tmpl->SetText('');
-				$vpos=rcv('vpos');
-
-				$res=mysql_query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
-				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
-				if(mysql_num_rows($res)==0)
+				if($jparam=='jget')
 				{
-					mysql_query("INSERT INTO `doc_base_kompl` (`pos_id`,`kompl_id`,`cnt`) VALUES ('$pos','$vpos','1')");
-					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку!");
-					doc_log("UPDATE komplekt","add kompl: pos_id:$vpos",'pos',$pos);
+					$str="{ response: '2', content: [".$poseditor->GetAllContent()."]}";
+					$tmpl->SetText($str);
 				}
-				else
+				// Получение данных наименования
+				else if($jparam=='jgpi')
 				{
-					$nxt=mysql_fetch_row($res);
-					mysql_query("UPDATE `doc_base_kompl` SET `cnt`=`cnt`+'1' WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
-					if(mysql_errno())	throw new MysqlException("Не удалось вставить строку!");
-					doc_log("UPDATE komplekt","change cnt: kompl_id:$nxt[1], cnt:$nxt[2]+1",'pos',$nxt[1]);
+					$pos=rcv('pos');
+					$tmpl->AddText($poseditor->GetPosInfo($pos));
 				}
-
-				link_poslist($pos);
-			}
-			else if($plm=='cc')
-			{
-				$tmpl->ajax=1;
-				$tmpl->SetText('');
-				$s=rcv('s');
-				$vpos=rcv('vpos');
-				if($s<=0) $s=1;
-				$res=mysql_query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
-				if(mysql_errno())	throw MysqlException("Не удалось выбрать строку!");
-				$nxt=mysql_fetch_row($res);
-				if(!$nxt)		throw new Exception("Строка $vpos не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-				if($s!=$nxt[1])
+				// Json вариант добавления позиции
+				else if($jparam=='jadd')
 				{
-					$res=mysql_query("UPDATE `doc_base_kompl` SET `cnt`='$s' WHERE `pos_id`='$pos' AND `id`='$vpos'");
-					if(mysql_errno())	throw MysqlException("Не удалось обновить количество в строке");
-					kompl_poslist($pos);
-					doc_log("UPDATE komplekt","change cnt: kompl_id:$nxt[1], cnt:$nxt[1] => $s",'pos',$nxt[1]);
+					$pos=rcv('pos');
+					$tmpl->SetText($poseditor->AddPos($pos));
 				}
-				else link_poslist($pos);
-			}
-			else if($plm='d')
-			{
-				$tmpl->ajax=1;
-				$tmpl->SetText('');
-				$vpos=rcv('vpos');
-				$res=mysql_query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
-				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
-				$nxt=mysql_fetch_row($res);
-				if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-
-				$res=mysql_query("DELETE FROM `doc_base_kompl` WHERE `id`='$vpos'");
-				doc_log("UPDATE komplekt","del kompl: kompl_id:$nxt[0], doc_list_pos:$pos, cnt:$nxt[1], cost:$nxt[2]",'pos',$pos);
-
-				link_poslist($pos);
+				// Json вариант удаления строки
+				else if($jparam=='jdel')
+				{
+					$line_id=rcv('line_id');
+					$tmpl->SetText($poseditor->Removeline($line_id));
+				}
+				// Json вариант обновления
+				else if($jparam=='jup')
+				{
+					$line_id=rcv('line_id');
+					$value=rcv('value');
+					$type=rcv('type');
+					$tmpl->SetText($poseditor->UpdateLine($line_id, $type, $value));
+				}
+				// Получение номенклатуры выбранной группы
+				else if($jparam=='jsklad')
+				{
+					$group_id=rcv('group_id');
+					$str="{ response: 'sklad_list', group: '$group_id',  content: [".$poseditor->GetSkladList($group_id)."] }";
+					$tmpl->SetText($str);
+				}
+				// Поиск по подстроке по складу
+				else if($jparam=='jsklads')
+				{
+					$s=rcv('s');
+					$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";
+					$tmpl->SetText($str);
+				}
+				
 			}
 		}
 		// История изменений
@@ -1432,7 +1412,7 @@ class doc_s_Sklad
 			if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 			if(!mysql_num_rows($res))
 			{
-				mysql_query("INSERT INTO `doc_base_params` (`param`, `type`) VALUES ('ZP', 'double')");
+				mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `system`) VALUES ('ZP', 'double', '1')");
 				if(mysql_errno())	throw new MysqlException("Не удалось добавить доп.свойство товара");
 				$nxt=array(0 => mysql_insert_id(), 1 => 0);
 			}

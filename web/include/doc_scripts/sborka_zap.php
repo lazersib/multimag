@@ -2,7 +2,7 @@
 
 include_once('include/doc.zapposeditor.php');
 
-
+/// Сценарий автоматизации: сборка с перемещением и начислением заработной платы
 class ds_sborka_zap
 {
 

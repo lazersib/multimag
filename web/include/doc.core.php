@@ -17,7 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once($CONFIG['site']['location']."/include/doc.tovary.php");
 include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
 function __autoload($class_name)
@@ -435,7 +434,7 @@ function getDocBaseGroupOptions($selected_id=0, $pid=0, $level=0)
 	return $ret;
 }
 
-// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ === ==========
+/// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
 function GetNextAltNum($type,$subtype,$cur=0)
 {
 	$res=mysql_query("SELECT `altnum` FROM `doc_list` WHERE `type`='$type' AND `subtype`='$subtype' AND `altnum`!='$cur' ORDER BY `altnum` DESC");
@@ -444,8 +443,8 @@ function GetNextAltNum($type,$subtype,$cur=0)
 	return $newnum;
 }
 
-// ====== Получение данных, связанных с документом =============================
-// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ === ==========
+/// ====== Получение данных, связанных с документом =============================
+/// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
 function get_docdata($doc)
 {
 	global $doc_data;
@@ -473,7 +472,7 @@ function get_docdata($doc)
 	}
 }
 
-// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ === ==========
+/// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
 function DocInfo($p_doc)
 {
 	$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
@@ -487,6 +486,14 @@ function DocInfo($p_doc)
 		return "<b>Относится к:</b> $r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt";
 	}
 	return '';
+}
+/// Ссылка на ajax перезагрузку складского блока
+/// Перенесено сюда из устаревшего файла doc.tovary.php
+/// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
+function link_sklad($doc, $link, $text)
+{
+	global $tmpl;
+	return "<a title='$link' href='' onclick=\"EditThis('/doc.php?mode=srv&opt=sklad&doc=$doc&$link','sklad'); return false;\" >$text</a> ";
 }
 
 // =========== Определение типа документа и создание соответствующего класса ====================

@@ -74,11 +74,32 @@ abstract class PriceLoader
 		return false;
 	}
 	
+	/// Определение совпадений фирмы с несколькими сигнатурами. Для выполнения анализа для нужной фирмы использовать useFirmAndCurency(firm_id, currency_id)
+	public function detectSomeFirm()
+	{
+		$firm_list=array();
+		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency` FROM `firm_info`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные фирмы");
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($this->findSignature($nxt[2]))
+				$firm_list[]=array('firm_id'=>$nxt[0], 'firm_name'=>$nxt[1], 'curency_id'=>$nxt[3]);
+		}
+		return $firm_list;
+	}
+	
+	/// Выбрать фирму и валюту для последующей загрузки прайса в базу
+	public function useFirmAndCurency($firm_id, $currency_id)
+	{
+		$this->firm_id=$firm_id;
+		$this->def_currency=$currency_id;		
+	}
+	
 	/// Запуск анализа
 	public function Run()
 	{
 		$this->line_cnt=0;
-		if(($this->firm_id==0) && $insert_to_database)		throw new Exception("Принадлежность прайс-листа к фирме не задана");	
+		if(($this->firm_id==0) && $this->insert_to_database)		throw new Exception("Принадлежность прайс-листа к фирме не задана");	
 		$this->table_parsing=0;
 		$this->html='';
 

@@ -17,16 +17,17 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// Редактор списка наименований
-// Для ускорения работы используется ajax технология
+/// Редактор списка наименований.
+/// Для ускорения работы используется ajax технология
 class PosEditor
 {
-	var $editable;	// Разрешено ли редактирование и показ складского блока
-	var $cost_id;	// id выбранной цены. 0 - базовая
-	var $sklad_id;  // id склада
-	var $show_vc;	// Показывать код производителя
-	var $show_tdb;	// Показывать тип/размеры/массу
-	var $show_rto;	// Показывать резерв/в пути/предложения
+	
+	var $editable;		///< Разрешено ли редактирование и показ складского блока
+	var $cost_id;		///< id выбранной цены. 0 - базовая	
+	var $sklad_id;		///< id склада	
+	var $show_vc;		///< Показывать код производителя	
+	var $show_tdb;		///< Показывать тип/размеры/массу	
+	var $show_rto;		///< Показывать резерв/в пути/предложения
 	
 function __construct()
 {
@@ -37,6 +38,8 @@ function __construct()
 	$this->show_rto=@$CONFIG['poseditor']['rto'];
 }
 
+/// Разрешить или запретить изменение данных в списке наименований
+/// @param editable 0: запретить, 1: разрешить
 function SetEditable($editable)
 {
 	$this->editable=$editable;
@@ -80,7 +83,8 @@ function getGroupLevel($level)
 
 };
 
-
+/// Редактор списка наименований документа.
+/// При создании экземпляра класса нужно указать ID существующеего документа
 class DocPosEditor extends PosEditor
 {
 	var $doc;	// Id документа
@@ -100,11 +104,12 @@ function __construct($doc)
 	if( @$CONFIG['poseditor']['true_gtd'] && $doc_data['type']==1)					$this->show_gtd=1;
 }
 
+/// Формирует html код списка товаров документа
 function Show($param='')
 {
 	global $CONFIG;
 	// Список товаров
-	/// TODO: возможность отключения редактирования в зависимости от статуса документа, настройка отображаемых столбцов из конфига. Не забыть про серийные номера.
+	/// @note TODO: возможность отключения редактирования в зависимости от статуса документа, настройка отображаемых столбцов из конфига. Не забыть про серийные номера.
 	/// Возможность отключения строки быстрого ввода
 	/// В итоге - сделать базовый класс, от которого наследуется редактор документов, редактор комплектующих, итп.
 	$ret="
@@ -185,7 +190,7 @@ function Show($param='')
 	return $ret;
 }
 
-// Получить весь текущий список товаров (документа)
+/// Получить весь текущий список товаров (документа)
 function GetAllContent()
 {
 	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_list_pos`.`gtd`
@@ -221,6 +226,7 @@ function GetAllContent()
 	return $ret;
 }
 
+/// Получить информацию о наименовании
 function GetPosInfo($pos)
 {
 	$ret='{response: 0}';
@@ -247,7 +253,7 @@ function GetPosInfo($pos)
 	return $ret;
 }
 
-// Возвращает выбранные данные, которые необходимо отобразить
+/// Возвращает выбранные данные, которые необходимо отобразить
 function ShowPosContent($param='')
 {
 	$ret='';
@@ -261,6 +267,7 @@ function ShowPosContent($param='')
 	return $ret;
 }
 
+/// Получить список номенклатуры заданной группы
 function GetSkladList($group)
 {
 	$ret='';
@@ -278,6 +285,7 @@ function GetSkladList($group)
 	return $this->FormatResult($res);
 }
 
+/// Получить список номенклатуры, содержащей в названии заданную строку
 function SearchSkladList($s)
 {
 	$ret='';

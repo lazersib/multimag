@@ -230,32 +230,48 @@ try
 	$dh  = opendir($CONFIG['price']['dir']);
 	if(!$dh)					throw new Exception("Не удалось открыть каталог с прайсами ({$CONFIG['price']['dir']})");
 	SetStatus('Loading prices');
+	require_once($CONFIG['location']."/common/priceloader.xls.php");
+	require_once($CONFIG['location']."/common/priceloader.ods.php");
+	
 	while (false !== ($filename = readdir($dh)))
 	{
-		$msg='';
-		
-		require_once($CONFIG['location']."/common/priceloader.xls.php");
-		require_once($CONFIG['location']."/common/priceloader.ods.php");
-	
 		$path_info = pathinfo($filename);
 		$ext=strtolower($path_info['extension']);
 		if($ext=='xls')		$loader=new XLSPriceLoader($CONFIG['price']['dir'].'/'.$filename);
 		else if($ext=='ods')	$loader=new ODSPriceLoader($CONFIG['price']['dir'].'/'.$filename);
 		else continue;
-		
-		if($firm=$loader->detectFirm())
+		$f=0;
+		$firm_array=$loader->detectSomeFirm();
+		$loader->setInsertToDatabase();
+		$msg="File: $filename\n";
+		foreach($firm_array as $firm)
 		{
-			$loader->setInsertToDatabase();
-			$msg.="Firm_id: $firm, ";
+			echo "{$msg}Firm_id: {$firm['firm_id']} ({$firm['firm_name']}), ";
+			$loader->useFirmAndCurency($firm['firm_id'],$firm['curency_id']);
 			$count=$loader->Run();
-			$msg.="Parsed ($count items)!";	
-			unlink($CONFIG['price']['dir']	.'/'.$filename);
+			echo "Parsed ($count items)!\n";
+			$f=1;
 		}
-		else
+		if($f==0)
 		{
 			$msg.="соответствий не найдено. Прайс не обработан.";
-			$mail_text.="Анализ прайсов: $msg\n";
+ 			$mail_text.="Анализ прайсов: $msg\n";
 		}
+		
+		
+// 		if($firm=$loader->detectFirm())
+// 		{
+// 			$loader->setInsertToDatabase();
+// 			$msg.="Firm_id: $firm, ";
+// 			$count=$loader->Run();
+// 			$msg.="Parsed ($count items)!";	
+// 			unlink($CONFIG['price']['dir']	.'/'.$filename);
+// 		}
+// 		else
+// 		{
+// 			$msg.="соответствий не найдено. Прайс не обработан.";
+// 			$mail_text.="Анализ прайсов: $msg\n";
+// 		}
 		log_write($CONFIG['price']['dir'], $msg);
 	}
 
@@ -333,7 +349,7 @@ try
 		FROM  `parsed_price` 
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm` 
 		LEFT JOIN `firm_info_group` ON `firm_info_group`.`firm_id`=`parsed_price`.`firm` AND `firm_info_group`.`group_id`='$nxt[4]'
-		WHERE `parsed_price`.`pos`='$nxt[0]' AND `parsed_price`.`cost`>'0' AND `parsed_price`.`nal`!='' AND `parsed_price`.`nal`!='-' AND `parsed_price`.`nal`!='call'");
+		WHERE `parsed_price`.`pos`='$nxt[0]' AND `parsed_price`.`cost`>'0' AND `parsed_price`.`nal`!='' AND `parsed_price`.`nal`!='-' AND `parsed_price`.`nal`!='call' AND `parsed_price`.`nal`!='0'");
 		if(mysql_errno())	throw new Exception(mysql_error());
 		while($nx=mysql_fetch_row($rs))
 		{

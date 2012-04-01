@@ -338,7 +338,7 @@ protected function ProductCard($product)
 
 		$param_res=mysql_query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-		WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='0'");
+		WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='0' AND `doc_base_params`.`system`='0'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список свойств!");
 		while($params=mysql_fetch_row($param_res))
 		{
@@ -352,7 +352,7 @@ protected function ProductCard($product)
 			$f=0;
 			$param_res=mysql_query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-			WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='$nxtg[0]'");
+			WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='$nxtg[0]' AND `doc_base_params`.`system`='0'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список свойств!");
 			while($params=mysql_fetch_row($param_res))
 			{

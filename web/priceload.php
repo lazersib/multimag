@@ -276,18 +276,49 @@ if($mode=='')
 	$tmpl->AddText("
 	<h1>Редактор организаций</h1>
 	<table width='100%'>
-	<tr><th>ID<th>Наименование<th>Сигнатура<th>Валюта<th>Дата обновления<th>Отчёты");
+	<tr><th>ID<th>Наименование<th>Обновлено<th>Сигнатура<th>Валюта<th>Отчёты");
 	$res=mysql_query("SELECT `firm_info`.`id`, `firm_info`.`name`, `firm_info`.`signature`, `currency`.`name`, `firm_info`.`coeff`, `firm_info`.`last_update`  FROM `firm_info`
 	LEFT JOIN `currency` ON `currency`.`id`=`firm_info`.`currency`
 	ORDER BY `firm_info`.`last_update` DESC");
-	echo mysql_error();
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список организаций");
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr class='lin$i'><td><a href='?mode=firme&amp;id=$nxt[0]'>$nxt[0]</a>
-		<td>$nxt[1]<td>$nxt[2]<td>$nxt[3], $nxt[4]<td>$nxt[5]<td>
+		$date_style='';
+		$date='';
+		$time=time();
+		$udate=strtotime($nxt[5]);
+		$days=floor( ($time-$udate)/(60*60*24));
+		if($days<30)
+		{
+			if($days<3)		$date_style="style='color: #0d0'";
+			else if($days<7)	$date_style="style='color: #d80'";
+			else			$date_style="style='color: #f00'";
+			
+			if($days<1)
+			{
+				$hours=floor( ($time-$udate)/(60*60));
+				if($hours<1)
+				{
+					$minutes=floor( ($time-$udate)/60);
+					if($minutes<1)
+					{
+						$date='только что';
+					}
+					else $date=$minutes.' мин. назад';
+				}
+				else $date=$hours.' ч. назад';
+			}
+			else $date=$days.' дн. назад';
+		}
+		else if($udate<2)	$date='никогда';
+		else			$date=date("Y-m-d", $udate);
+		
+		$tmpl->AddText("<tr class='lin$i pointer'><td><a href='?mode=firme&amp;id=$nxt[0]'>$nxt[0]</a>
+		<td>$nxt[1]<td $date_style>$date<td>$nxt[2]<td>$nxt[3], $nxt[4]<td>
 		<a href='?mode=r_noparsed&amp;f=$nxt[0]'>Необработанные</a> |
 		<a href='?mode=r_parsed&amp;f=$nxt[0]'>Обработанные</a> |
 		<a href='?mode=r_multiparsed&amp;f=$nxt[0]'>Дублирующиеся</a>
+		
 		");
 		$i=1-$i;
 	}
@@ -331,26 +362,49 @@ else if($mode=="parse")
 		default:	throw new Exception("Неверное расширение файла!");
 	}
 	
-	if($firm=$loader->detectFirm())
+	$firm_array=$loader->detectSomeFirm();
+	$loader->setBuildHTMLData();
+	foreach($firm_array as $firm)
 	{
 		$loader->setInsertToDatabase();
-		if($bhtml)	$loader->setBuildHTMLData();
+		$loader->useFirmAndCurency($firm['firm_id'],$firm['curency_id']);
 		$count=$loader->Run();
-		$tmpl->msg("Успешно обработано $count строк фирмы $firm","ok");
+		$tmpl->msg("Успешно обработано $count строк фирмы {$firm['firm_id']} ({$firm['firm_name']})","ok");
 		if($bhtml)	$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
+		$f=1;
 	}
-	else
+	if($f==0)
 	{
 		$tmpl->msg("Фирма не определена!","info");
 		if($bhtml)
 		{
-			$loader->setBuildHTMLData();
 			$loader->Run();
 			$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
 		}
 
 		firmAddForm();
 	}
+	
+// 	if($firm=$loader->detectFirm())
+// 	{
+// 		$loader->setInsertToDatabase();
+// 		if($bhtml)	$loader->setBuildHTMLData();
+// 		$count=$loader->Run();
+// 		$tmpl->msg("Успешно обработано $count строк фирмы $firm","ok");
+// 		if($bhtml)	$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
+// 	}
+// 	else
+// 	{
+// 		$tmpl->msg("Фирма не определена!","info");
+// 		if($bhtml)
+// 		{
+// 			$loader->setBuildHTMLData();
+// 			$loader->Run();
+// 			$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
+// 		}
+// 
+// 		firmAddForm();
+// 	}
 }
 else if($mode=='firme')
 {
