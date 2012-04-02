@@ -608,6 +608,60 @@ function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 	return round($cost,2);
 }
 
+// Проверка, не уходило ли когда-либо количество какого-либо товара в минус
+// Используется при отмене документов, уменьшающих остатки на складе, напр. реализаций и перемещений
+/// TODO: Устарело. Заменить везде, где используется на getStoreCntOnDate
+function CheckMinus($pos, $sklad)
+{
+    return getStoreCntOnDate($pos, $sklad);
+}
+
+// Получить количество товара на складе на заданную дату
+function getStoreCntOnDate($pos, $sklad, $unixtime=0)
+{
+	$cnt=0;
+	$sql_add=$unixtime?"AND `doc_list`.`date`<='$unixtime'":'';
+	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
+	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos' $sql_add
+	ORDER BY `doc_list`.`date`");
+	if(mysql_errno())	throw new MysqlExceprion("Не удалось запросить список документов с товаром ID:$pos при проверке на отрицательные остатки");
+	while($nxt=mysql_fetch_row($res))
+	{
+		if($nxt[1]==1)
+		{
+			if($nxt[2]==$sklad)	$cnt+=$nxt[0];
+		}
+		else if($nxt[1]==2)
+		{
+			if($nxt[2]==$sklad)	$cnt-=$nxt[0];
+		}
+		else if($nxt[1]==8)
+		{
+			if($nxt[2]==$sklad)	$cnt-=$nxt[0];
+			else
+			{
+				$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[3]' AND `param`='na_sklad'");
+				if(mysql_errno())	throw new MysqlExceprion("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+				$nasklad=mysql_result($rr,0,0);
+				if(!$nasklad)		throw new Exceprion("Не удалось получить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+				if($nasklad==$sklad)	$cnt+=$nxt[0];
+			}
+		}
+		else if($nxt[1]==17)
+		{
+			if($nxt[2]==$sklad)
+			{
+				if($nxt[4]==0)	$cnt+=$nxt[0];
+				else		$cnt+=$nxt[0];
+			}
+		}
+		if($cnt<0) break;
+	}
+	mysql_free_result($res);
+	return $cnt;
+}
+
 // Кол-во товара в резерве
 function DocRezerv($pos,$doc=0)
 {
