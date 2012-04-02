@@ -52,7 +52,8 @@ if($last_time_counter = mysql_fetch_row(mysql_query("select `data` from `ps_pars
 	$refer_query = mysql_query($refer_query);
 	while ($refer_query_data = mysql_fetch_row($refer_query)) {
 		
-		$str= urldecode ($refer_query_data[1]); // Договорились сразу писать декодированные рефы, так что это должно быть ненужным
+		//$str= urldecode ($refer_query_data[1]); // Договорились сразу писать декодированные рефы, так что это должно быть ненужным
+		$str= $refer_query_data[1];
 		$str = iconv("utf-8", "windows-1251", $str); // У меня в локале были проблемы, так что тоже может быть ненужным
 		
 		$str = trim($str);

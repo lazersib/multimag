@@ -145,7 +145,7 @@ function exception_handler($exception)
 {
 	$ip=getenv("REMOTE_ADDR");
 	$ag=getenv("HTTP_USER_AGENT");
-	$rf=getenv("HTTP_REFERER");
+	$rf=urldecode(getenv("HTTP_REFERER"));
 	$ff=$_SERVER['REQUEST_URI'];
 	$uid=$_SESSION['uid'];
 	$s=mysql_real_escape_string($exception->getMessage());
