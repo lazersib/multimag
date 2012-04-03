@@ -73,11 +73,11 @@ mysql_query("SET character_set_connection = UTF8");
 
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 
-$ip=getenv("REMOTE_ADDR");
-$ag=getenv("HTTP_USER_AGENT");
-$rf=getenv("HTTP_REFERER");
-$qq=$_SERVER['REQUEST_URI'].'?'.$_SERVER['QUERY_STRING'];
-$ff=$_SERVER['SCRIPT_NAME'];
+$ip=mysql_real_escape_string(getenv("REMOTE_ADDR"));
+$ag=mysql_real_escape_string(getenv("HTTP_USER_AGENT"));
+$rf=mysql_real_escape_string(urldecode(getenv("HTTP_REFERER")));
+$qq=mysql_real_escape_string(urldecode($_SERVER['REQUEST_URI'].'?'.$_SERVER['QUERY_STRING']));
+$ff=mysql_real_escape_string($_SERVER['SCRIPT_NAME']);
 $tim=time();
 $skidka="";
 $ncnt=rcv('ncnt');
@@ -176,7 +176,7 @@ function exception_handler($exception)
 {
 	$ip=getenv("REMOTE_ADDR");
 	$ag=getenv("HTTP_USER_AGENT");
-	$rf=getenv("HTTP_REFERER");
+	$rf=urldecode(getenv("HTTP_REFERER"));
 	$ff=$_SERVER['REQUEST_URI'];
 	$uid=$_SESSION['uid'];
 	$s=mysql_real_escape_string($exception->getMessage());
