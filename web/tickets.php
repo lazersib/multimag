@@ -20,6 +20,7 @@
 include_once("core.php");
 need_auth();
 
+
 function p_menu($dop='')
 {
 	global $tmpl;
@@ -41,7 +42,7 @@ function ShowTicket($n)
 	$nxt=mysql_fetch_row($res);
 	if(!$nxt)	$tmpl->msg("Задача не найдена!","err");
 	else
-	{	
+	{
 		$tmpl->AddText("<h2>$nxt[2]</h2>
 		<b>Дата создания:</b> $nxt[1]<br>
 		<b>Важность:</b> $nxt[3]<br>
@@ -55,8 +56,8 @@ function ShowTicket($n)
 		LEFT JOIN `users` ON `users`.`id`=`tickets_log`.`uid`
 		WHERE `ticket`='$nxt[0]'");
 		while($nx=mysql_fetch_row($res))
-			$tmpl->AddText("<li><i>$nx[1]</i>, <b>$nx[0]:</b> $nx[2]</li>");	
-		
+			$tmpl->AddText("<li><i>$nx[1]</i>, <b>$nx[0]:</b> $nx[2]</li>");
+
 		$tmpl->AddText("</ul><br><br><fieldset><legend>Установить статус</legend>
 		<form action=''>
 		<input type='hidden' name='mode' value='set'>
@@ -66,24 +67,39 @@ function ShowTicket($n)
 		$res=mysql_query("SELECT `id`, `name` FROM `tickets_state` WHERE `id`!='$nxt[9]'");
 		while($nx=mysql_fetch_row($res))
 			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
-		
+
 		$tmpl->AddText("</select><input type='submit' value='Сменить'></form></fieldset>
 		<fieldset><legend>Добавить коментарий:</legend>
 		<form action=''>
 		<input type='hidden' name='mode' value='set'>
 		<input type='hidden' name='opt' value='comment'>
 		<input type='hidden' name='n' value='$nxt[0]'>
-		<textarea name='comment'></textarea>
+		<textarea name='comment'></textarea><br>
 		<input type='submit' value='Добавить'></form></fieldset>
-		
+
 		<fieldset><legend>Изменить срок:</legend>
 		<form action=''>
 		<input type='hidden' name='mode' value='set'>
 		<input type='hidden' name='opt' value='to_date'>
 		<input type='hidden' name='n' value='$nxt[0]'>
-		<input type='text' name='to_date' class='vDateField' value='$nxt[5]'><br>
+		<input type='text' name='to_date' class='vDateField' value='$nxt[5]'>
 		<input type='submit' value='Изменить'></form></fieldset>
-		
+
+		<fieldset><legend>Переназначить задачу на:</legend>
+		<form action=''>
+		<input type='hidden' name='mode' value='set'>
+		<input type='hidden' name='opt' value='to_user'>
+		<input type='hidden' name='n' value='$nxt[0]'>
+		<select name='user_id'>");
+		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($nxt[0]==0) continue;
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] - $nxt[2] ($nxt[0])</option>");
+		}
+		$tmpl->AddText("</select>
+		<input type='submit' value='Изменить'></form></fieldset>
+
 		<fieldset><legend>Изменить приоритет:</legend>
 		<form action=''>
 		<input type='hidden' name='mode' value='set'>
@@ -92,10 +108,10 @@ function ShowTicket($n)
 		<select name='prio'>");
 		$res=mysql_query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
 		while($nxt=mysql_fetch_row($res))
-			$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");		
-		$tmpl->AddText("</select><br>
+			$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
+		$tmpl->AddText("</select>
 		<input type='submit' value='Изменить'></form></fieldset>
-		");	
+		");
 	}
 }
 
@@ -105,7 +121,7 @@ if($mode=='')
 {
 	p_menu("Задачи для меня");
 
-	$tmpl->AddText("<table width='100%'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Срок<th>Статус");
+	$tmpl->AddText("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Срок<th>Статус");
 	$res=mysql_query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
 	LEFT JOIN `users` ON `users`.`id`=`tickets`.`autor`
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
@@ -115,48 +131,47 @@ if($mode=='')
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");	
+		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");
 		$i=1-$i;
-	}	
+	}
 	$tmpl->AddText("</table>");
 }
 else if($mode=='new')
 {
-	if($rights['write'])
+	if(!isAccess('generic_tickets','create'))	throw new AccessException("Недостаточно привилегий");
+
+	p_menu("Новая задача");
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='add'>
+	Задача для:<br>
+	<select name='to_uid'>");
+	$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
+	while($nxt=mysql_fetch_row($res))
 	{
-		p_menu("Новая задача");
-		$tmpl->AddText("<form action='' method='post'>
-		<input type='hidden' name='mode' value='add'>
-		Задача для:<br>
-		<select name='to_uid'>
-		<option value='0'>-- Не важно --</option>");
-		$res=mysql_query("SELECT `id`, `name` FROM `users` ORDER BY `name`");
-		while($nxt=mysql_fetch_row($res))
-		{
-			if($nxt[0]==0) continue;
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[0])</option>");
-		}
-		$tmpl->AddText("</select><br>
-		Название:<br>
-		<input type='text' name='theme'><br>
-		Важность, приоритет:<br>
-		<select name='prio'>");
-		$res=mysql_query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
-		while($nxt=mysql_fetch_row($res))
-			$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
-		
-		$tmpl->AddText("</select><br>
-		Срок (указывать не обязательно):<br>
-		<input type='text' name='to_date'  class='vDateField'><br>
-		Описание задачи:<br>
-		<textarea name='text'></textarea><br>
-		<input type='submit' value='Назначить задачу'>
-		</form>");
+		if($nxt[0]==0) continue;
+		$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] - $nxt[2] ($nxt[0])</option>");
 	}
-	else $tmpl->msg("У Вас недостаточно привилегий!");
+	$tmpl->AddText("</select><br>
+	Название:<br>
+	<input type='text' name='theme'><br>
+	Важность, приоритет:<br>
+	<select name='prio'>");
+	$res=mysql_query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
+	while($nxt=mysql_fetch_row($res))
+		$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
+
+	$tmpl->AddText("</select><br>
+	Срок (указывать не обязательно):<br>
+	<input type='text' name='to_date'  class='vDateField'><br>
+	Описание задачи:<br>
+	<textarea name='text'></textarea><br>
+	<input type='submit' value='Назначить задачу'>
+	</form>");
+
 }
 else if($mode=='add')
 {
+	if(!isAccess('generic_tickets','create'))	throw new AccessException("Недостаточно привилегий");
 	p_menu("Сохранение задачи");
 	$uid=@$_SESSION['uid'];
 	$to_uid=rcv('to_uid');
@@ -164,31 +179,31 @@ else if($mode=='add')
 	$prio=rcv('prio');
 	$to_date=rcv('to_date');
 	$text=rcv('text');
-	
+
 	mysql_query("INSERT INTO `tickets` (`date`, `autor`, `priority`, `theme`, `text`, `to_uid`, `to_date`)
 	VALUES ( NOW(), '$uid', '$prio', '$theme', '$text', '$to_uid', '$to_date')");
 	if(!mysql_error())
 		$tmpl->msg("Задание назначено!","ok");
 	else $tmpl->msg("Ошибка добавления!","err");
 	$n=mysql_insert_id();
-	
+
 	$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='$to_uid'");
 	$email=mysql_result($res,0,0);
-	
+
 	$msg="Для Вас новое задание от $uid: $theme - $text\n";
 	if($to_date) $msg.="Выполнить до $to_date\n";
 	$msg.="Посмотреть задание можно здесь: http://{$CONFIG['site']['name']}/tickets.php/mode=view&n=$n";
-	
+
 	mailto($email, "У Вас Новое задание - $theme", $msg);
-	
+
 	ShowTicket($n);
-	
+
 }
 else if($mode=='my')
 {
 	p_menu("Мои задачи");
 
-	$tmpl->AddText("<table width='100%'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Для<th>Срок<th>Статус");
+	$tmpl->AddText("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Для<th>Срок<th>Статус");
 	$res=mysql_query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
 	LEFT JOIN `users` ON `users`.`id`=`tickets`.`to_uid`
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
@@ -198,16 +213,16 @@ else if($mode=='my')
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");	
+		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");
 		$i=1-$i;
-	}	
+	}
 	$tmpl->AddText("</table>");
 }
 else if($mode=='viewall')
 {
 	p_menu("Все задачи");
 
-	$tmpl->AddText("<table width='100%'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Для<th>Срок<th>Статус");
+	$tmpl->AddText("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Для<th>Срок<th>Статус");
 	$res=mysql_query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color`, `t`.`name` FROM `tickets`
 	LEFT JOIN `users` AS `a` ON `a`.`id`=`tickets`.`autor`
 	LEFT JOIN `users` AS `t` ON `t`.`id`=`tickets`.`to_uid`
@@ -217,9 +232,9 @@ else if($mode=='viewall')
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[8]<td>$nxt[5]<td>$nxt[6]");	
+		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[8]<td>$nxt[5]<td>$nxt[6]");
 		$i=1-$i;
-	}	
+	}
 	$tmpl->AddText("</table>");
 }
 else if($mode=='view')
@@ -227,10 +242,11 @@ else if($mode=='view')
 	$n=rcv('n');
 	p_menu("Просмотр задачи N$n");
 	ShowTicket($n);
-	
+
 }
 else if($mode=='set')
 {
+	if(!isAccess('generic_tickets','edit'))	throw new AccessException("Недостаточно привилегий");
 	$opt=rcv('opt');
 	$n=rcv('n');
 	$txt='';
@@ -239,7 +255,7 @@ else if($mode=='set')
 		$state=rcv('state');
 		$res=mysql_query("SELECT `name` FROM `tickets_state` WHERE `id`='$state'");
 		$st_text=mysql_result($res,0,0);
-		
+
 		mysql_query("UPDATE `tickets` SET `state`='$state' WHERE `id`='$n'");
 		$txt="Установил статус *$st_text*";
 	}
@@ -251,7 +267,7 @@ else if($mode=='set')
 	if($opt=='to_date')
 	{
 		$to_date=rcv('to_date');
-		
+
 		mysql_query("UPDATE `tickets` SET `to_date`='$to_date' WHERE `id`='$n'");
 		$txt="Установил срок *$to_date*";
 	}
@@ -260,31 +276,61 @@ else if($mode=='set')
 		$prio=rcv('prio');
 		$res=mysql_query("SELECT `name` FROM `tickets_priority` WHERE `id`='$prio'");
 		$st_text=mysql_result($res,0,0);
-		
+
 		mysql_query("UPDATE `tickets` SET `priority`='$prio' WHERE `id`='$n'");
 		$txt="Установил приоритет *$st_text ($prio)*";
 	}
-	
+	if($opt=='to_user')
+	{
+		$user_id=rcv('user_id');
+		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='$user_id'");
+		$user_name=mysql_result($res,0,0);
+
+		mysql_query("UPDATE `tickets` SET `to_uid`='$user_id' WHERE `id`='$n'");
+		$txt=" переназначил задачу на пользователя $user_name ID $user_id";
+	}
 	if($txt)
 	{
 		mysql_query("INSERT INTO `tickets_log` (`uid`, `ticket`, `date`, `text`)
-		VALUES ('$uid', '$n', NOW(), '$txt')");	
-		
-		
-		$res=mysql_query("SELECT `users`.`email`, `tickets`.`theme` FROM `tickets`
+		VALUES ('$uid', '$n', NOW(), '$txt')");
+
+
+		$res=mysql_query("SELECT `users`.`email`, `users`.`jid`, `tickets`.`theme` FROM `tickets`
 		LEFT JOIN `users` AS `users` ON `users`.`id`=`tickets`.`autor`
 		WHERE `tickets`.`id`='$n'");
-		$email=mysql_result($res,0,0);
-		$theme=mysql_result($res,0,1);
-		
+		list($email,$jid,$theme)=mysql_fetch_row($res);
+
 		$msg="Изменение состояния Вашего задания: $theme\n{$_SESSION['name']} $txt\n\n";
 		$msg.="Посмотреть задание можно здесь: http://{$CONFIG['site']['name']}/ticket.php/mode=view&n=$n";
-	
-		mailto($email, "Change ticket - $theme", $msg);
-		
+
+		try
+		{
+			mailto($email, "Change ticket - $theme", $msg);
+		}
+		catch(Exception $e)
+		{
+			$tmpl->logger("Невозможно отправить сообщение email!");
+		}
+
+		if($jid)
+		{
+			try
+			{
+				$xmppclient->connect();
+				$xmppclient->processUntil('session_start');
+				$xmppclient->presence();
+				$xmppclient->message($jid, $msg);
+				$xmppclient->disconnect();
+				$tmpl->msg("Сообщение было отправлено!","ok");
+			}
+			catch(Exception $e)
+			{
+				$tmpl->logger("Невозможно отправить сообщение XMPP!");
+			}
+		}
 	}
-	
-	p_menu("Корректировка задачи N$nxt[0]");
+
+	p_menu("Корректировка задачи N$n");
 	$tmpl->msg("Сделано!");
 	ShowTicket($n);
 

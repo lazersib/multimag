@@ -65,10 +65,10 @@ else if($mode=='send')
 	$text="Нам написал сообщение $nm($backadr)с сайта {$CONFIG['site']['name']}\n-------------------\n$text\n";
 	$text.="-------------------\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
 	if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
-	
+
 	if($opt=='jabber')
 	{
-		try 
+		try
 		{
 			$xmppclient->connect();
 			$xmppclient->processUntil('session_start');
@@ -76,22 +76,22 @@ else if($mode=='send')
 			$xmppclient->message($to, $text);
 			$xmppclient->disconnect();
 			$tmpl->msg("Сообщение было отправлено!","ok");
-		} 
-		catch(XMPPHP_Exception $e) 
+		}
+		catch(XMPPHP_Exception $e)
 		{
-			$tmpl->logger("Невозможно отправить сообщение!","err");
+			$tmpl->logger("Невозможно отправить сообщение XMPP!");
 		}
 	}
 	else
 	{
-		try 
+		try
 		{
 			mailto($to,"Сообщение с сайта {$CONFIG['site']['name']}", $text);
 			$tmpl->msg("Сообщение было отправлено!","ok");
 		}
-		catch(Exception $e) 
+		catch(Exception $e)
 		{
-			$tmpl->logger("Невозможно отправить сообщение!","err");
+			$tmpl->logger("Невозможно отправить сообщение email!");
 		}
 	}
 }
@@ -109,13 +109,13 @@ else if($mode=='petitions')
 	$doc=rcv('doc');
 	settype($doc,"int");
 	$comment=rcv('comment');
-	
+
 	if(strlen($comment)>8)
 	{
 		$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 		echo mysql_error();
 		$from=mysql_result($res,0,0);
-		
+
 		$res=mysql_query("SELECT `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`date`, `doc_agent`.`name`, `doc_types`.`name`
 		FROM `doc_list`
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
@@ -123,20 +123,20 @@ else if($mode=='petitions')
 		WHERE `doc_list`.`id`='$doc'");
 		echo mysql_error();
 		$nxt=mysql_fetch_row($res);
-		
+
 		$date=date("d.m.Y H:i:s",$nxt[3]);
-	
+
 		$txt="Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *$nxt[5]* с ID: $doc, $nxt[0]$nxt[1] от $date на сумму $nxt[2]. Клиент $nxt[4].\n
 		{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc \n
 		Цель отмены: $comment.\n IP: $ip\n
 		Пожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
-	
+
 		if($CONFIG['site']['doc_adm_email'])
 			mailto($CONFIG['site']['doc_adm_email'], 'Запрос на отмену проведения документа' ,$txt, $from);
-	
+
 		if($CONFIG['site']['doc_adm_jid'])
 		{
-			try 
+			try
 			{
 				$xmppclient->connect();
 				$xmppclient->processUntil('session_start');
@@ -144,8 +144,8 @@ else if($mode=='petitions')
 				$xmppclient->message($CONFIG['site']['doc_adm_jid'], $txt);
 				$xmppclient->disconnect();
 				$tmpl->msg("Сообщение было отправлено уполномоченному лицу! Ответ о снятии проводки придёт вам на e-mail!","ok");
-			} 
-			catch(XMPPHP_Exception $e) 
+			}
+			catch(XMPPHP_Exception $e)
 			{
 				$tmpl->logger("Невозможно отправить сообщение по XMPP!","err");
 			}

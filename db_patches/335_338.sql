@@ -2,12 +2,16 @@ SET UNIQUE_CHECKS=0;
 SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE='TRADITIONAL';
 
+ALTER TABLE `doc_base_dop` CHANGE `type` `type` INT( 11 ) NULL DEFAULT NULL;
+ALTER TABLE `doc_base_dop` ADD FOREIGN KEY ( `type` ) REFERENCES `dev`.`doc_base_dop_type` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION ;
+
+
 ALTER TABLE `counter` CHANGE `query` `query` VARCHAR( 128 ) NOT NULL DEFAULT '',
 	CHANGE `refer` `refer` VARCHAR( 512 ) NOT NULL DEFAULT '',
 	CHANGE `agent` `agent` VARCHAR( 128 ) NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS `ps_counter` (
-  `date` date NOT NULL DEFAULT '0000-00-00',
+  `date` date NOT NULL DEFAULT '1970-01-01',
   `query` int(11) NOT NULL DEFAULT '0',
   `ps` int(11) NOT NULL DEFAULT '0',
   `counter` int(11) NOT NULL,
@@ -52,7 +56,8 @@ INSERT INTO `ps_settings` (`id`, `icon`, `name`, `template`, `template_like`, `p
 	(6, 'Q', 'qip', '/.*?qip.*?query=[\\. \\s]*(\\w+.*?)[\\. \\s]*($|&.*)/', '%qip%query=%', 6),
 	(7, 'N', 'ngs', '/.*?ngs.*?q=[\\. \\s]*(\\w+.*?)[\\. \\s]*($|&.*)/', '%ngs%q=%', 7);
 
-
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES (NULL, 'generic_tickets', 'Планировщик задач', 'view,edit,create,redirect');
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES (NULL, 'sys_ps-stat', 'Статистика переходов с поисковиков', 'view');
 
 
 START TRANSACTION;

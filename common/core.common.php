@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "322");
+define("MULTIMAG_REV", "338");
 define("MULTIMAG_VERSION", "0.1r".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -26,7 +26,7 @@ function mailto($email, $subject, $msg, $from="")
 {
 	global $CONFIG;
 	require_once($CONFIG['location'].'/common/email_message.php');
-	
+
 	$email_message=new email_message_class();
 	$email_message->default_charset="UTF-8";
 	$email_message->SetEncodedEmailHeader("To", $email, $email);
@@ -36,7 +36,7 @@ function mailto($email, $subject, $msg, $from="")
 	$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
 	$email_message->AddQuotedPrintableTextPart($msg);
 	$error=$email_message->Send();
-	
+
 	if(strcmp($error,""))	throw new Exception($error);
 	else			return 0;
 }

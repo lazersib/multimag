@@ -51,8 +51,8 @@ if($mode=='')
 
 	if(isAccess('sys_async_task','view'))
 		$tmpl->AddText("<li><a href='?mode=async_task' title=''>Статус ассинхронных обработчиков</a></li>");
-		
-	if(isAccess('sys_async_task','view'))
+
+	if(isAccess('sys_ps-stat','view'))
 		$tmpl->AddText("<li><a href='?mode=psstat' title=''>NEW Статистика переходов с поисковиков (экспериментально)</a></li>");
 
 	if(isAccess('sys_ip-blacklist','view'))
@@ -81,13 +81,16 @@ else if($mode=='user_data')
 		$tel=rcv('tel');
 		$adres=rcv('adres');
 		$subscribe=rcv('subscribe');
-		mysql_query("UPDATE `users` SET `subscribe`='$subscribe', `rname`='$rname', `tel`='$tel', `adres`='$adres' WHERE `id`='$uid'");
-		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 		$jid=rcv('jid');
 		$icq=rcv('icq');
 		$skype=rcv('skype');
 		$mra=rcv('mra');
 		$site_name=rcv('site_name');
+
+		mysql_query("UPDATE `users` SET `subscribe`='$subscribe', `rname`='$rname', `tel`='$tel', `adres`='$adres', `jid`='$jid' WHERE `id`='$uid'");
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
+
+
 		mysql_query("REPLACE INTO `users_data` (`uid`,`param`,`value`) VALUES
 		( '$uid' ,'jid','$jid'),
 		( '$uid' ,'icq','$icq'),
@@ -99,7 +102,7 @@ else if($mode=='user_data')
 	}
 
 
-	$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='$uid'");
+	$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres`, `jid` FROM `users` WHERE `id`='$uid'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
 	$user_data=mysql_fetch_assoc($res);
 	$user_dopdata=array('kont_lico'=>'','tel'=>'','dop_info'=>'');
@@ -108,8 +111,9 @@ else if($mode=='user_data')
 	while($line=mysql_fetch_row($res))	$user_dopdata[$line[0]]=$line[1];
 
 	$subs_checked=$user_data['subscribe']?'checked':'';
+	if(!$user_data['jid'])	$user_data['jid']=@$user_dopdata['jid'];
 
-	$tmpl->AddText("<form action='' method='post'>
+	@$tmpl->AddText("<form action='' method='post'>
 	<input type='hidden' name='mode' value='user_data'>
 	<input type='hidden' name='opt' value='save'>
 	<table border='0' width='500' class='list'>
@@ -117,12 +121,12 @@ else if($mode=='user_data')
 	<tr><td>Логин:<td>{$user_data['name']}
 	<tr><td>Дата регистрации:<td>{$user_data['date_reg']}
 	<tr><td>E-mail:<td>{$user_data['email']}<br><label><input type='checkbox' name='subscribe' value='1' $subs_checked> Подписка</label>
+	<tr><td>Jabber ID<td><input type='text' name='jid' value='{$user_data['jid']}'>
 	<tr><th colspan='2'>Данные физического лица
 	<tr><td>Фамилия И.О.<td><input type='text' name='rname' value='{$user_data['rname']}'>
 	<tr><td>Телефон<td><input type='text' name='tel' value='{$user_data['tel']}'>
 	<tr><td>Адрес доставки<td><input type='text' name='adres' value='{$user_data['adres']}'>
 	<tr><th colspan='2'>Дополнительные данные
-	<tr><td>Jabber ID<td><input type='text' name='jid' value='{$user_dopdata['jid']}'>
 	<tr><td>UIN ICQ<td><input type='text' name='icq' value='{$user_dopdata['icq']}'>
 	<tr><td>Skype-login<td><input type='text' name='skype' value='{$user_dopdata['skype']}'>
 	<tr><td>Mail-ru ID<td><input type='text' name='mra' value='{$user_dopdata['mra']}'>
@@ -408,9 +412,9 @@ else if($mode=='psstat')
 {
 	if(isAccess('sys_ps-stat','view'))
 	{
-	
+
 	if(isset($_POST['date']))
-	
+
 	{
 		if(preg_match('/^(([0-9]{4})-([0-9]{2})-([0-9]{2}))$/',$_POST['date'],$data_post))
 		{
@@ -418,20 +422,20 @@ else if($mode=='psstat')
 			if ($data_post>time()) $data_post = time();
 		}
 		else $data_post = time();
-		
+
 		$data_post_1 = $data_post - (24*60*60);
 		$data_post_2 = $data_post_1 - (24*60*60);
 		$data_post_3 = $data_post_2 - (24*60*60);
 		$data_post_4 = $data_post_3 - (24*60*60);
 		$data_post_5 = $data_post_4 - (24*60*60);
-		$data_post_6 = $data_post_5 - (24*60*60);	
-		
-	
-	
+		$data_post_6 = $data_post_5 - (24*60*60);
+
+
+
 	$tmpl->AddText("<form action=\"\" method=\"post\">
 	Статистика за 7 дней, по дату <input name=\"date\" type=\"text\" value=\"".date('Y-m-d', $data_post)."\" maxlength=\"10\"> (YYYY-MM-DD) <input name=\"\" type=\"submit\" value=\"Получить данные\">
 	</form>
-	
+
 	<div style=\"width:100%; height:400px; overflow:auto;\">
 	<table border=\"1\" cellpadding=\"2\" class='list'>
 	  <tr>
@@ -445,7 +449,7 @@ else if($mode=='psstat')
 	    <th scope=\"col\">".date("Y-m-d", $data_post_1)."</th>
 	    <th scope=\"col\">".date("Y-m-d", $data_post)."</th>
 	  </tr>");
-		
+
 		$counter_data = "SELECT `ps_query`.`query`,
 	 sum(`main`.`counter`) as `counter`,
 	 `".date("Y-m-d", $data_post_6)."`.`counter` as `".date("Y-m-d", $data_post_6)."`,
@@ -481,8 +485,8 @@ else if($mode=='psstat')
 	   where `main`.`date` >= '".date("Y-m-d", $data_post_6)."' and `main`.`date` <= '".date("Y-m-d", $data_post)."'
 		 group by `main`.`query`
 		 order by `counter` DESC";
-		
-		
+
+
 		/*$counter_data = "SELECT `ps_query`.`query`,
 	 sum(`main`.`counter`) as `counter`,
 	 (SELECT sum(`counter`) from `ps_counter` as `".date("Y-m-d", $data_post_6)."` where `".date("Y-m-d", $data_post_6)."`.`date` = '".date("Y-m-d", $data_post_6)."' and `".date("Y-m-d", $data_post_6)."`.`query` = `main`.`query` ) as `".date("Y-m-d", $data_post_6)."`,
@@ -497,8 +501,8 @@ else if($mode=='psstat')
 	   where `main`.`date` >= '".date("Y-m-d", $data_post_6)."' and `main`.`date` <= '".date("Y-m-d", $data_post)."'
 		 group by `main`.`query`
 		 order by `counter` DESC";*/
-		
-		
+
+
 		if($counter_data = mysql_query($counter_data))
 		{
 			while ($counter_data_row = mysql_fetch_row($counter_data))
@@ -518,24 +522,24 @@ else if($mode=='psstat')
 				");
 			}
 		}
-		
+
 	$tmpl->AddText("
 	</table>
 	</div>
 	");
-		
+
 	} else {
-		
+
 	$tmpl->AddText("
-	
+
 	<form action=\"\" method=\"post\">
 	Статистика за 7 дней, по дату <input name=\"date\" type=\"text\" value=\"".date('Y-m-d')."\" maxlength=\"10\"> (YYYY-MM-DD) <input name=\"\" type=\"submit\" value=\"Получить данные\">
 	</form>
-	
+
 	");
-		
+
 	}
-	
+
 	}
 	else $tmpl->logger("У Вас недостаточно прав!");
 }

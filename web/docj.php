@@ -331,16 +331,6 @@ function FilterMenu()
 			extraParams:{'mode':'upl'}
 			});
 
-// 			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
-// 
-// 			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
-// 			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-// 			$( '#datepicker_f' ).datepicker( 'setDate' , '{$_SESSION['j_date_from']}' );
-// 			$( '#datepicker_t' ).datepicker({showButtonPanel: true	});
-// 			$( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-// 			$( '#datepicker_t' ).datepicker( 'setDate' , '{$_SESSION['j_date_to']}' );
-			
-			
 			initCalendar('datepicker_f',false)
 			initCalendar('datepicker_t',false)
 		});
@@ -1033,7 +1023,7 @@ else if($mode=='print')
 		$ds.=" AND `doc_list`.`agent`='$asel'";
 		$info.=", <b>агент:</b> {$_SESSION['j_agent_name']}";
 	}
-	
+
 	if(is_array(@$_SESSION['j_need_doctypes']))
 	{
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_types` ORDER BY `id`");

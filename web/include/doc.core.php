@@ -127,6 +127,7 @@ function num2str_semantic($i,&$words,&$fem,$f)
 // Число прописью
 function num2str($L, $ed='rub', $sot=2)
 {
+	$ff=1;
 	if($ed=='kg')
 	{
 		$namerub[1]="килограмм ";
@@ -136,6 +137,7 @@ function num2str($L, $ed='rub', $sot=2)
 		$kopeek[1]="грамм ";
 		$kopeek[2]="грамма ";
 		$kopeek[3]="граммов ";
+		$ff=0;
 	}
 	else if($ed=='sht')
 	{
@@ -248,7 +250,7 @@ function num2str($L, $ed='rub', $sot=2)
 		if($kop > 0)
 		{
 			$many=0;
-			num2str_semantic($kop,$s1,$many,1);
+			num2str_semantic($kop,$s1,$many,$ff);
 			$s.=$s1.$kopeek[$many];
 		}
 		else
@@ -590,7 +592,7 @@ function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 	$res=mysql_query("SELECT `pos_type`, `cost` FROM `doc_base` WHERE `id`='$pos_id'");
 	list($type, $cost)=mysql_fetch_row($res);
 	if($type==1)	return $serv_mode?$cost:0;
-	
+
 	if($limit_date)	$sql_add="AND `doc_list`.`date`<='$limit_date'";
 	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`
 	FROM `doc_list_pos`

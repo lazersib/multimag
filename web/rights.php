@@ -43,7 +43,7 @@ $tmpl->SetTitle("Настройка привилегий");
 if($mode=='')
 {
 	$tmpl->AddText("<h3>Группы пользователей</h3>
-	<table><tr><th>N<th>Название<th>Описание");
+	<table class='list'><tr><th>N<th>Название<th>Описание");
 	$res=mysql_query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
 	while($nxt=mysql_fetch_row($res))
 	{
@@ -54,7 +54,7 @@ if($mode=='')
 else if($mode=='group_acl')
 {
 	$g=rcv('g');
-	$tmpl->AddText("<h2>Привилегии группы</h2>");	
+	$tmpl->AddText("<h2>Привилегии группы</h2>");
 	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions`
 	FROM `users_objects` ORDER BY `object`, `actions`");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список объектов");
@@ -62,25 +62,25 @@ else if($mode=='group_acl')
 	<input type='hidden' name='mode' value='group_acl_save'>
 	<input type='hidden' name='g' value='$g'>
 	<table width='100%' class='list'><tr><th>Объект");
-	
+
 	$actions_show=array();
 	$object_actions=array();
 	$objects=array();
-	
+
 	while($nxt=mysql_fetch_array($res))
 	{
 		$objects[$nxt['object']]=$nxt['desc'];
 		if($nxt['actions']!='')
 		{
-			$act_line=explode(',',$nxt['actions']);	
+			$act_line=explode(',',$nxt['actions']);
 			foreach($act_line as $action)
 			{
-				$object_actions[$nxt['object']][$action]='';				
-				$actions_show[$action]='1';				
+				$object_actions[$nxt['object']][$action]='';
+				$actions_show[$action]='1';
 			}
 		}
 	}
-	
+
 	$res=mysql_query("SELECT `gid`, `object`, `action` FROM `users_groups_acl`
 	WHERE `gid`='$g'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить ACL группы");
@@ -125,7 +125,7 @@ else if($mode=='group_acl')
 	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 	<input type='hidden' name='us_id' id='user_id' value='0'>
 	<input type='text' id='user_nm'  style='width: 450px;' value=''><br>
-	
+
 	<script type=\"text/javascript\">
 	$(document).ready(function(){
 		$(\"#user_nm\").autocomplete(\"/rights.php\", {
@@ -136,29 +136,29 @@ else if($mode=='group_acl')
 			selectFirst:true,
 			matchContains:1,
 			cacheLength:10,
-			maxItemsToShow:15, 
+			maxItemsToShow:15,
 			formatItem:usliFormat,
 			onItemSelect:usselectItem,
 			extraParams:{'mode':'upl'}
 		});
 	});
-	
+
 	function usliFormat (row, i, num) {
 		var result = row[0] + \"<em class='qnt'>email: \" +
 		row[2] + \"</em> \";
 		return result;
-	}		
+	}
 	function usselectItem(li) {
 		if( li == null ) var sValue = \"Ничего не выбрано!\";
 		if( !!li.extra ) var sValue = li.extra[0];
 		else var sValue = li.selectValue;
 		document.getElementById('user_id').value=sValue;
 	}
-	</script>		
+	</script>
 	<input type='submit' value='Записать'>
 	</form>
 	");
-	
+
 	$res=mysql_query("SELECT `users_in_group`.`uid`, `users`.`name`
 	FROM `users_in_group`
 	LEFT JOIN `users` ON `users_in_group`.`uid`=`users`.`id`
@@ -167,37 +167,37 @@ else if($mode=='group_acl')
 	{
 		$tmpl->AddText("<a href='?mode=ud&amp;us_id=$nxt[0]&amp;g=$g'><img src='/img/i_del.png' alt='Удалить'></a> - $nxt[1]<br>");
 	}
-	
+
 }
 else if($mode=='group_acl_save')
 {
 	$g=rcv('g');
 	$tmpl->AddText("<h2>Группа $g: сохранение привилегий группы</h2>");
 	if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
-	
-	
+
+
 	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions` FROM `users_objects`
 	ORDER BY `object`, `actions`");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список объектов");
-	
+
 	$actions_show=array();
 	$object_actions=array();
 	$objects=array();
-	
+
 	while($nxt=mysql_fetch_array($res))
 	{
 		$objects[$nxt['object']]=$nxt['desc'];
 		if($nxt['actions']!='')
 		{
-			$act_line=explode(',',$nxt['actions']);	
+			$act_line=explode(',',$nxt['actions']);
 			foreach($act_line as $action)
 			{
-				$object_actions[$nxt['object']][$action]='';				
-				$actions_show[$action]='1';				
+				$object_actions[$nxt['object']][$action]='';
+				$actions_show[$action]='1';
 			}
 		}
 	}
-	
+
 	mysql_query("DELETE FROM `users_groups_acl` WHERE `gid`='$g'");
 	foreach($objects as $obj_name => $obj_desc)
 	{

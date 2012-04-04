@@ -412,13 +412,14 @@ class doc_s_Sklad
 			<tbody>
 			<tr class='lin0'><td align='right'>Аналог<td><input type='text' name='analog' value='$nxt[1]' id='pos_analog'>
 			<tr class='lin1'><td align='right'>Рыночная цена<td><input type='text' name='koncost' value='$nxt[2]' id='pos_koncost'>
-			<tr class='lin0'><td align='right'>Тип<td><select name='type' id='pos_type' >");
+			<tr class='lin0'><td align='right'>Тип<td><select name='type' id='pos_type' >
+			<option value='null'>--не задан--</option>");
 
 			$res=mysql_query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$ii="";
-				if($nx[0]==$nxt[0]) $ii=" selected";
+				if($nx[0]===$nxt[0]) $ii=" selected";
 				$tmpl->AddText("<option value='$nx[0]' $ii>$nx[0] - $nx[1]</option>");
 			}
 
@@ -738,7 +739,7 @@ class doc_s_Sklad
 			$poseditor=new LinkPosList($pos);
 			$poseditor->SetEditable(1);
 			if($jparam=='')
-			{			
+			{
 				$tmpl->AddText($poseditor->Show());
 			}
 			else
@@ -789,7 +790,7 @@ class doc_s_Sklad
 					$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";
 					$tmpl->SetText($str);
 				}
-				
+
 			}
 		}
 		// История изменений
@@ -1151,8 +1152,8 @@ class doc_s_Sklad
 			$strana=rcv('strana');
 			$ntd=rcv('ntd');
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
-
-			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `strana`, `ntd`) VALUES ('$pos', '$analog', '$koncost', '$type', '$d_int', '$d_ext', '$size', '$mass', '$strana', '$ntd')");
+			if($type!=='null')	$type="'$type'";
+			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `strana`, `ntd`) VALUES ('$pos', '$analog', '$koncost', $type, '$d_int', '$d_ext', '$size', '$mass', '$strana', '$ntd')");
 
 			$par=@$_POST['par'];
 			if(is_array($par))
@@ -1796,6 +1797,7 @@ class doc_s_Sklad
 		$opt=rcv("opt");
 		$name=rcv('name');
 		$analog=rcv('analog');
+		$desc=rcv('desc');
 		$proizv=rcv('proizv');
 		$mesto=rcv('mesto');
 		$di_min=rcv('di_min');
@@ -1816,6 +1818,7 @@ class doc_s_Sklad
 		{
 			doc_menu();
 			$analog_checked=$analog?'checked':'';
+			$desc_checked=$desc?'checked':'';
 			$tmpl->AddText("<h1>Расширенный поиск</h1>
 			<form action='docs.php' method='post'>
 			<input type='hidden' name='mode' value='search'>
@@ -1827,7 +1830,7 @@ class doc_s_Sklad
 			<th>Тип
 			<th>Место на складе
 			<tr class='lin1'>
-			<td><input type='text' name='name' value='$name'><br><label><input type='checkbox' name='analog' value='1' $analog_checked>И аналог</label>
+			<td><input type='text' name='name' value='$name'><br><label><input type='checkbox' name='analog' value='1' $analog_checked>Или аналог</label> <label><input type='checkbox' name='desc' value='1' $desc_checked>Или описание</label>
 			<td>От: <input type='text' name='li_min' value='$li_min'><br>до: <input type='text' name='li_max' value='$li_max'>
 			<td><input type='text' id='proizv' name='proizv' value='$proizv' onkeydown=\"return AutoFill('/docs.php?mode=search&amp;opt=pop_proizv','proizv','proizv_p')\"><br>
 			<div id='proizv_p' class='dd'></div>
@@ -1891,8 +1894,14 @@ class doc_s_Sklad
 
 			if($name)
 			{
-				if(!$analog) 	$sql.="AND `doc_base`.`name` LIKE '%$name%'";
-				else $sql.="AND (`doc_base_dop`.`analog` LIKE '%$name%' OR `doc_base`.`name` LIKE '%$name%')";
+				if(!$analog && !$desc) 	$sql.="AND `doc_base`.`name` LIKE '%$name%'";
+				else
+				{
+					$s="`doc_base`.`name` LIKE '%$name%'";
+					if($analog)	$s.=" OR `doc_base_dop`.`analog` LIKE '%$name%'";
+					if($desc)	$s.=" OR `doc_base`.`desc` LIKE '%$name%'";
+					$sql.="AND ( $s )";
+				}
 
 			}
 			if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv%'";
