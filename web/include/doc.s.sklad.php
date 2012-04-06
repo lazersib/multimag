@@ -1149,12 +1149,11 @@ class doc_s_Sklad
 			$d_ext=rcv('d_ext');
 			$size=rcv('size');
 			$mass=rcv('mass');
-			$strana=rcv('strana');
 			$ntd=rcv('ntd');
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 			if($type!=='null')	$type="'$type'";
-			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `strana`, `ntd`) VALUES ('$pos', '$analog', '$koncost', $type, '$d_int', '$d_ext', '$size', '$mass', '$strana', '$ntd')");
-
+			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd`) VALUES ('$pos', '$analog', '$koncost', $type, '$d_int', '$d_ext', '$size', '$mass', '$ntd')");
+			if(mysql_errno())	throw new MysqlException("Не удалось установить дополнительные параметры!");
 			$par=@$_POST['par'];
 			if(is_array($par))
 			{

@@ -133,7 +133,7 @@ class doc_Specific extends doc_Nulltype
 		$res=mysql_query("INSERT INTO `doc_list`
 		(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `nds`, `firm_id`)
 		VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '{$this->doc_data[7]}', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '$sum', '{$this->doc_data[12]}', '{$this->doc_data[17]}')");
-
+		if(mysql_errno())	throw new MysqlException("Не удалось создаьть документ");
 		$r_id= mysql_insert_id();
 
 		if(!$r_id) return 0;
@@ -142,14 +142,16 @@ class doc_Specific extends doc_Nulltype
 
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ('$r_id','cena','{$this->dop_data['cena']}')");
-
-		$res=mysql_query("SELECT `tovar`, `cnt`, `sn`, `comm`, `cost` FROM `doc_list_pos`
+		if(mysql_errno())	throw new MysqlException("Не удалось скопировать цену");
+		$res=mysql_query("SELECT `tovar`, `cnt`, `comm`, `cost` FROM `doc_list_pos`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
 		while($nxt=mysql_fetch_row($res))
 		{
-			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `sn`, `comm`, `cost`)
-			VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]' )");
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+			VALUES ('$r_id', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
+			if(mysql_errno())	throw new MysqlException("Не удалось записать товар");
 		}
 
 		return $r_id;
