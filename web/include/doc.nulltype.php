@@ -855,13 +855,13 @@ class doc_Nulltype
 		else if($agent['name'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['name']);
 		else			$email_message->SetEncodedEmailHeader("To", $email, $email);
 
-		$email_message->SetEncodedHeader("Subject", "$docname от {$CONFIG['site']['name']}");
+		$email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - $docname ({$CONFIG['site']['name']})");
 
 		if(!@$doc_autor['email'])
 		{
 			$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
 			$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
-			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!\nДля переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
+			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\n$comment\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!\nДля переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
 		}
 		else
 		{

@@ -39,7 +39,9 @@ class doc_Postuplenie extends doc_Nulltype
 	{
 		global $tmpl;
 		if(!$this->dop_data['input_doc'])	$this->dop_data['input_doc']='';
-		$tmpl->AddText("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");	
+		$tmpl->AddText("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
+		$checked=$this->dop_data['return']?'checked':'';
+		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>");
 	}
 
 
@@ -47,8 +49,9 @@ class doc_Postuplenie extends doc_Nulltype
 	function DopSave()
 	{
 		$input_doc=rcv('input_doc');
+		$return=rcv('return');
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'input_doc','$input_doc')");
+		VALUES ( '{$this->doc}' ,'input_doc','$input_doc'), ( '{$this->doc}' ,'return','$return')");
 	}
 	
 	function DopBody()

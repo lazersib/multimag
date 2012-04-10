@@ -120,6 +120,8 @@ class doc_Realizaciya extends doc_Nulltype
 		");
 		$checked=$this->dop_data['received']?'checked':'';
 		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
+		$checked=$this->dop_data['return']?'checked':'';
+		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>");
 	}
 
 	function DopSave()
@@ -127,10 +129,10 @@ class doc_Realizaciya extends doc_Nulltype
 		$plat_id=rcv('plat_id');
 		$gruzop_id=rcv('gruzop_id');
 		$received=rcv('received');
-
+		$return=rcv('return');
 		$doc=$this->doc;
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'), ( '{$this->doc}' ,'gruzop','$gruzop_id'),  ( '{$this->doc}' ,'received','$received')");
+		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'), ( '{$this->doc}' ,'gruzop','$gruzop_id'),  ( '{$this->doc}' ,'received','$received'), ( '{$this->doc}' ,'return','$return')");
 	}
 
 	function DopBody()
@@ -224,11 +226,14 @@ class doc_Realizaciya extends doc_Nulltype
 			$tmpl->ajax=1;
 			$tmpl->AddText("
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak'\">Накладная</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak_pdf'\">Накладная PDF</div>
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=nak_email'); return false;\">Накладная PDF по e-mail</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop'\">Копия чека</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop_np'\">Копия чека (без покупателя)</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nac'\">Наценки</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12'\">Форма ТОРГ-12 (УСТАРЕЛО)</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Форма ТОРГ-12 (PDF)</div>
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=tg12_email'); return false;\">Форма ТОРГ-12 по e-mail</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура (PDF)</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf2010_pdf'\">Счёт - фактура 2010 (PDF)</div>
 			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>
@@ -240,16 +245,9 @@ class doc_Realizaciya extends doc_Nulltype
 		else if($opt=='tg12')
 			$this->PrintTg12($doc);
 		else if($opt=='tg12_pdf')
-		{
-// 			if(!$this->doc_data[6])
-// 			{
-// 				doc_menu(0,0);
-// 				$tmpl->AddText("<h1>Реализация</h1>");
-// 				$tmpl->msg("Сначала нужно провести документ!","err");
-// 			}
-// 			else
 			$this->PrintTg12PDF();
-		}
+		else if($opt=='tg12_email')
+			$this->TgEmail();
 		else if($opt=='nac')
 			$this->Nacenki();
 		else if($opt=='sf')
@@ -272,6 +270,10 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->PrintActRabot();
 		else if($opt=='warr')
 			$this->PrintWarantyList();
+		else if($opt=='nak_pdf')
+			$this->PrintNaklPDF();
+		else if($opt=='nak_email')
+			$this->NaklEmail();
 		else
 			$this->PrintNakl($doc);
 	}
@@ -482,6 +484,165 @@ class doc_Realizaciya extends doc_Nulltype
 		$prop
 		<p>Поставщик:_____________________________________</p>
 		<p>Покупатель: ____________________________________</p>");
+	}
+
+/// Обычная накладная в PDF формате
+/// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
+	function PrintNaklPDF($to_str=false)
+	{
+		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
+		require('fpdf/fpdf_mc.php');
+		global $tmpl, $CONFIG, $uid;
+		
+		if(!$to_str) $tmpl->ajax=1;
+		
+		$pdf=new PDF_MC_Table('P');
+		$pdf->Open();
+		$pdf->SetAutoPageBreak(0,10);
+		$pdf->AddFont('Arial','','arial.php');
+		$pdf->tMargin=5;
+		$pdf->AddPage();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(255);
+		
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить цену по умолчанию");
+		$def_cost=mysql_result($res,0,0);
+		if(!$def_cost)		throw new Exception("Цена по умолчанию не определена!");
+		
+		$pdf->SetFont('','',16);
+		$str="Накладная N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt";
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell(0,8,$str,0,1,'C',0);
+		$pdf->SetFont('','',10);
+		$str="Поставщик: {$this->firm_vars['firm_name']}";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$str="Покупатель: {$this->doc_data[3]}";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$pdf->Ln();
+		
+		$pdf->SetLineWidth(0.5);
+		$t_width=array(8);
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_width[]=20;
+			$t_width[]=91;
+		}
+		else	$t_width[]=111;
+		$t_width=array_merge($t_width, array(12,15,23,23));
+		
+		$t_text=array('№');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_text[]='Код';
+			$t_text[]='Наименование';
+		}
+		else	$t_text[]='Наименование';
+		$t_text=array_merge($t_text, array('Место', 'Кол-во', 'Стоимость', 'Сумма'));
+		
+		foreach($t_width as $id=>$w)	
+		{
+			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
+			$pdf->Cell($w,6,$str,1,0,'C',0);
+		}
+		$pdf->Ln();
+		$pdf->SetWidths($t_width);
+		$pdf->SetHeight(3.8);
+
+		$aligns=array('R');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$aligns[]='L';
+			$aligns[]='L';
+		}
+		else	$aligns[]='L';
+		$aligns=array_merge($aligns, array('C','R','R','R'));
+		
+		$pdf->SetAligns($aligns);
+		$pdf->SetLineWidth(0.2);
+		$pdf->SetFont('','',8);
+
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`, `doc_base`.`vc`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
+		$i=0;
+		$ii=1;
+		$sum=0;
+		$skid_sum=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f руб.", $nxt[4]);
+			$cost2 = sprintf("%01.2f руб.", $sm);
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			
+			$row=array($ii);
+			if($CONFIG['poseditor']['vc'])
+			{
+				$row[]=$nxt[8];
+				$row[]="$nxt[0] $nxt[1]";
+			}
+			else	$row[]="$nxt[0] $nxt[1]";
+			$row=array_merge($row, array($nxt[5], "$nxt[3] $nxt[6]", $cost, $cost2));
+			
+			$pdf->RowIconv($row);
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+			$skid_sum+=GetCostPos($nxt[7], $def_cost)*$nxt[3];
+		}
+		$ii--;
+		$cost = sprintf("%01.2f руб.", $sum);
+
+		$prop='';
+		if($sum>0)
+		{
+			$add='';
+			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
+			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE
+			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			$add
+			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if(@$prop=mysql_result($rs,0,0))
+			{
+				$prop=sprintf("<p><b>Оплачено</b> %0.2f руб.</p>",$prop);
+			}
+		}
+		$pdf->Ln();
+
+		$str="Всего $ii наименований на сумму $cost";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		if($sum!=$skid_sum)
+		{
+			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
+			$str="Скидка: $cost";
+			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+			$pdf->Cell(0,5,$str,0,1,'L',0);
+		}
+		$str="Товар получил, претензий к качеству товара и внешнему виду не имею.";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$str="Покупатель: ____________________________________";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$str="Поставщик:_____________________________________";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+
+		if($to_str)
+			return $pdf->Output('blading.pdf','S');
+		else
+			$pdf->Output('blading.pdf','I');
 	}
 
 	// -- Акт выполненных работ --------------
@@ -834,7 +995,7 @@ class doc_Realizaciya extends doc_Nulltype
 		<p>Поставщик:_____________________________________</p>
 		<br><br><p align=right>Место печати</p>");
 	}
-		// -- Обычная накладная --------------
+		// -- Товарный чек --------------
 	function PrintTovCheck()
 	{
 		global $tmpl, $CONFIG;
@@ -1220,36 +1381,94 @@ function PrintTg12()
 
 }
 
-	function SfakEmail($doc, $email='')
-	{
-		global $tmpl;
-		if(!$email)
-			$email=rcv('email');
+function NaklEmail($email='')
+{
+	global $tmpl;
+	if(!$email)
+		$email=rcv('email');
 
-		if($email=='')
-		{
-			$tmpl->ajax=1;
-			get_docdata($doc);
-			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
-			$email=mysql_result($res,0,0);
-			$tmpl->AddText("<form action=''>
-			<input type=hidden name=mode value='print'>
-			<input type=hidden name=doc value='$doc'>
-			<input type=hidden name=opt value='sf_email'>
-			email:<input type=text name=email value='$email'><br>
-			Коментарий:<br>
-			<textarea name='comm'></textarea><br>
-			<input type=submit value='&gt;&gt;'>
-			</form>");
-		}
-		else
-		{
-			$comm=rcv('comm');
-			doc_menu();
-			$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->SfakPDF($doc, 1), "schet-fakt.pdf");
-			$tmpl->msg("Сообщение отправлено!","ok");
-    		}
+	if($email=='')
+	{
+		$tmpl->ajax=1;
+		$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+		$email=mysql_result($res,0,0);
+		$tmpl->AddText("<form action=''>
+		<input type=hidden name=mode value='print'>
+		<input type=hidden name=doc value='{$this->doc}'>
+		<input type=hidden name=opt value='nak_email'>
+		email:<input type=text name=email value='$email'><br>
+		Коментарий:<br>
+		<textarea name='comm'></textarea><br>
+		<input type=submit value='&gt;&gt;'>
+		</form>");
 	}
+	else
+	{
+		$comm=rcv('comm');
+		doc_menu();
+		$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->PrintNaklPDF(1), "blading.pdf");
+		$tmpl->msg("Сообщение отправлено!","ok");
+	}
+}
+
+function SfakEmail($doc, $email='')
+{
+	global $tmpl;
+	if(!$email)
+		$email=rcv('email');
+
+	if($email=='')
+	{
+		$tmpl->ajax=1;
+		$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+		$email=mysql_result($res,0,0);
+		$tmpl->AddText("<form action=''>
+		<input type=hidden name=mode value='print'>
+		<input type=hidden name=doc value='{$this->doc}'>
+		<input type=hidden name=opt value='sf_email'>
+		email:<input type=text name=email value='$email'><br>
+		Коментарий:<br>
+		<textarea name='comm'></textarea><br>
+		<input type=submit value='&gt;&gt;'>
+		</form>");
+	}
+	else
+	{
+		$comm=rcv('comm');
+		doc_menu();
+		$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->SfakPDF($doc, 1), "schet-fakt.pdf");
+		$tmpl->msg("Сообщение отправлено!","ok");
+	}
+}
+
+function TgEmail($email='')
+{
+	global $tmpl;
+	if(!$email)	$email=rcv('email');
+
+	if($email=='')
+	{
+		$tmpl->ajax=1;
+		$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+		$email=mysql_result($res,0,0);
+		$tmpl->AddText("<form action=''>
+		<input type=hidden name=mode value='print'>
+		<input type=hidden name=doc value='{$this->doc}'>
+		<input type=hidden name=opt value='tg12_email'>
+		email:<input type=text name=email value='$email'><br>
+		Коментарий:<br>
+		<textarea name='comm'></textarea><br>
+		<input type=submit value='&gt;&gt;'>
+		</form>");
+	}
+	else
+	{
+		$comm=rcv('comm');
+		doc_menu();
+		$this->SendDocEMail($email, $comm, 'Накладная по форме ТОРГ-12', $this->PrintTg12PDF(1), "torg12.pdf");
+		$tmpl->msg("Сообщение отправлено!","ok");
+	}
+}
 
 function PrintTg12PDF($to_str=0)
 {

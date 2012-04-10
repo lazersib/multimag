@@ -594,16 +594,17 @@ function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 	if($type==1)	return $serv_mode?$cost:0;
 
 	if($limit_date)	$sql_add="AND `doc_list`.`date`<='$limit_date'";
-	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`
+	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`
 	FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
+	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list_pos`.`doc` AND `doc_dopdata`.`param`='return'
 	WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' $sql_add ORDER BY `doc_list`.`date`");
 
 	while($nxt=mysql_fetch_row($res))
 	{
 		if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
 		if( ($cnt+$nxt[0])==0)	{}
-		else if($nxt[0]>0)
+		else if($nxt[0]>0 && $nxt[4]!=1)
 			$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
 		$cnt+=$nxt[0];
 	}
