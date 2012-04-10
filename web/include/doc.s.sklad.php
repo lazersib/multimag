@@ -1735,10 +1735,13 @@ class doc_s_Sklad
 		if(mysql_num_rows($res))
 		{
 			if($CONFIG['poseditor']['vc'])		$vc_add.='<th>Код</th>';
+			
+			if($CONFIG['poseditor']['rto'])		$vc_rto.='<th>Тип<th>d<th>D<th>B';
+			if($CONFIG['poseditor']['tdb'])		$vc_tdb.="<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>";
+			
 			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 			$tmpl->AddText("$pagebar<table width='100%' cellspacing='1' cellpadding='2'><tr>
-			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог<th>Тип<th>d<th>D<th>B
-			<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
+			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог $vc_rto<th>Масса $vc_tdb<th>Склад<th>Всего<th>Место");
 			$i=0;
 			$this->DrawSkladTable($res,$s);
 			$tmpl->AddText("</table>$pagebar");
@@ -1759,11 +1762,13 @@ class doc_s_Sklad
 		$sklad=$_SESSION['sklad_num'];
 		$tmpl->AddText("<b>Показаны наименования изо всех групп!</b><br>");
 		$vc_add=$CONFIG['poseditor']['vc']?'<th>Код</th>':'';
+		if($CONFIG['poseditor']['rto'])		$vc_rto.='<th>Тип<th>d<th>D<th>B';
+		if($CONFIG['poseditor']['tdb'])		$vc_tdb.="<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>";
 		$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 		$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
 		<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог
-		<th>Тип<th>d<th>D<th>B<th>Масса
-		<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>
+		 $vc_rto<th>Масса
+		 $vc_tdb
 		<th>Склад<th>Всего<th>Место");
 
 
@@ -1964,9 +1969,9 @@ function DrawSkladTable($res,$s)
 	$go=rcv('go');
 	while($nxt=mysql_fetch_array($res))
 	{
-		$rezerv=DocRezerv($nxt[0],0);
-		$pod_zakaz=DocPodZakaz($nxt[0],0);
-		$v_puti=DocVPuti($nxt[0],0);
+		$rezerv=$CONFIG['poseditor']['rto']?DocRezerv($nxt[0],0):'';
+		$pod_zakaz=$CONFIG['poseditor']['rto']?DocPodZakaz($nxt[0],0):'';
+		$v_puti=$CONFIG['poseditor']['rto']?DocVPuti($nxt[0],0):'';
 
 		if($rezerv)	$rezerv="<a onclick=\"OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$rezerv</a>";
 
@@ -2001,6 +2006,10 @@ function DrawSkladTable($res,$s)
 		$cost_p=sprintf("%0.2f",$nxt[5]);
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		$vc_add=$CONFIG['poseditor']['vc']?"<td>{$nxt['vc']}</th>":'';
+		
+		if ($CONFIG['poseditor']['tdb'] == 1) $vc_tdb = "<td>$rezerv<td>$pod_zakaz<td>$v_puti"; else $vc_tdb = '';
+		if ($CONFIG['poseditor']['rto'] == 1) $vc_rto = "<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]"; else $vc_rto = '';
+		
 		$cb=$go?"<input type='checkbox' name='pos[$nxt[0]]' class='pos_ch' value='1'>":'';
 		$cadd=($_SESSION['sklad_cost']>0)?('<td>'.GetCostPos($nxt[0],$_SESSION['sklad_cost'])):'';
 
@@ -2008,7 +2017,7 @@ function DrawSkladTable($res,$s)
 		<td>$cb
 		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos=$nxt[0]'>$nxt[0]</a>
 		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos=$nxt[0]')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a> $vc_add
-		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r{$cadd}<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
+		<td align=left>$nxt[2] $info<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r{$cadd}<td>$nxt[8] $vc_rto<td>$nxt[13] $vc_tdb<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
 	}
 }
 
