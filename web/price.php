@@ -804,7 +804,6 @@ else if($mode=="gen")
 	}
 	else if($f=='xls')
 	{
-
 		$tmpl->AddText("<h2 id='page-title'>Загрузка прайс - листа</h2><div id='page-info'>Используется xls формат</div>
 		В файле содержится электронная таблица Microsoft Excel. Формат удобен только для пользователей этой программы, желающих вносить изменения в прайс. Для просмотра и печати рекомендуется <a class='wiki' href='?mode=gen&f=pdf'>формат PDF</a>.<br>
 		Загруженный файл можно будет открыть при помощи:
@@ -909,11 +908,12 @@ else if($mode=="get")
 
 
 		global $CONFIG;
+		if(!isset($CONFIG['site']['price_width_vc']))	$CONFIG['site']['price_width_vc']=0;
 		if(!$CONFIG['site']['price_col_cnt'])		$CONFIG['site']['price_col_cnt']=2;
 		if(!$CONFIG['site']['price_width_cost'])	$CONFIG['site']['price_width_cost']=16;
 		if(!$CONFIG['site']['price_width_name'])
 		{
-			$CONFIG['site']['price_width_name']=(194-$CONFIG['site']['price_width_cost']*$CONFIG['site']['price_col_cnt']-$CONFIG['site']['price_col_cnt']*2)/$CONFIG['site']['price_col_cnt'];
+			$CONFIG['site']['price_width_name']=(194-$CONFIG['site']['price_width_cost']*$CONFIG['site']['price_col_cnt']-$CONFIG['site']['price_width_vc']*$CONFIG['site']['price_col_cnt']-$CONFIG['site']['price_col_cnt']*2)/$CONFIG['site']['price_col_cnt'];
 			settype($CONFIG['site']['price_width_name'],'int');
 		}
 
@@ -921,10 +921,16 @@ else if($mode=="get")
 
 
 		//$pdf->Sety(90);
+		if($CONFIG['site']['price_width_vc'])
+		{
+			$str = iconv('UTF-8', 'windows-1251', 'Код');
+			$pdf->AddCol('vc', $CONFIG['site']['price_width_vc'], $str,'');
+		}
+		
 		$str = iconv('UTF-8', 'windows-1251', 'Наименование');
-		$pdf->AddCol('name',$CONFIG['site']['price_width_name'], $str,'');
+		$pdf->AddCol('name', $CONFIG['site']['price_width_name'], $str,'');
 		$str = iconv('UTF-8', 'windows-1251', 'Цена');
-		$pdf->AddCol('cost',$CONFIG['site']['price_width_cost'],$str,'R');
+		$pdf->AddCol('cost', $CONFIG['site']['price_width_cost'],$str,'R');
 		$prop=array('HeaderColor'=>array(255,150,100),
 				'color1'=>array(210,245,255),
 				'color2'=>array(255,255,210),
@@ -940,7 +946,7 @@ else if($mode=="get")
 		if($proizv) $proizv='`doc_base`.`proizv`';
 		else $proizv="''";
 
-		$pdf->Table("SELECT `doc_base`.`name`, $proizv, `doc_base`.`id` AS `pos_id` , `doc_base`.`cost_date`, `class_unit`.`rus_name1` AS `units_name`
+		$pdf->Table("SELECT `doc_base`.`name`, $proizv, `doc_base`.`id` AS `pos_id` , `doc_base`.`cost_date`, `class_unit`.`rus_name1` AS `units_name`, `doc_base`.`vc`
 		FROM `doc_base`
 		LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 		",$prop);

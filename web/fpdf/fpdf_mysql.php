@@ -104,7 +104,7 @@ function Row($data, $divider=0, $cost_id=1)
 			$this->SetFillColor($this->HeaderColor[0],$this->HeaderColor[1],$this->HeaderColor[2]);
 		$str = iconv('UTF-8', 'windows-1251', $data);
 		$this->SetTextColor(0);
-		$this->Cell($this->aCols[0]['w']+$this->aCols[1]['w'],4,$str,1,0,'C',$fill);    
+		$this->Cell($this->aCols[0]['w']+$this->aCols[1]['w']+@$this->aCols[2]['w'],4,$str,1,0,'C',$fill);    
     }
     
     $this->Ln();

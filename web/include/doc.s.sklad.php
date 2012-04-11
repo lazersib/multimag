@@ -1116,6 +1116,7 @@ class doc_s_Sklad
 				if(!isAccess('list_sklad','create'))	throw new AccessException("");
 				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`)
 				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml')");
+				if(mysql_errno())	throw new MysqlException("Ошибка сохранения основной информации.");
 				$opos=$pos;
 				$pos=mysql_insert_id();
 				if($opos)
@@ -1123,20 +1124,21 @@ class doc_s_Sklad
 					$res=mysql_query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`
 					FROM `doc_base_dop`
 					WHERE `doc_base_dop`.`id`='$opos'");
+					if(mysql_errno())	throw new MysqlException("Ошибка выборки дополнительной информации.");
 					$nxt=@mysql_fetch_row($res);
 					$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`)
 					VALUES ('$pos', '$nxt[1]', '0', '$nxt[0]', '$nxt[3]', '$nxt[4]', '$nxt[5]', '$nxt[6]')");
+					if(mysql_errno())	throw new MysqlException("Ошибка сохранения дополнительной информации.");
 					doc_log("INSERT pos","name:$pos_name, proizv:$proizv, group:$group, desc: $desc, hidden:$hid, cost:$cost",'pos',$pos);
 				}
 				$this->PosMenu($pos, '');
-				if($res)
-				{
-					$tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
-					$res=mysql_query("SELECT `id` FROM `doc_sklady`");
-					while($nxt=mysql_fetch_row($res))
-						mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
-				}
-				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
+				
+				$tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
+				$res=mysql_query("SELECT `id` FROM `doc_sklady`");
+				if(mysql_errno())	throw new MysqlException("Ошибка выборки складов.");
+				while($nxt=mysql_fetch_row($res))
+					mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
+				
 
 			}
 		}
@@ -2025,7 +2027,7 @@ function DrawSkladTable($res,$s)
 		$sel[$param]="class='selected'";
 
 		$res=mysql_query("SELECT `doc_base`.`name` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
-		if(mysql_errno())	throw new Exception("Не удалось получить наименование позиции!");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить наименование позиции!");
 		$pos_info=mysql_fetch_row($res);
 		if($pos_info)
 		{

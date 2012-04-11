@@ -328,9 +328,9 @@ function processContents(httpRequest)
 
 // ========================= Запрос номера =====================================
 
-function GetValue(url,id,s) {
+function GetValue(url,id,sub,date,firm) {
     var httpRequest;
-    url=url+"&s="+encodeURIComponent(document.getElementById(s).value);
+    url=url+"&sub="+encodeURIComponent(document.getElementById(sub).value)+"&date="+encodeURIComponent(document.getElementById(date).value)+"&firm="+encodeURIComponent(document.getElementById(firm).value);
     if (window.XMLHttpRequest)  {
         httpRequest = new XMLHttpRequest(); }
 

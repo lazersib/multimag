@@ -606,9 +606,16 @@ class AccessException extends Exception
 class MysqlException extends Exception
 {
 	var $sql_error;
+	var $sql_errno;
 	function __construct($text)
 	{
 		$this->sql_error=mysql_error();
+		$this->sql_errno=mysql_errno();
+		switch($this->sql_errno)
+		{
+			case 1062:	$text.=" {$this->sql_errno}:Дублирование - такая запись уже существует в базе данных. Исправьте данные, и попробуйте снова.";	break;
+			case 1452:	$text.=" {$this->sql_errno}:Нарушение связи - введённые данные недопустимы, либо предпринята попытка удаления объекта, от которого зависят другие объекты. Проверьте правильность заполнения полей.";	break;
+		}
 		parent::__construct($text);
 		$this->WriteLog();
 	}
@@ -622,7 +629,7 @@ class MysqlException extends Exception
 		$ff=$_SERVER['PHP_SELF'];
 		$uid=@$_SESSION['uid'];
 		$s=mysql_real_escape_string($this->message);
-		$hidden_data=mysql_real_escape_string($this->sql_error);
+		$hidden_data=mysql_real_escape_string($this->sql_errno).": ".mysql_real_escape_string($this->sql_error);
 		$ag=mysql_real_escape_string($ag);
 		$rf=mysql_real_escape_string($rf);
 		$qq=mysql_real_escape_string($qq);

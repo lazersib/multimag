@@ -127,14 +127,16 @@ else if($mode=="incnum")
 {
 	$tmpl->ajax=1;
 	$type=rcv('type');
-	$subtype=rcv('s');
+	$sub=rcv('sub');
+	$date=rcv('date');
+	$firm=rcv('firm');
 	if($doc)
 	{
 		$res=mysql_query("SELECT `type`,`subtype`,`altnum` FROM `doc_list` WHERE `id`='$doc'");
 		$nxt=mysql_fetch_row($res);
 		$type=$nxt[0];
 	}
-	$altnum=GetNextAltNum($type,$subtype,$nxt[2]);
+	$altnum=GetNextAltNum($type,$sub,$doc,$date,$firm);
 	echo "$altnum";
 	exit(0);
 }

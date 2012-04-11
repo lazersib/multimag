@@ -102,7 +102,7 @@ class doc_Nulltype
 		for ($i = 0; $i < $columns; $i++)	$col_array[mysql_field_name($fields, $i)]=mysql_field_name($fields, $i);
 		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user'],$col_array['ok']);
 // 		echo "{$this->doc_type}-{$doc_data['subtype']}<br>";
-		$doc_data['altnum']=GetNextAltNum($this->doc_type ,$doc_data['subtype']);
+		$doc_data['altnum']=GetNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
 		$sqlinsert_keys="`date`, `type`, `user`";
 		$sqlinsert_value="'$date', '".$this->doc_type."', '$uid'";
 //  		echo"<br>";
@@ -265,9 +265,8 @@ class doc_Nulltype
 		$cena=rcv('cena');
 		$cost_recalc=rcv('cost_recalc');
 
-		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type,$subtype);
-
 		if($date<=0) $date=time();
+		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);		
 
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
@@ -368,9 +367,10 @@ class doc_Nulltype
 		$kassa=rcv('kassa');
 		$cena=rcv('cena');
 		$contract=rcv('contract');
-
-		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type,$subtype);
 		if($date<=0)	$date=time();
+		
+		if(!$altnum)	$altnum=$comment=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
+		
 
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
@@ -1088,12 +1088,12 @@ class doc_Nulltype
 		<table id='doc_head_main'>
 		<tr><td class='altnum'>А. номер</td><td class='subtype'>Подтип</td><td class='datetime'>Дата и время</td><tr>
 		<tr class='inputs'>
-		<td class='altnum'><input type='text' name='altnum' value='".$this->doc_data[9]."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."','anum','sudata')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
+		<td class='altnum'><input type='text' name='altnum' value='".$this->doc_data[9]."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."', 'anum', 'sudata', 'datetime', 'firm_id')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
 		<td class='subtype'><input type='text' name='subtype' value='".$this->doc_data[10]."' id='sudata'></td>
 		<td class='datetime'><input type='text' name='datetime' value='$dt' id='datetime'></td>
 		</tr>
 		</table>
-		Организация:<br><select name='firm'>");
+		Организация:<br><select name='firm' id='firm_id'>");
 		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 
 		if($this->doc_data[17]==0) $this->doc_data[17]=$CONFIG['site']['default_firm'];
@@ -1317,10 +1317,20 @@ class doc_Nulltype
 	}
 
 	// === Получение альтернативного порядкового номера документа =========
-	protected function GetNextAltNum($doc_type, $subtype)
+	protected function GetNextAltNum($doc_type, $subtype, $date, $firm_id)
 	{
-		$res=@mysql_query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype' AND `altnum`!='{$this->doc}' ORDER BY `altnum` DESC");
-		return @mysql_result($res,0,0)+1;
+		$start_date=strtotime(date("Y-01-01 00:00:00",strtotime($date)));
+		$end_date=strtotime(date("Y-12-31 23:59:59",strtotime($date)));
+		$res=@mysql_query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype' AND `id`!='{$this->doc}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id' ORDER BY `altnum` ASC");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить выборку альтернативных номеров");
+		$newnum=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			if($nxt[0]-1 > $newnum)	break;
+			$newnum=$nxt[0];
+		}
+		$newnum++;
+		return $newnum;
 	}
 
 	// === Кнопки меню - провети / отменить ===
