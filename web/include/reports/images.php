@@ -58,16 +58,17 @@ class Report_Images
 		FROM `doc_img`
 		ORDER BY `doc_img`.`id`");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать список изображений");
-		$img_col=$show_img?'<td>Эскиз':'';
+		$img_col=$show_img?'<th>Эскиз':'';
 		$tmpl->AddText("<table width='100%'>
 		<tr><th>ID $img_col<th>Изображение<th>Умолч.<th>ID товара<th>Код<th>Наименование / произв.");
 		$old='';
 		while($nxt=mysql_fetch_array($res))
 		{
-			$r=mysql_query("SELECT `doc_base_img`.`pos_id`, `doc_base_img`.`default`, `doc_base`.`name`
+			$r=mysql_query("SELECT `doc_base_img`.`pos_id`, `doc_base_img`.`default`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`
 			FROM `doc_base_img`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_img`.`pos_id`
 			WHERE `doc_base_img`.`img_id`='{$nxt['img_id']}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать список наименований");
 			$pos_rows=array();
 			$c=0;
 			while($n=mysql_fetch_array($r))
@@ -101,7 +102,7 @@ class Report_Images
 				foreach($pos_rows as $line)
 				{
 					if($a)	$tmpl->AddText("<tr>");
-					$tmpl->AddText("<td>{$line['default']}<td>{$line['pos_id']}<td>{$line['name']}<td>\n");
+					$tmpl->AddText("<td>{$line['default']}<td>{$line['pos_id']}<td>{$line['vc']}<td>{$line['name']}\n");
 					$a=1;
 				}
 			}
@@ -110,7 +111,6 @@ class Report_Images
 				if($show_img)	$img_tag="<td>".$img_tag;
 				$tmpl->AddText("<tr><td>{$nxt['img_id']} $img_tag<td>{$nxt['name']} ({$nxt['type']})<td colspan='5'>-\n");
 			}
-			if($old==$nxt['img_id']) $tmpl->AddText("!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			$old=$$nxt['img_id'];
 		}
 		$tmpl->AddText("</table>");

@@ -449,6 +449,7 @@ function GetNextAltNum($type, $subtype, $doc, $date, $firm)
 		$newnum=$nxt[0];
 	}
 	$newnum++;
+	echo $newnum;
 	return $newnum;
 }
 

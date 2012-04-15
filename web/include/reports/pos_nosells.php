@@ -56,6 +56,7 @@ class Report_Pos_NoSells extends BaseGSReport
 	
 	function Make($engine)
 	{
+		global $CONFIG;
 		$this->loadEngine($engine);
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t'));
@@ -65,11 +66,22 @@ class Report_Pos_NoSells extends BaseGSReport
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
 		$this->header("Отчёт по номенклатуре без продаж с $print_df по $print_dt");
-		$widths=array(10,70,20);
+		$headers=array('ID');
+		$widths=array(5);
+
+		if($CONFIG['poseditor']['vc'])
+		{
+			$headers[]='Код';
+			$widths[]=10;
+			$widths[]=65;
+		}
+		else	$widths[]=75;
+		$widths[]=10;
+		$headers=array_merge($headers, array('Наименование', 'Ликв.'));
 		$this->tableBegin($widths);
-		$this->tableHeader(array('ID', 'Наименование', 'Ликвидность'));
+		$this->tableHeader($headers);
 		$cnt=0;
-		
+		$col_cnt=count($headers);
 		$res_group=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список групп");
 		while($group_line=mysql_fetch_assoc($res_group))
@@ -77,9 +89,9 @@ class Report_Pos_NoSells extends BaseGSReport
 			if($gs && is_array($g))
 				if(!in_array($group_line['id'],$g))	continue;
 			$this->tableAltStyle();
-			$this->tableSpannedRow(array(3),array($group_line['id'].': '.$group_line['name']));
+			$this->tableSpannedRow(array($col_cnt),array($group_line['id'].': '.$group_line['name']));
 			$this->tableAltStyle(false);
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`likvid`
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, CONCAT(`doc_base`.`likvid`,'%')
 			FROM `doc_base`
 			WHERE `doc_base`.`id` NOT IN (
 			SELECT `doc_list_pos`.`tovar` FROM `doc_list_pos`
@@ -89,13 +101,13 @@ class Report_Pos_NoSells extends BaseGSReport
 			
 			while($nxt=mysql_fetch_row($res))
 			{
-				$nxt[2].=' %';
+				if(!$CONFIG['poseditor']['vc'])	unset($nxt[1]);
 				$this->tableRow($nxt);
 				$cnt++;
 			}
 		}
 		$this->tableAltStyle();
-		$this->tableSpannedRow(array(1,2),array('Итого:', $cnt.' товаров без продаж'));
+		$this->tableSpannedRow(array(1,$col_cnt-1),array('Итого:', $cnt.' товаров без продаж'));
 		$this->tableEnd();
 		$this->output();
 		exit(0);

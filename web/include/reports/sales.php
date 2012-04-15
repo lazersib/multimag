@@ -190,7 +190,7 @@ class Report_Sales extends BaseGSReport
 		");
 	}
 	
-	function dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t)
+	function dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost)
 	{
 		$start_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f);
 		
@@ -296,7 +296,7 @@ class Report_Sales extends BaseGSReport
 			$perem_cnt+=$nxt['cnt'];
 		}
 		if($this->w_docs)	$this->tableRow(array('', 'По перемещениям:', '', $perem_cnt, '', $sum));
-		$r_cnt+=$cnt;
+		$r_cnt+=$perem_cnt;
 		$r_sum+=$sum;
 		if($this->w_docs)	
 		{
@@ -344,7 +344,7 @@ class Report_Sales extends BaseGSReport
 		else
 		{
 			$end_cnt=$start_cnt+$prix_cnt-$r_cnt;
-			$this->tableRow(array($pos_id, $vc, $name, $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt));
+			$this->tableRow(array($pos_id, $vc, $name, $base_cost, $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt));
 		}
 	}
 	
@@ -415,9 +415,9 @@ class Report_Sales extends BaseGSReport
 	
 	}
 	
-	function outPos($pos_id, $vc, $name, $dt_f, $dt_t)
+	function outPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost)
 	{
-		if($this->div_dt || !$this->w_docs)	$this->dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t);
+		if($this->div_dt || !$this->w_docs)	$this->dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost);
 		else			$this->serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t);
 	}
 	
@@ -441,8 +441,8 @@ class Report_Sales extends BaseGSReport
 		
 		if(!$this->w_docs)	
 		{
-			$widths=array(5,8,45, 7, 7, 7, 7, 7, 7);
-			$headers=array('ID','Код','Наименование','Нач. кол-во','Приход','Реализ.','Перем.','Сборка','Итог');
+			$widths=array(5,8,38, 7, 7, 7, 7, 7, 7, 7);
+			$headers=array('ID','Код','Наименование','Базов. цена','Нач. кол-во','Приход','Реализ.','Перем.','Сборка','Итог');
 		}
 		else if($this->div_dt)
 		{
@@ -489,7 +489,7 @@ class Report_Sales extends BaseGSReport
 				$this->tableAltStyle();
 				$this->tableSpannedRow(array($this->col_cnt),array($group_line['id'].'. '.$group_line['name']));
 				$this->tableAltStyle(false);
-				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`
+				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`
 				FROM `doc_base`
 				WHERE `doc_base`.`group`='{$group_line['id']}'
 				ORDER BY `doc_base`.`name`");
@@ -497,7 +497,7 @@ class Report_Sales extends BaseGSReport
 				
 				while($nxt=mysql_fetch_row($res))
 				{
-					$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t);
+					$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3]);
 				}
 			}
 		}

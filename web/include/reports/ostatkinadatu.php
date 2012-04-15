@@ -153,7 +153,7 @@ class Report_OstatkiNaDatu
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady`");
 		while($nxt=mysql_fetch_row($res))
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
-		$tmpl->AddText("</select>
+		$tmpl->AddText("</select><br>
 		Группа товаров:<br>");
 		$this->GroupSelBlock();
 		$tmpl->AddText("<button type='submit'>Создать отчет</button></form>");	
@@ -161,16 +161,30 @@ class Report_OstatkiNaDatu
 	
 	function MakeHTML()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$sklad=rcv('sklad');
 		$date=rcv('date');
 		$unixtime=strtotime($date." 23:59:59");
 		$pdate=date("Y-m-d",$unixtime);
 		$gs=rcv('gs');
 		$g=@$_POST['g'];
+		
+		$res=mysql_query("SELECT `name` FROM `doc_sklady` WHERE `id`='$sklad'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить наименование склада");
+		if(mysql_num_rows($res)<1)	throw new Exception("Склад не найден!");
+		list($sklad_name)=mysql_fetch_row($res);
+		
 		$tmpl->LoadTemplate('print');
-		$tmpl->SetText("<h1>Остатки товара на складе N$sklad на дату $pdate</h1>
-		<table width=100%><tr><th>N<th>Наименование<th>Количество<th>Базовая цена<th>Сумма по базовой");
+		$tmpl->SetText("<h1>Остатки товара на складе N$sklad ($sklad_name) на дату $pdate</h1>
+		<table width=100%><tr><th>N");
+		$col_count=1;
+		if($CONFIG['poseditor']['vc'])
+		{
+			$tmpl->AddText("<th>Код");
+			$col_count++;
+		}
+		$tmpl->AddText("<th>Наименование<th>Количество<th>Базовая цена<th>Сумма по базовой");
+		$col_count+=4;
 		$sum=$zeroflag=$bsum=$summass=0;
 		$res_group=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список групп");
@@ -179,9 +193,9 @@ class Report_OstatkiNaDatu
 			if($gs && is_array($g))
 				if(!in_array($group_line['id'],$g))	continue;
 			
-			$tmpl->AddText("<tr><td colspan='8' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");		
+			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");		
 		
-			$res=mysql_query("SELECT `doc_base`.`id`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` , `doc_base`.`cost`,	`doc_base_dop`.`mass`
+			$res=mysql_query("SELECT `doc_base`.`id`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` , `doc_base`.`cost`,	`doc_base_dop`.`mass`, `doc_base`.`vc`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
@@ -199,7 +213,10 @@ class Report_OstatkiNaDatu
 				if($count<0) $count='<b>'.$count.'</b/>';
 				$summass+=$count*$nxt[3];
 				
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$count<td>$cost_p р.<td>$bsum_p р.");
+				$tmpl->AddText("<tr><td>$nxt[0]");
+				if($CONFIG['poseditor']['vc'])	$tmpl->AddText("<td>{$nxt[4]}");
+
+				$tmpl->AddText("<td>$nxt[1]<td>$count<td>$cost_p р.<td>$bsum_p р.");
 			}
 		}
 		$tmpl->AddText("<tr><td colspan='4'><b>Итого:</b><td>$bsum р.</table>");

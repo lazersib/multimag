@@ -367,7 +367,7 @@ function AddPos($pos)
 	$ret='';
 	
 	if(!$pos)	throw new Exception("ID позиции не задан!");
-		
+	if($cnt<=0)	throw new Exception("Количество должно быть положительным!");
 	$res=mysql_query("SELECT `id`, `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `tovar`='$pos'");
 	if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
 	if(mysql_num_rows($res)==0)

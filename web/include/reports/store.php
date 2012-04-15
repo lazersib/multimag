@@ -64,7 +64,7 @@ class Report_Store extends BaseGSReport
 	
 	function MakeHTML()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$gs=rcv('gs');
 		$show_price=	rcv('show_price');
 		$show_add=	rcv('show_add');
@@ -73,10 +73,25 @@ class Report_Store extends BaseGSReport
 		$g=@$_POST['g'];
 		$cost=@$_POST['cost'];
 		$tmpl->LoadTemplate('print');
-		if($sklad)	$tmpl->SetText("<h1>Остатки товара на складе N{$sklad}</h1>");
+		
+		if($sklad)
+		{
+			$res=mysql_query("SELECT `name` FROM `doc_sklady` WHERE `id`='$sklad'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить наименование склада");
+			if(mysql_num_rows($res)<1)	throw new Exception("Склад не найден!");
+			list($sklad_name)=mysql_fetch_row($res);
+			$tmpl->SetText("<h1>Остатки товара на складе N{$sklad} ($sklad_name)</h1>");
+		}
 		else		$tmpl->SetText("<h1>Остатки товара суммарно по всем складам</h1>");
-		$tmpl->AddText("<table width=100%><tr><th>N<th>Наименование<th>Количество");
-		$col_count=3;
+		$tmpl->AddText("<table width=100%><tr><th>N");
+		$col_count=1;
+		if($CONFIG['poseditor']['vc'])
+		{
+			$tmpl->AddText("<th>Код");
+			$col_count++;
+		}
+		$tmpl->AddText("<th>Наименование<th>Количество");
+		$col_count+=2;
 		if($show_price)
 		{
 			$tmpl->AddText("<th>Актуальная цена<br>поступления<th>Базовая цена");
@@ -128,7 +143,7 @@ class Report_Store extends BaseGSReport
 			$tmpl->AddText("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. {$group_line['name']}</td></tr>");
 		
 		
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`, {$cnt_field}, `doc_base_dop`.`mass`
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`, {$cnt_field}, `doc_base_dop`.`mass`, `doc_base`.`vc`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			$cnt_join
@@ -136,11 +151,14 @@ class Report_Store extends BaseGSReport
 			ORDER BY `doc_base`.`name`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			
-			while($nxt=mysql_fetch_row($res))
+			while($nxt=mysql_fetch_array($res))
 			{
 				if($nxt[3]==0) continue;
 				if($nxt[3]<0) $nxt[3]='<b>'.$nxt[3].'</b>';
-				$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[3]");
+				$tmpl->AddText("<tr><td>$nxt[0]");
+				if($CONFIG['poseditor']['vc'])		$tmpl->AddText("<td>{$nxt['vc']}");
+
+				$tmpl->AddText("<td>$nxt[1]<td>$nxt[3]");
 				if($show_price || $show_sum || $show_add)
 				{
 					$act_cost=sprintf('%0.2f',GetInCost($nxt[0]));
@@ -165,7 +183,7 @@ class Report_Store extends BaseGSReport
 					$tmpl->AddText("<td>$sum_p р.<td>$bsum_p р.");
 				}
 				
-				$summass+=$nxt[3]*$nxt[4];
+				$summass+=$nxt[3]*$nxt['mass'];
 				
 				if(is_array($cost))
 				{

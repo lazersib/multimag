@@ -284,7 +284,7 @@ protected function ProductCard($product)
 	global $tmpl, $CONFIG, $wikiparser;
 	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`
+	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`
 	FROM `doc_base`
 	LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -318,6 +318,7 @@ protected function ProductCard($product)
 		}
 
 		$tmpl->AddText("$img<td class='field'>Наименование:<td>{$nxt['name']}");
+		if($nxt['vc']) $tmpl->AddText("<tr><td class='field'>Код производителя:<td>{$nxt['vc']}<br>");
 		if($nxt[2])
 		{
 			$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
@@ -742,7 +743,7 @@ protected function MakeBuy()
 		$agent=1;
 		//if($_SESSION['uid'])	$agent=$_SESSION['uid'];	// ?????????????????????????/
 		$tm=time();
-		$altnum=GetNextAltNum(3,$subtype);
+		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
 		$comm="ФИО: $rname, телефон: $tel, IP: $ip, адрес доставки: $adres<br>Другая информация: $dop";
 		if(!$uid)	$comm="e-mail: $email<br>".$comm;

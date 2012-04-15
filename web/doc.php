@@ -130,13 +130,19 @@ else if($mode=="incnum")
 	$sub=rcv('sub');
 	$date=rcv('date');
 	$firm=rcv('firm');
-	if($doc)
+// 	if($doc)
+// 	{
+// 		$res=mysql_query("SELECT `type`,`subtype`,`altnum` FROM `doc_list` WHERE `id`='$doc'");
+// 		$nxt=mysql_fetch_row($res);
+// 		$type=$nxt[0];
+// 	}
+	if(!$doc)
 	{
-		$res=mysql_query("SELECT `type`,`subtype`,`altnum` FROM `doc_list` WHERE `id`='$doc'");
-		$nxt=mysql_fetch_row($res);
-		$type=$nxt[0];
+		$type=rcv('type');
+		$document=AutoDocumentType($type, 0);
 	}
-	$altnum=GetNextAltNum($type,$sub,$doc,$date,$firm);
+	
+	$altnum=$document->GetNextAltNum($type,$sub,$date,$firm);
 	echo "$altnum";
 	exit(0);
 }

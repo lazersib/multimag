@@ -94,15 +94,17 @@ class doc_Nulltype
 		global $uid, $CONFIG;
 		if(!isAccess('doc_'.$this->doc_name,'create'))	throw new AccessException("");
 		$date=time();
-
+		$doc_data['altnum']=$this->GetNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
+	
 		$fields = mysql_list_fields($CONFIG['mysql']['db'], "doc_list");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить структуру таблицы документов");
 		$columns = mysql_num_fields($fields);
 		$col_array=array();
 		for ($i = 0; $i < $columns; $i++)	$col_array[mysql_field_name($fields, $i)]=mysql_field_name($fields, $i);
 		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user'],$col_array['ok']);
-// 		echo "{$this->doc_type}-{$doc_data['subtype']}<br>";
-		$doc_data['altnum']=GetNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
+		
+		
+		
 		$sqlinsert_keys="`date`, `type`, `user`";
 		$sqlinsert_value="'$date', '".$this->doc_type."', '$uid'";
 //  		echo"<br>";
@@ -1317,7 +1319,7 @@ class doc_Nulltype
 	}
 
 	// === Получение альтернативного порядкового номера документа =========
-	protected function GetNextAltNum($doc_type, $subtype, $date, $firm_id)
+	public function GetNextAltNum($doc_type, $subtype, $date, $firm_id)
 	{
 		$start_date=strtotime(date("Y-01-01 00:00:00",strtotime($date)));
 		$end_date=strtotime(date("Y-12-31 23:59:59",strtotime($date)));
