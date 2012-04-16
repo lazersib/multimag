@@ -41,12 +41,14 @@ if($last_time_counter = mysql_fetch_row(mysql_query("select `data` from `ps_pars
 		
 		//$str= urldecode ($refer_query_data[1]); // Договорились сразу писать декодированные рефы, так что это должно быть ненужным
 		$str= $refer_query_data[1];
-		$str = iconv("UTF-8", "cp1251", $str); // У меня в локале были проблемы, так что тоже может быть ненужным
+		//$str = iconv("UTF-8", "cp1251", $str); // У меня в локале были проблемы, так что тоже может быть ненужным
 		
 		$str = trim($str);
-		echo $str."\n";
+		//echo $str."\n";
 		
 		$last_time_counter = intval($refer_query_data[0]);
+		
+		$true_ref = false;
 		
 		$ps_settings = mysql_query("select `id`, `name`, `template`, `template_like` from `ps_settings` order by `prioritet`"); // Избыточность: под каждый запрос мы постоянно запрашиваем одни и теже данные по шаблонам ПС, хотя мы их запросили в 44 строке, но не нашел как после прохода mysql_fetch_row возвращать маркер на первую строчку
 		echo mysql_error();
@@ -54,29 +56,37 @@ if($last_time_counter = mysql_fetch_row(mysql_query("select `data` from `ps_pars
 			preg_match($ps_settings_data[2], $str, $matches);
 			if(count($matches)>0)
 			{
-				echo "\n";
-				print_r($matches);
-				echo "\nПоисковик: ".$ps_settings_data[1]."\n";
+				//echo "\n";
+				//print_r($matches);
+				//echo "\nПоисковик: ".$ps_settings_data[1]."\n";
+				
+				$true_ref = true;
 				
 				$matches = trim(mysql_real_escape_string($matches[1]));
+				if($matches==''||$matches=='\"') {
+					echo "Пустой результат (".$matches."): ".$str."\n";
+					continue;
+				}
+				echo "Добавлено: ".$matches."\n";
 				if ($ps_query_data = mysql_fetch_row(mysql_query("select `id` from `ps_query` where `query`='$matches'"))) {
-					echo "Запрос найден в БД\n";
+					//echo "Запрос найден в БД\n";
 				} else {
-					echo "Запроса нет, добавляем в БД\n";
+					//echo "Запроса нет, добавляем в БД\n";
 					mysql_query("INSERT INTO `ps_query` (`query`) VALUES ('$matches')");
 					$ps_query_data = mysql_fetch_row(mysql_query("select `id` from `ps_query` where `query`='$matches'"));
 				}
 				
 				if (mysql_fetch_row(mysql_query("select `counter` from `ps_counter` where `date`='".date('Y-m-d',$last_time_counter)."' and `query`='".$ps_query_data[0]."' and `ps`='".$ps_settings_data[0]."'"))) {
-					echo "Счетчик найден в БД\n";
+					//echo "Счетчик найден в БД\n";
 					mysql_query("UPDATE `ps_counter` SET `counter`=`counter`+1 WHERE `date`='".date('Y-m-d',$last_time_counter)."' AND `query`='".$ps_query_data[0]."' AND `ps`='".$ps_settings_data[0]."'");
 				} else {
-					echo "Счетчик не найден в БД\n";
+					//echo "Счетчик не найден в БД\n";
 					mysql_query("INSERT INTO `ps_counter` (`date`,`query`,`ps`,`counter`) VALUES ('".date('Y-m-d',$last_time_counter)."','".$ps_query_data[0]."','".$ps_settings_data[0]."','1')");
 				}
 				break;
 			}
 		}
+		if(!$true_ref) echo "Нет регулярки: ".$str."\n";
 	}
 	mysql_query("UPDATE `ps_parser` SET `data`='$last_time_counter' WHERE `parametr`='last_time_counter'");
 }
