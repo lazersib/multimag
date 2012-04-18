@@ -1,0 +1,13 @@
+SET UNIQUE_CHECKS=0;
+SET FOREIGN_KEY_CHECKS=0;
+SET SQL_MODE='TRADITIONAL';
+
+ALTER TABLE `doc_agent` CHANGE `bank` `bank` VARCHAR( 128 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+CHANGE `email` `email` VARCHAR( 64 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+CHANGE `responsible` `responsible` INT( 11 ) NULL DEFAULT NULL;
+
+START TRANSACTION;
+TRUNCATE `db_version`;
+INSERT INTO `db_version` (`version`) VALUES (347);
+
+COMMIT;
