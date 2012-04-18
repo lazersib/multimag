@@ -439,13 +439,14 @@ function getDocBaseGroupOptions($selected_id=0, $pid=0, $level=0)
 /// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
 function GetNextAltNum($type, $subtype, $doc, $date, $firm)
 {
+	global $CONFIG;
 	$start_date=strtotime(date("Y-01-01 00:00:00",strtotime($date)));
 	$end_date=strtotime(date("Y-12-31 23:59:59",strtotime($date)));
 	$res=mysql_query("SELECT `altnum` FROM `doc_list` WHERE `type`='$type' AND `subtype`='$subtype' AND `id`!='$doc' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm' ORDER BY `altnum` ASC");
 	$newnum=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		if($nxt[0]-1 > $newnum)	break;
+		if(($nxt[0]-1 > $newnum)&& @$CONFIG['doc']['use_persist_altnum'])	break;
 		$newnum=$nxt[0];
 	}
 	$newnum++;

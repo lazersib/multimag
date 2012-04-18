@@ -95,16 +95,16 @@ class doc_Nulltype
 		if(!isAccess('doc_'.$this->doc_name,'create'))	throw new AccessException("");
 		$date=time();
 		$doc_data['altnum']=$this->GetNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
-	
+
 		$fields = mysql_list_fields($CONFIG['mysql']['db'], "doc_list");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить структуру таблицы документов");
 		$columns = mysql_num_fields($fields);
 		$col_array=array();
 		for ($i = 0; $i < $columns; $i++)	$col_array[mysql_field_name($fields, $i)]=mysql_field_name($fields, $i);
 		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user'],$col_array['ok']);
-		
-		
-		
+
+
+
 		$sqlinsert_keys="`date`, `type`, `user`";
 		$sqlinsert_value="'$date', '".$this->doc_type."', '$uid'";
 //  		echo"<br>";
@@ -268,7 +268,7 @@ class doc_Nulltype
 		$cost_recalc=rcv('cost_recalc');
 
 		if($date<=0) $date=time();
-		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);		
+		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
 
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
@@ -370,9 +370,9 @@ class doc_Nulltype
 		$cena=rcv('cena');
 		$contract=rcv('contract');
 		if($date<=0)	$date=time();
-		
+
 		if(!$altnum)	$altnum=$comment=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
-		
+
 
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
@@ -1083,26 +1083,26 @@ class doc_Nulltype
 		$tmpl->AddText("<form method='post' action='' id='doc_head_form'>
 		<input type='hidden' name='mode' value='{$alt}heads'>
 		<input type='hidden' name='type' value='".$this->doc_type."'>");
-		if($this->doc_data[0])
+		if(isset($this->doc_data['id']))
 			$tmpl->AddText("<input type='hidden' name='doc' value='".$this->doc_data[0]."'>");
-		if($this->doc_data[14]) $tmpl->AddText("<h3>Документ помечен на удаление!</h3>");
+		if(@$this->doc_data['mark_del']) $tmpl->AddText("<h3>Документ помечен на удаление!</h3>");
 		$tmpl->AddText("
 		<table id='doc_head_main'>
 		<tr><td class='altnum'>А. номер</td><td class='subtype'>Подтип</td><td class='datetime'>Дата и время</td><tr>
 		<tr class='inputs'>
-		<td class='altnum'><input type='text' name='altnum' value='".$this->doc_data[9]."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."', 'anum', 'sudata', 'datetime', 'firm_id')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
-		<td class='subtype'><input type='text' name='subtype' value='".$this->doc_data[10]."' id='sudata'></td>
+		<td class='altnum'><input type='text' name='altnum' value='".@$this->doc_data['altnum']."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."', 'anum', 'sudata', 'datetime', 'firm_id')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
+		<td class='subtype'><input type='text' name='subtype' value='".@$this->doc_data['subtype']."' id='sudata'></td>
 		<td class='datetime'><input type='text' name='datetime' value='$dt' id='datetime'></td>
 		</tr>
 		</table>
 		Организация:<br><select name='firm' id='firm_id'>");
 		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 
-		if($this->doc_data[17]==0) $this->doc_data[17]=$CONFIG['site']['default_firm'];
+		if(@$this->doc_data['firm_id']==0) $this->doc_data[17]=$CONFIG['site']['default_firm'];
 
 		while($nx=mysql_fetch_row($rs))
 		{
-			if($this->doc_data[17]==$nx[0]) $s=' selected'; else $s='';
+			if(@$this->doc_data['firm_id']==$nx[0]) $s=' selected'; else $s='';
 			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1] / $nx[0]</option>");
 		}
 		$tmpl->AddText("</select><br>");
@@ -1117,7 +1117,7 @@ class doc_Nulltype
 	protected function DrawHeadformEnd()
 	{
 		global $tmpl;
-		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data[4]}</textarea><br><input type=submit value='Записать'></form>");
+		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data['comment']}</textarea><br><input type=submit value='Записать'></form>");
 	}
 
 	protected function DrawAgentField()
@@ -1285,6 +1285,7 @@ class doc_Nulltype
 	protected function get_docdata()
 	{
 		if($this->doc_data) return;
+		global $CONFIG;
 		if($this->doc)
 		{
 			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`
@@ -1308,12 +1309,15 @@ class doc_Nulltype
 			$res=mysql_query("SELECT `name` FROM `doc_agent` WHERE `id`='1'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить имя агента по умолчанию");
 			$this->doc_data[3]=@mysql_result($res,0,0);
+			$this->doc_data[5]=$this->doc_data['date']=time();
 			$this->doc_data[7]=1;
 			$this->doc_data[12]=1;
 			$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` WHERE `vid`='1'");
 			$this->dop_data['cena']=@mysql_result($res,0,0);
-			$firm_id=@$_SESSION['firm'];
-			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
+			$this->doc_data['firm_id']=$this->doc_data[17]=@$CONFIG['site']['default_firm'];
+			$this->doc_data['comment']='';
+			$this->doc_data['contract']='';
+			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='{$this->doc_data['firm_id']}'");
 			$this->firm_vars=mysql_fetch_assoc($res);
 		}
 	}
@@ -1321,6 +1325,7 @@ class doc_Nulltype
 	// === Получение альтернативного порядкового номера документа =========
 	public function GetNextAltNum($doc_type, $subtype, $date, $firm_id)
 	{
+		global $CONFIG;
 		$start_date=strtotime(date("Y-01-01 00:00:00",strtotime($date)));
 		$end_date=strtotime(date("Y-12-31 23:59:59",strtotime($date)));
 		$res=@mysql_query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype' AND `id`!='{$this->doc}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id' ORDER BY `altnum` ASC");
@@ -1328,7 +1333,7 @@ class doc_Nulltype
 		$newnum=0;
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($nxt[0]-1 > $newnum)	break;
+			if(($nxt[0]-1 > $newnum)&& @$CONFIG['doc']['use_persist_altnum'])	break;
 			$newnum=$nxt[0];
 		}
 		$newnum++;

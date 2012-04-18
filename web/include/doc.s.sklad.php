@@ -1114,8 +1114,8 @@ class doc_s_Sklad
 			else
 			{
 				if(!isAccess('list_sklad','create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`)
-				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml')");
+				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`, `country`)
+				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml', '$country')");
 				if(mysql_errno())	throw new MysqlException("Ошибка сохранения основной информации.");
 				$opos=$pos;
 				$pos=mysql_insert_id();
@@ -1132,13 +1132,13 @@ class doc_s_Sklad
 					doc_log("INSERT pos","name:$pos_name, proizv:$proizv, group:$group, desc: $desc, hidden:$hid, cost:$cost",'pos',$pos);
 				}
 				$this->PosMenu($pos, '');
-				
+
 				$tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
 				$res=mysql_query("SELECT `id` FROM `doc_sklady`");
 				if(mysql_errno())	throw new MysqlException("Ошибка выборки складов.");
 				while($nxt=mysql_fetch_row($res))
 					mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
-				
+
 
 			}
 		}
@@ -1757,7 +1757,8 @@ class doc_s_Sklad
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
-			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>Поиск по названию, начинающемуся на $s: найдено $cnt");
+			$tmpl->AddText("<tr><th colspan='18' align='center'>Поиск по названию, начинающемуся на $s: найдено $cnt");
+			if($cnt>=100)	$tmpl->AddText("<tr style='color: #f00'><td colspan='18' align='center'>Вероятно, показаны не все наименования. Уточните запрос.");
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
 		}
@@ -1765,11 +1766,12 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE (`doc_base`.`name` LIKE '%$s%'  OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`vc` NOT LIKE '$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 30";
+		WHERE (`doc_base`.`name` LIKE '%$s%'  OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`vc` NOT LIKE '$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
 			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>Поиск по названию, содержащему $s: найдено $cnt");
+			if($cnt>=100)	$tmpl->AddText("<tr style='color: #f00'><td colspan='18' align='center'>Вероятно, показаны не все наименования. Уточните запрос.");
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
 		}
@@ -1782,6 +1784,7 @@ class doc_s_Sklad
 		if($cnt=mysql_num_rows($res))
 		{
 			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>Поиск аналога, для $s: найдено $cnt");
+			if($cnt>=30)	$tmpl->AddText("<tr style='color: #f00'><td colspan='18' align='center'>Вероятно, показаны не все наименования. Уточните запрос.");
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
 		}

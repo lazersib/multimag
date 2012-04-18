@@ -38,9 +38,9 @@ class doc_Postuplenie extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
-		if(!$this->dop_data['input_doc'])	$this->dop_data['input_doc']='';
+		if(!@$this->dop_data['input_doc'])	$this->dop_data['input_doc']='';
 		$tmpl->AddText("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
-		$checked=$this->dop_data['return']?'checked':'';
+		$checked=@$this->dop_data['return']?'checked':'';
 		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>");
 	}
 
@@ -53,7 +53,7 @@ class doc_Postuplenie extends doc_Nulltype
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ( '{$this->doc}' ,'input_doc','$input_doc'), ( '{$this->doc}' ,'return','$return')");
 	}
-	
+
 	function DopBody()
 	{
 		global $tmpl;
@@ -64,7 +64,7 @@ class doc_Postuplenie extends doc_Nulltype
 	{
 		global $tmpl, $uid, $CONFIG;
 		$tim=time();
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка выборки данных документа при проведении!');
@@ -83,7 +83,7 @@ class doc_Postuplenie extends doc_Nulltype
 			$rs=mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
 			if(!$rs)	throw new MysqlException("Ошибка изменения количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
 			// Если это первое поступление
-			if(mysql_affected_rows()==0) 
+			if(mysql_affected_rows()==0)
 			{
 				mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$nx[3]', '$nxt[1]')");
 				if(mysql_errno())	throw new MysqlException("Ошибка записи количества товара $nxt[0] ($nxt[1]) на складе $nx[3] при проведении!");
@@ -107,7 +107,7 @@ class doc_Postuplenie extends doc_Nulltype
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
-		
+
 		if(@$CONFIG['doc']['update_in_cost']==2)
 		{
 			$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`cost`, `doc_base`.`cost`
@@ -127,7 +127,7 @@ class doc_Postuplenie extends doc_Nulltype
 			}
 		}
 	}
-	
+
 	function DocCancel()
 	{
 		global $tmpl;
@@ -165,11 +165,11 @@ class doc_Postuplenie extends doc_Nulltype
 						$badpos=$nxt[0];
 						throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' на складе!");
 					}
-					
+
 				}
 				mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
 				if(mysql_error())	throw new Exception("Ошибка отмены проведения, ошибка изменения количества!");
-				
+
 				if(!$nx['dnc'])
 				{
 					$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
@@ -198,7 +198,7 @@ class doc_Postuplenie extends doc_Nulltype
 		else if($opt=='nac')	$this->PrintNacenki($this->doc);
 		else $this->PrintNakl($this->doc);
 	}
-	
+
 	function PrintNakl($doc)
 	{
 		get_docdata($doc);
@@ -244,7 +244,7 @@ class doc_Postuplenie extends doc_Nulltype
 				$cost = sprintf("%01.2f р.", $nxt[4]);
 				$cost2 = sprintf("%01.2f р.", $sm);
 				$mass = sprintf("%0.3f кг.", $nxt[6]);
-				
+
 				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[5]<td>$mass<td>$nxt[3]<td>$cost<td>$cost2");
 				$i=1-$i;
 				$ii++;
@@ -262,7 +262,7 @@ class doc_Postuplenie extends doc_Nulltype
 			doc_log("PRINT {$this->doc_name}",'Накладная','doc',$doc);
 		}
 	}
-	
+
 	function PrintNacenki($doc)
 	{
 		get_docdata($doc);
@@ -308,7 +308,7 @@ class doc_Postuplenie extends doc_Nulltype
 				$bcost = sprintf("%01.2f р.", $nxt[5]);
 				$nac = sprintf("%01.2f р.", $nxt[5]-$nxt[4]);
 				$cost2 = sprintf("%01.2f р.", $sm);
-				
+
 				$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[3]<td>$cost<td>$bcost<td>$nac<td>$cost2");
 				$i=1-$i;
 				$ii++;
@@ -368,7 +368,7 @@ class doc_Postuplenie extends doc_Nulltype
 			$tmpl->msg("В разработке","info");
 		}
 	}
-	
+
 	//	================== Функции только этого класса ======================================================
 	function Otgruzka()
 	{
@@ -386,13 +386,13 @@ class doc_Postuplenie extends doc_Nulltype
 			$res=mysql_query("INSERT INTO `doc_list`
 			(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `nds`, `firm_id`)
 			VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '{$this->doc_data[7]}', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '$sum', '{$this->doc_data[12]}', '{$this->doc_data[17]}')");
-			
+
 			$r_id= mysql_insert_id();
 
 			if(!$r_id) return 0;
-			
+
 			doc_log("CREATE", "FROM {$this->doc_name} {$this->doc_name}", 'doc', $r_id);
-			
+
 			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('$r_id','cena','{$this->dop_data['cena']}')");
 
@@ -421,7 +421,7 @@ class doc_Postuplenie extends doc_Nulltype
 				//echo"$nxt[5] - $nxt[1]<br>";
 				if($nxt[5]<$nxt[1])
 				{
-					
+
 					if(!$new_id)
 					{
 						$altnum=GetNextAltNum($target_type, $this->doc_data[10]);
@@ -431,7 +431,7 @@ class doc_Postuplenie extends doc_Nulltype
 						(`type`, `agent`, `date`, `sklad`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `nds`, `firm_id`)
 						VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '{$this->doc_data[7]}', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '$sum', '{$this->doc_data[12]}', '{$this->doc_data[17]}')");
 						$new_id= mysql_insert_id();
-						
+
 						mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 						VALUES ('$new_id','cena','{$this->dop_data['cena']}')");
 					}

@@ -286,7 +286,7 @@ protected function ProductCard($product)
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
 	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`
 	FROM `doc_base`
-	LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
+	INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	LEFT JOIN `doc_base_dop_type` ON `doc_base_dop_type`.`id`=`doc_base_dop`.`type`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -300,24 +300,66 @@ protected function ProductCard($product)
 	{
 		$tmpl->AddText("<h1 id='page-title'>{$nxt['group_printname']} {$nxt['name']}</h1>");
 		$tmpl->SetTitle("{$nxt['group_printname']} {$nxt['name']}");
-		$tmpl->AddText("<table class='product-card'>
-		<tr valign='top'><td rowspan='15' width='150'>");
+
+		$appends=$img_mini="";
 		if($nxt['img_id'])
 		{
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+			$miniimg->SetY(220);
 			$miniimg->SetX(200);
 			$fullimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
-			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
-		}
-		else
-		{
-			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
-				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
-			else	$img_url='/img/no_photo.png';
-			$img="<img src='$img_url' alt='no photo' style='width: 200px'><br>";
-		}
+			$img="<img src='".$miniimg->GetURI()."' alt='{$nxt['name']}' onload='$(this).fadeTo(500,1);' style='opacity: 1' id='midiphoto'>";
+			$res=mysql_query("SELECT `doc_img`.`id` AS `img_id`, `doc_base_img`.`default`, `doc_img`.`name`, `doc_img`.`type` AS `img_type` FROM `doc_base_img`
+			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+			WHERE `doc_base_img`.`pos_id`='{$nxt['id']}'");
+			if(mysql_errno())	throw new MysqlException('Не удалось выбрать информацию о изображениях');
 
-		$tmpl->AddText("$img<td class='field'>Наименование:<td>{$nxt['name']}");
+			while($img_data=mysql_fetch_assoc($res))
+			{
+				$miniimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
+				$miniimg->SetX(40);
+				$miniimg->SetY(40);
+				$midiimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
+				$midiimg->SetX(200);
+				$midiimg->SetY(220);
+				$fullimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
+				//$fullimg->SetY(300);
+				if(mysql_num_rows($res)>1)
+					$img_mini.="<a href='".$midiimg->GetURI()."' onclick=\"return setPhoto({$img_data['img_id']});\"><img src='".$miniimg->GetURI()."' alt='{$img_data['name']}'></a>";
+				$appends.="midiphoto.appendImage({$img_data['img_id']},'".$midiimg->GetURI()."', '".$fullimg->GetURI()."');\n";
+
+			}
+		}
+		else $img="<img src='/skins/root2/images/no_photo.png' alt='no photo'>";
+
+		$tmpl->AddText("<table class='product-card'>
+		<tr valign='top'><td rowspan='15' width='150'>
+		<div class='image'><div class='one load'>$img</div><div class='list'>$img_mini</div></div>
+		<script>
+		var midiphoto=tripleView('midiphoto')
+		$appends
+		function setPhoto(id)
+		{
+			return midiphoto.setPhoto(id)
+		}
+		</script>");
+
+// 		if($nxt['img_id'])
+// 		{
+// 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+// 			$miniimg->SetX(200);
+// 			$fullimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+// 			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
+// 		}
+// 		else
+// 		{
+// 			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
+// 				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
+// 			else	$img_url='/img/no_photo.png';
+// 			$img="<img src='$img_url' alt='no photo' style='width: 200px'><br>";
+// 		}
+
+		$tmpl->AddText("<td class='field'>Наименование:<td>{$nxt['name']}");
 		if($nxt['vc']) $tmpl->AddText("<tr><td class='field'>Код производителя:<td>{$nxt['vc']}<br>");
 		if($nxt[2])
 		{
@@ -365,7 +407,7 @@ protected function ProductCard($product)
 				$tmpl->AddText("<tr><td class='field'>$params[0]:<td>$params[1]</tr>");
 			}
 		}
-		
+
 		$att_res=mysql_query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
 		FROM `doc_base_attachments`
 		LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
@@ -381,7 +423,7 @@ protected function ProductCard($product)
 				$tmpl->AddText("<tr><td><a href='$link'>$anxt[1]</td></td><td>$anxt[2]</td></tr>");
 			}
 		}
-		
+
 		$tmpl->AddText("<tr><td colspan='3'>
 		<form action='/vitrina.php'>
 		<input type='hidden' name='mode' value='korz_add'>
