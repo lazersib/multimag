@@ -603,7 +603,7 @@ class doc_Zayavka extends doc_Nulltype
 	function PrintPDF($to_str=0)
 	{
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
-		require('fpdf/fpdf_mysql.php');
+		require('fpdf/fpdf_mc.php');
 		global $tmpl, $CONFIG, $uid;
 
 		$res=mysql_query("SELECT `adres`, `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
@@ -618,7 +618,7 @@ class doc_Zayavka extends doc_Nulltype
 		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
 
-		$pdf=new FPDF('P');
+		$pdf=new PDF_MC_Table('P');
 		$pdf->Open();
 		$pdf->SetAutoPageBreak(0,10);
 		$pdf->AddFont('Arial','','arial.php');
@@ -732,33 +732,54 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 
 		$pdf->Ln(3);
-
-		$t_width=array(8,110,20,25,0);
-		$pdf->SetFont('','',12);
-		$str='№';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[0],5,$str,1,0,'C',0);
-		$str='Наименование';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[1],5,$str,1,0,'C',0);
-		$str='Кол-во';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[2],5,$str,1,0,'C',0);
-		$str='Цена';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[3],5,$str,1,0,'C',0);
-		$str='Сумма';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[4],5,$str,1,0,'C',0);
+		
+		$pdf->SetLineWidth(0.5);
+		$t_width=array(8);
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_width[]=20;
+			$t_width[]=92;
+		}
+		else	$t_width[]=112;
+		$t_width=array_merge($t_width, array(20,25,25));
+		
+		$t_text=array('№');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_text[]='Код';
+			$t_text[]='Наименование';
+		}
+		else	$t_text[]='Наименование';
+		$t_text=array_merge($t_text, array('Кол-во', 'Цена', 'Сумма'));
+		
+		foreach($t_width as $id=>$w)	
+		{
+			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
+			$pdf->Cell($w,6,$str,1,0,'C',0);
+		}
 		$pdf->Ln();
+		$pdf->SetWidths($t_width);
+		$pdf->SetHeight(3.8);
 
-		$pdf->SetFont('','',9);
-
-		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`
+		$aligns=array('R');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$aligns[]='R';
+			$aligns[]='L';
+		}
+		else	$aligns[]='L';
+		$aligns=array_merge($aligns, array('R','R','R'));
+		
+		$pdf->SetAligns($aligns);
+		$pdf->SetLineWidth(0.2);
+		$pdf->SetFont('','',8);
+		
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
@@ -774,34 +795,18 @@ class doc_Zayavka extends doc_Nulltype
 
 			$name=$nxt[0].' '.$nxt[1];
 			if($nxt[2]) $name.='('.$nxt[2].')';
-			$name = iconv('UTF-8', 'windows-1251', unhtmlentities($name));
-
-			$rough_lines=ceil($pdf->GetStringWidth($name)/$t_width[1]);
-
-			if( $pdf->h <= ($pdf->GetY()+15 + $rough_lines*5 ) ) $pdf->AddPage();
-
-
-			// Вывод наименования и расчёт отступов
-			$old_x=$pdf->GetX();
-			$old_y=$pdf->GetY();
-			$pdf->SetX($pdf->GetX()+$t_width[0]);
-			$pdf->MultiCell($t_width[1],5,$name,1,'L');
-			$line_height=$pdf->GetY()-$old_y;
-			$pdf->SetX($old_x);
-			$pdf->SetY($old_y);
-
-
-
-			$pdf->Cell($t_width[0],$line_height,$i,1,0,'R');
-			$pdf->Cell($t_width[1],5,'',0,0,'L');
-			//if($pdf->GetStringWidth($str)>$t_width[1])
-			//$pdf->MultiCell($t_width[1],5,$str,1,'L');
-			$pdf->Cell($t_width[2],$line_height,$nxt[3],1,0,'C');
-			$str = iconv('UTF-8', 'windows-1251', $cost);
-			$pdf->Cell($t_width[3],$line_height,$str,1,0,'R');
-			$str = iconv('UTF-8', 'windows-1251', $smcost);
-			$pdf->Cell($t_width[4],$line_height,$str,1,0,'R');
-			$pdf->Ln($line_height);
+	
+			$row=array($i);
+			if(@$CONFIG['poseditor']['vc'])
+			{
+				$row[]=$nxt[6];
+				$row[]=$name;
+			}
+			else	$row[]=$name;
+			$row=array_merge($row, array("$nxt[3] $nxt[7]", $cost, $smcost));
+	
+			if( $pdf->h <= ($pdf->GetY()+40 ) ) $pdf->AddPage();	
+			$pdf->RowIconv($row);
 		}
 
 		$cost = num2str($sum);
@@ -901,8 +906,7 @@ class doc_Zayavka extends doc_Nulltype
 
 	function PrintKomplekt()
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $uid, $CONFIG;
 
 		if(!$this->doc_data[6])
 		{
@@ -926,9 +930,12 @@ class doc_Zayavka extends doc_Nulltype
 
 			<br><br>
 			<table width=800 cellspacing=0 cellpadding=0>
-			<tr><th>№<th width=450>Наименование<th>Цена<th>Кол-во<th>Остаток<th>Резерв<th>Масса<th>Место");
+			<tr><th>№");
+			if(@$CONFIG['poseditor']['vc'])	$tmpl->AddText("<th>Код");
+			
+			$tmpl->AddText("<th width=450>Наименование<th>Цена<th>Кол-во<th>Остаток<th>Резерв<th>Масса<th>Место");
 
-			$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`
+			$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_base`.`vc`
 			FROM `doc_list_pos`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -950,8 +957,9 @@ class doc_Zayavka extends doc_Nulltype
 
 				$ostatok=$nxt[6];
 
-				$tmpl->AddText("<tr align=right>
-				<td>$i<td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[8]<td>$nxt[3]<td>$ostatok<td>$rezerv<td>$mass<td>$nxt[5]");
+				$tmpl->AddText("<tr align=right><td>$i");
+				if(@$CONFIG['poseditor']['vc'])	$tmpl->AddText("<td>$nxt[9]");
+				$tmpl->AddText("<td align=left>$nxt[0] $nxt[1] / $nxt[2]<td>$nxt[8]<td>$nxt[3]<td>$ostatok<td>$rezerv<td>$mass<td>$nxt[5]");
 
 
 			}

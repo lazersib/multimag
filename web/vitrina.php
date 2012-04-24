@@ -252,7 +252,7 @@ protected function ProductList($group, $page)
 
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
-	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`
+	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
 	FROM `doc_base`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -644,6 +644,7 @@ protected function TovList_ImageList($res, $lim)
 		$tmpl->AddText("<div class='pitem'>
 		<a href='$link'>$img</a>
 		<a href='$link'>{$nxt['name']}</a><br>
+		<b>Код:</b> {$nxt['vc']}<br>
 		<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
 		<b>Кол-во:</b> $nal<br>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>

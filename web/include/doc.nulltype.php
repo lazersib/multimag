@@ -1314,7 +1314,7 @@ class doc_Nulltype
 			$this->doc_data[12]=1;
 			$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` WHERE `vid`='1'");
 			$this->dop_data['cena']=@mysql_result($res,0,0);
-			$this->doc_data['firm_id']=$this->doc_data[17]=@$CONFIG['site']['default_firm'];
+			$this->doc_data['firm_id']=0;
 			$this->doc_data['comment']='';
 			$this->doc_data['contract']='';
 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='{$this->doc_data['firm_id']}'");

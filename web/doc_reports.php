@@ -380,80 +380,85 @@ $dir=$CONFIG['site']['location'].'/include/reports/';
 
 try
 {
-	if(isAccess('doc_reports','view'))
+
+		
+	if($mode=='')
 	{
-			
-		if($mode=='')
+		doc_menu();	
+		$tmpl->SetTitle("Отчёты");
+		$tmpl->AddText("<h1>Отчёты</h1>
+		<p>Внимание! Отчёты создают высокую нагрузку на сервер, поэтому не рекомендуеся генерировать отчёты во время интенсивной работы с базой данных, а так же не рекомендуется частое использование генератора отчётов по этой же причине!</p>");
+		$tmpl->AddText("<ul>");
+		if (is_dir($dir))
 		{
-			doc_menu();	
-			$tmpl->SetTitle("Отчёты");
-			$tmpl->AddText("<h1>Отчёты</h1>
-			<p>Внимание! Отчёты создают высокую нагрузку на сервер, поэтому не рекомендуеся генерировать отчёты во время интенсивной работы с базой данных, а так же не рекомендуется частое использование генератора отчётов по этой же причине!</p>");
-			$tmpl->AddText("<ul>");
-			if (is_dir($dir))
+			if ($dh = opendir($dir))
 			{
-				if ($dh = opendir($dir))
+				while (($file = readdir($dh)) !== false)
 				{
-					while (($file = readdir($dh)) !== false)
+					if( preg_match('/.php$/',$file) )
 					{
-						if( preg_match('/.php$/',$file) )
+						$cn=explode('.',$file);
+						if(isAccess('report_'.$cn[0],'view'))
 						{
 							include_once("$dir/$file");
-							$cn=explode('.',$file);
 							$class_name='Report_'.$cn[0];
 							$class=new $class_name;
 							$nm=$class->getName();
 							$tmpl->AddText("<li><a href='/doc_reports.php?mode=$cn[0]'>$nm</a></li>");
 						}
 					}
-					closedir($dh);
 				}
+				closedir($dh);
 			}
-			$tmpl->AddText("</ul>");
 		}
-		else if($mode=='pmenu')
+		$tmpl->AddText("</ul>");
+	}
+	else if($mode=='pmenu')
+	{
+		$tmpl->ajax=1;
+		$tmpl->SetText("");
+		if (is_dir($dir))
 		{
-			$tmpl->ajax=1;
-			$tmpl->SetText("");
-			if (is_dir($dir))
+			if ($dh = opendir($dir))
 			{
-				if ($dh = opendir($dir))
+				while (($file = readdir($dh)) !== false)
 				{
-					while (($file = readdir($dh)) !== false)
+					if( preg_match('/.php$/',$file) )
 					{
-						if( preg_match('/.php$/',$file) )
+						$cn=explode('.',$file);
+						if(isAccess('report_'.$cn[0],'view'))
 						{
 							include_once("$dir/$file");
-							$cn=explode('.',$file);
 							$class_name='Report_'.$cn[0];
 							$class=new $class_name;
 							$nm=$class->getName(1);
 							$tmpl->AddText("<div onclick='window.location=\"/doc_reports.php?mode=$cn[0]\"'>$nm</div>");
 						}
 					}
-					closedir($dh);
 				}
+				closedir($dh);
 			}
-			$tmpl->AddText("<hr><div onclick='window.location=\"/doc_reports.php\"'>Подробнее</div>");
 		}
-		else
-		{
-			doc_menu();
-			$tmpl->SetTitle("Отчёты");
-			$opt=rcv('opt');
-			$fn=$dir.$mode.'.php';
-			if(file_exists($fn))
-			{
-				include_once($fn);
-				$class_name='Report_'.$mode;
-				$class=new $class_name;
-				$tmpl->SetTitle($class->getName());
-				$class->Run($opt);
-			}
-			else $tmpl->msg("Сценарий $fn не найден!","err");	
-		}
+		$tmpl->AddText("<hr><div onclick='window.location=\"/doc_reports.php\"'>Подробнее</div>");
 	}
-	else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
+	else
+	{
+		doc_menu();
+		if(!isAccess('report_'.$cn[0],'view'))	throw new AccessException("");
+		$tmpl->SetTitle("Отчёты");
+		$opt=rcv('opt');
+		$fn=$dir.$mode.'.php';
+		if(file_exists($fn))
+		{
+			include_once($fn);
+			$class_name='Report_'.$mode;
+			$class=new $class_name;
+			$tmpl->SetTitle($class->getName());
+			$class->Run($opt);
+		}
+		else $tmpl->msg("Сценарий $fn не найден!","err");	
+	}
+
 }
 catch(AccessException $e)
 {
