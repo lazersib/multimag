@@ -47,7 +47,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$this->get_docdata();
 		return $this->doc;
 	}
-	
+
 	function DopHead()
 	{
 		global $tmpl;
@@ -143,11 +143,11 @@ class doc_Realizaciya extends doc_Nulltype
 		$return=rcv('return');
 		$kladovshik=rcv('kladovshik');
 		settype($kladovshik, 'int');
-		
+
 		$doc=$this->doc;
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'),
-		( '{$this->doc}' ,'gruzop','$gruzop_id'), 
+		( '{$this->doc}' ,'gruzop','$gruzop_id'),
 		( '{$this->doc}' ,'received','$received'),
 		( '{$this->doc}' ,'return','$return'),
 		( '{$this->doc}' ,'kladovshik','$kladovshik')");
@@ -317,7 +317,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$tm=time();
-			$altnum=GetNextAltNum($target_type ,$this->doc_data[10]);
+			$altnum=GetNextAltNum($target_type ,$this->doc_data['subtype'],0,date("Y-m-d",$this->doc_data['date']), $this->doc_data['firm_id']);
 			$res=mysql_query("INSERT INTO `doc_list`
 			(`type`, `agent`, `date`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
 			VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '1', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '$sum', '{$this->doc_data[17]}')");
@@ -341,7 +341,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$tm=time();
-			$altnum=GetNextAltNum($target_type ,$this->doc_data[10]);
+			$altnum=GetNextAltNum($target_type ,$this->doc_data['subtype'],0,date("Y-m-d",$this->doc_data['date']), $this->doc_data['firm_id']);
 			$res=mysql_query("INSERT INTO `doc_list`
 			(`type`, `agent`, `date`, `bank`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
 			VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '1', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '$sum', '{$this->doc_data[17]}')");
@@ -514,9 +514,9 @@ class doc_Realizaciya extends doc_Nulltype
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
 		require('fpdf/fpdf_mc.php');
 		global $tmpl, $CONFIG, $uid;
-		
+
 		if(!$to_str) $tmpl->ajax=1;
-		
+
 		$pdf=new PDF_MC_Table('P');
 		$pdf->Open();
 		$pdf->SetAutoPageBreak(0,10);
@@ -525,14 +525,14 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->AddPage();
 		$pdf->SetFont('Arial','',10);
 		$pdf->SetFillColor(255);
-		
+
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
 		$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить цену по умолчанию");
 		$def_cost=mysql_result($res,0,0);
 		if(!$def_cost)		throw new Exception("Цена по умолчанию не определена!");
-		
+
 		$pdf->SetFont('','',16);
 		$str="Накладная N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt";
 		$str = iconv('UTF-8', 'windows-1251', $str);
@@ -545,7 +545,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
-		
+
 		$pdf->SetLineWidth(0.5);
 		$t_width=array(8);
 		if($CONFIG['poseditor']['vc'])
@@ -555,7 +555,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else	$t_width[]=111;
 		$t_width=array_merge($t_width, array(12,15,23,23));
-		
+
 		$t_text=array('№');
 		if($CONFIG['poseditor']['vc'])
 		{
@@ -564,8 +564,8 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else	$t_text[]='Наименование';
 		$t_text=array_merge($t_text, array('Место', 'Кол-во', 'Стоимость', 'Сумма'));
-		
-		foreach($t_width as $id=>$w)	
+
+		foreach($t_width as $id=>$w)
 		{
 			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
 			$pdf->Cell($w,6,$str,1,0,'C',0);
@@ -582,7 +582,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else	$aligns[]='L';
 		$aligns=array_merge($aligns, array('C','R','R','R'));
-		
+
 		$pdf->SetAligns($aligns);
 		$pdf->SetLineWidth(0.2);
 		$pdf->SetFont('','',8);
@@ -605,7 +605,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
 			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
-			
+
 			$row=array($ii);
 			if($CONFIG['poseditor']['vc'])
 			{
@@ -614,7 +614,7 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 			else	$row[]="$nxt[0] $nxt[1]";
 			$row=array_merge($row, array($nxt[5], "$nxt[3] $nxt[6]", $cost, $cost2));
-			
+
 			$pdf->RowIconv($row);
 			$i=1-$i;
 			$ii++;
@@ -665,7 +665,7 @@ class doc_Realizaciya extends doc_Nulltype
 		else
 			$pdf->Output('blading.pdf','I');
 	}
-	
+
 /// Накладная на комплектацию в PDF формате
 /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
 	function PrintNaklKomplektPDF($to_str=false)
@@ -673,9 +673,9 @@ class doc_Realizaciya extends doc_Nulltype
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
 		require('fpdf/fpdf_mc.php');
 		global $tmpl, $CONFIG, $uid;
-		
+
 		if(!$to_str) $tmpl->ajax=1;
-		
+
 		$pdf=new PDF_MC_Table('P');
 		$pdf->Open();
 		$pdf->SetAutoPageBreak(0,10);
@@ -684,14 +684,14 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->AddPage();
 		$pdf->SetFont('Arial','',10);
 		$pdf->SetFillColor(255);
-		
+
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
 		$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить цену по умолчанию");
 		$def_cost=mysql_result($res,0,0);
 		if(!$def_cost)		throw new Exception("Цена по умолчанию не определена!");
-		
+
 		$pdf->SetFont('','',16);
 		$str="Накладная на комплектацию N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt";
 		$str = iconv('UTF-8', 'windows-1251', $str);
@@ -707,7 +707,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
-		
+
 		$pdf->SetLineWidth(0.5);
 		$t_width=array(8);
 		if($CONFIG['poseditor']['vc'])
@@ -717,7 +717,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else	$t_width[]=102;
 		$t_width=array_merge($t_width, array(12,17,15,13,12,12));
-		
+
 		$t_text=array('№');
 		if($CONFIG['poseditor']['vc'])
 		{
@@ -726,8 +726,8 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else	$t_text[]='Наименование';
 		$t_text=array_merge($t_text, array('Цена', 'Кол-во', 'Остаток', 'Резерв', 'Масса', 'Место'));
-		
-		foreach($t_width as $id=>$w)	
+
+		foreach($t_width as $id=>$w)
 		{
 			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
 			$pdf->Cell($w,6,$str,1,0,'C',0);
@@ -744,7 +744,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		else	$aligns[]='L';
 		$aligns=array_merge($aligns, array('R','R','R','R','R','R'));
-		
+
 		$pdf->SetAligns($aligns);
 		$pdf->SetLineWidth(0.2);
 		$pdf->SetFont('','',8);
@@ -769,7 +769,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$cost2 = sprintf("%01.2f руб.", $sm);
 			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt['proizv'])	$nxt['name'].=' / '.$nxt['proizv'];
 			$summass+=$nxt['cnt']*$nxt['mass'];
-			
+
 			$row=array($ii);
 			if($CONFIG['poseditor']['vc'])
 			{
@@ -777,12 +777,12 @@ class doc_Realizaciya extends doc_Nulltype
 				$row[]="{$nxt['printname']} {$nxt['name']}";
 			}
 			else	$row[]="{$nxt['printname']} {$nxt['name']}";
-			
+
 			$mass=sprintf("%0.3f",$nxt['mass']);
 			$rezerv=DocRezerv($nxt['tovar'],$this->doc);
-			
+
 			$row=array_merge($row, array($nxt['cost'], "{$nxt['cnt']} {$nxt['units']}", $nxt['base_cnt'], $rezerv, $mass, $nxt['mesto']));
-			
+
 			$pdf->RowIconv($row);
 			$i=1-$i;
 			$ii++;
@@ -806,7 +806,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `id`='$klad_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		$nxt=mysql_fetch_row($res);
-		
+
 		$pdf->Ln(5);
 
 		$str="Всего $ii наименований массой $summass кг. на сумму $cost";
@@ -815,7 +815,7 @@ class doc_Realizaciya extends doc_Nulltype
 
 		$str = iconv('UTF-8', 'windows-1251', $mass_p);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
-		
+
 		$str="Заявку принял: _________________________________________ ($autor_name)";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);

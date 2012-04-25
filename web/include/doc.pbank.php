@@ -32,11 +32,11 @@ class doc_PBank extends doc_Nulltype
 		$this->header_fields			='bank sum separator agent';
 		settype($this->doc,'int');
 	}
-	
+
 	function DopHead()
 	{
 		global $tmpl;
-		$tmpl->AddText("Номер документа клиента банка:<br><input type='text' name='unique' value='{$this->dop_data['unique']}'><br>");
+		$tmpl->AddText(@"Номер документа клиента банка:<br><input type='text' name='unique' value='{$this->dop_data['unique']}'><br>");
 	}
 
 	function DopSave()
@@ -45,14 +45,14 @@ class doc_PBank extends doc_Nulltype
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ( '{$this->doc}' ,'unique','$unique')");
 	}
-	
+
 	function DopBody()
 	{
 		global $tmpl;
 		if($this->dop_data['unique'])
 			$tmpl->AddText("<b>Номер документа клиента банка:</b> {$this->dop_data['unique']}");
 	}
-	
+
 	// Провести
 	function DocApply($silent=0)
 	{
@@ -72,7 +72,7 @@ class doc_PBank extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
 	}
-	
+
 	// Отменить проведение
 	function DocCancel()
 	{
@@ -96,7 +96,7 @@ class doc_PBank extends doc_Nulltype
 	{
 		global $tmpl, $uid;
 		$opt=rcv('opt');
-		
+
 		if(!$this->doc_data[6])
 		{
 			$tmpl->ajax=1;

@@ -1117,7 +1117,7 @@ class doc_Nulltype
 	protected function DrawHeadformEnd()
 	{
 		global $tmpl;
-		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data['comment']}</textarea><br><input type=submit value='Записать'></form>");
+		$tmpl->AddText(@"<br>Комментарий:<br><textarea name='comment'>{$this->doc_data['comment']}</textarea><br><input type=submit value='Записать'></form>");
 	}
 
 	protected function DrawAgentField()
@@ -1128,7 +1128,7 @@ class doc_Nulltype
 		if($b>0)	$col="color: #f00; font-weight: bold;";
 		if($b<0)	$col="color: #f08; font-weight: bold;";
 
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
+		$res=mysql_query(@"SELECT `doc_list`.`id`, `doc_dopdata`.`value`
 		FROM `doc_list`
 		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
 		WHERE `agent`='{$this->doc_data[2]}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
@@ -1218,7 +1218,7 @@ class doc_Nulltype
 	protected function DrawBankField()
 	{
 		global $tmpl;
-		if($this->doc_data['firm_id'])	$sql_add="AND ( `firm_id`='0' OR `num`='{$this->doc_data[16]}' OR `firm_id`='{$this->doc_data['firm_id']}' )";
+		if(@$this->doc_data['firm_id'])	$sql_add="AND ( `firm_id`='0' OR `num`='{$this->doc_data[16]}' OR `firm_id`='{$this->doc_data['firm_id']}' )";
 		else				$sql_add='';
 		$tmpl->AddText("Банк:<br>
 		<select name='bank'>");
@@ -1226,7 +1226,7 @@ class doc_Nulltype
 		if(mysql_errno())	throw new Exception("Не удалось выбрать список банков");
 		while($nxt=mysql_fetch_row($res))
 		{
-			if($nxt[0]==$this->doc_data[16])
+			if($nxt[0]==@$this->doc_data[16])
 				$tmpl->AddText("<option value='$nxt[0]' selected>$nxt[1] / $nxt[2]</option>");
 			else
 				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] / $nxt[2]</option>");
@@ -1254,7 +1254,7 @@ class doc_Nulltype
 	protected function DrawSumField()
 	{
 		global $tmpl;
-		$tmpl->AddText("Сумма:<br>
+		$tmpl->AddText(@"Сумма:<br>
 		<input type='text' name='sum' value='{$this->doc_data[11]}'><img src='/img/i_+-.png'><br>");
 	}
 
@@ -1314,11 +1314,9 @@ class doc_Nulltype
 			$this->doc_data[12]=1;
 			$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` WHERE `vid`='1'");
 			$this->dop_data['cena']=@mysql_result($res,0,0);
-			$this->doc_data['firm_id']=0;
-			$this->doc_data['comment']='';
 			$this->doc_data['contract']='';
-			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='{$this->doc_data['firm_id']}'");
-			$this->firm_vars=mysql_fetch_assoc($res);
+// 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='{$this->doc_data['firm_id']}'");
+// 			$this->firm_vars=mysql_fetch_assoc($res);
 		}
 	}
 
