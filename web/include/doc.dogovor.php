@@ -34,7 +34,7 @@ class doc_Dogovor extends doc_Nulltype
 		settype($this->doc,'int');
 		if(!$doc)
 		{
-			$this->doc_data[4]="
+			$this->doc_data[4]=$this->doc_data['comment']="
 = Договор поставки № {{DOCNUM}} =
 г. Новосибирск, {{DOCDATE}} .
 
