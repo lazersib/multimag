@@ -538,7 +538,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
-		$str="Поставщик: {$this->firm_vars['firm_name']}";
+		$str="Поставщик: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		$str="Покупатель: {$this->doc_data[3]}";
