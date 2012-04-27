@@ -213,7 +213,7 @@ class doc_Zayavka extends doc_Nulltype
 			else
 			{
 				$tm=time();
-				$altnum=GetNextAltNum($target_type ,$this->doc_data[10]);
+				$altnum=GetNextAltNum($target_type ,$this->doc_data['subtype'],0,date("Y-m-d",$this->doc_data['date']), $this->doc_data['firm_id']);
 				$res=mysql_query("INSERT INTO `doc_list`
 				(`type`, `agent`, `date`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
 				VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '1', '$uid', '$altnum', '{$this->doc_data[10]}', '$base', '$sum', '{$this->doc_data[17]}')");
@@ -246,7 +246,7 @@ class doc_Zayavka extends doc_Nulltype
 			else
 			{
 				$tm=time();
-				$altnum=GetNextAltNum($target_type ,$this->doc_data[10]);
+				$altnum=GetNextAltNum($target_type ,$this->doc_data['subtype'],0,date("Y-m-d",$this->doc_data['date']), $this->doc_data['firm_id']);
 				$res=mysql_query("INSERT INTO `doc_list`
 				(`type`, `agent`, `date`, `bank`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
 				VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '{$this->doc_data[16]}', '$uid', '$altnum', '{$this->doc_data[10]}', '$base', '$sum', '{$this->doc_data[17]}')");
@@ -673,7 +673,8 @@ class doc_Zayavka extends doc_Nulltype
 		$str='ИНН '.$this->firm_vars['firm_inn'].' КПП';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($table_c,5,$str,1,1,'L',0);
-		$str='Получатель: '.unhtmlentities($this->firm_vars['firm_name']);
+		$str='Получатель: '.unhtmlentities
+		($this->firm_vars['firm_name']);
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$tx=$pdf->GetX();
 		$ty=$pdf->GetY();

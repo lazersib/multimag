@@ -62,8 +62,7 @@ else
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
 	if(mysql_num_rows($res))
 	{
-		$tmpl->AddText("<table class='index-nsr'><tr><td>
-		<h3>Акции</h3>");
+		$tmpl->AddText("<table class='index-nsr'><tr>");
 
 		$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news`
 		WHERE `news`.`type`='stock'
@@ -71,6 +70,7 @@ else
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список акций!");
 		if(mysql_num_rows($res))
 		{
+			$tmpl->AddText("<td><h3>Акции</h3>");
 			while($nxt=mysql_fetch_assoc($res))
 			{
 				$wikiparser->title='';
@@ -92,13 +92,14 @@ else
 			}
 		}
 
-		$tmpl->AddText("<td><h3>Обзоры</h3>");
+		
 		$res=mysql_query("SELECT `name`, `date`, `text`, `img_ext`  FROM `wiki`
 		WHERE `name` LIKE 'review:%'
 		ORDER BY `date` DESC LIMIT 3");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список статей!");
 		if(mysql_num_rows($res))
 		{
+			$tmpl->AddText("<td><h3>Обзоры</h3>");
 			while($nxt=mysql_fetch_assoc($res))
 			{
 				$wikiparser->title='';
@@ -120,7 +121,6 @@ else
 			}
 		}
 
-		$tmpl->AddText("<td><h3><a href='/news.php'>Новости</a></h3>");
 
 		$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news`
 		WHERE `news`.`type`=''
@@ -128,6 +128,7 @@ else
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
 		if(mysql_num_rows($res))
 		{
+			$tmpl->AddText("<td><h3><a href='/news.php'>Новости</a></h3>");
 			while($nxt=mysql_fetch_assoc($res))
 			{
 				$wikiparser->title='';
@@ -196,7 +197,7 @@ else
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	WHERE `hidden`='0'
 	ORDER BY `likvid` DESC
-	LIMIT 24");
+	LIMIT 12");
 	if(mysql_errno())	throw new MysqlException("Выборка популярных товаров не удалась!");
 	$i=1;
 	while($nxt=mysql_fetch_array($res))

@@ -239,6 +239,7 @@ protected function ViewGroup($group, $page)
 		$text=$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
 		$tmpl->AddText("<div class='group-description'>$text</div><br>");
 	}
+	$tmpl->AddText("<div style='clear: right'></div>");
 	if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle($group);
 	else						$this->GroupList_ImageStyle($group);
 	/// TODO: сделать возможность выбора вида отображения списка товаров посетителем
@@ -300,7 +301,7 @@ protected function ProductCard($product)
 	{
 		$tmpl->AddText("<h1 id='page-title'>{$nxt['group_printname']} {$nxt['name']}</h1>");
 		$tmpl->SetTitle("{$nxt['group_printname']} {$nxt['name']}");
-
+		$tmpl->AddText("<div class='breadcrumb'>".$this->GetVitPath($nxt['group'])."</div>");
 		$appends=$img_mini="";
 		if($nxt['img_id'])
 		{
