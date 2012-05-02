@@ -29,7 +29,7 @@ if($CONFIG['route']['ulog']['enable'])	`modprobe ipt_ULOG nlbufsiz=800000`;
 
 `$ipt -F`;		// RESET ALL iptables RULES
 `$ipt -X`;
-`$ipt -t nat -F`;	//RESET nat RULES
+`$ipt -t nat -F`;	// RESET nat RULES
 `$ipt -P INPUT DROP`;
 `$ipt -P OUTPUT ACCEPT`;
 `$ipt -P FORWARD DROP`;
@@ -59,12 +59,10 @@ foreach($CONFIG['route']['allow_ext_tcp_ports'] as $port)
 	`$ipt -A tcp_packets -p TCP -s 0/0 --dport $port -j allowed`;
 
 // local TCP rules
-
-
-`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 135:139 -j allowed`;	// SAMBA-local
-`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 445 -j allowed`;		// SAMBA-local
-`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 631 -j allowed`;		// CUPS
-`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 8123 -j allowed`;		// lock-site-local
+//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 135:139 -j allowed`;	// SAMBA-local
+//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 445 -j allowed`;		// SAMBA-local
+//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 631 -j allowed`;		// CUPS
+//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 8123 -j allowed`;		// lock-site-local
 
 `$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} -j allowed`;		// Пока изнутри всё разрешено
 
@@ -78,10 +76,6 @@ foreach($CONFIG['route']['allow_ext_udp_ports'] as $port)
 `$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} --dport 445 -j ACCEPT`;
 `$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} -j ACCEPT`;
 
-
-//`$ipt -A udp_packets -p UDP -s 0/0 --destination-port 5098 -j ACCEPT`;
-
-
 // ICMP rules
 `$ipt -N icmp_packets`;
 `$ipt -A icmp_packets -j ACCEPT`;
@@ -89,21 +83,15 @@ foreach($CONFIG['route']['allow_ext_udp_ports'] as $port)
 `$ipt -A icmp_packets -p ICMP -s 0/0 --icmp-type 11 -j ACCEPT`;
 `$ipt -A icmp_packets -p ICMP -s 0/0 --icmp-type 30 -j ACCEPT`;
 
-// Chain BADMAC #
-`$ipt -N BADMAC`;
-`$ipt -A BADMAC -j DROP`;
 
 //######################################## Chain INPUT ###########################
 `$ipt -A INPUT -p tcp -j bad_tcp_packets`;
-//`$ipt -A INPUT -p tcp --dport 135:138 -j DROP`;
-//`$ipt -A INPUT -p udp --dport 135:138 -j DROP`;
 `$ipt -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT`;
 `$ipt -A INPUT -s 127.0.0.0/8 -j ACCEPT`;
 `$ipt -A OUTPUT -d 127.0.0.0/8 -j ACCEPT`;
 `$ipt -A INPUT -p TCP -j tcp_packets`;
 `$ipt -A INPUT -p UDP -j udp_packets`;
 `$ipt -A INPUT -p ICMP -j icmp_packets`;
-
 
 `$ipt -N IN_INET_FORWARD`;
 `$ipt -N OUT_INET_FORWARD`;
@@ -137,8 +125,6 @@ if($CONFIG['route']['ulog']['enable'])
 `$ipt -A OUT_INET_FORWARD -j ACCEPT`;
 
 
-//############################################# NAT ##############################
-
 // Ограничения на доступ к ненужным сайтам
 if($CONFIG['route']['iplimit']['enable'])
 {
@@ -157,20 +143,22 @@ if( ($date_time_array['hours']>=$CONFIG['route']['iplimit']['hstart']) && ($date
 else echo"IP limit NOT set, now ".$date_time_array['hours']." hours!\n";
 }
 
+// Прозрачный прокси
 if($CONFIG['route']['transparent_proxy'])
 {
     echo "Transparent proxy start\n";
     `$ipt -t nat -A PREROUTING -d ! {$CONFIG['route']['ext_ip']} -p tcp -m multiport --dport 80 -j REDIRECT --to-port 3128`;
 }
 
-// Проброс портов
+//############################################# NAT ##############################
 foreach($CONFIG['route']['dnat_tcp'] as $port => $ip)
 	`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p tcp -m tcp --dport $port -j DNAT --to-destination $ip`;
 foreach($CONFIG['route']['dnat_udp'] as $port => $ip)
 	`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p udp -m udp --dport $port -j DNAT --to-destination $ip`;
-
+// Основной канал
 `$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} -d ! {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['ext_iface']} -j SNAT --to-source {$CONFIG['route']['ext_ip']}`;
-
+// резервный канал
+`$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} -d ! {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['backup_ext_iface']} -j SNAT --to-source {$CONFIG['route']['backup_ext_ip']}`;
 echo"All ok!\n";
 
 ?>
