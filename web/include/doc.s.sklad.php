@@ -91,7 +91,7 @@ class doc_s_Sklad
 
 	function Service()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$opt=rcv("opt");
 		$g=rcv('g');
 		if($opt=='pl')
@@ -127,8 +127,6 @@ class doc_s_Sklad
 		{
 			$tmpl->ajax=1;
 			$pos=rcv('pos');
-// 			$res=mysql_query("SELECT `name`,`proizv` FROM `doc_base` WHERE `id`='$pos'");
-// 			$tov=mysql_result($res,0,0).":".mysql_result($res,0,1);
 			$dend=date("Y-m-d");
 			$tmpl->AddText("
 			<div onclick=\"ShowPopupWin('/docs.php?l=pran&mode=srv&opt=ceni&pos=$pos'); return false;\" >Где и по чём</div>
@@ -140,11 +138,12 @@ class doc_s_Sklad
 			$q=rcv('q');
 			$i=0;
 			$tmpl->ajax=1;
-			$res=mysql_query("SELECT `id`, `name`, `proizv`, `vc` FROM `doc_base` WHERE LOWER(`name`) LIKE LOWER('%$q%') ORDER BY `name`");
+			$res=mysql_query("SELECT `id`, `name`, `proizv`, `vc` FROM `doc_base` WHERE LOWER(`name`) LIKE LOWER('%$q%') OR LOWER(`vc`) LIKE LOWER('%$q%') ORDER BY `name`");
 			$row=mysql_numrows($res);
 			while($nxt=mysql_fetch_row($res))
 			{
 				$i=1;
+				if($CONFIG['poseditor']['vc'])	$nxt[1].='('.$nxt[3].')';
 				$nxt[1]=unhtmlentities($nxt[1]);
 				$tmpl->AddText("$nxt[1]|$nxt[0]|$nxt[2]|$nxt[3]\n");
 			}

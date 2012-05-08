@@ -158,7 +158,7 @@ else if($mode=="add")
 		$tmpl->AddText("Фотографии в данный разделе используются для последующего отображения в вики-статьях. После добавления Вы получите код фотографии.<br>
 		<form method=post action='wikiphoto.php' enctype='multipart/form-data'>
 		<input type=hidden name=mode value='addo'>
-		Фотография (JPEG, до 6 Мб, 150*150 - 5000*5000)<br>
+		Фотография (JPEG, до 6 Мб, 150*150 - 10000*10000)<br>
 		<input type='hidden' name='MAX_FILE_SIZE' value='8000000'>
 		<input name='fotofile' type='file'><br>
 		Коментарий к фото:<br>
@@ -185,7 +185,7 @@ else if($mode=="addo")
 		if(!$aa)
 		$tmpl->msg("Файл фотографии не является картинкой!$an","err");
 		else if(@$aa[2]!=2) $tmpl->msg("Даннная фотография не в формате JPG!$an","err");
-		else if((@$aa[0]<150)||(@$aa[1]<150)||(@$aa[0]>5000)||(@$aa[1]>5000)) $tmpl->msg("Некорректное разрешение (должно быть > 150*150 и < 2600*2600)!$an","err");
+		else if((@$aa[0]<150)||(@$aa[1]<150)||(@$aa[0]>10000)||(@$aa[1]>10000)) $tmpl->msg("Некорректное разрешение (должно быть > 150*150 и < 10000*10000)!$an","err");
 		else
 		{
 			$res=mysql_query("INSERT INTO `wikiphoto` (`uid`,`comment`) VALUES ('$uid','$comm')");

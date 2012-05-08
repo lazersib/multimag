@@ -14,10 +14,10 @@ function Show($param='')
 	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
 	<table width='100%' id='poslist'><thead><tr>
 	<th width='60px' align='left'>№</th>";
-	if($this->show_vc>0)	$ret.="<th width='90px' align='left' title='Код изготовителя'>Код</th>";
-	$ret.="<th>Наименование</th>
+	if($this->show_vc>0)	$ret.="<th width='90px' align='left' title='Код изготовителя'><div class='order_button' id='pl_order_vc'></div> Код</th>";
+	$ret.="<th><div class='order_button' id='pl_order_name'></div> Наименование</th>
 	<th width='90px' title='Выбранная цена'>Выбр. цена</th>
-	<th width='90px' class='hl'>Цена</th>
+	<th width='90px' class='hl'><div class='order_button' id='pl_order_cost'></div> Цена</th>
 	<th width='60px' class='hl'>Кол-во</th>
 	<th width='90px' class='hl'>Стоимость</th>
 	<th width='60px' title='Остаток товара на складе'>Остаток</th>
@@ -66,7 +66,7 @@ function Show($param='')
 	</table>";
 	if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
 	else						$CONFIG['poseditor']['need_dialog']=1;
-	$ret.=@"<script type=\"text/javascript\">
+	$ret.="<script type=\"text/javascript\">
 	var poslist=PosEditorInit('/doc_sc.php?mode=srv&sn=sborka_zap&doc={$this->doc}',{$this->editable})
 	poslist.show_column['vc']='{$this->show_vc}'
 

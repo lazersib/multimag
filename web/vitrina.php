@@ -231,8 +231,9 @@ protected function ViewGroup($group, $page)
 	}
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 		$tmpl->AddText("<div style='float: right'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
-	$tmpl->SetTitle("$nxt[0]");
-	$tmpl->AddText("<h1 id='page-title'>$nxt[0]</h1>");
+	$title=($page>1)?"$nxt[0] - стр.$page":$nxt[0];
+	$tmpl->SetTitle($title);
+	$tmpl->AddText("<h1 id='page-title'>$title</h1>");
 	$tmpl->AddText("<div class='breadcrumb'>".$this->GetVitPath($nxt[1])."</div>");
 	if($nxt[2])
 	{
@@ -909,7 +910,7 @@ protected function GetVitPath($group_id)
 	return $this->GetVitPath($nxt[2])." / <a href='".$this->GetGroupLink($nxt[0])."'>$nxt[1]</a>";
 }
 /// Получить ссылку на группу с заданным ID
-protected function GetGroupLink($group, $page=0)
+protected function GetGroupLink($group, $page=1)
 {
 	global $CONFIG;
 	if($CONFIG['site']['recode_enable'])	return "/vitrina/ig/$page/$group.html";
