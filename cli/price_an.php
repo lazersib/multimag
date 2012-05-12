@@ -124,7 +124,7 @@ function forked_match_process($nproc, $limit, $res)
 		$costar=array();
 		$rs=mysql_query("SELECT `price`.`id`, `price`.`name`, `price`.`cost`, `price`.`firm`, `price`.`nal`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`art`, `price`.`currency`
 		FROM `price`
-		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
+		INNER JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
 		LEFT JOIN `currency` ON `currency`.`id`=`price`.`currency`
 		WHERE $sql_add");
 		if(mysql_errno())		throw new Exception("Не удалось выбрать прайс-лист из базы данных: ".mysql_error());
@@ -257,7 +257,7 @@ try
 			$msg.="соответствий не найдено. Прайс не обработан.";
  			$mail_text.="Анализ прайсов: $msg\n";
 		}
-		
+		else unlink($CONFIG['price']['dir']	.'/'.$filename);
 		
 // 		if($firm=$loader->detectFirm())
 // 		{
@@ -272,7 +272,7 @@ try
 // 			$msg.="соответствий не найдено. Прайс не обработан.";
 // 			$mail_text.="Анализ прайсов: $msg\n";
 // 		}
-		log_write($CONFIG['price']['dir'], $msg);
+//		log_write($CONFIG['price']['dir'], $msg);
 	}
 
 	// Выборка

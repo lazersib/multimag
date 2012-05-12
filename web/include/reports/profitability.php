@@ -153,6 +153,7 @@ class Report_Profitability extends BaseGSReport
 		settype($date_from,'int');
 		settype($date_to,'int');
 		$cnt=$cost=$profit=0;
+		
 
 		$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`, `doc_list`.`date`
 		FROM `doc_list_pos`
@@ -166,9 +167,10 @@ class Report_Profitability extends BaseGSReport
 			if($nxt[0]>0 && $nxt[4]!=1 && $cnt+$nxt[0]!=0  )
 				$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
 			if($nxt[2]==2 && $nxt[5]>=$date_from)
-				$profit-=$nxt[0]*$nxt[1];			
+				$profit+=$nxt[0]*($cost-$nxt[1]);			
 			$cnt+=$nxt[0];
 		}
+		
 		return $profit;
 	}
 	
@@ -254,12 +256,15 @@ class Report_Profitability extends BaseGSReport
 		WHERE `temp_report_profit`.`profit`>'$ren_min_abs'
 		ORDER BY `temp_report_profit`.`profit` DESC");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить временные данные");
+		$sum=0;
 		while($nxt=mysql_fetch_row($res))
 		{
+			$sum+=$nxt[4];
 			$profitability=round($nxt[4]*100/$max_profit, 2);
 			if($profitability<$ren_min_pp)	continue;
 			$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], "$nxt[4] р.", "$profitability %"));
 		}
+		$this->tableRow(array("", "", "Всего", "", "$sum р.", ""));
 		$this->tableEnd();
 		$this->output();
 		exit(0);
