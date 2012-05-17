@@ -1613,13 +1613,14 @@ class doc_s_Sklad
 		$go=rcv('go');
 		$lim=200;
 		$vc_add='';
+		$sql_add='';
 		if($group && !$go)
 		{
 			$tmpl->AddText("
 			<a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
 			<a href='/docs.php?l=sklad&amp;mode=edit&amp;param=g&amp;g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
 			<a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a> |
-			<a href='#' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=$group&amp;go=1','sklad'); return false;\" ><img src='/img/i_reload.png' alt=''> Групповые операции</a>");
+			<a href='#' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=$group&amp;go=1','sklad'); return false;\" ><img src='/img/i_reload.png' alt=''> Групповые операции</a><br>");
 			$res=mysql_query("SELECT `desc` FROM `doc_group` WHERE `id`='$group'");
 			$g_desc=mysql_result($res,0,0);
 			if($g_desc) $tmpl->AddText("<h4>$g_desc</h4>");
@@ -1664,13 +1665,21 @@ class doc_s_Sklad
 			</div>");
 			$lim=5000000;
 			$vc_add.="<input type='checkbox' id='selall' onclick='return SelAll(this);'>";
+			$sql_add=",
+			((SELECT COUNT(`doc_base_params`.`id`) FROM `doc_base_params`
+			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+			WHERE  `doc_group_params`.`group_id`='$group' AND `doc_base_params`.`system`='0' AND `doc_base_params`.`id` IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`value`!=''))/
+			(SELECT COUNT(`doc_base_params`.`id`) FROM `doc_base_params`
+			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+			WHERE  `doc_group_params`.`group_id`='$group' AND `doc_base_params`.`system`='0')*100) AS `ppz`
+			";
 		}
 
 
 		$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 		`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-		(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
+		(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock` $sql_add
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
@@ -1723,6 +1732,10 @@ class doc_s_Sklad
 			$i=0;
 			$this->DrawSkladTable($res,$s);
 			$tmpl->AddText("</table>$pagebar");
+			if($go)
+			{
+				$tmpl->AddText("<b>Легенда:</b> Заполненность дополнительных свойств наименования: <b><span style='color: #f00;'>&lt;40%</span>, <span style='color: #f80;'>&lt;60%</span>, <span style='color: #00C;'>&lt;90%</span>, <span style='color: #0C0;'>&gt;90%</span>,</b>");
+			}
 
 		}
 		else $tmpl->msg("В выбранной группе товаров не найдено!");
@@ -1986,6 +1999,15 @@ function DrawSkladTable($res,$s)
 		if($nxt['no_export_yml'])	$info.='Y';
 		if($nxt['stock'])		$info.='S';
 		if($info)			$info="<span style='color: #f00; font-weight: bold'>$info</span>";
+		if($go)
+		{
+			$pz=sprintf("%0.1f",$nxt[21]);
+			if($nxt[21]<40)		$color='f00';
+			else if($nxt[21]<60)	$color='f80';
+			else if($nxt[21]<90)	$color='00C';
+			else			$color='0C0';
+			$info=" <span style='color: #{$color}; font-weight: bold'>$pz%</span>";
+		}
 		$nxt[2]=SearchHilight($nxt[2],$s);
 		$nxt[8]=SearchHilight($nxt[8],$s);
 		$i=1-$i;

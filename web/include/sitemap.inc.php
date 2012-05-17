@@ -100,16 +100,16 @@ function getMap()
 	$this->addPriceGroup(0);
 	$this->AddLink('wiki.php','Статьи','0.1','weekly');
 	$this->startGroup();
-	$res=mysql_query("SELECT * FROM `wiki` ORDER BY `name`");
+	$res=mysql_query("SELECT `name`, `date`, `text` FROM `articles` ORDER BY `name`");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать список статей');
 	while($nxt=mysql_fetch_row($res))
 	{
-		@$wikiparser->parse(html_entity_decode($nxt[5],ENT_QUOTES,"UTF-8"));
+		@$wikiparser->parse(html_entity_decode($nxt[2],ENT_QUOTES,"UTF-8"));
 		$h=$wikiparser->title;
-		$this->AddLink("wiki/$nxt[0].html",$h,'0.4','weekly',$nxt[1]);
+		$this->AddLink("article/$nxt[0].html",$h,'0.4','weekly',$nxt[1]);
 	}
 	$this->endGroup();
-	$this->AddLink('wiki.php','Статьи');
+	$this->AddLink('articles.php','Статьи');
 	$this->AddLink('news.php','Новости');
 	$this->AddLink('photogalery.php','Фотогалерея');
 	$this->AddLink('message.php','Отправить сообщение');

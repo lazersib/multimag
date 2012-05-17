@@ -118,7 +118,6 @@ function RegForm($err_target='', $err_msg='')
 	if($CONFIG['site']['force_https_login'])
 	{
 		$host=$_SERVER['HTTP_HOST'];
-		$qs=explode('/',$query);
 		$form_action='https://'.$host.'/login.php';
 	}
 
@@ -253,7 +252,6 @@ if($mode=='')
 		if($CONFIG['site']['force_https_login'])
 		{
 			$host=$_SERVER['HTTP_HOST'];
-			$qs=explode('/',$query);
 			$form_action='https://'.$host.'/login.php';
 		}
 		$tmpl->AddText("

@@ -32,9 +32,24 @@ $tmpl->SetText("<h1 id='page-title'>Страница не найдена</h1>
 Страница, запрашиваемая Вами, не найдена на нашем сервере! Возможно она была перемещена в другое место, или не существует больше! Если Вы пришли с другого сервера, значит Вам дали неверную ссылку! Если же вы перешли по ссылке, размещенной на нашем сервере, эта информация уже записана в лог, и администратор разберётся с проблемой в ближайшее время.
 </p>
 <p id='text'>Воспользуйтесь меню, чтобы найти нужную страницу:</p>");
-
+try
+{
 	$map=new SiteMap();
 	$tmpl->AddText($map->getMap());
+
+}
+catch(MysqlException $e)
+{
+	mysql_query("ROLLBACK");
+	$tmpl->AddText("<br><br>");
+	$tmpl->msg($e->getMessage(),"err");
+}
+catch(Exception $e)
+{
+	mysql_query("ROLLBACK");
+	$tmpl->AddText("<br><br>");
+	$tmpl->logger($e->getMessage());
+}
 
 $tmpl->write();
 

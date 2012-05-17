@@ -1,5 +1,6 @@
 
 ErrorDocument 404 "/e404.php"
+Options -MultiViews
 
 # Если установлен mod_revrite
 <IfModule mod_rewrite.c>
@@ -7,7 +8,7 @@ RewriteEngine On
 RewriteBase   /
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^wiki(.*)$ wiki.php [L,QSA]
+RewriteRule ^article(.*)$ articles.php [L,QSA]
 RewriteRule ^vitrina(.*)$ vitrina.php [L,QSA]
 RewriteRule ^attachments(.*)$ attachments.php [L,QSA]
 RewriteRule ^sitemap.xml sitemap.php?mode=xml [L,QSA]

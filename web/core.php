@@ -651,8 +651,8 @@ require_once("include/imgresizer.php");
 require_once("include/wikiparser.php");
 
 $wikiparser=new WikiParser();
-$wikiparser->reference_wiki	= "/wiki/";
-$wikiparser->reference_site	= @$_SERVER['HTTPS']?'https':'http'."://{$_SERVER['HTTP_HOST']}/";
+$wikiparser->reference_wiki	= "/article/";
+$wikiparser->reference_site	= @($_SERVER['HTTPS']?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
 $wikiparser->image_uri		= "/share/var/wikiphoto/";
 $wikiparser->ignore_images	= false;
 
