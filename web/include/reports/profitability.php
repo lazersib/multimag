@@ -169,6 +169,7 @@ class Report_Profitability extends BaseGSReport
 			if($nxt[2]==2 && $nxt[5]>=$date_from)
 				$profit+=$nxt[0]*($cost-$nxt[1]);			
 			$cnt+=$nxt[0];
+			if($cnt<0)	return 0xFFFFBADF00D;	// Невозможно расчитать прибыль, если остатки уходили в минус
 		}
 		
 		return $profit;
@@ -201,7 +202,7 @@ class Report_Profitability extends BaseGSReport
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
 		
-		mysql_query("CREATE TEMPORARY TABLE `temp_report_profit` (`pos_id` INT NOT NULL , `profit` DECIMAL( 10, 2 ) NOT NULL) ENGINE = MEMORY");
+		mysql_query("CREATE TEMPORARY TABLE `temp_report_profit` (`pos_id` INT NOT NULL , `profit` DECIMAL( 16, 2 ) NOT NULL) ENGINE = MEMORY");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать временную таблицу");
 		
 		if($sel_type=='all')
@@ -212,7 +213,7 @@ class Report_Profitability extends BaseGSReport
 			while($nxt=mysql_fetch_row($res))
 			{
 				$profit=$this->calcPos($nxt[0], $dt_f, $dt_t);
-				if($max_profit<$profit)	$max_profit=$profit;
+				if($max_profit<$profit && $profit!=0xFFFFBADF00D)	$max_profit=$profit;
 				mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit)");
 			}
 		}
@@ -231,7 +232,7 @@ class Report_Profitability extends BaseGSReport
 				while($nxt=mysql_fetch_row($res))
 				{
 					$profit=$this->calcPos($nxt[0], $dt_f, $dt_t);
-					if($max_profit<$profit)	$max_profit=$profit;
+					if($max_profit<$profit && $profit!=0xFFFFBADF00D)	$max_profit=$profit;
 					mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit)");
 				}
 			}
@@ -259,10 +260,17 @@ class Report_Profitability extends BaseGSReport
 		$sum=0;
 		while($nxt=mysql_fetch_row($res))
 		{
-			$sum+=$nxt[4];
-			$profitability=round($nxt[4]*100/$max_profit, 2);
-			if($profitability<$ren_min_pp)	continue;
-			$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], "$nxt[4] р.", "$profitability %"));
+			if($nxt[4]==0xFFFFBADF00D)
+			{
+				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], "ошибка", "conut < 0"));
+			}
+			else
+			{
+				$sum+=$nxt[4];
+				$profitability=round($nxt[4]*100/$max_profit, 2);
+				if($profitability<$ren_min_pp)	continue;
+				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], "$nxt[4] р.", "$profitability %"));
+			}
 		}
 		$this->tableRow(array("", "", "Всего", "", "$sum р.", ""));
 		$this->tableEnd();

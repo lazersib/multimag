@@ -156,8 +156,9 @@ class doc_Realizaciya extends doc_Nulltype
 	function DopBody()
 	{
 		global $tmpl;
-		if($this->dop_data['received'])
-			$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
+		if(isset($this->dop_data['received']))
+			if($this->dop_data['received'])
+				$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
 	}
 
 	function DocApply($silent=0)

@@ -40,15 +40,92 @@ class doc_Realiz_op extends doc_Realizaciya
 	function DopHead()
 	{
 		global $tmpl;
+
+		$cur_agent=$this->doc_data['agent'];
+		if(!$cur_agent)		$cur_agent=1;
+
+		if(!$this->dop_data['platelshik'])	$this->dop_data['platelshik']=$cur_agent;
+		if(!$this->dop_data['gruzop'])		$this->dop_data['gruzop']=$cur_agent;
+
+		$res=mysql_query("SELECT `name` FROM `doc_agent` WHERE `id`='{$this->dop_data['platelshik']}'");
+		if(mysql_errno())	throw new MysqlException('Ошибка выборки имени плательщика');
+		$plat_name=mysql_result($res,0,0);
+
+		$res=mysql_query("SELECT `name` FROM `doc_agent` WHERE `id`='{$this->dop_data['gruzop']}'");
+		if(mysql_errno())	throw new MysqlException('Ошибка выборки имени грузополучателя');
+		$gruzop_name=mysql_result($res,0,0);
+
+		$tmpl->AddText("<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+		Плательщик:<br>
+		<input type='hidden' name='plat_id' id='plat_id' value='{$this->dop_data['platelshik']}'>
+		<input type='text' id='plat'  style='width: 100%;' value='$plat_name'><br>
+		Грузополучатель:<br>
+		<input type='hidden' name='gruzop_id' id='gruzop_id' value='{$this->dop_data['gruzop']}'>
+		<input type='text' id='gruzop'  style='width: 100%;' value='$gruzop_name'><br>
+		<script type=\"text/javascript\">
+		$(document).ready(function(){
+			$(\"#plat\").autocomplete(\"/docs.php\", {
+			delay:300,
+			minChars:1,
+			matchSubset:1,
+			autoFill:false,
+			selectFirst:true,
+			matchContains:1,
+			cacheLength:10,
+			maxItemsToShow:15,
+			formatItem:agliFormat,
+			onItemSelect:platselectItem,
+			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+			});
+			$(\"#gruzop\").autocomplete(\"/docs.php\", {
+			delay:300,
+			minChars:1,
+			matchSubset:1,
+			autoFill:false,
+			selectFirst:true,
+			matchContains:1,
+			cacheLength:10,
+			maxItemsToShow:15,
+			formatItem:agliFormat,
+			onItemSelect:gruzopselectItem,
+			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+			});
+		});
+
+		function platselectItem(li) {
+		if( li == null ) var sValue = \"Ничего не выбрано!\";
+		if( !!li.extra ) var sValue = li.extra[0];
+		else var sValue = li.selectValue;
+		document.getElementById('plat_id').value=sValue;
+		}
+
+		function gruzopselectItem(li) {
+		if( li == null ) var sValue = \"Ничего не выбрано!\";
+		if( !!li.extra ) var sValue = li.extra[0];
+		else var sValue = li.selectValue;
+		document.getElementById('gruzop_id').value=sValue;
+		}
+		</script>
+		");
 		$checked=$this->dop_data['received']?'checked':'';
 		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
+		$checked=$this->dop_data['return']?'checked':'';
+		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>");
 	}
 
 	function DopSave()
 	{
+		$plat_id=rcv('plat_id');
+		$gruzop_id=rcv('gruzop_id');
 		$received=rcv('received');
+		$return=rcv('return');
+
+		$doc=$this->doc;
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'received','$received')");
+		VALUES ( '{$this->doc}' ,'platelshik','$plat_id'),
+		( '{$this->doc}' ,'gruzop','$gruzop_id'),
+		( '{$this->doc}' ,'received','$received'),
+		( '{$this->doc}' ,'return','$return')");
 	}
 
 	function DopBody()
@@ -58,6 +135,7 @@ class doc_Realiz_op extends doc_Realizaciya
 			if($this->dop_data['received'])
 				$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
 	}
+	
 	function DocApply($silent=0)
 	{
 		$tim=time();

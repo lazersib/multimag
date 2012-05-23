@@ -28,7 +28,7 @@ function __construct($maptype='html')
 	$this->maptype=$maptype;
 }
 
-function getGroupLink($group, $page=0)
+function getGroupLink($group, $page=1)
 {
 	global $CONFIG;
 	if($CONFIG['site']['recode_enable'])	return "vitrina/ig/$page/$group.html";

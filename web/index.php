@@ -93,7 +93,7 @@ else
 		}
 
 		
-		$res=mysql_query("SELECT `name`, `date`, `text`, `img_ext`  FROM `wiki`
+		$res=mysql_query("SELECT `name`, `date`, `text`, `img_ext`  FROM `articles`
 		WHERE `name` LIKE 'review:%'
 		ORDER BY `date` DESC LIMIT 3");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список статей!");

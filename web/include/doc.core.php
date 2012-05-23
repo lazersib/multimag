@@ -371,7 +371,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	<div id='doc_menu_r'>
 	<input type='text' id='quicksearch'>
 	<script>
-	var ac=initAutocomplete('quicksearch','/doc.php')
+	//var ac=initAutocomplete('quicksearch','/doc.php')
 	</script>
 	<a href='/user.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>
 	<a href='/login.php?mode=logout' title='Выход'><img src='/img/i_logout.png' alt='Выход'></a>
@@ -618,7 +618,10 @@ function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 		if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
 		if( ($cnt+$nxt[0])==0)	{}
 		else if($nxt[0]>0 && $nxt[4]!=1)
-			$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
+		{
+			if($cnt>0)	$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
+			else		$cost=$nxt[1];
+		}
 		$cnt+=$nxt[0];
 	}
 	return round($cost,2);
