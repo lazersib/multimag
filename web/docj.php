@@ -108,6 +108,7 @@ function DrawSubTreeDocumentNode($doc,$cur_doc)
 function FilterMenu()
 {
 	global $tmpl;
+//	return 0;
 	$tmpl->AddStyle("
 		#doc_sel
 		{

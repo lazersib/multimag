@@ -155,7 +155,7 @@ function get_max_upload_filesize()
         case 'k':
             $max_post *= 1024;
     }
-    
+
     $max_fs = trim(ini_get('upload_max_filesize'));
     $last = strtolower($max_fs[strlen($max_fs)-1]);
     switch($last) {
@@ -167,7 +167,7 @@ function get_max_upload_filesize()
         case 'k':
             $max_fs *= 1024;
     }
-    
+
 
     return min($max_fs, $max_post);
 }
@@ -352,7 +352,7 @@ function SendSubscribe($tema,$msg)
 	$firm_name=mysql_result($res,0,0);
 	$res=mysql_query("(SELECT `name`, `email`, `rname` FROM `users` WHERE `subscribe`='1' AND `confirm`='0')
 	UNION
-	(SELECT `name`, `email`, `fullname` AS `rname` FROM `doc_agent` WHERE `no_mail`!='0' AND `email`!='')
+	(SELECT `name`, `email`, `fullname` AS `rname` FROM `doc_agent` WHERE `no_mail`='0' AND `email`!='')
 	");
 	if(mysql_errno())	throw new MysqlException("Ошибка получения списка подписчиков");
 	while($nxt=mysql_fetch_row($res))

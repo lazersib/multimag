@@ -230,7 +230,7 @@ protected function ViewGroup($group, $page)
 		throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
 	}
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
-		$tmpl->AddText("<div style='float: right'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
+		$tmpl->AddText("<div style='float: right; margin: 35px 35px 20px 20px;'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
 	$title=($page>1)?"$nxt[0] - стр.$page":$nxt[0];
 	$tmpl->SetTitle($title);
 	$tmpl->AddText("<h1 id='page-title'>$title</h1>");

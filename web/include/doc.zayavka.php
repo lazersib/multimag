@@ -152,7 +152,8 @@ class doc_Zayavka extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=2'\">Реализация (устарело)</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=6'\">Приходный кассовый ордер</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=4'\">Приход средств в банк</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=15'\">Оперативная реализация</div>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=15'\">Оперативная реализация</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">Копия заявки</div>");
 		}
 		else if($target_type=='t2')
 		{
@@ -162,6 +163,13 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->SetDopData('platelshik',$this->doc_data['agent']);
 			$new_doc->SetDopData('gruzop',$this->doc_data['agent']);
 			$new_doc->SetDopData('received',0);
+			header("Location: doc.php?mode=body&doc=$dd");
+		}
+		else if($target_type=='1')
+		{
+			$new_doc=new doc_Zayavka();
+			$dd=$new_doc->CreateFromP($this);
+			$new_doc->SetDopData('cena',$this->dop_data['cena']);
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type=='d2')
@@ -733,7 +741,7 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 
 		$pdf->Ln(3);
-		
+
 		$pdf->SetLineWidth(0.5);
 		$t_width=array(8);
 		if($CONFIG['poseditor']['vc'])
@@ -743,7 +751,7 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else	$t_width[]=112;
 		$t_width=array_merge($t_width, array(20,25,25));
-		
+
 		$t_text=array('№');
 		if($CONFIG['poseditor']['vc'])
 		{
@@ -752,8 +760,8 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else	$t_text[]='Наименование';
 		$t_text=array_merge($t_text, array('Кол-во', 'Цена', 'Сумма'));
-		
-		foreach($t_width as $id=>$w)	
+
+		foreach($t_width as $id=>$w)
 		{
 			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
 			$pdf->Cell($w,6,$str,1,0,'C',0);
@@ -770,11 +778,11 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else	$aligns[]='L';
 		$aligns=array_merge($aligns, array('R','R','R'));
-		
+
 		$pdf->SetAligns($aligns);
 		$pdf->SetLineWidth(0.2);
 		$pdf->SetFont('','',8);
-		
+
 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -796,7 +804,7 @@ class doc_Zayavka extends doc_Nulltype
 
 			$name=$nxt[0].' '.$nxt[1];
 			if($nxt[2]) $name.='('.$nxt[2].')';
-	
+
 			$row=array($i);
 			if(@$CONFIG['poseditor']['vc'])
 			{
@@ -805,8 +813,8 @@ class doc_Zayavka extends doc_Nulltype
 			}
 			else	$row[]=$name;
 			$row=array_merge($row, array("$nxt[3] $nxt[7]", $cost, $smcost));
-	
-			if( $pdf->h <= ($pdf->GetY()+40 ) ) $pdf->AddPage();	
+
+			if( $pdf->h <= ($pdf->GetY()+40 ) ) $pdf->AddPage();
 			$pdf->RowIconv($row);
 		}
 
@@ -933,7 +941,7 @@ class doc_Zayavka extends doc_Nulltype
 			<table width=800 cellspacing=0 cellpadding=0>
 			<tr><th>№");
 			if(@$CONFIG['poseditor']['vc'])	$tmpl->AddText("<th>Код");
-			
+
 			$tmpl->AddText("<th width=450>Наименование<th>Цена<th>Кол-во<th>Остаток<th>Резерв<th>Масса<th>Место");
 
 			$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_base`.`vc`

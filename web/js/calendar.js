@@ -1,6 +1,6 @@
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,17 +24,17 @@ function initCalendar(input_id, selectTime)
 	function isLeapYear(year) {
 		return (((year % 4)==0) && ((year % 100)!=0) || ((year % 400)==0));
 	}
-	
+
 	function getDaysInMonth(month,year) {
 		var days;
-		if (month==1 || month==3 || month==5 || month==7 || month==8 || month==10 || month==12) 
+		if (month==1 || month==3 || month==5 || month==7 || month==8 || month==10 || month==12)
 										days = 31
 		else if (month==4 || month==6 || month==9 || month==11)		days = 30
 		else if (month==2 && isLeapYear(year))				days = 29
 		else 								days = 28
 		return days
 	}
-	
+
 	function pad(value) {
 		return value>9?value:'0'+value
 	}
@@ -45,11 +45,11 @@ function initCalendar(input_id, selectTime)
 			val+=' '+pad(date.getHours())+':'+pad(date.getMinutes())+':'+pad(date.getSeconds())
 		input.value=val
 	}
-	
+
 	function updateHeader()	{
 		head_text.data=months[date.getMonth()]+' '+date.getFullYear()
 	}
-	
+
 	function selectNow() {
 		nowdate=new Date()
 		date.setFullYear(nowdate.getFullYear())
@@ -59,7 +59,7 @@ function initCalendar(input_id, selectTime)
 		updateInput()
 		draw()
 	}
-	
+
 	function draw()	{
 		var nowdate=new Date()
 		while (tbody.hasChildNodes()) tbody.removeChild(tbody.lastChild)
@@ -71,9 +71,9 @@ function initCalendar(input_id, selectTime)
 		var tableRow = tbody.insertRow(rows++)
 		for (i = 0; i < startingPos; i++) {
 			var cell = newElement('td', tableRow, 'none')
-			cell.innerHTML='&nbsp;' 
+			cell.innerHTML='&nbsp;'
 		}
-		
+
 		var currentDay = 1;
 		for (i = startingPos; currentDay <= days; i++) {
 			if (i%7 == 0 && currentDay != 1) {
@@ -88,10 +88,10 @@ function initCalendar(input_id, selectTime)
 		}
 		for(;i%7 != 0;i++) {
 			var cell = newElement('td', tableRow, 'none')
-			cell.innerHTML='&nbsp;' 
+			cell.innerHTML='&nbsp;'
 		}
 	}
-	
+
 	function bodyClick(event) {
 		if(event.target.datevalue>0)
 		{
@@ -102,18 +102,18 @@ function initCalendar(input_id, selectTime)
 		}
 		return false
 	}
-	
+
 	function retFalse() { return false }
-	
+
 	var input = document.getElementById(input_id)
 	var date = new Date(input.value)
 	if(!date.getFullYear()) date=new Date()
 	input.oldstyle=input.style
 	input.selectTime = selectTime	// Возможность выбрать время
-	
+
 	var months=Array('Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сертябрь','Октябрь','Ноябрь','Декабрь')
 	var days=Array('Вс','Пн','Вт','Чт','Пт','Сб')
-	
+
 	var calendar=newElement('div', input.parentNode, 'calendar')
 	calendar.onmousedown=retFalse
 	// header
@@ -121,10 +121,10 @@ function initCalendar(input_id, selectTime)
 	var yback=newElement('div', cal_header, 'button yback')
 	var mback=newElement('div', cal_header, 'button mback')
 	var yfw=newElement('div', cal_header, 'button yfw')
-	var mfw=newElement('div', cal_header, 'button mfw')	
-	var head_text = document.createTextNode('')	
-	cal_header.appendChild(head_text)	
-	
+	var mfw=newElement('div', cal_header, 'button mfw')
+	var head_text = document.createTextNode('')
+	cal_header.appendChild(head_text)
+
 	yback.onclick=function() {
 		date.setFullYear(date.getFullYear()-1)
 		updateHeader()
@@ -145,17 +145,17 @@ function initCalendar(input_id, selectTime)
 		updateHeader()
 		draw()
 	}
-	
+
 	updateHeader()
-	
+
 	newElement('div', cal_header, 'clear')
 	// body
 	var table=newElement('table', calendar, 'main')
 	newElement('thead', table, '').insertRow(0).innerHTML='<th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th>'
 	var tbody=newElement('tbody', table, '')
-	tbody.onclick=bodyClick	
+	tbody.onclick=bodyClick
 	tbody.onmousedown=retFalse
-	
+
 	if(input.selectTime)
 	{
 		var table=newElement('table', calendar, 'time')
@@ -165,7 +165,7 @@ function initCalendar(input_id, selectTime)
 		var time_12 = newElement('td', tableRow, '', '12:00')
 		var time_18 = newElement('td', tableRow, '', '18:00')
 		var time_21 = newElement('td', tableRow, '', '21:00')
-		
+
 		time_6.onclick=function() {
 			date.setHours(6)
 			date.setMinutes(0)
@@ -198,8 +198,8 @@ function initCalendar(input_id, selectTime)
 			updateInput()
 		}
 	}
-	
-	
+
+
 	var cal_footer=newElement('div', calendar, 'footer')
 	var cal_nowday=newElement('div', cal_footer, 'button left', 'Сегодня')
 	var cal_close=newElement('div', cal_footer, 'button right', 'Закрыть')
@@ -209,11 +209,11 @@ function initCalendar(input_id, selectTime)
 	function input_onfocus(event) {
 		calendar.style.display='block'
 	}
-	
+
 	function calendar_close(event) {
 		calendar.style.display='none'
 	}
-	
+
 	function input_onkeyup(event)
 	{
 		var newdate = new Date(input.value)
@@ -228,16 +228,16 @@ function initCalendar(input_id, selectTime)
 		{
 			input.style.color='#f22'
 			head_text.data='Не верно'
-			
+
 		}
 	}
-	
+
 	draw()
-	
-	cal_close.onclick=calendar_close	
+
+	cal_close.onclick=calendar_close
 	input.addEventListener( 'focus', input_onfocus, false)
 	input.addEventListener( 'blur', calendar_close, false)
 	input.addEventListener( 'keyup', input_onkeyup, false)
-	
+
 	return input
 }
