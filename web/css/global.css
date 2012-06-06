@@ -6,7 +6,7 @@
 	border-spacing:		3px;
 	border-collapse:	none;
 	min-width:		200px;
-	position: 		absolute;  
+	position: 		absolute;
 	display: 		block;
 	padding:		4px;
 }
@@ -344,4 +344,40 @@ div.hidblock
 {
 	padding:	3px;
 	border-bottom:	1px solid #000;
+}
+
+/* autocomplete. вынести в отдельный файл */
+div.autocomplete
+{
+	position:	absolute;
+	width:		100px;
+	height:		200px;
+	border:		1px solid #000;
+	background-color: #fff;
+	overflow:	auto;
+	opacity:	0.5;
+}
+
+div.autocomplete ul
+{
+	padding:	0px;
+	margin:		0px;
+	list-style-type:none;
+
+}
+
+div.autocomplete li
+{
+	padding:	1px 3px;
+	margin:		0px;
+	line-height: 	1em;
+	overflow:	hidden;
+	font-size:	14px;
+	height:		14px;
+}
+
+div.autocomplete li:hover
+{
+	background-color:	#008;
+	color:			#fff;
 }

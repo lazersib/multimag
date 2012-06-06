@@ -24,11 +24,37 @@
 function initAutocomplete(input_id, ac_url)
 {
 	var input = document.getElementById(input_id)
-	input.style.cssText='border-radius: 1px; margin: 0px; margin-bottom: 5px; width: 300px;'
+	input.style.cssText='border-radius: 1px; margin: 0px; width: 300px;'
+	var input_offset=getOffset(input)
 	var div = document.createElement('div')
-	div.innerHTML='test<br>123'
-	div.style.cssText='position: absolute; width: 200px; height: 200px; border: 1px solid #000; background-color: #f95;'
-	div.style.width=input.style.width
-	input.parentNode.appendChild(div)
-	return input
+	document.getElementsByTagName('body')[0].appendChild(div)
+	var httpRequest;
+	if (window.XMLHttpRequest)  {    httpRequest = new XMLHttpRequest(); }
+	if (!httpRequest) { return false; }
+
+
+// 	httpRequest.onreadystatechange = function() {  };
+// 	httpRequest.open('GET', url, true);
+// 	httpRequest.send(null);
+
+	input.onfocus=function()
+	{
+		var input_offset=getOffset(input)
+		var dd=document.createElement('div')
+		input.parentNode.appendChild(dd)
+		dd.style.cssText='position: absolute; width: 20px; height: 20px; background-color: #f00;'
+		dd.style.left=(input_offset.left+280)+'px'
+		dd.style.top=input_offset.top+'px'
+
+
+		div.className='autocomplete'
+		div.style.left=input_offset.left+'px'
+		div.style.top=(input_offset.top+20)+'px'
+		div.innerHTML='<ul><li>efgerg</li><li>efgerg</li><li>etr hrtj hrth rthi rtjhrthrt  rth rh  th rhtr h rthrth hrth trhrth srth o rtjho rjfgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efge rthrth rth rth rth rthrthrtrg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li></ul>'
+		div.style.width=input.style.width
+
+		return input
+	}
+
+
 }

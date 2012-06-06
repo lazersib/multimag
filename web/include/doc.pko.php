@@ -33,7 +33,7 @@ class doc_Pko extends doc_Nulltype
 		$this->header_fields			='kassa sum separator agent';
 		settype($this->doc,'int');
 	}
-	
+
 	// Провести
 	function DocApply($silent=0)
 	{
@@ -44,7 +44,7 @@ class doc_Pko extends doc_Nulltype
 		$nx=@mysql_fetch_row($res);
 		if(!$nx)	throw new Exception('Документ не найден!');
 		if( $nx[3] && (!$silent) )	throw new Exception('Документ уже был проведён!');
-			
+
 		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'$nx[4]'
 		WHERE `ids`='kassa' AND `num`='$nx[2]'");
 		if(!$res)			throw new MysqlException("Ошибка обновления суммы $nx[4] в кассе $nx[2]!");
@@ -53,7 +53,7 @@ class doc_Pko extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
 	}
-	
+
 	// Отменить проведение
 	function DocCancel()
 	{
@@ -62,7 +62,7 @@ class doc_Pko extends doc_Nulltype
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка выборки данных документа при проведении!');
 		if(!($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
-		if(!$nx[3])				throw new Exception('Документ не проведён!');		
+		if(!$nx[3])				throw new Exception('Документ не проведён!');
 		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'$nx[4]' WHERE `ids`='kassa' AND `num`='$nx[2]'");
 		if(! mysql_affected_rows())		throw new MysqlException("Cумма в кассе $nx[2] не изменилась!");
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
@@ -129,40 +129,482 @@ class doc_Pko extends doc_Nulltype
 		mysql_query("UNLOCK TABLE `doc_list`, `doc_kassa`");
 		return $err;
 	}
-	
-	
-	
+
+
+
 	// Печать документа
 	function Printform($doc, $opt='')
 	{
-		get_docdata($doc);
 		global $tmpl;
-		global $uid;
-		global $doc_data;
-		global $dop_data;
-		global $dv;
 
-		if(!$doc_data[6])
+		if(!$this->doc_data['ok'])
 		{
 			doc_menu(0,0);
 			$tmpl->AddText("<h1>Приходный кассовый ордер</h1>");
-
 			$tmpl->msg("Сначала нужно провести документ!","err");
 		}
-		else
+		else if($opt=='')
 		{
-			$tmpl->LoadTemplate('print');
-			$dt=date("d.m.Y",$doc_data[5]);
-			$sum_p=sprintf("%0.2f руб.",$doc_data[11]);
-			$sump_p=num2str($doc_data[11]);
-			$tmpl->AddText("<h1>Приходный кассовый ордер N $doc_data[9]$doc_data[10], от $dt </h1>
-			<b>Получено от: </b>$doc_data[3]<br>
-			<b>Сумма:</b> $sum_p ($sump_p)<br>
-			<b>Получатель средств: </b>".$dv['firm_name']."<br><br>
-			<p>Покупатель:_____________________________ /$doc_data[3]/</p>
-			<p>Кассир: _____________________________ /".$dv['firm_buhgalter']."/</p>");
+			global $tmpl;
+			$tmpl->ajax=1;
+			$tmpl->AddText("
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=pko_pdf'\">Приходный ордер</div>");
+		}
+		else
+		if($opt=='pko_pdf')
+			$this->PrintPKOPDF();
+
+	}
+
+	function PrintPKOPDF($to_str=false)
+	{
+		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
+		require('fpdf/fpdf.php');
+		global $tmpl, $CONFIG, $uid;
+		if(!$to_str) $tmpl->ajax=1;
+
+		$pdf=new FPDF('P');
+		$pdf->Open();
+		$pdf->SetAutoPageBreak(0,10);
+		$pdf->AddFont('Arial','','arial.php');
+		$pdf->tMargin=10;
+		$pdf->AddPage();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(255);
+
+		$pdf->Rect(136, 3, 3, 120 );
+
+		$pdf->lMargin=5;
+		$pdf->rMargin=75;
+
+		$pdf->SetFont('','',6);
+		$str = "Унифицированная форма № КО-1\nУтверждена постановлением Госкомстата\nРоссии от 18.08.1998г. №88";
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->MultiCell(0,3,$str,0,'R',0);
+
+		$pdf->SetX(120);
+		$str = iconv('UTF-8', 'windows-1251', "Код");
+		$pdf->Cell(0,4,$str,1,1,'C',0);
+		$y=$pdf->GetY();
+		$pdf->SetLineWidth(0.5);
+		$pdf->SetX(120);
+		$pdf->Cell(0,16,'',1,1,'C',0);
+		$pdf->SetLineWidth(0.2);
+		$pdf->SetY($y);
+
+		$str = iconv('UTF-8', 'windows-1251', "Форма по ОКУД");
+		$pdf->Cell(115,4,$str,0,0,'R',0);
+		$pdf->Cell(0,4,'0310001',1,1,'C',0);
+
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($this->firm_vars['firm_name']));
+		$pdf->Cell(95,4,$str,0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "по ОКПО");
+		$pdf->Cell(20,4,$str,0,0,'R',0);
+		$pdf->Cell(0,4,$this->firm_vars['firm_okpo'],1,1,'C',0);
+
+		$pdf->SetFont('','',5);
+		$pdf->Line(5, $pdf->GetY(), 100, $pdf->GetY());
+		$str = iconv('UTF-8', 'windows-1251', "организация");
+		$pdf->Cell(115,2,$str,0,0,'C',0);
+		$pdf->Cell(0,4,'',1,1,'C',0);
+
+		$pdf->Cell(115,4,'',0,1,'C',0);
+		$pdf->Line(5, $pdf->GetY(), 100, $pdf->GetY());
+		$str = iconv('UTF-8', 'windows-1251', "структурное подразделение");
+		$pdf->Cell(115,2,$str,0,1,'C',0);
+
+
+		$pdf->Cell(85,4,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "Номер документа");
+		$pdf->Cell(18,3,$str,1,0,'C',0);
+		$str = iconv('UTF-8', 'windows-1251', "Дата составления");
+		$pdf->Cell(0,3,$str,1,1,'C',0);
+
+		$pdf->SetLineWidth(0.5);
+		$pdf->SetFont('','',14);
+		$str = iconv('UTF-8', 'windows-1251', "Приходный кассовый ордер");
+		$pdf->Cell(85,4,$str,0,0,'C',0);
+		$pdf->SetFont('','',7);
+		$pdf->Cell(18,4,$this->doc_data['altnum'],1,0,'C',0);
+		$date=date("d.m.Y",$this->doc_data['date']);
+		$pdf->Cell(0,4,$date,1,1,'C',0);
+		$pdf->SetLineWidth(0.2);
+		$pdf->Ln();
+
+
+		$y=$pdf->GetY();
+
+		$t_all_offset=array();
+		$pdf->SetFont('','',10);
+		$t_width=array(10,70,23,20,7);
+		$t_ydelta=array(2,1,6,4,1);
+		$t_text=array(
+		'Дебет',
+		'Кредит',
+		'Сумма руб, коп',
+		'Код целевого назначения',
+		'');
+
+		foreach($t_width as $w)
+		{
+			$pdf->Cell($w,16,'',1,0,'C',0);
+		}
+		$pdf->Ln();
+		$pdf->Ln(0.5);
+		$pdf->SetFont('','',8);
+		$offset=0;
+		foreach($t_width as $i => $w)
+		{
+			$t_all_offset[$offset]=$offset;
+			$pdf->SetY($y+$t_ydelta[$i]+0.2);
+			$pdf->SetX($offset+$pdf->lMargin);
+			$str = iconv('UTF-8', 'windows-1251', $t_text[$i] );
+			$pdf->MultiCell($w,3,$str,0,'C',0);
+			$offset+=$w;
 		}
 
+		$t2_width=array(25, 25, 20);
+		$t2_start=array(1,1,1);
+		$t2_ydelta=array(2,1,1);
+		$t2_text=array(
+		'код структурного подразделения',
+		'корреспондиру- ющий счёт, субсчёт',
+		'код аналитичес- кого учёта');
+		$offset=0;
+		$c_id=0;
+		$old_col=0;
+		$y+=5;
+
+		foreach($t2_width as $i => $w2)
+		{
+			while($c_id<$t2_start[$i])
+			{
+				$t_a[$offset]=$offset;
+				$offset+=$t_width[$c_id++];
+			}
+
+			if($old_col==$t2_start[$i])	$off2+=$t2_width[$i-1];
+			else				$off2=0;
+			$old_col=$t2_start[$i];
+			$t_all_offset[$offset+$off2]=$offset+$off2;
+			$pdf->SetY($y);
+			$pdf->SetX($offset+$off2+$pdf->lMargin);
+			$pdf->Cell($w2,11,'',1,0,'C',0);
+
+			$pdf->SetY($y+$t2_ydelta[$i]);
+			$pdf->SetX($offset+$off2+$pdf->lMargin);
+			$str = iconv('UTF-8', 'windows-1251', $t2_text[$i] );
+			$pdf->MultiCell($w2,3,$str,0,'C',0);
+		}
+
+		sort ( $t_all_offset, SORT_NUMERIC );
+		$pdf->SetY($y+11);
+		$t_all_width=array();
+		$old_offset=0;
+		foreach($t_all_offset as $offset)
+		{
+			if($offset==0)	continue;
+			$t_all_width[]=	$offset-$old_offset;
+			$old_offset=$offset;
+		}
+		$t_all_width[]=0;
+		$i=1;
+		$pdf->SetLineWidth(0.4);
+		foreach($t_all_width as $id => $w)
+		{
+			$pdf->Cell($w,4,'',1,0,'C',0);
+			$i++;
+		}
+		$pdf->SetLineWidth(0.2);
+		$pdf->Ln(6);
+		$pdf->SetFont('','',7);
+		$res=mysql_query("SELECT `doc_agent`.`fullname`	FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
+		if(mysql_errno())		throw new MysqlException("Невозможно получить данные агента!");
+		$agent_info=mysql_fetch_array($res);
+		if(!$agent_info)		throw new Exception('Агент не найден');
+
+		$str = iconv('UTF-8', 'windows-1251', "Принято от");
+		$pdf->Cell(20,4,$str,'B',0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($agent_info['fullname']));
+		$pdf->Cell(0,4,$str,'B',1,'L',0);
+
+		if($this->doc_data['p_doc'])
+		{
+			$res=mysql_query("SELECT `doc_list`.`altnum`, `doc_list`.`date` FROM `doc_list`
+			WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
+			$data=mysql_fetch_array($res);
+			$ddate=date("d.m.Y",$data['date']);
+			$str_osn="Оплата к с/ф №{$data['altnum']} от $ddate";
+			$str_osn = iconv('UTF-8', 'windows-1251', $str_osn);
+		}
+		else $str_osn='';
+		$str = iconv('UTF-8', 'windows-1251', "Основание:");
+		$pdf->Cell(20,4,$str,'B',0,'L',0);
+		$pdf->Cell(0,4,$str_osn,'B',1,'L',0);
+
+		$str = iconv('UTF-8', 'windows-1251', "Сумма");
+		$pdf->Cell(15,4,$str,'B',0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', num2str($this->doc_data['sum']));
+		$pdf->Cell(0,4,$str,'B',1,'L',0);
+
+		$sum_r=round($this->doc_data['sum']);
+		$sum_c=round(($this->doc_data['sum']-$sum_r)*100);
+		$str = iconv('UTF-8', 'windows-1251', "Сумма");
+		$pdf->Cell(90,4,'','B',0,'L',0);
+		$pdf->Cell(20,4,$sum_r,'B',0,'R',0);
+		$str = iconv('UTF-8', 'windows-1251', "руб.");
+		$pdf->Cell(10,4,$str,0,0,'C',0);
+		$pdf->Cell(5,4,$sum_c,'B',0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "коп.");
+		$pdf->Cell(0,4,$str,0,1,'L',0);
+
+		$str = iconv('UTF-8', 'windows-1251', "В том числе");
+		$pdf->Cell(20,4,$str,0,0,'L',0);
+		$pdf->Cell(0,4,'','B',1,'L',0);
+
+		$str = iconv('UTF-8', 'windows-1251', "Приложение");
+		$pdf->Cell(20,4,$str,0,0,'L',0);
+		$pdf->Cell(0,4,'','B',1,'L',0);
+
+		$pdf->Ln(3);
+		$str = iconv('UTF-8', 'windows-1251', "Бухгалтер");
+		$pdf->Cell(20,4,$str,0,0,'L',0);
+		$pdf->Cell(40,4,'','B',0,'L',0);
+		$pdf->Cell(5,4,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', $this->firm_vars['firm_buhgalter'] );
+		$pdf->Cell(0,4,$str,'B',1,'L',0);
+
+		$pdf->SetFont('','',5);
+		$pdf->Cell(20,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(подпись)");
+		$pdf->Cell(40,2,$str,0,0,'C',0);
+		$pdf->Cell(5,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(расшифровка подписи)");
+		$pdf->Cell(0,2,$str,0,1,'C',0);
+		$pdf->SetFont('','',7);
+
+		$res=mysql_query("SELECT `rname` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
+		$name=@mysql_result($res,0,0);
+		if(!$name) $name=$this->firm_vars['firm_buhgalter'];
+
+		$str = iconv('UTF-8', 'windows-1251', "Получил кассир");
+		$pdf->Cell(20,4,$str,0,0,'L',0);
+		$pdf->Cell(40,4,'','B',0,'L',0);
+		$pdf->Cell(5,4,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', $name );
+		$pdf->Cell(0,4,$str,'B',1,'L',0);
+
+		$pdf->SetFont('','',5);
+		$pdf->Cell(20,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(подпись)");
+		$pdf->Cell(40,2,$str,0,0,'C',0);
+		$pdf->Cell(5,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(расшифровка подписи)");
+		$pdf->Cell(0,2,$str,0,1,'C',0);
+		$pdf->SetFont('','',7);
+
+		$pdf->lMargin=140;
+		$pdf->rMargin=5;
+		$pdf->SetY(5);
+		$pdf->Ln();
+
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($this->firm_vars['firm_name']));
+		$pdf->MultiCell(0,4,$str,'B','L',0);
+
+		$pdf->SetFont('','',5);
+		$str = iconv('UTF-8', 'windows-1251', "организация");
+		$pdf->Cell(0,2,$str,0,1,'C',0);
+
+		$pdf->SetFont('','',14);
+		$str = iconv('UTF-8', 'windows-1251', "Квитанция");
+		$pdf->Cell(0,12,$str,0,1,'C',0);
+
+		$pdf->SetFont('','',7);
+		$str = iconv('UTF-8', 'windows-1251', "К приходно-кассовому ордеру №");
+		$pdf->Cell(40,4,$str,0,0,'L',0);
+		$pdf->Cell(0,4,$this->doc_data['altnum'],'B',1,'C',0);
+
+		$date=date("d.m.Y",$this->doc_data['date']);
+		$str = iconv('UTF-8', 'windows-1251', "От $date");
+		$pdf->Cell(0,4,$str,'B',1,'L',0);
+
+		$str = iconv('UTF-8', 'windows-1251', "Принято от");
+		$pdf->Cell(20,4,$str,0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($agent_info['fullname']));
+		$pdf->Cell(0,4,'','B',1,'L',0);
+
+		$y=$pdf->GetY();
+		$pdf->Cell(0,4,'','B',1,'L',0);
+		$pdf->Cell(0,4,'','B',1,'L',0);
+		$pdf->SetY($y);
+		$pdf->MultiCell(0,4,$str,'B','L',0);
+		$pdf->SetY($y+8);
+		$str = iconv('UTF-8', 'windows-1251', "Основание:");
+		$pdf->Cell(20,4,$str,0,0,'L',0);
+		$pdf->Cell(0,4,'','B',1,'L',0);
+		$y=$pdf->GetY();
+		$pdf->Cell(0,4,'','B',1,'L',0);
+		$pdf->Cell(0,4,'','B',1,'L',0);
+		$pdf->SetY($y);
+		$pdf->MultiCell(0,4,$str_osn,0,'L',0);
+		$pdf->SetY($y+8);
+		$sum_r=round($this->doc_data['sum']);
+		$sum_c=round(($this->doc_data['sum']-$sum_r)*100);
+		$str = iconv('UTF-8', 'windows-1251', "Сумма");
+		$pdf->Cell(10,4,$str,0,0,'L',0);
+		$pdf->Cell(30,4,$sum_r,'B',0,'R',0);
+		$str = iconv('UTF-8', 'windows-1251', "руб.");
+		$pdf->Cell(10,4,$str,0,0,'C',0);
+		$pdf->Cell(5,4,$sum_c,'B',0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "коп.");
+		$pdf->Cell(0,4,$str,0,1,'L',0);
+		$pdf->SetFont('','',5);
+		$str = iconv('UTF-8', 'windows-1251', "цифрами");
+		$pdf->Cell(0,2,$str,0,1,'C',0);
+		$pdf->SetFont('','',7);
+
+
+		$str = iconv('UTF-8', 'windows-1251', num2str($this->doc_data['sum']));
+		$y=$pdf->GetY();
+		$pdf->Cell(0,4,'','B',1,'L',0);
+		$pdf->Cell(0,4,'','B',1,'L',0);
+		$pdf->SetY($y);
+		$pdf->MultiCell(0,4,$str,0,'L',0);
+		$pdf->SetY($y+8);
+
+
+		$pdf->SetFont('','',5);
+		$str = iconv('UTF-8', 'windows-1251', "прописью");
+		$pdf->Cell(0,2,$str,0,1,'C',0);
+		$pdf->SetFont('','',7);
+
+		$str = iconv('UTF-8', 'windows-1251', "В том числе");
+		$pdf->Cell(20,4,$str,0,0,'L',0);
+		$pdf->Cell(0,4,'','B',1,'L',0);
+
+		$date=date("d.m.Y",$this->doc_data['date']);
+		$pdf->Cell(0,6,$date,0,1,'L',0);
+
+		$str = iconv('UTF-8', 'windows-1251', "МП (штампа)");
+		$pdf->Cell(0,6,$str,0,1,'C',0);
+
+		$pdf->Ln(3);
+		$str = iconv('UTF-8', 'windows-1251', "Бухгалтер");
+		$pdf->Cell(14,4,$str,0,0,'L',0);
+		$pdf->Cell(20,4,'','B',0,'L',0);
+		$pdf->Cell(5,4,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', $this->firm_vars['firm_buhgalter'] );
+		$pdf->Cell(0,4,$str,'B',1,'L',0);
+
+		$pdf->SetFont('','',5);
+		$pdf->Cell(14,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(подпись)");
+		$pdf->Cell(20,2,$str,0,0,'C',0);
+		$pdf->Cell(5,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(расшифровка подписи)");
+		$pdf->Cell(0,2,$str,0,1,'C',0);
+		$pdf->SetFont('','',7);
+
+		$res=mysql_query("SELECT `rname` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
+		$name=@mysql_result($res,0,0);
+		if(!$name) $name=$this->firm_vars['firm_buhgalter'];
+
+		$str = iconv('UTF-8', 'windows-1251', "Кассир");
+		$pdf->Cell(10,4,$str,0,0,'L',0);
+		$pdf->Cell(20,4,'','B',0,'L',0);
+		$pdf->Cell(5,4,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', $name );
+		$pdf->Cell(0,4,$str,'B',1,'L',0);
+
+		$pdf->SetFont('','',5);
+		$pdf->Cell(10,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(подпись)");
+		$pdf->Cell(20,2,$str,0,0,'C',0);
+		$pdf->Cell(5,2,'',0,0,'L',0);
+		$str = iconv('UTF-8', 'windows-1251', "(расшифровка подписи)");
+		$pdf->Cell(0,2,$str,0,1,'C',0);
+		$pdf->SetFont('','',7);
+// 		$old_x=$pdf->GetX();
+// 		$old_y=$pdf->GetY();
+// 		$old_margin=$pdf->lMargin;
+// 		$table_c=110;
+// 		$table_c2=15;
+//
+// 		$pdf->SetFont('','',12);
+// 		$str=$bank_data[0];
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell($table_c,10,$str,1,1,'L',0);
+// 		$str='ИНН '.$this->firm_vars['firm_inn'].' КПП';
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell($table_c,5,$str,1,1,'L',0);
+// 		$str='Получатель: '.unhtmlentities
+// 		($this->firm_vars['firm_name']);
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$tx=$pdf->GetX();
+// 		$ty=$pdf->GetY();
+// 		$pdf->Cell($table_c,10,'',1,1,'L',0);
+//
+// 		$pdf->lMargin=$old_x+1;
+// 		$pdf->SetX($tx+1);
+// 		$pdf->SetY($ty+1);
+// 		$pdf->SetFont('','',9);
+// 		$pdf->MultiCell($table_c,3,$str,0,1,'L',0);
+//
+// 		$pdf->SetFont('','',12);
+// 		$pdf->lMargin=$old_x+$table_c;
+// 		$pdf->SetY($old_y);
+// 		$str='БИК';
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell($table_c2,5,$str,1,1,'L',0);
+// 		$str='корр/с';
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell($table_c2,10,$str,1,1,'L',0);
+// 		$str='р/с N';
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell($table_c2,10,$str,1,1,'L',0);
+//
+// 		$pdf->lMargin=$old_x+$table_c+$table_c2;
+// 		$pdf->SetY($old_y);
+// 		$str=$bank_data[1];
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell(0,5,$str,1,1,'L',0);
+// 		$str=$bank_data[3];
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell(0,5,$str,1,1,'L',0);
+// 		$str=$bank_data[2];
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell(0,15,$str,1,1,'L',0);
+//
+// 		$pdf->lMargin=$old_margin;
+// 		$pdf->SetY($old_y+30);
+//
+//
+// 		$pdf->SetFont('','',16);
+// 		$str='Счёт № '.$this->doc_data[9].', от '.$dt;
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->Cell(0,5,$str,0,1,'L',0);
+// 		$pdf->SetFont('','',8);
+// 		$str='Поставщик: '.unhtmlentities($this->firm_vars['firm_name'].', '.$this->firm_vars['firm_adres'].', тел:'.$this->firm_vars['firm_telefon']);
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->MultiCell(0,4,$str,0,1,'L',0);
+// 		$str="Покупатель: ".unhtmlentities($this->doc_data[3].", адрес: $agent_data[0], телефон: $agent_data[1]");
+// 		$str = iconv('UTF-8', 'windows-1251', $str);
+// 		$pdf->MultiCell(0,4,$str,0,1,'L',0);
+//
+// 		$pdf->Ln(3);
+// 		$pdf->SetFont('','',11);
+// 		$str = iconv('UTF-8', 'windows-1251', str_replace("<br>",", ",unhtmlentities($this->doc_data[4])));
+// 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
+
+		$pdf->Ln(3);
+
+
+
+
+		if($to_str)
+			return $pdf->Output('zayavka.pdf','S');
+		else
+			$pdf->Output('zayavka.pdf','I');
 	}
 	// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
