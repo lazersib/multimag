@@ -193,13 +193,13 @@ function Show($param='')
 /// Получить весь текущий список товаров (документа)
 function GetAllContent()
 {
-	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_list_pos`.`gtd`
+	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`
 	FROM `doc_list_pos`
 	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'
 	ORDER BY `doc_list_pos`.`id`");
-	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
+	if(mysql_errno())	throw new MysqlException("Ошибка получения списка товаров документа");
 	$ret='';
 	while($nxt=mysql_fetch_assoc($res))
 	{
@@ -209,7 +209,7 @@ function GetAllContent()
 		if($ret)	$ret.=', ';
 		
 		$ret.="{
-		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}', gtd: '{$nxt['gtd']}'";
+		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}', gtd: '{$nxt['gtd']}', comm: '{$nxt['comm']}'";
 		
 		if($this->show_sn)
 		{
@@ -430,8 +430,7 @@ function RemoveLine($line_id)
 /// Обновить строку документа с указанным ID (type - идентификатор колонки, value - записываемое значение)
 function UpdateLine($line_id, $type, $value)
 {
-	if($value<=0) $value=1;
-	$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `doc`, `gtd` FROM `doc_list_pos` WHERE `id`='$line_id'");
+	$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `doc`, `gtd`, `comm` FROM `doc_list_pos` WHERE `id`='$line_id'");
 	if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
 	$nxt=mysql_fetch_row($res);
 	if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
@@ -439,6 +438,7 @@ function UpdateLine($line_id, $type, $value)
 	
 	if($type=='cnt' && $value!=$nxt[1])
 	{
+		if($value<=0) $value=1;
 		$res=mysql_query("UPDATE `doc_list_pos` SET `cnt`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить количество в строке документа");
 		$doc_sum=DocSumUpdate($this->doc);
@@ -448,6 +448,7 @@ function UpdateLine($line_id, $type, $value)
 	}
 	else if($type=='cost' && $value!=$nxt[2])
 	{
+		if($value<=0) $value=1;
 		$res=mysql_query("UPDATE `doc_list_pos` SET `cost`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить цену в строке документа");
 		$doc_sum=DocSumUpdate($this->doc);
@@ -458,6 +459,7 @@ function UpdateLine($line_id, $type, $value)
 	}
 	else if($type=='sum' && $value!=($nxt[1]*$nxt[2]))
 	{
+		if($value<=0) $value=1;
 		$value=sprintf("%0.2f",$value/$nxt[1]);
 		$res=mysql_query("UPDATE `doc_list_pos` SET `cost`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить цену в строке документа");
@@ -472,8 +474,14 @@ function UpdateLine($line_id, $type, $value)
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить ГТД в строке документа");
 		$doc_sum=DocSumUpdate($this->doc);
 		doc_log("UPDATE","change gtd: pos:$nxt[0], line_id:$line_id, gtd:$nxt[4] => $value",'doc',$this->doc);
-		doc_log("UPDATE","change gtd: pos:$nxt[0], line_id:$line_id, gtd:$nxt[4] => $value",'pos',$nxt[0]);
 		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$nxt[2]}', gtd: '{$value}'}, sum: '$doc_sum' }";
+	}
+	else if($type=='comm' && $value!=$nxt[5])
+	{
+		$res=mysql_query("UPDATE `doc_list_pos` SET `comm`='$value' WHERE `doc`='{$this->doc}' AND `id`='$line_id'");
+		if(mysql_errno())	throw new MysqlException("Не удалось обновить комментарий в строке документа");
+		doc_log("UPDATE","change comm: pos:$nxt[0], line_id:$line_id, comm:$nxt[5] => $value",'doc',$this->doc);
+		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt[1]}', cost: '{$nxt[2]}', comm: '{$value}'} }";
 	}
 	else return "{ response: '0', message: 'value: $value, type:$type, line_id:$line_id'}";
 }

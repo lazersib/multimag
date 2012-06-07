@@ -101,7 +101,7 @@ function ExecMode($mode)
 		$j=rcv('j');
 		if($p)
 		{
-			@$_SESSION['korz_cnt'][$p]+=$cnt;
+			@$_SESSION['basket']['cnt'][$p]+=$cnt;
 			$tmpl->ajax=1;
 			if(!$j)
 			{
@@ -110,7 +110,7 @@ function ExecMode($mode)
 			}
 			else
 			{
-				$korz_cnt=count(@$_SESSION['korz_cnt']);
+				$korz_cnt=count(@$_SESSION['basket']['cnt']);
 				$sum=0;
 				if(@$_SESSION['uid'])
 					$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
@@ -118,8 +118,8 @@ function ExecMode($mode)
 					$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
 				$c_cena_id=@mysql_result($res,0,0);
 				if(!$c_cena_id)	$c_cena_id=1;
-				if(is_array($_SESSION['korz_cnt']))
-				foreach(@$_SESSION['korz_cnt'] as $item => $cnt)
+				if(is_array($_SESSION['basket']['cnt']))
+				foreach(@$_SESSION['basket']['cnt'] as $item => $cnt)
 				{
 					$res=mysql_query("SELECT `id`, `name`, `cost` FROM `doc_base` WHERE `id`='$item'");
 					$nx=mysql_fetch_row($res);
@@ -142,7 +142,7 @@ function ExecMode($mode)
 		$cnt=rcv('cnt');
 		if($p)
 		{
-			@$_SESSION['korz_cnt'][$p]+=$cnt;
+			@$_SESSION['basket']['cnt'][$p]+=$cnt;
 			$tmpl->AddText("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 			//echo"Товар добавлен в корзину!<br><a class='urllink' href='vitrina.php?mode=basket'>Ваша корзина</a>";
 		}
@@ -156,26 +156,34 @@ function ExecMode($mode)
 	else if($mode=='korz_del')
 	{
 		$cnt=rcv('cnt');
-		unset($_SESSION['korz_cnt'][$p]);
+		unset($_SESSION['basket']['cnt'][$p]);
 		$tmpl->msg("Товар убран из корзины!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 	}
 	else if($mode=='korz_clear')
 	{
 		$cnt=rcv('cnt');
-		unset($_SESSION['korz_cnt']);
+		unset($_SESSION['basket']['cnt']);
 		$tmpl->msg("Корзина очищена!","info","<a class='urllink' href='/vitrina.php'>Вернутья на витрину</a>");
 	}
-	else if($mode=='korz_setcnt')
+	else if($mode=='basket_submit')
 	{
+		$button=rcv('button');
 		$tmpl->ajax=1;
-		foreach($_SESSION['korz_cnt'] as $item => $cnt)
+		if(isset($_SESSION['basket']['cnt']))
+			if(is_array($_SESSION['basket']['cnt']))
+				foreach($_SESSION['basket']['cnt'] as $item => $cnt)
+				{
+					$ncnt=rcv("cnt$item");
+					if($ncnt<=0) unset($_SESSION['basket']['cnt'][$item]);
+					else $_SESSION['basket']['cnt'][$item]=round($ncnt,3);
+					$_SESSION['basket']['comments'][$item]=rcv("comm$item");
+				}
+		if($button=='recalc')
 		{
-			$ncnt=rcv("cnt$item");
-			if($ncnt<=0) unset($_SESSION['korz_cnt'][$item]);
-			else $_SESSION['korz_cnt'][$item]=$ncnt;
+			if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
+			else 	header('Location: vitrina.php?mode=basket');
 		}
-		if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
-		else 	header('Location: vitrina.php?mode=basket');
+		else	header('Location: vitrina.php?mode=buy');
 	}
 	else if($mode=='buy')		$this->Buy();
 	else if($mode=='makebuy')	$this->MakeBuy();
@@ -273,7 +281,6 @@ protected function ProductList($group, $page)
 
 		if(($lim<$rows) && $page )	mysql_data_seek($res, $lim*($page-1));
 		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$this->TovList_ImageList($res, $lim);
-//		else if($CONFIG['site']['vitrina_plstyle']=='tilelist')		$this->TovList_TileList($res);
 		else if($CONFIG['site']['vitrina_plstyle']=='extable')		$this->TovList_ExTable($res, $lim);
 		else								$this->TovList_SimpleTable($res, $lim);
 		$this->PageBar($group, $rows, $lim, $page);
@@ -460,33 +467,40 @@ protected function Basket()
 	$cc=0;
 	$sum=0;
 	$exist=0;
-
-	if($_SESSION['korz_cnt'])
-	foreach($_SESSION['korz_cnt'] as $item => $cnt)
+	$i=1;
+	if(isset($_SESSION['basket']['cnt']))
+	foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 	{
 		$res=mysql_query("SELECT `id`, `name`, `cost` FROM `doc_base` WHERE `id`='$item'");
 		$nx=mysql_fetch_row($res);
 		$cena=GetCostPos($nx[0], $this->cost_id);
 		$sm=$cena*$cnt;
 		$sum+=$sm;
-		$s.="<tr class='lin$cc'><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td>$cena<td>$sm<td><input type=text name='cnt$item' value='$cnt' class='mini'><td><a href='?mode=korz_del&amp;p=$item'>убрать</a>";
+		$sm=sprintf("%0.2f",$sm);
+		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
+		$s.="<tr class='lin$cc'><td class='right'>$i <a href='?mode=korz_del&amp;p=$item'><img src='/img/i_del.png' alt='Убрать'></a><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'>$sm<td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
 		$cc=1-$cc;
 		$exist=1;
+		$i++;
 	}
 	if(!$exist) $tmpl->msg("Ваша корзина пуста! Выберите, пожалуйста интересующие Вас товары!","info");
 	else
 	{
 		$tmpl->AddText("
 		<h1 id='page-title'>Ваша корзина</h1>
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='korz_setcnt'>
-		<table width='100%' cellspacing='0' border='0' class='list'>
-		<tr class='title'><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Дополнительно</tr>
+		В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
+		<form action='' method='get'>
+		<input type='hidden' name='mode' value='basket_submit'>
+		<table width='100%' class='list'>
+		<tr class='title'><th>N</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
 		$s
+		<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='3'>$sum рублей</td></tr>
 		</table>
-		<center><button type='submit'>Пересчитать</button></center></form><br>
-		<center>Итого: Товаров на сумму <b>$sum</b> рублей<br><a href='/vitrina.php?mode=buy'><b>Оформить заказ!</b></a><br>
-		<a href='/vitrina.php?mode=korz_clear'><b>Очистить корзину!</b></a><br>
+		<br>
+		<center><button name='button' value='recalc' type='submit'>Пересчитать</button>
+		<button name='button' value='buy' type='submit'>Оформить заказ</button></center><br>
+		<center><a href='/vitrina.php?mode=korz_clear'><b>Очистить корзину!</b></a></center><br>
+		</form>
 		</center><br><br>");
 
 		$_SESSION['korz_sum']=$sum;
@@ -714,7 +728,6 @@ protected function BuyMakeForm()
 			$user_dopdata["$nn[0]"]=$nn[1];
 		}
 		$str='Товар будет зарезервирован для Вас на 3 рабочих дня.';
-		//if( ($_SESSION['korz_sum']>20000) && $uid )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
 	}
 	else
 	{
@@ -769,12 +782,6 @@ protected function MakeBuy()
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$dop') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
-// 		if( $_SESSION['korz_sum']>20000)
-// 		{
-// 			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-2'");
-// 			$this->cost_id=mysql_result($res,0,0);
-// 			if(!$this->cost_id)	$this->cost_id=1;
-// 		}
 	}
 	else if(!$tel && !$email)
 	{
@@ -782,7 +789,7 @@ protected function MakeBuy()
 		return;
 	}
 
-	if($_SESSION['korz_cnt'])
+	if($_SESSION['basket']['cnt'])
 	{
 		$subtype="site";
 		$agent=1;
@@ -805,10 +812,11 @@ protected function MakeBuy()
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}')");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
 		$zakaz_items='';
-		foreach($_SESSION['korz_cnt'] as $item => $cnt)
+		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 		{
 			$cena=GetCostPos($item, $this->cost_id);
-			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`) VALUES ('$doc','$item','$cnt','$cena')");
+			if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];	else $comm='';
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$cena','$comm')");
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить товар в заказ");
 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`

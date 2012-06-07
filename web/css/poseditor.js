@@ -102,12 +102,29 @@ function PosEditorInit(base_url, editable)
 		row.id='posrow'+data.line_id
 		var sum=(data.cost*data.cnt).toFixed(2)
 		row.sklad_cnt=Number(data.sklad_cnt)
-		row.ondblclick=row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.pos_id); return false }
+		row.comm=data.comm
+		var addition_menu=''
+		//if(poslist.editable)	addition_menu="<div onclick=\"ShowPopupWin('/docs.php?l=pran&amp;mode=srv&amp;opt=ceni&amp;pos="+pos_id+"'); return false;\" >Правка комментария</div>"
+		row.ondblclick=row.oncontextmenu=function(event)
+		{
+			var menu=ShowPosContextMenu(event ,data.pos_id, addition_menu)
+			if(poslist.editable)
+			{
+				var menudiv=document.createElement('div')
+				menudiv.innerHTML='Правка комментария'
+				menudiv.onclick=function() { poslist.showCommEditor(row); }
+				menu.appendChild(menudiv)
+			}
+			return false
+		}
 		var linehtml="<td>"+(row_cnt+1)
 		if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>"
 		linehtml+="</td>"
 		if(poslist.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
-		linehtml+="<td class='la'>"+data.name+"</td><td>"+data.scost+"</td><td>"
+		var posname=data.name
+		if(data.comm)	posname+="<br><small>"+data.comm+"</small>"
+		else		posname+="<br><small></small>"
+		linehtml+="<td class='la'>"+posname+"</td><td>"+data.scost+"</td><td>"
 		if(poslist.editable)	linehtml+="<input type='text' name='cost' value='"+data.cost+"'>"
 		else			linehtml+=data.cost
 		linehtml+="</td><td>"
@@ -143,6 +160,11 @@ function PosEditorInit(base_url, editable)
 			{
 				var gtd_cell=document.getElementById('gtd'+data.line_id)
 				gtd_cell.onclick=poslist.showGTDEditor
+			}
+			var smalltag=row.getElementsByTagName('small')
+			for(var i=0;i<smalltag.length;i++)
+			{
+				smalltag[i].onclick=function() { poslist.showCommEditor(row); }
 			}
 		}
 	}
@@ -235,6 +257,32 @@ function PosEditorInit(base_url, editable)
 				success: function(msg) { rcvDataSuccess(msg); },
 				error:   function() { jAlert('Ошибка соединения!','Обновление данных',function() {},'icon_err'); },
 			});
+		})
+	}
+	
+	// Окно ввода коментария
+	poslist.showCommEditor=function(poslist_line)
+	{
+ 		var line=poslist_line.lineIndex
+ 		jPrompt("Введите комментарий", poslist_line.comm, "Редактирование документа", function(val)
+		{
+			if(val)
+			{
+				poslist_line.comm=val
+				var smalltag=poslist_line.getElementsByTagName('small')
+				for(var i=0;i<smalltag.length;i++)
+				{
+					smalltag[i].innerHTML=val
+				}
+				poslist_line.className='el'
+				$.ajax({
+				type:   'GET',
+				url:    base_url,
+				data:   'opt=jup&type=comm&value='+encodeURIComponent(val)+'&line_id='+line,
+				success: function(msg) { rcvDataSuccess(msg); },
+				error:   function() { jAlert('Ошибка соединения!','Обновление данных',function() {},'icon_err'); },
+				});
+			}
 		})
 	}
 
@@ -735,7 +783,7 @@ function SkladViewInit(doc)
 			row.className='pointer'
 			//row.onclick=function() {AddData(data)}
 			if(poslist.editable)	row.onclick=skladlist.clickRow
-			row.oncontextmenu=function(){ ShowContextMenu(event ,'/docs.php?mode=srv&opt=menu&doc=0&pos='+data.id); return false }
+			row.oncontextmenu=function(){ ShowPosContextMenu(event ,data.pos_id); return false }
 			linehtml+="<td>"+data.id+"</td>"
 			if(skladview.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
 			linehtml+="<td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td>"
