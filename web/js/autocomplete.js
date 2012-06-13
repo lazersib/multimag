@@ -28,14 +28,44 @@ function initAutocomplete(input_id, ac_url)
 	var input_offset=getOffset(input)
 	var div = document.createElement('div')
 	document.getElementsByTagName('body')[0].appendChild(div)
-	var httpRequest;
-	if (window.XMLHttpRequest)  {    httpRequest = new XMLHttpRequest(); }
-	if (!httpRequest) { return false; }
 
+	function requestData(str_query)
+	{
+		var httpRequest
+		if (window.XMLHttpRequest) httpRequest = new XMLHttpRequest()
+		if (!httpRequest)  return false
+		var url=ac_url+'&s='+encodeURIComponent(str_query)
+		httpRequest.onreadystatechange = receiveDataProcess
+		httpRequest.open('GET', url, true)
+		httpRequest.send(null)
 
-// 	httpRequest.onreadystatechange = function() {  };
-// 	httpRequest.open('GET', url, true);
-// 	httpRequest.send(null);
+		function receiveDataProcess()
+		{
+			if (httpRequest.readyState == 4)
+			{
+				if (httpRequest.status == 200)
+				{
+
+				}
+				//else {}
+
+			}
+			else if (httpRequest.readyState == 2)
+			{
+
+			}
+			else if (httpRequest.readyState == 3)
+			{
+				//status.innerHTML="Обработка...";
+			}
+			//else {}
+		}
+	}
+
+	function parseReceived(data)
+	{
+
+	}
 
 	input.onfocus=function()
 	{
@@ -43,7 +73,7 @@ function initAutocomplete(input_id, ac_url)
 		var dd=document.createElement('div')
 		input.parentNode.appendChild(dd)
 		dd.style.cssText='position: absolute; width: 20px; height: 20px; background-color: #f00;'
-		dd.style.left=(input_offset.left+280)+'px'
+		dd.style.left=(input_offset.left+parseInt(input.style.width)-16)+'px'
 		dd.style.top=input_offset.top+'px'
 
 
@@ -55,6 +85,8 @@ function initAutocomplete(input_id, ac_url)
 
 		return input
 	}
+
+
 
 
 }

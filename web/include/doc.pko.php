@@ -130,8 +130,6 @@ class doc_Pko extends doc_Nulltype
 		return $err;
 	}
 
-
-
 	// Печать документа
 	function Printform($doc, $opt='')
 	{
@@ -523,88 +521,11 @@ class doc_Pko extends doc_Nulltype
 		$pdf->Cell(5,2,'',0,0,'L',0);
 		$str = iconv('UTF-8', 'windows-1251', "(расшифровка подписи)");
 		$pdf->Cell(0,2,$str,0,1,'C',0);
-		$pdf->SetFont('','',7);
-// 		$old_x=$pdf->GetX();
-// 		$old_y=$pdf->GetY();
-// 		$old_margin=$pdf->lMargin;
-// 		$table_c=110;
-// 		$table_c2=15;
-//
-// 		$pdf->SetFont('','',12);
-// 		$str=$bank_data[0];
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell($table_c,10,$str,1,1,'L',0);
-// 		$str='ИНН '.$this->firm_vars['firm_inn'].' КПП';
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell($table_c,5,$str,1,1,'L',0);
-// 		$str='Получатель: '.unhtmlentities
-// 		($this->firm_vars['firm_name']);
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$tx=$pdf->GetX();
-// 		$ty=$pdf->GetY();
-// 		$pdf->Cell($table_c,10,'',1,1,'L',0);
-//
-// 		$pdf->lMargin=$old_x+1;
-// 		$pdf->SetX($tx+1);
-// 		$pdf->SetY($ty+1);
-// 		$pdf->SetFont('','',9);
-// 		$pdf->MultiCell($table_c,3,$str,0,1,'L',0);
-//
-// 		$pdf->SetFont('','',12);
-// 		$pdf->lMargin=$old_x+$table_c;
-// 		$pdf->SetY($old_y);
-// 		$str='БИК';
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell($table_c2,5,$str,1,1,'L',0);
-// 		$str='корр/с';
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell($table_c2,10,$str,1,1,'L',0);
-// 		$str='р/с N';
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell($table_c2,10,$str,1,1,'L',0);
-//
-// 		$pdf->lMargin=$old_x+$table_c+$table_c2;
-// 		$pdf->SetY($old_y);
-// 		$str=$bank_data[1];
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell(0,5,$str,1,1,'L',0);
-// 		$str=$bank_data[3];
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell(0,5,$str,1,1,'L',0);
-// 		$str=$bank_data[2];
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell(0,15,$str,1,1,'L',0);
-//
-// 		$pdf->lMargin=$old_margin;
-// 		$pdf->SetY($old_y+30);
-//
-//
-// 		$pdf->SetFont('','',16);
-// 		$str='Счёт № '.$this->doc_data[9].', от '.$dt;
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->Cell(0,5,$str,0,1,'L',0);
-// 		$pdf->SetFont('','',8);
-// 		$str='Поставщик: '.unhtmlentities($this->firm_vars['firm_name'].', '.$this->firm_vars['firm_adres'].', тел:'.$this->firm_vars['firm_telefon']);
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->MultiCell(0,4,$str,0,1,'L',0);
-// 		$str="Покупатель: ".unhtmlentities($this->doc_data[3].", адрес: $agent_data[0], телефон: $agent_data[1]");
-// 		$str = iconv('UTF-8', 'windows-1251', $str);
-// 		$pdf->MultiCell(0,4,$str,0,1,'L',0);
-//
-// 		$pdf->Ln(3);
-// 		$pdf->SetFont('','',11);
-// 		$str = iconv('UTF-8', 'windows-1251', str_replace("<br>",", ",unhtmlentities($this->doc_data[4])));
-// 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
-
-		$pdf->Ln(3);
-
-
-
 
 		if($to_str)
-			return $pdf->Output('zayavka.pdf','S');
+			return $pdf->Output('pko.pdf','S');
 		else
-			$pdf->Output('zayavka.pdf','I');
+			$pdf->Output('pko.pdf','I');
 	}
 	// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
