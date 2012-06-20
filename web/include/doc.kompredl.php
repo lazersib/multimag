@@ -53,6 +53,7 @@ class doc_Kompredl extends doc_Nulltype
 		if($this->dop_data['shapka'])
 			$tmpl->AddText("<b>Текст шапки:</b> {$this->dop_data['shapka']}");
 		else 	$tmpl->AddText("<br><b style='color: #f00'>ВНИМАНИЕ! Текст шапки не указан!</b><br>");
+		$tmpl->AddText("Срок поставки можно указать в коментариях наименования<br>");
 	}
 
 
@@ -470,7 +471,7 @@ class doc_Kompredl extends doc_Nulltype
 			$pdf->MultiCell(0,7,$str,0,'C',0);
 		}
 
-		$t_width=array(8,140,0);
+		$t_width=array(8,125,30,0);
 		$pdf->SetFont('','',12);
 		$str='№';
 		$str = iconv('UTF-8', 'windows-1251', $str);
@@ -478,14 +479,17 @@ class doc_Kompredl extends doc_Nulltype
 		$str='Наименование';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[1],5,$str,1,0,'C',0);
-		$str='Цена';
+		$str='Срок поставки';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[2],5,$str,1,0,'C',0);
+		$str='Цена за ед.';
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell($t_width[3],5,$str,1,0,'C',0);
 		$pdf->Ln();
 
 		$pdf->SetFont('','',10);
 
-		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `doc_list_pos`.`comm`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -502,14 +506,20 @@ class doc_Kompredl extends doc_Nulltype
 			if($nxt[2]) $str.='('.$nxt[2].')';
 			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->Cell($t_width[1],5,$str,1,0,'L',0);
-			$str = iconv('UTF-8', 'windows-1251', $cost);
+			$str = iconv('UTF-8', 'windows-1251', $nxt[6]);
 			$pdf->Cell($t_width[2],5,$str,1,0,'R',0);
+			$str = iconv('UTF-8', 'windows-1251', $cost);
+			$pdf->Cell($t_width[3],5,$str,1,0,'R',0);
 			$pdf->Ln();
 		}
 
 		if($pdf->h<=($pdf->GetY()+40)) $pdf->AddPage();
 
-		$pdf->ln(10);
+		$pdf->SetFont('','',12);
+		$str="Цены указаны с учётом НДС, за 1 ед. товара";
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell(0,8,$str,0,1,'C',0);
+		$pdf->ln(6);
 
 		if($this->doc_data[4])
 		{
@@ -518,6 +528,7 @@ class doc_Kompredl extends doc_Nulltype
 			$pdf->MultiCell(0,5,$str,0,1,'R',0);
 			$pdf->ln(6);
 		}
+
 
 
 		$pdf->SetFont('','',12);
@@ -777,7 +788,7 @@ class doc_Kompredl extends doc_Nulltype
 	function KomPredlPDF_Cnt($to_str=0)
 	{
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
-		require('fpdf/fpdf_mysql.php');
+		require('fpdf/fpdf_mc.php');
 
 		global $tmpl, $uid, $CONFIG;
 
@@ -785,7 +796,7 @@ class doc_Kompredl extends doc_Nulltype
 
 		if(!$to_str) $tmpl->ajax=1;
 
-		$pdf=new FPDF('P');
+		$pdf=new PDF_MC_Table('P');
 		$pdf->Open();
 		$pdf->SetAutoPageBreak(1,12);
 		$pdf->AddFont('Arial','','arial.php');
@@ -880,50 +891,45 @@ class doc_Kompredl extends doc_Nulltype
 			$pdf->MultiCell(0,7,$str,0,'C',0);
 		}
 
-		$t_width=array(8,135,15,0);
-		$pdf->SetFont('','',12);
-		$str='№';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[0],5,$str,1,0,'C',0);
-		$str='Наименование';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[1],5,$str,1,0,'C',0);
-		$str='Кол-во';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[2],5,$str,1,0,'C',0);
-		$str='Цена';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[3],5,$str,1,0,'C',0);
-		$pdf->Ln();
+		$pdf->SetFont('','',11);
+		$t_width=array(8,105,15,30,30);
+		$t_text=array("№","Наименование","Кол-во","Срок поставки, рабочих дней","Цена за 1 ед.");
+		$t_aligns=array('C','C','C','C','C');
+		$pdf->SetWidths($t_width);
+		$pdf->SetHeight(5);
+		$pdf->SetAligns($t_aligns);
+		$pdf->RowIconv($t_text);
 
 		$pdf->SetFont('','',10);
 
-		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `doc_list_pos`.`comm`, `class_unit`.`rus_name1`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
+		$aligns=array('R','L','C','R','R');
+		$pdf->SetAligns($aligns);
 		while($nxt=mysql_fetch_row($res))
 		{
 			$i++;
 			$cost = sprintf("%01.2f р.", $nxt[4]);
-			$pdf->Cell($t_width[0],5,$i,1,0,'R',0);
-			$str=$nxt[0].' '.$nxt[1];
-			if($nxt[2]) $str.='('.$nxt[2].')';
-			$str = iconv('UTF-8', 'windows-1251', $str);
-			$pdf->Cell($t_width[1],5,$str,1,0,'L',0);
-			$pdf->Cell($t_width[2],5,$nxt[3],1,0,'C',0);
-			$str = iconv('UTF-8', 'windows-1251', $cost);
-			$pdf->Cell($t_width[3],5,$str,1,0,'R',0);
-			$pdf->Ln();
+			$name=$nxt[0].' '.$nxt[1];
+			if($nxt[2]) $name.='('.$nxt[2].')';
+			$a=array($i, $name, $nxt[3].' '.$nxt[7], $nxt[6], $cost);
+			$pdf->RowIconv($a);
 		}
 
 		if($pdf->h<=($pdf->GetY()+40)) $pdf->AddPage();
 
-		$pdf->ln(10);
+		$pdf->SetFont('','',12);
+		$str="Цены указаны с учётом НДС, за 1 ед. товара";
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell(0,8,$str,0,1,'C',0);
+		$pdf->ln(6);
 
 		if($this->doc_data[4])
 		{
