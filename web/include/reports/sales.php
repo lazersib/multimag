@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
+/// Отчёт по движению товара
 class Report_Sales extends BaseGSReport
 {
 	var $sklad=0;	// ID склада
