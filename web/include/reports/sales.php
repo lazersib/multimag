@@ -212,7 +212,8 @@ class Report_Sales extends BaseGSReport
 		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
 		(`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
 		(`doc_list`.`type`='8' AND `ns`.`value`='{$this->sklad}') OR
-		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0");
+		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0
+		ORDER BY `doc_list`.`date`");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$sum_cnt=$start_cnt;
 		$prix_cnt=$prix_sum=0;
@@ -244,7 +245,8 @@ class Report_Sales extends BaseGSReport
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
 		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
-		`doc_list`.`type`='2' AND `doc_list`.`ok`>0");
+		`doc_list`.`type`='2' AND `doc_list`.`ok`>0
+		ORDER BY `doc_list`.`date`");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$realiz_cnt=$sum=0;
 		while($nxt=mysql_fetch_assoc($res))
@@ -278,7 +280,8 @@ class Report_Sales extends BaseGSReport
 		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='8' AND `doc_list`.`ok`>0");
+		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='8' AND `doc_list`.`ok`>0
+		ORDER BY `doc_list`.`date`");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$perem_cnt=$sum=0;
 		while($nxt=mysql_fetch_assoc($res))
@@ -311,7 +314,8 @@ class Report_Sales extends BaseGSReport
 		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND (`doc_list`.`type`='17' AND `doc_list_pos`.`page`!='0') AND `doc_list`.`ok`>0");
+		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND (`doc_list`.`type`='17' AND `doc_list_pos`.`page`!='0') AND `doc_list`.`ok`>0
+		ORDER BY `doc_list`.`date`");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать документы приходов!");
 		$sbor_cnt=$sum=0;
 		while($nxt=mysql_fetch_assoc($res))
@@ -338,7 +342,7 @@ class Report_Sales extends BaseGSReport
 			
 			$r_sum+=$sum;
 			$this->tableRow(array('', 'Всего расход:', '', $r_cnt, '', $r_sum));
-			$end_cnt=$start_cnt+$p_cnt-$r_cnt;
+			$end_cnt=$start_cnt+$prix_cnt-$r_cnt;
 			$this->tableRow(array('', 'На конец периода:', '', $end_cnt, '', ''));
 		}
 		else
@@ -457,7 +461,12 @@ class Report_Sales extends BaseGSReport
 		$this->col_cnt=count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
-		
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 		if($sel_type=='pos')
 		{
 			$pos_id=rcv('pos_id');
@@ -469,7 +478,7 @@ class Report_Sales extends BaseGSReport
 		}
 		else if($sel_type=='all')
 		{
-			$res=mysql_query("SELECT `id`, `vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` FROM `doc_base` ORDER BY `name`");
+			$res=mysql_query("SELECT `id`, `vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` FROM `doc_base` ORDER BY $order");
 			if(mysql_errno())		throw MysqlException("Не удалось получить информацию о товарах");
 
 			while($nxt=mysql_fetch_row($res))
@@ -492,7 +501,7 @@ class Report_Sales extends BaseGSReport
 				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`
 				FROM `doc_base`
 				WHERE `doc_base`.`group`='{$group_line['id']}'
-				ORDER BY `doc_base`.`name`");
+				ORDER BY $order");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 				
 				while($nxt=mysql_fetch_row($res))

@@ -117,8 +117,13 @@ function kompl_sklad($pos, $group, $sklad=1)
 
 function kompl_ViewSklad($pos, $group)
 {
-	global $tmpl;
-	
+	global $tmpl,$CONFIG;
+	switch($CONFIG['doc']['sklad_default_order'])
+	{
+		case 'vc':	$order='`doc_base`.`vc`';	break;
+		case 'cost':	$order='`doc_base`.`cost`';	break;
+		default:	$order='`doc_base`.`name`';
+	}
 	$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 	`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` , (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`
@@ -126,7 +131,7 @@ function kompl_ViewSklad($pos, $group)
 	LEFT JOIN `doc_base_cnt`  ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	WHERE `doc_base`.`group`='$group'
-	ORDER BY `doc_base`.`name`";
+	ORDER BY $order";
 
 	$lim=50;
 	$page=rcv('p');
@@ -171,14 +176,19 @@ function kompl_ViewSklad($pos, $group)
 
 function kompl_ViewSkladS($doc, $group, $s)
 {
-	global $tmpl;
+	global $tmpl,$CONFIG;
 	$sf=0;
 	$tmpl->ajax=1;
 	$tmpl->SetText("<b>Показаны наименования изо всех групп!</b><br>");
 	$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 	<th>№<th>Код<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 	<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-	
+	switch($CONFIG['doc']['sklad_default_order'])
+	{
+		case 'vc':	$order='`doc_base`.`vc`';	break;
+		case 'cost':	$order='`doc_base`.`cost`';	break;
+		default:	$order='`doc_base`.`name`';
+	}
 	$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 	`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`";
@@ -186,7 +196,7 @@ function kompl_ViewSkladS($doc, $group, $s)
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base`.`name` LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
+	WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY $order LIMIT 100";
 	$res=mysql_query($sqla);
 	if($cnt=mysql_num_rows($res))
 	{
@@ -198,7 +208,7 @@ function kompl_ViewSkladS($doc, $group, $s)
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base`.`name` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 30";
+	WHERE (`doc_base`.`name` LIKE '%$s%' OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`name` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s%' ORDER BY $order LIMIT 30";
 	$res=mysql_query($sqla);
 	if($cnt=mysql_num_rows($res))
 	{
@@ -210,7 +220,7 @@ function kompl_ViewSkladS($doc, $group, $s)
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' ORDER BY `doc_base`.`name` LIMIT 30";
+	WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' AND `doc_base`.`vc` NOT LIKE '%$s%' ORDER BY $order LIMIT 30";
 	$res=mysql_query($sqla);
 	echo mysql_error();
 	if($cnt=mysql_num_rows($res))
@@ -250,7 +260,7 @@ function kompl_DrawSkladTable($res,$s,$pos)
 			else if($dcc>(time()-60*60*24*30*12)) $cc="class=f_more";
 		}
 		$end=date("Y-m-d");
-					
+		$nxt[17]=SearchHilight($nxt[17],$s);			
 		$nxt[2]=SearchHilight($nxt[2],$s);
 		$nxt[8]=SearchHilight($nxt[8],$s);	
 		$i=1-$i;

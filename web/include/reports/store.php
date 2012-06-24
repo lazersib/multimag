@@ -73,7 +73,12 @@ class Report_Store extends BaseGSReport
 		$g=@$_POST['g'];
 		$cost=@$_POST['cost'];
 		$tmpl->LoadTemplate('print');
-		
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 		if($sklad)
 		{
 			$res=mysql_query("SELECT `name` FROM `doc_sklady` WHERE `id`='$sklad'");
@@ -148,7 +153,7 @@ class Report_Store extends BaseGSReport
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			$cnt_join
 			WHERE `doc_base`.`group`='{$group_line['id']}'
-			ORDER BY `doc_base`.`name`");
+			ORDER BY $order");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			
 			while($nxt=mysql_fetch_array($res))

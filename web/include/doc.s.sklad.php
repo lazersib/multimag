@@ -153,7 +153,7 @@ class doc_s_Sklad
 			$q=rcv('q');
 			$i=0;
 			$tmpl->ajax=1;
-			$res=mysql_query("SELECT `id`, `name`, `proizv`, `vc` FROM `doc_base` WHERE LOWER(`vc`) LIKE LOWER('%$q%') ORDER BY `name`");
+			$res=mysql_query("SELECT `id`, `name`, `proizv`, `vc` FROM `doc_base` WHERE LOWER(`vc`) LIKE LOWER('%$q%') ORDER BY `vc`");
 			$row=mysql_numrows($res);
 			while($nxt=mysql_fetch_row($res))
 			{
@@ -1675,6 +1675,12 @@ class doc_s_Sklad
 			";
 		}
 
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 
 		$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
@@ -1684,7 +1690,7 @@ class doc_s_Sklad
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		WHERE `doc_base`.`group`='$group'
-		ORDER BY `doc_base`.`name`";
+		ORDER BY $order";
 
 
 		$page=rcv('p');
@@ -1759,6 +1765,12 @@ class doc_s_Sklad
 		$tmpl->AddText("<table width='100%' cellspacing='1' cellpadding='2'><tr>
 		<th>№{$vc_add}<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
 
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 
 		$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
@@ -1767,7 +1779,7 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
+		WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY $order LIMIT 100";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
@@ -1780,7 +1792,7 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE (`doc_base`.`name` LIKE '%$s%'  OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`vc` NOT LIKE '$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
+		WHERE (`doc_base`.`name` LIKE '%$s%'  OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`vc` NOT LIKE '$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY $order LIMIT 100";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
@@ -1793,7 +1805,7 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' ORDER BY `doc_base`.`name` LIMIT 30";
+		WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' ORDER BY $order LIMIT 30";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
@@ -1811,7 +1823,7 @@ class doc_s_Sklad
 
 	function Search()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$opt=rcv("opt");
 		$name=rcv('name');
 		$analog=rcv('analog');
@@ -1910,6 +1922,13 @@ class doc_s_Sklad
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE 1 ";
 
+			switch($CONFIG['doc']['sklad_default_order'])
+			{
+				case 'vc':	$order='`doc_base`.`vc`';	break;
+				case 'cost':	$order='`doc_base`.`cost`';	break;
+				default:	$order='`doc_base`.`name`';
+			}
+			
 			if($name)
 			{
 				if(!$analog && !$desc) 	$sql.="AND `doc_base`.`name` LIKE '%$name%'";
@@ -1938,7 +1957,7 @@ class doc_s_Sklad
 			if($cost_max)		$sql.="AND `doc_base`.`cost` <= '$cost_max'";
 			if($type!='null')	$sql.="AND `doc_base_dop`.`type` = '$type'";
 
-			$sql.="ORDER BY `doc_base`.`name`";
+			$sql.="ORDER BY $order";
 
 			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 			//$nheader_add=$_SESSION['sklad_cost']?'<th>Выб. цена':'';
@@ -2051,12 +2070,14 @@ function DrawSkladTable($res,$s)
 
 	function PosMenu($pos, $param, $pos_name='')
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$sel=array('v'=>'','d'=>'','a'=>'','s'=>'','i'=>'','c'=>'','k'=>'','l'=>'','h'=>'',);
 		if($param=='')	$param='v';
 		$sel[$param]="class='selected'";
-
-		$res=mysql_query("SELECT `doc_base`.`name` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
+		
+		if($CONFIG['poseditor']['vc'])
+			$res=mysql_query("SELECT CONCAT(`doc_base`.`vc`, ' - ', `doc_base`.`name`) FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
+		else	$res=mysql_query("SELECT `doc_base`.`name` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить наименование позиции!");
 		$pos_info=mysql_fetch_row($res);
 		if($pos_info)

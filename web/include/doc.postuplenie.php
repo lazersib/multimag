@@ -184,7 +184,7 @@ class doc_Postuplenie extends doc_Nulltype
 
 
 	}
-
+/// Печатные формы
 	function PrintForm($doc, $opt='')
 	{
 		global $tmpl;
@@ -192,13 +192,148 @@ class doc_Postuplenie extends doc_Nulltype
 		{
 			$tmpl->ajax=1;
 			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak'\">Накладная</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=pdf'\">Накладная PDF</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nac'\">Наценки</div>
 			");
 		}
 		else if($opt=='nac')	$this->PrintNacenki($this->doc);
+		else if($opt=='pdf')	$this->PrintNaklPDF();
 		else $this->PrintNakl($this->doc);
 	}
+	
+/// Обычная накладная в PDF формате
+/// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
+	function PrintNaklPDF($to_str=false)
+	{
+		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
+		require('fpdf/fpdf_mc.php');
+		global $tmpl, $CONFIG, $uid;
 
+		if(!$to_str) $tmpl->ajax=1;
+
+		$pdf=new PDF_MC_Table('P');
+		$pdf->Open();
+		$pdf->SetAutoPageBreak(0,10);
+		$pdf->AddFont('Arial','','arial.php');
+		$pdf->tMargin=10;
+		$pdf->AddPage();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(255);
+
+		$dt=date("d.m.Y",$this->doc_data[5]);
+
+		$pdf->SetFont('','',16);
+		$str="Накладная N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt";
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell(0,8,$str,0,1,'C',0);
+		$pdf->SetFont('','',10);
+		$str="Поставщик: {$this->doc_data[3]}";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$str="Покупатель: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$pdf->Ln();
+
+		$pdf->SetLineWidth(0.5);
+		$t_width=array(8);
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_width[]=20;
+			$t_width[]=91;
+		}
+		else	$t_width[]=111;
+		$t_width=array_merge($t_width, array(12,15,23,23));
+
+		$t_text=array('№');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_text[]='Код';
+			$t_text[]='Наименование';
+		}
+		else	$t_text[]='Наименование';
+		$t_text=array_merge($t_text, array('Место', 'Кол-во', 'Стоимость', 'Сумма'));
+
+		foreach($t_width as $id=>$w)
+		{
+			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
+			$pdf->Cell($w,6,$str,1,0,'C',0);
+		}
+		$pdf->Ln();
+		$pdf->SetWidths($t_width);
+		$pdf->SetHeight(3.8);
+
+		$aligns=array('R');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$aligns[]='L';
+			$aligns[]='L';
+		}
+		else	$aligns[]='L';
+		$aligns=array_merge($aligns, array('C','R','R','R'));
+
+		$pdf->SetAligns($aligns);
+		$pdf->SetLineWidth(0.2);
+		$pdf->SetFont('','',8);
+
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`, `doc_base`.`vc`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
+		$i=0;
+		$ii=1;
+		$sum=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f руб.", $nxt[4]);
+			$cost2 = sprintf("%01.2f руб.", $sm);
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+
+			$row=array($ii);
+			if($CONFIG['poseditor']['vc'])
+			{
+				$row[]=$nxt[8];
+				$row[]="$nxt[0] $nxt[1]";
+			}
+			else	$row[]="$nxt[0] $nxt[1]";
+			$row=array_merge($row, array($nxt[5], "$nxt[3] $nxt[6]", $cost, $cost2));
+
+			$pdf->RowIconv($row);
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+		}
+		$ii--;
+		$cost = sprintf("%01.2f руб.", $sum);
+
+		$pdf->Ln();
+
+		$str="Всего $ii наименований на сумму $cost";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+
+		$str="Товар получил, претензий к качеству товара и внешнему виду не имею.";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$str="Покупатель: ____________________________________";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$str="Поставщик:_____________________________________";
+		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+		$pdf->Cell(0,5,$str,0,1,'L',0);
+
+		if($to_str)
+			return $pdf->Output('blading.pdf','S');
+		else
+			$pdf->Output('blading.pdf','I');
+	}
+
+/// Обычная накладная в HTML формате
 	function PrintNakl($doc)
 	{
 		get_docdata($doc);

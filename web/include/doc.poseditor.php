@@ -81,6 +81,18 @@ function getGroupLevel($level)
 	return $ret;
 }
 
+function getOrder()
+{
+	global $CONFIG;
+	switch($CONFIG['doc']['sklad_default_order'])
+	{
+		case 'vc':	$order='`doc_base`.`vc`';	break;
+		case 'cost':	$order='`doc_base`.`cost`';	break;
+		default:	$order='`doc_base`.`name`';
+	}
+	return $order;
+}
+
 };
 
 /// Редактор списка наименований документа.
@@ -258,7 +270,7 @@ function ShowPosContent($param='')
 {
 	$ret='';
 	$doc=rcv('doc');
-	$res=mysql_query("SELECT `id`, `pos`, `cost`, `cnt` FROM `doc-list_pos` WHERE `doc`='$doc'");
+	$res=mysql_query("SELECT `id`, `pos`, `cost`, `cnt` FROM `doc_list_pos` WHERE `doc`='$doc'");
 	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
 	while($nxt=mysql_fetch_row($res))
 	{
@@ -278,7 +290,7 @@ function GetSkladList($group)
 	LEFT JOIN `doc_base_cnt`  ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	WHERE `doc_base`.`group`='$group'
-	ORDER BY `doc_base`.`name`";
+	ORDER BY ".$this->getOrder();
 	$res=mysql_query($sql);
 	if(mysql_errno())	throw new MysqlException("Не удалось получить списока номенклатуры группы $group, склада {$this->sklad_id}");
 
@@ -296,7 +308,7 @@ function SearchSkladList($s)
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 200";
+	WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s%' ORDER BY ".$this->getOrder()." LIMIT 200";
 	$res=mysql_query($sqla);
 	if(mysql_errno())	throw new MysqlException("Ошибка поиска");
 	if($cnt=mysql_num_rows($res))
@@ -308,7 +320,7 @@ function SearchSkladList($s)
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE (`doc_base`.`name` LIKE '%$s%' OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`name` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s%' ORDER BY `doc_base`.`name` LIMIT 100";
+	WHERE (`doc_base`.`name` LIKE '%$s%' OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`name` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s%' ORDER BY ".$this->getOrder()." LIMIT 100";
 	$res=mysql_query($sqla);
 	if(mysql_errno())	throw new MysqlException("Ошибка поиска");
 	if($cnt=mysql_num_rows($res))
@@ -320,7 +332,7 @@ function SearchSkladList($s)
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' AND `doc_base`.`vc` NOT LIKE '%$s%' ORDER BY `doc_base`.`name` LIMIT 100";
+	WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' AND `doc_base`.`vc` NOT LIKE '%$s%' ORDER BY ".$this->getOrder()." LIMIT 100";
 	$res=mysql_query($sqla);
 	if(mysql_errno())	throw new MysqlException("Ошибка поиска");
 	if($cnt=mysql_num_rows($res))

@@ -340,7 +340,7 @@ else if($mode=='regs')
 
 // 			header("Location: login.php?mode=reg".$l);
 		$conf=md5(time()+rand(0,1000000));
-		$pass=keygen_unique(0,6,9);
+		$pass=keygen_unique(0,8,11);
 		$msg=regMsg($login, $pass, $conf);
 
 		mailto($email,"Регистрация на ".$CONFIG['site']['name'], $msg);

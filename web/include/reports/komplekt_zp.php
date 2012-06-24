@@ -47,7 +47,7 @@ class Report_Komplekt_Zp
 	
 	function MakeHTML()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$tmpl->LoadTemplate('print');
 		$group=rcv('group');
 		settype($group,'int');
@@ -58,49 +58,53 @@ class Report_Komplekt_Zp
 		if(mysql_errno())	throw new MysqlException("Не удалось получить выборку доп.информации");
 		if(mysql_num_rows($res)==0)	throw new Exception("Данные о зарплате за сборку в базе не найдены. Необходим дополнительный параметр 'ZP'");
 		$zp_id=mysql_result($res,0,0);
-		
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base_values`.`value` AS `zp`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`='$zp_id'
 		WHERE 1 $sel
-		ORDER BY `doc_base`.`name`");
+		ORDER BY $order");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить выборку наименований");
-		$tmpl->AddText("<h1>Отчёт по комплектующим с зарплатой для группы $group на $date</h1><table width='100%'>
-		<tr><th rowspan='2'>ID<th rowspan='2'>Код<br>произв.<th rowspan='2'>Наименование<th rowspan='2'>Зар. плата<th colspan='4'>Комплектующие<th rowspan='2'>Стоимость сборки<th rowspan='2'>Стоимость с зарплатой
-		<tr><th>Наименование<th>Цена<th>Количество<th>Стоимость");
+		$tmpl->SetText("<h1>Отчёт по комплектующим с зарплатой для группы $group на $date</h1><table width='100%'>
+		<tr><th rowspan='2'>ID<th rowspan='2'>Код<br>произв.<th rowspan='2'>Наименование<th rowspan='2'>Зар. плата<th colspan='5'>Комплектующие<th rowspan='2'>Стоимость сборки<th rowspan='2'>Стоимость с зарплатой
+		<tr><th>Код<th>Наименование<th>Цена<th>Количество<th>Стоимость");
 		$zp_sum=$kompl_sum=$all_sum=0;
 		while($nxt=mysql_fetch_assoc($res))
 		{
 			settype($nxt['zp'], 'double');
 			$cnt=$sum=0;
 			$kompl_data1=$kompl_data='';
-			$rs=mysql_query("SELECT `doc_base_kompl`.`kompl_id` AS `id`, `doc_base`.`name`, `doc_base`.`cost`, `doc_base_kompl`.`cnt`
+			$rs=mysql_query("SELECT `doc_base_kompl`.`kompl_id` AS `id`, `doc_base`.`name`, `doc_base`.`cost`, `doc_base_kompl`.`cnt`, `doc_base`.`vc`
 			FROM `doc_base_kompl`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
 			WHERE `doc_base_kompl`.`pos_id`='{$nxt['id']}'");
-			echo mysql_error();
 			if(mysql_errno())	throw new MysqlException("Не удалось получить выборку комплектующих");
 			while($nx=mysql_fetch_row($rs))
 			{
 				$cnt++;
-				$cost=sprintf("%0.2f",GetInCost($nx[0]));
+				$cost=sprintf("%0.2f",GetInCost($nx[0],0,1));
 				$cc=$cost*$nx[3];
 				$sum+=$cc;
-				if(!$kompl_data1)	$kompl_data1="<td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
-				else			$kompl_data.="<tr><td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
+				if(!$kompl_data1)	$kompl_data1="<td>$nx[4]<td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
+				else			$kompl_data.="<tr><td>$nx[4]<td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
 			}
 			$span=($cnt>1)?"rowspan='$cnt'":'';
-			if(!$kompl_data1)	$kompl_data1="<td><td><td><td>";
+			if(!$kompl_data1)	$kompl_data1="<td><td><td><td><td>";
 			$zsum=$nxt['zp']+$sum;
-			$tmpl->AddText("<tr><td $span>{$nxt['id']}<td $span>{$nxt['vc']}<td $span>{$nxt['printname']} {$nxt['name']} / {$nxt['proizv']}<td $span>{$nxt['zp']} $kompl_data1<td $span>$sum<td $span>$zsum
+			$tmpl->AddText("<tr style='border-top: 2px solid #000'><td $span>{$nxt['id']}<td $span>{$nxt['vc']}<td $span>{$nxt['printname']} {$nxt['name']} / {$nxt['proizv']}<td $span>{$nxt['zp']} $kompl_data1<td $span>$sum<td $span>$zsum
 			$kompl_data");
 			$zp_sum+=$nxt['zp'];
 			$kompl_sum+=$sum;
 			$all_sum+=$zsum;
 		}
 		$tmpl->AddText("
-		<tr><td colspan='3'><b>Итого:</b><td>$zp_sum<td colspan='4'><td>$kompl_sum<td>$all_sum
+		<tr><td colspan='3'><b>Итого:</b><td>$zp_sum<td colspan='5'><td>$kompl_sum<td>$all_sum
 		</table>");
 	}
 	

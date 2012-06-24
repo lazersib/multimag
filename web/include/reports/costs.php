@@ -52,7 +52,7 @@ class Report_Costs extends BaseGSReport
 	
 	function MakeHTML()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$g=@$_POST['g'];
 		$gs=rcv('gs');
 		$tmpl->LoadTemplate('print');
@@ -66,6 +66,13 @@ class Report_Costs extends BaseGSReport
 			if(!rcv('cost'.$nxt[0]))	continue;
 			$costs[$nxt[0]]=$nxt[1];
 			$cost_cnt++;
+		}
+		
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
 		}
 		
 		$tmpl->AddText("<table width='100%'>
@@ -86,7 +93,7 @@ class Report_Costs extends BaseGSReport
 			
 			$res=mysql_query("SELECT `id`, `vc`, `name`, `proizv`, `cost` FROM `doc_base`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
-			ORDER BY `name`");
+			ORDER BY $order");
 			if(mysql_errno())	throw new MysqlException("Не удалось выбрать список позиций");
 			while($nxt=mysql_fetch_row($res))
 			{

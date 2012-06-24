@@ -636,7 +636,7 @@ class doc_Realizaciya extends doc_Nulltype
 			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
 			if(@$prop=mysql_result($rs,0,0))
 			{
-				$prop=sprintf("<p><b>Оплачено</b> %0.2f руб.</p>",$prop);
+				$prop=sprintf("Оплачено: %0.2f руб.",$prop);
 			}
 		}
 		$pdf->Ln();
@@ -644,6 +644,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$str="Всего $ii наименований на сумму $cost";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
+		
 		if($sum!=$skid_sum)
 		{
 			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
@@ -651,6 +652,13 @@ class doc_Realizaciya extends doc_Nulltype
 			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 			$pdf->Cell(0,5,$str,0,1,'L',0);
 		}
+		
+		if($prop)
+		{
+			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($prop));
+			$pdf->Cell(0,5,$str,0,1,'L',0);
+		}
+		
 		$str="Товар получил, претензий к качеству товара и внешнему виду не имею.";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);

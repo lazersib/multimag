@@ -398,13 +398,18 @@ class Report_PriceTags
 	
 	function Form2()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$cost_id=rcv('cost');
 		$gs=rcv('gs');
 		$g=@$_POST['g'];
 		$tag_id=rcv('tag_id');
 		settype($tag_id,'int');
-		
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 		$tmpl->AddText("<h1>".$this->getName()."</h1>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='pricetags'>
@@ -441,7 +446,7 @@ class Report_PriceTags
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
-			ORDER BY `doc_base`.`name`");
+			ORDER BY $order");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			
 			while($nxt=mysql_fetch_row($res))

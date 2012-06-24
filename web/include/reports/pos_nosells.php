@@ -76,6 +76,13 @@ class Report_Pos_NoSells extends BaseGSReport
 			$widths[]=65;
 		}
 		else	$widths[]=75;
+		
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 		$widths[]=10;
 		$headers=array_merge($headers, array('Наименование', 'Ликв.'));
 		$this->tableBegin($widths);
@@ -97,7 +104,7 @@ class Report_Pos_NoSells extends BaseGSReport
 			SELECT `doc_list_pos`.`tovar` FROM `doc_list_pos`
 			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
 			) AND `doc_base`.`group`='{$group_line['id']}'
-			ORDER BY `doc_base`.`name`");
+			ORDER BY $order");
 			
 			while($nxt=mysql_fetch_row($res))
 			{

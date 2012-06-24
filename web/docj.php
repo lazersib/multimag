@@ -519,7 +519,7 @@ if($mode=="")
 	}
 	else
 	{
-		$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name`, `users`.`name`, `doc_types`.`name`, `doc_list`.`p_doc`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`, `doc_list`.`err_flag`
+		$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name`, `users`.`name`, `doc_types`.`name`, `doc_list`.`p_doc`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`, `doc_list`.`err_flag`, `doc_list_pos`.`page`
 		FROM `doc_list`
 		LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
@@ -536,6 +536,7 @@ if($mode=="")
 
 	$i=0;
 	$pr=$ras=0;
+	$tpr=$tras=0;
 
 	$tmpl->AddText("<h1 id='page-title'>Список документов</h1><div id='page-info'>$info</div>");
 
@@ -657,6 +658,15 @@ if($mode=="")
 			$sm=$nxt[13]*$nxt[14];
 			$sm=sprintf("%0.2f",$sm);
 			$dp="<td>$nxt[13]<td>$nxt[14]<td>$sm";
+			switch($nxt['type'])
+			{
+				case 1:	$tpr+=$nxt[13];	break;
+				case 2:	$tras+=$nxt[13];break;
+				case 17:{
+						if($nxt['page']==0)	$tpr+=$nxt[13];	
+						else			$tras+=$nxt[13];
+					} break;
+			}
 		}
 
 		if($nxt[8]) $motions="<a href='' title='На удаление' onclick=\"EditThis('/docj.php?mode=undel&_id=$nxt[0]','mo$nxt[0]'); return false;\"><img src='/img/i_alert.png' alt='На удаление'></a>";
@@ -682,6 +692,7 @@ if($mode=="")
 	}
 	$tmpl->AddText("</table>");
 	$razn=$pr-$ras;
+	$trazn=$tpr-$tras;
 	$pr=sprintf("%0.2f руб.",$pr);
 	$ras=sprintf("%0.2f руб.",$ras);
 	if($razn<0)
@@ -689,8 +700,9 @@ if($mode=="")
 	else
 		$razn=sprintf("%0.2f руб.",$razn);
 
-	$tmpl->AddText("Итого: приход: $pr, расход: $ras. Баланс: $razn<br>
-	<b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
+	$tmpl->AddText("Итого: приход: $pr, расход: $ras. Баланс: $razn.");
+	if($sel)	$tmpl->AddText(" приход товара: $tpr, расход товара: $tras. Разница: $trazn. Перемещения не учитываются.");
+	$tmpl->AddText("<br><b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
 	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
 	");
 

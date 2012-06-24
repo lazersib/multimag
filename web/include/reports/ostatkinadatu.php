@@ -183,6 +183,12 @@ class Report_OstatkiNaDatu
 			$tmpl->AddText("<th>Код");
 			$col_count++;
 		}
+		switch($CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
 		$tmpl->AddText("<th>Наименование<th>Количество<th>Базовая цена<th>Сумма по базовой");
 		$col_count+=4;
 		$sum=$zeroflag=$bsum=$summass=0;
@@ -199,7 +205,7 @@ class Report_OstatkiNaDatu
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
-			ORDER BY `doc_base`.`name`");
+			ORDER BY $order");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			
 			while($nxt=mysql_fetch_row($res))
@@ -219,7 +225,9 @@ class Report_OstatkiNaDatu
 				$tmpl->AddText("<td>$nxt[1]<td>$count<td>$cost_p р.<td>$bsum_p р.");
 			}
 		}
-		$tmpl->AddText("<tr><td colspan='4'><b>Итого:</b><td>$bsum р.</table>");
+		$cs=$col_count-1;
+		$bsum=sprintf("%0.2f",$bsum);
+		$tmpl->AddText("<tr><td colspan='$cs'><b>Итого:</b><td>$bsum р.</table>");
 		if(!$zeroflag)	$tmpl->AddText("<h3>Общая масса склада: $summass кг.</h3>");
 		else		$tmpl->AddText("<h3>Общая масса склада: невозможно определить из-за отрицательных остатков</h3>");
 	}
