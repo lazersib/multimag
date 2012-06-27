@@ -259,7 +259,7 @@ function PosEditorInit(base_url, editable)
 			});
 		})
 	}
-	
+
 	// Окно ввода коментария
 	poslist.showCommEditor=function(poslist_line)
 	{
@@ -424,7 +424,7 @@ function PosEditorInit(base_url, editable)
 	var order_vc=document.getElementById('pl_order_vc')
 	if(order_vc)
 	{
-		
+
 		order_vc.onclick=function(event)
 		{
 			$.ajax({
@@ -783,7 +783,7 @@ function SkladViewInit(doc)
 			row.className='pointer'
 			//row.onclick=function() {AddData(data)}
 			if(poslist.editable)	row.onclick=skladlist.clickRow
-			row.oncontextmenu=function(){ ShowPosContextMenu(event ,data.pos_id); return false }
+			row.oncontextmenu=function(){ ShowPosContextMenu(event ,data.id,''); return false }
 			linehtml+="<td>"+data.id+"</td>"
 			if(skladview.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
 			linehtml+="<td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td>"

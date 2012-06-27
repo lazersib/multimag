@@ -21,14 +21,14 @@
 /// Для ускорения работы используется ajax технология
 class PosEditor
 {
-	
+
 	var $editable;		///< Разрешено ли редактирование и показ складского блока
-	var $cost_id;		///< id выбранной цены. 0 - базовая	
-	var $sklad_id;		///< id склада	
-	var $show_vc;		///< Показывать код производителя	
-	var $show_tdb;		///< Показывать тип/размеры/массу	
+	var $cost_id;		///< id выбранной цены. 0 - базовая
+	var $sklad_id;		///< id склада
+	var $show_vc;		///< Показывать код производителя
+	var $show_tdb;		///< Показывать тип/размеры/массу
 	var $show_rto;		///< Показывать резерв/в пути/предложения
-	
+
 function __construct()
 {
 	global $CONFIG;
@@ -84,7 +84,7 @@ function getGroupLevel($level)
 function getOrder()
 {
 	global $CONFIG;
-	switch($CONFIG['doc']['sklad_default_order'])
+	switch(@$CONFIG['doc']['sklad_default_order'])
 	{
 		case 'vc':	$order='`doc_base`.`vc`';	break;
 		case 'cost':	$order='`doc_base`.`cost`';	break;
@@ -107,7 +107,7 @@ class DocPosEditor extends PosEditor
 function __construct($doc)
 {
 	global $CONFIG;
-	parent::__construct();	
+	parent::__construct();
 	$this->doc=$doc->getDocNum();
 	$this->show_sn=0;
 	$this->doc_obj=$doc;
@@ -154,7 +154,7 @@ function Show($param='')
 	<td id='pos_mesto'></td>";
 	if($this->show_sn)	$ret.="<td></td>";
 	if($this->show_gtd)	$ret.="<td></td>";
-	
+
 	$ret.="
 	</tr>
 	</tfoot>
@@ -163,12 +163,12 @@ function Show($param='')
  	</tbody>
 	</table>
 	<p align='right' id='sum'></p>";
-	
+
 	$ret.="
 	<table id='sklad_view'>
 	<tr><td id='groups_list' width='200' valign='top' class='lin0'>";
 	$ret.=$this->getGroupsTree();
-	$ret.="</td><td valign='top' class='lin1'>	
+	$ret.="</td><td valign='top' class='lin1'>
 	<table width='100%' cellspacing='1' cellpadding='2'>
 	<tr><thead>
 	<th>№";
@@ -195,10 +195,10 @@ function Show($param='')
 	skladview.show_column['vc']='{$this->show_vc}'
 	skladview.show_column['tdb']='{$this->show_tdb}'
 	skladview.show_column['rto']='{$this->show_rto}'
-	
+
 	skladlist=document.getElementById('sklad_list').needDialog={$CONFIG['poseditor']['need_dialog']};
-	</script>";	
-	
+	</script>";
+
 	return $ret;
 }
 
@@ -219,10 +219,10 @@ function GetAllContent()
 		else			$scost=sprintf("%0.2f",$nxt['bcost']);
 		$nxt['cost']=		sprintf("%0.2f",$nxt['cost']);
 		if($ret)	$ret.=', ';
-		
+
 		$ret.="{
 		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '{$nxt['mesto']}', gtd: '{$nxt['gtd']}', comm: '{$nxt['comm']}'";
-		
+
 		if($this->show_sn)
 		{
 			$doc_data=$this->doc_obj->getDocData();
@@ -304,7 +304,7 @@ function SearchSkladList($s)
 	$sql="SELECT `doc_base`.`id`,`doc_base`.`vc`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 	`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`";
-		
+
 	$sqla=$sql."FROM `doc_base`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -341,7 +341,7 @@ function SearchSkladList($s)
 		$ret.="{id: 'header', name: 'Поиск по аналогу($s) - $cnt наименований найдено'}";
 		$ret=$this->FormatResult($res,$ret);
 	}
-	
+
 	return $ret;
 }
 
@@ -365,7 +365,7 @@ protected function FormatResult($res, $ret='')
 			$rcost=sprintf("%0.2f",$nxt['koncost']);
 			if($ret!='')	$ret.=', ';
 			$ret.="{ id: '{$nxt['id']}', name: '{$nxt['name']}', vc: '{$nxt['vc']}', vendor: '{$nxt['proizv']}', liquidity: '{$nxt['likvid']}', cost: '$cost', cost_class: '$cc', rcost: '$rcost', analog: '{$nxt['analog']}', type: '{$nxt['type']}', d_int: '{$nxt['d_int']}', d_ext: '{$nxt['d_ext']}', size: '{$nxt['size']}', mass: '{$nxt['mass']}', place: '{$nxt['mesto']}', cnt: '{$nxt['cnt']}', allcnt: '{$nxt['allcnt']}', reserve: '$reserve', offer: '$offer', transit: '$transit' }";
-		}	
+		}
 	}
 	return $ret;
 }
@@ -377,7 +377,7 @@ function AddPos($pos)
 	$cost=rcv('cost');
 	$add=0;
 	$ret='';
-	
+
 	if(!$pos)	throw new Exception("ID позиции не задан!");
 	if($cnt<=0)	throw new Exception("Количество должно быть положительным!");
 	$res=mysql_query("SELECT `id`, `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `tovar`='$pos'");
@@ -399,9 +399,9 @@ function AddPos($pos)
 		if(mysql_errno())	throw MysqlException("Не удалось вставить строку в документ!");
 		doc_log("UPDATE","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1",'doc',$this->doc);
 		doc_log("UPDATE","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1, doc:{$this->doc}",'pos',$nxt[1]);
-	}	
+	}
 	$doc_sum=DocSumUpdate($this->doc);
-	
+
 	if($add)
 	{
 		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
@@ -447,7 +447,7 @@ function UpdateLine($line_id, $type, $value)
 	$nxt=mysql_fetch_row($res);
 	if(!$nxt)		throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
 	if($nxt[3]!=$this->doc)	throw new Exception("Строка отностися к другому документу. Правка невозможна.");
-	
+
 	if($type=='cnt' && $value!=$nxt[1])
 	{
 		if($value<=0) $value=1;
@@ -530,7 +530,7 @@ function reOrder($by='name')
 {
 	if($by!=='name' && $by!=='cost' && $by!=='vc')	$by='name';
 	mysql_query("START TRANSACTION");
-	$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc` 
+	$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	WHERE `doc_list_pos`.`doc`='{$this->doc}'
