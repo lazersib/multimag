@@ -30,6 +30,7 @@ class doc_Zayavka extends doc_Nulltype
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
 		$this->header_fields			='bank sklad separator agent cena';
+		$this->dop_menu_buttons			="<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=fax&amp;doc=$doc'); return false;\" title='Отправить по факсу'><img src='/img/i_fax.png' alt='sendfax'></a>";
 		settype($this->doc,'int');
 	}
 
@@ -280,10 +281,43 @@ class doc_Zayavka extends doc_Nulltype
 
 	function Service()
 	{
+		global $tmpl;
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
-		parent::_Service($opt,$pos);
+		if($opt=='fax')
+		{
+			$faxnum=rcv('faxnum');
+			if($faxnum=='')
+			{
+				$tmpl->ajax=1;
+				$res=mysql_query("SELECT `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+				$faxnum=mysql_result($res,0,0);
+				$tmpl->AddText("<form action='' method='get'>
+				<input type=hidden name='mode' value='srv'>
+				<input type=hidden name='doc' value='{$this->doc}'>
+				<input type=hidden name='opt' value='fax'>
+				Номер факса:<input type='text' name='faxnum' value='$faxnum'><br>
+				Номер должен быть без пробелов, дефисов, и других разделителей!<br>
+				<input type='submit' value='&gt;&gt;'>
+				</form>");
+			}
+			else
+			{
+				$tmpl->ajax=0;
+				doc_menu(0,0);
+				$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
+				$email=@mysql_result($res,0,2);
+				include_once('sendfax.php');
+				$fs=new FaxSender();
+				$fs->setFileBuf($this->PrintPDF(1));
+				$fs->setFaxNumber($faxnum);
+				$fs->setNotifyMail($email);
+				$res=$fs->send();
+				$tmpl->msg("Факс успешно передан на сервер факсов! Вам придёт отчёт о доставке на email.","ok");
+			}
+		}
+		else parent::_Service($opt,$pos);
 	}
 //	================== Функции только этого класса ======================================================
 	function Otgruzka($target_type)

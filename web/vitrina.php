@@ -258,8 +258,33 @@ protected function ViewGroup($group, $page)
 protected function ProductList($group, $page)
 {
 	global $tmpl, $CONFIG;
-
-
+	
+	$order=rcv('order', @$_SESSION['vitrina_order']);
+	if(!$order)	$order=@$CONFIG['site']['vitrina_order'];
+	switch($order)
+	{
+		case 'n':	$sql_order='`doc_base`.`name`';		break;
+		case 'nd':	$sql_order='`doc_base`.`name` DESC';	break;
+		case 'vc':	$sql_order='`doc_base`.`vc`';		break;
+		case 'vcd':	$sql_order='`doc_base`.`vc` DESC';	break;
+		case 'c':	$sql_order='`doc_base`.`cost`';		break;
+		case 'cd':	$sql_order='`doc_base`.`cost` DESC';	break;
+		case 's':	$sql_order='`count`';			break;
+		case 'sd':	$sql_order='`count` DESC';		break;
+		default:	$sql_order='`doc_base`.`name`';
+				$order='n';
+	}
+	$_SESSION['vitrina_order']=$order;
+	
+	$view=rcv('view',@$_SESSION['vitrina_view']);
+	if($view!='i' && $view!='l' && $view!='t')
+	{
+		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$view='i';
+		else if($CONFIG['site']['vitrina_plstyle']=='extable')		$view='t';
+		else								$view='l';
+	}
+	$_SESSION['vitrina_view']=$view;
+	
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
 	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
@@ -269,7 +294,7 @@ protected function ProductList($group, $page)
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0'
-	ORDER BY `doc_base`.`name` ASC";
+	ORDER BY $sql_order";
 	$res=mysql_query($sql);
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 	$lim=$CONFIG['site']['vitrina_limit'];
@@ -277,15 +302,48 @@ protected function ProductList($group, $page)
 	$rows=mysql_num_rows($res);
         if($rows)
         {
+		$this->OrderAndViewBar($group,$page,$order,$view);
+		
 		$this->PageBar($group, $rows, $lim, $page);
-
 		if(($lim<$rows) && $page )	mysql_data_seek($res, $lim*($page-1));
-		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$this->TovList_ImageList($res, $lim);
-		else if($CONFIG['site']['vitrina_plstyle']=='extable')		$this->TovList_ExTable($res, $lim);
-		else								$this->TovList_SimpleTable($res, $lim);
+		if($view=='i')			$this->TovList_ImageList($res, $lim);
+		else if($view=='t')		$this->TovList_ExTable($res, $lim);
+		else				$this->TovList_SimpleTable($res, $lim);
 		$this->PageBar($group, $rows, $lim, $page);
 		$tmpl->AddText("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}
+}
+
+protected function OrderAndViewBar($group,$page,$order,$view)
+{
+	global $tmpl;
+	$tmpl->AddText("<div class='orderviewbar'>");
+	$tmpl->AddText("<div class='orderbar'>Показывать: ");
+	if($view=='i')	$tmpl->AddText("<span class='selected'>Картинками</span> ");
+	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=i')."'>Картинками</a></span> ");
+	if($view=='t')$tmpl->AddText("<span class='selected'>Таблицей</span> ");
+	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=t')."'>Таблицей</a></span> ");
+	if($view=='l')$tmpl->AddText("<span class='selected'>Списком</span> ");
+	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=l')."'>Списком</a></span> ");	
+	$tmpl->AddText("</div>");
+	$tmpl->AddText("<div class='viewbar'>Сортировать по: ");
+	if($order=='n')		$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=nd')."'>Названию</a></span> ");
+	else if($order=='nd')	$tmpl->AddText("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=n')."'>Названию</a></span> ");
+	else			$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'order=n')."'>Названию</a></span> ");
+	
+	if($order=='vc')	$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=vcd')."'>Коду</a></span> ");
+	else if($order=='vcd')	$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=vc')."'>Коду</a></span> ");
+	else			$tmpl->AddText("<span><a class='down' href='".$this->GetGroupLink($group, $page, 'order=vc')."'>Коду</a></span> ");
+	
+	if($order=='c')		$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=cd')."'>Цене</a></span> ");
+	else if($order=='cd')	$tmpl->AddText("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=c')."'>Цене</a></span> ");
+	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'order=c')."'>Цене</a></span> ");	
+	
+	if($order=='s')		$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=sd')."'>Наличию</a></span> ");
+	else if($order=='sd')	$tmpl->AddText("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=s')."'>Наличию</a></span> ");
+	else			$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'order=s')."'>Наличию</a></span> ");
+	$tmpl->AddText("</div><div class='clear'></div>");
+	$tmpl->AddText("</div>");
 }
 /// Карточка товара
 protected function ProductCard($product)
@@ -918,18 +976,18 @@ protected function GetVitPath($group_id)
 	return $this->GetVitPath($nxt[2])." / <a href='".$this->GetGroupLink($nxt[0])."'>$nxt[1]</a>";
 }
 /// Получить ссылку на группу с заданным ID
-protected function GetGroupLink($group, $page=1)
+protected function GetGroupLink($group, $page=1, $alt_param='')
 {
 	global $CONFIG;
-	if($CONFIG['site']['recode_enable'])	return "/vitrina/ig/$page/$group.html";
-	else					return "/vitrina.php?mode=group&amp;g=$group".($page?"&amp;p=$page":'');
+	if($CONFIG['site']['recode_enable'])	return "/vitrina/ig/$page/$group.html".($alt_param?"?$alt_param":'');
+	else					return "/vitrina.php?mode=group&amp;g=$group".($page?"&amp;p=$page":'').($alt_param?"&amp;$alt_param":'');
 }
 /// Получить ссылку на товар с заданным ID
-protected function GetProductLink($product, $name)
+protected function GetProductLink($product, $name, $alt_param='')
 {
 	global $CONFIG;
-	if($CONFIG['site']['recode_enable'])	return "/vitrina/ip/$product.html";
-	else					return "/vitrina.php?mode=product&amp;p=$product";
+	if($CONFIG['site']['recode_enable'])	return "/vitrina/ip/$product.html".($alt_param?"?$alt_param":'');
+	else					return "/vitrina.php?mode=product&amp;p=$product".($alt_param?"&amp;$alt_param":'');
 }
 /// Получить информации о количестве товара. Формат информации - в конфигурационном файле
 protected function GetCountInfo($count, $tranzit)
