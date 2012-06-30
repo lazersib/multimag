@@ -35,6 +35,13 @@ class doc_Realizaciya extends doc_Nulltype
 		$this->header_fields			='sklad cena separator agent';
 		$this->dop_menu_buttons			="<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc=$doc'); return false;\" title='Доверенное лицо'><img src='img/i_users.png' alt='users'></a>";
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'nak','desc'=>'Накладная','method'=>'PrintNaklPDF'),
+			array('name'=>'tg12','desc'=>'Накладная ТОРГ-12','method'=>'PrintTg12PDF'),
+			array('name'=>'nak_kompl','desc'=>'Накладная на комплектацию','method'=>'PrintNaklKomplektPDF'),
+			array('name'=>'sfak','desc'=>'Счёт - фактура','method'=>'SfakPDF'),
+			array('name'=>'sfak2010','desc'=>'Счёт - фактура 2010','method'=>'Sfak2010PDF')			
+		);
 	}
 
 	// Создать документ с товарными остатками на основе другого документа
@@ -251,9 +258,9 @@ class doc_Realizaciya extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop'\">Копия чека</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kop_np'\">Копия чека (без покупателя)</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nac'\">Наценки</div>
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12'\">Форма ТОРГ-12 (УСТАРЕЛО)</div>
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Форма ТОРГ-12 (PDF)</div>
-			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=tg12_email'); return false;\">Форма ТОРГ-12 по e-mail</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12'\">Накладная ТОРГ-12 (УСТАРЕЛО)</div>
+			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=tg12_pdf'\">Накладная ТОРГ-12 (PDF)</div>
+			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=tg12_email'); return false;\">Накладная ТОРГ-12 по e-mail</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf_pdf'\">Счёт - фактура (PDF)</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=sf2010_pdf'\">Счёт - фактура 2010 (PDF)</div>
 			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc=$doc&amp;opt=sf_email'); return false;\">Счёт - фактура по e-mail</div>
@@ -273,7 +280,7 @@ class doc_Realizaciya extends doc_Nulltype
 		else if($opt=='sf')
 			$this->PrintSfak($doc);
 		else if($opt=='sf_pdf')
-			$this->SfakPDF($doc);
+			$this->SfakPDF();
 		else if($opt=='sf2010_pdf')
 			$this->Sfak2010PDF();
 		else if($opt=='sf_email')
@@ -1607,7 +1614,7 @@ function NaklEmail($email='')
 	}
 }
 
-function SfakEmail($doc, $email='')
+function SfakEmail($email='')
 {
 	global $tmpl;
 	if(!$email)
@@ -1632,7 +1639,7 @@ function SfakEmail($doc, $email='')
 	{
 		$comm=rcv('comm');
 		doc_menu();
-		$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->SfakPDF($doc, 1), "schet-fakt.pdf");
+		$this->SendDocEMail($email, $comm, 'Счёт-фактура', $this->SfakPDF(1), "schet-fakt.pdf");
 		$tmpl->msg("Сообщение отправлено!","ok");
 	}
 }
@@ -2395,7 +2402,7 @@ function PrintTg12PDF($to_str=0)
 		$pdf->Output('torg12.pdf','I');
 }
 
-function SfakPDF($doc, $to_str=0)
+function SfakPDF($to_str=0)
 {
 	global $CONFIG;
 	define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');

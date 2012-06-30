@@ -672,7 +672,6 @@ div.contextmenu
 	position: 		absolute;  
 	display: 		block;
 	padding:		4px;
-	min-width:		200px;
 	text-align:		left;
 }
 
@@ -716,6 +715,18 @@ div.contextmenu div.disabled:hover
 div.context_menu a:hover
 {
 	text-decoration:	none;
+}
+
+div.contextlayer
+{
+	background-color:	#f5f5f5;
+	color:			#000;
+	border:			1px #bbb solid;
+	min-width:		200px;
+	position: 		absolute;  
+	display: 		block;
+	padding:		4px;
+	text-align:		left;
 }
 
 table.list tr
@@ -768,6 +779,14 @@ table.list tr:nth-child(odd) td
 	width:			auto;
 	padding:		4px;
 	height:			25px;
+}
+
+#doc_menu.error
+{
+	background-color:	#ffe0ef;
+	background-image:	url('/img/win/important.png');
+	background-position:	center center;
+	background-repeat: 	no-repeat;
 }
 
 #doc_menu_r

@@ -30,8 +30,10 @@ class doc_Zayavka extends doc_Nulltype
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
 		$this->header_fields			='bank sklad separator agent cena';
-		$this->dop_menu_buttons			="<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=fax&amp;doc=$doc'); return false;\" title='Отправить по факсу'><img src='/img/i_fax.png' alt='sendfax'></a>";
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
+		);
 	}
 
 	function DopHead()
@@ -105,7 +107,6 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=komplekt'\">Накладная на комплектацию</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_pdf'\">Счёт</div>
-			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_email'); return false;\">Счёт PDF по e-mail</div>
 			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=schet_ue'); return false;\">Счёт в у.е.</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=csv_export'\">Экспорт в CSV</div>");
 		}
@@ -130,8 +131,6 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else if($opt=='schet_pdf')
 			$this->PrintPDF();
-		else if($opt=='schet_email')
-			$this->SendEmail();
 		else if($opt=='komplekt')
 			$this->PrintKomplekt();
 		else if($opt=='csv_export')
@@ -500,37 +499,6 @@ class doc_Zayavka extends doc_Nulltype
 				$tmpl->AddText("<img src='{$CONFIG['site']['doc_shtamp']}' alt='Место для печати'>");
 			$tmpl->AddText("<p align='right'>Масса товара: <b>$summass</b> кг.<br></p>");
 		}
-	}
-
-	function SendEMail()
-	{
-		global $tmpl;
-		global $CONFIG;
-		$email=rcv('email');
-
-		if($email=='')
-		{
-			$tmpl->ajax=1;
-			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
-			$email=mysql_result($res,0,0);
-			$tmpl->AddText("<form action='' method='post'>
-			<input type=hidden name='mode' value='print'>
-			<input type=hidden name='doc' value='{$this->doc}'>
-			<input type=hidden name='opt' value='schet_email'>
-			email:<input type='text' name='email' value='$email'><br>
-			Комментарий:<br>
-			<textarea name='comm'></textarea><br>
-			<input type='submit' value='&gt;&gt;'>
-			</form>");
-		}
-		else
-		{
-			$comm=rcv('comm');
-			doc_menu();
-			$this->SendDocEMail($email, $comm, 'Счёт', $this->PrintPDF(1), "invoice.pdf");
-			$tmpl->msg("Сообщение отправлено!","ok");
-		}
-
 	}
 
 	function PrintSchetUE($coeff)

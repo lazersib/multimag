@@ -32,6 +32,9 @@ class doc_Pko extends doc_Nulltype
 		$this->ksaas_modify			=1;
 		$this->header_fields			='kassa sum separator agent';
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'pko','desc'=>'Приходный ордер','method'=>'PrintPKOPDF')
+		);
 	}
 
 	// Провести

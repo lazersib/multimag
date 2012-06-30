@@ -113,6 +113,16 @@ else if($mode=='print')
 	$opt=rcv('opt');
 	$document->PrintForm($doc, $opt);
 }
+else if($mode=='fax')
+{
+	$opt=rcv('opt');
+	$document->SendFax($opt);
+}
+else if($mode=='email')
+{
+	$opt=rcv('opt');
+	$document->SendEmail($opt);
+}
 else if($mode=='morphto')
 {
 	$target_type=rcv('tt');

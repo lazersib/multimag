@@ -33,6 +33,9 @@ class doc_Postuplenie extends doc_Nulltype
 		$this->sklad_modify			=1;
 		$this->header_fields			='sklad cena separator agent';
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'blading','desc'=>'Накладная','method'=>'PrintNaklPDF')
+		);
 	}
 
 	function DopHead()

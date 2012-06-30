@@ -24,6 +24,12 @@ $CONFIG['xmpp']['port']		= 5222;
 $CONFIG['xmpp']['login']	= '';
 $CONFIG['xmpp']['pass']		= '';
 
+// настройки отправки факсов
+// $CONFIG['sendfax']['username']	= '';	
+// $CONFIG['sendfax']['password']	= '';
+// $CONFIG['sendfax']['attempts']	= 5;	// кол-во попыток отправки
+// $CONFIG['sendfax']['delay']	= 15;	// задержка между попытками, мин
+
 // Настройки для яндекс-маркет
 $CONFIG['ymarket']['local_delivery_cost']	= 150;
 

@@ -32,6 +32,9 @@ class doc_Specific extends doc_Nulltype
 		$this->sklad_editor_enable		= true;
 		$this->header_fields			= 'agent cena';
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'prn','desc'=>'Спецификация','method'=>'PrintPDF')		
+		);
 	}
 
 	function DopHead()

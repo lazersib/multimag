@@ -32,6 +32,11 @@ class doc_Kompredl extends doc_Nulltype
 		$this->sklad_editor_enable		= true;
 		$this->header_fields			= 'bank sklad separator agent cena';
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'kp','desc'=>'Коммерческое предложение','method'=>'KomPredlPDF'),
+			array('name'=>'kpad','desc'=>'Коммерческое предложение с аналогом и описанием','method'=>'KomPredlAPPDF'),
+			array('name'=>'kpc','desc'=>'Коммерческое предложение с количеством','method'=>'KomPredlPDF_Cnt')
+		);
 	}
 
 	function DopHead()
@@ -94,7 +99,6 @@ class doc_Kompredl extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=komap_pdf'\">Предложение с аналогом и описанием</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_all'\">Коммерческое предложение (рассылка)</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_pdf_cnt'\">Коммерческое предложение (с количеством)</div>
-			<div onclick=\"ShowPopupWin('/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=kom_email')\">Коммерческое предложение (email)</div>
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=csv_export'\">Экспорт в CSV</div>");
 		}
 		else if($opt=='kom_all')
@@ -105,8 +109,6 @@ class doc_Kompredl extends doc_Nulltype
 			$this->KomPredlAPPDF();
 		else if($opt=='kom_pdf_cnt')
 			$this->KomPredlPDF_Cnt();
-		else if($opt=='kom_email')
-			$this->SendEmail();
 		else if($opt=='csv_export')
 			$this->CSVExport();
 		else $tmpl->logger("Запрошена неизвестная опция!");
@@ -198,36 +200,6 @@ class doc_Kompredl extends doc_Nulltype
 		$opt=rcv('opt');
 		$pos=rcv('pos');
 		parent::_Service($opt,$pos);
-	}
-
-	function SendEMail($email='')
-	{
-		global $tmpl;
-		if(!$email)
-			$email=rcv('email');
-
-		if($email=='')
-		{
-			$tmpl->ajax=1;
-			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
-			$email=mysql_result($res,0,0);
-			$tmpl->AddText("<form action=''>
-			<input type='hidden' name='mode' value='print'>
-			<input type='hidden' name='doc' value='{$this->doc}'>
-			<input type='hidden' name='opt' value='kom_email'>
-			email:<input type='text' name='email' value='$email'><br>
-			Коментарий:<br>
-			<textarea name='comm'></textarea><br>
-			<button type='submit'>&gt;&gt;</button>
-			</form>");
-		}
-		else
-		{
-			$comm=rcv('comm');
-			doc_menu();
-			$this->SendDocEMail($email, $comm, 'Коммерческое предложение', $this->KomPredlPDF(1), "buissness_offer.pdf");
-			$tmpl->msg("Сообщение отправлено!","ok");
-		}
 	}
 
 //	================== Функции только этого класса ======================================================

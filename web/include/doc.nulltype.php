@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -62,7 +62,7 @@ class doc_Nulltype
 	public function getDocNum()	{return $this->doc;}
 	public function getDocData()	{return $this->doc_data;}
 	public function getDopData()	{return $this->dop_data;}
-
+	public function getViewName()	{return $this->doc_viewname;}
 	public function SetDocData($name, $value)
 	{
 		if($this->doc)
@@ -276,9 +276,9 @@ class doc_Nulltype
 
 		doc_menu($this->dop_buttons());
 
-		if($this->doc_data[6])
+		if(@$this->doc_data[6])
 			$tmpl->msg("Операция не допускается для проведённого документа!","err");
-		else if($this->doc_data[14])
+		else if(@$this->doc_data[14])
 			$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
 		else
 		{
@@ -752,22 +752,159 @@ class doc_Nulltype
 			doc_log("FORCE CANCEL {$this->doc_name}",'', 'doc', $this->doc);
 			$res=mysql_query("UPDATE `doc_list` SET `ok`='0', `err_flag`='1' WHERE `id`='{$this->doc}'");
 			if(mysql_errno())	throw new MysqlException("Не удалось установить флаги!");
+			mysql_query("UPDATE `variables` SET `corrupted`='1'");
 			$tmpl->msg("Всё, сделано.","err","Снятие отметки проведения");
 		}
 
 	}
-
-	// Печать документа
+	/// Отправка документа по факсу
+	final function SendFax($opt='')
+	{
+		global $tmpl;
+		$tmpl->ajax=1;
+		try
+		{
+			if($opt=='')
+			{
+				$str='';
+				foreach($this->PDFForms as $form)
+				{
+					if($str)	$str.=",";
+					$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
+				}
+				$res=mysql_query("SELECT `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+				$faxnum=@mysql_result($res,0,0);
+				$tmpl->SetText("{response: 'item_list', faxnum: '$faxnum', content: [$str]}");
+			}
+			else
+			{
+				$faxnum=rcv('faxnum');
+				if($faxnum=='')
+				{
+					$tmpl->SetText("{response: 'err', text: 'Номер факса не указан!'}");
+				}
+				else
+				{
+					$tmpl->ajax=1;
+					$method='';
+					foreach($this->PDFForms as $form)
+					{
+						if($form['name']==$opt)	$method=$form['method'];
+					}
+					if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
+					$res=@mysql_query("SELECT `email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+					$email=@mysql_result($res,0,0);
+					include_once('sendfax.php');
+					$fs=new FaxSender();
+					$fs->setFileBuf($this->$method(1));
+					$fs->setFaxNumber($faxnum);
+					$fs->setNotifyMail($email);
+					$res=$fs->send();
+					$tmpl->SetText("{response: 'send'}");
+					doc_log("Send FAX", $faxnum, 'doc', $this->doc);
+					
+				}
+			}
+		}
+		catch(Exception $e)
+		{
+			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
+		}
+		
+	}
+	/// Отправка документа по электронной почте
+	final function SendEMail($opt='')
+	{
+		global $tmpl;
+		$tmpl->ajax=1;
+		try
+		{
+			if($opt=='')
+			{
+				$str='';
+				foreach($this->PDFForms as $form)
+				{
+					if($str)	$str.=",";
+					$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
+				}
+				$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+				$email=@mysql_result($res,0,0);
+				$tmpl->SetText("{response: 'item_list', email: '$email', content: [$str]}");
+			}
+			else
+			{
+				$email=rcv('email');
+				$comment=rcv('comment');
+				if($email=='')
+				{
+					$tmpl->SetText("{response: 'err', text: 'Адрес электронной почты не указан!'}");
+				}
+				else
+				{
+					$tmpl->ajax=1;
+					$method='';
+					foreach($this->PDFForms as $form)
+					{
+						if($form['name']==$opt)	$method=$form['method'];
+					}
+					if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
+					$this->SendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->name.".pdf");
+					$tmpl->SetText("{response: 'send'}");
+					doc_log("Send email", $email, 'doc', $this->doc);
+					
+				}
+			}
+		}
+		catch(Exception $e)
+		{
+			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
+		}
+		
+	}
+	
+// 		function SendEMail($doc, $email='')
+// 	{
+// 		global $tmpl;
+// 		if(!$email)
+// 			$email=rcv('email');
+// 
+// 		if($email=='')
+// 		{
+// 			$tmpl->ajax=1;
+// 			get_docdata($doc);
+// 			global $doc_data;
+// 			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='$doc_data[2]'");
+// 			$email=mysql_result($res,0,0);
+// 			$tmpl->AddText("<form action=''>
+// 			<input type=hidden name=mode value='print'>
+// 			<input type=hidden name=doc value='$doc'>
+// 			<input type=hidden name=opt value='zayavka_email'>
+// 			email:<input type=text name=email value='$email'>
+// 			<input type=submit value='&gt;&gt;'>
+// 			</form>");
+// 		}
+// 		else
+// 		{
+// 			$comm=rcv('comm');
+// 			doc_menu();
+// 			$this->SendDocEMail($email, $comm, 'Заявка на поставку', $this->PrintPDF($doc, 1), "order.pdf", "Здравствуйте!\nПрошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}.\nПодробная информация во вложении.");
+// 			$tmpl->msg("Сообщение отправлено!","ok");
+//     }
+// 
+// 	}
+	
+	/// Печать документа
 	function Printform($doc, $opt='')
 	{
 		global $tmpl;
-		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
+		$tmpl->ajax=1;
+		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",'err');
 	}
-	// Формирование другого документа на основании текущего
+	/// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
 	{
 		global $tmpl;
-		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
+		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",'err');
 	}
 	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function DelExec($doc)
@@ -1358,6 +1495,8 @@ class doc_Nulltype
 
 			$ret.="</span>
 			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=print&amp;doc={$this->doc}')\" title='Печать накладной'><img src='img/i_print.png' alt='Печать'></a>
+			<a href='#' onclick=\"return FaxMenu(event, '{$this->doc}')\" title='Отправить по факсу'><img src='img/i_fax.png' alt='Факс'></a>
+			<a href='#' onclick=\"return MailMenu(event, '{$this->doc}')\" title='Отправить по email'><img src='img/i_mailsend.png' alt='email'></a>
 			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=morphto&amp;doc={$this->doc}')\" title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
 		}
 

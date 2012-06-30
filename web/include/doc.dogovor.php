@@ -32,6 +32,9 @@ class doc_Dogovor extends doc_Nulltype
 		$this->sklad_editor_enable		=false;
 		$this->header_fields			='separator agent cena';
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'dog','desc'=>'Договор','method'=>'DogovorPDF')
+		);
 		if(!$doc)
 		{
 			$this->doc_data[4]=$this->doc_data['comment']="
@@ -266,21 +269,6 @@ $agent_info[2], тел. $agent_info[3]<br>
 
 		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
-
-// 		$pdf=new FPDF('P');
-// 		$pdf->Open();
-// 		$pdf->SetAutoPageBreak(1,12);
-// 		$pdf->AddFont('Arial','','arial.php');
-// 		$pdf->tMargin=10;
-// 		$pdf->AddPage();
-//
-// 		$pdf->SetFont('Arial','',16);
-// 		$str = iconv('UTF-8', 'windows-1251', "Договор N {$this->doc_data[9]}");
-// 		$pdf->Cell(0,6,$str,0,1,'C',0);
-//
-// 		$pdf->SetFont('Arial','',12);
-// 		$str = iconv('UTF-8', 'windows-1251', $this->doc_data[4]);
-// 		$pdf->Write(4,$str,'');
 
 		$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`dir_fio`, `doc_agent`.`dir_fio_r`
 		FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");

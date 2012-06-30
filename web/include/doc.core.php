@@ -365,8 +365,14 @@ function but_provodka($doc,$ok)
 function doc_menu($dop="", $nd=1, $doc=0)
 {
 	global $tmpl, $CONFIG;
-
-	$tmpl->AddText("<div id='doc_menu'>
+	// Индикатор нарушения целостности проводок
+	// Устанавливается при ошибке при проверке целостности и при принудительной отмене
+	// Снимается, если проверка целостности завершилась успешно
+	$res=@mysql_query("SELECT `corrupted` FROM `variables`");
+	if(@mysql_result($res,0,0))	$err="class='error'";
+	else				$err='';
+	
+	$tmpl->AddText("<div id='doc_menu' $err>
 	<div id='doc_menu_container'>
 	<div id='doc_menu_r'>
 	<input type='text' id='quicksearch'>

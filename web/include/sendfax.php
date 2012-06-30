@@ -47,21 +47,27 @@ function setNotifyMail($email)
 	$this->notifymail=$email;
 }
 
+/// Отправить факс
 function send()
 {
 	global $CONFIG;
+	if(!isset($CONFIG['sendfax']))	throw new Exception("Работа с факсами не настроена!");
+	if($this->file_str=='')		throw new Exception("Не указан передаваемый файл!");
+	if($this->faxnumber=='')	throw new Exception("Не указан номер факса получателя!");
+	if($this->notifymail=='')	throw new Exception("Не указан email адрес для уведомлений!");
 	$fn=tempnam ( '/tmp' , 'mmag_fax' );
 	$fn.='.pdf';
 	$fd=fopen($fn,'wb');
+	if(!$fd)			throw new Exception("Не удалось создать временный файл!");
 	fwrite($fd,$this->file_str);
 	fclose($fd);
 	$postdata = array(
-	'username' => $CONFIG['sendfax']['username'], 
-	'password' => MD5($CONFIG['sendfax']['password']), 
+	'username' => @$CONFIG['sendfax']['username'], 
+	'password' => MD5(@$CONFIG['sendfax']['password']), 
 	'Phone' => $this->faxnumber, 
 	'userfile' => "@".$fn,
-	'Attempts' => $CONFIG['sendfax']['attempts'],
-	'Delay' => $CONFIG['sendfax']['delay'],
+	'Attempts' => @$CONFIG['sendfax']['attempts'],
+	'Delay' => @$CONFIG['sendfax']['delay'],
 	'NotifyOnOk' => 1,
 	'NotifyOnError' => 1,
 	'NotifyEMail' => $this->notifymail); 
@@ -80,7 +86,7 @@ function send()
 	$doc = new DOMDocument();
 	$doc->loadXML($output);
 	$errnode=$doc->getElementsByTagName('response')->item(0)->getElementsByTagName('error')->item(0);
-	if($errnode->getAttribute('code')!=0)	throw new Exception("ошибка от сервиса передачи: ".$errnode->getAttribute('message'));
+	if($errnode->getAttribute('code')!=0)	throw new Exception("Ошибка от сервиса передачи: ".$errnode->getAttribute('message'));
 
 
 	

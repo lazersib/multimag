@@ -32,6 +32,9 @@ class doc_v_puti extends doc_Nulltype
 		$this->sklad_editor_enable		=true;
 		$this->header_fields			='sklad cena separator agent';
 		settype($this->doc,'int');
+		$this->PDFForms=array(
+			array('name'=>'prn','desc'=>'Заявка','method'=>'PrintPDF')		
+		);
 	}
 
 	function DopHead()
@@ -144,7 +147,7 @@ class doc_v_puti extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=zayavka_pdf'\">Заявка PDF</div>");
 		}
 		else if($opt=='zayavka_pdf')
-			$this->PrintPDF($doc);
+			$this->PrintPDF();
 	}
 	// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
@@ -283,11 +286,11 @@ class doc_v_puti extends doc_Nulltype
 		return $r_id;
 	}
 
-	function PrintPDF($doc, $to_str=0)
+	function PrintPDF($to_str=0)
 	{
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
 		require('fpdf/fpdf_mysql.php');
-		global $tmpl, $CONGIG, $uid;
+		global $tmpl, $CONFIG, $uid;
 
 		$res=mysql_query("SELECT `adres`, `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
 		$agent_data=mysql_fetch_row($res);

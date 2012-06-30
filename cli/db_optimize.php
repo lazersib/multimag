@@ -47,7 +47,7 @@ mysql_query("REPAIR TABLE `doc_agent`");
 mysql_query("REPAIR TABLE `doc_base`");
 mysql_query("REPAIR TABLE `doc_list`");
 mysql_query("REPAIR TABLE `doc_list_pos`");
-
+mysql_query("UPDATE `variables` SET `corrupted`='1'");
 $res=mysql_query("SELECT `version` FROM `db_version`");
 if(mysql_errno())
 {
@@ -138,12 +138,11 @@ $res=mysql_query("SELECT `id`, `type`, `altnum`, `date` FROM `doc_list` WHERE `o
 while($nxt=mysql_fetch_row($res))
 {
 	$dt=date("d.m.Y H:i:s",$nxt[3]);
-	$typename=$doc_types[$nxt[1]]."N $nxt[2] от $dt";;
 	$document=AutoDocumentType($nxt[1],$nxt[0]);
 	if($err=$document->Apply($nxt[0],1))
 	{
 		mysql_query("UPDATE `doc_list` SET `err_flag`='1' WHERE `id`='$nxt[0]'");
-		$text="$nxt[0]($typename): $err ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ НЕВЕРНЫ!\n";
+		$text="$nxt[0](".$document->getViewName()." N $nxt[2] от $dt): $err ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ НЕВЕРНЫ!\n";
 		echo $text;
 		$mail_text.=$text;
 		$i++;
@@ -198,13 +197,18 @@ if($mail_text)
 
 		mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
 		echo "Почта отправлена!";
+		mysql_query("UPDATE `variables` SET `corrupted`='1'");
 	}
 	catch(Exception $e) 
 	{
 		echo"Ошибка отправки почты!".$e->getMessage();
 	}
 }
-else echo"Ошибок не найдено, не о чем оповещать!\n";
+else
+{
+	echo"Ошибок не найдено, не о чем оповещать!\n";
+	mysql_query("UPDATE `variables` SET `corrupted`='0'");
+}
 
 
 ?>

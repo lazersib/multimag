@@ -71,13 +71,13 @@ class createPDF {
         );
         foreach ($str as $_from => $_to) $this->html = str_replace($_from,$_to,$this->html);
 
-        $pdf=new PDF('P','mm','A4',$this->title,$this->articleurl,false);
-        $pdf->SetCreator("MultiMag 2.0, TND Team (© BlackLight)");
-        $pdf->SetDisplayMode('real');
-        $pdf->SetTitle($this->_convert($this->title));
-        $pdf->SetAuthor($this->author);
-        $pdf->AddPage();
-        $pdf->SetY(5);
+        $this->pdf=new PDF('P','mm','A4',$this->title,$this->articleurl,false);
+        $this->pdf->SetCreator("MultiMag 0.1, TND Team (© BlackLight)");
+        $this->pdf->SetDisplayMode('real');
+        $this->pdf->SetTitle($this->_convert($this->title));
+        $this->pdf->SetAuthor($this->author);
+        $this->pdf->AddPage();
+        $this->pdf->SetY(5);
 
         // face
 //         $pdf->PutMainTitle($this->_convert($this->title));
@@ -90,13 +90,12 @@ class createPDF {
 //         $pdf->Ln(10);
 
         // html
-        $pdf->WriteHTML($this->_convert(stripslashes($this->html)),$this->bi);
-
-        // output
-        $pdf->Output();
-
-        // stop processing
-        exit;
+        $this->pdf->WriteHTML($this->_convert(stripslashes($this->html)),$this->bi);
+    }
+    
+    function Output($file,$param)
+    {
+	return $this->pdf->Output($file,$param);
     }
 } 
 

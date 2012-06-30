@@ -410,6 +410,196 @@ function UpdateContractInfo(doc, agent_id)
 	});
 }
 
+function FaxMenu(event,doc)
+{
+	var menu=CreateContextMenu(event)
+	var fax_number=''
+	function pickItem(event)
+	{
+		var obj=event.target
+		menu.innerHTML=''
+		menu.className='contextlayer'
+		menu.onmouseover=menu.onmouseout=function() {  }
+		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
+		var elem=document.createElement('div')
+		elem.innerHTML='Номер факса:'
+		menu.appendChild(elem)
+		var ifax=document.createElement('input')
+		ifax.type='tel'
+		ifax.value=fax_number
+		ifax.style.width='200px'
+		menu.appendChild(ifax)
+		elem=document.createElement('br')
+		menu.appendChild(elem)
+		var bcancel=document.createElement('button')
+		bcancel.innerText='Отменить'
+		bcancel.onclick=function() {menu.parentNode.removeChild(menu)}
+		menu.appendChild(bcancel)
+		var bsend=document.createElement('button')
+		bsend.innerText='Отправить'
+		menu.appendChild(bsend)
+		bsend.onclick=function()
+		{
+			$.ajax({
+			type:   'GET',
+			url:    '/doc.php',
+			data:   'mode=fax&doc='+doc+'&opt='+event.target.fname+'&faxnum='+ifax.value,
+			success: function(msg) { rcvDataSuccess(msg) },
+			error:   function() { jAlert('Ошибка соединения!','Отправка факса',null,'icon_err'); menu.parentNode.removeChild(menu);},
+			});
+			menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка факса...'
+		}
+	}
+	
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			var json=eval('('+msg+')');
+			if(json.response=='err')
+			{
+				jAlert(json.text,"Ошибка", {}, 'icon_err');
+				menu.parentNode.removeChild(menu);
+			}
+			else if(json.response=='item_list')
+			{
+				menu.innerHTML=''
+				fax_number=json.faxnum
+				for(var i=0;i<json.content.length;i++)
+				{
+					var elem=document.createElement('div')
+					elem.innerHTML=json.content[i].desc
+					elem.fname=json.content[i].name
+					elem.onclick=pickItem
+					menu.appendChild(elem)
+				}
+			}
+			else if(json.response=='send')
+			{
+				jAlert('Факс успешно отправлен на сервер! Вы получите уведомление по email c результатом отправки получателю!',"Выполнено", {});
+				menu.parentNode.removeChild(menu)
+			}
+			else
+			{
+				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Отправка факса", {},  'icon_err');
+				menu.parentNode.removeChild(menu)
+			}
+		}
+		catch(e)
+		{
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Отправка факса", {},  'icon_err');
+			menu.parentNode.removeChild(menu)
+		}
+	}
+	
+	$.ajax({
+		type:   'GET',
+	       url:    '/doc.php',
+	       data:   'mode=fax&doc='+doc,
+	       success: function(msg) { rcvDataSuccess(msg) },
+	       error:   function() { jAlert('Ошибка соединения!','Отправка факса',{},'icon_err'); menu.parentNode.removeChild(menu);},
+	});
+	return false
+}
+
+function MailMenu(event,doc)
+{
+	var menu=CreateContextMenu(event)
+	var email=''
+	function pickItem(event)
+	{
+		var obj=event.target
+		menu.innerHTML=''
+		menu.className='contextlayer'
+		menu.onmouseover=menu.onmouseout=function() {  }
+		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
+			var elem=document.createElement('div')
+			elem.innerHTML='Адрес электронной почты:'
+			menu.appendChild(elem)
+			var imail=document.createElement('input')
+			imail.type='tel'
+			imail.value=email
+			imail.style.width='200px'
+			menu.appendChild(imail)
+			elem=document.createElement('div')
+			elem.innerHTML='Комментарий:'
+			menu.appendChild(elem)
+			var mailtext=document.createElement('textarea')
+			menu.appendChild(mailtext)
+			menu.appendChild(document.createElement('br'))
+			var bcancel=document.createElement('button')
+			bcancel.innerText='Отменить'
+			bcancel.onclick=function() {menu.parentNode.removeChild(menu)}
+			menu.appendChild(bcancel)
+			var bsend=document.createElement('button')
+			bsend.innerText='Отправить'
+			menu.appendChild(bsend)
+			bsend.onclick=function()
+			{
+				$.ajax({
+					type:   'GET',
+				       url:    '/doc.php',
+				       data:   'mode=email&doc='+doc+'&opt='+event.target.fname+'&email='+imail.value+'&comment='+mailtext.value,
+				       success: function(msg) { rcvDataSuccess(msg) },
+				       error:   function() { jAlert('Ошибка соединения!','Отправка email сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
+				});
+				menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка email сообщения...'
+			}
+	}
+	
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			var json=eval('('+msg+')');
+			if(json.response=='err')
+			{
+				jAlert(json.text,"Ошибка", {}, 'icon_err');
+				menu.parentNode.removeChild(menu);
+			}
+			else if(json.response=='item_list')
+			{
+				menu.innerHTML=''
+				email=json.email
+				for(var i=0;i<json.content.length;i++)
+				{
+					var elem=document.createElement('div')
+					elem.innerHTML=json.content[i].desc
+					elem.fname=json.content[i].name
+					elem.onclick=pickItem
+					menu.appendChild(elem)
+				}
+			}
+			else if(json.response=='send')
+			{
+				jAlert('Сообщение успешно отправлено!',"Выполнено", {});
+				menu.parentNode.removeChild(menu)
+			}
+			else
+			{
+				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Отправка email сообщения", {},  'icon_err');
+				menu.parentNode.removeChild(menu)
+			}
+		}
+		catch(e)
+		{
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Отправка email сообщения", {},  'icon_err');
+			menu.parentNode.removeChild(menu)
+		}
+	}
+	
+	$.ajax({
+		type:   'GET',
+	       url:    '/doc.php',
+	       data:   'mode=email&doc='+doc,
+	       success: function(msg) { rcvDataSuccess(msg) },
+	       error:   function() { jAlert('Ошибка соединения!','Отправка email сообщения',{},'icon_err'); menu.parentNode.removeChild(menu);},
+	});
+	return false
+}
+
 // Сообщения
 
 // function MsgGet()
