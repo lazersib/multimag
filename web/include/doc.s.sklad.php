@@ -675,7 +675,7 @@ class doc_s_Sklad
 				$tmpl->ajax=1;
 				$tmpl->SetText('');
 				$vpos=rcv('vpos');
-
+				if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 				$res=mysql_query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
 				if(mysql_num_rows($res)==0)

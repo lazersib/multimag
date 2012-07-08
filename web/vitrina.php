@@ -628,14 +628,14 @@ protected function GroupList_ImageStyle($group)
 			else	$img_url='/img/no_photo.png';
 			$tmpl->AddText("<img src='$img_url' alt='Изображение не доступно'>");
 		}
-		$tmpl->AddText("</a><div><a href='$link'><b>$nxt[1]</b><br>");
+		$tmpl->AddText("</a><div><a href='$link'><b>$nxt[1]</b></a><br>");
 		if($nxt[2])
 		{
 			$desc=split('\.',$nxt[2],2);
 			if($desc[0])	$tmpl->AddText($desc[0]);
 			else		$tmpl->AddText($nxt[2]);
 		}
-		$tmpl->AddText("</a></div></div>");
+		$tmpl->AddText("</div></div>");
 	}
 	$tmpl->AddText("<hr class='clear'>");
 }

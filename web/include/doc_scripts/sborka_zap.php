@@ -48,6 +48,7 @@ function Run($mode)
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><br>
+		<label><input type='checkbox' name='not_a_p' value='1'>Не проводить перемещение</label><br>
 		
 		<script type=\"text/javascript\">
 		$(document).ready(function(){

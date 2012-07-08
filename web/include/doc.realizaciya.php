@@ -750,7 +750,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		$pdf->Ln();
 		$pdf->SetWidths($t_width);
-		$pdf->SetHeight(3.8);
+		$pdf->SetHeight(4.8);
 
 		$aligns=array('R');
 		if($CONFIG['poseditor']['vc'])
@@ -763,7 +763,7 @@ class doc_Realizaciya extends doc_Nulltype
 
 		$pdf->SetAligns($aligns);
 		$pdf->SetLineWidth(0.2);
-		$pdf->SetFont('','',8);
+		$pdf->SetFont('','',16);
 
 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` AS `base_cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`
 		FROM `doc_list_pos`
