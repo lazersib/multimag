@@ -85,9 +85,9 @@ class Report_Store extends BaseGSReport
 			if(mysql_errno())	throw new MysqlException("Не удалось получить наименование склада");
 			if(mysql_num_rows($res)<1)	throw new Exception("Склад не найден!");
 			list($sklad_name)=mysql_fetch_row($res);
-			$tmpl->SetText("<h1>Остатки товара на складе N{$sklad} ($sklad_name)</h1>");
+			$tmpl->SetText("<h1>Остатки товара на складе N{$sklad} ($sklad_name) на текущий момент (".date("Y-m-d H:i:s").")</h1>");
 		}
-		else		$tmpl->SetText("<h1>Остатки товара суммарно по всем складам</h1>");
+		else		$tmpl->SetText("<h1>Остатки товара суммарно по всем складам на текущий момент (".date("Y-m-d H:i:s").")</h1>");
 		$tmpl->AddText("<table width=100%><tr><th>N");
 		$col_count=1;
 		if($CONFIG['poseditor']['vc'])

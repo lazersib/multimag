@@ -151,7 +151,7 @@ class ReportEnginePDF
 		$font_size=18-$type*2;
 		$this->pdf->SetFont('Arial','',$font_size);
 		$text = iconv('UTF-8', 'windows-1251', $text);
-		$this->pdf->Cell(0, $this->getCellHeight($font_size), $text, 0, 1, 'C', 0);
+		$this->pdf->MultiCell(0, $this->getCellHeight($font_size), $text, 0, 'C', 0);
 	}
 
 	function tableBegin($widths)

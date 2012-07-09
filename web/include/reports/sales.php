@@ -441,7 +441,12 @@ class Report_Sales extends BaseGSReport
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
 		
-		$this->header($this->getName()." с $print_df по $print_dt");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$this->sklad}'");
+		if(mysql_errno())		throw MysqlException("Не удалось получить информацию о складе");
+		if(!mysql_num_rows($res))	throw new Exception("Склад не найден");
+		list($sklad_id,$sklad_name)=mysql_fetch_row($res);
+		
+		$this->header($this->getName()." с $print_df по $print_dt, склад: $sklad_name($sklad_id)");
 		
 		if(!$this->w_docs)	
 		{
@@ -470,20 +475,20 @@ class Report_Sales extends BaseGSReport
 		if($sel_type=='pos')
 		{
 			$pos_id=rcv('pos_id');
-			$res=mysql_query("SELECT `vc`, `name` FROM `doc_base` WHERE `id`='$pos_id'");
+			$res=mysql_query("SELECT `vc`, `name`, `doc_base`.`cost`  FROM `doc_base` WHERE `id`='$pos_id'");
 			if(mysql_errno())		throw MysqlException("Не удалось получить информацию о товаре");
 			if(mysql_num_rows($res)==0)	throw new Exception("Товар не выбран!");
 			$tov_data=mysql_fetch_row($res);
-			$this->outPos($pos_id, $tov_data[0], $tov_data[1], $dt_f, $dt_t);
+			$this->outPos($pos_id, $tov_data[0], $tov_data[1], $dt_f, $dt_t, $tov_data[2]);
 		}
 		else if($sel_type=='all')
 		{
-			$res=mysql_query("SELECT `id`, `vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` FROM `doc_base` ORDER BY $order");
+			$res=mysql_query("SELECT `id`, `vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost` FROM `doc_base` ORDER BY $order");
 			if(mysql_errno())		throw MysqlException("Не удалось получить информацию о товарах");
 
 			while($nxt=mysql_fetch_row($res))
 			{
-				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t);
+				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3]);
 			}
 		}
 		else if($sel_type=='group')

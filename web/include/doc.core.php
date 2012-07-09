@@ -642,7 +642,7 @@ function CheckMinus($pos, $sklad)
 }
 
 // Получить количество товара на складе на заданную дату
-function getStoreCntOnDate($pos, $sklad, $unixtime=0)
+function getStoreCntOnDate($pos, $sklad, $unixtime=0, $noBreakIfMinus=0)
 {
 	$cnt=0;
 	$sql_add=$unixtime?"AND `doc_list`.`date`<='$unixtime'":'';
@@ -678,10 +678,10 @@ function getStoreCntOnDate($pos, $sklad, $unixtime=0)
 			if($nxt[2]==$sklad)
 			{
 				if($nxt[4]==0)	$cnt+=$nxt[0];
-				else		$cnt+=$nxt[0];
+				else		$cnt-=$nxt[0];
 			}
 		}
-		if($cnt<0) break;
+		if($cnt<0 && $noBreakIfMinus==0) break;
 	}
 	mysql_free_result($res);
 	return $cnt;

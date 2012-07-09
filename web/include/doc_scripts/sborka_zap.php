@@ -123,13 +123,14 @@ function Run($mode)
 		$nasklad=rcv('nasklad');
 		$firm=rcv('firm');
 		$tov_id=rcv('tov_id');
+		$not_a_p=rcv('not_a_p');
 		$tim=time();
 		$res=mysql_query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
 				VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id')");
-		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad");
+		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad&not_a_p=$not_a_p");
 	}
 	else if($mode=='reopen')
 	{
@@ -164,11 +165,12 @@ function Run($mode)
 		$sklad=rcv('sklad');
 		$firm=rcv('firm');
 		$nasklad=rcv('nasklad');
+		$not_a_p=rcv('not_a_p');
 		$this->ReCalcPosCost($doc,$tov_id);
 		$zp=$this->CalcZP($doc);
 		$tmpl->AddText("<h1>".$this->getname()."</h1>
 		Необходимо выбрать товары, которые будут скомплектованы. Устанавливать цену не требуется - при проведении документа она будет выставлена автоматически исходя из стоимости затраченных ресурсов. Для того, чтобы узнать цены - обновите страницу. После выполнения сценария выбранные товары будут оприходованы на склад, а соответствующее им количество ресурсов, использованных для сборки, будет списано. Попытка провести через этот сценарий товары, не содержащие ресурсов, вызовет ошибку. Если это указано в свойствах товара, от агента-сборщика будет оприходована выбранная услуга для последующей выдачи заработной платы (на данный момент в размере $zp руб.).<br>
-		<a href='/doc_sc.php?mode=exec&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad'>Выполнить необходимые действия</a>
+		<a href='/doc_sc.php?mode=exec&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad&not_a_p=$not_a_p'>Выполнить необходимые действия</a>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>");
 		
 		$document=new doc_Sborka($doc);		
@@ -188,6 +190,7 @@ function Run($mode)
 		$sklad=rcv('sklad');
 		$firm=rcv('firm');
 		$nasklad=rcv('nasklad');
+		$not_a_p=rcv('not_a_p');
 		$this->ReCalcPosCost($doc,$tov_id);
 		$document=AutoDocument($doc);
 		$document->DocApply();
@@ -243,7 +246,7 @@ function Run($mode)
 				VALUES ('$docnum', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
 				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
 			}
-			$perem_doc->DocApply();
+			if(!$not_a_p)	$perem_doc->DocApply();
 		}
 		
 		$tmpl->ajax=0;

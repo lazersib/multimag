@@ -210,7 +210,7 @@ class Report_OstatkiNaDatu
 			
 			while($nxt=mysql_fetch_row($res))
 			{
-				$count=getStoreCntOnDate($nxt[0], $sklad, $unixtime);
+				$count=getStoreCntOnDate($nxt[0], $sklad, $unixtime, 1);
 				if($count==0) 	continue;
 				if($count<0)	$zeroflag=1;
 				$cost_p=sprintf("%0.2f",$nxt[2]);
