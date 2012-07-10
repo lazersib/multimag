@@ -22,6 +22,7 @@ include_once("include/doc.core.php");
 need_auth();
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
+$tmpl->HideBlock('left');
 
 $uid=@$_SESSION['uid'];
 if(!isAccess('doc_service','view'))	throw new AccessException("Недостаточно привилегий");
@@ -42,6 +43,7 @@ if($mode=='')
 	<li><a href='?mode=vrasx'>Настройки видов расходов</a></li>
 	<li><a href='?mode=store'>Настройки складов</a></li>
 	<li><a href='?mode=params'>Настройки параметров складской номенклатуры</a></li>
+	<li><a href='?mode=auinfo'>Документы, изменённые после проведения</a></li>
 	</ul>");
 }
 else if($mode=='merge_agent')
@@ -128,6 +130,7 @@ else if($mode=='merge_tovar_ok')
 }
 else if($mode=='doc_log')
 {
+	doc_menu();
 	$motions=$targets=array();
 	$res=mysql_query("SELECT DISTINCT `motion` FROM `doc_log`");
 	while($nxt=mysql_fetch_row($res))
@@ -142,7 +145,7 @@ else if($mode=='doc_log')
 	Данная функция позволяет получить информацию по изменениям в базе документов, отобранной по заданным критериям.
 	<form method='post'><input type='hidden' name='mode' value=doc_log_ok'>
 	<table width='100%'>
-	<tr><th>Дата<th>Типы объектов<th>Действие<th>IP адрес
+	<tr><th>Дата<th>Типы объектов<th>Действие
 	<tr>
 	<td>
 	От: <input type=text id='id_pub_date_date' class='vDateField required' name='dt_from' value='$dt_from'><br>
@@ -172,11 +175,6 @@ else if($mode=='doc_log')
 		$tmpl->AddText("<label><input type='radio' name='motion' value='$val'>$val</label><br>");
 	}
 	
-	$tmpl->AddText("<td><label><input type='radio' name='motion' value='all'>Все</label><br>");
-	foreach($targets as $id=> $val)
-	{
-		$tmpl->AddText("<label><input type='radio' name='motion' value='$val'>$val</label><br>");
-	}
 	
 	$tmpl->AddText("</table>
 	<button>Отобразить</button>
@@ -591,6 +589,86 @@ else if($mode=='params')
 	
 	
 }
+else if($mode=='auinfo')
+{
+	$dt_apply=strtotime(rcv('dt_apply',date("Y-m-d",time()-60*60*24*31)));
+	$dt_update=strtotime(rcv('dt_update',date("Y-m-d",time()-60*60*24*31)));	
+	$print_dt_apply=date('Y-m-d', $dt_apply);
+	$print_dt_update=date('Y-m-d', $dt_update);
+	$ndd=rcv('ndd');
+	$ndd_check=$ndd?'checked':'';
+	doc_menu();
+	$tmpl->AddText("<h1 id='page-title'>Информация по документам, изменённым после проведения</h1>
+	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+	<form action='' method='post'>
+	<input type='hidden' name='mode' value='auinfo'>
+	Проведен не ранее: <input type=text id='dt_apply' name='dt_apply' value='$print_dt_apply'><br>
+	Изменён не ранее: <input type=text id='dt_update' name='dt_update' value='$print_dt_update'><br>
+	<label><input type='checkbox' name='ndd' value='1' $ndd_check>Не показывать правки, сделанные в день проведения</label><br>
+	<button type='submit'>Отобразить</button>
+	</form>
+	
+	<script type=\"text/javascript\">
+	function dtinit()
+	{
+		initCalendar('dt_apply',false)
+		initCalendar('dt_update',false)
+	}
+	
+	addEventListener('load',dtinit,false)
+	</script>
+	<table class='list'>
+	<tr><th rowspan='2'>ID док.</th><th rowspan='2'>Название</th><th colspan='2'>Проведен до изменения</th><th rowspan='2'>Кто правил</th><th colspan='2'>Последняя правка</th><th rowspan='2'>Окончательно проведён</th></tr>
+	<tr><th>Когда</th><th>Кем</th><th>Когда</th><th>Кто</th></tr>");
+	
+	$res=mysql_query("SELECT `doc_log`.`object_id` AS `doc_id`, `doc_log`.`time`, `doc_log`.`user`, `users`.`name` AS `user_name`, `doc_list`.`ok`, `doc_types`.`name` AS `doc_type`
+	FROM `doc_log`
+	LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
+	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_log`.`object_id`
+	LEFT JOIN `doc_types` ON `doc_list`.`type`=`doc_types`.`id`
+	WHERE `doc_log`.`object`='doc' AND `time`>='$print_dt_apply 00:00:00' AND `motion` LIKE 'APPLY%'
+	ORDER BY `doc_log`.`time`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные истории проведений");
+	$docs=array();
+	while($nxt=mysql_fetch_assoc($res))
+	{
+		if(in_array($nxt['doc_id'],$docs))	continue;
+		$update_res=mysql_query("SELECT `doc_log`.`object_id` AS `doc_id`, `doc_log`.`time`, `doc_log`.`user`, `users`.`name` AS `user_name`, `doc_log`.`desc`
+		FROM `doc_log`
+		LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
+		WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='{$nxt['doc_id']}' AND `time`>='$print_dt_update 00:00:00' AND `motion` LIKE 'UPDATE%'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные истории изменений");
+		if(mysql_num_rows($update_res)==0)	continue;
+		else
+		{
+			$c_users=array();
+			$lastchange=$lastuser=$lastdesc='';
+			$datec=date('Y-m-d',strtotime($nxt['time']));
+			while($updates=mysql_fetch_array($update_res))
+			{
+				if($ndd)	if(date('Y-m-d',strtotime($updates['time']))==$datec)	continue;
+				
+				$c_users[$updates['user_name']]=1;
+				$lastchange=$updates['time'];
+				$lastuser=$updates['user_name'];
+				$lastdesc=$updates['desc'];
+			}
+			if($lastchange=='')	continue;
+			$users='';
+			foreach($c_users as $user => $v)
+			{
+				$users.=$user.', ';
+			}
+			if($nxt['ok'])	$a_date=date("Y-m-d H:i:s",$nxt['ok']);
+			else		$a_date='не проведён';
+			$tmpl->AddText("<tr><td><a href='/doc.php?mode=body&amp;doc={$nxt['doc_id']}'>{$nxt['doc_id']}</a></td><td>{$nxt['doc_type']}</td><td>{$nxt['time']}</td><td>{$nxt['user_name']}</td><td>$users</td><td>$lastchange</td><td>$lastuser</td><td>$a_date</td></tr>");
+ 		}
+ 		$docs[]=$nxt['doc_id'];
+	}
+	
+	$tmpl->AddText("</table>");
+}
+
 else $tmpl->logger("Запрошена несуществующая опция!");
 }
 catch(MysqlException $e)
