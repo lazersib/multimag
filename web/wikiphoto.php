@@ -120,31 +120,31 @@ else if($mode=='viewall')
 	$pageimg=new ImageProductor($n,'w', 'jpg');
 	$pageimg->SetX(700);
 	$pageimg->SetNoEnlarge(1);
-	
+
 	$fullimg=new ImageProductor($n,'w', 'jpg');
 	$fullimg->SetQuality(100);
-	
+
 	$img800=new ImageProductor($n,'w', 'jpg');
 	$img800->SetX(800);
 	$img800->SetY(600);
 	$img800->SetNoEnlarge(1);
-	
+
 	$img1024=new ImageProductor($n,'w', 'jpg');
 	$img1024->SetX(1024);
 	$img1024->SetY(768);
 	$img1024->SetNoEnlarge(1);
-	
+
 	$img1280=new ImageProductor($n,'w', 'jpg');
 	$img1280->SetX(1280);
 	$img1280->SetY(1024);
 	$img1280->SetNoEnlarge(1);
-	
+
 	$img1600=new ImageProductor($n,'w', 'jpg');
 	$img1600->SetX(1600);
 	$img1600->SetY(1200);
 	$img1600->SetNoEnlarge(1);
-	
-	
+
+
 	$tmpl->AddText("<a href='".$fullimg->GetURI()."' title='Максимальный размер и качество'><img src='".$pageimg->GetURI()."' alt='Максимальный размер и качество'></a><br>
 	<b>Открыть с разрешением<sup>*</sup>:</b> <a href='".$img800->GetURI()."'>800x600</a>, <a href='".$img1024->GetURI()."'>1024x768</a>, <a href='".$img1280->GetURI()."'>1280x1024</a>, <a href='".$img1600->GetURI()."'>1600x1200</a>, <a href='".$fullimg->GetURI()."'>Максимум</a><br>
 	* Примечание: если оригинал изображения имеет разрешение, меньшее, чем запрошено, изображение будет показано в оригинальном размере.");
@@ -152,7 +152,7 @@ else if($mode=='viewall')
 }
 else if($mode=="add")
 {
-	if(!isAccess('articles','edit'))	throw new AccessException("Недостаточно привилегий");
+	if(!isAccess('generic_articles','edit'))	throw new AccessException("Недостаточно привилегий");
 
 		$tmpl->AddText("<h3>Добавить фотографию</h3>");
 		$tmpl->AddText("Фотографии в данный разделе используются для последующего отображения в вики-статьях. После добавления Вы получите код фотографии.<br>
@@ -170,7 +170,7 @@ else if($mode=="addo")
 {
 	$tmpl->AddText("<h3>Сохранение фотографии</h3>");
 	$comm=rcv('comm');
-	if(!isAccess('articles','edit'))	throw new AccessException("Недостаточно привилегий");
+	if(!isAccess('generic_articles','edit'))	throw new AccessException("Недостаточно привилегий");
 
 	$an=" Фотография не установлена!";
 	if(strlen($comm)>1)
@@ -192,7 +192,7 @@ else if($mode=="addo")
 			if($res)
 			{
 				$fid=mysql_insert_id();
-	
+
 				$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], "$gpath/$fid.jpg");
 				if($m_ok)
 				{

@@ -371,13 +371,13 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	$res=@mysql_query("SELECT `corrupted` FROM `variables`");
 	if(@mysql_result($res,0,0))	$err="class='error'";
 	else				$err='';
-	
+
 	$tmpl->AddText("<div id='doc_menu' $err>
 	<div id='doc_menu_container'>
 	<div id='doc_menu_r'>
 	<input type='text' id='quicksearch'>
 	<script>
-	var ac=initAutocomplete('quicksearch','/docs.php?l=sklad&mode=srv&opt=ac')
+	var ac=initAutocomplete('quicksearch','/docs.php?l=sklad&mode=srv&opt=acj')
 	</script>
 	<a href='/user.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>
 	<a href='/login.php?mode=logout' title='Выход'><img src='/img/i_logout.png' alt='Выход'></a>

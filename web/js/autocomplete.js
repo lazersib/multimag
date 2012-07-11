@@ -28,26 +28,30 @@ function initAutocomplete(input_id, ac_url)
 	var input_offset=getOffset(input)
 	var div = document.createElement('div')
 	document.getElementsByTagName('body')[0].appendChild(div)
+	div.className='autocomplete'
 
-	function requestData(str_query)
+	div.style.width=input.style.width
+	div.style.display='none'
+
+	function requestData()
 	{
 		var httpRequest
 		if (window.XMLHttpRequest) httpRequest = new XMLHttpRequest()
 		if (!httpRequest)  return false
-		var url=ac_url+'&s='+encodeURIComponent(str_query)
+		var url=ac_url+'&s='+encodeURIComponent(input.value)
 		httpRequest.onreadystatechange = receiveDataProcess
 		httpRequest.open('GET', url, true)
+		httpRequest.setRequestHeader('X-Ajax', 'true')
 		httpRequest.send(null)
-
 		function receiveDataProcess()
 		{
 			if (httpRequest.readyState == 4)
 			{
 				if (httpRequest.status == 200)
 				{
-
+					parseReceived(httpRequest.responseText)
 				}
-				//else {}
+				else alert('ошибка '+httpRequest.status)
 
 			}
 			else if (httpRequest.readyState == 2)
@@ -64,26 +68,59 @@ function initAutocomplete(input_id, ac_url)
 
 	function parseReceived(data)
 	{
+		try{
+			var json=eval('('+data+')')
+			switch(json.response)
+			{
+				case 'err':
+					jAlert(json.message,"Ошибка", {}, 'icon_err');
+					break;
+				case 'data':
+					updateDd(json);
+					break;
+				default:
+					jAlert("Обработка полученного сообщения не реализована", "Изменение списка товаров", null,  'icon_err');
+			}
+		}catch(e)
+		{
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>", "Автодополнение", null,  'icon_err');
+		}
+	}
 
+	function updateDd(json)
+	{
+		div.innerHTML=''
+		var str=''
+		var ul=document.createElement('ul')
+		div.appendChild(ul)
+		for(var i=0;i<json.content.length;i++)
+		{
+			if(json.content[i].name.indexOf(input.value)<0)	continue;
+			var li=document.createElement('li')
+			ul.appendChild(li)
+			li.innerText=json.content[i].name
+		}
+	}
+
+	input.onkeyup=function (event)
+	{
+		if(input.timer_id) window.clearTimeout(input.timer_id)
+		input.timer_id=window.setTimeout(requestData, 300);
 	}
 
 	input.onfocus=function()
 	{
 		var input_offset=getOffset(input)
-		var dd=document.createElement('div')
-		input.parentNode.appendChild(dd)
-		dd.style.cssText='position: absolute; width: 20px; height: 20px; background-color: #f00;'
-		dd.style.left=(input_offset.left+parseInt(input.style.width)-16)+'px'
-		dd.style.top=input_offset.top+'px'
-
-
-		div.className='autocomplete'
 		div.style.left=input_offset.left+'px'
 		div.style.top=(input_offset.top+20)+'px'
-		div.innerHTML='<ul><li>efgerg</li><li>efgerg</li><li>etr hrtj hrth rthi rtjhrthrt  rth rh  th rhtr h rthrth hrth trhrth srth o rtjho rjfgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efge rthrth rth rth rth rthrthrtrg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li><li>efgerg</li></ul>'
-		div.style.width=input.style.width
-
+		div.style.display=''
 		return input
+	}
+
+	input.onblur=function()
+	{
+		div.style.display='none'
 	}
 
 

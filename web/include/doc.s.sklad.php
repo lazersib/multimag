@@ -148,6 +148,32 @@ class doc_s_Sklad
 				$tmpl->AddText("$nxt[1]|$nxt[0]|$nxt[2]|$nxt[3]\n");
 			}
 		}
+		else if($opt=='acj')
+		{
+			try
+			{
+				$s=rcv('s');
+				$i=0;
+				$tmpl->ajax=1;
+				$res=mysql_query("SELECT `id`, `name`, `proizv`, `vc` FROM `doc_base` WHERE LOWER(`name`) LIKE LOWER('%$s%') OR LOWER(`vc`) LIKE LOWER('%$s%') ORDER BY `name`");
+				$row=mysql_numrows($res);
+				$str='';
+				while($nxt=mysql_fetch_row($res))
+				{
+					$i=1;
+					if($CONFIG['poseditor']['vc'])	$nxt[1].='('.$nxt[3].')';
+					$nxt[1]=unhtmlentities($nxt[1]);
+					$tmpl->AddText("$nxt[1]|$nxt[0]|$nxt[2]|$nxt[3]\n");
+					if($str)	$str.=",\n";
+					$str.="{id:'$nxt[0]',name:'$nxt[1]',vendor:'$nxt[2]',vc:'$nxt[3]'}";
+				}
+				$tmpl->SetText("{response: 'data', content: [$str] }");
+			}
+			catch(Exception $e)
+			{
+				$tmpl->SetText("{response: 'err', message: 'Внутренняя ошибка'}");
+			}
+		}
 		else if($opt=='acv')
 		{
 			$q=rcv('q');
@@ -1728,10 +1754,10 @@ class doc_s_Sklad
 		if(mysql_num_rows($res))
 		{
 			if($CONFIG['poseditor']['vc'])		$vc_add.='<th>Код</th>';
-			
+
 			$tdb_add=$CONFIG['poseditor']['tdb']?'<th>Тип<th>d<th>D<th>B':'';
 			$rto_add=$CONFIG['poseditor']['rto']?"<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>":'';
-			
+
 			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 			$tmpl->AddText("$pagebar<table width='100%' cellspacing='1' cellpadding='2'><tr>
 			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
@@ -1928,7 +1954,7 @@ class doc_s_Sklad
 				case 'cost':	$order='`doc_base`.`cost`';	break;
 				default:	$order='`doc_base`.`name`';
 			}
-			
+
 			if($name)
 			{
 				if(!$analog && !$desc) 	$sql.="AND `doc_base`.`name` LIKE '%$name%'";
@@ -2033,10 +2059,10 @@ function DrawSkladTable($res,$s)
 		$cost_p=sprintf("%0.2f",$nxt[5]);
 		$cost_r=sprintf("%0.2f",$nxt[7]);
 		$vc_add=$CONFIG['poseditor']['vc']?"<td>{$nxt['vc']}</th>":'';
-		
+
 		if ($CONFIG['poseditor']['tdb'] == 1) $tdb_add = "<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]"; else $tdb_add = '';
 		if ($CONFIG['poseditor']['rto'] == 1) $rto_add = "<td>$rezerv<td>$pod_zakaz<td>$v_puti"; else $rto_add = '';
-		
+
 		$cb=$go?"<input type='checkbox' name='pos[$nxt[0]]' class='pos_ch' value='1'>":'';
 		$cadd=($_SESSION['sklad_cost']>0)?('<td>'.GetCostPos($nxt[0],$_SESSION['sklad_cost'])):'';
 
@@ -2071,10 +2097,10 @@ function DrawSkladTable($res,$s)
 	function PosMenu($pos, $param, $pos_name='')
 	{
 		global $tmpl, $CONFIG;
-		$sel=array('v'=>'','d'=>'','a'=>'','s'=>'','i'=>'','c'=>'','k'=>'','l'=>'','h'=>'',);
+		$sel=array('v'=>'','d'=>'','a'=>'','s'=>'','i'=>'','c'=>'','k'=>'','l'=>'','h'=>'','t'=>'');
 		if($param=='')	$param='v';
 		$sel[$param]="class='selected'";
-		
+
 		if($CONFIG['poseditor']['vc'])
 			$res=mysql_query("SELECT CONCAT(`doc_base`.`vc`, ' - ', `doc_base`.`name`) FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
 		else	$res=mysql_query("SELECT `doc_base`.`name` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
@@ -2097,6 +2123,7 @@ function DrawSkladTable($res,$s)
 		<li><a {$sel['k']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=k&amp;pos=$pos'>Комплектующие</a></li>
 		<li><a {$sel['l']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=l&amp;pos=$pos'>Связи</a></li>
 		<li><a {$sel['h']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
+		<li><a {$sel['t']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=t&amp;pos=$pos'>Test</a></li>
 		</ul>");
 	}
 

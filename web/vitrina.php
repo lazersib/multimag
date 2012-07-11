@@ -258,7 +258,7 @@ protected function ViewGroup($group, $page)
 protected function ProductList($group, $page)
 {
 	global $tmpl, $CONFIG;
-	
+
 	$order=rcv('order', @$_SESSION['vitrina_order']);
 	if(!$order)	$order=@$CONFIG['site']['vitrina_order'];
 	switch($order)
@@ -275,7 +275,7 @@ protected function ProductList($group, $page)
 				$order='n';
 	}
 	$_SESSION['vitrina_order']=$order;
-	
+
 	$view=rcv('view',@$_SESSION['vitrina_view']);
 	if($view!='i' && $view!='l' && $view!='t')
 	{
@@ -284,7 +284,7 @@ protected function ProductList($group, $page)
 		else								$view='l';
 	}
 	$_SESSION['vitrina_view']=$view;
-	
+
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
 	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
@@ -303,7 +303,7 @@ protected function ProductList($group, $page)
         if($rows)
         {
 		$this->OrderAndViewBar($group,$page,$order,$view);
-		
+
 		$this->PageBar($group, $rows, $lim, $page);
 		if(($lim<$rows) && $page )	mysql_data_seek($res, $lim*($page-1));
 		if($view=='i')			$this->TovList_ImageList($res, $lim);
@@ -324,21 +324,21 @@ protected function OrderAndViewBar($group,$page,$order,$view)
 	if($view=='t')$tmpl->AddText("<span class='selected'>Таблицей</span> ");
 	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=t')."'>Таблицей</a></span> ");
 	if($view=='l')$tmpl->AddText("<span class='selected'>Списком</span> ");
-	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=l')."'>Списком</a></span> ");	
+	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=l')."'>Списком</a></span> ");
 	$tmpl->AddText("</div>");
 	$tmpl->AddText("<div class='viewbar'>Сортировать по: ");
 	if($order=='n')		$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=nd')."'>Названию</a></span> ");
 	else if($order=='nd')	$tmpl->AddText("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=n')."'>Названию</a></span> ");
 	else			$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'order=n')."'>Названию</a></span> ");
-	
+
 	if($order=='vc')	$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=vcd')."'>Коду</a></span> ");
 	else if($order=='vcd')	$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=vc')."'>Коду</a></span> ");
 	else			$tmpl->AddText("<span><a class='down' href='".$this->GetGroupLink($group, $page, 'order=vc')."'>Коду</a></span> ");
-	
+
 	if($order=='c')		$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=cd')."'>Цене</a></span> ");
 	else if($order=='cd')	$tmpl->AddText("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=c')."'>Цене</a></span> ");
-	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'order=c')."'>Цене</a></span> ");	
-	
+	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'order=c')."'>Цене</a></span> ");
+
 	if($order=='s')		$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=sd')."'>Наличию</a></span> ");
 	else if($order=='sd')	$tmpl->AddText("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=s')."'>Наличию</a></span> ");
 	else			$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'order=s')."'>Наличию</a></span> ");
