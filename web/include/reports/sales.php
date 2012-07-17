@@ -364,7 +364,7 @@ class Report_Sales extends BaseGSReport
 			$this->tableAltStyle(false);
 			$this->tableSpannedRow(array($this->col_cnt-1,1),array('На начало периода:',$cur_cnt));
 		}
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`page`,
+		$res=mysql_query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`page`,
 		`doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
 		FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
@@ -411,7 +411,7 @@ class Report_Sales extends BaseGSReport
 			}
 			$cur_cnt+=$p-$r;
 			$date=date("Y-m-d H:i:s",$nxt['date']);
-			$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']}", $link, $p, $r, $cur_cnt));
+			$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} / {$nxt['doc_id']}", $link, $p, $r, $cur_cnt));
 			$sp+=$p;
 			$sr+=$r;
 		}
@@ -431,7 +431,7 @@ class Report_Sales extends BaseGSReport
 		$this->loadEngine($engine);		
 
 		$dt_f=strtotime(rcv('dt_f'));
-		$dt_t=strtotime(rcv('dt_t'));
+		$dt_t=strtotime(rcv('dt_t')." 23:59:59");
 		$g=@$_POST['g'];
 		$sel_type=rcv('sel_type');
 		$this->sklad=rcv('sklad');

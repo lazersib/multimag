@@ -85,12 +85,15 @@ class doc_Realizaciya extends doc_Nulltype
 		Кладовщик:<br><select name='kladovshik'>");
 		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
+		$tmpl->AddText("<option value='0'>--не выбран--</option>");
 		while($nxt=mysql_fetch_row($res))
 		{
 			$s=($klad_id==$nxt[0])?'selected':'';
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
 		}
-		$tmpl->AddText("</select>
+		$tmpl->AddText("</select><br>
+		Количество мест:<br>
+		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
 			$(\"#plat\").autocomplete(\"/docs.php\", {
@@ -149,6 +152,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$received=rcv('received');
 		$return=rcv('return');
 		$kladovshik=rcv('kladovshik');
+		$mest=rcv('mest');
 		settype($kladovshik, 'int');
 
 		$doc=$this->doc;
@@ -157,7 +161,8 @@ class doc_Realizaciya extends doc_Nulltype
 		( '{$this->doc}' ,'gruzop','$gruzop_id'),
 		( '{$this->doc}' ,'received','$received'),
 		( '{$this->doc}' ,'return','$return'),
-		( '{$this->doc}' ,'kladovshik','$kladovshik')");
+		( '{$this->doc}' ,'kladovshik','$kladovshik'),
+		( '{$this->doc}' ,'mest','$mest')");
 	}
 
 	function DopBody()
@@ -180,8 +185,9 @@ class doc_Realizaciya extends doc_Nulltype
 		if( $nx['ok'] && ( !$silent) )		throw new Exception('Документ уже был проведён!');
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
-
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`
+		if(!@$this->dop_data['kladovshik'] && @$CONFIG['doc']['require_storekeeper'] && !$silent)	throw new Exception("Кладовщик не выбран!");
+		if(!@$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent)	throw new Exception("Количество мест не задано");
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
@@ -190,7 +196,7 @@ class doc_Realizaciya extends doc_Nulltype
 		{
 			if(!$nx['dnc'])
 			{
-				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]($nxt[0])': на складе только $nxt[2] шт!");
+				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])': на складе только $nxt[2] шт!");
 			}
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
 			if(mysql_error())	throw new MysqlException('Ошибка проведения, ошибка изменения количества!');
@@ -198,7 +204,7 @@ class doc_Realizaciya extends doc_Nulltype
 			if(!$nx['dnc'] && (!$silent))
 			{
 				$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
-				if( $budet<0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]($nxt[0])'!");
+				if( $budet<0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])'!");
 			}
 
 			if(@$CONFIG['poseditor']['sn_restrict'])
@@ -503,7 +509,9 @@ class doc_Realizaciya extends doc_Nulltype
 
 
 		$tmpl->AddText("</table>
-		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>");
+		<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b>");
+		if($this->dop_data['mest'])	$tmpl->AddText(", мест: ".$this->dop_data['mest']);
+		$tmpl->AddText("</p>");
 		if($sum!=$skid_sum)
 		{
 			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
@@ -649,6 +657,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->Ln();
 
 		$str="Всего $ii наименований на сумму $cost";
+		if($this->dop_data['mest'])	$str.=", мест: ".$this->dop_data['mest'];
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		
@@ -2203,7 +2212,7 @@ function PrintTg12PDF($to_str=0)
 	$x_end=$pdf->w-$pdf->rMargin;
 
 	$pdf->Ln(5);
-	$str = iconv('UTF-8', 'windows-1251', "Всего мест" );
+	$str = iconv('UTF-8', 'windows-1251', "Всего мест: ".$this->dop_data['mest'] );
 	$pdf->Cell(30,$line_height, $str ,0,0,'R',0);
 	$pdf->Line($pdf->GetX(), $pdf->GetY()+$line_height, $x_end, $pdf->GetY()+$line_height);
 	$pdf->Ln();

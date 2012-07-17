@@ -48,14 +48,18 @@ class doc_Peremeshenie extends doc_Nulltype
 			else
 				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
 		}
-		$tmpl->AddText("</select>");	
+		$tmpl->AddText("</select><br>
+		Количество мест:<br>
+		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>");	
 	}
 
 	function DopSave()
 	{
 		$nasklad=rcv('nasklad');
+		$mest=rcv('mest');
 		$res=mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ('{$this->doc}','na_sklad','$nasklad')");
+		VALUES ('{$this->doc}','na_sklad','$nasklad'),
+		( '{$this->doc}' ,'mest','$mest')");
 		if(!$res)		throw new MysqlException("Не удалось установить склад назначения в поступлении!");
 	}
 	
@@ -71,8 +75,10 @@ class doc_Peremeshenie extends doc_Nulltype
 	
 	function DocApply($silent=0)
 	{
+		global $CONFIG;
 		$tim=time();
 		$nasklad=$this->dop_data['na_sklad'];
+		if(!$nasklad)	throw new Exception("Не определён склад назначения!");
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
@@ -81,7 +87,8 @@ class doc_Peremeshenie extends doc_Nulltype
 		$nx=@mysql_fetch_assoc($res);
 		if(!$nx)	throw new Exception('Документ не найден!');
 		if( $nx['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
-
+		if(!@$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent)	throw new Exception("Количество мест не задано");
+		
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -110,7 +117,19 @@ class doc_Peremeshenie extends doc_Nulltype
 				if($budet<0)	
 					throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
 			}
-			
+			if($nxt[0]==534)
+			{
+				if($nx['sklad']==1)
+				{
+					$cnt=$nxt[2]-$nxt[1];
+					echo"{$this->doc} - $nxt[2] - $nxt[1] = $cnt\n";
+				}
+// 				else if($nasklad==1)
+// 				{
+// 					$cnt=$nxt[2]+$nxt[1];
+// 					echo"{$this->doc} - $nxt[2] + $nxt[1] = $cnt\n";
+// 				}
+			}
 		}
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");

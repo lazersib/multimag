@@ -78,6 +78,7 @@ while($nxt=mysql_fetch_row($res))
 echo" готово!\n";
 
 // ============== Расчет ликвидности ===================================================
+$starttime=time();
 echo"Расчет ликвидности...";
 $res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`) AS `aa`
 FROM `doc_list_pos`, `doc_list`
@@ -135,9 +136,23 @@ $i=0;
 $res=mysql_query("UPDATE `doc_kassa` SET `ballance`='0'");
 $res=mysql_query("UPDATE `doc_base_cnt` SET `cnt`='0'");
 $res=mysql_query("SELECT `id`, `type`, `altnum`, `date` FROM `doc_list` WHERE `ok`>'0' AND `type`!='3' AND `mark_del`='0' ORDER BY `date`");
+$allcnt=mysql_num_rows($res);
+$opp=$cnt=0;
+
 while($nxt=mysql_fetch_row($res))
 {
 	$dt=date("d.m.Y H:i:s",$nxt[3]);
+// 	$pp=round(($cnt/$allcnt)*100);
+// 	if($pp!=$opp)
+// 	{
+// 		$opp=$pp;
+// 		$remains=(time()-$starttime)*(100/$pp-1);
+// 		$remainm=round($remains/60);
+// 		$remains%=60;
+// 		if($remainm)	echo"\rВыполнено $pp% (осталось около $remainm мин. $remains сек.)      ";
+// 		else		echo"\rВыполнено $pp% (осталось около $remains сек.)     ";
+// 	}
+	$cnt++;
 	$document=AutoDocumentType($nxt[1],$nxt[0]);
 	if($err=$document->Apply($nxt[0],1))
 	{

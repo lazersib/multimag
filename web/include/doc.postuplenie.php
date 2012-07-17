@@ -150,7 +150,7 @@ class doc_Postuplenie extends doc_Nulltype
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException("Ошибка установки даты проведения!");
 
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_base`.`vc`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
@@ -166,7 +166,7 @@ class doc_Postuplenie extends doc_Nulltype
 					{
 						$budet=$nxt[2]-$nxt[1];
 						$badpos=$nxt[0];
-						throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' на складе!");
+						throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[6]($nxt[0])' на складе!");
 					}
 
 				}
@@ -179,7 +179,7 @@ class doc_Postuplenie extends doc_Nulltype
 					if($budet<0)
 					{
 						$badpos=$nxt[0];
-						throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
+						throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[6]($nxt[0])' !");
 					}
 				}
 			}
