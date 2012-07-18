@@ -40,7 +40,7 @@ class doc_Realizaciya extends doc_Nulltype
 			array('name'=>'tg12','desc'=>'Накладная ТОРГ-12','method'=>'PrintTg12PDF'),
 			array('name'=>'nak_kompl','desc'=>'Накладная на комплектацию','method'=>'PrintNaklKomplektPDF'),
 			array('name'=>'sfak','desc'=>'Счёт - фактура','method'=>'SfakPDF'),
-			array('name'=>'sfak2010','desc'=>'Счёт - фактура 2010','method'=>'Sfak2010PDF')			
+			array('name'=>'sfak2010','desc'=>'Счёт - фактура 2010','method'=>'Sfak2010PDF')
 		);
 	}
 
@@ -660,7 +660,7 @@ class doc_Realizaciya extends doc_Nulltype
 		if($this->dop_data['mest'])	$str.=", мест: ".$this->dop_data['mest'];
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
-		
+
 		if($sum!=$skid_sum)
 		{
 			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
@@ -668,13 +668,13 @@ class doc_Realizaciya extends doc_Nulltype
 			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 			$pdf->Cell(0,5,$str,0,1,'L',0);
 		}
-		
+
 		if($prop)
 		{
 			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($prop));
 			$pdf->Cell(0,5,$str,0,1,'L',0);
 		}
-		
+
 		$str="Товар получил, претензий к качеству товара и внешнему виду не имею.";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
@@ -2652,7 +2652,7 @@ function SfakPDF($to_str=0)
 	$pdf->SetFillColor(255,255,255);
 	$i=0;
 	$ii=1;
-	$sum=$sumnaloga=0;
+	$sum=$sumnaloga=$sumbeznaloga=0;
 	$nds=$this->firm_vars['param_nds']/100;
 	$ndsp=$this->firm_vars['param_nds'];
 	while($nxt=mysql_fetch_row($res))
@@ -2705,6 +2705,7 @@ function SfakPDF($to_str=0)
 
 				$sum+=$snalogom;
 				$sumnaloga+=$nalog;
+				$sumbeznaloga+=$cena;
 
 				if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
 				$row=array( "$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
@@ -2738,6 +2739,7 @@ function SfakPDF($to_str=0)
 
 			$sum+=$snalogom;
 			$sumnaloga+=$nalog;
+			$sumbeznaloga+=$cena;
 
 			$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
 			$pdf->RowIconv($row);
@@ -2750,12 +2752,15 @@ function SfakPDF($to_str=0)
 
 	$sum = sprintf("%01.2f", $sum);
 	$sumnaloga = sprintf("%01.2f", $sumnaloga);
+	$sumbeznaloga = sprintf("%01.2f", $sumbeznaloga);
 	$step=5.5;
 	$pdf->SetFont('','',9);
 	$pdf->SetLineWidth(0.3);
 	$str = iconv('UTF-8', 'windows-1251', "Всего к оплате:" );
-	$pdf->Cell($t_all_width[0]+$t_all_width[1]+$t_all_width[2]+$t_all_width[3]+$t_all_width[4]+$t_all_width[5]+$t_all_width[6]+$t_all_width[7],$step,$str,1,0,'L',0);
-
+	$pdf->Cell($t_all_width[0]+$t_all_width[1]+$t_all_width[2]+$t_all_width[3]+$t_all_width[4],$step,$str,1,0,'L',0);
+// +$t_all_width[6]+$t_all_width[7]
+	$pdf->Cell($t_all_width[5],$step,$sumbeznaloga,1,0,'R',0);
+	$pdf->Cell($t_all_width[6]+$t_all_width[7],$step,'X',1,0,'C',0);
 	$pdf->Cell($t_all_width[8],$step,$sumnaloga,1,0,'R',0);
 	$pdf->Cell($t_all_width[9],$step,$sum,1,0,'R',0);
 
