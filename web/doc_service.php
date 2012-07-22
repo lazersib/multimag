@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -34,6 +34,7 @@ if(!isAccess('doc_service','view'))	throw new AccessException("Нет досту
 
 if($mode=='')
 {
+	doc_menu();
 	$tmpl->AddText("<h1>Служебные функции</h1><ul>
 	<li><a href='?mode=merge_agent'>Группировка агентов</a></li>
 	<li><a href='?mode=merge_tovar'>Группировка складской номенклатуры</a></li>
@@ -42,7 +43,8 @@ if($mode=='')
 	<li><a href='?mode=firm'>Настройки организаций</a></li>
 	<li><a href='?mode=vrasx'>Настройки видов расходов</a></li>
 	<li><a href='?mode=store'>Настройки складов</a></li>
-	<li><a href='?mode=params'>Настройки параметров складской номенклатуры</a></li>
+	<li><a href='?mode=params'>Настройки свойств складской номенклатуры</a></li>
+	<li><a href='?mode=param_collections'>Настройки наборов свойств складской номенклатуры</a></li>
 	<li><a href='?mode=auinfo'>Документы, изменённые после проведения</a></li>
 	</ul>");
 }
@@ -463,132 +465,207 @@ else if($mode=='store')
 }
 else if($mode=='params')
 {
-	$types=array('text', 'float', 'int', 'bool');
+	$types=array('text'=>'Текстовый', 'int'=>'Целый', 'bool'=>'Логический', 'float'=>'С плавающей точкой');
 	$opt=rcv('opt');
+	doc_menu();
 	if($opt=='save')
 	{
 		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
 		$res=mysql_query("SELECT `id`, `param`, `type`, `pgroup_id` FROM `doc_base_params`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
+		$save=$newg=$newp=0;
 		while($nxt=mysql_fetch_row($res))
 		{
-			if(!isset($_POST['param'][$nxt[0]]))	continue;
-			$param=mysql_real_escape_string($_POST['param'][$nxt[0]]);
-			$type=mysql_real_escape_string($_POST['type'][$nxt[0]]);
-			if(!in_array($type,$types))	$type='text';
-			$g=$_POST['g'][$nxt[0]];
-			settype($g, 'int');
+			if(!isset($_POST['param'][$nxt[3]]))	continue;
+			if(!isset($_POST['param'][$nxt[3]][$nxt[0]]))	continue;
+			$param=mysql_real_escape_string($_POST['param'][$nxt[3]][$nxt[0]]);
+			$type=mysql_real_escape_string($_POST['type'][$nxt[3]][$nxt[0]]);
+			if(!array_key_exists($type,$types))
+			{
+				echo "id: $nxt[0], $type: $type<br>";
+				$type='text';
+			}
 			$desc='';
-			if($_POST['param'][$nxt[0]]!=$nxt[1])	$desc.="param:(".mysql_real_escape_string($nxt[1])." => $param), ";
-			if($type!=$nxt[2])			$desc.="type: ($nxt[2] => $type)";
-			if($g!=$nxt[3])				$desc.="group: ($nxt[3] => $g)";
+			if($_POST['param'][$nxt[3]][$nxt[0]]!=$nxt[1])	$desc.="param:(".mysql_real_escape_string($nxt[1])." => $param), ";
+			if($type!=$nxt[2])				$desc.="type: ($nxt[2] => $type)";
 			if($desc=='')	continue;			
-			
-			mysql_query("UPDATE `doc_base_params` SET `param`='$param', `type`='$type', `pgroup_id`='$g' WHERE `id`='$nxt[0]'");
-			if(mysql_errno())	throw new MysqlException("Не удалось обновить параметры складской номенклатуры");
+			$save=1;
+			mysql_query("UPDATE `doc_base_params` SET `param`='$param', `type`='$type' WHERE `id`='$nxt[0]'");
+			if(mysql_errno())	throw new MysqlException("Не удалось обновить параметры складской номенклатуры, id=$nxt[0]");
 			doc_log('UPDATE',$desc,'base_params',$nxt[0]);
 		}
-		$tmpl->msg("Данные обновлены","ok");
-		if(isset($_POST['param'][0]))
+		if($save)	$tmpl->msg("Данные обновлены","ok");
+		if(isset($_POST['name']))
 		{
-			$param=mysql_real_escape_string($_POST['param'][0]);
-			$type=mysql_real_escape_string($_POST['type'][0]);
-			if(!in_array($type,$types))	$type='text';
-			$g=$_POST['g'][0];
-			settype($g, 'int');
-			
-			mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`) VALUES ('$param', '$type', '$g')");
-			if(mysql_errno())	throw new MysqlException("Не удалось создать параметр складской номенклатуры");
-			doc_log('INSERT',"param: $param, type: $type, group: $g",'base_params',$nxt[0]);
-		}
-	}
-	else if($opt=='gsave')
-	{
-		$res=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams`");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
-		while($nxt=mysql_fetch_row($res))
-		{
-			if(!isset($_POST['name'][$nxt[0]]))	continue;
-			$name=mysql_real_escape_string($_POST['name'][$nxt[0]]);
-
-			mysql_query("UPDATE `doc_base_gparams` SET `name`='$name' WHERE `id`='$nxt[0]'");
-			if(mysql_errno())	throw new MysqlException("Не удалось обновить параметры складской номенклатуры");
-		}
-		$tmpl->msg("Данные о бновлены","ok");
-		if(isset($_POST['name'][0]))
-		{
-			$name=mysql_real_escape_string($_POST['name'][0]);
+			$name=mysql_real_escape_string($_POST['name']);
 			if(strlen($name)>0)
 			{
 				mysql_query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$name')");
-				if(mysql_errno())	throw new MysqlException("Не удалось создать параметр складской номенклатуры");
+				if(mysql_errno())	throw new MysqlException("Не удалось создать группу складской номенклатуры");
+				$newg=1;
 			}
 		}
-	}
-	
-	$tmpl->AddText("<h1>Настройки параметров складской номенклатуры</h1>
-	<form action='' method='post'>
-	<input type='hidden' name='mode' value='params'>
-	<input type='hidden' name='opt' value='gsave'>
-	<table class='list'><tr><th>N</th><th>Наименование</th></tr>");
-
-	$res=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams`");
-	if(mysql_errno())	throw new MysqlException("Не удалось параметры групп складской номенклатуры");
-	$pgroups=array();
-	while($line=mysql_fetch_row($res))
-	{
-		$pgroups[$line[0]]=$line[1];
-		$tmpl->AddText("<tr><td>$line[0]</td><td><input type='text' name='name[$line[0]]' value='$line[1]'></td></tr>");
-	}
-	
-	$tmpl->AddText("
-	<tr><td>Новый</td><td><input type='text' name='name[0]' value=''></td></tr>
-	</table>
-	<button>Сохранить</button>
-	</form>
-	
-	<form action='' method='post'>
-	<input type='hidden' name='mode' value='params'>
-	<input type='hidden' name='opt' value='save'>
-	<table><tr><th>N</th><th>Группа</th><th>Наименование</th><th>Тип данных</th></tr>");
-	
-	$res=mysql_query("SELECT `id`, `param`, `type`, `pgroup_id`  FROM `doc_base_params` ORDER BY `id`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
-	while($line=mysql_fetch_row($res))
-	{
-		$c=$line[2]?'checked':'';
-		$tmpl->AddText("<tr><td>$line[0]</td><td><select name='g[$line[0]]'>");
-		foreach($pgroups as $i => $v)
+		if($newg)	$tmpl->msg("Группа создана","ok");
+		$rgroups=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить группы складской номенклатуры");
+		while($group=mysql_fetch_row($rgroups))
 		{
-			$sel=$line[3]==$i?'selected':'';
-			$tmpl->AddText("<option value='$i' $sel>$v</option>");
+			if(isset($_POST['param'][$group[0]][0]))
+			{
+				$param=mysql_real_escape_string($_POST['param'][$group[0]][0]);
+				if(strlen($param)>0)
+				{
+					$type=mysql_real_escape_string($_POST['type'][$group[0]][0]);
+					if(!array_key_exists($type,$types))	$type='text';
+					
+					mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`) VALUES ('$param', '$type', '$group[0]')");
+					if(mysql_errno())	throw new MysqlException("Не удалось создать параметр складской номенклатуры");
+					doc_log('INSERT',"param: $param, type: $type",'base_params',$group[0]);
+					$newp=1;
+				}
+			}
 		}
-		$tmpl->AddText("</select><td><input type='text' name='param[$line[0]]' value='$line[1]'></td>
-		<td><select name='type[$line[0]]'>");
-		foreach($types as $t)
+		if($newp)	$tmpl->msg("Параметр создан","ok");
+		if((!$save) && (!$newg) && (!$newp))	$tmpl->msg("Ничего не изменено!","info");
+	}
+	
+	$tmpl->AddText("<h1 id='page-title'>Настройки параметров складской номенклатуры</h1>");
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='params'>
+	<input type='hidden' name='opt' value='save'>");
+	$rgroups=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить группы складской номенклатуры");
+	while($group=mysql_fetch_row($rgroups))
+	{
+		$tmpl->AddText("<fieldset><legend>$group[1]</legend>
+		<table><tr><th>ID</th><th>Название</th><th>Тип данных</th><th>Ассоциация с Яндекс.Маркет</th></tr>");
+		$rparams=mysql_query("SELECT `id`, `param`, `type`, `pgroup_id`, `ym_assign` FROM  `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
+		while($param=mysql_fetch_row($rparams))
 		{
-			$sel=$line[2]==$t?'selected':'';
-			$tmpl->AddText("<option value='$t' $sel>$t</option>");
+			$tmpl->AddText("<tr><td>$param[0]:</td>
+			<td><input type='text' name='param[$group[0]][$param[0]]' value='$param[1]'></td>
+			<td><select name='type[$group[0]][$param[0]]'>");
+			foreach($types as $t=>$n)
+			{
+				$sel=$param[2]==$t?'selected':'';
+				$tmpl->AddText("<option value='$t' $sel>$n</option>");
+			}
+			$tmpl->AddText("</select></td>
+			<td><input type='text' name='ym[$group[0]][$param[0]]' value='$param[4]' style='width:400px'></td></tr>");			
 		}
-		$tmpl->AddText("</select></td></tr>");
+		$tmpl->AddText("<tr><td><b>+</b></td>
+		<td><input type='text' name='param[$group[0]][0]' value=''></td>
+		<td><select name='type[$group[0]][0]'>");
+		foreach($types as $t=>$n)
+		{
+			$tmpl->AddText("<option value='$t'>$n</option>");
+		}
+		$tmpl->AddText("</select></td><td><input type='text' name='ym[$group[0]][0]' value='' style='width:400px'></td></tr>");
+		
+		$tmpl->AddText("</table></fieldset>");
 	}
-	$tmpl->AddText("<tr><td>Новый</td><td><select name='g[0]'>");
-	foreach($pgroups as $i => $v)
-	{
-		$tmpl->AddText("<option value='$i'>$v</option>");
-	}
-	$tmpl->AddText("</select><td><input type='text' name='param[0]' value=''></td><td><select name='type[0]'>");
-	foreach($types as $t)
-	{
-		$tmpl->AddText("<option value='$t'>$t</option>");
-	}
-	$tmpl->AddText("</select></td></tr>
-	</table>
-	<button>Сохранить</button>
-	</form>");
+	
+	$tmpl->AddText("Новая группа: <input type='text' name='name' value=''><br>");
+	
+	$tmpl->AddText("<button>Сохранить</button></form>");
 	
 	
 }
+else if($mode=='param_collections')
+{
+	$opt=rcv('opt');
+	doc_menu();
+	if($opt=='save')
+	{
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
+ 		$newp=$newc=0;
+
+		if(isset($_POST['name']))
+		{
+			$name=mysql_real_escape_string($_POST['name']);
+			if(strlen($name)>0)
+			{
+				mysql_query("INSERT INTO `doc_base_pcollections_list` (`name`) VALUES ('$name')");
+				if(mysql_errno())	throw new MysqlException("Не удалось создать набор свойств складской номенклатуры");
+				$collection_id=mysql_insert_id();
+				doc_log('CREATE',"name: $name",'base_pcollections',$collection_id);
+				$newc=1;
+			}
+		}
+		if($newc)	$tmpl->msg("Набор создан","ok");
+		
+		if(isset($_POST['add']))
+		if(is_array($_POST['add']))
+		{
+			foreach($_POST['add'] as $collection_id => $param_id)
+			{
+				settype($collection_id,'int');
+				settype($param_id,'int');
+				if($param_id<1)	continue;
+				mysql_query("INSERT INTO `doc_base_pcollections_set` (`param_id`, `collection_id`) VALUES ('$param_id', '$collection_id')");
+				if(mysql_errno())	throw new MysqlException("Не удалось добавить параметр в набор");
+				doc_log('INSERT',"param_id: $param_id",'base_pcollections',$collection_id);
+				$newp=1;
+			}
+		}
+		if($newp)	$tmpl->msg("Параметр добавлен","ok");
+		if((!$newc) && (!$newp))	$tmpl->msg("Ничего не изменено!","info");
+	}
+	else if($opt=='del')
+	{
+		if(!isAccess('doc_service','delete'))	throw new AccessException("Недостаточно привилегий!");
+		$p=$_GET['p'];
+		$c=$_GET['c'];
+		settype($p,'int');
+		settype($c,'int');
+		mysql_query("DELETE FROM `doc_base_pcollections_set` WHERE `param_id`='$p' AND `collection_id`='$c'");
+		if(mysql_errno())	throw new MysqlException("Не удалось удалить параметр из набора");
+		$tmpl->msg("Параметр удалён","ok");
+	}
+
+	$tmpl->AddText("<h1 id='page-title'>Настройки наборов свойств складской номенклатуры</h1>");
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='param_collections'>
+	<input type='hidden' name='opt' value='save'>");
+	$rgroups=mysql_query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить наборы свойств складской номенклатуры");
+	while($group=mysql_fetch_row($rgroups))
+	{
+		$tmpl->AddText("<fieldset><legend>$group[1]</legend><table>");
+		$rparams=mysql_query("SELECT `doc_base_pcollections_set`.`param_id`, `doc_base_params`.`param`
+		FROM `doc_base_pcollections_set`
+		INNER JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_pcollections_set`.`param_id`
+		WHERE `collection_id`='$group[0]'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
+		while($param=mysql_fetch_row($rparams))
+		{
+			$tmpl->AddText("<tr><td><a href='/doc_service.php?mode=param_collections&amp;opt=del&amp;p=$param[0]&amp;c=$group[0]'><img alt='Удалить' src='/img/i_del.png'></a></td><td>$param[1]</td></tr>");			
+		}
+		$tmpl->AddText("<tr><td><b>+</b></td><td><select name='add[$group[0]]'>
+		<option value='0' selected>--не выбрано--</option>");
+		$res_group=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+		while($group=mysql_fetch_row($res_group))
+		{
+			$tmpl->AddText("<option value='-1' disabled>$group[1]</option>");
+			$res=mysql_query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
+			while($param=mysql_fetch_row($res))
+			{
+				$tmpl->AddText("<option value='$param[0]'>- $param[1]</option>");
+			}
+		}
+		$tmpl->AddText("</select></td></tr>");
+		
+		$tmpl->AddText("</table></fieldset>");
+	}
+	
+	$tmpl->AddText("Новый набор: <input type='text' name='name' value=''><br>");
+	
+	$tmpl->AddText("<button>Сохранить</button></form>");
+	
+	
+}
+
 else if($mode=='auinfo')
 {
 	$dt_apply=strtotime(rcv('dt_apply',date("Y-m-d",time()-60*60*24*31)));

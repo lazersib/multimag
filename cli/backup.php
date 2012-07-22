@@ -2,7 +2,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -28,7 +28,7 @@ $minspace=$CONFIG['backup']['min_free_space'];
 
 
 // Check free disk space
-if($minspace)
+if($minspace && $archiv_dir)
 if(disk_free_space($archiv_dir)<=($minspace*1024*1024) )
 {
 	echo"Need cleaning!\n";

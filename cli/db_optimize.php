@@ -2,7 +2,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -142,16 +142,16 @@ $opp=$cnt=0;
 while($nxt=mysql_fetch_row($res))
 {
 	$dt=date("d.m.Y H:i:s",$nxt[3]);
-// 	$pp=round(($cnt/$allcnt)*100);
-// 	if($pp!=$opp)
-// 	{
-// 		$opp=$pp;
-// 		$remains=(time()-$starttime)*(100/$pp-1);
-// 		$remainm=round($remains/60);
-// 		$remains%=60;
-// 		if($remainm)	echo"\rВыполнено $pp% (осталось около $remainm мин. $remains сек.)      ";
-// 		else		echo"\rВыполнено $pp% (осталось около $remains сек.)     ";
-// 	}
+	$pp=round(($cnt/$allcnt)*100);
+	if($pp!=$opp)
+	{
+		$opp=$pp;
+		$remains=(time()-$starttime)*(100/$pp-1);
+		$remainm=round($remains/60);
+		$remains%=60;
+		if($remainm)	echo"\rВыполнено $pp% (осталось около $remainm мин. $remains сек.)      ";
+		else		echo"\rВыполнено $pp% (осталось около $remains сек.)     ";
+	}
 	$cnt++;
 	$document=AutoDocumentType($nxt[1],$nxt[0]);
 	if($err=$document->Apply($nxt[0],1))

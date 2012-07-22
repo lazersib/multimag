@@ -117,19 +117,6 @@ class doc_Peremeshenie extends doc_Nulltype
 				if($budet<0)	
 					throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
 			}
-			if($nxt[0]==534)
-			{
-				if($nx['sklad']==1)
-				{
-					$cnt=$nxt[2]-$nxt[1];
-					echo"{$this->doc} - $nxt[2] - $nxt[1] = $cnt\n";
-				}
-// 				else if($nasklad==1)
-// 				{
-// 					$cnt=$nxt[2]+$nxt[1];
-// 					echo"{$this->doc} - $nxt[2] + $nxt[1] = $cnt\n";
-// 				}
-			}
 		}
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");

@@ -913,21 +913,38 @@ class doc_s_Sklad
 			<tr class='lin0'>
 			<td>Описание:
 			<td><textarea name='desc'>$nxt[2]</textarea>
-			<tr class='lin0'><td>	Статические дополнительные свойства товаров группы
+			<tr class='lin0'><td>Статические дополнительные свойства товаров группы<br><br>
+			Добавить из набора:<select name='collection'>
+			<option value='0'>--не выбран--</option>");
+			$rgroups=mysql_query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить наборы свойств складской номенклатуры");
+			while($col=mysql_fetch_row($rgroups))
+			{
+				$tmpl->AddText("<option value='$col[0]'>$col[1]</option>");
+			}
+			$tmpl->AddText("</select>
 			<td>
 			<table width='100%' id='fg_table' class='list'>
 			<thead>
 			<tr><th><img src='/img/i_filter.png' alt='Отображать в фильтрах'></th><th>Название параметра</th><th>&nbsp;</th></tr>
 			</thead>
 			<tfoot>
-			<tr><td><input type='checkbox' id='fg_check'><td><select name='pp' id='fg_select'>");
-			$r=mysql_query("SELECT `id`, `param`, `type` FROM `doc_base_params` ORDER BY `param`");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о дополнительных свойствах");
-			while($p=mysql_fetch_row($r))
+			<tr><td><input type='checkbox' id='fg_check'><td>
+			<select name='pp' id='fg_select'>
+			<option value='0' selected>--не выбрано--</option>");
+			$res_group=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+			while($groupp=mysql_fetch_row($res_group))
 			{
-				$tmpl->AddText("<option value='$p[0]'>$p[1]</option>");
+				$tmpl->AddText("<option value='-1' disabled>$groupp[1]</option>");
+				$res=mysql_query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$groupp[0]' ORDER BY `param`");
+				while($param=mysql_fetch_row($res))
+				{
+					$tmpl->AddText("<option value='$param[0]'>- $param[1]</option>");
+				}
 			}
-			$tmpl->AddText("</select></td><td><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
+			$tmpl->AddText("</select>
+			
+			</td><td><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
 			</td></tr></tfoot>
 			<tbody>");
 
@@ -944,7 +961,7 @@ class doc_s_Sklad
 				<td><img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td></tr>");
 			}
 
-			$tmpl->AddText("</tbody></table>
+			$tmpl->AddText("</tbody></table>			
 			<tr class='lin1'><td colspan='2' align='center'>
 			<button type='submit'>Сохранить</button>
 			</table></form>");
@@ -1009,6 +1026,122 @@ class doc_s_Sklad
 				}
 				$tmpl->AddText("</table>
 				<button>Сохранить цены</button></form>");
+			}
+		}
+		// Импорт из яндекс маркета
+		else if($param=='y')
+		{
+			$a=rcv('a');
+			if($a=='')
+			{
+				$tmpl->AddText("
+				<form method='post' action='/docs.php'>
+				<input type='hidden' name='l' value='sklad'>
+				<input type='hidden' name='mode' value='srv'>
+				<input type='hidden' name='opt' value='ep'>
+				<input type='hidden' name='param' value='y'>
+				<input type='hidden' name='pos' value='$pos'>
+				<input type='hidden' name='a' value='parse'>
+				Введите ссылку на нужную страницу Яндекс-маркета:<br>
+				<input type='text' name='url' value=''>
+				<button>Получить данные</button>
+				</form>");
+			}
+			else
+			{
+				$url = $_POST['url'];
+				$ch = curl_init(); 
+				curl_setopt($ch, CURLOPT_URL, $url); 
+				curl_setopt($ch, CURLOPT_FAILONERROR, 1); 
+				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+				curl_setopt($ch, CURLOPT_TIMEOUT, 4); 
+				$result = curl_exec($ch);
+				curl_close($ch);  
+				
+				$dom = new domDocument();
+				$dom->loadHTML($result);
+				$dom->preserveWhiteSpace = false;
+
+				$f=0;
+				$tables = $dom->getElementsByTagName('table');
+				foreach($tables as $table)
+				{
+					if($table->getAttribute('class')=='b-properties')
+					{
+						$f=1;
+						break;
+					}
+				}
+				
+				function getSelectParams($id,$name)
+				{
+					$ret="<select name='sel[$id]'><option value='-1' selected>--не выбрано--</option>";
+					$selected=mysql_real_escape_string($name);
+					$res=mysql_query("SELECT CONCAT(`doc_base_gparams`.`name`,' - ',`doc_base_params`.`param`), `doc_base_params`.`ym_assign`
+					FROM `doc_base_params`
+					INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`pgroup_id`
+					WHERE `doc_base_params`.`ym_assign`='$selected'");
+					if(mysql_num_rows($res))
+					{
+						return mysql_result($res,0,0);
+					}
+					$res_group=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+					while($group=mysql_fetch_row($res_group))
+					{
+						$ret.="<option value='-1' disabled>$group[1]</option>";
+						$res=mysql_query("SELECT `id`, `param`, `ym_assign` FROM `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
+						while($param=mysql_fetch_row($res))
+						{
+							$warn=$param[2]?'(!)':'';
+							$ret.="<option value='$param[0]'>- $param[1] $warn</option>";
+						}
+					}
+					$ret.="</select>";
+					return $ret;				
+				}
+				
+				if($f)
+				{
+					$values=array();
+					
+					mb_internal_encoding('UTF-8');
+					$rows = $table->getElementsByTagName('tr');
+					$prefix=$param='';
+					foreach ($rows as $row)
+					{
+						for($item=$row->firstChild;$item!=null;$item=$item->nextSibling)
+						{
+							$class=$item->getAttribute('class');
+							if(strpos($class,'b-properties__title')!==false)
+								$prefix=$item->nodeValue;
+							else if(strpos($class,'b-properties__label')!==false)
+								$param=$item->nodeValue;
+							else if(strpos($class,'b-properties__value')!==false)
+								$values["$prefix:$param"]=$item->nodeValue;
+						}
+
+					}
+					$tmpl->AddText("
+					<form method='post' action='/docs.php'>
+					<input type='hidden' name='l' value='sklad'>
+					<input type='hidden' name='mode' value='esave'>
+					<input type='hidden' name='param' value='y'>
+					<input type='hidden' name='pos' value='$pos'>
+
+					<table class='list'>
+					<tr><th>Параметр Яндекс Маркета</th><th>Ассоциированный параметр</th><th>Значение из Яндекс Маркета</th></tr>");
+					$i=0;
+					foreach($values as $param => $value)
+					{
+						$tmpl->AddText("<tr><td><input type='checkbox' name='ch[$i]' value='$param' checked>$param</td><td>".getSelectParams($i,$param)."</td><td><input type='text' name='val[$i]' value='$value' style='width: 400px'></td></tr>");
+						$i++;
+					}
+					$tmpl->AddText("</table>
+					<button>Записать</button>
+					</form>");
+				}
+			
 			}
 		}
 		else $tmpl->msg("Неизвестная закладка");
@@ -1078,11 +1211,6 @@ class doc_s_Sklad
 				{
 					$sql_add.=", `proizv`='$proizv'";
 					$log_add.=", proizv:({$old_data['proizv']} => $proizv)";
-				}
-				if($old_data['desc']!=$desc)
-				{
-					$sql_add.=", `desc`='$desc'";
-					$log_add.=", desc:({$old_data['desc']} => $desc)";
 				}
 				if($old_data['desc']!=$desc)
 				{
@@ -1462,6 +1590,8 @@ class doc_s_Sklad
 			$pid=rcv('pid');
 			$hid=rcv('hid');
 			$pname=rcv('pname');
+			$collection=rcv('collection');
+			settype($collection,'int');
 			$no_export_yml=rcv('no_export_yml');
 			if($group)
 			{
@@ -1483,6 +1613,17 @@ class doc_s_Sklad
 					settype($id,'int');
 					$show=(@$_POST['fc'][$id])?'1':'0';
 					mysql_query("INSERT INTO `doc_group_params` (`group_id`, `param_id`, `show_in_filter`) VALUES ('$group', '$id', '$show')");
+				}
+			}
+			if($collection)
+			{
+				$rparams=mysql_query("SELECT `doc_base_pcollections_set`.`param_id`
+				FROM `doc_base_pcollections_set`
+				WHERE `collection_id`='$collection'");
+				if(mysql_errno())	throw new MysqlException("Не удалось получить параметры из набора");
+				while($param=mysql_fetch_row($rparams))
+				{
+					mysql_query("INSERT INTO `doc_group_params` (`group_id`, `param_id`, `show_in_filter`) VALUES ('$group', '$param[0]', '0')");
 				}
 			}
 
@@ -1507,7 +1648,7 @@ class doc_s_Sklad
 							throw new Exception("Не удалось записать изображение. Проверьте права доступа к директории {$CONFIG['site']['var_data_fs']}/category/");
 				}
 			}
-			$tmpl->msg("Сохранено! {$CONFIG['site']['var_data_fs']}/category/$group.jpg");
+			$tmpl->msg("Сохранено!");
 		}
 		else if($param=='gid')
 		{
@@ -1584,6 +1725,34 @@ class doc_s_Sklad
 			$tmpl->msg("Изменения сохранены!","ok");
 			if($log)	doc_log('UPDATE group-ceni', $log, 'group', $group);
 			mysql_query("COMMIT");
+		}
+		else if($param=='y')
+		{
+			$checkboxes=$_POST['ch'];
+			if(!is_array($checkboxes))	throw new Exception('Не передан набор данных');
+			foreach($checkboxes as $id => $param)
+			{
+				$param_e=mysql_real_escape_string($param);
+				$res=mysql_query("SELECT `doc_base_params`.`id` FROM `doc_base_params` WHERE `doc_base_params`.`ym_assign`='$param_e'");
+				if(mysql_errno())	throw new MysqlException('Не удалось получиь ID свойства');
+				if(mysql_num_rows($res))
+				{
+					$int_param=mysql_result($res,0,0);
+				}
+				else
+				{
+					$int_param=$_POST['sel'][$id];
+					settype($int_param,'int');
+					if($int_param<1)	continue;
+					mysql_query("UPDATE `doc_base_params` SET `ym_assign`='$param_e' WHERE `id`='$int_param'");
+				}
+				if($int_param<1)	continue;
+				$val=mysql_real_escape_string($_POST['val'][$id]);
+				mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
+				if(mysql_errno())	throw new MysqlException("Не удалось добавить дополнительные параметры!");
+				
+			}
+			$tmpl->msg("Данные сохранены!","ok");
 		}
 		else $tmpl->msg("Неизвестная закладка");
 	}
@@ -1701,7 +1870,7 @@ class doc_s_Sklad
 			";
 		}
 
-		switch($CONFIG['doc']['sklad_default_order'])
+		switch(@$CONFIG['doc']['sklad_default_order'])
 		{
 			case 'vc':	$order='`doc_base`.`vc`';	break;
 			case 'cost':	$order='`doc_base`.`cost`';	break;
@@ -1770,12 +1939,14 @@ class doc_s_Sklad
 			}
 
 		}
-		else $tmpl->msg("В выбранной группе товаров не найдено!");
+		else if($group)	$tmpl->msg("В выбранной группе товаров не найдено!");
+		else $tmpl->msg("Выберите нужную группу в левом меню");
 		if($go)	$tmpl->AddText("</form>");
-		else	$tmpl->AddText("
-		<a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
-		<a href='/docs.php?l=sklad&amp;mode=edit&amp;param=g&amp;g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
-		<a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
+		else
+		{	$tmpl->AddText("<a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=0&amp;g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
+			if($group)	$tmpl->AddText(" | <a href='/docs.php?l=sklad&amp;mode=edit&amp;param=g&amp;g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a>");
+			$tmpl->AddText(" | <a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
+		}
 	}
 
 	function ViewSkladS($group=0,$s)
@@ -2097,7 +2268,7 @@ function DrawSkladTable($res,$s)
 	function PosMenu($pos, $param, $pos_name='')
 	{
 		global $tmpl, $CONFIG;
-		$sel=array('v'=>'','d'=>'','a'=>'','s'=>'','i'=>'','c'=>'','k'=>'','l'=>'','h'=>'','t'=>'');
+		$sel=array('v'=>'','d'=>'','a'=>'','s'=>'','i'=>'','c'=>'','k'=>'','l'=>'','h'=>'','y'=>'','t'=>'');
 		if($param=='')	$param='v';
 		$sel[$param]="class='selected'";
 
@@ -2123,6 +2294,7 @@ function DrawSkladTable($res,$s)
 		<li><a {$sel['k']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=k&amp;pos=$pos'>Комплектующие</a></li>
 		<li><a {$sel['l']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=l&amp;pos=$pos'>Связи</a></li>
 		<li><a {$sel['h']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
+		<li><a {$sel['y']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=y&amp;pos=$pos'>Импорт Я.Маркет</a></li>
 		<li><a {$sel['t']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=t&amp;pos=$pos'>Test</a></li>
 		</ul>");
 	}

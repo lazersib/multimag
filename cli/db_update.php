@@ -1,0 +1,80 @@
+#!/usr/bin/php
+<?php
+//	MultiMag v0.1 - Complex sales system
+//
+//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//
+//	This program is free software: you can redistribute it and/or modify
+//	it under the terms of the GNU Affero General Public License as
+//	published by the Free Software Foundation, either version 3 of the
+//	License, or (at your option) any later version.
+//
+//	This program is distributed in the hope that it will be useful,
+//	but WITHOUT ANY WARRANTY; without even the implied warranty of
+//	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//	GNU Affero General Public License for more details.
+//
+//	You should have received a copy of the GNU Affero General Public License
+//	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+
+/// Наложение патчей на активную базу данных при обновлении, либо вручную
+$c=explode('/',__FILE__);$base_path='';
+for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
+include_once("$base_path/config_cli.php");
+require_once($CONFIG['cli']['location']."/core.cli.inc.php");
+
+unset($CONFIG['backup']['dirs']);
+include_once("$base_path/cli/backup.php");
+
+function applyPatch($patch)
+{
+	$file=file_get_contents($patch);
+	if(!$file)	throw new Exception("Не удаётся открыть файл патча!");
+	$queries=explode(";",$file);
+	mysql_query("START TRANSACTION");
+	foreach($queries as $query)
+	{
+		if(strlen(trim($query))==0) continue;
+		mysql_query($query);
+		if(mysql_errno())	throw new MysqlException("Не удалось исполнить запрос $query");
+	}	
+	mysql_query("COMMIT");
+}
+
+
+try
+{
+$patches=scandir("$base_path/db_patches/");
+
+while(1)
+{
+	$res=mysql_query("SELECT `version` FROM `db_version`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить версию базы данных! Вероятно, ваша база слишком стара, и не поддерживает автоматическое обновление. Обновите вручную.");
+	else
+	{
+		$db_version=@mysql_result($res,0,0);
+		if($db_version!=MULTIMAG_REV)
+		{
+			foreach($patches as $patch)
+			{
+				if(strpos($patch,'~')!==false)	continue;
+				if(strpos($patch,$db_version)===0)
+				{
+					echo "Накладываем патч $patch\n";
+					applyPatch("$base_path/db_patches/$patch");
+					break;
+				}
+			}
+		}
+		else break;
+	}
+}
+
+}
+catch(Exception $e)
+{
+	echo "\n\n==============================================\nОШИБКА ОБНОВЛЕНИЯ БАЗЫ: ".$e->getMessage()."\n==============================================\n\n";
+}
+
+?>
