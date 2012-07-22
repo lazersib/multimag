@@ -25,7 +25,7 @@ include_once("$base_path/config_cli.php");
 require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
 unset($CONFIG['backup']['dirs']);
-include_once("$base_path/cli/backup.php");
+include_once($CONFIG['cli']['location']."/backup.php");
 
 function applyPatch($patch)
 {
@@ -45,9 +45,9 @@ function applyPatch($patch)
 
 try
 {
-$patches=scandir("$base_path/db_patches/");
-
-while(1)
+$patches=scandir($CONFIG['location']."/db_patches/");
+if(!is_array($patches))	try new Exception("Не удалось получить список файлов патчей!");
+for($i=0;$i<1000;$i++)
 {
 	$res=mysql_query("SELECT `version` FROM `db_version`");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить версию базы данных! Вероятно, ваша база слишком стара, и не поддерживает автоматическое обновление. Обновите вручную.");
@@ -62,7 +62,7 @@ while(1)
 				if(strpos($patch,$db_version)===0)
 				{
 					echo "Накладываем патч $patch\n";
-					applyPatch("$base_path/db_patches/$patch");
+					applyPatch($CONFIG['location']."/db_patches/$patch");
 					break;
 				}
 			}
