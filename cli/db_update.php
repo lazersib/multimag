@@ -46,7 +46,7 @@ function applyPatch($patch)
 try
 {
 $patches=scandir($CONFIG['location']."/db_patches/");
-if(!is_array($patches))	try new Exception("Не удалось получить список файлов патчей!");
+if(!is_array($patches))	throw new Exception("Не удалось получить список файлов патчей!");
 for($i=0;$i<1000;$i++)
 {
 	$res=mysql_query("SELECT `version` FROM `db_version`");

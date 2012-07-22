@@ -51,7 +51,7 @@ $tm=date("Y.m.d_H.i");
 @mkdir("$archiv_dir/$yy/",0700);
 @mkdir("$archiv_dir/$yy/$tm",0700);
 
-if($CONFIG['backup']['mysql'])
+if(@$CONFIG['backup']['mysql'])
 {
 	@mkdir("/tmp/mysql_dump",0700);
 	$res=mysql_list_dbs();
@@ -70,7 +70,7 @@ if($CONFIG['backup']['mysql'])
 	}
 }
 
-if(is_array($CONFIG['backup']['dirs']))
+if(@is_array($CONFIG['backup']['dirs']))
 foreach($CONFIG['backup']['dirs'] as $arch => $path)
 {
 	echo"Zipping $path => $arch...";
@@ -122,7 +122,7 @@ function deleteDirectory($dir)
 }
 
 
-if($CONFIG['backup']['ftp_host'])
+if(@$CONFIG['backup']['ftp_host'])
 {
 $conn_id = @ftp_connect($CONFIG['backup']['ftp_host']);
 $login_result = @ftp_login($conn_id, $CONFIG['backup']['ftp_login'], $CONFIG['backup']['ftp_pass']);
