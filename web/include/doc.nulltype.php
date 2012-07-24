@@ -140,12 +140,12 @@ class doc_Nulltype
 		$this->Create($doc_data);
 		if($this->sklad_editor_enable)
 		{
-			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
+			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
 			while($nxt=mysql_fetch_row($res))
 			{
-				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
-				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`, `comm`)
+				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
 				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
 			}
 		}
@@ -168,12 +168,12 @@ class doc_Nulltype
 		{
 			if($child_count<1)
 			{
-				$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
+				$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
 				if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
 				while($nxt=mysql_fetch_row($res))
 				{
-					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
-					VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
+					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`, `comm`)
+					VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
 					if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
 				}
 			}
@@ -182,7 +182,7 @@ class doc_Nulltype
 				$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 				( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
 				INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$doc_obj->doc}' AND `doc_list`.`mark_del`='0'
-				WHERE `b`.`tovar`=`a`.`tovar` )
+				WHERE `b`.`tovar`=`a`.`tovar` ), `a`.`comm`
 				FROM `doc_list_pos` AS `a`
 				WHERE `a`.`doc`='{$doc_obj->doc}'
 				ORDER BY `a`.`id`");
@@ -193,7 +193,7 @@ class doc_Nulltype
 					{
 						$n_cnt=$nxt[1]-$nxt[4];
 						mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
-						VALUES ('{$this->doc}', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
+						VALUES ('{$this->doc}', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]', '$nxt[5]' )");
 					}
 				}
 			}

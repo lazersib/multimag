@@ -233,6 +233,7 @@ function Run($mode)
 			$perem_doc=new doc_Peremeshenie();
 			$perem_doc->CreateFrom($document);
 			$perem_doc->SetDopData('na_sklad',$nasklad);
+			$perem_doc->SetDopData('mest',1);
 		}
 		
 		if( ($sklad!=$nasklad) && $nasklad)
