@@ -182,7 +182,7 @@ class doc_Nulltype
 				$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 				( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
 				INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$doc_obj->doc}' AND `doc_list`.`mark_del`='0'
-				WHERE `b`.`tovar`=`a`.`tovar` ), `a`.`comm`
+				WHERE `b`.`tovar`=`a`.`tovar` ), `a`.`page`
 				FROM `doc_list_pos` AS `a`
 				WHERE `a`.`doc`='{$doc_obj->doc}'
 				ORDER BY `a`.`id`");
@@ -192,8 +192,9 @@ class doc_Nulltype
 					if($nxt[4]<$nxt[1])
 					{
 						$n_cnt=$nxt[1]-$nxt[4];
-						mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
+						mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`, `page`)
 						VALUES ('{$this->doc}', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]', '$nxt[5]' )");
+						if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
 					}
 				}
 			}
@@ -802,7 +803,7 @@ class doc_Nulltype
 					$res=$fs->send();
 					$tmpl->SetText("{response: 'send'}");
 					doc_log("Send FAX", $faxnum, 'doc', $this->doc);
-					
+
 				}
 			}
 		}
@@ -810,7 +811,7 @@ class doc_Nulltype
 		{
 			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
 		}
-		
+
 	}
 	/// Отправка документа по электронной почте
 	final function SendEMail($opt='')
@@ -851,7 +852,7 @@ class doc_Nulltype
 					$this->SendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->name.".pdf");
 					$tmpl->SetText("{response: 'send'}");
 					doc_log("Send email", $email, 'doc', $this->doc);
-					
+
 				}
 			}
 		}
@@ -859,15 +860,15 @@ class doc_Nulltype
 		{
 			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
 		}
-		
+
 	}
-	
+
 // 		function SendEMail($doc, $email='')
 // 	{
 // 		global $tmpl;
 // 		if(!$email)
 // 			$email=rcv('email');
-// 
+//
 // 		if($email=='')
 // 		{
 // 			$tmpl->ajax=1;
@@ -890,9 +891,9 @@ class doc_Nulltype
 // 			$this->SendDocEMail($email, $comm, 'Заявка на поставку', $this->PrintPDF($doc, 1), "order.pdf", "Здравствуйте!\nПрошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}.\nПодробная информация во вложении.");
 // 			$tmpl->msg("Сообщение отправлено!","ok");
 //     }
-// 
+//
 // 	}
-	
+
 	/// Печать документа
 	function Printform($doc, $opt='')
 	{

@@ -140,9 +140,9 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		</script>
 		");
-		$checked=$this->dop_data['received']?'checked':'';
+		$checked=@$this->dop_data['received']?'checked':'';
 		$tmpl->AddText("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
-		$checked=$this->dop_data['return']?'checked':'';
+		$checked=@$this->dop_data['return']?'checked':'';
 		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>");
 	}
 
@@ -824,7 +824,7 @@ class doc_Realizaciya extends doc_Nulltype
 		if($this->dop_data['mest'])	$str.=", мест: ".$this->dop_data['mest'];
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
-		
+
 		if($sum!=$skid_sum)
 		{
 			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
@@ -832,13 +832,13 @@ class doc_Realizaciya extends doc_Nulltype
 			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 			$pdf->Cell(0,5,$str,0,1,'L',0);
 		}
-		
+
 		if($prop)
 		{
 			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($prop));
 			$pdf->Cell(0,5,$str,0,1,'L',0);
 		}
-		
+
 
 		$str="Продавец:_____________________________________";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));

@@ -33,6 +33,9 @@ function initAutocomplete(input_id, ac_url)
 	div.style.width=input.style.width
 	div.style.display='none'
 
+	var cursor=0
+	var old_cursor=0
+
 	function requestData()
 	{
 		var httpRequest
@@ -99,14 +102,74 @@ function initAutocomplete(input_id, ac_url)
 			if(json.content[i].name.indexOf(input.value)<0)	continue;
 			var li=document.createElement('li')
 			ul.appendChild(li)
-			li.innerText=json.content[i].name
+			li.innerText=json.content[i].name+':'+json.content[i].vendor+' ('+json.content[i].vc+')'
+			li.line_id=json.content[i].id
 		}
+		cursor=0
+		highlight()
+	}
+
+	function highlight()
+	{
+		var elems=div.getElementsByTagName('li')
+		if(cursor<0)		cursor=0
+		if(cursor>=elems.length)	cursor=elems.length-1
+		if(old_cursor<(elems.length-1))	elems[old_cursor].className=''
+		if(elems.length)		elems[cursor].className='cursor'
+		old_cursor=cursor
+	}
+	function scroll()
+	{
+		var elem_size=0
+		var elems=div.getElementsByTagName('li')
+		if(elems.length>0)
+			elem_size=elems[0].offsetHeight
+		if(cursor>5 && elem_size>0 && elems.length>10)
+			div.scrollTop=(cursor-5)*elem_size
+		else	div.scrollTop=0
 	}
 
 	input.onkeyup=function (event)
 	{
 		if(input.timer_id) window.clearTimeout(input.timer_id)
-		input.timer_id=window.setTimeout(requestData, 300);
+		switch(event.keyCode)
+		{
+			case 40:	cursor++;	highlight();	scroll();	break;	// Down
+			case 38:	cursor--;	highlight();	scroll();	break;	// Up
+			case 34:	cursor+=10;	highlight();	scroll();	break;	// PageDown
+			case 33:	cursor-=10;	highlight();	scroll();	break;	// PageUp
+			case 13:{
+					if(div.onselect)	div.onselect(cursor)
+					var elems=div.getElementsByTagName('li')
+					input.value=elems[cursor].innerText
+					div.style.display='none'
+				}
+			default:	input.timer_id=window.setTimeout(requestData, 300);
+		}
+	}
+
+	div.onmousemove=function(event)
+	{
+		if(event.target.tagName=='LI')
+		{
+			var elems=div.getElementsByTagName('li')
+			for(i=0;i<elems.length;i++)
+			{
+				if(elems[i]==event.target)
+				{
+					cursor=i
+					highlight()
+					break
+				}
+			}
+		}
+	}
+
+	div.onclick=function(event)
+	{
+		if(div.onselect)	div.onselect(event.target.line_id)
+		input.value=event.target.innerText
+		div.style.display='none'
 	}
 
 	input.onfocus=function()
@@ -120,7 +183,7 @@ function initAutocomplete(input_id, ac_url)
 
 	input.onblur=function()
 	{
-		div.style.display='none'
+		//div.style.display='none'
 	}
 
 
