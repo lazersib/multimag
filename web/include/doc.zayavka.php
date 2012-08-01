@@ -30,6 +30,9 @@ class doc_Zayavka extends doc_Nulltype
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
 		$this->header_fields			='bank sklad separator agent cena';
+		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$doc'");
+		if(mysql_errno())			throw new MysqlException("Не удалось получить подчинённые документы");
+		if(mysql_num_rows($res))		$this->dop_menu_buttons			="<a href='/doc.php?mode=srv&amp;opt=rewrite&amp;doc=$doc' title='Перезаписать номенклатурой из подчинённых документов'><img src='img/i_rewrite.png' alt='rewrite'></a>";
 		settype($this->doc,'int');
 		$this->PDFForms=array(
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
@@ -315,6 +318,29 @@ class doc_Zayavka extends doc_Nulltype
 				$res=$fs->send();
 				$tmpl->msg("Факс успешно передан на сервер факсов! Вам придёт отчёт о доставке на email.","ok");
 			}
+		}
+		else if($opt=='rewrite')
+		{
+			
+			mysql_query("START TRANSACTION");
+			mysql_query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось удалить старую номенклатуру");
+			$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить подчинённые документы");
+			$docs="`doc`='-1'";
+			while($nxt=mysql_fetch_row($res))	$docs.=" OR `doc`='$nxt[0]'";
+			$res=mysql_query("SELECT `tovar`, `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
+			while($nxt=mysql_fetch_row($res))
+			{
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `gtd`, `comm`, `cost`, `page`)
+				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]', '$nxt[5]')");
+				if(mysql_errno())	throw new MysqlException("Не удалось добавить товар в список");
+			}
+			doc_log("REWRITE", "", 'doc', $this->doc);
+			mysql_query("COMMIT");
+			header("location: /doc.php?mode=body&doc=".$this->doc);
+			exit();
 		}
 		else parent::_Service($opt,$pos);
 	}

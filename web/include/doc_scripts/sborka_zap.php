@@ -155,7 +155,7 @@ function Run($mode)
 		if($no_mark)	throw new Exception("Этот документ создан вручную, а не через сценарий. Недостаточно информации для редактирования документа через сценарий.");
 
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1')");
-		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad");
+		header("Location: /doc_sc.php?mode=edit&amp;sn=sborka_zap&amp;doc=$doc&amp;tov_id=$tov_id&amp;agent=$agent&amp;sklad=$sklad&amp;firm=$firm&amp;nasklad=$nasklad");
 	}
 	else if($mode=='edit')
 	{
@@ -170,7 +170,7 @@ function Run($mode)
 		$zp=$this->CalcZP($doc);
 		$tmpl->AddText("<h1>".$this->getname()."</h1>
 		Необходимо выбрать товары, которые будут скомплектованы. Устанавливать цену не требуется - при проведении документа она будет выставлена автоматически исходя из стоимости затраченных ресурсов. Для того, чтобы узнать цены - обновите страницу. После выполнения сценария выбранные товары будут оприходованы на склад, а соответствующее им количество ресурсов, использованных для сборки, будет списано. Попытка провести через этот сценарий товары, не содержащие ресурсов, вызовет ошибку. Если это указано в свойствах товара, от агента-сборщика будет оприходована выбранная услуга для последующей выдачи заработной платы (на данный момент в размере $zp руб.).<br>
-		<a href='/doc_sc.php?mode=exec&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad&not_a_p=$not_a_p'>Выполнить необходимые действия</a>
+		<a href='/doc_sc.php?mode=exec&amp;sn=sborka_zap&amp;doc=$doc&amp;tov_id=$tov_id&amp;agent=$agent&amp;sklad=$sklad&amp;firm=$firm&amp;nasklad=$nasklad&amp;not_a_p=$not_a_p'>Выполнить необходимые действия</a>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>");
 		
 		$document=new doc_Sborka($doc);		
@@ -187,9 +187,9 @@ function Run($mode)
 		$doc=rcv('doc');
 		$tov_id=rcv('tov_id');
 		$agent=rcv('agent');
-		$sklad=rcv('sklad');
+		$sklad=round(rcv('sklad'));
 		$firm=rcv('firm');
-		$nasklad=rcv('nasklad');
+		$nasklad=round(rcv('nasklad'));
 		$not_a_p=rcv('not_a_p');
 		$this->ReCalcPosCost($doc,$tov_id);
 		$document=AutoDocument($doc);

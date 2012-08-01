@@ -933,7 +933,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->SetLineWidth(0.2);
 		$pdf->SetFont('','',10);
 
-		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` AS `base_cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`
+		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` AS `base_cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`, `doc_list_pos`.`comm`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -955,19 +955,26 @@ class doc_Realizaciya extends doc_Nulltype
 			$summass+=$nxt['cnt']*$nxt['mass'];
 
 			$row=array($ii);
+			$rowc=array('');
 			if($CONFIG['poseditor']['vc'])
 			{
 				$row[]=$nxt['vc'];
 				$row[]="{$nxt['printname']} {$nxt['name']}";
+				$rowc[]='';
+				$rowc[]=$nxt['comm'];
 			}
-			else	$row[]="{$nxt['printname']} {$nxt['name']}";
+			else
+			{
+				$row[]="{$nxt['printname']} {$nxt['name']}";
+				$rowc[]=$nxt['comm'];
+			}
 
 			$mass=sprintf("%0.3f",$nxt['mass']);
 			$rezerv=DocRezerv($nxt['tovar'],$this->doc);
 
 			$row=array_merge($row, array($nxt['cost'], "{$nxt['cnt']} {$nxt['units']}", $nxt['base_cnt'], $rezerv, $mass, $nxt['mesto']));
-
-			$pdf->RowIconv($row);
+			$rowc=array_merge($rowc, array('', '', '', '', '', ''));
+			$pdf->RowIconvCommented($row,$rowc);
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
