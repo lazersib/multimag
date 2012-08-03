@@ -40,8 +40,19 @@ function mailto($email, $subject, $msg, $from="")
 	if(strcmp($error,""))	throw new Exception($error);
 	else			return 0;
 }
-
-
+/// @param times - время в секундах
+/// возвращает строковое представление интервала
+function sectostrinterval($times)
+{
+	$ret=($times%60).' с.';
+	$times=round($times/60);
+	if(!$times)	return $ret;
+	$ret=($times%60).' м. '.$ret;
+	$times=round($times/60);
+	if(!$times)	return $ret;
+	$ret=$times.' ч. '.$ret;
+	return $ret;
+}
 
 
 ?>

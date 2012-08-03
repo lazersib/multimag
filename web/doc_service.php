@@ -46,6 +46,7 @@ if($mode=='')
 	<li><a href='?mode=params'>Настройки свойств складской номенклатуры</a></li>
 	<li><a href='?mode=param_collections'>Настройки наборов свойств складской номенклатуры</a></li>
 	<li><a href='?mode=auinfo'>Документы, изменённые после проведения</a></li>
+	<li><a href='?mode=pcinfo'>Информация по изменениям в номеклатуре</a></li>
 	</ul>");
 }
 else if($mode=='merge_agent')
@@ -745,7 +746,42 @@ else if($mode=='auinfo')
 	
 	$tmpl->AddText("</table>");
 }
-
+else if($mode=='pcinfo')
+{
+	doc_menu();
+	$from=rcv('from','1970-01-01');
+	$to=rcv('to',date('Y-m-d'));
+	$tmpl->AddText("<h1 id='page-title'>Информация по изменениям в номенклатуре</h1>
+	<form method='get' action=''>
+	<input type='hidden' name='mode' value='pcinfo'>
+	С: <input type='text' name='from' value='$from'><br>
+	По: <input type='text' name='to' value='$to'><br>
+	<button>Показать</button>
+	</form>
+	<table class='list'><tr><th>Пользователь</th><th>Затраченное время</th><th>Отредактировано наименований</th></tr>");
+	$res=mysql_query("SELECT `id`, `name` FROM `users` ORDER BY `name`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список пользователей!");
+	while($user_data=mysql_fetch_row($res))
+	{
+		$oldtime=$totaltime=0;
+		$pos=array();
+		$res_log=mysql_query("SELECT `time`, `object_id` FROM `doc_log` WHERE `user`='{$user_data[0]}' AND `object`='pos' AND `time`>='$from' AND `time`<='$to' ORDER BY `time`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные журнала!");
+		while($logline=mysql_fetch_row($res_log))
+		{
+			$curtime=strtotime($logline[0]);
+			if($curtime<=($oldtime+60*15))	$totaltime+=$curtime-$oldtime;
+			else				$totaltime+=180;	// по 180 сек на наименование, если оно первое или единственное в серии редактирования
+			$oldtime=$curtime;
+			$pos[$logline[1]]=1;
+		}
+		if(!$totaltime)	continue;
+		$ptotaltime=sectostrinterval($totaltime);
+		$poscnt=count($pos);
+		$tmpl->AddText("<tr><td>{$user_data[1]}</td><td>$ptotaltime</td><td>$poscnt</td></tr>");
+	}
+	$tmpl->AddText("</table>");
+}
 else $tmpl->logger("Запрошена несуществующая опция!");
 }
 catch(MysqlException $e)

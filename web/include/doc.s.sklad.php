@@ -529,17 +529,33 @@ class doc_s_Sklad
 			<input type='hidden' name='l' value='sklad'>
 			<input type='hidden' name='pos' value='$pos'>
 			<input type='hidden' name='param' value='i'>
-			<table cellpadding='0'>
-			<tr class='lin1'><td>Файл картнки:
-			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br><small>Не более $max_img_size, разрешение от 150*150 до 10000*10000, форматы JPG, PNG, допустим, но не рекомендуется GIF</small>
-			<tr class='lin0'><td>Название картинки:
-			<td><input type='text' name='nm' value='photo_$pos'><br>
-			Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
-			<tr class='lin1'><td>Дополнительно:
-				<td><label><input type='checkbox' name='set_def' value='1' checked>Установить по умолчанию</label>
-			<tr class='lin0'><td colspan='2' align='center'>
+			<table class='list' width='100%'>
+			<tr><th width='10%'>По умолч.</th><th>Файл</th><th>Имя изображения</th></tr>
+			<tr><td><input type='radio' name='def_img' value='1'></td>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile1' type='file'></td>
+			<td><input type='text' name='photoname_1' value='photo_$pos'></td>
+			</tr>
+			<tr><td><input type='radio' name='def_img' value='2'></td>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile2' type='file'></td>
+			<td><input type='text' name='photoname_2' value='photo_$pos'></td>
+			</tr>
+			<tr><td><input type='radio' name='def_img' value='3'></td>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile3' type='file'></td>
+			<td><input type='text' name='photoname_3' value='photo_$pos'></td>
+			</tr>
+			<tr><td><input type='radio' name='def_img' value='4'></td>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile4' type='file'></td>
+			<td><input type='text' name='photoname_4' value='photo_$pos'></td>
+			</tr>
+			<tr><td><input type='radio' name='def_img' value='5'></td>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile5' type='file'></td>
+			<td><input type='text' name='photoname_5' value='photo_$pos'></td>
+			</tr>
+			<tr class='lin0'><td colspan='3' align='center'>
 			<input type='submit' value='Сохранить'>
 			</table>
+			<b>Форматы</b>:Не более $max_img_size суммарно, разрешение от 150*150 до 10000*10000, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
+			<b>Примечание</b>: Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
 
 			</form><h2>Ассоциированные с товаром картинки</h2>");
 			$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
@@ -1298,22 +1314,54 @@ class doc_s_Sklad
 		else if($param=='d')
 		{
 			$analog=rcv('analog');
-			$koncost=rcv('koncost');
-			$type=rcv('type');
-			$d_int=rcv('d_int');
-			$d_ext=rcv('d_ext');
-			$size=rcv('size');
-			$mass=rcv('mass');
+			$koncost=rcv('koncost',0);
+			$type=rcv('type','null');
+			$d_int=rcv('d_int',0);
+			$d_ext=rcv('d_ext',0);
+			$size=rcv('size',0);
+			$mass=rcv('mass',0);
 			$ntd=rcv('ntd');
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
+			
+			
+			$res=mysql_query("SELECT `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd` FROM `doc_base_dop` WHERE `id`='$pos'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные параметры!");
+			$old_data=mysql_fetch_assoc($res);
+			$log_add='';
+			if($old_data['analog']!=$analog)
+				$log_add.=", analog:({$old_data['analog']} => $analog)";
+			if($old_data['koncost']!=$koncost)
+				$log_add.=", koncost:({$old_data['koncost']} => $koncost)";
+			if($old_data['type']!=$type && ($old_data['type']!='' || $type!='null'))
+				$log_add.=", type:({$old_data['type']} => $type)";
+			if($old_data['d_int']!=$d_int)
+				$log_add.=", d_int:({$old_data['d_int']} => $d_int)";
+			if($old_data['d_ext']!=$d_ext)
+				$log_add.=", d_ext:({$old_data['d_ext']} => $d_ext)";
+			if($old_data['size']!=$size)
+				$log_add.=", size:({$old_data['size']} => $size)";
+			if($old_data['mass']!=$mass)
+				$log_add.=", mass:({$old_data['mass']} => $mass)";
+			if($old_data['ntd']!=$ntd)
+				$log_add.=", ntd:({$old_data['ntd']} => $ntd)";
+			
 			if($type!=='null')	$type="'$type'";
 			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd`) VALUES ('$pos', '$analog', '$koncost', $type, '$d_int', '$d_ext', '$size', '$mass', '$ntd')");
 			if(mysql_errno())	throw new MysqlException("Не удалось установить дополнительные параметры!");
+			
+			$res=mysql_query("SELECT `param_id`, `value` FROM `doc_base_values` WHERE `id`='$pos'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные параметры!");
+			$dp=array();
+			while($nxt=mysql_fetch_row($res))	$dp[$nxt[0]]=$nxt[1];
 			$par=@$_POST['par'];
 			if(is_array($par))
 			{
 				foreach($par as $key => $value)
 				{
+					$key=mysql_real_escape_string($key);
+					$value=mysql_real_escape_string($value);
+					if($dp[$key]!=$value)
+						$log_add.=", $key:({$old_data[$key]} => $value)";					
 					mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$key', '$value')");
 					if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");
 				}
@@ -1325,9 +1373,11 @@ class doc_s_Sklad
 			{
 				mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$par_add', '$value_add')");
 				if(mysql_errno())	throw new MysqlException("Не удалось добавить дополнительные параметры!");
+				if($dp[$key]!=$value)
+					$log_add.=", $par_add:$value_add";
 			}
-			if($res) $tmpl->msg("Данные сохранены!".mysql_affected_rows());
-			else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
+			if($log_add)	doc_log("UPDATE","$log_add",'pos',$pos);
+			$tmpl->msg("Данные сохранены!");
 		}
 		else if($param=='s')
 		{
@@ -1336,14 +1386,23 @@ class doc_s_Sklad
 			FROM `doc_base_cnt`
 			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id` = `doc_base_cnt`.`sklad`
 			WHERE `doc_base_cnt`.`id`='$pos'");
+			$log_add='';
 			while($nxt=@mysql_fetch_row($res))
 			{
-				$mincnt=rcv("min$nxt[4]");
+				$mincnt=round(rcv("min$nxt[4]"));
 				$mesto=rcv("mesto$nxt[4]");
-				$r=mysql_query("UPDATE `doc_base_cnt` SET `mincnt`='$mincnt', `mesto`='$mesto' WHERE `id`='$pos' AND `sklad`='$nxt[4]'");
-				if($r) $tmpl->msg("$nxt[0] - Сохранено","ok");
-				else $tmpl->msg("$nxt[0] - ошибка".mysql_error(),"err");
+				if($nxt[2]!=$mincnt)
+					$log_add.=", mincnt:({$nxt[2]} => $mincnt)";				
+				if($nxt[3]!=$mesto)
+					$log_add.=", mesto:({$nxt[3]} => $mesto)";
+				if($nxt[2]!=$mincnt || $nxt[3]!=$mesto)
+				{
+					mysql_query("UPDATE `doc_base_cnt` SET `mincnt`='$mincnt', `mesto`='$mesto' WHERE `id`='$pos' AND `sklad`='$nxt[4]'");
+					if(mysql_errno())	throw new MysqlException("Не удалось обновить места и значения минимального количества!");
+				}
+
 			}
+			if($log_add)	doc_log("UPDATE","$log_add",'pos',$pos);
 		}
 		else if($param=='i')
 		{
@@ -1353,63 +1412,71 @@ class doc_s_Sklad
 			$min_pix=150;
 			$max_pix=10000;
 			global $CONFIG;
-			$nm=rcv('nm');
-			$set_def=rcv('set_def');
+			
+			$def_img=round(rcv('def_img'));
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
-			$res=mysql_query("SELECT `id` FROM `doc_img` WHERE `name`='$nm'");
-			if(mysql_num_rows($res))
+			
+			for($img_num=1;$img_num<=5;$img_num++)
 			{
-				$img_id=mysql_result($res,0,0);
-				$tmpl->msg("Эта картинка найдена, N $img_id","info");
-			}
-			else
-			{
-				if($_FILES['userfile']['size']<=0)
-					$tmpl->msg("Файл не получен. Возможно он не был выбран, либо его размер превышает максимально допустимый сервером.",'err');
+				$set_def=0;
+				if($def_img==$img_num)	$set_def=1;				
+				$nm=rcv('photoname_'.$img_num);
+				
+				$res=mysql_query("SELECT `id` FROM `doc_img` WHERE `name`='$nm'");
+				if(mysql_num_rows($res))
+				{
+					$img_id=mysql_result($res,0,0);
+					$tmpl->msg("Эта картинка найдена, N $img_id","info");
+				}
 				else
 				{
-					if($_FILES['userfile']['size']>$max_img_size)
-						$tmpl->msg("Слишком большой файл! Допустимо не более $max_img_size байт!",'err');
+					if($_FILES['userfile'.$img_num]['size']<=0)
+						$tmpl->msg("Файл не получен. Возможно он не был выбран, либо его размер превышает максимально допустимый сервером.",'err');
 					else
 					{
-						$iminfo=getimagesize($_FILES['userfile']['tmp_name']);
-						switch ($iminfo[2])
-						{
-							case IMAGETYPE_JPEG: $imtype='jpg'; break;
-							case IMAGETYPE_PNG: $imtype='png'; break;
-							case IMAGETYPE_GIF: $imtype='gif'; break;
-							default: $imtype='';
-						}
-						if(!$imtype) $tmpl->msg("Файл - не картинка, или неверный формат файла. Рекомендуется PNG и JPG, допустим но не рекомендуется GIF.",'err');
-						else if(($iminfo[0]<$min_pix)||($iminfo[1]<$min_pix))
-						$tmpl->msg("Слишком мелкая картинка! Минимальный размер - $min_pix пикселей!",'err');
-						else if(($iminfo[0]>$max_pix)||($iminfo[1]>$max_pix))
-						$tmpl->msg("Слишком большая картинка! Максимальный размер - $max_pix пикселей!",'err');
+						if($_FILES['userfile'.$img_num]['size']>$max_img_size)
+							$tmpl->msg("Слишком большой файл! Допустимо не более $max_img_size байт!",'err');
 						else
 						{
-							mysql_query("START TRANSACTION");
-							mysql_query("INSERT INTO `doc_img` (`name`, `type`)	VALUES ('$nm', '$imtype')");
-							$img_id=mysql_insert_id();
-							if($img_id)
-							if(move_uploaded_file($_FILES['userfile']['tmp_name'],$CONFIG['site']['var_data_fs'].'/pos/'.$img_id.'.'.$imtype))
+							$iminfo=getimagesize($_FILES['userfile'.$img_num]['tmp_name']);
+							switch ($iminfo[2])
 							{
-								mysql_query("COMMIT");
-								$tmpl->msg("Файл загружен, $img_id.$imtype","info");
+								case IMAGETYPE_JPEG: $imtype='jpg'; break;
+								case IMAGETYPE_PNG: $imtype='png'; break;
+								case IMAGETYPE_GIF: $imtype='gif'; break;
+								default: $imtype='';
 							}
+							if(!$imtype) $tmpl->msg("Файл - не картинка, или неверный формат файла. Рекомендуется PNG и JPG, допустим но не рекомендуется GIF.",'err');
+							else if(($iminfo[0]<$min_pix)||($iminfo[1]<$min_pix))
+							$tmpl->msg("Слишком мелкая картинка! Минимальный размер - $min_pix пикселей!",'err');
+							else if(($iminfo[0]>$max_pix)||($iminfo[1]>$max_pix))
+							$tmpl->msg("Слишком большая картинка! Максимальный размер - $max_pix пикселей!",'err');
 							else
 							{
-								$tmpl->msg("Файл не загружен, $img_id.$imtype","info");
-								$img_id=false;
+								mysql_query("START TRANSACTION");
+								mysql_query("INSERT INTO `doc_img` (`name`, `type`)	VALUES ('$nm', '$imtype')");
+								$img_id=mysql_insert_id();
+								if($img_id)
+								if(move_uploaded_file($_FILES['userfile'.$img_num]['tmp_name'],$CONFIG['site']['var_data_fs'].'/pos/'.$img_id.'.'.$imtype))
+								{
+									mysql_query("COMMIT");
+									$tmpl->msg("Файл загружен, $img_id.$imtype","info");
+								}
+								else
+								{
+									$tmpl->msg("Файл не загружен, $img_id.$imtype","info");
+									$img_id=false;
+								}
 							}
 						}
 					}
 				}
-			}
-			if($img_id)
-			{
-				if($set_def)	mysql_query("UPDATE `doc_base_img` SET `default`='0' WHERE `pos_id`='$pos'");
-				mysql_query("INSERT INTO `doc_base_img` (`pos_id`, `img_id`, `default`) VALUES ('$pos', '$img_id', '$set_def')");
-				doc_log("UPDATE","Add image (id:$img_id)", 'pos', $pos);
+				if($img_id)
+				{
+					if($set_def)	mysql_query("UPDATE `doc_base_img` SET `default`='0' WHERE `pos_id`='$pos'");
+					mysql_query("INSERT INTO `doc_base_img` (`pos_id`, `img_id`, `default`) VALUES ('$pos', '$img_id', '$set_def')");
+					doc_log("UPDATE","Add image (id:$img_id)", 'pos', $pos);
+				}
 			}
 
 		}
