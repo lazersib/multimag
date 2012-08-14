@@ -519,7 +519,11 @@ class doc_s_Sklad
 			if($max_fs_size>1024*1024)	$max_fs_size=($max_fs_size/(1024*1024)).' Мб';
 			else if($max_fs_size>1024)	$max_fs_size=($max_fs_size/(1024)).' Кб';
 			else				$max_fs_size.='байт';
-
+			$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
+			FROM `doc_base_img`
+			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+			WHERE `doc_base_img`.`pos_id`='$pos'");
+			$checked=(mysql_num_rows($res)==0)?'checked':'';
 			$tmpl->AddText("
 			<table>
 			<tr><th width='50%'>Изображения</th><th width='50%'>Прикреплённые файлы</th></tr>
@@ -531,7 +535,7 @@ class doc_s_Sklad
 			<input type='hidden' name='param' value='i'>
 			<table class='list' width='100%'>
 			<tr><th width='10%'>По умолч.</th><th>Файл</th><th>Имя изображения</th></tr>
-			<tr><td><input type='radio' name='def_img' value='1'></td>
+			<tr><td><input type='radio' name='def_img' value='1' $checked></td>
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile1' type='file'></td>
 			<td><input type='text' name='photoname_1' value='photo_$pos'></td>
 			</tr>
@@ -558,10 +562,6 @@ class doc_s_Sklad
 			<b>Примечание</b>: Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
 
 			</form><h2>Ассоциированные с товаром картинки</h2>");
-			$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
-			FROM `doc_base_img`
-			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-			WHERE `doc_base_img`.`pos_id`='$pos'");
 			while($nxt=@mysql_fetch_row($res))
 			{
 				$miniimg=new ImageProductor($nxt[0],'p', $nxt[1]);
