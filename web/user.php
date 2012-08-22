@@ -28,8 +28,9 @@ $tmpl->HideBlock('left');
 if($mode=='')
 {
 	$tmpl->AddText("<ul>");
-
-	//$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
+	$res=mysql_query("SELECT `worker` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+	if(@mysql_result($res,0,0))
+		$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a> - ФУНКЦИЯ РАБОТАЕТ !</li>");
 
 	if(isAccess('doc_list','view'))
 		$tmpl->AddText("<li><a href='/docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
@@ -190,88 +191,184 @@ else if($mode=='doc_view')
 	}
 }
 
-// else if($mode=='frequest')
-// {
-//         // create curl resource
-//         $ch = curl_init();
-//         // set url
-//         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/login");
-//         //return the transfer as a string
-//         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-//         curl_setopt($ch, CURLOPT_USERPWD, "");
-//         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-//         curl_setopt($ch, CURLOPT_HEADER, true);
-//
-//         // $output contains the output string
-//         $data = curl_exec($ch);
-//         $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
-// 	//$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
-// 	preg_match_all("/Set-Cookie: (.*?)=(.*?);/i",$header,$res);
-// 	$cookie='';
-// 	foreach ($res[1] as $key => $value)
-// 		$cookie.= $value.'='.$res[2][$key].'; ';
-//
-//         curl_setopt($ch, CURLOPT_HEADER, false);
-//         curl_setopt($ch, CURLOPT_COOKIE,$cookie);
-//         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
-//         $output = curl_exec($ch);
-//         // close curl resource to free up system resources
-//         curl_close($ch);
-//
-//         $_SESSION['trac_cookie']=$cookie;
-//
-//         $doc = new DOMDocument();
-// 	$doc->loadHTML($output);
-// 	$doc->normalizeDocument ();
-// 	$form=$doc->getElementById('propertyform');
-// 	$elements=$form->getElementsByTagName("div");
-// 	$token_elem=$elements->item(0)->getElementsByTagName('input')->item(0);
-// 	$token=$token_elem->attributes->getNamedItem('value')->nodeValue;
-//
-// 	$type=$doc->getElementById('field-type');
-//
-// 	$tmpl->SetText("<h1>Оформление запроса на доработку программы</h1>
-// 	Внимание! Данная страница в разработке. Вы можете воспользоваться старой версией, доступной по адресу: <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a>
-// 	<br><br>
-// 	<p class='text'>
-//
-// 	Внимательно заполните все поля. Если иное не написано рядом с полем, все поля являются обязательными для заполнения. Особое внимание стоит уделить полю *краткое содержание*. <b>ВНИМАНИЕ! Для удобства отслеживания исполнения задач (вашего и разработчиков) каждая задача должна быть отдельной задачей. Несоблюдение этого условия может привести к тому, что некоторые задачи окажутся незамеченными</b>. Все глобальные задания можно и нужно отслеживать через систему-треккер.
-// 	</p>
-//
-// 	<form action='/user.php' method='post'>
-// 	<input type='hidden' name='token' value='$token'>
-// 	<input type='hidden' name='mode' value='sendrequest'>
-// 	<b>Краткое содержание</b>. Тема задачи. Максимально кратко (3-6 слов) и ёмко изложите суть поставленной задачи. Максимум 64 символа.<br>
-// 	<i><u>Пример</u>: Реализовать печатную форму: Товарный чек</i><br>
-// 	<input type='text' maxlength='64' name='summary' style='width:90%'><br>
-// 	<b>Подробное описание</b>. Максимально подробно изложите суть задачи. Описание должно являться дополнением краткого содержания. Не допускается писать несколько задач.<br>
-// 	<textarea name='description' rows='40' cols='6'></textarea><br>
-// 	Тип задачи:<br>
-// 	<select name='field_type'>
-// 	<option>Дефект (Bug)</option><option selected='selected'>Улучшение</option><option>Задача</option><option>Предложение</option>
-// 	</select><br>
-// 	Приоритет:<br>
-// 	<select name='field_priority'>
-// 	<option>Критический</option><option>Важный</option><option selected='selected'>Обычный</option><option>Неважный</option><option>Несущественный</option>
-// 	</select><br>
-// 	Срочность выполнения:<br>
-// 	<select name='field_milestone'>
-// 	<option></option>
-// 	<optgroup label='Open (by due date)'>
-// 	<option selected='selected'>0.1</option>
-// 	</optgroup><optgroup label='Open (no due date)'>
-// 	<option>0.2</option><option>0.9</option><option>1.0</option>
-// 	</optgroup>
-// 	</select><br>
-// 	Компонент:<br>
-// 	<select id='field-component' name='field_component'>
-// 	<option>CLI: Внешние обработчики</option><option>Wiki</option><option>Анализатор прайсов</option><option>Витрина и прайс-лист</option><option>Документы</option><option selected='selected'>Другое</option><option>Отчёты</option><option>Справочники</option><option>Ядро</option>
-// 	</select><br>
-//
-// 	<button type='submit'>Сформировать задачу</button>
-// 	</form>
-// 	");
-// }
+else if($mode=='frequest')
+{
+       if(!$CONFIG['site']['trackticket_login'])	throw new Exception("Конфигурация модуля не заполнена!");
+       
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/login");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_USERPWD, $CONFIG['site']['trackticket_login'].':'.$CONFIG['site']['trackticket_pass']);
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+
+        $data = curl_exec($ch);
+        $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+	//$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+	preg_match_all("/Set-Cookie: (.*?)=(.*?);/i",$header,$res);
+	$cookie='';
+	foreach ($res[1] as $key => $value)
+		$cookie.= $value.'='.$res[2][$key].'; ';
+
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_COOKIE,$cookie);
+        curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
+        $output = curl_exec($ch);
+        // close curl resource to free up system resources
+        curl_close($ch);
+
+        $_SESSION['trac_cookie']=$cookie;
+
+        $doc = new DOMDocument('1.0','UTF8');
+	
+	@$doc->loadHTML('<meta http-equiv="content-type" content="text/html; charset=utf-8">'.$output);
+	$doc->normalizeDocument ();
+	
+	$form=$doc->getElementById('propertyform');
+	if(!$form)	throw new Exception("Не удалость получить форму треккера!");
+	
+	$form_inputs=$form->getElementsByTagName('input');
+	$token='';
+	foreach($form_inputs as $input)
+	{
+		$input_name=$input->attributes->getNamedItem('name');
+		$input_name=$input_name?$input_name->nodeValue:'';
+		if($input_name=='__FORM_TOKEN')
+		{
+			$input_value=$input->attributes->getNamedItem('value');
+			$input_value=$input_value?$input_value->nodeValue:'';
+			$token=$input_value;
+			break;
+		}
+	}
+	$form_selects=$form->getElementsByTagName('select');
+	$selects=array();
+	$selects_html=array();
+	foreach($form_selects as $select)
+	{
+		$select_name=$select->attributes->getNamedItem('name');
+		$select_name=$select_name?$select_name->nodeValue:'';
+		$selects[$select_name]=array();
+		$select_options=$select->getElementsByTagName('option');
+		$selects_html[$select_name]='';
+		
+		foreach($select_options as $option)
+		{
+			if($option->nodeValue=='Ядро')	continue;
+			$selected=$option->attributes->getNamedItem('selected');
+			$selected=$selected?' selected':'';
+			$selects[$select_name][]=$option->nodeValue;
+			$selects_html[$select_name].='<option'.$selected.'>'.$option->nodeValue.'</option>';
+		}
+	}
+	
+	$tmpl->SetTitle("Запрос на доработку программы");
+	$tmpl->SetText("<h1 id='page-title'>Оформление запроса на доработку программы</h1>
+	<div id='page-info'>Внимание! Страница является упрощённым интерфейсом к <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a></div>
+	<p class='text'>Заполняя эту форму, вы формируете заказ на доработку сайта от имени Вашей организации в общедоступный реестр заказов, расположенный по адресу <a href='http://multimag.tndproject.org/report/3'>http://multimag.tndproject.org/report/3</a>. 
+	<br>
+	Внимательно заполните все поля. Если иное не написано рядом с полем, все поля являются обязательными для заполнения. Особое внимание стоит уделить полю *краткое содержание*.
+	<br>
+	<b>Для удобства отслеживания исполнения задач (вашего и разработчиков) каждая задача должна быть добавлена отдельно. Нарушение этого условия скорее всего приведёт к тому, что некоторые задачи окажутся незамеченными.</b>
+	<br>
+	Все задания можно и нужно отслеживать через систему-треккер.
+	</p>
+	</p>
+
+	<form action='/user.php' method='post'>
+	<input type='hidden' name='token' value='$token'>
+	<input type='hidden' name='mode' value='sendrequest'>
+	
+	<b>Тип задачи</b> определяет суть задачи и очерёдность её исполнения.
+	<ul>
+	<li>Тип <u>Дефект</u> используется для информирования разработчиков о неверной работе существующих частей сайта. Такие задачи исполняются в первую очередь.</li>
+	<li>Тип <u>Улучшение</u> используйте для задач по доработке существующего функционала сайта</li>
+	<li>Тип <u>Задача</u> используется для задач, описывающих новый функционал. Это тип по умолчанию.</li>
+	<li>Тип <u>Предложение</u> используете в том случае, если Вам бы хотелось видеть какой-либо функционал на сайте, но Вы не планируете заказывать его разработку в ближайшее время. Используется для отправки идей по доработке разработчикам и другим пользователям программы.</li>
+	</ul>
+	<i><u>Пример</u>: Задача</i><br>
+	<select name='field_type'>{$selects_html['field_type']}</select><br><br>
+	
+	<b>Краткое содержание</b>. Тема задачи. Максимально кратко (3-8 слов) и ёмко изложите суть поставленной задачи. Максимум 64 символа.<br>
+	<i><u>Пример</u>: Реализовать печатную форму: Приходный кассовый ордер</i><br>
+	<input type='text' maxlength='64' name='field_summary' style='width:90%'><br><br>
+	
+	<b>Подробное описание</b>. Максимально подробно изложите суть задачи. Описание должно являться дополнением краткого содержания. Не допускается писать несколько задач. Можно использовать wiki разметку для форматирвания.<br>
+	<i><u>Пример</u>: Форма должна быть доступна в документе *приходный кассовый ордер*, должна быть в PDF формате, и соответствовать общепринятой форме КО-1</i><br>
+	<textarea name='field_description' rows='40' cols='6'></textarea><br><br>
+	
+	<b>Компонент приложения</b>. Выбирается исходя из того, к какой части сайта относится ваша задача. Если задача относится к вашим индивидуальным модификациям - выбирайте *пользовательский дизайн*<br>
+	<i><u>Пример</u>: Документы</i><br>
+	<select name='field_component'>{$selects_html['field_component']}</select><br><br>
+	
+	<b>Приоритет</b> определяет то, насколько срочно требуется выполнить поставленную задачу. Критический приоритет допустимо указывать только для задач с типом *дефект*<br>
+	<i><u>Пример</u>: Обычный</i><br>
+	<select name='field_priority'>{$selects_html['field_priority']}</select><br><br>
+	
+	<b>Целевая версия</b> нужна, чтобы указать, в какой версии программы вы хотели бы видеть реализацию этой задачи. Вы можете отложить реализацию, указав более позднюю версию. Нет смысла выбирать более раннюю версию, т.к. приём задач в неё закрыт. В случае, если задача не соответствует целям версии, разработчики могут изменить этот параметр.<br>
+	<i><u>Пример</u>: 0.9</i><br>
+	<select name='field_milestone'>{$selects_html['field_milestone']}</select><br><br>
+	
+	<button type='submit'>Опубликовать задачу</button>
+	</form>");
+}
+else if($mode=='sendrequest')
+{
+	$fields=array(
+	'__FORM_TOKEN'		=> $_POST['token'],
+	'field_type' 		=> $_POST['field_type'],
+	'field_summary' 	=> $_POST['field_summary'],
+	'field_description'	=> $_POST['field_description']."\nUser: {$_SESSION['name']} at {$_SERVER['HTTP_HOST']}",
+	'field_component'	=> $_POST['field_component'],
+	'field_priority'	=> $_POST['field_priority'],
+	'field_milestone'	=> $_POST['field_milestone'],
+	'field_reporter'	=> $CONFIG['site']['trackticket_login'],
+	'submit'		=> 'submit'
+	);
+	
+	var_dump($fields);
+	var_dump($_SESSION['trac_cookie']);
+	
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+	curl_setopt($ch, CURLOPT_COOKIE,$_SESSION['trac_cookie'].' trac_form_token='.$_POST['token']);
+	curl_setopt($ch, CURLOPT_POST, 1);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+
+
+        $data = curl_exec($ch);
+        $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+	$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
+        curl_close($ch);
+	
+	$ticket=0;
+	$ticket_url='';
+	$hlines=explode("\n",$header);
+	foreach($hlines as $line)
+	{
+		$line=trim($line);
+		if(strpos($line,'Location')===0)
+		{
+			$chunks=explode(": ",$line);
+			$ticket_url=trim($chunks[1]);
+			$chunks=explode("/",$ticket_url);
+			$ticket=$chunks[count($chunks)-1];
+			settype($ticket,'int');
+			break;
+		}
+	}
+	
+	$tmpl->SetText("<h1 id='page-title'>Оформление запроса на доработку программы</h1>
+	<div id='page-info'>Внимание! Страница является упрощённым интерфейсом к <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a></div>");
+	if($ticket)
+	{
+		$tmpl->msg("Номер задачи: <b>$ticket</b>.<br>Посмотресть созданную задачу, а так же следить за ходом её выполнения, можно по ссылке: <a href='$ticket_url'>$ticket_url</a>","ok","Задача успешно внесена в реестр!");
+		$tmpl->AddText("<iframe width='100%' height='70%' src='$ticket_url'></iframe>");
+	}
+	else	$tmpl->msg("Не удалось создать задачу! Сообщите о проблеме своему системному администратору!","err");
+}
 else if($mode=="elog")
 {
 	if(!isAccess('log_error','view'))	throw new AccessException("Недостаточно привилегий");

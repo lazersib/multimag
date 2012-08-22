@@ -30,6 +30,10 @@ $CONFIG['xmpp']['pass']		= '';
 // $CONFIG['sendfax']['attempts']	= 5;	// кол-во попыток отправки
 // $CONFIG['sendfax']['delay']	= 15;	// задержка между попытками, мин
 
+// настройки отправки заявки на доработку сайта
+$CONFIG['site']['trackticket_login']	= '';
+$CONFIG['site']['trackticket_pass']	= '';
+
 // Настройки для яндекс-маркет
 $CONFIG['ymarket']['local_delivery_cost']	= 150;
 
