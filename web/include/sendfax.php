@@ -37,6 +37,10 @@ function setFileBuf($buf)
 /// @param num - номер факса
 function setFaxNumber($num)
 {
+	if(preg_match('/^\+7\d{1,}$/', $num))
+		$num='8'.substr($num,2);
+	else if(preg_match('/^\+\d{1,}$/', $num))
+		$num='810'.substr($num,1);
 	$this->faxnumber=$num;
 }
 

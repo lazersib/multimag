@@ -117,11 +117,11 @@ class doc_s_Agent
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`
+			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`, `sms_phone`, `fax_phone`, `alt_phone`
 			FROM `doc_agent`
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Выборка информации об агенте не удалась");
-			$nxt=@mysql_fetch_row($res);
+			$nxt=@mysql_fetch_array($res);
 
 			$pagent_name='';
 
@@ -174,6 +174,9 @@ class doc_s_Agent
 			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='$nxt[3]'>
 			<tr class=lin0><td align=right>Полное название / ФИО:<td><input type=text name='fullname' value='$nxt[4]' style='width: 90%;'>
 			<tr class=lin1><td align=right>Телефон:<td><input type=text name='tel' value='$nxt[5]'>
+			<tr class=lin0><td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='fax_phone' value='{$nxt['fax_phone']}'>
+			<tr class=lin1><td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='sms_phone' value='{$nxt['sms_phone']}'>
+			<tr class=lin0><td align=right>Дополнительный телефон:<td><input type=text name='alt_phone' value='{$nxt['alt_phone']}'>
 			<tr class=lin0><td align=right>Юридический адрес / Адрес прописки<td colspan=2><textarea name='adres'>$nxt[6]</textarea>
 			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>$nxt[7]</textarea>
 			<tr class=lin0><td align=right>ИНН,КПП / ИНН:<td><input type=text name='inn' value='$nxt[8]' style='width: 40%;'>
@@ -352,6 +355,9 @@ class doc_s_Agent
 			$email=rcv('email');
 			$fullname=rcv('fullname');
 			$tel=rcv('tel');
+			$fax_phone=rcv('fax_phone');
+			$sms_phone=rcv('sms_phone');
+			$alt_phone=rcv('alt_phone');
 			$adres=rcv('adres');
 			$gruzopol=rcv('gruzopol');
 			$inn=rcv('inn');
@@ -391,6 +397,9 @@ class doc_s_Agent
 			if($email!=$ag_info['email'])		$log_text.="email: ( {$ag_info['email']} => $email ), ";
 			if($fullname!=$ag_info['fullname'])	$log_text.="fullname: ( {$ag_info['fullname']} => $fullname ), ";
 			if($tel!=$ag_info['tel'])		$log_text.="tel: ( {$ag_info['tel']} => $tel ), ";
+			if($fax_phone!=$ag_info['fax_phone'])	$log_text.="fax_phone: ( {$ag_info['fax_phone']} => $fax_phone ), ";
+			if($sms_phone!=$ag_info['sms_phone'])	$log_text.="sms_phone: ( {$ag_info['sms_phone']} => $sms_phone ), ";
+			if($alt_phone!=$ag_info['alt_phone'])	$log_text.="alt_phone: ( {$ag_info['alt_phone']} => $alt_phone ), ";
 			if($adres!=$ag_info['adres'])		$log_text.="adres: ( {$ag_info['adres']} => $adres ), ";
 			if($gruzopol!=$ag_info['gruzopol'])	$log_text.="gruzopol: ( {$ag_info['gruzopol']} => $gruzopol ), ";
 			if($inn!=$ag_info['inn'])		$log_text.="inn: ( {$ag_info['inn']} => $inn ), ";
@@ -429,7 +438,7 @@ class doc_s_Agent
 					$sql_add=", `responsible`=$responsible, `data_sverki`='$data_sverki'";
 				}
 				if(!isAccess('list_agent','edit'))	throw new AccessException("");
-				$res=mysql_query("UPDATE `doc_agent` SET `name`='$pos_name', `type`='$type', `group`='$g', `email`='$email', `fullname`='$fullname', `tel`='$tel', `adres`='$adres', `gruzopol`='$gruzopol', `inn`='$inn', `rs`='$rs', `ks`='$ks', `okevd`='$okevd', `okpo`='$okpo', `bank`='$bank', `bik`='$bik', `pfio`='$pfio', `pdol`='$pdol', `pasp_num`='$pasp_num', `pasp_date`='$pasp_date', `pasp_kem`='$pasp_kem', `comment`='$comment', `dishonest`='$dishonest', `dir_fio`='$dir_fio', `dir_fio_r`='$dir_fio_r', `p_agent`= $p_agent $sql_add  WHERE `id`='$pos'");
+				$res=mysql_query("UPDATE `doc_agent` SET `name`='$pos_name', `type`='$type', `group`='$g', `email`='$email', `fullname`='$fullname', `tel`='$tel', `fax_phone`='$fax_phone', `sms_phone`='$sms_phone', `alt_phone`='$alt_phone', `adres`='$adres', `gruzopol`='$gruzopol', `inn`='$inn', `rs`='$rs', `ks`='$ks', `okevd`='$okevd', `okpo`='$okpo', `bank`='$bank', `bik`='$bik', `pfio`='$pfio', `pdol`='$pdol', `pasp_num`='$pasp_num', `pasp_date`='$pasp_date', `pasp_kem`='$pasp_kem', `comment`='$comment', `dishonest`='$dishonest', `dir_fio`='$dir_fio', `dir_fio_r`='$dir_fio_r', `p_agent`= $p_agent $sql_add  WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Ошибка сохранения данных агента");
 				$tmpl->msg("Данные обновлены!");
 			}
@@ -446,7 +455,7 @@ class doc_s_Agent
 					$sql_v=", '$data_sverki'";
 				}
 				if(!isAccess('list_agent','create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_agent` (`name`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `dishonest`, `p_agent` $sql_c  ) VALUES ( '$pos_name', '$fullname', '$tel', '$adres', '$gruzopol', '$inn', '$dir_fio', '$dir_fio_r', '$pfio', '$pdol', '$okevd', '$okpo', '$rs', '$bank', '$ks', '$bik', '$group', '$email', '$type', '$pasp_num', '$pasp_date', '$pasp_kem', '$comment', '$uid', '$dishonest', $p_agent $sql_v )");
+				$res=mysql_query("INSERT INTO `doc_agent` (`name`, `fullname`, `tel`, `sms_phone`, `fax_phone`, `alt_phone`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `dishonest`, `p_agent` $sql_c  ) VALUES ( '$pos_name', '$fullname', '$tel', '$sms_phone', '$fax_phone', '$alt_phone', '$adres', '$gruzopol', '$inn', '$dir_fio', '$dir_fio_r', '$pfio', '$pdol', '$okevd', '$okpo', '$rs', '$bank', '$ks', '$bik', '$group', '$email', '$type', '$pasp_num', '$pasp_date', '$pasp_kem', '$comment', '$uid', '$dishonest', $p_agent $sql_v )");
 				$pos=mysql_insert_id();
 				$this->PosMenu($pos, '');
 				if($res)

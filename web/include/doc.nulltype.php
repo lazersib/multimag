@@ -773,38 +773,36 @@ class doc_Nulltype
 					if($str)	$str.=",";
 					$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
 				}
-				$res=mysql_query("SELECT `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+				$res=mysql_query("SELECT `fax_phone` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
 				$faxnum=@mysql_result($res,0,0);
 				$tmpl->SetText("{response: 'item_list', faxnum: '$faxnum', content: [$str]}");
 			}
 			else
 			{
-				$faxnum=rcv('faxnum');
-				if($faxnum=='')
+				$faxnum=$_GET['faxnum'];
+				if($faxnum=='')		throw new Exception('Номер факса не указан');
+				
+				if(!preg_match('/^\+\d{8,15}$/', $faxnum))
+					throw new Exception("Номер факса $faxnum указан в недопустимом формате");
+		
+				$method='';
+				foreach($this->PDFForms as $form)
 				{
-					$tmpl->SetText("{response: 'err', text: 'Номер факса не указан!'}");
+					if($form['name']==$opt)	$method=$form['method'];
 				}
-				else
-				{
-					$tmpl->ajax=1;
-					$method='';
-					foreach($this->PDFForms as $form)
-					{
-						if($form['name']==$opt)	$method=$form['method'];
-					}
-					if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-					$res=@mysql_query("SELECT `email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
-					$email=@mysql_result($res,0,0);
-					include_once('sendfax.php');
-					$fs=new FaxSender();
-					$fs->setFileBuf($this->$method(1));
-					$fs->setFaxNumber($faxnum);
-					$fs->setNotifyMail($email);
-					$res=$fs->send();
-					$tmpl->SetText("{response: 'send'}");
-					doc_log("Send FAX", $faxnum, 'doc', $this->doc);
+				if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
+				$res=@mysql_query("SELECT `email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+				$email=@mysql_result($res,0,0);
+				include_once('sendfax.php');
+				$fs=new FaxSender();
+				$fs->setFileBuf($this->$method(1));
+				$fs->setFaxNumber($faxnum);
+				$fs->setNotifyMail($email);
+				$res=$fs->send();
+				$tmpl->SetText("{response: 'send'}");
+				doc_log("Send FAX", $faxnum, 'doc', $this->doc);
 
-				}
+				
 			}
 		}
 		catch(Exception $e)

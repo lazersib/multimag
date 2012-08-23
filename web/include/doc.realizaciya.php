@@ -2871,7 +2871,7 @@ function SfakPDF($to_str=0)
 
 				$sum+=$snalogom;
 				$sumnaloga+=$nalog;
-				$sumbeznaloga+=$cena;
+				$sumbeznaloga+=$stoimost;
 
 				if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
 				$row=array( "$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
@@ -2905,9 +2905,10 @@ function SfakPDF($to_str=0)
 
 			$sum+=$snalogom;
 			$sumnaloga+=$nalog;
-			$sumbeznaloga+=$cena;
-
-			$row=array( "$nxt[0] $nxt[1] / $nxt[2]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
+			$sumbeznaloga+=$stoimost;
+			
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+			$row=array( "$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
 			$pdf->RowIconv($row);
 		}
 	}

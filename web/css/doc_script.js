@@ -422,33 +422,49 @@ function FaxMenu(event,doc)
 		menu.onmouseover=menu.onmouseout=function() {  }
 		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
 		var elem=document.createElement('div')
-		elem.innerHTML='Номер факса:'
+		elem.innerHTML='Номер факса:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>'
 		menu.appendChild(elem)
 		var ifax=document.createElement('input')
-		ifax.type='tel'
+		ifax.type='text'
 		ifax.value=fax_number
 		ifax.style.width='200px'
 		menu.appendChild(ifax)
 		elem=document.createElement('br')
 		menu.appendChild(elem)
 		var bcancel=document.createElement('button')
-		bcancel.innerText='Отменить'
+		bcancel.innerHTML='Отменить'
 		bcancel.onclick=function() {menu.parentNode.removeChild(menu)}
 		menu.appendChild(bcancel)
 		var bsend=document.createElement('button')
-		bsend.innerText='Отправить'
+		bsend.innerHTML='Отправить'
 		menu.appendChild(bsend)
 		bsend.onclick=function()
 		{
 			$.ajax({
 			type:   'GET',
 			url:    '/doc.php',
-			data:   'mode=fax&doc='+doc+'&opt='+event.target.fname+'&faxnum='+ifax.value,
+			data:   'mode=fax&doc='+doc+'&opt='+event.target.fname+'&faxnum='+encodeURIComponent(ifax.value),
 			success: function(msg) { rcvDataSuccess(msg) },
 			error:   function() { jAlert('Ошибка соединения!','Отправка факса',null,'icon_err'); menu.parentNode.removeChild(menu);},
 			});
 			menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка факса...'
 		}
+		function validate_fax()
+		{
+			var regexp=/^\+\d{8,15}$/
+			if(!regexp.test(ifax.value))
+			{
+				ifax.style.color="#f00"
+				bsend.disabled=true
+			}
+			else
+			{
+				ifax.style.color=""
+				bsend.disabled=false
+			}
+		}
+		ifax.onkeyup=validate_fax
+		validate_fax()
 	}
 	
 	function rcvDataSuccess(msg)
