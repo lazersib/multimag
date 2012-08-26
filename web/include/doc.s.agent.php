@@ -180,7 +180,7 @@ class doc_s_Agent
 			<tr class=lin0><td align=right>Юридический адрес / Адрес прописки<td colspan=2><textarea name='adres'>$nxt[6]</textarea>
 			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>$nxt[7]</textarea>
 			<tr class=lin0><td align=right>ИНН,КПП / ИНН:<td><input type=text name='inn' value='$nxt[8]' style='width: 40%;'>
-			<tr class=lin1><td align=right>Рассчетный счет<td><input type=text name='rs' value='$nxt[9]' style='width: 40%;' class='rs validate'>
+			<tr class=lin1><td align=right>Рассчетный счет<td><input type=text name='rs' value='$nxt[9]' style='width: 40%;' class='rs'>
 			<tr class=lin0><td align=right>Корр. счет<td><input type=text name='ks' value='$nxt[10]' style='width: 40%;'>
 			<tr class=lin1><td align=right>ОКВЭД<td><input type=text name='okevd' value='$nxt[11]'>
 			<tr class=lin0><td align=right>ОКПО<td><input type=text name='okpo' value='$nxt[12]'>
