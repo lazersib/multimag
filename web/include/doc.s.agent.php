@@ -26,12 +26,6 @@ class doc_s_Agent
 	{
 		global $tmpl;
 		doc_menu(0,0);
-
-		$sklad=rcv('sklad');
-		settype($sklad,'int');
-		if($sklad) $_SESSION['sklad_num']=$sklad;
-		if(!$_SESSION['sklad_num']) $_SESSION['sklad_num']=1;
-		$sklad=$_SESSION['sklad_num'];
 		if(!isAccess('list_agent','view'))	throw new AccessException("");
 		$tmpl->AddText("<h1>Агенты</h1><table width=100%><tr><td id='groups' width='200' valign='top' class='lin0'>");
 		$this->draw_groups(0);
@@ -214,7 +208,7 @@ class doc_s_Agent
 			<tr class=lin0><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
 			<tr class=lin1><td><td><button type='submit' id='b_submit'>Сохранить</button>
 			</table></form>
-			
+
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 			<script type='text/javascript' src='/js/formvalid.js'></script>
 			<script type=\"text/javascript\">
@@ -248,12 +242,12 @@ class doc_s_Agent
 			}
 			initCalendar('pasp_date')
 			initCalendar('data_sverki')
-			
+
 			var valid=form_validator('agent_edit_form')
-			
-			
-			</script>			
-			
+
+
+			</script>
+
 			");
 
 		}
@@ -604,7 +598,7 @@ class doc_s_Agent
 				if($g_desc) $tmpl->AddText("<h4>$g_desc</h4>");
 			}
 
-			$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest`
+			$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest`, `doc_agent`.`fax_phone`, `doc_agent`.`sms_phone`, `doc_agent`.`alt_phone`
 			FROM `doc_agent`
 			LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
 			WHERE `doc_agent`.`group`='$group'
@@ -663,7 +657,8 @@ class doc_s_Agent
 		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Название<th>Телефон<th>e-mail<th>Дополнительно<th>Отв.менеджер");
 
-		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest` FROM `doc_agent`
+		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest`, `doc_agent`.`fax_phone`, `doc_agent`.`sms_phone`, `doc_agent`.`alt_phone`
+		FROM `doc_agent`
 		LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`";
 
         	$sqla=$sql."WHERE `doc_agent`.`name` LIKE '$s%' OR `doc_agent`.`fullname` LIKE '$s%' ORDER BY `doc_agent`.`name` LIMIT 30";
@@ -696,7 +691,8 @@ class doc_s_Agent
 		$sf=0;
 		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Название<th>Телефон<th>e-mail<th>Дополнительно<th>Отв.менеджер");
-		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest` FROM `doc_agent`
+		$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest`, `doc_agent`.`fax_phone`, `doc_agent`.`sms_phone`, `doc_agent`.`alt_phone`
+		FROM `doc_agent`
 		LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
 		WHERE `doc_agent`.`responsible`='$resp'";
 		$res=mysql_query($sql);
@@ -761,7 +757,7 @@ class doc_s_Agent
 			$kont=rcv('kont');
 			$pasp_num=rcv('pasp_num');
 
-			$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest`
+			$sql="SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name`, `doc_agent`.`dishonest`, `doc_agent`.`fax_phone`, `doc_agent`.`sms_phone`, `doc_agent`.`alt_phone`
 			FROM `doc_agent`
 			LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
 			WHERE 1 ";
@@ -805,10 +801,15 @@ class doc_s_Agent
 			$info=SearchHilight($info,$s);
 			$red=$nxt['dishonest']?"style='color: #f00;'":'';
 			if($nxt[4]) $nxt[4]="<a href='mailto:$nxt[4]'>$nxt[4]</a>";
+			$phone_info='';
+			if($nxt['tel'])						$phone_info.='тел. '.formatPhoneNumber($nxt['tel']).' ';
+			if($nxt['fax_phone']&& $nxt['fax_phone']!=$nxt['tel'])	$phone_info.='факс '.formatPhoneNumber($nxt['fax_phone']).' ';
+			if($nxt['sms_phone']&& $nxt['sms_phone']!=$nxt['tel'])	$phone_info.='sms: '.formatPhoneNumber($nxt['sms_phone']).' ';
+			if($nxt['alt_phone']&& $nxt['alt_phone']!=$nxt['tel'])	$phone_info.='доп: '.formatPhoneNumber($nxt['alt_phone']).' ';
 			$tmpl->AddText("<tr class='lin$i pointer' align='right' $red oncontextmenu=\"return ShowAgentContextMenu(event,$nxt[0])\">
 			<td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a>
 			<a href='' onclick=\"return ShowAgentContextMenu(event,$nxt[0]);\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
-			<td align=left>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$info<td>$nxt[8]");
+			<td align=left>$nxt[2]<td>$phone_info<td>$nxt[4]<td>$info<td>$nxt[8]");
 		}
 	}
 

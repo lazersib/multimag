@@ -639,6 +639,12 @@ class doc_Nulltype
 			if($this->doc_name) $object='doc_'.$this->doc_name;
 			else $object='doc';
 			if(!isAccess($object,'apply'))	throw new AccessException("");
+
+			$res=mysql_query("SELECT `recalc_active` FROM `variables`");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные блокировок!");
+			if(mysql_result($res,0,0))	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить данные блокировок!");
+
 			mysql_query("START TRANSACTION");
 			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
 			if(method_exists($this,'DocApply'))	$this->DocApply(0);
@@ -682,6 +688,12 @@ class doc_Nulltype
 			if( !isAccess($object,'cancel') )
 				if( (!isAccess($object,'cancel')) && ($dd>$this->doc_data['date']) )
 					throw new AccessException("");
+
+			$res=mysql_query("SELECT `recalc_active` FROM `variables`");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные блокировок!");
+			if(mysql_result($res,0,0))	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить данные блокировок!");
+
 			mysql_query("START TRANSACTION");
 			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
 			$this->get_docdata();
@@ -781,10 +793,10 @@ class doc_Nulltype
 			{
 				$faxnum=$_GET['faxnum'];
 				if($faxnum=='')		throw new Exception('Номер факса не указан');
-				
+
 				if(!preg_match('/^\+\d{8,15}$/', $faxnum))
 					throw new Exception("Номер факса $faxnum указан в недопустимом формате");
-		
+
 				$method='';
 				foreach($this->PDFForms as $form)
 				{
@@ -802,7 +814,7 @@ class doc_Nulltype
 				$tmpl->SetText("{response: 'send'}");
 				doc_log("Send FAX", $faxnum, 'doc', $this->doc);
 
-				
+
 			}
 		}
 		catch(Exception $e)

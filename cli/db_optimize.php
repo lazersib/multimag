@@ -47,7 +47,8 @@ mysql_query("REPAIR TABLE `doc_agent`");
 mysql_query("REPAIR TABLE `doc_base`");
 mysql_query("REPAIR TABLE `doc_list`");
 mysql_query("REPAIR TABLE `doc_list_pos`");
-mysql_query("UPDATE `variables` SET `corrupted`='1'");
+mysql_query("UPDATE `variables` SET `corrupted`='1', `recalc_active`='1'");
+sleep(5);
 $res=mysql_query("SELECT `version` FROM `db_version`");
 if(mysql_errno())
 {
@@ -65,7 +66,6 @@ else
 		echo $text;
 	}
 }
-
 echo"Сброс остатков...";
 $res=mysql_query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0'
@@ -93,7 +93,8 @@ mysql_query("CREATE TEMPORARY TABLE IF NOT EXISTS `doc_base_likv_update` (
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
 echo mysql_error();
-$rs=mysql_query("UPDATE `doc_base` SET `likvid`='0'");
+// Это не нужно - см ниже
+//$rs=mysql_query("UPDATE `doc_base` SET `likvid`='0'");
 $res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`)
 FROM `doc_list_pos`, `doc_list`
 WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND (`doc_list`.`type`='2' OR `doc_list`.`type`='3') AND `doc_list`.`date`>'$dtim'
@@ -119,7 +120,7 @@ function seek_and_up($date,$pos)
 	WHERE `doc_list`.`date`>'$date' AND `doc_list`.`type`='1'");
 	@$doc=mysql_result($res,0,0);
 	@$dt=mysql_result($res,0,1);
-	
+
 	if($doc)
 	{
 		$dtn=$date-60;
@@ -157,7 +158,7 @@ while($nxt=mysql_fetch_row($res))
 	if($err=$document->Apply($nxt[0],1))
 	{
 		mysql_query("UPDATE `doc_list` SET `err_flag`='1' WHERE `id`='$nxt[0]'");
-		$text="$nxt[0](".$document->getViewName()." N $nxt[2] от $dt): $err ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ НЕВЕРНЫ!\n";
+		$text="$nxt[0](".$document->getViewName()." N $nxt[2] от $dt): $err ВЕРОЯТНО, ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ МОГУТ БЫТЬ НЕВЕРНЫ!\n";
 		echo $text;
 		$mail_text.=$text;
 		$i++;
@@ -165,12 +166,12 @@ while($nxt=mysql_fetch_row($res))
 }
 if($i)
 {
-	$text="-----------------------\nИтого: $i документов в минус!\n";
+	$text="-----------------------\nИтого: $i документов с ошибками проведения!\n";
 	echo $text;
 	$mail_text.=$text;
 }
 else echo"Ошибки последовательности документов не найдены!\n";
-
+$res=mysql_query("UPDATE `variables` SET `recalc_active`='0'");
 
 echo "Удаление помеченных на удаление...\n";
 // ============================= Удаление помеченных на удаление =========================================
@@ -192,7 +193,7 @@ while($nxt=mysql_fetch_row($res))
 }
 
 $res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list`.`id`, `doc_agent`.`name`, `doc_list_pos`.`id`, `doc_base`.`name` FROM `doc_list_pos`
-INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0' 
+INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
 LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 WHERE `doc_list_pos`.`cost`<='0' ");
@@ -214,7 +215,7 @@ if($mail_text)
 		echo "Почта отправлена!";
 		mysql_query("UPDATE `variables` SET `corrupted`='1'");
 	}
-	catch(Exception $e) 
+	catch(Exception $e)
 	{
 		echo"Ошибка отправки почты!".$e->getMessage();
 	}

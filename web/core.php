@@ -172,6 +172,21 @@ function get_max_upload_filesize()
     return min($max_fs, $max_post);
 }
 
+/// Форматирование номера телефона, записанного в международном формате, в легкочитаемый вид
+/// Номера, не начинающиеся с +, возвращаются без форматирования
+function formatPhoneNumber($phone)
+{
+	if($phone[0]!='+')	return $phone;
+	$divs=array('','','-','','','-','','','-','','-','','-','','-','','-','','-','','','','','','','','','','','','','','','','','','','','');
+	$fphone='';
+	$len=strlen($phone);
+	for($i=0;$i<$len;$i++)
+	{
+		$fphone.=$divs[$i].$phone[$i];
+	}
+	return $fphone;
+}
+
 function exception_handler($exception)
 {
 	$ip=getenv("REMOTE_ADDR");
