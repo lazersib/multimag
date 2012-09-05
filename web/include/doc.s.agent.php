@@ -173,13 +173,13 @@ class doc_s_Agent
 			<tr class=lin0><td align=right>Дополнительный телефон:<td><input type=text name='alt_phone' value='{$nxt['alt_phone']}'>
 			<tr class=lin0><td align=right>Юридический адрес / Адрес прописки<td colspan=2><textarea name='adres'>$nxt[6]</textarea>
 			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>$nxt[7]</textarea>
-			<tr class=lin0><td align=right>ИНН,КПП / ИНН:<td><input type=text name='inn' value='$nxt[8]' style='width: 40%;'>
-			<tr class=lin1><td align=right>Рассчетный счет<td><input type=text name='rs' value='$nxt[9]' style='width: 40%;' class='rs validate'>
+			<tr class=lin0><td align=right>ИНН/КПП или ИНН:<td><input type=text name='inn' value='$nxt[8]' style='width: 40%;' class='inn validate'>
+			<tr class=lin1><td align=right>Банк<td><input type=text name='bank' value='$nxt[13]' style='width: 90%;'>
 			<tr class=lin0><td align=right>Корр. счет<td><input type=text name='ks' value='$nxt[10]' style='width: 40%;'>
+			<tr class=lin1><td align=right>БИК<td><input type=text name='bik' value='$nxt[14]' class='bik validate'>
+			<tr class=lin0><td align=right>Рассчетный счет<td><input type=text name='rs' value='$nxt[9]' style='width: 40%;' class='rs validate'>			
 			<tr class=lin1><td align=right>ОКВЭД<td><input type=text name='okevd' value='$nxt[11]'>
 			<tr class=lin0><td align=right>ОКПО<td><input type=text name='okpo' value='$nxt[12]'>
-			<tr class=lin1><td align=right>Банк<td><input type=text name='bank' value='$nxt[13]' style='width: 90%;'>
-			<tr class=lin0><td align=right>БИК<td><input type=text name='bik' value='$nxt[14]' class='bik validate'>
 			<tr class=lin1><td align=right>ФИО директора<td><input type=text name='dir_fio' value='$nxt[23]'>
 			<tr class=lin0><td align=right>ФИО директора в родительном падеже<td><input type=text name='dir_fio_r' value='$nxt[24]'>
 			<tr class=lin1><td align=right>Контактное лицо<td><input type=text name='pfio' value='$nxt[15]'>

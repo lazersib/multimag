@@ -50,6 +50,22 @@ function form_validator(form_id)
 	function hasClass(elem, className) {
 		    return new RegExp("(^|\\s)"+className+"(\\s|$)").test(elem.className)
 	}
+	
+	function hlErrorField(field,hl)
+	{
+		if(hl)
+		{
+			field.style.borderColor="#f00"
+			field.style.color="#f00"
+			field.valid=false
+		}
+		else
+		{
+			field.style.borderColor=""
+			field.style.color=""
+			field.valid=true
+		}
+	}
 
 	function validatePhone(input,no_empty)
 	{
@@ -59,14 +75,12 @@ function form_validator(form_id)
 			{
 				if(no_empty)
 				{
-					input.style.color="#f00"
-					input.valid=false
+					hlErrorField(input,true)
 					buttons_toggle()
 				}
 				else
 				{
-					input.style.color=""
-					input.valid=true
+					hlErrorField(input,false)
 					buttons_toggle()
 				}
 				return true
@@ -74,14 +88,12 @@ function form_validator(form_id)
 			var regexp=/^\+\d{8,15}$/
 			if(!regexp.test(input.value))
 			{
-				input.style.color="#f00"
-				input.valid=false
+				hlErrorField(input,true)
 				buttons_toggle()
 			}
 			else
 			{
-				input.style.color=""
-				input.valid=true
+				hlErrorField(input,false)
 				buttons_toggle()
 			}
 			return true
@@ -98,14 +110,12 @@ function form_validator(form_id)
 			{
 				if(no_empty)
 				{
-					input.style.color="#f00"
-					input.valid=false
+					hlErrorField(input,true)
 					buttons_toggle()
 				}
 				else
 				{
-					input.style.color=""
-					input.valid=true
+					hlErrorField(input,false)
 					buttons_toggle()
 				}
 				return true
@@ -113,14 +123,12 @@ function form_validator(form_id)
 			var regexp=/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/
 			if(!regexp.test(input.value))
 			{
-				input.style.color="#f00"
-				input.valid=false
+				hlErrorField(input,true)
 				buttons_toggle()
 			}
 			else
 			{
-				input.style.color=""
-				input.valid=true
+				hlErrorField(input,false)
 				buttons_toggle()
 			}
 			return true
@@ -133,19 +141,28 @@ function form_validator(form_id)
 	{
 		function test_valid()
 		{
-			var v=input.value
+			var a=input.value.split('/')
+			var v=a[0]
+			if(a.length>1)
+			{
+				if(a[1].length!=0 && a[1].length!=9)
+				{
+					hlErrorField(input,true)
+					buttons_toggle()
+					return true
+				}
+			}
+			
 			if(v.length==0)
 			{
 				if(no_empty)
 				{
-					input.style.color="#f00"
-					input.valid=false
+					hlErrorField(input,true)
 					buttons_toggle()
 				}
 				else
 				{
-					input.style.color=""
-					input.valid=true
+					hlErrorField(input,false)
 					buttons_toggle()
 				}
 				return true
@@ -156,14 +173,12 @@ function form_validator(form_id)
 				var c=((2*v[0]+4*v[1]+10*v[2]+3*v[3]+5*v[4]+9*v[5]+4*v[6]+6*v[7]+8*v[8])%11)%10
 				if(c!=Number(v[9]))
 				{
-					input.style.color="#f00"
-					input.valid=false
+					hlErrorField(input,true)
 					buttons_toggle()
 				}
 				else
 				{
-					input.style.color=""
-					input.valid=true
+					hlErrorField(input,false)
 					buttons_toggle()
 				}
 				return true
@@ -174,20 +189,17 @@ function form_validator(form_id)
 				var c12=((3*v[0]+7*v[1]+2*v[2]+4*v[3]+10*v[4]+3*v[5]+5*v[6]+9*v[7]+4*v[8]+6*v[9]+8*v[10])%11)%10
 				if(c11!=Number(v[10]) || c12!=Number(v[11]))
 				{
-					input.style.color="#f00"
-					input.valid=false
+					hlErrorField(input,true)
 					buttons_toggle()
 				}
 				else
 				{
-					input.style.color=""
-					input.valid=true
+					hlErrorField(input,false)
 					buttons_toggle()
 				}
 				return true
 			}
-			input.style.color="#f00"
-			input.valid=false
+			hlErrorField(input,true)
 			buttons_toggle()
 			return true
 		}
@@ -199,54 +211,48 @@ function form_validator(form_id)
 	{
 		function test_valid()
 		{
+			
 			if(input_bik.value.length==0 && input_rs.value.length==0)
 			{
-				input.style.color=""
-				input.valid=true
+				hlErrorField(input_bik,false)
+				hlErrorField(input_rs,false)
 				buttons_toggle()
 				return true
 			}
-
+			//alert('test'+input_bik+input_rs)
 			if(input_rs.value.length!=20)
-			{
-				input_rs.style.color="#f00"
-				input_rs.valid=false
-				buttons_toggle()
-				return true
-			}
+				hlErrorField(input_rs,true)
 
 			if(input_bik.value.length!=9)
+				hlErrorField(input_bik,true)
+			
+			if(input_bik.value.length!=9 || input_rs.value.length!=20)
 			{
-				input_bik.style.color="#f00"
-				input_bik.valid=false
 				buttons_toggle()
 				return true
 			}
-
+			
 			var sum=0
 			var coef=[7,1,3]
-			for(var i=0;i<input.value.length;i++)
+			for(var i=6;i<input_bik.value.length;i++)
 			{
-				sum+=Number(input.value[i])*coef[i%3]
+				sum+=Number(input_bik.value[i])*coef[i%3]
 			}
-			for(var i=0;i<input.value.length;i++)
+			for(var i=0;i<input_rs.value.length;i++)
 			{
-				sum+=Number(input.value[i])*coef[i%3]
+				sum+=Number(input_rs.value[i])*coef[i%3]
 			}
 
 
 			if(sum%10==0)
 			{
-				input.style.color=""
-				input.valid=true
+				hlErrorField(input_bik,false)
+				hlErrorField(input_rs,false)
 				buttons_toggle()
 				return true
 			}
-			alert(sum%10)
-			input_rs.style.color="#f00"
-			input_bik.style.color="#f00"
-			input_rs.valid=false
-			input_bik.valid=false
+			hlErrorField(input_bik,true)
+			hlErrorField(input_rs,true)
 			buttons_toggle()
 			return true
 		}
@@ -266,10 +272,8 @@ function form_validator(form_id)
 				input_bik=form_inputs[i]
 			else if(hasClass(form_inputs[i],'rs'))
 				input_rs=form_inputs[i]
-			//else if(hasClass(form_inputs[i],'inn'))
-			//	validateINN(form_inputs[i], hasClass(form_inputs[i],'no_empty'))
-// 			else if(hasClass(form_inputs[i],'rs'))
-// 				validateRS(form_inputs[i], hasClass(form_inputs[i],'no_empty'))
+			else if(hasClass(form_inputs[i],'inn'))
+				validateINN(form_inputs[i], hasClass(form_inputs[i],'no_empty'))
 		}
 	}
 	if(input_bik && input_rs)
