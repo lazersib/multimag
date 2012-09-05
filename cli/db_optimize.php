@@ -26,17 +26,17 @@ require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
 include_once($CONFIG['site']['location']."/include/doc.core.php");
 include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
-include_once($CONFIG['site']['location']."/include/doc.postuplenie.php");
-include_once($CONFIG['site']['location']."/include/doc.realizaciya.php");
-include_once($CONFIG['site']['location']."/include/doc.zayavka.php");
-include_once($CONFIG['site']['location']."/include/doc.rbank.php");
-include_once($CONFIG['site']['location']."/include/doc.pbank.php");
-include_once($CONFIG['site']['location']."/include/doc.rko.php");
-include_once($CONFIG['site']['location']."/include/doc.pko.php");
-include_once($CONFIG['site']['location']."/include/doc.peremeshenie.php");
-include_once($CONFIG['site']['location']."/include/doc.perkas.php");
-include_once($CONFIG['site']['location']."/include/doc.sborka.php");
-include_once($CONFIG['site']['location']."/include/doc.kordolga.php");
+// include_once($CONFIG['site']['location']."/include/doc.postuplenie.php");
+// include_once($CONFIG['site']['location']."/include/doc.realizaciya.php");
+// include_once($CONFIG['site']['location']."/include/doc.zayavka.php");
+// include_once($CONFIG['site']['location']."/include/doc.rbank.php");
+// include_once($CONFIG['site']['location']."/include/doc.pbank.php");
+// include_once($CONFIG['site']['location']."/include/doc.rko.php");
+// include_once($CONFIG['site']['location']."/include/doc.pko.php");
+// include_once($CONFIG['site']['location']."/include/doc.peremeshenie.php");
+// include_once($CONFIG['site']['location']."/include/doc.perkas.php");
+// include_once($CONFIG['site']['location']."/include/doc.sborka.php");
+// include_once($CONFIG['site']['location']."/include/doc.kordolga.php");
 
 $mail_text='';
 
