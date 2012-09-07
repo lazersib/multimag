@@ -65,17 +65,29 @@ while($nxt=mysql_fetch_row($res))
 echo"</categories>
 <local_delivery_cost>{$CONFIG['ymarket']['local_delivery_cost']}</local_delivery_cost>
 <offers>";
-$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`, `doc_img`.`type` AS `img_type`
+$cols_add=$join_add='';
+if(@$CONFIG['ymarket']['av_from_prices'])
+{
+	$cols_add=", `parsed_price`.`nal`, `firm_info`.`delivery_info`";
+	$join_add="LEFT JOIN `parsed_price` ON `parsed_price`.`pos`=`doc_base`.`id` AND `parsed_price`.`selected`='1'
+	LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm`";
+}
+$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`, `doc_img`.`type` AS `img_type` $cols_add
 FROM `doc_base`
 INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+$join_add
 WHERE `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND `doc_base`.`no_export_yml`='0' AND `doc_group`.`no_export_yml`='0'");
 if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 while($nxt=mysql_fetch_assoc($res))
 {
 	$avariable=($nxt['nal']>0)?'true':'false';
+	if(@$CONFIG['ymarket']['av_from_prices'])
+		if($nxt['nal']>1 || strstr($nxt['nal'],'*') || strstr($nxt['nal'],'+'))
+			if($nxt['delivery_info']=='+')	$avariable='true';
+
 	if($CONFIG['site']['recode_enable'])	$url= "http://{$CONFIG['site']['name']}/vitrina/ip/{$nxt['id']}.html";
 	else					$url= "http://{$CONFIG['site']['name']}/vitrina.php?mode=product&amp;p={$nxt['id']}";
 	$cost=GetCostPos($nxt['id'], $cost_id);

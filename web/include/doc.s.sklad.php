@@ -1986,6 +1986,7 @@ class doc_s_Sklad
 			$pagebar.='<br>';
 			$res=mysql_query("$sql LIMIT $sl,$lim");
 		}
+		else $sl=0;
 
 		if(mysql_num_rows($res))
 		{
@@ -1997,6 +1998,7 @@ class doc_s_Sklad
 			$cheader_add=($_SESSION['sklad_cost']>0)?'<th>Выб. цена':'';
 			$tmpl->AddText("$pagebar<table width='100%' cellspacing='1' cellpadding='2'><tr>
 			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
+			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>В группе $row наименований, показаны ".( ($sl+$lim)<$row?$lim:($row-$sl) ).", начиная с $sl" );
 			$i=0;
 			$this->DrawSkladTable($res,$s);
 			$tmpl->AddText("</table>$pagebar");

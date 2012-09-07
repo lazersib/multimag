@@ -35,7 +35,8 @@ $CONFIG['site']['trackticket_login']	= '';
 $CONFIG['site']['trackticket_pass']	= '';
 
 // Настройки для яндекс-маркет
-$CONFIG['ymarket']['local_delivery_cost']	= 150;
+$CONFIG['ymarket']['local_delivery_cost']	= 150;		// Цена доставки в пределах региона, указываемая в яндекс-маркете
+$CONFIG['ymarket']['av_from_prices']		= false;	// Брать информацию о наличии из анализатора прайсов
 
 require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
 
