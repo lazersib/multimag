@@ -42,6 +42,7 @@ class doc_Zayavka extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
+		$status_options=array('err'=>'Ошибочный','inproc'=>'В процессе','ready'=>'Готов','ok'=>'Отгружен');
 		$klad_id=@$this->dop_data['kladovshik'];
 		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
 		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
@@ -56,12 +57,25 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		$tmpl->AddText("</select><hr>
 		<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
-		Желаемая дата:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'>
+		Желаемая дата:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br><br>
+		Статус (будет меняться автоматически):<br>
+		<select name='status'>");
+		if(@$this->dop_data['status']=='')	$tmpl->AddText("<option value=''>Новый</option>");
+		foreach($status_options as $id => $name)
+		{
+			$s=(@$this->dop_data['status']==$id)?'selected':'';
+			$tmpl->AddText("<option value='$id' $s>$name</option>");
+		}
+
+		$tmpl->AddText("</select>
 		<hr>");
 	}
 
 	function DopSave()
 	{
+		$status_options=array('err','inproc','ready','ok');
+		$status=rcv('status');
+		if(!in_array($status,$status_options))	$status='';
 		$kladovshik=rcv('kladovshik');
 		$delivery=rcv('delivery');
 		$delivery_date=rcv('delivery_date');
@@ -73,7 +87,8 @@ class doc_Zayavka extends doc_Nulltype
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES
 		( '{$this->doc}' ,'kladovshik','$kladovshik'),
 		( '{$this->doc}' ,'delivery','$delivery'),
-		( '{$this->doc}' ,'delivery_date','$delivery_date')");
+		( '{$this->doc}' ,'delivery_date','$delivery_date'),
+		( '{$this->doc}' ,'status','$status')");
 	}
 
 	function DocApply($silent=0)

@@ -464,7 +464,7 @@ else if($mode=='store')
 	<button>Сохранить</button>
 	</form>");
 }
-else if($mode=='params')
+else if($mode=='param')
 {
 	$types=array('text'=>'Текстовый', 'int'=>'Целый', 'bool'=>'Логический', 'float'=>'С плавающей точкой');
 	$opt=rcv('opt');
@@ -529,7 +529,6 @@ else if($mode=='params')
 		if($newp)	$tmpl->msg("Параметр создан","ok");
 		if((!$save) && (!$newg) && (!$newp))	$tmpl->msg("Ничего не изменено!","info");
 	}
-	
 	$tmpl->AddText("<h1 id='page-title'>Настройки параметров складской номенклатуры</h1>");
 	$tmpl->AddText("<form action='' method='post'>
 	<input type='hidden' name='mode' value='params'>
@@ -570,8 +569,214 @@ else if($mode=='params')
 	$tmpl->AddText("Новая группа: <input type='text' name='name' value=''><br>");
 	
 	$tmpl->AddText("<button>Сохранить</button></form>");
+}
+else if($mode=='params')
+{
+	$opt=rcv('opt');
+	$cur_group=round(rcv('group',1));
+	$types=array('text'=>'Текстовый', 'int'=>'Целый', 'bool'=>'Логический', 'float'=>'С плавающей точкой');
+	doc_menu();
+	$tmpl->AddText("<h1 id='page-title'>Настройки параметров складской номенклатуры</h1>");
+	if($opt=='newg')
+	{
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
+		if(isset($_POST['name']))
+		{
+			$name=mysql_real_escape_string($_POST['name']);
+			if(strlen($name)>0)
+			{
+				mysql_query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$name')");
+				if(mysql_errno())	throw new MysqlException("Не удалось создать группу складской номенклатуры");
+				$cur_group=mysql_insert_id();
+				$newg=1;
+			}
+		}
+		if($newg)	$tmpl->msg("Группа создана","ok");	
+	}
+	if($opt=='save')
+	{
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
+		$res=mysql_query("SELECT `id`, `param`, `type`, `pgroup_id` FROM `doc_base_params` WHERE `pgroup_id`='$cur_group'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
+		$save=$newg=$newp=0;
+		while($nxt=mysql_fetch_row($res))
+		{
+			$param=mysql_real_escape_string($_POST['param'][$nxt[0]]);
+			$type=mysql_real_escape_string($_POST['type'][$nxt[0]]);
+			if(!array_key_exists($type,$types))
+			{
+				echo "id: $nxt[0], $type: $type<br>";
+				$type='text';
+			}
+			$desc='';
+			if($_POST['param'][$nxt[0]]!=$nxt[1])	$desc.="param:(".mysql_real_escape_string($nxt[1])." => $param), ";
+			if($type!=$nxt[2])				$desc.="type: ($nxt[2] => $type)";
+			if($desc=='')	continue;			
+			$save=1;
+			mysql_query("UPDATE `doc_base_params` SET `param`='$param', `type`='$type' WHERE `id`='$nxt[0]'");
+			if(mysql_errno())	throw new MysqlException("Не удалось обновить параметры складской номенклатуры, id=$nxt[0]");
+			doc_log('UPDATE',$desc,'base_params',$nxt[0]);
+		}
+		if($save)	$tmpl->msg("Данные обновлены","ok");
+	
+		$param=mysql_real_escape_string($_POST['param'][0]);
+		if(strlen($param)>0)
+		{
+			$type=mysql_real_escape_string($_POST['type'][0]);
+			if(!array_key_exists($type,$types))	$type='text';
+			
+			mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`) VALUES ('$param', '$type', '$cur_group')");
+			if(mysql_errno())	throw new MysqlException("Не удалось создать параметр складской номенклатуры");
+			doc_log('INSERT',"param: $param, type: $type",'base_params',$cur_group);
+			$tmpl->msg("Параметр создан","ok");
+		}
+
+		
+	
+	}
 	
 	
+	
+	$tmpl->AddStyle("
+div.tabeditor
+{
+	border:	#00c solid 1px;
+}
+
+div.tabeditor form
+{
+	margin: 0;
+	padding:0;
+}
+
+div.group_menu
+{
+	background-color:	#66f;
+	width:			300px;
+	float:			left;
+}
+
+div.group_item
+{
+	height:			25px;
+	border-bottom:		1px solid #fff;
+	font-size:		18px;
+	color:			#fff;
+	text-align:		right;
+	padding:		2px 10px 2px 10px;
+	cursor:			pointer;
+}
+
+div.group_content
+{
+	margin-left:		310px;
+	display:		none;
+}
+
+div.clear
+{
+	clear:			both;
+}
+
+	");
+	
+	
+	
+	$tmpl->AddText("<div class='tabeditor'><div class='group_menu' onclick='menuclick(event)'>");
+	$rgroups=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить группы складской номенклатуры");
+	$content='';
+	while($group=mysql_fetch_row($rgroups))
+	{
+		if($group[0]==$cur_group)
+		{
+			$gi="style='background-color: #fff; color: #66f;'";
+			$gc="style='display: block;'";
+		}
+		else $gi=$gc='';
+		$tmpl->AddText("<div class='group_item' id='g{$group[0]}' $gi>$group[1]</div>");		
+		$content.="<div class='group_content' id='g{$group[0]}c' $gc>
+		<form action='' method='post'>
+		<input type='hidden' name='mode' value='params'>
+		<input type='hidden' name='opt' value='save'>
+		<input type='hidden' name='group' value='{$group[0]}'>		
+		<table><tr><th>ID</th><th>Название</th><th>Тип данных</th><th>Ассоциация с Яндекс.Маркет</th></tr>";
+		$rparams=mysql_query("SELECT `id`, `param`, `type`, `pgroup_id`, `ym_assign` FROM  `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
+		while($param=mysql_fetch_row($rparams))
+		{
+			$content.="<tr><td>$param[0]:</td>
+			<td><input type='text' name='param[$param[0]]' value='$param[1]'></td>
+			<td><select name='type[$param[0]]'>";
+			foreach($types as $t=>$n)
+			{
+				$sel=$param[2]==$t?'selected':'';
+				$content.="<option value='$t' $sel>$n</option>";
+			}
+			$content.="</select></td>
+			<td><input type='text' name='ym[$param[0]]' value='$param[4]' style='width:400px'></td></tr>";			
+		}
+		$content.="<tr><td><b>+</b></td>
+		<td><input type='text' name='param[0]' value=''></td>
+		<td><select name='type[0]'>";
+		foreach($types as $t=>$n)
+		{
+			$content.="<option value='$t'>$n</option>";
+		}
+		$content.="</select></td><td><input type='text' name='ym[0]' value='' style='width:400px'></td></tr>";
+		
+		$content.="</table>
+		<button type='submit'>Сохранить</button>
+		</form>
+		</div>";
+		
+	}
+	$tmpl->AddText("
+	<div class='group_item'>
+	<form action='' method='post'>
+	<input type='hidden' name='mode' value='params'>
+	<input type='hidden' name='opt' value='newg'>
+	+ <input type='text' name='name' value=''><button type='submit'>&gt;&gt;</button>
+	</form>
+	</div>
+	</div>
+	$content
+	<div class='clear'></div>
+	</div>
+	<script type='text/javascript'>
+	var old_item=0;
+	var old_cont=0;
+	if($cur_group)
+	{
+		old_item=document.getElementById('g'+$cur_group)
+		old_cont=document.getElementById('g'+$cur_group+'c')
+	}
+	function menuclick(event)
+	{
+		if(event.target.className!='group_item')	return;
+		if(old_item)
+		{
+			old_item.style.backgroundColor='';
+			old_item.style.color='';
+		}
+		event.target.style.backgroundColor='#fff';
+		event.target.style.color='#66f';
+		old_item=event.target
+		//alert(event.target.id+'c')
+		var cont=document.getElementById(event.target.id+'c')
+		
+		if(cont)
+		{
+			if(old_cont)	old_cont.style.display='none'
+			cont.style.display='block'
+			old_cont=cont
+		}
+	}
+	
+	</script>
+	
+	");
+
 }
 else if($mode=='param_collections')
 {
