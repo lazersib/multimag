@@ -60,7 +60,7 @@ class Report_Dolgi
 		<button type='submit'>Сформировать</button></form>");
 	}
 	
-	function MakeHTML($vdolga)
+	function MakeHTML($vdolga=0)
 	{
 		global $tmpl;
 		$vdolga=rcv('vdolga');
@@ -69,9 +69,12 @@ class Report_Dolgi
 		$tmpl->LoadTemplate('print');
 		if($vdolga==2) $tmpl->SetText("<h1>Мы должны (от ".date('d.m.Y').")</h1>");
 		else $tmpl->SetText("<h1>Долги партнёров (от ".date('d.m.Y').")</h1>");
-		$tmpl->AddText("<table width=100%><tr><th>N<th>Агент - партнер<th>Дата сверки<th>Сумма");
+		$tmpl->AddText("<table width=100%><tr><th>N<th>Агент - партнер<th>Дата сверки<th>Сумма<th>Дата посл. касс. док-та<th>Дата посл. банк. док-та");
 		$sql_add=$agroup?"WHERE `group`='$agroup'":'';
-		$res=mysql_query("SELECT `id`, `name`, `data_sverki` FROM `doc_agent` $sql_add ORDER BY `name`");
+		$res=mysql_query("SELECT `id` AS `agent_id`, `name`, `data_sverki`,
+		( SELECT `date` FROM `doc_list` WHERE `agent`=`agent_id` AND (`type`='4' OR `type`='5') ORDER BY `date` DESC LIMIT 1 ) AS `kass_date`,
+		( SELECT `date` FROM `doc_list` WHERE `agent`=`agent_id` AND (`type`='6' OR `type`='7') ORDER BY `date` DESC LIMIT 1 ) AS `bank_date`
+		FROM `doc_agent` $sql_add ORDER BY `name`");
 		$i=0;
 		$sum_dolga=0;
 		while($nxt=mysql_fetch_row($res))
@@ -82,9 +85,10 @@ class Report_Dolgi
 				$i++;
 				$dolg=abs($dolg);
 				$sum_dolga+=$dolg;
+				$k_date=$nxt[3]?date("Y-m-d",$nxt[3]):'';
+				$b_date=$nxt[4]?date("Y-m-d",$nxt[4]):'';
 				$dolg=sprintf("%0.2f",$dolg);
-				$tmpl->AddText("<tr><td>$i<td>$nxt[1]<td>$nxt[2]<td align='right'>$dolg руб.");
-				
+				$tmpl->AddText("<tr><td>$i<td>$nxt[1]<td align='right'>$nxt[2]<td align='right'>$dolg руб.<td align='right'>$k_date<td align='right'>$b_date");
 			}
 		}
 		$tmpl->AddText("</table>

@@ -18,12 +18,12 @@
 //
 
 /// Отчёт по кладовщикам в реализациях
-class Report_Kladovshik extends BaseGSReport
+class Report_Apay extends BaseGSReport
 {
 	function getName($short=0)
 	{
-		if($short)	return "По кладовщикам в реализациях";
-		else		return "Отчёт по кладовщикам в реализациях";
+		if($short)	return "По платежам агентов";
+		else		return "Отчёт по платежам агентов";
 	}
 	
 	function Form()
@@ -34,21 +34,20 @@ class Report_Kladovshik extends BaseGSReport
 		$tmpl->AddText("<h1>".$this->getName()."</h1>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		<form action='' method='post'>
-		<input type='hidden' name='mode' value='kladovshik'>
+		<input type='hidden' name='mode' value='apay'>
 		<fieldset><legend>Дата</legend>
 		От: <input type=text id='dt_f' name='dt_f' value='$d_f'><br>
 		До: <input type=text id='dt_t' name='dt_t' value='$d_t'>
 		</fieldset>
 		<br>
-		Кладовщик:<br><select name='kladovshik'>");
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
-		$tmpl->AddText("<option value='0' selected>--не выбран--</option>");
-		while($nxt=mysql_fetch_row($res))
-		{
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[2])</option>");
-		}
-		$tmpl->AddText("</select><br><br>
+		Сортировать по:<br>
+		<select name='order'>
+		<option value='agent_name'>Имени агента</option>
+		<option value='agent_id'>ID агента</option>
+		<option value='bank_sum'>Приходу по банку</option>
+		<option value='kass_sum'>Приходу по кассе</option>
+		</select><br>
+		<label><input type='checkbox' name='direct' value='1'>В обратном порядке</label><br>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>
@@ -72,43 +71,42 @@ class Report_Kladovshik extends BaseGSReport
 
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t')." 23:59:59");
-		$kladovshik=round(rcv('kladovshik'));
 		
 		$print_f=date('Y-m-d', $dt_f);
 		$print_t=date('Y-m-d', $dt_t);
 		
 		$this->header($this->getName().", с $print_f по $print_t");
 		
-		$widths=array(5,20,15,15, 15, 30);
-		$headers=array('ID', 'док','Дата','Сумма','Автор','Кладовщик');
-		
+		$widths=array(5,65,10,10, 10);
+		$headers=array('ID', 'Агент','По банку','По кассе','Сумма');
+		$order=rcv('order');
+		$direct=rcv('direct');
+		$orders=array('agent_id','agent_name','bank_sum','kass_sum');
+		if(!in_array($order,$orders))	$order='agent_name';
+		$direct=$direct?'DESC':'ASC';
 		$this->col_cnt=count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
 		
-		$sql_add='';
-		if($kladovshik)	$sql_add=" AND `doc_dopdata`.`value`='$kladovshik' ";
-		
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`sum`, `autor`.`name`, CONCAT(`klad`.`name`,' ',`klad`.`rname`), `doc_types`.`name`, `doc_dopdata`.`value`
-		FROM `doc_list`
-		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		LEFT JOIN `users` AS `autor` ON `autor`.`id`=`doc_list`.`user`
-		LEFT JOIN `doc_dopdata` ON `doc_list`.`id`=`doc_dopdata`.`doc` AND `doc_dopdata`.`param`='kladovshik'
-		LEFT JOIN `users` AS `klad` ON `klad`.`id`=`doc_dopdata`.`value`
-		WHERE `doc_list`.`ok`>'0' AND (`doc_list`.`type`='1' OR `doc_list`.`type`='2' OR `doc_list`.`type`='8') AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t'
-		$sql_add
-		ORDER BY `doc_list`.`date`");
-		if(mysql_errno())		throw new MysqlException("Не удалось получить список документов");
-		$count=$sum=0;
+		$res=mysql_query("SELECT `doc_agent`.`id` AS `agent_id`, `doc_agent`.`name` AS `agent_name`,
+		( SELECT SUM(`doc_list`.`sum`) FROM `doc_list` WHERE `doc_list`.`agent`=`doc_agent`.`id` AND `doc_list`.`type`='4' AND `doc_list`.`ok`>0 AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t') AS `bank_sum`,
+		( SELECT SUM(`doc_list`.`sum`) FROM `doc_list` WHERE `doc_list`.`agent`=`doc_agent`.`id` AND `doc_list`.`type`='6' AND `doc_list`.`ok`>0 AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t') AS `kass_sum`		
+		FROM `doc_agent` ORDER BY $order $direct");
+		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос ".mysql_error());
+		$sumb=$sumc=$count=0;
 		while($nxt=mysql_fetch_row($res))
 		{
-			$this->tableRow(array($nxt[0], $nxt[5], date('Y-m-d H:i:s',$nxt[1]), $nxt[2], $nxt[3], $nxt[4]));
+			if(!$nxt[2] && !$nxt[3])	continue;
+			$this->tableRow(array($nxt[0], $nxt[1],$nxt[2],$nxt[3],$nxt[2]+$nxt[3]));
+			$sumb+=$nxt[2];
+			$sumc+=$nxt[3];
 			$count++;
-			$sum+=$nxt[2];
 		}
 		$this->tableAltStyle(true);
-		$sum=sprintf("%0.2f руб.",$sum);
-		$this->tableSpannedRow(array(2,1,1,2),array("Итого:","$count документов",$sum,'')); 
+		$sum=sprintf("%0.2f",$sumb+$sumc);
+		$sumb=sprintf("%0.2f",$sumb);
+		$sumc=sprintf("%0.2f",$sumc);
+		$this->tableSpannedRow(array(2,1,1,1),array("Итого: $count агентов",$sumb,$sumc,$sum)); 
 		$this->tableEnd();
 		$this->output();
 		exit(0);

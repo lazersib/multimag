@@ -41,10 +41,22 @@ class doc_Postuplenie extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
+		$klad_id=@$this->dop_data['kladovshik'];
+		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
 		if(!@$this->dop_data['input_doc'])	$this->dop_data['input_doc']='';
 		$tmpl->AddText("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
 		$checked=@$this->dop_data['return']?'checked':'';
-		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>");
+		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>
+		Кладовщик:<br><select name='kladovshik'>");
+		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
+		$tmpl->AddText("<option value='0'>--не выбран--</option>");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$s=($klad_id==$nxt[0])?'selected':'';
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
+		}
+		$tmpl->AddText("</select><br>");
 	}
 
 
@@ -53,8 +65,11 @@ class doc_Postuplenie extends doc_Nulltype
 	{
 		$input_doc=rcv('input_doc');
 		$return=rcv('return');
+		$kladovshik=rcv('kladovshik');
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'input_doc','$input_doc'), ( '{$this->doc}' ,'return','$return')");
+		VALUES ( '{$this->doc}' ,'input_doc','$input_doc'),
+		( '{$this->doc}' ,'return','$return'),
+		( '{$this->doc}' ,'kladovshik','$kladovshik')");
 	}
 
 	function DopBody()

@@ -38,6 +38,24 @@ class doc_Zayavka extends doc_Nulltype
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
 		);
 	}
+	
+	/// Функция устанавливает статус, и выполняет информирование клиента о событии
+	function setStatus($status)
+	{
+		$status_options=array('err','inproc','ready','ok');
+		if(!in_array($status,$status_options))	$status='';
+		if($this->dop_data['status']==$status)	return;
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$status')");
+		$this->dop_data['status']=$status;
+		// Отправка по e-mail
+		
+		// Отправка по SMS
+		
+		// Отправка по телефону (голосом)
+		
+		// Отправка по телефону (факсом)
+		
+	}
 
 	function DopHead()
 	{
@@ -59,6 +77,7 @@ class doc_Zayavka extends doc_Nulltype
 		<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
 		Желаемая дата:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br><br>
 		Статус (будет меняться автоматически):<br>
+		<small>Если поменять вручную - уведомление о смене статуса клиентам не будет отправлено</small><br>
 		<select name='status'>");
 		if(@$this->dop_data['status']=='')	$tmpl->AddText("<option value=''>Новый</option>");
 		foreach($status_options as $id => $name)
@@ -101,6 +120,7 @@ class doc_Zayavka extends doc_Nulltype
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
+		$this->setStatus('inproc');
 	}
 
 	function DocCancel()
@@ -181,6 +201,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->SetDopData('platelshik',$this->doc_data['agent']);
 			$new_doc->SetDopData('gruzop',$this->doc_data['agent']);
 			$new_doc->SetDopData('received',0);
+			$this->setStatus('ok');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type=='1')
@@ -198,6 +219,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->SetDopData('platelshik',$this->doc_data['agent']);
 			$new_doc->SetDopData('gruzop',$this->doc_data['agent']);
 			$new_doc->SetDopData('received',0);
+			$this->setStatus('ok');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		// Реализация
@@ -214,6 +236,7 @@ class doc_Zayavka extends doc_Nulltype
 			else
 			{
 				mysql_query("COMMIT");
+				$this->setStatus('inproc');
 				$ref="Location: doc.php?mode=body&doc=$base";
 				header($ref);
 			}
@@ -223,6 +246,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$new_doc=new doc_Realiz_op();
 			$dd=$new_doc->CreateFromP($this);
+			$this->setStatus('inproc');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type==6)
@@ -248,6 +272,7 @@ class doc_Zayavka extends doc_Nulltype
 				if($res)
 				{
 					mysql_query("COMMIT");
+					$this->setStatus('inproc');
 					$ref="Location: doc.php?mode=body&doc=$ndoc";
 					header($ref);
 				}
@@ -280,6 +305,7 @@ class doc_Zayavka extends doc_Nulltype
 				if($res)
 				{
 					mysql_query("COMMIT");
+					$this->setStatus('inproc');
 					$ref="Location: doc.php?mode=body&doc=$ndoc";
 					header($ref);
 				}

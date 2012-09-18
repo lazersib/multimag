@@ -38,6 +38,8 @@ class doc_Peremeshenie extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
+		$klad_id=@$this->dop_data['kladovshik'];
+		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
 		$tmpl->AddText("На склад:<br>
 		<select name='nasklad'>");
 		$res=mysql_query("SELECT `id`,`name` FROM `doc_sklady` ORDER BY `name`");
@@ -49,6 +51,16 @@ class doc_Peremeshenie extends doc_Nulltype
 				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><br>
+		Кладовщик:<br><select name='kladovshik'>");
+		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
+		$tmpl->AddText("<option value='0'>--не выбран--</option>");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$s=($klad_id==$nxt[0])?'selected':'';
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
+		}
+		$tmpl->AddText("</select><br>
 		Количество мест:<br>
 		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>");	
 	}
@@ -57,9 +69,11 @@ class doc_Peremeshenie extends doc_Nulltype
 	{
 		$nasklad=rcv('nasklad');
 		$mest=rcv('mest');
+		$kladovshik=rcv('kladovshik');
 		$res=mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ('{$this->doc}','na_sklad','$nasklad'),
-		( '{$this->doc}' ,'mest','$mest')");
+		( '{$this->doc}' ,'mest','$mest'),
+		( '{$this->doc}' ,'kladovshik','$kladovshik')");
 		if(!$res)		throw new MysqlException("Не удалось установить склад назначения в поступлении!");
 	}
 	
