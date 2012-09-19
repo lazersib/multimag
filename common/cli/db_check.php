@@ -209,39 +209,39 @@ class DbCheck extends AsyncWorker
 			}
 		}
 
-$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list`.`id`, `doc_agent`.`name`, `doc_list_pos`.`id`, `doc_base`.`name` FROM `doc_list_pos`
-INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
-LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-WHERE `doc_list_pos`.`cost`<='0' ");
-while($nxt=mysql_fetch_row($res))
-{
-	$text="Поступление ID:$nxt[1], товар $nxt[0]($nxt[4]) - нулевая цена! Агент $nxt[2]\n";
-	echo $text;
-	$mail_text.=$text;
-}
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list`.`id`, `doc_agent`.`name`, `doc_list_pos`.`id`, `doc_base`.`name` FROM `doc_list_pos`
+		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
+		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+		WHERE `doc_list_pos`.`cost`<='0' ");
+		while($nxt=mysql_fetch_row($res))
+		{
+			$text="Поступление ID:$nxt[1], товар $nxt[0]($nxt[4]) - нулевая цена! Агент $nxt[2]\n";
+			echo $text;
+			$mail_text.=$text;
+		}
 
 
-if($mail_text)
-{
-	try
-	{
-		$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$mail_text."\n\n****\nНеобходимо исправить найденные ошибки!";
+		if($mail_text)
+		{
+			try
+			{
+				$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$mail_text."\n\n****\nНеобходимо исправить найденные ошибки!";
 
-		mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
-		echo "Почта отправлена!";
-		mysql_query("UPDATE `variables` SET `corrupted`='1'");
-	}
-	catch(Exception $e)
-	{
-		echo"Ошибка отправки почты!".$e->getMessage();
-	}
-}
-else
-{
-	echo"Ошибок не найдено, не о чем оповещать!\n";
-	mysql_query("UPDATE `variables` SET `corrupted`='0'");
-}
+				mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
+				echo "Почта отправлена!";
+				mysql_query("UPDATE `variables` SET `corrupted`='1'");
+			}
+			catch(Exception $e)
+			{
+				echo"Ошибка отправки почты!".$e->getMessage();
+			}
+		}
+		else
+		{
+			echo"Ошибок не найдено, не о чем оповещать!\n";
+			mysql_query("UPDATE `variables` SET `corrupted`='0'");
+		}
 
 	}
 

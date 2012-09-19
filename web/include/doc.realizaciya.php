@@ -462,7 +462,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$def_cost=mysql_result($res,0,0);
 		if(!$def_cost)		throw new Exception("Цена по умолчанию не определена!");
 
-		$tmpl->AddText("<h1>Накладная N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
+		$tmpl->AddText("<h1>Накладная N {$this->doc_data[9]}{$this->doc_data[10]} ({$this->doc}), от $dt </h1>
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
 		<b>Покупатель: </b>{$this->doc_data[3]}<br><br>");
 
@@ -554,7 +554,7 @@ class doc_Realizaciya extends doc_Nulltype
 		if(!$def_cost)		throw new Exception("Цена по умолчанию не определена!");
 
 		$pdf->SetFont('','',16);
-		$str="Накладная N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt";
+		$str="Накладная N {$this->doc_data[9]}{$this->doc_data[10]} ({$this->doc}), от $dt";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
@@ -1224,7 +1224,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
-		$tmpl->AddText("<h1>Наценки N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
+		$tmpl->AddText("<h1>Наценки N {$this->doc_data[9]}{$this->doc_data[10]} ({$this->doc}), от $dt </h1>
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
 		<b>Покупатель: </b>{$this->doc_data[3]}<br>");
 

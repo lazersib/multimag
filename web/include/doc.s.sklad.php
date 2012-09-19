@@ -959,7 +959,7 @@ class doc_s_Sklad
 				}
 			}
 			$tmpl->AddText("</select>
-			
+
 			</td><td><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
 			</td></tr></tfoot>
 			<tbody>");
@@ -977,7 +977,7 @@ class doc_s_Sklad
 				<td><img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td></tr>");
 			}
 
-			$tmpl->AddText("</tbody></table>			
+			$tmpl->AddText("</tbody></table>
 			<tr class='lin1'><td colspan='2' align='center'>
 			<button type='submit'>Сохранить</button>
 			</table></form>");
@@ -1066,15 +1066,15 @@ class doc_s_Sklad
 			else
 			{
 				$url = $_POST['url'];
-				$ch = curl_init(); 
-				curl_setopt($ch, CURLOPT_URL, $url); 
-				curl_setopt($ch, CURLOPT_FAILONERROR, 1); 
+				$ch = curl_init();
+				curl_setopt($ch, CURLOPT_URL, $url);
+				curl_setopt($ch, CURLOPT_FAILONERROR, 1);
 				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-				curl_setopt($ch, CURLOPT_TIMEOUT, 4); 
+				curl_setopt($ch, CURLOPT_TIMEOUT, 4);
 				$result = curl_exec($ch);
-				curl_close($ch);  
-				
+				curl_close($ch);
+
 				$dom = new domDocument();
 				$dom->loadHTML($result);
 				$dom->preserveWhiteSpace = false;
@@ -1089,7 +1089,7 @@ class doc_s_Sklad
 						break;
 					}
 				}
-				
+
 				function getSelectParams($id,$name)
 				{
 					$ret="<select name='sel[$id]'><option value='-1' selected>--не выбрано--</option>";
@@ -1114,13 +1114,13 @@ class doc_s_Sklad
 						}
 					}
 					$ret.="</select>";
-					return $ret;				
+					return $ret;
 				}
-				
+
 				if($f)
 				{
 					$values=array();
-					
+
 					mb_internal_encoding('UTF-8');
 					$rows = $table->getElementsByTagName('tr');
 					$prefix=$param='';
@@ -1157,7 +1157,7 @@ class doc_s_Sklad
 					<button>Записать</button>
 					</form>");
 				}
-			
+
 			}
 		}
 		else $tmpl->msg("Неизвестная закладка");
@@ -1322,8 +1322,8 @@ class doc_s_Sklad
 			$mass=rcv('mass',0);
 			$ntd=rcv('ntd');
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
-			
-			
+
+
 			$res=mysql_query("SELECT `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd` FROM `doc_base_dop` WHERE `id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные параметры!");
 			$old_data=mysql_fetch_assoc($res);
@@ -1344,11 +1344,11 @@ class doc_s_Sklad
 				$log_add.=", mass:({$old_data['mass']} => $mass)";
 			if($old_data['ntd']!=$ntd)
 				$log_add.=", ntd:({$old_data['ntd']} => $ntd)";
-			
+
 			if($type!=='null')	$type="'$type'";
 			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd`) VALUES ('$pos', '$analog', '$koncost', $type, '$d_int', '$d_ext', '$size', '$mass', '$ntd')");
 			if(mysql_errno())	throw new MysqlException("Не удалось установить дополнительные параметры!");
-			
+
 			$res=mysql_query("SELECT `param_id`, `value` FROM `doc_base_values` WHERE `id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные параметры!");
 			$dp=array();
@@ -1361,7 +1361,7 @@ class doc_s_Sklad
 					$key=mysql_real_escape_string($key);
 					$value=mysql_real_escape_string($value);
 					if($dp[$key]!=$value)
-						$log_add.=", $key:({$old_data[$key]} => $value)";					
+						$log_add.=", $key:({$old_data[$key]} => $value)";
 					mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$key', '$value')");
 					if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");
 				}
@@ -1392,7 +1392,7 @@ class doc_s_Sklad
 				$mincnt=round(rcv("min$nxt[4]"));
 				$mesto=rcv("mesto$nxt[4]");
 				if($nxt[2]!=$mincnt)
-					$log_add.=", mincnt:({$nxt[2]} => $mincnt)";				
+					$log_add.=", mincnt:({$nxt[2]} => $mincnt)";
 				if($nxt[3]!=$mesto)
 					$log_add.=", mesto:({$nxt[3]} => $mesto)";
 				if($nxt[2]!=$mincnt || $nxt[3]!=$mesto)
@@ -1412,16 +1412,16 @@ class doc_s_Sklad
 			$min_pix=150;
 			$max_pix=10000;
 			global $CONFIG;
-			
+
 			$def_img=round(rcv('def_img'));
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
-			
+
 			for($img_num=1;$img_num<=5;$img_num++)
 			{
 				$set_def=0;
-				if($def_img==$img_num)	$set_def=1;				
+				if($def_img==$img_num)	$set_def=1;
 				$nm=rcv('photoname_'.$img_num);
-				
+
 				$res=mysql_query("SELECT `id` FROM `doc_img` WHERE `name`='$nm'");
 				if(mysql_num_rows($res))
 				{
@@ -1817,7 +1817,7 @@ class doc_s_Sklad
 				$val=mysql_real_escape_string($_POST['val'][$id]);
 				mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
 				if(mysql_errno())	throw new MysqlException("Не удалось добавить дополнительные параметры!");
-				
+
 			}
 			$tmpl->msg("Данные сохранены!","ok");
 		}
@@ -2058,11 +2058,11 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE (`doc_base`.`name` LIKE '%$s%'  OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`vc` NOT LIKE '$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY $order LIMIT 100";
+		WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' ORDER BY $order LIMIT 30";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
-			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>Поиск по названию, содержащему $s: найдено $cnt");
+			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>Поиск аналога, для $s: найдено $cnt");
 			if($cnt>=100)	$tmpl->AddText("<tr style='color: #f00'><td colspan='18' align='center'>Вероятно, показаны не все наименования. Уточните запрос.");
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
@@ -2071,12 +2071,12 @@ class doc_s_Sklad
 		$sqla=$sql."FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base_dop`.`analog` LIKE '%$s%' AND `doc_base`.`name` NOT LIKE '%$s%' ORDER BY $order LIMIT 30";
+		WHERE (`doc_base`.`name` LIKE '%$s%'  OR `doc_base`.`vc` LIKE '%$s%') AND `doc_base`.`vc` NOT LIKE '$s%' AND `doc_base`.`name` NOT LIKE '$s%' ORDER BY $order LIMIT 100";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
 		{
-			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>Поиск аналога, для $s: найдено $cnt");
-			if($cnt>=30)	$tmpl->AddText("<tr style='color: #f00'><td colspan='18' align='center'>Вероятно, показаны не все наименования. Уточните запрос.");
+			$tmpl->AddText("<tr class='lin0'><th colspan='18' align='center'>Поиск по названию, содержащему $s: найдено $cnt");
+			if($cnt>=100)	$tmpl->AddText("<tr style='color: #f00'><td colspan='18' align='center'>Вероятно, показаны не все наименования. Уточните запрос.");
 			$this->DrawSkladTable($res,$s);
 			$sf=1;
 		}

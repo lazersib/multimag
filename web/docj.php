@@ -650,6 +650,23 @@ if($mode=="")
 			else $cl='f_red';
 		}
 
+		if(($nxt[1]==1)&&($nxt[7]>0))
+		{
+			$add='';
+			if($nxt[12]) $add=" OR (`p_doc`='$nxt[12]' AND (`type`='5' OR `type`='7'))";
+			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE
+			(`p_doc`='$nxt[0]' AND (`type`='5' OR `type`='7'))
+			$add
+				AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if(@$prop=mysql_result($rs,0,0))
+			{
+				$prop=sprintf("%0.2f",$prop);
+				if($prop==$nxt[7])	$cl='f_green';
+				else if($prop>$nxt[7])	$cl='f_purple';
+				else $cl='f_brown';
+			}
+		}
+
 
 		$i=1-$i;
 		$dp=$motions="";
@@ -663,7 +680,7 @@ if($mode=="")
 				case 1:	$tpr+=$nxt[13];	break;
 				case 2:	$tras+=$nxt[13];break;
 				case 17:{
-						if($nxt['page']==0)	$tpr+=$nxt[13];	
+						if($nxt['page']==0)	$tpr+=$nxt[13];
 						else			$tras+=$nxt[13];
 					} break;
 			}

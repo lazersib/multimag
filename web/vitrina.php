@@ -720,11 +720,11 @@ protected function TovList_ImageList($res, $lim)
 		<a href='$link'>{$nxt['name']}</a><br>
 		<b>Код:</b> {$nxt['vc']}<br>
 		<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
+		<b>Производитель:</b> {$nxt['proizv']}<br>
 		<b>Кол-во:</b> $nal<br>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
 		</div>");
 
-		$sf++;
 		$i++;
 		$cc=1-$cc;
 		if($i>=$lim)	break;

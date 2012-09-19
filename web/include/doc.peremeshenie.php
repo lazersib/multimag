@@ -34,7 +34,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		$this->header_fields			='cena separator sklad';
 		settype($this->doc,'int');
 	}
-	
+
 	function DopHead()
 	{
 		global $tmpl;
@@ -62,7 +62,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		}
 		$tmpl->AddText("</select><br>
 		Количество мест:<br>
-		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>");	
+		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>");
 	}
 
 	function DopSave()
@@ -76,17 +76,17 @@ class doc_Peremeshenie extends doc_Nulltype
 		( '{$this->doc}' ,'kladovshik','$kladovshik')");
 		if(!$res)		throw new MysqlException("Не удалось установить склад назначения в поступлении!");
 	}
-	
+
 	function DopBody()
 	{
 		global $tmpl;
         	$res=mysql_query("SELECT `doc_sklady`.`name` FROM `doc_sklady`
 		WHERE `doc_sklady`.`id`='{$this->dop_data['na_sklad']}'");
-			
+
         	$nxt=mysql_fetch_row($res);
 		$tmpl->AddText("<b>На склад:</b> $nxt[0]");
 	}
-	
+
 	function DocApply($silent=0)
 	{
 		global $CONFIG;
@@ -96,13 +96,13 @@ class doc_Peremeshenie extends doc_Nulltype
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-		WHERE `doc_list`.`id`='{$this->doc}'");		
+		WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка выборки данных документа при проведении!');
 		$nx=@mysql_fetch_assoc($res);
 		if(!$nx)	throw new Exception('Документ не найден!');
 		if( $nx['ok'] && (!$silent) )	throw new Exception('Документ уже был проведён!');
 		if(!@$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent)	throw new Exception("Количество мест не задано");
-		
+
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -114,7 +114,7 @@ class doc_Peremeshenie extends doc_Nulltype
 			if($nxt[5]>0)		throw new Exception("Перемещение услуги '$nxt[3]:$nxt[4]' недопустимо!");
 			if(!$nx['dnc'])
 			{
-				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]' на складе($nxt[2])!");			
+				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]' на складе($nxt[2])!");
 			}
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
 			if(mysql_error()) 	throw new MysqlException('Ошибка изменения количества на исходном складе!');
@@ -124,33 +124,33 @@ class doc_Peremeshenie extends doc_Nulltype
 			if(mysql_affected_rows()==0) mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)
 			VALUES ('$nxt[0]', '$nasklad', '$nxt[1]')");
 			if(mysql_error()) 	throw new MysqlException('Ошибка изменения количества на складе назначения!');
-			
+
 			if( (!$nx['dnc']) && (!$silent))
 			{
 				$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
-				if($budet<0)	
+				if($budet<0)
 					throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
 			}
 		}
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
-		
+
 	}
-	
+
 	function DocCancel()
 	{
 		global $uid;
 		$tim=time();
 		$nasklad=$this->dop_data['na_sklad'];
-		
+
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
 		WHERE `doc_list`.`id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
 		if(! ($nx=@mysql_fetch_assoc($res)))	throw new Exception('Документ не найден!');
-		if(!$nx['ok'])				throw new Exception('Документ не проведён!');	
+		if(!$nx['ok'])				throw new Exception('Документ не проведён!');
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`
@@ -195,7 +195,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		$tmpl->AddText("Не поддерживается для данного типа документа");
 
 	}
-   	
+
 	function Service($doc)
 	{
 		$tmpl->ajax=1;
@@ -215,8 +215,23 @@ class doc_Peremeshenie extends doc_Nulltype
 		$tmpl->LoadTemplate('print');
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
+		$res=mysql_query("SELECT `name` FROM `doc_sklady` WHERE `id`='{$this->doc_data['sklad']}'");
+		if(mysql_errno())		throw new MysqlException("Не удалось получить информацию о складе-источнике");
+		if(! mysql_num_rows($res))	throw new Exception("Склад не найден!");
+		$line=mysql_fetch_row($res);
+		if(!$line)			throw new Exception("Склад не найден!");
+		$from_sklad=$line[0];
+
+		$res=mysql_query("SELECT `name` FROM `doc_sklady` WHERE `id`='{$this->dop_data['na_sklad']}'");
+		if(mysql_errno())		throw new MysqlException("Не удалось получить информацию о складе-назначении");
+		if(! mysql_num_rows($res))	throw new Exception("Склад назначения не найден!");
+		$line=mysql_fetch_row($res);
+		if(!$line)			throw new Exception("Склад назначения не найден!");
+		$to_sklad=$line[0];
+
 		$tmpl->AddText("<h1>Накладная перемещения N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt </h1>
-		<b>Поставщик: </b>".$this->firm_vars['firm_name']."<br><br>");
+		<b>Со склада: </b>$from_sklad<br>
+		<b>На склад:</b> $to_sklad<br><br>");
 
 		$tmpl->AddText("
 		<table width=800 cellspacing=0 cellpadding=0>
@@ -274,21 +289,21 @@ class doc_Peremeshenie extends doc_Nulltype
 		$str="Накладная перемещения N {$this->doc_data[9]}{$this->doc_data[10]}, от $dt";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'C',0);
-		
+
 		$res=mysql_query("SELECT `name` FROM `doc_sklady` WHERE `id`='{$this->doc_data['sklad']}'");
 		if(mysql_errno())		throw new MysqlException("Не удалось получить информацию о складе-источнике");
 		if(! mysql_num_rows($res))	throw new Exception("Склад не найден!");
 		$line=mysql_fetch_row($res);
 		if(!$line)			throw new Exception("Склад не найден!");
 		$from_sklad=$line[0];
-		
+
 		$res=mysql_query("SELECT `name` FROM `doc_sklady` WHERE `id`='{$this->dop_data['na_sklad']}'");
 		if(mysql_errno())		throw new MysqlException("Не удалось получить информацию о складе-назначении");
 		if(! mysql_num_rows($res))	throw new Exception("Склад назначения не найден!");
 		$line=mysql_fetch_row($res);
 		if(!$line)			throw new Exception("Склад назначения не найден!");
 		$to_sklad=$line[0];
-		
+
 		$pdf->SetFont('','',10);
 		$str="C: $from_sklad";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
@@ -380,11 +395,11 @@ class doc_Peremeshenie extends doc_Nulltype
 		$str="Всего $ii наименований общей массой $sum";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
-		
+
 		$str="Выдал кладовщик: ____________________________________";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
-		
+
 		$str="Вид и количество принятого товара совпадает с накладной. Внешние дефекты не обнаружены.";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
