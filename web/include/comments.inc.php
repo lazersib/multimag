@@ -56,7 +56,16 @@ class CommentDispatcher
 		if(mysql_errno())	throw new MysqlException("Не удалось сохранить коментарий!");
 		if($CONFIG['noify']['comments'])
 		{
-			$text="Object: {$this->object_name}|{$this->object_id}\nAuthor: $autor_name <$autor_email>\nUID: $uid\nRate:$rate\nText: $text";		
+			switch($this->object_name)
+			{
+				case 'product':
+					$url='http://'.$CONFIG['site']['name'].'/vitrina.php?mode=product&amp;p='.$this->object_id;
+					break;
+				default:
+					$url='UNKNOWN';
+			
+			}			
+			$text="Object: {$this->object_name}|{$this->object_id}\nURL: $url\nAuthor: $autor_name <$autor_email>\nUID: $uid\nRate:$rate\nText: $text";		
 			sendAdmMessage($text,'New comments');
 		}
 		return mysql_insert_id();

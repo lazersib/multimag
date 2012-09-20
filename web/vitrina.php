@@ -932,6 +932,7 @@ protected function MakeBuy()
 			$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
 		}
 		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
+		unset($_SESSION['basket']);
 	}
 	else $tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?","err");
 
@@ -1069,8 +1070,19 @@ catch(Exception $e)
 	$tmpl->logger($e->getMessage());
 }
 
+include('include/sendsms.php');
+
+// $smssend=new SMSSender();
+// 
+// $smssend->setNumber('+79232409725');
+// $smssend->setText('Проверка',1);
+// $smssend->send();
+
 
 $tmpl->write();
+
+
+
 ?>
 
 

@@ -52,20 +52,6 @@ class Foo
 
 $tmpl=new Foo();
 
-$file=file("http://export.rbc.ru/free/cb.0/free.fcgi?period=DAILY&lastdays=0&separator=%2C&data_format=BROWSER");
-if(!$file)
-{
-	$mail_text.="Не удалось получить курсы валют!\n";
-	echo "Не удалось получить курсы валют!\n";
-}
-else foreach($file as $fl)
-{
-	$fl=trim($fl);
-	$fa=explode(',',$fl);
-	mysql_query("UPDATE `currency` SET `coeff`='$fa[5]' WHERE `name`='$fa[0]'");
-}
-
-
 function log_write($dir, $msg)
 {
 	$f_log=fopen($dir.'/load.log','a');

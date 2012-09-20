@@ -25,7 +25,7 @@ class doc_s_Sklad
 {
 	function View()
 	{
-		global $tmpl;
+		global $tmpl,$CONFIG;
 		doc_menu(0,0);
 		if(!isAccess('list_sklad','view'))	throw new AccessException("");
 		$sklad=rcv('sklad');
@@ -37,7 +37,11 @@ class doc_s_Sklad
 		$cost=rcv('cost');
 		settype($cost,'int');
 		if($cost) $_SESSION['sklad_cost']=$cost;
-		if(!isset($_SESSION['sklad_cost'])) $_SESSION['sklad_cost']=-1;
+		if(!isset($_SESSION['sklad_cost']))
+		{
+			if(@$CONFIG['stock']['default_cost']>0)	$_SESSION['sklad_cost']=$CONFIG['stock']['default_cost'];
+			else $_SESSION['sklad_cost']=-1;
+		}
 		$cost=$_SESSION['sklad_cost'];
 
 		$tmpl->AddText("

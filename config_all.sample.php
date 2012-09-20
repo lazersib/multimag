@@ -30,6 +30,12 @@ $CONFIG['xmpp']['pass']		= '';
 // $CONFIG['sendfax']['attempts']	= 5;	// кол-во попыток отправки
 // $CONFIG['sendfax']['delay']	= 15;	// задержка между попытками, мин
 
+// настройки отправки sms сообщений
+// $CONFIG['sendsms']['service']	= 'infosmska';	// Службы отправки sms: infosmska, virtualofficetools
+// $CONFIG['sendsms']['login']		= '';	// Логин службы отправки sms. Не обязятелен для некоторых служб
+// $CONFIG['sendsms']['password']	= '';	// Пароль службы отправки sms. Не обязятелен для некоторых служб
+// $CONFIG['sendsms']['callerid']	= 'SMS';	// Номер телефона или имя отправителя. Поддерживается не всеми сервисами
+
 // настройки отправки заявки на доработку сайта
 $CONFIG['site']['trackticket_login']	= '';
 $CONFIG['site']['trackticket_pass']	= '';
