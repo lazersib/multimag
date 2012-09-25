@@ -181,9 +181,9 @@ function ExecMode($mode)
 		if($button=='recalc')
 		{
 			if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
-			else 	header('Location: vitrina.php?mode=basket');
+			else 	header('Location: /vitrina.php?mode=basket');
 		}
-		else	header('Location: vitrina.php?mode=buy');
+		else	header('Location: /vitrina.php?mode=buy');
 	}
 	else if($mode=='buy')		$this->Buy();
 	else if($mode=='makebuy')	$this->MakeBuy();
@@ -536,6 +536,7 @@ protected function Basket()
 		$sum+=$sm;
 		$sm=sprintf("%0.2f",$sm);
 		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
+		else	$comm='';
 		$s.="<tr class='lin$cc'><td class='right'>$i <a href='?mode=korz_del&amp;p=$item'><img src='/img/i_del.png' alt='Убрать'></a><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'>$sm<td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
 		$cc=1-$cc;
 		$exist=1;
@@ -547,7 +548,7 @@ protected function Basket()
 		$tmpl->AddText("
 		<h1 id='page-title'>Ваша корзина</h1>
 		В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
-		<form action='' method='get'>
+		<form action='' method='post'>
 		<input type='hidden' name='mode' value='basket_submit'>
 		<table width='100%' class='list'>
 		<tr class='title'><th>N</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
