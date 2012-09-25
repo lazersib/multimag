@@ -107,7 +107,7 @@ try
 				$tmpl->SetTitle($h);
 				if($nxt[4]) $ch=", последнее изменение - $nxt[4], date $nxt[3]";
 				else $ch="";
-				if($nxt[6]==0 || $nxt[6]==2)	$tmpl->AddText("<h2 id='page-title'>$h</h2>");
+				if($nxt[6]==0 || $nxt[6]==2)	$tmpl->AddText("<h1 id='page-title'>$h</h1>");
 				if(@$_SESSION['uid'])
 				{
 					$tmpl->AddText("<div id='page-info'>Создал: $nxt[1], date: $nxt[2] $ch");

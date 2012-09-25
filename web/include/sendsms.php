@@ -157,30 +157,13 @@ class SendSMSTransportVirtualofficetools extends SendSMSTransport
 		if(!isset($CONFIG['sendsms']))		throw new Exception("Работа с sms не настроена!");
 		if(!@$CONFIG['sendsms']['login'])	throw new Exception("Работа с sms не настроена (не указан логин)");
 		if(!@$CONFIG['sendsms']['password'])	throw new Exception("Работа с sms не настроена (не указан пароль)");
-// 		$postdata = array(
-// 		'login' => rawurlencode($CONFIG['sendsms']['login']), 
-// 		'pwd' => rawurlencode(MD5($CONFIG['sendsms']['password']))
-// 		); 
-// 
-// 		$ch = curl_init(); 
-// 		curl_setopt($ch, CURLOPT_URL, 'http://api.infosmska.ru/interfaces/getbalance.ashx'); 
-// 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
-// 		curl_setopt($ch, CURLOPT_POST, 1); 
-// 		curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata); 
-// 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20); 
-// 		$output=curl_exec($ch);  
-// 		if(curl_errno($ch))	throw new Exception("Ошибка передачи: ".curl_error());
-// 		curl_close($ch);
-// 		
-// 		$balance=sprintf("%0.2f",$output);
-// 		if($balance<0.5)	throw new Exception("Не достаточно средств ($balance) на счете для отправки sms!");
 	}
 	
 	/// Установить номер для отправки
 	function setNumber($number)
 	{
-		if(preg_match('/^\+7\d{1,15}$/', $number))
-			$number='8'.substr($number,2);
+		if(preg_match('/^\+7\d{10}$/', $number))
+			$number=substr($number,2);
 		else throw new Exception('Номер для SMS указан в недопустимом формате!');	
 		$this->number=$number;
 	}
@@ -196,8 +179,8 @@ class SendSMSTransportVirtualofficetools extends SendSMSTransport
 		'username' => $CONFIG['sendsms']['login'], 
 		'password' => MD5($CONFIG['sendsms']['password']),
 		'sender' => $CONFIG['sendsms']['callerid'],
-		'phone' => '9232409725',
-		'smstext' => $this->text
+		'phone' => $this->number,
+		'smstext' => iconv("UTF-8", "CP1251", $this->text)
 		); 
 
 		$ch = curl_init(); 

@@ -859,7 +859,7 @@ class doc_Nulltype
 						if($form['name']==$opt)	$method=$form['method'];
 					}
 					if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-					$this->SendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->name.".pdf");
+					$this->SendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->doc_name.".pdf");
 					$tmpl->SetText("{response: 'send'}");
 					doc_log("Send email", $email, 'doc', $this->doc);
 

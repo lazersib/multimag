@@ -40,9 +40,10 @@ class doc_Zayavka extends doc_Nulltype
 	}
 	
 	/// Функция устанавливает статус, и выполняет информирование клиента о событии
+	/// Для защиты от многократного информирования, не меняет статус с большего на меньший (см. порядок)
 	function setStatus($status)
 	{
-		$status_options=array('err','inproc','ready','ok');
+		$status_options=array(1=>'inproc',2=>'ready',3=>'ok',4=>'err');
 		if(!in_array($status,$status_options))	$status='';
 		if($this->dop_data['status']==$status)	return;
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$status')");
@@ -73,8 +74,15 @@ class doc_Zayavka extends doc_Nulltype
 			$s=($klad_id==$nxt[0])?'selected':'';
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
 		}
-		$tmpl->AddText("</select><hr>
-		<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
+		$tmpl->AddText("</select><hr>");
+		
+		if(@$this->dop_data['ishop'])		$tmpl->AddText("<b>Заявка с интернет-витрины</b><br>");
+		if(@$this->dop_data['buyer_rname'])	$tmpl->AddText("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
+		if(@$this->dop_data['buyer_email'])	$tmpl->AddText("<b>e-mail: </b>{$this->dop_data['buyer_email']}<br>");
+		if(@$this->dop_data['buyer_phone'])	$tmpl->AddText("<b>Телефон: </b>{$this->dop_data['buyer_phone']}<br>");
+		if(@$this->dop_data['buyer_ip'])	$tmpl->AddText("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
+		
+		$tmpl->AddText("<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
 		Желаемая дата:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br><br>
 		Статус (будет меняться автоматически):<br>
 		<small>Если поменять вручную - уведомление о смене статуса клиентам не будет отправлено</small><br>
@@ -86,7 +94,9 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("<option value='$id' $s>$name</option>");
 		}
 
-		$tmpl->AddText("</select>
+		$tmpl->AddText("</select><br>
+		
+		
 		<hr>");
 	}
 

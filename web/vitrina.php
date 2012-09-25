@@ -855,7 +855,7 @@ protected function MakeBuy()
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
-		$comm="ФИО: $rname, телефон: $tel, IP: $ip, адрес доставки: $adres<br>Другая информация: $dop";
+		$comm="Адрес доставки: $adres. Другая информация: $dop";
 		if(!$uid)	$comm="e-mail: $email<br>".$comm;
 		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
@@ -867,7 +867,7 @@ protected function MakeBuy()
 
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ заявки");
 		$doc=mysql_insert_id();
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}')");
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname'), ('$doc', 'buyer_ip', '$ip')");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
 		$zakaz_items='';
 		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
@@ -1070,13 +1070,6 @@ catch(Exception $e)
 	$tmpl->logger($e->getMessage());
 }
 
-include('include/sendsms.php');
-
-// $smssend=new SMSSender();
-// 
-// $smssend->setNumber('+79232409725');
-// $smssend->setText('Проверка',1);
-// $smssend->send();
 
 
 $tmpl->write();

@@ -34,7 +34,7 @@ $CONFIG['xmpp']['pass']		= '';
 // $CONFIG['sendsms']['service']	= 'infosmska';	// Службы отправки sms: infosmska, virtualofficetools
 // $CONFIG['sendsms']['login']		= '';	// Логин службы отправки sms. Не обязятелен для некоторых служб
 // $CONFIG['sendsms']['password']	= '';	// Пароль службы отправки sms. Не обязятелен для некоторых служб
-// $CONFIG['sendsms']['callerid']	= 'SMS';	// Номер телефона или имя отправителя. Поддерживается не всеми сервисами
+// $CONFIG['sendsms']['callerid']	= 'SMS';	// Номер телефона или имя отправителя. Не более 11 символов. Поддерживается не всеми сервисами
 
 // настройки отправки заявки на доработку сайта
 $CONFIG['site']['trackticket_login']	= '';
