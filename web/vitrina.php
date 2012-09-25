@@ -856,7 +856,6 @@ protected function MakeBuy()
 		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
 		$comm="Адрес доставки: $adres. Другая информация: $dop";
-		if(!$uid)	$comm="e-mail: $email<br>".$comm;
 		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
 		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");

@@ -43,14 +43,71 @@ class doc_Zayavka extends doc_Nulltype
 	/// Для защиты от многократного информирования, не меняет статус с большего на меньший (см. порядок)
 	function setStatus($status)
 	{
+		global $CONFIG;
 		$status_options=array(1=>'inproc',2=>'ready',3=>'ok',4=>'err');
+		$status_options_text=array('err'=>'Ошибочный','inproc'=>'В процессе','ready'=>'Готов','ok'=>'Отгружен');
 		if(!in_array($status,$status_options))	$status='';
 		if($this->dop_data['status']==$status)	return;
+		if(array_search($this->dop_data['status'],$status_options)>=array_search($status,$status_options))	return;
+		
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$status')");
 		$this->dop_data['status']=$status;
-		// Отправка по e-mail
 		
+		// Отправка по e-mail
+		if(@$CONFIG['doc']['notify_email'])
+		{
+			if(isset($this->dop_data['buyer_email']))	$email=$this->dop_data['buyer_email'];
+			else if($this->doc_data['agent']>1)
+			{
+				$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$doc_data['user']}'");
+				$email=mysql_result($res,0,0);
+				if(!$email)
+				{
+					$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$doc_data['user']}'");
+					$email=@mysql_result($res,0,0);
+				}
+			}
+			else
+			{
+				$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$doc_data['autor']}'");
+				$email=@mysql_result($res,0,0);
+			}
+			
+			if($email)
+			{
+				$user_msg="Уважаемый клиент!\nСтатус Вашего заказа на сайте {$CONFIG['site']['name']} изменён на {$status_options_text[$status]}";
+				mailto($email,"Заказ N {$this->doc} на {$CONFIG['site']['name']} - {$status_options_text[$status]}", $user_msg);
+			}
+		}
 		// Отправка по SMS
+		if(@$CONFIG['doc']['notify_sms'])
+		{
+			require_once('include/sendsms.php');
+			if(isset($this->dop_data['buyer_phone']))	$smsphone=$this->dop_data['buyer_phone'];
+			else if($this->doc_data['agent']>1)
+			{
+				$res=mysql_query("SELECT `sms_phone` FROM `doc_agent` WHERE `id`='{$doc_data['user']}'");
+				$smsphone=mysql_result($res,0,0);
+				if(!$smsphone)
+				{
+					$res=mysql_query("SELECT `tel` FROM `users` WHERE `id`='{$doc_data['user']}'");
+					$smsphone=@mysql_result($res,0,0);
+				}
+			}
+			else
+			{
+				$res=mysql_query("SELECT `tel` FROM `users` WHERE `id`='{$doc_data['autor']}'");
+				$smsphone=@mysql_result($res,0,0);
+			}
+			if(preg_match('/^\+79\d{9}$/', $smsphone))
+			{
+				$sender=new SMSSender();
+				$sender->setNumber($smsphone);
+				$sender->setText("Заказ N {$this->doc} - {$status_options_text[$status]}. {$CONFIG['site']['name']}");
+				$sender->send();
+			}
+		}
+		// Отправка по XMPP
 		
 		// Отправка по телефону (голосом)
 		
@@ -211,7 +268,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->SetDopData('platelshik',$this->doc_data['agent']);
 			$new_doc->SetDopData('gruzop',$this->doc_data['agent']);
 			$new_doc->SetDopData('received',0);
-			$this->setStatus('ok');
+			$this->setStatus('ready');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type=='1')
@@ -229,7 +286,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->SetDopData('platelshik',$this->doc_data['agent']);
 			$new_doc->SetDopData('gruzop',$this->doc_data['agent']);
 			$new_doc->SetDopData('received',0);
-			$this->setStatus('ok');
+			$this->setStatus('ready');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		// Реализация
