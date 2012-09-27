@@ -363,7 +363,7 @@ else if($mode=="parse")
 	}
 	
 	$firm_array=$loader->detectSomeFirm();
-	$loader->setBuildHTMLData();
+	$loader->setBuildHTMLData(40);
 	foreach($firm_array as $firm)
 	{
 		$loader->setInsertToDatabase();

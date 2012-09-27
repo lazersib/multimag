@@ -1882,7 +1882,7 @@ function PrintTg12PDF($to_str=0)
 	if($gruzop_info['fullname'])	$gruzop.=$gruzop_info['fullname'];
 	else				$gruzop.=$gruzop_info['name'];
 	if($gruzop_info['adres'])	$gruzop.=', адрес '.$gruzop_info['adres'];
-	if($gruzop_info['tel'])		$gruzop.=', тел. '.$gruzop_info['tel'];
+	//if($gruzop_info['tel'])		$gruzop.=', тел. '.$gruzop_info['tel'];
 	if($gruzop_info['inn'])		$gruzop.=', ИНН/КПП '.$gruzop_info['inn'];
 	if($gruzop_info['okevd'])	$gruzop.=', ОКВЭД '.$gruzop_info['okevd'];
 	if($gruzop_info['rs'])		$gruzop.=', Р/С '.$gruzop_info['rs'];
@@ -1900,7 +1900,7 @@ function PrintTg12PDF($to_str=0)
 	if($platelshik_info['fullname'])	$platelshik.=$platelshik_info['fullname'];
 	else					$platelshik.=@$platelshik_info['name'];
 	if($platelshik_info['adres'])		$platelshik.=', адрес '.$platelshik_info['adres'];
-	if($platelshik_info['tel'])		$platelshik.=', тел. '.$platelshik_info['tel'];
+	//if($platelshik_info['tel'])		$platelshik.=', тел. '.$platelshik_info['tel'];
 	if($platelshik_info['inn'])		$platelshik.=', ИНН/КПП '.$platelshik_info['inn'];
 	if($platelshik_info['okevd'])		$platelshik.=', ОКВЭД '.$platelshik_info['okevd'];
 	if($platelshik_info['rs'])		$platelshik.=', Р/С '.$platelshik_info['rs'];
@@ -2657,7 +2657,7 @@ function SfakPDF($to_str=0)
 	$pdf->Cell(0,$step,$str,0,1,'L');
 	$str = iconv('UTF-8', 'windows-1251', "Покупатель: ".unhtmlentities($nx[1]));
 	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Адрес: ".unhtmlentities($nx[2]).", тел. $nx[3]");
+	$str = iconv('UTF-8', 'windows-1251', "Адрес: ".unhtmlentities($nx[2]));
 	$pdf->Cell(0,$step,$str,0,1,'L');
 	$str = iconv('UTF-8', 'windows-1251', "ИНН / КПП покупателя: $nx[4]");
 	$pdf->Cell(0,$step,$str,0,1,'L');
