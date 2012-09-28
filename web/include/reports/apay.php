@@ -46,6 +46,7 @@ class Report_Apay extends BaseGSReport
 		<option value='agent_id'>ID агента</option>
 		<option value='bank_sum'>Приходу по банку</option>
 		<option value='kass_sum'>Приходу по кассе</option>
+		<option value='all_sum'>Общей сумме</option>
 		</select><br>
 		<label><input type='checkbox' name='direct' value='1'>В обратном порядке</label><br>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
@@ -81,23 +82,37 @@ class Report_Apay extends BaseGSReport
 		$headers=array('ID', 'Агент','По банку','По кассе','Сумма');
 		$order=rcv('order');
 		$direct=rcv('direct');
-		$orders=array('agent_id','agent_name','bank_sum','kass_sum');
+		$orders=array('agent_id','agent_name','bank_sum','kass_sum','all_sum');
 		if(!in_array($order,$orders))	$order='agent_name';
 		$direct=$direct?'DESC':'ASC';
 		$this->col_cnt=count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
 		
-		$res=mysql_query("SELECT `doc_agent`.`id` AS `agent_id`, `doc_agent`.`name` AS `agent_name`,
+		mysql_query("CREATE TEMPORARY TABLE `apay_report` (`agent_id` INT NOT NULL ,
+		`agent_name` VARCHAR( 64 ) NOT NULL ,
+		`bank_sum` DECIMAL( 10, 2 ) NOT NULL ,
+		`kass_sum` DECIMAL( 10, 2 ) NOT NULL ,
+		`all_sum` DECIMAL( 10, 2 ) NOT NULL 
+		) ENGINE = MYISAM CHARACTER SET utf8 COLLATE utf8_general_ci");
+		if(mysql_errno())		throw new MysqlException("Не удалось создать таблицу");
+		
+		mysql_query("INSERT INTO `apay_report` (`agent_id`, `agent_name`, `bank_sum`, `kass_sum`) SELECT `doc_agent`.`id` AS `agent_id`, `doc_agent`.`name` AS `agent_name`,
 		( SELECT SUM(`doc_list`.`sum`) FROM `doc_list` WHERE `doc_list`.`agent`=`doc_agent`.`id` AND `doc_list`.`type`='4' AND `doc_list`.`ok`>0 AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t') AS `bank_sum`,
 		( SELECT SUM(`doc_list`.`sum`) FROM `doc_list` WHERE `doc_list`.`agent`=`doc_agent`.`id` AND `doc_list`.`type`='6' AND `doc_list`.`ok`>0 AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t') AS `kass_sum`		
-		FROM `doc_agent` ORDER BY $order $direct");
-		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос ".mysql_error());
+		FROM `doc_agent`");
+		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос");
+		
+		mysql_query("UPDATE `apay_report` SET `all_sum`=`bank_sum`+`kass_sum`");
+		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос");
+		
+		$res=mysql_query("SELECT `agent_id`, `agent_name`, `bank_sum`, `kass_sum`, `all_sum` FROM `apay_report` WHERE `all_sum`>0  ORDER BY $order $direct");
+		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос ");
 		$sumb=$sumc=$count=0;
+		
 		while($nxt=mysql_fetch_row($res))
 		{
-			if(!$nxt[2] && !$nxt[3])	continue;
-			$this->tableRow(array($nxt[0], $nxt[1],$nxt[2],$nxt[3],$nxt[2]+$nxt[3]));
+			$this->tableRow(array($nxt[0], $nxt[1],$nxt[2],$nxt[3],$nxt[4]));
 			$sumb+=$nxt[2];
 			$sumc+=$nxt[3];
 			$count++;

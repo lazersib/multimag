@@ -136,11 +136,27 @@ class doc_Zayavka extends doc_Nulltype
 		if(@$this->dop_data['ishop'])		$tmpl->AddText("<b>Заявка с интернет-витрины</b><br>");
 		if(@$this->dop_data['buyer_rname'])	$tmpl->AddText("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
 		if(@$this->dop_data['buyer_email'])	$tmpl->AddText("<b>e-mail: </b>{$this->dop_data['buyer_email']}<br>");
-		if(@$this->dop_data['buyer_phone'])	$tmpl->AddText("<b>Телефон: </b>{$this->dop_data['buyer_phone']}<br>");
+		if(@$this->dop_data['buyer_phone'])	$tmpl->AddText("<b>Телефон: </b>{$this->dop_data['buyer_phone']}<br>");		
 		if(@$this->dop_data['buyer_ip'])	$tmpl->AddText("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
+		if(@$this->dop_data['pay_type'])
+		{
+			$tmpl->AddText("<b>Способ оплаты: </b>");
+			switch($this->dop_data['pay_type'])
+			{
+				case 'bn':	$tmpl->AddText("безналичный");	break;
+				case 'nal':	$tmpl->AddText("наличными");	break;
+				case 'card':	$tmpl->AddText("платёдной картой");	break;
+				case 'wmr':	$tmpl->AddText("Webmoney WMR");	break;
+				default:	$tmpl->AddText("не определён ({$this->dop_data['pay_type']})");
+			}
+			$tmpl->AddText("<br>");
+		}
 		
 		$tmpl->AddText("<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
-		Желаемая дата:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br><br>
+		Желаемая дата доставки:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br>");
+		if(@$this->dop_data['delivery_address'])$tmpl->AddText("<b>Адрес доставки: </b>{$this->dop_data['delivery_address']}<br>");
+		
+		$tmpl->AddText("<br><hr>
 		Статус (будет меняться автоматически):<br>
 		<small>Если поменять вручную - уведомление о смене статуса клиентам не будет отправлено</small><br>
 		<select name='status'>");

@@ -787,17 +787,31 @@ protected function BuyMakeForm()
 			$user_dopdata["$nn[0]"]=$nn[1];
 		}
 		$str='Товар будет зарезервирован для Вас на 3 рабочих дня.';
+		$email_field='';
 	}
 	else
 	{
 		$str='<b>Для незарегистрированных пользователей наличие товара на складе не гарантируется.</b>';
 		$email_field="e-mail:<br>
 		<input type='text' name='email' value=''><br>
-		Необходимо заполнить телефон или e-mail<br>";
+		Необходимо заполнить телефон или e-mail<br><br>";
 	}
 
 	if(rcv('cwarn'))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
-
+	
+	if(@$user_data['tel'])
+	{
+		$country_phone=substr($user_data['tel'],1,1);
+		$city_phone=substr($user_data['tel'],2,3);
+		$dop_phone=substr($user_data['tel'],5);
+	}
+	else
+	{
+		$country_phone=7;
+		$city_phone=$dop_tel='';
+	}
+	
+	
 	$tmpl->AddText("
 	<h4>Для оформления заказа требуется следующая информация</h4>
 	<form action='/vitrina.php' method='post'>
@@ -805,36 +819,84 @@ protected function BuyMakeForm()
 	<div>
 	Фамилия И.О.<br>
 	<input type='text' name='rname' value='".$user_data['rname']."'><br>
-	Телефон:<br>
-	<input type='text' name='tel' value='".$user_data['tel']."'><br>
-	$email_field
+	Мобильный телефон: <span id='phone_num'></span><br>
+	+<input type='text' name='country_phone' value='$country_phone' maxlength='1' style='width: 90px;' placeholder='Код страны' id='country_phone'> -
+	<input type='text' name='city_phone' value='$city_phone' maxlength='3' placeholder='Код оператора' id='city_phone'> - 
+	<input type='text' name='dop_phone' value='$dop_phone' maxlength='10' placeholder='Номер' id='dop_phone'>
+	<br>
 
-	Способ оплаты:<br>
-	<!--
-	<label><input type='radio' name='soplat' value='wmr' disabled >Webmoney WMR.
-	<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты</b></label><br> -->
-	<label><input type='radio' name='soplat' value='bn' checked>Безналичный перевод.
-	<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня)</label><br>
-	<label><input type='radio' name='soplat' value='n'>Наличный расчет.
-	<b>Только самовывоз</b>, расчет при отгрузке. $str</label>
+	$email_field
+	
+	<br>Способ оплаты:<br>
+	<label><input type='radio' name='pay_type' value='wmr'>Webmoney WMR.
+	<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>
+	<label><input type='radio' name='pay_type' value='card'>Платёжной картой
+	<b>VISA, MasterCard</b>. Обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (до часа)</label><br>
+	<label><input type='radio' name='pay_type' value='bn'>Безналичный банкосвкий перевод.
+	<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня). После оформления заказа Вы сможете распечатать счёт для оплаты.</label><br>
+	<label><input type='radio' name='pay_type' value='nal' id='soplat_nal' checked>Наличный расчет.
+	<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br><br>
+	
+	
+	<label><input type='checkbox' name='delivery' id='delivery' value='1'>Нужна доставка</label><br>
+	<div id='delivery_fields'>
+	Желаемые дата и время доставки:<br>
+	<input type='text' name='delivery_date'><br>	
 	<br>Адрес доставки:<br>
 	<textarea name='adres' rows='5' cols='15'>".$user_data['adres']."</textarea><br>
+	</div>
+	
+	
+	
 	Другая информация:<br>
 	<textarea name='dop' rows='5' cols='15'>".$user_dopdata['dop_info']."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
-	</form>");
+	</form>
+	<script>
+	var country_phone=document.getElementById('country_phone')
+	var city_phone=document.getElementById('city_phone')
+	var dop_phone=document.getElementById('dop_phone')
+	var phone_num=document.getElementById('phone_num')
+	function updatePhoneNum()
+	{
+		phone_num.innerHTML='+'+country_phone.value+city_phone.value+dop_phone.value
+	}
+	country_phone.onkeyup=city_phone.onkeyup=dop_phone.onkeyup=updatePhoneNum
+	
+	var delivery=document.getElementById('delivery')
+	var delivery_fields=document.getElementById('delivery_fields')
+	function deliveryCheck()
+	{
+		if(delivery.checked)
+			delivery_fields.style.display='block';
+		else	delivery_fields.style.display='none';
+	}
+	delivery.onclick=deliveryCheck;
+	deliveryCheck();
+
+	</script>
+	");
 }
 /// Сделать покупку
 protected function MakeBuy()
 {
 	global $tmpl, $CONFIG, $uid, $xmppclient;
-	$soplat=rcv('soplat');
+	$pay_type=rcv('pay_type');
 	$rname=rcv('rname');
-	$tel=rcv('tel');
 	$adres=rcv('adres');
 	$email=rcv('email');
 	$dop=rcv('dop');
+	$delivery=rcv('delivery');
+	$delivery_date=rcv('delivery_date');
+	
+	$country_phone=rcv('country_phone');
+	$city_phone=rcv('city_phone');
+	$dop_phone=rcv('dop_phone');
+	if($country_phone && $city_phone && $dop_phone)
+		$tel="+".$country_phone.$city_phone.$dop_phone;
+	else	$tel='';
+	
 	if($_SESSION['uid'])
 	{
 		mysql_query("UPDATE `users` SET `rname`='$rname', `tel`='$tel', `adres`='$adres' WHERE `id`='$uid'");
@@ -856,7 +918,7 @@ protected function MakeBuy()
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
-		$comm="Адрес доставки: $adres. Другая информация: $dop";
+		$comm=$dop;
 		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
 		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");
@@ -867,7 +929,7 @@ protected function MakeBuy()
 
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ заявки");
 		$doc=mysql_insert_id();
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname'), ('$doc', 'buyer_ip', '$ip')");
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres'), ('$doc', 'pay_type', '$pay_type') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
 		$zakaz_items='';
 		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
@@ -926,7 +988,7 @@ protected function MakeBuy()
 			mailto($email,"Message from {$CONFIG['site']['name']}", $user_msg);
 
 		$tmpl->AddText("<h1 id='page-title'>Заказ оформлен</h1>");
-		if($soplat=='bn')
+		if($pay_type=='bn')
 		{
 			$tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>выписать счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
 			$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
