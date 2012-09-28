@@ -62,12 +62,14 @@ try
 			$uwtext=$wikiparser->parse(html_entity_decode($text,ENT_QUOTES,"UTF-8"));
 			$title=$wikiparser->title;
 			$uwtext=strip_tags($uwtext);
+			$uwtext=$wikiparser->title."\n".$uwtext;
 			mysql_query("START TRANSACTION");
 			mysql_query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
 			VALUES ('$type', '$title', '$text', NOW(), '$uid','$ex_date' )");
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить новость");
 			$news_id=mysql_insert_id();
 			if(!$news_id)		throw new Exception("Не удалось получить ID новости");
+			if($type=='stock')	$uwtext.="\n\nАкция действует до: $ex_date\n";
 
 			if(is_uploaded_file($_FILES['img']['tmp_name']))
 			{
@@ -99,7 +101,7 @@ try
 	{
 		if($mode=='')
 		{
-			$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext` FROM `news`
+			$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
 			INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 			ORDER BY `date` DESC LIMIT 50");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
@@ -117,7 +119,9 @@ try
 						$miniimg->SetY(48);
 						$tmpl->AddText("<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt=''>");
 					}
-					$tmpl->AddText("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i></p></div>");
+					if($nxt['type'])	$do="<br><i><u>Действительно до:	{$nxt['ex_date']}</u></i>";
+					else			$do='';
+					$tmpl->AddText("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i>$do</p></div>");
 					// <!--<br><a href='/forum.php'>Комментарии: 0</a>-->
 				}
 			}
@@ -126,7 +130,7 @@ try
 		else if($mode=='read')
 		{
 			$id=rcv('id');
-			$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext` FROM `news`
+			$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
 			INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 			WHERE `news`.`id`='$id'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
@@ -136,7 +140,9 @@ try
 				{
 					$wikiparser->title='';
 					$text=$wikiparser->parse(html_entity_decode($nxt['text'],ENT_QUOTES,"UTF-8"));
-					$tmpl->SetText("<h1 id='page-title'>{$wikiparser->title}</h1><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br></p>");
+					if($nxt['type'])	$do="<br><i><u>Действительно до:	{$nxt['ex_date']}</u></i>";
+					else			$do='';
+					$tmpl->SetText("<h1 id='page-title'>{$wikiparser->title}</h1><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br>$do</p>");
 					// <a href='/forum.php'>Комментарии: 0</a>
 				}
 			}
