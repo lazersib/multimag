@@ -120,7 +120,7 @@ class doc_Zayavka extends doc_Nulltype
 		global $tmpl;
 		$status_options=array('err'=>'Ошибочный','inproc'=>'В процессе','ready'=>'Готов','ok'=>'Отгружен');
 		$klad_id=@$this->dop_data['kladovshik'];
-		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
+		if(!$klad_id)	$klad_id=@$this->firm_vars['firm_kladovshik_id'];
 		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
 		$delivery_checked=@$this->dop_data['delivery']?'checked':'';
 		$tmpl->AddText("Кладовщик:<br><select name='kladovshik'>");

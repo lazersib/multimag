@@ -912,7 +912,8 @@ protected function MakeBuy()
 
 	if($_SESSION['basket']['cnt'])
 	{
-		$subtype="site";
+		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype="site";
+		else $subtype=$CONFIG['site']['vitrina_subtype'];
 		$agent=1;
 		//if($_SESSION['uid'])	$agent=$_SESSION['uid'];	// ?????????????????????????/
 		$tm=time();
@@ -938,13 +939,14 @@ protected function MakeBuy()
 			if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];	else $comm='';
 			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$cena','$comm')");
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить товар в заказ");
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost` FROM `doc_base`
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$item'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о товаре");
 			$tov_info=mysql_fetch_row($res);
-			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt шт. - $cena руб.\n";
-			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt шт. - $cena руб. (базовая - $tov_info[5]р.)\n";
+			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
+			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
 		}
 		$zakaz_sum=DocSumUpdate($doc);
 		$_SESSION['zakaz_docnum']=$doc;
