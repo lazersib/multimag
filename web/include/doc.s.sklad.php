@@ -1638,7 +1638,7 @@ class doc_s_Sklad
 			if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 			if(!mysql_num_rows($res))
 			{
-				mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `system`) VALUES ('ZP', 'double', '1')");
+				mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `system`, `pgroup_id`) VALUES ('ZP', 'double', '1','1')");
 				if(mysql_errno())	throw new MysqlException("Не удалось добавить доп.свойство товара");
 				$nxt=array(0 => mysql_insert_id(), 1 => 0);
 			}

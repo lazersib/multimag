@@ -651,7 +651,7 @@ function getStoreCntOnDate($pos, $sklad, $unixtime=0, $noBreakIfMinus=0)
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos' $sql_add
 	ORDER BY `doc_list`.`date`");
-	if(mysql_errno())	throw new MysqlExceprion("Не удалось запросить список документов с товаром ID:$pos при проверке на отрицательные остатки");
+	if(mysql_errno())	throw new MysqlException("Не удалось запросить список документов с товаром ID:$pos при проверке на отрицательные остатки");
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($nxt[1]==1)
@@ -668,7 +668,7 @@ function getStoreCntOnDate($pos, $sklad, $unixtime=0, $noBreakIfMinus=0)
 			else
 			{
 				$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[3]' AND `param`='na_sklad'");
-				if(mysql_errno())	throw new MysqlExceprion("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+				if(mysql_errno())	throw new MysqlException("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
 				$nasklad=mysql_result($rr,0,0);
 				if(!$nasklad)		throw new Exceprion("Не удалось получить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
 				if($nasklad==$sklad)	$cnt+=$nxt[0];
@@ -731,10 +731,12 @@ function DocVPuti($pos,$doc=0)
 
 function AutoDocument($doc)
 {
-	get_docdata($doc);
-	global $doc_data;
-	global $dop_data;
-	return AutoDocumentType(@$doc_data[1], $doc);
+	$doc=round($doc);
+	$res=mysql_query("SELECT `type` FROM `doc_list` WHERE `id`=$doc");
+	if(mysql_errno())		throw new MysqlException("Не удалось получить тип документа");
+	if(!mysql_num_rows($res))	throw new Exception("Документ не найден");
+	$type=mysql_result($res,0,0);
+	return AutoDocumentType($type, $doc);
 }
 
 

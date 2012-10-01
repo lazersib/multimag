@@ -216,16 +216,18 @@ class doc_Realizaciya extends doc_Nulltype
 			}
 		}
 		if($silent)	return;
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
+		mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
+		if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
 		if($this->doc_data['p_doc'])
 		{
 			$doc=AutoDocument($this->doc_data['p_doc']);
 			if($doc->doc_type==3)
 			{
 				$doc->setStatus('ok');
+				
 			}
 		}
+		
 	}
 
 	function DocCancel()

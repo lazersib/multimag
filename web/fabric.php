@@ -20,7 +20,7 @@ include_once("core.php");
 include_once("include/doc.core.php");
 try
 {
-
+if(!isAccess('doc_fabric','view'))	throw new AccessException('');
 need_auth($tmpl);
 $tmpl->HideBlock('left');
 $tmpl->SetTitle("Производственный учёт (в разработке)");
@@ -60,6 +60,7 @@ else if($mode=='builders')
 			}
 			if($upd)
 			{
+				if(!isAccess('doc_fabric','edit'))	throw new AccessException('');
 				mysql_query("UPDATE `fabric_builders` SET $upd WHERE `id`=$line[0]");
 				if(mysql_errno())	throw new MysqlException("Не удалось обновить список сборщиков");
 				$f=1;
@@ -69,6 +70,7 @@ else if($mode=='builders')
 	}
 	if(@$_POST['name_new'])
 	{
+		if(!isAccess('doc_fabric','edit'))	throw new AccessException('');
 		$active=@$_POST['active_new']?1:0;
 		$name=mysql_real_escape_string($_POST['name_new']);
 		mysql_query("INSERT INTO `fabric_builders` (`active`,`name`) VALUES ($active, '$name')");
@@ -113,61 +115,108 @@ else if($mode=='prepare')
 }
 else if($mode=='enter_day')
 {
-	$sklad=round(@$_POST['sklad']);
-	$date=@$_POST['date'];
+	$sklad=round(@$_REQUEST['sklad']);
+	$date=date("Y-m-d",strtotime(@$_REQUEST['date']));
 	$tmpl->SetText("<h1 id='page-title'>Производственный учёт - ввод данных</h1>
 	<div id='page-info'><a href='/fabric.php?mode=prepare'>Назад</a></div>");
 	$res=mysql_query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`=1 ORDER BY `name`");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список сборщиков");
 	$tmpl->AddText("<table class='list'>
-	<tr><th>Сборщик</th><th>Собрано единиц</th><th>На сумму</th><th>Вознаграждение</th></tr>");
+	<tr><th>Сборщик</th><th>Собрано единиц</th><th>Из них различных</th><th>Вознаграждение</th></tr>");
+	$sv=$sc=0;
 	while($line=mysql_fetch_row($res))
 	{
 		$line[1]=htmlentities($line[1],ENT_QUOTES,"UTF-8");
-		$tmpl->AddText("<tr><td><a href='/fabric.php?mode=enter_pos&amp;sklad=$sklad&amp;date=$date&amp;builder=$line[0]'>$line[1]</a></td><td></td><td></td><td></td></tr>");
+		$result=mysql_query("SELECT `fabric_data`.`id`, `fabric_data`.`cnt`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
+		LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+		LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
+		WHERE `fabric_data`.`builder_id`=$line[0] AND `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
+		$i=$sum=$cnt=0;
+		while($nxt=mysql_fetch_assoc($result))
+		{
+			$i++;
+			$sum+=$nxt['cnt']*$nxt['zp'];
+			$cnt+=$nxt['cnt'];
+		}
+		$sv+=$sum;
+		$sc+=$cnt;
+		$tmpl->AddText("<tr><td><a href='/fabric.php?mode=enter_pos&amp;sklad=$sklad&amp;date=$date&amp;builder=$line[0]'>$line[1]</a></td><td>$cnt</td><td>$i</td><td>$sum</td></tr>");
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->AddText("
+	<tr><th>Итого:</th><th>$sc</th><th></th><th>$sv</th></table>");
 }
 else if($mode=='enter_pos')
 {
-	$builder=round(@$_POST['builder']);
-	$sklad=round(@$_POST['sklad']);
-	$date=@$_POST['date'];
+	$builder=round(@$_REQUEST['builder']);
+	$sklad=round(@$_REQUEST['sklad']);
+	$date=date("Y-m-d",strtotime(@$_REQUEST['date']));
 	$tmpl->SetText("<h1 id='page-title'>Производственный учёт - ввод данных</h1>
 	<div id='page-info'><a href='/fabric.php?mode=enter_day&amp;sklad=$sklad&amp;date=$date'>Назад</a></div>");
-	if(isset($_POST['vc']))
+	if(isset($_REQUEST['vc']))
 	{
-		$vc=mysql_real_escape_string($_POST['vc']);
+		$vc=mysql_real_escape_string($_REQUEST['vc']);
+		$cnt=round(@$_REQUEST['cnt']);
+		
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_base` WHERE `vc`='$vc'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить id наименования");
-		if(mysql_num_rows($res)==0)	throw new Exception("Наименование с таким кодом отсутствует в базе");
-		$pos_id=mysql_result($res,0,0);
+		if(mysql_num_rows($res)==0)	$tmpl->msg("Наименование с таким кодом отсутствует в базе",'err');
+		else
+		{
+			if(!isAccess('doc_fabric','edit'))	throw new AccessException('');
+			$pos_id=mysql_result($res,0,0);
+			mysql_query("REPLACE INTO `fabric_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
+			VALUES ($sklad, $builder, '$date', $pos_id, $cnt)");
+			if(mysql_errno())	throw new MysqlException("Не удалось добавить наименование");
+		}
 	}
+	$res=mysql_query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, `fabric_data`.`cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
+	WHERE `fabric_data`.`builder_id`=$builder AND `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 	
 	$tmpl->AddText("<table class='list'>
 	<thead>
-	<tr><th>N</th><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th></tr>
+	<tr><th>N</th><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th><th>Сумма</th></tr>
 	</thead>
+
+	
+	
+	<tbody>");
+	$i=$sum=$allcnt=0;
+	while($line=mysql_fetch_assoc($res))
+	{
+		$i++;
+		$line['vc']=htmlentities($line['vc'],ENT_QUOTES,"UTF-8");
+		$line['name']=htmlentities($line['name'],ENT_QUOTES,"UTF-8");
+		$sumline=$line['cnt']*$line['zp'];
+		$sum+=$sumline;
+		$allcnt+=$line['cnt'];
+		$tmpl->AddText("<tr><td>$i</td><td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['cnt']}</td><td>{$line['zp']}</td><td>$sumline</td></tr>");
+	}
+	$tmpl->AddText("</tbody>
 	<form method='post'>
 	<input type='hidden' name='mode' value='enter_pos'>
 	<input type='hidden' name='builder' value='$builder'>
 	<input type='hidden' name='sklad' value='$sklad'>
-	<input type='hidden' name='date' value='$date'>
+	<input type='hidden' name='date' value='$date'>	
 	<tfoot>
-	<tr><td>+</td><td><input type='text' name='vc'></td><td></td><td><input type='text' name='cnt'></td><td><button type='submit'>Записать</button></td></tr>
+	<tr><th colspan='3'>Итого:</th><th>$allcnt</th><th></th><th>$sum</th></tr>
+	<tr><td>+</td><td><input type='text' name='vc'></td><td></td><td><input type='text' name='cnt'></td><td></td><td><button type='submit'>Записать</button></td></tr>
 	</tfoot>
 	</form>
-	<tbody>
-	<tr><td>1</td><td>line</td></tr>
-	</tbody>
-	");
-	
-	
-	$tmpl->AddText("</table>");
+	</table>");
 }
 
 
 
+}
+catch(AccessException $e)
+{
+	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
 }
 catch(MysqlException $e)
 {

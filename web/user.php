@@ -35,8 +35,11 @@ if($mode=='')
 	if(isAccess('doc_list','view'))
 		$tmpl->AddText("<li><a href='/docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
 
+	if(isAccess('doc_fabric','view'))
+		$tmpl->AddText("<li><a href='/fabric.php'>Учёт производства (экспериментально)</a></li>");
+
 	if(isAccess('generic_articles','view'))
-		$tmpl->AddText("<li><a href='/wiki.php' accesskey='w' title='Wiki-статьи'>Wiki-статьи (W)</a></li>");
+		$tmpl->AddText("<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>");
 
 	if(isAccess('generic_tickets','view'))
 		$tmpl->AddText("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");

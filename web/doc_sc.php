@@ -26,8 +26,6 @@ SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
 $tmpl->HideBlock('left');
 $mode=rcv('mode');
-$doc=rcv("doc");
-$document=AutoDocument($doc);
 
 $tmpl->AddTMenu("<script type='text/javascript' src='/css/doc_script.js'></script>
 <script src='/css/jquery/jquery.js' type='text/javascript'></script>
