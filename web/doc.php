@@ -27,7 +27,6 @@ $tmpl->HideBlock('left');
 $GLOBALS['m_left']=0;
 $mode=rcv('mode');
 $doc=rcv("doc");
-$document=AutoDocument($doc);
 
 $tmpl->AddTMenu("
 <script src='/css/jquery/jquery.js' type='text/javascript'></script>
@@ -65,6 +64,7 @@ else if($mode=="heads")
 		$type=rcv('type');
 		$document=AutoDocumentType($type, 0);
 	}
+	else	$document=AutoDocument($doc);
 	$document->head_submit($doc);
 }
 else if($mode=="jheads")
@@ -74,62 +74,75 @@ else if($mode=="jheads")
 		$type=rcv('type');
 		$document=AutoDocumentType($type, 0);
 	}
+	else	$document=AutoDocument($doc);
 	$document->json_head_submit($doc);
 }
 else if($mode=="ehead")
 {
+	$document=AutoDocument($doc);
 	$document->head($doc);
 }
 else if($mode=="body")
 {
+	$document=AutoDocument($doc);
 	$document->body($doc);
 }
 else if($mode=="srv")
 {
+	$document=AutoDocument($doc);
 	$document->Service($doc);
 }
 else if($mode=='applyj')
 {
+	$document=AutoDocument($doc);
 	$tmpl->ajax=1;
 	$tmpl->SetText($document->ApplyJson());
 }
 else if($mode=='cancelj')
 {
+	$document=AutoDocument($doc);
 	$tmpl->ajax=1;
 	$tmpl->SetText($document->CancelJson());
 }
 else if($mode=='conn')
 {
+	$document=AutoDocument($doc);
 	$tmpl->ajax=1;
 	$p_doc=rcv('p_doc');
 	$tmpl->SetText($document->ConnectJson($p_doc));
 }
 else if($mode=='forcecancel')
 {
+	$document=AutoDocument($doc);
 	$document->ForceCancel();
 }
 else if($mode=='print')
 {
+	$document=AutoDocument($doc);
 	$opt=rcv('opt');
 	$document->PrintForm($doc, $opt);
 }
 else if($mode=='fax')
 {
+	$document=AutoDocument($doc);
 	$opt=rcv('opt');
 	$document->SendFax($opt);
 }
 else if($mode=='email')
 {
+	$document=AutoDocument($doc);
 	$opt=rcv('opt');
 	$document->SendEmail($opt);
 }
 else if($mode=='morphto')
 {
+	$document=AutoDocument($doc);
 	$target_type=rcv('tt');
 	$document->MorphTo($doc, $target_type);
 }
 else if($mode=='getinfo')
 {
+	$document=AutoDocument($doc);
 	$document->GetInfo();
 }
 // Это переделать !!!!!!!!!!!!!!!!!!
@@ -151,6 +164,7 @@ else if($mode=="incnum")
 		$type=rcv('type');
 		$document=AutoDocumentType($type, 0);
 	}
+	else	$document=AutoDocument($doc);
 	
 	$altnum=$document->GetNextAltNum($type,$sub,$date,$firm);
 	echo "$altnum";
