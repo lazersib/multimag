@@ -1,4 +1,3 @@
-#!/usr/bin/php
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
@@ -18,38 +17,18 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-require_once($CONFIG['cli']['location']."/core.cli.inc.php");
-include_once($CONFIG['site']['location']."/include/doc.core.php");
-include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
+require_once($CONFIG['location']."/common/asyncworker.php");
+require_once($CONFIG['site']['location']."/include/doc.core.php");
+require_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
-/// Родительский класс для ассинхронных обработчиков
-class AsyncWorker
+/// Ассинхронный обработчик
+/// Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.
+class DbCheckWorker extends AsyncWorker
 {
-	var $mail_text;
-	var $starttime;
-
-	function __construct()
+	function getDescription()
 	{
-		$this->mail_text='';
-		$this->starttime=time();
+		return "Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.";
 	}
-
-	/// Устанавливает статус исполнения обработчика в процентах для отображения в интерфейсе
-	/// Расчитывает примерное время исполнения
-	function SetStatus($status)
-	{
-		$remains=(time()-$starttime)*(100/$status-1);
-		$remainm=round($remains/60);
-		$remains%=60;
-		if($remainm)	echo"\rВыполнено $status% (осталось не менее $remainm мин. $remains сек.)      ";
-		else		echo"\rВыполнено $status% (осталось не менее $remains сек.)     ";
-		/// Добавить код записи в базу данных
-	}
-};
-
-class DbCheck extends AsyncWorker
-{
-
 
 	function seek_and_up($date,$pos)
 	{
@@ -70,8 +49,10 @@ class DbCheck extends AsyncWorker
 
 	function run()
 	{
+		global $CONFIG;
 		$this->mail_text='';
 		$tim=time();
+		$dtim=time()-60*60*24*365;
 
 		mysql_query("UPDATE `variables` SET `corrupted`='1', `recalc_active`='1'");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить системные переменные");
@@ -93,7 +74,7 @@ class DbCheck extends AsyncWorker
 				echo $text;
 			}
 		}
-		echo"Сброс остатков...";
+		$this->SetStatusText("Сброс остатков...");
 		mysql_query("UPDATE `doc_base_cnt` SET `cnt`='0'");
 		if(mysql_errno())	throw new MysqlException("Не удалось сбросить остатки склада");
 		mysql_query("UPDATE `doc_kassa` SET `ballance`='0'");
@@ -109,11 +90,10 @@ class DbCheck extends AsyncWorker
 // 		{
 // 			mysql_query("UPDATE `doc_list_pos` SET `tranzit`='$nxt[1]' WHERE `id`='$nxt[0]'");
 // 		}
-		echo" готово!\n";
 
 		// ============== Расчет ликвидности ===================================================
 		$starttime=time();
-		echo"Расчет ликвидности...";
+		$this->SetStatusText("Расчет ликвидности...");
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`) AS `aa`
 		FROM `doc_list_pos`, `doc_list`
 		WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND (`doc_list`.`type`='2' OR `doc_list`.`type`='3') AND `doc_list`.`date`>'$dtim'
@@ -149,10 +129,9 @@ class DbCheck extends AsyncWorker
 			mysql_query("UPDATE `doc_base` SET `likvid`='0'");
 			if(mysql_errno())	throw new MysqlException("Не удалось сбросить ликвидность");
 		}
-		global $badpos; /// ??????????????????
 
 		// ================================ Перепроводка документов с коррекцией сумм ============================
-		echo"Перепроводка документов...\n\n";
+		$this->SetStatusText("Перепроводка документов...");
 		$i=0;
 
 		$res=mysql_query("SELECT `id`, `type`, `altnum`, `date` FROM `doc_list` WHERE `ok`>'0' AND `type`!='3' AND `mark_del`='0' ORDER BY `date`");
@@ -176,7 +155,7 @@ class DbCheck extends AsyncWorker
 				mysql_query("UPDATE `doc_list` SET `err_flag`='1' WHERE `id`='$nxt[0]'");
 				$text="$nxt[0](".$document->getViewName()." N $nxt[2] от $dt): $err ВЕРОЯТНО, ЭТО КРИТИЧЕСКАЯ ОШИБКА! ОСТАТКИ НА СКЛАДЕ, В КАССАХ, И БАНКАХ МОГУТ БЫТЬ НЕВЕРНЫ!\n";
 				echo $text;
-				$mail_text.=$text;
+				$this->mail_text.=$text;
 				$i++;
 			}
 		}
@@ -184,14 +163,14 @@ class DbCheck extends AsyncWorker
 		{
 			$text="-----------------------\nИтого: $i документов с ошибками проведения!\n";
 			echo $text;
-			$mail_text.=$text;
+			$this->mail_text.=$text;
 		}
 		else echo"Ошибки последовательности документов не найдены!\n";
 		$res=mysql_query("UPDATE `variables` SET `recalc_active`='0'");
 
-		echo "Удаление помеченных на удаление...\n";
+		$this->SetStatusText("Удаление помеченных на удаление...\n");
 		// ============================= Удаление помеченных на удаление =========================================
-		$tim_minus=time()-60*60*24*$CONFIG['auto']['doc_del_days'];
+		$tim_minus=time()-60*60*24*@$CONFIG['auto']['doc_del_days'];
 		$res=mysql_query("SELECT `id`, `type` FROM `doc_list` WHERE `mark_del`<'$tim_minus' AND `mark_del`>'0'");
 		if(mysql_errno())	throw new MysqlException("Ошибка выборки документов для удаления");
 		while($nxt=mysql_fetch_row($res))
@@ -218,15 +197,15 @@ class DbCheck extends AsyncWorker
 		{
 			$text="Поступление ID:$nxt[1], товар $nxt[0]($nxt[4]) - нулевая цена! Агент $nxt[2]\n";
 			echo $text;
-			$mail_text.=$text;
+			$this->mail_text.=$text;
 		}
 
 
-		if($mail_text)
+		if($this->mail_text)
 		{
 			try
 			{
-				$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$mail_text."\n\n****\nНеобходимо исправить найденные ошибки!";
+				$mail_text="При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n".$this->mail_text."\n\n****\nНеобходимо исправить найденные ошибки!";
 
 				mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
 				echo "Почта отправлена!";

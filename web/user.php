@@ -54,7 +54,7 @@ if($mode=='')
 		$tmpl->AddText("<li><a href='?mode=clog'>Журнал посещений</a></li>");
 
 	if(isAccess('sys_async_task','view'))
-		$tmpl->AddText("<li><a href='?mode=async_task' title=''>Статус ассинхронных обработчиков</a></li>");
+		$tmpl->AddText("<li><a href='?mode=async_task' title=''>Ассинхронные задачи</a></li>");
 
 	if(isAccess('sys_ps-stat','view'))
 		$tmpl->AddText("<li><a href='?mode=psstat' title=''>NEW Статистика переходов с поисковиков (экспериментально)</a></li>");
@@ -197,7 +197,7 @@ else if($mode=='doc_view')
 else if($mode=='frequest')
 {
        if(!$CONFIG['site']['trackticket_login'])	throw new Exception("Конфигурация модуля не заполнена!");
-       
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/login");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -223,13 +223,13 @@ else if($mode=='frequest')
         $_SESSION['trac_cookie']=$cookie;
 
         $doc = new DOMDocument('1.0','UTF8');
-	
+
 	@$doc->loadHTML('<meta http-equiv="content-type" content="text/html; charset=utf-8">'.$output);
 	$doc->normalizeDocument ();
-	
+
 	$form=$doc->getElementById('propertyform');
 	if(!$form)	throw new Exception("Не удалость получить форму треккера!");
-	
+
 	$form_inputs=$form->getElementsByTagName('input');
 	$token='';
 	foreach($form_inputs as $input)
@@ -254,7 +254,7 @@ else if($mode=='frequest')
 		$selects[$select_name]=array();
 		$select_options=$select->getElementsByTagName('option');
 		$selects_html[$select_name]='';
-		
+
 		foreach($select_options as $option)
 		{
 			if($option->nodeValue=='Ядро')	continue;
@@ -264,11 +264,11 @@ else if($mode=='frequest')
 			$selects_html[$select_name].='<option'.$selected.'>'.$option->nodeValue.'</option>';
 		}
 	}
-	
+
 	$tmpl->SetTitle("Запрос на доработку программы");
 	$tmpl->SetText("<h1 id='page-title'>Оформление запроса на доработку программы</h1>
 	<div id='page-info'>Внимание! Страница является упрощённым интерфейсом к <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a></div>
-	<p class='text'>Заполняя эту форму, вы формируете заказ на доработку сайта от имени Вашей организации в общедоступный реестр заказов, расположенный по адресу <a href='http://multimag.tndproject.org/report/3'>http://multimag.tndproject.org/report/3</a>. 
+	<p class='text'>Заполняя эту форму, вы формируете заказ на доработку сайта от имени Вашей организации в общедоступный реестр заказов, расположенный по адресу <a href='http://multimag.tndproject.org/report/3'>http://multimag.tndproject.org/report/3</a>.
 	<br>
 	Внимательно заполните все поля. Если иное не написано рядом с полем, все поля являются обязательными для заполнения. Особое внимание стоит уделить полю *краткое содержание*.
 	<br>
@@ -281,7 +281,7 @@ else if($mode=='frequest')
 	<form action='/user.php' method='post'>
 	<input type='hidden' name='token' value='$token'>
 	<input type='hidden' name='mode' value='sendrequest'>
-	
+
 	<b>Тип задачи</b> определяет суть задачи и очерёдность её исполнения.
 	<ul>
 	<li>Тип <u>Дефект</u> используется для информирования разработчиков о неверной работе существующих частей сайта. Такие задачи исполняются в первую очередь.</li>
@@ -291,27 +291,27 @@ else if($mode=='frequest')
 	</ul>
 	<i><u>Пример</u>: Задача</i><br>
 	<select name='field_type'>{$selects_html['field_type']}</select><br><br>
-	
+
 	<b>Краткое содержание</b>. Тема задачи. Максимально кратко (3-8 слов) и ёмко изложите суть поставленной задачи. Максимум 64 символа.<br>
 	<i><u>Пример</u>: Реализовать печатную форму: Приходный кассовый ордер</i><br>
 	<input type='text' maxlength='64' name='field_summary' style='width:90%'><br><br>
-	
+
 	<b>Подробное описание</b>. Максимально подробно изложите суть задачи. Описание должно являться дополнением краткого содержания. Не допускается писать несколько задач. Можно использовать wiki разметку для форматирвания.<br>
 	<i><u>Пример</u>: Форма должна быть доступна в документе *приходный кассовый ордер*, должна быть в PDF формате, и соответствовать общепринятой форме КО-1</i><br>
 	<textarea name='field_description' rows='7' cols='80'></textarea><br><br>
-	
+
 	<b>Компонент приложения</b>. Выбирается исходя из того, к какой части сайта относится ваша задача. Если задача относится к вашим индивидуальным модификациям - выбирайте *пользовательский дизайн*<br>
 	<i><u>Пример</u>: Документы</i><br>
 	<select name='field_component'>{$selects_html['field_component']}</select><br><br>
-	
+
 	<b>Приоритет</b> определяет то, насколько срочно требуется выполнить поставленную задачу. Критический приоритет допустимо указывать только для задач с типом *дефект*<br>
 	<i><u>Пример</u>: Обычный</i><br>
 	<select name='field_priority'>{$selects_html['field_priority']}</select><br><br>
-	
+
 	<b>Целевая версия</b> нужна, чтобы указать, в какой версии программы вы хотели бы видеть реализацию этой задачи. Вы можете отложить реализацию, указав более позднюю версию. Нет смысла выбирать более раннюю версию, т.к. приём задач в неё закрыт. В случае, если задача не соответствует целям версии, разработчики могут изменить этот параметр.<br>
 	<i><u>Пример</u>: 0.9</i><br>
 	<select name='field_milestone'>{$selects_html['field_milestone']}</select><br><br>
-	
+
 	<button type='submit'>Опубликовать задачу</button>
 	</form>");
 }
@@ -328,10 +328,10 @@ else if($mode=='sendrequest')
 	'field_reporter'	=> $CONFIG['site']['trackticket_login'],
 	'submit'		=> 'submit'
 	);
-	
+
 	var_dump($fields);
 	var_dump($_SESSION['trac_cookie']);
-	
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "http://multimag.tndproject.org/newticket");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -345,7 +345,7 @@ else if($mode=='sendrequest')
         $header=substr($data,0,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
 	$body=substr($data,curl_getinfo($ch,CURLINFO_HEADER_SIZE));
         curl_close($ch);
-	
+
 	$ticket=0;
 	$ticket_url='';
 	$hlines=explode("\n",$header);
@@ -362,7 +362,7 @@ else if($mode=='sendrequest')
 			break;
 		}
 	}
-	
+
 	$tmpl->SetText("<h1 id='page-title'>Оформление запроса на доработку программы</h1>
 	<div id='page-info'>Внимание! Страница является упрощённым интерфейсом к <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a></div>");
 	if($ticket)
@@ -432,15 +432,47 @@ else if($mode=="clog")
 else if($mode=='async_task')
 {
 	if(!isAccess('sys_async_task','view'))	throw new AccessException("Недостаточно привилегий");
-	$tmpl->AddText("<h1>Статус ассинхронных обработчиков</h1>
-	<table class='list'><tr><th>ID<th>Скрипт<th>Состояние");
-	$res=mysql_query("SELECT `id`, `script`, `status` FROM `sys_cli_status` ORDER BY `script`");
+	$task=rcv('task');
+	if($task)
+	{
+		if(!isAccess('sys_async_task','exec'))	throw new AccessException("Недостаточно привилегий");
+		mysql_query("INSERT INTO `async_workers_tasks` (`task`, `needrun`, `textstatus`) VALUES ('$task', 1, 'Запланировано')");
+		if(mysql_errno())	throw new MysqlException("Не удалось запланировать задачу");
+	}
+
+	$tmpl->AddText("<h1>Ассинхронные задачи</h1>");
+	$dir=$CONFIG['location'].'/common/async/';
+	if (is_dir($dir))
+	{
+		if ($dh = opendir($dir))
+		{
+			$tmpl->AddText("<ul>");
+			while (($file = readdir($dh)) !== false)
+			{
+				if( preg_match('/.php$/',$file) )
+				{
+					$cn=explode('.',$file);
+					include_once("$dir/$file");
+					$class_name=$cn[0]."Worker";;
+					$class=new $class_name(0);
+					$nm=$class->getDescription();
+					$tmpl->AddText("<li><a href='/user.php?mode=async_task&amp;task=$cn[0]'>Запланировать $cn[0] ($nm)</a></li>");
+
+				}
+			}
+			closedir($dh);
+			$tmpl->AddText("</ul>");
+		}
+	}
+
+	$tmpl->AddText("
+	<table class='list'><tr><th>ID<th>Задача<th>Ож.запуска<th>Состояние");
+	$res=mysql_query("SELECT `id`, `task`, `needrun`, `textstatus` FROM `async_workers_tasks` ORDER BY `id` DESC");
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]");
+		$tmpl->AddText("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
 	}
 	$tmpl->AddText("</table>");
-
 }
 else if($mode=="denyip")
 {
@@ -521,9 +553,9 @@ else if($mode=='psstat')
 		else $data_post = time();
 	}
 	else $data_post = time();
-	
+
 	$tmpl->AddText("<form action='' method='post'>Статистика за 7 дней, по дату <input name='date' type='text' value='".date('Y-m-d', $data_post)."' maxlength='10'> (YYYY-MM-DD) <button type='submit'>Получить данные</button></form>");
-	
+
 	if(isset($_POST['date']))
 	{
 		$data_post_1 = $data_post - (24*60*60);

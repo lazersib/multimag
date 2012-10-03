@@ -224,10 +224,10 @@ class doc_Realizaciya extends doc_Nulltype
 			if($doc->doc_type==3)
 			{
 				$doc->setStatus('ok');
-				
+
 			}
 		}
-		
+
 	}
 
 	function DocCancel()
@@ -2240,7 +2240,7 @@ function PrintTg12PDF($to_str=0)
 	{
 		if($this->doc_data[12])
 		{
-			$cena = round($nxt[4]/(1+$nds),2);
+			$cena = $nxt[4]/(1+$nds);
 			$stoimost = $cena*$nxt[3];
 			$nalog = ($nxt[4]*$nxt[3])-$stoimost;
 			$snalogom = $nxt[4]*$nxt[3];
@@ -2858,7 +2858,7 @@ function SfakPDF($to_str=0)
 			{
 				if($this->doc_data[12])
 				{
-					$cena = round($nxt[4]/(1+$nds),2);
+					$cena = $nxt[4]/(1+$nds);
 					$stoimost = $cena*$cnt;
 					$nalog = ($nxt[4]*$cnt)-$stoimost;
 					$snalogom = $nxt[4]*$cnt;
@@ -2892,7 +2892,7 @@ function SfakPDF($to_str=0)
 		{
 			if($this->doc_data[12])
 			{
-				$cena = round($nxt[4]/(1+$nds),2);
+				$cena = $nxt[4]/(1+$nds);
 				$stoimost = $cena*$nxt[3];
 				$nalog = ($nxt[4]*$nxt[3])-$stoimost;
 				$snalogom = $nxt[4]*$nxt[3];
