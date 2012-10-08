@@ -820,7 +820,7 @@ else if($mode=='adding')
 	if(mysql_errno())	throw new MysqlException("Не удалось получить данные прайсов");
 	$tmpl->AddText("<form action='' method='post'>
 	<input type='hidden' name='mode' value='adding_s'>
-	<table width='100%'><tr><th>N<th>Код произв.<th>Оригинальное наименование<th style='width: 50%'>Наше наименование");
+	<table width='100%'><tr><th>N<th>Код произв.<th>Оригинальное наименование<th style='width: 40%'>Наше наименование</th><th>Описание</th></tr>");
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
@@ -828,7 +828,8 @@ else if($mode=='adding')
 		$i++;
 		$nxt[1]=trim($nxt[1]);
 		$nxt[2]=trim($nxt[2]);
-		$tmpl->AddText("<tr class='lin$i'><td>$i<td><input type='text' name='vc[$nxt[0]]' value='$nxt[1]'><td>$nxt[2]<td><input type='text' name='n[$nxt[0]]' value='$nxt[2]' style='width: 95%'>");
+		$name=mb_substr($nxt[2],0,128,"UTF-8");
+		$tmpl->AddText("<tr class='lin$i'><td>$i<td><input type='text' name='vc[$nxt[0]]' value='$nxt[1]'><td>$nxt[2]<td><input type='text' name='n[$nxt[0]]' value='$name' style='width: 95%'><td><textarea name='d[$nxt[0]]'>$nxt[2]</textarea>");
 	}
 	$tmpl->AddText("</table>Группа:<br><select name='group'>");
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_group`");
@@ -859,8 +860,9 @@ else if($mode=='adding_s')
 	foreach($n as $id => $value)
 	{
 		$vc=mysql_real_escape_string(@$_POST['vc'][$id]);
+		$desc=mysql_real_escape_string(@$_POST['d'][$id]);
 		$value=mysql_real_escape_string($value);
-		mysql_query("INSERT INTO `doc_base` (`group`, `name`, `vc`, `unit`) VALUES ('$group', '$value', '$vc', '$units')");
+		mysql_query("INSERT INTO `doc_base` (`group`, `name`, `vc`, `unit`, `desc`) VALUES ('$group', '$value', '$vc', '$units', '$desc')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить наименование $value");
 		$pos_id=mysql_insert_id();
 		$tmpl->AddText("Добавлено $pos_id: $vc - $value<br>");
