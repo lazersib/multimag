@@ -29,7 +29,7 @@ if(!isAccess('admin_comments','view'))	throw new AccessException("Недоста
 
 if($mode=='')
 {
-	$res=mysql_query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`email` AS `user_email`
+	$res=mysql_query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	ORDER BY `comments`.`id` DESC");
@@ -73,7 +73,7 @@ else if($mode=='response')
 		$tmpl->msg("Коментарий сохранён успешно");
 	
 	}	
-	$res=mysql_query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`email` AS `user_email`
+	$res=mysql_query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	WHERE `comments`.`id`='$id'");

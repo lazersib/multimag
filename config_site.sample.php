@@ -4,6 +4,12 @@ require_once("config_all.php");
 $CONFIG['site']['skin']			= 'default';		// default по умолчанию
 $CONFIG['site']['inner_skin']		= 'inner';	// по умолчанию = предыдущему
 
+$CONFIG['site']['allow_openid']		= true;		// Разрешить регистрацию и вход по openid. false по умолчанию
+$CONFIG['site']['allow_phone_regist']	= true;		// Разрешить регистрацию по номеру мобильного телефона. Требуется настроенная отправка SMS
+							// false по умолчанию
+$CONFIG['site']['pass_type']		= 'CRYPT';	// Варианты: CRYPT (по умолчанию), MD5, SHA1. CRYPT обеспечивает самое надёжное хранение паролей
+							
+
 // Настройки прайса
 $CONFIG['site']['price_col_cnt']	= 0;	// 2 по умолчанию
 $CONFIG['site']['price_width_cost']	= 0;	// 12 по умлочанию

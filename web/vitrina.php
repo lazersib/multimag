@@ -808,7 +808,7 @@ protected function BuyMakeForm()
 	else
 	{
 		$country_phone=7;
-		$city_phone=$dop_tel='';
+		$city_phone=$dop_phone='';
 	}
 	
 	

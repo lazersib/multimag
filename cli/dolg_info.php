@@ -48,7 +48,7 @@ try
 	$xmppclient->processUntil('session_start');
 	$xmppclient->presence();
 
-	$res=mysql_query("SELECT `id`, `name`, `email`, `jid` FROM `users`");
+	$res=mysql_query("SELECT `id`, `name`, `reg_email`, `jid` FROM `users`");
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($mail_text[$nxt[0]])

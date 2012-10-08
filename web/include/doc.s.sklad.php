@@ -1468,7 +1468,7 @@ class doc_s_Sklad
 								}
 								else
 								{
-									$tmpl->msg("Файл не загружен, $img_id.$imtype","info");
+									$tmpl->msg("Файл не загружен, $img_id.$imtype","err");
 									$img_id=false;
 								}
 							}
