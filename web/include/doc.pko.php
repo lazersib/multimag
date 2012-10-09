@@ -384,7 +384,7 @@ class doc_Pko extends doc_Nulltype
 		$pdf->Cell(0,2,$str,0,1,'C',0);
 		$pdf->SetFont('','',7);
 
-		$res=mysql_query("SELECT `rname` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
+		$res=mysql_query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `id`='{$this->doc_data[8]}'");
 		$name=@mysql_result($res,0,0);
 		if(!$name) $name=$this->firm_vars['firm_buhgalter'];
 
@@ -506,7 +506,7 @@ class doc_Pko extends doc_Nulltype
 		$pdf->Cell(0,2,$str,0,1,'C',0);
 		$pdf->SetFont('','',7);
 
-		$res=mysql_query("SELECT `rname` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
+		$res=mysql_query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `id`='{$this->doc_data[8]}'");
 		$name=@mysql_result($res,0,0);
 		if(!$name) $name=$this->firm_vars['firm_buhgalter'];
 

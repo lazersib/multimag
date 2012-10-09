@@ -25,7 +25,7 @@ if($mode=='upl')
 {
 	$s=@$_GET['s'];
 	$s=mysql_real_escape_string($s);
-	$res=mysql_query("SELECT `id`,`name`, `email` FROM `users` WHERE `name` LIKE '%$s%'");
+	$res=mysql_query("SELECT `id`,`name`, `reg_email` FROM `users` WHERE `name` LIKE '%$s%'");
 	$i=0;
 	$row=mysql_numrows($res);
 	while($nxt=mysql_fetch_row($res))

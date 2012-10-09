@@ -112,9 +112,10 @@ else if($mode=='petitions')
 
 	if(strlen($comment)>8)
 	{
-		$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		$res=mysql_query("SELECT `reg_email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 		echo mysql_error();
 		$from=mysql_result($res,0,0);
+		if($from=='')	$from=$CONFIG['site']['doc_adm_email'];
 
 		$res=mysql_query("SELECT `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`date`, `doc_agent`.`name`, `doc_types`.`name`
 		FROM `doc_list`

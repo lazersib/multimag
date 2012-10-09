@@ -90,13 +90,13 @@ class doc_Zayavka extends doc_Nulltype
 				$smsphone=mysql_result($res,0,0);
 				if(!$smsphone)
 				{
-					$res=mysql_query("SELECT `tel` FROM `users` WHERE `id`='{$doc_data['user']}'");
+					$res=mysql_query("SELECT `reg_phone` FROM `users` WHERE `id`='{$doc_data['user']}'");
 					$smsphone=@mysql_result($res,0,0);
 				}
 			}
 			else
 			{
-				$res=mysql_query("SELECT `tel` FROM `users` WHERE `id`='{$doc_data['autor']}'");
+				$res=mysql_query("SELECT `reg_phone` FROM `users` WHERE `id`='{$doc_data['autor']}'");
 				$smsphone=@mysql_result($res,0,0);
 			}
 			if(preg_match('/^\+79\d{9}$/', $smsphone))
@@ -124,12 +124,12 @@ class doc_Zayavka extends doc_Nulltype
 		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
 		$delivery_checked=@$this->dop_data['delivery']?'checked':'';
 		$tmpl->AddText("Кладовщик:<br><select name='kladovshik'>");
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
+		$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		while($nxt=mysql_fetch_row($res))
 		{
 			$s=($klad_id==$nxt[0])?'selected':'';
-			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><hr>");
 		
@@ -1038,25 +1038,38 @@ class doc_Zayavka extends doc_Nulltype
 			$pdf->Cell(0,4,$str,0,1,'L',0);
 		}
 
-		$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-		$name=@mysql_result($res,0,0);
-		if(!$name) $name='('.$_SESSION['name'].')';
-		$tel=@mysql_result($res,0,1);
-		$email=@mysql_result($res,0,2);
+		$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data[8]}'");
+		if(mysql_num_rows($res))
+		{
+			$name=@mysql_result($res,0,0);
+			if(!$name) $name='('.$_SESSION['name'].')';
+			$tel=@mysql_result($res,0,1);
+			$email=@mysql_result($res,0,2);
 
-		$pdf->SetAutoPageBreak(0,10);
-		$pdf->SetY($pdf->h-18);
-		$pdf->Ln(1);
-		$pdf->SetFont('','',10);
-		$str="Исп. менеджер $name";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Контактный телефон: $tel";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Электронная почта: $email";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-18);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Исп. менеджер $name";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Контактный телефон: $tel";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Электронная почта: $email";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
+		else
+		{
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-12);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Login автора: ".$_SESSION['name'];
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
 
 		if($to_str)
 			return $pdf->Output('zayavka.pdf','S');
@@ -1136,7 +1149,7 @@ class doc_Zayavka extends doc_Nulltype
 			$autor_name=@mysql_result($res,0,0);
 
 			$klad_id=$this->dop_data['kladovshik'];
-			$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `id`='$klad_id'");
+			$res=mysql_query("SELECT `user_id`, `worker_real_rname` FROM `users_worker_info` WHERE `user_id`='$klad_id'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 			$nxt=mysql_fetch_row($res);
 

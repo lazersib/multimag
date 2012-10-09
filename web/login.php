@@ -671,12 +671,12 @@ catch(Exception $e)
 }
 
 }
-/// До сюда сделано
+
 else if($mode=='rem')
 {
 	if(!isset($_REQUEST['login']))
 	{
-		$tmpl->SetText("<h1 id='page-title'>Восстановление пароля</h1>
+		$tmpl->SetText("<h1 id='page-title'>Восстановление доступа</h1>
 		<p id='text'>Для начала процедуры смены пароля введите логин на сайте, номер телефона, или адрес электронной почты, указанный при регистрации:</p>
 		<form method='post'>
 		<input type='hidden' name='mode' value='rem'>
@@ -704,12 +704,12 @@ else if($mode=='rem')
 		
 		if(!isset($_REQUEST['method']))
 		{
-			$tmpl->AddText("<h1 id='page-title'>Восстановление пароля - шаг 2</h1>
+			$tmpl->AddText("<h1 id='page-title'>Восстановление доступа - шаг 2</h1>
 			<form method='post'>
 			<input type='hidden' name='mode' value='rem'>
 			<input type='hidden' name='login' value='$login'>
 			<input type='hidden' name='img' value='{$_REQUEST['img']}'>
-			<fieldset><legend>Восстановить пароль при помощи</legend>");
+			<fieldset><legend>Восстановить доступ при помощи</legend>");
 			if($user_info['reg_email']!='' && $user_info['reg_email_confirm']=='1')
 				$tmpl->AddText("<label><input type='radio' name='method' value='email'>Электронной почты</label><br>");
 			if(preg_match('/^\+79\d{9}$/', $user_info['reg_phone']) && $user_info['reg_phone_confirm']=='1' && @$CONFIG['site']['allow_phone_regist'])
@@ -733,66 +733,98 @@ else if($mode=='rem')
 			$method=$_REQUEST['method'];
 			if($method=='email')
 			{
-				$key=substr(md5($user_info[0].$user_info[1].$user_info[2].$user_info[4].time()),8);
+				mysql_query("START TRANSACTION");
+				$key=substr(md5($user_info['id'].$user_info['name'].$user_info['reg_email'].time().rand(0,1000000)),8);
 				$proto='http';
 				if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
 
 				mysql_query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
+				if(mysql_errno())		throw new MysqlException("Не удалось включить режим смены пароля");
 				$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта {$user_info['name']}.
 				Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&amp;login={$user_info['name']}&amp;s=$key
 				
 				----------------------------------------
 				Сообщение сгенерировано автоматически, отвечать на него не нужно!";
-				mailto($nxt[2],"Восстановление забытого пароля",$msg);
-				$tmpl->msg("Проверьте почтовый ящик!","ok");			
+				mailto($user_info['reg_email'],"Восстановление забытого пароля",$msg);
+				$tmpl->msg("Код для смены пароля выслан Вам по электронной почте. Проверьте почтовый ящик.","ok");		
+				mysql_query("COMMIT");
+			}
+			else if($method=='sms')
+			{
+				require_once('include/sendsms.php');
+				mysql_query("START TRANSACTION");
+				$key=rand(100000,99999999);
+				mysql_query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
+				if(mysql_errno())		throw new MysqlException("Не удалось включить режим смены пароля");
+				
+				$sender=new SMSSender();
+				$sender->setNumber($user_info['reg_phone']);
+				$sender->setText("Ваш код: $key\n{$CONFIG['site']['name']}");
+				$sender->send();
+				mysql_query("COMMIT");
+				$tmpl->msg("Код для смены пароля выслан Вам по SMS","ok");		
+			}
+			else if(@$CONFIG['site']['allow_openid'])
+			{
+				header("Location: /login_oid.php?oid=$method");
+				exit();
 			}
 			else throw new Exception("Метод не реализован или не доступен");
+			
+			if($method!='openid')
+			{
+				$tmpl->AddText("<h1 id='page-title'>Восстановление доступа - шаг 3</h1>
+				<form method='post'>
+				<input type='hidden' name='mode' value='remn'>
+				<input type='hidden' name='login' value='$login'>
+				Введите полученный код:<br>
+				<input type='text' name='s'><br>
+				<br><button type='submit'>Далее</button>
+				</form>");
+			}
 		}
 	
 	}
 }
-else if($mode=='rems')
-{
-	$tmpl->SetText("<h1 id='page-title'>Смена пароля</h1>");
-	$res=mysql_query("SELECT `id`,`name`,`email`,`confirm`,`date_reg` FROM `users` WHERE `name`='$login' OR `email`='$login'");
-	if(@$nxt=mysql_fetch_row($res))
-	{
-		$key=md5($nxt[0].$nxt[1].$nxt[2].$nxt[4].time());
-		$proto='http';
-		if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
-
-		mysql_query("UPDATE `users` SET `passch`='$key' WHERE `id`='$nxt[0]'");
-		$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта $nxt[1].
-Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&s=$key
-Если Вы не давали запрос на смену пароля, обязательно отмените этот запрос, авторизовавшись на сайте!
-----------------------------------------
-Сообщение сгенерировано автоматически, отвечать на него не нужно!";
-		mailto($nxt[2],"Восстановление забытого пароля",$msg);
-		$tmpl->msg("Проверьте почтовый ящик!","ok");
-	}
-	else $tmpl->msg("Пользователя с таким именем или адресом электронной почты не найдено! Возможно, он был удален по неактивности.","err");
-}
+/// До сюда сделано
 else if($mode=='remn')
 {
-	$key=rcv('s');
-	if(strlen($key)!=32) $tmpl->logger("PassRecovery: uncorrect key!");
-	else
+	$sql_key=mysql_real_escape_string(@$_REQUEST['s']);
+	$sql_login=mysql_real_escape_string(@$_REQUEST['login']);
+	$res=mysql_query("SELECT `id`, `name` FROM `users` WHERE `pass_change`='$sql_key' AND `name`='$sql_login'");
+	if($nxt=mysql_fetch_row($res))
 	{
-		$res=mysql_query("SELECT `id`,`name`,`email` FROM `users` WHERE `passch`='$key'");
-		if($nxt=mysql_fetch_row($res))
+		$pass=keygen_unique(0,8,11);
+		
+		if($CONFIG['site']['pass_type']=='MD5')
 		{
-		$pass=keygen_unique(0,6,9);
-		mysql_query("UPDATE `users` SET `pass`=md5('$pass'), `passch`='', `confirm`='0' WHERE `id`='$nxt[0]'");
+			$sql_pass_hash=MD5($pass);
+			$sql_pass_type='MD5';
+		}
+		else if($CONFIG['site']['pass_type']=='SHA1')
+		{
+			$sql_pass_hash=SHA1($pass);
+			$sql_pass_type='SHA1';
+		}
+		else
+		{
+			if(CRYPT_SHA256 == 1)
+			{
+				$sql_pass_hash=crypt($pass, '$5$'.substr(MD5($login.rand(0,1000000)),0,16).'$');
+			}
+			else	$sql_pass_hash=crypt($pass);
+			$sql_pass_type='CRYPT';
+		}
+		
+		mysql_query("UPDATE `users` SET `pass`='$sql_pass_hash', `pass_type`='$sql_pass_type', `pass_change`='', `pass_date_change`=NOW() WHERE `id`='$nxt[0]'");
 		$_SESSION['uid']=$nxt[0];
 		$_SESSION['name']=$nxt[1];
-		$msg="Сайт {$CONFIG['site']['name']}\nПароль был успешно изменён! Не забудьте его!\nlogin: $nxt[1]\npass: $pass\n----------------------------------------\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
-		mailto($nxt[2],"Информация о смене пароля",$msg);
 		$tmpl->AddText("<h1>Завершение смены пароля</h1>
-		<p id=text>$nxt[1], ваш новый пароль:<br>
-		$pass<br>Не забудьте его! Письмо с новым паролем отправлено Вам по электронной почте!");
-		}
-		else $tmpl->logger("Ссылка уже не действительна!");
+		$nxt[1], ваш новый пароль:<br>
+		$pass<br>Не забудьте его!");
 	}
+	else $tmpl->logger("Код неверен или устарел");
+
 }
 else if($mode=='unsubscribe')
 {

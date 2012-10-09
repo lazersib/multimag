@@ -48,13 +48,13 @@ class doc_Postuplenie extends doc_Nulltype
 		$checked=@$this->dop_data['return']?'checked':'';
 		$tmpl->AddText("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>
 		Кладовщик:<br><select name='kladovshik'>");
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
+		$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		$tmpl->AddText("<option value='0'>--не выбран--</option>");
 		while($nxt=mysql_fetch_row($res))
 		{
 			$s=($klad_id==$nxt[0])?'selected':'';
-			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><br>");
 	}

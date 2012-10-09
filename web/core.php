@@ -388,7 +388,7 @@ function SendSubscribe($tema,$msg)
 	$res=mysql_query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
 	if(mysql_errno())	throw new MysqlException("Ошибка получения наименования организации");
 	$firm_name=mysql_result($res,0,0);
-	$res=mysql_query("(SELECT `name`, `email`, `rname` FROM `users` WHERE `subscribe`='1' AND `confirm`='0')
+	$res=mysql_query("(SELECT `name`, `reg_email`, `real_name` FROM `users` WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1')
 	UNION
 	(SELECT `name`, `email`, `fullname` AS `rname` FROM `doc_agent` WHERE `no_mail`='0' AND `email`!='')
 	");

@@ -6,8 +6,8 @@ ALTER TABLE `users` CHANGE `email` `reg_email` VARCHAR(64) CHARACTER SET utf8 CO
 ALTER TABLE `users` CHANGE `confirm` `reg_email_confirm` VARCHAR(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL AFTER `reg_email`;
 ALTER TABLE `users` CHANGE `tel` `reg_phone` VARCHAR(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL AFTER `reg_email_confirm`;
 ALTER TABLE `users` CHANGE `subscribe` `reg_email_subscribe` TINYINT NOT NULL AFTER `reg_email_confirm`;
-ALTER TABLE `users` ADD `reg_phone_subscribe` TINYINT NOT NULL AFTER `reg_phone`;
 ALTER TABLE `users` ADD `reg_phone_confirm` VARCHAR(8) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL AFTER `reg_phone`;
+ALTER TABLE `users` ADD `reg_phone_subscribe` TINYINT NOT NULL AFTER `reg_phone`;
 ALTER TABLE `users` ADD `pass_date_change` DATETIME NOT NULL AFTER `pass_change`;
 ALTER TABLE `users` ADD `pass_expired` TINYINT NOT NULL DEFAULT 0 AFTER `pass_change`;
 ALTER TABLE `users` CHANGE `date_reg` `reg_date` DATETIME NOT NULL AFTER `reg_phone_confirm`;
@@ -31,7 +31,7 @@ CREATE TABLE `users_openid` (
 `openid_identify` VARCHAR(192) NOT NULL ,
 `openid_type` INT( 16 ) NOT NULL,
 INDEX (`user_id`),
-UNIQUE (`opienid_identify`)
+UNIQUE (`openid_identify`)
 ) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci COMMENT = 'Привязка к openid';
 ALTER TABLE `users_openid` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE ;
 
@@ -50,7 +50,10 @@ INDEX (`worker_jid`)
 ) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci;
 ALTER TABLE `users_worker_info` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE ;
 
+INSERT INTO `users_worker_info` (`user_id`, `worker`, `worker_real_name`, `worker_email`, `worker_phone`, `worker_real_address`, `worker_jid`)
+SELECT `id`, `worker`, `real_name`, `reg_email`, `reg_phone`, `real_address`, `jid` FROM `users` WHERE `worker`='1';
 
+ALTER TABLE `users` DROP `worker`;
 
 CREATE TABLE `users_login_history` (
 `id` INT NOT NULL AUTO_INCREMENT,
