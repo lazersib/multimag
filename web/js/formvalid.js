@@ -50,7 +50,7 @@ function form_validator(form_id)
 	function hasClass(elem, className) {
 		    return new RegExp("(^|\\s)"+className+"(\\s|$)").test(elem.className)
 	}
-	
+
 	function hlErrorField(field,hl)
 	{
 		if(hl)
@@ -152,7 +152,7 @@ function form_validator(form_id)
 					return true
 				}
 			}
-			
+
 			if(v.length==0)
 			{
 				if(no_empty)
@@ -211,7 +211,7 @@ function form_validator(form_id)
 	{
 		function test_valid()
 		{
-			
+
 			if(input_bik.value.length==0 && input_rs.value.length==0)
 			{
 				hlErrorField(input_bik,false)
@@ -225,13 +225,13 @@ function form_validator(form_id)
 
 			if(input_bik.value.length!=9)
 				hlErrorField(input_bik,true)
-			
+
 			if(input_bik.value.length!=9 || input_rs.value.length!=20)
 			{
 				buttons_toggle()
 				return true
 			}
-			
+
 			var sum=0
 			var coef=[7,1,3]
 			for(var i=6;i<input_bik.value.length;i++)

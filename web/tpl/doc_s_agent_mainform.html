@@ -1,0 +1,41 @@
+
+<table width='100%'>
+<tr><td width='200px'>
+<label><input type='radio' name='type' value='0' <% if(agent_data.type==0) {%>checked<% } %> >Физическое лицо</label><br>
+<label><input type='radio' name='type' value='1'<% if(agent_data.type!=0) {%>checked<% } %>>Юридическое лицо</label><br>
+<label><input type='checkbox' name='dishonest' value='1' <% if(agent_data.dishonest!=0) {%>checked<% } %>>Недобросовестный агент</label>
+</td><td>
+Краткое наименование: <br>
+<input type=text name='pos_name' value='<%= agent_data.name %>' style='width: 95%;'>
+</td>
+<td width='180px'>
+Группа:<br>
+<select name='group'>
+<% for (var i = 0; i < group_data.length; i++) { %>
+<option value='<%= group_data[i].id  %>'><%= group_data[i].value %></option>
+<% } %>
+</select>
+</td>
+<tr>
+<td id='fullname_text'><% if(agent_data.type==0) {%>ФИО:<% }else{ %>Полное наименование:<% } %></td>
+<td colspan='2'><input type=text name='fullname' value='<%= agent_data.fullname %>' style='width: 95%;'></td>
+</tr>
+</table>
+<fieldset><legend>Контакты</legend>
+<table width='100%' cellpadding='0' cellspacing='0'>
+<tr>
+<td>E-mail:</td><td>Основной телефон</td><td>Телефон/факс</td><td>Мобильный телефон (для SMS)</td><td>Дополнительный телефон</td>
+</tr>
+<tr>
+<td><input type=text name='email' value='<%= agent_data.email %>' class='email validate'></td>
+<td><input type=text name='phone' value='<%= agent_data.phone %>' class='phone validate'></td>
+<td><input type=text name='fax_phone' value='<%= agent_data.fax_phone %>' class='phone validate'></td>
+<td><input type=text name='sms_phone' value='<%= agent_data.sms_phone %>' class='phone validate'></td>
+<td><input type=text name='alt_phone' value='<%= agent_data.alt_phone %>' class='phone'></td>
+</tr>
+</table>
+</fieldset>
+<% if(agent_data.type==0) {%>Адрес прописки:<% }else{ %>Юридический адрес:<% } %><br>
+<input type=text name='alt_phone' value='<%= agent_data.adres %>' style='width: 95%;'><br>
+Почтоый адрес:<br>
+<input type=text name='alt_phone' value='<%= agent_data.gruzopol %>' style='width: 95%;'><br>

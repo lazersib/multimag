@@ -238,7 +238,7 @@ protected function ViewGroup($group, $page)
 		throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
 	}
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
-		$tmpl->AddText("<div style='float: right; margin: 35px 35px 20px 20px;'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'></a></div>");
+		$tmpl->AddText("<div style='float: right; margin: 35px 35px 20px 20px;'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg' alt='$nxt[0]'></div>");
 	$title=($page>1)?"$nxt[0] - стр.$page":$nxt[0];
 	$tmpl->SetTitle($title);
 	$tmpl->AddText("<h1 id='page-title'>$title</h1>");
@@ -258,6 +258,8 @@ protected function ViewGroup($group, $page)
 protected function ProductList($group, $page)
 {
 	global $tmpl, $CONFIG;
+	if(isset($_GET['op']))
+		$_SESSION['vit_photo_only']=$_GET['op']?1:0;
 
 	$order=rcv('order', @$_SESSION['vitrina_order']);
 	if(!$order)	$order=@$CONFIG['site']['vitrina_order'];
@@ -285,6 +287,8 @@ protected function ProductList($group, $page)
 	}
 	$_SESSION['vitrina_view']=$view;
 
+	$sql_photo_only=$_SESSION['vit_photo_only']?"AND `img_id` IS NOT NULL":"";
+
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
 	`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
@@ -293,7 +297,7 @@ protected function ProductList($group, $page)
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-	WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0'
+	WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' $sql_photo_only
 	ORDER BY $sql_order";
 	$res=mysql_query($sql);
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
@@ -321,10 +325,12 @@ protected function OrderAndViewBar($group,$page,$order,$view)
 	$tmpl->AddText("<div class='orderbar'>Показывать: ");
 	if($view=='i')	$tmpl->AddText("<span class='selected'>Картинками</span> ");
 	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=i')."'>Картинками</a></span> ");
-	if($view=='t')$tmpl->AddText("<span class='selected'>Таблицей</span> ");
+	if($view=='t')	$tmpl->AddText("<span class='selected'>Таблицей</span> ");
 	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=t')."'>Таблицей</a></span> ");
-	if($view=='l')$tmpl->AddText("<span class='selected'>Списком</span> ");
+	if($view=='l')	$tmpl->AddText("<span class='selected'>Списком</span> ");
 	else		$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'view=l')."'>Списком</a></span> ");
+	if(@$_SESSION['vit_photo_only'])	$tmpl->AddText("<span class='selected'><a class='down'  href='".$this->GetGroupLink($group, $page, 'op=0')."'>Только с фото</a></span> ");
+	else					$tmpl->AddText("<span><a href='".$this->GetGroupLink($group, $page, 'op=1')."'>Только с фото</a></span> ");
 	$tmpl->AddText("</div>");
 	$tmpl->AddText("<div class='viewbar'>Сортировать по: ");
 	if($order=='n')		$tmpl->AddText("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=nd')."'>Названию</a></span> ");
@@ -730,7 +736,7 @@ protected function TovList_ImageList($res, $lim)
 		$cc=1-$cc;
 		if($i>=$lim)	break;
 	}
-	$tmpl->AddText("<br clear='all'>");
+	$tmpl->AddText("<div class='clear'></div>");
 }
 /// Подробная таблица товаров
 protected function TovList_ExTable($res, $lim)
@@ -798,7 +804,7 @@ protected function BuyMakeForm()
 	}
 
 	if(rcv('cwarn'))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
-	
+
 	if(@$user_data['tel'])
 	{
 		$country_phone=substr($user_data['tel'],1,1);
@@ -810,8 +816,8 @@ protected function BuyMakeForm()
 		$country_phone=7;
 		$city_phone=$dop_tel='';
 	}
-	
-	
+
+
 	$tmpl->AddText("
 	<h4>Для оформления заказа требуется следующая информация</h4>
 	<form action='/vitrina.php' method='post'>
@@ -821,12 +827,12 @@ protected function BuyMakeForm()
 	<input type='text' name='rname' value='".$user_data['rname']."'><br>
 	Мобильный телефон: <span id='phone_num'></span><br>
 	+<input type='text' name='country_phone' value='$country_phone' maxlength='1' style='width: 90px;' placeholder='Код страны' id='country_phone'> -
-	<input type='text' name='city_phone' value='$city_phone' maxlength='3' placeholder='Код оператора' id='city_phone'> - 
+	<input type='text' name='city_phone' value='$city_phone' maxlength='3' placeholder='Код оператора' id='city_phone'> -
 	<input type='text' name='dop_phone' value='$dop_phone' maxlength='10' placeholder='Номер' id='dop_phone'>
 	<br>
 
 	$email_field
-	
+
 	<br>Способ оплаты:<br>
 	<label><input type='radio' name='pay_type' value='wmr'>Webmoney WMR.
 	<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>
@@ -836,18 +842,18 @@ protected function BuyMakeForm()
 	<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня). После оформления заказа Вы сможете распечатать счёт для оплаты.</label><br>
 	<label><input type='radio' name='pay_type' value='nal' id='soplat_nal' checked>Наличный расчет.
 	<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br><br>
-	
-	
+
+
 	<label><input type='checkbox' name='delivery' id='delivery' value='1'>Нужна доставка</label><br>
 	<div id='delivery_fields'>
 	Желаемые дата и время доставки:<br>
-	<input type='text' name='delivery_date'><br>	
+	<input type='text' name='delivery_date'><br>
 	<br>Адрес доставки:<br>
 	<textarea name='adres' rows='5' cols='15'>".$user_data['adres']."</textarea><br>
 	</div>
-	
-	
-	
+
+
+
 	Другая информация:<br>
 	<textarea name='dop' rows='5' cols='15'>".$user_dopdata['dop_info']."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
@@ -863,7 +869,7 @@ protected function BuyMakeForm()
 		phone_num.innerHTML='+'+country_phone.value+city_phone.value+dop_phone.value
 	}
 	country_phone.onkeyup=city_phone.onkeyup=dop_phone.onkeyup=updatePhoneNum
-	
+
 	var delivery=document.getElementById('delivery')
 	var delivery_fields=document.getElementById('delivery_fields')
 	function deliveryCheck()
@@ -889,14 +895,14 @@ protected function MakeBuy()
 	$dop=rcv('dop');
 	$delivery=rcv('delivery');
 	$delivery_date=rcv('delivery_date');
-	
+
 	$country_phone=rcv('country_phone');
 	$city_phone=rcv('city_phone');
 	$dop_phone=rcv('dop_phone');
 	if($country_phone && $city_phone && $dop_phone)
 		$tel="+".$country_phone.$city_phone.$dop_phone;
 	else	$tel='';
-	
+
 	if($_SESSION['uid'])
 	{
 		mysql_query("UPDATE `users` SET `rname`='$rname', `tel`='$tel', `adres`='$adres' WHERE `id`='$uid'");
@@ -1026,8 +1032,8 @@ protected function PageBar($group, $item_count, $per_page, $cur_page)
 		if($cur_page<$pages_count)
 		{
 			$i=$cur_page+1;
-			$tmpl->AddText(" <a href='".$this->GetGroupLink($group, $i)."'>&gt&gt</a> ");
-		}	else	$tmpl->AddText(" &gt&gt ");
+			$tmpl->AddText(" <a href='".$this->GetGroupLink($group, $i)."'>&gt;&gt;</a> ");
+		}	else	$tmpl->AddText(" &gt;&gt; ");
 		$tmpl->AddText("</div>");
 	}
 }

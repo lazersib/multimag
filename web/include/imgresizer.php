@@ -46,7 +46,7 @@ class ImageProductor
 	protected $show_watermark=1;
 	// Путь к шрифту для отображения наименования
 	protected $font_watermark='ttf-dejavu/DejaVuSansCondensed-Bold.ttf';
-	
+
 	public function __construct($img_id, $img_storage, $type='jpg')
 	{
 		global $CONFIG;
@@ -65,17 +65,17 @@ class ImageProductor
 	{
 		$this->dim_x=$x;
 	}
-	
+
 	public function SetY($y)
 	{
 		$this->dim_y=$y;
 	}
-	
+
 	public function SetQuality($quality)
 	{
 		if($quality>0)	$this->quality=$quality;
 	}
-	
+
 	public function SetNoEnlarge($flag)
 	{
 		$this->no_enlarge=$flag;
@@ -86,17 +86,17 @@ class ImageProductor
 	{
 		$this->fix_aspect=$flag;
 	}
-	
+
 	/// Возвращает URI изображения. Если изображение есть в кеше - возвращает его. Иначе - возвращает адрес скрипта конвертирования
 	public function GetURI()
 	{
 		global $CONFIG;
 		if($this->cached==null)	$this->CacheProbe();
 		if($this->cached)	return "{$CONFIG['site']['var_data_web']}/{$this->cache_fclosure}";
-		else			return "/images.php?i={$this->id}&s={$this->storage}&x={$this->dim_x}&y={$this->dim_y}&q={$this->quality}&t={$this->type}&f={$this->fix_aspect}&n={$this->no_enlarge}";
+		else			return "/images.php?i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}&amp;f={$this->fix_aspect}&amp;n={$this->no_enlarge}";
 	}
-	
-	// Есть ли изображение в кеше 
+
+	// Есть ли изображение в кеше
 	protected function CacheProbe()
 	{
 		global $CONFIG;
@@ -107,7 +107,7 @@ class ImageProductor
 	public function MakeAndStore()
 	{
 		global $CONFIG;
-		
+
 		if(@isset($CONFIG['images']['watermark']))
 		{
 			if(is_array($CONFIG['images']['watermark']))
@@ -117,23 +117,23 @@ class ImageProductor
 			else	$this->show_watermark=$CONFIG['images']['watermark'];
 		}
 		if(@$CONFIG['images']['font_watermark'])	$this->font_watermark=$CONFIG['images']['font_watermark'];
-		
+
 		$rs=0;
 		$this->cache_fclosure="cache/{$this->storages[$this->storage]}/{$this->id}-{$this->dim_x}-{$this->dim_y}-{$this->quality}.{$this->type}";
 		$cname="{$CONFIG['site']['var_data_fs']}/{$this->cache_fclosure}";
 		$icname="{$CONFIG['site']['var_data_web']}/{$this->cache_fclosure}";
 
 		$this->source_file="{$CONFIG['site']['var_data_fs']}/{$this->storages[$this->storage]}/{$this->id}.{$this->type}";
-			
+
 		@mkdir("{$CONFIG['site']['var_data_fs']}/cache/{$this->storages[$this->storage]}/",0755);
-		
+
 		$dx=$dy=0;
 
 		$sz=getimagesize($this->source_file);
 		$sx=$sz[0];
 		$sy=$sz[1];
 		$stype=$sz[2];
-		
+
 		if($this->dim_x || $this->dim_y)
 		{
 		// Жёстко заданные размеры
@@ -155,7 +155,7 @@ class ImageProductor
 			else			$ny=round($this->dim_x/$aspect);
 			$lx=($this->dim_x-$nx)/2;
 			$ly=($this->dim_y-$ny)/2;
-			
+
 			$rs=1;
 		}
 		else
@@ -163,7 +163,7 @@ class ImageProductor
 			$this->dim_x=$sz[0];
 			$this->dim_y=$sz[1];
 		}
-		
+
 		if( ($this->dim_x>$sx || $this->dim_y>$sy) && $this->no_enlarge)	$rs=0;
 
 		if($this->type=='jpg')
@@ -182,7 +182,7 @@ class ImageProductor
 			else		throw new ImageException($this->type.' не поддерживается вашей версией PHP!');
 		}
 		else throw new ImageException($this->type.' не поддерживается обработчиком!');
-			
+
 		if($rs)
 		{
 			$im2=imagecreatetruecolor($this->dim_x,$this->dim_y);
@@ -193,7 +193,7 @@ class ImageProductor
 		}
 		// Оптимизировать большие изображения
 		if( $this->dim_x>=300 || $this->dim_y>=300)	imageinterlace($im, 1);
-		
+
 		if($this->show_watermark)
 		{
 			$bg_c = imagecolorallocatealpha ($im, 64,64, 64, 96);
@@ -201,7 +201,7 @@ class ImageProductor
 			if($this->dim_x<$this->dim_y)	$font_size=$this->dim_x/10;
 			else				$font_size=$this->dim_y/10;
 			$text_bbox=imageftbbox ( $font_size , 45 , $this->font_watermark , $CONFIG['site']['name'] );
-			
+
 			$min_x=$max_x=$text_bbox[0];
 			$min_y=$max_y=$text_bbox[0];
 			for($i=0;$i<8;$i+=2)
@@ -213,19 +213,19 @@ class ImageProductor
 			}
 			$delta_x=$this->dim_x-$max_x+$min_x;
 			$delta_y=$this->dim_y-$min_y+$max_y;
-			
+
 			imagefttext ( $im , $font_size , 45 , $delta_x/1.9, $delta_y/2 , $bg_c , $this->font_watermark , $CONFIG['site']['name'] );
 			imagefttext ( $im , $font_size , 45 , $delta_x/1.9+2, $delta_y/2+2 , $text_c , $this->font_watermark , $CONFIG['site']['name'] );
 		}
 // 		header("Content-type: image/jpg");
 // 		imagejpeg($im,"",$this->quality);
-		
+
 		if($this->type=='jpg')		imagejpeg($im,$cname,$this->quality);
 		else if($this->type=='gif')	imagegif($im,$cname,$this->quality);
 		else 				imagepng($im,$cname,9);
 		header("Location: $icname",true,301);
 		//exit();
-	
+
 	}
 };
 
@@ -234,10 +234,10 @@ class ImageException extends Exception
 {
 	function __construct($text='')
 	{
-		parent::__construct($text);	
+		parent::__construct($text);
 		$this->WriteLog();
 	}
-	
+
 	protected function WriteLog()
 	{
 	        $ip=getenv("REMOTE_ADDR");
@@ -252,7 +252,7 @@ class ImageException extends Exception
 		$qq=mysql_real_escape_string($qq);
 		$ff=mysql_real_escape_string($ff);
 		@mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-		('$ff $qq','$rf','IMAGE: $s',NOW(),'$ip','$ag', '$uid')");	
+		('$ff $qq','$rf','IMAGE: $s',NOW(),'$ip','$ag', '$uid')");
 	}
 };
 
@@ -275,25 +275,25 @@ function img_resize($n, $imgdir, $ext='jpg')
 	settype($nrs,"integer");
 	$u=isset($_GET['u'])?$_GET['u']:0;
 	settype($u,"integer");
-	
+
 	if( (!$x) && (!$y) )	$x=300;
-	
+
 	if(!$n) @header("Pragma: no-cache");
 	//header("Content-type: image/jpg");
-	
+
 	$cc[0]=$CONFIG['site']['name'];
 	$cc[1]="";
 	$cc[2]="";
-	
-	
+
+
 	$rs=0;
-	
+
 	$cname="{$CONFIG['site']['var_data_fs']}/cache/$imgdir/$n-$x-$y-$q.jpg";
 	$icname="{$CONFIG['site']['var_data_web']}/cache/$imgdir/$n-$x-$y-$q.jpg";
 	if(!file_exists($cname))
 	{
 		$imagefile="{$CONFIG['site']['var_data_fs']}/$imgdir/$n.$ext";
-		
+
 		@mkdir("{$CONFIG['site']['var_data_fs']}/cache/$imgdir/",0755);
 		$dx=$dy=0;
 		if($x||$y)
@@ -303,8 +303,8 @@ function img_resize($n, $imgdir, $ext='jpg')
 			$sy=$sz[1];
 			$stype=$sz[2];
 			{
-				
-				
+
+
 				// Жёстко заданные размеры
 				$aspect=$sx/$sy;
 				if($y&&(!$x))
@@ -324,7 +324,7 @@ function img_resize($n, $imgdir, $ext='jpg')
 				else			$ny=round($x/$aspect);
 				$lx=($x-$nx)/2;
 				$ly=($y-$ny)/2;
-			
+
 			}
 			$rs=1;
 		}
@@ -332,7 +332,7 @@ function img_resize($n, $imgdir, $ext='jpg')
 		else if($ext=='png')	$im=imagecreatefrompng($imagefile);
 		else if($ext=='gif')	$im=imagecreatefromgif($imagefile);
 		else if($ext=='xpm')	$im=imagecreatefromxpm($imagefile);
-		else die("invalid extension!"); 
+		else die("invalid extension!");
  		if($rs)
 		{
 			$im2=imagecreatetruecolor($x,$y);
@@ -342,7 +342,7 @@ function img_resize($n, $imgdir, $ext='jpg')
 			$im=$im2;
 		}
 		if($x<200) $ss=1; else if($x<1000) $ss=2; else $ss=4;
-	
+
 		$bg_c = imagecolorallocate ($im, 128,128, 128);
 		$text_c = imagecolorallocate ($im, 255, 255, 255);
 		for($t=0;$t<=2;$t++)
