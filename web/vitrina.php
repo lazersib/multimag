@@ -903,7 +903,7 @@ protected function MakeBuy()
 		$tel="+".$country_phone.$city_phone.$dop_phone;
 	else	$tel='';
 
-	if($_SESSION['uid'])
+	if(@$_SESSION['uid'])
 	{
 		mysql_query("UPDATE `users` SET `real_name`='$rname', `real_address`='$adres' WHERE `id`='$uid'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
@@ -938,7 +938,7 @@ protected function MakeBuy()
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres'), ('$doc', 'pay_type', '$pay_type') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
-		$zakaz_items='';
+		$zakaz_items=$admin_items='';
 		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 		{
 			$cena=GetCostPos($item, $this->cost_id);
@@ -980,7 +980,7 @@ protected function MakeBuy()
 		if($CONFIG['site']['doc_adm_email'])
 			mailto($CONFIG['site']['doc_adm_email'],"Message from {$CONFIG['site']['name']}", $text);
 
-		if($_SESSION['uid'])
+		if(@$_SESSION['uid'])
 		{
 			$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
@@ -988,7 +988,7 @@ protected function MakeBuy()
 			$user_msg="Доброго времени суток, {$user_data['name']}!\nНа сайте {$CONFIG['site']['name']} на Ваше имя оформлен заказ на сумму $zakaz_sum рублей\nЗаказано:\n";
 			$email=$user_data['reg_email'];
 		}
-		else $user_msg="Доброго времени суток, $real_name!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\n Номер заказа: $doc/$altnum\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
+		else $user_msg="Доброго времени суток, $rname!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\n Номер заказа: $doc/$altnum\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
 		$user_msg.="--------------------------------------\n$zakaz_items\n--------------------------------------\n";
 		$user_msg.="\n\n\nСообщение отправлено роботом. Не отвечайте на это письмо.";
 

@@ -434,11 +434,11 @@ else if($mode=='regs')
 {
 	try
 	{
-		$login=@$_POST['login'];
-		$email=@$_POST['email'];
-		$phone=@$_POST['phone'];
-		$img=strtoupper(@$_POST['img']);
-		$subs=@$_POST['subs'];
+		$login=@$_REQUEST['login'];
+		$email=@$_REQUEST['email'];
+		$phone=@$_REQUEST['phone'];
+		$img=strtoupper(@$_REQUEST['img']);
+		$subs=@$_REQUEST['subs'];
 		$subs=$subs?1:0;
 
 		if($login=='')
@@ -499,12 +499,12 @@ else if($mode=='regs')
 		$sql_phone=mysql_real_escape_string($phone);
 		
 		$sql_login=mysql_real_escape_string($login);
-		if($CONFIG['site']['pass_type']=='MD5')
+		if(@$CONFIG['site']['pass_type']=='MD5')
 		{
 			$sql_pass_hash=MD5($pass);
 			$sql_pass_type='MD5';
 		}
-		else if($CONFIG['site']['pass_type']=='SHA1')
+		else if(@$CONFIG['site']['pass_type']=='SHA1')
 		{
 			$sql_pass_hash=SHA1($pass);
 			$sql_pass_type='SHA1';
