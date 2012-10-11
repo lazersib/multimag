@@ -91,7 +91,7 @@ function ShowTicket($n)
 		<input type='hidden' name='opt' value='to_user'>
 		<input type='hidden' name='n' value='$nxt[0]'>
 		<select name='user_id'>");
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
+		$res=mysql_query("SELECT `id`, `name`, `real_name` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
 		while($nxt=mysql_fetch_row($res))
 		{
 			if($nxt[0]==0) continue;
@@ -145,7 +145,7 @@ else if($mode=='new')
 	<input type='hidden' name='mode' value='add'>
 	Задача для:<br>
 	<select name='to_uid'>");
-	$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
+	$res=mysql_query("SELECT `id`, `name`, `real_name` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($nxt[0]==0) continue;
@@ -187,7 +187,7 @@ else if($mode=='add')
 	else $tmpl->msg("Ошибка добавления!","err");
 	$n=mysql_insert_id();
 
-	$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='$to_uid'");
+	$res=mysql_query("SELECT `reg_email` FROM `users` WHERE `id`='$to_uid'");
 	$email=mysql_result($res,0,0);
 
 	$msg="Для Вас новое задание от $uid: $theme - $text\n";
@@ -295,7 +295,7 @@ else if($mode=='set')
 		VALUES ('$uid', '$n', NOW(), '$txt')");
 
 
-		$res=mysql_query("SELECT `users`.`email`, `users`.`jid`, `tickets`.`theme` FROM `tickets`
+		$res=mysql_query("SELECT `users`.`reg_email`, `users`.`jid`, `tickets`.`theme` FROM `tickets`
 		LEFT JOIN `users` AS `users` ON `users`.`id`=`tickets`.`autor`
 		WHERE `tickets`.`id`='$n'");
 		list($email,$jid,$theme)=mysql_fetch_row($res);

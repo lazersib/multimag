@@ -41,12 +41,12 @@ class Report_Kladovshik extends BaseGSReport
 		</fieldset>
 		<br>
 		Кладовщик:<br><select name='kladovshik'>");
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
+		$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		$tmpl->AddText("<option value='0' selected>--не выбран--</option>");
 		while($nxt=mysql_fetch_row($res))
 		{
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[2])</option>");
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><br><br>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
@@ -89,7 +89,7 @@ class Report_Kladovshik extends BaseGSReport
 		$sql_add='';
 		if($kladovshik)	$sql_add=" AND `doc_dopdata`.`value`='$kladovshik' ";
 		
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`sum`, `autor`.`name`, CONCAT(`klad`.`name`,' ',`klad`.`rname`), `doc_types`.`name`, `doc_dopdata`.`value`
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`sum`, `autor`.`name`, `klad`.`name`, `doc_types`.`name`, `doc_dopdata`.`value`
 		FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 		LEFT JOIN `users` AS `autor` ON `autor`.`id`=`doc_list`.`user`

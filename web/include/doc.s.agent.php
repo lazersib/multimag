@@ -167,7 +167,7 @@ class doc_s_Agent
 			<tr class=lin1><td align=right>Ответственный:<td>
 			<select name='responsible' $ext>
 			<option value='null'>--не назначен--</option>");
-			$res=mysql_query("SELECT `id`, `name` FROM `users` WHERE `worker`>'0'");
+			$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$s='';
@@ -558,7 +558,7 @@ just.render('doc_s_agent_mainform', { title: 'Hello, World!', agent_data: $json_
 		<div><a href='' title='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&g=0','list'); return false;\" >Группы</a> (<a href='/docs.php?l=agent&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
 		<ul class='Container'>".$this->draw_level($select,0)."</ul></div>
 		<hr>");
-		$res=mysql_query("SELECT `id`, `name` FROM `users` WHERE `worker`>'0'");
+		$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 		while($nx=mysql_fetch_row($res))
 		{
 			$m=($_SESSION['uid']==$nx[0])?' (МОИ)':'';

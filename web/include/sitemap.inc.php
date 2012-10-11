@@ -98,7 +98,7 @@ function getMap()
 	$this->AddLink('price.php','Прайсы','0.2');
 	$this->AddLink('vitrina.php','Витрина','0.8');
 	$this->addPriceGroup(0);
-	$this->AddLink('wiki.php','Статьи','0.1','weekly');
+	$this->AddLink('articles.php','Статьи','0.1','weekly');
 	$this->startGroup();
 	$res=mysql_query("SELECT `name`, `date`, `text` FROM `articles` ORDER BY `name`");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать список статей');
@@ -108,8 +108,7 @@ function getMap()
 		$h=$wikiparser->title;
 		$this->AddLink("article/$nxt[0].html",$h,'0.4','weekly',$nxt[1]);
 	}
-	$this->endGroup();
-	$this->AddLink('articles.php','Статьи');
+	$this->endGroup();	
 	$this->AddLink('news.php','Новости');
 	$this->AddLink('photogalery.php','Фотогалерея');
 	$this->AddLink('message.php','Отправить сообщение');

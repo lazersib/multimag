@@ -84,13 +84,13 @@ class doc_Realizaciya extends doc_Nulltype
 		<input type='hidden' name='gruzop_id' id='gruzop_id' value='{$this->dop_data['gruzop']}'>
 		<input type='text' id='gruzop'  style='width: 100%;' value='$gruzop_name'><br>
 		Кладовщик:<br><select name='kladovshik'>");
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `worker`='1' ORDER BY `name`");
+		$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		$tmpl->AddText("<option value='0'>--не выбран--</option>");
 		while($nxt=mysql_fetch_row($res))
 		{
 			$s=($klad_id==$nxt[0])?'selected':'';
-			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1] ($nxt[2])</option>");
+			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><br>
 		Количество мест:<br>
@@ -1004,7 +1004,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$autor_name=@mysql_result($res,0,0);
 
 		$klad_id=$this->dop_data['kladovshik'];
-		$res=mysql_query("SELECT `id`, `name`, `rname` FROM `users` WHERE `id`='$klad_id'");
+		$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `user_id`='$klad_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		$nxt=mysql_fetch_row($res);
 
@@ -1023,7 +1023,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$str="Документ выписал: ______________________________________ ($vip_name)";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
-		$str="Заказ скомплектовал: ___________________________________ ( $nxt[1] - $nxt[2] )";
+		$str="Заказ скомплектовал: ___________________________________ ( $nxt[1] )";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 
@@ -1230,8 +1230,9 @@ class doc_Realizaciya extends doc_Nulltype
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
 		<b>Покупатель: </b>{$this->doc_data[3]}<br>");
 
-		$res=mysql_query("SELECT `users`.`name`, `users`.`rname` FROM `doc_list`
+		$res=mysql_query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name` FROM `doc_list`
 		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
 		WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}' AND `doc_list`.`type`='3'");
 		if(mysql_errno())			throw new MysqlException('Ошибка выбоки автора заявки');
 		if(mysql_num_rows($res))

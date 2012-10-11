@@ -12,7 +12,7 @@ $allowed_symbols = "23456789abcdeghkmnpqsuvxyz"; #alphabet without similar symbo
 $fontsdir = 'fonts';	
 
 # CAPTCHA string length
-$length = mt_rand(5,7); # random 5 or 6
+$length = mt_rand(4,5); # random 5 or 6
 //$length = 6;
 
 # CAPTCHA image size (you do not need to change it, whis parameters is optimal)
@@ -20,10 +20,10 @@ $width = 180;
 $height = 50;
 
 # symbol's vertical fluctuation amplitude divided by 2
-$fluctuation_amplitude = 10;
+$fluctuation_amplitude = 4;
 
 # increase safety by prevention of spaces between symbols
-$no_spaces = true;
+$no_spaces = false;
 
 # show credits
 $show_credits = false; # set to false to remove credits line. Credits adds 12 pixels to image height
@@ -36,5 +36,5 @@ $foreground_color = array(mt_rand(0,150), mt_rand(0,150), mt_rand(0,150));
 $background_color = array(mt_rand(200,255), mt_rand(200,255), mt_rand(200,255));
 
 # JPEG quality of CAPTCHA image (bigger is better quality, but larger file size)
-$jpeg_quality = 15;
+$jpeg_quality = 35;
 ?>

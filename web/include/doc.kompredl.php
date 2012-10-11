@@ -222,9 +222,8 @@ class doc_Kompredl extends doc_Nulltype
 			<input type=hidden name='ok' value='ok'>
 			<table width='100%'><tr><th>!<th>Название<th>Полное название<th>e-mail</tr>");
 
-			$res=mysql_query("SELECT `users`.`name`, `a`.`value`, `users`.`rname`, `users`.`email` FROM `users`
-			LEFT JOIN `users_data` AS `a` ON `a`.`uid`=`users`.`id` AND `a`.`param`='org'
-			WHERE `users`.`subscribe`='1' AND `users`.`confirm`='0'");
+			$res=mysql_query("SELECT `users`.`name`, `a`.`value`, `users`.`real_name`, `users`.`reg_email` FROM `users`
+			WHERE `users`.`reg_email_subscribe`='1' AND `users`.`confirm`='1'");
 
 			$tmpl->AddText("<tr><th colspan='4'>Пользователи, выразившие желание получать рассылки");
 			while($nxt=mysql_fetch_row($res))
@@ -303,7 +302,7 @@ class doc_Kompredl extends doc_Nulltype
 				$recipient=@mysql_fetch_assoc($res);
 				if(!$recipient)
 				{
-					$res=mysql_query("SELECT `name`, `rname` AS `fullname` FROM `users` WHERE `email`='$line'");
+					$res=mysql_query("SELECT `name`, `real_name` AS `fullname` FROM `users` WHERE `email`='$line'");
 					$recipient=@mysql_fetch_assoc($res);
 				}
 				if($recipient)
@@ -519,26 +518,38 @@ class doc_Kompredl extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'C',0);
 
-		$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-		$name=@mysql_result($res,0,0);
-		if(!$name) $name='('.$_SESSION['name'].')';
-		$tel=@mysql_result($res,0,1);
-		$email=@mysql_result($res,0,2);
+		$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data[8]}'");
+		if(mysql_num_rows($res))
+		{
+			$name=@mysql_result($res,0,0);
+			if(!$name) $name='('.$_SESSION['name'].')';
+			$tel=@mysql_result($res,0,1);
+			$email=@mysql_result($res,0,2);
 
-		$pdf->SetAutoPageBreak(0,10);
-		$pdf->SetY($pdf->h-18);
-		$pdf->Ln(1);
-		$pdf->SetFont('','',10);
-		$str="Исп. менеджер $name";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Контактный телефон: $tel";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Электронная почта: $email";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-18);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Исп. менеджер $name";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Контактный телефон: $tel";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Электронная почта: $email";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
+		else
+		{
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-12);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Login автора: ".$_SESSION['name'];
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
 		if($to_str)
 			return $pdf->Output('buisness_offer.pdf','S');
 		else
@@ -731,25 +742,38 @@ class doc_Kompredl extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'C',0);
 
-		$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-		$name=@mysql_result($res,0,0);
-		if(!$name) $name='('.$_SESSION['name'].')';
-		$tel=@mysql_result($res,0,1);
-		$email=@mysql_result($res,0,2);
+		$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data[8]}'");
+		if(mysql_num_rows($res))
+		{
+			$name=@mysql_result($res,0,0);
+			if(!$name) $name='('.$_SESSION['name'].')';
+			$tel=@mysql_result($res,0,1);
+			$email=@mysql_result($res,0,2);
 
-		$pdf->SetAutoPageBreak(0,10);
-		$pdf->SetY($pdf->h-18);
-		$pdf->Ln(1);
-		$pdf->SetFont('','',10);
-		$str="Исп. менеджер $name";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Контактный телефон: $tel";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Электронная почта: $email";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-18);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Исп. менеджер $name";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Контактный телефон: $tel";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Электронная почта: $email";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
+		else
+		{
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-12);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Login автора: ".$_SESSION['name'];
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
 
 		if($to_str)
 			return $pdf->Output('buisness_offer.pdf','S');
@@ -928,25 +952,38 @@ class doc_Kompredl extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'C',0);
 
-		$res=mysql_query("SELECT `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data[8]}'");
-		$name=@mysql_result($res,0,0);
-		if(!$name) $name='('.$_SESSION['name'].')';
-		$tel=@mysql_result($res,0,1);
-		$email=@mysql_result($res,0,2);
+		$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data[8]}'");
+		if(mysql_num_rows($res))
+		{
+			$name=@mysql_result($res,0,0);
+			if(!$name) $name='('.$_SESSION['name'].')';
+			$tel=@mysql_result($res,0,1);
+			$email=@mysql_result($res,0,2);
 
-		$pdf->SetAutoPageBreak(0,10);
-		$pdf->SetY($pdf->h-18);
-		$pdf->Ln(1);
-		$pdf->SetFont('','',10);
-		$str="Исп. менеджер $name";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Контактный телефон: $tel";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
-		$str="Электронная почта: $email";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,4,$str,0,1,'R',0);
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-18);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Исп. менеджер $name";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Контактный телефон: $tel";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+			$str="Электронная почта: $email";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
+		else
+		{
+			$pdf->SetAutoPageBreak(0,10);
+			$pdf->SetY($pdf->h-12);
+			$pdf->Ln(1);
+			$pdf->SetFont('','',10);
+			$str="Login автора: ".$_SESSION['name'];
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0,4,$str,0,1,'R',0);
+		}
 
 		if($to_str)
 			return $pdf->Output('buisness_offer.pdf','S');

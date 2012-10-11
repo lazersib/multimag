@@ -22,7 +22,6 @@
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
-
 require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
 $tim=time();
@@ -33,10 +32,10 @@ $info_mail='';
 
 if($CONFIG['resp_clear']['info_time'])
 {
-	$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`name`, `doc_agent`.`responsible`, `users`.`name`, `users`.`email` FROM `doc_agent`
+	$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`name`, `doc_agent`.`responsible`, `users`.`name`, `users`.`reg_email` FROM `doc_agent`
 	LEFT JOIN `users` ON `users`.`id`=`doc_agent`.`responsible`
 	WHERE `doc_agent`.`id` NOT IN (SELECT `agent` FROM `doc_list` WHERE `date`>='$i_time' ) AND `doc_agent`.`responsible`>'0'");
-	
+	if(mysql_errno())	throw new MysqlException("Не удалось получить пользователей");
 	$resp_info=array();
 	$resp_mail=array();
 	
@@ -71,10 +70,10 @@ try
 
 if($CONFIG['resp_clear']['clear_time'])
 {
-	$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`name`, `doc_agent`.`responsible`, `users`.`name`, `users`.`email` FROM `doc_agent`
+	$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`name`, `doc_agent`.`responsible`, `users`.`name`, `users`.`reg_email` FROM `doc_agent`
 	LEFT JOIN `users` ON `users`.`id`=`doc_agent`.`responsible`
 	WHERE `doc_agent`.`id` NOT IN (SELECT `agent` FROM `doc_list` WHERE `date`>='$c_time' ) AND `doc_agent`.`responsible`>'0'");
-	
+	if(mysql_errno())	throw new MysqlException("Не удалось получить пользователей");
 	if(mysql_num_rows($res)>0)	$info_mail.="\n\nУ следующих агентов были сняты ассоциации с ответственным, т.к. не было движения более {$CONFIG['resp_clear']['clear_time']} дней:\n";
 	
 	while($nxt=mysql_fetch_row($res))

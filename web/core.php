@@ -358,6 +358,29 @@ function isAccess($object, $action,$no_redirect=false)
 	return $access;
 }
 
+// Транслитерация
+function translitIt($str) 
+{
+    $tr = array(
+        "А"=>"A","Б"=>"B","В"=>"V","Г"=>"G",
+        "Д"=>"D","Е"=>"E","Ж"=>"J","З"=>"Z","И"=>"I",
+        "Й"=>"Y","К"=>"K","Л"=>"L","М"=>"M","Н"=>"N",
+        "О"=>"O","П"=>"P","Р"=>"R","С"=>"S","Т"=>"T",
+        "У"=>"U","Ф"=>"F","Х"=>"H","Ц"=>"TS","Ч"=>"CH",
+        "Ш"=>"SH","Щ"=>"SCH","Ъ"=>"","Ы"=>"YI","Ь"=>"",
+        "Э"=>"E","Ю"=>"YU","Я"=>"YA","а"=>"a","б"=>"b",
+        "в"=>"v","г"=>"g","д"=>"d","е"=>"e","ж"=>"j",
+        "з"=>"z","и"=>"i","й"=>"y","к"=>"k","л"=>"l",
+        "м"=>"m","н"=>"n","о"=>"o","п"=>"p","р"=>"r",
+        "с"=>"s","т"=>"t","у"=>"u","ф"=>"f","х"=>"h",
+        "ц"=>"ts","ч"=>"ch","ш"=>"sh","щ"=>"sch","ъ"=>"y",
+        "ы"=>"yi","ь"=>"","э"=>"e","ю"=>"yu","я"=>"ya"
+    );
+    return strtr($str,$tr);
+}
+
+
+
 // ==================================== Рассылка ===================================================
 function SendSubscribe($tema,$msg)
 {
@@ -365,7 +388,7 @@ function SendSubscribe($tema,$msg)
 	$res=mysql_query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
 	if(mysql_errno())	throw new MysqlException("Ошибка получения наименования организации");
 	$firm_name=mysql_result($res,0,0);
-	$res=mysql_query("(SELECT `name`, `email`, `rname` FROM `users` WHERE `subscribe`='1' AND `confirm`='0')
+	$res=mysql_query("(SELECT `name`, `reg_email`, `real_name` FROM `users` WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1')
 	UNION
 	(SELECT `name`, `email`, `fullname` AS `rname` FROM `doc_agent` WHERE `no_mail`='0' AND `email`!='')
 	");

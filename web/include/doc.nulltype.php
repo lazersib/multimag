@@ -803,7 +803,7 @@ class doc_Nulltype
 					if($form['name']==$opt)	$method=$form['method'];
 				}
 				if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-				$res=@mysql_query("SELECT `email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+				$res=@mysql_query("SELECT `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
 				$email=@mysql_result($res,0,0);
 				include_once('sendfax.php');
 				$fs=new FaxSender();
@@ -993,7 +993,7 @@ class doc_Nulltype
 		global $CONFIG;
 		require_once($CONFIG['location'].'/common/email_message.php');
 
-		$res=mysql_query("SELECT `name`, `rname`, `tel`, `email` FROM `users` WHERE `id`='{$this->doc_data['user']}'");
+		$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `id`='{$this->doc_data['user']}'");
 		$doc_autor=@mysql_fetch_assoc($res);
 
 		$res=mysql_query("SELECT `name`, `fullname`, `email` FROM `doc_agent` WHERE `id`='{$this->doc_data['agent']}'");
@@ -1007,7 +1007,7 @@ class doc_Nulltype
 
 		$email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - $docname ({$CONFIG['site']['name']})");
 
-		if(!@$doc_autor['email'])
+		if(!@$doc_autor['worker_email'])
 		{
 			$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
 			$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
@@ -1015,10 +1015,10 @@ class doc_Nulltype
 		}
 		else
 		{
-			$email_message->SetEncodedEmailHeader("From", $doc_autor['email'], $doc_autor['rname']);
-			$email_message->SetHeader("Sender", $doc_autor['email']);
-			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\nОтветственный сотрудник: {$doc_autor['name']}\nКонтактный телефон: {$doc_autor['tel']}\nЭлектронная почта (e-mail): {$doc_autor['email']}";
-			if($_SESSION['name']!=$doc_autor['name'])	$text_message.="\nОтправитель: {$_SESSION['name']}";
+			$email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
+			$email_message->SetHeader("Sender", $doc_autor['worker_email']);
+			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\nОтветственный сотрудник: {$doc_autor['worker_real_name']}\nКонтактный телефон: {$doc_autor['worker_phone']}\nЭлектронная почта (e-mail): {$doc_autor['worker_email']}";
+			$text_message.="\nОтправитель: {$_SESSION['name']}";
 		}
 		if($body)	$email_message->AddQuotedPrintableTextPart($body);
 		else		$email_message->AddQuotedPrintableTextPart($text_message);

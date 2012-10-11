@@ -783,7 +783,7 @@ protected function BuyMakeForm()
 	$users_data=array();
 	if($_SESSION['uid'])
 	{
-		$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
 		$user_data=mysql_fetch_assoc($res);
 		$rr=mysql_query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='".$_SESSION['uid']."'");
@@ -805,16 +805,16 @@ protected function BuyMakeForm()
 
 	if(rcv('cwarn'))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
 
-	if(@$user_data['tel'])
+	if(@$user_data['reg_phone'])
 	{
-		$country_phone=substr($user_data['tel'],1,1);
-		$city_phone=substr($user_data['tel'],2,3);
-		$dop_phone=substr($user_data['tel'],5);
+		$country_phone=substr($user_data['reg_phone'],1,1);
+		$city_phone=substr($user_data['reg_phone'],2,3);
+		$dop_phone=substr($user_data['reg_phone'],5);
 	}
 	else
 	{
 		$country_phone=7;
-		$city_phone=$dop_tel='';
+		$city_phone=$dop_phone='';
 	}
 
 
@@ -824,7 +824,7 @@ protected function BuyMakeForm()
 	<input type='hidden' name='mode' value='makebuy'>
 	<div>
 	Фамилия И.О.<br>
-	<input type='text' name='rname' value='".$user_data['rname']."'><br>
+	<input type='text' name='rname' value='".$user_data['real_name']."'><br>
 	Мобильный телефон: <span id='phone_num'></span><br>
 	+<input type='text' name='country_phone' value='$country_phone' maxlength='1' style='width: 90px;' placeholder='Код страны' id='country_phone'> -
 	<input type='text' name='city_phone' value='$city_phone' maxlength='3' placeholder='Код оператора' id='city_phone'> -
@@ -849,7 +849,7 @@ protected function BuyMakeForm()
 	Желаемые дата и время доставки:<br>
 	<input type='text' name='delivery_date'><br>
 	<br>Адрес доставки:<br>
-	<textarea name='adres' rows='5' cols='15'>".$user_data['adres']."</textarea><br>
+	<textarea name='adres' rows='5' cols='15'>".$user_data['real_address']."</textarea><br>
 	</div>
 
 
@@ -905,7 +905,7 @@ protected function MakeBuy()
 
 	if($_SESSION['uid'])
 	{
-		mysql_query("UPDATE `users` SET `rname`='$rname', `tel`='$tel', `adres`='$adres' WHERE `id`='$uid'");
+		mysql_query("UPDATE `users` SET `real_name`='$rname', `real_address`='$adres' WHERE `id`='$uid'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$dop') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
@@ -982,13 +982,13 @@ protected function MakeBuy()
 
 		if($_SESSION['uid'])
 		{
-			$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+			$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
 			$user_data=mysql_fetch_assoc($res);
 			$user_msg="Доброго времени суток, {$user_data['name']}!\nНа сайте {$CONFIG['site']['name']} на Ваше имя оформлен заказ на сумму $zakaz_sum рублей\nЗаказано:\n";
-			$email=$user_data['email'];
+			$email=$user_data['reg_email'];
 		}
-		else $user_msg="Доброго времени суток, $rname!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\n Номер заказа: $doc/$altnum\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
+		else $user_msg="Доброго времени суток, $real_name!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\n Номер заказа: $doc/$altnum\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
 		$user_msg.="--------------------------------------\n$zakaz_items\n--------------------------------------\n";
 		$user_msg.="\n\n\nСообщение отправлено роботом. Не отвечайте на это письмо.";
 

@@ -28,7 +28,9 @@ $tmpl->HideBlock('left');
 if($mode=='')
 {
 	$tmpl->AddText("<ul>");
-	$res=mysql_query("SELECT `worker` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+	$res=mysql_query("SELECT `users_worker_info`.`worker` FROM `users`
+	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+	WHERE `users`.`id`='{$_SESSION['uid']}'");
 	if(@mysql_result($res,0,0))
 		$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a> - ФУНКЦИЯ РАБОТАЕТ !</li>");
 
@@ -91,7 +93,7 @@ else if($mode=='user_data')
 		$mra=rcv('mra');
 		$site_name=rcv('site_name');
 
-		mysql_query("UPDATE `users` SET `subscribe`='$subscribe', `rname`='$rname', `tel`='$tel', `adres`='$adres', `jid`='$jid' WHERE `id`='$uid'");
+		mysql_query("UPDATE `users` SET `reg_email_subscribe`='$subscribe', `reg_phone`='$tel', `real_name`='$rname', `real_address`='$adres', `jid`='$jid' WHERE `id`='$uid'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 
 
@@ -106,7 +108,7 @@ else if($mode=='user_data')
 	}
 
 
-	$res=mysql_query("SELECT `name`, `email`, `date_reg`, `subscribe`, `rname`, `tel`, `adres`, `jid` FROM `users` WHERE `id`='$uid'");
+	$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `jid` FROM `users` WHERE `id`='$uid'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
 	$user_data=mysql_fetch_assoc($res);
 	$user_dopdata=array('kont_lico'=>'','tel'=>'','dop_info'=>'');
@@ -114,7 +116,7 @@ else if($mode=='user_data')
 	if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
 	while($line=mysql_fetch_row($res))	$user_dopdata[$line[0]]=$line[1];
 
-	$subs_checked=$user_data['subscribe']?'checked':'';
+	$subs_checked=$user_data['reg_email_subscribe']?'checked':'';
 	if(!$user_data['jid'])	$user_data['jid']=@$user_dopdata['jid'];
 
 	@$tmpl->AddText("<form action='' method='post'>
@@ -123,13 +125,13 @@ else if($mode=='user_data')
 	<table border='0' width='500' class='list'>
 	<tr><th colspan='2'>Общие данные
 	<tr><td>Логин:<td>{$user_data['name']}
-	<tr><td>Дата регистрации:<td>{$user_data['date_reg']}
-	<tr><td>E-mail:<td>{$user_data['email']}<br><label><input type='checkbox' name='subscribe' value='1' $subs_checked> Подписка</label>
+	<tr><td>Дата регистрации:<td>{$user_data['reg_date']}
+	<tr><td>E-mail:<td>{$user_data['reg_email']}<br><label><input type='checkbox' name='subscribe' value='1' $subs_checked> Подписка</label>
 	<tr><td>Jabber ID<td><input type='text' name='jid' value='{$user_data['jid']}'>
 	<tr><th colspan='2'>Данные физического лица
-	<tr><td>Фамилия И.О.<td><input type='text' name='rname' value='{$user_data['rname']}'>
-	<tr><td>Телефон<td><input type='text' name='tel' value='{$user_data['tel']}'>
-	<tr><td>Адрес доставки<td><input type='text' name='adres' value='{$user_data['adres']}'>
+	<tr><td>Фамилия И.О.<td><input type='text' name='rname' value='{$user_data['real_name']}'>
+	<tr><td>Телефон<td><input type='text' name='tel' value='{$user_data['reg_phone']}'>
+	<tr><td>Адрес доставки<td><input type='text' name='adres' value='{$user_data['real_address']}'>
 	<tr><th colspan='2'>Дополнительные данные
 	<tr><td>UIN ICQ<td><input type='text' name='icq' value='{$user_dopdata['icq']}'>
 	<tr><td>Skype-login<td><input type='text' name='skype' value='{$user_dopdata['skype']}'>
