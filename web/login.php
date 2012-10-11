@@ -132,7 +132,7 @@ function RegForm($err_target='', $err_msg='')
 	<table cellspacing='15'>
 	
 	<tr><td>
-	<b>Ваш логин</b><br>
+	<b>Желаемый логин</b><br>
 	<small>латинские буквы, цифры, длина от 3 до 24 символов	</small>
 	<td>
 	<input type='text' name='login' value='$login' id='login'><br>
@@ -239,6 +239,9 @@ function RegForm($err_target='', $err_msg='')
 	</script>
 	");
 }
+
+try
+{
 
 if($mode=='')
 {
@@ -481,7 +484,7 @@ else if($mode=='regs')
 			$res=mysql_query("SELECT `id` FROM `users` WHERE `reg_phone`='$phone'");
 			if(mysql_errno())	throw new MysqlException("Не удалось проверить уникальность телефона");
 			if(mysql_num_rows($res))
-				throw new RegException('Пользователь с таким email уже зарегистрирован. Используйте другой.','email');
+				throw new RegException('Пользователь с таким телефоном уже зарегистрирован. Используйте другой.','phone');
 		}
 		
 		if($img=='')
@@ -534,11 +537,7 @@ else if($mode=='regs')
 			$sender->setText("Ваш код: $phone_conf\nЛогин:$login\nПароль:$pass\n{$CONFIG['site']['name']}");
 			$sender->send();
 		}
-		
 
-		
-		
-		
 		$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
 		<form action='/login.php' method='post'>
 		<input type='hidden' name='mode' value='conf'>
@@ -580,9 +579,6 @@ else if($mode=='conf')
 	$e=@$_REQUEST['e'];
 	$p=@$_REQUEST['p'];
 	
-	
-try
-{
 	$sql_login=mysql_real_escape_string($login);
 	$res=mysql_query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
@@ -605,20 +601,20 @@ try
 		if(mysql_errno())	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
 		$nxt=mysql_fetch_assoc($res);
 		
-		if(($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='0') || ($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='0') )
+		if(($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='') || ($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='') )
 		{
 			$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
 			<form action='/login.php' method='post'>
 			<input type='hidden' name='mode' value='conf'>
 			<input type='hidden' name='login' value='$login'>");
-			if($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='0')
+			if($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='')
 			{
 				$tmpl->AddText("Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по email:</b><br>
 				<input type='text' name='e'>");
 				if($e_key)	$tmpl->AddText("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
 				$tmpl->AddText("<br>Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!<br><br>");
 			}
-			if($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='0')
+			if($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='')
 			{
 				$tmpl->AddText("Для проверки, что номер телефона принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по SMS:</b><br>
 				<input type='text' name='p'>");
@@ -649,31 +645,10 @@ try
 	}
 	else $tmpl->msg("Пользователь не найден в базе","err");
 }
-catch(MysqlException $e)
-{
-	global $CONFIG;
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'], $e->getMessage());
-}
-catch(RegException $e)
-{
-	mysql_query("ROLLBACK");
-	$tmpl->SetTitle("Регистрация");
-	$tmpl->SetText("<h1 id='page-title'>Регистрация</h1>");
-	$tmpl->msg("Проверьте данные! ".$e->getMessage(),"err","Неверный ввод!");
-	RegForm($e->target, $e->getMessage());
-
-}
-catch(Exception $e)
-{
-	mysql_query("ROLLBACK");
-	$tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
-}
-
-}
 
 else if($mode=='rem')
 {
+
 	if(!isset($_REQUEST['login']))
 	{
 		$tmpl->SetText("<h1 id='page-title'>Восстановление доступа</h1>
@@ -792,6 +767,7 @@ else if($mode=='remn')
 	$sql_key=mysql_real_escape_string(@$_REQUEST['s']);
 	$sql_login=mysql_real_escape_string(@$_REQUEST['login']);
 	$res=mysql_query("SELECT `id`, `name` FROM `users` WHERE `pass_change`='$sql_key' AND `name`='$sql_login'");
+	if(mysql_errno())		throw new MysqlException("Не удалось получить данные смены пароля");
 	if($nxt=mysql_fetch_row($res))
 	{
 		$pass=keygen_unique(0,8,11);
@@ -817,13 +793,18 @@ else if($mode=='remn')
 		}
 		
 		mysql_query("UPDATE `users` SET `pass`='$sql_pass_hash', `pass_type`='$sql_pass_type', `pass_change`='', `pass_date_change`=NOW() WHERE `id`='$nxt[0]'");
+		if(mysql_errno())		throw new MysqlException("Не удалось обновить пароль");
 		$_SESSION['uid']=$nxt[0];
 		$_SESSION['name']=$nxt[1];
 		$tmpl->AddText("<h1>Завершение смены пароля</h1>
 		$nxt[1], ваш новый пароль:<br>
 		$pass<br>Не забудьте его!");
 	}
-	else $tmpl->logger("Код неверен или устарел");
+	else 
+	{
+		mysql_query("UPDATE `users` SET `pass_change`='' WHERE `login`='$sql_login'");
+		$tmpl->msg("Код неверен или устарел","err");
+	}
 
 }
 else if($mode=='unsubscribe')
@@ -851,6 +832,19 @@ else if($mode=='unsubscribe')
 }
 else $tmpl->logger("Uncorrect mode!");
 
+
+}
+catch(MysqlException $e)
+{
+	global $CONFIG;
+	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
+	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'], $e->getMessage());
+}
+catch(Exception $e)
+{
+	mysql_query("ROLLBACK");
+	$tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
+}
 
 $tmpl->write();
 

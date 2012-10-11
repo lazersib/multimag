@@ -69,6 +69,6 @@ INSERT INTO `users_login_history` (`user_id`, `date`) SELECT `id`, `lastlogin` F
 ALTER TABLE `users` DROP `lastlogin`;
 
 TRUNCATE `db_version`;
-INSERT INTO `db_version` (`version`) VALUES (414);
+INSERT INTO `db_version` (`version`) VALUES (418);
 
 

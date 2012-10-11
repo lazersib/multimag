@@ -84,7 +84,7 @@ elseif($openid->mode)
 			// Пробуем использовать ник в качестве логина
 			if(@$oid_attr['namePerson/friendly'])
 			{
-				$sql_login=mysql_real_escape_string($oid_attr['namePerson/friendly']);
+				$sql_login=mysql_real_escape_string(translitIt($oid_attr['namePerson/friendly']));
 				$res=mysql_query("SELECT `id` FROM `users` WHERE `name`='$sql_login'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить данные уникальности");
 				if(!mysql_num_rows($res))	$login=$oid_attr['namePerson/friendly'];
