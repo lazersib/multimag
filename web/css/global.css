@@ -184,12 +184,12 @@ div.hidblock
 
 .pointer
 {
-	cursor:pointer;
+	cursor:pointer !important;
 }
 
 .pointer:hover
 {
-	background-color: #ff8;
+	background-color: #ff8 !important;
 }
 
 
