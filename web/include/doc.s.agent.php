@@ -93,6 +93,7 @@ class doc_s_Agent
 		else $tmpl->msg("Неверный режим!");
 	}
 
+// Служебные функции класса
 	function Edit()
 	{
 		global $tmpl;
@@ -110,19 +111,11 @@ class doc_s_Agent
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel` AS `phone`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`, `sms_phone`, `fax_phone`, `alt_phone`, `id`
+			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`, `sms_phone`, `fax_phone`, `alt_phone`
 			FROM `doc_agent`
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Выборка информации об агенте не удалась");
 			$nxt=@mysql_fetch_array($res);
-
-			$res=mysql_query("SELECT * FROM `doc_agent_group`");
-			$group_data_json='';
-			while($nx=mysql_fetch_row($res))
-			{
-				if($group_data_json)	$group_data_json.=", ";
-				$group_data_json.="{id: '$nx[0]', value: '$nx[1]'}";
-			}
 
 			$pagent_name='';
 
@@ -133,22 +126,53 @@ class doc_s_Agent
 				$pagent_name=mysql_result($r,0,0);
 			}
 
-			$json_agent_info=json_encode($nxt);
-
-			$tmpl->AddText("
-			<form action='' method='post' id='agent_edit_form'>
+			$tmpl->AddText("<form action='' method='post' id='agent_edit_form'><table cellpadding=0 width=100%>
 			<input type=hidden name=mode value=esave>
 			<input type=hidden name=l value=agent>
 			<input type=hidden name=pos value=$pos>
-			<div id='agent_form_container'></div>
-			<table cellpadding=0 width=100%>
-			");
+			<tr class=lin0><td align=right width=20%>Наименование
+			<td><input type=text name='pos_name' value='$nxt[1]' style='width: 90%;'>
+			<tr class=lin1><td align=right>Тип:
+			<td>");
+			if($nxt[2]==0)
+			{
+				$tmpl->AddText("<label><input type='radio' name='type' value='0' checked>Физическое лицо</label><br>
+				<label><input type='radio' name='type' value='1'>Юридическое лицо</label>");
+			}
+			else
+			{
+				$tmpl->AddText("<label><input type='radio' name='type' value='0'>Физическое лицо</label><br>
+				<label><input type='radio' name='type' value='1' checked>Юридическое лицо</label>");
+			}
+			$tmpl->AddText("
+			<tr class=lin0><td align=right>Группа
+        		<td><select name='g'>");
+
+			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
+			$tmpl->AddText("<option value='0' $i>--</option>");
+
+			$res=mysql_query("SELECT * FROM `doc_agent_group`");
+			while($nx=mysql_fetch_row($res))
+			{
+				$i="";
+
+				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
+				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
+			}
 
 			$ext='';
 			$rights=getright('doc_agent_ext',@$_SESSION['uid']);
 			if(! $rights['write']) $ext='disabled';
 
-			$tmpl->AddText("
+			$tmpl->AddText("</select>
+			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='$nxt[3]' class='validate email'>
+			<tr class=lin0><td align=right>Полное название / ФИО:<td><input type=text name='fullname' value='$nxt[4]' style='width: 90%;'>
+			<tr class=lin1><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='tel' value='$nxt[5]' class='phone validate'>
+			<tr class=lin0><td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='fax_phone' value='{$nxt['fax_phone']}' class='phone validate'>
+			<tr class=lin1><td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='sms_phone' value='{$nxt['sms_phone']}' class='phone validate'>
+			<tr class=lin0><td align=right>Дополнительный телефон:<td><input type=text name='alt_phone' value='{$nxt['alt_phone']}'>
+			<tr class=lin0><td align=right>Юридический адрес / Адрес прописки<td colspan=2><textarea name='adres'>$nxt[6]</textarea>
+			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>$nxt[7]</textarea>
 			<tr class=lin0><td align=right>ИНН/КПП или ИНН:<td><input type=text name='inn' value='$nxt[8]' style='width: 40%;' class='inn validate'>
 			<tr class=lin1><td align=right>Банк<td><input type=text name='bank' value='$nxt[13]' style='width: 90%;'>
 			<tr class=lin0><td align=right>Корр. счет<td><input type=text name='ks' value='$nxt[10]' style='width: 40%;'>
@@ -174,28 +198,19 @@ class doc_s_Agent
 				if($nxt[21]==$nx[0])	$s='selected';
 				$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");
 			}
+			$dish_checked=$nxt[25]?'checked':'';
 			$tmpl->AddText("</select>
+			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
 			<tr class='lin1'><td align='right'>Относится к<td>
 			<input type='hidden' name='p_agent' id='agent_id' value='$nxt[26]'>
 			<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 50%;' value='$pagent_name'>
 			<div id='agent_info'></div>
 			<tr class=lin0><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
-			<tr class=lin1><td width='20%'><td><button type='submit' id='b_submit'>Сохранить</button>
+			<tr class=lin1><td><td><button type='submit' id='b_submit'>Сохранить</button>
 			</table></form>
 
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 			<script type='text/javascript' src='/js/formvalid.js'></script>
-			<script type='text/javascript' src='/js/just.min.js'></script>
-
-<script type='text/javascript'>
-var just = new JUST({ root : '/tpl', ext : '.html' });
-var a='123'
-var form_container=document.getElementById('agent_form_container');
-just.render('doc_s_agent_mainform', { title: 'Hello, World!', agent_data: $json_agent_info, group_data: [ $group_data_json ] }, function(error, html) {
-    form_container.innerHTML=html;
-  //  var valid=form_validator('agent_edit_form')
-});
-</script>
 			<script type=\"text/javascript\">
 			$(document).ready(function(){
 				$(\"#agent_nm\").autocomplete(\"/docs.php\", {
@@ -228,7 +243,7 @@ just.render('doc_s_agent_mainform', { title: 'Hello, World!', agent_data: $json_
 			initCalendar('pasp_date')
 			initCalendar('data_sverki')
 
-
+			var valid=form_validator('agent_edit_form')
 
 
 			</script>
@@ -321,6 +336,7 @@ just.render('doc_s_agent_mainform', { title: 'Hello, World!', agent_data: $json_
 		if($pos!=0)
 		{
 			//$this->PosMenu($pos, $param);
+
 		}
 
 		if($param=='')
@@ -338,7 +354,7 @@ just.render('doc_s_agent_mainform', { title: 'Hello, World!', agent_data: $json_
 			$g=rcv('g');
 			$email=rcv('email');
 			$fullname=rcv('fullname');
-			$tel=rcv('phone');
+			$tel=rcv('tel');
 			$fax_phone=rcv('fax_phone');
 			$sms_phone=rcv('sms_phone');
 			$alt_phone=rcv('alt_phone');
@@ -815,3 +831,4 @@ just.render('doc_s_agent_mainform', { title: 'Hello, World!', agent_data: $json_
 
 
 ?>
+
