@@ -1149,7 +1149,7 @@ class doc_Zayavka extends doc_Nulltype
 			$autor_name=@mysql_result($res,0,0);
 
 			$klad_id=$this->dop_data['kladovshik'];
-			$res=mysql_query("SELECT `user_id`, `worker_real_rname` FROM `users_worker_info` WHERE `user_id`='$klad_id'");
+			$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `user_id`='$klad_id'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 			$nxt=mysql_fetch_row($res);
 
