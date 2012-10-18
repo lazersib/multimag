@@ -17,9 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// Работа с товарами
-$doc_types[2]="Агенты";
-
 class doc_s_Agent
 {
 	function View()
@@ -93,7 +90,6 @@ class doc_s_Agent
 		else $tmpl->msg("Неверный режим!");
 	}
 
-// Служебные функции класса
 	function Edit()
 	{
 		global $tmpl;
@@ -111,14 +107,29 @@ class doc_s_Agent
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`, `sms_phone`, `fax_phone`, `alt_phone`
+			$res=mysql_query("SELECT `group`, `name`, `type`, `email`, `fullname`, `tel` AS `phone`, `adres`, `gruzopol`, `inn`, `rs`, `ks`, `okevd`, `okpo`,  `bank`,  `bik`, `pfio`, `pdol`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `responsible`, `data_sverki`, `dir_fio`, `dir_fio_r`, `dishonest`, `p_agent`, `sms_phone`, `fax_phone`, `alt_phone`, `id`
 			FROM `doc_agent`
 			WHERE `doc_agent`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Выборка информации об агенте не удалась");
 			$nxt=@mysql_fetch_array($res);
+			$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
+			if(mysql_errno())	throw new MysqlException("Выборка информации о сотрудниках не удалась");
+			$worker_data_json='';
+			while($nx=mysql_fetch_row($res))
+			{
+				if($worker_data_json)	$worker_data_json.=", ";
+				$worker_data_json.="{id: '$nx[0]', value: '$nx[1]'}";
+			}
+			$res=mysql_query("SELECT * FROM `doc_agent_group`");
+			if(mysql_errno())	throw new MysqlException("Выборка информации о группах не удалась");
+			$group_data_json='';
+			while($nx=mysql_fetch_row($res))
+			{
+				if($group_data_json)	$group_data_json.=", ";
+				$group_data_json.="{id: '$nx[0]', value: '$nx[1]'}";
+			}
 
 			$pagent_name='';
-
 			if(!$nxt)	$tmpl->AddText("<h3>Новая запись</h3>");
 			else if($nxt[26]>0)
 			{
@@ -126,158 +137,79 @@ class doc_s_Agent
 				$pagent_name=mysql_result($r,0,0);
 			}
 
-			$tmpl->AddText("<form action='' method='post' id='agent_edit_form'><table cellpadding=0 width=100%>
+			$nxt['p_agent_name']=$pagent_name;
+			$json_agent_info=json_encode($nxt);
+
+			$tmpl->AddText("
+<style>
+#agent_edit_form INPUT[type=text], #agent_edit_form SELECT, #agent_edit_form TEXTAREA
+{
+	border-radius:	0;
+	margin:		0;
+	padding:	2px;
+	vertical-align:	middle;
+	width:		97%;
+}
+</style>
+
+			<form action='' method='post' id='agent_edit_form'>
 			<input type=hidden name=mode value=esave>
 			<input type=hidden name=l value=agent>
 			<input type=hidden name=pos value=$pos>
-			<tr class=lin0><td align=right width=20%>Наименование
-			<td><input type=text name='pos_name' value='$nxt[1]' style='width: 90%;'>
-			<tr class=lin1><td align=right>Тип:
-			<td>");
-			if($nxt[2]==0)
-			{
-				$tmpl->AddText("<label><input type='radio' name='type' value='0' checked>Физическое лицо</label><br>
-				<label><input type='radio' name='type' value='1'>Юридическое лицо</label>");
-			}
-			else
-			{
-				$tmpl->AddText("<label><input type='radio' name='type' value='0'>Физическое лицо</label><br>
-				<label><input type='radio' name='type' value='1' checked>Юридическое лицо</label>");
-			}
-			$tmpl->AddText("
-			<tr class=lin0><td align=right>Группа
-        		<td><select name='g'>");
-
-			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
-			$tmpl->AddText("<option value='0' $i>--</option>");
-
-			$res=mysql_query("SELECT * FROM `doc_agent_group`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$i="";
-
-				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
-				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
-			}
+			<div id='agent_form_container'></div>
+			<table cellpadding=0 width=100%>
+			");
 
 			$ext='';
 			$rights=getright('doc_agent_ext',@$_SESSION['uid']);
-			if(! $rights['write']) $ext='disabled';
+			$doc_agent_ext_write=$rights['write']?1:0;
 
-			$tmpl->AddText("</select>
-			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='$nxt[3]' class='validate email'>
-			<tr class=lin0><td align=right>Полное название / ФИО:<td><input type=text name='fullname' value='$nxt[4]' style='width: 90%;'>
-			<tr class=lin1><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='tel' value='$nxt[5]' class='phone validate'>
-			<tr class=lin0><td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='fax_phone' value='{$nxt['fax_phone']}' class='phone validate'>
-			<tr class=lin1><td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='sms_phone' value='{$nxt['sms_phone']}' class='phone validate'>
-			<tr class=lin0><td align=right>Дополнительный телефон:<td><input type=text name='alt_phone' value='{$nxt['alt_phone']}'>
-			<tr class=lin0><td align=right>Юридический адрес / Адрес прописки<td colspan=2><textarea name='adres'>$nxt[6]</textarea>
-			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>$nxt[7]</textarea>
-			<tr class=lin0><td align=right>ИНН/КПП или ИНН:<td><input type=text name='inn' value='$nxt[8]' style='width: 40%;' class='inn validate'>
-			<tr class=lin1><td align=right>Банк<td><input type=text name='bank' value='$nxt[13]' style='width: 90%;'>
-			<tr class=lin0><td align=right>Корр. счет<td><input type=text name='ks' value='$nxt[10]' style='width: 40%;'>
-			<tr class=lin1><td align=right>БИК<td><input type=text name='bik' value='$nxt[14]' class='bik validate'>
-			<tr class=lin0><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small><td><input type=text name='rs' value='$nxt[9]' style='width: 40%;' class='rs validate'>
-			<tr class=lin1><td align=right>ОКВЭД<td><input type=text name='okevd' value='$nxt[11]'>
-			<tr class=lin0><td align=right>ОКПО<td><input type=text name='okpo' value='$nxt[12]'>
-			<tr class=lin1><td align=right>ФИО директора<td><input type=text name='dir_fio' value='$nxt[23]'>
-			<tr class=lin0><td align=right>ФИО директора в родительном падеже<td><input type=text name='dir_fio_r' value='$nxt[24]'>
-			<tr class=lin1><td align=right>Контактное лицо<td><input type=text name='pfio' value='$nxt[15]'>
-			<tr class=lin0><td align=right>Должность контактног лица<td><input type=text name='pdol' value='$nxt[16]'>
-			<tr class=lin1><td align=right>Паспорт: Номер<td><input type=text name='pasp_num' value='$nxt[17]'>
-			<tr class=lin0><td align=right>Паспорт: Дата выдачи<td><input type=text name='pasp_date' value='$nxt[18]' id='pasp_date'>
-			<tr class=lin1><td align=right>Паспорт: Кем выдан<td><input type=text name='pasp_kem' value='$nxt[19]'>
-			<tr class=lin0><td align=right>Дата последней сверки:<td><input type=text name='data_sverki' value='$nxt[22]' id='data_sverki' $ext>
-			<tr class=lin1><td align=right>Ответственный:<td>
-			<select name='responsible' $ext>
-			<option value='null'>--не назначен--</option>");
-			$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$s='';
-				if($nxt[21]==$nx[0])	$s='selected';
-				$tmpl->AddText("<option value='$nx[0]' $s>$nx[1]</option>");
-			}
-			$dish_checked=$nxt[25]?'checked':'';
-			$tmpl->AddText("</select>
-			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
-			<tr class='lin1'><td align='right'>Относится к<td>
-			<input type='hidden' name='p_agent' id='agent_id' value='$nxt[26]'>
-			<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 50%;' value='$pagent_name'>
-			<div id='agent_info'></div>
-			<tr class=lin0><td align=right>Комментарий<td colspan=2><textarea name='comment'>$nxt[20]</textarea>
-			<tr class=lin1><td><td><button type='submit' id='b_submit'>Сохранить</button>
+			$tmpl->AddText("
+			<tr class=lin1><td width='20%'><td><button type='submit' id='b_submit'>Сохранить</button>
 			</table></form>
 
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 			<script type='text/javascript' src='/js/formvalid.js'></script>
-			<script type=\"text/javascript\">
-			$(document).ready(function(){
-				$(\"#agent_nm\").autocomplete(\"/docs.php\", {
-					delay:300,
-					minChars:1,
-					matchSubset:1,
-					autoFill:false,
-					selectFirst:true,
-					matchContains:1,
-					cacheLength:10,
-					maxItemsToShow:15,
-					formatItem:agliFormat,
-					onItemSelect:agselectItem,
-					extraParams:{'l':'agent','mode':'srv','opt':'ac'}
-				});
-			});
+			<script type='text/javascript' src='/js/just.min.js'></script>
 
-			function agliFormat (row, i, num) {
-				var result = row[0] + \"<em class='qnt'>тел. \" +
-				row[2] + \"</em> \";
-				return result;
-			}
+<script type='text/javascript'>
+var just = new JUST({ root : '/tpl', ext : '.html' });
+var a='123'
+var form_container=document.getElementById('agent_form_container');
+just.render('doc_s_agent_mainform', { title: 'Hello, World!', agent_data: $json_agent_info, group_data: [ $group_data_json ] , worker_data: [ $worker_data_json ], doc_agent_ext_write: '$doc_agent_ext_write' }, function(error, html) {
+	form_container.innerHTML=html;
+	var valid=form_validator('agent_edit_form')
+	$(\"#agent_nm\").autocomplete(\"/docs.php\", {
+		delay:300,
+		minChars:1,
+		matchSubset:1,
+		autoFill:false,
+		selectFirst:true,
+		matchContains:1,
+		cacheLength:10,
+		maxItemsToShow:15,
+		formatItem:agliFormat,
+		onItemSelect:agselectItem,
+		extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+	});
+	initCalendar('pasp_date')
+	initCalendar('data_sverki')
+});
+function agliFormat (row, i, num) {
+	var result = row[0] + \"<em class='qnt'>тел. \" +
+	row[2] + \"</em> \";
+	return result;
+}
 
-			function agselectItem(li) {
-				if( li == null ) var sValue = \"Ничего не выбрано!\";
-				if( !!li.extra ) var sValue = li.extra[0];
-				else var sValue = li.selectValue;
-				document.getElementById('agent_id').value=sValue;
-			}
-			initCalendar('pasp_date')
-			initCalendar('data_sverki')
+function agselectItem(li) {
+	if( li == null ) var sValue = \"Ничего не выбрано!\";
+	if( !!li.extra ) var sValue = li.extra[0];
+	else var sValue = li.selectValue;
+	document.getElementById('agent_id').value=sValue;
+}
 
-			var valid=form_validator('agent_edit_form')
+</script>");
 
-
-			</script>
-
-			");
-
-		}
-		else if($param=='i')
-		{
-			$tmpl->AddText("<form action='' method=post enctype='multipart/form-data'>
-			<input type=hidden name=mode value=esave>
-			<input type=hidden name=l value=sklad>
-			<input type=hidden name=pos value=$pos>
-			<input type=hidden name=param value=i>
-			<table cellpadding=0 width=50%>
-			<tr class=lin1><td>Файл картнки:
-			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>
-			<tr class=lin0><td>Название картинки:
-			<td><input type=text name='nm'><br>
-			Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
-			<tr class=lin1><td>Дополнительно:
-			<td><label><input type='checkbox' name='set_def' value='1'>Установить по умолчанию</label>
-			<tr class=lin0><td colspan=2 align=center>
-			<input type='submit' value='Сохранить'>
-			</table>
-			</form><h2>Ассоциированные с товаром картинки</h2>");
-			$res=mysql_query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
-			FROM `doc_base_img`
-			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-			WHERE `doc_base_img`.`pos_id`='$pos'");
-			while($nxt=@mysql_fetch_row($res))
-			{
-				$tmpl->AddText("<img src='img/t/$nxt[0].$nxt[1]'><br>");
-			}
 		}
 		else if($param=='h')
 		{
@@ -336,7 +268,6 @@ class doc_s_Agent
 		if($pos!=0)
 		{
 			//$this->PosMenu($pos, $param);
-
 		}
 
 		if($param=='')
@@ -354,7 +285,7 @@ class doc_s_Agent
 			$g=rcv('g');
 			$email=rcv('email');
 			$fullname=rcv('fullname');
-			$tel=rcv('tel');
+			$tel=rcv('phone');
 			$fax_phone=rcv('fax_phone');
 			$sms_phone=rcv('sms_phone');
 			$alt_phone=rcv('alt_phone');
@@ -464,59 +395,6 @@ class doc_s_Agent
 			}
 
 			doc_log($log_start.' agent', $log_text, 'AGENT', $pos);
-		}
-		else if($param=='i')
-		{
-			$id=0;
-			$max_size=500;
-			$min_pix=50;
-			$max_pix=800;
-			$nm=rcv('nm');
-			$set_def=rcv('set_def');
-			if(!isAccess('list_agent','edit'))	throw new AccessException("");
-			$res=mysql_query("SELECT `id` FROM `doc_img` WHERE `name`='$nm'");
-			if(mysql_num_rows($res))
-			{
-				$img_id=mysql_result($res,0,0);
-				$tmpl->msg("Эта картинка найдена, N $img_id","info");
-			}
-			else
-			{
-				if($_FILES['userfile']['size']<=0)
-					$tmpl->msg("Забыли выбрать картинку?");
-				else
-				{
-					if($_FILES['userfile']['size']>$max_size*1024)
-						$tmpl->msg("Слишком большой файл! Допустимо не более $max_size кб!");
-					else
-					{
-						$iminfo=getimagesize($_FILES['userfile']['tmp_name']);
-						switch ($iminfo[2])
-						{
-							case IMAGETYPE_JPEG: $imtype='jpg'; break;
-							case IMAGETYPE_PNG: $imtype='png'; break;
-							case IMAGETYPE_GIF: $imtype='gif'; break;
-							default: $imtype='';
-						}
-						if(!$imtype) $tmpl->msg("Файл - не картинка, или неверный формат файла. Рекомендуется PNG и JPG, допустим но не рекомендуется GIF.");
-						else if(($iminfo[0]<$min_pix)||($iminfo[1]<$min_pix))
-						$tmpl->msg("Слишком мелкая картинка! Минимальный размер - $min_pix пикселей!");
-						else if(($iminfo[0]>$max_pix)||($iminfo[1]>$max_pix))
-						$tmpl->msg("Слишком большая картинка! Максимальный размер - $max_pix пикселей!");
-						else
-						{
-							mysql_query("INSERT INTO `doc_img` (`name`, `type`)	VALUES ('$nm', '$imtype')");
-							$img_id=mysql_insert_id();
-							if($img_id)
-							move_uploaded_file($_FILES['userfile']['tmp_name'],$CONFIG['site']['location'].'/img/t/'.$img_id.'.'.$imtype);
-							$tmpl->msg("Файл загружен, $img_id.$imtype","info");
-						}
-					}
-				}
-			}
-
-			//mysql_query("INSERT INTO `doc_base_img` (`pos_id`, `img_id`, `default`) VALUES ('$pos', '$img_id', '$set_def')");
-
 		}
 		else if($param=='g')
 		{
@@ -831,4 +709,3 @@ class doc_s_Agent
 
 
 ?>
-
