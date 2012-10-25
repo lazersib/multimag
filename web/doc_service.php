@@ -813,7 +813,7 @@ else if($mode=='auinfo')
 		$update_res=mysql_query("SELECT `doc_log`.`object_id` AS `doc_id`, `doc_log`.`time`, `doc_log`.`user`, `users`.`name` AS `user_name`, `doc_log`.`desc`
 		FROM `doc_log`
 		LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
-		WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='{$nxt['doc_id']}' AND `time`>='$print_dt_update 00:00:00' AND `motion` LIKE 'UPDATE%'");
+		WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='{$nxt['doc_id']}' AND `time`>='$print_dt_update 00:00:00' AND `time`>='{$nxt['time']}' AND `motion` LIKE 'UPDATE%'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить данные истории изменений");
 		if(mysql_num_rows($update_res)==0)	continue;
 		else

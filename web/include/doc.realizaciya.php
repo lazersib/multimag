@@ -1017,6 +1017,15 @@ class doc_Realizaciya extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $mass_p);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 
+		if($this->doc_data['comment'])
+		{
+			$pdf->Ln(5);
+			$str="Комментарий : ".$this->doc_data['comment'];
+			$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
+			$pdf->MultiCell(0,5,$str,0,'L',0);
+			$pdf->Ln(5);
+		}
+		
 		$str="Заявку принял: _________________________________________ ($autor_name)";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
