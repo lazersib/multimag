@@ -482,10 +482,11 @@ function agselectItem(li) {
 			WHERE `doc_agent`.`group`='$group'
 			ORDER BY `doc_agent`.`name`";
 
-			$lim=50;
+			$lim=20;
 			$page=rcv('p');
 			$res=mysql_query($sql);
 			$row=mysql_num_rows($res);
+			$pages="";
 			if($row>$lim)
 			{
 				$dop="g=$group";
@@ -493,20 +494,20 @@ function agselectItem(li) {
 				if($page>1)
 				{
 					$i=$page-1;
-					link_sklad(0, "$dop&p=$i","&lt;&lt;");
+					$pages.="<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&lt;&lt;</a> ";
 				}
 				$cp=$row/$lim;
 				for($i=1;$i<($cp+1);$i++)
 				{
-					if($i==$page) $tmpl->AddText(" <b>$i</b> ");
-					else $tmpl->AddText("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">$i</a> ");
+					if($i==$page) $pages.=" <b>$i</b> ";
+					else $pages.="<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">$i</a> ";
 				}
 				if($page<$cp)
 				{
 					$i=$page+1;
-					link_sklad(0, "$dop&p=$i","&gt;&gt;");
+					$pages.="<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&gt;&gt;</a> ";
 				}
-				$tmpl->AddText("<br>");
+				$tmpl->AddText("$pages<br>");
 				$sl=($page-1)*$lim;
 
 				$res=mysql_query("$sql LIMIT $sl,$lim");
@@ -518,7 +519,7 @@ function agselectItem(li) {
 				<th>№<th>Название<th>Телефон<th>e-mail<th>Дополнительно<th>Отв.менеджер");
 				$this->DrawTable($res,$s);
 				$tmpl->AddText("</table>");
-
+				if($row>$lim)	$tmpl->AddText("$pages<br>");
 			}
 			else $tmpl->msg("В выбранной группе записей не найдено!");
 			$tmpl->AddText("
