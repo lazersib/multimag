@@ -259,7 +259,7 @@ class WikiParser {
 		
 		if($namespace=='title')
 		{
-			$data->title=$title;
+			$this->title=$data;
 		}
 		$this->definitions[$namespace]=$data;
 		return '';
