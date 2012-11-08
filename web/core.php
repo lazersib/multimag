@@ -458,11 +458,12 @@ function SafeLoadTemplate($template)
 // ====================================== Шаблон страницы ===============================================
 class BETemplate
 {
-	var $tpl;			// Шаблон
-	var $page;		    // Данные страницы
-	var $ajax;
-	var $tplname;
-	var $hide_blocks;		// Скрытые блоки. Блоки, отображать которые не нужно
+	var $tpl;			/// Шаблон
+	var $page=array();		/// Данные страницы. 
+	var $ajax=0;			/// Флаг ajax выдачи
+	var $tplname;			/// Наименование загруженного шаблона
+	var $page_blocks=array();	/// Новые блоки шаблонизатора. Ассоциативный массив. Замена устаревшего $page
+	var $hide_blocks=array();	/// Скрытые блоки. Блоки, отображать которые не нужно
 
 	function BETemplate()
 	{
@@ -470,8 +471,6 @@ class BETemplate
 		$this->page[0]=$this->page[1]=$this->page[2]=$this->page[3]=$this->page[4]=$this->page[5]=$this->page[6]="";
 		if($CONFIG['site']['skin'])	$this->LoadTemplate($CONFIG['site']['skin']);
 		else				$this->LoadTemplate('default');
-		$this->ajax=0;
-		$this->hide_blocks=array();
 	}
 
 	function LoadTemplate($s)

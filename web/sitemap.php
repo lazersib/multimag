@@ -25,7 +25,7 @@ $tmpl->SetTitle("Карта сайта");
 if($mode=='xml')
 {
 	$tmpl->ajax=1;
-	header("Content-type: text/xml");
+	header("Content-type: application/xml");
 	$map=new SiteMap('xml');
 	$tmpl->SetText('');
 	$tmpl->AddText($map->getMap());

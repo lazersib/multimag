@@ -86,13 +86,15 @@ try
 		WHERE `articles`.`name` LIKE '$p'");
 		if(@$nxt=mysql_fetch_row($res))
 		{
-			$h='';
+			$h=$meta_description=$meta_keywords='';
 			$text=$nxt[5];
 			if($nxt[6]==0)	$text=strip_tags($text, '<nowiki>');
 			if($nxt[6]==0 || $nxt[6]==2)
 			{	
 				$text=$wikiparser->parse(html_entity_decode($text,ENT_QUOTES,"UTF-8"));
 				$h=$wikiparser->title;
+				$meta_description=@$wikiparser->definitions['meta_description'];
+				$meta_keywords=@$wikiparser->definitions['meta_keywords'];
 			}
 			if($nxt[6]==1 || $nxt[6]==2)	$text=html_entity_decode($text,ENT_QUOTES,"UTF-8");
 			if(!$h)

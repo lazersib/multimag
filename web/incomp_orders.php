@@ -76,7 +76,7 @@ while($line=mysql_fetch_assoc($res))
 	{
 		case 'bn':	$pay_type="безналичный";	break;
 		case 'nal':	$pay_type="наличными";	break;
-		case 'card':	$pay_type="платёдной картой";	break;
+		case 'card':	$pay_type="платёжной картой";	break;
 		case 'wmr':	$pay_type="Webmoney WMR";	break;
 		default:	$pay_type="не определён ({$line['pay_type']})";
 	}

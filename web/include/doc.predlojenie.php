@@ -74,7 +74,7 @@ class doc_Predlojenie extends doc_Nulltype
 			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=zayavka_pdf'\">Заявка PDF</div>");
 		}
 		else if($opt=='zayavka_pdf')
-			$this->PrintPDF($doc);
+			$this->PrintPDF();
 		else $tmpl->logger("Запрошена неизвестная опция!");
 	}
 	// Формирование другого документа на основании текущего
@@ -295,8 +295,7 @@ class doc_Predlojenie extends doc_Nulltype
 	function PrintPDF($to_str=0)
 	{
 		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
-		require('fpdf/fpdf_mysql.php');
-		get_docdata($doc);
+		require('fpdf/fpdf.php');
 		global $tmpl;
 		global $uid;
 		global $CONFIG;
@@ -324,7 +323,7 @@ class doc_Predlojenie extends doc_Nulltype
 			$pdf->Image($header_img,8,10, 190);
 			$pdf->Sety(54);
 		}
-
+		
 		$str = 'Просим рассмотреть возможность поставки следующей продукции:';
 		$pdf->SetFont('','U',14);
 		$str = iconv('UTF-8', 'windows-1251', $str);
@@ -438,6 +437,7 @@ class doc_Predlojenie extends doc_Nulltype
 			return $pdf->Output('request.pdf','S');
 		else
 			$pdf->Output('request.pdf','I');
+			
 	}
 
 

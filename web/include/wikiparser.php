@@ -249,19 +249,19 @@ class WikiParser {
 		//var_dump($matches);
 		$nolink = false;
 
-		$title = $matches[4];
+		$data = $matches[4];
 		//$href = $matches[4];
 		//$title = $matches[6] ? $matches[6] : $href.$matches[7];
 		$namespace = $matches[3];
 
-		$title = preg_replace('/\(.*?\)/','',$title);
-		$title = preg_replace('/^.*?\:/','',$title);
-
+		$data = preg_replace('/\(.*?\)/','',$data);
+		$data = preg_replace('/^.*?\:/','',$data);
+		
 		if($namespace=='title')
 		{
-			$this->title=$title;
+			$data->title=$title;
 		}
-
+		$this->definitions[$namespace]=$data;
 		return '';
 	}
 

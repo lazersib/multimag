@@ -8,7 +8,7 @@
 </td>
 <td width='180px'>
 Группа:<br>
-<select name='group'>
+<select name='g'>
 <% for (var i = 0; i < group_data.length; i++) { %>
 <option value='<%= group_data[i].id  %>'<% if(agent_data.group==group_data[i].id) {%> selected<% } %>><%= group_data[i].value %></option>
 <% } %>
