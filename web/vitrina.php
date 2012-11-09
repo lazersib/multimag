@@ -399,7 +399,7 @@ protected function ProductCard($product)
 				//$fullimg->SetY(300);
 				if(mysql_num_rows($res)>1)
 					$img_mini.="<a href='".$midiimg->GetURI()."' onclick=\"return setPhoto({$img_data['img_id']});\"><img src='".$miniimg->GetURI()."' alt='{$img_data['name']}'></a>";
-				$appends.="midiphoto.appendImage({$img_data['img_id']},'".html_entity_decode($midiimg->GetURI(), ENT_HTML401, 'UTF-8')."', '".html_entity_decode($fullimg->GetURI(), ENT_HTML401, 'UTF-8')."');\n";
+				$appends.="midiphoto.appendImage({$img_data['img_id']},'".html_entity_decode($midiimg->GetURI(), ENT_COMPAT, 'UTF-8')."', '".html_entity_decode($fullimg->GetURI(), ENT_COMPAT, 'UTF-8')."');\n";
 
 			}
 		}
