@@ -117,6 +117,8 @@ try
 					$tmpl->AddText("</div>");
 				}
 				$tmpl->AddText("$text<br><br>");
+				$tmpl->SetMetaKeywords($meta_keywords);
+				$tmpl->SetMetaDescription($meta_description);
 
 			}
 			else

@@ -200,11 +200,11 @@ function exception_handler($exception)
 	$ff=mysql_real_escape_string($ff);
 	mysql_query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
 	('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
-	header("500 Internal error");
+	header('HTTP/1.0 404 Internal error');
+	header('Status: 404 Internal error');
 	echo"<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><title>Error 500: Необработанная внутренняя ошибка</title>
-	<style type='text/css'>body{color: #0f0; background-color: #000; text-align: center;}</style></head><body>
+	<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
 	<h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
-
 }
 set_exception_handler('exception_handler');
 
@@ -458,21 +458,19 @@ function SafeLoadTemplate($template)
 // ====================================== Шаблон страницы ===============================================
 class BETemplate
 {
-	var $tpl;			/// Шаблон
-	var $page=array();		/// Данные страницы. 
-	var $ajax=0;			/// Флаг ajax выдачи
-	var $tplname;			/// Наименование загруженного шаблона
-	var $page_blocks=array();	/// Новые блоки шаблонизатора. Ассоциативный массив. Замена устаревшего $page
-	var $hide_blocks=array();	/// Скрытые блоки. Блоки, отображать которые не нужно
+	var $tpl;			///< Шаблон
+	var $ajax=0;			///< Флаг ajax выдачи
+	var $tplname;			///< Наименование загруженного шаблона
+	var $page_blocks=array();	///< Новые блоки шаблонизатора. Ассоциативный массив. Замена устаревшего $page
+	var $hide_blocks=array();	///< Скрытые блоки. Блоки, отображать которые не нужно
 
 	function BETemplate()
 	{
 		global $CONFIG;
-		$this->page[0]=$this->page[1]=$this->page[2]=$this->page[3]=$this->page[4]=$this->page[5]=$this->page[6]="";
 		if($CONFIG['site']['skin'])	$this->LoadTemplate($CONFIG['site']['skin']);
 		else				$this->LoadTemplate('default');
 	}
-
+	/// Загрузка шаблона по его имени
 	function LoadTemplate($s)
 	{
 		$this->tplname=$s;
@@ -484,78 +482,132 @@ class BETemplate
 				$this->tpl.=$item;
 		}
 	}
-
+	
+	/// Установить флаг скрытия заданной части страницы
 	function HideBlock($block)
 	{
 		$this->hide_blocks[$block]=true;
 	}
-
+	
+	/// Снять флаг скрытия заданной части страницы
 	function ShowBlock($block)
 	{
 		unset($this->hide_blocks[$block]);
 	}
-
-// TOP
-	function SetTMenu($s)
+	
+	/// Задать HTML содержимое шапки страницы
+	function SetTop($s)
 	{
-		$this->page[1]=$s;
+		@$this->page_blocks['top']=$s;
 	}
-	function AddTMenu($s)
+	
+	/// Добавить HTML содержимое в конец шапки страницы
+	function AddTop($s)
 	{
-		$this->page[1].=$s;
+		@$this->page_blocks['top'].=$s;
 	}
-// RIGHT
-	function SetRMenu($s)
+	
+	/// Задать HTML содержимое правой колонки страницы
+	function SetRight($s)
 	{
-		$this->page[2]=$s;
+		@$this->page_blocks['right']=$s;
 	}
-	function InsRMenu($s)
+	
+	/// Вставить HTML содержимое в начало правой колонки страницы
+	function InsRight($s)
 	{
-		$this->page[2]=$s.$this->page[2];
+		@$this->page_blocks['right']=$s.$this->page_blocks['right'];
 	}
-	function AddRMenu($s)
+	
+	/// Добавить HTML содержимое в конец правой колонки страницы
+	function AddRight($s)
 	{
-		$this->page[2].=$s;
+		@$this->page_blocks['right'].=$s;
 	}
-// LEFT
-	function AddLMenu($s)
+	
+	/// Вставить HTML содержимое в начало левой колонки страницы
+	function AddLeft($s)
 	{
-		$this->page[5].=$s;
+		@$this->page_blocks['left'].=$s;
 	}
-	function SetLMenu($s)
+	
+	/// Задать HTML содержимое левой колонки страницы
+	function SetLeft($s)
 	{
-		$this->page[5]=$s;
+		@$this->page_blocks['left']=$s;
 	}
+	
+	/// Задать текст заголовка (обычно тэг title) страницы
 	function SetTitle($s)
 	{
-		$this->page[3]=$s;
+		@$this->page_blocks['title']=$s;
 	}
-// TEXT
+	
+	/// Задать содержимое мета-тэга keywords
+	function SetMetaKeywords($s)
+	{
+		@$this->page_blocks['meta_keywords']=$s;
+	}
+	
+	/// Задать содержимое мета-тэга description
+	function SetMetaDescription($s)
+	{
+		@$this->page_blocks['meta_description']=$s;
+	}
+	
+	/// Добавить HTML содержимое к основному блоку страницы (content)
+	/// Не рекомендуется к использованию. Вместо этого используйте SetContent
+	/// @sa SetContent
 	function SetText($s)
 	{
-		$this->page[0]=$s;
+		@$this->page_blocks['content']=$s;
 	}
+	
+	/// Задать HTML содержимое основного блока страницы (content)
+	/// Не рекомендуется к использованию. Вместо этого используйте AddContent
+	/// @sa AddContent
 	function AddText($s)
 	{
-		$this->page[0].=$s;
+		@$this->page_blocks['content'].=$s;
 	}
-// STYLE
+	
+	/// Задать HTML содержимое основного блока страницы (content)
+	function SetContent($s)
+	{
+		@$this->page_blocks['content']=$s;
+	}
+	
+	/// Добавить HTML содержимое к основному блоку страницы (content)
+	function AddContent($s)
+	{
+		@$this->page_blocks['content'].=$s;
+	}
+	
+	/// Добавить содержимое к таблице стилей страницы (тэг style)
 	function AddStyle($s)
 	{
-		$this->page[4].=$s;
+		@$this->page_blocks['stylesheet'].=$s;
 	}
-
-	function AddNote($head,$text,$id)
+	
+	/// Задать содержимое к пользовательского блока страницы
+	/// @param block_name Имя блока. Не должно совпадать с именами стандартных блоков.
+	/// @param data HTML данные блока
+	function SetCustomBlockData($block_name, $data)
 	{
-		$this->page[6].="<div class=note><div id=hd>(<a href='notes.php?mode=wait&amp;n=$id'>x</a>) $head</div><a href='notes.php?n=$id'><div id=txt>$text</div></a></div>";
+		@$this->page_blocks[$block_name]=$data;
 	}
-
-	function ClearNote()
+	/// Добавить содержимое к пользовательскому блоку страницы
+	/// @param block_name Имя блока. Не должно совпадать с именами стандартных блоков.
+	/// @param data HTML данные блока
+	function AddCustomBlockData($block_name, $data)
 	{
-	   $this->page[6]="";
+		@$this->page_blocks[$block_name].=$data;
 	}
 
-	// ====================================== Сообщение ======================================================
+	/// Добавить блок (div) с информацией к основному блоку страницы (content)
+	/// @param text Текст сообщения
+	/// @param mode Вид сообщения: ok - сообщение об успехе, err - сообщение об ошибке, info - информационное сообщение
+	/// @param head Заголовок сообшения
 	function msg($text="",$mode="",$head="")
 	{
 		if($text=="") return;
@@ -570,47 +622,55 @@ class BETemplate
 		}
 		else $msg=$head;
 
-		$this->page[0].="<div class='$mode'><b>$msg</b><br>$text</div>";
+		@$this->page_blocks['content'].="<div class='$mode'><b>$msg</b><br>$text</div>";
 	}
 
-
+	/// Сформировать HTML и отправить его, в соответствии с загруженным шаблоном и установленным содержимым блоков
 	function write()
 	{
+		global $time_start;
+		if(stripos(getenv("HTTP_USER_AGENT"), "MSIE" )!==FALSE )
+		{
+			$this->page_blocks['notsupportbrowser']="<div style='background: #ffb; border: 1px #fff outset; padding: 3px; padding-right: 15px; text-align: right; font-size: 14px;'><img src='/img/win/important.png' alt='info' style='float: left'>
+			Вероятно, Вы используете неподдерживаемую версию броузера.<br><b>Для правильной работы сайта, скачайте и установите последнюю версию <a href='http://mozilla.com'>Mozilla</a>, <a href='http://www.opera.com/download/'>Opera</a> или <a href='http://www.google.com/intl/ru/chrome/browser/'>Chrome</a></b><div style='clear: both'></div></div>";
+		}
+		$time = microtime(true) - $time_start;
+		$this->page_blocks['gentime']=round($time,4);
+
 		@include_once("skins/".$this->tplname."/style.php");
-		if($this->ajax)
-			echo $this->page[0];
+		if($this->ajax)		echo $this->page_blocks['content'];
 		else
 		{
 			@include_once("skins/".$this->tplname."/style.php");
+			if(function_exists('skin_prepare'))
+			{
+				$res=skin_prepare();
+			}
+			
 			if(function_exists('skin_render'))
 			{
-				$res=skin_render($this->page,$this->tpl);
+				$res=skin_render($this->page_blocks,$this->tpl);
 			}
 			else
 			{
-				$res=$this->tpl;
-				ksort($this->page);
-				$sign=array("<!--site-text-->","<!--site-tmenu-->","<!--site-rmenu-->","<!--site-title-->","<!--site-style-->",
-				"<!--site-lmenu-->","<!--site-notes-->");
-
-				if(!isset($this->hide_blocks['left']))
-					$this->page[5]="<td class=lmenu>".$this->page[5]."<td class=fvbl>";
-				if(!isset($this->hide_blocks['right']))
-					$this->AddStyle(".rmenu { display: table-cell; }");
-				else
-					$this->AddStyle(".rmenu { display: none; }");
-
-				$res=str_replace($sign,$this->page,$res);
+				$signatures=array();
+				foreach($this->page_blocks as $key => $value)
+				{
+					$signatures[]="<!--site-$key-->";
+				}
+				$res=str_replace($signatures,$this->page_blocks,$this->tpl);
 			}
 			echo"$res";
 		}
-		global $time_start;
 		$time = microtime(true) - $time_start;
 		if($time>=3)
 			$this->logger("Exec time: $time",1);
-		//echo"Страница сгенерирована за $time секунд";
 	}
 
+	/// Записать сообщение об ошибке в журнал и опционально вывести на страницу
+	/// @param s Основной текст сообщения
+	/// @param silent Если TRUE, то сообщение не выводится на страницу. FALSE по умолчанию.
+	/// @param hidden_data Скрытый текст сообщения об ошибке. Заносится в журнал, на страницу не выводится.
 	function logger($s, $silent=0, $hidden_data='')
 	{
 		$ip=getenv("REMOTE_ADDR");

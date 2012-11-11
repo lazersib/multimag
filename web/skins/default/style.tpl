@@ -3,6 +3,8 @@
 <html lang="ru">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="keywords" content="<!--site-meta_keywords-->">
+<meta name="description" content="<!--site-meta_description-->">
 <title><!--site-title--></title>
 <link rel='stylesheet' type='text/css' href='/css/global.css'>
 
@@ -22,7 +24,7 @@
 <link rel='stylesheet' type='text/css' href='/skins/default/user.css'>
 <style type='text/css'>
 <!--
-<!--site-style-->
+<!--site-stylesheet-->
 -->
 </style>
 <link rel='icon' type='image/png' href='/favicon.ico'>
@@ -55,12 +57,12 @@
 <li><a title='Скачать или распечатать прайс-лист' href='/price.php'>Прайс</a></li>
 <li><a title='Как с нами связаться' href='/wiki/ContactInfo'>Контактная информация</a></li>
 <li><a title='Дополнительные возможности' href='/user.php'>Возможности</a></li>
-<!--site-tmenu-->
+<!--site-top-->
 </ul></div>
-<!--site-rmenu-->
+<!--site-right-->
 <p><br clear='all'></p>
 </div>
-<!--site-text-->
+<!--site-content-->
 <div id='wiki-foot' class='wiki-foot'>
 <div  id='foot-left' class='hidebar' ><img src='/counter.php' alt='counter'>
 <a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-html401-blue" alt="Valid HTML 4.01 Transitional" height="31" width="88"></a>

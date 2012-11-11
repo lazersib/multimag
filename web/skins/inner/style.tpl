@@ -24,7 +24,7 @@
 
 <style type='text/css'>
 <!--
-<!--site-style-->
+<!--site-stylesheet-->
 -->
 </style>
 <link rel='icon' type='image/png' href='/favicon.ico'>
@@ -33,11 +33,12 @@
 <meta name='robots' content='index,follow'>
 </head>
 <body><div id='wiki-wrap' class='wiki-wrap'>
-<!--site-tmenu-->
-<!--site-rmenu-->
-<!--site-text-->
+<!--site-top-->
+<!--site-right-->
+<!--site-content-->
 <hr>
-<div>Система <a href='http://multimag.tndproject.org'>MultiMag</a><br>Создано при поддержке <a href='http://tndproject.org'>TND team</a></div>
+<div>Система <a href='http://multimag.tndproject.org'>MultiMag</a><br>Создано при поддержке <a href='http://tndproject.org'>TND team</a><br>
+Страница сгенерирована за <!--site-gentime--> сек.</div>
 
 
 </div></body>

@@ -27,20 +27,20 @@ function rusdate($fstr,$rtime=-1)
 }
 
 
-function skin_render($page,$tpl)
+function skin_prepare()
 {
 	global $tmpl, $CONFIG;
 
 	if(@$_SESSION['uid'])
 	{
-		$tmpl->AddRMenu("<li class='noborder'><a href='/login.php?mode=logout' title='Покинуть сайт'>Выход</a></li>");
-		$tmpl->AddLMenu("<p class='vspace sidehead'><a>{$_SESSION['name']}:</a></p>
+		$tmpl->AddRight("<li class='noborder'><a href='/login.php?mode=logout' title='Покинуть сайт'>Выход</a></li>");
+		$tmpl->AddLeft("<p class='vspace sidehead'><a>{$_SESSION['name']}:</a></p>
 		<ul><li><a href='/login.php?mode=logout' accesskey='q' title='Выйти с сайта'>Выход</a></li><li><a href='/user.php' accesskey='s' title='Дополнительные возможности'>Возможности</a></li></ul>");
 	}
 	else
 	{
-		$tmpl->AddRMenu("<li class='noborder'><a href='/login.php' title='Войти на сайт'>Вход</a></li>");
-		$tmpl->AddLMenu("<ul><li><a href='/login.php' accesskey='l' title='Войти на сайт'>Вход на сайт</a></li><li><a href='/login.php?mode=reg'>Регистрация</a></li></ul>");
+		$tmpl->AddRight("<li class='noborder'><a href='/login.php' title='Войти на сайт'>Вход</a></li>");
+		$tmpl->AddLeft("<ul><li><a href='/login.php' accesskey='l' title='Войти на сайт'>Вход на сайт</a></li><li><a href='/login.php?mode=reg'>Регистрация</a></li></ul>");
 	}
 
 	$rr=$ll='';
@@ -50,7 +50,7 @@ function skin_render($page,$tpl)
 		$ll="style='color: #fff; font-weight: bold;'";
 	}
 
-	$tmpl->AddLMenu("<p class='vspace sidehead'><a class='wikilink' >Навигация</a></p>
+	$tmpl->AddLeft("<p class='vspace sidehead'><a class='wikilink' >Навигация</a></p>
 	<ul>
 	<li><a class='selflink' href='/index.php'>Домашняя страница</a></li>
 	<li $rr><a class='selflink' href='/vitrina.php?mode=basket' $ll rel='nofollow'>Корзина</a></li>
@@ -73,17 +73,11 @@ function skin_render($page,$tpl)
 	<li><a class='urllink' href='http://tndproject.org'>tndproject.org</a></li>
 	</ul>");
 
-	$page=$tmpl->page;
-
-	ksort($page);
-	$sign=array("<!--site-text-->","<!--site-tmenu-->","<!--site-rmenu-->","<!--site-title-->","<!--site-style-->",
-	"<!--site-lmenu-->","<!--site-notes-->");
-	if(!isset($tmpl->hide_blocks['left'])) $tpl=str_replace("<!--site-text-->","<div id='wiki-menu' class='wiki-menu'><!--site-lmenu--></div><div id='wiki-page' class='wiki-page'><!--site-text--></div>",$tpl);
-	else $tpl=str_replace("<!--site-text-->","<div id='wiki-page-nolmenu' class='wiki-page-nolmenu'><!--site-text--></div>",$tpl);
-	if(!isset($tmpl->hide_blocks['right'])) $tpl=str_replace("<!--site-rmenu-->","<div id='info-right'><ul><!--site-rmenu--></ul></div>",$tpl);
-	$tpl=str_replace("<!--site-topleft-->",rusdate ("l, d.m.Y H:i"),$tpl);
-	$res=str_replace($sign,$page,$tpl);
-	return $res;
+	if(!isset($tmpl->hide_blocks['left'])) $tmpl->tpl=str_replace("<!--site-content-->","<div id='wiki-menu' class='wiki-menu'><!--site-left--></div><div id='wiki-page' class='wiki-page'><!--site-content--></div>",$tmpl->tpl);
+	else $tmpl->tpl=str_replace("<!--site-content-->","<div id='wiki-page-nolmenu' class='wiki-page-nolmenu'><!--site-content--></div>",$tmpl->tpl);
+	if(!isset($tmpl->hide_blocks['right'])) $tmpl->tpl=str_replace("<!--site-right-->","<div id='info-right'><ul><!--site-right--></ul></div>",$tmpl->tpl);
+	
+	$tmpl->SetCustomBlockData('topleft', rusdate ("l, d.m.Y H:i"));
 }
 
 

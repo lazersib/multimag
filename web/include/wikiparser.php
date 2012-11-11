@@ -245,7 +245,7 @@ class WikiParser {
 		);
 	}
 	
-		function handle_definitions($matches) {
+	function handle_definitions($matches) {
 		//var_dump($matches);
 		$nolink = false;
 

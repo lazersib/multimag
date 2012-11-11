@@ -275,7 +275,7 @@ class doc_s_Sklad
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`
+			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
@@ -365,9 +365,16 @@ class doc_s_Sklad
 			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</label>
 			<tr class='lin1'><td align='right'>Гарантия:<td><label><input type='radio' name='warr_type' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='warr_type' value='1' $wt1_check>От производителя</label>
 			<tr class='lin0'><td align='right'>Гарантийный срок:<td><input type='text' name='warranty' value='{$nxt['warranty']}'> мес.
-			<tr class='lin1'><td align='right'>Описание<td colspan='2'><textarea name='desc'>$nxt[2]</textarea>");
+			<tr class='lin1'><td align='right'>Описание<td colspan='2'><textarea name='desc'>$nxt[2]</textarea>
+			<tr class='lin0'><td align='right'>Тэг title карточки товара на витрине
+			<td><input type='text' name='title_tag' value='$nxt[17]' style='width: 95%' maxlength='128'><br>
+			<tr class='lin1'><td align='right'>Мета-тэг keywords карточки товара на витрине
+			<td><input type='text' name='meta_keywords' value='$nxt[18]' style='width: 95%' maxlength='128'><br>
+			<tr class='lin0'><td align='right'>Мета-тэг description карточки товара на витрине
+			<td><input type='text' name='meta_description' value='$nxt[19]' style='width: 95%' maxlength='256'><br>
+			");
 			if($pos!=0)
-				$tmpl->AddText("<tr class='lin0'><td align='right'>Режим записи:<td>
+				$tmpl->AddText("<tr class='lin1'><td align='right'>Режим записи:<td>
 				<label><input type='radio' name='sr' value='0' checked>Сохранить</label><br>
 				<label><input type='radio' name='sr' value='1'>Добавить</label><br>");
 			$tmpl->AddText("<tr class='lin1'><td><td><input type='submit' value='Сохранить'>
@@ -859,9 +866,10 @@ class doc_s_Sklad
 		// Правка описания группы
 		else if($param=='g')
 		{
-			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname`, `no_export_yml`
+			$res=mysql_query("SELECT `id`, `name` , `desc` , `pid` , `hidelevel` , `printname`, `no_export_yml`, `title_tag`, `meta_keywords`, `meta_description`
 			FROM `doc_group`
 			WHERE `id`='$group'");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить данные группы");
 			@$nxt=mysql_fetch_row($res);
 			$tmpl->AddText("<h1>Описание группы</h1>
 			<script type=\"text/javascript\">
@@ -928,9 +936,13 @@ class doc_s_Sklad
 			<tr class='lin0'>
 			<td>Печатное название:
 			<td><input type='text' name='pname' value='$nxt[5]'>
-			<tr class='lin1'><td>Изображение (jpg, до 100 кб, 50*50 - 200*200):
+			<tr class='lin1'><td>Тэг title группы на витрине:<td><input type='text' name='title_tag' value='$nxt[7]' maxlength='128'>
+			<tr class='lin0'><td>Мета-тэг keywords группы на витрине:<td><input type='text' name='meta_keywords' value='$nxt[8]' maxlength='128'>
+			<tr class='lin1'><td>Мета-тэг description группы на витрине:<td><input type='text' name='meta_description' value='$nxt[9]' maxlength='256'>
+			
+			<tr class='lin0'><td>Изображение (jpg, до 100 кб, 50*50 - 200*200):
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>$img
-			<tr class='lin0'>
+			<tr class='lin1'>
 			<td>Описание:
 			<td><textarea name='desc'>$nxt[2]</textarea>
 			<tr class='lin0'><td>Статические дополнительные свойства товаров группы<br><br>
@@ -1196,6 +1208,9 @@ class doc_s_Sklad
 			$warranty=floor(rcv('warranty'));
 			$warranty_type=floor(rcv('warr_type'));
 			$no_export_yml=floor(rcv('no_export_yml'));
+			$title_tag=rcv('title_tag');
+			$meta_keywords=rcv('meta_keywords');
+			$meta_description=rcv('meta_description');
 			if(!$hid)	$hid=0;
 			if(!$stock)	$stock=0;
 			$cc='Цена осталась прежняя!';
@@ -1203,7 +1218,7 @@ class doc_s_Sklad
 			{
 				if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 				$sql_add=$log_add='';
-				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type`, `no_export_yml`, `country` FROM `doc_base` WHERE `id`='$pos'");
+				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type`, `no_export_yml`, `country`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_base` WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить старые свойства позиции!");
 				$old_data=mysql_fetch_assoc($res);
 				if($old_data['name']!=$pos_name)
@@ -1236,6 +1251,21 @@ class doc_s_Sklad
 				{
 					$sql_add.=", `desc`='$desc'";
 					$log_add.=", desc:({$old_data['desc']} => $desc)";
+				}
+				if($old_data['title_tag']!=$title_tag)
+				{
+					$sql_add.=", `title_tag`='$title_tag'";
+					$log_add.=", title_tag:({$old_data['title_tag']} => $title_tag)";
+				}
+				if($old_data['meta_keywords']!=$meta_keywords)
+				{
+					$sql_add.=", `meta_keywords`='$meta_keywords'";
+					$log_add.=", meta_keywords:({$old_data['meta_keywords']} => $meta_keywords)";
+				}
+				if($old_data['meta_description']!=$meta_description)
+				{
+					$sql_add.=", `meta_description`='$meta_description'";
+					$log_add.=", meta_description:({$old_data['meta_description']} => $meta_description)";
 				}
 				if($old_data['hidden']!=$hid)
 				{
@@ -1287,8 +1317,8 @@ class doc_s_Sklad
 			else
 			{
 				if(!isAccess('list_sklad','create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`, `country`)
-				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml', '$country')");
+				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`, `country`, `title_tag`, `meta_keywords`, `meta_description`)
+				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml', '$country', '$title_tag', '$meta_keywords', '$meta_description')");
 				if(mysql_errno())	throw new MysqlException("Ошибка сохранения основной информации.");
 				$opos=$pos;
 				$pos=mysql_insert_id();
@@ -1661,17 +1691,20 @@ class doc_s_Sklad
 			$pid=rcv('pid');
 			$hid=rcv('hid');
 			$pname=rcv('pname');
+			$title_tag=rcv('title_tag');
+			$meta_keywords=rcv('meta_keywords');
+			$meta_description=rcv('meta_description');
 			$collection=rcv('collection');
 			settype($collection,'int');
 			$no_export_yml=rcv('no_export_yml');
 			if($group)
 			{
-				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname', `no_export_yml`='$no_export_yml' WHERE `id` = '$group'");
+				$res=mysql_query("UPDATE `doc_group` SET `name`='$name', `desc`='$desc', `pid`='$pid', `hidelevel`='$hid', `printname`='$pname', `no_export_yml`='$no_export_yml', `title_tag`='$title_tag', `meta_keywords`='$meta_keywords', `meta_description`='$meta_description' WHERE `id` = '$group'");
 			}
 			else
 			{
-				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`, `no_export_yml`)
-				VALUES ('$name', '$desc', '$pid', '$hid', '$pname', '$no_export_yml')");
+				$res=mysql_query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`, `no_export_yml`, `title_tag`, `meta_keywords`, `meta_description`)
+				VALUES ('$name', '$desc', '$pid', '$hid', '$pname', '$no_export_yml', '$title_tag', '$meta_keywords', '$meta_description' )");
 			}
 			if(mysql_errno())	throw new MysqlException("Не удалось сохранить информацию группы");
 

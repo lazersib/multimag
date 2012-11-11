@@ -131,7 +131,7 @@ function FilterMenu()
 		}
 		");
 
-		$tmpl->AddTMenu("<script type='text/javascript' src='/css/doc_script.js'></script>
+		$tmpl->AddTop("<script type='text/javascript' src='/css/doc_script.js'></script>
 		<script src='/css/jquery/jquery.js' type='text/javascript'></script>
 		<!-- Core files -->
 		<script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
@@ -176,7 +176,7 @@ function FilterMenu()
 
 		}
 
-		$tmpl->AddTMenu("
+		$tmpl->AddTop("
 		Отбор по типу документа:<br>
 		<div id='doc_sel' onClick='ShowDocTypes(this)'>$doc_sel</div>
 		<div id='doc_sel_popup'>$doc_cb</div>
@@ -233,7 +233,7 @@ function FilterMenu()
 
 		$date_f=$date_t=date("Y-m-d");
 
-		@$tmpl->AddTMenu("
+		@$tmpl->AddTop("
 		</td><td align='right'>
 		Альт.н.<br>
 		<input type='text' name='altnum' style='width: 50px;' value='{$_SESSION['j_select_altnum']}'><br>

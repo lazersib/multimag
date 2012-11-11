@@ -41,7 +41,7 @@ $ff=$_SERVER['PHP_SELF'];
 $tim=time();
 $skidka="";
 
-$cc=$_GET['cc'];
+$cc=@$_GET['cc'];
 $im=imagecreatefrompng("img/counterbg.png");
 $bg_c = imagecolorallocate ($im, 150,255, 150);
 $text_c = imagecolorallocate ($im, 0, 80, 0);
@@ -59,9 +59,10 @@ $res=mysql_query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
 $aw=mysql_num_rows($res);
 
 
-
+header("Content-type: image/png");
 imagestring ($im,1,5,5,"Week: $aw/$ww", $text_c);
 imagestring ($im,1,5,12,"Day:  $all/$pip", $text_c);
 imagestring ($im,1,25,25,$CONFIG['site']['name'], $text_c);
 imagepng($im);
+
 ?>

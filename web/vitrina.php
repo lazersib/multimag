@@ -228,7 +228,7 @@ protected function ViewGroup($group, $page)
 {
 	global $tmpl, $CONFIG, $wikiparser;
 	settype($group,'int');
-	$res=mysql_query("SELECT `name`, `pid`, `desc` FROM `doc_group` WHERE `id`='$group'");
+	$res=mysql_query("SELECT `name`, `pid`, `desc`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_group` WHERE `id`='$group' AND `hidelevel`='0'");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать информацию о группе');
 	$nxt=mysql_fetch_row($res);
 	if(!$nxt)
@@ -239,9 +239,37 @@ protected function ViewGroup($group, $page)
 	}
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 		$tmpl->AddText("<div style='float: right; margin: 35px 35px 20px 20px;'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg' alt='$nxt[0]'></div>");
-	$title=($page>1)?"$nxt[0] - стр.$page":$nxt[0];
+	
+	if($nxt[3])	$title=$nxt[3];
+	else		$title=$nxt[0].', цены, купить';
+	if($page>1)	$title.=" - стр.$page";
 	$tmpl->SetTitle($title);
-	$tmpl->AddText("<h1 id='page-title'>$title</h1>");
+	if($nxt[4])	$tmpl->SetMetaKeywords($nxt[4]);
+	else
+	{
+		$k1=array('купить цены','продажа цены','отзывы купить','продажа отзывы','купить недорого');
+		$meta_key=$nxt[0].' '.$k1[rand(0,count($k1)-1)].' интернет-магазин '.$CONFIG['site']['display_name'];
+		$tmpl->SetMetaKeywords($meta_key);
+	}
+	
+	if($nxt[5])	$tmpl->SetMetaDescription($nxt[5]);
+	else
+	{
+		$d1=array('купить','заказать','продажа','приобрести');
+		$d2=array('доступной','отличной','хорошей','разумной','выгодной');
+		$d3=array('цене','стоимости');
+		$d4=array('Большой','Широкий','Огромный');
+		$d5=array('выбор','каталог','ассортимент');
+		$d6=array('товаров','продукции');
+		$d7=array('Доставка','Экспресс-доставка','Доставка курьером','Почтовая доставка');
+		$d8=array('по всей России','в любой город России','по РФ','в любой регион России');
+		$meta_desc=$nxt[0].' - '.$d1[rand(0,count($d1)-1)].' в интернет-магазине '.$CONFIG['site']['display_name'].' по '.$d2[rand(0,count($d2)-1)].' '.$d3[rand(0,count($d3)-1)].'. '.$d4[rand(0,count($d4)-1)].' '.$d5[rand(0,count($d5)-1)].' '.$d6[rand(0,count($d6)-1)].'. '.$d7[rand(0,count($d7)-1)].' '.$d8[rand(0,count($d8)-1)].'.';
+		$tmpl->SetMetaDescription($meta_desc);
+	}
+	
+	$h1=$nxt[0];
+	if($page>1)	$h1.=" - стр.$page";
+	$tmpl->AddText("<h1 id='page-title'>$h1</h1>");
 	$tmpl->AddText("<div class='breadcrumb'>".$this->GetVitPath($nxt[1])."</div>");
 	if($nxt[2])
 	{
@@ -287,7 +315,7 @@ protected function ProductList($group, $page)
 	}
 	$_SESSION['vitrina_view']=$view;
 
-	$sql_photo_only=$_SESSION['vit_photo_only']?"AND `img_id` IS NOT NULL":"";
+	$sql_photo_only=@$_SESSION['vit_photo_only']?"AND `img_id` IS NOT NULL":"";
 
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
@@ -357,7 +385,7 @@ protected function ProductCard($product)
 	global $tmpl, $CONFIG, $wikiparser;
 	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`
+	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`
 	FROM `doc_base`
 	INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -371,8 +399,34 @@ protected function ProductCard($product)
 	$i=0;
 	if($nxt=mysql_fetch_array($res))
 	{
+		if($nxt['title_tag'])	$title=$nxt['title_tag'];
+		else			$title="{$nxt['group_printname']} {$nxt['name']}, цены и характеристики, купить";
+		$tmpl->SetTitle($title);
+		if($nxt['meta_keywords'])	$tmpl->SetMetaKeywords($nxt['meta_keywords']);
+		else
+		{
+			$k1=array('купить','цены','характеристики','фото','выбор','каталог','описания','отзывы','продажа','описание');
+			$meta_key=$nxt['group_printname'].' '.$nxt['name'].' '.$k1[rand(0,count($k1)-1)].' '.$k1[rand(0,count($k1)-1)];
+			$tmpl->SetMetaKeywords($meta_key);
+		}
+		
+		if($nxt['meta_description'])	$tmpl->SetMetaDescription($nxt['meta_description']);
+		else
+		{
+			$d1=array('купить','заказать','продажа','приобрести');
+			$d2=array('доступной','отличной','хорошей','разумной','выгодной');
+			$d3=array('цене','стоимости');
+			$d4=array('Большой','Широкий','Огромный');
+			$d5=array('выбор','каталог','ассортимент');
+			$d6=array('товаров','продукции');
+			$d7=array('Доставка','Экспресс-доставка','Доставка курьером','Почтовая доставка');
+			$d8=array('по всей России','в любой город России','по РФ','в любой регион России');
+			$meta_desc=$nxt['group_printname'].' '.$nxt['name'].' - '.$d1[rand(0,count($d1)-1)].' в интернет-магазине '.$CONFIG['site']['display_name'].' по '.$d2[rand(0,count($d2)-1)].' '.$d3[rand(0,count($d3)-1)].'. '.$d4[rand(0,count($d4)-1)].' '.$d5[rand(0,count($d5)-1)].' '.$d6[rand(0,count($d6)-1)].'. '.$d7[rand(0,count($d7)-1)].' '.$d8[rand(0,count($d8)-1)].'.';
+			$tmpl->SetMetaDescription($meta_desc);
+		}
+		
+		
 		$tmpl->AddText("<h1 id='page-title'>{$nxt['group_printname']} {$nxt['name']}</h1>");
-		$tmpl->SetTitle("{$nxt['group_printname']} {$nxt['name']}");
 		$tmpl->AddText("<div class='breadcrumb'>".$this->GetVitPath($nxt['group'])."</div>");
 		$appends=$img_mini="";
 		if($nxt['img_id'])

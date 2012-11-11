@@ -28,7 +28,7 @@ $GLOBALS['m_left']=0;
 $mode=rcv('mode');
 $doc=rcv("doc");
 
-$tmpl->AddTMenu("
+$tmpl->AddTop("
 <script src='/css/jquery/jquery.js' type='text/javascript'></script>
 <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 <script type='text/javascript' src='/css/doc_script.js'></script>

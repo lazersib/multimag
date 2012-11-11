@@ -27,7 +27,7 @@ SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->HideBlock('left');
 $mode=rcv('mode');
 
-$tmpl->AddTMenu("<script type='text/javascript' src='/css/doc_script.js'></script>
+$tmpl->AddTop("<script type='text/javascript' src='/css/doc_script.js'></script>
 <script src='/css/jquery/jquery.js' type='text/javascript'></script>
 <!-- Core files -->
 <script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
