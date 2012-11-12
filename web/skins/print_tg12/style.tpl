@@ -3,7 +3,7 @@
 
 <BODY bgColor=#ffffff>
 
-<!--site-text-->
+<!--site-content-->
 
 <script type="text/javascript">
 // Do print the page
