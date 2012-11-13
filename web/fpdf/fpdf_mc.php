@@ -46,7 +46,7 @@ class PDF_MC_Table extends FPDF
 				$this->FontSizePt=$this->fsizes[$i];
 				$this->FontSize=$this->fsizes[$i]/$this->k;
 			}
-			$nb=max($nb,$this->NbLines($this->widths[$i],$data[$i]));
+			$nb=@max($nb,$this->NbLines($this->widths[$i],$data[$i]));
 		}
 		$h=$this->line_height*$nb;
 		//Issue a page break first if needed
@@ -72,7 +72,7 @@ class PDF_MC_Table extends FPDF
 			//Draw the border
 			$this->Rect($x,$y,$w,$h,'DF');
 			//Print the text
-			$this->MultiCell($w,$this->line_height,$data[$i],0,$a);
+			$this->MultiCell($w,$this->line_height,@$data[$i],0,$a);
 			//Put the position to the right of the cell
 			$this->SetXY($x+$w,$y);
 		}

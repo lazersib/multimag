@@ -47,6 +47,12 @@ class Report_Pos_NoSells extends BaseGSReport
 		С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
 		По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
 		</fieldset>
+		Склад:<br>
+		<select name='sklad'>");
+		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady`");
+		while($nxt=mysql_fetch_row($res))
+			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
+		$tmpl->AddText("</select><br>
 		Группа товаров:<br>");
 		$this->GroupSelBlock();
 		$tmpl->AddText("Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
@@ -61,6 +67,7 @@ class Report_Pos_NoSells extends BaseGSReport
 		$dt_f=strtotime(rcv('dt_f'));
 		$dt_t=strtotime(rcv('dt_t'));
 		$gs=rcv('gs');
+		$sklad=rcv('sklad');
 		$g=@$_POST['g'];
 		
 		$print_df=date('Y-m-d', $dt_f);
@@ -69,22 +76,19 @@ class Report_Pos_NoSells extends BaseGSReport
 		$headers=array('ID');
 		$widths=array(5);
 
-		if($CONFIG['poseditor']['vc'])
-		{
-			$headers[]='Код';
-			$widths[]=10;
-			$widths[]=65;
-		}
-		else	$widths[]=75;
+		$headers[]='Код';
+		$widths[]=10;
+		$widths[]=68;
 		
-		switch($CONFIG['doc']['sklad_default_order'])
+		switch(@$CONFIG['doc']['sklad_default_order'])
 		{
 			case 'vc':	$order='`doc_base`.`vc`';	break;
 			case 'cost':	$order='`doc_base`.`cost`';	break;
 			default:	$order='`doc_base`.`name`';
 		}
-		$widths[]=10;
-		$headers=array_merge($headers, array('Наименование', 'Ликв.'));
+		$widths[]=8;
+		$widths[]=8;
+		$headers=array_merge($headers, array('Наименование', 'Ликв.','Остаток'));
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
 		$cnt=0;
@@ -98,8 +102,9 @@ class Report_Pos_NoSells extends BaseGSReport
 			$this->tableAltStyle();
 			$this->tableSpannedRow(array($col_cnt),array($group_line['id'].': '.$group_line['name']));
 			$this->tableAltStyle(false);
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, CONCAT(`doc_base`.`likvid`,'%')
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, CONCAT(`doc_base`.`likvid`,'%'), `doc_base_cnt`.`cnt`
 			FROM `doc_base`
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 			WHERE `doc_base`.`id` NOT IN (
 			SELECT `doc_list_pos`.`tovar` FROM `doc_list_pos`
 			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
@@ -108,7 +113,6 @@ class Report_Pos_NoSells extends BaseGSReport
 			
 			while($nxt=mysql_fetch_row($res))
 			{
-				if(!$CONFIG['poseditor']['vc'])	unset($nxt[1]);
 				$this->tableRow($nxt);
 				$cnt++;
 			}
