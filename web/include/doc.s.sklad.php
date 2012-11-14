@@ -18,8 +18,6 @@
 //
 
 // Работа с товарами
-$doc_types[1]="Склад";
-// [ \s][^$][\d\w]{0,10}=[^'\\]
 
 class doc_s_Sklad
 {
@@ -28,14 +26,12 @@ class doc_s_Sklad
 		global $tmpl,$CONFIG;
 		doc_menu(0,0);
 		if(!isAccess('list_sklad','view'))	throw new AccessException("");
-		$sklad=rcv('sklad');
-		settype($sklad,'int');
+		$sklad=round(@$_REQUEST['sklad']);
 		if($sklad) $_SESSION['sklad_num']=$sklad;
 		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num']=1;
 		$sklad=$_SESSION['sklad_num'];
 
-		$cost=rcv('cost');
-		settype($cost,'int');
+		$cost=round(@$_REQUEST['cost']);
 		if($cost) $_SESSION['sklad_cost']=$cost;
 		if(!isset($_SESSION['sklad_cost']))
 		{
@@ -52,12 +48,10 @@ class doc_s_Sklad
 			var node=document.getElementById('sklad')
 			var elems = node.getElementsByClassName('pos_ch')
 
-			//var elems = node.getElementsByName('pos[]');
 			var l = elems.length;
 			for(var i=0; i<l; i++)
 			{
 				elems[i].checked=flag;
-				//if(flag)	elems[i].disabled = false;
 			}
 		}
 		</script>
@@ -939,7 +933,7 @@ class doc_s_Sklad
 			<tr class='lin1'><td>Тэг title группы на витрине:<td><input type='text' name='title_tag' value='$nxt[7]' maxlength='128'>
 			<tr class='lin0'><td>Мета-тэг keywords группы на витрине:<td><input type='text' name='meta_keywords' value='$nxt[8]' maxlength='128'>
 			<tr class='lin1'><td>Мета-тэг description группы на витрине:<td><input type='text' name='meta_description' value='$nxt[9]' maxlength='256'>
-			
+
 			<tr class='lin0'><td>Изображение (jpg, до 100 кб, 50*50 - 200*200):
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>$img
 			<tr class='lin1'>

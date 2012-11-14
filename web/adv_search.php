@@ -128,7 +128,6 @@ if($mode)
 	if($name)
 	{
 		$sql.="AND (`doc_base_dop`.`analog` LIKE '%$name%' OR `doc_base`.`name` LIKE '%$name%' OR `doc_base`.`desc` LIKE '%$name%')";
-
 	}
 	if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv%'";
 	if($type)		$sql.="AND `doc_base_dop`.`type` = '$type'";

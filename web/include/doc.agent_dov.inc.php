@@ -87,36 +87,6 @@ class BDocAgentDov
 		}
 		return 0;
 	}
-
-	// Инициализация базы данных
-	function Create()
-	{
-		$res=mysql_query("
-CREATE TABLE IF NOT EXISTS `doc_agent_dov` (
-  `id` int(11) NOT NULL auto_increment,
-  `ag_id` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `name2` varchar(50) NOT NULL,
-  `surname` varchar(50) NOT NULL,
-  `range` varchar(50) NOT NULL,
-  `pasp_ser` varchar(5) NOT NULL,
-  `pasp_num` varchar(10) NOT NULL,
-  `pasp_kem` varchar(100) NOT NULL,
-  `pasp_data` varchar(15) NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `ag_id` (`ag_id`),
-  KEY `name` (`name`),
-  KEY `name2` (`name2`),
-  KEY `surname` (`surname`),
-  KEY `range` (`range`),
-  KEY `pasp_ser` (`pasp_ser`),
-  KEY `pasp_num` (`pasp_num`),
-  KEY `pasp_kem` (`pasp_kem`),
-  KEY `pasp_data` (`pasp_data`)
-) ENGINE=MyISAM;");
-		if($res) return 1;
-		else return 0;
-	}
 };
 
 ?>

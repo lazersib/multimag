@@ -53,11 +53,15 @@ function articles_form($p,$text='',$type=0)
 		$s=($id==$type)?'selected':'';
 		$tmpl->AddText("<option value='$id'{$s}>$name</option>");
 	}
-	
+
 	$tmpl->AddText("</select><br>
 	<textarea class='e_msg' name='text' rows='8' cols='30'>$text</textarea><br>
 	<button type='submit'>Сохранить</button>
-	</form><br><a href='/wikiphoto.php'>Галерея изображений</a>");
+	</form><br><a href='/wikiphoto.php'>Галерея изображений</a><br>
+	<h3>Примеры wiki разметки</h3>
+	<table class='list' width='100%'>
+	<th><tr>
+	</table>");
 }
 
 try
@@ -90,7 +94,7 @@ try
 			$text=$nxt[5];
 			if($nxt[6]==0)	$text=strip_tags($text, '<nowiki>');
 			if($nxt[6]==0 || $nxt[6]==2)
-			{	
+			{
 				$text=$wikiparser->parse(html_entity_decode($text,ENT_QUOTES,"UTF-8"));
 				$h=$wikiparser->title;
 				$meta_description=@$wikiparser->definitions['meta_description'];
@@ -187,8 +191,8 @@ try
 				else if($mode=='save')
 				{
 					if(!isAccess('generic_articles','create'))	throw new AccessException("");
-					$type=rcv('type');
-					$text=rcv('text');
+					$type=rcvint('type');
+					$text=rcvstrsql('text');
 					$res=mysql_query("INSERT INTO `articles` (`type`, `name`,`autor`,`date`,`text`)
 					VALUES ('$type', '$p','$uid', NOW(), '$text')");
 					if(!mysql_errno())

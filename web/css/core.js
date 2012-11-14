@@ -101,6 +101,7 @@ function ShowAgentContextMenu(event, agent_id, addition)
 {
 	var menu=CreateContextMenu(event)
 	var dt = new Date()
+	if(!addition || addition=='undefined')	addition=''
 	var nowdate=dt.getFullYear()+'-'+((dt.getMonth()<9)?('0'+(dt.getMonth()+1)):(dt.getMonth()+1))+'-'+((dt.getDate()<10)?('0'+dt.getDate()):dt.getDate())
 	menu.innerHTML=	"<div onclick=\"window.open('/docj.php?mode=filter&opt=fsn&agent_id="+agent_id+"&agent_name=selected&date_to="+nowdate+"')\">Агент в журнале</div>"+
 	"<div onclick=\"window.open('/docs.php?mode=srv&amp;l=agent&amp;opt=ep&amp;pos="+agent_id+"')\">Редактирование агента</div>"+addition

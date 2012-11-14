@@ -806,9 +806,9 @@ class doc_s_Agent
 			if($nxt['fax_phone']&& $nxt['fax_phone']!=$nxt['tel'])	$phone_info.='факс '.formatPhoneNumber($nxt['fax_phone']).' ';
 			if($nxt['sms_phone']&& $nxt['sms_phone']!=$nxt['tel'])	$phone_info.='sms: '.formatPhoneNumber($nxt['sms_phone']).' ';
 			if($nxt['alt_phone']&& $nxt['alt_phone']!=$nxt['tel'])	$phone_info.='доп: '.formatPhoneNumber($nxt['alt_phone']).' ';
-			$tmpl->AddText("<tr class='lin$i pointer' align='right' $red oncontextmenu=\"return ShowAgentContextMenu(event,$nxt[0])\">
+			$tmpl->AddText("<tr class='lin$i pointer' align='right' $red oncontextmenu=\"ShowAgentContextMenu(event,$nxt[0]); return false;\">
 			<td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a>
-			<a href='' onclick=\"return ShowAgentContextMenu(event,$nxt[0]);\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
+			<a href='' onclick=\"ShowAgentContextMenu(event,$nxt[0]); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
 			<td align=left>$nxt[2]<td>$phone_info<td>$nxt[4]<td>$info<td>$nxt[8]");
 		}
 	}

@@ -56,15 +56,15 @@ if($mode=='')
 	{
 		$econfirm=$line['reg_email_confirm']=='1'?'Да':'Нет';
 		$esubscribe=$line['reg_email_subscribe']?'Да':'Нет';
-		
+
 		$p_email=$line['reg_email']?"<a href='mailto:{$line['reg_email']}'>{$line['reg_email']}</a>":'';
 		$pconfirm=$line['reg_phone_confirm']=='1'?'Да':'Нет';
 		$psubscribe=$line['reg_phone_subscribe']?'Да':'Нет';
-		
+
 		$openid=$line['openid']?'Да':'Нет';
-		
+
 		$worker=$line['worker']?'Да':'Нет';
-		
+
 		@$tmpl->AddText("<tr><td><a href='?mode=view&amp;id={$line['id']}'>{$line['id']}</a></td><td>{$line['name']}</td>
 		<td>$p_email</td><td>$econfirm</td><td>$esubscribe</td>
 		<td>{$line['reg_phone']}</td><td>$pconfirm</td><td>$psubscribe</td>
@@ -83,7 +83,7 @@ else if($mode=='view')
 	if(mysql_errno())			throw new MysqlException("Не удалось получить данные пользователя");
 	if(mysql_num_rows($res)<=0)		throw new Exception("Пользователь не найден!");
 	$line=mysql_fetch_assoc($res);
-	
+
 	$passch=$line['pass_change']?'Да':'Нет';
 	$passexp=$line['pass_expired']?'Да':'Нет';
 	switch($line['pass_type'])
@@ -97,16 +97,16 @@ else if($mode=='view')
 	}
 	$bifact=$line['bifact_auth']?'Да':'Нет';
 	$econfirm=$line['reg_email_confirm']=='1'?'Да':'Нет';
-	$esubscribe=$line['reg_email_subscribe']?'Да':'Нет';	
+	$esubscribe=$line['reg_email_subscribe']?'Да':'Нет';
 	$p_email=$line['reg_email']?"<a href='mailto:{$line['reg_email']}'>{$line['reg_email']}</a>":'';
 	$pconfirm=$line['reg_phone_confirm']=='1'?'Да':'Нет';
 	$psubscribe=$line['reg_phone_subscribe']?'Да':'Нет';
-	$diasbled=$line['disabled']?('Да, '.$line['disabled_reason']):'Нет';	
-	
-	
-	
+	$diasbled=$line['disabled']?('Да, '.$line['disabled_reason']):'Нет';
+
+
+
 	$worker=$line['worker']?'Да':'Нет';
-	
+
 	$tmpl->AddText("<h1 id='page-title'>Данные пользователя</h1>
 	<table class='list'>
 	<tr><th colspan='2'>Основная информация</th></tr>
@@ -149,7 +149,7 @@ else if($mode=='view')
 	{
 		$tmpl->AddText("<tr><td>$line[0]</td><td>$line[1]</td></tr>");
 	}
-	
+
 	$tmpl->AddText("</table>");
 }
 

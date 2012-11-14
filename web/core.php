@@ -276,6 +276,21 @@ function rcv($varname,$def="")
 	else return $def;
 }
 
+/// Безопасное получение целого значения
+function rcvint($varname,$def=0)
+{
+	if(isset($_REQUEST[$varname]))	return intval($_REQUEST[$varname]);
+	return $def;
+}
+
+/// Получение строкового значения для записи в базу
+function rcvstrsql($varname,$def='')
+{
+	if(isset($_REQUEST[$varname]))	return mysql_real_escape_string($_REQUEST[$varname]);
+	return $def;
+}
+
+
 function unhtmlentities ($string)
 {
 	return html_entity_decode ($string,ENT_QUOTES,"UTF-8");
@@ -288,8 +303,27 @@ function getpost($varname,$def="")
 	return $def;
 }
 
+/// INSERT данных из массива c экранированием
+function mysql_escaped_insert($table,$array_data)
+{
+	$keys='';
+	$values='';
+	foreach($array_data as $id => $data)
+	{
+		if($keys)
+		{
+			$keys.=', ';
+			$values.=', ';
+		}
+		$keys.='`'.mysql_real_escape_string($id).'`';
+		if(is_int($data))	$values.=$data;
+		else			$values.='\''.mysql_real_escape_string($data).'\'';
+	}
+	mysql_query("INSERT INTO `$table` ($keys) VALUES ($values)";
+}
+
 // =================================== Аутентификация и контроль привилегий ============================================
-// Требование аутентификации
+/// Требование аутентификации
 function need_auth()
 {
 	global $tmpl;
@@ -359,7 +393,7 @@ function isAccess($object, $action,$no_redirect=false)
 }
 
 // Транслитерация
-function translitIt($str) 
+function translitIt($str)
 {
     $tr = array(
         "А"=>"A","Б"=>"B","В"=>"V","Г"=>"G",
@@ -482,79 +516,79 @@ class BETemplate
 				$this->tpl.=$item;
 		}
 	}
-	
+
 	/// Установить флаг скрытия заданной части страницы
 	function HideBlock($block)
 	{
 		$this->hide_blocks[$block]=true;
 	}
-	
+
 	/// Снять флаг скрытия заданной части страницы
 	function ShowBlock($block)
 	{
 		unset($this->hide_blocks[$block]);
 	}
-	
+
 	/// Задать HTML содержимое шапки страницы
 	function SetTop($s)
 	{
 		@$this->page_blocks['top']=$s;
 	}
-	
+
 	/// Добавить HTML содержимое в конец шапки страницы
 	function AddTop($s)
 	{
 		@$this->page_blocks['top'].=$s;
 	}
-	
+
 	/// Задать HTML содержимое правой колонки страницы
 	function SetRight($s)
 	{
 		@$this->page_blocks['right']=$s;
 	}
-	
+
 	/// Вставить HTML содержимое в начало правой колонки страницы
 	function InsRight($s)
 	{
 		@$this->page_blocks['right']=$s.$this->page_blocks['right'];
 	}
-	
+
 	/// Добавить HTML содержимое в конец правой колонки страницы
 	function AddRight($s)
 	{
 		@$this->page_blocks['right'].=$s;
 	}
-	
+
 	/// Вставить HTML содержимое в начало левой колонки страницы
 	function AddLeft($s)
 	{
 		@$this->page_blocks['left'].=$s;
 	}
-	
+
 	/// Задать HTML содержимое левой колонки страницы
 	function SetLeft($s)
 	{
 		@$this->page_blocks['left']=$s;
 	}
-	
+
 	/// Задать текст заголовка (обычно тэг title) страницы
 	function SetTitle($s)
 	{
 		@$this->page_blocks['title']=$s;
 	}
-	
+
 	/// Задать содержимое мета-тэга keywords
 	function SetMetaKeywords($s)
 	{
 		@$this->page_blocks['meta_keywords']=$s;
 	}
-	
+
 	/// Задать содержимое мета-тэга description
 	function SetMetaDescription($s)
 	{
 		@$this->page_blocks['meta_description']=$s;
 	}
-	
+
 	/// Добавить HTML содержимое к основному блоку страницы (content)
 	/// Не рекомендуется к использованию. Вместо этого используйте SetContent
 	/// @sa SetContent
@@ -562,7 +596,7 @@ class BETemplate
 	{
 		@$this->page_blocks['content']=$s;
 	}
-	
+
 	/// Задать HTML содержимое основного блока страницы (content)
 	/// Не рекомендуется к использованию. Вместо этого используйте AddContent
 	/// @sa AddContent
@@ -570,25 +604,25 @@ class BETemplate
 	{
 		@$this->page_blocks['content'].=$s;
 	}
-	
+
 	/// Задать HTML содержимое основного блока страницы (content)
 	function SetContent($s)
 	{
 		@$this->page_blocks['content']=$s;
 	}
-	
+
 	/// Добавить HTML содержимое к основному блоку страницы (content)
 	function AddContent($s)
 	{
 		@$this->page_blocks['content'].=$s;
 	}
-	
+
 	/// Добавить содержимое к таблице стилей страницы (тэг style)
 	function AddStyle($s)
 	{
 		@$this->page_blocks['stylesheet'].=$s;
 	}
-	
+
 	/// Задать содержимое к пользовательского блока страницы
 	/// @param block_name Имя блока. Не должно совпадать с именами стандартных блоков.
 	/// @param data HTML данные блока
@@ -646,7 +680,7 @@ class BETemplate
 			{
 				$res=skin_prepare();
 			}
-			
+
 			if(function_exists('skin_render'))
 			{
 				$res=skin_render($this->page_blocks,$this->tpl);
