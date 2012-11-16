@@ -59,6 +59,7 @@ if($mode=='')
 	<li><a href='?mode=builders'>Список сборщиков</a></li>
 	<li><a href='?mode=prepare'>Внесение данных</a></li>
 	<li><a href='?mode=summary'>Сводная информация</a></li>
+	<li><a href='?mode=export'>Экспорт</a></li>
 	</ul>");
 }
 else if($mode=='builders')
@@ -321,7 +322,119 @@ else if($mode=='summary')
 		$tmpl->AddText("</table>");
 	}
 }
-
+else if($mode=='export')
+{
+	$tmpl->SetText("<h1 id='page-title'>Производственный учёт - экспорт данных</h1>
+	<div id='page-info'><a href='/fabric.php'>Назад</a></div>
+	<script type='text/javascript' src='/js/calendar.js'></script>
+	<script type='text/javascript' src='/css/jquery/jquery.js'></script>
+	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+	<link rel='stylesheet' type='text/css' href='/css/core.calendar.css'>
+	<form method='post'>
+	<input type='hidden' name='mode' value='export_submit'>
+	Дата:<br>
+	<input type='text' name='date' id='date_input' value='".date('Y-m-d')."'><br>
+	<script>
+	initCalendar('date_input')
+	</script>	
+	Склад сборки:<br>
+	<select name='sklad'>");
+	$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
+	while($line=mysql_fetch_row($res))
+	{
+		$tmpl->AddText("<option value='$line[0]'>$line[1]</option>");
+	}
+	$tmpl->AddText("</select><br>
+	Поместить готовую продукцию на склад:<br>
+	<select name='nasklad'>");
+	$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
+	while($line=mysql_fetch_row($res))
+	{
+		$tmpl->AddText("<option value='$line[0]'>$line[1]</option>");
+	}
+	$tmpl->AddText("</select><br>
+	Услуга начисления зарплаты:<br>
+	<select name='tov_id'>");
+	$res=mysql_query("SELECT `id`,`name` FROM `doc_base` WHERE `pos_type`=1 ORDER BY `name`");
+	while($nxt=mysql_fetch_row($res))
+	{
+		$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+	}
+	$tmpl->AddText("</select><br>
+	Организация:<br><select name='firm'>");
+	$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
+	while($nx=mysql_fetch_row($rs))
+	{
+		$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");		
+	}		
+	$tmpl->AddText("</select><br>
+	Агент:<br>
+	<input type='hidden' name='agent' id='agent_id' value=''>
+	<input type='text' id='agent_nm'  style='width: 450px;' value=''><br>
+	<button type='submit'>Далее</button>
+	</form>
+			<script type=\"text/javascript\">
+		$(document).ready(function(){
+			$(\"#agent_nm\").autocomplete(\"/docs.php\", {
+				delay:300,
+				minChars:1,
+				matchSubset:1,
+				autoFill:false,
+				selectFirst:true,
+				matchContains:1,
+				cacheLength:10,
+				maxItemsToShow:15, 
+				formatItem:agliFormat,
+				onItemSelect:agselectItem,
+				extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+			});
+		});
+		
+		function agliFormat (row, i, num) {
+			var result = row[0] + \"<em class='qnt'>тел. \" +
+			row[2] + \"</em> \";
+			return result;
+		}
+		
+		
+		function agselectItem(li) {
+			if( li == null ) var sValue = \"Ничего не выбрано!\";
+			if( !!li.extra ) var sValue = li.extra[0];
+			else var sValue = li.selectValue;
+			document.getElementById('agent_id').value=sValue;
+		}
+		</script>
+	");
+}
+else if($mode=='export_submit')
+{
+	$agent=rcv('agent');
+	$sklad=rcv('sklad');
+	$nasklad=rcv('nasklad');
+	$firm=rcv('firm');
+	$tov_id=rcv('tov_id');
+	$tim=time();
+	$res=mysql_query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
+			VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
+	if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
+	$doc=mysql_insert_id();
+	mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id'), ('$doc','not_a_p','0')");
+	
+	$res=mysql_query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, SUM(`fabric_data`.`cnt`) AS `cnt`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
+	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' $sql_add
+	GROUP BY `fabric_data`.`pos_id`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
+	$ret='';
+	while($line=mysql_fetch_assoc($res))
+	{
+		mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `page`) VALUES ($doc, {$line['pos_id']}, {$line['cnt']}, 0)");
+	}
+	
+	header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad&not_a_p=$not_a_p");
+}
 
 }
 catch(AccessException $e)
