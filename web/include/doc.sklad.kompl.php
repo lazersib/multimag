@@ -30,7 +30,7 @@ function kompl_poslist($pos)
 	FROM `doc_base_kompl`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
 	WHERE `doc_base_kompl`.`pos_id`='$pos'");
-
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список комплектующих");
 	$i=0;
 	$ii=1;
 	$sum=0;
@@ -47,7 +47,7 @@ function kompl_poslist($pos)
 
 		$tmpl->AddText("<tr class='$cl'  align=right><td>$ii
 		<a href='' title='Удалить' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&plm=d&pos=$pos&vpos=$nxt[0]','poslist'); return false;\"><img src='/img/i_del.png' alt='Удалить'></a>
-		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=$doc&pos=$nxt[5]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a><td>{$nxt['vc']}
+		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&pos=$nxt[5]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a><td>{$nxt['vc']}
 		<td align=left>{$nxt['name']} / {$nxt['proizv']}<td>$cost_p
 		<td><input type=text class='tedit $cl' id='val$nxt[0]t' value='{$nxt['cnt']}' onblur=\"EditThisSave('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=cc&pos=$pos&vpos=$nxt[0]','poslist','val$nxt[0]t'); return false;\">
 		<td>$sumline_p");
@@ -118,7 +118,7 @@ function kompl_sklad($pos, $group, $sklad=1)
 function kompl_ViewSklad($pos, $group)
 {
 	global $tmpl,$CONFIG;
-	switch($CONFIG['doc']['sklad_default_order'])
+	switch(@$CONFIG['doc']['sklad_default_order'])
 	{
 		case 'vc':	$order='`doc_base`.`vc`';	break;
 		case 'cost':	$order='`doc_base`.`cost`';	break;
@@ -144,7 +144,7 @@ function kompl_ViewSklad($pos, $group)
 		if($page>1)
 		{
 			$i=$page-1;
-			kompl_link_sklad($doc, "$dop&p=$i","&lt;&lt;");
+			kompl_link_sklad(0, "$dop&p=$i","&lt;&lt;");
 		}
 		$cp=$row/$lim;
 		for($i=1;$i<($cp+1);$i++)
@@ -155,7 +155,7 @@ function kompl_ViewSklad($pos, $group)
 		if($page<$cp)
 		{
 			$i=$page+1;
-			link_sklad($doc, "$dop&p=$i","&gt;&gt;");
+			link_sklad(0, "$dop&p=$i","&gt;&gt;");
 		}
 		$tmpl->AddText("<br>");
 		$sl=($page-1)*$lim;
@@ -168,7 +168,7 @@ function kompl_ViewSklad($pos, $group)
 		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Код<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 		<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-		kompl_DrawSkladTable($res,$s,$pos);
+		kompl_DrawSkladTable($res,'',$pos);
 		$tmpl->AddText("</table><a href='/docs.php?mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
 	}
 	else $tmpl->msg("В выбранной группе товаров не найдено!");
@@ -241,9 +241,9 @@ function kompl_DrawSkladTable($res,$s,$pos)
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		$rezerv=DocRezerv($nxt[0],$doc);
-		$pod_zakaz=DocPodZakaz($nxt[0],$doc);
-		$v_puti=DocVPuti($nxt[0],$doc);
+		$rezerv=DocRezerv($nxt[0],0);
+		$pod_zakaz=DocPodZakaz($nxt[0],0);
+		$v_puti=DocVPuti($nxt[0],0);
 		
 		if($rezerv)	$rezerv="<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$rezerv</a>";
 	

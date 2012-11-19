@@ -201,6 +201,13 @@ else if($mode=='enter_pos')
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить наименование");
 		}
 	}
+	if(isset($_REQUEST['del_id']))
+	{
+		$del_id=rcvint('del_id');
+		mysql_query("DELETE FROM `fabric_data` WHERE `id`=$del_id");
+		if(mysql_errno())	throw new MysqlException("Не удалось удалить наименование");
+	
+	}
 	$res=mysql_query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, `fabric_data`.`cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
 	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
@@ -225,7 +232,7 @@ else if($mode=='enter_pos')
 		$sumline=$line['cnt']*$line['zp'];
 		$sum+=$sumline;
 		$allcnt+=$line['cnt'];
-		$tmpl->AddText("<tr><td>$i</td><td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['cnt']}</td><td>{$line['zp']}</td><td>$sumline</td></tr>");
+		$tmpl->AddText("<tr><td>$i<a href='/fabric.php?mode=enter_pos&amp;builder=$builder&amp;sklad=$sklad&amp;date=$date&amp;del_id={$line['id']}'><img src='/img/i_del.png' alt='del'></a></td><td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['cnt']}</td><td>{$line['zp']}</td><td>$sumline</td></tr>");
 	}
 	$tmpl->AddText("</tbody>
 	<form method='post'>

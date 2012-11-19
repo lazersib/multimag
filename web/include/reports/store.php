@@ -44,7 +44,8 @@ class Report_Store extends BaseGSReport
 		<fieldset><legend>Показывать</legend>
 		<label><input type='checkbox' name='show_price' value='1'>Цены</label><br>
 		<label><input type='checkbox' name='show_add' value='1'>Наценку</label><br>
-		<label><input type='checkbox' name='show_sum' value='1'>Суммы</label>
+		<label><input type='checkbox' name='show_sum' value='1'>Суммы</label><br>
+		<label><input type='checkbox' name='show_mincnt' value='1'>Минимально допустимый остаток</label>
 		</fieldset><br>
 		Склад:<br>
 		<select name='sklad'>
@@ -69,6 +70,7 @@ class Report_Store extends BaseGSReport
 		$show_price=	rcv('show_price');
 		$show_add=	rcv('show_add');
 		$show_sum=	rcv('show_sum');
+		$show_mincnt=	rcv('show_mincnt');
 		$sklad=		rcv('sklad');
 		$g=@$_POST['g'];
 		$cost=@$_POST['cost'];
@@ -97,6 +99,13 @@ class Report_Store extends BaseGSReport
 		}
 		$tmpl->AddText("<th>Наименование<th>Количество");
 		$col_count+=2;
+		
+		if($show_mincnt)
+		{
+			$tmpl->AddText("<th>Мин.Кол-во");
+			$col_count++;
+		}
+		
 		if($show_price)
 		{
 			$tmpl->AddText("<th>Актуальная цена<br>поступления<th>Базовая цена");
@@ -132,10 +141,13 @@ class Report_Store extends BaseGSReport
 		{
 			$cnt_field="`doc_base_cnt`.`cnt`";
 			$cnt_join="INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'";
+			if($show_mincnt)	$cnt_field.=", `doc_base_cnt`.`mincnt`";
+			
 		}
 		else
 		{
 			$cnt_field="(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `cnt`";
+			if($show_mincnt)	$cnt_field.=", (SELECT SUM(`mincnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `mincnt`";
 			$cnt_join='';
 		}
 		$sum=$bsum=$summass=0;
@@ -158,16 +170,19 @@ class Report_Store extends BaseGSReport
 			
 			while($nxt=mysql_fetch_array($res))
 			{
-				if($nxt[3]==0) continue;
-				if($nxt[3]<0) $nxt[3]='<b>'.$nxt[3].'</b>';
-				$tmpl->AddText("<tr><td>$nxt[0]");
+				if($nxt['cnt']==0 && (!$show_mincnt)) continue;
+				if($nxt['cnt']<0) $nxt['cnt']='<b>'.$nxt['cnt'].'</b>';
+				$tmpl->AddText("<tr><td>{$nxt['id']}");
 				if($CONFIG['poseditor']['vc'])		$tmpl->AddText("<td>{$nxt['vc']}");
 
-				$tmpl->AddText("<td>$nxt[1]<td>$nxt[3]");
+				$tmpl->AddText("<td>{$nxt['name']}<td>{$nxt['cnt']}");
+				
+				if($show_mincnt)	$tmpl->AddText("<td>{$nxt['mincnt']}");
+				
 				if($show_price || $show_sum || $show_add)
 				{
-					$act_cost=sprintf('%0.2f',GetInCost($nxt[0]));
-					$cost_p=sprintf("%0.2f",$nxt[2]);
+					$act_cost=sprintf('%0.2f',GetInCost($nxt['id']));
+					$cost_p=sprintf("%0.2f",$nxt['cost']);
 					if($show_price)
 						$tmpl->AddText("<td>$act_cost р.<td>$cost_p р.");
 				}
@@ -181,20 +196,20 @@ class Report_Store extends BaseGSReport
 				
 				if($show_sum)
 				{
-					$sum_p=sprintf("%0.2f",$act_cost*$nxt[3]);
-					$bsum_p=sprintf("%0.2f",$nxt[2]*$nxt[3]);
-					$sum+=$act_cost*$nxt[3];
-					$bsum+=$nxt[2]*$nxt[3];
+					$sum_p=sprintf("%0.2f",$act_cost*$nxt['cnt']);
+					$bsum_p=sprintf("%0.2f",$nxt['cost']*$nxt['cnt']);
+					$sum+=$act_cost*$nxt['cnt'];
+					$bsum+=$nxt['cost']*$nxt['cnt'];
 					$tmpl->AddText("<td>$sum_p р.<td>$bsum_p р.");
 				}
 				
-				$summass+=$nxt[3]*$nxt['mass'];
+				$summass+=$nxt['cnt']*$nxt['mass'];
 				
 				if(is_array($cost))
 				{
 					foreach($cost as $id => $value)
 					{
-						$tmpl->AddText("<td>".GetCostPos($nxt[0], $id));
+						$tmpl->AddText("<td>".GetCostPos($nxt['id'], $id));
 					}
 				}
 			}
@@ -225,6 +240,7 @@ class Report_Store extends BaseGSReport
 		$show_price=	rcv('show_price');
 		$show_add=	rcv('show_add');
 		$show_sum=	rcv('show_sum');
+		$show_mincnt=	rcv('show_mincnt');
 		$sklad=		rcv('sklad');
 		$g=@$_POST['g'];
 		$cost=@$_POST['cost'];
@@ -255,6 +271,12 @@ class Report_Store extends BaseGSReport
 		$aligns[]='R';
 		$col_sizes[]=100;
 		$col_sizes[]=10;
+		if($show_mincnt)
+		{
+			$headers[]='Мин.кол-во';
+			$haligns[]='R';
+			$col_sizes[]=10;
+		}
 		if($show_price)
 		{
 			$headers[]='АЦП';
@@ -353,10 +375,13 @@ class Report_Store extends BaseGSReport
 		{
 			$cnt_field="`doc_base_cnt`.`cnt`";
 			$cnt_join="INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'";
+			if($show_mincnt)	$cnt_field.=", `doc_base_cnt`.`mincnt`";
+			
 		}
 		else
 		{
 			$cnt_field="(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `cnt`";
+			if($show_mincnt)	$cnt_field.=", (SELECT SUM(`mincnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `mincnt`";
 			$cnt_join='';
 		}
 		
@@ -382,12 +407,16 @@ class Report_Store extends BaseGSReport
 			
 			while($nxt=mysql_fetch_array($res))
 			{
-				if($nxt[3]==0) continue;
+				if($nxt[3]==0 && (!$show_mincnt)) continue;
 				
 				$line=array($nxt[0]);
 				if($CONFIG['poseditor']['vc'])		$line[]=$nxt['vc'];
 				$line[]=$nxt[1];
 				$line[]=$nxt[3];
+				if($show_mincnt)
+				{
+					$line[]=$nxt['mincnt'];
+				}
 				if($show_price || $show_sum || $show_add)
 				{
 					$act_cost=sprintf('%0.2f',GetInCost($nxt[0]));

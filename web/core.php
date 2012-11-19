@@ -319,7 +319,7 @@ function mysql_escaped_insert($table,$array_data)
 		if(is_int($data))	$values.=$data;
 		else			$values.='\''.mysql_real_escape_string($data).'\'';
 	}
-	mysql_query("INSERT INTO `$table` ($keys) VALUES ($values)";
+	mysql_query("INSERT INTO `$table` ($keys) VALUES ($values)");
 }
 
 // =================================== Аутентификация и контроль привилегий ============================================
