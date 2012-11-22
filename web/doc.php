@@ -26,7 +26,7 @@ $tmpl->HideBlock('left');
 
 $GLOBALS['m_left']=0;
 $mode=rcv('mode');
-$doc=rcv("doc");
+$doc=rcvint("doc");
 
 $tmpl->AddTop("
 <script src='/css/jquery/jquery.js' type='text/javascript'></script>
@@ -53,7 +53,7 @@ if($mode=="")
 }
 else if($mode=='new')
 {
-	$type=rcv('type');
+	$type=rcvint('type');
 	$document=AutoDocumentType($type, 0);
 	$document->head();
 }
@@ -165,7 +165,7 @@ else if($mode=="incnum")
 		$document=AutoDocumentType($type, 0);
 	}
 	else	$document=AutoDocument($doc);
-	
+
 	$altnum=$document->GetNextAltNum($type,$sub,$date,$firm);
 	echo "$altnum";
 	exit(0);

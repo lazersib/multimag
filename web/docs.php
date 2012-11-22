@@ -51,6 +51,12 @@ else if($mode=='search')
 	$sprav->Search();
 
 }
+catch(AccessException $e)
+{
+	$tmpl->ajax=0;
+	//$tmpl->SetText('');
+	$tmpl->msg('Не достаточно привилегий: '.$e->getMessage(),'err',"Нет доступа");
+}
 catch(MysqlException $e)
 {
 	mysql_query("ROLLBACK");

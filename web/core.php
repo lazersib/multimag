@@ -80,8 +80,7 @@ $qq=mysql_real_escape_string(urldecode($_SERVER['REQUEST_URI'].'?'.$_SERVER['QUE
 $ff=mysql_real_escape_string($_SERVER['SCRIPT_NAME']);
 $tim=time();
 $skidka="";
-$ncnt=rcv('ncnt');
-if(!$ncnt) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
+if(!isset($_REQUEST['ncnt'])) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 
 class ipv6
 {
@@ -774,10 +773,16 @@ global $tmpl;
 global $uid;
 global $mode;
 $tmpl=new BETemplate;
-$mode=rcv('mode');
+
+/// Глобальная переменная должна быть заменена в местах использования на $_REQUEST['mode']
+if(isset($_REQUEST['mode']))	$mode=$_REQUEST['mode'];
+else				$mode='';
+
+/// Нужно вычистить глобальную переменную UID везде
 if(isset($_SESSION['uid']))	$uid=$_SESSION['uid'];
 if($uid=='') $uid=0;
 
+/// Должно быть убрано, должно подключаться и создаваться по необходимости
 require_once("include/imgresizer.php");
 require_once("include/wikiparser.php");
 

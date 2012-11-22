@@ -18,8 +18,6 @@
 //
 
 
-$doc_types[3]="Доверенные лица";
-
 class doc_s_Agent_dov
 {
 	function View()
@@ -36,9 +34,9 @@ class doc_s_Agent_dov
 //		$this->draw_groups(0);
 		$tmpl->AddText("<td id='list' valign='top'  class='lin1'>");
 		$this->ViewList();
-		$tmpl->AddText("</table>");            	
+		$tmpl->AddText("</table>");
 	}
-	
+
 	function Service()
 	{
 		global $tmpl;
@@ -56,7 +54,7 @@ class doc_s_Agent_dov
 		}
 		else if($opt=='ep')
 		{
-			$this->Edit();			
+			$this->Edit();
 		}
 		else if($opt=='popup')
 		{
@@ -77,11 +75,11 @@ class doc_s_Agent_dov
 		}
 		else $tmpl->msg("Неверный режим!");
 	}
-		
+
 // Служебные функции класса
 	function Edit()
 	{
-		global $tmpl;		
+		global $tmpl;
 		doc_menu();
 		$pos=rcv('pos');
 		$ag_id=rcv('ag_id');
@@ -93,10 +91,10 @@ class doc_s_Agent_dov
 		{
 			//$this->PosMenu($pos, $param);
 		}
-		
+
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `id`, `ag_id` , `name` , `name2` , `surname` , `range` , `pasp_ser` , `pasp_num` , `pasp_kem` , `pasp_data` , `mark_del` 
+			$res=mysql_query("SELECT `id`, `ag_id` , `name` , `name2` , `surname` , `range` , `pasp_ser` , `pasp_num` , `pasp_kem` , `pasp_data` , `mark_del`
 			FROM `doc_agent_dov`
 			WHERE `doc_agent_dov`.`id`='$pos'");
 			$nxt=@mysql_fetch_row($res);
@@ -111,16 +109,16 @@ class doc_s_Agent_dov
 			<tr class=lin0><td align=right width=20%>Имя
 			<td><input type=text name='name' value='$nxt[2]'>
 			<tr class=lin1><td align=right width=20%>отчество
-			<td><input type=text name='name2' value='$nxt[3]'> 
+			<td><input type=text name='name2' value='$nxt[3]'>
 			<tr class=lin0><td align=right width=20%>Фамилия
-			<td><input type=text name='surname' value='$nxt[4]'> 
+			<td><input type=text name='surname' value='$nxt[4]'>
 			<tr class=lin1><td align=right>Организация:
 			<td><select name='ag_id'>");
 			$res=mysql_query("SELECT `id`,`name` FROM `doc_agent` ORDER BY `name`");
 			while($nx=mysql_fetch_row($res))
 			{
 				$i="";
-				
+
 				if( (($pos!=0)&&($nx[0]==$nxt[1])) || (($pos==0)&&($ag_id==$nx[0])) ) $i=" selected style='background-color: #bfb;'";
 				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
 			}
@@ -135,18 +133,18 @@ class doc_s_Agent_dov
 			<td><input type=text name='pasp_kem' value='$nxt[8]'>
 			<tr class=lin0><td align=right width=20%>Паспорт: дата выдачи
 			<td><input type=text name='pasp_data' value='$nxt[9]'>
-			
+
 			<tr class=lin1><td><td><input type=submit value='Сохранить'>
-			
+
 			</table></form>");
 
 		}
 		else $tmpl->msg("Неизвестная закладка");
-		
+
 	}
 	function ESave()
 	{
-		global $tmpl, $CONFIG;		
+		global $tmpl, $CONFIG;
 		doc_menu();
 		$pos=rcv('pos');
 		$param=rcv('param');
@@ -169,7 +167,7 @@ class doc_s_Agent_dov
 			$pasp_data=rcv('pasp_data');
 			$pasp_kem=rcv('pasp_kem');
 			$comment=rcv('comment');
-			
+
 			if($pos)
 			{
 				if(!isAccess('list_agent_dov','edit'))	throw new AccessException("");
@@ -178,7 +176,7 @@ class doc_s_Agent_dov
 				else $tmpl->msg("Ошибка сохранения!".mysql_error(),"err");
 			}
 			else
-			{	
+			{
 				if(!isAccess('list_agent_dov','create'))	throw new AccessException("");
 				$res=mysql_query("INSERT INTO `doc_agent_dov` ( `ag_id`, `name`, `name2`, `surname`, `range`, `pasp_ser`, `pasp_num`, `pasp_data`, `pasp_kem` ) VALUES ( '$ag_id', '$name', '$name2', '$surname', '$range', '$pasp_ser', '$pasp_num', '$pasp_date', '$pasp_kem')");
 				$pos=mysql_insert_id();
@@ -188,8 +186,8 @@ class doc_s_Agent_dov
 			}
 		}
 		else $tmpl->msg("Неизвестная закладка");
-	}	
-	
+	}
+
 	function draw_level($select, $level)
 	{
 		$ret='';
@@ -202,9 +200,9 @@ class doc_s_Agent_dov
 		{
 			if($nxt[0]==0) continue;
 			$item="<a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&g=$nxt[0]','list'); return false;\" >$nxt[1]</a>";
-	
+
 			if($i>=($cnt-1)) $r.=" IsLast";
-	
+
 			$tmp=$this->draw_level($select, $nxt[0]); // рекурсия
 			if($tmp)
 				$ret.="
@@ -218,13 +216,13 @@ class doc_s_Agent_dov
 		}
 		return $ret;
 	}
-	
-	
+
+
 	function ViewList($group=0,$s='')
 	{
 		global $tmpl;
 
-        
+
 		$sql="SELECT a.`id`, `a`.`surname`, a.`name` , a.`name2` , b.`name`, a.`range`, a.`mark_del`
 		FROM `doc_agent_dov` AS `a`
 		LEFT JOIN `doc_agent` AS `b` ON `a`.`ag_id`=`b`.`id`
@@ -256,7 +254,7 @@ class doc_s_Agent_dov
 			}
 			$tmpl->AddText("<br>");
 			$sl=($page-1)*$lim;
-	
+
 			$res=mysql_query("$sql LIMIT $sl,$lim");
 		}
 
@@ -273,18 +271,18 @@ class doc_s_Agent_dov
 		<a href='/docs.php?l=dov&mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.gif' alt=''> Добавить</a> |
 		<a href='/docs.php?l=agent&mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
 	}
-	
+
 	function ViewListS($group=0,$s)
 	{
 		global $tmpl;
 		$sf=0;
 		$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 		<th>№<th>Фамилия<th>Имя<th>Отчество<th>Организация<th>Должность");
-		        
+
 		$sql="SELECT a.`id`, `a`.`surname`, a.`name` , a.`name2` , b.`name`, a.`range`, a.`mark_del`
 		FROM `doc_agent_dov` AS `a`
 		LEFT JOIN `doc_agent` AS `b` ON `a`.`ag_id`=`b`.`id`";
-		
+
 		$sqla=$sql."WHERE `a`.`name` LIKE '$s%' OR `a`.`surname` LIKE '$s%' ORDER BY `a`.`name` LIMIT 30";
 		$res=mysql_query($sqla);
 		echo mysql_error();
@@ -294,7 +292,7 @@ class doc_s_Agent_dov
 			$this->DrawTable($res,$s);
 			$sf=1;
 		}
-		
+
 		$sqla=$sql."WHERE (`a`.`name` LIKE '%$s%' OR `a`.`surname` LIKE '%$s%') AND (`a`.`name` NOT LIKE '$s%' AND `a`.`surname` NOT LIKE '$s%') ORDER BY `a`.`name` LIMIT 30";
 		$res=mysql_query($sqla);
 		if($cnt=mysql_num_rows($res))
@@ -303,13 +301,13 @@ class doc_s_Agent_dov
 			$this->DrawTable($res,$s);
 			$sf=1;
 		}
-		
+
 		$tmpl->AddText("</table><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.gif' alt=''> Добавить</a>");
-		
+
 		if($sf==0)
 			$tmpl->msg("По данным критериям записей не найдено!");
 	}
-	
+
 	function Search()
 	{
 		global $tmpl;
@@ -331,7 +329,7 @@ class doc_s_Agent_dov
 			<input type=text id='proizv' name='proizv' value='$nxt[3]' onkeydown=\"return AutoFill('/docs.php?mode=search&opt=pop_proizv','proizv','proizv_p')\"><br>
 			<div id='proizv_p' class='dd'></div>
 			<td><input type=text name=mesto>
-			
+
 			<tr>
 			<th>Внутренний диаметр
 			<th>Внешний диаметр
@@ -344,7 +342,7 @@ class doc_s_Agent_dov
 			<td>От: <input type=text name='size_min'><br>до: <input type=text name='size_max'>
 			<td>От: <input type=text name='m_min'><br>до: <input type=text name='m_max'>
 			<td>От: <input type=text name='cost_min'><br>до: <input type=text name='cost_max'>
-			
+
 			<tr>
 			<td colspan=5 align=center><input type='submit' value='Найти'>
 			</table>
@@ -368,9 +366,9 @@ class doc_s_Agent_dov
 			$m_max=rcv('m_max');
 			$cost_min=rcv('cost_min');
 			$cost_max=rcv('cost_max');
-			
+
 			$sklad=$_SESSION['sklad_num'];
-			
+
 			$sql="SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
 			`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 			`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`mincnt`
@@ -378,12 +376,12 @@ class doc_s_Agent_dov
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE 1 ";
-			
+
 			if($name)
-			{		
+			{
 				if(!$analog) 	$sql.="AND `doc_base`.`name` LIKE '%$name%'";
 				else $sql.="AND (`doc_base_dop`.`analog` LIKE '%$name%' OR `doc_base`.`name` LIKE '%$name%')";
-					
+
 			}
 			if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv%'";
 			if($mesto)		$sql.="AND `doc_base_cnt`.`mesto` LIKE '$mesto'";
@@ -397,15 +395,15 @@ class doc_s_Agent_dov
 			if($m_max)		$sql.="AND `doc_base_dop`.`mass` <= '$m_max'";
 			if($cost_min)	$sql.="AND `doc_base`.`cost` >= '$cost_min'";
 			if($cost_max)	$sql.="AND `doc_base`.`cost` <= '$cost_max'";
-			
+
 
 			$sql.="ORDER BY `doc_base`.`name`";
-			
-			
+
+
 			$tmpl->AddText("<table width=100% cellspacing=1 cellpadding=2><tr>
 			<th>№<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 			<th>Масса<th>Резерв<th>Склад<th>Всего<th>Место");
-			
+
 			$res=mysql_query($sql);
 			if($cnt=mysql_num_rows($res))
 			{
@@ -414,11 +412,11 @@ class doc_s_Agent_dov
 				$sf=1;
 			}
 			$tmpl->AddText("</table>");
-			
-		
+
+
 		}
 	}
-	
+
 	function DrawTable($res,$s)
 	{
 		global $tmpl;
@@ -430,16 +428,16 @@ class doc_s_Agent_dov
 			$nxt[3]=SearchHilight($nxt[3],$s);
 
 			$tmpl->AddText("<tr class='lin$i pointer' align=right>
-			
+
 			<td><a href='/docs.php?l=dov&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a><td align=left>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]");
-		}	
+		}
 	}
-	
+
 	function PosMenu($pos, $param)
 	{
-	
+
 	}
-	
+
 };
 
 

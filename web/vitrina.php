@@ -73,7 +73,8 @@ function ProbeRecode()
 function ExecMode($mode)
 {
 	global $tmpl, $CONFIG;
-	$p=rcv('p');
+	$p=intval(@$_REQUEST['p']);
+	$g=intval(@$_REQUEST['g']);
 	if($mode=='')	// Верхний уровень. Никакая группа не выбрана.
 	{
 		//$tmpl->AddText("<h1 id='page-title'>Витрина</h1>");
@@ -82,13 +83,10 @@ function ExecMode($mode)
 	}
 	else if($mode=='group')
 	{
-		$g=rcv('g');
-		$page=rcv('p');
-		$this->ViewGroup($g, $page);
+		$this->ViewGroup($g, $p);
 	}
 	else if($mode=='product')
 	{
-		$p=rcv('p');
 		$this->ProductCard($p);
 	}
 	else if($mode=='basket')
@@ -97,13 +95,12 @@ function ExecMode($mode)
 	}
 	else if($mode=='korz_add')
 	{
-		$cnt=rcv('cnt');
-		$j=rcv('j');
+		$cnt=intval(@$_REQUEST['cnt']);
 		if($p)
 		{
 			@$_SESSION['basket']['cnt'][$p]+=$cnt;
 			$tmpl->ajax=1;
-			if(!$j)
+			if(isset($_REQUEST['j']))
 			{
 				if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
 				$tmpl->msg("Товар добавлен в корзину!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
@@ -126,7 +123,7 @@ function ExecMode($mode)
 					$cena=GetCostPos($nx[0], 1);
 					$sum+=$cena*$cnt;
 				}
-				$tmpl->AddText("Товаров: $korz_cnt на $sum руб.");
+				echo "Товаров: $korz_cnt на $sum руб.";
 			}
 		}
 		else
@@ -139,12 +136,11 @@ function ExecMode($mode)
 	else if($mode=='korz_adj')
 	{
 		$tmpl->ajax=1;
-		$cnt=rcv('cnt');
+		$cnt=intval(@$_REQUEST['cnt']);
 		if($p)
 		{
 			@$_SESSION['basket']['cnt'][$p]+=$cnt;
 			$tmpl->AddText("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-			//echo"Товар добавлен в корзину!<br><a class='urllink' href='vitrina.php?mode=basket'>Ваша корзина</a>";
 		}
 		else
 		{
@@ -155,30 +151,27 @@ function ExecMode($mode)
 	}
 	else if($mode=='korz_del')
 	{
-		$cnt=rcv('cnt');
 		unset($_SESSION['basket']['cnt'][$p]);
 		$tmpl->msg("Товар убран из корзины!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 	}
 	else if($mode=='korz_clear')
 	{
-		$cnt=rcv('cnt');
 		unset($_SESSION['basket']['cnt']);
 		$tmpl->msg("Корзина очищена!","info","<a class='urllink' href='/vitrina.php'>Вернутья на витрину</a>");
 	}
 	else if($mode=='basket_submit')
 	{
-		$button=rcv('button');
 		$tmpl->ajax=1;
 		if(isset($_SESSION['basket']['cnt']))
 			if(is_array($_SESSION['basket']['cnt']))
 				foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 				{
-					$ncnt=rcv("cnt$item");
+					$ncnt=@$_REQUEST['cnt'.$item];
 					if($ncnt<=0) unset($_SESSION['basket']['cnt'][$item]);
 					else $_SESSION['basket']['cnt'][$item]=round($ncnt,3);
-					$_SESSION['basket']['comments'][$item]=rcv("comm$item");
+					$_SESSION['basket']['comments'][$item]=@$_REQUEST['comm'.$item];
 				}
-		if($button=='recalc')
+		if(@$_REQUEST['button']=='recalc')
 		{
 			if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
 			else 	header('Location: /vitrina.php?mode=basket');
@@ -201,16 +194,22 @@ function ExecMode($mode)
 	else if($mode=='comm_add')
 	{
 		require_once("include/comments.inc.php");
-		$p=@$_POST['p'];
 		if(!@$_SESSION['uid'])
 		{
-			$img=rcv('img');
-			if( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper($img)) || ($_SESSION['captcha_keystring']=='') )
+			if( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring']=='') )
+			{
+				unset($_SESSION['captcha_keystring']);
 				throw new Exception("Защитный код введён неверно!");
+			}
+			unset($_SESSION['captcha_keystring']);
+			$cd=new CommentDispatcher('product',$p);
+			$cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate'], @$_REQUEST['autor_name'], @$_REQUEST['autor_email']);
 		}
-		$cd=new CommentDispatcher('product',$p);
-		$cd->WriteComment(@$_POST['text'], rcv('rate'), rcv('autor_name'), rcv('autor_email'));
-
+		else
+		{
+			$cd=new CommentDispatcher('product',$p);
+			$cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate']);
+		}
 		$tmpl->msg("Коментарий добавлен!","ok");
 	}
 	else
@@ -239,7 +238,7 @@ protected function ViewGroup($group, $page)
 	}
 	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 		$tmpl->AddText("<div style='float: right; margin: 35px 35px 20px 20px;'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg' alt='$nxt[0]'></div>");
-	
+
 	if($nxt[3])	$title=$nxt[3];
 	else		$title=$nxt[0].', цены, купить';
 	if($page>1)	$title.=" - стр.$page";
@@ -251,7 +250,7 @@ protected function ViewGroup($group, $page)
 		$meta_key=$nxt[0].' '.$k1[rand(0,count($k1)-1)].' интернет-магазин '.$CONFIG['site']['display_name'];
 		$tmpl->SetMetaKeywords($meta_key);
 	}
-	
+
 	if($nxt[5])	$tmpl->SetMetaDescription($nxt[5]);
 	else
 	{
@@ -266,7 +265,7 @@ protected function ViewGroup($group, $page)
 		$meta_desc=$nxt[0].' - '.$d1[rand(0,count($d1)-1)].' в интернет-магазине '.$CONFIG['site']['display_name'].' по '.$d2[rand(0,count($d2)-1)].' '.$d3[rand(0,count($d3)-1)].'. '.$d4[rand(0,count($d4)-1)].' '.$d5[rand(0,count($d5)-1)].' '.$d6[rand(0,count($d6)-1)].'. '.$d7[rand(0,count($d7)-1)].' '.$d8[rand(0,count($d8)-1)].'.';
 		$tmpl->SetMetaDescription($meta_desc);
 	}
-	
+
 	$h1=$nxt[0];
 	if($page>1)	$h1.=" - стр.$page";
 	$tmpl->AddText("<h1 id='page-title'>$h1</h1>");
@@ -289,8 +288,11 @@ protected function ProductList($group, $page)
 	if(isset($_GET['op']))
 		$_SESSION['vit_photo_only']=$_GET['op']?1:0;
 
-	$order=rcv('order', @$_SESSION['vitrina_order']);
+	if(isset($_REQUEST['order']))			$order=$_REQUEST['order'];
+	else if(isset($_SESSION['vitrina_order']))	$order=@$_SESSION['vitrina_order'];
+	else $order='';
 	if(!$order)	$order=@$CONFIG['site']['vitrina_order'];
+
 	switch($order)
 	{
 		case 'n':	$sql_order='`doc_base`.`name`';		break;
@@ -306,7 +308,9 @@ protected function ProductList($group, $page)
 	}
 	$_SESSION['vitrina_order']=$order;
 
-	$view=rcv('view',@$_SESSION['vitrina_view']);
+	if(isset($_REQUEST['view']))			$view=$_REQUEST['view'];
+	else if(isset($_SESSION['vitrina_view']))	$view=@$_SESSION['vitrina_view'];
+	else $view='';
 	if($view!='i' && $view!='l' && $view!='t')
 	{
 		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$view='i';
@@ -409,7 +413,7 @@ protected function ProductCard($product)
 			$meta_key=$nxt['group_printname'].' '.$nxt['name'].' '.$k1[rand(0,count($k1)-1)].' '.$k1[rand(0,count($k1)-1)];
 			$tmpl->SetMetaKeywords($meta_key);
 		}
-		
+
 		if($nxt['meta_description'])	$tmpl->SetMetaDescription($nxt['meta_description']);
 		else
 		{
@@ -424,8 +428,8 @@ protected function ProductCard($product)
 			$meta_desc=$nxt['group_printname'].' '.$nxt['name'].' - '.$d1[rand(0,count($d1)-1)].' в интернет-магазине '.$CONFIG['site']['display_name'].' по '.$d2[rand(0,count($d2)-1)].' '.$d3[rand(0,count($d3)-1)].'. '.$d4[rand(0,count($d4)-1)].' '.$d5[rand(0,count($d5)-1)].' '.$d6[rand(0,count($d6)-1)].'. '.$d7[rand(0,count($d7)-1)].' '.$d8[rand(0,count($d8)-1)].'.';
 			$tmpl->SetMetaDescription($meta_desc);
 		}
-		
-		
+
+
 		$tmpl->AddText("<h1 id='page-title'>{$nxt['group_printname']} {$nxt['name']}</h1>");
 		$tmpl->AddText("<div class='breadcrumb'>".$this->GetVitPath($nxt['group'])."</div>");
 		$appends=$img_mini="";
@@ -457,7 +461,7 @@ protected function ProductCard($product)
 
 			}
 		}
-		else $img="<img src='/skins/root2/images/no_photo.png' alt='no photo'>";
+		else $img="<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo.png' alt='no photo'>";
 
 		$tmpl->AddText("<table class='product-card'>
 		<tr valign='top'><td rowspan='15' width='150'>
@@ -630,8 +634,7 @@ protected function Basket()
 /// Оформление покупки
 protected function Buy()
 {
-	global $tmpl, $CONFIG;
-	$step=rcv('step');
+	$step=intval(@$_REQUEST['step']);
 	$tmpl->SetText("<h1 id='page-title'>Оформление заказа</h1>");
 	if((!$_SESSION['uid'])&&($step!=1))
 	{
@@ -857,7 +860,7 @@ protected function BuyMakeForm()
 		Необходимо заполнить телефон или e-mail<br><br>";
 	}
 
-	if(rcv('cwarn'))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
+	if(isset($_REQUEST['cwarn']))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
 
 	if(@$user_data['reg_phone'])
 	{
@@ -942,26 +945,40 @@ protected function BuyMakeForm()
 protected function MakeBuy()
 {
 	global $tmpl, $CONFIG, $uid, $xmppclient;
-	$pay_type=rcv('pay_type');
-	$rname=rcv('rname');
-	$adres=rcv('adres');
-	$email=rcv('email');
-	$dop=rcv('dop');
-	$delivery=rcv('delivery');
-	$delivery_date=rcv('delivery_date');
+	$pay_type=@$_REQUEST['pay_type'];
+	switch($pay_type)
+	{
+		case 'bn':
+		case 'nal':
+		case 'card':
+		case 'wmr':	break;
+		default:	$pay_type='nal';
+	}
+	$rname=@$_REQUEST['rname'];
+	$rname_sql=mysql_real_escape_string($rname);
+	$adres=@$_REQUEST['adres'];
+	$adres_sql=mysql_real_escape_string($adres);
+	$email=@$_REQUEST['email'];
+	$email_sql=mysql_real_escape_string($email);
+	$delivery=intval(@$_REQUEST['delivery']);
+	$delivery_date=mysql_real_escape_string(@$_REQUEST['delivery_date']);
+	$comment=@$_REQUEST['dop'];
+	$comment_sql=mysql_real_escape_string($comment);
 
-	$country_phone=rcv('country_phone');
-	$city_phone=rcv('city_phone');
-	$dop_phone=rcv('dop_phone');
+
+
+	$country_phone=intval(@$_REQUEST['country_phone']);
+	$city_phone=intval(@$_REQUEST['city_phone']);
+	$dop_phone=intval(@$_REQUEST['dop_phone']);
 	if($country_phone && $city_phone && $dop_phone)
 		$tel="+".$country_phone.$city_phone.$dop_phone;
 	else	$tel='';
 
 	if(@$_SESSION['uid'])
 	{
-		mysql_query("UPDATE `users` SET `real_name`='$rname', `real_address`='$adres' WHERE `id`='$uid'");
+		mysql_query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='$uid'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
-		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$dop') ");
+		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$comment_sql') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
 	}
 	else if(!$tel && !$email)
@@ -979,24 +996,24 @@ protected function MakeBuy()
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
-		$comm=$dop;
 		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
 		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");
 		$bank=mysql_result($res,0,0);
 
 		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
-		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comm','{$CONFIG['site']['default_firm']}','$bank')");
+		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 
 		if(mysql_errno())	throw new MysqlException("Не удалось создать документ заявки");
 		$doc=mysql_insert_id();
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres'), ('$doc', 'pay_type', '$pay_type') ");
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
 		$zakaz_items=$admin_items='';
 		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 		{
 			$cena=GetCostPos($item, $this->cost_id);
-			if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];	else $comm='';
+			if(isset($_SESSION['basket']['comments'][$item]))
+				$comm=mysql_real_escape_string($_SESSION['basket']['comments'][$item]);	else $comm='';
 			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$cena','$comm')");
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить товар в заказ");
 			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1` FROM `doc_base`
@@ -1059,7 +1076,6 @@ protected function MakeBuy()
 		unset($_SESSION['basket']);
 	}
 	else $tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?","err");
-
 }
 
 /// Отобразить панель страниц

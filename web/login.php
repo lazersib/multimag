@@ -108,9 +108,9 @@ class RegException extends Exception
 function RegForm($err_target='', $err_msg='')
 {
 	global $CONFIG, $tmpl;
-	$login=rcv('login');
-	$email=rcv('email');
-	$phone=rcv('phone');
+	$login=htmlentities(@$_REQUEST['login']);
+	$email=htmlentities(@$_REQUEST['email']);
+	$phone=htmlentities(@$_REQUEST['phone']);
 
 	$err_msgs=array('login'=>'', 'email'=>'','img'=>'','phone'=>'');
 	$err_msgs[$err_target]="<div style='color: #c00'>$err_msg</div>";
@@ -244,12 +244,9 @@ function RegForm($err_target='', $err_msg='')
 try
 {
 
-if($mode=='')
+if(!isset($_REQUEST['mode']))
 {
-	$opt=rcv('opt');
-	$img=rcv('img');
-	$login=rcv('login');
-	$pass=rcv('pass');
+	$pass=@$_REQUEST['pass'];
 	if(@$_SESSION['uid'])
 	{
 		include("user.php");
@@ -266,10 +263,9 @@ if($mode=='')
 	}
 	$_SESSION['redir_to']=$from;
 
-	$cont=rcv('cont');
 	$tmpl->AddText("<h1 id='page-title'>Аутентификация</h1>");
 	$tmpl->SetTitle("Аутентификация");
-	if($cont)	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутентификацию.</div>");
+	if(isset($_REQUEST['cont']))	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутентификацию.</div>");
 
 	$ip=getenv("REMOTE_ADDR");
 	$time=time()+60;
@@ -285,17 +281,18 @@ if($mode=='')
 	}
 	else
 	{
-		if($opt=='login')
+		if(@$_REQUEST['opt']=='login')
 		{
-			if( ($at==1) && ( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper($img)) || ($_SESSION['captcha_keystring']=='') ) )
+			if( ($at==1) && ( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring']=='') ) )
 			{
 				$tmpl->msg("Введите правильный код подтверждения, изображенный на картинке", "err");
 				mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
 			}
 			else
 			{
+				$login_sql=mysql_real_escape_string($_REQUEST['login']);
 				$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users`.`pass`, `users`.`pass_type`, `users`.`reg_email_confirm`, `users`.`reg_phone_confirm`, `users`.`disabled`, `users`.`disabled_reason`, `users`.`bifact_auth` FROM `users`
-				WHERE `name`='$login'");
+				WHERE `name`='$login_sql'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить данные");
 				if(@$nxt=mysql_fetch_assoc($res))
 				{
@@ -346,7 +343,7 @@ if($mode=='')
 						}
 						else
 						{
-							header("Location: login.php?mode=conf&login=$login");
+							header("Location: login.php?mode=conf&login=".urlencode($_REQUEST['login']));
 							exit();
 						}
 					}
@@ -356,8 +353,6 @@ if($mode=='')
 					mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
 					$tmpl->msg("Неверная пара логин / пароль! Попробуйте снова!","err","Авторизоваться не удалось");
 				}
-
-
 			}
 		}
 		$at=attack_test();
@@ -375,6 +370,7 @@ if($mode=='')
 			$host=$_SERVER['HTTP_HOST'];
 			$form_action='https://'.$host.'/login.php';
 		}
+		$login_html=htmlentities(@$_REQUEST['login']);
 		$tmpl->AddText("
 		<form method='post' action='$form_action' id='login-form' name='fefe'>
 		<input type='hidden' name='opt' value='login'>
@@ -385,7 +381,7 @@ if($mode=='')
 		Если у Вас их нет, вы можете <a class='wiki' href='/login.php?mode=reg'>зарегистрироваться</a>
 		<tr><td>
 		Имя:<td>
-		<input type='text' name='login' class='text' id='input_name' value='$login'>
+		<input type='text' name='login' class='text' id='input_name' value='$login_html'>
 		<tr><td>Пароль:<td>
 		<input type='password' name='pass' class='text'>(<a class='wiki' href='?mode=rem'>Сменить</a>)<br>$m
 		<tr><td><td>
@@ -814,7 +810,7 @@ else if($mode=='remn')
 else if($mode=='unsubscribe')
 {
 	$tmpl->SetText("<h1 id='page-title'>Отказ от рассылки</h1>");
-	$email=rcv('email');
+	$email=rcvstrsql('email');
 	$c=0;
 	$res=mysql_query("UPDATE `users` SET `reg_email_subscribe`='0' WHERE `reg_email`='$email'");
 	if(mysql_errno())		throw new MysqlException("Не удалось отписаться. Сообщите администратору о проблеме.");
@@ -832,7 +828,7 @@ else if($mode=='unsubscribe')
 		$c=1;
 	}
 
-	if(!$c)	$tmpl->msg("Ваш адрес не найден в наших базах рассылки! Возможно, Вы отказались от рассылки ранее, или не являетесь нашим зарегистрированным пользователем. За разяснением обратитесь по телефону или e-mail, указанному на странице <a class='wiki' href='/wiki/ContactInfo'>Контакты</a>, либо в письме, полученном от нас. Спасибо за понимание!","notify");
+	if(!$c)	$tmpl->msg("Ваш адрес не найден в наших базах рассылки! Возможно, Вы отказались от рассылки ранее, или не являетесь нашим зарегистрированным пользователем. За разяснением обратитесь по телефону или e-mail, указанному на странице <a class='wiki' href='/article/ContactInfo'>Контакты</a>, либо в письме, полученном от нас. Спасибо за понимание!","notify");
 }
 else $tmpl->logger("Uncorrect mode!");
 
