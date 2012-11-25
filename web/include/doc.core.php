@@ -587,6 +587,7 @@ function DocCalcDolg($agent, $print=0, $firm_id=0)
 	$dolg=0;
 	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
 	$res=mysql_query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent' AND `mark_del`='0' $sql_add");
+	if(mysql_errno())	throw new MysqlException("Не возможно выбрать документы агента");
 	while($nxt=mysql_fetch_row($res))
 	{
 		switch($nxt[0])
@@ -741,6 +742,20 @@ function AutoDocument($doc)
 	return AutoDocumentType($type, $doc);
 }
 
+/// Создаёт HTML код элемента select со списком групп агентов
+function agentSelect($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
+{
+	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
+	if($not_select)	$ret.="<option name='0'>--не выбран--</option>";
+	$res=mysql_query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
+	if(mysql_errno())		throw new MysqlException("Не удалось получить список агентов");
+	while($line=mysql_fetch_row($res))
+	{
+		$ret.="<option name='$line[0]'>$line[1]</option>";
+	}
+	$ret.="</select>";
+	return $ret;
+}
 
 
 ?>

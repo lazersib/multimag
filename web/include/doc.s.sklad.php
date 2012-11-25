@@ -516,10 +516,6 @@ class doc_s_Sklad
 		else if($param=='i')
 		{
 			$max_fs=get_max_upload_filesize();
-			$max_img_size=min(8*1024*1204,$max_fs);
-			if($max_img_size>1024*1024)	$max_img_size=($max_img_size/(1024*1024)).' Мб';
-			else if($max_img_size>1024)	$max_img_size=($max_img_size/(1024)).' Кб';
-			else				$max_img_size.='байт';
 			$max_fs_size=$max_fs;
 			if($max_fs_size>1024*1024)	$max_fs_size=($max_fs_size/(1024*1024)).' Мб';
 			else if($max_fs_size>1024)	$max_fs_size=($max_fs_size/(1024)).' Кб';
@@ -563,7 +559,7 @@ class doc_s_Sklad
 			<tr class='lin0'><td colspan='3' align='center'>
 			<input type='submit' value='Сохранить'>
 			</table>
-			<b>Форматы</b>:Не более $max_img_size суммарно, разрешение от 150*150 до 10000*10000, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
+			<b>Форматы</b>: Не более $max_fs_size суммарно, разрешение от 150*150 до 10000*10000, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
 			<b>Примечание</b>: Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
 
 			</form><h2>Ассоциированные с товаром картинки</h2>");
