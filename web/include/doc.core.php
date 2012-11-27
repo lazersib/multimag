@@ -343,11 +343,11 @@ function GetCostPos($pos_id, $cost_id)
 // =========== Запись событий документов в лог ======================
 function doc_log($motion,$desc,$object='',$object_id=0)
 {
-	$uid=round(@$_SESSION['uid']);
+	$uid=intval(@$_SESSION['uid']);
 	$motion=mysql_real_escape_string($motion);
 	$desc=mysql_real_escape_string($desc);
 	$object=mysql_real_escape_string($object);
-	$object_id=round($object_id);
+	$object_id=intval($object_id);
 	$ip=getenv("REMOTE_ADDR");
 	mysql_query("INSERT INTO `doc_log` (`user`, `ip`, `time`,`motion`,`desc`, `object`, `object_id`)
 	VALUES ('$uid', '$ip', NOW(),'$motion','$desc', '$object', '$object_id')");
@@ -746,13 +746,13 @@ function AutoDocument($doc)
 function selectAgentGroup($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
 {
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
-	if($not_select)	$ret.="<option name='0'>***не выбран***</option>";
+	if($not_select)	$ret.="<option value='0'>***не выбран***</option>";
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
 	if(mysql_errno())		throw new MysqlException("Не удалось получить список агентов");
 	while($line=mysql_fetch_row($res))
 	{
 		$sel=($selected==$line[0])?' selected':'';
-		$ret.="<option name='$line[0]'{$sel}>$line[1]</option>";
+		$ret.="<option value='$line[0]'{$sel}>$line[1]</option>";
 	}
 	$ret.="</select>";
 	return $ret;
@@ -766,7 +766,7 @@ function selectGroupPosRecursive($group_id,$prefix,$selected)
 	while($line=mysql_fetch_row($res))
 	{
 		$sel=($selected==$line[0])?' selected':'';
-		$ret.="<option name='$line[0]'{$sel}>{$prefix}{$line[1]}</option>";
+		$ret.="<option value='$line[0]'{$sel}>{$prefix}{$line[1]}</option>";
 		$ret.=selectGroupPosRecursive($line[0],$prefix.'--',$selected);
 	}
 	return $ret;
@@ -776,7 +776,7 @@ function selectGroupPosRecursive($group_id,$prefix,$selected)
 function selectGroupPos($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
 {
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
-	if($not_select)	$ret.="<option name='0'>***не выбран***</option>";
+	if($not_select)	$ret.="<option value='0'>***не выбран***</option>";
 	$ret.=selectGroupPosRecursive(0,'',$selected);
 	$ret.="</select>";
 	return $ret;

@@ -269,57 +269,64 @@ class doc_s_Sklad
 
 		if($param=='')
 		{
-			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id`, `doc_img`.`type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`
+			$res=mysql_query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`, `doc_base`.`cost_date`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 			WHERE `doc_base`.`id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить информацию о наименовании");
 			$nxt=@mysql_fetch_array($res);
+			if(is_array($nxt))
+			foreach($nxt as $id => $value)
+			{
+				$nxt[$id]=htmlentities($value,ENT_QUOTES,'UTF-8');
+			}
 			$cc='';
-			if($nxt[6]) $cc="<td rowspan='8'><img src='{$CONFIG['site']['var_data_web']}/pos/$nxt[6].$nxt[7]' alt='$nxt[1]' style='max-width: 350px; max-height: 350px;'>";
 			if(!$nxt)
 			{
 				$tmpl->AddText("<h3>Новая позиция</h3>");
-				$cc.="<tr class='lin1'><td align='right'>Вид:<td>
-				<label><input type='radio' name='pos_type' value='0' checked>Товар</label>
-				<label><input type='radio' name='pos_type' value='1'>Услуга</label>";
+				$n="<label><input type='radio' name='pd[type]' value='0' checked>Товар</label><br>
+				<label><input type='radio' name='pd[type]' value='1'>Услуга</label>";
 			}
 			else
 			{
-				$cc.="<tr class='lin1'><td align='right'>Вид:<td>";
-				if($nxt[8]) $cc.="<input type='hidden' name='pos_type' value='1'>Услуга";
-				else $cc.="<input type='hidden' name='pos_type' value='0'>Товар";
+				if($nxt[8]) $n="<input type='hidden' name='pd[type]' value='1'>Услуга";
+				else $n="<input type='hidden' name='pd[type]' value='0'>Товар";
 			}
-			$tmpl->AddText("<form action='' method='post'>
-			<table cellpadding='0' width='100%'>
-			<input type='hidden' name='mode' value='esave'>
-			<input type='hidden' name='l' value='sklad'>
-			<input type='hidden' name='pos' value='$pos'>
-        		<tr class='lin0'><td align='right' width='20%'>Наименование
-        		<td><input type='text' name='pos_name' value='$nxt[1]' style='width: 95%'>$cc
-        		<tr class='lin0'><td align='right'>Производитель
-			<td><input type='text' name='proizv' value='$nxt[3]' id='proizv_nm' style='width: 95%'><br>
-			<div id='proizv_p' class='dd'></div>
-
-        		<tr class='lin1'><td align='right'>Группа
-        		<td>");
+			if($nxt['img_id'])
+			{
+				include_once("include/imgresizer.php");
+				$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
+				$miniimg->SetY(320);
+				$miniimg->SetX(240);
+				$cc="<td rowspan='18' style='width: 250px;'><a href='{$CONFIG['site']['var_data_web']}/pos/$nxt[6].$nxt[7]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a></td>";
+			}
 
 			$i='';
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
-
+			if($pos!=0)	$selected=$nxt['group'];
+			else		$selected=$group;
 			$hid_check=$nxt[9]?'checked':'';
 			$yml_check=$nxt['no_export_yml']?'checked':'';
 			$stock_check=$nxt[12]?'checked':'';
 			$wt0_check=(!$nxt['warranty_type'])?'checked':'';
 			$wt1_check=($nxt['warranty_type'])?'checked':'';
 
-			if($pos!=0)	$selected=$nxt[0];
-			else		$selected=$group;
-			$tmpl->AddText(selectGroupPos('to_group',$selected,1)."
-			<tr class='lin0'><td align='right'>Код изготовителя<td><input type='text' name='vc' value='$nxt[11]'>
-			<tr class='lin1'><td align='right'>Базовая цена<td><input type='text' name='cost' value='$nxt[4]'>
-			<tr class='lin0'><td align='right'>Единица измерения<td><select name='unit'>");
+			$tmpl->AddText("<form action='' method='post'>
+			<input type='hidden' name='mode' value='esave'>
+			<input type='hidden' name='l' value='sklad'>
+			<input type='hidden' name='pos' value='$pos'>
+			<input type='hidden' name='pd[id]' value='$pos'>
+			<table cellpadding='0' width='100%'>
+        		<tr class='lin0'><td align='right' width='20%'>$n</td>
+        		<td colspan='3'><input type='text' name='pd[name]' value='{$nxt['name']}' style='width: 95%'>$cc
+        		<tr class='lin1'><td align='right'>Группа</td>
+        		<td colspan='3'>".selectGroupPos('pd[group]',$selected,1)."</td></tr>
+        		<tr class='lin0'><td align='right'>Изготовитель</td>
+			<td><input type='text' name='pd[proizv]' value='{$nxt['proizv']}' id='proizv_nm' style='width: 95%'><br>
+			<div id='proizv_p' class='dd'></div></td>
+			<td align='right'>Код изготовителя</td><td><input type='text' name='pd[vc]' value='{$nxt['vc']}'></td></tr>
+			<tr class='lin1'><td align='right'>Единица измерения</td><td colspan='3'><select name='pd[unit]'>");
 
 			$res2=mysql_query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
 			while($nx2=mysql_fetch_row($res2))
@@ -329,40 +336,41 @@ class doc_s_Sklad
 				while($nx=mysql_fetch_row($res))
 				{
 					$i="";
-					if((($pos!=0)&&($nx[0]==$nxt[10]))||($group==$nx[0])) $i=" selected";
+					if((($pos!=0)&&($nx[0]==$nxt['unit']))||($group==$nx[0])) $i=" selected";
 					$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[2])</option>");
 				}
 			}
-			$tmpl->AddText("</select>
-			<tr class='lin0'><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small><td><select name='country'>");
+			$tmpl->AddText("</select></td></tr>
+			<tr class='lin0'><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small></td><td colspan='3'><select name='pd[country]'>");
 			$tmpl->AddText("<option value='0'>--не выбрана--</option>");
 			$res=mysql_query("SELECT `id`, `name` FROM `class_country` ORDER BY `name`");
 			while($nx=mysql_fetch_row($res))
 			{
-				$selected=($group==$nx[0])||($nx[0]==$nxt[16])?'selected':'';
+				$selected=($group==$nx[0])||($nx[0]==$nxt['country'])?'selected':'';
 				$tmpl->AddText("<option value='$nx[0]' $selected>$nx[1]</option>");
 			}
-			$tmpl->AddText("</select>
-			<tr class='lin1'><td align='right'>Актуальная цена поступления:<td><b>$act_cost</b>
-			<tr class='lin0'><td align='right'>Ликвидность:<td><b>$nxt[5]% <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b>
-			<tr class='lin1'><td align='right'>Скрытность:<td><label><input type='checkbox' name='hid' value='1' $hid_check>Не отображать на витрине</label><br>
-			<input type='checkbox' name='no_export_yml' value='1' $yml_check>Не экспортировать в YML</label>
-			<tr class='lin0'><td align='right'>Распродажа:<td><label><input type='checkbox' name='stock' value='1' $stock_check>Поместить в спецпредложения</label>
-			<tr class='lin1'><td align='right'>Гарантия:<td><label><input type='radio' name='warr_type' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='warr_type' value='1' $wt1_check>От производителя</label>
-			<tr class='lin0'><td align='right'>Гарантийный срок:<td><input type='text' name='warranty' value='{$nxt['warranty']}'> мес.
-			<tr class='lin1'><td align='right'>Описание<td colspan='2'><textarea name='desc'>$nxt[2]</textarea>
-			<tr class='lin0'><td align='right'>Тэг title карточки товара на витрине
-			<td><input type='text' name='title_tag' value='$nxt[17]' style='width: 95%' maxlength='128'><br>
-			<tr class='lin1'><td align='right'>Мета-тэг keywords карточки товара на витрине
-			<td><input type='text' name='meta_keywords' value='$nxt[18]' style='width: 95%' maxlength='128'><br>
-			<tr class='lin0'><td align='right'>Мета-тэг description карточки товара на витрине
-			<td><input type='text' name='meta_description' value='$nxt[19]' style='width: 95%' maxlength='256'><br>
+			$tmpl->AddText("</select></td></tr>
+			<tr class='lin1'><td align='right'>Ликвидность:</td><td colspan='3'><b>{$nxt['likvid']}% <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b></td></tr>
+			<tr class='lin0'><td align='right'>Базовая цена</td><td><input type='text' name='pd[cost]' value='{$nxt['cost']}'> с {$nxt['cost_date']} </td>
+			<td align='right'>Актуальная цена поступления:</td><td><b>$act_cost</b></td></tr>
+			<tr class='lin1'><td align='right'>Гарантийный срок:</td><td><input type='text' name='pd[warranty]' value='{$nxt['warranty']}'> мес.</td>
+			<td align='right'>Гарантия:</td><td><label><input type='radio' name='pd[warranty_type]' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='pd[warranty_type]' value='1' $wt1_check>От производителя</label></td></tr>
+			<tr class='lin1'><td align='right'>Видимость:</td><td><label><input type='checkbox' name='pd[hidden]' value='1' $hid_check>Не отображать на витрине</label></td><td><label><input type='checkbox' name='pd[no_export_yml]' value='1' $yml_check>Не экспортировать в YML</label>
+			<td><label><input type='checkbox' name='pd[stock]' value='1' $stock_check>Поместить в спецпредложения</label></td></tr>
+
+			<tr class='lin0'><td align='right'>Описание</td><td colspan='3'><textarea name='pd[desc]'>{$nxt['desc']}</textarea></td></tr>
+			<tr class='lin0'><td align='right'>Тэг title карточки товара на витрине</td>
+			<td colspan='3'><input type='text' name='pd[title_tag]' value='{$nxt['title_tag']}' style='width: 95%' maxlength='128'></td></tr>
+			<tr class='lin1'><td align='right'>Мета-тэг keywords карточки товара на витрине</td>
+			<td colspan='3'><input type='text' name='pd[meta_keywords]' value='{$nxt['meta_keywords']}' style='width: 95%' maxlength='128'></td></tr>
+			<tr class='lin0'><td align='right'>Мета-тэг description карточки товара на витрине</td>
+			<td colspan='3'><input type='text' name='pd[meta_description]' value='{$nxt['meta_description']}' style='width: 95%' maxlength='256'></td></tr>
 			");
 			if($pos!=0)
-				$tmpl->AddText("<tr class='lin1'><td align='right'>Режим записи:<td>
-				<label><input type='radio' name='sr' value='0' checked>Сохранить</label><br>
-				<label><input type='radio' name='sr' value='1'>Добавить</label><br>");
-			$tmpl->AddText("<tr class='lin1'><td><td><input type='submit' value='Сохранить'>
+				$tmpl->AddText("<tr class='lin1'><td align='right'>Режим записи:</td><td colspan='3'>
+				<label><input type='radio' name='sr' value='0' checked>Сохранить</label>
+				<label><input type='radio' name='sr' value='1'>Добавить</label></td></tr>");
+			$tmpl->AddText("<tr class='lin1'><td></td><td  colspan='3'><input type='submit' value='Сохранить'></td></tr>
 			<script type='text/javascript' src='/css/jquery/jquery.js'></script>
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 
@@ -382,7 +390,6 @@ class doc_s_Sklad
 			});
 			</script>
 			</table></form>");
-
 		}
 		// Дополнительные свойства
 		else if($param=='d')
@@ -1174,132 +1181,64 @@ class doc_s_Sklad
 
 		if($param=='')
 		{
-			$pos_name=rcv('pos_name');
-			$proizv=rcv('proizv');
-			$g=rcv('g');
-			$desc=rcv('desc');
-			$cost=rcv('cost');
-			$stock=rcv('stock');
-			$sr=rcv('sr');
-			$pos_type=rcv('pos_type');
-			$hid=rcv('hid');
-			$unit=rcv('unit');
-			$vc=rcv('vc');
-			$country=rcv('country');
-			$warranty=floor(rcv('warranty'));
-			$warranty_type=floor(rcv('warr_type'));
-			$no_export_yml=floor(rcv('no_export_yml'));
-			$title_tag=rcv('title_tag');
-			$meta_keywords=rcv('meta_keywords');
-			$meta_description=rcv('meta_description');
-			if(!$hid)	$hid=0;
-			if(!$stock)	$stock=0;
-			$cc='Цена осталась прежняя!';
+			$pd=@$_REQUEST['pd'];
+			$sr=@$_REQUEST['sr'];
+
 			if( ($pos)&&(!$sr) )
 			{
 				if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 				$sql_add=$log_add='';
-				$res=mysql_query("SELECT `group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type`, `no_export_yml`, `country`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_base` WHERE `id`='$pos'");
+				$res=mysql_query("SELECT `id`,`group`, `name`, `desc`, `proizv`, `cost`, `likvid`, `hidden`, `unit`, `vc`, `stock`, `warranty`, `warranty_type`, `no_export_yml`, `country`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_base` WHERE `id`='$pos'");
 				if(mysql_errno())	throw new MysqlException("Не удалось получить старые свойства позиции!");
 				$old_data=mysql_fetch_assoc($res);
-				if($old_data['name']!=$pos_name)
+
+				foreach($old_data as $id=>$value)
 				{
-					$sql_add.=", `name`='$pos_name'";
-					$log_add.=", name:({$old_data['name']} => $pos_name)";
+					if($id=='id' || $id=='likvid')	continue;
+					if(!isset($pd[$id]))	$pd[$id]=0;
+					if($pd[$id]!=$value)
+					{
+						if($id=='country')
+						{
+							if(!$pd[$id] && !$value)	continue;
+							$new_val=intval($pd[$id]);
+							if(!$new_val)	$new_val='NULL';
+						}
+						else if($id=='cost')
+						{
+							$cost=sprintf("%0.2f",$pd[$id]);
+							$new_val="'$cost', `cost_date`=NOW()";
+						}
+						else	$new_val="'".mysql_real_escape_string($pd[$id])."'";
+
+						$log_add.=", $id:($value => {$pd[$id]})";
+						$sql_add.=", `$id`=$new_val";
+					}
 				}
-				if($old_data['cost']!=$cost)
+
+				if($sql_add)
 				{
-					$sql_add.=", `cost`='$cost', `cost_date`=NOW()";
-					$cc='Установлена новая цена!';
-					$log_add.=", cost:({$old_data['cost']} => $cost)";
+					$res=mysql_query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos'");
+					if(mysql_errno())	throw new MysqlException("Не удалось обновить свойства позиции!");
+					$tmpl->msg("Данные обновлены!");
+					doc_log("UPDATE","$log_add", 'pos', $pos);
 				}
-				if($old_data['group']!=$g)
-				{
-					$sql_add.=", `group`='$g'";
-					$log_add.=", group:({$old_data['group']} => $g)";
-				}
-				if($old_data['proizv']!=$proizv)
-				{
-					$sql_add.=", `proizv`='$proizv'";
-					$log_add.=", proizv:({$old_data['proizv']} => $proizv)";
-				}
-				if($old_data['proizv']!=$proizv)
-				{
-					$sql_add.=", `proizv`='$proizv'";
-					$log_add.=", proizv:({$old_data['proizv']} => $proizv)";
-				}
-				if($old_data['desc']!=$desc)
-				{
-					$sql_add.=", `desc`='$desc'";
-					$log_add.=", desc:({$old_data['desc']} => $desc)";
-				}
-				if($old_data['title_tag']!=$title_tag)
-				{
-					$sql_add.=", `title_tag`='$title_tag'";
-					$log_add.=", title_tag:({$old_data['title_tag']} => $title_tag)";
-				}
-				if($old_data['meta_keywords']!=$meta_keywords)
-				{
-					$sql_add.=", `meta_keywords`='$meta_keywords'";
-					$log_add.=", meta_keywords:({$old_data['meta_keywords']} => $meta_keywords)";
-				}
-				if($old_data['meta_description']!=$meta_description)
-				{
-					$sql_add.=", `meta_description`='$meta_description'";
-					$log_add.=", meta_description:({$old_data['meta_description']} => $meta_description)";
-				}
-				if($old_data['hidden']!=$hid)
-				{
-					$sql_add.=", `hidden`='$hid'";
-					$log_add.=", hidden:({$old_data['hidden']} => $hid)";
-				}
-				if($old_data['no_export_yml']!=$no_export_yml)
-				{
-					$sql_add.=", `no_export_yml`='$no_export_yml'";
-					$log_add.=", no_export_yml:({$old_data['no_export_yml']} => $no_export_yml)";
-				}
-				if($old_data['stock']!=$stock)
-				{
-					$sql_add.=", `stock`='$stock'";
-					$log_add.=", stock:({$old_data['stock']} => $stock)";
-				}
-				if($old_data['unit']!=$unit)
-				{
-					$sql_add.=", `unit`='$unit'";
-					$log_add.=", unit:({$old_data['unit']} => $unit)";
-				}
-				if($old_data['vc']!=$vc)
-				{
-					$sql_add.=", `vc`='$vc'";
-					$log_add.=", vc:({$old_data['vc']} => $vc)";
-				}
-				if($old_data['country']!=$country)
-				{
-					settype($country,'int');
-					if($country==0)	$country='NULL';
-					$sql_add.=", `country`=$country";
-					$log_add.=", country:({$old_data['country']} => $country)";
-				}
-				if($old_data['warranty']!=$warranty)
-				{
-					$sql_add.=", `warranty`='$warranty'";
-					$log_add.=", warranty:({$old_data['warranty']} => $warranty)";
-				}
-				if($old_data['warranty_type']!=$warranty_type)
-				{
-					$sql_add.=", `warranty_type`='$warranty_type'";
-					$log_add.=", warranty_type:({$old_data['warranty_type']} => $warranty_type)";
-				}
-				$res=mysql_query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos'");
-				if(mysql_errno())	throw new MysqlException("Не удалось обновить свойства позиции!");
-				$tmpl->msg("Данные обновлены! $cc");
-				doc_log("UPDATE","$log_add", 'pos', $pos);
+				else $tmpl->msg("Ничего не было изменено",'info');
 			}
 			else
 			{
 				if(!isAccess('list_sklad','create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_base` (`name`, `vc`, `group`, `proizv`, `desc`, `cost`, `stock`, `cost_date`, `pos_type`, `hidden`, `unit`, `warranty`, `warranty_type`, `no_export_yml`, `country`, `title_tag`, `meta_keywords`, `meta_description`)
-				VALUES	('$pos_name', '$vc', '$g', '$proizv', '$desc', '$cost', '$stock', NOW() , '$pos_type', '$hid', '$unit', '$warranty', '$warranty_type', '$no_export_yml', '$country', '$title_tag', '$meta_keywords', '$meta_description')");
+				$fields=array('name', 'vc', 'group', 'proizv', 'desc', 'cost', 'stock', 'pos_type', 'hidden', 'unit', 'warranty', 'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description');
+				$cols=$values=$log='';
+				foreach($fields as $field)
+				{
+					$cols.="`$field`,";
+					$values.="'".mysql_real_escape_string(@$pd[$field])."',";
+					$log.="$field:".@$pd[$field].", ";
+				}
+				$cols.="`cost_date`";
+				$values.="NOW()";
+				$res=mysql_query("INSERT INTO `doc_base` ($cols) VALUES	($values)");
 				if(mysql_errno())	throw new MysqlException("Ошибка сохранения основной информации.");
 				$opos=$pos;
 				$pos=mysql_insert_id();
@@ -1313,17 +1252,17 @@ class doc_s_Sklad
 					$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`)
 					VALUES ('$pos', '$nxt[1]', '0', '$nxt[0]', '$nxt[3]', '$nxt[4]', '$nxt[5]', '$nxt[6]')");
 					if(mysql_errno())	throw new MysqlException("Ошибка сохранения дополнительной информации.");
-					doc_log("INSERT pos","name:$pos_name, proizv:$proizv, group:$group, desc: $desc, hidden:$hid, cost:$cost",'pos',$pos);
+
 				}
+				doc_log("INSERT pos",$log,'pos',$pos);
 				$this->PosMenu($pos, '');
 
-				$tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
 				$res=mysql_query("SELECT `id` FROM `doc_sklady`");
 				if(mysql_errno())	throw new MysqlException("Ошибка выборки складов.");
 				while($nxt=mysql_fetch_row($res))
 					mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
 
-
+				$tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
 			}
 		}
 		else if($param=='d')

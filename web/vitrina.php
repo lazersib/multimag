@@ -406,27 +406,43 @@ protected function ProductCard($product)
 		if($nxt['title_tag'])	$title=$nxt['title_tag'];
 		else			$title="{$nxt['group_printname']} {$nxt['name']}, цены и характеристики, купить";
 		$tmpl->SetTitle($title);
+		$base=abs(crc32($nxt['name'].$nxt['group'].$nxt['proizv'].$nxt['vc'].$nxt['desc']));
 		if($nxt['meta_keywords'])	$tmpl->SetMetaKeywords($nxt['meta_keywords']);
 		else
 		{
 			$k1=array('купить','цены','характеристики','фото','выбор','каталог','описания','отзывы','продажа','описание');
-			$meta_key=$nxt['group_printname'].' '.$nxt['name'].' '.$k1[rand(0,count($k1)-1)].' '.$k1[rand(0,count($k1)-1)];
+			$l=count($k1);
+			$i1=$base%$l;
+			$base=floor($base/$l);
+			$i2=$base%$l;
+			$base=floor($base/$l);
+			$meta_key=$nxt['group_printname'].' '.$nxt['name'].' '.$k1[$i1].' '.$k1[$i2];
 			$tmpl->SetMetaKeywords($meta_key);
 		}
 
 		if($nxt['meta_description'])	$tmpl->SetMetaDescription($nxt['meta_description']);
 		else
 		{
-			$d1=array('купить','заказать','продажа','приобрести');
-			$d2=array('доступной','отличной','хорошей','разумной','выгодной');
-			$d3=array('цене','стоимости');
-			$d4=array('Большой','Широкий','Огромный');
-			$d5=array('выбор','каталог','ассортимент');
-			$d6=array('товаров','продукции');
-			$d7=array('Доставка','Экспресс-доставка','Доставка курьером','Почтовая доставка');
-			$d8=array('по всей России','в любой город России','по РФ','в любой регион России');
-			$meta_desc=$nxt['group_printname'].' '.$nxt['name'].' - '.$d1[rand(0,count($d1)-1)].' в интернет-магазине '.$CONFIG['site']['display_name'].' по '.$d2[rand(0,count($d2)-1)].' '.$d3[rand(0,count($d3)-1)].'. '.$d4[rand(0,count($d4)-1)].' '.$d5[rand(0,count($d5)-1)].' '.$d6[rand(0,count($d6)-1)].'. '.$d7[rand(0,count($d7)-1)].' '.$d8[rand(0,count($d8)-1)].'.';
-			$tmpl->SetMetaDescription($meta_desc);
+			$d=array();
+			$d[0]=array($nxt['group_printname'].' '.$nxt['name'].' '.$nxt['proizv'].' - ');
+			$d[1]=array('купить','заказать','продажа','приобрести');
+			$d[2]=array(' в интернет-магазине '.$CONFIG['site']['display_name'].' по ');
+			$d[3]=array('доступной','отличной','хорошей','разумной','выгодной');
+			$d[4]=array('цене.','стоимости.');
+			$d[5]=array('Большой','Широкий','Огромный');
+			$d[6]=array('выбор','каталог','ассортимент');
+			$d[7]=array('товаров.','продукции.');
+			$d[8]=array('Доставка','Экспресс-доставка','Доставка курьером','Почтовая доставка');
+			$d[9]=array('по всей России.','в любой город России.','по РФ.','в любой регион России.');
+			$str='';
+			foreach($d as $id => $item)
+			{
+				$l=count($item);
+				$i=$base%$l;
+				$base=floor($base/$l);
+				$str.=$item[$i].' ';
+			}
+ 			$tmpl->SetMetaDescription($str);
 		}
 
 
@@ -474,21 +490,6 @@ protected function ProductCard($product)
 			return midiphoto.setPhoto(id)
 		}
 		</script>");
-
-// 		if($nxt['img_id'])
-// 		{
-// 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
-// 			$miniimg->SetX(200);
-// 			$fullimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
-// 			$img="<a href='".$fullimg->GetURI()."' rel='prettyPhoto[img]'><img src='".$miniimg->GetURI()."' alt='{$nxt['name']}'></a><br>";
-// 		}
-// 		else
-// 		{
-// 			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
-// 				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
-// 			else	$img_url='/img/no_photo.png';
-// 			$img="<img src='$img_url' alt='no photo' style='width: 200px'><br>";
-// 		}
 
 		$tmpl->AddText("<td class='field'>Наименование:<td>{$nxt['name']}");
 		if($nxt['vc']) $tmpl->AddText("<tr><td class='field'>Код производителя:<td>{$nxt['vc']}<br>");
@@ -564,8 +565,32 @@ protected function ProductCard($product)
 		<input type='text' name='cnt' value='1' class='mini'> штук <button type='submit'>В корзину!</button>
 		</div>
 		</form>
-		</td></tr></table>
-		<script type='text/javascript' charset='utf-8'>
+		</td></tr></table>");
+		$d=array();
+		$d[]=array('В нашем');
+		$d[]=array('магазине','интернет-магазине','каталоге','прайс-листе');
+		$d[]=array('Вы можете');
+		$d[]=array('купить','заказать','приобрести');
+		$d[]=array($nxt['group_printname'].' '.$nxt['name'].' '.$nxt['proizv'].' по ');
+		$d[]=array('доступной','отличной','хорошей','разумной','выгодной');
+		$d[]=array('цене за','стоимости за');
+		$d[]=array('наличный расчёт.','безналичный расчёт.','webmoney.');
+		$d[]=array('Так же можно');
+		$d[]=array('заказать','запросить','осуществить');
+		$d[]=array('доставку','экспресс-доставку','доставку транспортной компанией','почтовую доставку','доставку курьером');
+		$d[]=array('этого товара','выбранной продукции');
+		$d[]=array('по всей России.','в любой город России.','по РФ.','в любой регион России.');
+		$str='';
+		$base=abs(crc32($nxt['name'].$nxt['group'].$nxt['proizv'].$nxt['vc'].$nxt['desc']));
+		foreach($d as $id => $item)
+		{
+			$l=count($item);
+			$i=$base%$l;
+			$base=floor($base/$l);
+			$str.=$item[$i].' ';
+		}
+		$tmpl->AddText("<div class='description'>$str</div>");
+		$tmpl->AddText("<script type='text/javascript' charset='utf-8'>
 		$(document).ready(function(){
 		$(\"a[rel^='prettyPhoto']\").prettyPhoto({theme:'dark_rounded'});
 		});
