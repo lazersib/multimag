@@ -303,19 +303,8 @@ class doc_s_Sklad
 			<div id='proizv_p' class='dd'></div>
 
         		<tr class='lin1'><td align='right'>Группа
-        		<td><select name='g'>");
+        		<td>");
 
-			if((($pos!=0)&&($nxt[0]==0))||($group==0)) $i=" selected";
-			$tmpl->AddText("<option value='0' $i>--</option>");
-
-			$res=mysql_query("SELECT * FROM `doc_group`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$i="";
-
-				if((($pos!=0)&&($nx[0]==$nxt[0]))||($group==$nx[0])) $i=" selected";
-				$tmpl->AddText("<option value='$nx[0]' $i>$nx[1]</option>");
-			}
 			$i='';
 			$act_cost=sprintf('%0.2f',GetInCost($pos));
 
@@ -325,7 +314,9 @@ class doc_s_Sklad
 			$wt0_check=(!$nxt['warranty_type'])?'checked':'';
 			$wt1_check=($nxt['warranty_type'])?'checked':'';
 
-			$tmpl->AddText("</select>
+			if($pos!=0)	$selected=$nxt[0];
+			else		$selected=$group;
+			$tmpl->AddText(selectGroupPos('to_group',$selected,1)."
 			<tr class='lin0'><td align='right'>Код изготовителя<td><input type='text' name='vc' value='$nxt[11]'>
 			<tr class='lin1'><td align='right'>Базовая цена<td><input type='text' name='cost' value='$nxt[4]'>
 			<tr class='lin0'><td align='right'>Единица измерения<td><select name='unit'>");
@@ -1939,15 +1930,7 @@ class doc_s_Sklad
 			<label><input type='radio' name='yml_flag' value='unset'>Снять</label>
 			</fieldset></td>
 			<td width='25%'><fieldset><legend>Переместить в группу</legend>
-			<select name='to_group'>");
-			$tmpl->AddText("<option value='0'>--не менять--</option>");
-
-			$res=mysql_query("SELECT * FROM `doc_group`");
-			while($nx=mysql_fetch_row($res))
-			{
-				$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
-			}
-			$tmpl->AddText("</select>
+			".selectGroupPos('to_group',0,1)."
 			</fieldset></td>
 			</table>
 			<br><button type='submit'>Выполнить</button>

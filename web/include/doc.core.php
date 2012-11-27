@@ -743,19 +743,45 @@ function AutoDocument($doc)
 }
 
 /// Создаёт HTML код элемента select со списком групп агентов
-function agentSelect($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
+function selectAgentGroup($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
 {
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
-	if($not_select)	$ret.="<option name='0'>--не выбран--</option>";
+	if($not_select)	$ret.="<option name='0'>***не выбран***</option>";
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
 	if(mysql_errno())		throw new MysqlException("Не удалось получить список агентов");
 	while($line=mysql_fetch_row($res))
 	{
-		$ret.="<option name='$line[0]'>$line[1]</option>";
+		$sel=($selected==$line[0])?' selected':'';
+		$ret.="<option name='$line[0]'{$sel}>$line[1]</option>";
 	}
 	$ret.="</select>";
 	return $ret;
 }
+
+function selectGroupPosRecursive($group_id,$prefix,$selected)
+{
+	$res=mysql_query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
+	if(mysql_errno())		throw new MysqlException("Не удалось получить список групп");
+	$ret='';
+	while($line=mysql_fetch_row($res))
+	{
+		$sel=($selected==$line[0])?' selected':'';
+		$ret.="<option name='$line[0]'{$sel}>{$prefix}{$line[1]}</option>";
+		$ret.=selectGroupPosRecursive($line[0],$prefix.'--',$selected);
+	}
+	return $ret;
+}
+
+/// Создаёт HTML код элемента select со списком групп наименований
+function selectGroupPos($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
+{
+	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
+	if($not_select)	$ret.="<option name='0'>***не выбран***</option>";
+	$ret.=selectGroupPosRecursive(0,'',$selected);
+	$ret.="</select>";
+	return $ret;
+}
+
 
 
 ?>

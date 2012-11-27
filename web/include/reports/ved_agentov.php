@@ -25,7 +25,7 @@ class Report_Ved_Agentov
 		if($short)	return "Ведомость по агентам";
 		else		return "Ведомость по агентам";
 	}
-	
+
 	function Form()
 	{
 		global $tmpl;
@@ -43,9 +43,9 @@ class Report_Ved_Agentov
 		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 		while($nx=mysql_fetch_row($rs))
 		{
-			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");		
+			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
 		}
-		
+
 		$tmpl->AddText("</select><br>
 		<fieldset><legend>Отчёт по</legend>
 		<select name='sel_type' id='sel_type'>
@@ -54,7 +54,7 @@ class Report_Ved_Agentov
 		<option value='pos'>Выбранному агенту</option>
 		</select>
 		<div id='sb' style='display: none;'>
-		".agentSelect('ag_sel_group',0,0)."
+		".selectAgentGroup('ag_sel_group',0,0)."
 		</div>
 		<div id='ag_sel' style='display: none;'>
 		<input type='hidden' name='agent' id='agent_id' value=''>
@@ -74,7 +74,7 @@ class Report_Ved_Agentov
 		<button type='submit'>Создать отчет</button></form>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		<script type='text/javascript'>
-		
+
 		function forminit()
 		{
 			initCalendar('dt_f',false);
@@ -87,13 +87,13 @@ class Report_Ved_Agentov
 				selectFirst:true,
 				matchContains:1,
 				cacheLength:10,
-				maxItemsToShow:15, 
+				maxItemsToShow:15,
 				formatItem:agliFormat,
 				onItemSelect:agselectItem,
 				extraParams:{'l':'agent','mode':'srv','opt':'ac'}
 			});
 		}
-		
+
 		function selectChange(event)
 		{
 			if(this.value=='group')
@@ -101,30 +101,30 @@ class Report_Ved_Agentov
 			else	document.getElementById('sb').style.display='none';
 			if(this.value=='pos')
 				document.getElementById('ag_sel').style.display='block';
-			else	document.getElementById('ag_sel').style.display='none';			
+			else	document.getElementById('ag_sel').style.display='none';
 		}
-		
-		
-		addEventListener('load',forminit,false)	
-		document.getElementById('sel_type').addEventListener('change',selectChange,false)	
-		
-		
+
+
+		addEventListener('load',forminit,false)
+		document.getElementById('sel_type').addEventListener('change',selectChange,false)
+
+
 		function agliFormat (row, i, num) {
 			var result = row[0] + \"<em class='qnt'>тел. \" +
 			row[2] + \"</em> \";
 			return result;
 		}
-		
-		
+
+
 		function agselectItem(li) {
 			if( li == null ) var sValue = \"Ничего не выбрано!\";
 			if( !!li.extra ) var sValue = li.extra[0];
 			else var sValue = li.selectValue;
 			document.getElementById('agent_id').value=sValue;
 		}
-		</script>");	
+		</script>");
 	}
-	
+
 	function Make()
 	{
 		global $tmpl;
@@ -140,7 +140,7 @@ class Report_Ved_Agentov
 		<table class='list' width='100%'>
 		<tr><th rowspan='2'>Дата</th><th rowspan='2'>Документ</th><th rowspan='2'>Начальный долг</th><th rowspan='2'>Увеличение долга</th><th rowspan='2'>Уменьшение долга</th><th colspan='2'>На конец периода</th></tr>
 		<tr><th>Наш долг</th><th>Долг клиента</th></tr>");
-		
+
 		if($this->sel_type=='pos')
 		{
 			$res=mysql_query("SELECT `id`, `name` FROM `doc_agent` WHERE `id`='$agent' ORDER BY `name`");
@@ -171,9 +171,9 @@ class Report_Ved_Agentov
 					if($where)	$where.=',';
 					$where.="OR `doc_list`.`agent`='{$line['id']}'";
 				}
-			
-				$tmpl->AddText($this->makeBlock('Выбранная группа:',"AND ($where)"));		
-			}	
+
+				$tmpl->AddText($this->makeBlock('Выбранная группа:',"AND ($where)"));
+			}
 		}
 		else
 		{
@@ -188,15 +188,15 @@ class Report_Ved_Agentov
 			}
 			else
 			{
-				$tmpl->AddText($this->makeBlock('Итог:'));		
+				$tmpl->AddText($this->makeBlock('Итог:'));
 			}
 		}
-		
-		
+
+
 		$tmpl->AddText("</table>");
-		
+
 	}
-	
+
 	function makeBlock($head,$agent_where='')
 	{
 		$res=mysql_query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`altnum` ,`doc_list`.`subtype`, `doc_list`.`type` AS `doc_type`, `doc_list`.`sum` AS `doc_sum`, `doc_list`.`date`, `doc_types`.`name` AS `doc_typename`, `doc_agent`.`name` AS `agent_name`
@@ -204,13 +204,13 @@ class Report_Ved_Agentov
 		LEFT JOIN `doc_types` ON `doc_list`.`type`=`doc_types`.`id`
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		WHERE `ok`>'0' AND `mark_del`='0' AND `date`<='{$this->dt_t}' $agent_where
-		ORDER BY `doc_list`.`date`"); 
+		ORDER BY `doc_list`.`date`");
 		if(mysql_errno())	throw new MysqlException("Ошибка получения списка документов");
 		$dolg=$start_dolg=$df=0;
 		$table_data=$start_dolg_p='';
 		while($line=mysql_fetch_assoc($res))
 		{
-			$d_inc=$d_dec=$info='';			
+			$d_inc=$d_dec=$info='';
 			$cont=0;
 			if(!$df && $line['date']>$this->dt_f)
 			{
@@ -231,15 +231,15 @@ class Report_Ved_Agentov
 				default:	$cont=1;
 			}
 			if($cont)	continue;
-			
+
 			$dolg_p=sprintf("%0.2f",abs($dolg));
 			$date_p=date("Y-m-d",$line['date']);
 			$end_nd=$end_cd='';
-			
+
 			if($dolg>0)		$end_cd=$dolg_p;
 			else if($dolg<0)	$end_nd=$dolg_p;
 			if($this->sel_type!='pos' && $agent_where=='')	$info=" ({$line['agent_name']})";
-			
+
 			if($df && $this->detail_doc)
 				$table_data.="<tr><td>$date_p</td><td><a href='/doc.php?mode=body&amp;id={$line['doc_id']}'>{$line['doc_typename']} N{$line['altnum']}{$line['subtype']} / {$line['doc_id']}</a>{$info}</td><td></td>
 				<td align='right'>$d_inc</td>
@@ -247,28 +247,28 @@ class Report_Ved_Agentov
 				<td align='right'>$end_nd</td>
 				<td align='right'>$end_cd</td></tr>";
 		}
-		
+
 		$end_cd=$end_nd=$end_cnd=$end_ccd='';
 		if($dolg>0)		$end_cd=$dolg_p;
 		else if($dolg<0)	$end_nd=$dolg_p;
 		$cdolg=$dolg-$start_dolg;
 		if($cdolg<0)		$end_ccd=sprintf("%0.2f",abs($cdolg));
 		else if($cdolg>0)	$end_cnd=sprintf("%0.2f",abs($cdolg));
-		
+
 		$ret='';
 		if($this->debt==0 || ($this->debt*$dolg>0))
 		{
 			$ret.="<tr style='background-color: #fec; font-weight: bold;'><td colspan='2'>$head</td><td align='right'>$start_dolg_p</td><td align='right'>$end_cnd</td><td align='right'>$end_ccd</td><td align='right' style='color: #f00;'>$end_nd</td><td align='right'>$end_cd</td></tr>";
 			if($this->detail_doc)	$ret.=$table_data;
 		}
-		
+
 		return $ret;
 	}
-	
+
 	function Run($opt)
 	{
 		if($opt=='')	$this->Form();
-		else		$this->Make();	
+		else		$this->Make();
 	}
 };
 
