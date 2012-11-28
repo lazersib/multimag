@@ -716,7 +716,7 @@ else if($mode=='rem')
 				mysql_query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
 				if(mysql_errno())		throw new MysqlException("Не удалось включить режим смены пароля");
 				$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта {$user_info['name']}.
-				Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&amp;login={$user_info['name']}&amp;s=$key
+				Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&login={$user_info['name']}&s=$key
 
 				----------------------------------------
 				Сообщение сгенерировано автоматически, отвечать на него не нужно!";
@@ -772,12 +772,12 @@ else if($mode=='remn')
 	{
 		$pass=keygen_unique(0,8,11);
 
-		if($CONFIG['site']['pass_type']=='MD5')
+		if(@$CONFIG['site']['pass_type']=='MD5')
 		{
 			$sql_pass_hash=MD5($pass);
 			$sql_pass_type='MD5';
 		}
-		else if($CONFIG['site']['pass_type']=='SHA1')
+		else if(@$CONFIG['site']['pass_type']=='SHA1')
 		{
 			$sql_pass_hash=SHA1($pass);
 			$sql_pass_type='SHA1';

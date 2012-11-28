@@ -102,11 +102,6 @@ function ExecMode($mode)
 			$tmpl->ajax=1;
 			if(isset($_REQUEST['j']))
 			{
-				if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
-				$tmpl->msg("Товар добавлен в корзину!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-			}
-			else
-			{
 				$korz_cnt=count(@$_SESSION['basket']['cnt']);
 				$sum=0;
 				if(@$_SESSION['uid'])
@@ -124,6 +119,11 @@ function ExecMode($mode)
 					$sum+=$cena*$cnt;
 				}
 				echo "Товаров: $korz_cnt на $sum руб.";
+			}
+			else
+			{
+				if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
+				$tmpl->msg("Товар добавлен в корзину!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 			}
 		}
 		else

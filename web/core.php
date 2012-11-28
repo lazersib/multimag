@@ -671,7 +671,7 @@ class BETemplate
 		$this->page_blocks['gentime']=round($time,4);
 
 		@include_once("skins/".$this->tplname."/style.php");
-		if($this->ajax)		echo $this->page_blocks['content'];
+		if($this->ajax)		echo @$this->page_blocks['content'];
 		else
 		{
 			@include_once("skins/".$this->tplname."/style.php");

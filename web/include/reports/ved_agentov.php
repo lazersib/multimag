@@ -241,7 +241,7 @@ class Report_Ved_Agentov
 			if($this->sel_type!='pos' && $agent_where=='')	$info=" ({$line['agent_name']})";
 
 			if($df && $this->detail_doc)
-				$table_data.="<tr><td>$date_p</td><td><a href='/doc.php?mode=body&amp;id={$line['doc_id']}'>{$line['doc_typename']} N{$line['altnum']}{$line['subtype']} / {$line['doc_id']}</a>{$info}</td><td></td>
+				$table_data.="<tr><td>$date_p</td><td><a href='/doc.php?mode=body&amp;doc={$line['doc_id']}'>{$line['doc_typename']} N{$line['altnum']}{$line['subtype']} / {$line['doc_id']}</a>{$info}</td><td></td>
 				<td align='right'>$d_inc</td>
 				<td align='right'>$d_dec</td>
 				<td align='right'>$end_nd</td>
