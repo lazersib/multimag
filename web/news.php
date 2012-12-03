@@ -241,7 +241,7 @@ protected function SaveAndSend()
 		}
 		@mkdir($CONFIG['site']['var_data_fs']."/news/",0755);
 		$m_ok=move_uploaded_file($_FILES['img']['tmp_name'], $CONFIG['site']['var_data_fs']."/news/$news_id.$ext");
-		if(!$m_ok)			throw new Exception("Не удалось записать изображение в хранилище".);
+		if(!$m_ok)			throw new Exception("Не удалось записать изображение в хранилище");
 		mysql_query("UPDATE `news` SET `img_ext`='$ext' WHERE `id`='$news_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось сохранить тип изображения");
 	}
