@@ -223,6 +223,7 @@ function ExecMode($mode)
 /// Корень каталога
 protected function TopGroup()
 {
+	global $tmpl, $CONFIG;
 	$tmpl->AddText("<h1 id='page-title'>Витрина</h1>");
 	if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle(0);
 	else						$this->GroupList_ImageStyle(0);
