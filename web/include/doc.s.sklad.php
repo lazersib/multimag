@@ -1363,8 +1363,8 @@ class doc_s_Sklad
 			$id=0;
 			$max_fs=get_max_upload_filesize();
 			$max_img_size=min(8*1024*1204,$max_fs);
-			$min_pix=150;
-			$max_pix=10000;
+			$min_pix=15;
+			$max_pix=20000;
 			global $CONFIG;
 
 			$def_img=round(rcv('def_img'));

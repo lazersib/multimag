@@ -77,9 +77,7 @@ function ExecMode($mode)
 	$g=intval(@$_REQUEST['g']);
 	if($mode=='')	// Верхний уровень. Никакая группа не выбрана.
 	{
-		//$tmpl->AddText("<h1 id='page-title'>Витрина</h1>");
-		if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle(0);
-		else						$this->GroupList_ImageStyle(0);
+		$this->TopGroup();
 	}
 	else if($mode=='group')
 	{
@@ -222,6 +220,14 @@ function ExecMode($mode)
 
 // ======== Приватные функции ========================
 // -------- Основные функции -------------------------
+/// Корень каталога
+protected function TopGroup()
+{
+	$tmpl->AddText("<h1 id='page-title'>Витрина</h1>");
+	if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle(0);
+	else						$this->GroupList_ImageStyle(0);
+}
+
 /// Список групп / подгрупп
 protected function ViewGroup($group, $page)
 {
@@ -552,7 +558,7 @@ protected function ProductCard($product)
 			{
 				if($CONFIG['site']['recode_enable'])	$link="/attachments/{$anxt[0]}/$anxt[1]";
 				else					$link="/attachments.php?att_id={$anxt[0]}";
-				$tmpl->AddText("<tr><td><a href='$link'>$anxt[1]</td></td><td>$anxt[2]</td></tr>");
+				$tmpl->AddText("<tr><td><a href='$link'>$anxt[1]</a></td><td>$anxt[2]</td></tr>");
 			}
 		}
 
@@ -619,6 +625,7 @@ protected function Basket()
 	foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 	{
 		$res=mysql_query("SELECT `id`, `name`, `cost` FROM `doc_base` WHERE `id`='$item'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 		$nx=mysql_fetch_row($res);
 		$cena=GetCostPos($nx[0], $this->cost_id);
 		$sm=$cena*$cnt;
@@ -659,9 +666,10 @@ protected function Basket()
 /// Оформление покупки
 protected function Buy()
 {
+	global $tmpl;
 	$step=intval(@$_REQUEST['step']);
 	$tmpl->SetText("<h1 id='page-title'>Оформление заказа</h1>");
-	if((!$_SESSION['uid'])&&($step!=1))
+	if((!@$_SESSION['uid'])&&($step!=1))
 	{
 		if($step==2)
 		{
@@ -863,7 +871,7 @@ protected function BuyMakeForm()
 {
 	global $tmpl, $CONFIG;
 	$users_data=array();
-	if($_SESSION['uid'])
+	if(@$_SESSION['uid'])
 	{
 		$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
@@ -889,14 +897,11 @@ protected function BuyMakeForm()
 
 	if(@$user_data['reg_phone'])
 	{
-		$country_phone=substr($user_data['reg_phone'],1,1);
-		$city_phone=substr($user_data['reg_phone'],2,3);
-		$dop_phone=substr($user_data['reg_phone'],5);
+		$phone=substr($user_data['reg_phone'],2);
 	}
 	else
 	{
-		$country_phone=7;
-		$city_phone=$dop_phone='';
+		$phone='';
 	}
 
 
@@ -906,11 +911,11 @@ protected function BuyMakeForm()
 	<input type='hidden' name='mode' value='makebuy'>
 	<div>
 	Фамилия И.О.<br>
-	<input type='text' name='rname' value='".$user_data['real_name']."'><br>
+	<input type='text' name='rname' value='".@$user_data['real_name']."'><br>
 	Мобильный телефон: <span id='phone_num'></span><br>
-	+<input type='text' name='country_phone' value='$country_phone' maxlength='1' style='width: 90px;' placeholder='Код страны' id='country_phone'> -
-	<input type='text' name='city_phone' value='$city_phone' maxlength='3' placeholder='Код оператора' id='city_phone'> -
-	<input type='text' name='dop_phone' value='$dop_phone' maxlength='10' placeholder='Номер' id='dop_phone'>
+	<small>Российский, 10 цифр, без +7 или 8</small>
+	<br>
+	+7<input type='text' name='phone' value='$phone' maxlength='10' placeholder='Номер' id='phone'><br>
 	<br>
 
 	$email_field
@@ -931,26 +936,17 @@ protected function BuyMakeForm()
 	Желаемые дата и время доставки:<br>
 	<input type='text' name='delivery_date'><br>
 	<br>Адрес доставки:<br>
-	<textarea name='adres' rows='5' cols='15'>".$user_data['real_address']."</textarea><br>
+	<textarea name='adres' rows='5' cols='80'>".@$user_data['real_address']."</textarea><br>
 	</div>
 
 
 
 	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='15'>".$user_dopdata['dop_info']."</textarea><br>
+	<textarea name='dop' rows='5' cols='80'>".@$user_dopdata['dop_info']."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
 	</form>
 	<script>
-	var country_phone=document.getElementById('country_phone')
-	var city_phone=document.getElementById('city_phone')
-	var dop_phone=document.getElementById('dop_phone')
-	var phone_num=document.getElementById('phone_num')
-	function updatePhoneNum()
-	{
-		phone_num.innerHTML='+'+country_phone.value+city_phone.value+dop_phone.value
-	}
-	country_phone.onkeyup=city_phone.onkeyup=dop_phone.onkeyup=updatePhoneNum
 
 	var delivery=document.getElementById('delivery')
 	var delivery_fields=document.getElementById('delivery_fields')
@@ -966,6 +962,7 @@ protected function BuyMakeForm()
 	</script>
 	");
 }
+
 /// Сделать покупку
 protected function MakeBuy()
 {
@@ -991,14 +988,12 @@ protected function MakeBuy()
 	$comment_sql=mysql_real_escape_string($comment);
 
 
-
-	$country_phone=intval(@$_REQUEST['country_phone']);
-	$city_phone=intval(@$_REQUEST['city_phone']);
-	$dop_phone=intval(@$_REQUEST['dop_phone']);
-	if($country_phone && $city_phone && $dop_phone)
-		$tel="+".$country_phone.$city_phone.$dop_phone;
+	if(@$_REQUEST['phone'])
+	{
+		$tel='+7'.intval(@$_REQUEST['phone']);
+	}
 	else	$tel='';
-
+	
 	if(@$_SESSION['uid'])
 	{
 		mysql_query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='$uid'");

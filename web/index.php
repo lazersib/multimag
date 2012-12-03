@@ -123,7 +123,7 @@ else
 
 
 		$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news`
-		WHERE `news`.`type`=''
+		WHERE `news`.`type`='novelty'
 		ORDER BY `date` DESC LIMIT 3");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
 		if(mysql_num_rows($res))
