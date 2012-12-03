@@ -128,7 +128,7 @@ protected function ShowList($type='')
 	{
 		$tmpl->SetText("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
 		$tmpl->SetTitle("$name сайта - ".$CONFIG['site']['display_name']);
-		
+		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='?mode=add&amp;opt=".@$_REQUEST['type']."'>Добавить новость</a><br>");
 		while($nxt=mysql_fetch_assoc($res))
 		{
 			$wikiparser->title='';
@@ -210,7 +210,7 @@ protected function WriteForm()
 /// Запись новости в хранилище
 protected function SaveAndSend()
 {
-	global $tmpl,$wikiparser;
+	global $tmpl,$wikiparser,$CONFIG;
 	$text=strip_tags(rcv('text'));
 	$type=rcv('type');
 	$ex_date=rcv('ex_date');
@@ -221,7 +221,7 @@ protected function SaveAndSend()
 	$uwtext=$wikiparser->title."\n".$uwtext;
 	mysql_query("START TRANSACTION");
 	mysql_query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
-	VALUES ('$type', '$title', '$text', NOW(), '$uid','$ex_date' )");
+	VALUES ('$type', '$title', '$text', NOW(), '{$_SESSION['uid']}','$ex_date' )");
 	if(mysql_errno())	throw new MysqlException("Не удалось добавить новость");
 	$news_id=mysql_insert_id();
 	if(!$news_id)		throw new Exception("Не удалось получить ID новости");
@@ -241,7 +241,7 @@ protected function SaveAndSend()
 		}
 		@mkdir($CONFIG['site']['var_data_fs']."/news/",0755);
 		$m_ok=move_uploaded_file($_FILES['img']['tmp_name'], $CONFIG['site']['var_data_fs']."/news/$news_id.$ext");
-		if(!$m_ok)			throw new Exception("Не удалось записать изображение в хранилище");
+		if(!$m_ok)			throw new Exception("Не удалось записать изображение в хранилище".);
 		mysql_query("UPDATE `news` SET `img_ext`='$ext' WHERE `id`='$news_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось сохранить тип изображения");
 	}
