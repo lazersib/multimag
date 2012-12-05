@@ -404,7 +404,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	<a href='/doc.php?mode=new&amp;type=5' title='Вывод средств из банка'><img src='/img/i_new_rbank.png' alt='Вывод средств из банка' border='0'></a>
 	<a href='/doc.php?mode=new&amp;type=6' title='Приходный кассовый ордер'><img src='/img/i_new_pko.png' alt='Приходный кассовый ордер' border='0'></a>
 	<a href='/doc.php?mode=new&amp;type=7' title='Расходный кассовый ордер'><img src='/img/i_new_rko.png' alt='Расходный кассовый ордер' border='0'></a>
-
+	<a href='/doc.php?mode=new&amp;type=12' title='Товар в пути'><img src='/img/i_new_tp.png' alt='Товар в пути' border='0'></a>
 	<img src='/img/i_separator.png' alt=''>
 
 	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
