@@ -123,7 +123,7 @@ class doc_Peremeshenie extends doc_Nulltype
 			// Если это первое поступление
 			if(mysql_affected_rows()==0) mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)
 			VALUES ('$nxt[0]', '$nasklad', '$nxt[1]')");
-			if(mysql_error()) 	throw new MysqlException('Ошибка изменения количества на складе назначения!');
+			if(mysql_errno()) 	throw new MysqlException('Ошибка изменения количества на складе назначения!');
 
 			if( (!$nx['dnc']) && (!$silent))
 			{

@@ -46,6 +46,7 @@ class AsyncWorker
 	function SetStatusText($text)
 	{
 		echo "\r$text             ";
+		flush();
 		/// Добавить код записи в базу данных
 		mysql_query("UPDATE `async_workers_tasks` SET `textstatus`='$text' WHERE `id`='{$this->task_id}'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить статус");

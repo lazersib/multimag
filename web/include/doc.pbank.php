@@ -37,6 +37,11 @@ class doc_PBank extends doc_Nulltype
 	{
 		global $tmpl;
 		$tmpl->AddText(@"Номер документа клиента банка:<br><input type='text' name='unique' value='{$this->dop_data['unique']}'><br>");
+		if($this->dop_data['cardpay'])
+		{
+			$tmpl->AddText(@"<b>Владелец карты:</b>{$this->dop_data['cardholder']}><br>
+			<b>PAN карты:</b>{$this->dop_data['masked_pan']}><br><b>Транзакция:</b>{$this->dop_data['trx_id']}><br><b>RNN транзакции:</b>{$this->dop_data['p_rnn']}><br>");
+		}
 	}
 
 	function DopSave()

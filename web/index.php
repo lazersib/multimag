@@ -242,6 +242,9 @@ catch(Exception $e)
 }
 $tmpl->write();
 
+// ALTER TABLE `doc_base` ADD `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+// ADD INDEX ( `create_time` )
+
 ?>
 
 

@@ -178,10 +178,11 @@ function ExecMode($mode)
 	}
 	else if($mode=='buy')		$this->Buy();
 	else if($mode=='makebuy')	$this->MakeBuy();
+	else if($mode=='pay')		$this->Payment();
 	else if($mode=='print_schet')
 	{
 		include_once("include/doc.nulltype.php");
-		$doc=$_SESSION['zakaz_docnum'];
+		$doc=$_SESSION['order_id'];
 		if($doc)
 		{
 			$document=AutoDocument($doc);
@@ -919,20 +920,40 @@ protected function BuyMakeForm()
 	+7<input type='text' name='phone' value='$phone' maxlength='10' placeholder='Номер' id='phone'><br>
 	<br>
 
-	$email_field
+	$email_field");
+	if(is_array($CONFIG['payments']['types']))
+	{
+		$tmpl->AddText("<br>Способ оплаты:<br>");
+		foreach($CONFIG['payments']['types'] as $type => $val)
+		{
+			if(!$val)	continue;
+			if($type==@$CONFIG['payments']['default'])	$checked=' checked';
+			else						$checked='';
+			switch($type)
+			{
+				case 'cash':	$s="<label><input type='radio' name='pay_type' value='cash' id='soplat_nal'$checked>Наличный расчет.
+				<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>";
+						break;
+				case 'bank':	$s="<label><input type='radio' name='pay_type' value='bank'$checked>Безналичный банкосвкий перевод.
+				<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня). После оформления заказа Вы сможете распечатать счёт для оплаты.</label><br>";
+						break;
+				case 'wmr':	$s="<label><input type='radio' name='pay_type' value='wmr'$checked>Webmoney WMR.
+						<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>";
+						break;
+				case 'card_o':	$s="<label><input type='radio' name='pay_type' value='card_o'$checked>Платёжной картой
+						<b>VISA, MasterCard</b> на сайте. Обработка заказа начнётся после подтверждения оплаты банком (обычно сразу после оплаты).</label><br>";
+						break;
+				case 'card_t':	$s="<label><input type='radio' name='pay_type' value='card_t'$checked>Платёжной картой
+						<b>VISA, MasterCard</b> при получении товара. С вами свяжутся и обсудят условия.</label><br>";
+						break;
+				default:	$s='';
+			}
+		
+			$tmpl->AddText($s);
+		}
+	}
 
-	<br>Способ оплаты:<br>
-	<label><input type='radio' name='pay_type' value='wmr'>Webmoney WMR.
-	<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>
-	<label><input type='radio' name='pay_type' value='card'>Платёжной картой
-	<b>VISA, MasterCard</b>. Обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (до часа)</label><br>
-	<label><input type='radio' name='pay_type' value='bn'>Безналичный банкосвкий перевод.
-	<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня). После оформления заказа Вы сможете распечатать счёт для оплаты.</label><br>
-	<label><input type='radio' name='pay_type' value='nal' id='soplat_nal' checked>Наличный расчет.
-	<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br><br>
-
-
-	<label><input type='checkbox' name='delivery' id='delivery' value='1'>Нужна доставка</label><br>
+	$tmpl->AddText("<label><input type='checkbox' name='delivery' id='delivery' value='1'>Нужна доставка</label><br>
 	<div id='delivery_fields'>
 	Желаемые дата и время доставки:<br>
 	<input type='text' name='delivery_date'><br>
@@ -971,11 +992,12 @@ protected function MakeBuy()
 	$pay_type=@$_REQUEST['pay_type'];
 	switch($pay_type)
 	{
-		case 'bn':
-		case 'nal':
-		case 'card':
+		case 'bank':
+		case 'cash':
+		case 'card_o':
+		case 'card_t':
 		case 'wmr':	break;
-		default:	$pay_type='nal';
+		default:	$pay_type='';
 	}
 	$rname=@$_REQUEST['rname'];
 	$rname_sql=mysql_real_escape_string($rname);
@@ -1047,7 +1069,7 @@ protected function MakeBuy()
 			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
 		}
 		$zakaz_sum=DocSumUpdate($doc);
-		$_SESSION['zakaz_docnum']=$doc;
+		$_SESSION['order_id']=$doc;
 
 		$text="На сайте {$CONFIG['site']['name']} оформлен новый заказ.\n";
 		$text.="Посмотреть можно по ссылке: http://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
@@ -1087,16 +1109,36 @@ protected function MakeBuy()
 		if($email)
 			mailto($email,"Message from {$CONFIG['site']['name']}", $user_msg);
 
-		$tmpl->AddText("<h1 id='page-title'>Заказ оформлен</h1>");
-		if($pay_type=='bn')
+		$tmpl->SetText("<h1 id='page-title'>Заказ оформлен</h1>");
+		if($pay_type=='bank')
 		{
 			$tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>выписать счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
 			$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
+		}
+		else if($pay_type=='card_o')
+		{
+			$tmpl->AddText("<p>Заказ оформлен. Теперь вы можете оплатить его! <a href='/vitrina.php?mode=pay'>Перейти к оплате</a></p>");
 		}
 		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
 		unset($_SESSION['basket']);
 	}
 	else $tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?","err");
+}
+
+protected function Payment()
+{
+	global $tmpl, $CONFIG;
+	$order_id=$_SESSION['order_id'];
+	settype($order_id,'int');
+	$res=mysql_query("SELECT `doc_list`.`id` FROM `doc_list`
+	WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6')");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные оплат");
+	if(mysql_num_rows($res))	$tmpl->msg("Этот заказ уже оплачен!");
+	else
+	{
+		$init_url="https://test.pps.gazprombank.ru:443/payment/start.wsm?lang=ru&merch_id={$CONFIG['gpb']['merch_id']}&back_url_s=http://{$CONFIG['site']['name']}/gpb_pay_success.php&back_url_f=http://{$CONFIG['site']['name']}/gpb_pay_failed.php&o.order_id=$order_id";
+		header("Location: $init_url");
+	}
 }
 
 /// Отобразить панель страниц

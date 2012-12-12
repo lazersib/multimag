@@ -652,7 +652,7 @@ function getStoreCntOnDate($pos, $sklad, $unixtime=0, $noBreakIfMinus=0)
 	$sql_add=$unixtime?"AND `doc_list`.`date`<='$unixtime'":'';
 	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos' $sql_add
+	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
 	ORDER BY `doc_list`.`date`");
 	if(mysql_errno())	throw new MysqlException("Не удалось запросить список документов с товаром ID:$pos при проверке на отрицательные остатки");
 	while($nxt=mysql_fetch_row($res))

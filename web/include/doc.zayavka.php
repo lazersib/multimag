@@ -143,9 +143,11 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("<b>Способ оплаты: </b>");
 			switch($this->dop_data['pay_type'])
 			{
-				case 'bn':	$tmpl->AddText("безналичный");	break;
-				case 'nal':	$tmpl->AddText("наличными");	break;
-				case 'card':	$tmpl->AddText("платёдной картой");	break;
+				case 'bank':	$tmpl->AddText("безналичный");	break;
+				case 'cash':	$tmpl->AddText("наличными");	break;
+				case 'card':	$tmpl->AddText("платёжной картой");	break;
+				case 'card_o':	$tmpl->AddText("платёжной картой на сайте");	break;
+				case 'card_t':	$tmpl->AddText("платёжной картой при получении");	break;
 				case 'wmr':	$tmpl->AddText("Webmoney WMR");	break;
 				default:	$tmpl->AddText("не определён ({$this->dop_data['pay_type']})");
 			}

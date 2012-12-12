@@ -53,7 +53,7 @@ class DbCheckWorker extends AsyncWorker
 		$this->mail_text='';
 		$tim=time();
 		$dtim=time()-60*60*24*365;
-
+		$this->SetStatusText("Запуск...");
 		mysql_query("UPDATE `variables` SET `corrupted`='1', `recalc_active`='1'");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить системные переменные");
 		sleep(5);
@@ -79,6 +79,25 @@ class DbCheckWorker extends AsyncWorker
 		if(mysql_errno())	throw new MysqlException("Не удалось сбросить остатки склада");
 		mysql_query("UPDATE `doc_kassa` SET `ballance`='0'");
 		if(mysql_errno())	throw new MysqlException("Не удалось сбросить остатки кассы");
+		// Заполнение нулевого количества для всех товаров
+		$res=mysql_query("SELECT `id` FROM `doc_sklady`");
+		if(mysql_errno())	throw new MysqlException("Ошибка выборки складов.");
+		while($sline=mysql_fetch_row($res))
+		{
+			$pres=mysql_query("SELECT `doc_base`.`id`, `doc_base_cnt`.`id`
+			FROM `doc_base`
+			LEFT JOIN `doc_base_cnt` ON `doc_base`.`id`=`doc_base_cnt`.`id` AND `doc_base_cnt`.`sklad`='$sline[0]'
+			WHERE `doc_base`.`pos_type`='0'");
+			if(mysql_errno())	throw new MysqlException("Ошибка выборки остатков товаров");
+			while($pline=mysql_fetch_row($pres))
+			{
+				if(!$pline[1])
+				{
+					mysql_query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)	VALUES ('$pline[0]', '$sline[0]', '0')");
+					if(mysql_errno()) 	throw new MysqlException('Ошибка изменения количества на складе назначения!');
+				}
+			}
+		}
 
 		/// Этот код относится к кешированию информации по транзитам. Функционал не реализован
 // 		if(mysql_errno())	throw new MysqlException("Не удалось сбросить остатки");
@@ -130,6 +149,24 @@ class DbCheckWorker extends AsyncWorker
 			if(mysql_errno())	throw new MysqlException("Не удалось сбросить ликвидность");
 		}
 
+
+		// ================ Проверка, что у всех перемещений установлен не нулевой склад назначения ===================
+		$res=mysql_query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
+		FROM `doc_list`
+		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='na_sklad'
+		WHERE `doc_list`.`type`='8'");
+		if(mysql_errno())	throw new MysqlException("Ошибка выборки перемещений");
+		while($nxt=mysql_fetch_row($res))
+		{
+			if(!$nxt[1])
+			{
+				$text="У перемещения ID $nxt[0] не задан склад назначения. Остатки на складе не верны!\n";
+				echo $text;
+				$this->mail_text.=$text;
+			}
+		}
+
+
 		// ================================ Перепроводка документов с коррекцией сумм ============================
 		$this->SetStatusText("Перепроводка документов...");
 		$i=0;
@@ -167,7 +204,7 @@ class DbCheckWorker extends AsyncWorker
 		}
 		else echo"Ошибки последовательности документов не найдены!\n";
 		$res=mysql_query("UPDATE `variables` SET `recalc_active`='0'");
-
+		
 		$this->SetStatusText("Удаление помеченных на удаление...\n");
 		// ============================= Удаление помеченных на удаление =========================================
 		$tim_minus=time()-60*60*24*@$CONFIG['auto']['doc_del_days'];

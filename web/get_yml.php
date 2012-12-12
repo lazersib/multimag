@@ -91,14 +91,14 @@ while($nxt=mysql_fetch_assoc($res))
 	if($CONFIG['site']['recode_enable'])	$url= "http://{$CONFIG['site']['name']}/vitrina/ip/{$nxt['id']}.html";
 	else					$url= "http://{$CONFIG['site']['name']}/vitrina.php?mode=product&amp;p={$nxt['id']}";
 	$cost=GetCostPos($nxt['id'], $cost_id);
-	if($nxt['cost']==0)	continue;
+	//if($nxt['cost']==0)	continue;
 	if($cost==0)		continue;
 	if($nxt['img_id']) 
 	{
 		$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 		$miniimg->SetX(200);
 		
-		$picture="<picture>http://{$CONFIG['site']['name']}".str_replace($finds, $replaces, $miniimg->GetURI())."</picture>";
+		$picture="<picture>http://{$CONFIG['site']['name']}".$miniimg->GetURI()."</picture>";
 	}
 	else	$picture='';
 	
