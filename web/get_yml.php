@@ -53,6 +53,8 @@ echo"<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <currency id=\"RUR\" rate=\"1\"/>
 </currencies>
 <categories>\n";
+
+
 $res=mysql_query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `hidelevel`='0' AND `no_export_yml`='0' ORDER BY `id`");
 if(mysql_errno())	throw new MysqlException("Не удалось получить список групп!");
 while($nxt=mysql_fetch_row($res))
@@ -72,7 +74,7 @@ if(@$CONFIG['ymarket']['av_from_prices'])
 	$join_add="LEFT JOIN `parsed_price` ON `parsed_price`.`pos`=`doc_base`.`id` AND `parsed_price`.`selected`='1'
 	LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm`";
 }
-$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`, `doc_img`.`type` AS `img_type` $cols_add
+$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `doc_base_dop`.`strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `sklad_nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`, `doc_img`.`type` AS `img_type` $cols_add
 FROM `doc_base`
 INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -83,7 +85,8 @@ WHERE `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND `doc_base`.`no
 if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 while($nxt=mysql_fetch_assoc($res))
 {
-	$avariable=($nxt['nal']>0)?'true':'false';
+	//if($nxt['sklad_nal']>0)	echo "{$nxt['id']}:{$nxt['sklad_nal']},<br>";
+	$avariable=($nxt['sklad_nal']>0)?'true':'false';
 	if(@$CONFIG['ymarket']['av_from_prices'])
 		if($nxt['nal']>1 || strstr($nxt['nal'],'*') || strstr($nxt['nal'],'+'))
 			if($nxt['delivery_info']=='+')	$avariable='true';
@@ -141,7 +144,7 @@ while($nxt=mysql_fetch_assoc($res))
 
     $coo
 </offer>\n";
-//    <description>{$nxt['desc']}</description>
+   //<description>{$nxt['desc']}</description>
 }
 echo"</offers>
 </shop>

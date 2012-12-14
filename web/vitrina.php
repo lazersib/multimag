@@ -931,20 +931,22 @@ protected function BuyMakeForm()
 			else						$checked='';
 			switch($type)
 			{
-				case 'cash':	$s="<label><input type='radio' name='pay_type' value='cash' id='soplat_nal'$checked>Наличный расчет.
+				case 'cash':	$s="<label><input type='radio' name='pay_type' value='$type' id='soplat_nal'$checked>Наличный расчет.
 				<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>";
 						break;
-				case 'bank':	$s="<label><input type='radio' name='pay_type' value='bank'$checked>Безналичный банкосвкий перевод.
+				case 'bank':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Безналичный банкосвкий перевод.
 				<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня). После оформления заказа Вы сможете распечатать счёт для оплаты.</label><br>";
 						break;
-				case 'wmr':	$s="<label><input type='radio' name='pay_type' value='wmr'$checked>Webmoney WMR.
+				case 'wmr':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Webmoney WMR.
 						<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>";
 						break;
-				case 'card_o':	$s="<label><input type='radio' name='pay_type' value='card_o'$checked>Платёжной картой
+				case 'card_o':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
 						<b>VISA, MasterCard</b> на сайте. Обработка заказа начнётся после подтверждения оплаты банком (обычно сразу после оплаты).</label><br>";
 						break;
-				case 'card_t':	$s="<label><input type='radio' name='pay_type' value='card_t'$checked>Платёжной картой
+				case 'card_t':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
 						<b>VISA, MasterCard</b> при получении товара. С вами свяжутся и обсудят условия.</label><br>";
+						break;
+				case 'credit_brs':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Онлайн-кредит в банке &quot;Русский стандарт&quot; за 5 минут</label><br>";
 						break;
 				default:	$s='';
 			}
@@ -996,6 +998,7 @@ protected function MakeBuy()
 		case 'cash':
 		case 'card_o':
 		case 'card_t':
+		case 'credit_brs':
 		case 'wmr':	break;
 		default:	$pay_type='';
 	}
@@ -1119,6 +1122,10 @@ protected function MakeBuy()
 		{
 			$tmpl->AddText("<p>Заказ оформлен. Теперь вы можете оплатить его! <a href='/vitrina.php?mode=pay'>Перейти к оплате</a></p>");
 		}
+		else if($pay_type=='credit_brs')
+		{
+			$tmpl->AddText("<p>Заказ оформлен. Теперь вы можете перейти на сайт банка &quot;ЗАО Банк Русский стандарт&quot; для оформления кредитной заявки. <a href='/vitrina.php?mode=pay'>Перейти на сайт банка</a></p>");
+		}
 		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
 		unset($_SESSION['basket']);
 	}
@@ -1136,8 +1143,40 @@ protected function Payment()
 	if(mysql_num_rows($res))	$tmpl->msg("Этот заказ уже оплачен!");
 	else
 	{
-		$init_url="https://test.pps.gazprombank.ru:443/payment/start.wsm?lang=ru&merch_id={$CONFIG['gpb']['merch_id']}&back_url_s=http://{$CONFIG['site']['name']}/gpb_pay_success.php&back_url_f=http://{$CONFIG['site']['name']}/gpb_pay_failed.php&o.order_id=$order_id";
-		header("Location: $init_url");
+		$res=mysql_query("SELECT `doc_list`.`id`, `dd_pt`.`value` AS `pay_type` FROM `doc_list`
+		LEFT JOIN `doc_dopdata` AS `dd_pt` ON `dd_pt`.`doc`=`doc_list`.`id` AND `dd_pt`.`param`='pay_type'
+		WHERE `doc_list`.`id`='$order_id' AND `doc_list`.`type`='3'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные заказа");	
+		
+		$order_info=mysql_fetch_assoc($res);
+		if($order_info['pay_type']=='card_o')
+		{
+			$init_url="https://test.pps.gazprombank.ru:443/payment/start.wsm?lang=ru&merch_id={$CONFIG['gpb']['merch_id']}&back_url_s=http://{$CONFIG['site']['name']}/gpb_pay_success.php&back_url_f=http://{$CONFIG['site']['name']}/gpb_pay_failed.php&o.order_id=$order_id";
+			header("Location: $init_url");
+			exit();
+		}
+		else if($order_info['pay_type']=='credit_brs')
+		{
+			$res=mysql_query("SELECT `doc_list_pos`.`tovar`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`, `doc_list_pos`.`cnt`
+			FROM `doc_list_pos`
+			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+			INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+			WHERE `doc_list_pos`.`doc`=$order_id");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
+			$pos_line='';
+			$cnt=0;
+			while($line=mysql_fetch_assoc($res))
+			{
+				$cnt++;
+				$cena=GetCostPos($line['tovar'], $this->cost_id);
+				$pos_line.="&TC_$cnt={$line['cnt']}&TPr_$cnt=$cena&TName_$cnt=".urlencode($line['name']);
+			}
+			$url="{$CONFIG['credit_brs']['address']}?idTpl={$CONFIG['credit_brs']['id_tpl']}&TTName={$CONFIG['site']['name']}&Order=$order_id&TCount={$cnt}{$pos_line}";
+			echo $url;
+			header("Location: $url");
+			exit();
+		}
+		else throw new Exception("Данный тип оплаты ({$order_info['pay_type']}) не поддерживается!");
 	}
 }
 
