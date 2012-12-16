@@ -38,37 +38,39 @@ if(!$p)
 
 function articles_form($p,$text='',$type=0)
 {
-	global $tmpl;
+	global $tmpl,$CONFIG;
 	$types=array(0=>'Wiki (Простая и безопасная разметка, рекомендуется)', 1=>'HTML (Для профессионалов. Может быть небезопасно.)', 'Wiki+HTML');
 	$tmpl->AddText("
 	<script type='text/javascript' src='/js/tiny_mce/tiny_mce.js'></script>
 	<script type='text/javascript'>
-tinyMCE.init({
-        theme : 'advanced',
-        mode : 'specific_textareas',
-        editor_selector : 'e_msg',
-        plugins : 'fullscreen',
-        force_hex_style_colors : true,
-        theme_advanced_buttons1 : 'bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,styleselect,formatselect,fontselect,fontsizeselect',
-        theme_advanced_buttons2 : 'cut,copy,paste,pastetext,pasteword,|,search,replace,|,bullist,numlist,|,outdent,indent,blockquote,|,undo,redo,|,link,unlink,anchor,image,cleanup,help,code,|,insertdate,inserttime,preview,|,forecolor,backcolor',
-        theme_advanced_buttons3 : 'tablecontrols,|,hr,removeformat,visualaid,|,sub,sup,|,charmap,iespell,advhr,|,fullscreen',
-        theme_advanced_buttons4 : 'insertlayer,moveforward,movebackward,absolute,|,styleprops,spellchecker,|,cite,abbr,acronym,del,ins,attribs,|,visualchars,nonbreaking,template,blockquote,pagebreak,|,insertfile,insertimage',
-        theme_advanced_toolbar_location : 'top',
-        theme_advanced_toolbar_align : 'left',
-        theme_advanced_statusbar_location : 'bottom',
-        theme_advanced_resizing : true,
-        document_base_url : 'http://{$CONFIG['site']['name']}/articles/',
-	fullscreen_new_window : true,
-        oninit : schange,
-         element_format : 'html',
-        plugins : 'autolink,lists,spellchecker,pagebreak,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,inlinepopups,insertdatetime,preview,media,searchreplace,print,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras,template',
-
-});
 
 function schange()
 {
-	var st=document.getElementById('select_type')
-	if(st.value==1)	tinyMCE.activeEditor.show();
+	var tme=document.getElementById('tme')
+	if(tme.checked)
+	{
+		tinyMCE.init({
+		theme : 'advanced',
+		mode : 'specific_textareas',
+		editor_selector : 'e_msg',
+		plugins : 'fullscreen',
+		force_hex_style_colors : true,
+		theme_advanced_buttons1 : 'bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,styleselect,formatselect,fontselect,fontsizeselect',
+		theme_advanced_buttons2 : 'cut,copy,paste,pastetext,pasteword,|,search,replace,|,bullist,numlist,|,outdent,indent,blockquote,|,undo,redo,|,link,unlink,anchor,image,cleanup,help,code,|,insertdate,inserttime,preview,|,forecolor,backcolor',
+		theme_advanced_buttons3 : 'tablecontrols,|,hr,removeformat,visualaid,|,sub,sup,|,charmap,iespell,advhr,|,fullscreen',
+		theme_advanced_buttons4 : 'insertlayer,moveforward,movebackward,absolute,|,styleprops,spellchecker,|,cite,abbr,acronym,del,ins,attribs,|,visualchars,nonbreaking,template,blockquote,pagebreak,|,insertfile,insertimage',
+		theme_advanced_toolbar_location : 'top',
+		theme_advanced_toolbar_align : 'left',
+		theme_advanced_statusbar_location : 'bottom',
+		theme_advanced_resizing : true,
+		document_base_url : 'http://{$CONFIG['site']['name']}/articles/',
+		fullscreen_new_window : true,
+		element_format : 'html',
+		plugins : 'autolink,lists,spellchecker,pagebreak,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,inlinepopups,insertdatetime,preview,media,searchreplace,print,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras,template',
+
+	});
+		tinyMCE.activeEditor.show();
+	}
 	else		tinyMCE.activeEditor.hide();
 }
 </script>
@@ -85,7 +87,7 @@ function schange()
 		$tmpl->AddText("<option value='$id'{$s}>$name</option>");
 	}
 
-	$tmpl->AddText("</select><br>
+	$tmpl->AddText("</select><label><input type='checkbox' id='tme' onclick='schange()'>Визуальный редактор</label><br>
 	<textarea class='e_msg' name='text' rows='8' cols='30'>$text</textarea><br>
 	<button type='submit'>Сохранить</button>
 	</form><br><a href='/wikiphoto.php'>Галерея изображений</a><br>

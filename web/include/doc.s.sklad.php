@@ -1068,15 +1068,17 @@ class doc_s_Sklad
 				<input type='hidden' name='param' value='y'>
 				<input type='hidden' name='pos' value='$pos'>
 				<input type='hidden' name='a' value='parse'>
-				Введите <b>ID</b> нужного предложения Яндекс-маркета:<br>
-				<input type='text' name='ym_id' value='".@$nxt[1]."'>
+				Введите url нужного предложения Яндекс-маркета:<br>
+				<input type='text' name='url' value=''>
 				<button>Получить данные</button>
 				</form>");
 				if($nxt[1])	$tmpl->AddText("<a href='http://market.yandex.ru/model-spec.xml?modelid=".@$nxt[1]."'>Посмотреть на яндекс-маркете</a>");
 			}
 			else
 			{
-				$ym_id = $_POST['ym_id'];
+				$url=@$_POST['url'];
+				preg_match("/[?]*modelid=([\d]{1,9})[?]*+/", $url,$keywords);
+				$ym_id = $keywords[1];
 				settype($ym_id,'int');
 				$url="http://market.yandex.ru/model-spec.xml?modelid=".$ym_id;
 				$ch = curl_init();
@@ -1167,9 +1169,19 @@ class doc_s_Sklad
 						$i++;
 					}
 					$tmpl->AddText("</table>
-					<label><input type='checkbox' name='id_save' value='1' checked>Сохранить новый ID<label><br>
-					<label><input type='checkbox' name='auto' value='1' checked>Автоматически ассоциировать одноимённые параметры<label><br>
-					<label><input type='checkbox' name='create' value='1'>Создать и ассоциировать отсутствующие (не рекомендуется, т.к. это может нарушить авторские права)<label><br>
+					<label><input type='checkbox' name='id_save' value='1' checked>Сохранить новый ID</label><br>
+					<label><input type='checkbox' name='auto' value='1' checked>Автоматически ассоциировать одноимённые параметры</label><br>
+					<label><input type='checkbox' name='create' value='1'>Создать и ассоциировать отсутствующие (не рекомендуется, т.к. это может нарушить авторские права)</label><br>
+					<label><input type='checkbox' name='to_collection' value='1'>Добавить создаваемые параметры в категорию</label><br>
+					<select name='collection'>
+					<option value='0'>--не выбран--</option>");
+					$rgroups=mysql_query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
+					if(mysql_errno())	throw new MysqlException("Не удалось получить наборы свойств складской номенклатуры");
+					while($col=mysql_fetch_row($rgroups))
+					{
+						$tmpl->AddText("<option value='$col[0]'>$col[1]</option>");
+					}
+					$tmpl->AddText("</select>
 					<button>Записать</button>
 					</form>");
 				}
@@ -1764,12 +1776,17 @@ class doc_s_Sklad
 		}
 		else if($param=='y')
 		{
+			$url=$_POST['url'];
 			$checkboxes=$_POST['ch'];
 			$ym_id=$_POST['ym_id'];
 			$id_save=@$_POST['id_save'];
 			$auto=@$_POST['auto'];
 			$create=@$_POST['create'];
+			$collection=@$_POST['collection'];
+			$to_collection=@$_POST['to_collection'];
 			settype($ym_id,'int');
+			settype($collection,'int');
+			
 			if($id_save)
 			{
 				$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
@@ -1840,9 +1857,11 @@ class doc_s_Sklad
 						}
 						else
 						{	
-							$res=mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `ym_assign`) VALUES ('$pname_sql', 'text', '$g_id', '$param_e')");
+							mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `ym_assign`) VALUES ('$pname_sql', 'text', '$g_id', '$param_e')");
 							if(mysql_errno())	throw new MysqlException('Не удалось добавить параметр');
 							$int_param=mysql_insert_id();
+							mysql_query("INSERT INTO `doc_base_pcollections_set` (`collection_id`, `param_id`) VALUES ('$collection', '$int_param')");
+							if(mysql_errno())	throw new MysqlException('Не удалось расширить набор');
 						}	
 					}
 					if($int_param<1) continue;
