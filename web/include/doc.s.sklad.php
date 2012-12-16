@@ -1054,6 +1054,12 @@ class doc_s_Sklad
 			$a=rcv('a');
 			if($a=='')
 			{
+				$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
+				 WHERE `doc_base_params`.`param`='ym_id'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
+				$nxt=@mysql_fetch_row($res);
+				
 				$tmpl->AddText("
 				<form method='post' action='/docs.php'>
 				<input type='hidden' name='l' value='sklad'>
@@ -1062,14 +1068,17 @@ class doc_s_Sklad
 				<input type='hidden' name='param' value='y'>
 				<input type='hidden' name='pos' value='$pos'>
 				<input type='hidden' name='a' value='parse'>
-				Введите ссылку на нужную страницу Яндекс-маркета:<br>
-				<input type='text' name='url' value=''>
+				Введите <b>ID</b> нужного предложения Яндекс-маркета:<br>
+				<input type='text' name='ym_id' value='".@$nxt[1]."'>
 				<button>Получить данные</button>
 				</form>");
+				if($nxt[1])	$tmpl->AddText("<a href='http://market.yandex.ru/model-spec.xml?modelid=".@$nxt[1]."'>Посмотреть на яндекс-маркете</a>");
 			}
 			else
 			{
-				$url = $_POST['url'];
+				$ym_id = $_POST['ym_id'];
+				settype($ym_id,'int');
+				$url="http://market.yandex.ru/model-spec.xml?modelid=".$ym_id;
 				$ch = curl_init();
 				curl_setopt($ch, CURLOPT_URL, $url);
 				curl_setopt($ch, CURLOPT_FAILONERROR, 1);
@@ -1148,7 +1157,7 @@ class doc_s_Sklad
 					<input type='hidden' name='mode' value='esave'>
 					<input type='hidden' name='param' value='y'>
 					<input type='hidden' name='pos' value='$pos'>
-
+					<input type='hidden' name='ym_id' value='$ym_id'>
 					<table class='list'>
 					<tr><th>Параметр Яндекс Маркета</th><th>Ассоциированный параметр</th><th>Значение из Яндекс Маркета</th></tr>");
 					$i=0;
@@ -1158,6 +1167,9 @@ class doc_s_Sklad
 						$i++;
 					}
 					$tmpl->AddText("</table>
+					<label><input type='checkbox' name='id_save' value='1' checked>Сохранить новый ID<label><br>
+					<label><input type='checkbox' name='auto' value='1' checked>Автоматически ассоциировать одноимённые параметры<label><br>
+					<label><input type='checkbox' name='create' value='1'>Создать и ассоциировать отсутствующие (не рекомендуется, т.к. это может нарушить авторские права)<label><br>
 					<button>Записать</button>
 					</form>");
 				}
@@ -1753,12 +1765,38 @@ class doc_s_Sklad
 		else if($param=='y')
 		{
 			$checkboxes=$_POST['ch'];
+			$ym_id=$_POST['ym_id'];
+			$id_save=@$_POST['id_save'];
+			$auto=@$_POST['auto'];
+			$create=@$_POST['create'];
+			settype($ym_id,'int');
+			if($id_save)
+			{
+				$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
+				WHERE `doc_base_params`.`param`='ym_id'");
+				if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
+				if(!mysql_num_rows($res))
+				{
+					mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `system`, `pgroup_id`) VALUES ('ym_id', 'double', '1','1')");
+					if(mysql_errno())	throw new MysqlException("Не удалось добавить доп.свойство товара");
+					$nxt=array(0 => mysql_insert_id(), 1 => 0);
+				}
+				else $nxt=mysql_fetch_row($res);
+				if($ym_id!=$nxt[1])
+				{
+					mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$nxt[0]', '$ym_id')");
+					if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");
+					doc_log("UPDATE pos","ZP: ($nxt[1] => $ym_id)", 'pos', $pos);
+				}
+			}
 			if(!is_array($checkboxes))	throw new Exception('Не передан набор данных');
+			$log_add='';
 			foreach($checkboxes as $id => $param)
 			{
 				$param_e=mysql_real_escape_string($param);
 				$res=mysql_query("SELECT `doc_base_params`.`id` FROM `doc_base_params` WHERE `doc_base_params`.`ym_assign`='$param_e'");
-				if(mysql_errno())	throw new MysqlException('Не удалось получиь ID свойства');
+				if(mysql_errno())	throw new MysqlException('Не удалось получить ID свойства');
 				if(mysql_num_rows($res))
 				{
 					$int_param=mysql_result($res,0,0);
@@ -1767,16 +1805,59 @@ class doc_s_Sklad
 				{
 					$int_param=$_POST['sel'][$id];
 					settype($int_param,'int');
-					if($int_param<1)	continue;
+					if($int_param<1 && $auto)	
+					{
+						$res=mysql_query("SELECT `doc_base_params`.`id`, CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`param`) AS `pname`
+						FROM `doc_base_params`
+						INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`pgroup_id`
+						WHERE CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`param`)='$param_e'");
+						if(mysql_errno())	throw new MysqlException('Не удалось получить одноимённые свойства');
+						if($line=@mysql_fetch_row($res))
+							$int_param=$line[0];
+					}
+					if($int_param<1 && $create)
+					{
+						list($gname,$pname)=mb_split(":",$param,2);
+						$gname_sql=mysql_real_escape_string($gname);
+						$pname_sql=mysql_real_escape_string($pname);
+						$res=mysql_query("SELECT `id`, `name` FROM `doc_base_gparams` WHERE `name` = '$gname_sql'");
+						if(mysql_errno())	throw new MysqlException('Не удалось получить данные групп');
+						if(mysql_num_rows($res)>0)
+						{
+							$g_id=mysql_result($res,0,0);
+						}
+						else
+						{	
+							$res=mysql_query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$gname_sql')");
+							if(mysql_errno())	throw new MysqlException('Не удалось добавить группу');
+							$g_id=mysql_insert_id();
+						}
+						$res=mysql_query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$g_id' AND `param`='$pname_sql'");
+						if(mysql_errno())	throw new MysqlException('Не удалось получить данные наименований');
+						if(mysql_num_rows($res)>0)
+						{
+							$p_id=mysql_result($res,0,0);
+						}
+						else
+						{	
+							$res=mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `ym_assign`) VALUES ('$pname_sql', 'text', '$g_id', '$param_e')");
+							if(mysql_errno())	throw new MysqlException('Не удалось добавить параметр');
+							$int_param=mysql_insert_id();
+						}	
+					}
+					if($int_param<1) continue;
 					mysql_query("UPDATE `doc_base_params` SET `ym_assign`='$param_e' WHERE `id`='$int_param'");
+					if(mysql_errno())	throw new MysqlException('Не удалось обновит привязку');
 				}
 				if($int_param<1)	continue;
 				$val=mysql_real_escape_string($_POST['val'][$id]);
 				mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
 				if(mysql_errno())	throw new MysqlException("Не удалось добавить дополнительные параметры!");
+				$log_add.=", $int_param:(=> $val)";
 
 			}
 			$tmpl->msg("Данные сохранены!","ok");
+			if($log_add)	doc_log("UPDATE","$log_add",'pos',$pos);
 		}
 		else $tmpl->msg("Неизвестная закладка");
 	}

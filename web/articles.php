@@ -41,13 +41,44 @@ function articles_form($p,$text='',$type=0)
 	global $tmpl;
 	$types=array(0=>'Wiki (Простая и безопасная разметка, рекомендуется)', 1=>'HTML (Для профессионалов. Может быть небезопасно.)', 'Wiki+HTML');
 	$tmpl->AddText("
+	<script type='text/javascript' src='/js/tiny_mce/tiny_mce.js'></script>
+	<script type='text/javascript'>
+tinyMCE.init({
+        theme : 'advanced',
+        mode : 'specific_textareas',
+        editor_selector : 'e_msg',
+        plugins : 'fullscreen',
+        force_hex_style_colors : true,
+        theme_advanced_buttons1 : 'bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,styleselect,formatselect,fontselect,fontsizeselect',
+        theme_advanced_buttons2 : 'cut,copy,paste,pastetext,pasteword,|,search,replace,|,bullist,numlist,|,outdent,indent,blockquote,|,undo,redo,|,link,unlink,anchor,image,cleanup,help,code,|,insertdate,inserttime,preview,|,forecolor,backcolor',
+        theme_advanced_buttons3 : 'tablecontrols,|,hr,removeformat,visualaid,|,sub,sup,|,charmap,iespell,advhr,|,fullscreen',
+        theme_advanced_buttons4 : 'insertlayer,moveforward,movebackward,absolute,|,styleprops,spellchecker,|,cite,abbr,acronym,del,ins,attribs,|,visualchars,nonbreaking,template,blockquote,pagebreak,|,insertfile,insertimage',
+        theme_advanced_toolbar_location : 'top',
+        theme_advanced_toolbar_align : 'left',
+        theme_advanced_statusbar_location : 'bottom',
+        theme_advanced_resizing : true,
+        document_base_url : 'http://{$CONFIG['site']['name']}/articles/',
+	fullscreen_new_window : true,
+        oninit : schange,
+         element_format : 'html',
+        plugins : 'autolink,lists,spellchecker,pagebreak,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,inlinepopups,insertdatetime,preview,media,searchreplace,print,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras,template',
+
+});
+
+function schange()
+{
+	var st=document.getElementById('select_type')
+	if(st.value==1)	tinyMCE.activeEditor.show();
+	else		tinyMCE.activeEditor.hide();
+}
+</script>
 	<fieldset>
 	<legend>Правка статьи</legend>
 	<form action='/articles.php' method='post'>
 	<input type='hidden' name='mode' value='save'>
 	<input type='hidden' name='p' value='$p'>
 	Тип разметки:<br>
-	<select name='type'>");
+	<select name='type' id='select_type' onchange='schange()'>");
 	foreach($types AS $id => $name)
 	{
 		$s=($id==$type)?'selected':'';
