@@ -59,7 +59,7 @@ class Report_Dolgi
 		</fieldset>
 		<button type='submit'>Сформировать</button></form>");
 	}
-	
+
 	function MakeHTML($vdolga=0)
 	{
 		global $tmpl;
@@ -70,35 +70,50 @@ class Report_Dolgi
 		if($vdolga==2) $tmpl->SetText("<h1>Мы должны (от ".date('d.m.Y').")</h1>");
 		else $tmpl->SetText("<h1>Долги партнёров (от ".date('d.m.Y').")</h1>");
 		$tmpl->AddText("<table width=100%><tr><th>N<th>Агент - партнер<th>Дата сверки<th>Сумма<th>Дата посл. касс. док-та<th>Дата посл. банк. док-та");
-		$sql_add=$agroup?"WHERE `group`='$agroup'":'';
-		$res=mysql_query("SELECT `id` AS `agent_id`, `name`, `data_sverki`,
-		( SELECT `date` FROM `doc_list` WHERE `agent`=`agent_id` AND (`type`='4' OR `type`='5') ORDER BY `date` DESC LIMIT 1 ) AS `kass_date`,
-		( SELECT `date` FROM `doc_list` WHERE `agent`=`agent_id` AND (`type`='6' OR `type`='7') ORDER BY `date` DESC LIMIT 1 ) AS `bank_date`
-		FROM `doc_agent` $sql_add ORDER BY `name`");
+		$sql_add=$agroup?" AND `group`='$agroup'":'';
+		$res=mysql_query("SELECT `id` AS `agent_id`, `name`, `data_sverki`
+		FROM `doc_agent` WHERE 1 $sql_add ORDER BY `name`");
 		$i=0;
 		$sum_dolga=0;
-		while($nxt=mysql_fetch_row($res))
+		while($nxt=mysql_fetch_array($res))
 		{
 			$dolg=DocCalcDolg($nxt[0],0,$firm_id);
 			if( (($dolg>0)&&($vdolga==1))|| (($dolg<0)&&($vdolga==2)) )
 			{
+				$d_res=mysql_query("SELECT `date` FROM `doc_list`
+				WHERE `agent`={$nxt['agent_id']} AND (`type`=4 OR `type`=5) ORDER BY `date` DESC LIMIT 1");
+				if(mysql_num_rows($d_res))
+				{
+					$k_date=mysql_result($d_res,0,0);
+				}
+				else	$k_date='';
+				$d_res=mysql_query("SELECT `date` FROM `doc_list`
+				WHERE `agent`={$nxt['agent_id']} AND (`type`=6 OR `type`=7) ORDER BY `date` DESC LIMIT 1");
+				if(mysql_num_rows($d_res))
+				{
+					$b_date=mysql_result($d_res,0,0);
+				}
+				else	$b_date='';
+
 				$i++;
 				$dolg=abs($dolg);
 				$sum_dolga+=$dolg;
-				$k_date=$nxt[3]?date("Y-m-d",$nxt[3]):'';
-				$b_date=$nxt[4]?date("Y-m-d",$nxt[4]):'';
-				$dolg=sprintf("%0.2f",$dolg);
+				$dolg=number_format ($dolg, 2, '.', ' ');
+				$k_date=$k_date?date("Y-m-d",$k_date):'';
+				$b_date=$b_date?date("Y-m-d",$b_date):'';
+				//$dolg=sprintf("%0.2f",$dolg);
 				$tmpl->AddText("<tr><td>$i<td>$nxt[1]<td align='right'>$nxt[2]<td align='right'>$dolg руб.<td align='right'>$k_date<td align='right'>$b_date");
 			}
 		}
+		$sum_dolga=number_format ($sum_dolga, 2, '.', ' ');
 		$tmpl->AddText("</table>
 		<p>Итого: $i должников с общей суммой долга $sum_dolga  руб.<br> (".num2str($sum_dolga).")</p>");
 	}
-	
+
 	function Run($opt)
 	{
 		if($opt=='')	$this->Form();
-		else		$this->MakeHTML();	
+		else		$this->MakeHTML();
 	}
 };
 

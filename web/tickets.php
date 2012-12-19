@@ -39,6 +39,7 @@ function ShowTicket($n)
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	WHERE `tickets`.`id`='$n'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные задачи");
 	$nxt=mysql_fetch_row($res);
 	if(!$nxt)	$tmpl->msg("Задача не найдена!","err");
 	else
@@ -65,6 +66,7 @@ function ShowTicket($n)
 		<input type='hidden' name='n' value='$nxt[0]'>
 		<select name='state'>");
 		$res=mysql_query("SELECT `id`, `name` FROM `tickets_state` WHERE `id`!='$nxt[9]'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные состояний");
 		while($nx=mysql_fetch_row($res))
 			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
 
@@ -91,7 +93,11 @@ function ShowTicket($n)
 		<input type='hidden' name='opt' value='to_user'>
 		<input type='hidden' name='n' value='$nxt[0]'>
 		<select name='user_id'>");
-		$res=mysql_query("SELECT `id`, `name`, `real_name` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
+		$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
+		FROM `users`
+		INNER JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+		WHERE `users_worker_info`.`worker`>'0' ORDER BY `users`.`name`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные сотрудников");
 		while($nxt=mysql_fetch_row($res))
 		{
 			if($nxt[0]==0) continue;
@@ -107,6 +113,7 @@ function ShowTicket($n)
 		<input type='hidden' name='n' value='$nxt[0]'>
 		<select name='prio'>");
 		$res=mysql_query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить данные приоритетов");
 		while($nxt=mysql_fetch_row($res))
 			$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
 		$tmpl->AddText("</select>
@@ -128,6 +135,7 @@ if($mode=='')
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	WHERE `to_uid`='{$_SESSION['uid']}' AND `tickets`.`state`<'2'
 	ORDER BY `tickets`.`priority` DESC, `tickets`.`to_date` DESC, `tickets`.`date`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные задач");
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
@@ -145,7 +153,11 @@ else if($mode=='new')
 	<input type='hidden' name='mode' value='add'>
 	Задача для:<br>
 	<select name='to_uid'>");
-	$res=mysql_query("SELECT `id`, `name`, `real_name` FROM `users` WHERE `worker`>'0' ORDER BY `name`");
+	$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
+	FROM `users`
+	INNER JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+	WHERE `users_worker_info`.`worker`>'0' ORDER BY `users`.`name`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные сотрудников");
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($nxt[0]==0) continue;
@@ -157,6 +169,7 @@ else if($mode=='new')
 	Важность, приоритет:<br>
 	<select name='prio'>");
 	$res=mysql_query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные приоритетов");
 	while($nxt=mysql_fetch_row($res))
 		$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
 
@@ -182,12 +195,13 @@ else if($mode=='add')
 
 	mysql_query("INSERT INTO `tickets` (`date`, `autor`, `priority`, `theme`, `text`, `to_uid`, `to_date`)
 	VALUES ( NOW(), '$uid', '$prio', '$theme', '$text', '$to_uid', '$to_date')");
-	if(!mysql_error())
+	if(!mysql_errno())
 		$tmpl->msg("Задание назначено!","ok");
 	else $tmpl->msg("Ошибка добавления!","err");
 	$n=mysql_insert_id();
 
 	$res=mysql_query("SELECT `reg_email` FROM `users` WHERE `id`='$to_uid'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные пользователей");
 	$email=mysql_result($res,0,0);
 
 	$msg="Для Вас новое задание от $uid: $theme - $text\n";
@@ -210,6 +224,7 @@ else if($mode=='my')
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	WHERE `autor`='{$_SESSION['uid']}'
 	ORDER BY `tickets`.`priority` DESC, `tickets`.`to_date`, `tickets`.`date`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные задачи");
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
@@ -229,6 +244,7 @@ else if($mode=='viewall')
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	ORDER BY `tickets`.`priority` DESC, `tickets`.`to_date`, `tickets`.`date`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить данные задачи");
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{

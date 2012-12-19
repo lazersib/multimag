@@ -1025,7 +1025,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$pdf->MultiCell(0,5,$str,0,'L',0);
 			$pdf->Ln(5);
 		}
-		
+
 		$str="Заявку принял: _________________________________________ ($autor_name)";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
@@ -1239,19 +1239,18 @@ class doc_Realizaciya extends doc_Nulltype
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
 		<b>Покупатель: </b>{$this->doc_data[3]}<br>");
 
-		$res=mysql_query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name` FROM `doc_list`
+		$res=mysql_query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`, `doc_list`.`date`, `doc_list`.`sum`
+		FROM `doc_list`
 		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
 		WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}' AND `doc_list`.`type`='3'");
 		if(mysql_errno())			throw new MysqlException('Ошибка выбоки автора заявки');
 		if(mysql_num_rows($res))
 		{
-			list($aname, $arname)=mysql_fetch_row($res);
-			if($arname)	$arname.=' ('.$aname.')';
-			else		$arname=$aname;
-			$tmpl->AddText("<b>Автор заявки: </b>$arname<br>");
+			$l=mysql_fetch_assoc($res);
+			$l['date']=date("Y-m-d",$l['date']);
+			$tmpl->AddText("<b>Заявка:</b> N{$l['name']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}<br>");
 		}
-		else echo $this->doc;
 
 		$tmpl->AddText("<br>
 		<table width=800 cellspacing=0 cellpadding=0>
