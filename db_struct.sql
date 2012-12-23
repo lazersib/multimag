@@ -1,222 +1,549 @@
---- THIS SCRIPT IS BAD!
+SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 
--- MySQL dump 10.13  Distrib 5.1.49, for debian-linux-gnu (i486)
---
--- Host: localhost    Database: mmag_demo
--- ------------------------------------------------------
--- Server version	5.1.49-3
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `active_user`
+-- База данных: `multimag`
 --
 
-DROP TABLE IF EXISTS `active_user`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `active_user` (
-  `id` int(11) NOT NULL DEFAULT '0',
-  `uid` varchar(40) NOT NULL DEFAULT '',
-  `date` double NOT NULL DEFAULT '0',
-  UNIQUE KEY `id` (`id`),
-  UNIQUE KEY `uid` (`uid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `active_user`
+-- Структура таблицы `articles`
 --
 
-LOCK TABLES `active_user` WRITE;
-/*!40000 ALTER TABLE `active_user` DISABLE KEYS */;
-/*!40000 ALTER TABLE `active_user` ENABLE KEYS */;
-UNLOCK TABLES;
+CREATE TABLE IF NOT EXISTS `articles` (
+  `type` int(11) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `date` datetime NOT NULL,
+  `autor` int(11) NOT NULL,
+  `changed` datetime NOT NULL,
+  `changeautor` int(11) DEFAULT NULL,
+  `text` text NOT NULL,
+  `img_ext` varchar(4) NOT NULL,
+  UNIQUE KEY `name` (`name`),
+  KEY `date` (`date`),
+  KEY `autor` (`autor`),
+  KEY `changed` (`changed`),
+  KEY `changeautor` (`changeautor`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `bad`
+-- Структура таблицы `async_workers_tasks`
 --
 
-DROP TABLE IF EXISTS `bad`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `bad` (
+CREATE TABLE IF NOT EXISTS `async_workers_tasks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `comment` text NOT NULL,
-  `date` double NOT NULL DEFAULT '0',
-  `num` int(11) NOT NULL DEFAULT '0',
-  `autor` varchar(30) NOT NULL DEFAULT '',
-  UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `task` varchar(32) NOT NULL,
+  `description` varchar(128) NOT NULL,
+  `needrun` tinyint(4) NOT NULL DEFAULT '1',
+  `textstatus` varchar(128) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `needrun` (`needrun`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `bad`
+-- Структура таблицы `attachments`
 --
 
-LOCK TABLES `bad` WRITE;
-/*!40000 ALTER TABLE `bad` DISABLE KEYS */;
-/*!40000 ALTER TABLE `bad` ENABLE KEYS */;
-UNLOCK TABLES;
+CREATE TABLE IF NOT EXISTS `attachments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `original_filename` varchar(64) NOT NULL,
+  `comment` varchar(256) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Вложения' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `counter`
+-- Структура таблицы `class_country`
 --
 
-DROP TABLE IF EXISTS `counter`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `counter` (
+CREATE TABLE IF NOT EXISTS `class_country` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `name` varchar(255) NOT NULL COMMENT 'Наименование страны',
+  `full_name` varchar(255) DEFAULT NULL COMMENT 'Полное наименование страны',
+  `number_code` varchar(4) NOT NULL COMMENT 'Числовой код',
+  `alfa2` varchar(2) NOT NULL COMMENT 'Код альфа-2',
+  `alfa3` varchar(3) NOT NULL COMMENT 'Код альфа-3',
+  `visible` tinyint(4) NOT NULL DEFAULT '1' COMMENT 'Видимость',
+  `comment` varchar(255) DEFAULT NULL COMMENT 'Комментарий',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `number_code` (`number_code`),
+  UNIQUE KEY `alfa2` (`alfa2`),
+  UNIQUE KEY `alfa3` (`alfa3`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Общероссийский классификатор стран мира ОКСМ' AUTO_INCREMENT=249 ;
+
+--
+-- Дамп данных таблицы `class_country`
+--
+
+INSERT INTO `class_country` (`id`, `name`, `full_name`, `number_code`, `alfa2`, `alfa3`, `visible`, `comment`) VALUES
+(1, 'АФГАНИСТАН', 'Переходное Исламское Государство Афганистан', '004', 'AF', 'AFG', 1, NULL),
+(2, 'АЛБАНИЯ', 'Республика Албания', '008', 'AL', 'ALB', 1, NULL),
+(3, 'АНТАРКТИДА', NULL, '010', 'AQ', 'ATA', 1, NULL),
+(4, 'АЛЖИР', 'Алжирская Народная Демократическая Республика', '012', 'DZ', 'DZA', 1, NULL),
+(5, 'АМЕРИКАНСКОЕ САМОА', NULL, '016', 'AS', 'ASM', 1, NULL),
+(6, 'АНДОРРА', 'Княжество Андорра', '020', 'AD', 'AND', 1, NULL),
+(7, 'АНГОЛА', 'Республика Ангола', '024', 'AO', 'AGO', 1, NULL),
+(8, 'АНТИГУА И БАРБУДА', NULL, '028', 'AG', 'ATG', 1, NULL),
+(9, 'АЗЕРБАЙДЖАН', 'Республика Азербайджан', '031', 'AZ', 'AZE', 1, NULL),
+(10, 'АРГЕНТИНА', 'Аргентинская Республика', '032', 'AR', 'ARG', 1, NULL),
+(11, 'АВСТРАЛИЯ', NULL, '036', 'AU', 'AUS', 1, NULL),
+(12, 'АВСТРИЯ', 'Австрийская Республика', '040', 'AT', 'AUT', 1, NULL),
+(13, 'БАГАМЫ', 'Содружество Багамы', '044', 'BS', 'BHS', 1, NULL),
+(14, 'БАХРЕЙН', 'Королевство Бахрейн', '048', 'BH', 'BHR', 1, NULL),
+(15, 'БАНГЛАДЕШ', 'Народная Республика Бангладеш', '050', 'BD', 'BGD', 1, NULL),
+(16, 'АРМЕНИЯ', 'Республика Армения', '051', 'AM', 'ARM', 1, NULL),
+(17, 'БАРБАДОС', NULL, '052', 'BB', 'BRB', 1, NULL),
+(18, 'БЕЛЬГИЯ', 'Королевство Бельгии', '056', 'BE', 'BEL', 1, NULL),
+(19, 'БЕРМУДЫ', NULL, '060', 'BM', 'BMU', 1, NULL),
+(20, 'БУТАН', 'Королевство Бутан', '064', 'BT', 'BTN', 1, NULL),
+(21, 'БОЛИВИЯ, МНОГОНАЦИОНАЛЬНОЕ ГОСУДАРСТВО', 'Многонациональное Государство Боливия', '068', 'BO', 'BOL', 1, NULL),
+(22, 'БОСНИЯ И ГЕРЦЕГОВИНА', NULL, '070', 'BA', 'BIH', 1, NULL),
+(23, 'БОТСВАНА', 'Республика Ботсвана', '072', 'BW', 'BWA', 1, NULL),
+(24, 'ОСТРОВ БУВЕ', NULL, '074', 'BV', 'BVT', 1, NULL),
+(25, 'БРАЗИЛИЯ', 'Федеративная Республика Бразилия', '076', 'BR', 'BRA', 1, NULL),
+(26, 'БЕЛИЗ', NULL, '084', 'BZ', 'BLZ', 1, NULL),
+(27, 'БРИТАНСКАЯ ТЕРРИТОРИЯ В ИНДИЙСКОМ ОКЕАНЕ', NULL, '086', 'IO', 'IOT', 1, NULL),
+(28, 'СОЛОМОНОВЫ ОСТРОВА', NULL, '090', 'SB', 'SLB', 1, NULL),
+(29, 'ВИРГИНСКИЕ ОСТРОВА, БРИТАНСКИЕ', 'Британские Виргинские острова', '092', 'VG', 'VGB', 1, NULL),
+(30, 'БРУНЕЙ-ДАРУССАЛАМ', NULL, '096', 'BN', 'BRN', 1, NULL),
+(31, 'БОЛГАРИЯ', 'Республика Болгария', '100', 'BG', 'BGR', 1, NULL),
+(32, 'МЬЯНМА', 'Союз Мьянма', '104', 'MM', 'MMR', 1, NULL),
+(33, 'БУРУНДИ', 'Республика Бурунди', '108', 'BI', 'BDI', 1, NULL),
+(34, 'БЕЛАРУСЬ', 'Республика Беларусь', '112', 'BY', 'BLR', 1, NULL),
+(35, 'КАМБОДЖА', 'Королевство Камбоджа', '116', 'KH', 'KHM', 1, NULL),
+(36, 'КАМЕРУН', 'Республика Камерун', '120', 'CM', 'CMR', 1, NULL),
+(37, 'КАНАДА', NULL, '124', 'CA', 'CAN', 1, NULL),
+(38, 'КАБО-ВЕРДЕ', 'Республика Кабо-Верде', '132', 'CV', 'CPV', 1, NULL),
+(39, 'ОСТРОВА КАЙМАН', NULL, '136', 'KY', 'CYM', 1, NULL),
+(40, 'ЦЕНТРАЛЬНО-АФРИКАНСКАЯ РЕСПУБЛИКА', NULL, '140', 'CF', 'CAF', 1, NULL),
+(41, 'ШРИ-ЛАНКА', 'Демократическая Социалистическая Республика Шри-Ланка', '144', 'LK', 'LKA', 1, NULL),
+(42, 'ЧАД', 'Республика Чад', '148', 'TD', 'TCD', 1, NULL),
+(43, 'ЧИЛИ', 'Республика Чили', '152', 'CL', 'CHL', 1, NULL),
+(44, 'КИТАЙ', 'Китайская Народная Республика', '156', 'CN', 'CHN', 1, NULL),
+(45, 'ТАЙВАНЬ (КИТАЙ)', NULL, '158', 'TW', 'TWN', 1, NULL),
+(46, 'ОСТРОВ РОЖДЕСТВА', NULL, '162', 'CX', 'CXR', 1, NULL),
+(47, 'КОКОСОВЫЕ (КИЛИНГ) ОСТРОВА', NULL, '166', 'CC', 'CCK', 1, NULL),
+(48, 'КОЛУМБИЯ', 'Республика Колумбия', '170', 'CO', 'COL', 1, NULL),
+(49, 'КОМОРЫ', 'Союз Коморы', '174', 'KM', 'COM', 1, NULL),
+(50, 'МАЙОТТА', NULL, '175', 'YT', 'MYT', 1, NULL),
+(51, 'КОНГО', 'Республика Конго', '178', 'CG', 'COG', 1, NULL),
+(52, 'КОНГО, ДЕМОКРАТИЧЕСКАЯ РЕСПУБЛИКА', 'Демократическая Республика Конго', '180', 'CD', 'COD', 1, NULL),
+(53, 'ОСТРОВА КУКА', NULL, '184', 'CK', 'COK', 1, NULL),
+(54, 'КОСТА-РИКА', 'Республика Коста-Рика', '188', 'CR', 'CRI', 1, NULL),
+(55, 'ХОРВАТИЯ', 'Республика Хорватия', '191', 'HR', 'HRV', 1, NULL),
+(56, 'КУБА', 'Республика Куба', '192', 'CU', 'CUB', 1, NULL),
+(57, 'КИПР', 'Республика Кипр', '196', 'CY', 'CYP', 1, NULL),
+(58, 'ЧЕШСКАЯ РЕСПУБЛИКА', NULL, '203', 'CZ', 'CZE', 1, NULL),
+(59, 'БЕНИН', 'Республика Бенин', '204', 'BJ', 'BEN', 1, NULL),
+(60, 'ДАНИЯ', 'Королевство Дания', '208', 'DK', 'DNK', 1, NULL),
+(61, 'ДОМИНИКА', 'Содружество Доминики', '212', 'DM', 'DMA', 1, NULL),
+(62, 'ДОМИНИКАНСКАЯ РЕСПУБЛИКА', NULL, '214', 'DO', 'DOM', 1, NULL),
+(63, 'ЭКВАДОР', 'Республика Эквадор', '218', 'EC', 'ECU', 1, NULL),
+(64, 'ЭЛЬ-САЛЬВАДОР', 'Республика Эль-Сальвадор', '222', 'SV', 'SLV', 1, NULL),
+(65, 'ЭКВАТОРИАЛЬНАЯ ГВИНЕЯ', 'Республика Экваториальная Гвинея', '226', 'GQ', 'GNQ', 1, NULL),
+(66, 'ЭФИОПИЯ', 'Федеративная Демократическая Республика Эфиопия', '231', 'ET', 'ETH', 1, NULL),
+(67, 'ЭРИТРЕЯ', NULL, '232', 'ER', 'ERI', 1, NULL),
+(68, 'ЭСТОНИЯ', 'Эстонская Республика', '233', 'EE', 'EST', 1, NULL),
+(69, 'ФАРЕРСКИЕ ОСТРОВА', NULL, '234', 'FO', 'FRO', 1, NULL),
+(70, 'ФОЛКЛЕНДСКИЕ ОСТРОВА (МАЛЬВИНСКИЕ)', NULL, '238', 'FK', 'FLK', 1, NULL),
+(71, 'ЮЖНАЯ ДЖОРДЖИЯ И ЮЖНЫЕ САНДВИЧЕВЫ ОСТРОВА', NULL, '239', 'GS', 'SGS', 1, NULL),
+(72, 'ФИДЖИ', 'Республика Островов Фиджи', '242', 'FJ', 'FJI', 1, NULL),
+(73, 'ФИНЛЯНДИЯ', 'Финляндская Республика', '246', 'FI', 'FIN', 1, NULL),
+(74, 'ЭЛАНДСКИЕ ОСТРОВА', NULL, '248', 'АХ', 'ALA', 1, NULL),
+(75, 'ФРАНЦИЯ', 'Французская Республика', '250', 'FR', 'FRA', 1, NULL),
+(76, 'ФРАНЦУЗСКАЯ ГВИАНА', NULL, '254', 'GF', 'GUF', 1, NULL),
+(77, 'ФРАНЦУЗСКАЯ ПОЛИНЕЗИЯ', NULL, '258', 'PF', 'PYF', 1, NULL),
+(78, 'ФРАНЦУЗСКИЕ ЮЖНЫЕ ТЕРРИТОРИИ', NULL, '260', 'TF', 'ATF', 1, NULL),
+(79, 'ДЖИБУТИ', 'Республика Джибути', '262', 'DJ', 'DJI', 1, NULL),
+(80, 'ГАБОН', 'Габонская Республика', '266', 'GA', 'GAB', 1, NULL),
+(81, 'ГРУЗИЯ', NULL, '268', 'GE', 'GEO', 1, NULL),
+(82, 'ГАМБИЯ', 'Республика Гамбия', '270', 'GM', 'GMB', 1, NULL),
+(83, 'ПАЛЕСТИНСКАЯ ТЕРРИТОРИЯ, ОККУПИРОВАННАЯ', 'Оккупированная Палестинская территория', '275', 'PS', 'PSE', 1, NULL),
+(84, 'ГЕРМАНИЯ', 'Федеративная Республика Германия', '276', 'DE', 'DEU', 1, NULL),
+(85, 'ГАНА', 'Республика Гана', '288', 'GH', 'GHA', 1, NULL),
+(86, 'ГИБРАЛТАР', NULL, '292', 'GI', 'GIB', 1, NULL),
+(87, 'КИРИБАТИ', 'Республика Кирибати', '296', 'KI', 'KIR', 1, NULL),
+(88, 'ГРЕЦИЯ', 'Греческая Республика', '300', 'GR', 'GRC', 1, NULL),
+(89, 'ГРЕНЛАНДИЯ', NULL, '304', 'GL', 'GRL', 1, NULL),
+(90, 'ГРЕНАДА', NULL, '308', 'GD', 'GRD', 1, NULL),
+(91, 'ГВАДЕЛУПА', NULL, '312', 'GP', 'GLP', 1, NULL),
+(92, 'ГУАМ', NULL, '316', 'GU', 'GUM', 1, NULL),
+(93, 'ГВАТЕМАЛА', 'Республика Гватемала', '320', 'GT', 'GTM', 1, NULL),
+(94, 'ГВИНЕЯ', 'Гвинейская Республика', '324', 'GN', 'GIN', 1, NULL),
+(95, 'ГАЙАНА', 'Республика Гайана', '328', 'GY', 'GUY', 1, NULL),
+(96, 'ГАИТИ', 'Республика Гаити', '332', 'HT', 'HTI', 1, NULL),
+(97, 'ОСТРОВ ХЕРД И ОСТРОВА МАКДОНАЛЬД', NULL, '334', 'HM', 'HMD', 1, NULL),
+(98, 'ПАПСКИЙ ПРЕСТОЛ (ГОСУДАРСТВО - ГОРОД ВАТИКАН)', NULL, '336', 'VA', 'VAT', 1, NULL),
+(99, 'ГОНДУРАС', 'Республика Гондурас', '340', 'HN', 'HND', 1, NULL),
+(100, 'ГОНКОНГ', 'Специальный административный регион Китая Гонконг', '344', 'HK', 'HKG', 1, NULL),
+(101, 'ВЕНГРИЯ', 'Венгерская Республика', '348', 'HU', 'HUN', 1, NULL),
+(102, 'ИСЛАНДИЯ', 'Республика Исландия', '352', 'IS', 'ISL', 1, NULL),
+(103, 'ИНДИЯ', 'Республика Индия', '356', 'IN', 'IND', 1, NULL),
+(104, 'ИНДОНЕЗИЯ', 'Республика Индонезия', '360', 'ID', 'IDN', 1, NULL),
+(105, 'ИРАН, ИСЛАМСКАЯ РЕСПУБЛИКА', 'Исламская Республика Иран', '364', 'IR', 'IRN', 1, NULL),
+(106, 'ИРАК', 'Республика Ирак', '368', 'IQ', 'IRQ', 1, NULL),
+(107, 'ИРЛАНДИЯ', NULL, '372', 'IE', 'IRL', 1, NULL),
+(108, 'ИЗРАИЛЬ', 'Государство Израиль', '376', 'IL', 'ISR', 1, NULL),
+(109, 'ИТАЛИЯ', 'Итальянская Республика', '380', 'IT', 'ITA', 1, NULL),
+(110, 'КОТ Д''ИВУАР', 'Республика Кот д''Ивуар', '384', 'CI', 'CIV', 1, NULL),
+(111, 'ЯМАЙКА', NULL, '388', 'JM', 'JAM', 1, NULL),
+(112, 'ЯПОНИЯ', NULL, '392', 'JP', 'JPN', 1, NULL),
+(113, 'КАЗАХСТАН', 'Республика Казахстан', '398', 'KZ', 'KAZ', 1, NULL),
+(114, 'ИОРДАНИЯ', 'Иорданское Хашимитское Королевство', '400', 'JO', 'JOR', 1, NULL),
+(115, 'КЕНИЯ', 'Республика Кения', '404', 'KE', 'KEN', 1, NULL),
+(116, 'КОРЕЯ, НАРОДНО-ДЕМОКРАТИЧЕСКАЯ РЕСПУБЛИКА', 'Корейская Народно-Демократическая Республика', '408', 'KP', 'PRK', 1, NULL),
+(117, 'КОРЕЯ, РЕСПУБЛИКА', 'Республика Корея', '410', 'KR', 'KOR', 1, NULL),
+(118, 'КУВЕЙТ', 'Государство Кувейт', '414', 'KW', 'KWT', 1, NULL),
+(119, 'КИРГИЗИЯ', 'Киргизская Республика', '417', 'KG', 'KGZ', 1, NULL),
+(120, 'ЛАОССКАЯ НАРОДНО-ДЕМОКРАТИЧЕСКАЯ РЕСПУБЛИКА', NULL, '418', 'LA', 'LAO', 1, NULL),
+(121, 'ЛИВАН', 'Ливанская Республика', '422', 'LB', 'LBN', 1, NULL),
+(122, 'ЛЕСОТО', 'Королевство Лесото', '426', 'LS', 'LSO', 1, NULL),
+(123, 'ЛАТВИЯ', 'Латвийская Республика', '428', 'LV', 'LVA', 1, NULL),
+(124, 'ЛИБЕРИЯ', 'Республика Либерия', '430', 'LR', 'LBR', 1, NULL),
+(125, 'ЛИВИЙСКАЯ АРАБСКАЯ ДЖАМАХИРИЯ', 'Социалистическая Народная Ливийская Арабская Джамахирия', '434', 'LY', 'LBY', 1, NULL),
+(126, 'ЛИХТЕНШТЕЙН', 'Княжество Лихтенштейн', '438', 'LI', 'LIE', 1, NULL),
+(127, 'ЛИТВА', 'Литовская Республика', '440', 'LT', 'LTU', 1, NULL),
+(128, 'ЛЮКСЕМБУРГ', 'Великое Герцогство Люксембург', '442', 'LU', 'LUX', 1, NULL),
+(129, 'МАКАО', 'Специальный административный регион Китая Макао', '446', 'MO', 'MAC', 1, NULL),
+(130, 'МАДАГАСКАР', 'Республика Мадагаскар', '450', 'MG', 'MDG', 1, NULL),
+(131, 'МАЛАВИ', 'Республика Малави', '454', 'MW', 'MWI', 1, NULL),
+(132, 'МАЛАЙЗИЯ', NULL, '458', 'MY', 'MYS', 1, NULL),
+(133, 'МАЛЬДИВЫ', 'Мальдивская Республика', '462', 'MV', 'MDV', 1, NULL),
+(134, 'МАЛИ', 'Республика Мали', '466', 'ML', 'MLI', 1, NULL),
+(135, 'МАЛЬТА', 'Республика Мальта', '470', 'MT', 'MLT', 1, NULL),
+(136, 'МАРТИНИКА', NULL, '474', 'MQ', 'MTQ', 1, NULL),
+(137, 'МАВРИТАНИЯ', 'Исламская Республика Мавритания', '478', 'MR', 'MRT', 1, NULL),
+(138, 'МАВРИКИЙ', 'Республика Маврикий', '480', 'MU', 'MUS', 1, NULL),
+(139, 'МЕКСИКА', 'Мексиканские Соединенные Штаты', '484', 'MX', 'MEX', 1, NULL),
+(140, 'МОНАКО', 'Княжество Монако', '492', 'MC', 'MCO', 1, NULL),
+(141, 'МОНГОЛИЯ', NULL, '496', 'MN', 'MNG', 1, NULL),
+(142, 'МОЛДОВА, РЕСПУБЛИКА', 'Республика Молдова', '498', 'MD', 'MDA', 1, NULL),
+(143, 'ЧЕРНОГОРИЯ', NULL, '499', 'ME', 'MNE', 1, NULL),
+(144, 'МОНТСЕРРАТ', NULL, '500', 'MS', 'MSR', 1, NULL),
+(145, 'МАРОККО', 'Королевство Марокко', '504', 'MA', 'MAR', 1, NULL),
+(146, 'МОЗАМБИК', 'Республика Мозамбик', '508', 'MZ', 'MOZ', 1, NULL),
+(147, 'ОМАН', 'Султанат Оман', '512', 'OM', 'OMN', 1, NULL),
+(148, 'НАМИБИЯ', 'Республика Намибия', '516', 'NA', 'NAM', 1, NULL),
+(149, 'НАУРУ', 'Республика Науру', '520', 'NR', 'NRU', 1, NULL),
+(150, 'НЕПАЛ', 'Федеративная Демократическая Республика Непал', '524', 'NP', 'NPL', 1, NULL),
+(151, 'НИДЕРЛАНДЫ', 'Королевство Нидерландов', '528', 'NL', 'NLD', 1, NULL),
+(152, 'НИДЕРЛАНДСКИЕ АНТИЛЫ', NULL, '530', 'AN', 'ANT', 1, NULL),
+(153, 'АРУБА', NULL, '533', 'AW', 'ABW', 1, NULL),
+(154, 'НОВАЯ КАЛЕДОНИЯ', NULL, '540', 'NC', 'NCL', 1, NULL),
+(155, 'ВАНУАТУ', 'Республика Вануату', '548', 'VU', 'VUT', 1, NULL),
+(156, 'НОВАЯ ЗЕЛАНДИЯ', NULL, '554', 'NZ', 'NZL', 1, NULL),
+(157, 'НИКАРАГУА', 'Республика Никарагуа', '558', 'NI', 'NIC', 1, NULL),
+(158, 'НИГЕР', 'Республика Нигер', '562', 'NE', 'NER', 1, NULL),
+(159, 'НИГЕРИЯ', 'Федеративная Республика Нигерия', '566', 'NG', 'NGA', 1, NULL),
+(160, 'НИУЭ', 'Республика Ниуэ', '570', 'NU', 'NIU', 1, NULL),
+(161, 'ОСТРОВ НОРФОЛК', NULL, '574', 'NF', 'NFK', 1, NULL),
+(162, 'НОРВЕГИЯ', 'Королевство Норвегия', '578', 'NO', 'NOR', 1, NULL),
+(163, 'СЕВЕРНЫЕ МАРИАНСКИЕ ОСТРОВА', 'Содружество Северных Марианских островов', '580', 'MP', 'MNP', 1, NULL),
+(164, 'МАЛЫЕ ТИХООКЕАНСКИЕ ОТДАЛЕННЫЕ ОСТРОВА СОЕДИНЕННЫХ ШТАТОВ', NULL, '581', 'UM', 'UMI', 1, NULL),
+(165, 'МИКРОНЕЗИЯ, ФЕДЕРАТИВНЫЕ ШТАТЫ', 'Федеративные штаты Микронезии', '583', 'FM', 'FSM', 1, NULL),
+(166, 'МАРШАЛЛОВЫ ОСТРОВА', 'Республика Маршалловы Острова', '584', 'MH', 'MHL', 1, NULL),
+(167, 'ПАЛАУ', 'Республика Палау', '585', 'PW', 'PLW', 1, NULL),
+(168, 'ПАКИСТАН', 'Исламская Республика Пакистан', '586', 'PK', 'PAK', 1, NULL),
+(169, 'ПАНАМА', 'Республика Панама', '591', 'PA', 'PAN', 1, NULL),
+(170, 'ПАПУА-НОВАЯ ГВИНЕЯ', NULL, '598', 'PG', 'PNG', 1, NULL),
+(171, 'ПАРАГВАЙ', 'Республика Парагвай', '600', 'PY', 'PRY', 1, NULL),
+(172, 'ПЕРУ', 'Республика Перу', '604', 'PE', 'PER', 1, NULL),
+(173, 'ФИЛИППИНЫ', 'Республика Филиппины', '608', 'PH', 'PHL', 1, NULL),
+(174, 'ПИТКЕРН', NULL, '612', 'PN', 'PCN', 1, NULL),
+(175, 'ПОЛЬША', 'Республика Польша', '616', 'PL', 'POL', 1, NULL),
+(176, 'ПОРТУГАЛИЯ', 'Португальская Республика', '620', 'PT', 'PRT', 1, NULL),
+(177, 'ГВИНЕЯ-БИСАУ', 'Республика Гвинея-Бисау', '624', 'GW', 'GNB', 1, NULL),
+(178, 'ТИМОР-ЛЕСТЕ', 'Демократическая Республика Тимор-Лесте', '626', 'TL', 'TLS', 1, NULL),
+(179, 'ПУЭРТО-РИКО', NULL, '630', 'PR', 'PRI', 1, NULL),
+(180, 'КАТАР', 'Государство Катар', '634', 'QA', 'QAT', 1, NULL),
+(181, 'РЕЮНЬОН', NULL, '638', 'RE', 'REU', 1, NULL),
+(182, 'РУМЫНИЯ', NULL, '642', 'RO', 'ROU', 1, NULL),
+(183, 'РОССИЯ', 'Российская Федерация', '643', 'RU', 'RUS', 1, NULL),
+(184, 'РУАНДА', 'Руандийская Республика', '646', 'RW', 'RWA', 1, NULL),
+(185, 'СЕН-БАРТЕЛЕМИ', NULL, '652', 'BL', 'BLM', 1, NULL),
+(186, 'СВЯТАЯ ЕЛЕНА', NULL, '654', 'SH', 'SHN', 1, NULL),
+(187, 'СЕНТ-КИТС И НЕВИС', NULL, '659', 'KN', 'KNA', 1, NULL),
+(188, 'АНГИЛЬЯ', NULL, '660', 'AI', 'AIA', 1, NULL),
+(189, 'СЕНТ-ЛЮСИЯ', NULL, '662', 'LC', 'LCA', 1, NULL),
+(190, 'СЕН-МАРТЕН', NULL, '663', 'MF', 'MAF', 1, NULL),
+(191, 'СЕН-ПЬЕР И МИКЕЛОН', NULL, '666', 'PM', 'SPM', 1, NULL),
+(192, 'СЕНТ-ВИНСЕНТ И ГРЕНАДИНЫ', NULL, '670', 'VC', 'VCT', 1, NULL),
+(193, 'САН-МАРИНО', 'Республика Сан-Марино', '674', 'SM', 'SMR', 1, NULL),
+(194, 'САН-ТОМЕ И ПРИНСИПИ', 'Демократическая Республика Сан-Томе и Принсипи', '678', 'ST', 'STP', 1, NULL),
+(195, 'САУДОВСКАЯ АРАВИЯ', 'Королевство Саудовская Аравия', '682', 'SA', 'SAU', 1, NULL),
+(196, 'СЕНЕГАЛ', 'Республика Сенегал', '686', 'SN', 'SEN', 1, NULL),
+(197, 'СЕРБИЯ', 'Республика Сербия', '688', 'RS', 'SRB', 1, NULL),
+(198, 'СЕЙШЕЛЫ', 'Республика Сейшелы', '690', 'SC', 'SYC', 1, NULL),
+(199, 'СЬЕРРА-ЛЕОНЕ', 'Республика Сьерра-Леоне', '694', 'SL', 'SLE', 1, NULL),
+(200, 'СИНГАПУР', 'Республика Сингапур', '702', 'SG', 'SGP', 1, NULL),
+(201, 'СЛОВАКИЯ', 'Словацкая Республика', '703', 'SK', 'SVK', 1, NULL),
+(202, 'ВЬЕТНАМ', 'Социалистическая Республика Вьетнам', '704', 'VN', 'VNM', 1, NULL),
+(203, 'СЛОВЕНИЯ', 'Республика Словения', '705', 'SI', 'SVN', 1, NULL),
+(204, 'СОМАЛИ', 'Сомалийская Республика', '706', 'SO', 'SOM', 1, NULL),
+(205, 'ЮЖНАЯ АФРИКА', 'Южно-Африканская Республика', '710', 'ZA', 'ZAF', 1, NULL),
+(206, 'ЗИМБАБВЕ', 'Республика Зимбабве', '716', 'ZW', 'ZWE', 1, NULL),
+(207, 'ИСПАНИЯ', 'Королевство Испания', '724', 'ES', 'ESP', 1, NULL),
+(208, 'ЗАПАДНАЯ САХАРА', NULL, '732', 'EH', 'ESH', 1, NULL),
+(209, 'СУДАН', 'Республика Судан', '736', 'SD', 'SDN', 1, NULL),
+(210, 'СУРИНАМ', 'Республика Суринам', '740', 'SR', 'SUR', 1, NULL),
+(211, 'ШПИЦБЕРГЕН И ЯН МАЙЕН', NULL, '744', 'SJ', 'SJM', 1, NULL),
+(212, 'СВАЗИЛЕНД', 'Королевство Свазиленд', '748', 'SZ', 'SWZ', 1, NULL),
+(213, 'ШВЕЦИЯ', 'Королевство Швеция', '752', 'SE', 'SWE', 1, NULL),
+(214, 'ШВЕЙЦАРИЯ', 'Швейцарская Конфедерация', '756', 'CH', 'CHE', 1, NULL),
+(215, 'СИРИЙСКАЯ АРАБСКАЯ РЕСПУБЛИКА', NULL, '760', 'SY', 'SYR', 1, NULL),
+(216, 'ТАДЖИКИСТАН', 'Республика Таджикистан', '762', 'TJ', 'TJK', 1, NULL),
+(217, 'ТАИЛАНД', 'Королевство Таиланд', '764', 'TH', 'THA', 1, NULL),
+(218, 'ТОГО', 'Тоголезская Республика', '768', 'TG', 'TGO', 1, NULL),
+(219, 'ТОКЕЛАУ', NULL, '772', 'TK', 'TKL', 1, NULL),
+(220, 'ТОНГА', 'Королевство Тонга', '776', 'TO', 'TON', 1, NULL),
+(221, 'ТРИНИДАД И ТОБАГО', 'Республика Тринидад и Тобаго', '780', 'TT', 'TTO', 1, NULL),
+(222, 'ОБЪЕДИНЕННЫЕ АРАБСКИЕ ЭМИРАТЫ', NULL, '784', 'AE', 'ARE', 1, NULL),
+(223, 'ТУНИС', 'Тунисская Республика', '788', 'TN', 'TUN', 1, NULL),
+(224, 'ТУРЦИЯ', 'Турецкая Республика', '792', 'TR', 'TUR', 1, NULL),
+(225, 'ТУРКМЕНИЯ', 'Туркменистан', '795', 'TM', 'TKM', 1, NULL),
+(226, 'ОСТРОВА ТЕРКС И КАЙКОС', NULL, '796', 'TC', 'TCA', 1, NULL),
+(227, 'ТУВАЛУ', NULL, '798', 'TV', 'TUV', 1, NULL),
+(228, 'УГАНДА', 'Республика Уганда', '800', 'UG', 'UGA', 1, NULL),
+(229, 'УКРАИНА', NULL, '804', 'UA', 'UKR', 1, NULL),
+(230, 'РЕСПУБЛИКА МАКЕДОНИЯ', NULL, '807', 'MK', 'MKD', 1, NULL),
+(231, 'ЕГИПЕТ', 'Арабская Республика Египет', '818', 'EG', 'EGY', 1, NULL),
+(232, 'СОЕДИНЕННОЕ КОРОЛЕВСТВО', 'Соединенное Королевство Великобритании и Северной Ирландии', '826', 'GB', 'GBR', 1, NULL),
+(233, 'ГЕРНСИ', NULL, '831', 'GG', 'GGY', 1, NULL),
+(234, 'ДЖЕРСИ', NULL, '832', 'JE', 'JEY', 1, NULL),
+(235, 'ОСТРОВ МЭН', NULL, '833', 'IM', 'IMN', 1, NULL),
+(236, 'ТАНЗАНИЯ, ОБЪЕДИНЕННАЯ РЕСПУБЛИКА', 'Объединенная Республика Танзания', '834', 'TZ', 'TZA', 1, NULL),
+(237, 'СОЕДИНЕННЫЕ ШТАТЫ', 'Соединенные Штаты Америки', '840', 'US', 'USA', 1, NULL),
+(238, 'ВИРГИНСКИЕ ОСТРОВА, США', 'Виргинские острова Соединенных Штатов', '850', 'VI', 'VIR', 1, NULL),
+(239, 'БУРКИНА-ФАСО', NULL, '854', 'BF', 'BFA', 1, NULL),
+(240, 'УРУГВАЙ', 'Восточная Республика Уругвай', '858', 'UY', 'URY', 1, NULL),
+(241, 'УЗБЕКИСТАН', 'Республика Узбекистан', '860', 'UZ', 'UZB', 1, NULL),
+(242, 'ВЕНЕСУЭЛА БОЛИВАРИАНСКАЯ РЕСПУБЛИКА', 'Боливарианская Республика Венесуэла', '862', 'VE', 'VEN', 1, NULL),
+(243, 'УОЛЛИС И ФУТУНА', NULL, '876', 'WF', 'WLF', 1, NULL),
+(244, 'САМОА', 'Независимое Государство Самоа', '882', 'WS', 'WSM', 1, NULL),
+(245, 'ЙЕМЕН', 'Йеменская Республика', '887', 'YE', 'YEM', 1, NULL),
+(246, 'ЗАМБИЯ', 'Республика Замбия', '894', 'ZM', 'ZMB', 1, NULL),
+(247, 'АБХАЗИЯ', 'Республика Абхазия', '895', 'AB', 'ABH', 1, NULL),
+(248, 'ЮЖНАЯ ОСЕТИЯ', 'Республика Южная Осетия', '896', 'OS', 'OST', 1, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `class_unit`
+--
+
+CREATE TABLE IF NOT EXISTS `class_unit` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `name` varchar(255) NOT NULL COMMENT 'Наименование единицы измерения',
+  `number_code` varchar(5) NOT NULL COMMENT 'Код',
+  `rus_name1` varchar(50) DEFAULT NULL COMMENT 'Условное обозначение национальное',
+  `eng_name1` varchar(50) DEFAULT NULL COMMENT 'Условное обозначение международное',
+  `rus_name2` varchar(50) DEFAULT NULL COMMENT 'Кодовое буквенное обозначение национальное',
+  `eng_name2` varchar(50) DEFAULT NULL COMMENT 'Кодовое буквенное обозначение международное',
+  `class_unit_group_id` tinyint(4) NOT NULL COMMENT 'Группа единиц измерения',
+  `class_unit_type_id` tinyint(4) NOT NULL COMMENT 'Раздел/приложение в которое входит единица измерения',
+  `visible` tinyint(4) NOT NULL DEFAULT '1' COMMENT 'Видимость',
+  `comment` varchar(255) DEFAULT NULL COMMENT 'Комментарий',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `number_code` (`number_code`),
+  KEY `class_unit_group_id` (`class_unit_group_id`),
+  KEY `class_unit_type_id` (`class_unit_type_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Общероссийский классификатор единиц измерения ОКЕИ' AUTO_INCREMENT=431 ;
+
+--
+-- Дамп данных таблицы `class_unit`
+--
+
+INSERT INTO `class_unit` (`id`, `name`, `number_code`, `rus_name1`, `eng_name1`, `rus_name2`, `eng_name2`, `class_unit_group_id`, `class_unit_type_id`, `visible`, `comment`) VALUES
+(1, 'Миллиметр', '003', 'мм', 'mm', 'ММ', 'MMT', 1, 1, 1, NULL),
+(2, 'Сантиметр', '004', 'см', 'cm', 'СМ', 'CMT', 1, 1, 1, NULL),
+(4, 'Метр', '006', 'м', 'm', 'М', 'MTR', 1, 1, 1, NULL),
+(9, 'Ярд (0,9144 м)', '043', 'ярд', 'yd', 'ЯРД', 'YRD', 1, 1, 1, NULL),
+(14, 'Квадратный метр', '055', 'м2', 'm2', 'М2', 'MTK', 2, 1, 1, NULL),
+(24, 'Литр; кубический дециметр', '112', 'л; дм3', 'I; L; dm^3', 'Л; ДМ3', 'LTR; DMQ', 3, 1, 1, NULL),
+(37, 'Килограмм', '166', 'кг', 'kg', 'КГ', 'KGM', 4, 1, 1, NULL),
+(114, 'Бобина', '616', 'боб', '-', 'БОБ', 'NBB', 7, 1, 1, NULL),
+(119, 'Изделие', '657', 'изд', '-', 'ИЗД', 'NAR', 7, 1, 1, NULL),
+(121, 'Набор', '704', 'набор', '-', 'НАБОР', 'SET', 7, 1, 1, NULL),
+(122, 'Пара (2 шт.)', '715', 'пар', 'pr; 2', 'ПАР', 'NPR', 7, 1, 1, NULL),
+(128, 'Рулон', '736', 'рул', '-', 'РУЛ', 'NPL', 7, 1, 1, NULL),
+(132, 'Упаковка', '778', 'упак', '-', 'УПАК', 'NMP', 7, 1, 1, NULL),
+(135, 'Штука', '796', 'шт', 'pc; 1', 'ШТ', 'PCE; NMB', 7, 1, 1, NULL),
+(155, 'Погонный метр', '018', 'пог. м', NULL, 'ПОГ М', NULL, 1, 2, 1, NULL),
+(219, 'Байт', '255', 'бай', NULL, 'БАЙТ', NULL, 5, 2, 1, NULL),
+(231, 'Рубль', '383', 'руб', NULL, 'РУБ', NULL, 7, 2, 1, NULL),
+(257, 'Тонна в смену', '536', 'т/смен', NULL, 'Т/СМЕН', NULL, 7, 2, 1, NULL),
+(260, 'Человеко-час', '539', 'чел.ч', NULL, 'ЧЕЛ.Ч', NULL, 7, 2, 1, NULL),
+(285, 'Единица', '642', 'ед', NULL, 'ЕД', NULL, 7, 2, 1, NULL),
+(290, 'Место', '698', 'мест', NULL, 'МЕСТ', NULL, 7, 2, 1, NULL),
+(304, 'Человек', '792', 'чел', NULL, 'ЧЕЛ', NULL, 7, 2, 1, NULL),
+(309, 'Ящик', '812', 'ящ', NULL, 'ЯЩ', NULL, 7, 2, 1, NULL),
+(312, 'Миллион пар', '838', '10^6 пар', NULL, 'МЛН ПАР', NULL, 7, 2, 1, NULL),
+(313, 'Комплект', '839', 'компл', NULL, 'КОМПЛ', NULL, 7, 2, 1, NULL),
+(323, 'Условная единица', '876', 'усл. ед', NULL, 'УСЛ ЕД', NULL, 7, 2, 1, NULL),
+(364, 'Смена', '917', 'смен', NULL, 'СМЕН', NULL, 7, 2, 1, NULL),
+(430, 'Стандарт', '152', NULL, '-', NULL, 'WSD', 3, 3, 1, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `class_unit_group`
+--
+
+CREATE TABLE IF NOT EXISTS `class_unit_group` (
+  `id` tinyint(4) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `name` varchar(255) NOT NULL COMMENT 'Наименование группы',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Группы единиц измерения' AUTO_INCREMENT=8 ;
+
+--
+-- Дамп данных таблицы `class_unit_group`
+--
+
+INSERT INTO `class_unit_group` (`id`, `name`) VALUES
+(6, 'Единицы времени'),
+(1, 'Единицы длины'),
+(4, 'Единицы массы'),
+(3, 'Единицы объема'),
+(2, 'Единицы площади'),
+(5, 'Технические единицы'),
+(7, 'Экономические единицы');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `class_unit_type`
+--
+
+CREATE TABLE IF NOT EXISTS `class_unit_type` (
+  `id` tinyint(4) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `name` varchar(255) NOT NULL COMMENT 'Наименование раздела/приложения',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Разделы/приложения, в которые включены единицы измерения' AUTO_INCREMENT=4 ;
+
+--
+-- Дамп данных таблицы `class_unit_type`
+--
+
+INSERT INTO `class_unit_type` (`id`, `name`) VALUES
+(1, 'Международные единицы измерения, включенные в ЕСКК'),
+(2, 'Национальные единицы измерения, включенные в ЕСКК'),
+(3, 'Международные единицы измерения, не включенные в ЕСКК');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `comments`
+--
+
+CREATE TABLE IF NOT EXISTS `comments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `date` datetime NOT NULL,
+  `object_name` varchar(16) NOT NULL COMMENT 'Имя(тип) объекта комментирования',
+  `object_id` int(11) NOT NULL COMMENT 'ID объекта комментирования',
+  `autor_name` varchar(16) NOT NULL COMMENT 'Имя автора (анонимного)',
+  `autor_email` varchar(32) NOT NULL COMMENT 'Электронная почта анонимного автора',
+  `autor_id` int(11) NOT NULL COMMENT 'UID автора',
+  `text` text NOT NULL COMMENT 'Текст коментария',
+  `rate` tinyint(4) NOT NULL COMMENT 'Оценка объекта (0-5)',
+  `ip` varchar(16) NOT NULL,
+  `user_agent` varchar(128) NOT NULL,
+  `response` varchar(512) NOT NULL COMMENT 'Ответ администрации',
+  `responser` int(11) NOT NULL COMMENT 'Автор ответа',
+  PRIMARY KEY (`id`),
+  KEY `object_name` (`object_name`),
+  KEY `object_id` (`object_id`),
+  KEY `rate` (`rate`),
+  KEY `date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Коментарии к товарам, новостям, статьям и пр.' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `counter`
+--
+
+CREATE TABLE IF NOT EXISTS `counter` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` bigint(20) NOT NULL DEFAULT '0',
-  `ip` varchar(30) NOT NULL DEFAULT '',
-  `agent` varchar(150) NOT NULL,
-  `refer` varchar(200) NOT NULL,
-  `file` varchar(20) NOT NULL DEFAULT '',
-  `query` varchar(50) NOT NULL DEFAULT '',
+  `ip` varchar(30) CHARACTER SET latin1 NOT NULL DEFAULT '',
+  `agent` varchar(128) NOT NULL DEFAULT '',
+  `refer` varchar(512) NOT NULL DEFAULT '',
+  `file` varchar(20) CHARACTER SET latin1 NOT NULL DEFAULT '',
+  `query` varchar(128) NOT NULL DEFAULT '',
   UNIQUE KEY `id` (`id`),
   KEY `time` (`date`),
   KEY `ip` (`ip`),
   KEY `agent` (`agent`),
-  KEY `refer` (`refer`),
+  KEY `refer` (`refer`(333)),
   KEY `file` (`file`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- -----------------------------------------------------
--- Table `doc_agent`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `doc_agent` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `group` INT(11) NOT NULL ,
-  `name` VARCHAR(128) NOT NULL ,
-  `fullname` VARCHAR(256) NOT NULL ,
-  `tel` VARCHAR(64) NOT NULL ,
-  `adres` VARCHAR(512) NOT NULL ,
-  `gruzopol` VARCHAR(512) NOT NULL ,
-  `inn` VARCHAR(24) NOT NULL ,
-  `dir_fio` VARCHAR(128) NOT NULL ,
-  `dir_fio_r` VARCHAR(128) NOT NULL ,
-  `pfio` VARCHAR(128) NOT NULL ,
-  `pdol` VARCHAR(128) NOT NULL ,
-  `okevd` VARCHAR(8) NOT NULL ,
-  `okpo` VARCHAR(16) NOT NULL ,
-  `rs` VARCHAR(32) NOT NULL ,
-  `bank` VARCHAR(64) NOT NULL ,
-  `ks` VARCHAR(32) NOT NULL ,
-  `bik` INT(11) NOT NULL ,
-  `email` VARCHAR(64) NOT NULL ,
-  `type` TINYINT(4) NOT NULL DEFAULT '1' ,
-  `pasp_num` VARCHAR(12) NOT NULL ,
-  `pasp_date` DATE NOT NULL ,
-  `pasp_kem` VARCHAR(64) NOT NULL ,
-  `comment` TEXT NOT NULL ,
-  `no_mail` TINYINT(4) NOT NULL ,
-  `responsible` INT(11) NULL ,
-  `data_sverki` DATE NOT NULL ,
-  `dishonest` TINYINT(4) NOT NULL COMMENT 'Недобросовестный' ,
-  `p_agent` int(11) DEFAULT NULL COMMENT 'Подчинение другому агенту',
-  UNIQUE INDEX `id` (`id` ASC) ,
-  UNIQUE INDEX `uniq_name` (`group` ASC, `name` ASC) ,
-  INDEX `name` (`name` ASC) ,
-  INDEX `fullname` (`fullname`(255) ASC) ,
-  INDEX `tel` (`tel` ASC) ,
-  INDEX `inn` (`inn` ASC) ,
-  INDEX `type` (`type` ASC) ,
-  INDEX `pasp_num` (`pasp_num` ASC, `pasp_date` ASC, `pasp_kem` ASC) ,
-  INDEX `group` (`group` ASC) ,
-  INDEX `fk_doc_agent_users1` (`responsible` ASC) ,
-  CONSTRAINT `doc_agent_ibfk_1`
-    FOREIGN KEY (`group` )
-    REFERENCES `doc_agent_group` (`id` ),
-  CONSTRAINT `doc_agent_ibfk_1`
-    FOREIGN KEY (`group` )
-    REFERENCES `doc_agent_group` (`id` ),
-  CONSTRAINT `fk_doc_agent_users1`
-    FOREIGN KEY (`responsible` )
-    REFERENCES `users` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB
-AUTO_INCREMENT = 3
-DEFAULT CHARACTER SET = utf8,
-COMMENT = 'Список агентов' ;
-
-
-LOCK TABLES `counter` WRITE;
-/*!40000 ALTER TABLE `counter` DISABLE KEYS */;
-/*!40000 ALTER TABLE `counter` ENABLE KEYS */;
-UNLOCK TABLES;
+-- --------------------------------------------------------
 
 --
--- Table structure for table `currency`
+-- Структура таблицы `currency`
 --
 
-DROP TABLE IF EXISTS `currency`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `currency` (
+CREATE TABLE IF NOT EXISTS `currency` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(10) NOT NULL,
   `coeff` decimal(8,4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=MyISAM AUTO_INCREMENT=34 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
 
 --
--- Dumping data for table `currency`
+-- Дамп данных таблицы `currency`
 --
 
-LOCK TABLES `currency` WRITE;
-/*!40000 ALTER TABLE `currency` DISABLE KEYS */;
-INSERT INTO `currency` VALUES (0,'RUR','1.0000'),(1,'USD','30.9190'),(2,'EUR','41.7035'),(3,'AUD','30.9190'),(4,'BYR','35.2957'),(5,'CAD','30.0535'),(6,'CHF','33.7102'),(7,'CNY','48.6270'),(8,'DKK','56.1378'),(9,'XDR','48.2865'),(10,'GBP','48.7964'),(11,'ISK','23.8315'),(12,'JPY','40.2251'),(13,'KZT','20.8884'),(14,'NOK','53.3804'),(15,'SEK','45.6019'),(16,'SGD','23.8370'),(17,'TRY','17.0447'),(18,'UAH','38.5548');
-/*!40000 ALTER TABLE `currency` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `currency` (`id`, `name`, `coeff`) VALUES
+(1, 'RUR', 1.0000),
+(2, 'USD', 30.7194);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `db_version`
+-- Структура таблицы `db_version`
 --
 
-DROP TABLE IF EXISTS `db_version`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `db_version` (
-  `version` int(11) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Текущая версия базы данных';
-/*!40101 SET character_set_client = @saved_cs_client */;
+CREATE TABLE IF NOT EXISTS `db_version` (
+  `version` int(11) NOT NULL,
+  PRIMARY KEY (`version`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 --
--- Dumping data for table `db_version`
+-- Дамп данных таблицы `db_version`
 --
 
-LOCK TABLES `db_version` WRITE;
-/*!40000 ALTER TABLE `db_version` DISABLE KEYS */;
-INSERT INTO `db_version` VALUES (272);
-/*!40000 ALTER TABLE `db_version` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `db_version` (`version`) VALUES
+(456);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_agent`
+-- Структура таблицы `doc_agent`
 --
 
-DROP TABLE IF EXISTS `doc_agent`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_agent` (
+CREATE TABLE IF NOT EXISTS `doc_agent` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `fullname` varchar(200) NOT NULL,
   `tel` varchar(64) NOT NULL,
+  `sms_phone` varchar(16) NOT NULL,
+  `fax_phone` varchar(16) NOT NULL,
+  `alt_phone` varchar(16) NOT NULL,
   `adres` varchar(300) NOT NULL,
   `gruzopol` varchar(300) NOT NULL,
   `inn` varchar(24) NOT NULL,
@@ -224,10 +551,10 @@ CREATE TABLE `doc_agent` (
   `dir_fio_r` varchar(128) NOT NULL,
   `pfio` text NOT NULL,
   `pdol` text NOT NULL,
-  `okevd` varchar(10) NOT NULL,
+  `okevd` varchar(5) NOT NULL,
   `okpo` varchar(10) NOT NULL,
   `rs` varchar(22) NOT NULL,
-  `bank` varchar(60) NOT NULL,
+  `bank` varchar(50) NOT NULL,
   `ks` varchar(50) NOT NULL,
   `bik` varchar(12) NOT NULL,
   `group` int(11) NOT NULL,
@@ -241,6 +568,7 @@ CREATE TABLE `doc_agent` (
   `responsible` int(11) NOT NULL,
   `data_sverki` date NOT NULL,
   `dishonest` tinyint(4) NOT NULL,
+  `p_agent` int(11) DEFAULT NULL COMMENT 'Подчинение другому агенту',
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`),
   KEY `fullname` (`fullname`),
@@ -248,28 +576,23 @@ CREATE TABLE `doc_agent` (
   KEY `inn` (`inn`),
   KEY `type` (`type`),
   KEY `pasp_num` (`pasp_num`,`pasp_date`,`pasp_kem`),
-  KEY `responsible` (`responsible`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='pcomment - printable comment';
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `p_agent` (`p_agent`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='pcomment - printable comment' AUTO_INCREMENT=2 ;
 
 --
--- Dumping data for table `doc_agent`
+-- Дамп данных таблицы `doc_agent`
 --
 
-LOCK TABLES `doc_agent` WRITE;
-/*!40000 ALTER TABLE `doc_agent` DISABLE KEYS */;
-INSERT INTO `doc_agent` VALUES (1,'Частное лицо','Частное лицо','+7 383 000 00 00','г. Новосибирск, ул. Новосибирская 1/11','','','','','','','','','','','','',1,'',1,'','0000-00-00','','',1,0,'0000-00-00',0),(2,'Иванов И.И.','Иванов И.И.','+7 383 999 99 99','г. Новосибирск, ул. Новосибирская 1/12','','','','','','','','','','','','',2,'',1,'','0000-00-00','','',1,0,'0000-00-00',0);
-/*!40000 ALTER TABLE `doc_agent` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_agent` (`id`, `name`, `fullname`, `tel`, `sms_phone`, `fax_phone`, `alt_phone`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `no_mail`, `responsible`, `data_sverki`, `dishonest`, `p_agent`) VALUES
+(1, 'Частное лицо', 'Частное лицо', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 1, '', 1, '', '0000-00-00', '', '', 1, 0, '0000-00-00', 0, NULL);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_agent_dov`
+-- Структура таблицы `doc_agent_dov`
 --
 
-DROP TABLE IF EXISTS `doc_agent_dov`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_agent_dov` (
+CREATE TABLE IF NOT EXISTS `doc_agent_dov` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ag_id` int(11) NOT NULL,
   `name` varchar(50) NOT NULL,
@@ -292,56 +615,48 @@ CREATE TABLE `doc_agent_dov` (
   KEY `pasp_kem` (`pasp_kem`),
   KEY `pasp_data` (`pasp_data`),
   KEY `mark_del` (`mark_del`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
 --
--- Dumping data for table `doc_agent_dov`
+-- Дамп данных таблицы `doc_agent_dov`
 --
 
-LOCK TABLES `doc_agent_dov` WRITE;
-/*!40000 ALTER TABLE `doc_agent_dov` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_agent_dov` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_agent_dov` (`id`, `ag_id`, `name`, `name2`, `surname`, `range`, `pasp_ser`, `pasp_num`, `pasp_kem`, `pasp_data`, `mark_del`) VALUES
+(1, 1, 'Тест', 'Тестович', 'Тестов', '', '', '', '', '', 0);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_agent_group`
+-- Структура таблицы `doc_agent_group`
 --
 
-DROP TABLE IF EXISTS `doc_agent_group`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_agent_group` (
+CREATE TABLE IF NOT EXISTS `doc_agent_group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `pid` int(11) NOT NULL,
   `desc` varchar(100) NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 PACK_KEYS=0;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
 --
--- Dumping data for table `doc_agent_group`
+-- Дамп данных таблицы `doc_agent_group`
 --
 
-LOCK TABLES `doc_agent_group` WRITE;
-/*!40000 ALTER TABLE `doc_agent_group` DISABLE KEYS */;
-INSERT INTO `doc_agent_group` VALUES (1,'Группа 1',0,''),(2,'Группа 2',0,'');
-/*!40000 ALTER TABLE `doc_agent_group` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_agent_group` (`id`, `name`, `pid`, `desc`) VALUES
+(1, 'Покупатели', 0, '');
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_base`
+-- Структура таблицы `doc_base`
 --
 
-DROP TABLE IF EXISTS `doc_base`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base` (
+CREATE TABLE IF NOT EXISTS `doc_base` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group` int(11) NOT NULL DEFAULT '0',
   `name` varchar(100) NOT NULL,
-  `vc` varchar(32) NOT NULL,
+  `vc` varchar(32) NOT NULL COMMENT 'Код производителя',
+  `country` int(11) DEFAULT NULL,
   `desc` text NOT NULL,
   `cost` double(10,2) NOT NULL DEFAULT '0.00',
   `stock` tinyint(1) NOT NULL,
@@ -351,67 +666,74 @@ CREATE TABLE `doc_base` (
   `pos_type` tinyint(4) NOT NULL,
   `hidden` tinyint(4) NOT NULL,
   `no_export_yml` tinyint(4) NOT NULL,
-  `unit` int(11) NOT NULL,
+  `unit` int(11) NOT NULL COMMENT 'Единица измерения',
   `warranty` int(11) NOT NULL,
   `warranty_type` tinyint(4) NOT NULL,
+  `meta_description` varchar(256) NOT NULL,
+  `meta_keywords` varchar(128) NOT NULL,
+  `title_tag` varchar(128) NOT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `buy_time` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
   UNIQUE KEY `id` (`id`),
+  UNIQUE KEY `uniq` (`group`,`name`),
   KEY `group` (`group`),
   KEY `name` (`name`),
   KEY `cost_date` (`cost_date`),
   KEY `hidden` (`hidden`),
   KEY `unit` (`unit`),
   KEY `stock` (`stock`),
-  CONSTRAINT `doc_base_ibfk_1` FOREIGN KEY (`group`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `likvid` (`likvid`),
+  KEY `country` (`country`),
+  KEY `create_time` (`create_time`),
+  KEY `buy_time` (`buy_time`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT AUTO_INCREMENT=3 ;
 
 --
--- Dumping data for table `doc_base`
+-- Дамп данных таблицы `doc_base`
 --
 
-LOCK TABLES `doc_base` WRITE;
-/*!40000 ALTER TABLE `doc_base` DISABLE KEYS */;
-INSERT INTO `doc_base` VALUES (1,1,'Сапоги зимние','SAPOG','',1000.00,0,'QUXEWX','0.00','0000-00-00 00:00:00',0,0,1,1,0,0),(2,2,'синяя меховая','KU','',12000.00,0,'AKEDAYNX','0.00','0000-00-00 00:00:00',0,0,1,1,0,0),(3,1,'Сапоги летние','SAPOG2','',2000.00,0,'QUXEWX','0.00','0000-00-00 00:00:00',0,0,1,1,0,0);
-/*!40000 ALTER TABLE `doc_base` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_base` (`id`, `group`, `name`, `vc`, `country`, `desc`, `cost`, `stock`, `proizv`, `likvid`, `cost_date`, `pos_type`, `hidden`, `no_export_yml`, `unit`, `warranty`, `warranty_type`, `meta_description`, `meta_keywords`, `title_tag`, `create_time`, `buy_time`) VALUES
+(1, 1, 'Первый товар', '', 1, '', 0.00, 0, '', 0.00, '0000-00-00 00:00:00', 0, 0, 0, 260, 0, 0, '', '', '', '2012-12-23 23:51:33', '1970-01-01 00:00:00'),
+(2, 2, 'Первая услуга', '', 1, '', 12.00, 0, '', 0.00, '0000-00-00 00:00:00', 1, 0, 0, 285, 0, 0, '', '', '', '2012-12-23 23:52:31', '1970-01-01 00:00:00');
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_base_cnt`
+-- Структура таблицы `doc_base_attachments`
 --
 
-DROP TABLE IF EXISTS `doc_base_cnt`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_cnt` (
+CREATE TABLE IF NOT EXISTS `doc_base_attachments` (
+  `pos_id` int(11) NOT NULL,
+  `attachment_id` int(11) NOT NULL,
+  UNIQUE KEY `uni` (`pos_id`,`attachment_id`),
+  KEY `attachment_id` (`attachment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Присоединённые файлы';
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `doc_base_cnt`
+--
+
+CREATE TABLE IF NOT EXISTS `doc_base_cnt` (
   `id` int(11) NOT NULL,
   `sklad` tinyint(4) NOT NULL,
   `cnt` double NOT NULL,
-  `mesto` int(11) NOT NULL,
-  `mincnt` int(11) NOT NULL,
+  `mesto` varchar(32) NOT NULL,
+  `mincnt` varchar(8) NOT NULL,
   PRIMARY KEY (`id`,`sklad`),
   KEY `cnt` (`cnt`),
   KEY `mesto` (`mesto`),
   KEY `mincnt` (`mincnt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_cnt`
+-- Структура таблицы `doc_base_cost`
 --
 
-LOCK TABLES `doc_base_cnt` WRITE;
-/*!40000 ALTER TABLE `doc_base_cnt` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_base_cnt` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_base_cost`
---
-
-DROP TABLE IF EXISTS `doc_base_cost`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_cost` (
+CREATE TABLE IF NOT EXISTS `doc_base_cost` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `pos_id` int(11) NOT NULL,
   `cost_id` int(11) NOT NULL,
@@ -424,39 +746,26 @@ CREATE TABLE `doc_base_cost` (
   KEY `group_id` (`pos_id`),
   KEY `cost_id` (`cost_id`),
   KEY `value` (`value`),
-  KEY `type` (`type`),
-  CONSTRAINT `doc_base_cost_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `doc_base_cost_ibfk_2` FOREIGN KEY (`cost_id`) REFERENCES `doc_cost` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_cost`
+-- Структура таблицы `doc_base_dop`
 --
 
-LOCK TABLES `doc_base_cost` WRITE;
-/*!40000 ALTER TABLE `doc_base_cost` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_base_cost` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_base_dop`
---
-
-DROP TABLE IF EXISTS `doc_base_dop`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_dop` (
+CREATE TABLE IF NOT EXISTS `doc_base_dop` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `type` int(11) NOT NULL DEFAULT '0',
+  `type` int(11) DEFAULT '0',
   `d_int` double NOT NULL DEFAULT '0',
   `d_ext` double NOT NULL DEFAULT '0',
   `size` double NOT NULL DEFAULT '0',
   `mass` double NOT NULL DEFAULT '0',
-  `analog` varchar(30) NOT NULL,
+  `analog` varchar(20) NOT NULL,
   `koncost` double NOT NULL DEFAULT '0',
   `strana` varchar(20) NOT NULL,
-  `tranzit` int(11) NOT NULL,
+  `tranzit` tinyint(4) NOT NULL,
   `ntd` varchar(32) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `type` (`type`),
@@ -465,311 +774,211 @@ CREATE TABLE `doc_base_dop` (
   KEY `size` (`size`),
   KEY `mass` (`mass`),
   KEY `analog` (`analog`),
-  KEY `koncost` (`koncost`),
-  KEY `ntd` (`ntd`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `koncost` (`koncost`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_dop`
+-- Структура таблицы `doc_base_dop_type`
 --
 
-LOCK TABLES `doc_base_dop` WRITE;
-/*!40000 ALTER TABLE `doc_base_dop` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_base_dop` ENABLE KEYS */;
-UNLOCK TABLES;
-
-
--- -----------------------------------------------------
--- Table `doc_list`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `doc_list` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `type` TINYINT(4) NOT NULL DEFAULT '0' ,
-  `agent` INT(11) NOT NULL DEFAULT '0' ,
-  `contract` INT(11) NULL DEFAULT NULL ,
-  `comment` TEXT NOT NULL ,
-  `date` BIGINT(20) NOT NULL DEFAULT '0' ,
-  `ok` BIGINT(20) NOT NULL DEFAULT '0' ,
-  `sklad` TINYINT(4) NOT NULL DEFAULT '0' ,
-  `kassa` TINYINT(4) NOT NULL DEFAULT '0' ,
-  `bank` TINYINT(4) NOT NULL DEFAULT '0' ,
-  `user` INT(11) NOT NULL DEFAULT '0' ,
-  `altnum` INT(11) NOT NULL ,
-  `subtype` VARCHAR(4) NOT NULL ,
-  `sum` DECIMAL(10,2) NOT NULL DEFAULT '0.00' ,
-  `nds` INT(11) NOT NULL DEFAULT '0' ,
-  `p_doc` INT(11) NOT NULL ,
-  `mark_del` BIGINT(20) NOT NULL ,
-  `firm_id` INT(11) NOT NULL DEFAULT '1' ,
-  `err_flag` TINYINT(4) NOT NULL DEFAULT '0' ,
-  UNIQUE INDEX `id` (`id` ASC) ,
-  INDEX `type` (`type` ASC) ,
-  INDEX `agent` (`agent` ASC) ,
-  INDEX `contract` (`contract` ASC) ,
-  INDEX `date` (`date` ASC) ,
-  INDEX `altnum` (`altnum` ASC) ,
-  INDEX `p_doc` (`p_doc` ASC) ,
-  INDEX `ok` (`ok` ASC) ,
-  INDEX `sklad` (`sklad` ASC) ,
-  INDEX `user` (`user` ASC) ,
-  INDEX `subtype` (`subtype` ASC) ,
-  INDEX `mark_del` (`mark_del` ASC) ,
-  INDEX `firm_id` (`firm_id` ASC) ,
-  INDEX `kassa` (`kassa` ASC, `bank` ASC) ,
-  CONSTRAINT `doc_list_ibfk_5`
-    FOREIGN KEY (`type` )
-    REFERENCES `doc_types` (`id` ),
-  CONSTRAINT `doc_list_ibfk_1`
-    FOREIGN KEY (`agent` )
-    REFERENCES `doc_agent` (`id` ),
-  CONSTRAINT `doc_list_ibfk_2`
-    FOREIGN KEY (`user` )
-    REFERENCES `users` (`id` ),
-  CONSTRAINT `doc_list_ibfk_3`
-    FOREIGN KEY (`sklad` )
-    REFERENCES `doc_sklady` (`id` ),
-  CONSTRAINT `doc_list_ibfk_4`
-    FOREIGN KEY (`firm_id` )
-    REFERENCES `doc_vars` (`id` ),
-  CONSTRAINT `doc_list_ibfk_5`
-    FOREIGN KEY (`type` )
-    REFERENCES `doc_types` (`id` ),
-  CONSTRAINT `doc_list_ibfk_1`
-    FOREIGN KEY (`agent` )
-    REFERENCES `doc_agent` (`id` ),
-  CONSTRAINT `doc_list_ibfk_2`
-    FOREIGN KEY (`user` )
-    REFERENCES `users` (`id` ),
-  CONSTRAINT `doc_list_ibfk_3`
-    FOREIGN KEY (`sklad` )
-    REFERENCES `doc_sklady` (`id` ),
-  CONSTRAINT `doc_list_ibfk_4`
-    FOREIGN KEY (`firm_id` )
-    REFERENCES `doc_vars` (`id` ))
-ENGINE = InnoDB
-AUTO_INCREMENT = 1
-DEFAULT CHARACTER SET = utf8;
-
-
-DROP TABLE IF EXISTS `doc_base_dop_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_dop_type` (
+CREATE TABLE IF NOT EXISTS `doc_base_dop_type` (
   `id` int(11) NOT NULL,
-  `name` varchar(70) CHARACTER SET utf8 NOT NULL,
-  `desc` text CHARACTER SET utf8 NOT NULL,
+  `name` varchar(70) NOT NULL,
+  `desc` text NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=ucs2;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_dop_type`
+-- Структура таблицы `doc_base_gparams`
 --
 
-LOCK TABLES `doc_base_dop_type` WRITE;
-/*!40000 ALTER TABLE `doc_base_dop_type` DISABLE KEYS */;
-INSERT INTO `doc_base_dop_type` VALUES (-1,'',''),(0,'Радиальный шариковый однорядный типовой',''),(1,'Радиальный шариковый сферический',''),(2,'Радиальный роликовый с короткими цилиндрическими роликами',''),(3,'Радиальные роликовые сферические',''),(4,'Радиальные роликовые с игольчатыми роликами',''),(5,'Радиальные роликовые с витыми роликами',''),(6,'Радиально-упорные шариковые',''),(7,'Радиально-упорные роликовые конические',''),(8,'Шариковые упорные',''),(9,'Роликовые упорные','');
-/*!40000 ALTER TABLE `doc_base_dop_type` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_base_gparams`
---
-
-DROP TABLE IF EXISTS `doc_base_gparams`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_gparams` (
-  `id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `doc_base_gparams` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_gparams`
+-- Структура таблицы `doc_base_img`
 --
 
-LOCK TABLES `doc_base_gparams` WRITE;
-/*!40000 ALTER TABLE `doc_base_gparams` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_base_gparams` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_base_img`
---
-
-DROP TABLE IF EXISTS `doc_base_img`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_img` (
+CREATE TABLE IF NOT EXISTS `doc_base_img` (
   `pos_id` int(11) NOT NULL,
   `img_id` int(11) NOT NULL,
   `default` tinyint(4) NOT NULL,
   UNIQUE KEY `pos_id` (`pos_id`,`img_id`),
   KEY `default` (`default`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_img`
+-- Структура таблицы `doc_base_kompl`
 --
 
-LOCK TABLES `doc_base_img` WRITE;
-/*!40000 ALTER TABLE `doc_base_img` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_base_img` ENABLE KEYS */;
-UNLOCK TABLES;
+CREATE TABLE IF NOT EXISTS `doc_base_kompl` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pos_id` int(11) NOT NULL COMMENT 'id наименования',
+  `kompl_id` int(11) NOT NULL COMMENT 'id комплектующего',
+  `cnt` double NOT NULL COMMENT 'количество',
+  UNIQUE KEY `id` (`id`),
+  KEY `kompl_id` (`kompl_id`),
+  KEY `cnt` (`cnt`),
+  KEY `pos_id` (`pos_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Комплектующие - из чего состоит эта позиция' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_base_params`
+-- Структура таблицы `doc_base_params`
 --
 
-DROP TABLE IF EXISTS `doc_base_params`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_params` (
+CREATE TABLE IF NOT EXISTS `doc_base_params` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `param` varchar(32) NOT NULL,
   `type` varchar(8) NOT NULL,
+  `pgroup_id` int(11) NOT NULL,
+  `system` tinyint(4) NOT NULL COMMENT 'Служебный параметр. Нигде не отображается.',
+  `ym_assign` varchar(128) NOT NULL,
   UNIQUE KEY `id` (`id`),
-  KEY `param` (`param`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `param` (`param`),
+  KEY `pgroup_id` (`pgroup_id`),
+  KEY `ym_assign` (`ym_assign`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_params`
+-- Структура таблицы `doc_base_pcollections_list`
 --
 
-LOCK TABLES `doc_base_params` WRITE;
-/*!40000 ALTER TABLE `doc_base_params` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_base_params` ENABLE KEYS */;
-UNLOCK TABLES;
+CREATE TABLE IF NOT EXISTS `doc_base_pcollections_list` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Наборы свойств складской номенклатуры' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_base_values`
+-- Структура таблицы `doc_base_pcollections_set`
 --
 
-DROP TABLE IF EXISTS `doc_base_values`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_base_values` (
+CREATE TABLE IF NOT EXISTS `doc_base_pcollections_set` (
+  `collection_id` int(11) NOT NULL,
+  `param_id` int(11) NOT NULL,
+  UNIQUE KEY `uniq` (`collection_id`,`param_id`),
+  KEY `collection_id` (`collection_id`),
+  KEY `param_id` (`param_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Список параметров в наборе';
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `doc_base_values`
+--
+
+CREATE TABLE IF NOT EXISTS `doc_base_values` (
   `id` int(11) NOT NULL,
   `param_id` int(11) NOT NULL,
   `value` varchar(32) NOT NULL,
+  `intval` int(11) NOT NULL,
+  `doubleval` double NOT NULL,
+  `strval` varchar(512) NOT NULL,
   UNIQUE KEY `unique` (`id`,`param_id`),
   KEY `id` (`id`),
   KEY `param` (`param_id`),
   KEY `value` (`value`),
-  CONSTRAINT `doc_base_values_ibfk_1` FOREIGN KEY (`id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `doc_base_values_ibfk_2` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  KEY `intval` (`intval`),
+  KEY `doubleval` (`doubleval`),
+  KEY `strval` (`strval`(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_base_values`
+-- Структура таблицы `doc_cost`
 --
 
-LOCK TABLES `doc_base_values` WRITE;
-/*!40000 ALTER TABLE `doc_base_values` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_base_values` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_cost`
---
-
-DROP TABLE IF EXISTS `doc_cost`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_cost` (
+CREATE TABLE IF NOT EXISTS `doc_cost` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(25) NOT NULL,
   `type` varchar(5) NOT NULL,
   `value` decimal(8,2) NOT NULL COMMENT 'Значение цены',
   `vid` tinyint(4) NOT NULL COMMENT 'Вид цены определяет места её использования',
-  `accuracy` tinyint(4) NOT NULL,
-  `direction` tinyint(4) NOT NULL,
+  `accuracy` int(11) NOT NULL,
+  `direction` int(11) NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=4 ;
 
 --
--- Dumping data for table `doc_cost`
+-- Дамп данных таблицы `doc_cost`
 --
 
-LOCK TABLES `doc_cost` WRITE;
-/*!40000 ALTER TABLE `doc_cost` DISABLE KEYS */;
-INSERT INTO `doc_cost` VALUES (1,'Оптовая','pp','0.00',1,2,0),(2,'Розничная','pp','15.00',0,2,0),(3,'Корпоративная','pp','-7.00',-2,2,0),(4,'Со скидкой','pp','-5.00',-1,2,0);
-/*!40000 ALTER TABLE `doc_cost` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_cost` (`id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES
+(1, 'Для зарегистрированных', 'pp', 0.00, -1, 2, 0),
+(2, 'По умолчанию', 'pp', 0.00, 1, 2, 0);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_dopdata`
+-- Структура таблицы `doc_dopdata`
 --
 
-DROP TABLE IF EXISTS `doc_dopdata`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_dopdata` (
+CREATE TABLE IF NOT EXISTS `doc_dopdata` (
   `doc` int(11) NOT NULL,
   `param` varchar(20) NOT NULL,
   `value` varchar(150) NOT NULL,
   UNIQUE KEY `doc` (`doc`,`param`),
   KEY `value` (`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_dopdata`
+-- Структура таблицы `doc_group`
 --
 
-LOCK TABLES `doc_dopdata` WRITE;
-/*!40000 ALTER TABLE `doc_dopdata` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_dopdata` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_group`
---
-
-DROP TABLE IF EXISTS `doc_group`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_group` (
+CREATE TABLE IF NOT EXISTS `doc_group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,
+  `name` varchar(64) NOT NULL,
   `desc` text NOT NULL,
   `pid` int(11) NOT NULL,
   `hidelevel` tinyint(4) NOT NULL,
-  `printname` varchar(50) NOT NULL,
   `no_export_yml` tinyint(4) NOT NULL,
+  `printname` varchar(64) NOT NULL,
+  `meta_description` varchar(256) NOT NULL,
+  `meta_keywords` varchar(128) NOT NULL,
+  `title_tag` varchar(128) NOT NULL,
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `name` (`name`),
   KEY `pid` (`pid`),
   KEY `hidelevel` (`hidelevel`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 PACK_KEYS=1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
 
 --
--- Dumping data for table `doc_group`
+-- Дамп данных таблицы `doc_group`
 --
 
-LOCK TABLES `doc_group` WRITE;
-/*!40000 ALTER TABLE `doc_group` DISABLE KEYS */;
-INSERT INTO `doc_group` VALUES (1,'Одежда','',0,0,'Куртка',0),(2,'Обувь','',0,0,'Ботинки',0);
-/*!40000 ALTER TABLE `doc_group` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_group` (`id`, `name`, `desc`, `pid`, `hidelevel`, `no_export_yml`, `printname`, `meta_description`, `meta_keywords`, `title_tag`) VALUES
+(1, 'Товары', '', 0, 0, 0, '', '', '', ''),
+(2, 'Услуги', '', 0, 0, 0, '', '', '', '');
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_group_cost`
+-- Структура таблицы `doc_group_cost`
 --
 
-DROP TABLE IF EXISTS `doc_group_cost`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_group_cost` (
+CREATE TABLE IF NOT EXISTS `doc_group_cost` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_id` int(11) NOT NULL,
   `cost_id` int(11) NOT NULL,
@@ -782,84 +991,47 @@ CREATE TABLE `doc_group_cost` (
   KEY `group_id` (`group_id`),
   KEY `cost_id` (`cost_id`),
   KEY `value` (`value`),
-  KEY `type` (`type`),
-  CONSTRAINT `doc_group_cost_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `doc_group_cost_ibfk_2` FOREIGN KEY (`cost_id`) REFERENCES `doc_cost` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_group_cost`
+-- Структура таблицы `doc_group_params`
 --
 
-LOCK TABLES `doc_group_cost` WRITE;
-/*!40000 ALTER TABLE `doc_group_cost` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_group_cost` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_group_params`
---
-
-DROP TABLE IF EXISTS `doc_group_params`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_group_params` (
-  `id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `doc_group_params` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_id` int(11) DEFAULT NULL,
   `param_id` int(11) DEFAULT NULL,
   `show_in_filter` tinyint(4) NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq` (`group_id`,`param_id`),
   KEY `fk_doc_group_params_doc_group1` (`group_id`),
-  KEY `fk_doc_group_params_doc_base_params1` (`param_id`),
-  KEY `show_in_filter` (`show_in_filter`),
-  CONSTRAINT `fk_doc_group_params_doc_base_params1` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_doc_group_params_doc_group1` FOREIGN KEY (`group_id`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `fk_doc_group_params_doc_base_params1` (`param_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_group_params`
+-- Структура таблицы `doc_img`
 --
 
-LOCK TABLES `doc_group_params` WRITE;
-/*!40000 ALTER TABLE `doc_group_params` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_group_params` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_img`
---
-
-DROP TABLE IF EXISTS `doc_img`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_img` (
+CREATE TABLE IF NOT EXISTS `doc_img` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `type` varchar(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_img`
+-- Структура таблицы `doc_kassa`
 --
 
-LOCK TABLES `doc_img` WRITE;
-/*!40000 ALTER TABLE `doc_img` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_img` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_kassa`
---
-
-DROP TABLE IF EXISTS `doc_kassa`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_kassa` (
+CREATE TABLE IF NOT EXISTS `doc_kassa` (
   `ids` varchar(50) CHARACTER SET latin1 NOT NULL,
   `num` int(11) NOT NULL,
   `name` varchar(50) NOT NULL,
@@ -870,31 +1042,28 @@ CREATE TABLE `doc_kassa` (
   `firm_id` int(11) NOT NULL,
   UNIQUE KEY `ids` (`ids`,`num`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `doc_kassa`
+-- Дамп данных таблицы `doc_kassa`
 --
 
-LOCK TABLES `doc_kassa` WRITE;
-/*!40000 ALTER TABLE `doc_kassa` DISABLE KEYS */;
-INSERT INTO `doc_kassa` VALUES ('bank',1,'OАО \"Надёжный банк\"','0.00','546547','356757357536735','35735675675673563',0),('kassa',1,'Основная касса','0.00','','','',0);
-/*!40000 ALTER TABLE `doc_kassa` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `ballance`, `bik`, `rs`, `ks`, `firm_id`) VALUES
+('bank', 1, 'Основной банк', 0.00, '000000000', '00000000000000000000', '00000000000000000000', 0),
+('kassa', 1, 'Основная касса', 0.00, '', '', '', 0);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_list`
+-- Структура таблицы `doc_list`
 --
 
-DROP TABLE IF EXISTS `doc_list`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_list` (
+CREATE TABLE IF NOT EXISTS `doc_list` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` tinyint(4) NOT NULL DEFAULT '0',
   `agent` int(11) NOT NULL DEFAULT '0',
   `comment` text NOT NULL,
   `date` bigint(20) NOT NULL DEFAULT '0',
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ok` bigint(20) NOT NULL DEFAULT '0',
   `sklad` tinyint(4) NOT NULL DEFAULT '0',
   `kassa` tinyint(4) NOT NULL DEFAULT '0',
@@ -907,7 +1076,8 @@ CREATE TABLE `doc_list` (
   `p_doc` int(11) NOT NULL,
   `mark_del` bigint(20) NOT NULL,
   `firm_id` int(11) NOT NULL DEFAULT '1',
-  `err_flag` tinyint(4) NOT NULL,
+  `err_flag` tinyint(4) NOT NULL DEFAULT '0',
+  `contract` int(11) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `type` (`type`),
   KEY `fio` (`agent`),
@@ -921,59 +1091,39 @@ CREATE TABLE `doc_list` (
   KEY `mark_del` (`mark_del`),
   KEY `firm_id` (`firm_id`),
   KEY `kassa` (`kassa`,`bank`),
-  CONSTRAINT `doc_list_ibfk_1` FOREIGN KEY (`firm_id`) REFERENCES `doc_vars` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `contract` (`contract`),
+  KEY `created` (`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_list`
+-- Структура таблицы `doc_list_pos`
 --
 
-LOCK TABLES `doc_list` WRITE;
-/*!40000 ALTER TABLE `doc_list` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_list` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_list_pos`
---
-
-DROP TABLE IF EXISTS `doc_list_pos`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_list_pos` (
+CREATE TABLE IF NOT EXISTS `doc_list_pos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `doc` int(11) NOT NULL DEFAULT '0',
   `tovar` int(11) NOT NULL DEFAULT '0',
-  `cnt` int(11) NOT NULL DEFAULT '0',
+  `cnt` double NOT NULL DEFAULT '0',
   `gtd` varchar(32) NOT NULL,
-  `comm` varchar(50) NOT NULL,
+  `comm` varchar(128) NOT NULL,
   `cost` decimal(10,2) NOT NULL DEFAULT '0.00',
   `page` int(11) NOT NULL DEFAULT '0',
-  KEY `id` (`id`),
+  UNIQUE KEY `id` (`id`),
+  UNIQUE KEY `uni_pos` (`doc`,`tovar`,`page`),
   KEY `doc` (`doc`),
   KEY `tovar` (`tovar`),
-  KEY `sklad` (`page`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `page` (`page`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_list_pos`
+-- Структура таблицы `doc_log`
 --
 
-LOCK TABLES `doc_list_pos` WRITE;
-/*!40000 ALTER TABLE `doc_list_pos` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_list_pos` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_log`
---
-
-DROP TABLE IF EXISTS `doc_log`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_log` (
+CREATE TABLE IF NOT EXISTS `doc_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user` int(11) NOT NULL,
   `ip` varchar(20) NOT NULL,
@@ -986,142 +1136,116 @@ CREATE TABLE `doc_log` (
   KEY `user` (`user`),
   KEY `motion` (`motion`),
   KEY `time` (`time`),
-  KEY `ip` (`ip`),
-  KEY `object` (`object`),
-  KEY `object_id` (`object_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `desc` (`desc`(333)),
+  KEY `ip` (`ip`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `doc_log`
+-- Структура таблицы `doc_rasxodi`
 --
 
-LOCK TABLES `doc_log` WRITE;
-/*!40000 ALTER TABLE `doc_log` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doc_log` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_rasxodi`
---
-
-DROP TABLE IF EXISTS `doc_rasxodi`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_rasxodi` (
-  `id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `doc_rasxodi` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `adm` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`),
   KEY `adm` (`adm`)
-) ENGINE=MyISAM AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 PACK_KEYS=0 COMMENT='Статьи расходов';
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COMMENT='Статьи расходов' AUTO_INCREMENT=15 ;
 
 --
--- Dumping data for table `doc_rasxodi`
+-- Дамп данных таблицы `doc_rasxodi`
 --
 
-LOCK TABLES `doc_rasxodi` WRITE;
-/*!40000 ALTER TABLE `doc_rasxodi` DISABLE KEYS */;
-INSERT INTO `doc_rasxodi` VALUES (0,'Прочие расходы',1),(1,'Аренда офиса, склада',1),(2,'Зарплата, премии, надбавки',1),(3,'Канцелярские товары, расходные материалы',1),(4,'Представительские расходы',1),(5,'Другие (банковские) платежи',1),(6,'Закупка товара на склад',0),(7,'Закупка товара на продажу',0),(8,'Транспортные расходы',1),(9,'Расходы на связь',1),(10,'Оплата товара на реализации',0),(11,'Налоги и сборы',1),(12,'Средства под отчёт',0),(13,'Расходы на рекламу',1),(14,'Возврат товара',0);
-/*!40000 ALTER TABLE `doc_rasxodi` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES
+(0, 'Прочие расходы', 1),
+(1, 'Аренда офиса, склада', 1),
+(2, 'Средства под отчёт', 1),
+(3, 'Канцелярские товары, хозяйственные материалы', 1),
+(4, 'Зарплата, премии (офис)', 1),
+(5, 'Расчетно кассовое обслуживание', 1),
+(6, 'Закупка товара на склад', 0),
+(7, ' Расходы Офиса', 1),
+(8, 'Расходы Склада', 1),
+(9, 'Расходы на связь', 1),
+(10, 'Расходы на автотранспорт (бензин, запчасти)', 1),
+(11, 'Налоги и сборы', 1),
+(12, 'Кредиты', 1),
+(13, 'Непредвиденные расходы', 0),
+(14, 'Премии по итогам квартала и года', 1);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_sklady`
+-- Структура таблицы `doc_sklady`
 --
 
-DROP TABLE IF EXISTS `doc_sklady`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_sklady` (
+CREATE TABLE IF NOT EXISTS `doc_sklady` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `comment` text NOT NULL,
-  `dnc` tinyint(4) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `dnc` tinyint(1) NOT NULL DEFAULT '0',
   KEY `id` (`id`),
   KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
 --
--- Dumping data for table `doc_sklady`
+-- Дамп данных таблицы `doc_sklady`
 --
 
-LOCK TABLES `doc_sklady` WRITE;
-/*!40000 ALTER TABLE `doc_sklady` DISABLE KEYS */;
-INSERT INTO `doc_sklady` VALUES (1,'Основной склад','Это первый склад',0),(2,'Левый склад','Это второй склад',0);
-/*!40000 ALTER TABLE `doc_sklady` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_sklady` (`id`, `name`, `dnc`) VALUES
+(1, 'Основной склад', 0);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_types`
+-- Структура таблицы `doc_types`
 --
 
-DROP TABLE IF EXISTS `doc_types`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_types` (
+CREATE TABLE IF NOT EXISTS `doc_types` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(30) NOT NULL,
   KEY `id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8 PACK_KEYS=0;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=19 ;
 
 --
--- Dumping data for table `doc_types`
+-- Дамп данных таблицы `doc_types`
 --
 
-LOCK TABLES `doc_types` WRITE;
-/*!40000 ALTER TABLE `doc_types` DISABLE KEYS */;
-INSERT INTO `doc_types` VALUES (1,'Поступление'),(2,'Реализация'),(3,'Заявка покупателя'),(4,'Банк - приход'),(5,'Банк - расход'),(6,'Касса - приход'),(7,'Касса - расход'),(8,'Перемещение товара'),(9,'Перемещение средств (касса)'),(10,'Доверенность'),(11,'Предложение поставщика'),(12,'Товар в пути'),(13,'Коммерческое предложение'),(14,'Договор'),(15,'Реализация (оперативная)'),(16,'Спецификация');
-/*!40000 ALTER TABLE `doc_types` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_types` (`id`, `name`) VALUES
+(1, 'Поступление'),
+(2, 'Реализация'),
+(3, 'Заявка покупателя'),
+(4, 'Банк - приход'),
+(5, 'Банк - расход'),
+(6, 'Касса - приход'),
+(7, 'Касса - расход'),
+(8, 'Перемещение товара'),
+(9, 'Перемещение средств (касса)'),
+(10, 'Доверенность'),
+(11, 'Предложение поставщика'),
+(12, 'Товар в пути'),
+(13, 'Коммерческое предложение'),
+(14, 'Договор'),
+(15, 'Реализация (оперативная)'),
+(16, 'Спецификация'),
+(17, 'Сборка'),
+(18, 'Корректировка долга');
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `doc_units`
+-- Структура таблицы `doc_vars`
 --
 
-DROP TABLE IF EXISTS `doc_units`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_units` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(16) NOT NULL,
-  `printname` varchar(8) NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `name` (`name`),
-  KEY `printname` (`printname`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `doc_units`
---
-
-LOCK TABLES `doc_units` WRITE;
-/*!40000 ALTER TABLE `doc_units` DISABLE KEYS */;
-INSERT INTO `doc_units` VALUES (1,'Штука','шт.'),(2,'Килограмм','кг.'),(3,'Грамм','гр.'),(4,'Литр','л.'),(5,'Метр','м.'),(6,'Милиметр','мм.'),(7,'Упаковка','уп.');
-/*!40000 ALTER TABLE `doc_units` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doc_vars`
---
-
-DROP TABLE IF EXISTS `doc_vars`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `doc_vars` (
+CREATE TABLE IF NOT EXISTS `doc_vars` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm_name` varchar(150) NOT NULL,
   `firm_director` varchar(100) NOT NULL,
-  `firm_director_r` varchar(100) NOT NULL,
   `firm_manager` varchar(100) NOT NULL,
   `firm_buhgalter` varchar(100) NOT NULL,
   `firm_kladovshik` varchar(100) NOT NULL,
-  `firm_kladovshik_id` int(11) NOT NULL,
   `firm_bank` varchar(100) NOT NULL,
   `firm_bank_kor_s` varchar(25) NOT NULL,
   `firm_bik` varchar(15) NOT NULL,
@@ -1133,65 +1257,75 @@ CREATE TABLE `doc_vars` (
   `firm_telefon` varchar(60) NOT NULL,
   `firm_okpo` varchar(10) NOT NULL,
   `param_nds` double NOT NULL DEFAULT '0',
-  `firm_skin` varchar(16) NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
 --
--- Dumping data for table `doc_vars`
+-- Дамп данных таблицы `doc_vars`
 --
 
-LOCK TABLES `doc_vars` WRITE;
-/*!40000 ALTER TABLE `doc_vars` DISABLE KEYS */;
-INSERT INTO `doc_vars` VALUES (1,'ООО Главная фирма','Иванов И.И.','Иванова И.И.','Пертов В.В.','Иванов И.И.','Пертов В.В.',1,'','','','','','630083, г. Новосибирск, ул. Большевистская, 1','ООО Главная фирма 630083, г. Новосибирск, ул. Большевистская, 1','ООО Главная фирма 630083, г. Новосибирск, ул. Большевистская, 1','+7(383) 0000000 11111111','278373278',18,'');
-/*!40000 ALTER TABLE `doc_vars` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `doc_vars` (`id`, `firm_name`, `firm_director`, `firm_manager`, `firm_buhgalter`, `firm_kladovshik`, `firm_bank`, `firm_bank_kor_s`, `firm_bik`, `firm_schet`, `firm_inn`, `firm_adres`, `firm_realadres`, `firm_gruzootpr`, `firm_telefon`, `firm_okpo`, `param_nds`) VALUES
+(1, 'ООО Первая Фирма', 'Аноним И.О.', 'Аноним И.О.', 'Аноним И.О.', 'Аноним И.О.', '', '', '', '', '', '', '', '', '', '', 18);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `errorlog`
+-- Структура таблицы `errorlog`
 --
 
-DROP TABLE IF EXISTS `errorlog`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `errorlog` (
+CREATE TABLE IF NOT EXISTS `errorlog` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `page` varchar(128) NOT NULL,
   `referer` varchar(128) NOT NULL,
+  `agent` varchar(128) NOT NULL,
+  `ip` varchar(18) NOT NULL,
   `msg` text NOT NULL,
   `date` datetime NOT NULL,
-  `ip` varchar(18) NOT NULL,
-  `agent` varchar(128) NOT NULL,
   `uid` int(11) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `page` (`page`),
+  KEY `referer` (`referer`),
+  KEY `date` (`date`),
+  KEY `agent` (`agent`,`ip`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `fabric_builders`
+--
+
+CREATE TABLE IF NOT EXISTS `fabric_builders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) NOT NULL,
+  `active` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
-
-ALTER TABLE `doc_agent` ADD CONSTRAINT `doc_agent_ibfk_1` FOREIGN KEY (`p_agent`) REFERENCES `doc_agent` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
-
-
-LOCK TABLES `errorlog` WRITE;
-/*!40000 ALTER TABLE `errorlog` DISABLE KEYS */;
-/*!40000 ALTER TABLE `errorlog` ENABLE KEYS */;
-UNLOCK TABLES;
-
-
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-
+-- --------------------------------------------------------
 
 --
--- Table structure for table `firm_info`
+-- Структура таблицы `fabric_data`
 --
 
-DROP TABLE IF EXISTS `firm_info`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `firm_info` (
+CREATE TABLE IF NOT EXISTS `fabric_data` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sklad_id` int(11) NOT NULL,
+  `builder_id` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `pos_id` int(11) NOT NULL,
+  `cnt` int(11) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  UNIQUE KEY `uni` (`sklad_id`,`builder_id`,`date`,`pos_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `firm_info`
+--
+
+CREATE TABLE IF NOT EXISTS `firm_info` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL DEFAULT '',
   `num_name` int(11) NOT NULL DEFAULT '0' COMMENT 'Номер колонки с наименованиями в прайсе',
@@ -1202,30 +1336,26 @@ CREATE TABLE `firm_info` (
   `currency` tinyint(4) NOT NULL,
   `coeff` decimal(10,3) NOT NULL,
   `last_update` datetime NOT NULL,
+  `delivery_info` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `name` (`name`),
   KEY `sign` (`signature`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
 --
--- Dumping data for table `firm_info`
+-- Дамп данных таблицы `firm_info`
 --
 
-LOCK TABLES `firm_info` WRITE;
-/*!40000 ALTER TABLE `firm_info` DISABLE KEYS */;
-INSERT INTO `firm_info` VALUES (1,'СБС  ГРУПП',0,0,0,0,'sbs-group.ru',0,'1.000','2010-03-09 12:21:38');
-/*!40000 ALTER TABLE `firm_info` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `firm_info` (`id`, `name`, `num_name`, `num_cost`, `num_art`, `num_nal`, `signature`, `currency`, `coeff`, `last_update`, `delivery_info`) VALUES
+(1, 'test', 1, 2, 3, 4, 'test@example.com', 0, 0.000, '0000-00-00 00:00:00', 0);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `firm_info_struct`
+-- Структура таблицы `firm_info_struct`
 --
 
-DROP TABLE IF EXISTS `firm_info_struct`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `firm_info_struct` (
+CREATE TABLE IF NOT EXISTS `firm_info_struct` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm_id` int(11) NOT NULL COMMENT 'Номер фирмы',
   `table_name` varchar(50) NOT NULL COMMENT 'Название листа прайса',
@@ -1236,58 +1366,46 @@ CREATE TABLE `firm_info_struct` (
   UNIQUE KEY `id` (`id`),
   KEY `firm_id` (`firm_id`),
   KEY `table_name` (`table_name`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
 --
--- Dumping data for table `firm_info_struct`
+-- Дамп данных таблицы `firm_info_struct`
 --
 
-LOCK TABLES `firm_info_struct` WRITE;
-/*!40000 ALTER TABLE `firm_info_struct` DISABLE KEYS */;
-INSERT INTO `firm_info_struct` VALUES (1,1,'',1,4,0,3);
-/*!40000 ALTER TABLE `firm_info_struct` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `firm_info_struct` (`id`, `firm_id`, `table_name`, `name`, `cost`, `art`, `nal`) VALUES
+(1, 1, 'test', 2, 3, 1, 4);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `messages`
+-- Структура таблицы `loginfo`
 --
 
-DROP TABLE IF EXISTS `messages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `messages` (
+CREATE TABLE IF NOT EXISTS `loginfo` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `date` datetime NOT NULL,
+  `page` varchar(100) CHARACTER SET latin1 NOT NULL,
+  `query` varchar(100) CHARACTER SET latin1 NOT NULL,
+  `mode` varchar(20) CHARACTER SET latin1 NOT NULL,
+  `ip` varchar(30) CHARACTER SET latin1 NOT NULL,
   `user` int(11) NOT NULL,
-  `sender` int(11) NOT NULL,
-  `head` varchar(50) NOT NULL,
-  `msg` text NOT NULL,
-  `senddate` datetime NOT NULL,
-  `ok` tinyint(4) NOT NULL,
+  `text` varchar(500) CHARACTER SET latin1 NOT NULL,
   UNIQUE KEY `id` (`id`),
-  KEY `user` (`user`),
-  KEY `sender` (`sender`),
-  KEY `senddate` (`senddate`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `date` (`date`),
+  KEY `page` (`page`),
+  KEY `query` (`query`),
+  KEY `mode` (`mode`),
+  KEY `ip` (`ip`),
+  KEY `user` (`user`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `messages`
+-- Структура таблицы `news`
 --
 
-LOCK TABLES `messages` WRITE;
-/*!40000 ALTER TABLE `messages` DISABLE KEYS */;
-/*!40000 ALTER TABLE `messages` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `news`
---
-
-DROP TABLE IF EXISTS `news`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `news` (
+CREATE TABLE IF NOT EXISTS `news` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` varchar(8) NOT NULL,
   `title` varchar(64) NOT NULL,
@@ -1299,130 +1417,68 @@ CREATE TABLE `news` (
   UNIQUE KEY `id` (`id`),
   KEY `type` (`type`),
   KEY `ex_date` (`ex_date`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
-
---
--- Dumping data for table `news`
---
-
-
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(1, 'doc', 'Документы', '');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(2, 'doc_list', 'Журнал документов', 'view,delete');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(3, 'doc_postuplenie', 'Поступление', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(4, 'generic_articles', 'Доступ к статьям', 'view,edit,create,delete');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(5, 'sys', 'Системные объекты', '');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(6, 'generic', 'Общие объекты', '');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(7, 'sys_acl', 'Управление привилегиями', 'view,edit');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(8, 'doc_realizaciya', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(9, 'doc_zayavka', 'Документ заявки', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(10, 'doc_kompredl', 'Коммерческое предложение', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(11, 'doc_dogovor', 'Договор', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(12, 'doc_doveren', 'Доверенность', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(13, 'doc_pbank', 'Приход средств в банк', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(14, 'doc_peremeshenie', 'Перемещение товара', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(15, 'doc_perkas', 'Перемещение средств в кассе', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(16, 'doc_predlojenie', 'Предложение поставщика', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(17, 'doc_rbank', 'Расход средств из банка', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(18, 'doc_realiz_op', 'Оперативная реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(19, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(20, 'doc_sborka', 'Сборка изделия', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(21, 'doc_specific', 'Спецификация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(22, 'doc_v_puti', 'Товар в пути', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(23, 'list', 'Списки', '');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(24, 'list_agent', 'Агенты', 'create,edit,view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(25, 'list_sklad', 'Склад', 'create,edit,view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(26, 'list_price_an', 'Анализатор прайсов', 'create,edit,view,delete');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(27, 'list_agent_dov', 'Доверенные лица', 'create,edit,view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(28, 'report', 'Отчёты', '');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(29, 'report_cash', 'Кассовый отчёт', 'view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(30, 'generic_news', 'Новости', 'view,create,edit,delete');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(31, 'doc_service', 'Служебные функции', 'view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(32, 'doc_scropts', 'Сценарии и операции', 'view,exec');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(33, 'log', 'Системные журналы', '');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(34, 'log_browser', 'Статистирка броузеров', 'view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(35, 'log_error', 'Журнал ошибок', 'view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(36, 'log_access', 'Журнал посещений', 'view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(37, 'sys_async_task', 'Ассинхронные задачи', 'view,exec');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(38, 'sys_ip-blacklist', 'Чёрный список IP адресов', 'view,create,delete');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(39, 'sys_ip-log', 'Журнал обращений к ip адресам', 'view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(40, 'generic_price_an', 'Анализатор прайсов', 'view');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete');
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES(42, 'doc_pko', 'Приходный кассовый ордер' 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-
--- -----------------------------------------------------
--- Data for table `db_version`
--- -----------------------------------------------------
-START TRANSACTION;
-INSERT INTO `db_version` (`version`) VALUES (289);
-commit;
-
-LOCK TABLES `news` WRITE;
-/*!40000 ALTER TABLE `news` DISABLE KEYS */;
-/*!40000 ALTER TABLE `news` ENABLE KEYS */;
-UNLOCK TABLES;
+-- --------------------------------------------------------
 
 --
--- Table structure for table `parsed_price`
+-- Структура таблицы `notes`
 --
 
-DROP TABLE IF EXISTS `parsed_price`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `parsed_price` (
+CREATE TABLE IF NOT EXISTS `notes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user` int(11) NOT NULL,
+  `sender` int(11) NOT NULL,
+  `head` varchar(50) NOT NULL,
+  `msg` text NOT NULL,
+  `senddate` datetime NOT NULL,
+  `enddate` datetime NOT NULL,
+  `ok` tinyint(4) NOT NULL,
+  `comment` text NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `user` (`user`),
+  KEY `sender` (`sender`),
+  KEY `senddate` (`senddate`),
+  KEY `enddate` (`enddate`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `parsed_price`
+--
+
+CREATE TABLE IF NOT EXISTS `parsed_price` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm` int(11) NOT NULL,
   `pos` int(11) NOT NULL,
   `cost` decimal(10,2) NOT NULL,
   `nal` varchar(10) NOT NULL,
   `from` int(11) NOT NULL,
+  `selected` tinyint(4) DEFAULT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `parsed_price`
+-- Структура таблицы `photogalery`
 --
 
-LOCK TABLES `parsed_price` WRITE;
-/*!40000 ALTER TABLE `parsed_price` DISABLE KEYS */;
-INSERT INTO `parsed_price` VALUES (1,1,2124,'130.00','15',13);
-/*!40000 ALTER TABLE `parsed_price` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `photogalery`
---
-
-DROP TABLE IF EXISTS `photogalery`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `photogalery` (
+CREATE TABLE IF NOT EXISTS `photogalery` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL DEFAULT '0',
   `comment` varchar(50) NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `photogalery`
+-- Структура таблицы `price`
 --
 
-LOCK TABLES `photogalery` WRITE;
-/*!40000 ALTER TABLE `photogalery` DISABLE KEYS */;
-/*!40000 ALTER TABLE `photogalery` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `price`
---
-
-DROP TABLE IF EXISTS `price`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `price` (
+CREATE TABLE IF NOT EXISTS `price` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL DEFAULT '',
   `cost` double NOT NULL DEFAULT '0',
@@ -1437,53 +1493,116 @@ CREATE TABLE `price` (
   KEY `art` (`art`),
   KEY `date` (`date`),
   KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `price`
+-- Структура таблицы `prices_replaces`
 --
 
-LOCK TABLES `price` WRITE;
-/*!40000 ALTER TABLE `price` DISABLE KEYS */;
-/*!40000 ALTER TABLE `price` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `priv_message`
---
-
-DROP TABLE IF EXISTS `priv_message`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `priv_message` (
+CREATE TABLE IF NOT EXISTS `prices_replaces` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `userid` int(11) NOT NULL DEFAULT '0',
-  `usersend` varchar(20) NOT NULL DEFAULT '0',
-  `text` text NOT NULL,
-  `date` double NOT NULL DEFAULT '0',
-  `themes` varchar(30) NOT NULL,
-  KEY `id` (`id`)
+  `search_str` varchar(16) NOT NULL,
+  `replace_str` varchar(256) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id` (`id`),
+  KEY `search_str` (`search_str`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Список замен для регулярных выражений анализатора прайсов' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `ps_counter`
+--
+
+CREATE TABLE IF NOT EXISTS `ps_counter` (
+  `date` date NOT NULL DEFAULT '0000-00-00',
+  `query` int(11) NOT NULL DEFAULT '0',
+  `ps` int(11) NOT NULL DEFAULT '0',
+  `counter` int(11) NOT NULL,
+  PRIMARY KEY (`date`,`query`,`ps`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `priv_message`
+-- Структура таблицы `ps_parser`
 --
 
-LOCK TABLES `priv_message` WRITE;
-/*!40000 ALTER TABLE `priv_message` DISABLE KEYS */;
-/*!40000 ALTER TABLE `priv_message` ENABLE KEYS */;
-UNLOCK TABLES;
+CREATE TABLE IF NOT EXISTS `ps_parser` (
+  `parametr` varchar(20) NOT NULL,
+  `data` varchar(50) NOT NULL DEFAULT '0'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
--- Table structure for table `question_answ`
+-- Дамп данных таблицы `ps_parser`
 --
 
-DROP TABLE IF EXISTS `question_answ`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `question_answ` (
+INSERT INTO `ps_parser` (`parametr`, `data`) VALUES
+('last_time_counter', '0');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `ps_query`
+--
+
+CREATE TABLE IF NOT EXISTS `ps_query` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `query` text NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `ps_settings`
+--
+
+CREATE TABLE IF NOT EXISTS `ps_settings` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `icon` varchar(3) NOT NULL,
+  `name` varchar(15) NOT NULL,
+  `template` varchar(150) NOT NULL,
+  `template_like` varchar(50) NOT NULL,
+  `prioritet` tinyint(4) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=8 ;
+
+--
+-- Дамп данных таблицы `ps_settings`
+--
+
+INSERT INTO `ps_settings` (`id`, `icon`, `name`, `template`, `template_like`, `prioritet`) VALUES
+(1, 'Y', 'yandex', '/.*?yandex.*?text=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%yandex%text=%', 1),
+(2, 'G', 'google', '/.*?google.*?q=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%google%q=%', 2),
+(3, 'M', 'mail', '/.*?mail.*?q=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%mail%q=%', 3),
+(4, 'R', 'rambler', '/.*?rambler.*?query=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%rambler%query=%', 4),
+(5, 'B', 'bing', '/.*?bing.*?q=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%bing%q=%', 5),
+(6, 'Q', 'qip', '/.*?qip.*?query=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%qip%query=%', 6),
+(7, 'N', 'ngs', '/.*?ngs.*?q=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%ngs%q=%', 7);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `questions`
+--
+
+CREATE TABLE IF NOT EXISTS `questions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `text` varchar(200) NOT NULL,
+  `mode` int(11) NOT NULL,
+  UNIQUE KEY `id` (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `question_answ`
+--
+
+CREATE TABLE IF NOT EXISTS `question_answ` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `q_id` int(11) NOT NULL,
   `answer` varchar(500) NOT NULL,
@@ -1493,130 +1612,75 @@ CREATE TABLE `question_answ` (
   KEY `q_id` (`q_id`),
   KEY `uid` (`uid`),
   KEY `ip` (`ip`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `question_answ`
+-- Структура таблицы `question_ip`
 --
 
-LOCK TABLES `question_answ` WRITE;
-/*!40000 ALTER TABLE `question_answ` DISABLE KEYS */;
-/*!40000 ALTER TABLE `question_answ` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `question_ip`
---
-
-DROP TABLE IF EXISTS `question_ip`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `question_ip` (
+CREATE TABLE IF NOT EXISTS `question_ip` (
   `ip` varchar(15) NOT NULL,
   `result` int(11) NOT NULL,
   UNIQUE KEY `ip_2` (`ip`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `question_ip`
+-- Структура таблицы `question_vars`
 --
 
-LOCK TABLES `question_ip` WRITE;
-/*!40000 ALTER TABLE `question_ip` DISABLE KEYS */;
-/*!40000 ALTER TABLE `question_ip` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `question_vars`
---
-
-DROP TABLE IF EXISTS `question_vars`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `question_vars` (
+CREATE TABLE IF NOT EXISTS `question_vars` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `q_id` int(11) NOT NULL,
   `var_id` int(11) NOT NULL,
   `text` varchar(500) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `q_id` (`q_id`,`var_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `question_vars`
+-- Структура таблицы `seekdata`
 --
 
-LOCK TABLES `question_vars` WRITE;
-/*!40000 ALTER TABLE `question_vars` DISABLE KEYS */;
-/*!40000 ALTER TABLE `question_vars` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `questions`
---
-
-DROP TABLE IF EXISTS `questions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `questions` (
+CREATE TABLE IF NOT EXISTS `seekdata` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `text` varchar(200) NOT NULL,
-  `mode` int(11) NOT NULL,
-  UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `questions`
---
-
-LOCK TABLES `questions` WRITE;
-/*!40000 ALTER TABLE `questions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `questions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `seekdata`
---
-
-DROP TABLE IF EXISTS `seekdata`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `seekdata` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) NOT NULL,
+  `name` varchar(200) NOT NULL,
   `sql` varchar(200) NOT NULL,
-  `regex` varchar(256) NOT NULL,
+  `regex` varchar(200) NOT NULL,
   `group` int(11) NOT NULL,
   `regex_neg` varchar(256) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`),
   KEY `sql` (`sql`),
   KEY `regex` (`regex`)
-) ENGINE=MyISAM AUTO_INCREMENT=6671 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `seekdata`
+-- Структура таблицы `sys_cli_status`
 --
 
-LOCK TABLES `seekdata` WRITE;
-/*!40000 ALTER TABLE `seekdata` DISABLE KEYS */;
-INSERT INTO `seekdata` VALUES (2124,'','411','411',0,''),(6670,'','52714','',0,'');
-/*!40000 ALTER TABLE `seekdata` ENABLE KEYS */;
-UNLOCK TABLES;
+CREATE TABLE IF NOT EXISTS `sys_cli_status` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `script` varchar(64) NOT NULL,
+  `status` text NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `script` (`script`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `tickets`
+-- Структура таблицы `tickets`
 --
 
-DROP TABLE IF EXISTS `tickets`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `tickets` (
+CREATE TABLE IF NOT EXISTS `tickets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` datetime NOT NULL,
   `autor` int(11) NOT NULL,
@@ -1632,26 +1696,15 @@ CREATE TABLE `tickets` (
   KEY `theme` (`theme`),
   KEY `to_uid` (`to_uid`),
   KEY `to_date` (`to_date`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `tickets`
+-- Структура таблицы `tickets_log`
 --
 
-LOCK TABLES `tickets` WRITE;
-/*!40000 ALTER TABLE `tickets` DISABLE KEYS */;
-/*!40000 ALTER TABLE `tickets` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `tickets_log`
---
-
-DROP TABLE IF EXISTS `tickets_log`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `tickets_log` (
+CREATE TABLE IF NOT EXISTS `tickets_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL,
   `ticket` int(11) NOT NULL,
@@ -1659,26 +1712,15 @@ CREATE TABLE `tickets_log` (
   `text` text NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `uid` (`uid`,`ticket`,`date`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `tickets_log`
+-- Структура таблицы `tickets_priority`
 --
 
-LOCK TABLES `tickets_log` WRITE;
-/*!40000 ALTER TABLE `tickets_log` DISABLE KEYS */;
-/*!40000 ALTER TABLE `tickets_log` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `tickets_priority`
---
-
-DROP TABLE IF EXISTS `tickets_priority`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `tickets_priority` (
+CREATE TABLE IF NOT EXISTS `tickets_priority` (
   `id` tinyint(4) NOT NULL,
   `name` varchar(50) NOT NULL,
   `color` varchar(6) NOT NULL,
@@ -1686,153 +1728,40 @@ CREATE TABLE `tickets_priority` (
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `tickets_priority`
+-- Структура таблицы `tickets_state`
 --
 
-LOCK TABLES `tickets_priority` WRITE;
-/*!40000 ALTER TABLE `tickets_priority` DISABLE KEYS */;
-INSERT INTO `tickets_priority` VALUES (-3,'Не важный','aaa',''),(-2,'Незначительный','0bd',''),(-1,'Низкий','55f',''),(0,'Обычный','0a0',''),(1,'Важный','b0b',''),(2,'Срочный','f92',''),(3,'Критический','f00','');
-/*!40000 ALTER TABLE `tickets_priority` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `tickets_state`
---
-
-DROP TABLE IF EXISTS `tickets_state`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `tickets_state` (
+CREATE TABLE IF NOT EXISTS `tickets_state` (
   `id` int(11) NOT NULL,
   `name` varchar(30) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `tickets_state`
+-- Структура таблицы `traffic_denyip`
 --
 
-LOCK TABLES `tickets_state` WRITE;
-/*!40000 ALTER TABLE `tickets_state` DISABLE KEYS */;
-INSERT INTO `tickets_state` VALUES (0,'Новый'),(1,'В процессе'),(2,'Ошибочный'),(3,'Готово');
-/*!40000 ALTER TABLE `tickets_state` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `traffic_declog`
---
-
-DROP TABLE IF EXISTS `traffic_declog`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `traffic_declog` (
-  `uid` int(11) NOT NULL DEFAULT '0',
-  `time` bigint(20) NOT NULL DEFAULT '0',
-  `decball` double NOT NULL DEFAULT '0',
-  `ip` varchar(15) NOT NULL DEFAULT '',
-  `dest` varchar(15) NOT NULL DEFAULT '',
-  `input` bigint(20) NOT NULL DEFAULT '0',
-  `output` bigint(20) NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `traffic_declog`
---
-
-LOCK TABLES `traffic_declog` WRITE;
-/*!40000 ALTER TABLE `traffic_declog` DISABLE KEYS */;
-/*!40000 ALTER TABLE `traffic_declog` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `traffic_denyip`
---
-
-DROP TABLE IF EXISTS `traffic_denyip`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `traffic_denyip` (
+CREATE TABLE IF NOT EXISTS `traffic_denyip` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip` varchar(20) NOT NULL,
   `host` varchar(50) NOT NULL,
   UNIQUE KEY `id_2` (`id`),
   UNIQUE KEY `ip` (`ip`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COMMENT='Zapreshennie IP';
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 COMMENT='Zapreshennie IP' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `traffic_denyip`
+-- Структура таблицы `ulog`
 --
 
-LOCK TABLES `traffic_denyip` WRITE;
-/*!40000 ALTER TABLE `traffic_denyip` DISABLE KEYS */;
-/*!40000 ALTER TABLE `traffic_denyip` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `traffic_onoff`
---
-
-DROP TABLE IF EXISTS `traffic_onoff`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `traffic_onoff` (
-  `uid` int(11) NOT NULL DEFAULT '0',
-  `time` bigint(20) NOT NULL DEFAULT '0',
-  `onoff` tinyint(4) NOT NULL DEFAULT '0',
-  `ballance` double NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `traffic_onoff`
---
-
-LOCK TABLES `traffic_onoff` WRITE;
-/*!40000 ALTER TABLE `traffic_onoff` DISABLE KEYS */;
-/*!40000 ALTER TABLE `traffic_onoff` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `traffic_stat`
---
-
-DROP TABLE IF EXISTS `traffic_stat`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `traffic_stat` (
-  `time` bigint(20) NOT NULL DEFAULT '0',
-  `uid` int(11) NOT NULL DEFAULT '0',
-  `decball` double NOT NULL DEFAULT '0',
-  `traffic` int(11) NOT NULL DEFAULT '0',
-  `ip` varchar(16) NOT NULL DEFAULT '',
-  `dest` varchar(16) NOT NULL DEFAULT '',
-  `output` double NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `traffic_stat`
---
-
-LOCK TABLES `traffic_stat` WRITE;
-/*!40000 ALTER TABLE `traffic_stat` DISABLE KEYS */;
-/*!40000 ALTER TABLE `traffic_stat` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `ulog`
---
-
-DROP TABLE IF EXISTS `ulog`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `ulog` (
+CREATE TABLE IF NOT EXISTS `ulog` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `raw_mac` varchar(80) DEFAULT NULL,
   `oob_time_sec` int(10) unsigned DEFAULT NULL,
@@ -1877,139 +1806,70 @@ CREATE TABLE `ulog` (
   `ahesp_spi` int(10) unsigned DEFAULT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `ip_daddr` (`ip_daddr`),
-  KEY `ip_saddr` (`ip_saddr`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `ip_saddr` (`ip_saddr`),
+  KEY `oob_time_sec` (`oob_time_sec`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `ulog`
+-- Структура таблицы `users`
 --
 
-LOCK TABLES `ulog` WRITE;
-/*!40000 ALTER TABLE `ulog` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ulog` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `user_badlist`
---
-
-DROP TABLE IF EXISTS `user_badlist`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user_badlist` (
+CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `login` varchar(30) NOT NULL DEFAULT '',
-  `pass` varchar(30) NOT NULL DEFAULT '',
-  `pin` varchar(30) NOT NULL DEFAULT '',
-  `date` double NOT NULL DEFAULT '0',
-  `ip` varchar(15) NOT NULL DEFAULT '',
-  UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `name` varchar(32) NOT NULL,
+  `pass` varchar(192) NOT NULL,
+  `pass_type` varchar(8) NOT NULL COMMENT 'тип хэша',
+  `pass_change` varchar(64) NOT NULL,
+  `pass_expired` tinyint(4) NOT NULL DEFAULT '0',
+  `pass_date_change` datetime NOT NULL,
+  `reg_email` varchar(64) NOT NULL,
+  `reg_email_confirm` varchar(16) NOT NULL,
+  `reg_email_subscribe` tinyint(4) NOT NULL,
+  `reg_phone` varchar(16) NOT NULL,
+  `reg_phone_subscribe` tinyint(4) NOT NULL,
+  `reg_phone_confirm` varchar(8) NOT NULL,
+  `reg_date` datetime NOT NULL,
+  `disabled` tinyint(4) NOT NULL DEFAULT '0',
+  `disabled_reason` varchar(128) NOT NULL,
+  `bifact_auth` tinyint(4) NOT NULL DEFAULT '0',
+  `real_name` varchar(64) NOT NULL,
+  `real_address` varchar(256) NOT NULL,
+  `jid` varchar(32) NOT NULL,
+  `type` varchar(4) NOT NULL COMMENT 'физ/юр',
+  `agent_id` int(11) DEFAULT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `passch` (`pass_change`),
+  KEY `name` (`name`),
+  KEY `reg_email` (`reg_email`),
+  KEY `reg_email_confirm` (`reg_email_confirm`),
+  KEY `reg_phone` (`reg_phone`),
+  KEY `reg_phone_confirm` (`reg_phone_confirm`),
+  KEY `pass_date_change` (`pass_date_change`),
+  KEY `pass_expired` (`pass_expired`),
+  KEY `disabled` (`disabled`),
+  KEY `reg_email_subscribe` (`reg_email_subscribe`),
+  KEY `reg_phone_subscribe` (`reg_phone_subscribe`),
+  KEY `jid` (`jid`),
+  KEY `agent_id` (`agent_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Spisok pol''zovatelei' AUTO_INCREMENT=3 ;
 
 --
--- Dumping data for table `user_badlist`
+-- Дамп данных таблицы `users`
 --
 
-LOCK TABLES `user_badlist` WRITE;
-/*!40000 ALTER TABLE `user_badlist` DISABLE KEYS */;
-/*!40000 ALTER TABLE `user_badlist` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `users` (`id`, `name`, `pass`, `pass_type`, `pass_change`, `pass_expired`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_email_subscribe`, `reg_phone`, `reg_phone_subscribe`, `reg_phone_confirm`, `reg_date`, `disabled`, `disabled_reason`, `bifact_auth`, `real_name`, `real_address`, `jid`, `type`, `agent_id`) VALUES
+(0, 'anonymous', '--not-valid--', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', 1),
+(2, 'root', 'enter_md5_password', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', NULL);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `user_log`
+-- Структура таблицы `users_acl`
 --
 
-DROP TABLE IF EXISTS `user_log`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user_log` (
-  `uid` int(11) NOT NULL DEFAULT '0',
-  `time` bigint(20) NOT NULL DEFAULT '0',
-  `motion` int(11) NOT NULL DEFAULT '0',
-  `comp` int(11) NOT NULL DEFAULT '0',
-  `ballance` double NOT NULL DEFAULT '0',
-  `pft` double NOT NULL DEFAULT '0',
-  KEY `time` (`time`),
-  KEY `uid` (`uid`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `user_log`
---
-
-LOCK TABLES `user_log` WRITE;
-/*!40000 ALTER TABLE `user_log` DISABLE KEYS */;
-/*!40000 ALTER TABLE `user_log` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users`
---
-
-DROP TABLE IF EXISTS `users`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(20) NOT NULL,
-  `pass` varchar(32) CHARACTER SET latin1 NOT NULL DEFAULT '',
-  `date_reg` datetime NOT NULL,
-  `a_manager` tinyint(4) NOT NULL DEFAULT '0',
-  `a_club_admin` tinyint(4) NOT NULL DEFAULT '0',
-  `a_superuser` tinyint(4) NOT NULL DEFAULT '0',
-  `a_lan_user` tinyint(4) NOT NULL DEFAULT '0',
-  `a_temp_user` tinyint(4) NOT NULL DEFAULT '0',
-  `ballance` double NOT NULL DEFAULT '0',
-  `skidka` tinyint(4) NOT NULL DEFAULT '0',
-  `comment` varchar(150) NOT NULL,
-  `mbcost` double NOT NULL DEFAULT '3.5',
-  `active` smallint(6) NOT NULL DEFAULT '0',
-  `mac` varchar(20) NOT NULL,
-  `payfortime` double NOT NULL DEFAULT '0',
-  `lastip` varchar(15) NOT NULL,
-  `needstart` tinyint(4) NOT NULL DEFAULT '0',
-  `endlocktime` bigint(20) NOT NULL DEFAULT '0',
-  `stseans` bigint(15) NOT NULL DEFAULT '0',
-  `tel` varchar(15) NOT NULL,
-  `rname` varchar(40) NOT NULL,
-  `credit` int(11) NOT NULL DEFAULT '0',
-  `tarif` int(11) NOT NULL DEFAULT '0',
-  `channel` int(11) NOT NULL DEFAULT '0',
-  `icq` int(11) NOT NULL DEFAULT '0',
-  `lastlogin` datetime NOT NULL,
-  `email` varchar(50) NOT NULL,
-  `confirm` varchar(35) NOT NULL,
-  `subscribe` int(11) NOT NULL,
-  `passch` varchar(35) NOT NULL,
-  `jid` varchar(40) NOT NULL,
-  `worker` tinyint(4) NOT NULL,
-  `adres` varchar(256) NOT NULL,
-  UNIQUE KEY `name` (`name`),
-  KEY `id` (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 PACK_KEYS=1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users`
---
-
-LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (0,'anonymous','','0000-00-00 00:00:00',0,0,0,0,0,0,0,'',3.5,0,'',0,'',0,0,0,'','',0,0,0,0,'0000-00-00 00:00:00','root@localhost','',0,'','',0,''),(1,'demo','fe01ce2a7fbac8fafaed7c982a04e229','0000-00-00 00:00:00',0,0,0,0,0,0,0,'',3.5,0,'',0,'',0,0,0,'','',0,0,0,0,'2012-01-05 00:03:46','','0',0,'','',0,'');
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users_acl`
---
-
-DROP TABLE IF EXISTS `users_acl`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_acl` (
+CREATE TABLE IF NOT EXISTS `users_acl` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL,
   `object` varchar(64) NOT NULL,
@@ -2018,160 +1878,70 @@ CREATE TABLE `users_acl` (
   KEY `uid` (`uid`),
   KEY `object` (`object`),
   KEY `action` (`action`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `users_acl`
+-- Структура таблицы `users_bad_auth`
 --
 
-LOCK TABLES `users_acl` WRITE;
-/*!40000 ALTER TABLE `users_acl` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users_acl` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users_bad_auth`
---
-
-DROP TABLE IF EXISTS `users_bad_auth`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_bad_auth` (
+CREATE TABLE IF NOT EXISTS `users_bad_auth` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip` varchar(24) NOT NULL,
   `time` double NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `ip` (`ip`),
   KEY `date` (`time`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `users_bad_auth`
+-- Структура таблицы `users_data`
 --
 
-LOCK TABLES `users_bad_auth` WRITE;
-/*!40000 ALTER TABLE `users_bad_auth` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users_bad_auth` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users_data`
---
-
-DROP TABLE IF EXISTS `users_data`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_data` (
+CREATE TABLE IF NOT EXISTS `users_data` (
   `uid` int(11) NOT NULL DEFAULT '0',
   `param` varchar(25) NOT NULL,
-  `value` varchar(100) CHARACTER SET utf8 NOT NULL,
+  `value` varchar(100) NOT NULL,
   UNIQUE KEY `uid` (`uid`,`param`),
   KEY `value` (`value`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `users_data`
+-- Структура таблицы `users_grouplist`
 --
 
-LOCK TABLES `users_data` WRITE;
-/*!40000 ALTER TABLE `users_data` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users_data` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users_grouplist`
---
-
-DROP TABLE IF EXISTS `users_grouplist`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_grouplist` (
+CREATE TABLE IF NOT EXISTS `users_grouplist` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
-  `comment` text NOT NULL,
+  `comment` text CHARACTER SET utf8 NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`)
-) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 PACK_KEYS=0 COMMENT='Spisok grupp';
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 PACK_KEYS=0 COMMENT='Spisok grupp' AUTO_INCREMENT=6 ;
 
 --
--- Dumping data for table `users_grouplist`
+-- Дамп данных таблицы `users_grouplist`
 --
 
-LOCK TABLES `users_grouplist` WRITE;
-/*!40000 ALTER TABLE `users_grouplist` DISABLE KEYS */;
-INSERT INTO `users_grouplist` VALUES (0,'anonymous','Группа незарегистрированных'),(1,'root','Группа администраторов'),(2,'manager','Группа менеджеров'),(3,'sklad','Кладовщики'),(4,'buhgalter','Бухгалтерия, работа с банками, кассой');
-/*!40000 ALTER TABLE `users_grouplist` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `users_grouplist` (`id`, `name`, `comment`) VALUES
+(0, 'anonymous', 'Гости'),
+(1, 'root', 'Администраторы'),
+(2, 'seo', 'Специалисты продвижения сайта'),
+(3, 'sklad', 'Кладовщики'),
+(4, 'manager', 'Управленцы'),
+(5, 'buhgalter', 'Бухгалтерия');
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `users_grouprights`
+-- Структура таблицы `users_groups_acl`
 --
 
-DROP TABLE IF EXISTS `users_grouprights`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_grouprights` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `gid` int(11) NOT NULL,
-  `object` varchar(50) NOT NULL,
-  `a_read` tinyint(4) NOT NULL,
-  `a_write` tinyint(4) NOT NULL,
-  `a_edit` tinyint(4) NOT NULL,
-  `a_delete` tinyint(4) NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `gid` (`gid`),
-  KEY `object` (`object`)
-) ENGINE=MyISAM AUTO_INCREMENT=60 DEFAULT CHARSET=utf8 PACK_KEYS=0 COMMENT='Prava grupp na dostup k objectam';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users_grouprights`
---
-
-LOCK TABLES `users_grouprights` WRITE;
-/*!40000 ALTER TABLE `users_grouprights` DISABLE KEYS */;
-INSERT INTO `users_grouprights` VALUES (1,2,'doc_list',1,1,1,0),(2,2,'doc_postuplenie',1,1,1,0),(3,1,'doc_list',1,1,1,1),(4,1,'doc_postuplenie',1,1,1,1),(5,1,'rights',1,1,1,1),(8,2,'doc',1,0,0,0),(9,1,'doc',1,1,1,1),(10,1,'doc_realizaciya',1,1,1,1),(11,1,'doc_otchet',1,1,1,1),(12,1,'doc_zayavka',1,1,1,1),(13,2,'doc_zayavka',1,1,1,1),(14,2,'doc_realizaciya',1,1,0,0),(15,2,'doc_otchet',1,0,0,0),(16,2,'doc_journal',1,0,0,0),(17,1,'doc_settings',1,1,1,1),(22,2,'doc_predlojenie',1,1,1,0),(21,1,'doc_predlojenie',1,1,1,1),(23,1,'doc_v_puti',1,1,1,1),(24,1,'doc_peremeshenie',1,1,1,1),(25,2,'wiki',1,1,1,1),(26,2,'doc_v_puti',1,1,1,1),(27,2,'doc_peremeshenie',1,1,1,0),(28,2,'doc_kompredl',1,1,1,1),(29,2,'doc_rbank',1,1,0,0),(30,2,'doc_pbank',1,1,1,0),(31,2,'doc_pko',1,1,1,0),(32,2,'doc_rko',1,1,1,0),(33,2,'tickets',1,1,0,0),(34,1,'tickets',1,1,1,1),(35,1,'doc_pko',1,1,1,1),(36,1,'doc_rko',1,1,1,1),(37,1,'doc_rbank',1,1,1,1),(38,1,'doc_pbank',1,1,1,1),(39,1,'doc_kompredl',1,1,1,1),(40,1,'deny_ip',1,1,1,1),(41,1,'doc_error_create',1,1,1,1),(42,1,'doc_agent_ext',1,1,1,1),(43,2,'price_analyzer',1,1,1,1),(44,3,'doc_postuplenie',1,1,1,0),(45,3,'doc_list',1,1,1,0),(46,3,'doc',1,0,0,0),(47,3,'tickets',1,1,0,0),(48,1,'doc_dogovor',1,1,1,1),(49,3,'doc_v_puti',1,1,1,0),(50,1,'doc_service',1,1,1,0),(51,2,'doc_error_create',0,0,0,0),(52,2,'doc_dogovor',1,1,1,0),(53,2,'doc_specific',1,1,1,0),(54,3,'doc_peremeshenie',0,0,0,0),(55,2,'doc_sklad_groups',1,1,1,0),(56,3,'doc_realizaciya',0,0,0,0),(57,3,'doc_predlojenie',1,1,1,0),(58,3,'doc_rko',1,1,1,0),(59,3,'doc_pko',1,1,1,0);
-/*!40000 ALTER TABLE `users_grouprights` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users_groups`
---
-
-DROP TABLE IF EXISTS `users_groups`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_groups` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `uid` int(11) NOT NULL,
-  `gid` int(11) NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `uid` (`uid`),
-  KEY `gid` (`gid`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Sootvetstvie grupp i pol''zovatelei';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users_groups`
---
-
-LOCK TABLES `users_groups` WRITE;
-/*!40000 ALTER TABLE `users_groups` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users_groups` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users_groups_acl`
---
-
-DROP TABLE IF EXISTS `users_groups_acl`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_groups_acl` (
+CREATE TABLE IF NOT EXISTS `users_groups_acl` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `gid` int(11) NOT NULL,
   `object` varchar(64) NOT NULL,
@@ -2179,164 +1949,298 @@ CREATE TABLE `users_groups_acl` (
   UNIQUE KEY `id` (`id`),
   KEY `gid` (`gid`),
   KEY `object` (`object`)
-) ENGINE=InnoDB AUTO_INCREMENT=3103 DEFAULT CHARSET=latin1 COMMENT='Привилегии групп';
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Привилегии групп' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `users_groups_acl`
+-- Структура таблицы `users_in_group`
 --
 
-LOCK TABLES `users_groups_acl` WRITE;
-/*!40000 ALTER TABLE `users_groups_acl` DISABLE KEYS */;
-INSERT INTO `users_groups_acl` VALUES (173,0,'generic_articles','view'),(174,0,'generic_galery','view'),(175,0,'generic_news','view'),(1738,1,'doc_dogovor','view'),(1739,1,'doc_dogovor','edit'),(1740,1,'doc_dogovor','create'),(1741,1,'doc_dogovor','apply'),(1742,1,'doc_dogovor','cancel'),(1743,1,'doc_dogovor','forcecancel'),(1744,1,'doc_dogovor','delete'),(1745,1,'doc_dogovor','today_cancel'),(1746,1,'doc_doveren','view'),(1747,1,'doc_doveren','edit'),(1748,1,'doc_doveren','create'),(1749,1,'doc_doveren','apply'),(1750,1,'doc_doveren','cancel'),(1751,1,'doc_doveren','forcecancel'),(1752,1,'doc_doveren','delete'),(1753,1,'doc_doveren','today_cancel'),(1754,1,'doc_kompredl','view'),(1755,1,'doc_kompredl','edit'),(1756,1,'doc_kompredl','create'),(1757,1,'doc_kompredl','apply'),(1758,1,'doc_kompredl','cancel'),(1759,1,'doc_kompredl','forcecancel'),(1760,1,'doc_kompredl','delete'),(1761,1,'doc_kompredl','today_cancel'),(1762,1,'doc_list','view'),(1763,1,'doc_list','delete'),(1764,1,'doc_pbank','view'),(1765,1,'doc_pbank','edit'),(1766,1,'doc_pbank','create'),(1767,1,'doc_pbank','apply'),(1768,1,'doc_pbank','cancel'),(1769,1,'doc_pbank','forcecancel'),(1770,1,'doc_pbank','delete'),(1771,1,'doc_pbank','today_cancel'),(1772,1,'doc_peremeshenie','view'),(1773,1,'doc_peremeshenie','edit'),(1774,1,'doc_peremeshenie','create'),(1775,1,'doc_peremeshenie','apply'),(1776,1,'doc_peremeshenie','cancel'),(1777,1,'doc_peremeshenie','forcecancel'),(1778,1,'doc_peremeshenie','delete'),(1779,1,'doc_peremeshenie','today_cancel'),(1780,1,'doc_perkas','view'),(1781,1,'doc_perkas','edit'),(1782,1,'doc_perkas','create'),(1783,1,'doc_perkas','apply'),(1784,1,'doc_perkas','cancel'),(1785,1,'doc_perkas','forcecancel'),(1786,1,'doc_perkas','delete'),(1787,1,'doc_perkas','today_cancel'),(1788,1,'doc_pko','view'),(1789,1,'doc_pko','edit'),(1790,1,'doc_pko','create'),(1791,1,'doc_pko','apply'),(1792,1,'doc_pko','cancel'),(1793,1,'doc_pko','forcecancel'),(1794,1,'doc_pko','delete'),(1795,1,'doc_pko','today_cancel'),(1796,1,'doc_postuplenie','view'),(1797,1,'doc_postuplenie','edit'),(1798,1,'doc_postuplenie','create'),(1799,1,'doc_postuplenie','apply'),(1800,1,'doc_postuplenie','cancel'),(1801,1,'doc_postuplenie','forcecancel'),(1802,1,'doc_postuplenie','delete'),(1803,1,'doc_postuplenie','today_cancel'),(1804,1,'doc_predlojenie','view'),(1805,1,'doc_predlojenie','edit'),(1806,1,'doc_predlojenie','create'),(1807,1,'doc_predlojenie','apply'),(1808,1,'doc_predlojenie','cancel'),(1809,1,'doc_predlojenie','forcecancel'),(1810,1,'doc_predlojenie','delete'),(1811,1,'doc_predlojenie','today_cancel'),(1812,1,'doc_rbank','view'),(1813,1,'doc_rbank','edit'),(1814,1,'doc_rbank','create'),(1815,1,'doc_rbank','apply'),(1816,1,'doc_rbank','cancel'),(1817,1,'doc_rbank','forcecancel'),(1818,1,'doc_rbank','delete'),(1819,1,'doc_rbank','today_cancel'),(1820,1,'doc_realizaciya','view'),(1821,1,'doc_realizaciya','edit'),(1822,1,'doc_realizaciya','create'),(1823,1,'doc_realizaciya','apply'),(1824,1,'doc_realizaciya','cancel'),(1825,1,'doc_realizaciya','forcecancel'),(1826,1,'doc_realizaciya','delete'),(1827,1,'doc_realizaciya','today_cancel'),(1828,1,'doc_realiz_op','view'),(1829,1,'doc_realiz_op','edit'),(1830,1,'doc_realiz_op','create'),(1831,1,'doc_realiz_op','apply'),(1832,1,'doc_realiz_op','cancel'),(1833,1,'doc_realiz_op','forcecancel'),(1834,1,'doc_realiz_op','delete'),(1835,1,'doc_realiz_op','today_cancel'),(1836,1,'doc_rko','view'),(1837,1,'doc_rko','edit'),(1838,1,'doc_rko','create'),(1839,1,'doc_rko','apply'),(1840,1,'doc_rko','cancel'),(1841,1,'doc_rko','forcecancel'),(1842,1,'doc_rko','delete'),(1843,1,'doc_rko','today_cancel'),(1844,1,'doc_sborka','view'),(1845,1,'doc_sborka','edit'),(1846,1,'doc_sborka','create'),(1847,1,'doc_sborka','apply'),(1848,1,'doc_sborka','cancel'),(1849,1,'doc_sborka','forcecancel'),(1850,1,'doc_sborka','delete'),(1851,1,'doc_sborka','today_cancel'),(1852,1,'doc_scropts','view'),(1853,1,'doc_scropts','exec'),(1854,1,'doc_service','view'),(1855,1,'doc_specific','view'),(1856,1,'doc_specific','edit'),(1857,1,'doc_specific','create'),(1858,1,'doc_specific','apply'),(1859,1,'doc_specific','cancel'),(1860,1,'doc_specific','forcecancel'),(1861,1,'doc_specific','delete'),(1862,1,'doc_specific','today_cancel'),(1863,1,'doc_v_puti','view'),(1864,1,'doc_v_puti','edit'),(1865,1,'doc_v_puti','create'),(1866,1,'doc_v_puti','apply'),(1867,1,'doc_v_puti','cancel'),(1868,1,'doc_v_puti','forcecancel'),(1869,1,'doc_v_puti','delete'),(1870,1,'doc_v_puti','today_cancel'),(1871,1,'doc_zayavka','view'),(1872,1,'doc_zayavka','edit'),(1873,1,'doc_zayavka','create'),(1874,1,'doc_zayavka','apply'),(1875,1,'doc_zayavka','cancel'),(1876,1,'doc_zayavka','forcecancel'),(1877,1,'doc_zayavka','delete'),(1878,1,'doc_zayavka','today_cancel'),(1879,1,'generic_articles','view'),(1880,1,'generic_articles','edit'),(1881,1,'generic_articles','create'),(1882,1,'generic_articles','delete'),(1883,1,'generic_galery','view'),(1884,1,'generic_galery','edit'),(1885,1,'generic_galery','create'),(1886,1,'generic_galery','delete'),(1887,1,'generic_news','view'),(1888,1,'generic_news','edit'),(1889,1,'generic_news','create'),(1890,1,'generic_news','delete'),(1891,1,'generic_price_an','view'),(1892,1,'list_agent','view'),(1893,1,'list_agent','edit'),(1894,1,'list_agent','create'),(1895,1,'list_agent_dov','view'),(1896,1,'list_agent_dov','edit'),(1897,1,'list_agent_dov','create'),(1898,1,'list_price_an','view'),(1899,1,'list_price_an','edit'),(1900,1,'list_price_an','create'),(1901,1,'list_price_an','delete'),(1902,1,'list_sklad','view'),(1903,1,'list_sklad','edit'),(1904,1,'list_sklad','create'),(1905,1,'log_access','view'),(1906,1,'log_browser','view'),(1907,1,'log_error','view'),(1908,1,'report_cash','view'),(1909,1,'sys_acl','view'),(1910,1,'sys_acl','edit'),(1911,1,'sys_async_task','view'),(1912,1,'sys_async_task','exec'),(1913,1,'sys_ip-blacklist','view'),(1914,1,'sys_ip-blacklist','create'),(1915,1,'sys_ip-blacklist','delete'),(1916,1,'sys_ip-log','view'),(2170,2,'doc_dogovor','view'),(2171,2,'doc_dogovor','edit'),(2172,2,'doc_dogovor','create'),(2173,2,'doc_dogovor','apply'),(2174,2,'doc_dogovor','cancel'),(2175,2,'doc_dogovor','today_cancel'),(2176,2,'doc_doveren','view'),(2177,2,'doc_doveren','edit'),(2178,2,'doc_doveren','create'),(2179,2,'doc_doveren','apply'),(2180,2,'doc_doveren','cancel'),(2181,2,'doc_doveren','today_cancel'),(2182,2,'doc_kompredl','view'),(2183,2,'doc_kompredl','edit'),(2184,2,'doc_kompredl','create'),(2185,2,'doc_kompredl','apply'),(2186,2,'doc_kompredl','cancel'),(2187,2,'doc_kompredl','today_cancel'),(2188,2,'doc_list','view'),(2189,2,'doc_pbank','view'),(2190,2,'doc_perkas','view'),(2191,2,'doc_pko','view'),(2192,2,'doc_pko','edit'),(2193,2,'doc_pko','create'),(2194,2,'doc_pko','apply'),(2195,2,'doc_postuplenie','view'),(2196,2,'doc_predlojenie','view'),(2197,2,'doc_rbank','view'),(2198,2,'doc_realizaciya','view'),(2199,2,'doc_realizaciya','edit'),(2200,2,'doc_realizaciya','create'),(2201,2,'doc_realizaciya','apply'),(2202,2,'doc_realizaciya','today_cancel'),(2203,2,'doc_realiz_op','view'),(2204,2,'doc_rko','view'),(2205,2,'doc_rko','edit'),(2206,2,'doc_rko','create'),(2207,2,'doc_rko','apply'),(2208,2,'doc_sborka','view'),(2209,2,'doc_sborka','edit'),(2210,2,'doc_sborka','create'),(2211,2,'doc_sborka','apply'),(2212,2,'doc_sborka','cancel'),(2213,2,'doc_specific','view'),(2214,2,'doc_specific','edit'),(2215,2,'doc_specific','create'),(2216,2,'doc_specific','apply'),(2217,2,'doc_specific','cancel'),(2218,2,'doc_specific','today_cancel'),(2219,2,'doc_v_puti','view'),(2220,2,'doc_zayavka','view'),(2221,2,'doc_zayavka','edit'),(2222,2,'doc_zayavka','create'),(2223,2,'doc_zayavka','apply'),(2224,2,'doc_zayavka','cancel'),(2225,2,'doc_zayavka','today_cancel'),(2226,2,'generic_articles','view'),(2227,2,'generic_articles','edit'),(2228,2,'generic_articles','create'),(2229,2,'generic_galery','view'),(2230,2,'generic_galery','edit'),(2231,2,'generic_galery','create'),(2232,2,'generic_news','view'),(2233,2,'generic_news','edit'),(2234,2,'generic_news','create'),(2235,2,'generic_price_an','view'),(2236,2,'list_agent','view'),(2237,2,'list_agent','edit'),(2238,2,'list_agent','create'),(2239,2,'list_agent_dov','view'),(2240,2,'list_agent_dov','edit'),(2241,2,'list_agent_dov','create'),(2242,2,'list_price_an','view'),(2243,2,'list_sklad','view'),(2244,2,'list_sklad','edit'),(2245,2,'list_sklad','create'),(2246,2,'log_access','view'),(2247,2,'log_browser','view'),(2248,2,'log_error','view'),(2249,2,'report_cash','view'),(2250,2,'sys_acl','view'),(2251,2,'sys_async_task','view'),(2252,2,'sys_ip-blacklist','view'),(2253,2,'sys_ip-log','view'),(2897,4,'doc_dogovor','view'),(2898,4,'doc_dogovor','edit'),(2899,4,'doc_dogovor','create'),(2900,4,'doc_dogovor','apply'),(2901,4,'doc_dogovor','today_cancel'),(2902,4,'doc_doveren','view'),(2903,4,'doc_doveren','edit'),(2904,4,'doc_doveren','create'),(2905,4,'doc_doveren','apply'),(2906,4,'doc_doveren','today_cancel'),(2907,4,'doc_kompredl','view'),(2908,4,'doc_kompredl','edit'),(2909,4,'doc_kompredl','create'),(2910,4,'doc_kompredl','apply'),(2911,4,'doc_kompredl','today_cancel'),(2912,4,'doc_list','view'),(2913,4,'doc_pbank','view'),(2914,4,'doc_pbank','edit'),(2915,4,'doc_pbank','create'),(2916,4,'doc_pbank','apply'),(2917,4,'doc_pbank','today_cancel'),(2918,4,'doc_perkas','view'),(2919,4,'doc_perkas','edit'),(2920,4,'doc_perkas','create'),(2921,4,'doc_perkas','apply'),(2922,4,'doc_perkas','today_cancel'),(2923,4,'doc_pko','view'),(2924,4,'doc_pko','edit'),(2925,4,'doc_pko','create'),(2926,4,'doc_pko','apply'),(2927,4,'doc_postuplenie','view'),(2928,4,'doc_postuplenie','edit'),(2929,4,'doc_postuplenie','create'),(2930,4,'doc_postuplenie','apply'),(2931,4,'doc_postuplenie','today_cancel'),(2932,4,'doc_predlojenie','view'),(2933,4,'doc_predlojenie','edit'),(2934,4,'doc_predlojenie','create'),(2935,4,'doc_predlojenie','apply'),(2936,4,'doc_predlojenie','today_cancel'),(2937,4,'doc_rbank','view'),(2938,4,'doc_rbank','edit'),(2939,4,'doc_rbank','create'),(2940,4,'doc_rbank','apply'),(2941,4,'doc_rbank','today_cancel'),(2942,4,'doc_realizaciya','view'),(2943,4,'doc_realizaciya','edit'),(2944,4,'doc_realizaciya','create'),(2945,4,'doc_realizaciya','apply'),(2946,4,'doc_realizaciya','today_cancel'),(2947,4,'doc_realiz_op','view'),(2948,4,'doc_realiz_op','edit'),(2949,4,'doc_realiz_op','create'),(2950,4,'doc_realiz_op','apply'),(2951,4,'doc_realiz_op','today_cancel'),(2952,4,'doc_rko','view'),(2953,4,'doc_sborka','view'),(2954,4,'doc_sborka','edit'),(2955,4,'doc_sborka','create'),(2956,4,'doc_sborka','apply'),(2957,4,'doc_sborka','today_cancel'),(2958,4,'doc_scropts','view'),(2959,4,'doc_scropts','exec'),(2960,4,'doc_service','view'),(2961,4,'doc_specific','view'),(2962,4,'doc_specific','edit'),(2963,4,'doc_specific','create'),(2964,4,'doc_specific','apply'),(2965,4,'doc_specific','today_cancel'),(2966,4,'doc_v_puti','view'),(2967,4,'doc_v_puti','today_cancel'),(2968,4,'doc_zayavka','view'),(2969,4,'doc_zayavka','edit'),(2970,4,'doc_zayavka','create'),(2971,4,'doc_zayavka','apply'),(2972,4,'doc_zayavka','today_cancel'),(2973,4,'generic_articles','view'),(2974,4,'generic_articles','edit'),(2975,4,'generic_articles','create'),(2976,4,'generic_galery','view'),(2977,4,'generic_galery','edit'),(2978,4,'generic_galery','create'),(2979,4,'generic_news','view'),(2980,4,'generic_news','edit'),(2981,4,'generic_news','create'),(2982,4,'generic_price_an','view'),(2983,4,'list_agent','view'),(2984,4,'list_agent','edit'),(2985,4,'list_agent','create'),(2986,4,'list_agent_dov','view'),(2987,4,'list_agent_dov','edit'),(2988,4,'list_agent_dov','create'),(2989,4,'list_price_an','view'),(2990,4,'list_price_an','edit'),(2991,4,'list_price_an','create'),(2992,4,'list_sklad','view'),(2993,4,'list_sklad','edit'),(2994,4,'list_sklad','create'),(2995,4,'log_access','view'),(2996,4,'log_browser','view'),(2997,4,'log_error','view'),(2998,4,'report_cash','view'),(2999,4,'sys_acl','view'),(3000,4,'sys_async_task','view'),(3001,4,'sys_async_task','exec'),(3002,4,'sys_ip-blacklist','view'),(3003,4,'sys_ip-log','view'),(3053,3,'doc_kompredl','view'),(3054,3,'doc_list','view'),(3055,3,'doc_pbank','view'),(3056,3,'doc_peremeshenie','view'),(3057,3,'doc_peremeshenie','edit'),(3058,3,'doc_peremeshenie','create'),(3059,3,'doc_pko','view'),(3060,3,'doc_postuplenie','view'),(3061,3,'doc_postuplenie','edit'),(3062,3,'doc_postuplenie','create'),(3063,3,'doc_postuplenie','apply'),(3064,3,'doc_predlojenie','view'),(3065,3,'doc_predlojenie','edit'),(3066,3,'doc_predlojenie','create'),(3067,3,'doc_predlojenie','apply'),(3068,3,'doc_predlojenie','cancel'),(3069,3,'doc_predlojenie','today_cancel'),(3070,3,'doc_rbank','view'),(3071,3,'doc_realizaciya','view'),(3072,3,'doc_realiz_op','view'),(3073,3,'doc_rko','view'),(3074,3,'doc_sborka','view'),(3075,3,'doc_sborka','edit'),(3076,3,'doc_sborka','create'),(3077,3,'doc_sborka','apply'),(3078,3,'doc_service','view'),(3079,3,'doc_specific','view'),(3080,3,'doc_v_puti','view'),(3081,3,'doc_v_puti','edit'),(3082,3,'doc_v_puti','create'),(3083,3,'doc_v_puti','apply'),(3084,3,'doc_v_puti','cancel'),(3085,3,'doc_v_puti','today_cancel'),(3086,3,'doc_zayavka','view'),(3087,3,'doc_zayavka','edit'),(3088,3,'doc_zayavka','create'),(3089,3,'generic_articles','view'),(3090,3,'generic_galery','view'),(3091,3,'generic_news','view'),(3092,3,'list_agent','view'),(3093,3,'list_agent','edit'),(3094,3,'list_agent','create'),(3095,3,'list_price_an','view'),(3096,3,'list_sklad','view'),(3097,3,'list_sklad','edit'),(3098,3,'list_sklad','create'),(3099,3,'sys_ip-blacklist','view'),(3100,3,'sys_ip-blacklist','create'),(3101,3,'sys_ip-blacklist','delete'),(3102,3,'sys_ip-log','view');
-/*!40000 ALTER TABLE `users_groups_acl` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users_in_group`
---
-
-DROP TABLE IF EXISTS `users_in_group`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_in_group` (
+CREATE TABLE IF NOT EXISTS `users_in_group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL,
   `gid` int(11) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `uid` (`uid`),
   KEY `gid` (`gid`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Соответствие групп и пользователей';
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Соответствие групп и пользователей' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `users_in_group`
+-- Структура таблицы `users_login_history`
 --
 
-LOCK TABLES `users_in_group` WRITE;
-/*!40000 ALTER TABLE `users_in_group` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users_in_group` ENABLE KEYS */;
-UNLOCK TABLES;
+CREATE TABLE IF NOT EXISTS `users_login_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `date` datetime NOT NULL,
+  `ip` varchar(32) NOT NULL,
+  `useragent` varchar(128) NOT NULL,
+  `method` varchar(8) NOT NULL,
+  UNIQUE KEY `id` (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `users_objects`
+-- Структура таблицы `users_objects`
 --
 
-DROP TABLE IF EXISTS `users_objects`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users_objects` (
+CREATE TABLE IF NOT EXISTS `users_objects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `object` varchar(32) NOT NULL,
   `desc` varchar(128) NOT NULL,
   `actions` varchar(128) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `object` (`object`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=74 ;
 
 --
--- Dumping data for table `users_objects`
+-- Дамп данных таблицы `users_objects`
 --
 
-LOCK TABLES `users_objects` WRITE;
-/*!40000 ALTER TABLE `users_objects` DISABLE KEYS */;
-INSERT INTO `users_objects` VALUES (1,'doc','Документы',''),(2,'doc_list','Журнал документов','view,delete'),(3,'doc_postuplenie','Поступление','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(4,'generic_articles','Доступ к статьям','view,edit,create,delete'),(5,'sys','Системные объекты',''),(6,'generic','Общие объекты',''),(7,'sys_acl','Управление привилегиями','view,edit'),(8,'doc_realizaciya','Реализация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(9,'doc_zayavka','Документ заявки','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(10,'doc_kompredl','Коммерческое предложение','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(11,'doc_dogovor','Договор','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(12,'doc_doveren','Доверенность','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(13,'doc_pbank','Приход средств в банк','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(14,'doc_peremeshenie','Перемещение товара','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(15,'doc_perkas','Перемещение средств в кассе','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(16,'doc_predlojenie','Предложение поставщика','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(17,'doc_rbank','Расход средств из банка','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(18,'doc_realiz_op','Оперативная реализация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(19,'doc_rko','Расходный кассовый ордер','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(20,'doc_sborka','Сборка изделия','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(21,'doc_specific','Спецификация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(22,'doc_v_puti','Товар в пути','view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),(23,'list','Списки',''),(24,'list_agent','Агенты','create,edit,view'),(25,'list_sklad','Склад','create,edit,view'),(26,'list_price_an','Анализатор прайсов','create,edit,view,delete'),(27,'list_agent_dov','Доверенные лица','create,edit,view'),(28,'report','Отчёты',''),(29,'report_cash','Кассовый отчёт','view'),(30,'generic_news','Новости','view,create,edit,delete'),(31,'doc_service','Служебные функции','view'),(32,'doc_scropts','Сценарии и операции','view,exec'),(33,'log','Системные журналы',''),(34,'log_browser','Статистирка броузеров','view'),(35,'log_error','Журнал ошибок','view'),(36,'log_access','Журнал посещений','view'),(37,'sys_async_task','Ассинхронные задачи','view,exec'),(38,'sys_ip-blacklist','Чёрный список IP адресов','view,create,delete'),(39,'sys_ip-log','Журнал обращений к ip адресам','view'),(40,'generic_price_an','Анализатор прайсов','view'),(41,'generic_galery','Фотогалерея','view,create,edit,delete'),(42,'doc_pko','Приходный кассовый ордер','view,edit,create,apply,cancel,forcecancel,delete,today_cancel');
-/*!40000 ALTER TABLE `users_objects` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
+(1, 'doc', 'Документы', ''),
+(2, 'doc_list', 'Журнал документов', 'view,delete'),
+(3, 'doc_postuplenie', 'Поступление', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(4, 'generic_articles', 'Доступ к статьям', 'view,edit,create,delete'),
+(5, 'sys', 'Системные объекты', ''),
+(6, 'generic', 'Общие объекты', ''),
+(7, 'sys_acl', 'Управление привилегиями', 'view,edit'),
+(8, 'doc_realizaciya', 'Реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(9, 'doc_zayavka', 'Документ заявки', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(10, 'doc_kompredl', 'Коммерческое предложение', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(11, 'doc_dogovor', 'Договор', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(12, 'doc_doveren', 'Доверенность', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(13, 'doc_pbank', 'Приход средств в банк', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(14, 'doc_peremeshenie', 'Перемещение товара', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(15, 'doc_perkas', 'Перемещение средств в кассе', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(16, 'doc_predlojenie', 'Предложение поставщика', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(17, 'doc_rbank', 'Расход средств из банка', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(18, 'doc_realiz_op', 'Оперативная реализация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(19, 'doc_rko', 'Расходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(20, 'doc_sborka', 'Сборка изделия', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(21, 'doc_specific', 'Спецификация', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(22, 'doc_v_puti', 'Товар в пути', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(23, 'list', 'Списки', ''),
+(24, 'list_agent', 'Агенты', 'create,edit,view'),
+(25, 'list_sklad', 'Склад', 'create,edit,view'),
+(26, 'list_price_an', 'Анализатор прайсов', 'create,edit,view,delete'),
+(27, 'list_agent_dov', 'Доверенные лица', 'create,edit,view'),
+(28, 'report', 'Отчёты', ''),
+(29, 'report_cash', 'Кассовый отчёт', 'view'),
+(30, 'generic_news', 'Новости', 'view,create,edit,delete'),
+(31, 'doc_service', 'Служебные функции', 'view,edit,delete'),
+(32, 'doc_scripts', 'Сценарии и операции', 'view,exec'),
+(33, 'log', 'Системные журналы', ''),
+(34, 'log_browser', 'Статистирка броузеров', 'view'),
+(35, 'log_error', 'Журнал ошибок', 'view'),
+(36, 'log_access', 'Журнал посещений', 'view'),
+(37, 'sys_async_task', 'Ассинхронные задачи', 'view,exec'),
+(38, 'sys_ip-blacklist', 'Чёрный список IP адресов', 'view,create,delete'),
+(39, 'sys_ip-log', 'Журнал обращений к ip адресам', 'view'),
+(40, 'generic_price_an', 'Анализатор прайсов', 'view'),
+(41, 'generic_galery', 'Фотогалерея', 'view,create,edit,delete'),
+(42, 'doc_pko', 'Приходный кассовый ордер', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(43, 'doc_kordolga', 'Корректировка долга', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(45, 'sys_ps-stat', 'Статистика переходов с поисковиков', 'view'),
+(46, 'report_move_nocost', 'Отчёт по движению товаров (без цен)', 'view'),
+(47, 'report_kassday', 'Отчёт по кассе за день', 'view'),
+(48, 'report_dolgi', 'Отчёт по задолженностям', 'view'),
+(49, 'report_pos_nosells', 'Отчёт по номенклатуре без продаж', 'view'),
+(50, 'report_store', 'Остатки на складе', 'view'),
+(51, 'report_payments', 'Отчёт по проплатам', 'view'),
+(52, 'report_agent_nosells', 'Отчёт по агентам без продаж', 'view'),
+(53, 'report_agent', 'Отчёт по агенту', 'view'),
+(54, 'report_ostatkinadatu', 'Отчёт по остаткам на складе на выбранную дату', 'view'),
+(55, 'report_cons_finance', 'Сводный финансовый', 'view'),
+(56, 'report_images', 'Отчёт по изображениям складских наименований', 'view'),
+(57, 'report_sales', 'Отчёт по движению товара', 'view'),
+(58, 'report_pricetags', 'Ценники', 'view'),
+(59, 'report_komplekt_zp', 'Отчёт по комплектующим с зарплатой', 'view'),
+(60, 'report_bankday', 'Отчёт по банку', 'view'),
+(62, 'report_costs', 'Отчёт по ценам', 'view'),
+(63, 'report_revision_act', 'Акт сверки', 'view'),
+(64, 'report_balance', 'Состояние счетов и касс', 'view'),
+(65, 'report_profitability', 'Отчёт по рентабельности', 'view'),
+(66, 'report_kladovshik', 'Отчёт по кладовщикам в реализациях', 'view'),
+(67, 'report_apay', 'Отчёт по платежам агентов', 'view'),
+(68, 'doc_fabric', 'Учёт производства', 'view,edit'),
+(69, 'admin_users', 'Администрирование пользователей', 'view,edit'),
+(70, 'report_mincnt', 'Отчёт по минимальному количеству', 'view'),
+(71, 'report_mincnt', 'Отчёт по минимальному количеству', 'view'),
+(72, 'report_pos_komplekt', 'Отчёт по остаткам комплектующих', 'view'),
+(73, 'report_ved_agentov', 'Ведомость по агентам', 'view');
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `variables`
+-- Структура таблицы `users_openid`
 --
 
-DROP TABLE IF EXISTS `variables`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `variables` (
-  `counter` int(11) NOT NULL DEFAULT '0',
-  `nightdate` bigint(20) NOT NULL DEFAULT '0',
-  `sel` int(11) NOT NULL DEFAULT '0',
-  `asel` int(11) NOT NULL DEFAULT '0'
+CREATE TABLE IF NOT EXISTS `users_openid` (
+  `user_id` int(11) NOT NULL,
+  `openid_identify` varchar(192) NOT NULL,
+  `openid_type` int(16) NOT NULL,
+  UNIQUE KEY `openid_identify` (`openid_identify`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Привязка к openid';
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `users_worker_info`
+--
+
+CREATE TABLE IF NOT EXISTS `users_worker_info` (
+  `user_id` int(11) NOT NULL,
+  `worker` tinyint(4) NOT NULL,
+  `worker_email` varchar(64) NOT NULL,
+  `worker_phone` varchar(16) NOT NULL,
+  `worker_jid` varchar(32) NOT NULL,
+  `worker_real_name` varchar(64) NOT NULL,
+  `worker_real_address` varchar(256) NOT NULL,
+  UNIQUE KEY `user_id` (`user_id`),
+  KEY `worker_email` (`worker_email`),
+  KEY `worker_phone` (`worker_phone`),
+  KEY `worker_jid` (`worker_jid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `variables`
+--
+
+CREATE TABLE IF NOT EXISTS `variables` (
+  `corrupted` tinyint(4) NOT NULL COMMENT 'Признак нарушения целостности',
+  `recalc_active` int(9) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `variables`
+-- Дамп данных таблицы `variables`
 --
 
-LOCK TABLES `variables` WRITE;
-/*!40000 ALTER TABLE `variables` DISABLE KEYS */;
-INSERT INTO `variables` VALUES (8742,1158944400,0,0);
-/*!40000 ALTER TABLE `variables` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `variables` (`corrupted`, `recalc_active`) VALUES
+(0, 0);
+
+-- --------------------------------------------------------
 
 --
--- Table structure for table `wiki`
+-- Структура таблицы `wikiphoto`
 --
 
-DROP TABLE IF EXISTS `wiki`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `wiki` (
-  `name` varchar(50) NOT NULL,
-  `date` datetime NOT NULL,
-  `autor` int(11) NOT NULL,
-  `changed` datetime NOT NULL,
-  `changeautor` int(11) NOT NULL,
-  `text` text NOT NULL,
-  `img_ext` varchar(4) NOT NULL,
-  UNIQUE KEY `name` (`name`),
-  KEY `date` (`date`),
-  KEY `autor` (`autor`),
-  KEY `changed` (`changed`),
-  KEY `changeautor` (`changeautor`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `wiki`
---
-
-LOCK TABLES `wiki` WRITE;
-/*!40000 ALTER TABLE `wiki` DISABLE KEYS */;
-/*!40000 ALTER TABLE `wiki` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `wikiphoto`
---
-
-DROP TABLE IF EXISTS `wikiphoto`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `wikiphoto` (
+CREATE TABLE IF NOT EXISTS `wikiphoto` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL DEFAULT '0',
   `comment` varchar(50) NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 --
--- Dumping data for table `wikiphoto`
+-- Ограничения внешнего ключа сохраненных таблиц
 --
 
-LOCK TABLES `wikiphoto` WRITE;
-/*!40000 ALTER TABLE `wikiphoto` DISABLE KEYS */;
-/*!40000 ALTER TABLE `wikiphoto` ENABLE KEYS */;
-UNLOCK TABLES;
+--
+-- Ограничения внешнего ключа таблицы `articles`
+--
+ALTER TABLE `articles`
+  ADD CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`autor`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `articles_ibfk_2` FOREIGN KEY (`changeautor`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
--- Dumping routines for database 'mmag_demo'
+-- Ограничения внешнего ключа таблицы `class_unit`
 --
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+ALTER TABLE `class_unit`
+  ADD CONSTRAINT `class_unit_ibfk_1` FOREIGN KEY (`class_unit_group_id`) REFERENCES `class_unit_group` (`id`),
+  ADD CONSTRAINT `class_unit_ibfk_2` FOREIGN KEY (`class_unit_type_id`) REFERENCES `class_unit_type` (`id`);
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+--
+-- Ограничения внешнего ключа таблицы `doc_base`
+--
+ALTER TABLE `doc_base`
+  ADD CONSTRAINT `doc_base_ibfk_1` FOREIGN KEY (`group`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_base_ibfk_2` FOREIGN KEY (`unit`) REFERENCES `class_unit` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_base_ibfk_3` FOREIGN KEY (`country`) REFERENCES `class_country` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
--- Dump completed on 2012-01-05  0:07:34
+--
+-- Ограничения внешнего ключа таблицы `doc_base_attachments`
+--
+ALTER TABLE `doc_base_attachments`
+  ADD CONSTRAINT `doc_base_attachments_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_base_attachments_ibfk_2` FOREIGN KEY (`attachment_id`) REFERENCES `attachments` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `doc_base_cost`
+--
+ALTER TABLE `doc_base_cost`
+  ADD CONSTRAINT `doc_base_cost_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_base_cost_ibfk_2` FOREIGN KEY (`cost_id`) REFERENCES `doc_cost` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `doc_base_kompl`
+--
+ALTER TABLE `doc_base_kompl`
+  ADD CONSTRAINT `doc_base_kompl_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_base_kompl_ibfk_2` FOREIGN KEY (`kompl_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `doc_base_pcollections_set`
+--
+ALTER TABLE `doc_base_pcollections_set`
+  ADD CONSTRAINT `doc_base_pcollections_set_ibfk_1` FOREIGN KEY (`collection_id`) REFERENCES `doc_base_pcollections_list` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_base_pcollections_set_ibfk_2` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `doc_base_values`
+--
+ALTER TABLE `doc_base_values`
+  ADD CONSTRAINT `doc_base_values_ibfk_1` FOREIGN KEY (`id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_base_values_ibfk_2` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `doc_group_cost`
+--
+ALTER TABLE `doc_group_cost`
+  ADD CONSTRAINT `doc_group_cost_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_group_cost_ibfk_2` FOREIGN KEY (`cost_id`) REFERENCES `doc_cost` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `doc_group_params`
+--
+ALTER TABLE `doc_group_params`
+  ADD CONSTRAINT `fk_doc_group_params_doc_base_params1` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `fk_doc_group_params_doc_group1` FOREIGN KEY (`group_id`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `doc_list_pos`
+--
+ALTER TABLE `doc_list_pos`
+  ADD CONSTRAINT `doc_list_pos_ibfk_2` FOREIGN KEY (`tovar`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_list_pos_ibfk_3` FOREIGN KEY (`doc`) REFERENCES `doc_list` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`agent_id`) REFERENCES `doc_agent` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `users_data`
+--
+ALTER TABLE `users_data`
+  ADD CONSTRAINT `users_data_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Ограничения внешнего ключа таблицы `users_openid`
+--
+ALTER TABLE `users_openid`
+  ADD CONSTRAINT `users_openid_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `users_worker_info`
+--
+ALTER TABLE `users_worker_info`
+  ADD CONSTRAINT `users_worker_info_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;

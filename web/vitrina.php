@@ -1124,7 +1124,7 @@ protected function MakeBuy()
 		}
 		else if($pay_type=='credit_brs')
 		{
-			$tmpl->AddText("<p>Заказ оформлен. Теперь вы можете перейти на сайт банка &quot;ЗАО Банк Русский стандарт&quot; для оформления кредитной заявки. <a href='/vitrina.php?mode=pay'>Перейти на сайт банка</a></p>");
+			$this->Payment();
 		}
 		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
 		unset($_SESSION['basket']);
