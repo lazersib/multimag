@@ -59,6 +59,11 @@ function ProbeRecode()
 		$this->ProductCard($block);
 		return true;
 	}
+	else if($arr[2]=='block')// Заданный блок
+	{
+		$this->ViewBlock($block);
+		return true;
+	}	
 	else if($arr[2]=='ng')	// Наименование группы
 	{
 
@@ -69,7 +74,8 @@ function ProbeRecode()
 	}
 	return false;
 }
-/// Исполнение заданной функции
+
+///Исполнение заданной функции
 function ExecMode($mode)
 {
 	global $tmpl, $CONFIG;
@@ -90,6 +96,10 @@ function ExecMode($mode)
 	else if($mode=='basket')
 	{
 		$this->Basket();
+	}
+	else if($mode=='block')
+	{
+		$this->ViewBlock($_REQUEST['type']);
 	}
 	else if($mode=='korz_add')
 	{
@@ -235,6 +245,7 @@ protected function ViewGroup($group, $page)
 {
 	global $tmpl, $CONFIG, $wikiparser;
 	settype($group,'int');
+	settype($page,'int');
 	$res=mysql_query("SELECT `name`, `pid`, `desc`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_group` WHERE `id`='$group' AND `hidelevel`='0'");
 	if(mysql_errno())	throw new MysqlException('Не удалось выбрать информацию о группе');
 	$nxt=mysql_fetch_row($res);
@@ -289,6 +300,7 @@ protected function ViewGroup($group, $page)
 	/// TODO: сделать возможность выбора вида отображения списка товаров посетителем
 	$this->ProductList($group, $page);
 }
+
 /// Список товаров в группе
 protected function ProductList($group, $page)
 {
@@ -358,6 +370,87 @@ protected function ProductList($group, $page)
 	}
 }
 
+/// Блок товаров, выбранных по признаку, основанному на типе блока
+protected function ViewBlock($block)
+{
+	global $tmpl, $CONFIG;
+
+	/// Определение типа блока
+	if($block=='stock')
+	{
+		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
+		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
+		`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
+		FROM `doc_base`
+		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_base`.`hidden`='0' AND `doc_base`.`stock`!='0'
+		ORDER BY `doc_base`.`likvid` ASC";
+		$tmpl->AddText("<h1>Распродажа</h1>");
+	}
+	else if($block=='popular')
+	{
+		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
+		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
+		`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
+		FROM `doc_base`
+		INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
+		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_base`.`hidden`='0'
+		ORDER BY `doc_base`.`likvid` DESC
+		LIMIT 48";
+		$tmpl->AddText("<h1>Популярные товары</h1>");
+	}
+	else if($block=='new')
+	{
+		if($CONFIG['site']['vitrina_newtime'])	$new_time=date("Y-m-d H:i:s",time()-60*60*24*$CONFIG['site']['vitrina_newtime']);
+		else					$new_time=date("Y-m-d H:i:s",time()-60*60*24*15);
+		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
+		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base`.`id`) AS `count`,
+		`doc_base_dop`.`tranzit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
+		FROM `doc_base`
+		INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
+		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_base`.`hidden`='0' AND (`doc_base`.`create_time`>='$new_time' OR `doc_base`.`buy_time`>='$new_time')
+		ORDER BY `doc_base`.`likvid` DESC
+		LIMIT 12";
+		$tmpl->AddText("<h1>Новинки</h1>");
+	}
+	else
+	{
+		header('HTTP/1.0 404 Not Found');
+		header('Status: 404 Not Found');
+		throw new Exception('Блок не найден!');
+	}
+
+	$res=mysql_query($sql);
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
+	$lim=1000;
+	$rows=mysql_num_rows($res);
+        if($rows)
+        {
+		if($CONFIG['site']['vitrina_plstyle']=='imagelist')		$view='i';
+		else if($CONFIG['site']['vitrina_plstyle']=='extable')		$view='t';
+		else								$view='l';
+
+		if($view=='i')			$this->TovList_ImageList($res, $lim);
+		else if($view=='t')		$this->TovList_ExTable($res, $lim);
+		else				$this->TovList_SimpleTable($res, $lim);
+
+		$tmpl->AddText("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
+	}
+	else $tmpl->msg("Товары в данной категории отсутствуют");
+}
+
+/// Блок ссылок смены вида отображения и сортировки
 protected function OrderAndViewBar($group,$page,$order,$view)
 {
 	global $tmpl;
@@ -391,10 +484,12 @@ protected function OrderAndViewBar($group,$page,$order,$view)
 	$tmpl->AddText("</div><div class='clear'></div>");
 	$tmpl->AddText("</div>");
 }
+
 /// Карточка товара
 protected function ProductCard($product)
 {
 	global $tmpl, $CONFIG, $wikiparser;
+	settype($product,'int');
 	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
 	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`

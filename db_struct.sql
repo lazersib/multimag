@@ -1853,7 +1853,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   KEY `reg_phone_subscribe` (`reg_phone_subscribe`),
   KEY `jid` (`jid`),
   KEY `agent_id` (`agent_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Spisok pol''zovatelei' AUTO_INCREMENT=3 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Spisok pol''zovatelei' AUTO_INCREMENT=2 ;
 
 --
 -- Дамп данных таблицы `users`
@@ -1861,7 +1861,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`id`, `name`, `pass`, `pass_type`, `pass_change`, `pass_expired`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_email_subscribe`, `reg_phone`, `reg_phone_subscribe`, `reg_phone_confirm`, `reg_date`, `disabled`, `disabled_reason`, `bifact_auth`, `real_name`, `real_address`, `jid`, `type`, `agent_id`) VALUES
 (0, 'anonymous', '--not-valid--', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', 1),
-(2, 'root', 'enter_md5_password', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', NULL);
+(1, 'root', 'enter_md5_password', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', NULL);
 
 -- --------------------------------------------------------
 
