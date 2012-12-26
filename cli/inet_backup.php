@@ -19,7 +19,7 @@ function logmail($str)
 
 $script_start_time=time();
 
-$route_res=`route -n`;
+$route_res=`/sbin/route -n`;
 $route_res=explode("\n", $route_res);
 $def_route_iface=$CONFIG['route']['ext_iface'];
 foreach($route_res as $r)
@@ -37,7 +37,7 @@ if(strpos($ping_res, 'ttl')===FALSE)
 	{
 		logmail("Тест доступности второго канала...");
 		$backup_active=0;
-		$ifconfig_res=`ifconfig`;
+		$ifconfig_res=`/sbin/ifconfig`;
 		if(strpos($ifconfig_res, $CONFIG['route']['backup_ext_iface'])===FALSE)
 		{
 			logmail("Резервный канал не доступен!");
@@ -52,7 +52,7 @@ if(strpos($ping_res, 'ttl')===FALSE)
 			}
 			while( ($script_start_time+50)>time())
 			{
-				$ifconfig_res=`ifconfig`;
+				$ifconfig_res=`/sbin/ifconfig`;
 				if(strpos($ifconfig_res, $CONFIG['route']['backup_ext_iface'])!==FALSE)
 				{
 					logmail("Канал запущен!\n");
@@ -70,9 +70,9 @@ if(strpos($ping_res, 'ttl')===FALSE)
 		if($backup_active==1)
 		{
 			logmail("Перевод маршрутизции на резервный канал");
-			`route del default`;
-			`route del default`;
-			`route add default dev {$CONFIG['route']['backup_ext_iface']}`;
+			`/sbin/route del default`;
+			`/sbin/route del default`;
+			`/sbin/route add default dev {$CONFIG['route']['backup_ext_iface']}`;
 		}
 	}
 	else logmail("Продолжаем использовать резервный канал");
@@ -83,12 +83,12 @@ else
 	if($def_route_iface!=$CONFIG['route']['ext_iface'])
 	{
 		logmail("Основной канал восстановился, возвращаем маршрутизцию через основной канал!");
-		`route del default`;
-		`route del default`;
-		`route add default dev {$CONFIG['route']['ext_iface']}`;
+		`/sbin/route del default`;
+		`/sbin/route del default`;
+		`/sbin/route add default dev {$CONFIG['route']['ext_iface']}`;
 		`poff {$CONFIG['route']['backup_pppoe_name']}`;
 	}
-	echo "Связь в норме!\n";
+	//echo "Связь в норме!\n";
 }
 
 if($mail_text)

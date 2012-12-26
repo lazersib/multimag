@@ -10,7 +10,7 @@ if(!$CONFIG['route']['ext_ip'])
     exit(0);
 }
 
-$ipt='iptables';
+$ipt='/sbin/iptables';
 
 `echo "1" > /proc/sys/net/ipv4/ip_forward`;
 `echo "0" > /proc/sys/net/ipv4/conf/all/log_martians`;
@@ -25,7 +25,7 @@ $ipt='iptables';
 `/sbin/modprobe ipt_LOG`;
 `/sbin/modprobe ipt_limit`;
 `/sbin/modprobe ipt_state`;
-if($CONFIG['route']['ulog']['enable'])	`modprobe ipt_ULOG nlbufsiz=800000`;
+if($CONFIG['route']['ulog']['enable'])	`/sbin/modprobe ipt_ULOG nlbufsiz=800000`;
 
 `$ipt -F`;		// RESET ALL iptables RULES
 `$ipt -X`;
@@ -34,7 +34,7 @@ if($CONFIG['route']['ulog']['enable'])	`modprobe ipt_ULOG nlbufsiz=800000`;
 `$ipt -P OUTPUT ACCEPT`;
 `$ipt -P FORWARD DROP`;
 
-if($CONFIG['route']['ulog']['ext_enable'])
+if(@$CONFIG['route']['ulog']['ext_enable'])
 {
     `$ipt -A INPUT -s ! {$CONFIG['route']['lan_range']} -j ULOG`;
     `$ipt -A OUTPUT -d ! {$CONFIG['route']['lan_range']} -j ULOG`;

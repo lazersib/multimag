@@ -29,7 +29,7 @@ $start_time=microtime(TRUE);
 
 if(!$CONFIG['price']['dir'])
 {
-	echo"Директория с прайсами не определена, завершаем работу...\n";
+	//echo"Директория с прайсами не определена, завершаем работу...\n";
 	exit(0);
 }
 $mail_text='';
@@ -37,7 +37,7 @@ $mail_text='';
 $c=explode('/',__FILE__);
 mysql_query("INSERT INTO `sys_cli_status` (`script`, `status`) VALUES ('".$c[count($c)-1]."', 'Start')");
 $status_id=mysql_insert_id();
- 
+
 function SetStatus($status)
 {
 	global $status_id;
@@ -69,7 +69,7 @@ function forked_match_process($nproc, $limit, $res)
 		$i++;
 		//$speed=(microtime(TRUE)-$a_start_time)/$i;
 		//echo"Proc: $nproc, Step $i, pos $nxt[3], $speed sec / pos...\n";
-		
+
 		if(!$nproc)
 		{
 			$p=floor($i/$limit*100);
@@ -118,7 +118,7 @@ function forked_match_process($nproc, $limit, $res)
 		{
 			$a=preg_match("/$nxt[2]/",$nx[1]);
 			$b=preg_match("/$nxt[2]/",$nx[7]);
-			
+
 			if( $a || $b )
 			{
 				if($nxt[5])
@@ -127,14 +127,14 @@ function forked_match_process($nproc, $limit, $res)
 					$b=preg_match("/$nxt[5]/",$nx[7]);
 					if( $a || $b )	continue;
 				}
-				
+
 				if($nx[5]==0) $nx[5]=1;
 				if($nx[6]==0) $nx[6]=1;
 				$cost=$nx[2]*$nx[5]*$nx[6];
 				mysql_query("INSERT INTO `parsed_price_tmp` (`firm`, `pos`, `cost`, `nal`, `from`)
 				VALUES ('$nx[3]', '$nxt[3]', '$cost', '$nx[4]', '$nx[0]' )");
 				if(mysql_errno())	throw new Exception("Не удалось сохранить строку совпадения: ".mysql_error());
-				
+
 				if($CONFIG['price']['mark_matched'])
 				{
 					if($CONFIG['price']['mark_doubles'])
@@ -167,7 +167,7 @@ function parallel_match()
 {
 	global $a_start_time, $CONFIG;
 	$res=mysql_query("SELECT `doc_base`.`name`, `seekdata`.`sql`, `seekdata`.`regex`, `seekdata`.`id`, `doc_group`.`name`, `seekdata`.`regex_neg`
-	FROM `seekdata` 
+	FROM `seekdata`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`seekdata`.`id`");
 	if(mysql_errno())		throw new Exception("Не удалось выбрать наименования: ".mysql_error());
@@ -175,14 +175,14 @@ function parallel_match()
 	SetStatus("Analyze: 0 pp");
 	$a_start_time=microtime(TRUE);
 	mysql_close();
-	
+
 	// Подготовка к распараллеливанию
 	$numproc=$CONFIG['price']['numproc'];		// Включая родительский
 	if($numproc<1)		$numproc=1;
 	if($numproc>128)	$numproc=128;
 	$pids_array=array();
 	$limit_per_child=floor($row/$numproc);
-	
+
 	for($i=0;$i<($numproc-1);$i++)
 	{
 		$pid = pcntl_fork();
@@ -202,9 +202,9 @@ function parallel_match()
 	if(mysql_errno())		throw new Exception("Не удалось сместить указатель $pid: ".mysql_error());
 	mysql_reconnect();
 	forked_match_process(0, $row-$limit_per_child*$i, $res);
-	
+
 	foreach($pids_array as $pid)	pcntl_waitpid($pid, $status);
-	
+
 	echo"Параллельная обработка завершена!";
 }
 
@@ -218,7 +218,7 @@ try
 	SetStatus('Loading prices');
 	require_once($CONFIG['location']."/common/priceloader.xls.php");
 	require_once($CONFIG['location']."/common/priceloader.ods.php");
-	
+
 	while (false !== ($filename = readdir($dh)))
 	{
 		$path_info = pathinfo($filename);
@@ -244,13 +244,13 @@ try
  			$mail_text.="Анализ прайсов: $msg\n";
 		}
 		else unlink($CONFIG['price']['dir']	.'/'.$filename);
-		
+
 // 		if($firm=$loader->detectFirm())
 // 		{
 // 			$loader->setInsertToDatabase();
 // 			$msg.="Firm_id: $firm, ";
 // 			$count=$loader->Run();
-// 			$msg.="Parsed ($count items)!";	
+// 			$msg.="Parsed ($count items)!";
 // 			unlink($CONFIG['price']['dir']	.'/'.$filename);
 // 		}
 // 		else
@@ -275,7 +275,7 @@ try
 	UNIQUE KEY `id` (`id`)
 	) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
 	if(mysql_errno())		throw new Exception("Не удалось создать временную таблицу совпадений: ".mysql_error());
-	
+
 	if($CONFIG['price']['mark_matched'])
 	{
 		mysql_query("DROP TABLE `price_seeked`");
@@ -286,15 +286,15 @@ try
 		) ENGINE=Memory");
 		if(mysql_errno())		throw new Exception("Не удалось создать временную таблицу отметок: ".mysql_error());
 	}
-	
+
 	parallel_match();
-	
+
 	if($CONFIG['price']['mark_matched'])
 	{
 		mysql_unbuffered_query("UPDATE `price`,`price_seeked` SET `price`.`seeked`=`price_seeked`.`seeked`  WHERE `price`.`id`=`price_seeked`.`id`");
 		if(mysql_errno())		throw new Exception("Не удалось записать отметки в основную таблицу: ".mysql_error());
 	}
-	
+
 	mysql_query("ALTER TABLE`parsed_price_tmp`
 	ADD INDEX ( `firm` ),
 	ADD INDEX ( `pos` ),
@@ -305,7 +305,7 @@ try
 
 	mysql_query("DROP TABLE `parsed_price`");
 	if(mysql_errno())	if(mysql_errno())	throw new Exception("Ошибка удаления старой таблицы с соответствиями: ".mysql_error());
-		
+
 	mysql_query("RENAME TABLE `parsed_price_tmp` TO `parsed_price` ;");
 	if(mysql_errno())				throw new Exception("Ошибка переименования таблицы с соответствиями: ".mysql_error());
 
@@ -328,12 +328,12 @@ try
 			SetStatus("Cost change: $p pp");
 		}
 		settype($nxt[3],'int');
-		
+
 		$mincost=99999999;
 		$ok_line=0;
 		$rs=mysql_query("SELECT `parsed_price`.`cost`,`firm_info`.`type`, `firm_info_group`.`id`, `parsed_price`.`id`
-		FROM  `parsed_price` 
-		LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm` 
+		FROM  `parsed_price`
+		LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm`
 		LEFT JOIN `firm_info_group` ON `firm_info_group`.`firm_id`=`parsed_price`.`firm` AND `firm_info_group`.`group_id`='$nxt[4]'
 		WHERE `parsed_price`.`pos`='$nxt[0]' AND `parsed_price`.`cost`>'0' AND `parsed_price`.`nal`!='' AND `parsed_price`.`nal`!='-' AND `parsed_price`.`nal`!='call' AND `parsed_price`.`nal`!='0'");
 		if(mysql_errno())	throw new Exception(mysql_error());
@@ -345,9 +345,9 @@ try
 				$ok_line=$nx[3];
 			}
 		}
-		
+
 		if($ok_line==0)	$mincost=0;
-		
+
 		if( $nxt[3]==0 )
 		{
 			mysql_query("UPDATE `parsed_price` SET `selected`='1' WHERE `id`='$ok_line'");
@@ -397,22 +397,22 @@ $text_time.=" (всего $work_time секунд)\n";
 
 echo $text_time;
 
-// ===================== ОТПРАВКА ПОЧТЫ =============================================================== 
+// ===================== ОТПРАВКА ПОЧТЫ ===============================================================
 if($mail_text)
 {
 	try
-	{	
+	{
 		$mail_text="При анализе прайс-листов произошло следующее:\n****\n\n".$mail_text."\n\n****\nНайденные ошибки желательно исправить в кратчайший срок!!\n\n$text_time";
 		mailto($CONFIG['site']['admin_email'], "Price analyzer errors", $mail_text);
 		mailto($CONFIG['site']['doc_adm_email'], "Price analyzer errors", $mail_text);
 		echo "Почта отправлена!";
 	}
-	catch(Exception $e) 
+	catch(Exception $e)
 	{
 		echo"Ошибка отправки почты!".$e->getMessage();
 	}
-	
-	
+
+
 }
 else echo"Ошибок не найдено, не о чем оповещать!\n";
 

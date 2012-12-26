@@ -40,7 +40,11 @@ function form_validator(form_id)
 		for(var i=0; i<form_inputs.length; i++) {
 			if(hasClass(form_inputs[i],'validate'))
 			{
-				if(!form_inputs[i].valid)	valid=false
+				if(!form_inputs[i].valid)
+				{
+					//alert(form_inputs[i].name)
+					valid=false
+				}
 			}
 		}
 		buttons_disable(!valid)
@@ -98,6 +102,7 @@ function form_validator(form_id)
 			}
 			return true
 		}
+		hlErrorField(input,false)
 		input.addEventListener( 'keyup', test_valid, false)
 		test_valid()
 	}
@@ -133,6 +138,7 @@ function form_validator(form_id)
 			}
 			return true
 		}
+		hlErrorField(input,false)
 		input.addEventListener( 'keyup', test_valid, false)
 		test_valid()
 	}
@@ -203,65 +209,100 @@ function form_validator(form_id)
 			buttons_toggle()
 			return true
 		}
+		hlErrorField(input,false)
 		input.addEventListener( 'keyup', test_valid, false)
 		test_valid()
 	}
 
-	function validateBikRs(input_bik,input_rs)
+	function validateBikRs(input_bik,input_rs,input_ks)
 	{
+
+		function test_str_schet(str)
+		{
+			var coef=[7,1,3]
+			var sum=0
+			for(var i=0;i<str.length;i++)
+			{
+				sum+=Number(str[i])*coef[i%3]
+			}
+			return sum%10;
+		}
+
 		function test_valid()
 		{
 
-			if(input_bik.value.length==0 && input_rs.value.length==0)
+			if(input_bik.value.length==0 && input_rs.value.length==0 && input_ks.value.length==0 )
 			{
 				hlErrorField(input_bik,false)
 				hlErrorField(input_rs,false)
+				hlErrorField(input_ks,false)
 				buttons_toggle()
 				return true
 			}
-			//alert('test'+input_bik+input_rs)
+			var lf=0;
 			if(input_rs.value.length!=20)
+			{
 				hlErrorField(input_rs,true)
+				lf=1;
+			}
 
 			if(input_bik.value.length!=9)
+			{
 				hlErrorField(input_bik,true)
+				lf=1
+			}
 
-			if(input_bik.value.length!=9 || input_rs.value.length!=20)
+			if(input_ks.value.length!=0 && input_ks.value.length!=20)
+			{
+				hlErrorField(input_ks,true)
+				lf=1
+			}
+
+			if(lf)
 			{
 				buttons_toggle()
 				return true
 			}
 
-			var sum=0
-			var coef=[7,1,3]
-			for(var i=6;i<input_bik.value.length;i++)
+			hlErrorField(input_bik,false)
+			hlErrorField(input_rs,false)
+			hlErrorField(input_ks,false)
+			if(input_ks.value!='')
 			{
-				sum+=Number(input_bik.value[i])*coef[i%3]
+				if(test_str_schet('0'+input_bik.value.substr(4,2)+input_ks.value))	//ks
+				{
+					hlErrorField(input_bik,true)
+					hlErrorField(input_ks,true)
+					buttons_toggle()
+					return true
+				}
 			}
-			for(var i=0;i<input_rs.value.length;i++)
-			{
-				sum+=Number(input_rs.value[i])*coef[i%3]
-			}
+			var bik_str=''
+			if(input_ks.value!='')		bik_str=input_bik.value.substr(-3)
+			else				bik_str='0'+input_bik.value.substr(4,2)
 
-
-			if(sum%10==0)
+			if(test_str_schet(bik_str+input_rs.value))	//rs
 			{
-				hlErrorField(input_bik,false)
-				hlErrorField(input_rs,false)
+				hlErrorField(input_bik,true)
+				hlErrorField(input_rs,true)
+				hlErrorField(input_ks,true)
 				buttons_toggle()
 				return true
 			}
-			hlErrorField(input_bik,true)
-			hlErrorField(input_rs,true)
+
 			buttons_toggle()
 			return true
 		}
+		hlErrorField(input_bik,false)
+		hlErrorField(input_rs,false)
+		hlErrorField(input_ks,false)
+		input_ks.addEventListener( 'keyup', test_valid, false)
 		input_rs.addEventListener( 'keyup', test_valid, false)
 		input_bik.addEventListener( 'keyup', test_valid, false)
 		test_valid()
 	}
 
-	var input_bik=0,input_rs=0
+	var input_bik=0,input_rs=0,input_ks=0
 	for(var i=0; i<form_inputs.length; i++) {
 		if(hasClass(form_inputs[i],'validate'))	{
 			if(hasClass(form_inputs[i],'phone'))
@@ -272,11 +313,13 @@ function form_validator(form_id)
 				input_bik=form_inputs[i]
 			else if(hasClass(form_inputs[i],'rs'))
 				input_rs=form_inputs[i]
+			else if(hasClass(form_inputs[i],'ks'))
+				input_ks=form_inputs[i]
 			else if(hasClass(form_inputs[i],'inn'))
 				validateINN(form_inputs[i], hasClass(form_inputs[i],'no_empty'))
 		}
 	}
-	if(input_bik && input_rs)
-		validateBikRs(input_bik,input_rs)
+	if(input_bik && input_rs && input_ks)
+		validateBikRs(input_bik,input_rs, input_ks)
 	return validator
 }

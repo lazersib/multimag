@@ -1239,7 +1239,7 @@ class doc_Realizaciya extends doc_Nulltype
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
 		<b>Покупатель: </b>{$this->doc_data[3]}<br>");
 
-		$res=mysql_query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`, `doc_list`.`date`, `doc_list`.`sum`
+		$res=mysql_query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`, `doc_list`.`date`, `doc_list`.`sum`, `doc_list`.`id`
 		FROM `doc_list`
 		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
@@ -1249,7 +1249,35 @@ class doc_Realizaciya extends doc_Nulltype
 		{
 			$l=mysql_fetch_assoc($res);
 			$l['date']=date("Y-m-d",$l['date']);
-			$tmpl->AddText("<b>Заявка:</b> N{$l['name']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}<br>");
+			$tmpl->AddText("<b>Заявка:</b> N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}<br>");
+			$z_id=$l['id'];
+		}
+		else	$z_id=0;
+
+		$res=mysql_query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`, `doc_list`.`date`, `doc_list`.`sum`
+		FROM `doc_list`
+		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
+		WHERE (`doc_list`.`p_doc`='{$this->doc}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='4'");
+		if(mysql_errno())			throw new MysqlException('Ошибка выбоки автора заявки');
+		if(mysql_num_rows($res))
+		{
+			$l=mysql_fetch_assoc($res);
+			$l['date']=date("Y-m-d",$l['date']);
+			$tmpl->AddText("<b>Банк-приход:</b> N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}<br>");
+		}
+
+		$res=mysql_query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`, `doc_list`.`date`, `doc_list`.`sum`
+		FROM `doc_list`
+		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
+		WHERE (`doc_list`.`p_doc`='{$this->doc}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='5'");
+		if(mysql_errno())			throw new MysqlException('Ошибка выбоки автора заявки');
+		if(mysql_num_rows($res))
+		{
+			$l=mysql_fetch_assoc($res);
+			$l['date']=date("Y-m-d",$l['date']);
+			$tmpl->AddText("<b>Касса-расход:</b> N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}<br>");
 		}
 
 		$tmpl->AddText("<br>

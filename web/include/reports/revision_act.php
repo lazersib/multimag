@@ -106,7 +106,7 @@ class Report_Revision_Act
 
 	function Make($opt='html')
 	{
-		global $tmpl;
+		global $tmpl,$CONFIG;
 		if($opt=='html')
 		{
 			$tmpl->LoadTemplate('print');
@@ -415,6 +415,15 @@ class Report_Revision_Act
 
 			$pdf->setY($y);
 			$pdf->MultiCell(0,5,$str,0,'L',0);
+
+		if($CONFIG['site']['doc_shtamp'])
+		{
+			$delta=-15;
+			$shtamp_img=str_replace('{FN}', $firm_id, $CONFIG['site']['doc_shtamp']);
+			if(file_exists($shtamp_img))
+			$pdf->Image($shtamp_img, 3,$pdf->GetY()+$delta, 120);
+		}
+
 			$pdf->Ln();
 			$pdf->Output('akt_sverki.pdf','I');
 		}

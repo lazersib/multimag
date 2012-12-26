@@ -125,7 +125,7 @@ class doc_s_Agent
 				$r=mysql_query("SELECT  `name` FROM `doc_agent` WHERE `id`='$nxt[26]'");
 				$pagent_name=mysql_result($r,0,0);
 			}
-
+			$tmpl->SetTitle("Правка агента ".@$nxt[1]);
 			$tmpl->AddText("<form action='' method='post' id='agent_edit_form'><table cellpadding=0 width=100%>
 			<input type=hidden name=mode value=esave>
 			<input type=hidden name=l value=agent>
@@ -175,7 +175,7 @@ class doc_s_Agent
 			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>$nxt[7]</textarea>
 			<tr class=lin0><td align=right>ИНН/КПП или ИНН:<td><input type=text name='inn' value='$nxt[8]' style='width: 40%;' class='inn validate'>
 			<tr class=lin1><td align=right>Банк<td><input type=text name='bank' value='$nxt[13]' style='width: 90%;'>
-			<tr class=lin0><td align=right>Корр. счет<td><input type=text name='ks' value='$nxt[10]' style='width: 40%;'>
+			<tr class=lin0><td align=right>Корр. счет<td><input type=text name='ks' value='$nxt[10]' style='width: 40%;' class='ks validate'>
 			<tr class=lin1><td align=right>БИК<td><input type=text name='bik' value='$nxt[14]' class='bik validate'>
 			<tr class=lin0><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small><td><input type=text name='rs' value='$nxt[9]' style='width: 40%;' class='rs validate'>
 			<tr class=lin1><td align=right>ОКВЭД<td><input type=text name='okevd' value='$nxt[11]'>

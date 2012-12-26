@@ -33,7 +33,7 @@ class doc_Specific extends doc_Nulltype
 		$this->header_fields			= 'agent cena';
 		settype($this->doc,'int');
 		$this->PDFForms=array(
-			array('name'=>'prn','desc'=>'Спецификация','method'=>'PrintPDF')		
+			array('name'=>'prn','desc'=>'Спецификация','method'=>'PrintPDF')
 		);
 	}
 
@@ -179,7 +179,6 @@ class doc_Specific extends doc_Nulltype
 
 		$dt=date("d.m.Y",$this->doc_data[5]);
 
-		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
 
 		$pdf=new FPDF('P');
@@ -335,7 +334,7 @@ class doc_Specific extends doc_Nulltype
 		$pdf->SetFont('','',16);
 		$str="Покупатель";
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(100,6,$str,0,0,'L',0);
+		$pdf->Cell(90,6,$str,0,0,'L',0);
 		$str="Поставщик";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,6,$str,0,0,'L',0);
@@ -353,13 +352,20 @@ class doc_Specific extends doc_Nulltype
 
 		$y=$pdf->GetY();
 
-		$pdf->MultiCell(100,5,$str,0,'L',0);
+		$pdf->MultiCell(90,5,$str,0,'L',0);
 		$pdf->SetY($y);
-		$pdf->SetX(110);
+		$pdf->SetX(100);
 
 		$str=unhtmlentities("{$this->firm_vars['firm_name']}\n{$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}\nК/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}\n__________________ / {$this->firm_vars['firm_director']} /\n\n      М.П.");
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,'L',0);
+
+		if($CONFIG['site']['doc_shtamp'])
+		{
+			$delta=-15;
+			$shtamp_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
+			$pdf->Image($shtamp_img, 95,$pdf->GetY()+$delta, 120);
+		}
 
 		$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data[8]}'");
 		if(mysql_num_rows($res))
