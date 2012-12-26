@@ -179,7 +179,7 @@ class doc_s_Agent
 			<tr class=lin1><td align=right>БИК<td><input type=text name='bik' value='$nxt[14]' class='bik validate'>
 			<tr class=lin0><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small><td><input type=text name='rs' value='$nxt[9]' style='width: 40%;' class='rs validate'>
 			<tr class=lin1><td align=right>ОКВЭД<td><input type=text name='okevd' value='$nxt[11]'>
-			<tr class=lin0><td align=right>ОКПО<td><input type=text name='okpo' value='$nxt[12]'>
+			<tr class=lin0><td align=right>ОКПО<td><input type=text name='okpo' value='$nxt[12]' class='okpo validate'>
 			<tr class=lin1><td align=right>ФИО директора<td><input type=text name='dir_fio' value='$nxt[23]'>
 			<tr class=lin0><td align=right>ФИО директора в родительном падеже<td><input type=text name='dir_fio_r' value='$nxt[24]'>
 			<tr class=lin1><td align=right>Контактное лицо<td><input type=text name='pfio' value='$nxt[15]'>

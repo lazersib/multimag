@@ -302,6 +302,37 @@ function form_validator(form_id)
 		test_valid()
 	}
 
+	function validateOkpo(input)
+	{
+		function test_valid()
+		{
+			if(input.value.length==0)
+			{
+				hlErrorField(input,false)
+				buttons_toggle()
+				return true
+			}
+			var i=0,kn1=0,kn2=0
+			for(i=0;i<input.value.length-1;i++)
+			{
+				kn1+=(i%10+1)*input.value[i]
+				kn2+=(i%10+3)*input.value[i]
+			}
+			kn1%=11
+			kn2%=11
+			if(kn1==Number(input.value[input.value.length-1]))
+				hlErrorField(input,false)
+			else if(kn1==10 && kn2==10 && Number(input.value[input.value.length-1]))
+				hlErrorField(input,false)
+			else	hlErrorField(input,true)
+			buttons_toggle()
+			return true
+		}
+		hlErrorField(input,false)
+		input.addEventListener( 'keyup', test_valid, false)
+		test_valid()
+	}
+
 	var input_bik=0,input_rs=0,input_ks=0
 	for(var i=0; i<form_inputs.length; i++) {
 		if(hasClass(form_inputs[i],'validate'))	{
@@ -315,6 +346,8 @@ function form_validator(form_id)
 				input_rs=form_inputs[i]
 			else if(hasClass(form_inputs[i],'ks'))
 				input_ks=form_inputs[i]
+			else if(hasClass(form_inputs[i],'okpo'))
+				validateOkpo(form_inputs[i], hasClass(form_inputs[i],'no_empty'))
 			else if(hasClass(form_inputs[i],'inn'))
 				validateINN(form_inputs[i], hasClass(form_inputs[i],'no_empty'))
 		}
