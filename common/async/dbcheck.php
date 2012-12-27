@@ -29,30 +29,13 @@ class DbCheckWorker extends AsyncWorker
 	{
 		return "Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.";
 	}
-
-	function seek_and_up($date,$pos)
-	{
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date` FROM `doc_list`
-		INNER JOIN `doc_list_pos` ON `doc_list_pos`.`tovar`='$pos' AND `doc_list_pos`.`doc`=`doc_list`.`id`
-		WHERE `doc_list`.`date`>'$date' AND `doc_list`.`type`='1'");
-		@$doc=mysql_result($res,0,0);
-		@$dt=mysql_result($res,0,1);
-
-		if($doc)
-		{
-			$dtn=$date-60;
-			mysql_query("UPDATE `doc_list` SET `date`='$dtn' WHERE `id`='$doc'");
-		}
-		else return "Не найдено!";
-		return $doc." ".date("d.m.Y H:i:s",$dt);
-	}
-
+	/// Запускает обработчик
 	function run()
 	{
 		global $CONFIG;
 		$this->mail_text='';
 		$tim=time();
-		$dtim=time()-60*60*24*365;
+		
 		$this->SetStatusText("Запуск...");
 		mysql_query("UPDATE `variables` SET `corrupted`='1', `recalc_active`='1'");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить системные переменные");
@@ -98,19 +81,47 @@ class DbCheckWorker extends AsyncWorker
 				}
 			}
 		}
+		
+		// Заплонение дат первой покупки для раздела новинок
+		mysql_query("UPDATE `doc_base` SET `buy_time`='1970-01-01 00:00:00'");
+		if(mysql_errno()) 	throw new MysqlException('Ошибка сброса данных о покупке');
+		$res=mysql_query("SELECT `id` FROM `doc_base` WHERE `doc_base`.`pos_type`=0");
+		if(mysql_errno()) 	throw new MysqlException('Ошибка получения списка наименований');
+		while($pos_data=mysql_fetch_row($res))
+		{
+			$doc_res=mysql_query("SELECT `doc_list`.`date`
+			FROM `doc_list_pos`
+			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`!=0
+			WHERE `doc_list_pos`.`tovar`=$pos_data[0]
+			ORDER BY `doc_list`.`date`
+			LIMIT 1");
+			if(mysql_num_rows($doc_res))
+			{
+				$buy_time=date("Y-m-d H:i:s",mysql_result($doc_res,0,0));
+				mysql_query("UPDATE `doc_base` SET `buy_time`='$buy_time' WHERE `id`='$pos_data[0]'");
+				if(mysql_errno()) 	throw new MysqlException('Ошибка обновления данных о покупке');
+				
+			}
+			
+		}
 
-		/// Этот код относится к кешированию информации по транзитам. Функционал не реализован
-// 		if(mysql_errno())	throw new MysqlException("Не удалось сбросить остатки");
-// 		$res=mysql_query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
-// 		INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0'
-// 		AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
-// 		WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` GROUP BY `doc_list_pos`.`tovar`) FROM `doc_base`");
-// 		while($nxt=mysql_fetch_row($res))
-// 		{
-// 			mysql_query("UPDATE `doc_list_pos` SET `tranzit`='$nxt[1]' WHERE `id`='$nxt[0]'");
-// 		}
+		// Кеширование транзитов
+		if(mysql_errno())	throw new MysqlException("Не удалось сбросить остатки");
+		$res=mysql_query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+		INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0'
+		AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
+		WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` GROUP BY `doc_list_pos`.`tovar`) FROM `doc_base`");
+		while($nxt=mysql_fetch_row($res))
+		{
+			if(!$nxt[1])	continue;
+			mysql_query("UPDATE `doc_base` SET `transit_cnt`='$nxt[1]' WHERE `id`='$nxt[0]'");
+			if(mysql_errno()) 	throw new MysqlException('Ошибка обновления данных о транзитах');
+			echo"UPDATE `doc_base` SET `transit_cnt`='$nxt[1]' WHERE `id`='$nxt[0]'\n";
+		}
 
 		// ============== Расчет ликвидности ===================================================
+		if(@$CONFIG['auto']['liquidity_interval'])	$dtim=time()-60*60*24*$CONFIG['auto']['liquidity_interval'];
+		else						$dtim=time()-60*60*24*365;
 		$starttime=time();
 		$this->SetStatusText("Расчет ликвидности...");
 		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`) AS `aa`

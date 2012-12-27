@@ -45,7 +45,7 @@ public function ProbeRecode()
 	}
 	else if($mode=='all' || $mode=='news' || $mode=='stocks' || $mode=='events')
 	{
-		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='?mode=add&amp;opt=$mode'>Добавить новость</a><br>");
+		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='/news.php?mode=add&amp;opt=$mode'>Добавить новость</a><br>");
 		if(isAccess('generic_news','view'))
 		{
 			$this->ShowList($mode);
@@ -70,7 +70,7 @@ public function ExecMode($mode='')
 	$tmpl->SetTitle("Новости сайта - ".$CONFIG['site']['display_name']);
 	if($mode=='')
 	{
-		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='?mode=add&amp;opt=".@$_REQUEST['type']."'>Добавить новость</a><br>");
+		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='/news.php?mode=add&amp;opt=".@$_REQUEST['type']."'>Добавить новость</a><br>");
 		if(isAccess('generic_news','view'))
 		{
 			$this->ShowList(@$_REQUEST['type']);
@@ -128,7 +128,7 @@ protected function ShowList($type='')
 	{
 		$tmpl->SetText("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
 		$tmpl->SetTitle("$name сайта - ".$CONFIG['site']['display_name']);
-		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='?mode=add&amp;opt=".@$_REQUEST['type']."'>Добавить новость</a><br>");
+		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='/news.php?mode=add&amp;opt=$type'>Добавить новость</a><br>");
 		while($nxt=mysql_fetch_assoc($res))
 		{
 			$wikiparser->title='';
@@ -183,16 +183,27 @@ protected function View($id)
 protected function WriteForm()
 {
 	global $tmpl;
+	$novelty_c=$stock_c=$event_c='';
+	switch(@$_REQUEST['opt'])
+	{
+		case 'news':	$novelty_c=' checked';
+				break;
+		case 'stocks':	$stock_c=' checked';
+				break;
+		case 'events':	$event_c=' checked';
+				break;
+	}
 	$tmpl->AddText("
 	<form action='' method='post' enctype='multipart/form-data'>
 	<h2>Добавление новости</h2>
 	<input type='hidden' name='mode' value='write'>
 	Класс новости:<br>
 	<small>Определяет место её отображения</small><br>
-	<label><input type='radio' name='type' value=''>Обычная<br><small>Отображается только в ленте новостей</small></label><br>
-	<label><input type='radio' name='type' value='stock'>Акция<br><small>Отображается в ленте новостей и списке акций. Дата - дата окончания акции</small></label><br>
-	<label><input type='radio' name='type' value='event'>Событие<br><small>Проведение выставки, распродажа, конурс, итд. Дата - дата наступления события</small></label><br>
+	<label><input type='radio' name='type' value='novelty'$novelty_c>Обычная<br><small>Отображается только в ленте новостей</small></label><br>
+	<label><input type='radio' name='type' value='stock'$stock_c>Акция<br><small>Отображается в ленте новостей и списке акций. Дата - дата окончания акции</small></label><br>
+	<label><input type='radio' name='type' value='event'$event_c>Событие<br><small>Проведение выставки, распродажа, конурс, итд. Дата - дата наступления события</small></label><br>
 	<br>
+	<label><input type='checkbox' name='no_mail' value='1'>Не выполнять рассылку</label><br>
 	Дата:<br>
 	<input type='text' name='ex_date'><br><br>
 	Текст новости:<br>
@@ -214,6 +225,7 @@ protected function SaveAndSend()
 	$text=strip_tags(rcv('text'));
 	$type=rcv('type');
 	$ex_date=rcv('ex_date');
+	$no_mail=rcv('no_mail');
 	$ext='';
 	$uwtext=$wikiparser->parse(html_entity_decode($text,ENT_QUOTES,"UTF-8"));
 	$title=$wikiparser->title;
@@ -245,8 +257,11 @@ protected function SaveAndSend()
 		mysql_query("UPDATE `news` SET `img_ext`='$ext' WHERE `id`='$news_id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось сохранить тип изображения");
 	}
-
-	SendSubscribe("Новости сайта",$uwtext);
+	if(!$no_mail)
+	{
+		SendSubscribe("Новости сайта",$uwtext);
+		$tmpl->msg("Рассылка выполнена","ok");
+	}
 	mysql_query("COMMIT");
 	$tmpl->msg("Новость добавлена!","ok");
 
