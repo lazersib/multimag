@@ -35,8 +35,8 @@ $time_start = microtime(true);
 session_start();
 mb_internal_encoding("UTF-8");
 
-$c=explode('/',__FILE__);$base_path='';
-for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
+define('__ROOT__', dirname(dirname(__FILE__)));
+$base_path = __ROOT__;
 
 if(! include_once("$base_path/config_site.php"))
 {
@@ -791,5 +791,3 @@ $wikiparser->reference_wiki	= "/wiki/";
 $wikiparser->reference_site	= @($_SERVER['HTTPS']?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
 $wikiparser->image_uri		= "/share/var/wikiphoto/";
 $wikiparser->ignore_images	= false;
-
-?>

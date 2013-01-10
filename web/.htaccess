@@ -1,6 +1,14 @@
-
 ErrorDocument 404 "/e404.php"
-Options -MultiViews
+Options -MultiViews -Indexes +FollowSymLinks +Includes
+
+DirectoryIndex index.php index.shtml index.php3 index.html index.htm
+
+AddDefaultCharset UTF-8
+
+php_value display_errors 0
+php_value display_startup_errors 0
+php_flag short_open_tag On
+php_value max_execution_time 600
 
 # Если установлен mod_revrite
 <IfModule mod_rewrite.c>
