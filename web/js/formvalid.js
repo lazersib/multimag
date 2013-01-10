@@ -322,6 +322,8 @@ function form_validator(form_id)
 			kn2%=11
 			if(kn1==Number(input.value[input.value.length-1]))
 				hlErrorField(input,false)
+			else if(kn2==Number(input.value[input.value.length-1]))
+				hlErrorField(input,false)
 			else if(kn1==10 && kn2==10 && Number(input.value[input.value.length-1]))
 				hlErrorField(input,false)
 			else	hlErrorField(input,true)
