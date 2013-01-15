@@ -1,5 +1,6 @@
 <?php
 
+
 //	MultiMag v0.1 - Complex sales system
 //
 //	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
@@ -23,9 +24,11 @@ include_once ("include/doc.core.php");
 include_once ("include/imgresizer.php");
 
 /// Класс витрины интернет-магазина
-class Vitrina {
+class Vitrina
+{
 	var $cost_id;
-	function __construct() {
+	function __construct()
+	{
 		global $tmpl;
 		if (@ $_SESSION['uid'])
 			$res = mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
@@ -39,7 +42,8 @@ class Vitrina {
 		$tmpl->SetTitle("Интернет - витрина");
 	}
 	/// Проверка и исполнение recode-запроса
-	function ProbeRecode() {
+	function ProbeRecode()
+	{
 		global $tmpl, $CONFIG;
 		/// Обрабатывает запросы-ссылки  вида http://example.com/vitrina/ig/5.html
 		/// Возвращает false в случае неудачи.
@@ -59,58 +63,75 @@ class Vitrina {
 		else
 			$query = $arr[4];
 		if ($arr[2] == 'ig') // Индекс группы
-			{
+		{
 			$this->ViewGroup($query, $block);
 			return true;
-		} else
+		}
+		else
 			if ($arr[2] == 'ip') // Индекс позиции
-				{
+			{
 				$this->ProductCard($block);
 				return true;
-			} else
+			}
+			else
 				if ($arr[2] == 'block') // Заданный блок
-					{
+				{
 					$this->ViewBlock($block);
 					return true;
-				} else
+				}
+				else
 					if ($arr[2] == 'ng') // Наименование группы
-						{
+					{
 
-					} else
+					}
+					else
 						if ($arr[2] == 'np') // Наименование позиции
-							{
+						{
 
 						}
 		return false;
 	}
 
 	///Исполнение заданной функции
-	function ExecMode($mode) {
+	function ExecMode($mode)
+	{
 		global $tmpl, $CONFIG;
 		$p = intval(@ $_REQUEST['p']);
 		$g = intval(@ $_REQUEST['g']);
 		if ($mode == '') // Верхний уровень. Никакая группа не выбрана.
-			{
+		{
 			$this->TopGroup();
-		} else
-			if ($mode == 'group') {
+		}
+		else
+			if ($mode == 'group')
+			{
 				$this->ViewGroup($g, $p);
-			} else
-				if ($mode == 'product') {
+			}
+			else
+				if ($mode == 'product')
+				{
 					$this->ProductCard($p);
-				} else
-					if ($mode == 'basket') {
+				}
+				else
+					if ($mode == 'basket')
+					{
 						$this->Basket();
-					} else
-						if ($mode == 'block') {
+					}
+					else
+						if ($mode == 'block')
+						{
 							$this->ViewBlock($_REQUEST['type']);
-						} else
-							if ($mode == 'korz_add') {
+						}
+						else
+							if ($mode == 'korz_add')
+							{
 								$cnt = intval(@ $_REQUEST['cnt']);
-								if ($p) {
+								if ($p)
+								{
 									@ $_SESSION['basket']['cnt'][$p] += $cnt;
 									$tmpl->ajax = 1;
-									if (isset ($_REQUEST['j'])) {
+									if (isset ($_REQUEST['j']))
+									{
 										$korz_cnt = count(@ $_SESSION['basket']['cnt']);
 										$sum = 0;
 										if (@ $_SESSION['uid'])
@@ -121,49 +142,66 @@ class Vitrina {
 										if (!$c_cena_id)
 											$c_cena_id = 1;
 										if (is_array($_SESSION['basket']['cnt']))
-											foreach (@ $_SESSION['basket']['cnt'] as $item => $cnt) {
+											foreach (@ $_SESSION['basket']['cnt'] as $item => $cnt)
+											{
 												$res = mysql_query("SELECT `id`, `name`, `cost` FROM `doc_base` WHERE `id`='$item'");
 												$nx = mysql_fetch_row($res);
 												$cena = GetCostPos($nx[0], 1);
 												$sum += $cena * $cnt;
 											}
 										echo "Товаров: $korz_cnt на $sum руб.";
-									} else {
+									}
+									else
+									{
 										if (getenv("HTTP_REFERER"))
 											header('Location: ' . getenv("HTTP_REFERER"));
 										$tmpl->msg("Товар добавлен в корзину!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 									}
-								} else {
+								}
+								else
+								{
 									header('HTTP/1.0 404 Not Found');
 									header('Status: 404 Not Found');
 									$tmpl->msg("Номер товара не задан!", "err", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 								}
-							} else
-								if ($mode == 'korz_adj') {
+							}
+							else
+								if ($mode == 'korz_adj')
+								{
 									$tmpl->ajax = 1;
 									$cnt = intval(@ $_REQUEST['cnt']);
-									if ($p) {
+									if ($p)
+									{
 										@ $_SESSION['basket']['cnt'][$p] += $cnt;
 										$tmpl->AddText("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-									} else {
+									}
+									else
+									{
 										header('HTTP/1.0 404 Not Found');
 										header('Status: 404 Not Found');
 										$tmpl->AddText("Номер товара не задан!");
 									}
-								} else
-									if ($mode == 'korz_del') {
+								}
+								else
+									if ($mode == 'korz_del')
+									{
 										unset ($_SESSION['basket']['cnt'][$p]);
 										$tmpl->msg("Товар убран из корзины!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-									} else
-										if ($mode == 'korz_clear') {
+									}
+									else
+										if ($mode == 'korz_clear')
+										{
 											unset ($_SESSION['basket']['cnt']);
 											$tmpl->msg("Корзина очищена!", "info", "<a class='urllink' href='/vitrina.php'>Вернутьcя на витрину</a>");
-										} else
-											if ($mode == 'basket_submit') {
+										}
+										else
+											if ($mode == 'basket_submit')
+											{
 												$tmpl->ajax = 1;
 												if (isset ($_SESSION['basket']['cnt']))
 													if (is_array($_SESSION['basket']['cnt']))
-														foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
+														foreach ($_SESSION['basket']['cnt'] as $item => $cnt)
+														{
 															$ncnt = @ $_REQUEST['cnt' . $item];
 															if ($ncnt <= 0)
 																unset ($_SESSION['basket']['cnt'][$item]);
@@ -171,14 +209,17 @@ class Vitrina {
 																$_SESSION['basket']['cnt'][$item] = round($ncnt, 3);
 															$_SESSION['basket']['comments'][$item] = @ $_REQUEST['comm' . $item];
 														}
-												if (@ $_REQUEST['button'] == 'recalc') {
+												if (@ $_REQUEST['button'] == 'recalc')
+												{
 													if (getenv("HTTP_REFERER"))
 														header('Location: ' . getenv("HTTP_REFERER"));
 													else
 														header('Location: /vitrina.php?mode=basket');
-												} else
+												}
+												else
 													header('Location: /vitrina.php?mode=buy');
-											} else
+											}
+											else
 												if ($mode == 'buy')
 													$this->Buy();
 												else
@@ -188,31 +229,42 @@ class Vitrina {
 														if ($mode == 'pay')
 															$this->Payment();
 														else
-															if ($mode == 'print_schet') {
+															if ($mode == 'print_schet')
+															{
 																include_once ("include/doc.nulltype.php");
 																$doc = $_SESSION['order_id'];
-																if ($doc) {
+																if ($doc)
+																{
 																	$document = AutoDocument($doc);
 																	$document->PrintForm($doc, 'schet_pdf');
-																} else
+																}
+																else
 																	$tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
-															} else
-																if ($mode == 'comm_add') {
+															}
+															else
+																if ($mode == 'comm_add')
+																{
 																	require_once ("include/comments.inc.php");
-																	if (!@ $_SESSION['uid']) {
-																		if ((strtoupper($_SESSION['captcha_keystring']) != strtoupper(@ $_REQUEST['img'])) || ($_SESSION['captcha_keystring'] == '')) {
+																	if (!@ $_SESSION['uid'])
+																	{
+																		if ((strtoupper($_SESSION['captcha_keystring']) != strtoupper(@ $_REQUEST['img'])) || ($_SESSION['captcha_keystring'] == ''))
+																		{
 																			unset ($_SESSION['captcha_keystring']);
 																			throw new Exception("Защитный код введён неверно!");
 																		}
 																		unset ($_SESSION['captcha_keystring']);
 																		$cd = new CommentDispatcher('product', $p);
 																		$cd->WriteComment(@ $_REQUEST['text'], @ $_REQUEST['rate'], @ $_REQUEST['autor_name'], @ $_REQUEST['autor_email']);
-																	} else {
+																	}
+																	else
+																	{
 																		$cd = new CommentDispatcher('product', $p);
 																		$cd->WriteComment(@ $_REQUEST['text'], @ $_REQUEST['rate']);
 																	}
 																	$tmpl->msg("Коментарий добавлен!", "ok");
-																} else {
+																}
+																else
+																{
 																	header('HTTP/1.0 404 Not Found');
 																	header('Status: 404 Not Found');
 																	throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
@@ -222,7 +274,8 @@ class Vitrina {
 	// ======== Приватные функции ========================
 	// -------- Основные функции -------------------------
 	/// Корень каталога
-	protected function TopGroup() {
+	protected function TopGroup()
+	{
 		global $tmpl, $CONFIG;
 		$tmpl->AddText("<h1 id='page-title'>Витрина</h1>");
 		if ($CONFIG['site']['vitrina_glstyle'] == 'item')
@@ -232,7 +285,8 @@ class Vitrina {
 	}
 
 	/// Список групп / подгрупп
-	protected function ViewGroup($group, $page) {
+	protected function ViewGroup($group, $page)
+	{
 		global $tmpl, $CONFIG, $wikiparser;
 		settype($group, 'int');
 		settype($page, 'int');
@@ -240,7 +294,8 @@ class Vitrina {
 		if (mysql_errno())
 			throw new MysqlException('Не удалось выбрать информацию о группе');
 		$nxt = mysql_fetch_row($res);
-		if (!$nxt) {
+		if (!$nxt)
+		{
 			header('HTTP/1.0 404 Not Found');
 			header('Status: 404 Not Found');
 			throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
@@ -257,7 +312,8 @@ class Vitrina {
 		$tmpl->SetTitle($title);
 		if ($nxt[4])
 			$tmpl->SetMetaKeywords($nxt[4]);
-		else {
+		else
+		{
 			$k1 = array (
 				'купить цены',
 				'продажа цены',
@@ -271,7 +327,8 @@ class Vitrina {
 
 		if ($nxt[5])
 			$tmpl->SetMetaDescription($nxt[5]);
-		else {
+		else
+		{
 			$d1 = array (
 				'купить',
 				'заказать',
@@ -324,7 +381,8 @@ class Vitrina {
 			$h1 .= " - стр.$page";
 		$tmpl->AddText("<h1 id='page-title'>$h1</h1>");
 		$tmpl->AddText("<div class='breadcrumb'>" . $this->GetVitPath($nxt[1]) . "</div>");
-		if ($nxt[2]) {
+		if ($nxt[2])
+		{
 			$text = $wikiparser->parse(html_entity_decode($nxt[2], ENT_QUOTES, "UTF-8"));
 			$tmpl->AddText("<div class='group-description'>$text</div><br>");
 		}
@@ -338,7 +396,8 @@ class Vitrina {
 	}
 
 	/// Список товаров в группе
-	protected function ProductList($group, $page) {
+	protected function ProductList($group, $page)
+	{
 		global $tmpl, $CONFIG;
 		if (isset ($_GET['op']))
 			$_SESSION['vit_photo_only'] = $_GET['op'] ? 1 : 0;
@@ -353,7 +412,8 @@ class Vitrina {
 		if (!$order)
 			$order = @ $CONFIG['site']['vitrina_order'];
 
-		switch ($order) {
+		switch ($order)
+		{
 			case 'n' :
 				$sql_order = '`doc_base`.`name`';
 				break;
@@ -391,7 +451,8 @@ class Vitrina {
 				$view = @ $_SESSION['vitrina_view'];
 			else
 				$view = '';
-		if ($view != 'i' && $view != 'l' && $view != 't') {
+		if ($view != 'i' && $view != 'l' && $view != 't')
+		{
 			if ($CONFIG['site']['vitrina_plstyle'] == 'imagelist')
 				$view = 'i';
 			else
@@ -405,15 +466,15 @@ class Vitrina {
 		$sql_photo_only = @ $_SESSION['vit_photo_only'] ? "AND `img_id` IS NOT NULL" : "";
 		$cnt_where = @ $CONFIG['site']['vitrina_sklad'] ? (" AND `doc_base_cnt`.`sklad`=" . intval($CONFIG['site']['vitrina_sklad']) . " ") : '';
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
-					( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-					`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
-					FROM `doc_base`
-					LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-					LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-					LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-					LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-					WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' $sql_photo_only
-					ORDER BY $sql_order";
+									( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
+									`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
+									FROM `doc_base`
+									LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+									LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+									LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+									LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+									WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' $sql_photo_only
+									ORDER BY $sql_order";
 		$res = mysql_query($sql);
 		if (mysql_errno())
 			throw new MysqlException("Не удалось получить список товаров!");
@@ -421,7 +482,8 @@ class Vitrina {
 		if ($lim == 0)
 			$lim = 100;
 		$rows = mysql_num_rows($res);
-		if ($rows) {
+		if ($rows)
+		{
 			$this->OrderAndViewBar($group, $page, $order, $view);
 
 			$this->PageBar($group, $rows, $lim, $page);
@@ -440,25 +502,50 @@ class Vitrina {
 	}
 
 	/// Блок товаров, выбранных по признаку, основанному на типе блока
-	protected function ViewBlock($block) {
+	protected function ViewBlock($block)
+	{
 		global $tmpl, $CONFIG;
 		$cnt_where = @ $CONFIG['site']['vitrina_sklad'] ? (" AND `doc_base_cnt`.`sklad`=" . intval($CONFIG['site']['vitrina_sklad']) . " ") : '';
 		/// Определение типа блока
-		if ($block == 'stock') {
+		if ($block == 'stock')
+		{
 			$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
-								( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-								`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
-								FROM `doc_base`
-								LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-								LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-								LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-								LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-								WHERE `doc_base`.`hidden`='0' AND `doc_base`.`stock`!='0'
-								ORDER BY `doc_base`.`likvid` ASC";
+														( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
+														`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
+														FROM `doc_base`
+														LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+														LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+														LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+														LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+														WHERE `doc_base`.`hidden`='0' AND `doc_base`.`stock`!='0'
+														ORDER BY `doc_base`.`likvid` ASC";
 			$tmpl->AddText("<h1>Распродажа</h1>");
-		} else
-			if ($block == 'popular') {
+		}
+		else
+			if ($block == 'popular')
+			{
 				$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
+						( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
+						`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
+						FROM `doc_base`
+						INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
+						LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+						LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+						LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+						LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+						WHERE `doc_base`.`hidden`='0'
+						ORDER BY `doc_base`.`likvid` DESC
+						LIMIT 48";
+				$tmpl->AddText("<h1>Популярные товары</h1>");
+			}
+			else
+				if ($block == 'new')
+				{
+					if ($CONFIG['site']['vitrina_newtime'])
+						$new_time = date("Y-m-d H:i:s", time() - 60 * 60 * 24 * $CONFIG['site']['vitrina_newtime']);
+					else
+						$new_time = date("Y-m-d H:i:s", time() - 60 * 60 * 24 * 180);
+					$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 										( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
 										`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
 										FROM `doc_base`
@@ -467,31 +554,14 @@ class Vitrina {
 										LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 										LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 										LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-										WHERE `doc_base`.`hidden`='0'
-										ORDER BY `doc_base`.`likvid` DESC
-										LIMIT 48";
-				$tmpl->AddText("<h1>Популярные товары</h1>");
-			} else
-				if ($block == 'new') {
-					if ($CONFIG['site']['vitrina_newtime'])
-						$new_time = date("Y-m-d H:i:s", time() - 60 * 60 * 24 * $CONFIG['site']['vitrina_newtime']);
-					else
-						$new_time = date("Y-m-d H:i:s", time() - 60 * 60 * 24 * 180);
-					$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
-												( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-												`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
-												FROM `doc_base`
-												INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
-												LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-												LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-												LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-												LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-												WHERE `doc_base`.`hidden`='0' AND (`doc_base`.`create_time`>='$new_time' OR `doc_base`.`buy_time`>='$new_time')
-												ORDER BY `doc_base`.`buy_time` DESC
-												LIMIT 24";
+										WHERE `doc_base`.`hidden`='0' AND (`doc_base`.`create_time`>='$new_time' OR `doc_base`.`buy_time`>='$new_time')
+										ORDER BY `doc_base`.`buy_time` DESC
+										LIMIT 24";
 					$tmpl->AddText("<h1>Новинки</h1>");
-				} else
-					if ($block == 'transit') {
+				}
+				else
+					if ($block == 'transit')
+					{
 						$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 														( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
 														`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`
@@ -504,7 +574,9 @@ class Vitrina {
 														WHERE `doc_base`.`hidden`='0' AND `doc_base`.`transit_cnt`>0
 														ORDER BY `doc_base`.`name`";
 						$tmpl->AddText("<h1>Товар в пути</h1>");
-					} else {
+					}
+					else
+					{
 						header('HTTP/1.0 404 Not Found');
 						header('Status: 404 Not Found');
 						throw new Exception('Блок не найден!');
@@ -515,7 +587,8 @@ class Vitrina {
 			throw new MysqlException("Не удалось получить список товаров!");
 		$lim = 1000;
 		$rows = mysql_num_rows($res);
-		if ($rows) {
+		if ($rows)
+		{
 			if ($CONFIG['site']['vitrina_plstyle'] == 'imagelist')
 				$view = 'i';
 			else
@@ -533,12 +606,14 @@ class Vitrina {
 					$this->TovList_SimpleTable($res, $lim);
 
 			$tmpl->AddText("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
-		} else
+		}
+		else
 			$tmpl->msg("Товары в данной категории отсутствуют");
 	}
 
 	/// Блок ссылок смены вида отображения и сортировки
-	protected function OrderAndViewBar($group, $page, $order, $view) {
+	protected function OrderAndViewBar($group, $page, $order, $view)
+	{
 		global $tmpl;
 		$tmpl->AddText("<div class='orderviewbar'>");
 		$tmpl->AddText("<div class='orderbar'>Показывать: ");
@@ -596,26 +671,28 @@ class Vitrina {
 	}
 
 	/// Карточка товара
-	protected function ProductCard($product) {
+	protected function ProductCard($product)
+	{
 		global $tmpl, $CONFIG, $wikiparser;
 		settype($product, 'int');
 		$cnt_where = @ $CONFIG['site']['vitrina_sklad'] ? (" AND `doc_base_cnt`.`sklad`=" . intval($CONFIG['site']['vitrina_sklad']) . " ") : '';
 		$res = mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
-					`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-					`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`
-					FROM `doc_base`
-					INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
-					LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-					LEFT JOIN `doc_base_dop_type` ON `doc_base_dop_type`.`id`=`doc_base_dop`.`type`
-					LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-					LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-					LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-					WHERE `doc_base`.`id`='$product'
-					ORDER BY `doc_base`.`name` ASC LIMIT 1");
+									`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
+									`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where), `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`
+									FROM `doc_base`
+									INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
+									LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+									LEFT JOIN `doc_base_dop_type` ON `doc_base_dop_type`.`id`=`doc_base_dop`.`type`
+									LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+									LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+									LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+									WHERE `doc_base`.`id`='$product'
+									ORDER BY `doc_base`.`name` ASC LIMIT 1");
 		if (mysql_errno())
 			throw new MysqlException('Не удалось получить карточку товара!');
 		$i = 0;
-		if ($nxt = mysql_fetch_array($res)) {
+		if ($nxt = mysql_fetch_array($res))
+		{
 			if ($nxt['title_tag'])
 				$title = $nxt['title_tag'];
 			else
@@ -624,7 +701,8 @@ class Vitrina {
 			$base = abs(crc32($nxt['name'] . $nxt['group'] . $nxt['proizv'] . $nxt['vc'] . $nxt['desc']));
 			if ($nxt['meta_keywords'])
 				$tmpl->SetMetaKeywords($nxt['meta_keywords']);
-			else {
+			else
+			{
 				$k1 = array (
 					'купить',
 					'цены',
@@ -648,7 +726,8 @@ class Vitrina {
 
 			if ($nxt['meta_description'])
 				$tmpl->SetMetaDescription($nxt['meta_description']);
-			else {
+			else
+			{
 				$d = array ();
 				$d[0] = array (
 					$nxt['group_printname'] . ' ' . $nxt['name'] . ' ' . $nxt['proizv'] . ' - '
@@ -700,7 +779,8 @@ class Vitrina {
 					'в любой регион России.'
 				);
 				$str = '';
-				foreach ($d as $id => $item) {
+				foreach ($d as $id => $item)
+				{
 					$l = count($item);
 					$i = $base % $l;
 					$base = floor($base / $l);
@@ -712,19 +792,21 @@ class Vitrina {
 			$tmpl->AddText("<h1 id='page-title'>{$nxt['group_printname']} {$nxt['name']}</h1>");
 			$tmpl->AddText("<div class='breadcrumb'>" . $this->GetVitPath($nxt['group']) . "</div>");
 			$appends = $img_mini = "";
-			if ($nxt['img_id']) {
+			if ($nxt['img_id'])
+			{
 				$miniimg = new ImageProductor($nxt['img_id'], 'p', $nxt['img_type']);
 				$miniimg->SetY(220);
 				$miniimg->SetX(200);
 				$fullimg = new ImageProductor($nxt['img_id'], 'p', $nxt['img_type']);
 				$img = "<img src='" . $miniimg->GetURI() . "' alt='{$nxt['name']}' onload='$(this).fadeTo(500,1);' style='opacity: 1' id='midiphoto'>";
 				$res = mysql_query("SELECT `doc_img`.`id` AS `img_id`, `doc_base_img`.`default`, `doc_img`.`name`, `doc_img`.`type` AS `img_type` FROM `doc_base_img`
-											LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-											WHERE `doc_base_img`.`pos_id`='{$nxt['id']}'");
+							LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+							WHERE `doc_base_img`.`pos_id`='{$nxt['id']}'");
 				if (mysql_errno())
 					throw new MysqlException('Не удалось выбрать информацию о изображениях');
 
-				while ($img_data = mysql_fetch_assoc($res)) {
+				while ($img_data = mysql_fetch_assoc($res))
+				{
 					$miniimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
 					$miniimg->SetX(40);
 					$miniimg->SetY(40);
@@ -739,25 +821,27 @@ class Vitrina {
 					$appends .= "midiphoto.appendImage({$img_data['img_id']},'" . html_entity_decode($midiimg->GetURI(), ENT_COMPAT, 'UTF-8') . "', '" . html_entity_decode($fullimg->GetURI(), ENT_COMPAT, 'UTF-8') . "');\n";
 
 				}
-			} else
+			}
+			else
 				$img = "<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo.png' alt='no photo'>";
 
 			$tmpl->AddText("<table class='product-card'>
-								<tr valign='top'><td rowspan='15' width='150'>
-								<div class='image'><div class='one load'>$img</div><div class='list'>$img_mini</div></div>
-								<script>
-								var midiphoto=tripleView('midiphoto')
-								$appends
-								function setPhoto(id)
-								{
-									return midiphoto.setPhoto(id)
-								}
-								</script>");
+														<tr valign='top'><td rowspan='15' width='150'>
+														<div class='image'><div class='one load'>$img</div><div class='list'>$img_mini</div></div>
+														<script>
+														var midiphoto=tripleView('midiphoto')
+														$appends
+														function setPhoto(id)
+														{
+			return midiphoto.setPhoto(id)
+														}
+														</script>");
 
 			$tmpl->AddText("<td class='field'>Наименование:<td>{$nxt['name']}");
 			if ($nxt['vc'])
 				$tmpl->AddText("<tr><td class='field'>Код производителя:<td>{$nxt['vc']}<br>");
-			if ($nxt[2]) {
+			if ($nxt[2])
+			{
 				$text = $wikiparser->parse(html_entity_decode($nxt[2], ENT_QUOTES, "UTF-8"));
 				$tmpl->AddText("<tr><td valign='top' class='field'>Описание:<td>$text");
 			}
@@ -784,26 +868,30 @@ class Vitrina {
 				$tmpl->AddText("<tr><td class='field'>Производитель: <td>$nxt[5]<br>");
 
 			$param_res = mysql_query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
-								LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-								WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='0' AND `doc_base_params`.`system`='0'");
+														LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+														WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='0' AND `doc_base_params`.`system`='0'");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось получить список свойств!");
-			while ($params = mysql_fetch_row($param_res)) {
+			while ($params = mysql_fetch_row($param_res))
+			{
 				$tmpl->AddText("<tr><td class='field'>$params[0]:<td>$params[1]</tr>");
 			}
 
 			$resg = mysql_query("SELECT `id`, `name` FROM `doc_base_gparams`");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось параметры групп складской номенклатуры");
-			while ($nxtg = mysql_fetch_row($resg)) {
+			while ($nxtg = mysql_fetch_row($resg))
+			{
 				$f = 0;
 				$param_res = mysql_query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
-											LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-											WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='$nxtg[0]' AND `doc_base_params`.`system`='0'");
+							LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+							WHERE `doc_base_values`.`id`='{$nxt['id']}' AND `doc_base_params`.`pgroup_id`='$nxtg[0]' AND `doc_base_params`.`system`='0'");
 				if (mysql_errno())
 					throw new MysqlException("Не удалось получить список свойств!");
-				while ($params = mysql_fetch_row($param_res)) {
-					if (!$f) {
+				while ($params = mysql_fetch_row($param_res))
+				{
+					if (!$f)
+					{
 						$f = 1;
 						$tmpl->AddText("<tr><th colspan='2'>$nxtg[1]</th></tr>");
 					}
@@ -812,14 +900,16 @@ class Vitrina {
 			}
 
 			$att_res = mysql_query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
-								FROM `doc_base_attachments`
-								LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
-								WHERE `doc_base_attachments`.`pos_id`='$product'");
+														FROM `doc_base_attachments`
+														LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
+														WHERE `doc_base_attachments`.`pos_id`='$product'");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось получить список прикреплённых файлов");
-			if (mysql_num_rows($att_res) > 0) {
+			if (mysql_num_rows($att_res) > 0)
+			{
 				$tmpl->AddText("<tr><th colspan='3'>Прикреплённые файлы</th></tr>");
-				while ($anxt = @ mysql_fetch_row($att_res)) {
+				while ($anxt = @ mysql_fetch_row($att_res))
+				{
 					if ($CONFIG['site']['recode_enable'])
 						$link = "/attachments/{$anxt[0]}/$anxt[1]";
 					else
@@ -829,15 +919,15 @@ class Vitrina {
 			}
 
 			$tmpl->AddText("<tr><td colspan='3'>
-								<form action='/vitrina.php'>
-								<input type='hidden' name='mode' value='korz_add'>
-								<input type='hidden' name='p' value='$product'>
-								<div>
-								Добавить
-								<input type='text' name='cnt' value='1' class='mini'> штук <button type='submit'>В корзину!</button>
-								</div>
-								</form>
-								</td></tr></table>");
+														<form action='/vitrina.php'>
+														<input type='hidden' name='mode' value='korz_add'>
+														<input type='hidden' name='p' value='$product'>
+														<div>
+														Добавить
+														<input type='text' name='cnt' value='1' class='mini'> штук <button type='submit'>В корзину!</button>
+														</div>
+														</form>
+														</td></tr></table>");
 			$d = array ();
 			$d[] = array (
 				'В нашем'
@@ -902,7 +992,8 @@ class Vitrina {
 			);
 			$str = '';
 			$base = abs(crc32($nxt['name'] . $nxt['group'] . $nxt['proizv'] . $nxt['vc'] . $nxt['desc']));
-			foreach ($d as $id => $item) {
+			foreach ($d as $id => $item)
+			{
 				$l = count($item);
 				$i = $base % $l;
 				$base = floor($base / $l);
@@ -910,14 +1001,15 @@ class Vitrina {
 			}
 			$tmpl->AddText("<div class='description'>$str</div>");
 			$tmpl->AddText("<script type='text/javascript' charset='utf-8'>
-								$(document).ready(function(){
-								$(\"a[rel^='prettyPhoto']\").prettyPhoto({theme:'dark_rounded'});
-								});
-								</script>");
+														$(document).ready(function(){
+														$(\"a[rel^='prettyPhoto']\").prettyPhoto({theme:'dark_rounded'});
+														});
+														</script>");
 			$i++;
 		}
 
-		if ($i == 0) {
+		if ($i == 0)
+		{
 			$tmpl->AddText("<h1 id='page-title'>Информация о товаре</h1>");
 			header('HTTP/1.0 404 Not Found');
 			header('Status: 404 Not Found');
@@ -925,7 +1017,8 @@ class Vitrina {
 		}
 	}
 	/// Просмотр корзины
-	protected function Basket() {
+	protected function Basket()
+	{
 		global $tmpl, $CONFIG;
 
 		$text = '';
@@ -933,8 +1026,10 @@ class Vitrina {
 		$sum = 0;
 		$exist = 0;
 		$i = 1;
-		if (isset ($_SESSION['basket']['cnt'])) {
-			foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
+		if (isset ($_SESSION['basket']['cnt']))
+		{
+			foreach ($_SESSION['basket']['cnt'] as $item => $cnt)
+			{
 				$res = mysql_query("SELECT `id`, `name`, `cost` FROM `doc_base` WHERE `id`='$item'");
 				if (mysql_errno())
 					throw new MysqlException("Не удалось получить список товаров!");
@@ -947,60 +1042,63 @@ class Vitrina {
 					$comm = $_SESSION['basket']['comments'][$item];
 				else
 					$comm = '';
-				$text .= "<tr id='korz_ajax_item_$item' class='lin$cc'><td class='right'>$i <span id='korz_item_clear_url'><a href='#' onClick='korz_item_clear($item)'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
+				$text .= "<tr id='korz_ajax_item_$item' class='lin$cc'><td class='right'>$i <span id='korz_item_clear_url'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item)'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
 				$cc = 1 - $cc;
 				$exist = 1;
 				$i++;
 			}
 		}
 
-		if (!$exist) {
+		if (!$exist)
+		{
 			$tmpl->msg("Ваша корзина пуста! Выберите, пожалуйста интересующие Вас товары!", "info");
-		} else {
+		}
+		else
+		{
 			$tmpl->AddText("
-									<span id='korz_ajax'>
-									<h1 id='page-title'>Ваша корзина</h1>
-									В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
-									<form action='' method='post'>
-									<input type='hidden' name='mode' value='basket_submit'>
-									<table id='korz_table' width='100%' class='list'>
-									<tr class='title'><th>N</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
-									$text
-									<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='3'><span class='sums'>$sum</span> рублей</td></tr>
-									</table>
-									<br>
+			<span id='korz_ajax'>
+			<h1 id='page-title'>Ваша корзина</h1>
+			В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
+			<form action='' method='post'>
+			<input type='hidden' name='mode' value='basket_submit'>
+			<table id='korz_table' width='100%' class='list'>
+			<tr class='title'><th>N</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
+			$text
+			<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='3'><span class='sums'>$sum</span> рублей</td></tr>
+			</table>
+			<br>
 
-									<script>
-									function korz_clear() {
-									$.ajax({
-									url: '/vitrina.php?mode=korz_clear',
-									beforeSend: function() { $('#korz_clear_url').html('<img src=/img/ajax-loader.gif alt=обработка..>'); },
-									success: function() { $('#korz_ajax').html('Корзина очищена'); }
-									})}
+			<script>
+			function korz_clear() {
+			$.ajax({
+			url: '/vitrina.php?mode=korz_clear',
+			beforeSend: function() { $('#korz_clear_url').html('<img src=/img/ajax-loader.gif alt=обработка..>'); },
+			success: function() { $('#korz_ajax').html('Корзина очищена'); }
+			})}
 
-									function korz_item_clear(id) {
-									$.ajax({
-									url: '/vitrina.php?mode=korz_del&p='+id,
-									async: false,
-									beforeSend: function() { $('#korz_item_clear_url').html('<img src=/img/ajax-loader.gif alt=обработка..>'); },
-									success: function() { $('#korz_ajax_item_'+id).remove(); },
-									complete: function() {
-									sum = 0;
-									$('span .sum').each(function() {
-									var num = parseInt($(this).text());
-									if (num) sum += num;
-									});
-									$('span .sums').html(sum);
-									}
-									})}
-									</script>
+			function korz_item_clear(id) {
+			$.ajax({
+			url: '/vitrina.php?mode=korz_del&p='+id,
+			async: false,
+			beforeSend: function() { $('#korz_item_clear_url').html('<img src=/img/ajax-loader.gif alt=обработка..>'); },
+			success: function() { $('#korz_ajax_item_'+id).remove(); },
+			complete: function() {
+			sum = 0;
+			$('span .sum').each(function() {
+			var num = parseInt($(this).text());
+			if (num) sum += num;
+			});
+			$('span .sums').html(sum);
+			}
+			})}
+			</script>
 
-									<center><button name='button' value='recalc' type='submit'>Пересчитать</button>
-									<button name='button' value='buy' type='submit'>Оформить заказ</button></center><br>
-									<center><span id='korz_clear_url'><a href='#' onClick='korz_clear()'><b>Очистить корзину!</b></a></span></center><br>
-									</form>
-									</center>
-									</span>");
+			<center><button name='button' value='recalc' type='submit'>Пересчитать</button>
+			<button name='button' value='buy' type='submit'>Оформить заказ</button></center><br>
+			<center><span id='korz_clear_url'><a href='/vitrina.php?mode=korz_clear' onClick='korz_clear()'><b>Очистить корзину!</b></a></span></center><br>
+			</form>
+			</center>
+			</span>");
 
 			$_SESSION['korz_sum'] = $sum;
 			//if( ($_SESSION['korz_sum']>20000) )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
@@ -1008,53 +1106,65 @@ class Vitrina {
 		}
 	}
 	/// Оформление покупки
-	protected function Buy() {
+	protected function Buy()
+	{
 		global $tmpl;
 		$step = intval(@ $_REQUEST['step']);
 		$tmpl->SetText("<h1 id='page-title'>Оформление заказа</h1>");
-		if ((!@ $_SESSION['uid']) && ($step != 1)) {
-			if ($step == 2) {
+		if ((!@ $_SESSION['uid']) && ($step != 1))
+		{
+			if ($step == 2)
+			{
 				$_SESSION['last_page'] = "/vitrina.php?mode=buy";
 				header("Location: /login.php?mode=reg");
 			}
-			if ($step == 3) {
+			if ($step == 3)
+			{
 				$_SESSION['last_page'] = "/vitrina.php?mode=buy";
 				header("Location: /login.php");
-			} else {
+			}
+			else
+			{
 				$_SESSION['last_page'] = "/vitrina.php?mode=buy";
 				$this->BuyAuthForm();
 			}
-		} else
+		}
+		else
 			$this->BuyMakeForm($step);
 	}
 	// -------- Вспомогательные функции ------------------
 	/// Поэлементный список подгрупп
-	protected function GroupList_ItemStyle($group) {
+	protected function GroupList_ItemStyle($group)
+	{
 		global $tmpl, $CONFIG;
 
 		$res = mysql_query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
 		if (mysql_errno())
 			throw new MysqlException('Не удалось выбрать список групп');
 		$tmpl->AddStyle(".vitem { width: 250px; float: left; font-size:	14px; } .vitem:before{content: '\\203A \\0020' ; } hr.clear{border: 0 none; margin: 0;}");
-		while ($nxt = mysql_fetch_row($res)) {
+		while ($nxt = mysql_fetch_row($res))
+		{
 			$tmpl->AddText("<div class='vitem'><a href='" . $this->GetGroupLink($nxt[0]) . "'>$nxt[1]</a></div>");
 		}
 		$tmpl->AddText("<hr class='clear'>");
 	}
 	/// Список групп с изображениями
-	protected function GroupList_ImageStyle($group) {
+	protected function GroupList_ImageStyle($group)
+	{
 		global $tmpl, $CONFIG;
 
 		$res = mysql_query("SELECT * FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group'  ORDER BY `id`");
 		if (mysql_errno())
 			throw new MysqlException('Не удалось выбрать список групп');
 		$tmpl->AddStyle(".vitem { width: 360px; float: left; font-size:	14px; margin: 10px;} .vitem img {float: left; padding-right: 8px;} hr.clear{border: 0 none; margin: 0;}");
-		while ($nxt = mysql_fetch_row($res)) {
+		while ($nxt = mysql_fetch_row($res))
+		{
 			$link = $this->GetGroupLink($nxt[0]);
 			$tmpl->AddText("<div class='vitem'><a href='$link'>");
 			if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$nxt[0].jpg"))
 				$tmpl->AddText("<img src='{$CONFIG['site']['var_data_web']}/category/$nxt[0].jpg' alt='$nxt[1]'>");
-			else {
+			else
+			{
 				if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png'))
 					$img_url = '/skins/' .
 					$CONFIG['site']['skin'] . '/no_photo.png';
@@ -1063,7 +1173,8 @@ class Vitrina {
 				$tmpl->AddText("<img src='$img_url' alt='Изображение не доступно'>");
 			}
 			$tmpl->AddText("</a><div><a href='$link'><b>$nxt[1]</b></a><br>");
-			if ($nxt[2]) {
+			if ($nxt[2])
+			{
 				$desc = split('\.', $nxt[2], 2);
 				if ($desc[0])
 					$tmpl->AddText($desc[0]);
@@ -1076,13 +1187,15 @@ class Vitrina {
 	}
 
 	/// Простая таблица товаров
-	protected function TovList_SimpleTable($res, $lim) {
+	protected function TovList_SimpleTable($res, $lim)
+	{
 		global $tmpl, $CONFIG;
 		$tmpl->AddText("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена<th>Купить</tr>");
 		$cc = $i = 0;
 		$cl = "lin0";
 		$basket_img = "/skins/" . $CONFIG['site']['skin'] . "/basket16.png";
-		while ($nxt = mysql_fetch_assoc($res)) {
+		while ($nxt = mysql_fetch_assoc($res))
+		{
 			$nal = $this->GetCountInfo($nxt['count'], @ $nxt['tranit']);
 			$link = $this->GetProductLink($nxt['id'], $nxt['name']);
 			$cce = '';
@@ -1091,9 +1204,9 @@ class Vitrina {
 				$cce = "style='color:#888'";
 			$cost = GetCostPos($nxt['id'], $this->cost_id);
 			@ $tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a>
-									<td>{$nxt['proizv']}<td>$nal<td $cce>$cost
-									<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
-									<img src='$basket_img' alt='В корзину!'></a></tr>");
+			<td>{$nxt['proizv']}<td>$nal<td $cce>$cost
+			<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
+			<img src='$basket_img' alt='В корзину!'></a></tr>");
 			$i++;
 			$cc = 1 - $cc;
 			if ($i >= $lim)
@@ -1103,24 +1216,26 @@ class Vitrina {
 	}
 
 	/// Список товаров в виде изображений
-	protected function TovList_ImageList($res, $lim) {
+	protected function TovList_ImageList($res, $lim)
+	{
 		global $tmpl, $CONFIG;
 		$cc = $i = 0;
 		$cl = "lin0";
 
 		$tmpl->AddStyle(".pitem	{
-							float:			left;
-							width:			330px;
-							height:			180px;
-							border:			1px solid #ccc;
-							background:		#fafafa;
-							margin:			10px;
-							padding:		5px;
-							border-radius:		10px;
-							-moz-border-radius:	10px;
-						}");
+											float:			left;
+											width:			330px;
+											height:			180px;
+											border:			1px solid #ccc;
+											background:		#fafafa;
+											margin:			10px;
+											padding:		5px;
+											border-radius:		10px;
+											-moz-border-radius:	10px;
+										}");
 
-		while ($nxt = mysql_fetch_assoc($res)) {
+		while ($nxt = mysql_fetch_assoc($res))
+		{
 			$nal = $this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
 			$link = $this->GetProductLink($nxt['id'], $nxt['name']);
 			$cce = '';
@@ -1128,12 +1243,15 @@ class Vitrina {
 			if ($dcc < (time() - 60 * 60 * 24 * 30 * 6))
 				$cce = "style='color:#888'";
 			$cost = GetCostPos($nxt['id'], $this->cost_id);
-			if ($nxt['img_id']) {
+			if ($nxt['img_id'])
+			{
 				$miniimg = new ImageProductor($nxt['img_id'], 'p', $nxt['img_type']);
 				$miniimg->SetX(135);
 				$miniimg->SetY(180);
 				$img = "<img src='" . $miniimg->GetURI() . "' style='float: left; margin-right: 10px;' alt='{$nxt['name']}'>";
-			} else {
+			}
+			else
+			{
 				if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png'))
 					$img_url = '/skins/' .
 					$CONFIG['site']['skin'] . '/no_photo.png';
@@ -1142,20 +1260,21 @@ class Vitrina {
 				$img = "<img src='$img_url' alt='no photo' style='float: left; margin-right: 10px; width: 135px;' alt='no photo'>";
 			}
 			$desc = $nxt['desc'];
-			if (strpos($desc, '.') !== false) {
+			if (strpos($desc, '.') !== false)
+			{
 				$desc = explode('.', $desc, 2);
 				$desc = $desc[0];
 			}
 
 			$tmpl->AddText("<div class='pitem'>
-									<a href='$link'>$img</a>
-									<a href='$link'>{$nxt['name']}</a><br>
-									<b>Код:</b> {$nxt['vc']}<br>
-									<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
-									<b>Производитель:</b> {$nxt['proizv']}<br>
-									<b>Кол-во:</b> $nal<br>
-									<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
-									</div>");
+			<a href='$link'>$img</a>
+			<a href='$link'>{$nxt['name']}</a><br>
+			<b>Код:</b> {$nxt['vc']}<br>
+			<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
+			<b>Производитель:</b> {$nxt['proizv']}<br>
+			<b>Кол-во:</b> $nal<br>
+			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
+			</div>");
 
 			$i++;
 			$cc = 1 - $cc;
@@ -1165,13 +1284,15 @@ class Vitrina {
 		$tmpl->AddText("<div class='clear'></div>");
 	}
 	/// Подробная таблица товаров
-	protected function TovList_ExTable($res, $lim) {
+	protected function TovList_ExTable($res, $lim)
+	{
 		global $tmpl, $CONFIG, $c_cena_id;
 		$tmpl->AddText("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена <th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>Купить</tr>");
 		$cc = 0;
 		$cl = "lin0";
 		$basket_img = "/skins/" . $CONFIG['site']['skin'] . "/basket16.png";
-		while ($nxt = mysql_fetch_array($res)) {
+		while ($nxt = mysql_fetch_array($res))
+		{
 			$nal = $this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
 			$link = $this->GetProductLink($nxt['id'], $nxt['name']);
 			$cce = '';
@@ -1180,31 +1301,34 @@ class Vitrina {
 				$cce = "style='color:#888'";
 			$cost = GetCostPos($nxt['id'], $this->cost_id);
 			$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a><td>{$nxt['proizv']}<td>$nal
-									<td $cce>$cost<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
-									<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
+			<td $cce>$cost<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
+			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
 			$cc = 1 - $cc;
 		}
 		$tmpl->AddText("</table>");
 	}
 	/// Форма аутентификации при покупке. Выдаётся, только если посетитель не вошёл на сайт
-	protected function BuyAuthForm() {
+	protected function BuyAuthForm()
+	{
 		global $tmpl, $CONFIG;
 		$tmpl->SetTitle("Оформление зкакза");
 		$tmpl->AddText("<p id='text'>Для использования всех возможностей этого сайта необходимо пройти процедуру регистрации. Регистрация не сложная, и займёт всего несколько минут.
-						Кроме того, все зарегистрированные пользователи получают возможность приобретать товары по специальным ценам.</p>
-						<form action='' method='post'>
-						<input type='hidden' name='mode' value='buy'>
-						<label><input type='radio' name='step' value='1'>Оформить заказ без регистрации</label><br>
-						<label><input type='radio' name='step' value='2'>Зарегистрироваться как новый покупатель</label><br>
-						<label><input type='radio' name='step' value='3'>Войти как уже зарегистрированный покупатель</label><br>
-						<button type='submit'>Далее</button>
-						</form>");
+										Кроме того, все зарегистрированные пользователи получают возможность приобретать товары по специальным ценам.</p>
+										<form action='' method='post'>
+										<input type='hidden' name='mode' value='buy'>
+										<label><input type='radio' name='step' value='1'>Оформить заказ без регистрации</label><br>
+										<label><input type='radio' name='step' value='2'>Зарегистрироваться как новый покупатель</label><br>
+										<label><input type='radio' name='step' value='3'>Войти как уже зарегистрированный покупатель</label><br>
+										<button type='submit'>Далее</button>
+										</form>");
 	}
 	/// Заключительная форма оформления покупки
-	protected function BuyMakeForm() {
+	protected function BuyMakeForm()
+	{
 		global $tmpl, $CONFIG;
 		$users_data = array ();
-		if (@ $_SESSION['uid']) {
+		if (@ $_SESSION['uid'])
+		{
 			$res = mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось получить основные данные пользователя!");
@@ -1212,51 +1336,60 @@ class Vitrina {
 			$rr = mysql_query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='" . $_SESSION['uid'] . "'");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
-			while ($nn = mysql_fetch_row($rr)) {
+			while ($nn = mysql_fetch_row($rr))
+			{
 				$user_dopdata["$nn[0]"] = $nn[1];
 			}
 			$str = 'Товар будет зарезервирован для Вас на 3 рабочих дня.';
 			$email_field = '';
-		} else {
+		}
+		else
+		{
 			$str = '<b>Для незарегистрированных пользователей наличие товара на складе не гарантируется.</b>';
 			$email_field = "e-mail:<br>
-									<input type='text' name='email' value=''><br>
-									Необходимо заполнить телефон или e-mail<br><br>";
+			<input type='text' name='email' value=''><br>
+			Необходимо заполнить телефон или e-mail<br><br>";
 		}
 
 		if (isset ($_REQUEST['cwarn']))
 			$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!", "err");
 
-		if (@ $user_data['reg_phone']) {
+		if (@ $user_data['reg_phone'])
+		{
 			$phone = substr($user_data['reg_phone'], 2);
-		} else {
+		}
+		else
+		{
 			$phone = '';
 		}
 
 		$tmpl->AddText("
-						<h4>Для оформления заказа требуется следующая информация</h4>
-						<form action='/vitrina.php' method='post'>
-						<input type='hidden' name='mode' value='makebuy'>
-						<div>
-						Фамилия И.О.<br>
-						<input type='text' name='rname' value='" . @ $user_data['real_name'] . "'><br>
-						Мобильный телефон: <span id='phone_num'></span><br>
-						<small>Российский, 10 цифр, без +7 или 8</small>
-						<br>
-						+7<input type='text' name='phone' value='$phone' maxlength='10' placeholder='Номер' id='phone'><br>
-						<br>
+										<h4>Для оформления заказа требуется следующая информация</h4>
+										<form action='/vitrina.php' method='post'>
+										<input type='hidden' name='mode' value='makebuy'>
+										<div>
+										Фамилия И.О.<br>
+										<input type='text' name='rname' value='" . @ $user_data['real_name'] . "'><br>
+										Мобильный телефон: <span id='phone_num'></span><br>
+										<small>Российский, 10 цифр, без +7 или 8</small>
+										<br>
+										+7<input type='text' name='phone' value='$phone' maxlength='10' placeholder='Номер' id='phone'><br>
+										<br>
 
-						$email_field");
-		if (is_array($CONFIG['payments']['types'])) {
+										$email_field");
+		if (is_array($CONFIG['payments']['types']))
+		{
 			$tmpl->AddText("<br>Способ оплаты:<br>");
-			foreach ($CONFIG['payments']['types'] as $type => $val) {
+			foreach ($CONFIG['payments']['types'] as $type => $val)
+			{
 				if (!$val)
 					continue;
 				if ($type == @ $CONFIG['payments']['default'])
 					$checked = ' checked';
 				else
 					$checked = '';
-				switch ($type) {
+				switch ($type)
+				{
 					case 'cash' :
 						$s = "<label><input type='radio' name='pay_type' value='$type' id='soplat_nal'$checked>Наличный расчет.
 																	<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>";
@@ -1267,15 +1400,15 @@ class Vitrina {
 						break;
 					case 'wmr' :
 						$s = "<label><input type='radio' name='pay_type' value='$type'$checked>Webmoney WMR.
-																			<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>";
+							<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>";
 						break;
 					case 'card_o' :
 						$s = "<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
-																			<b>VISA, MasterCard</b> на сайте. Обработка заказа начнётся после подтверждения оплаты банком (обычно сразу после оплаты).</label><br>";
+							<b>VISA, MasterCard</b> на сайте. Обработка заказа начнётся после подтверждения оплаты банком (обычно сразу после оплаты).</label><br>";
 						break;
 					case 'card_t' :
 						$s = "<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
-																			<b>VISA, MasterCard</b> при получении товара. С вами свяжутся и обсудят условия.</label><br>";
+							<b>VISA, MasterCard</b> при получении товара. С вами свяжутся и обсудят условия.</label><br>";
 						break;
 					case 'credit_brs' :
 						$s = "<label><input type='radio' name='pay_type' value='$type'$checked>Онлайн-кредит в банке &quot;Русский стандарт&quot; за 5 минут</label><br>";
@@ -1289,42 +1422,44 @@ class Vitrina {
 		}
 
 		$tmpl->AddText("<label><input type='checkbox' name='delivery' id='delivery' value='1'>Нужна доставка</label><br>
-						<div id='delivery_fields'>
-						Желаемые дата и время доставки:<br>
-						<input type='text' name='delivery_date'><br>
-						<br>Адрес доставки:<br>
-						<textarea name='adres' rows='5' cols='80'>" . @ $user_data['real_address'] . "</textarea><br>
-						</div>
+										<div id='delivery_fields'>
+										Желаемые дата и время доставки:<br>
+										<input type='text' name='delivery_date'><br>
+										<br>Адрес доставки:<br>
+										<textarea name='adres' rows='5' cols='80'>" . @ $user_data['real_address'] . "</textarea><br>
+										</div>
 
 
 
-						Другая информация:<br>
-						<textarea name='dop' rows='5' cols='80'>" . @ $user_dopdata['dop_info'] . "</textarea><br>
-						<button type='submit'>Оформить заказ</button>
-						</div>
-						</form>
-						<script>
+										Другая информация:<br>
+										<textarea name='dop' rows='5' cols='80'>" . @ $user_dopdata['dop_info'] . "</textarea><br>
+										<button type='submit'>Оформить заказ</button>
+										</div>
+										</form>
+										<script>
 
-						var delivery=document.getElementById('delivery')
-						var delivery_fields=document.getElementById('delivery_fields')
-						function deliveryCheck()
-						{
-							if(delivery.checked)
-								delivery_fields.style.display='block';
-							else	delivery_fields.style.display='none';
-						}
-						delivery.onclick=deliveryCheck;
-						deliveryCheck();
+										var delivery=document.getElementById('delivery')
+										var delivery_fields=document.getElementById('delivery_fields')
+										function deliveryCheck()
+										{
+											if(delivery.checked)
+												delivery_fields.style.display='block';
+											else	delivery_fields.style.display='none';
+										}
+										delivery.onclick=deliveryCheck;
+										deliveryCheck();
 
-						</script>
-						");
+										</script>
+										");
 	}
 
 	/// Сделать покупку
-	protected function MakeBuy() {
+	protected function MakeBuy()
+	{
 		global $tmpl, $CONFIG, $uid, $xmppclient;
 		$pay_type = @ $_REQUEST['pay_type'];
-		switch ($pay_type) {
+		switch ($pay_type)
+		{
 			case 'bank' :
 			case 'cash' :
 			case 'card_o' :
@@ -1346,25 +1481,31 @@ class Vitrina {
 		$comment = @ $_REQUEST['dop'];
 		$comment_sql = mysql_real_escape_string($comment);
 
-		if (@ $_REQUEST['phone']) {
+		if (@ $_REQUEST['phone'])
+		{
 			$tel = '+7' . intval(@ $_REQUEST['phone']);
-		} else
+		}
+		else
 			$tel = '';
 
-		if (@ $_SESSION['uid']) {
+		if (@ $_SESSION['uid'])
+		{
 			mysql_query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='$uid'");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось обновить основные данные пользователя!");
 			mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$comment_sql') ");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
-		} else
-			if (!$tel && !$email) {
+		}
+		else
+			if (!$tel && !$email)
+			{
 				header("Location: /vitrina.php?mode=buy&step=1&cwarn=1");
 				return;
 			}
 
-		if ($_SESSION['basket']['cnt']) {
+		if ($_SESSION['basket']['cnt'])
+		{
 			if (!isset ($CONFIG['site']['vitrina_subtype']))
 				$subtype = "site";
 			else
@@ -1382,7 +1523,7 @@ class Vitrina {
 			$bank = mysql_result($res, 0, 0);
 
 			$res = mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
-									VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
+			VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 
 			if (mysql_errno())
 				throw new MysqlException("Не удалось создать документ заявки");
@@ -1391,7 +1532,8 @@ class Vitrina {
 			if (mysql_errno())
 				throw new MysqlException("Не удалось установить цену документа");
 			$zakaz_items = $admin_items = '';
-			foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
+			foreach ($_SESSION['basket']['cnt'] as $item => $cnt)
+			{
 				$cena = GetCostPos($item, $this->cost_id);
 				if (isset ($_SESSION['basket']['comments'][$item]))
 					$comm = mysql_real_escape_string($_SESSION['basket']['comments'][$item]);
@@ -1401,9 +1543,9 @@ class Vitrina {
 				if (mysql_errno())
 					throw new MysqlException("Не удалось добавить товар в заказ");
 				$res = mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1` FROM `doc_base`
-												LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-												LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
-												WHERE `doc_base`.`id`='$item'");
+								LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+								LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+								WHERE `doc_base`.`id`='$item'");
 				if (mysql_errno())
 					throw new MysqlException("Не удалось получить информацию о товаре");
 				$tov_info = mysql_fetch_row($res);
@@ -1419,28 +1561,34 @@ class Vitrina {
 				$text .= "\nLogin отправителя: " . $_SESSION['name'];
 			$text .= "----------------------------------\n" . $admin_items;
 
-			if ($CONFIG['site']['doc_adm_jid']) {
-				try {
+			if ($CONFIG['site']['doc_adm_jid'])
+			{
+				try
+				{
 					$xmppclient->connect();
 					$xmppclient->processUntil('session_start');
 					$xmppclient->presence();
 					$xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
 					$xmppclient->disconnect();
-				} catch (XMPPHP_Exception $e) {
+				}
+				catch (XMPPHP_Exception $e)
+				{
 					$tmpl->logger("Невозможно отправить сообщение XMPP!", "err");
 				}
 			}
 			if ($CONFIG['site']['doc_adm_email'])
 				mailto($CONFIG['site']['doc_adm_email'], "Message from {$CONFIG['site']['name']}", $text);
 
-			if (@ $_SESSION['uid']) {
+			if (@ $_SESSION['uid'])
+			{
 				$res = mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 				if (mysql_errno())
 					throw new MysqlException("Не удалось получить основные данные пользователя!");
 				$user_data = mysql_fetch_assoc($res);
 				$user_msg = "Доброго времени суток, {$user_data['name']}!\nНа сайте {$CONFIG['site']['name']} на Ваше имя оформлен заказ на сумму $zakaz_sum рублей\nЗаказано:\n";
 				$email = $user_data['reg_email'];
-			} else
+			}
+			else
 				$user_msg = "Доброго времени суток, $rname!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\n Номер заказа: $doc/$altnum\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
 			$user_msg .= "--------------------------------------\n$zakaz_items\n--------------------------------------\n";
 			$user_msg .= "\n\n\nСообщение отправлено роботом. Не отвечайте на это письмо.";
@@ -1449,56 +1597,69 @@ class Vitrina {
 				mailto($email, "Message from {$CONFIG['site']['name']}", $user_msg);
 
 			$tmpl->SetText("<h1 id='page-title'>Заказ оформлен</h1>");
-			if ($pay_type == 'bank') {
+			if ($pay_type == 'bank')
+			{
 				$tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>выписать счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
 				$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
-			} else
-				if ($pay_type == 'card_o') {
+			}
+			else
+				if ($pay_type == 'card_o')
+				{
 					$tmpl->AddText("<p>Заказ оформлен. Теперь вы можете оплатить его! <a href='/vitrina.php?mode=pay'>Перейти к оплате</a></p>");
-				} else
-					if ($pay_type == 'credit_brs') {
+				}
+				else
+					if ($pay_type == 'credit_brs')
+					{
 						$this->Payment();
-					} else
+					}
+					else
 						$tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
 			unset ($_SESSION['basket']);
-		} else
+		}
+		else
 			$tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?", "err");
 	}
 
-	protected function Payment() {
+	protected function Payment()
+	{
 		global $tmpl, $CONFIG;
 		$order_id = $_SESSION['order_id'];
 		settype($order_id, 'int');
 		$res = mysql_query("SELECT `doc_list`.`id` FROM `doc_list`
-						WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6')");
+										WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6')");
 		if (mysql_errno())
 			throw new MysqlException("Не удалось получить данные оплат");
 		if (mysql_num_rows($res))
 			$tmpl->msg("Этот заказ уже оплачен!");
-		else {
+		else
+		{
 			$res = mysql_query("SELECT `doc_list`.`id`, `dd_pt`.`value` AS `pay_type` FROM `doc_list`
-									LEFT JOIN `doc_dopdata` AS `dd_pt` ON `dd_pt`.`doc`=`doc_list`.`id` AND `dd_pt`.`param`='pay_type'
-									WHERE `doc_list`.`id`='$order_id' AND `doc_list`.`type`='3'");
+			LEFT JOIN `doc_dopdata` AS `dd_pt` ON `dd_pt`.`doc`=`doc_list`.`id` AND `dd_pt`.`param`='pay_type'
+			WHERE `doc_list`.`id`='$order_id' AND `doc_list`.`type`='3'");
 			if (mysql_errno())
 				throw new MysqlException("Не удалось получить данные заказа");
 
 			$order_info = mysql_fetch_assoc($res);
-			if ($order_info['pay_type'] == 'card_o') {
+			if ($order_info['pay_type'] == 'card_o')
+			{
 				$init_url = "https://test.pps.gazprombank.ru:443/payment/start.wsm?lang=ru&merch_id={$CONFIG['gpb']['merch_id']}&back_url_s=http://{$CONFIG['site']['name']}/gpb_pay_success.php&back_url_f=http://{$CONFIG['site']['name']}/gpb_pay_failed.php&o.order_id=$order_id";
 				header("Location: $init_url");
 				exit ();
-			} else
-				if ($order_info['pay_type'] == 'credit_brs') {
+			}
+			else
+				if ($order_info['pay_type'] == 'credit_brs')
+				{
 					$res = mysql_query("SELECT `doc_list_pos`.`tovar`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`, `doc_list_pos`.`cnt`
-														FROM `doc_list_pos`
-														INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-														INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-														WHERE `doc_list_pos`.`doc`=$order_id");
+												FROM `doc_list_pos`
+												INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+												INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+												WHERE `doc_list_pos`.`doc`=$order_id");
 					if (mysql_errno())
 						throw new MysqlException("Не удалось получить список товаров");
 					$pos_line = '';
 					$cnt = 0;
-					while ($line = mysql_fetch_assoc($res)) {
+					while ($line = mysql_fetch_assoc($res))
+					{
 						$cnt++;
 						$cena = GetCostPos($line['tovar'], $this->cost_id);
 						$pos_line .= "&TC_$cnt={$line['cnt']}&TPr_$cnt=$cena&TName_$cnt=" . urlencode($line['name']);
@@ -1507,43 +1668,52 @@ class Vitrina {
 					echo $url;
 					header("Location: $url");
 					exit ();
-				} else
+				}
+				else
 					throw new Exception("Данный тип оплаты ({$order_info['pay_type']}) не поддерживается!");
 		}
 	}
 
 	/// Отобразить панель страниц
-	protected function PageBar($group, $item_count, $per_page, $cur_page) {
+	protected function PageBar($group, $item_count, $per_page, $cur_page)
+	{
 		global $tmpl;
-		if ($item_count > $per_page) {
+		if ($item_count > $per_page)
+		{
 			$pages_count = ceil($item_count / $per_page);
 			if ($cur_page < 1)
 				$cur_page = 1;
 			if ($cur_page > $pages_count)
 				$cur_page = $pages_count;
 			$tmpl->AddText("<div class='pagebar'>");
-			if ($cur_page > 1) {
+			if ($cur_page > 1)
+			{
 				$i = $cur_page -1;
 				$tmpl->AddText(" <a href='" . $this->GetGroupLink($group, $i) . "'>&lt;&lt;</a> ");
-			} else
+			}
+			else
 				$tmpl->AddText(" &lt;&lt; ");
 
-			for ($i = 1; $i < $pages_count +1; $i++) {
+			for ($i = 1; $i < $pages_count +1; $i++)
+			{
 				if ($i == $cur_page)
 					$tmpl->AddText(" $i ");
 				else
 					$tmpl->AddText(" <a href='" . $this->GetGroupLink($group, $i) . "'>$i</a> ");
 			}
-			if ($cur_page < $pages_count) {
+			if ($cur_page < $pages_count)
+			{
 				$i = $cur_page +1;
 				$tmpl->AddText(" <a href='" . $this->GetGroupLink($group, $i) . "'>&gt;&gt;</a> ");
-			} else
+			}
+			else
 				$tmpl->AddText(" &gt;&gt; ");
 			$tmpl->AddText("</div>");
 		}
 	}
 	/// *Хлебные крошки* витрины
-	protected function GetVitPath($group_id) {
+	protected function GetVitPath($group_id)
+	{
 		$res = mysql_query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `id`='$group_id'");
 		if (mysql_errno())
 			throw new MysqlException("Не удалось выбрать группу при формировании пути!");
@@ -1553,7 +1723,8 @@ class Vitrina {
 		return $this->GetVitPath($nxt[2]) . " / <a href='" . $this->GetGroupLink($nxt[0]) . "'>$nxt[1]</a>";
 	}
 	/// Получить ссылку на группу с заданным ID
-	protected function GetGroupLink($group, $page = 1, $alt_param = '') {
+	protected function GetGroupLink($group, $page = 1, $alt_param = '')
+	{
 		global $CONFIG;
 		if ($CONFIG['site']['recode_enable'])
 			return "/vitrina/ig/$page/$group.html" . ($alt_param ? "?$alt_param" : '');
@@ -1561,7 +1732,8 @@ class Vitrina {
 			return "/vitrina.php?mode=group&amp;g=$group" . ($page ? "&amp;p=$page" : '') . ($alt_param ? "&amp;$alt_param" : '');
 	}
 	/// Получить ссылку на товар с заданным ID
-	protected function GetProductLink($product, $name, $alt_param = '') {
+	protected function GetProductLink($product, $name, $alt_param = '')
+	{
 		global $CONFIG;
 		if ($CONFIG['site']['recode_enable'])
 			return "/vitrina/ip/$product.html" . ($alt_param ? "?$alt_param" : '');
@@ -1569,7 +1741,8 @@ class Vitrina {
 			return "/vitrina.php?mode=product&amp;p=$product" . ($alt_param ? "&amp;$alt_param" : '');
 	}
 	/// Получить информации о количестве товара. Формат информации - в конфигурационном файле
-	protected function GetCountInfo($count, $tranzit) {
+	protected function GetCountInfo($count, $tranzit)
+	{
 		global $CONFIG;
 		if (!isset ($CONFIG['site']['vitrina_pcnt_limit']))
 			$CONFIG['site']['vitrina_pcnt_limit'] = array (
@@ -1577,13 +1750,16 @@ class Vitrina {
 				10,
 				100
 			);
-		if ($CONFIG['site']['vitrina_pcnt'] == 1) {
-			if ($count <= 0) {
+		if ($CONFIG['site']['vitrina_pcnt'] == 1)
+		{
+			if ($count <= 0)
+			{
 				if ($tranzit)
 					return 'в пути';
 				else
 					return 'уточняйте';
-			} else
+			}
+			else
 				if ($count <= $CONFIG['site']['vitrina_pcnt_limit'][0])
 					return '*';
 				else
@@ -1594,14 +1770,18 @@ class Vitrina {
 							return '***';
 						else
 							return '****';
-		} else
-			if ($CONFIG['site']['vitrina_pcnt'] == 2) {
-				if ($count <= 0) {
+		}
+		else
+			if ($CONFIG['site']['vitrina_pcnt'] == 2)
+			{
+				if ($count <= 0)
+				{
 					if ($tranzit)
 						return 'в пути';
 					else
 						return 'уточняйте';
-				} else
+				}
+				else
 					if ($count <= $CONFIG['site']['vitrina_pcnt_limit'][0])
 						return 'мало';
 					else
@@ -1612,7 +1792,8 @@ class Vitrina {
 								return 'много';
 							else
 								return 'оч.много';
-			} else
+			}
+			else
 				return round($count) . ($tranzit ? ('(' . $tranzit . ')') : '');
 	}
 
@@ -1640,7 +1821,8 @@ class Vitrina {
 // 	}
 // }
 
-try {
+try
+{
 	$tmpl->SetTitle("Интернет - витрина");
 
 	if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/vitrina.tpl.php'))
@@ -1651,11 +1833,15 @@ try {
 
 	if (!$vitrina->ProbeRecode())
 		$vitrina->ExecMode($mode);
-} catch (MysqlException $e) {
+}
+catch (MysqlException $e)
+{
 	mysql_query("ROLLBACK");
 	$tmpl->AddText("<br><br>");
 	$tmpl->msg($e->getMessage(), "err");
-} catch (Exception $e) {
+}
+catch (Exception $e)
+{
 	mysql_query("ROLLBACK");
 	$tmpl->AddText("<br><br>");
 	$tmpl->logger($e->getMessage());
