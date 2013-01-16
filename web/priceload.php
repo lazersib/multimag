@@ -293,7 +293,7 @@ if($mode=='')
 			if($days<3)		$date_style="style='color: #0d0'";
 			else if($days<7)	$date_style="style='color: #d80'";
 			else			$date_style="style='color: #f00'";
-			
+
 			if($days<1)
 			{
 				$hours=floor( ($time-$udate)/(60*60));
@@ -312,13 +312,13 @@ if($mode=='')
 		}
 		else if($udate<2)	$date='никогда';
 		else			$date=date("Y-m-d", $udate);
-		
+
 		$tmpl->AddText("<tr class='lin$i pointer'><td><a href='?mode=firme&amp;id=$nxt[0]'>$nxt[0]</a>
 		<td>$nxt[1]<td $date_style>$date<td>$nxt[2]<td>$nxt[3], $nxt[4]<td>
 		<a href='?mode=r_noparsed&amp;f=$nxt[0]'>Необработанные</a> |
 		<a href='?mode=r_parsed&amp;f=$nxt[0]'>Обработанные</a> |
 		<a href='?mode=r_multiparsed&amp;f=$nxt[0]'>Дублирующиеся</a>
-		
+
 		");
 		$i=1-$i;
 	}
@@ -346,12 +346,10 @@ else if($mode=="parse")
 	$bhtml=rcv('bhtml');
 	if(!is_uploaded_file($_FILES['file']['tmp_name']))
 		throw new Exception("Файл не получен. Возможно, его забыли выбрать, либо он слишком большой.");
-	if($_FILES['file']['size']>(4000*1024))
-		throw new Exception("Слишком большой файл!");
-	
+
 	require_once($CONFIG['location']."/common/priceloader.xls.php");
 	require_once($CONFIG['location']."/common/priceloader.ods.php");
-	
+
 	$path_info = pathinfo($_FILES['file']['name']);
 	switch(strtolower($path_info['extension']))
 	{
@@ -361,7 +359,7 @@ else if($mode=="parse")
 				break;
 		default:	throw new Exception("Неверное расширение файла!");
 	}
-	
+
 	$firm_array=$loader->detectSomeFirm();
 	$loader->setBuildHTMLData(40);
 	foreach($firm_array as $firm)
@@ -384,7 +382,7 @@ else if($mode=="parse")
 
 		firmAddForm();
 	}
-	
+
 // 	if($firm=$loader->detectFirm())
 // 	{
 // 		$loader->setInsertToDatabase();
@@ -402,7 +400,7 @@ else if($mode=="parse")
 // 			$loader->Run();
 // 			$tmpl->AddText("<h3>Загруженные данные:</h3>".$loader->getHTML());
 // 		}
-// 
+//
 // 		firmAddForm();
 // 	}
 }
@@ -426,7 +424,7 @@ else if($mode=='firms')
 		$col_art=rcv('col_art');
 		$col_name=rcv('col_name');
 		$col_cost=rcv('col_cost');
-		$col_nal=rcv('col_nal');		
+		$col_nal=rcv('col_nal');
 		$col_curr=rcv('col_curr');
 		$col_info=rcv('col_info');
 		$res=mysql_query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`)

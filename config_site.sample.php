@@ -8,7 +8,7 @@ $CONFIG['site']['allow_openid']		= true;		// Разрешить регистра
 $CONFIG['site']['allow_phone_regist']	= true;		// Разрешить регистрацию по номеру мобильного телефона. Требуется настроенная отправка SMS
 							// false по умолчанию
 $CONFIG['site']['pass_type']		= 'CRYPT';	// Варианты: CRYPT (по умолчанию), MD5, SHA1. CRYPT обеспечивает самое надёжное хранение паролей
-							
+
 
 // Настройки прайса
 $CONFIG['site']['price_col_cnt']	= 0;	// 2 по умолчанию
@@ -69,7 +69,7 @@ $CONFIG['images']['watermark']		= 1;	// Показывать ли названи
 $CONFIG['images']['font_watermark']	= '';	// Шрифт текста, накладываемого на изображение
 $CONFIG['images']['quality']		= 70;	// Качество (по уровню сжатия) изображений
 
-$CONFIG['noify']['comments']		= true;	// Оповещать о коментариях
+$CONFIG['notify']['comments']		= true;	// Оповещать о коментариях
 
 /// Не включайте не настроенные способы оплаты !
 $CONFIG['payments']['types']['cash']		= true;	// Разрешить оплату наличными
@@ -87,6 +87,8 @@ $CONFIG['gpb']['terminal_id']	= '';
 $CONFIG['gpb']['bank_id']	= 1;
 $CONFIG['gpb']['callback_login']= '';
 $CONFIG['gpb']['callback_pass']	= '';
+
+$CONFIG['doc_scripts']['zp_s_prodaj.coeff']=	0.05;	// Коэффициент начислений для зарплаты с продаж
 
 // Параметры для кредита *русский стандарт*
 $CONFIG['credit_brs']['address']= 'https://anketa.bank.rs.ru/minipotreb.php';

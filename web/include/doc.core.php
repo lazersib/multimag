@@ -580,13 +580,18 @@ function DocSumUpdate($doc)
 	return $sum;
 }
 
-// Расчёт баланса агента
-function DocCalcDolg($agent, $print=0, $firm_id=0)
+/// Расчёт долга агента. Положительное число обозначает долг агента, отрицательное - долг перед агентом.
+/// @param agent_id	ID агента, для которого расчитывается баланс
+/// @param no_cache	Не брать данные расчёта из кеша
+/// @param firm_id	ID собственной фирмы, для которой будет расчитан баланс. Если 0 - расчёт ведётся для всех фирм.
+function DocCalcDolg($agent_id, $no_cache=0, $firm_id=0)
 {
-	global $tmpl;
+	global $tmpl, $doc_agent_dolg_cache_storage;
+	//if(!$no_cache && isset($doc_agent_dolg_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
+
 	$dolg=0;
 	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
-	$res=mysql_query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent' AND `mark_del`='0' $sql_add");
+	$res=mysql_query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
 	if(mysql_errno())	throw new MysqlException("Не возможно выбрать документы агента");
 	while($nxt=mysql_fetch_row($res))
 	{
@@ -603,10 +608,14 @@ function DocCalcDolg($agent, $print=0, $firm_id=0)
 	}
 
 	$dolg=sprintf("%0.2f", $dolg);
+	//$doc_agent_dolg_cache_storage[$agent_id]=$dolg;
 	return $dolg;
 }
 
-// Расчёт актуальной входящей цены
+/// Расчёт актуальной входящей цены
+/// @param pos_id 	ID складского наименования, для которого производится расчёт
+/// @param limit_date	Ограничить период расчёта указанной датой. Расчёт цены выполняется на указанную дату.
+/// @param serv_mode	Если true - функция возвращает для улуг их базовую цену. Иначе возвращает 0.
 function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 {
 	settype($pos_id,'int');
@@ -640,46 +649,53 @@ function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 /// Проверка, не уходило ли когда-либо количество какого-либо товара в минус
 /// Используется при отмене документов, уменьшающих остатки на складе, напр. реализаций и перемещений
 /// TODO: Устарело. Заменить везде, где используется на getStoreCntOnDate
-function CheckMinus($pos, $sklad)
+/// @sa getStoreCntOnDate
+/// @param pos_id 		ID складского наименования, для которого производится расчёт
+/// @param sklad_id		ID склада, для которого производится расчёт
+function CheckMinus($pos_id, $sklad_id)
 {
-    return getStoreCntOnDate($pos, $sklad);
+    return getStoreCntOnDate($pos_id, $sklad_id);
 }
 
-// Получить количество товара на складе на заданную дату
-function getStoreCntOnDate($pos, $sklad, $unixtime=0, $noBreakIfMinus=0)
+/// Получить количество товара на складе на заданную дату
+/// @param pos_id 		ID складского наименования, для которого производится расчёт
+/// @param sklad_id		ID склада, для которого производится расчёт
+/// @param unixtime		Дата, на которую производится расчёт в формате unixtime. Если не задан - расчитывается остаток на дату последнего документа.
+/// @param noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
+function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 {
 	$cnt=0;
 	$sql_add=$unixtime?"AND `doc_list`.`date`<='$unixtime'":'';
 	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
+	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos_id' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
 	ORDER BY `doc_list`.`date`");
-	if(mysql_errno())	throw new MysqlException("Не удалось запросить список документов с товаром ID:$pos при проверке на отрицательные остатки");
+	if(mysql_errno())	throw new MysqlException("Не удалось запросить список документов с товаром ID:$pos_id при проверке на отрицательные остатки");
 	while($nxt=mysql_fetch_row($res))
 	{
 		if($nxt[1]==1)
 		{
-			if($nxt[2]==$sklad)	$cnt+=$nxt[0];
+			if($nxt[2]==$sklad_id)	$cnt+=$nxt[0];
 		}
 		else if($nxt[1]==2)
 		{
-			if($nxt[2]==$sklad)	$cnt-=$nxt[0];
+			if($nxt[2]==$sklad_id)	$cnt-=$nxt[0];
 		}
 		else if($nxt[1]==8)
 		{
-			if($nxt[2]==$sklad)	$cnt-=$nxt[0];
+			if($nxt[2]==$sklad_id)	$cnt-=$nxt[0];
 			else
 			{
 				$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[3]' AND `param`='na_sklad'");
 				if(mysql_errno())	throw new MysqlException("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
 				$nasklad=mysql_result($rr,0,0);
 				if(!$nasklad)		throw new Exceprion("Не удалось получить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
-				if($nasklad==$sklad)	$cnt+=$nxt[0];
+				if($nasklad==$sklad_id)	$cnt+=$nxt[0];
 			}
 		}
 		else if($nxt[1]==17)
 		{
-			if($nxt[2]==$sklad)
+			if($nxt[2]==$sklad_id)
 			{
 				if($nxt[4]==0)	$cnt+=$nxt[0];
 				else		$cnt-=$nxt[0];
