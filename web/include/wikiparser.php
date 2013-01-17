@@ -71,8 +71,8 @@ class WikiParser {
 	function handle_list($matches,$close=false) {
 
 		$listtypes = array(
-			'*'=>'ul',
-			'#'=>'ol',
+			'*'=>'ul class=\'items\'',
+			'#'=>'ol class=\'items\'',
 		);
 
 		$output = "";
