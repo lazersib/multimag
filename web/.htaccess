@@ -1,6 +1,8 @@
-
 ErrorDocument 404 "/e404.php"
-Options -MultiViews
+Options -MultiViews -Indexes +FollowSymLinks
+DirectoryIndex index.php
+
+AddDefaultCharset UTF-8
 
 # Если установлен mod_revrite
 <IfModule mod_rewrite.c>

@@ -118,7 +118,7 @@ class SearchPage
 	{
 		$ret="<div class='searchblock'><h1>Поиск по сайту</h1>
 		<form action='/search.php' method='get'>
-		<input type='text' name='s' value='{$this->search_str}' class='sp'> <input type='submit' value='Найти'><br>
+		<input type='search' name='s' placeholder='Искать..' value='{$this->search_str}' class='sp' require> <input type='submit' value='Найти'><br>
 		<a href='/adv_search.php?s={$this->search_str}'>Расширенный поиск продукции</a>
 		</form>
 		</div>";
