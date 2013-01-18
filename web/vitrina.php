@@ -749,7 +749,11 @@ protected function Basket()
 		$sm=sprintf("%0.2f",$sm);
 		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
 		else	$comm='';
-		$s.="<tr class='lin$cc'><td class='right'>$i <a href='?mode=korz_del&amp;p=$item'><img src='/img/i_del.png' alt='Убрать'></a><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'>$sm<td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
+		$s.="
+		<tr id='korz_ajax_item_$item' class='lin$cc'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
+		
+		";
+// 		<tr class='lin$cc'><td class='right'>$i <a href='?mode=korz_del&amp;p=$item'><img src='/img/i_del.png' alt='Убрать'></a><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'>$sm<td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
 		$cc=1-$cc;
 		$exist=1;
 		$i++;
@@ -760,19 +764,47 @@ protected function Basket()
 		$tmpl->AddText("
 		<h1 id='page-title'>Ваша корзина</h1>
 		В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
+		<script>
+		function korz_clear() {
+		$.ajax({
+		url: '/vitrina.php?mode=korz_clear',
+		beforeSend: function() { $('#korz_clear_url').html('<img src=\"/img/icon_load.gif\" alt=\"обработка..\">'); },
+		success: function() { $('#korz_ajax').html('Корзина очищена'); }
+		})
+		}
+
+		function korz_item_clear(id) {
+		$.ajax({
+			url: '/vitrina.php?mode=korz_del&p='+id,
+			async: false,
+			beforeSend: function() { $('#korz_item_clear_url_'+id).html('<img src=\"/img/icon_load.gif\" alt=\"обработка..\">'); },
+			success: function() { $('#korz_ajax_item_'+id).remove(); },
+			complete: function() {
+			alert('123');
+			sum = 0;
+			$('span.sum').each(function() {
+			var num = parseFloat($(this).text());
+			if (num) sum += num;
+			});
+			$('span.sums').html(sum.toFixed(2));
+			}
+		})
+		}
+		</script>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='basket_submit'>
 		<table width='100%' class='list'>
 		<tr class='title'><th>N</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
 		$s
-		<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='3'>$sum рублей</td></tr>
+		<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='3'><span class='sums'>$sum</span> рублей</td></tr>
 		</table>
 		<br>
 		<center><button name='button' value='recalc' type='submit'>Пересчитать</button>
 		<button name='button' value='buy' type='submit'>Оформить заказ</button></center><br>
-		<center><a href='/vitrina.php?mode=korz_clear'><b>Очистить корзину!</b></a></center><br>
+		<center><span id='korz_clear_url'><a href='/vitrina.php?mode=korz_clear' onClick='korz_clear(); return false;'><b>Очистить корзину!</b></a></span></center><br>
 		</form>
-		</center><br><br>");
+		</center><br><br>
+		");
 
 		$_SESSION['korz_sum']=$sum;
 		//if( ($_SESSION['korz_sum']>20000) )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
