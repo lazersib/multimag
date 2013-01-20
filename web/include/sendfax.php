@@ -20,6 +20,7 @@
 /// Отправка факсов через API http://www.virtualofficetools.ru/
 /// требует php-libcurl
 /// использует параметры конфигурации ['sendfax']
+/// @brief отправка факсов
 class FaxSender
 {
 	var $file_str;

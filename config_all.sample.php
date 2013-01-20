@@ -44,6 +44,9 @@ $CONFIG['site']['trackticket_pass']	= '';
 $CONFIG['ymarket']['local_delivery_cost']	= 150;		// Цена доставки в пределах региона, указываемая в яндекс-маркете
 $CONFIG['ymarket']['av_from_prices']		= false;	// Брать информацию о наличии из анализатора прайсов
 
+// Бонусная система
+$CONFIG['bonus']['coeff']		= 0.01;		// Коэффициент бонусного вознаграждения
+
 require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
 
 $xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '', $printlog=false, $loglevel=XMPPHP_Log::LEVEL_INFO);

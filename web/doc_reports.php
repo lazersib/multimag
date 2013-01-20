@@ -22,6 +22,8 @@ include_once("include/doc.core.php");
 need_auth();
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
+
+/// Генератор отчётов в html формате
 class ReportEngineHTML
 {
 	private $buffer_body='';
@@ -115,6 +117,7 @@ tr.alt { background-color: #ccc; }
 	}
 }
 
+/// Генератор отчётов в PDF формате
 class ReportEnginePDF
 {
 	var $pdf;
@@ -228,8 +231,9 @@ class ReportEnginePDF
 	}
 }
 
-/// Все стили доложны быть заданы ДО вызова header!!!
+// Все стили доложны быть заданы ДО вызова header!!!
 
+/// Родительский класс для всех отчётов системы
 class BaseReport
 {
 	protected $output_format='html';

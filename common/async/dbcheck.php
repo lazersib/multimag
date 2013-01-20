@@ -21,8 +21,7 @@ require_once($CONFIG['location']."/common/asyncworker.php");
 require_once($CONFIG['site']['location']."/include/doc.core.php");
 require_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
-/// Ассинхронный обработчик
-/// Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.
+/// Ассинхронный обработчик. Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.
 class DbCheckWorker extends AsyncWorker
 {
 	function getDescription()

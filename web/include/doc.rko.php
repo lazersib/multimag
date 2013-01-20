@@ -20,6 +20,7 @@
 
 $doc_types[7]="Расходный кассовый ордер";
 
+/// Документ *Расходный кассовый ордер*
 class doc_Rko extends doc_Nulltype
 {
 	function __construct($doc=0)

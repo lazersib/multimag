@@ -21,8 +21,7 @@ require_once($CONFIG['location']."/common/asyncworker.php");
 require_once($CONFIG['site']['location']."/include/doc.core.php");
 require_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
-/// Ассинхронный обработчик
-/// Анализ статистики переходов на сайт и выборка информации о переходах с поисковиков, и текстах запросов
+/// Ассинхронный обработчик. Анализ статистики переходов на сайт и выборка информации о переходах с поисковиков, и текстах запросов
 class PsParserWorker extends AsyncWorker
 {
 	function getDescription()

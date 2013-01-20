@@ -17,6 +17,19 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+/**
+@mainpage Cистема комплексного учёта торговли multimag. Документация разработчика.
+<h2>Часто используемые классы</h2>
+BETemplate в core.php содержит шаблонизатор страницы. \n
+doc.core.php содержит основные функции работы с документами \n
+Vitrina (vitrina.php) формирует все страницы витрины и может быть перегружен шаблоном \n
+doc_Nulltype является базовым классом для всех документов системы \n
+BaseReport используется для генерации отчётов \n
+От AsyncWorker наследуются обработчики, выполняющиеся независимо от веб сервера \n
+PosEditor содержит методы для работы с редактором списка товаров \n
+Смотри <a href='annotated.html'>структуры данных</a> и <a href='hierarchy.html'>иерархию классов</a>, чтобы получить полне представление о классах системы
+**/
+
 if(!function_exists('mysql_connect'))
 {
 	header("500 Internal Server Error");
@@ -474,7 +487,6 @@ function sendAdmMessage($text,$subject='')
 	}
 }
 
-
 function date_day($date)
 {
    $ee=date("d M Y 00:00:00",$date);
@@ -488,7 +500,7 @@ function SafeLoadTemplate($template)
 	if($template)	$tmpl->LoadTemplate($template);
 }
 
-// ====================================== Шаблон страницы ===============================================
+/// Класс шаблонизатора вывода страницы. Содержит методы, отвечающие за загрузку темы оформления, заполнения страницы содержимым и отправки в броузер
 class BETemplate
 {
 	var $tpl;			///< Шаблон
@@ -724,7 +736,7 @@ class BETemplate
 	}
 };
 
-
+/// Класс-исключение используется для информирования о отсутствии привилегий на доступ к запрошенной функции
 class AccessException extends Exception
 {
 	function __construct($text='')
@@ -733,6 +745,7 @@ class AccessException extends Exception
 	}
 };
 
+/// Класс-исключение используется для информирования об ошибке при выполнении myqsl запроса
 class MysqlException extends Exception
 {
 	var $sql_error;
@@ -749,7 +762,8 @@ class MysqlException extends Exception
 		parent::__construct($text);
 		$this->WriteLog();
 	}
-
+	
+	/// Записывает событие в журнал ошибок
 	function WriteLog()
 	{
 	        $ip=getenv("REMOTE_ADDR");

@@ -18,6 +18,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+/// Генератор карты сайта в нужном формате
 class SiteMap
 {
 	private $maptype;

@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
+/// Редактор справочника доверенных лиц
 class doc_s_Agent_dov
 {
 	function View()

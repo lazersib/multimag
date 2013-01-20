@@ -20,6 +20,7 @@
 
 $doc_types[2]="Реализация";
 
+/// Документ *Реализация*
 class doc_Realizaciya extends doc_Nulltype
 {
 	// Создание нового документа или редактирование заголовка старого
@@ -188,11 +189,12 @@ class doc_Realizaciya extends doc_Nulltype
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
 		if(!@$this->dop_data['kladovshik'] && @$CONFIG['doc']['require_storekeeper'] && !$silent)	throw new Exception("Кладовщик не выбран!");
 		if(!@$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent)	throw new Exception("Количество мест не задано");
-		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`
+		$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+		$bonus=0;
 		while($nxt=mysql_fetch_row($res))
 		{
 			if(!$nx['dnc'])
@@ -214,8 +216,18 @@ class doc_Realizaciya extends doc_Nulltype
 				$sn_cnt=mysql_result($r,0,0);
 				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
 			}
+			$bonus+=$nxt[8]*$nxt[1]*(@$CONFIG['bonus']['coeff']);
 		}
+		
+// 		if(@$CONFIG['bonus']['enable'] && $bonus>0)
+// 		{
+// 			mysql_query("UPDATE `doc_agent` SET `bonus`='$bonus' WHERE `id`='{$this->doc}'");
+// 			if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка начисления бонусного вознаграждения');
+// 		}
+		
 		if($silent)	return;
+		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
+		if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка записи начисленных бонусов!');
 		mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
 		if($this->doc_data['p_doc'])
@@ -227,7 +239,6 @@ class doc_Realizaciya extends doc_Nulltype
 
 			}
 		}
-
 	}
 
 	function DocCancel()

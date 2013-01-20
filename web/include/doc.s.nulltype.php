@@ -26,6 +26,8 @@ include_once("include/doc.s.price_an.php");
 
 $doc_types[0]="Неопределённый справочник";
 
+/// Неопределённый справочник
+/// TODO: сделать базовым классом справочников
 class doc_s_Nulltype
 {
 	function doc_s_Nulltype()

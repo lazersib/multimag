@@ -18,18 +18,18 @@
 //
 
 
-$doc_types[18]="Корректировка долга";
+$doc_types[19]="Корректировка бонусов";
 
-/// Документ *корректоровка долга*
-class doc_Kordolga extends doc_Nulltype
+/// Документ *корректировка бонусов*
+class doc_Korbonus extends doc_Nulltype
 {
 	// Создание нового документа или редактирование заголовка старого
 	function __construct($doc=0)
 	{
 		parent::__construct($doc);
-		$this->doc_type				=18;
-		$this->doc_name				='kordolga';
-		$this->doc_viewname			='Корректировка долга';
+		$this->doc_type				=19;
+		$this->doc_name				='korbonus';
+		$this->doc_viewname			='Корректировка бонусов';
 		$this->sklad_editor_enable		=false;
 		$this->header_fields			='separator agent sum';
 		settype($this->doc,'int');
@@ -44,6 +44,8 @@ class doc_Kordolga extends doc_Nulltype
 		$nx=@mysql_fetch_row($res);
 		if(!$nx)			throw new Exception('Документ не найден!');
 		if( $nx[1] && (!$silent) )	throw new Exception('Документ уже был проведён!');
+// 		mysql_query("UPDATE `doc_agent` SET `bonus`=`bonus`+'{$this->doc_data['sum']}' WHERE `id`='{$this->doc}'");
+// 		if(mysql_errno())		throw new MysqlException('Ошибка проведения, ошибка начисления бонусного вознаграждения');
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');	
@@ -58,6 +60,8 @@ class doc_Kordolga extends doc_Nulltype
 		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
 		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
 		if(! $nx[4])				throw new Exception('Документ НЕ проведён!');
+// 		mysql_query("UPDATE `doc_agent` SET `bonus`=`bonus`-'{$this->doc_data['sum']}' WHERE `id`='{$this->doc}'");
+// 		if(mysql_errno())			throw new MysqlException('Ошибка проведения, ошибка начисления бонусного вознаграждения');
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага!');
 	}

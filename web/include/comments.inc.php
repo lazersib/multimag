@@ -19,8 +19,8 @@
 //
 
 include_once("core.php");
-// Работа с коментариями к статьям, новостям, товарам, и пр.
 
+/// Работа с коментариями к статьям, новостям, товарам, и пр.
 class CommentDispatcher
 {
 	protected $object_name;
@@ -34,6 +34,7 @@ class CommentDispatcher
 		$this->object_id=$object_id;
 	}
 	
+	/// Сохранить коментарий в базу и отправить уведомление при необходимости
 	function WriteComment($text, $rate, $autor_name='', $autor_email='')
 	{
 		global $CONFIG;
@@ -71,6 +72,7 @@ class CommentDispatcher
 		return mysql_insert_id();
 	}
 	
+	/// Получить рейтинг заданного объекта
 	function GetRating()
 	{
 		$res=mysql_query("SELECT SUM(`rate`)/COUNT(`rate`) FROM `comments` WHERE `object_name`='{$this->object_name}' AND `object_id`='{$this->object_id}'");

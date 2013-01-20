@@ -19,6 +19,7 @@
 
 $doc_types[3]="Заявка покупателя";
 
+/// Документ *Заявка покупателя*
 class doc_Zayavka extends doc_Nulltype
 {
 	function __construct($doc=0)

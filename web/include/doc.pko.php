@@ -20,6 +20,7 @@
 
 $doc_types[6]="Приходный кассовый ордер";
 
+/// Документ *приходный кассовый ордер*
 class doc_Pko extends doc_Nulltype
 {
 	function __construct($doc=0)

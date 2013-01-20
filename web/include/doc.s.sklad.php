@@ -17,8 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// Работа с товарами
-
+/// Справочник товаров и услуг
 class doc_s_Sklad
 {
 	function View()

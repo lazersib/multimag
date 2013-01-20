@@ -19,6 +19,7 @@
 
 $doc_types[5]="Расход средств из банка";
 
+/// Документ *Расход средств из банка*
 class doc_RBank extends doc_Nulltype
 {
 	function __construct($doc=0)

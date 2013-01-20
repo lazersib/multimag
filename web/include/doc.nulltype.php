@@ -24,6 +24,7 @@ include_once($CONFIG['site']['location']."/include/doc.v_puti.php");
 
 $doc_types[0]="Неопределённый документ";
 
+/// Базовый класс для всех документов стстемы. Содержит остновные методы для работы с документами.
 class doc_Nulltype
 {
 	protected $doc;				// ID документа
@@ -1271,10 +1272,11 @@ class doc_Nulltype
 	protected function DrawAgentField()
 	{
 		global $tmpl;
-		$b=DocCalcDolg($this->doc_data[2]);
+		$balance=DocCalcDolg($this->doc_data[2]);
+		$bonus=DocCalcBonus($this->doc_data[2]);
 		$col='';
-		if($b>0)	$col="color: #f00; font-weight: bold;";
-		if($b<0)	$col="color: #f08; font-weight: bold;";
+		if($balance>0)	$col="color: #f00; font-weight: bold;";
+		if($balance<0)	$col="color: #f08; font-weight: bold;";
 
 		$res=mysql_query(@"SELECT `doc_list`.`id`, `doc_dopdata`.`value`
 		FROM `doc_list`
@@ -1291,7 +1293,7 @@ class doc_Nulltype
 
 		$tmpl->AddText("
 		<div>
-		<div style='float: right; $col' id='agent_balance_info'>$b</div>
+		<div style='float: right; $col' id='agent_balance_info'>$balance / $bonus</div>
 		Агент:
 		<a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data[2]}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>
 		<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a>

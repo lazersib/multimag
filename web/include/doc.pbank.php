@@ -19,6 +19,7 @@
 
 $doc_types[4]="Приход средств в банк";
 
+/// Документ *приход средств в банк*
 class doc_PBank extends doc_Nulltype
 {
 	function __construct($doc=0)

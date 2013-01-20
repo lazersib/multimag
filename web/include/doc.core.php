@@ -561,6 +561,10 @@ function AutoDocumentType($doc_type, $doc)
 			return new doc_Sborka($doc);
 		case 18:
 			return new doc_Kordolga($doc);
+		case 19:
+			return new doc_Korbonus($doc);
+		case 20:
+			return new doc_Realiz_bonus($doc);
 		default:
 			return new doc_Nulltype();
 	}
@@ -610,6 +614,34 @@ function DocCalcDolg($agent_id, $no_cache=0, $firm_id=0)
 	$dolg=sprintf("%0.2f", $dolg);
 	//$doc_agent_dolg_cache_storage[$agent_id]=$dolg;
 	return $dolg;
+}
+
+/// Расчёт бонусного баланса агента. Бонусы начисляются за поступления средств на баланс агента
+/// @param agent_id	ID агента, для которого расчитывается баланс
+/// @param no_cache	Не брать данные расчёта из кеша
+function DocCalcBonus($agent_id, $no_cache=0)
+{
+	global $tmpl, $doc_agent_dolg_cache_storage;
+	if(!$no_cache && isset($doc_agent_bonus_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
+
+	$bonus=0;
+	$res=mysql_query("SELECT `doc_list`.`type`, `doc_list`.`sum`, `doc_dopdata`.`value` AS `bonus` FROM `doc_list`
+	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='bonus'
+	WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0'");
+	if(mysql_errno())	throw new MysqlException("Не возможно выбрать документы агента");
+	while($nxt=mysql_fetch_row($res))
+	{
+		switch($nxt[0])
+		{
+			case 2:	$bonus+=$nxt[2]; break;
+			case 19:$bonus+=$nxt[1]; break;
+			case 20:$bonus-=$nxt[1]; break;
+		}
+	}
+
+	$bonus=sprintf("%0.2f", $bonus);
+	$doc_agent_bonus_cache_storage[$agent_id]=$bonus;
+	return $bonus;
 }
 
 /// Расчёт актуальной входящей цены
@@ -707,7 +739,7 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 	return $cnt;
 }
 
-// Кол-во товара в резерве
+/// Кол-во товара в резерве
 function DocRezerv($pos,$doc=0)
 {
 	// $doc - номер исключенного документа
@@ -723,7 +755,7 @@ function DocRezerv($pos,$doc=0)
 
 }
 
-// Кол-во товара под заказ
+/// Кол-во товара под заказ
 function DocPodZakaz($pos,$doc=0)
 {
 	// $doc - номер исключенного документа

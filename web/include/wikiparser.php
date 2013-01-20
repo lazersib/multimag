@@ -34,6 +34,7 @@
  *
  */
 
+/// Парсер викитекста с конвертацией в html формат
 class WikiParser {
 
 	function WikiParser() {
