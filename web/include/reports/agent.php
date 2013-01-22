@@ -108,19 +108,13 @@ class Report_Agent
 				case 18:
 				{
 					if($nxt[2]>0)
-					{
-						$ras+=$nxt[2];
-						$deb=$nxt[2];
-					}
+						$rasx=$nxt[2];
 					else
-					{
-						$pr+=abs($nxt[2]);
-						$kr=abs($nxt[2]);
-					}
+						$prix=abs($nxt[2]);
 				}
 				break;
 			}
-			$sum=$sum+$prix-$rasx;
+			$sum=round($sum+$prix-$rasx);
 			$sum_p=$prix_p=$rasx_p='';
 			if($sum) $sum_p=sprintf("%0.2f",$sum);
 			if($prix) $prix_p=sprintf("%0.2f",$prix);

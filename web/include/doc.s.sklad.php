@@ -17,9 +17,12 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-/// Справочник товаров и услуг
+/// @brief Справочник товаров и услуг.
+///
+/// Позволяет отображать список товаров, редактировать товары и их доп.свойства индивидуально или набором, управлять товарными группами, осуществлять поиск
 class doc_s_Sklad
 {
+	/// Отобразить справочник
 	function View()
 	{
 		global $tmpl,$CONFIG;
@@ -85,7 +88,8 @@ class doc_s_Sklad
 		$this->ViewSklad();
 		$tmpl->AddText("</table>");
 	}
-
+	
+	/// Служебные функции справочника
 	function Service()
 	{
 		global $tmpl, $CONFIG;
@@ -250,7 +254,7 @@ class doc_s_Sklad
 		else $tmpl->msg("Неверный режим!");
 	}
 
-// Служебные функции класса
+	/// Отобразить форму редактирования
 	function Edit()
 	{
 		global $tmpl, $CONFIG, $uid;
@@ -1189,6 +1193,8 @@ class doc_s_Sklad
 		}
 		else $tmpl->msg("Неизвестная закладка");
 	}
+	
+	/// Сохранить данные после редактирования
 	function ESave()
 	{
 		global $tmpl, $CONFIG, $uid;
@@ -1879,7 +1885,11 @@ class doc_s_Sklad
 		}
 		else $tmpl->msg("Неизвестная закладка");
 	}
-
+	
+	/// Формирует html код заданного уровня иерархии групп
+	/// @param select ID группы, выбранной пользователем (текущая группа)
+	/// @param level ID группы верхнего уровня (родительская)
+	/// @return HTML код для данной родительской группы
 	function draw_level($select, $level)
 	{
 		$ret='';
@@ -1909,7 +1919,8 @@ class doc_s_Sklad
 		return $ret;
 	}
 
-
+	/// Отображает древо групп
+	/// @param select ID группы, выбранной пользователем (текущая группа)
 	function draw_groups($select)
 	{
 		global $tmpl;
@@ -1922,7 +1933,11 @@ class doc_s_Sklad
 		");
 
 	}
-
+	
+	/// Отображает список товаров группы, разбитый на страницы
+	/// @param group ID группы, товары из которой нужно показать
+	/// @param s не используется
+	/// TODO: убрать обращения к параметру s и сам параметр
 	function ViewSklad($group=0,$s='')
 	{
 		global $tmpl, $CONFIG;
@@ -2065,7 +2080,12 @@ class doc_s_Sklad
 			$tmpl->AddText(" | <a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
 		}
 	}
-
+	
+	/// Отображает результаты поиска товаров по наименованию
+	/// Отображает список товаров группы, разбитый на страницы
+	/// @param group ID группы, куда должен быть добавлен товар при нажати кнопки добавить
+	/// @param s подстрока поиска
+	/// TODO: убрать обращения к параметру group и сам параметр
 	function ViewSkladS($group=0,$s)
 	{
 		global $tmpl, $CONFIG;
@@ -2134,7 +2154,8 @@ class doc_s_Sklad
 		if($sf==0)
 			$tmpl->msg("По данным критериям товаров не найдено!");
 	}
-
+	
+	/// Поиск товаров по параметрам
 	function Search()
 	{
 		global $tmpl, $CONFIG;
@@ -2293,8 +2314,10 @@ class doc_s_Sklad
 		}
 	}
 
-
-function DrawSkladTable($res,$s)
+/// Отображает таблицу товаров
+/// @param res Результат выполнения sql запроса к таблице товаров
+/// @param s Подстрока поиска
+function DrawSkladTable($res,$s='')
 {
 	global $tmpl, $CONFIG;
 	$i=0;
@@ -2362,7 +2385,8 @@ function DrawSkladTable($res,$s)
 	}
 }
 
-	// Вывод списка комплектующих позиции
+	/// Вывод списка комплектующих товара
+	/// @param pos ID запрашиваемого товара
 	function ViewKomplList($pos)
 	{
 		global $tmpl;
@@ -2381,7 +2405,11 @@ function DrawSkladTable($res,$s)
 		}
 		$tmpl->AddText("</table><p align=right id=sum>Итого для сборки позиции используется $i позиций на сумму $sum_p руб.</p>");
 	}
-
+	
+	/// Отображает вкладки редактора товара
+	/// @param pos ID запрашиваемого товара
+	/// @param param Код открытой вкладки
+	/// @param pos_name Наименование запрашиваемого товара
 	function PosMenu($pos, $param, $pos_name='')
 	{
 		global $tmpl, $CONFIG;
