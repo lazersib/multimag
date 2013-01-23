@@ -46,7 +46,7 @@ class WikiParser {
 		$this->preformat=false;
 		$this->emphasis=array();
 	}
-	
+
 	function AddVariable($var, $value)
 	{
 		$this->variables[$var]=$value;
@@ -72,14 +72,14 @@ class WikiParser {
 	function handle_list($matches,$close=false) {
 
 		$listtypes = array(
-			'*'=>'ul class=\'items\'',
-			'#'=>'ol class=\'items\'',
+			'*'=>'ul',
+			'#'=>'ol',
 		);
 
 		$output = "";
 
 		$newlevel = ($close) ? 0 : strlen($matches[1]);
-		
+
 		while ($this->list_level!=$newlevel) {
 			if(!$close)
 			{
@@ -91,11 +91,14 @@ class WikiParser {
 			if ($this->list_level>$newlevel) {
 				$listtype = '/'.array_pop($this->list_level_types);
 				$this->list_level--;
+				$output .= "\n<{$listtype}>\n";
+
 			} else {
 				$this->list_level++;
 				array_push($this->list_level_types,$listtype);
+				$output .= "\n<{$listtype} class='items'>\n";
 			}
-			$output .= "\n<{$listtype}>\n";
+
 		}
 
 		if ($close) return $output;
@@ -232,7 +235,7 @@ class WikiParser {
 				$href = $this->reference_site.$href;
 			else
 				$href = $this->reference_wiki.($namespace?$namespace.':':'').$this->wiki_link($href).'.html';
-		} 
+		}
 		else {
 			$nolink = true;
 		}
@@ -245,7 +248,7 @@ class WikiParser {
 			$title
 		);
 	}
-	
+
 	function handle_definitions($matches) {
 		//var_dump($matches);
 		$nolink = false;
@@ -257,7 +260,7 @@ class WikiParser {
 
 		$data = preg_replace('/\(.*?\)/','',$data);
 		$data = preg_replace('/^.*?\:/','',$data);
-		
+
 		if($namespace=='title')
 		{
 			$this->title=$data;
@@ -330,7 +333,7 @@ class WikiParser {
 	function handle_variable($matches) {
 		if($this->variables[$matches[2]])
 			return $this->variables[$matches[2]];
-	
+
 		switch($matches[2]) {
 			case 'CURRENTMONTH': return date('m');
 			case 'CURRENTMONTHNAMEGEN':
@@ -367,7 +370,7 @@ class WikiParser {
 				'([a-zа-я]+)?'. // any suffixes
 				')',
 			'definitions'=>'('.
-				'\(:'. // opening 
+				'\(:'. // opening
 					'(([^\]]*?)\s)?'. // variable
 					'([^\]]*?)'. // data
 				':\)'. // closing brackets
