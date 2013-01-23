@@ -39,7 +39,7 @@ class doc_Zayavka extends doc_Nulltype
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
 		);
 	}
-	
+
 	/// Функция устанавливает статус, и выполняет информирование клиента о событии
 	/// Для защиты от многократного информирования, не меняет статус с большего на меньший (см. порядок)
 	function setStatus($status)
@@ -50,10 +50,10 @@ class doc_Zayavka extends doc_Nulltype
 		if(!in_array($status,$status_options))	$status='';
 		if($this->dop_data['status']==$status)	return;
 		if(array_search($this->dop_data['status'],$status_options)>=array_search($status,$status_options))	return;
-		
+
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$status')");
 		$this->dop_data['status']=$status;
-		
+
 		// Отправка по e-mail
 		if(@$CONFIG['doc']['notify_email'])
 		{
@@ -73,7 +73,7 @@ class doc_Zayavka extends doc_Nulltype
 				$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$doc_data['autor']}'");
 				$email=@mysql_result($res,0,0);
 			}
-			
+
 			if($email)
 			{
 				$user_msg="Уважаемый клиент!\nСтатус Вашего заказа на сайте {$CONFIG['site']['name']} изменён на {$status_options_text[$status]}";
@@ -109,11 +109,11 @@ class doc_Zayavka extends doc_Nulltype
 			}
 		}
 		// Отправка по XMPP
-		
+
 		// Отправка по телефону (голосом)
-		
+
 		// Отправка по телефону (факсом)
-		
+
 	}
 
 	function DopHead()
@@ -133,11 +133,11 @@ class doc_Zayavka extends doc_Nulltype
 			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><hr>");
-		
+
 		if(@$this->dop_data['ishop'])		$tmpl->AddText("<b>Заявка с интернет-витрины</b><br>");
 		if(@$this->dop_data['buyer_rname'])	$tmpl->AddText("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
 		if(@$this->dop_data['buyer_email'])	$tmpl->AddText("<b>e-mail: </b>{$this->dop_data['buyer_email']}<br>");
-		if(@$this->dop_data['buyer_phone'])	$tmpl->AddText("<b>Телефон: </b>{$this->dop_data['buyer_phone']}<br>");		
+		if(@$this->dop_data['buyer_phone'])	$tmpl->AddText("<b>Телефон: </b>{$this->dop_data['buyer_phone']}<br>");
 		if(@$this->dop_data['buyer_ip'])	$tmpl->AddText("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
 		if(@$this->dop_data['pay_type'])
 		{
@@ -154,11 +154,11 @@ class doc_Zayavka extends doc_Nulltype
 			}
 			$tmpl->AddText("<br>");
 		}
-		
+
 		$tmpl->AddText("<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
 		Желаемая дата доставки:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br>");
 		if(@$this->dop_data['delivery_address'])$tmpl->AddText("<b>Адрес доставки: </b>{$this->dop_data['delivery_address']}<br>");
-		
+
 		$tmpl->AddText("<br><hr>
 		Статус (будет меняться автоматически):<br>
 		<small>Если поменять вручную - уведомление о смене статуса клиентам не будет отправлено</small><br>
@@ -171,8 +171,8 @@ class doc_Zayavka extends doc_Nulltype
 		}
 
 		$tmpl->AddText("</select><br>
-		
-		
+
+
 		<hr>");
 	}
 
@@ -277,7 +277,8 @@ class doc_Zayavka extends doc_Nulltype
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=6'\">Приходный кассовый ордер</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=4'\">Приход средств в банк</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=15'\">Оперативная реализация</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">Копия заявки</div>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">Копия заявки</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=16'\">Спецификация (не рек. здесь)</div>");
 		}
 		else if($target_type=='t2')
 		{
@@ -333,6 +334,12 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc=new doc_Realiz_op();
 			$dd=$new_doc->CreateFromP($this);
 			$this->setStatus('inproc');
+			header("Location: doc.php?mode=body&doc=$dd");
+		}
+		else if($target_type==16)
+		{
+			$new_doc=new doc_Specific();
+			$dd=$new_doc->CreateFromP($this);
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type==6)
@@ -448,7 +455,7 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else if($opt=='rewrite')
 		{
-			
+
 			mysql_query("START TRANSACTION");
 			mysql_query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
 			if(mysql_errno())	throw new MysqlException("Не удалось удалить старую номенклатуру");

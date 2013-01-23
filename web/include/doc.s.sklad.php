@@ -88,7 +88,7 @@ class doc_s_Sklad
 		$this->ViewSklad();
 		$tmpl->AddText("</table>");
 	}
-	
+
 	/// Служебные функции справочника
 	function Service()
 	{
@@ -339,7 +339,11 @@ class doc_s_Sklad
 				while($nx=mysql_fetch_row($res))
 				{
 					$i="";
-					if((($pos!=0)&&($nx[0]==$nxt['unit']))||($group==$nx[0])) $i=" selected";
+					if($pos!=0)
+					{
+						if($nx[0]==$nxt['unit']) $i=" selected";
+					}
+					else	if($nx[0]==$CONFIG['doc']['default_unit']) $i=" selected";
 					$tmpl->AddText("<option value='$nx[0]' $i>$nx[1] ($nx[2])</option>");
 				}
 			}
@@ -1062,7 +1066,7 @@ class doc_s_Sklad
 				 WHERE `doc_base_params`.`param`='ym_id'");
 				if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
 				$nxt=@mysql_fetch_row($res);
-				
+
 				$tmpl->AddText("
 				<form method='post' action='/docs.php'>
 				<input type='hidden' name='l' value='sklad'>
@@ -1193,7 +1197,7 @@ class doc_s_Sklad
 		}
 		else $tmpl->msg("Неизвестная закладка");
 	}
-	
+
 	/// Сохранить данные после редактирования
 	function ESave()
 	{
@@ -1791,7 +1795,7 @@ class doc_s_Sklad
 			$to_collection=@$_POST['to_collection'];
 			settype($ym_id,'int');
 			settype($collection,'int');
-			
+
 			if($id_save)
 			{
 				$res=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
@@ -1827,7 +1831,7 @@ class doc_s_Sklad
 				{
 					$int_param=$_POST['sel'][$id];
 					settype($int_param,'int');
-					if($int_param<1 && $auto)	
+					if($int_param<1 && $auto)
 					{
 						$res=mysql_query("SELECT `doc_base_params`.`id`, CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`param`) AS `pname`
 						FROM `doc_base_params`
@@ -1849,7 +1853,7 @@ class doc_s_Sklad
 							$g_id=mysql_result($res,0,0);
 						}
 						else
-						{	
+						{
 							$res=mysql_query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$gname_sql')");
 							if(mysql_errno())	throw new MysqlException('Не удалось добавить группу');
 							$g_id=mysql_insert_id();
@@ -1861,13 +1865,13 @@ class doc_s_Sklad
 							$p_id=mysql_result($res,0,0);
 						}
 						else
-						{	
+						{
 							mysql_query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `ym_assign`) VALUES ('$pname_sql', 'text', '$g_id', '$param_e')");
 							if(mysql_errno())	throw new MysqlException('Не удалось добавить параметр');
 							$int_param=mysql_insert_id();
 							mysql_query("INSERT INTO `doc_base_pcollections_set` (`collection_id`, `param_id`) VALUES ('$collection', '$int_param')");
 							if(mysql_errno())	throw new MysqlException('Не удалось расширить набор');
-						}	
+						}
 					}
 					if($int_param<1) continue;
 					mysql_query("UPDATE `doc_base_params` SET `ym_assign`='$param_e' WHERE `id`='$int_param'");
@@ -1885,7 +1889,7 @@ class doc_s_Sklad
 		}
 		else $tmpl->msg("Неизвестная закладка");
 	}
-	
+
 	/// Формирует html код заданного уровня иерархии групп
 	/// @param select ID группы, выбранной пользователем (текущая группа)
 	/// @param level ID группы верхнего уровня (родительская)
@@ -1933,7 +1937,7 @@ class doc_s_Sklad
 		");
 
 	}
-	
+
 	/// Отображает список товаров группы, разбитый на страницы
 	/// @param group ID группы, товары из которой нужно показать
 	/// @param s не используется
@@ -2080,7 +2084,7 @@ class doc_s_Sklad
 			$tmpl->AddText(" | <a href='/docs.php?l=sklad&amp;mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
 		}
 	}
-	
+
 	/// Отображает результаты поиска товаров по наименованию
 	/// Отображает список товаров группы, разбитый на страницы
 	/// @param group ID группы, куда должен быть добавлен товар при нажати кнопки добавить
@@ -2154,7 +2158,7 @@ class doc_s_Sklad
 		if($sf==0)
 			$tmpl->msg("По данным критериям товаров не найдено!");
 	}
-	
+
 	/// Поиск товаров по параметрам
 	function Search()
 	{
@@ -2405,7 +2409,7 @@ function DrawSkladTable($res,$s='')
 		}
 		$tmpl->AddText("</table><p align=right id=sum>Итого для сборки позиции используется $i позиций на сумму $sum_p руб.</p>");
 	}
-	
+
 	/// Отображает вкладки редактора товара
 	/// @param pos ID запрашиваемого товара
 	/// @param param Код открытой вкладки

@@ -440,7 +440,7 @@ else if($mode=='regs')
 		$img=strtoupper(@$_REQUEST['img']);
 		$subs=@$_REQUEST['subs'];
 		$subs=$subs?1:0;
-
+		mysql_query("START TRANSACTION");
 		if($login=='')
 			throw new RegException('Поле login не заполнено','login');
 		if(strlen($login)<3)
@@ -537,7 +537,7 @@ else if($mode=='regs')
 			$sender->setText("Ваш код: $phone_conf\nЛогин:$login\nПароль:$pass\n{$CONFIG['site']['name']}");
 			$sender->send();
 		}
-
+		mysql_query("COMMIT");
 		$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
 		<form action='/login.php' method='post'>
 		<input type='hidden' name='mode' value='conf'>
@@ -550,6 +550,7 @@ else if($mode=='regs')
 			<input type='text' name='p'><br>SMS сообщения обычно приходят в течение 1 часа.<br><br>");
 		$tmpl->AddText("<button type='submit'>Продолжить</button>
 		</form>");
+
 
 	}
 	catch(MysqlException $e)
