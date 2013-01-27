@@ -6,7 +6,7 @@ CREATE TABLE `multimag`.`log_call_requests` (`id` INT NOT NULL AUTO_INCREMENT ,
 `request_date` DATETIME NOT NULL ,
 `call_date` VARCHAR( 32 ) NOT NULL ,
 `ip` VARCHAR( 32 ) NOT NULL ,
-PRIMARY KEY ( `id` ) ,
+PRIMARY KEY ( `id` )
 ) ENGINE = MYISAM CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 TRUNCATE `db_version`;
