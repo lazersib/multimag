@@ -57,6 +57,91 @@ if($mode=="")
 	<input type='submit' value='Отправить'>
 	</form>");
 }
+else if($mode=='call_request')
+{
+	$ok=0;
+	$name=rcv('name',@$_SESSION['name']);
+	$phone=@$_REQUEST['phone'];
+	$call_date=@$_REQUEST['call_date'];
+	if(isset($_REQUEST['opt']))
+	{
+		if($name && $phone && $call_date)
+		{
+			if(@$CONFIG['call_request']['captcha'] && (@$_REQUEST['img']=='' || strtoupper($_SESSION['captcha_keystring'])!=strtoupper(@$_REQUEST['img'])))
+				$tmpl->msg("Не верно введён код с картинки!","err");
+			else
+			{
+				try
+				{
+					$name_s=mysql_real_escape_string($name);
+					$phone_s=mysql_real_escape_string($phone);
+					$call_date_s=mysql_real_escape_string($call_date);
+					$ip_s=mysql_real_escape_string(getenv("REMOTE_ADDR"));
+					mysql_query("INSERT INTO `log_call_requests` (`name`, `phone`, `call_date`, `ip`, `request_date`)
+					VALUES ('$name_s', '$phone_s', '$call_date_s', '$ip_s', NOW())");
+					if(mysql_errno())	throw new MysqlException("Не удалось записать запрос в журнал звонков");
+					$text="Посетитель $name просит перезвонить на $phone в $call_date";
+					
+					if(@$CONFIG['call_request']['email'])
+					{
+						mailto($CONFIG['call_request']['email'],"Запрос звонка с сайта {$CONFIG['site']['name']}", $text);
+					}
+					
+					if(@$CONFIG['call_request']['xmpp'])
+					{
+						require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
+						$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
+						$xmppclient->connect();
+						$xmppclient->processUntil('session_start');
+						$xmppclient->presence();
+						$xmppclient->message($CONFIG['call_request']['xmpp'], $text);
+						$xmppclient->disconnect();
+					}
+					
+					if(@$CONFIG['call_request']['sms'])
+					{
+						require_once('include/sendsms.php');
+						$sender=new SMSSender();
+						$sender->setNumber($CONFIG['call_request']['sms']);
+						$sender->setText($text);
+						$sender->send();
+						
+					}
+					$tmpl->msg("Ваш запрос передан. Вам обязательно перезвонят.","ok");
+					$ok=1;
+				}
+				catch(Exception $e)
+				{
+					$tmpl->logger("Невозможно отправить запрос. Попробуйте позднее.");
+				}
+				
+			}
+		}
+		else $tmpl->msg("Не заполнено одно из полей!","err");
+	}
+	if(!$ok)
+	{
+		$tmpl->AddText("
+		<h1 id='page-title'>Запрос звонка</h1>
+		<div id='page-info'>Заполните форму - и вам перезвонят! Все поля обязательны к заполнению.</div>
+		<form action='' method='post'>
+		<input type='hidden' name='mode' value='call_request'>
+		<input type='hidden' name='opt' value='ok'>
+		Ваше имя:<br>
+		<input type='text' name='name' value='$name'><br>
+		Контактный телефон (лучше мобильный или sip):<br>
+		<input type='text' name='phone' value='$phone'><br>
+		Желаемая дата и время звонка:<br>
+		<small>Желательно запрашивать звонок в рабочее время магазина</small><br>
+		<input type='text' name='call_date' value='$call_date'><br>");
+		if(@$CONFIG['call_request']['captcha'])
+		{
+			$tmpl->AddText("Подтвердите что вы не робот, введя текст с картинки:<br><img src='/kcaptcha/index.php'><br><input type='text' name='img'><br>");
+		}
+		$tmpl->AddText("<button type='submit'>Отправить запрос</button>
+		</form>");
+	}
+}
 else if($mode=='send')
 {
 	$nm=rcv('nm');

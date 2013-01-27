@@ -131,7 +131,8 @@ class doc_s_Agent
 			<input type=hidden name=mode value=esave>
 			<input type=hidden name=l value=agent>
 			<input type=hidden name=pos value=$pos>
-			<tr class=lin0><td align=right width=20%>Наименование
+			<tr class=lin0><td align=right width=20%>Краткое наименование<br>
+			<small>По этому полю выполняется поиск. Не пишите здесь аббревиатуры вроде OOO, ИП, МУП, итд. а так же кавычки и подобные символы!</small>
 			<td><input type=text name='pos_name' value='$nxt[1]' style='width: 90%;'>
 			<tr class=lin1><td align=right>Тип:
 			<td>");
@@ -166,7 +167,7 @@ class doc_s_Agent
 		
 			$tmpl->AddText("</select>
 			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='$nxt[3]' class='validate email'>
-			<tr class=lin0><td align=right>Полное название / ФИО:<td><input type=text name='fullname' value='$nxt[4]' style='width: 90%;'>
+			<tr class=lin0><td align=right>Полное название / ФИО:<br><small>Так, как должно быть в документах</small><td><input type=text name='fullname' value='$nxt[4]' style='width: 90%;'>
 			<tr class=lin1><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='tel' value='$nxt[5]' class='phone validate'>
 			<tr class=lin0><td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='fax_phone' value='{$nxt['fax_phone']}' class='phone validate'>
 			<tr class=lin1><td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='sms_phone' value='{$nxt['sms_phone']}' class='phone validate'>

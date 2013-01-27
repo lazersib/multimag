@@ -148,7 +148,6 @@ else if($mode=='view')
 		<tr><td>Адрес</td><td>{$adata['adres']}</td></tr>
 		<tr><td>Дата сверки</td><td>{$adata['data_sverki']}</td></tr>
 		");
-		
 	}
 	$tmpl->AddText("
 	<tr><th colspan='2'>Карточка сотрудника</th></tr>

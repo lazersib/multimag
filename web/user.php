@@ -32,46 +32,46 @@ if($mode=='')
 	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 	WHERE `users`.`id`='{$_SESSION['uid']}'");
 	if(@mysql_result($res,0,0))
-		$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a> - ФУНКЦИЯ РАБОТАЕТ !</li>");
-
+		$tmpl->AddText("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
+	
+	if(isAccess('doc_list','view') || isAccess('doc_fabric','view'))	$tmpl->AddText("<h2>Документы</h2>");
 	if(isAccess('doc_list','view'))
 		$tmpl->AddText("<li><a href='/docj.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
-
 	if(isAccess('doc_fabric','view'))
 		$tmpl->AddText("<li><a href='/fabric.php'>Учёт производства (экспериментально)</a></li>");
 
-	if(isAccess('generic_articles','view'))
-		$tmpl->AddText("<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>");
-
-	if(isAccess('generic_tickets','view'))
-		$tmpl->AddText("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");
-
+	if(isAccess('log_browser','view') || isAccess('log_error','view') || isAccess('log_access','view') || isAccess('log_call_request','view'))	$tmpl->AddText("<h2>Журналы</h2>");
 	if(isAccess('log_browser','view'))
 		$tmpl->AddText("<li><a href='/statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
-
 	if(isAccess('log_error','view'))
 		$tmpl->AddText("<li><a href='?mode=elog' accesskey='e' title='Ошибки'>Журнал ошибок (E)</a></li>");
-
 	if(isAccess('log_access','view'))
 		$tmpl->AddText("<li><a href='?mode=clog'>Журнал посещений</a></li>");
-
+	if(isAccess('log_call_request','view'))
+		$tmpl->AddText("<li><a href='?mode=log_call_request'>Журнал запрошенных звонков</a></li>");
+	
+	if(isAccess('sys_async_task','view') || isAccess('sys_ps-stat','view') || isAccess('sys_ip-blacklist','view') || isAccess('sys_acl','view'))	$tmpl->AddText("<h2>Системные функции</h2>");
 	if(isAccess('sys_async_task','view'))
 		$tmpl->AddText("<li><a href='?mode=async_task' title=''>Ассинхронные задачи</a></li>");
-
 	if(isAccess('sys_ps-stat','view'))
-		$tmpl->AddText("<li><a href='?mode=psstat' title=''>NEW Статистика переходов с поисковиков (экспериментально)</a></li>");
-
+		$tmpl->AddText("<li><a href='?mode=psstat' title=''>Статистика переходов с поисковиков</a></li>");
 	if(isAccess('sys_ip-blacklist','view'))
 		$tmpl->AddText("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
-
 	if(isAccess('sys_acl','view'))
 		$tmpl->AddText("<li><a href='/rights.php'>Привилегии доступа</a></li>");
-
+	
+	if(isAccess('admin_comments','view') || isAccess('admin_users','view'))	$tmpl->AddText("<h2>Администрирование</h2>");
 	if(isAccess('admin_comments','view'))
 		$tmpl->AddText("<li><a href='/adm_comments.php'>Администрирование коментариев</a></li>");
 	if(isAccess('admin_users','view'))
 		$tmpl->AddText("<li><a href='/adm_users.php'>Администрирование пользователей (в разработке)</a></li>");
 
+	if(isAccess('generic_articles','view') || isAccess('generic_tickets','view'))	$tmpl->AddText("<h2>Разное</h2>");
+	if(isAccess('generic_articles','view'))
+		$tmpl->AddText("<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>");
+	if(isAccess('generic_tickets','view'))
+		$tmpl->AddText("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");
+	
 	$tmpl->AddText("<li><a href='/user.php?mode=user_data'>Личные данные</a></li>");
 	$tmpl->AddText("<li><a href='/user.php?mode=doc_hist'>История документов</a></li>");
 
@@ -108,7 +108,7 @@ else if($mode=='user_data')
 	}
 
 
-	$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `jid` FROM `users` WHERE `id`='$uid'");
+	$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `jid`, `agent_id` FROM `users` WHERE `id`='$uid'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
 	$user_data=mysql_fetch_assoc($res);
 	$user_dopdata=array('kont_lico'=>'','tel'=>'','dop_info'=>'');
@@ -139,6 +139,40 @@ else if($mode=='user_data')
 	<tr><td>Сайт<td><input type='text' name='site_name' value='{$user_dopdata['site_name']}'>
 	<tr><td><td><button type='submit'>Сохранить</button>
 	</table></form>");
+	
+	if($user_data['agent_id'])
+	{
+		$res=mysql_query("SELECT `id`, `name`, `fullname`, `tel`, `fax_phone`, `sms_phone`, `adres`, `data_sverki` FROM `doc_agent` WHERE `id`='{$user_data['agent_id']}'");
+		if(mysql_errno())			throw new MysqlException("Не удалось получить данные агента");
+		$adata=mysql_fetch_assoc($res);
+		$tmpl->AddText("<table border='0' width='500' class='list'>
+		<tr><th colspan='2'>Аккаунт прикреплён к агенту
+		<tr><td>ID агента</td><td>{$adata['id']}</td></tr>
+		<tr><td>Краткое название</td><td>{$adata['name']}</td></tr>
+		<tr><td>Полное название</td><td>{$adata['fullname']}</td></tr>
+		<tr><td>Телефон</td><td>{$adata['tel']}</td></tr>
+		<tr><td>Факс</td><td>{$adata['fax_phone']}</td></tr>
+		<tr><td>Телефон для SMS</td><td>{$adata['sms_phone']}</td></tr>
+		<tr><td>Адрес</td><td>{$adata['adres']}</td></tr>
+		<tr><td>Дата сверки</td><td>{$adata['data_sverki']}</td></tr>
+		</table>");
+	}
+}
+else if($mode=='log_call_request')
+{
+	if(!isAccess('log_call_request','view'))	throw new AccessException("Недостаточно привилегий");
+
+	$tmpl->SetText("<h1>Журнал запрошенных звонков</h1>
+	<div class='content'>
+	<table width='100%' class='list' cellspacing='0'>
+	<tr><th>Дата запроса</th><th>Кому звонить?</th><th>Куда звонить?</th><th>Когда звонить?</th><th>IP</th></tr>");
+	$res=mysql_query("SELECT `id`, `request_date`, `name`, `phone`, `call_date`, `ip` FROM `log_call_requests` ORDER BY `request_date`");
+	if(mysql_errno())			throw new MysqlException("Не удалось получить данные запросов");
+	while($line=mysql_fetch_assoc($res))
+	{
+		$tmpl->AddText("<tr><td>{$line['request_date']}</td><td>{$line['name']}</td><td>{$line['phone']}</td><td>{$line['call_date']}</td><td>{$line['ip']}</td></tr>");
+	}
+	$tmpl->AddText("</table></div>");
 }
 else if($mode=='doc_hist')
 {

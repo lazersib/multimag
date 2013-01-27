@@ -95,6 +95,12 @@ $CONFIG['doc_scripts']['zp_s_prodaj.coeff']=	0.05;	// Коэффициент н�
 $CONFIG['credit_brs']['address']= 'https://anketa.bank.rs.ru/minipotreb.php';
 $CONFIG['credit_brs']['id_tpl']	= 0;
 
+// Уведомления запроса звонка
+$CONFIG['call_request']['captcha']	= true;	// Использовать ли captcha во избежание заспамливания и перерасхода средств с sms счёта
+$CONFIG['call_request']['email']	= '';	// Адрес email уведомления
+$CONFIG['call_request']['xmpp']		= '';	// Адрес jabber уведомления
+$CONFIG['call_request']['sms']		= '';	// Адрес sms уведомления
+
 // Расположение изменяемых доступных данных - изображения, итп
 $CONFIG['site']['var_data_web']		= '/share/var';		// по отношению к корню сайта
 $CONFIG['site']['var_data_fs']		= $CONFIG['site']['location'].$CONFIG['site']['var_data_web'];	// по отношению к корню файловой системы
