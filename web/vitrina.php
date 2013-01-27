@@ -1158,7 +1158,7 @@ protected function MakeBuy()
 	$delivery_date=mysql_real_escape_string(@$_REQUEST['delivery_date']);
 	$comment=@$_REQUEST['dop'];
 	$comment_sql=mysql_real_escape_string($comment);
-
+	$agent=1;
 
 	if(@$_REQUEST['phone'])
 	{
@@ -1172,6 +1172,13 @@ protected function MakeBuy()
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 		mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'dop_info', '$comment_sql') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
+		// Получить ID агента		
+		$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `agent_id` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
+		$user_data=mysql_fetch_assoc($res);
+		$agent=$user_data['agent_id'];
+		settype($agent,'int');
+		if($agent<1)	$agent=1;
 	}
 	else if(!$tel && !$email)
 	{
@@ -1183,8 +1190,8 @@ protected function MakeBuy()
 	{
 		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype="site";
 		else $subtype=$CONFIG['site']['vitrina_subtype'];
-		$agent=1;
-		//if($_SESSION['uid'])	$agent=$_SESSION['uid'];	// ?????????????????????????/
+		
+		
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
@@ -1245,9 +1252,6 @@ protected function MakeBuy()
 
 		if(@$_SESSION['uid'])
 		{
-			$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
-			$user_data=mysql_fetch_assoc($res);
 			$user_msg="Доброго времени суток, {$user_data['name']}!\nНа сайте {$CONFIG['site']['name']} на Ваше имя оформлен заказ на сумму $zakaz_sum рублей\nЗаказано:\n";
 			$email=$user_data['reg_email'];
 		}
@@ -1318,7 +1322,6 @@ protected function Payment()
 				$pos_line.="&TC_$cnt={$line['cnt']}&TPr_$cnt=$cena&TName_$cnt=".urlencode($line['name']);
 			}
 			$url="{$CONFIG['credit_brs']['address']}?idTpl={$CONFIG['credit_brs']['id_tpl']}&TTName={$CONFIG['site']['name']}&Order=$order_id&TCount={$cnt}{$pos_line}";
-			echo $url;
 			header("Location: $url");
 			exit();
 		}

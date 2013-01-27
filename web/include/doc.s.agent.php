@@ -162,9 +162,8 @@ class doc_s_Agent
 			}
 
 			$ext='';
-			$rights=getright('doc_agent_ext',@$_SESSION['uid']);
-			if(! $rights['write']) $ext='disabled';
-
+			if(isAccess('doc_agent_ext', 'write')) $ext='disabled';
+		
 			$tmpl->AddText("</select>
 			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='$nxt[3]' class='validate email'>
 			<tr class=lin0><td align=right>Полное название / ФИО:<td><input type=text name='fullname' value='$nxt[4]' style='width: 90%;'>
@@ -202,6 +201,17 @@ class doc_s_Agent
 			$dish_checked=$nxt[25]?'checked':'';
 			$tmpl->AddText("</select>
 			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
+			<tr class='lin1'><td align='right'>Связанные пользователи</td><td>");
+			$r=mysql_query("SELECT `id`, `name` FROM `users` WHERE `agent_id`='$pos'");
+			if(!mysql_num_rows($r))	$tmpl->AddText("отсутствуют");
+			else
+			{
+				while($nn=mysql_fetch_assoc($r))
+				{
+					$tmpl->AddText("<a href='/adm_users.php?mode=view&amp;id={$nn['id']}'>{$nn['name']} ({$nn['id']})</a>, ");
+				}
+			}			
+			$tmpl->AddText("</td></tr>
 			<tr class='lin1'><td align='right'>Относится к<td>
 			<input type='hidden' name='p_agent' id='agent_id' value='$nxt[26]'>
 			<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 50%;' value='$pagent_name'>

@@ -362,6 +362,7 @@ function auth()
 // Не рекомендуется к использованию с версии 0.0.1r221
 function getright($object,$uid)
 {
+	throw new Exception("Проверка привилений доступа через удаляемую функцию getright($object,$uid)");
 	if($uid==1)
 	{
 		$nxt['read']=1;
@@ -377,6 +378,7 @@ function getright($object,$uid)
 	OR `users_groups`.`uid`='0')
 	WHERE `users_grouprights`.`object`='$object'
 	GROUP BY `users_grouprights`.`object`");
+	
 	$nxt=mysql_fetch_assoc($res);
 	return $nxt;
 }

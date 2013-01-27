@@ -128,6 +128,29 @@ else if($mode=='view')
 	<tr><td>Jabber ID</td><td>{$line['jid']}</td></tr>
 	<tr><td>Настоящее имя</td><td>{$line['real_name']}</td></tr>
 	<tr><td>Адрес доставки заказов</td><td>{$line['real_address']}</td></tr>
+	<tr><th colspan='2'>Связь с агентами</th></tr>");
+	if(!$line['agent_id'])
+	{
+		$tmpl->AddText("<tr><td>Связь отсутствует</td><td><a href='/adm_users.php?mode=agent&amp;id=$id'>Установить</a></td></tr>");
+	}
+	else
+	{
+		$res=mysql_query("SELECT `id`, `name`, `fullname`, `tel`, `fax_phone`, `sms_phone`, `adres`, `data_sverki` FROM `doc_agent` WHERE `id`='{$line['agent_id']}'");
+		if(mysql_errno())			throw new MysqlException("Не удалось получить данные агента");
+		$adata=mysql_fetch_assoc($res);
+		$tmpl->AddText("
+		<tr><td>ID агента</td><td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$adata['id']}'>{$adata['id']}</a> - <a href='/adm_users.php?mode=agent&amp;id=$id'>Убрать связь</a></td></tr>
+		<tr><td>Краткое название</td><td>{$adata['name']}</td></tr>
+		<tr><td>Полное название</td><td>{$adata['fullname']}</td></tr>
+		<tr><td>Телефон</td><td>{$adata['tel']}</td></tr>
+		<tr><td>Факс</td><td>{$adata['fax_phone']}</td></tr>
+		<tr><td>Телефон для SMS</td><td>{$adata['sms_phone']}</td></tr>
+		<tr><td>Адрес</td><td>{$adata['adres']}</td></tr>
+		<tr><td>Дата сверки</td><td>{$adata['data_sverki']}</td></tr>
+		");
+		
+	}
+	$tmpl->AddText("
 	<tr><th colspan='2'>Карточка сотрудника</th></tr>
 	<tr><td>Является сотрудником</td><td>$worker</td></tr>
 	<tr><td>Рабочий email</td><td><a href='mailto:{$line['worker_email']}'>{$line['worker_email']}</a></td></tr>
@@ -142,7 +165,17 @@ else if($mode=='view')
 	{
 		$tmpl->AddText("<tr><td>$line[0]</td><td>$line[1]</td></tr>");
 	}
-	$tmpl->AddText("<tr><th colspan='2'>История входов</th></tr>");
+	$tmpl->AddText("<tr><th colspan='2'><a href='/adm_users.php?mode=view_login_history&amp;id=$id'>История входов</a></th></tr>");
+	$tmpl->AddText("</table>");
+}
+else if($mode=='view_login_history')
+{
+	if(!isAccess('admin_users','view'))	throw new AccessException("Недостаточно привилегий");
+	$id=rcv('id');
+	$tmpl->AddText("<h1 id='page-title'>Данные пользователя</h1>
+	<table class='list'>
+	<tr><th colspan='2'><a href='/adm_users.php?mode=view&amp;id=$id'>Основная информация</a></th></tr>
+	<tr><th colspan='2'>История входов</th></tr>");
 	$res=mysql_query("SELECT `date`, CONCAT(`ip`,' - ',`method`) FROM `users_login_history` WHERE `user_id`='$id' ORDER BY `date` DESC");
 	if(mysql_errno())			throw new MysqlException("Не удалось получить информацию об истории входов");
 	while($line=mysql_fetch_row($res))
@@ -152,7 +185,72 @@ else if($mode=='view')
 
 	$tmpl->AddText("</table>");
 }
+else if($mode=='agent')
+{
+	if(!isAccess('admin_users','edit'))	throw new AccessException("Недостаточно привилегий");
+	$id=rcv('id');
+	if(isset($_REQUEST['opt']))
+	{
+		if($_REQUEST['agent_nm'])
+		{
+			$agent_id=$_REQUEST['agent_id'];
+			settype($agent_id,'int');
+		}
+		else	$agent_id='NULL';
+		mysql_query("UPDATE `users` SET `agent_id`=$agent_id WHERE `id`='$id'");
+		if(mysql_errno())			throw new MysqlException("Не удалось обновить привязку");
+		$tmpl->msg("Привязка выполнена!",'ok');
+	}
+	$res=mysql_query("SELECT `users`.`agent_id`, `doc_agent`.`name` FROM `users`
+	LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`users`.`agent_id`
+	WHERE `users`.`id`='$id'");
+	if(mysql_errno())			throw new MysqlException("Не удалось получить данные пользователя");
+	if(mysql_num_rows($res)<=0)		throw new Exception("Пользователь не найден!");
+	$line=mysql_fetch_assoc($res);
+	$tmpl->AddText("<h1 id='page-title'>Привязка пользователя к агенту</h1>
+	<div id='page-info'><a href='/adm_users.php?mode=view&amp;id=$id'>Назад</a></div>
+	<form action='' method='post'>
+	<input type='hidden' name='id' value='$id'>
+	<input type='hidden' name='mode' value='agent'>
+	<input type='hidden' name='opt' value='save'>
+	Краткое название прикрепляемого агента:<br>
+	<script type='text/javascript' src='/css/jquery/jquery.js'></script>
+	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+	<input type='hidden' name='agent_id' id='agent_id' value='{$line['agent_id']}'>
+	<input type='text' id='agent_nm' name='agent_nm'  style='width: 450px;' value='{$line['name']}'><br>
 
+	<script type=\"text/javascript\">
+	$(document).ready(function(){
+		$(\"#agent_nm\").autocomplete(\"/docs.php\", {
+			delay:300,
+			minChars:1,
+			matchSubset:1,
+			autoFill:false,
+			selectFirst:true,
+			matchContains:1,
+			cacheLength:10,
+			maxItemsToShow:15,
+			formatItem:usliFormat,
+			onItemSelect:usselectItem,
+			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+		});
+	});
+
+	function usliFormat (row, i, num) {
+		var result = row[0] + \"<em class='qnt'>id: \" +
+		row[1] + \"</em> \";
+		return result;
+	}
+	function usselectItem(li) {
+		if( li == null ) var sValue = \"Ничего не выбрано!\";
+		if( !!li.extra ) var sValue = li.extra[0];
+		else var sValue = li.selectValue;
+		document.getElementById('agent_id').value=sValue;
+	}
+	</script>
+	<input type='submit' value='Записать'>
+	</form>");
+}
 
 
 }
