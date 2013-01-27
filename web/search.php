@@ -39,7 +39,7 @@ class SearchPage
 		$c_cena_id=mysql_result($res,0,0);
 
 		$ret='';
-		$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base_dop`.`tranzit`
+		$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -83,7 +83,7 @@ class SearchPage
 		mb_internal_encoding("UTF-8");
 		$ret='';
 		$i=1;
-		$res=mysql_query("SELECT `name`, `text` FROM `wiki` WHERE `text` LIKE '%$s%' OR `name` LIKE '%$s'");
+		$res=mysql_query("SELECT `name`, `text` FROM `articles` WHERE `text` LIKE '%$s%' OR `name` LIKE '%$s'");
 		while($nxt=mysql_fetch_row($res))
 		{
 			$text=$wikiparser->parse(html_entity_decode($nxt[1],ENT_QUOTES,"UTF-8"));
