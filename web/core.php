@@ -362,7 +362,7 @@ function auth()
 // Не рекомендуется к использованию с версии 0.0.1r221
 function getright($object,$uid)
 {
-	throw new Exception("Проверка привилений доступа через удаляемую функцию getright($object,$uid)");
+	//throw new Exception("Проверка привилений доступа через удаляемую функцию getright($object,$uid)");
 	if($uid==1)
 	{
 		$nxt['read']=1;
