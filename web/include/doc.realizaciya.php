@@ -1131,20 +1131,46 @@ class doc_Realizaciya extends doc_Nulltype
 		$tmpl->AddText("
 		<table width='800' cellspacing='0' cellpadding='0'>
 		<tr><th>№</th><th width=450>Наименование<th>Кол-во<th>Серийный номер<th>Гарантия</tr>");
-		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, COUNT(`doc_list_sn`.`num`), `doc_list_sn`.`num`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`warranty`
-		FROM `doc_list_sn`
-		INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`rasx_list_pos` AND  `doc_list_pos`.`doc`='{$this->doc}'
+		
+// 		$res=mysql_query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_sn`.`num`, `doc_list_sn`.`num`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`warranty`
+// 		FROM `doc_list_pos`
+// 		LEFT JOIN `doc_list_sn` ON `doc_list_pos`.`id`=`doc_list_sn`.`rasx_list_pos`
+// 		INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+// 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+// 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+// 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+// 		");
+		
+		
+		$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`warranty`
+		FROM `doc_list_pos`
 		INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		GROUP BY `doc_list_sn`.`num`
-		");
-		$ii=1;
-		while($nxt=mysql_fetch_row($res))
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
+		$ii=0;
+		while($line=mysql_fetch_assoc($res))
 		{
-			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
-			$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[3] $nxt[5]<td>$nxt[4]<td>$nxt[6] мес.");
-			$ii++;
+			if(!@$CONFIG['doc']['no_print_vendor'] && $line['proizv'])	$line['name'].=' / '.$line['proizv'];
+			$r=mysql_query("SELECT `num`, COUNT(`num`) FROM `doc_list_sn` WHERE `doc_list_sn`.`rasx_list_pos`='{$line['line_id']}' GROUP BY `num`");
+			if(mysql_errno())	throw new MysqlException("Не удалось получить список серийных номеров");
+			$mcnt=$line['cnt'];
+			while($nxt=mysql_fetch_row($r))
+			{
+				$mcnt-=$nxt[1];
+				$ii++;
+				$tmpl->AddText("<tr align=right><td>$ii</td><td align='left'>{$line['group_printname']} {$line['name']}</td><td>$nxt[1] {$line['units']}</td><td>$nxt[0]</td><td>{$line['warranty']} мес.</td></tr>");
+			}
+			
+			if($mcnt)
+			{
+				for($c=0;$c<$mcnt;$c++)
+				{
+					$ii++;
+					$tmpl->AddText("<tr align=right><td>$ii</td><td align='left'>{$line['group_printname']} {$line['name']}</td><td>1 {$line['units']}</td><td></td><td>{$line['warranty']} мес.</td></tr>");
+				}
+			}
 		}
 		$tmpl->AddText("</table>
 		<br>

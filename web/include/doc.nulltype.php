@@ -504,8 +504,8 @@ class doc_Nulltype
 			$pod.="$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt<br>";
 		}
 		if($pod)	$tmpl->AddText("<br><b>Зависящие документы:</b><br>$pod");
-		$tmpl->AddText("<br>Документ создан: {$this->doc_data['created']}");
-
+		$tmpl->AddText("<br><b>Дата создания:</b>: {$this->doc_data['created']}<br>");
+		if($this->doc_data[6])$tmpl->AddText("<b>Дата проведения:</b> ".date("Y-m-d H:i:s",$this->doc_data[6])."<br>");
 		$tmpl->AddText("</div>
 		<script type=\"text/javascript\">
 
@@ -574,7 +574,7 @@ class doc_Nulltype
 		}
 
 		$tmpl->AddText("<div id='statusblock'>");
-		if($this->doc_data[6])$tmpl->AddText("<b>Дата проведения:</b> ".date("d.m.Y H:i:s",$this->doc_data[6]));
+		
 		$tmpl->AddText("</div>");
 		$tmpl->AddText("<br><br>
 		</div></div>");
