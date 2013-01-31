@@ -44,6 +44,7 @@ function SetStatus($status)
 	mysql_query("UPDATE `sys_cli_status` SET `status`='$status' WHERE `id`='$status_id'");
 }
 
+/// Фиктивный класс для анализатора прайсов. Надо переделать архитектуру так, чтобы он не требовался
 class Foo
 {
     function AddText($t) {return;}
@@ -358,6 +359,9 @@ try
 				mysql_query("UPDATE `doc_base` SET `cost`='$mincost', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
 				if(mysql_errno())	throw new Exception(mysql_error());
 				echo $txt;
+				$pp=($nxt[1]-$mincost)*100/$nxt[1];
+				if($pp>@$CONFIG['price']['notify_down'] && @$CONFIG['price']['notify_down'])	$mail_text.=$txt;
+				if(($pp*(-1))>@$CONFIG['price']['notify_up'] && @$CONFIG['price']['notify_up'])	$mail_text.=$txt;
 			}
 		}
 	}

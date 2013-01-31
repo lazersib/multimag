@@ -153,6 +153,7 @@ class Report_Profitability extends BaseGSReport
 		settype($date_from,'int');
 		settype($date_to,'int');
 		$cnt=$out_cnt=$cost=$profit=0;
+		$sum_extra=0;
 		
 
 		$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`, `doc_list`.`date`
@@ -165,18 +166,20 @@ class Report_Profitability extends BaseGSReport
 		while($nxt=mysql_fetch_row($res))
 		{
 			if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
-			if($nxt[0]>0 && $nxt[4]!=1 && $cnt+$nxt[0]!=0  )
+			if($nxt[0]>0 && (!$nxt[4]) && $cnt+$nxt[0]!=0  )
 				$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
-			if($nxt[2]==2 && $nxt[5]>=$date_from)
+			if($nxt[2]==2 && $nxt[5]>=$date_from && (!$nxt[4]))
 			{
-				$profit+=$nxt[0]*($cost-$nxt[1]);
+				$profit-=$nxt[0]*($nxt[1]-$cost);
+				if($cost)	$sum_extra-=($nxt[1]-$cost)*100*$nxt[0]/$cost;
 				$out_cnt-=$nxt[0];
 			}
 			$cnt+=$nxt[0];
-			if($cnt<0)	return array(0xFFFFBADF00D,0);	// Невозможно расчитать прибыль, если остатки уходили в минус
+			if($cnt<0)	return array(0xFFFFBADF00D,0,0);	// Невозможно расчитать прибыль, если остатки уходили в минус
 		}
-		
-		return array($profit,$out_cnt);
+		if($out_cnt)	$avg_extra_pp=round($sum_extra/$out_cnt,1);
+		else		$avg_extra_pp=0;
+		return array($profit,$out_cnt,$avg_extra_pp);
 	}
 	
 	function Make($engine)
@@ -199,14 +202,14 @@ class Report_Profitability extends BaseGSReport
 		
 		$this->header($this->getName()." с $print_df по $print_dt");
 		
-		$widths=array(5, 8, 53, 8, 9, 9, 8);
-		$headers=array('ID','Код','Наименование','Б. цена','Продано','Прибыль','Рентаб.');
+		$widths=array(5, 8, 45, 8, 9, 9, 8,8);
+		$headers=array('ID','Код','Наименование','Б. цена','Продано','Прибыль','Рентаб.','Ср.нац.');
 
 		$this->col_cnt=count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
 		
-		mysql_query("CREATE TEMPORARY TABLE `temp_report_profit` (`pos_id` INT NOT NULL , `profit` DECIMAL( 16, 2 ) NOT NULL , `count` INT( 11 ) NOT NULL) ENGINE = MEMORY");
+		mysql_query("CREATE TEMPORARY TABLE `temp_report_profit` (`pos_id` INT NOT NULL , `profit` DECIMAL( 16, 2 ) NOT NULL , `count` INT( 11 ) NOT NULL, `avg_extra_pp` DECIMAL( 6, 2 ) NOT NULL) ENGINE = MEMORY");
 		if(mysql_errno())	throw new MysqlException("Не удалось создать временную таблицу");
 		
 		if($sel_type=='all')
@@ -216,9 +219,9 @@ class Report_Profitability extends BaseGSReport
 
 			while($nxt=mysql_fetch_row($res))
 			{
-				list($profit,$count)=$this->calcPos($nxt[0], $dt_f, $dt_t);
+				list($profit,$count,$avg_extra_pp)=$this->calcPos($nxt[0], $dt_f, $dt_t);
 				if($max_profit<$profit && $profit!=0xFFFFBADF00D)	$max_profit=$profit;
-				mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count)");
+				mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count, $avg_extra_pp)");
 			}
 		}
 		else if($sel_type=='group')
@@ -235,16 +238,16 @@ class Report_Profitability extends BaseGSReport
 				
 				while($nxt=mysql_fetch_row($res))
 				{
-					list($profit,$count)=$this->calcPos($nxt[0], $dt_f, $dt_t);
+					list($profit,$count,$avg_extra_pp)=$this->calcPos($nxt[0], $dt_f, $dt_t);
 					if($max_profit<$profit && $profit!=0xFFFFBADF00D)	$max_profit=$profit;
-					mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count)");
+					mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count, $avg_extra_pp)");
 				}
 			}
 		}
 		
 		if($neg_pos)
 		{
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`, `temp_report_profit`.`profit`, `temp_report_profit`.`count` FROM `temp_report_profit`
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`, `temp_report_profit`.`profit`, `temp_report_profit`.`count`, `temp_report_profit`.`avg_extra_pp` FROM `temp_report_profit`
 			LEFT JOIN `doc_base` ON `temp_report_profit`.`pos_id`=`doc_base`.`id`
 			WHERE `temp_report_profit`.`profit`<'0'
 			ORDER BY `temp_report_profit`.`profit` ASC");
@@ -252,11 +255,11 @@ class Report_Profitability extends BaseGSReport
 			while($nxt=mysql_fetch_row($res))
 			{
 				$profitability=round($nxt[4]*100/$max_profit, 2);
-				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], $nxt[5], "$nxt[4] р.", "$profitability %"));
+				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], $nxt[5], "$nxt[4] р.", "$profitability %", $nxt[6].' %'));
 			}
 		}
 		
-		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`, `temp_report_profit`.`profit`, `temp_report_profit`.`count` FROM `temp_report_profit`
+		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`, `temp_report_profit`.`profit`, `temp_report_profit`.`count`, `temp_report_profit`.`avg_extra_pp` FROM `temp_report_profit`
 		LEFT JOIN `doc_base` ON `temp_report_profit`.`pos_id`=`doc_base`.`id`
 		WHERE `temp_report_profit`.`profit`>'$ren_min_abs'
 		ORDER BY `temp_report_profit`.`profit` DESC");
@@ -266,14 +269,14 @@ class Report_Profitability extends BaseGSReport
 		{
 			if($nxt[4]==0xFFFFBADF00D)
 			{
-				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], "ошибка", "ошибка", "conut < 0"));
+				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], 'ошибка', 'ошибка', "conut < 0", 'ошибка'));
 			}
 			else
 			{
 				$sum+=$nxt[4];
 				$profitability=round($nxt[4]*100/$max_profit, 2);
 				if($profitability<$ren_min_pp)	continue;
-				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], $nxt[5], "$nxt[4] р.", "$profitability %"));
+				$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], $nxt[5], "$nxt[4] р.", "$profitability %", $nxt[6].' %'));
 			}
 		}
 		$this->tableRow(array("", "", "Всего", "","", "$sum р.", ""));

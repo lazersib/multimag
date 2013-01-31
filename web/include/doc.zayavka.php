@@ -136,9 +136,9 @@ class doc_Zayavka extends doc_Nulltype
 
 		if(@$this->dop_data['ishop'])		$tmpl->AddText("<b>Заявка с интернет-витрины</b><br>");
 		if(@$this->dop_data['buyer_rname'])	$tmpl->AddText("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
-		if(@$this->dop_data['buyer_email'])	$tmpl->AddText("<b>e-mail: </b>{$this->dop_data['buyer_email']}<br>");
-		if(@$this->dop_data['buyer_phone'])	$tmpl->AddText("<b>Телефон: </b>{$this->dop_data['buyer_phone']}<br>");
 		if(@$this->dop_data['buyer_ip'])	$tmpl->AddText("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
+		$tmpl->AddText("e-mail, прикреплённый к заявке<br><input type='text' name='buyer_email' style='width: 100%' value='{$this->dop_data['buyer_email']}'><br>");
+ 		$tmpl->AddText("Телефон для sms, прикреплённый к заявке<input type='text' name='buyer_phone' style='width: 100%' value='{$this->dop_data['buyer_phone']}'><br>");
 		if(@$this->dop_data['pay_type'])
 		{
 			$tmpl->AddText("<b>Способ оплаты: </b>");
@@ -184,6 +184,9 @@ class doc_Zayavka extends doc_Nulltype
 		$kladovshik=rcv('kladovshik');
 		$delivery=rcv('delivery');
 		$delivery_date=rcv('delivery_date');
+		$buyer_email=rcv('buyer_email');
+		$buyer_phone=rcv('buyer_phone');
+		
 
 		settype($kladovshik, 'int');
 		$delivery=$delivery?'1':'0';
@@ -193,7 +196,10 @@ class doc_Zayavka extends doc_Nulltype
 		( '{$this->doc}' ,'kladovshik','$kladovshik'),
 		( '{$this->doc}' ,'delivery','$delivery'),
 		( '{$this->doc}' ,'delivery_date','$delivery_date'),
-		( '{$this->doc}' ,'status','$status')");
+		( '{$this->doc}' ,'status','$status'),
+		( '{$this->doc}' ,'buyer_email','$buyer_email'),
+		( '{$this->doc}' ,'buyer_phone','$buyer_phone')
+		");
 	}
 
 	function DocApply($silent=0)

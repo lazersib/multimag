@@ -56,7 +56,7 @@
 <li><a title='Поиск продукции по параметрам' href='/search.php'>Поиск</a></li>
 <li><a title='Выбрать и купить' href='/vitrina.php'>Витрина</a></li>
 <li><a title='Скачать или распечатать прайс-лист' href='/price.php'>Прайс</a></li>
-<li><a title='Как с нами связаться' href='/wiki/ContactInfo'>Контактная информация</a></li>
+<li><a title='Как с нами связаться' href='/articles/ContactInfo'>Контактная информация</a></li>
 <li><a title='Дополнительные возможности' href='/user.php'>Возможности</a></li>
 <!--site-top-->
 </ul></div>
