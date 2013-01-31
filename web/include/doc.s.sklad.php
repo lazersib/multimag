@@ -1347,11 +1347,19 @@ class doc_s_Sklad
 				foreach($par as $key => $value)
 				{
 					$key=mysql_real_escape_string($key);
-					$value=mysql_real_escape_string($value);
-					if($dp[$key]!=$value)
-						$log_add.=", $key:({$old_data[$key]} => $value)";
-					mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$key', '$value')");
-					if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");
+					if($value!=='')
+					{
+						$value=mysql_real_escape_string($value);
+						if($dp[$key]!=$value)
+							$log_add.=", $key:({$old_data[$key]} => $value)";
+						mysql_query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$key', '$value')");
+						if(mysql_errno())	throw new MysqlException("Не удалось обновить дополнительные параметры!");
+					}
+					else
+					{
+						mysql_query("DELETE FROM `doc_base_values` WHERE `id`='$pos' AND `param_id`='$key'");
+						if(mysql_errno())	throw new MysqlException("Не удалось очистить дополнительные параметры!");
+					}
 				}
 			}
 
