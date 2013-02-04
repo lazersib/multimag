@@ -76,6 +76,14 @@ class doc_Peremeshenie extends doc_Nulltype
 		( '{$this->doc}' ,'mest','$mest'),
 		( '{$this->doc}' ,'kladovshik','$kladovshik')");
 		if(!$res)		throw new MysqlException("Не удалось установить склад назначения в поступлении!");
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['nasklad']!=$nasklad)		$log_data.=@"nasklad: {$this->dop_data['nasklad']}=>$nasklad, ";
+			if(@$this->dop_data['mest']!=$mest)			$log_data.=@"mest: {$this->dop_data['mest']}=>$mest, ";
+			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
+			if(@$log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

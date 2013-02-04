@@ -127,6 +127,15 @@ class doc_Realiz_op extends doc_Realizaciya
 		( '{$this->doc}' ,'gruzop','$gruzop_id'),
 		( '{$this->doc}' ,'received','$received'),
 		( '{$this->doc}' ,'return','$return')");
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['platelshik']!=$plat_id)		$log_data.=@"platelshik: {$this->dop_data['platelshik']}=>$plat_id, ";
+			if(@$this->dop_data['return']!=$return)			$log_data.=@"return: {$this->dop_data['return']}=>$return, ";
+			if(@$this->dop_data['gruzop']!=$gruzop_id)		$log_data.=@"gruzop: {$this->dop_data['gruzop']}=>$gruzop_id, ";
+			if(@$this->dop_data['received']!=$received)		$log_data.=@"received: {$this->dop_data['received']}=>$received, ";
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

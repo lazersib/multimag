@@ -165,6 +165,19 @@ class doc_Realizaciya extends doc_Nulltype
 		( '{$this->doc}' ,'return','$return'),
 		( '{$this->doc}' ,'kladovshik','$kladovshik'),
 		( '{$this->doc}' ,'mest','$mest')");
+
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['platelshik']!=$plat_id)		$log_data.=@"platelshik: {$this->dop_data['platelshik']}=>$plat_id, ";
+			if(@$this->dop_data['gruzop']!=$gruzop_id)		$log_data.=@"gruzop: {$this->dop_data['gruzop']}=>$gruzop_id, ";
+			if(@$this->dop_data['received']!=$received)		$log_data.=@"received: {$this->dop_data['received']}=>$received, ";
+			if(@$this->dop_data['return']!=$return)			$log_data.=@"return: {$this->dop_data['return']}=>$return, ";
+			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
+			if(@$this->dop_data['mest']!=$mest)			$log_data.=@"mest: {$this->dop_data['mest']}=>$mest, ";
+			
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

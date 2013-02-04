@@ -94,6 +94,14 @@ class doc_v_puti extends doc_Nulltype
 
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('{$this->doc}','dataprib','$dataprib'), ( '{$this->doc}' ,'transkom','$transkom_id')");
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['dataprib']!=$dataprib)		$log_data.=@"dataprib: {$this->dop_data['dataprib']}=>$dataprib, ";
+			if(@$this->dop_data['transkom']!=$transkom_id)		$log_data.=@"transkom: {$this->dop_data['transkom']}=>$transkom_id, ";
+			
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

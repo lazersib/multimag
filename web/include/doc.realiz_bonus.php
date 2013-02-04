@@ -91,6 +91,13 @@ class doc_Realiz_bonus extends doc_Realizaciya
 		VALUES
 		( '{$this->doc}' ,'kladovshik','$kladovshik'),
 		( '{$this->doc}' ,'mest','$mest')");
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
+			if(@$this->dop_data['mest']!=$mest)			$log_data.=@"mest: {$this->dop_data['mest']}=>$mest, ";
+			if(@$log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

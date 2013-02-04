@@ -54,6 +54,12 @@ class doc_RBank extends doc_Nulltype
 
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('{$this->doc}','rasxodi','$v_rasx')");
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['rasxodi']!=$v_rasx)			$log_data.=@"rasxodi: {$this->dop_data['rasxodi']}=>$v_rasx, ";
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 	
 	function DopBody()

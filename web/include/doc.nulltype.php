@@ -78,12 +78,14 @@ class doc_Nulltype
 
 	public function SetDopData($name, $value)
 	{
-		if($this->doc)
+		if($this->doc && $this->dop_data[$name]!=$value)
 		{
 			$_name=mysql_real_escape_string($name);
 			$_value=mysql_real_escape_string($value);
+			$ovalue=mysql_real_escape_string($this->dop_data[$name]);
 			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'$_name','$_value')");
 			if(mysql_errno())		throw new MysqlException("Не удалось сохранить дополнительный параметр документа");
+			doc_log("UPDATE {$this->doc_name}","$_name: ($ovalue => $_value)",'doc',$this->doc);
 		}
 		$this->dop_data[$name]=$value;
 	}
@@ -275,6 +277,16 @@ class doc_Nulltype
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
 		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$comment', '$uid', '$altnum', '$subtype'";
+		$log_data='';
+		
+		if($this->doc)
+		{
+			if($this->doc_data['date']!=$date)		$log_data.="date: {$this->doc_data['date']}=>$date, ";
+			if($this->doc_data['firm_id']!=$firm_id)	$log_data.="firm_id: {$this->doc_data['firm_id']}=>$firm_id, ";
+			if($this->doc_data['comment']!=$comment)	$log_data.="comment: {$this->doc_data['comment']}=>$comment, ";
+			if($this->doc_data['altnum']!=$altnum)		$log_data.="altnum: {$this->doc_data['altnum']}=>$altnum, ";
+			if($this->doc_data['subtype']!=$subtype)	$log_data.="subtype: {$this->doc_data['subtype']}=>$subtype, ";
+		}
 
 		doc_menu($this->dop_buttons());
 
@@ -307,28 +319,42 @@ class doc_Nulltype
 						}
 						DocSumUpdate($this->doc);
 					}
+					if($this->doc)
+					{
+						if($this->doc_data['nds']!=$nds)	$log_data.="nds: {$this->doc_data['nds']}=>$nds, ";
+						if($this->dop_data['cena']!=$cena)	$log_data.="cena: {$this->doc_data['cena']}=>$cena, ";
+					}
 				}
 				else if($f=='agent')
 				{
 					$sqlupdate.=", `$f`='${$f}', `contract`='$contract'";
 					$sqlinsert_keys.=", `$f`, `contract`";
 					$sqlinsert_value.=", '${$f}', '$contract'";
+					if($this->doc)
+					{
+						if($this->doc_data[$f]!=$$f)			$log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
+						if($this->dop_data['contract']!=$contract)	$log_data.="contract: {$this->doc_data['contract']}=>$cena, ";
+					}
 				}
 				else
 				{
 					$sqlupdate.=", `$f`='${$f}'";
 					$sqlinsert_keys.=", `$f`";
 					$sqlinsert_value.=", '${$f}'";
+					if($this->doc)
+					{
+						if($this->doc_data[$f]!=$$f)			$log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
+					}
 				}
 			}
 
-			if($doc)
+			if($this->doc)
 			{
 				if(!isAccess($object,'edit'))	throw new AccessException("");
 				$res=mysql_query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='$doc'");
 				if(mysql_errno())	throw new MysqlException("Документ не сохранён");
 				$link="/doc.php?doc=$doc&mode=body";
-				doc_log("UPDATE {$this->doc_name}","$sqlupdate",'doc',$doc);
+				if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 			}
 			else
 			{
@@ -371,6 +397,7 @@ class doc_Nulltype
 		$kassa=rcv('kassa');
 		$cena=rcv('cena');
 		$contract=rcv('contract');
+		settype($contract,'int');
 		if($date<=0)	$date=time();
 
 		if(!$altnum)	$altnum=$comment=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
@@ -379,6 +406,15 @@ class doc_Nulltype
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
 		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$comment', '$uid', '$altnum', '$subtype'";
+		$log_data='';
+		if($this->doc)
+		{
+			if($this->doc_data['date']!=$date)		$log_data.="date: {$this->doc_data['date']}=>$date, ";
+			if($this->doc_data['firm_id']!=$firm_id)	$log_data.="firm_id: {$this->doc_data['firm_id']}=>$firm_id, ";
+			if($this->doc_data['comment']!=$comment)	$log_data.="comment: {$this->doc_data['comment']}=>$comment, ";
+			if($this->doc_data['altnum']!=$altnum)		$log_data.="altnum: {$this->doc_data['altnum']}=>$altnum, ";
+			if($this->doc_data['subtype']!=$subtype)	$log_data.="subtype: {$this->doc_data['subtype']}=>$subtype, ";
+		}
 
 		$tmpl->ajax=1;
 		try
@@ -398,18 +434,32 @@ class doc_Nulltype
 						$sqlupdate.=", `nds`='$nds'";
 						$sqlinsert_keys.=", `nds`";
 						$sqlinsert_value.=", '$nds'";
+						if($this->doc)
+						{
+							if($this->doc_data['nds']!=$nds)	$log_data.="nds: {$this->doc_data['nds']}=>$nds, ";
+							if($this->dop_data['cena']!=$cena)	$log_data.="cena: {$this->dop_data['cena']}=>$cena, ";
+						}
 					}
 					else if($f=='agent')
 					{
 						$sqlupdate.=", `$f`='${$f}', `contract`='$contract'";
 						$sqlinsert_keys.=", `$f`, `contract`";
 						$sqlinsert_value.=", '${$f}', '$contract'";
+						if($this->doc)
+						{
+							if($this->doc_data[$f]!=$$f)			$log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
+							if($this->doc_data['contract']!=$contract)	$log_data.="contract: {$this->doc_data['contract']}=>$contract, ";
+						}
 					}
 					else
 					{
 						$sqlupdate.=", `$f`='${$f}'";
 						$sqlinsert_keys.=", `$f`";
 						$sqlinsert_value.=", '${$f}'";
+						if($this->doc)
+						{
+							if($this->doc_data[$f]!=$$f)			$log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
+						}
 					}
 				}
 
@@ -419,7 +469,7 @@ class doc_Nulltype
 					$res=mysql_query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->doc}'");
 					if(mysql_errno())	throw new MysqlException("Документ не сохранён");
 					$link="/doc.php?doc={$this->doc}&mode=body";
-					doc_log("UPDATE {$this->doc_name}","$sqlupdate",'doc',$this->doc);
+					if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 				}
 				else
 				{
@@ -434,7 +484,8 @@ class doc_Nulltype
 				if(method_exists($this,'DopSave'))	$this->DopSave();
 				if($cena_update)	mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->doc}','cena','$cena')");
 				if(mysql_errno())	throw new MysqlException("Цена не сохранена");
-				$b=DocCalcDolg($agent);
+				if($agent)	$b=DocCalcDolg($agent);
+				else		$b=0;
 				$tmpl->SetText("{response: 'ok', agent_balance: '$b'}");
 			}
 		}

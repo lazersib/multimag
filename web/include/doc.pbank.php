@@ -48,8 +48,17 @@ class doc_PBank extends doc_Nulltype
 	function DopSave()
 	{
 		$unique=rcv('unique');
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'unique','$unique')");
+		if($unique)
+		{
+			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
+			VALUES ( '{$this->doc}' ,'unique','$unique')");
+			if($this->doc)
+			{
+				$log_data='';
+				if($this->dop_data['unique']!=$unique)			$log_data.="unique: {$this->dop_data['unique']}=>$unique, ";
+				if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+			}
+		}
 	}
 
 	function DopBody()

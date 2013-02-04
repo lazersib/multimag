@@ -50,6 +50,14 @@ class doc_Specific extends doc_Nulltype
 		$received=rcv('received');
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ( '{$this->doc}' ,'received','$received')");
+		
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['received']!=$received)		$log_data.=@"received: {$this->dop_data['received']}=>$received, ";
+			
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

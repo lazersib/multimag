@@ -107,6 +107,20 @@ class doc_Dogovor extends doc_Nulltype
 		$limit=rcv('limit');
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ( '{$this->doc}' ,'received','$received'), ( '{$this->doc}' ,'end_date','$end_date'), ( '{$this->doc}' ,'debt_control','$debt_control'), ( '{$this->doc}' ,'debt_size','$debt_size'), ( '{$this->doc}' ,'limit','$limit'), ( '{$this->doc}' ,'name','$name')");
+		if(mysql_errno())	throw new MysqlError("Невозможно сохранить дополнительные данные");
+		
+		
+		if($this->doc)
+		{
+			$log_data='';
+			if($this->dop_data['received']!=$received)			$log_data.="received: {$this->dop_data['received']}=>$received, ";
+			if($this->dop_data['end_date']!=$end_date)			$log_data.="end_date: {$this->dop_data['end_date']}=>$end_date, ";
+			if($this->dop_data['debt_control']!=$debt_control)		$log_data.="debt_control: {$this->dop_data['debt_control']}=>$debt_control, ";
+			if($this->dop_data['debt_size']!=$debt_size)			$log_data.="debt_size: {$this->dop_data['debt_size']}=>$debt_size, ";
+			if($this->dop_data['name']!=$name)				$log_data.="name: {$this->dop_data['name']}=>$name, ";
+			if($this->dop_data['limit']!=$limit)				$log_data.="limit: {$this->dop_data['limit']}=>$limit, ";
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

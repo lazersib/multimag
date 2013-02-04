@@ -58,6 +58,12 @@ class doc_PerKas extends doc_Nulltype
 		$v_kassu=rcv('v_kassu');
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('{$this->doc}','v_kassu','$v_kassu')");
+		if($this->doc)
+		{
+			$log_data='';
+			if($this->dop_data['v_kassu']!=$v_kassu)			$log_data.="v_kassu: {$this->dop_data['v_kassu']}=>$v_kassu, ";
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

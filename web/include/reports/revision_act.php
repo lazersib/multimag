@@ -62,6 +62,9 @@ class Report_Revision_Act
 		<input type='text' name='subtype'><br>
 		<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
 		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>
+		<label><input type='radio' name='opt' value='email'>отправить по email</label><br>
+		email адрес (не указывайте, чтобы взять из контактов):<br>
+		<input type='text' name='email' value=''><br>
 		<button type='submit'>Сформировать отчет</button></form>
 
 		<script type='text/javascript'>
@@ -107,6 +110,14 @@ class Report_Revision_Act
 	function Make($opt='html')
 	{
 		global $tmpl,$CONFIG;
+		$email=rcv('email');
+		if($opt=='email')
+		{
+			$opt='pdf';
+			
+			$sendmail=1;
+		}
+		else $sendmail=0;
 		if($opt=='html')
 		{
 			$tmpl->LoadTemplate('print');
@@ -142,11 +153,12 @@ class Report_Revision_Act
 		}
 		if(!$date_end) $date_end=time();
 
-		$res=mysql_query("SELECT `id`, `fullname`, `dir_fio` FROM `doc_agent` WHERE `id`='$agent_id'");
+		$res=mysql_query("SELECT `id`, `fullname`, `dir_fio`, `email` FROM `doc_agent` WHERE `id`='$agent_id'");
 		if(mysql_errno())		throw new MysqlException("Не удалось получить данные агента");
 		if(mysql_num_rows($res)==0)	throw new Exception("Не указан агент $agent_id!");
-		list($agent, $fn, $dir_fio)=mysql_fetch_row($res);
-
+		list($agent, $fn, $dir_fio, $_email)=mysql_fetch_row($res);
+		if(!$email)			$email=$_email;
+		if(!$email && $sendmail)	throw new Exception("Не задан email");
 		$sql_add='';
 		if($firm_id>0) $sql_add.=" AND `doc_list`.`firm_id`='$firm_id'";
 		if($subtype!='') $sql_add.=" AND `doc_list`.`subtype`='$subtype'";
@@ -416,16 +428,68 @@ class Report_Revision_Act
 			$pdf->setY($y);
 			$pdf->MultiCell(0,5,$str,0,'L',0);
 
-		if($CONFIG['site']['doc_shtamp'])
-		{
-			$delta=-15;
-			$shtamp_img=str_replace('{FN}', $firm_id, $CONFIG['site']['doc_shtamp']);
-			if(file_exists($shtamp_img))
-			$pdf->Image($shtamp_img, 3,$pdf->GetY()+$delta, 120);
-		}
+			if($CONFIG['site']['doc_shtamp'])
+			{
+				$delta=-15;
+				$shtamp_img=str_replace('{FN}', $firm_id, $CONFIG['site']['doc_shtamp']);
+				if(file_exists($shtamp_img))
+				$pdf->Image($shtamp_img, 3,$pdf->GetY()+$delta, 120);
+			}
 
 			$pdf->Ln();
-			$pdf->Output('akt_sverki.pdf','I');
+			if(!$sendmail)	$pdf->Output('akt_sverki.pdf','I');
+			else
+			{
+			/// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+				$data=$pdf->Output('rev_act.pdf','S');;
+				
+				require_once($CONFIG['location'].'/common/email_message.php');
+
+				$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `id`='{$_SESSION['uid']}'");
+				$doc_autor=@mysql_fetch_assoc($res);
+
+				$res=mysql_query("SELECT `name`, `fullname`, `email` FROM `doc_agent` WHERE `id`='$agent'");
+				$agent=@mysql_fetch_assoc($res);
+
+				$email_message=new email_message_class();
+				$email_message->default_charset="UTF-8";
+				if($agent['fullname'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['fullname']);
+				else if($agent['name'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['name']);
+				else			$email_message->SetEncodedEmailHeader("To", $email, $email);
+
+				$email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - акт сверки ({$CONFIG['site']['name']})");
+
+				if(!@$doc_autor['worker_email'])
+				{
+					$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
+					$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
+					$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!\nДля переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
+				}
+				else
+				{
+					$email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
+					$email_message->SetHeader("Sender", $doc_autor['worker_email']);
+					$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$CONFIG['site']['name']}\n\nОтветственный сотрудник: {$doc_autor['worker_real_name']}\nКонтактный телефон: {$doc_autor['worker_phone']}\nЭлектронная почта (e-mail): {$doc_autor['worker_email']}";
+					$text_message.="\nОтправитель: {$_SESSION['name']}";
+				}
+				$email_message->AddQuotedPrintableTextPart($text_message);
+
+				$text_attachment=array(
+					"Data"=>$data,
+					"Name"=>'rev_act.pdf',
+					"Content-Type"=>"automatic/name",
+					"Disposition"=>"attachment"
+				);
+				$email_message->AddFilePart($text_attachment);
+
+				$error=$email_message->Send();
+
+				if(strcmp($error,""))	throw new Exception($error);
+				$tmpl->ajax=0;
+				$tmpl->msg("Документ отправлен.","ok");
+			
+			/// -----------------------------------------------------
+			}
 		}
 
 
@@ -434,7 +498,7 @@ class Report_Revision_Act
 	function Run($opt)
 	{
 		if($opt=='')		$this->Form();
-		else if(($opt=='html')||($opt=='pdf'))	$this->Make($opt);
+		else 			$this->Make($opt);
 	}
 };
 

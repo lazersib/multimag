@@ -51,6 +51,12 @@ class doc_Kompredl extends doc_Nulltype
 		$shapka=rcv('shapka');
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 		VALUES ( '{$this->doc}' ,'shapka','$shapka')");
+		if($this->doc)
+		{
+			$log_data='';
+			if($this->dop_data['shapka']!=$shapka)			$log_data.="shapka: {$this->dop_data['shapka']}=>$shapka, ";
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}		
 	}
 
 	function DopBody()

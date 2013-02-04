@@ -49,6 +49,12 @@ class doc_Doveren extends doc_Nulltype
 
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 			VALUES ('{$this->doc}','ot','$ot')");
+		if($this->doc)
+		{
+			$log_data='';
+			if($this->dop_data['ot']!=$ot)			$log_data.="ot: {$this->dop_data['ot']}=>$ot, ";
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 	
 	function DopBody()

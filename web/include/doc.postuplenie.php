@@ -71,6 +71,14 @@ class doc_Postuplenie extends doc_Nulltype
 		VALUES ( '{$this->doc}' ,'input_doc','$input_doc'),
 		( '{$this->doc}' ,'return','$return'),
 		( '{$this->doc}' ,'kladovshik','$kladovshik')");
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['input_doc']!=$input_doc)		$log_data.=@"input_doc: {$this->dop_data['input_doc']}=>$input_doc, ";
+			if(@$this->dop_data['return']!=$return)			$log_data.=@"return: {$this->dop_data['return']}=>$return, ";
+			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
+			if(@$log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DopBody()

@@ -200,6 +200,19 @@ class doc_Zayavka extends doc_Nulltype
 		( '{$this->doc}' ,'buyer_email','$buyer_email'),
 		( '{$this->doc}' ,'buyer_phone','$buyer_phone')
 		");
+		
+		if($this->doc)
+		{
+			$log_data='';
+			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
+			if(@$this->dop_data['delivery']!=$delivery)		$log_data.=@"delivery: {$this->dop_data['delivery']}=>$delivery, ";
+			if(@$this->dop_data['delivery_date']!=$delivery_date)	$log_data.=@"delivery_date: {$this->dop_data['delivery_date']}=>$delivery_date, ";
+			if(@$this->dop_data['status']!=$status)			$log_data.=@"status: {$this->dop_data['status']}=>$status, ";
+			if(@$this->dop_data['buyer_email']!=$buyer_email)	$log_data.=@"buyer_email: {$this->dop_data['buyer_email']}=>$buyer_email, ";
+			if(@$this->dop_data['buyer_phone']!=$buyer_phone)	$log_data.=@"buyer_phone: {$this->dop_data['buyer_phone']}=>$mest, ";
+			
+			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		}
 	}
 
 	function DocApply($silent=0)
