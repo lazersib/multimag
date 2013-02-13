@@ -30,8 +30,8 @@ function Run($mode)
 		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 		while($nx=mysql_fetch_row($rs))
 		{
-			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");		
-		}		
+			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
+		}
 		$tmpl->AddText("</select><br>
 		Агент:<br>
 		<input type='hidden' name='agent' id='agent_id' value=''>
@@ -49,7 +49,7 @@ function Run($mode)
 		}
 		$tmpl->AddText("</select><br>
 		<label><input type='checkbox' name='not_a_p' value='1'>Не проводить перемещение</label><br>
-		
+
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
 			$(\"#agent_nm\").autocomplete(\"/docs.php\", {
@@ -60,7 +60,7 @@ function Run($mode)
 				selectFirst:true,
 				matchContains:1,
 				cacheLength:10,
-				maxItemsToShow:15, 
+				maxItemsToShow:15,
 				formatItem:agliFormat,
 				onItemSelect:agselectItem,
 				extraParams:{'l':'agent','mode':'srv','opt':'ac'}
@@ -73,44 +73,44 @@ function Run($mode)
 			selectFirst:true,
 			matchContains:1,
 			cacheLength:10,
-			maxItemsToShow:15, 	
-			formatItem:tovliFormat, 
+			maxItemsToShow:15,
+			formatItem:tovliFormat,
 			onItemSelect:tovselectItem,
 			extraParams:{'l':'sklad','mode':'srv','opt':'ac'}
 			});
 		});
-		
+
 		function agliFormat (row, i, num) {
 			var result = row[0] + \"<em class='qnt'>тел. \" +
 			row[2] + \"</em> \";
 			return result;
 		}
-		
-		
+
+
 		function agselectItem(li) {
 			if( li == null ) var sValue = \"Ничего не выбрано!\";
 			if( !!li.extra ) var sValue = li.extra[0];
 			else var sValue = li.selectValue;
 			document.getElementById('agent_id').value=sValue;
 		}
-		
+
 		function tovliFormat (row, i, num) {
 			var result = row[0] + \"<em class='qnt'>\" +
 			row[2] + \"</em> \";
 			return result;
 		}
-		
+
 		function tovselectItem(li) {
 			if( li == null ) var sValue = \"Ничего не выбрано!\";
 			if( !!li.extra ) var sValue = li.extra[0];
 			else var sValue = li.selectValue;
 			document.getElementById('tov_id').value=sValue;
-			
+
 		}
-		
+
 		</script>
-		
-		
+
+
 		<button type='submit'>Выполнить</button>
 		</form>
 		");
@@ -172,16 +172,16 @@ function Run($mode)
 		Необходимо выбрать товары, которые будут скомплектованы. Устанавливать цену не требуется - при проведении документа она будет выставлена автоматически исходя из стоимости затраченных ресурсов. Для того, чтобы узнать цены - обновите страницу. После выполнения сценария выбранные товары будут оприходованы на склад, а соответствующее им количество ресурсов, использованных для сборки, будет списано. Попытка провести через этот сценарий товары, не содержащие ресурсов, вызовет ошибку. Если это указано в свойствах товара, от агента-сборщика будет оприходована выбранная услуга для последующей выдачи заработной платы (на данный момент в размере $zp руб.).<br>
 		<a href='/doc_sc.php?mode=exec&amp;sn=sborka_zap&amp;doc=$doc&amp;tov_id=$tov_id&amp;agent=$agent&amp;sklad=$sklad&amp;firm=$firm&amp;nasklad=$nasklad&amp;not_a_p=$not_a_p'>Выполнить необходимые действия</a>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>");
-		
-		$document=new doc_Sborka($doc);		
+
+		$document=new doc_Sborka($doc);
 		$poseditor=new SZapPosEditor($document);
 		$dd=$document->getDopData();
 		$poseditor->cost_id=$dd['cena'];
 		$dd=$document->getDocData();
 		$poseditor->SetEditable($dd[6]?0:1);
 		$poseditor->sklad_id=$dd['sklad'];
-		$tmpl->AddText($poseditor->Show());		
-	}	
+		$tmpl->AddText($poseditor->Show());
+	}
 	else if($mode=='exec')
 	{
 		$doc=rcv('doc');
@@ -206,7 +206,7 @@ function Run($mode)
 		}
 		else
 		{
-			$altnum=GetNextAltNum(1,'auto');
+			$altnum=GetNextAltNum(1,'auto',0,0,1);
 			mysql_query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
 			VALUES	('$tim', '$firm', '1', '$uid', '$altnum', 'auto', '$sklad', '$agent', '$doc', '$zp')");
 			if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
@@ -216,9 +216,9 @@ function Run($mode)
 			$document2=AutoDocument($post_doc);
 			$document2->DocApply();
 		}
-		
+
 		mysql_query("UPDATE `doc_list` SET `sum`='$zp' WHERE `id`='$post_doc'");
-		
+
 		// Проверка, создано ли уже перемещение
 		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `type`='8' AND `p_doc`='$doc'");
 		if(mysql_num_rows($res))
@@ -235,7 +235,7 @@ function Run($mode)
 			$perem_doc->SetDopData('na_sklad',$nasklad);
 			$perem_doc->SetDopData('mest',1);
 		}
-		
+
 		if( ($sklad!=$nasklad) && $nasklad)
 		{
 			$docnum=$perem_doc->getDocNum();
@@ -249,7 +249,7 @@ function Run($mode)
 			}
 			if(!$not_a_p)	$perem_doc->DocApply();
 		}
-		
+
 		$tmpl->ajax=0;
 		$tmpl->msg("Все операции выполнены успешно. Размер зарплаты: $zp");
 	}
@@ -268,10 +268,10 @@ function Run($mode)
 
 		// Json-вариант списка товаров
 		if($opt=='jget')
-		{				
+		{
 			$doc_sum=DocSumUpdate($doc);
-			$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";			
-			$tmpl->AddText($str);			
+			$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";
+			$tmpl->AddText($str);
 		}
 		// Получение данных наименования
 		else if($opt=='jgpi')
@@ -306,24 +306,24 @@ function Run($mode)
 		else if($opt=='jsklad')
 		{
 			$group_id=rcv('group_id');
-			$str="{ response: 'sklad_list', group: '$group_id',  content: [".$poseditor->GetSkladList($group_id)."] }";		
-			$tmpl->SetText($str);			
+			$str="{ response: 'sklad_list', group: '$group_id',  content: [".$poseditor->GetSkladList($group_id)."] }";
+			$tmpl->SetText($str);
 		}
 		// Поиск по подстроке по складу
 		else if($opt=='jsklads')
 		{
 			$s=rcv('s');
-			$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";			
-			$tmpl->SetText($str);			
+			$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";
+			$tmpl->SetText($str);
 		}
 		else if($opt=='jsn')
 		{
 			$action=rcv('a');
 			$line_id=rcv('line');
 			$data=rcv('data');
-			$tmpl->SetText($poseditor->SerialNum($action, $line_id, $data) );	
+			$tmpl->SetText($poseditor->SerialNum($action, $line_id, $data) );
 		}
-	
+
 	}
 }
 
@@ -347,15 +347,15 @@ function ReCalcPosCost($doc, $tov_id)
 		{
 			$acp=GetInCost($nx[0],0,true);
 			if($acp>0)	$cost+=$nx[1]*$acp;
-			else		
+			else
 			$cost+=$nx[1]*$nx[2];
 			$cntc=$nxt[2]*$nx[1];
 			if($acp>0)	mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`) VALUES ('$doc', '$nx[0]', '$cntc', '$acp', '$nxt[1]')");
-			else		
+			else
 			mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`) VALUES ('$doc', '$nx[0]', '$cntc', '$nx[2]', '$nxt[1]')");
 			if(mysql_errno())	throw new MysqlException("Не удалось добавить ресурс в документ");
 		}
-		
+
 		// Расчитываем зарплату
 		$rs=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$nxt[1]'
@@ -369,7 +369,7 @@ function ReCalcPosCost($doc, $tov_id)
 			$cost+=$zp;
 		}
 		else $zp=0;
-		
+
 		mysql_query("UPDATE `doc_list_pos` SET `cost`='$cost' WHERE `id`='$nxt[0]'");
 	}
 	DocSumUpdate($doc);
@@ -382,7 +382,7 @@ function CalcZP($doc)
 	WHERE `doc`='$doc' AND `page`='0'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров документа");
 	while($nxt=mysql_fetch_row($res))
-	{		
+	{
 		$rs=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$nxt[1]'
 		WHERE `doc_base_params`.`param`='ZP'");

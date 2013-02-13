@@ -26,8 +26,7 @@ function Run($mode)
 		<input type='text' name='date_f' id='datepicker_f' value='$curdate'><br>
 		По:<br>
 		<input type='text' name='date_t' id='datepicker_t' value='$curdate'><br>
-		Сотрудник:<br><select name='user_id'>
-		<option value='0'>--не выбран--</option>");
+		Сотрудник:<br><select name='user_id'>");
 		$res=mysql_query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить имя кладовщика");
 		while($nxt=mysql_fetch_row($res))
@@ -80,11 +79,17 @@ function Run($mode)
 		$date_t=strtotime(rcv('date_t'));
 		$user_id=$_REQUEST['user_id'];
 		settype($user_id,'int');
-		$sql_add='';
-		if($user_id)	$sql_add=" AND `zlist`.`user`=$user_id";
 
 		$tmpl->AddText("<h1>".$this->getname()."</h1>");
-		$res=mysql_query("SELECT `curlist`.`id`, `curlist`.`user`, `doc_agent`.`name` AS `agent_name`, `curlist`.`date`, `curlist`.`sum`, `curusers`.`name` AS `ruser_name`, `zlist`.`user` AS `zuser`, `zusers`.`name` AS `zuser_name`, `curlist`.`p_doc`, `rkolist`.`sum` AS `ag_sum`, `curlist`.`agent` AS `agent_id`
+		if(!$tov_id)				throw new Exception("Не указана услуга!");
+
+		$res=mysql_query("SELECT `agent_id` FROM `users` WHERE `id`='$user_id'");
+		if(!$res)	throw new MysqlException("Не удалость запросить привязку агентов!");
+		if(!mysql_num_rows($res))		throw new Exception("Сотрудник на найден!");
+		list($agent_id)=mysql_fetch_row($res);
+		if(!$agent_id)	$tmpl->msg("Пользователь не привязан к агенту. Вы не сможете начислить заработную плату!",'err');
+
+		$res=mysql_query("SELECT `curlist`.`id`, `curlist`.`user`, `doc_agent`.`name` AS `agent_name`, `curlist`.`date`, `curlist`.`sum`, `curusers`.`name` AS `ruser_name`, `zlist`.`user` AS `zuser`, `zusers`.`name` AS `zuser_name`, `curlist`.`p_doc`, `rkolist`.`sum` AS `ag_sum`, `curlist`.`agent` AS `agent_id`, `n_data`.`value` AS `zp_s_prodaj`
 		FROM `doc_list` AS `curlist`
 		INNER JOIN `doc_agent` ON		`doc_agent`.`id`=`curlist`.`agent`
 		INNER JOIN `users` AS `curusers`	ON `curusers`.`id`=`curlist`.`user`
@@ -92,9 +97,10 @@ function Run($mode)
 		LEFT JOIN `doc_list` AS `rkolist`	ON `rkolist`.`p_doc`=`curlist`.`id` AND `rkolist`.`type`='7'
 		LEFT JOIN `users` AS `zusers`		ON `zusers`.`id`=`zlist`.`user`
 		LEFT JOIN `doc_list` AS `pay_doc`	ON `pay_doc`.`p_doc`=`curlist`.`id`
+		LEFT JOIN `doc_dopdata` AS `n_data`	ON `n_data`.`doc`=`curlist`.`id` AND `n_data`.`param`='zp_s_prodaj'
 		WHERE `curlist`.`ok`>'0' AND `curlist`.`type`='2' AND `curlist`.`date`>='$date_f' AND `curlist`.`date`<='$date_t'
-		AND `curlist`.`id` NOT IN (SELECT `doc` FROM `doc_dopdata` WHERE `param`='nzp') $sql_add");
-		echo mysql_error();
+		AND `curlist`.`id` NOT IN (SELECT `doc` FROM `doc_dopdata` WHERE `param`='nzp')  AND `zlist`.`user`=$user_id");
+		if(!$res)	throw new MysqlException("Не удалось получить список документов");
 		/// nsp (param) - начислена зарплата
 		$tmpl->AddText("
 		<form action='' method='post' enctype='multipart/form-data'>
@@ -102,6 +108,7 @@ function Run($mode)
 		<input type='hidden' name='param' value='i'>
 		<input type='hidden' name='sn' value='zp_s_prodaj'>
 		<input type='hidden' name='tov_id' id='tov_id' value='$tov_id'>
+		<input type='hidden' name='user_id' id='tov_id' value='$user_id'>
 		<table width='100%'>
 		<tr><th>ID<th>Автор<th>Агент<th>Дата<th>Сумма<th>Агентские<th>К начислению");
 		$i=0;
@@ -115,6 +122,7 @@ function Run($mode)
 					$users[$nxt['zuser']]=array();
 					$users[$nxt['zuser']]['name']=$nxt['zuser_name'];
 					$users[$nxt['zuser']]['sum']=0;
+					$users[$nxt['zuser']]['nsum']=0;
 				}
 			}
 			else
@@ -124,6 +132,7 @@ function Run($mode)
 					$users[$nxt['user']]=array();
 					$users[$nxt['user']]['name']=$nxt['ruser_name'];
 					$users[$nxt['user']]['sum']=0;
+					$users[$nxt['user']]['nsum']=0;
 				}
 
 			}
@@ -175,23 +184,75 @@ function Run($mode)
 			$date=date("Y-m-d H:i:s", $nxt['date']);
 
 			$tmpl->AddText("<tr class='lin$i $cl'><td><a href='/doc.php?mode=body&doc={$nxt['id']}'>{$nxt['id']}</a>
-			<td>{$nxt['ruser_name']} / {$nxt['zuser_name']}<td>{$nxt['agent_name']} <td>$date<td>{$nxt['sum']}<td>{$nxt['ag_sum']}<td><input type='text' name='sum_doc[{$nxt['id']}]' value='$nach_sum' $disable>");
+			<td>{$nxt['ruser_name']} / {$nxt['zuser_name']}<td>{$nxt['agent_name']} <td>$date<td>{$nxt['sum']}<td>{$nxt['ag_sum']}<td>");
+			if(!$nxt['zp_s_prodaj'])	$tmpl->AddText("{$nxt['zp_s_prodaj']} <input type='text' name='sum_doc[{$nxt['id']}]' value='$nach_sum' $disable>");
+			else
+			{
+				$tmpl->AddText("{$nxt['zp_s_prodaj']}");
+			}
 			$i=1-$i;
 			if($disable=='')
 			{
 				if($nxt['zuser']>0)
+				{
 					$users[$nxt['zuser']]['sum']+=$nach_sum;
+					if(!$nxt['zp_s_prodaj'])
+						$users[$nxt['zuser']]['nsum']+=$nach_sum;
+				}
 				else	$users[$nxt['user']]['sum']+=$nach_sum;
 			}
 		}
+		$but_disabled='';
+		if(!$agent_id)	$but_disabled='disabled';
+
 		$tmpl->AddText("</table>
-		<button>Начислить зарплату</button>
+		<button $but_disabled>Начислить зарплату</button>
 		</form>
-		Суммы выплат:<br>");
+		<table>
+		<tr><th>Сотрудник</th><th>Расчёт</th><th>К начислению</th></tr>");
 		foreach($users as $id=>$data)
 		{
-			$tmpl->AddText("user:$id({$data['name']}) - {$data['sum']} руб.<br>");
+			$tmpl->AddText("<tr><td>{$data['name']}</td><td>{$data['sum']}</td><td>{$data['nsum']}</td></tr>");
 		}
+		$tmpl->AddText("</table>");
+	}
+	else if($mode=='exec')
+	{
+		$tov_id=intval($_REQUEST['tov_id']);
+		$user_id=intval($_REQUEST['user_id']);
+
+		if(!is_array($_REQUEST['sum_doc']))	throw new Exception("Нечего начислять!");
+		if(!$user_id)				throw new Exception("Некому начислять!");
+		if(!$tov_id)				throw new Exception("Не указана услуга!");
+
+		$res=mysql_query("SELECT `agent_id` FROM `users` WHERE `id`='$user_id'");
+		if(!$res)	throw new MysqlException("Не удалость запросить привязку агентов!");
+		if(!mysql_num_rows($res))		throw new Exception("Сотрудник на найден!");
+		list($agent_id)=mysql_fetch_row($res);
+		if(!$agent_id)	throw new Exception("Необходимо привязать пользователя к агенту!");
+		mysql_query("START TRANSACTION");
+		$all_sum=0;
+		foreach($_REQUEST['sum_doc'] as $doc=>$sum)
+		{
+			$sum=round($sum,2);
+			settype($doc,'int');
+			if(!$sum)	continue;
+			$all_sum+=$sum;
+			mysql_query("INSERT INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'zp_s_prodaj', '$sum')");
+			if(mysql_errno())	throw new MysqlException("Не удалось установить пометку о выданной зарплате".mysql_error());
+		}
+
+		$tim=time();
+		$uid=$_SESSION['uid'];
+		$altnum=GetNextAltNum(1,'auto',0,$tim,1);
+		mysql_query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
+		VALUES	('$tim', '1', '1', '$uid', '$altnum', 'auto', '1', '$agent_id', '0', '$all_sum')");
+		if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
+		$post_doc=mysql_insert_id();
+		mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$all_sum')");
+		if(mysql_errno())	throw new MysqlException("Не удалось добавить услугу");
+		mysql_query("COMMIT");
+		header("location: /doc.php?mode=body&doc=$post_doc");
 	}
 }
 
