@@ -60,18 +60,7 @@ $tmpl->AddText("<table width='100%' cellspacing='1' id='doc_list' class='list'>
 while($line=mysql_fetch_assoc($res))
 {
 	if($line['status']=='ok' || $line['status']=='err')	continue;
-	$status='';
-	switch($line['status'])
-	{
-		case 'inproc':
-			$status='В процессе';
-			break;
-		case 'ready':
-			$status='Готов';
-			break;
-		default:
-			$status='Новый';
-	}
+	$status=$CONFIG['doc']['status_list'][$line['status']];
 	switch($line['pay_type'])
 	{
 		case 'bank':	$pay_type="безналичный";	break;

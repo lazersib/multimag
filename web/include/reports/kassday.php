@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -23,8 +23,8 @@ class Report_KassDay extends BaseReport
 
 	function getName($short=0)
 	{
-		if($short)	return "Кассовый за день";
-		else		return "Кассовый отчёт за выбранный день";
+		if($short)	return "Кассовый";
+		else		return "Кассовый отчёт";
 	}
 
 	function Form()
@@ -43,13 +43,17 @@ class Report_KassDay extends BaseReport
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
 		}
 		$tmpl->AddText("</select><br>
-		Выберите дату:<br>
-		<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
+		Начальная дата:<br>
+		<input type='text' name='date_f' id='datepicker_f' value='$curdate'><br>
+		Конечная дата:<br>
+		<input type='text' name='date_t' id='datepicker_t' value='$curdate'><br>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать</button></form>
-		<script type='text/javascript'>
+		<script type=\"text/javascript\">
 		initCalendar('datepicker_f',false);
-		</script>");
+		initCalendar('datepicker_t',false);
+		</script>
+		");
 	}
 	
 	function Make($engine)
@@ -57,17 +61,18 @@ class Report_KassDay extends BaseReport
 		global $CONFIG;
 		$this->loadEngine($engine);
 		
-		$dt=rcv('date');
+		$dt_f=rcv('date_f');
+		$dt_t=rcv('date_t');
 		$kass=rcv('kass');
 		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список касс");
 		$kass_list=array();
 		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt[1];
 		
-		$this->header("Отчёт по кассе {$kass_list[$kass]} за $dt");
+		$this->header("Отчёт по кассе {$kass_list[$kass]} с $dt_f по $dt_t");
 	
-		$daystart=strtotime("$dt 00:00:00");
-		$dayend=strtotime("$dt 23:59:59");
+		$daystart=strtotime("$dt_f 00:00:00");
+		$dayend=strtotime("$dt_t 23:59:59");
 		
 		$widths=array(5,8,59, 9, 9, 9);
 		$headers=array('ID','Время','Документ','Приход','Расход','В кассе');
@@ -94,9 +99,9 @@ class Report_KassDay extends BaseReport
 			if( !$flag && $nxt[3]>=$daystart && $nxt[3]<=$dayend)
 			{
 				$flag=1;
-				$sum_p=sprintf("%0.2f руб.",$sum);
+				$sum_p=sprintf("%0.2f",$sum);
 				$this->tableAltStyle();
-				$this->tableSpannedRow(array($this->col_cnt-1,1),array("На начало дня",$sum_p));
+				$this->tableSpannedRow(array($this->col_cnt-1,1),array("На начало периода",$sum_p));
 				$this->tableAltStyle(false);
 			}
 			if($nxt[1]==6)		$sum+=$nxt[2];
@@ -113,13 +118,13 @@ class Report_KassDay extends BaseReport
 				{
 					$daysum+=$nxt[2];
 					$prix+=$nxt[2];
-					$csum_p=sprintf("%0.2f руб.",$nxt[2]);
+					$csum_p=sprintf("%0.2f",$nxt[2]);
 				}
 				else if($nxt[1]==7)
 				{
 					$daysum-=$nxt[2];
 					$rasx+=$nxt[2];
-					$csum_r=sprintf("%0.2f руб.",$nxt[2]);
+					$csum_r=sprintf("%0.2f",$nxt[2]);
 				}
 				else
 				{
@@ -127,13 +132,13 @@ class Report_KassDay extends BaseReport
 					{
 						$daysum-=$nxt[2];
 						$rasx+=$nxt[2];
-						$csum_r=sprintf("%0.2f руб.",$nxt[2]);
+						$csum_r=sprintf("%0.2f",$nxt[2]);
 					}
 					else
 					{
 						$daysum+=$nxt[2];
 						$prix+=$nxt[2];
-						$csum_p=sprintf("%0.2f руб.",$nxt[2]);
+						$csum_p=sprintf("%0.2f",$nxt[2]);
 					}
 				}
 				if($nxt[8])	$sadd="\nк $nxt[9] N$nxt[10]$nxt[11] от ".date("d-m-Y H:i:s",$nxt[12])." на сумму ".sprintf("%0.2f руб",$nxt[13])."";
@@ -146,37 +151,37 @@ class Report_KassDay extends BaseReport
 					else				$sadd.="\nиз кассы {$kass_list[$nxt['kassa']]}";
 				}
 				$dt=date("H:i:s",$nxt[3]);
-				$sum_p=sprintf("%0.2f руб.",$sum);
+				$sum_p=sprintf("%0.2f",$sum);
 				$this->tableRow(array($nxt[0], $dt, "$nxt[6] N$nxt[4]$nxt[5]   $sadd", $csum_p, $csum_r, $sum_p));
 			}
 		}
 		if( !$flag)
 		{
-				$sum_p=sprintf("%0.2f руб.",$sum);
+				$sum_p=sprintf("%0.2f",$sum);
 				$this->tableAltStyle();
-				$this->tableSpannedRow(array($this->col_cnt-1,1),array("На начало дня",$sum_p));
+				$this->tableSpannedRow(array($this->col_cnt-1,1),array("На начало периода",$sum_p));
 				$this->tableAltStyle(false);
 		}
 		if($flag)
 		{
-			$dsum_p=sprintf("%0.2f руб.",$daysum);
-			$psum_p=sprintf("%0.2f руб.",$prix);
-			$rsum_p=sprintf("%0.2f руб.",$rasx);
+			$dsum_p=sprintf("%0.2f",$daysum);
+			$psum_p=sprintf("%0.2f",$prix);
+			$rsum_p=sprintf("%0.2f",$rasx);
 			
 			$this->tableAltStyle();
-			$this->tableSpannedRow(array(3,1,1,1),array("На конец дня",$psum_p,$rsum_p,$sum_p));
-			$this->tableSpannedRow(array(3,3),array("Разница за смену",$dsum_p));
+			$this->tableSpannedRow(array(3,1,1,1),array("На конец периода",$psum_p,$rsum_p,$sum_p));
+			$this->tableSpannedRow(array(3,3),array("Разница за период",$dsum_p));
 			$this->tableAltStyle(false);
  		}
  		else
  		{
-			$this->tableSpannedRow(array($this->col_cnt),array("Нет данных по балансу на выбранную дату"));
+			$this->tableSpannedRow(array($this->col_cnt),array("Нет данных по балансу за выбранный период"));
  		}
  		
  		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
  		$nm=mysql_result($res,0,0);
  		
-		$this->tableSpannedRow(array($this->col_cnt),array("\nCоответствие сумм подтверждаю ___________________ ($nm)\n"));
+		$this->tableSpannedRow(array($this->col_cnt),array("\nCоответствие сумм подтверждаю ___________________ ($nm)\nБез подписи не действителен!"));
 		$this->tableEnd();
 		$this->output();
 		exit(0);

@@ -243,15 +243,7 @@ class doc_Realizaciya extends doc_Nulltype
 		if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка записи начисленных бонусов!');
 		mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
-		if($this->doc_data['p_doc'])
-		{
-			$doc=AutoDocument($this->doc_data['p_doc']);
-			if($doc->doc_type==3)
-			{
-				$doc->setStatus('ok');
-
-			}
-		}
+		$this->sentZEvent('apply');
 	}
 
 	function DocCancel()
@@ -282,14 +274,15 @@ class doc_Realizaciya extends doc_Nulltype
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
 			if(mysql_error())	throw new MysqlException("Ошибка изменения количества товара id:$nxt[0] на складе $nx[3]!");
 		}
+		$this->sentZEvent('cancel');
 	}
 
 	function PrintForm($doc, $opt='')
 	{
 		global $tmpl;
+		if(!$opt)	$this->sentZEvent('print');
 		if($opt=='')
 		{
-
 			$tmpl->ajax=1;
 			$tmpl->AddText("
 			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=nak'\">Накладная</div>
@@ -490,7 +483,7 @@ class doc_Realizaciya extends doc_Nulltype
 
 		$tmpl->AddText("<h1>Накладная N {$this->doc_data[9]}{$this->doc_data[10]} ({$this->doc}), от $dt </h1>
 		<b>Поставщик: </b>{$this->firm_vars['firm_name']}<br>
-		<b>Покупатель: </b>{$this->doc_data[3]}<br><br>");
+		<b>Покупатель: </b>{$this->doc_data['agent_fullname']}<br><br>");
 
 		$tmpl->AddText("
 		<table width='800' cellspacing='0' cellpadding='0'>
@@ -587,7 +580,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$str="Поставщик: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
-		$str="Покупатель: {$this->doc_data[3]}";
+		$str="Покупатель: {$this->doc_data['agent_fullname']}";
 		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($str));
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
@@ -952,7 +945,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 		$pdf->Ln();
 		$pdf->SetWidths($t_width);
-		$pdf->SetHeight(4);
+		$pdf->SetHeight(5);
 
 		$aligns=array('R');
 		if($CONFIG['poseditor']['vc'])
@@ -975,7 +968,7 @@ class doc_Realizaciya extends doc_Nulltype
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
-		ORDER BY `doc_list_pos`.`id`");
+		ORDER BY `doc_base_cnt`.`mesto`");
 		$i=0;
 		$ii=1;
 		$sum=0;

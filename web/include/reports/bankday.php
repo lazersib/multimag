@@ -23,8 +23,8 @@ class Report_BankDay
 
 	function getName($short=0)
 	{
-		if($short)	return "Банковский за день";
-		else		return "Банковский отчёт за текущий день";
+		if($short)	return "Банковский";
+		else		return "Банковский отчёт";
 	}
 
 
@@ -33,11 +33,6 @@ class Report_BankDay
 		global $tmpl;
 		$curdate=date("Y-m-d");
 		$tmpl->AddText("<h1>".$this->getName()."</h1>
-		<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
-		<script src='/css/jquery/ui/jquery.ui.core.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
-		<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
 		<form action=''>
 		<input type='hidden' name='mode' value='bankday'>
 		<input type='hidden' name='opt' value='ok'>
@@ -49,24 +44,32 @@ class Report_BankDay
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] ($nxt[2])</option>");
 		}
 		$tmpl->AddText("</select><br>
-		Выберите дату:<br>
-		<input type='text' name='date' id='datepicker_f' value='$curdate'><br>
-		<button type='submit'>Сформировать</button></form>");
+		Начальная дата:<br>
+		<input type='text' name='date_f' id='datepicker_f' value='$curdate'><br>
+		Конечная дата:<br>
+		<input type='text' name='date_t' id='datepicker_t' value='$curdate'><br>
+		<button type='submit'>Сформировать</button></form>
+		<script type=\"text/javascript\">
+		initCalendar('datepicker_f',false);
+		initCalendar('datepicker_t',false);
+		</script>
+		");
 	}
 	
 	function MakeHTML()
 	{
 		global $tmpl;
 		$tmpl->LoadTemplate('print');
-		$dt=rcv('date');
+		$dt_f=rcv('date_f');
+		$dt_t=rcv('date_t');
 		$kass=rcv('kass');
 		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список банок");
 		$kass_list=array();
 		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt;
-		$tmpl->SetText("<h1>Отчёт по банку {$kass_list[$kass][1]} ({$kass_list[$kass][2]}) за $dt</h1>");	
-		$daystart=strtotime("$dt 00:00:00");
-		$dayend=strtotime("$dt 23:59:59");
+		$tmpl->SetText("<h1>Отчёт по банку {$kass_list[$kass][1]} ({$kass_list[$kass][2]}) с $dt_f по $dt_t</h1>");	
+		$daystart=strtotime("$dt_f 00:00:00");
+		$dayend=strtotime("$dt_t 23:59:59");
 		$tmpl->AddText("<table width='100%'><tr><th>ID<th>Время<th>Документ<th>Приход<th>Расход<th>В банке");			
 		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`, `doc_list`.`bank`
 		FROM `doc_list`
@@ -89,7 +92,7 @@ class Report_BankDay
 			{
 				$flag=1;
 				$sum_p=sprintf("%0.2f руб.",$sum);
-				$tmpl->AddText("<tr><td colspan=5><b>На начало дня</b><td align='right'><b>$sum_p</b>");
+				$tmpl->AddText("<tr><td colspan=5><b>На начало периода</b><td align='right'><b>$sum_p</b>");
 			}
 			if($nxt[1]==4)		$sum+=$nxt[2];
 			else if($nxt[1]==5)	$sum-=$nxt[2];
@@ -128,10 +131,10 @@ class Report_BankDay
 			$dsum_p=sprintf("%0.2f руб.",$daysum);
 			$psum_p=sprintf("%0.2f руб.",$prix);
 			$rsum_p=sprintf("%0.2f руб.",$rasx);
-			$tmpl->AddText("<tr><td>-<td>-<td><b>На конец дня</b><td align='right'><b>$psum_p</b><td align='right'><b>$rsum_p</b><td align='right'><b>$sum_p</b>");
-			$tmpl->AddText("<tr><td>-<td>-<td><b>Разница за смену</b><td align='right' colspan=3><b>$dsum_p</b>");
+			$tmpl->AddText("<tr><td>-<td>-<td><b>На конец периода</b><td align='right'><b>$psum_p</b><td align='right'><b>$rsum_p</b><td align='right'><b>$sum_p</b>");
+			$tmpl->AddText("<tr><td>-<td>-<td><b>Разница за период</b><td align='right' colspan=3><b>$dsum_p</b>");
  		}
- 		else	$tmpl->AddText("<tr><td>-<td>-<td><b>Нет данных по балансу на выбранную дату</b><td align='right'><b>нет данных</b><td align='right'><b>нет данных</b><td align='right'><b>нет данных</b>");
+ 		else	$tmpl->AddText("<tr><td>-<td>-<td><b>Нет данных по балансу за выбранный период</b><td align='right'><b>нет данных</b><td align='right'><b>нет данных</b><td align='right'><b>нет данных</b>");
  		
  		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
  		$nm=mysql_result($res,0,0);

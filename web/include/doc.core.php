@@ -782,7 +782,7 @@ function DocVPuti($pos,$doc=0)
 
 function AutoDocument($doc)
 {
-	$doc=round($doc);
+	settype($doc,'int');
 	$res=mysql_query("SELECT `type` FROM `doc_list` WHERE `id`=$doc");
 	if(mysql_errno())		throw new MysqlException("Не удалось получить тип документа");
 	if(!mysql_num_rows($res))	throw new Exception("Документ не найден");

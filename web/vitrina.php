@@ -374,8 +374,9 @@ protected function ProductList($group, $page)
 /// Блок товаров, выбранных по признаку, основанному на типе блока
 protected function ViewBlock($block)
 {
-	global $tmpl, $CONFIG;
+	global $tmpl, $CONFIG, $wikiparser;
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
+	$head='';
 	/// Определение типа блока
 	if($block=='stock')
 	{
@@ -389,7 +390,7 @@ protected function ViewBlock($block)
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_base`.`hidden`='0' AND `doc_base`.`stock`!='0'
 		ORDER BY `doc_base`.`likvid` ASC";
-		$tmpl->AddText("<h1>Распродажа</h1>");
+		$head='Распродажа';
 	}
 	else if($block=='popular')
 	{
@@ -405,7 +406,7 @@ protected function ViewBlock($block)
 		WHERE `doc_base`.`hidden`='0'
 		ORDER BY `doc_base`.`likvid` DESC
 		LIMIT 48";
-		$tmpl->AddText("<h1>Популярные товары</h1>");
+		$head='Популярные товары';
 	}
 	else if($block=='new')
 	{
@@ -423,7 +424,7 @@ protected function ViewBlock($block)
 		WHERE `doc_base`.`hidden`='0' AND (`doc_base`.`create_time`>='$new_time' OR `doc_base`.`buy_time`>='$new_time')
 		ORDER BY `doc_base`.`buy_time` DESC
 		LIMIT 24";
-		$tmpl->AddText("<h1>Новинки</h1>");
+		$head='Новинки';
 	}
 	else if($block=='transit')
 	{
@@ -438,13 +439,64 @@ protected function ViewBlock($block)
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_base`.`hidden`='0' AND `doc_base`.`transit_cnt`>0
 		ORDER BY `doc_base`.`name`";
-		$tmpl->AddText("<h1>Товар в пути</h1>");
+		$head='Товар в пути';
 	}
 	else
 	{
 		header('HTTP/1.0 404 Not Found');
 		header('Status: 404 Not Found');
 		throw new Exception('Блок не найден!');
+	}
+
+	$page_name='vitrina:'.$block;
+	$res=mysql_query("SELECT `articles`.`name`, `a`.`name` AS `a_name`, `articles`.`date`, `articles`.`changed`, `b`.`name` AS `b_name`, `articles`.`text`, `articles`.`type`
+	FROM `articles`
+	LEFT JOIN `users` AS `a` ON `a`.`id`=`articles`.`autor`
+	LEFT JOIN `users` AS `b` ON `b`.`id`=`articles`.`changeautor`
+	WHERE `articles`.`name` = '$page_name'");
+	if(mysql_errno())	throw new MysqlException("Невозможно получить текст блока");
+	if($nxt=mysql_fetch_assoc($res))
+	{
+		$meta_description=$meta_keywords='';
+		$text=$nxt['text'];
+		if($nxt['type']==0)	$text=strip_tags($text, '<nowiki>');
+		if($nxt['type']==0 || $nxt['type']==2)
+		{
+			$text=$wikiparser->parse(html_entity_decode($text,ENT_QUOTES,"UTF-8"));
+			if(@$wikiparser->title)
+				$head=$wikiparser->title;
+			$meta_description=@$wikiparser->definitions['meta_description'];
+			$meta_keywords=@$wikiparser->definitions['meta_keywords'];
+			$tmpl->AddText("<h1 id='page-title'>$head</h1>");
+		}
+		if($nxt['type']==1 || $nxt['type']==2)	$text=html_entity_decode($text,ENT_QUOTES,"UTF-8");
+
+		$tmpl->SetTitle($head);
+
+		if(@$_SESSION['uid'])
+		{
+			if(isAccess('generic_articles','edit'))
+			{
+				if($nxt['b_name']) $ch=", последнее изменение - {$nxt['b_name']}, date {$nxt['changed']}";
+				else $ch='';
+				$tmpl->AddText("<div id='page-info'>Создал: {$nxt['a_name']}, date: {$nxt['date']} $ch");
+				$tmpl->AddText(", <a href='/articles.php?p=$page_name&amp;mode=edit'>Исправить</a>");
+				$tmpl->AddText("</div>");
+			}
+		}
+		$tmpl->AddText("<div>$text</div>");
+		$tmpl->SetMetaKeywords($meta_keywords);
+		$tmpl->SetMetaDescription($meta_description);
+	}
+	else
+	{
+		$tmpl->AddText("<h1 id='page-title'>$head</h1>");
+		if(@$_SESSION['uid'])
+		{
+			if(isAccess('generic_articles','edit'))
+				$tmpl->AddText("<div id='page-info'><a href='/articles.php?p=$page_name&amp;mode=edit'>Создать</a></div>");
+		}
+		$tmpl->SetTitle($head);
 	}
 
 	$res=mysql_query($sql);
@@ -590,10 +642,11 @@ protected function ProductCard($product)
 				$midiimg->SetX(200);
 				$midiimg->SetY(220);
 				$fullimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
-				//$fullimg->SetY(300);
+				$fullimg->SetY(800);
+				$originimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
 				if(mysql_num_rows($res)>1)
 					$img_mini.="<a href='".$midiimg->GetURI()."' onclick=\"return setPhoto({$img_data['img_id']});\"><img src='".$miniimg->GetURI()."' alt='{$img_data['name']}'></a>";
-				$appends.="midiphoto.appendImage({$img_data['img_id']},'".html_entity_decode($midiimg->GetURI(), ENT_COMPAT, 'UTF-8')."', '".html_entity_decode($fullimg->GetURI(), ENT_COMPAT, 'UTF-8')."');\n";
+				$appends.="midiphoto.appendImage({$img_data['img_id']},'".html_entity_decode($midiimg->GetURI(), ENT_COMPAT, 'UTF-8')."', '".html_entity_decode($fullimg->GetURI(), ENT_COMPAT, 'UTF-8')."', '".html_entity_decode($originimg->GetURI(), ENT_COMPAT, 'UTF-8')."');\n";
 
 			}
 		}

@@ -219,7 +219,8 @@ class ImageProductor
 		}
 // 		header("Content-type: image/jpg");
 // 		imagejpeg($im,"",$this->quality);
-
+		
+		imageinterlace($im ,1);	// Progressive JPEG
 		if($this->type=='jpg')		imagejpeg($im,$cname,$this->quality);
 		else if($this->type=='gif')	imagegif($im,$cname,$this->quality);
 		else 				imagepng($im,$cname,9);

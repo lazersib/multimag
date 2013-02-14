@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,26 +24,26 @@ include_once($CONFIG['site']['location']."/include/doc.v_puti.php");
 
 $doc_types[0]="Неопределённый документ";
 
-/// Базовый класс для всех документов стстемы. Содержит остновные методы для работы с документами.
+/// Базовый класс для всех документов системы. Содержит основные методы для работы с документами.
 class doc_Nulltype
 {
-	protected $doc;				// ID документа
-	protected $doc_type;			// ID типа документа
-	protected $doc_name;			// Наименование документа	(для контроля прав и пр.)
-	protected $doc_viewname;		// Отображаемое название документа при просмотре и печати
-	protected $sklad_editor_enable;		// Разрешить отображение редактора склада
+	protected $doc;				///< ID документа
+	protected $doc_type;			///< ID типа документа
+	protected $doc_name;			///< Наименование документа	(для контроля прав и пр.)
+	protected $doc_viewname;		///< Отображаемое название документа при просмотре и печати
+	protected $sklad_editor_enable;		///< Разрешить отображение редактора склада
 
 							// Значение следующих полей: +1 - увеличивает, -1 - уменьшает, 0 - не влияет
 							// Документы перемещений должны иметь 0 в соответствующих полях !
-	protected $sklad_modify;		// Изменяет ли общие остатки на складе
-	protected $bank_modify;			// Изменяет ли общие средства в банке
-	protected $kassa_modify;		// Изменяет ли общие средства в кассе
+	protected $sklad_modify;		///< Изменяет ли общие остатки на складе
+	protected $bank_modify;			///< Изменяет ли общие средства в банке
+	protected $kassa_modify;		///< Изменяет ли общие средства в кассе
 
-	protected $header_fields;		// Поля заголовка документа, доступные через форму редактирования
-	protected $dop_menu_buttons;		// Дополнительные кнопки меню
-	protected $doc_data;
-	protected $dop_data;
-	protected $firm_vars;			// информация с данными о фирме
+	protected $header_fields;		///< Поля заголовка документа, доступные через форму редактирования
+	protected $dop_menu_buttons;		///< Дополнительные кнопки меню
+	protected $doc_data;			///< Основные данные документа
+	protected $dop_data;			///< Дополнительные данные документа
+	protected $firm_vars;			///< информация с данными о фирме
 
 	public function __construct($doc=0)
 	{
@@ -75,7 +75,9 @@ class doc_Nulltype
 		}
 		$this->doc_data[$name]=$value;
 	}
-
+	
+	/// Установить дополнительные данные текущего документа
+	/// TODO: Сделать аналогичную функцию с массивом key=>value изменяемых данных
 	public function SetDopData($name, $value)
 	{
 		if($this->doc && $this->dop_data[$name]!=$value)
@@ -127,7 +129,8 @@ class doc_Nulltype
 		$this->get_docdata();
 		return $this->doc;
 	}
-	// Создать документ на основе данных другого документа
+	
+	/// Создать документ на основе данных другого документа
 	public function CreateFrom($doc_obj)
 	{
 		$doc_data=$doc_obj->doc_data;
@@ -135,7 +138,8 @@ class doc_Nulltype
 		$this->Create($doc_data);
 		return $this->doc;
 	}
-	// Создать документ с товарными остатками на основе другого документа
+	
+	/// Создать документ с товарными остатками на основе другого документа
 	public function CreateFromP($doc_obj)
 	{
 		$doc_data=$doc_obj->doc_data;
@@ -155,8 +159,8 @@ class doc_Nulltype
 		return $this->doc;
 	}
 
-	// Создать документ с товарными остатками на основе другого документа
-	// В новый документ войдут только те наименования, которых нет в других подчинённых документах
+	/// Создать документ с товарными остатками на основе другого документа
+	/// В новый документ войдут только те наименования, которых нет в других подчинённых документах
 	public function CreateFromPDiff($doc_obj)
 	{
 		$doc_data=$doc_obj->doc_data;
@@ -204,6 +208,33 @@ class doc_Nulltype
 		}
 		return $this->doc;
 	}
+	
+	/// Послать в связанный заказ событие с заданным типом.
+	/// Полное название события будет doc:{$docname}:{$event_type}
+	/// @param event_type Название события
+	public function sentZEvent($event_type)
+	{
+		$event_name="doc:{$this->doc_name}:$event_type";
+		if($this->doc_type==3)	$this->dispatchZEvent($event_name);
+		else
+		{
+			$pdoc=$this->doc_data['p_doc'];
+			while($pdoc)
+			{
+				$res=mysql_query("SELECT `id`, `type` FROM `doc_list` WHERE `id`=$pdoc");
+				if(mysql_errno())		throw new MysqlException("Не удалось получить тип документа");
+				if(!mysql_num_rows($res))	throw new Exception("Документ не найден");
+				list($pdoc_id, $pdoc_type)=mysql_fetch_row($res);
+				if($pdoc_type==3)
+				{
+					$doc=doc_Zayavka($pdoc_id);
+					$doc->dispatchZEvent($event_name);
+					return;
+				}
+				$pdoc=$pdoc_id;
+			}
+		}
+	}
 
 	public function head()
 	{
@@ -237,7 +268,8 @@ class doc_Nulltype
 			$this->DrawHeadformEnd();
 		}
 	}
-	// Применить изменения редактирования
+	
+	/// Применить изменения редактирования
 	public function head_submit()
 	{
 		global $tmpl;
@@ -373,7 +405,8 @@ class doc_Nulltype
 		}
 		return $this->doc=$doc;
 	}
-	// Сохранение заголовка документа и возврат результата в json формате
+	
+	/// Сохранение заголовка документа и возврат результата в json формате
 	public function json_head_submit()
 	{
 		global $uid, $tmpl;
@@ -495,7 +528,8 @@ class doc_Nulltype
 		}
 
 	}
-	// Редактирование тела докумнета
+	
+	/// Редактирование тела докумнета
 	public function body()
 	{
 		global $tmpl, $uid;
@@ -787,14 +821,14 @@ class doc_Nulltype
 		return $json;
 	}
 
-	// Отменить проведение
+	/// Отменить проведение
 	function Cancel($doc)
 	{
 		global $tmpl;
 		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
 	}
 
-	// Отменить проведение, не обращая внимание на структуру подчинённости
+	/// Отменить проведение, не обращая внимание на структуру подчинённости
 	function ForceCancel()
 	{
 		global $tmpl, $uid;
@@ -822,6 +856,7 @@ class doc_Nulltype
 		}
 
 	}
+	
 	/// Отправка документа по факсу
 	final function SendFax($opt='')
 	{
@@ -875,6 +910,7 @@ class doc_Nulltype
 		}
 
 	}
+	
 	/// Отправка документа по электронной почте
 	final function SendEMail($opt='')
 	{
@@ -925,37 +961,6 @@ class doc_Nulltype
 
 	}
 
-// 		function SendEMail($doc, $email='')
-// 	{
-// 		global $tmpl;
-// 		if(!$email)
-// 			$email=rcv('email');
-//
-// 		if($email=='')
-// 		{
-// 			$tmpl->ajax=1;
-// 			get_docdata($doc);
-// 			global $doc_data;
-// 			$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='$doc_data[2]'");
-// 			$email=mysql_result($res,0,0);
-// 			$tmpl->AddText("<form action=''>
-// 			<input type=hidden name=mode value='print'>
-// 			<input type=hidden name=doc value='$doc'>
-// 			<input type=hidden name=opt value='zayavka_email'>
-// 			email:<input type=text name=email value='$email'>
-// 			<input type=submit value='&gt;&gt;'>
-// 			</form>");
-// 		}
-// 		else
-// 		{
-// 			$comm=rcv('comm');
-// 			doc_menu();
-// 			$this->SendDocEMail($email, $comm, 'Заявка на поставку', $this->PrintPDF($doc, 1), "order.pdf", "Здравствуйте!\nПрошу рассмотреть возможность поставки Вашей продукции для {$CONFIG['site']['name']}.\nПодробная информация во вложении.");
-// 			$tmpl->msg("Сообщение отправлено!","ok");
-//     }
-//
-// 	}
-
 	/// Печать документа
 	function Printform($doc, $opt='')
 	{
@@ -963,13 +968,15 @@ class doc_Nulltype
 		$tmpl->ajax=1;
 		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",'err');
 	}
+	
 	/// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
 	{
 		global $tmpl;
 		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",'err');
 	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
+	
+	/// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function DelExec($doc)
 	{
 		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
@@ -984,7 +991,7 @@ class doc_Nulltype
 		if(mysql_errno())		throw new MysqlException("Не удалось удалить документ");
    	}
 
-   	// Сделать документ потомком указанного документа
+   	/// Сделать документ потомком указанного документа
    	function Connect($p_doc)
    	{
    		if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
@@ -1009,7 +1016,7 @@ class doc_Nulltype
 		}
 	}
 
-   	// Получение информации, не связанной со складом, и допустимых для проведённых докеументов
+   	/// Получение информации, не связанной со складом, и допустимых для проведённых докеументов
    	function GetInfo()
    	{
 		global $tmpl;
@@ -1089,7 +1096,7 @@ class doc_Nulltype
 		else			return 0;
    	}
 
-	// Служебные опции
+	/// Служебные опции
 	function _Service($opt, $pos)
 	{
 		//if(!$this->sklad_editor_enable) return 0;
@@ -1274,7 +1281,8 @@ class doc_Nulltype
 	{
 		$this->DrawHeadformStart('j');
 	}
-	// Служебные методы формирования документа
+	
+	/// Отобразить заголовок шапки документа
 	protected function DrawHeadformStart($alt='')
 	{
 		global $tmpl, $CONFIG;
@@ -1489,7 +1497,7 @@ class doc_Nulltype
 		global $CONFIG;
 		if($this->doc)
 		{
-			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`
+			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`, `b`.`fullname` AS `agent_fullname`
 			FROM `doc_list` AS `a`
 			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
 			WHERE `a`.`id`='".$this->doc."'");
@@ -1521,7 +1529,7 @@ class doc_Nulltype
 		}
 	}
 
-	// === Получение альтернативного порядкового номера документа =========
+	/// Получение альтернативного порядкового номера документа
 	public function GetNextAltNum($doc_type, $subtype, $date, $firm_id)
 	{
 		global $CONFIG;
@@ -1539,7 +1547,7 @@ class doc_Nulltype
 		return $newnum;
 	}
 
-	// === Кнопки меню - провети / отменить ===
+	/// Кнопки меню - провети / отменить
 	protected function dop_buttons()
 	{
 		global $tmpl;
@@ -1579,7 +1587,8 @@ class doc_Nulltype
 // 		$a='';
 		return "<a title='Отменить проводку' onclick='CancelDoc({$this->doc}); return false;'><img src='img/i_revert.png' alt='Отменить' /></a>";
 	}
-	// Вычисление, можно ли отменить кассовый документ
+	
+	/// Вычисление, можно ли отменить кассовый документ
 	protected function CheckKassMinus()
 	{
 		$sum=0;
@@ -1616,7 +1625,7 @@ class doc_Nulltype
 		return $sum;
 	}
 
-	// Сбросить цены документа
+	/// Сбросить цены в списке товаров документа к ценам по умолчанию
 	protected function ResetCost()
 	{
 		if(!$this->doc)			throw new Exception("Документ не определён!");

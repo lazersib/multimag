@@ -39,87 +39,112 @@ class doc_Zayavka extends doc_Nulltype
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
 		);
 	}
-
-	/// Функция устанавливает статус, и выполняет информирование клиента о событии
-	/// Для защиты от многократного информирования, не меняет статус с большего на меньший (см. порядок)
-	function setStatus($status)
+	
+	/// Функция обработки событий, связанных  с заказом
+	/// @param event_name Полное название события
+	public function dispatchZEvent($event_name)
 	{
 		global $CONFIG;
-		$status_options=array(1=>'inproc',2=>'ready',3=>'ok',4=>'err');
-		$status_options_text=array('err'=>'Ошибочный','inproc'=>'В процессе','ready'=>'Готов','ok'=>'Отгружен');
-		if(!in_array($status,$status_options))	$status='';
-		if($this->dop_data['status']==$status)	return;
-		if(array_search($this->dop_data['status'],$status_options)>=array_search($status,$status_options))	return;
-
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$status')");
-		$this->dop_data['status']=$status;
-
-		// Отправка по e-mail
-		if(@$CONFIG['doc']['notify_email'])
+		if(isset($CONFIG['zstatus'][$event_name]))
 		{
-			if(isset($this->dop_data['buyer_email']))	$email=$this->dop_data['buyer_email'];
-			else if($this->doc_data['agent']>1)
+			$s=array('{DOC}','{SUM}','{DATE}');
+			$r=array($this->doc,$this->doc_data['sum'],date('Y-m-d',$this->doc_data['date']));
+			
+			foreach($CONFIG['zstatus'][$event_name] as $trigger=>$value)
 			{
-				$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$doc_data['user']}'");
-				$email=mysql_result($res,0,0);
-				if(!$email)
+				switch($trigger)
 				{
-					$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$doc_data['user']}'");
-					$email=@mysql_result($res,0,0);
+					case 'set_status':
+						mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$value')");
+						if(mysql_errno())	throw new MysqlException("Не удалось записпть статус заказа");
+						$this->dop_data['status']=$value;
+						break;
+					case 'send_sms':
+						$value=str_replace($s,$r,$value);
+						$this->sendSMSNotify($value);
+						break;
+					case 'send_email':
+						$value=str_replace($s,$r,$value);
+						$this->sendEmailNotify($value);
+						break;
+					case 'notify':
+						$value=str_replace($s,$r,$value);
+						$this->sendSMSNotify($value);
+						$this->sendEmailNotify($value);
+						break;
 				}
 			}
-			else
-			{
-				$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$doc_data['autor']}'");
-				$email=@mysql_result($res,0,0);
-			}
-
-			if($email)
-			{
-				$user_msg="Уважаемый клиент!\nСтатус Вашего заказа на сайте {$CONFIG['site']['name']} изменён на {$status_options_text[$status]}";
-				mailto($email,"Заказ N {$this->doc} на {$CONFIG['site']['name']} - {$status_options_text[$status]}", $user_msg);
-			}
 		}
-		// Отправка по SMS
+	}
+	/// Отправить SMS с заданным текстом заказчику
+	function sendSMSNotify($text)
+	{
+		global $CONFIG;
 		if(@$CONFIG['doc']['notify_sms'])
 		{
 			require_once('include/sendsms.php');
 			if(isset($this->dop_data['buyer_phone']))	$smsphone=$this->dop_data['buyer_phone'];
 			else if($this->doc_data['agent']>1)
 			{
-				$res=mysql_query("SELECT `sms_phone` FROM `doc_agent` WHERE `id`='{$doc_data['user']}'");
+				$res=mysql_query("SELECT `sms_phone` FROM `doc_agent` WHERE `id`='{$this->doc_data['user']}'");
 				$smsphone=mysql_result($res,0,0);
 				if(!$smsphone)
 				{
-					$res=mysql_query("SELECT `reg_phone` FROM `users` WHERE `id`='{$doc_data['user']}'");
+					$res=mysql_query("SELECT `reg_phone` FROM `users` WHERE `id`='{$this->doc_data['user']}'");
 					$smsphone=@mysql_result($res,0,0);
 				}
 			}
 			else
 			{
-				$res=mysql_query("SELECT `reg_phone` FROM `users` WHERE `id`='{$doc_data['autor']}'");
+				$res=mysql_query("SELECT `reg_phone` FROM `users` WHERE `id`='{$this->doc_data['autor']}'");
 				$smsphone=@mysql_result($res,0,0);
 			}
 			if(preg_match('/^\+79\d{9}$/', $smsphone))
 			{
 				$sender=new SMSSender();
 				$sender->setNumber($smsphone);
-				$sender->setText("Заказ N {$this->doc} - {$status_options_text[$status]}. {$CONFIG['site']['name']}");
+				$sender->setText($text);
 				$sender->send();
 			}
 		}
-		// Отправка по XMPP
+	}
+	
+	/// Отправить email с заданным текстом заказчику
+	function sendEmailNotify($text)
+	{
+		global $CONFIG;
+		if(@$CONFIG['doc']['notify_email'])
+		{
+			if(isset($this->dop_data['buyer_email']))	$email=$this->dop_data['buyer_email'];
+			else if($this->doc_data['agent']>1)
+			{
+				$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data['user']}'");
+				$email=mysql_result($res,0,0);
+				if(!$email)
+				{
+					$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$this->doc_data['user']}'");
+					$email=@mysql_result($res,0,0);
+				}
+			}
+			else
+			{
+				$res=mysql_query("SELECT `email` FROM `users` WHERE `id`='{$this->doc_data['autor']}'");
+				$email=@mysql_result($res,0,0);
+			}
 
-		// Отправка по телефону (голосом)
-
-		// Отправка по телефону (факсом)
-
+			if($email)
+			{
+				$user_msg="Уважаемый клиент!\n".$text;
+				mailto($email,"Заказ N {$this->doc} на {$CONFIG['site']['name']}", $user_msg);
+			}
+		}
+	
 	}
 
 	function DopHead()
 	{
-		global $tmpl;
-		$status_options=array('err'=>'Ошибочный','inproc'=>'В процессе','ready'=>'Готов','ok'=>'Отгружен');
+		global $tmpl, $CONFIG;
+
 		$klad_id=@$this->dop_data['kladovshik'];
 		if(!$klad_id)	$klad_id=@$this->firm_vars['firm_kladovshik_id'];
 		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
@@ -163,8 +188,8 @@ class doc_Zayavka extends doc_Nulltype
 		Статус (будет меняться автоматически):<br>
 		<small>Если поменять вручную - уведомление о смене статуса клиентам не будет отправлено</small><br>
 		<select name='status'>");
-		if(@$this->dop_data['status']=='')	$tmpl->AddText("<option value=''>Новый</option>");
-		foreach($status_options as $id => $name)
+		if(@$this->dop_data['status']=='')	$tmpl->AddText("<option value=''>Не задан</option>");
+		foreach($CONFIG['doc']['status_list'] as $id => $name)
 		{
 			$s=(@$this->dop_data['status']==$id)?'selected':'';
 			$tmpl->AddText("<option value='$id' $s>$name</option>");
@@ -178,9 +203,7 @@ class doc_Zayavka extends doc_Nulltype
 
 	function DopSave()
 	{
-		$status_options=array('err','inproc','ready','ok');
 		$status=rcv('status');
-		if(!in_array($status,$status_options))	$status='';
 		$kladovshik=rcv('kladovshik');
 		$delivery=rcv('delivery');
 		$delivery_date=rcv('delivery_date');
@@ -207,7 +230,11 @@ class doc_Zayavka extends doc_Nulltype
 			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
 			if(@$this->dop_data['delivery']!=$delivery)		$log_data.=@"delivery: {$this->dop_data['delivery']}=>$delivery, ";
 			if(@$this->dop_data['delivery_date']!=$delivery_date)	$log_data.=@"delivery_date: {$this->dop_data['delivery_date']}=>$delivery_date, ";
-			if(@$this->dop_data['status']!=$status)			$log_data.=@"status: {$this->dop_data['status']}=>$status, ";
+			if(@$this->dop_data['status']!=$status)	
+			{
+				$log_data.=@"status: {$this->dop_data['status']}=>$status, ";
+				$this->sentZEvent('cstatus');
+			}
 			if(@$this->dop_data['buyer_email']!=$buyer_email)	$log_data.=@"buyer_email: {$this->dop_data['buyer_email']}=>$buyer_email, ";
 			if(@$this->dop_data['buyer_phone']!=$buyer_phone)	$log_data.=@"buyer_phone: {$this->dop_data['buyer_phone']}=>$mest, ";
 			
@@ -225,7 +252,7 @@ class doc_Zayavka extends doc_Nulltype
 		if($silent)	return;
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if( !$res )				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
-		$this->setStatus('inproc');
+		$this->sentZEvent('apply');
 	}
 
 	function DocCancel()
@@ -239,10 +266,12 @@ class doc_Zayavka extends doc_Nulltype
 		$tim=time();
 		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
 		if(!$res)				throw new MysqlException('Ошибка установки флага отмены!');
+		$this->sentZEvent('cancel');
 	}
 
 	function PrintForm($doc, $opt='')
 	{
+		if($opt!='')	$this->sentZEvent('print');
 		if($opt=='')
 		{
 			global $tmpl;
@@ -307,7 +336,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->SetDopData('platelshik',$this->doc_data['agent']);
 			$new_doc->SetDopData('gruzop',$this->doc_data['agent']);
 			$new_doc->SetDopData('received',0);
-			$this->setStatus('ready');
+			$this->sentZEvent('morph_realizaciya');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type=='1')
@@ -325,7 +354,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->SetDopData('platelshik',$this->doc_data['agent']);
 			$new_doc->SetDopData('gruzop',$this->doc_data['agent']);
 			$new_doc->SetDopData('received',0);
-			$this->setStatus('ready');
+			$this->sentZEvent('morph_realizaciya');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		// Реализация
@@ -342,7 +371,7 @@ class doc_Zayavka extends doc_Nulltype
 			else
 			{
 				mysql_query("COMMIT");
-				$this->setStatus('inproc');
+				$this->sentZEvent('morph_realizaciya');
 				$ref="Location: doc.php?mode=body&doc=$base";
 				header($ref);
 			}
@@ -352,7 +381,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$new_doc=new doc_Realiz_op();
 			$dd=$new_doc->CreateFromP($this);
-			$this->setStatus('inproc');
+			$this->sentZEvent('morph_oprealizaciya');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type==16)
@@ -364,6 +393,7 @@ class doc_Zayavka extends doc_Nulltype
 		else if($target_type==6)
 		{
 			if(!isAccess('doc_pko','create'))	throw new AccessException("");
+			$this->sentZEvent('morph_pko');
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$base=$this->Otgruzka(2);
@@ -384,7 +414,7 @@ class doc_Zayavka extends doc_Nulltype
 				if($res)
 				{
 					mysql_query("COMMIT");
-					$this->setStatus('inproc');
+					$this->sentZEvent('morph_realizaciya');
 					$ref="Location: doc.php?mode=body&doc=$ndoc";
 					header($ref);
 				}
@@ -398,6 +428,7 @@ class doc_Zayavka extends doc_Nulltype
 		else if($target_type==4)
 		{
 			if(!isAccess('doc_pbank','create'))	throw new AccessException("");
+			$this->sentZEvent('morph_pbank');
 			$sum=DocSumUpdate($this->doc);
 			mysql_query("START TRANSACTION");
 			$base=$this->Otgruzka(2);
@@ -417,7 +448,7 @@ class doc_Zayavka extends doc_Nulltype
 				if($res)
 				{
 					mysql_query("COMMIT");
-					$this->setStatus('inproc');
+					$this->sentZEvent('morph_realizaciya');
 					$ref="Location: doc.php?mode=body&doc=$ndoc";
 					header($ref);
 				}

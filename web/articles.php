@@ -88,7 +88,7 @@ function schange()
 	}
 
 	$tmpl->AddText("</select><label><input type='checkbox' id='tme' onclick='schange()'>Визуальный редактор</label><br>
-	<textarea class='e_msg' name='text' rows='8' cols='30'>$text</textarea><br>
+	<textarea class='e_msg' name='text' rows='10' cols='80'>$text</textarea><br>
 	<button type='submit'>Сохранить</button>
 	</form><br><a href='/wikiphoto.php'>Галерея изображений</a><br>
 	<h3>Примеры wiki разметки</h3>

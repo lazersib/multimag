@@ -127,6 +127,7 @@ function tripleView(object_id)
 	var body = document.getElementsByTagName('body')[0];
 	var midi_urls=new Array()
 	var full_urls=new Array()
+	var origin_urls=new Array()
 	var last_id=0
 	var container_size
 	var cont_padding=5
@@ -247,7 +248,7 @@ function tripleView(object_id)
 
 			expand_btn.onclick=function()
 			{
-				window.open(image.src)
+				window.open(origin_urls[last_id])
 			}
 
 		}
@@ -300,10 +301,11 @@ function tripleView(object_id)
 		//popup.onclick=popup.destroy
 	}
 
-	midiview.appendImage=function(id,midi_url,full_url)
+	midiview.appendImage=function(id,midi_url,full_url,origin_url)
 	{
 		midi_urls[id]=midi_url
 		full_urls[id]=full_url
+		origin_urls[id]=origin_url
 		if(!last_id)	last_id=id
 		photo_count++;
 	}
@@ -312,7 +314,6 @@ function tripleView(object_id)
 	{
 		last_id=id
 		first=last=0
-		//$("div.image div.one img","#good").hide();
 		midiview.src='/img/icon_load.gif'
 		midiview.src=midi_urls[id]
 		return false;

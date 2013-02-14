@@ -60,7 +60,7 @@ class CommentDispatcher
 			switch($this->object_name)
 			{
 				case 'product':
-					$url='http://'.$CONFIG['site']['name'].'/vitrina.php?mode=product&amp;p='.$this->object_id;
+					$url='http://'.$CONFIG['site']['name'].'/vitrina.php?mode=product&p='.$this->object_id;
 					break;
 				default:
 					$url='UNKNOWN';

@@ -153,15 +153,7 @@ class doc_Realiz_bonus extends doc_Realizaciya
 		if($this->doc_data['sum']>$bonus)		throw new Exception("У агента недостаточно бонусов");
 		mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
 		if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка установки даты проведения!');
-		if($this->doc_data['p_doc'])
-		{
-			$doc=AutoDocument($this->doc_data['p_doc']);
-			if($doc->doc_type==3)
-			{
-				$doc->setStatus('ok');
-
-			}
-		}
+		$this->sentZEvent('apply');
 	}
 
 	function DocCancel()
@@ -192,6 +184,7 @@ class doc_Realiz_bonus extends doc_Realizaciya
 			mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
 			if(mysql_error())	throw new MysqlException("Ошибка изменения количества товара id:$nxt[0] на складе $nx[3]!");
 		}
+		$this->sentZEvent('cancel');
 	}
 
 	function PrintForm($doc, $opt='')
