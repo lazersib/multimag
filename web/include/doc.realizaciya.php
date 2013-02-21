@@ -23,7 +23,7 @@ $doc_types[2]="Реализация";
 /// Документ *Реализация*
 class doc_Realizaciya extends doc_Nulltype
 {
-	// Создание нового документа или редактирование заголовка старого
+	var $status_list;
 
 	function __construct($doc=0)
 	{
@@ -44,6 +44,7 @@ class doc_Realizaciya extends doc_Nulltype
 			array('name'=>'sfak','desc'=>'Счёт - фактура','method'=>'SfakPDF'),
 			array('name'=>'sfak2010','desc'=>'Счёт - фактура 2010','method'=>'Sfak2010PDF')
 		);
+		$this->status_list=array('in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
 	}
 
 	// Создать документ с товарными остатками на основе другого документа
@@ -60,7 +61,7 @@ class doc_Realizaciya extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
-
+		
 		$cur_agent=$this->doc_data['agent'];
 		if(!$cur_agent)		$cur_agent=1;
 		$klad_id=@$this->dop_data['kladovshik'];
@@ -96,6 +97,19 @@ class doc_Realizaciya extends doc_Nulltype
 		$tmpl->AddText("</select><br>
 		Количество мест:<br>
 		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>
+		
+		<br><hr>
+		Статус:<br>
+		<select name='status'>");
+		if(@$this->dop_data['status']=='')	$tmpl->AddText("<option value=''>Новый</option>");
+		foreach($this->status_list as $id => $name)
+		{
+			$s=(@$this->dop_data['status']==$id)?'selected':'';
+			$tmpl->AddText("<option value='$id' $s>$name</option>");
+		}
+
+		$tmpl->AddText("</select><br>
+		
 		<script type=\"text/javascript\">
 		$(document).ready(function(){
 			$(\"#plat\").autocomplete(\"/docs.php\", {
@@ -155,6 +169,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$return=rcv('return');
 		$kladovshik=rcv('kladovshik');
 		$mest=rcv('mest');
+		$status=rcv('status');
 		settype($kladovshik, 'int');
 
 		$doc=$this->doc;
@@ -164,6 +179,7 @@ class doc_Realizaciya extends doc_Nulltype
 		( '{$this->doc}' ,'received','$received'),
 		( '{$this->doc}' ,'return','$return'),
 		( '{$this->doc}' ,'kladovshik','$kladovshik'),
+		( '{$this->doc}' ,'status','$status'),
 		( '{$this->doc}' ,'mest','$mest')");
 
 		if($this->doc)
@@ -175,7 +191,11 @@ class doc_Realizaciya extends doc_Nulltype
 			if(@$this->dop_data['return']!=$return)			$log_data.=@"return: {$this->dop_data['return']}=>$return, ";
 			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
 			if(@$this->dop_data['mest']!=$mest)			$log_data.=@"mest: {$this->dop_data['mest']}=>$mest, ";
-			
+			if(@$this->dop_data['status']!=$status)	
+			{
+				$log_data.=@"status: {$this->dop_data['status']}=>$status, ";
+				$this->sentZEvent('cstatus:'.$status);
+			}
 			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 		}
 	}

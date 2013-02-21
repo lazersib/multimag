@@ -185,8 +185,7 @@ class doc_Zayavka extends doc_Nulltype
 		if(@$this->dop_data['delivery_address'])$tmpl->AddText("<b>Адрес доставки: </b>{$this->dop_data['delivery_address']}<br>");
 
 		$tmpl->AddText("<br><hr>
-		Статус (будет меняться автоматически):<br>
-		<small>Если поменять вручную - уведомление о смене статуса клиентам не будет отправлено</small><br>
+		Статус (может меняться автоматически):<br>
 		<select name='status'>");
 		if(@$this->dop_data['status']=='')	$tmpl->AddText("<option value=''>Не задан</option>");
 		foreach($CONFIG['doc']['status_list'] as $id => $name)

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
+/// Отчёт по остаткам комплектующих
 class Report_Pos_Komplekt extends BaseGSReport
 {
 	function getName($short=0)
@@ -83,6 +83,7 @@ class Report_Pos_Komplekt extends BaseGSReport
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			while($nxt=mysql_fetch_row($res))
 			{
+				if(!$nxt[3])	continue;
 				$this->tableRow($nxt);
 				$cnt++;
 			}

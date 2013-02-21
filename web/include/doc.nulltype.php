@@ -227,7 +227,7 @@ class doc_Nulltype
 				list($pdoc_id, $pdoc_type)=mysql_fetch_row($res);
 				if($pdoc_type==3)
 				{
-					$doc=doc_Zayavka($pdoc_id);
+					$doc=new doc_Zayavka($pdoc_id);
 					$doc->dispatchZEvent($event_name);
 					return;
 				}

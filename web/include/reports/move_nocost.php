@@ -192,7 +192,7 @@ class Report_Move_NoCost extends BaseGSReport
 	
 	function dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost)
 	{
-		$start_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f);
+		$start_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f, 1);
 		
 		if($this->w_docs)
 		{
@@ -346,7 +346,7 @@ class Report_Move_NoCost extends BaseGSReport
 	function serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t)
 	{
 		global $tmpl;
-		$cur_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f);
+		$cur_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f, 1);
 		
 		if($this->w_docs)
 		{

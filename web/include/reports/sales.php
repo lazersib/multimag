@@ -192,7 +192,7 @@ class Report_Sales extends BaseGSReport
 	
 	function dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost)
 	{
-		$start_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f);
+		$start_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f, 1);
 		
 		if($this->w_docs)
 		{
@@ -355,7 +355,7 @@ class Report_Sales extends BaseGSReport
 	function serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t)
 	{
 		global $tmpl;
-		$cur_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f);
+		$cur_cnt=getStoreCntOnDate($pos_id, $this->sklad, $dt_f, 1);
 		
 		if($this->w_docs)
 		{
@@ -466,7 +466,7 @@ class Report_Sales extends BaseGSReport
 		$this->col_cnt=count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
-		switch($CONFIG['doc']['sklad_default_order'])
+		switch(@$CONFIG['doc']['sklad_default_order'])
 		{
 			case 'vc':	$order='`doc_base`.`vc`';	break;
 			case 'cost':	$order='`doc_base`.`cost`';	break;
