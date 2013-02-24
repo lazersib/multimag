@@ -397,6 +397,7 @@ try
 		{
 			if ($dh = opendir($dir))
 			{
+				$reports=array();
 				while (($file = readdir($dh)) !== false)
 				{
 					if( preg_match('/.php$/',$file) )
@@ -408,11 +409,15 @@ try
 							$class_name='Report_'.$cn[0];
 							$class=new $class_name;
 							$nm=$class->getName();
-							$tmpl->AddText("<li><a href='/doc_reports.php?mode=$cn[0]'>$nm</a></li>");
+							//$tmpl->AddText("<li><a href='/doc_reports.php?mode=$cn[0]'>$nm</a></li>");
+							$reports[$cn[0]]=$nm;
 						}
 					}
 				}
 				closedir($dh);
+				asort($reports);
+				foreach($reports AS $id => $name)
+					$tmpl->AddText("<li><a href='/doc_reports.php?mode=$id'>$name</a></li>");
 			}
 		}
 		$tmpl->AddText("</ul>");
@@ -425,6 +430,7 @@ try
 		{
 			if ($dh = opendir($dir))
 			{
+				$reports=array();
 				while (($file = readdir($dh)) !== false)
 				{
 					if( preg_match('/.php$/',$file) )
@@ -436,11 +442,15 @@ try
 							$class_name='Report_'.$cn[0];
 							$class=new $class_name;
 							$nm=$class->getName(1);
-							$tmpl->AddText("<div onclick='window.location=\"/doc_reports.php?mode=$cn[0]\"'>$nm</div>");
+							$reports[$cn[0]]=$nm;
+							
 						}
 					}
 				}
 				closedir($dh);
+				asort($reports);
+				foreach($reports AS $id => $name)
+					$tmpl->AddText("<div onclick='window.location=\"/doc_reports.php?mode=$id\"'>$name</div>");
 			}
 		}
 		$tmpl->AddText("<hr><div onclick='window.location=\"/doc_reports.php\"'>Подробнее</div>");

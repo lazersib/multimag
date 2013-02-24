@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -27,12 +27,26 @@ if(!isAccess('doc_list','view'))	throw new AccessException("");
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->HideBlock('left');
 
-if(!isset($_SERVER['HTTP_X_AJAX']))
+function json_encode_line($line)
+{
+	$ret='';
+	foreach($line as $id => $value)
+	{
+		if($ret)	$ret.=',';
+		$value=str_replace("'","\\'",$value);
+		//$ret.="'$id':'".htmlentities($value,ENT_QUOTES,"UTF-8")."'";
+		$ret.="'$id':'$value'";
+	}
+	return "{ $ret }";
+}
+
+if(!isset($_REQUEST['mode']))
 {
 	$tmpl->SetTitle("Новый журнал");
 	doc_menu("<a href='?mode=print' title='Печать реестра'><img src='img/i_print.png' alt='Реестр документов' border='0'></a>");
 	$tmpl->AddText("<script type='text/javascript' src='/css/doc_script.js'></script>
-	
+	<div id='doc_list_filter'></div>
+	<div class='clear'></div>
 	<div id='doc_list_status'></div>
 	
 	<table width='100%' cellspacing='1' onclick='hlThisRow(event)' id='doc_list' class='list'>
@@ -47,33 +61,15 @@ if(!isset($_SERVER['HTTP_X_AJAX']))
 	
 	<br><b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
 	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
-	<script type='text/javascript' src='/js/just.min.js'></script>
 	<script type='text/javascript' src='/js/doc_journal.js'></script>
 	");
-	
-// 	$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_agent`.`name` AS `agent_name`, `users`.`name` AS `author_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`p_doc`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`, `doc_list`.`err_flag`
-// 	FROM `doc_list`
-// 	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
-// 	LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
-// 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-// 	WHERE 1
-// 	ORDER by `doc_list`.`date` DESC
-// 	LIMIT 5000";
-// 	$starttime=microtime(true);
-// 	for($i=0;$i<500;$i++)
-// 	{
-// 		$res=mysql_query($sql);
-// 		mysql_query("RESET QUERY CACHE");
-// 		//mysql_query("FLUSH TABLES");
-// 		if(mysql_errno())	echo mysql_error();
-// 	}
-// 	$endtime=microtime(true);
-// 	echo "exec: ".round($endtime-$starttime,2)." sec, ".round(($endtime-$starttime)/$i,4)." per query<br>";
+
 }
 else
 {
 try
 {
+	ob_start();
 	mysql_query("RESET QUERY CACHE");
 	$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user` AS `author_id`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_list`.`err_flag`, `doc_list`.`p_doc`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`,
 	`doc_agent`.`name` AS `agent_name`,
@@ -93,7 +89,8 @@ try
 	LEFT JOIN `doc_dopdata` AS `na_sklad_t` ON `na_sklad_t`.`doc`=`doc_list`.`id` AND `na_sklad_t`.`param`='na_sklad'
 	LEFT JOIN `doc_sklady` AS `na_sklad_n` ON `na_sklad_n`.`id`=`na_sklad_t`.`value`
 	WHERE 1
-	ORDER by `doc_list`.`date` DESC";
+	ORDER by `doc_list`.`date` DESC
+	LIMIT 100";
 	$starttime=microtime(true);
 	$res=mysql_query($sql);
 	if(mysql_errno())	throw new MysqlException("Не удалость получить данные документов ");
@@ -118,8 +115,6 @@ try
 			case 6:
 			case 7:
 			case 9:		$line['data1']='Касса: '.$line['kassa_name'];
-					break;
-					$line['data1']='';
 					break;
 			default:	$line['data1']='';
 		}		
@@ -190,6 +185,8 @@ try
 	}
 	$exec_time=round(microtime(true)-$starttime,3);
 	echo "{result: 'ok', doc_list: [$jdata], user_id: {$_SESSION['uid']}, exec_time: '$exec_time'}";
+	ob_end_flush();
+	exit();
 }
 catch(Exception $e)
 {

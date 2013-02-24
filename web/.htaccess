@@ -39,7 +39,7 @@ AddOutputFilterByType DEFLATE text/xml application/xml text/x-component
 #php_value zlib.output_compression_level 3
 
 <IfModule mod_expires.c>
-Header set Cache-Control "public"
+#Header set Cache-Control "public"
 ExpiresActive on
 # устанавливаем значения кэширования по умолчанию
 ExpiresDefault                          "access plus 1 month"

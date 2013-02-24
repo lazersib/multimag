@@ -725,7 +725,7 @@ class doc_Nulltype
 			if($this->doc_name) $object='doc_'.$this->doc_name;
 			else $object='doc';
 			if(!isAccess($object,'apply'))	throw new AccessException("");
-
+			if($this->doc_data['mark_del'])	throw new Exception("Документ помечен на удаление!");
 			$res=mysql_query("SELECT `recalc_active` FROM `variables`");
 			if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные блокировок!");
 			if(mysql_result($res,0,0))	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
@@ -1118,10 +1118,28 @@ class doc_Nulltype
 				$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";
 				$tmpl->AddText($str);
 			}
+			// Снять пометку на удаление
+			else if($opt=='jundeldoc')
+			{
+				try
+				{
+					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");
+
+					$res=mysql_query("UPDATE `doc_list` SET `mark_del`='0' WHERE `id`='{$this->doc}'");
+					if(!$res)	throw new MysqlException("Не удалось снять метку");
+					doc_log("UNDELETE", '', "doc", $this->doc);
+					$json=' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "'.$this->apply_buttons().'", "statusblock": "Документ не будет удалён" }';
+					$tmpl->SetText($json);
+				}
+				catch(Exception $e)
+				{
+					$tmpl->SetText("{response: 0, message: '".$e->getMessage()."'}");
+				}
+			}
 			/// TODO: Это тоже переделать!
-			else if($this->doc_data[6])
+			else if($this->doc_data['ok'])
 				throw new Exception("Операция не допускается для проведённого документа!");
-			else if($this->doc_data[14])
+			else if($this->doc_data['mark_del'])
 				throw new Exception("Операция не допускается для документа, отмеченного для удаления!");
 			// Получение данных наименования
 			else if($opt=='jgpi')
@@ -1185,6 +1203,31 @@ class doc_Nulltype
 			{
 				$by=rcv('by');
 				$poseditor->reOrder($by);
+			}
+			else if($opt=='jdeldoc')
+			{
+				try
+				{
+					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");
+					$tim=time();
+
+					$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `mark_del`='0'");
+					if(!$res)	throw new MysqlException("Не удалось получить список потомков");
+					if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
+					{
+						$res=mysql_query("UPDATE `doc_list` SET `mark_del`='$tim' WHERE `id`='{$this->doc}'");
+						if(!$res)	throw new MysqlException("Не удалось пометить на удаление");
+						doc_log("MARKDELETE",  '', "doc", $this->doc);
+						$this->doc_data['mark_del']=$tim;
+						$json=' { "response": "1", "message": "Пометка на удаление установлена!", "buttons": "'.$this->apply_buttons().'", "statusblock": "Документ помечен на удаление" }';
+						$tmpl->SetText($json);
+					}
+					else	throw new Exception("Есть подчинённые не удалённые документы. Удаление невозможно.");
+				}
+				catch(Exception $e)
+				{
+					$tmpl->SetText("{response: 0, message: '".$e->getMessage()."'}");
+				}
 			}
 			// Не-json обработчики
 			// Серийный номер
@@ -1578,7 +1621,9 @@ class doc_Nulltype
 
 	protected function apply_buttons()
 	{
-		return "<a href='?mode=ehead&amp;doc={$this->doc}' title='Правка заголовка'><img src='img/i_docedit.png' alt='Правка'></a><a href='#' title='Провести документ' onclick='ApplyDoc({$this->doc}); return false;'><img src='img/i_ok.png' alt='Провести'></a>";
+		if($this->doc_data['mark_del'])	$s="<a href='#' title='Отменить удаление' onclick='unMarkDelDoc({$this->doc}); return false;'><img src='img/i_trash_undo.png' alt='отменить удаление'></a>";
+		else	$s="<a href='#' title='Пометить на удаление' onclick='MarkDelDoc({$this->doc}); return false;'><img src='img/i_trash.png' alt='Пометить на удаление'></a>";
+		return "$s<a href='#' title='Провести документ' onclick='ApplyDoc({$this->doc}); return false;'><img src='img/i_ok.png' alt='Провести'></a>";
 		//<a href='?mode=ehead&amp;doc={$this->doc}' title='Правка заголовка'><img src='img/i_docedit.png' alt='Правка'></a>
 	}
 

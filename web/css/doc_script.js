@@ -21,10 +21,37 @@ function ApplyDoc(doc)
 	httpRequest.send(null);
 }
 
-// function CancelDoc(doc)
-// {
-// 	ShowPopupWin('/doc.php?mode=cancel&doc='+doc);
-// }
+function MarkDelDoc(doc)
+{
+	var httpRequest;
+	if (window.XMLHttpRequest)  {  httpRequest = new XMLHttpRequest(); }
+	if (!httpRequest) { return false; }
+
+	var provodki=document.getElementById("provodki");
+	old_provodki=provodki.innerHTML;
+	provodki.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
+
+	var url='/doc.php?mode=srv&opt=jdeldoc&doc='+doc;
+	httpRequest.onreadystatechange = function() { DocProcessRequest(httpRequest, doc); };
+	httpRequest.open('GET', url, true);
+	httpRequest.send(null);
+}
+
+function unMarkDelDoc(doc)
+{
+	var httpRequest;
+	if (window.XMLHttpRequest)  {  httpRequest = new XMLHttpRequest(); }
+	if (!httpRequest) { return false; }
+
+	var provodki=document.getElementById("provodki");
+	old_provodki=provodki.innerHTML;
+	provodki.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
+
+	var url='/doc.php?mode=srv&opt=jundeldoc&doc='+doc;
+	httpRequest.onreadystatechange = function() { DocProcessRequest(httpRequest, doc); };
+	httpRequest.open('GET', url, true);
+	httpRequest.send(null);
+}
 
 function CancelDoc(doc)
 {

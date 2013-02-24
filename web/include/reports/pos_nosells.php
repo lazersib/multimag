@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,17 +17,25 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
+/// Отчёт по номенклатуре без продаж за заданный период
 class Report_Pos_NoSells extends BaseGSReport
 {
-	function getName($short=0)
+	/// Получить имя отчёта
+	public function getName($short=0)
 	{
 		if($short)	return "По номенклатуре без продаж";
 		else		return "Отчёт по номенклатуре без продаж за заданный период";
 	}
 	
-
-	function Form()
+	/// Запустить отчёт
+	public function Run($opt)
+	{
+		if($opt=='')	$this->Form();
+		else		$this->Make($opt);	
+	}
+	
+	/// Отобразить форму
+	protected function Form()
 	{
 		global $tmpl;
 		$d_t=date("Y-m-d");
@@ -48,7 +56,8 @@ class Report_Pos_NoSells extends BaseGSReport
 		По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
 		</fieldset>
 		Склад:<br>
-		<select name='sklad'>");
+		<select name='sklad'>
+		<option value='0'>***Не выбран***</option>");
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady`");
 		while($nxt=mysql_fetch_row($res))
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
@@ -60,7 +69,8 @@ class Report_Pos_NoSells extends BaseGSReport
 		</form>");
 	}
 	
-	function Make($engine)
+	/// Сформировать отчёт
+	protected function Make($engine)
 	{
 		global $CONFIG;
 		$this->loadEngine($engine);
@@ -78,7 +88,6 @@ class Report_Pos_NoSells extends BaseGSReport
 
 		$headers[]='Код';
 		$widths[]=10;
-		$widths[]=68;
 		
 		switch(@$CONFIG['doc']['sklad_default_order'])
 		{
@@ -86,9 +95,26 @@ class Report_Pos_NoSells extends BaseGSReport
 			case 'cost':	$order='`doc_base`.`cost`';	break;
 			default:	$order='`doc_base`.`name`';
 		}
+		
+		
+		$headers=array_merge($headers, array('Наименование', 'Ликв.'));
+		if($sklad)
+		{
+			$headers[]='Остаток';
+			$widths[]=68;
+			$widths[]=8;
+			$sel_add=', `doc_base_cnt`.`cnt`';
+			$join_add="LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'";
+		}
+		else
+		{
+			$widths[]=76;
+			$sel_add='';
+			$join_add='';
+		}
+		
 		$widths[]=8;
-		$widths[]=8;
-		$headers=array_merge($headers, array('Наименование', 'Ликв.','Остаток'));
+		
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
 		$cnt=0;
@@ -102,9 +128,9 @@ class Report_Pos_NoSells extends BaseGSReport
 			$this->tableAltStyle();
 			$this->tableSpannedRow(array($col_cnt),array($group_line['id'].': '.$group_line['name']));
 			$this->tableAltStyle(false);
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, CONCAT(`doc_base`.`likvid`,'%'), `doc_base_cnt`.`cnt`
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, CONCAT(`doc_base`.`likvid`,'%') $sel_add
 			FROM `doc_base`
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+			$join_add
 			WHERE `doc_base`.`id` NOT IN (
 			SELECT `doc_list_pos`.`tovar` FROM `doc_list_pos`
 			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t' AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
@@ -122,12 +148,6 @@ class Report_Pos_NoSells extends BaseGSReport
 		$this->tableEnd();
 		$this->output();
 		exit(0);
-	}
-	
-	function Run($opt)
-	{
-		if($opt=='')	$this->Form();
-		else		$this->Make($opt);	
 	}
 };
 

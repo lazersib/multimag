@@ -17,16 +17,25 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
+/// Отчёт *Ведомость по агентам*
 class Report_Ved_Agentov
 {
-	function getName($short=0)
+	/// Получить имя отчёта
+	public function getName($short=0)
 	{
 		if($short)	return "Ведомость по агентам";
 		else		return "Ведомость по агентам";
 	}
 
-	function Form()
+	/// Запустить отчёт
+	public function Run($opt)
+	{
+		if($opt=='')	$this->Form();
+		else		$this->Make();
+	}
+	
+	/// Отобразить форму
+	protected function Form()
 	{
 		global $tmpl;
 		$dt_f=date("Y-m-01");
@@ -125,7 +134,8 @@ class Report_Ved_Agentov
 		</script>");
 	}
 
-	function Make()
+	/// Сформировать отчёт
+	protected function Make()
 	{
 		global $tmpl;
 		$this->dt_f=strtotime(@$_REQUEST['dt_f']);
@@ -196,8 +206,9 @@ class Report_Ved_Agentov
 		$tmpl->AddText("</table>");
 
 	}
-
-	function makeBlock($head,$agent_where='')
+	
+	/// Сформировать блок с данными
+	protected function makeBlock($head,$agent_where='')
 	{
 		$res=mysql_query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`altnum` ,`doc_list`.`subtype`, `doc_list`.`type` AS `doc_type`, `doc_list`.`sum` AS `doc_sum`, `doc_list`.`date`, `doc_types`.`name` AS `doc_typename`, `doc_agent`.`name` AS `agent_name`
 		FROM `doc_list`
@@ -263,12 +274,6 @@ class Report_Ved_Agentov
 		}
 
 		return $ret;
-	}
-
-	function Run($opt)
-	{
-		if($opt=='')	$this->Form();
-		else		$this->Make();
 	}
 };
 

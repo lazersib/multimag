@@ -14,8 +14,8 @@ input
 	padding:0.3ex;
 	margin:0.5ex;
 	border:	1px solid #ccc;
-	-moz-border-radius:	4px;
-	border-radius:		4px;
+/* 	-moz-border-radius:	4px; */
+/* 	border-radius:		4px; */
 }
 
 textarea
@@ -26,15 +26,17 @@ textarea
 	padding:1ex;
 	width: 90%;
 	height: 100px;
-	-moz-border-radius:	4px;
-	border-radius:		4px;
+/*	-moz-border-radius:	4px;
+	border-radius:		4px;*/
 }
 
 select
 {
 	border:	1px solid #ccc;
-	-moz-border-radius:	4px;
-	border-radius:		4px;
+	padding:0.3ex;
+	margin:0.5ex;
+/*	-moz-border-radius:	4px;
+	border-radius:		4px;*/
 }
 
 form
@@ -266,9 +268,10 @@ input.tedit
 
 
 div#wiki-wrap {
-	margin:	0;
-	padding:0;
-	border:	0;
+	margin:		0;
+	padding:	0;
+	border:		0;
+	min-width:	850px;
 }
 
 div#wiki-top
@@ -784,7 +787,7 @@ table.list tr:nth-child(odd) td
 #doc_menu.error
 {
 	background-color:	#ffe0ef;
-	background-image:	url('/img/win/important.png');
+	background-image:	url('/img/32x32/i_bug.png');
 	background-position:	center center;
 	background-repeat: 	no-repeat;
 }
@@ -869,3 +872,50 @@ table.list tr:nth-child(odd) td
 	border-left:		1px solid #ccc;
 }
 
+div.clear
+{
+	border:		0 !important;
+	margin:		0 !important;
+	padding:	0 !important;
+	color:		white !important;
+	background-color:white !important;
+	clear:		both !important;
+}
+
+#doc_list_filter
+{
+	width:		100%;
+	border:		0;
+	margin:		0;
+	padding:	0;
+}
+
+
+#doc_list_filter div
+{
+	float:			left;
+	width:			200px;
+	height:			55px;
+	border:			1px solid #eee;
+	padding:		3px;
+	margin:			2px;
+}
+
+#doc_list_filter span
+{
+	width:			100%;
+	display:		block;
+	padding-bottom:		4px;
+	margin:			0;
+	border:			0;
+}
+
+#doc_list_filter input[type=text], #doc_list_filter select
+{
+	width:			187px;
+}
+
+#doc_list_filter input.half[type=text]
+{
+	width:			80px;
+}

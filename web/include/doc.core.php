@@ -377,10 +377,11 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	$tmpl->AddText("<div id='doc_menu' $err>
 	<div id='doc_menu_container'>
 	<div id='doc_menu_r'>
-	<input type='text' id='quicksearch'>
+	<!--<input type='text' id='quicksearch'>
 	<script>
 	var ac=initAutocomplete('quicksearch','/docs.php?l=sklad&mode=srv&opt=acj')
 	</script>
+	-->
 	<a href='/user.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>
 	<a href='/login.php?mode=logout' title='Выход'><img src='/img/i_logout.png' alt='Выход'></a>
 	</div>
@@ -794,7 +795,7 @@ function AutoDocument($doc)
 function selectAgentGroup($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
 {
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
-	if($not_select)	$ret.="<option value='0'>***не выбран***</option>";
+	if($not_select)	$ret.="<option value='0'>***не выбрана***</option>";
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
 	if(mysql_errno())		throw new MysqlException("Не удалось получить список агентов");
 	while($line=mysql_fetch_row($res))
