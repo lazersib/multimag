@@ -112,6 +112,7 @@ function getMap()
 	$this->endGroup();	
 	$this->AddLink('news.php','Новости');
 	$this->AddLink('photogalery.php','Фотогалерея');
+	$this->AddLink('voting.php','Голосования','0.1');
 	$this->AddLink('message.php','Отправить сообщение');
 	$this->AddLink('sitemap.xml','XML Sitemap','0.0');
 	$this->endMap();

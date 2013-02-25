@@ -988,7 +988,7 @@ class doc_Realizaciya extends doc_Nulltype
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data[7]}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
-		ORDER BY `doc_base_cnt`.`mesto`");
+		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
 		$sum=0;

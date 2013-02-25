@@ -458,6 +458,17 @@ function PosEditorInit(base_url, editable)
 		       error:   function() { jAlert('Ошибка!','Сортировка наименований',{},'icon_err'); },
 		});
 	}
+	var order_loc=document.getElementById('pl_order_loc')
+	order_loc.onclick=function(event)
+	{
+		$.ajax({
+			type:   'GET',
+		       url:    base_url,
+		       data:   'opt=jorder&by=loc',
+		       success: function(msg) { poslist.refresh() },
+		       error:   function() { jAlert('Ошибка!','Сортировка наименований',{},'icon_err'); },
+		});
+	}
 
 	return poslist
 }

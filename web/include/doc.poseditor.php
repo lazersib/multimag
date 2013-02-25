@@ -135,7 +135,7 @@ function Show($param='')
 	<th width='60px' class='hl'>Кол-во</th>
 	<th width='90px' class='hl'>Стоимость</th>
 	<th width='60px' title='Остаток товара на складе'>Остаток</th>
-	<th width='90px'>Место</th>";
+	<th width='90px'><div class='order_button' id='pl_order_loc'></div> Место</th>";
 	if($this->show_sn)	$ret.="<th>SN</th>";
 	if($this->show_gtd)	$ret.="<th>ГТД</th>";
 	$ret.="</tr>
@@ -527,11 +527,13 @@ function SerialNum($action, $line_id, $data)
 
 function reOrder($by='name')
 {
-	if($by!=='name' && $by!=='cost' && $by!=='vc')	$by='name';
+	if($by!=='name' && $by!=='cost' && $by!=='vc'&& $by!=='loc')	$by='name';
+	if($by=='loc')	$by='doc_base_cnt`.`mesto';
 	mysql_query("START TRANSACTION");
-	$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc`
+	$res=mysql_query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_cnt`.`mesto`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	WHERE `doc_list_pos`.`doc`='{$this->doc}'
 	ORDER BY `$by`");
 	if(mysql_errno())		throw new MysqlException("Не удалось получить наименования");
