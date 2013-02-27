@@ -45,6 +45,10 @@ Disallow: /fpdf
 Disallow: /basket
 Disallow: *basket
 Disallow: *korz
+Disallow: *html?order=
+Disallow: *html?op=
+Disallow: *html?view=
+
 Host: ".$CONFIG['site']['name'];
 	exit();
 }
