@@ -459,6 +459,7 @@ function PosEditorInit(base_url, editable)
 		});
 	}
 	var order_loc=document.getElementById('pl_order_loc')
+	if(order_loc)
 	order_loc.onclick=function(event)
 	{
 		$.ajax({
