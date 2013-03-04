@@ -810,5 +810,5 @@ $wikiparser->ignore_images	= false;
 
 $dop_status=array('new'=>'Новый', 'err'=>'Ошибочный', 'inproc'=>'В процессе', 'ready'=>'Готов', 'ok'=>'Отгружен');
 if(is_array($CONFIG['doc']['status_list']))	$CONFIG['doc']['status_list']=array_merge($dop_status, $CONFIG['doc']['status_list']);
-
+else						$CONFIG['doc']['status_list']=$dop_status;
 ?>
