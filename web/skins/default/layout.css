@@ -32,7 +32,7 @@ div#wiki-top
 		background-color:transparent;
 		text-decoration:underline;
 	}
-	
+
 	div#wiki-top p
 	{
 		margin-top:0px; margin-bottom:0px;
@@ -64,8 +64,8 @@ div#wiki-head {
 		float:		left;
 		background-color: transparent;
 	}
-	
-	
+
+
 	div#wiki-head form{
 		padding:	0;
 		margin:		0.8em 0 0 0;
@@ -96,7 +96,7 @@ div#wiki-info {
 		padding:		0;
 	}
 	div#info-left {
-		float:			left;		
+		float:			left;
 	}
 	div#info-right {
 		float:			right;
@@ -111,7 +111,7 @@ div#wiki-info {
 		margin: 		0;
 		padding:		0;
 		border:			0;
-		white-space: 	normal;	
+		white-space: 	normal;
 	}
 	div#wiki-info  li, div#wiki-info  div ul li {
 		display:		inline;
@@ -149,9 +149,9 @@ div#wiki-menu {
 		border:					0;
 	}
 	div#wiki-menu ul li a:before{
-		content: "\203A \0020" ; 
+		content: "\203A \0020" ;
 	}
-	
+
 	div#wiki-menu a{
 		border:				0;
 		color: 				rgb(0,102,204);
@@ -161,7 +161,7 @@ div#wiki-menu {
 		padding: 			0.3em 0.3em 0.3em 0.5em;
 		display: 			block;
 	}
-	
+
 	div#wiki-menu a:hover{
 		color:				white;
 		background-color: 	rgb(100,135,220);
@@ -170,7 +170,7 @@ div#wiki-menu {
 	div#wiki-menu p {
 		margin:				0;
 		padding:			0;
-	}	
+	}
 	div#wiki-menu p.sidehead a {
 		font-size:			1.2em;
 		font-weight:		bold;
@@ -184,7 +184,7 @@ div#wiki-menu {
 		background-color: 	rgb(100,135,220);
 		text-decoration: none;
 	}
-	
+
 	div#wiki-menu p.sidehead a:before {
 		content: "\203A  \0020"
 	}
@@ -220,7 +220,7 @@ div#wiki-page {
 	table-layout:	fixed;
 	text-align:	justify;
 }
-	#page-title {
+	h1 {
 		margin:		0;
 		padding:	0;
 		border:		0;
@@ -244,12 +244,12 @@ div#wiki-page {
 		color:		#444;
 		background-color: transparent;
 	}
-	
+
 	div#wiki-page P {
 		text-indent: 	25px;
 	}
-	
-	
+
+
 	hr#page-end {
 		border:		0;
 		margin:		0;
@@ -282,7 +282,7 @@ div#wiki-foot {
 		margin: 	0;
 		padding:	0;
 		border:		0;
-		white-space:normal;	
+		white-space:normal;
 	}
 	div#wiki-foot  li, div#wiki-foot  div ul li {
 		display:	inline;
@@ -317,7 +317,7 @@ div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
 
 
 .lin0{
-    BACKGROUND-COLOR: #f0f8ff;    
+    BACKGROUND-COLOR: #f0f8ff;
 }
 
 .lin0 td
@@ -378,10 +378,10 @@ ul.tabs li a
 	-moz-border-radius-topright:	5px;
 	border-top-left-radius:		5px;
 	border-top-right-radius:	5px;
-	border-bottom:			1px solid #b0d8ff; 
+	border-bottom:			1px solid #b0d8ff;
 	margin:				0;
 	margin-left:			5px;
-	padding:			3px 15px 3px 15px 
+	padding:			3px 15px 3px 15px
 }
 
 ul.tabs li a.selected

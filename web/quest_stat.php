@@ -18,6 +18,8 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+require_once("core.php");
+
 if($mode=='')
 {
 	$tmpl->AddText("<h1>Статистика опросов</h1>");
@@ -27,7 +29,7 @@ if($mode=='')
 		$tmpl->AddText("<h3>$nxt[0]. $nxt[1]</h3>");
 		$arr=array();
 		$max=0;
-		
+
 		$r=mysql_query("SELECT `id` FROM `question_answ` WHERE `q_id`='$nxt[0]' AND `answer` LIKE '%|0|%'");
 		$cnt=mysql_num_rows($r);
 		if($cnt)
@@ -36,7 +38,7 @@ if($mode=='')
 			$arr[0]['cnt']=$cnt;
 			$max+=$cnt;
 		}
-		
+
 		$rs=mysql_query("SELECT `question_vars`.`var_id`, `question_vars`.`text` FROM `question_vars` WHERE `q_id`='$nxt[0]'");
 		while($nx=mysql_fetch_row($rs))
 		{
@@ -44,9 +46,9 @@ if($mode=='')
 			$cnt=mysql_num_rows($r);
 			$arr[$nx[0]]['name']=$nx[1];
 			$arr[$nx[0]]['cnt']=$cnt;
-			$max+=$cnt;	
+			$max+=$cnt;
 		}
-		
+
 		foreach($arr as $line)
 		{
 			$pp=$line['cnt']*100/$max;
@@ -57,8 +59,8 @@ if($mode=='')
 			}
 		}
 		$tmpl->AddText("<br>Всего ответов: $max");
-	
-	
+
+
 	}
 }
 

@@ -378,7 +378,7 @@ function getright($object,$uid)
 	OR `users_groups`.`uid`='0')
 	WHERE `users_grouprights`.`object`='$object'
 	GROUP BY `users_grouprights`.`object`");
-	
+
 	$nxt=mysql_fetch_assoc($res);
 	return $nxt;
 }
@@ -747,6 +747,16 @@ class AccessException extends Exception
 	}
 };
 
+/// Класс-исключение используется для информирования о отсутствии запрашиваемого объекта. Устанавливает заголовок 404 Not found
+class NotFoundException extends Exception
+{
+	function __construct($text='')
+	{
+		header('HTTP/1.0 404 Not found');
+		parent::__construct($text);
+	}
+};
+
 /// Класс-исключение используется для информирования об ошибке при выполнении myqsl запроса
 class MysqlException extends Exception
 {
@@ -764,7 +774,7 @@ class MysqlException extends Exception
 		parent::__construct($text);
 		$this->WriteLog();
 	}
-	
+
 	/// Записывает событие в журнал ошибок
 	function WriteLog()
 	{
@@ -809,6 +819,6 @@ $wikiparser->image_uri		= "/share/var/wikiphoto/";
 $wikiparser->ignore_images	= false;
 
 $dop_status=array('new'=>'Новый', 'err'=>'Ошибочный', 'inproc'=>'В процессе', 'ready'=>'Готов', 'ok'=>'Отгружен');
-if(is_array($CONFIG['doc']['status_list']))	$CONFIG['doc']['status_list']=array_merge($dop_status, $CONFIG['doc']['status_list']);
+if(is_array(@$CONFIG['doc']['status_list']))	$CONFIG['doc']['status_list']=array_merge($dop_status, $CONFIG['doc']['status_list']);
 else						$CONFIG['doc']['status_list']=$dop_status;
 ?>

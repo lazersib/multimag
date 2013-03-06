@@ -18,88 +18,142 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-if($_SESSION['question_ok'])	header("location: /vitrina.php");
-$res=mysql_query("SELECT `ip` FROM `question_ip` WHERE `ip`='$ip'");
-if(mysql_num_rows($res)) header("location: /vitrina.php");
+require_once("core.php");
 
-$tmpl->SetTitle("Наш опрос");
-$tmpl->AddText("<h1>Наш опрос</h1>");
+$ip=getenv("REMOTE_ADDR");
+
+try
+{
+$tmpl->SetTitle("Опросы");
 if($mode=='')
 {
-	$tmpl->AddText("В целях повышения удобства использования нашего сайта, предлагаем Вам ответить на несколько вопросов. Это займёт не более 5 минут. Вы согласны?<br>
-	<table width='100%'><tr>
-	<td><form action='' method='get'><input type='hidden' name='mode' value='start'><input type='submit' value='Да, конечно!'></form> 
-	<td><form action='' method='get'><input type='hidden' name='mode' value='later'><input type='submit' value='Не сейчас!'></form> 
-	<td><form action='' method='get'><input type='hidden' name='mode' value='no'><input type='submit' value='Нет, не хочу!'></form>
-	</table>");
-	$_SESSION['question_ok']=1;
-}
-else if($mode=='no')
-{
-	mysql_query("INSERT INTO `question_ip` (`ip`, `result`) VALUES ('$ip', '0')");
-	$_SESSION['question_ok']=1;
-	header("location: /vitrina.php");
-}
-else if($mode=='later')
-{
-	$_SESSION['question_ok']=1;
-	header("location: /vitrina.php");
-}
-else if($mode=='start')
-{
-	$q=rcv('q');
-	if($q<=0)	$q=1;
-	
-	if($q>1)
+	$tmpl->AddText("<h1>Активные опросы</h1>");
+	$res=mysql_query("SELECT `id`, `name`, `start_date`, `end_date` FROM `survey` WHERE `start_date`<=CURDATE() AND `end_date`>=CURDATE()");
+	if(!$res)	throw new MysqlException("Не удалось выбрать активные опросы");
+	if(mysql_num_rows($res))
 	{
-		$oq=$q-1;
-		$t=rcv('t');
-		$res=mysql_query("SELECT `id`, `text`, `mode` FROM `questions` WHERE `id`='$oq'");
-		$nx=mysql_fetch_row($res);
-		$a='|';
-		if($nx[2])	$a.=@$_POST['r'].'|';
-		else
+		$tmpl->AddText("<ul class='items'>");
+		while($line=mysql_fetch_assoc($res))
 		{
-			$c=@$_POST['c'];			
-			if(is_array($c))
-			foreach($c as $line)
-				$a.=$line.'|';
+			$tmpl->AddText("<li><a href='?mode=get&amp;s={$line['id']}'>{$line['name']}</a><br><i>Действует c {$line['start_date']} по {$line['end_date']}</li>");
 		}
-		if($t) $a.=$t.'|';
-		mysql_query("INSERT INTO `question_answ` (`q_id`, `answer`, `uid`, `ip`) VALUES ('$oq', '$a', '$uid', '$ip')");
+		$tmpl->AddText("</ul>");
 	}
-	
-	
-	$res=mysql_query("SELECT `id`, `text`, `mode` FROM `questions` WHERE `id`='$q'");
-	if($nx=mysql_fetch_row($res))
+	else $tmpl->AddText("отсутствуют");
+}
+else if($mode=='get')
+{
+	$survey_id = @$_REQUEST['s'];
+	$question_num = @$_REQUEST['q'];
+	settype($survey_id, 'int');
+	settype($question_num, 'int');
+
+	if(isset($_SESSION['uid']))	$uid=intval($_SESSION['uid']);
+	else	$uid='NULL';
+
+
+	$res=mysql_query("SELECT `survey`.`id`, `survey`.`name`, `survey`.`start_date`, `survey`.`end_date`, `survey`.`start_text`, `survey`.`end_text`, (SELECT COUNT(`survey_question`.`id`) FROM `survey_question` WHERE `survey_id`=`survey`.`id` ) AS `q_cnt` FROM `survey` WHERE `start_date`<=CURDATE() AND `end_date`>=CURDATE() AND `id`='$survey_id'");
+	if(!$res)	throw new MysqlException("Не удалось выбрать опрос");
+	if(!mysql_num_rows($res))	throw new NotFoundException("Опрос не существует, ещё не начался или уже завершен");
+	$survey=mysql_fetch_assoc($res);
+	$tmpl->AddText("<h1>{$survey['name']}</h1>");
+	if($question_num<1)
 	{
-		$nq=$q+1;
-		$tmpl->AddText("<h2>Вопрос $q</h2>");
-		$tmpl->AddText("<h4>$nx[1]</h4>
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='start'>
-		<input type='hidden' name='q' value='$nq'>");
-		$res=mysql_query("SELECT `var_id`, `text` FROM `question_vars` WHERE `q_id`='$nx[0]'");
-		if($nx[2]) $tmpl->AddText("Выберите один наиболее подходящий вариант, или напишите свой.<br><br>");
-		else $tmpl->AddText("Выберите не более трёх вариантов. Можно не выбирать ничего.<br><br>");
-		while($nxt=mysql_fetch_row($res))
-		{
-			if($nx[2])	$tmpl->AddText("<label><input type='radio' name='r' value='$nxt[0]'>$nxt[1]</label><br>");
-			else $tmpl->AddText("<label><input type='checkbox' name='c[]' value='$nxt[0]'>$nxt[1]</label><br>");
-		}
-		if($nx[2])	$tmpl->AddText("<label><input type='radio' name='r' value='0'>Затрудняюсь с ответом</label><br>");
-		$tmpl->AddText("Ваш вариант: <input type='text' name='t'>$nxt[1]<br>
-		<input type='submit' value='Далее &gt;&gt;'>
-		</form>");
+		if(!$survey['start_text'])	$survey['start_text']='Для начала опроса нажмите кнопку &quot;начать опрос&quot;';
+		$tmpl->AddText("<form action='' method='post'>
+		<input type='hidden' name='mode' value='get'>
+		<input type='hidden' name='s' value='$survey_id'>
+		<input type='hidden' name='q' value='1'>
+		<p>{$survey['start_text']}</p>
+
+		<button type='submit'>Начать опрос</button>");
 	}
 	else
 	{
-		mysql_query("INSERT INTO `question_ip` (`ip`, `result`) VALUES ('$ip', '$q')");
-		$tmpl->msg("Спасибо за участие в нашем опросе! Это поможет повысить удобство обслуживания наших клиентов.");
+		if(isset($_REQUEST['vq']))
+		{
+			$vq=$_REQUEST['vq'];
+			settype($vq,'int');
+			$res=mysql_query("SELECT `id`, `survey_id`, `text`, `type` FROM `survey_question` WHERE `question_num`='$vq' AND `survey_id`='$survey_id'");
+			if(!$res)	throw new MysqlException("Не удалось выбрать вопрос");
+			if($question=mysql_fetch_assoc($res))
+			{
+				$answer_id='';
+				$answer_int=-1;
+				$answer_txt='';
+				if(!$question['type'])	$answer_int=intval(@$_REQUEST['or']);
+				else
+				{
+					if(isset($_REQUEST['oc']))
+					if(is_array($_REQUEST['oc']))
+					{
+						foreach($_REQUEST['oc'] AS $val)
+						{
+							if($answer_txt)	$answer_txt.=',';
+							$answer_txt.=$val;
+						}
+					}
+				}
+				$comment=rcv('comment');
+				mysql_query("INSERT INTO `survey_answer` (`survey_id`, `question_num`, `answer_txt`, `answer_int`, `comment`, `uid`, `ip_address`)
+				VALUES ($survey_id, $vq, '$answer_txt', '$answer_int', '$comment', $uid, '$ip')");
+				if(mysql_errno())	throw new MysqlException("Не удалось сохранить ответ");
+			}
+			else		throw new Exception('Вопрос не найден');
+		}
+
+		$res=mysql_query("SELECT `id`, `survey_id`, `text`, `type` FROM `survey_question` WHERE `question_num`='$question_num' AND `survey_id`='$survey_id'");
+		if(!$res)	throw new MysqlException("Не удалось выбрать вопрос");
+		if($question=mysql_fetch_assoc($res))
+		{
+			$nq=$question_num+1;
+			$tmpl->AddText("<div id='page-info'>Вопрос $question_num/{$survey['q_cnt']}</div>");
+			$tmpl->AddText("<h4>{$question['text']}:</h4>
+			<form action='' method='post'>
+			<input type='hidden' name='mode' value='get'>
+			<input type='hidden' name='vq' value='$question_num'>
+			<input type='hidden' name='q' value='$nq'>");
+			$res=mysql_query("SELECT `option_num`, `text` FROM `survey_quest_option` WHERE `question_id`='{$question['id']}'");
+			if(!$res)	throw new MysqlException("Не удалось выбрать варианты ответов");
+
+			while($nxt=mysql_fetch_row($res))
+			{
+				if(!$question['type'])	$tmpl->AddText("<label><input type='radio' name='or' value='$nxt[0]'>$nxt[1]</label><br>");
+				else			$tmpl->AddText("<label><input type='checkbox' name='oc[]' value='$nxt[0]'>$nxt[1]</label><br>");
+			}
+			if(!$question['type'])	$tmpl->AddText("<label><input type='radio' name='or' value='0'>Затрудняюсь с ответом</label><br>");
+
+			if($question['type'])	$tmpl->AddText("<br>Выберите не более трёх вариантов.<br><br>");
+			else			$tmpl->AddText("<br>Выберите один наиболее подходящий вариант.<br><br>");
+
+			$tmpl->AddText("Ваш коментарий:<br><input type='text' name='comment'><br>
+			<button type='submit'>Далее &gt;&gt;</button>
+			</form>");
+		}
+		else
+		{
+			mysql_query("INSERT INTO `survey_ok` (`survey_id`, `uid`, `ip`, `result`) VALUES ('$survey_id', $uid, '$ip', '1')");
+			$tmpl->msg("Спасибо за участие в нашем опросе! Это поможет повысить удобство обслуживания наших клиентов.");
+		}
+
 	}
 
 }
 
+}
+catch(MysqlException $e)
+{
+	header('HTTP/1.0 500 Internal error');
+	mysql_query("ROLLBACK");
+	$tmpl->AddText("<br><br>");
+	$tmpl->msg($e->getMessage(),"err");
+}
+catch(Exception $e)
+{
+	mysql_query("ROLLBACK");
+	$tmpl->AddText("<br><br>");
+	$tmpl->logger($e->getMessage());
+}
 
 $tmpl->Write();
 ?>
