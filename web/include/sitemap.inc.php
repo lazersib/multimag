@@ -57,7 +57,7 @@ function addPriceGroup($group)
 
 function startMap()
 {
-	if($this->maptype=='html')	$this->buf.="<ul>";
+	if($this->maptype=='html')	$this->buf.="<ul class='items'>";
 	else if($this->maptype=='xml')	$this->buf.='<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 }
 
@@ -81,7 +81,7 @@ function AddLink($link, $text, $prio='0.5', $changefreq='always', $lastmod='')
 
 function startGroup()
 {
-	if($this->maptype=='html')	$this->buf.="<ul>";
+	if($this->maptype=='html')	$this->buf.="<ul class='items'>";
 }
 
 function endGroup()
@@ -113,6 +113,7 @@ function getMap()
 	$this->AddLink('news.php','Новости');
 	$this->AddLink('photogalery.php','Фотогалерея');
 	$this->AddLink('voting.php','Голосования','0.1');
+	$this->AddLink('survey.php','Опросы','0.1');
 	$this->AddLink('message.php','Отправить сообщение');
 	$this->AddLink('sitemap.xml','XML Sitemap','0.0');
 	$this->endMap();
