@@ -158,6 +158,29 @@ class doc_Nulltype
 		}
 		return $this->doc;
 	}
+	
+	/// Создать несвязанный документ с товарными остатками из другого документа
+	public function CreateParent($doc_obj)
+	{
+		$doc_data=$doc_obj->doc_data;
+		$doc_data['p_doc']=0;
+		$this->Create($doc_data);
+		if($this->sklad_editor_enable)
+		{
+			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
+			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
+			while($nxt=mysql_fetch_row($res))
+			{
+				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`, `comm`)
+				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
+				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
+			}
+		}
+
+		unset($this->doc_data);
+		$this->get_docdata();
+		return $this->doc;
+	}
 
 	/// Создать документ с товарными остатками на основе другого документа
 	/// В новый документ войдут только те наименования, которых нет в других подчинённых документах

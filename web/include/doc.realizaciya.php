@@ -367,6 +367,15 @@ class doc_Realizaciya extends doc_Nulltype
 			$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=6'\">Приходный кассовый ордер</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=4'\">Приход средств в банк</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=18'\">Корректировка долга</div>");
+			if(!$this->doc_data['p_doc'])	$tmpl->AddText("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc=$doc&amp;tt=1'\">Заявка (родительская)</div>");
+		}
+		else if($target_type=='1')
+		{
+			$new_doc=new doc_Zayavka();
+			$dd=$new_doc->CreateParent($this);
+			$new_doc->SetDopData('cena',$this->dop_data['cena']);
+			$this->SetDocData('p_doc',$dd);
+			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type==6)
 		{
