@@ -211,10 +211,10 @@ function DocHeadInit()
 	var doc_left_block=document.getElementById("doc_left_block")
 	var doc_menu_container=document.getElementById("doc_menu_container")
 	var reset_cost=document.getElementById("reset_cost")
-	
+
 	var lock_blur=0
 	var oldbg=doc_left_block.style.backgroundColor
-	
+
 	doc_left_block.changing=0
 
 	doc_left_block.Save=function()
@@ -299,7 +299,7 @@ function DocHeadInit()
 		lock_blur=1
 		window.setTimeout(function() {lock_blur=0}, 60)
 	}
-	
+
 	obj_onblur=function(event)
 	{
 		if(lock_blur)	return
@@ -328,7 +328,7 @@ function DocHeadInit()
 	for(var i=0; i<fields.length; i++)	doc_left_block.SetEvents(fields[i])
 
 	initCalendar("datetime",true)
-	
+
 	if(supports_html5_storage())
 	{
 		if(localStorage['doc_left_block_hidden']=='hidden')
@@ -493,7 +493,7 @@ function FaxMenu(event,doc)
 		ifax.onkeyup=validate_fax
 		validate_fax()
 	}
-	
+
 	function rcvDataSuccess(msg)
 	{
 		try
@@ -535,7 +535,7 @@ function FaxMenu(event,doc)
 			menu.parentNode.removeChild(menu)
 		}
 	}
-	
+
 	$.ajax({
 		type:   'GET',
 	       url:    '/doc.php',
@@ -590,7 +590,7 @@ function MailMenu(event,doc)
 				menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка email сообщения...'
 			}
 	}
-	
+
 	function rcvDataSuccess(msg)
 	{
 		try
@@ -632,7 +632,7 @@ function MailMenu(event,doc)
 			menu.parentNode.removeChild(menu)
 		}
 	}
-	
+
 	$.ajax({
 		type:   'GET',
 	       url:    '/doc.php',

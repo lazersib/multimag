@@ -1311,6 +1311,9 @@ class doc_s_Sklad
 			$ntd=rcv('ntd');
 			if(!isAccess('list_sklad','edit'))	throw new AccessException("");
 
+			if(isset($_REQUEST['type']))	$type=$_REQUEST['type'];
+			else				$type='null';
+			if($type!=='null')		settype($type,'int');
 
 			$res=mysql_query("SELECT `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd` FROM `doc_base_dop` WHERE `id`='$pos'");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные параметры!");
@@ -1334,6 +1337,7 @@ class doc_s_Sklad
 				$log_add.=", ntd:({$old_data['ntd']} => $ntd)";
 
 			if($type!=='null')	$type="'$type'";
+
 			$res=mysql_query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd`) VALUES ('$pos', '$analog', '$koncost', $type, '$d_int', '$d_ext', '$size', '$mass', '$ntd')");
 			if(mysql_errno())	throw new MysqlException("Не удалось установить дополнительные параметры!");
 

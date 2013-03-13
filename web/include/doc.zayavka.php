@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -33,13 +33,13 @@ class doc_Zayavka extends doc_Nulltype
 		$this->header_fields			='bank sklad separator agent cena';
 		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$doc'");
 		if(mysql_errno())			throw new MysqlException("Не удалось получить подчинённые документы");
-		if(mysql_num_rows($res))		$this->dop_menu_buttons			="<a href='/doc.php?mode=srv&amp;opt=rewrite&amp;doc=$doc' title='Перезаписать номенклатурой из подчинённых документов'><img src='img/i_rewrite.png' alt='rewrite'></a>";
+		if(mysql_num_rows($res))		$this->dop_menu_buttons			="<a href='/doc.php?mode=srv&amp;opt=rewrite&amp;doc=$doc' title='Перезаписать номенклатурой из подчинённых документов' onclick='return confirm(\"Подтвертите перезапись номенклатуры документа\")'><img src='img/i_rewrite.png' alt='rewrite'></a>";
 		settype($this->doc,'int');
 		$this->PDFForms=array(
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
 		);
 	}
-	
+
 	/// Функция обработки событий, связанных  с заказом
 	/// @param event_name Полное название события
 	public function dispatchZEvent($event_name)
@@ -49,7 +49,7 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$s=array('{DOC}','{SUM}','{DATE}');
 			$r=array($this->doc,$this->doc_data['sum'],date('Y-m-d',$this->doc_data['date']));
-			
+
 			foreach($CONFIG['zstatus'][$event_name] as $trigger=>$value)
 			{
 				switch($trigger)
@@ -108,7 +108,7 @@ class doc_Zayavka extends doc_Nulltype
 			}
 		}
 	}
-	
+
 	/// Отправить email с заданным текстом заказчику
 	function sendEmailNotify($text)
 	{
@@ -138,7 +138,7 @@ class doc_Zayavka extends doc_Nulltype
 				mailto($email,"Заказ N {$this->doc} на {$CONFIG['site']['name']}", $user_msg);
 			}
 		}
-	
+
 	}
 
 	function DopHead()
@@ -208,7 +208,7 @@ class doc_Zayavka extends doc_Nulltype
 		$delivery_date=rcv('delivery_date');
 		$buyer_email=rcv('buyer_email');
 		$buyer_phone=rcv('buyer_phone');
-		
+
 
 		settype($kladovshik, 'int');
 		$delivery=$delivery?'1':'0';
@@ -222,21 +222,21 @@ class doc_Zayavka extends doc_Nulltype
 		( '{$this->doc}' ,'buyer_email','$buyer_email'),
 		( '{$this->doc}' ,'buyer_phone','$buyer_phone')
 		");
-		
+
 		if($this->doc)
 		{
 			$log_data='';
 			if(@$this->dop_data['kladovshik']!=$kladovshik)		$log_data.=@"kladovshik: {$this->dop_data['kladovshik']}=>$kladovshik, ";
 			if(@$this->dop_data['delivery']!=$delivery)		$log_data.=@"delivery: {$this->dop_data['delivery']}=>$delivery, ";
 			if(@$this->dop_data['delivery_date']!=$delivery_date)	$log_data.=@"delivery_date: {$this->dop_data['delivery_date']}=>$delivery_date, ";
-			if(@$this->dop_data['status']!=$status)	
+			if(@$this->dop_data['status']!=$status)
 			{
 				$log_data.=@"status: {$this->dop_data['status']}=>$status, ";
 				$this->sentZEvent('cstatus');
 			}
 			if(@$this->dop_data['buyer_email']!=$buyer_email)	$log_data.=@"buyer_email: {$this->dop_data['buyer_email']}=>$buyer_email, ";
 			if(@$this->dop_data['buyer_phone']!=$buyer_phone)	$log_data.=@"buyer_phone: {$this->dop_data['buyer_phone']}=>$mest, ";
-			
+
 			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 		}
 	}
