@@ -41,7 +41,7 @@ if(@$_REQUEST['mode']=='')
 		$tmpl->AddText("</ul>");
 	}
 	else $tmpl->AddText("<h2>Активные голосования на данный момент отсутствуют!</h2>");
-	
+
 	$res=mysql_query("SELECT `id`, `name`, `end_date` FROM `votings`
 	WHERE `end_date`<=NOW()");
 	if(!$res)	throw new MysqlException("Не удалось получить список активных голосований");
@@ -66,7 +66,7 @@ else if(@$_REQUEST['mode']=='vv')
 	$vote_data=mysql_fetch_assoc($res);
 	$tmpl->SetTitle("{$vote_data['name']} - голосование");
 	$tmpl->AddText("<h1>Голосование: {$vote_data['name']}</h1><div id='page-info'>Проходит с {$vote_data['start_date']} по {$vote_data['end_date']}</div>");
-	
+
 	if(isset($_REQUEST['opt']))
 	{
 		/// TODO: проверка диапазона дат!
@@ -87,7 +87,7 @@ else if(@$_REQUEST['mode']=='vv')
 			if(mysql_errno())	$tmpl->msg("Не удалось записать ваш голос. Возможно, вы уже голосовали.",'err');
 		}
 	}
-	
+
 	if(@$_SESSION['uid'])
 	{
 		$uid=intval($_SESSION['uid']);
@@ -100,7 +100,7 @@ else if(@$_REQUEST['mode']=='vv')
 	}
 	$res=mysql_query("SELECT `id` FROM `votings_results` WHERE $where");
 	if(!$res)	throw new MysqlException("Не удалось получить результаты голосований");
-	if(!mysql_num_rows($res) && (time() > strtotime($vote_data['end_date'].' 23:59:59')) && (time() < strtotime($vote_data['start_date'])) )	//Выводим форму голосования 
+	if(!mysql_num_rows($res) && (time() < strtotime($vote_data['end_date'].' 23:59:59')) && (time() > strtotime($vote_data['start_date'])) )	//Выводим форму голосования
 	{
 		$tmpl->AddText("<form action='/voting.php' method='post'>
 		<input type='hidden' name='mode' value='vv'>
