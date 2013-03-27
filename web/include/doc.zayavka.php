@@ -1222,35 +1222,33 @@ class doc_Zayavka extends doc_Nulltype
 		}
 	}
 
-	function CSVExport()
+	function CSVExport($to_str=0)
 	{
-		global $tmpl;
-		global $uid;
-
-		$dt=date("d.m.Y",$this->doc_data[5]);
-
-		if($coeff==0) $coeff=1;
+		global $tmpl, $uid;
 		if(!$to_str) $tmpl->ajax=1;
 
 		header("Content-type: 'application/octet-stream'");
 		header("Content-Disposition: attachment; filename=zayavka.csv;");
-		echo"PosNum;ID;Name;Proizv;Cnt;Cost;Sum\r\n";
+		echo"PosNum;ID;Name;Vendor;Cnt;Cost;Sum\r\n";
 
 		$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-// 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+ 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
+		if(!$res)	throw new MysqlException("Не удалось выбрать список товаров в документе");
 		$i=0;
 		$sum=$summass=0;
 		while($nxt=mysql_fetch_row($res))
 		{
 			$i++;
 			$sm=$nxt[5]*$nxt[4];
+			$sum+=$sm;
 			echo"$i;$nxt[0];\"$nxt[1] $nxt[2]\";\"$nxt[3]\";$nxt[4];$nxt[5];$sm\n";
 		}
+		echo";;Summary;;;;$sum\n";
 
 	}
 
