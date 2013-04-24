@@ -60,8 +60,8 @@ class Report_MinCnt extends BaseGSReport
 
 		$this->header($header);
 		
-		$widths=array(5, 8, 59, 8, 9, 11);
-		$headers=array('ID','Код','Наименование','Остаток','Минимум','Не хватает');
+		$widths=array(5, 8, 51, 8, 8, 9, 11);
+		$headers=array('ID','Код','Наименование','Остаток','В пути','Минимум','Не хватает');
 
 		$this->col_cnt=count($widths);
 		$this->tableBegin($widths);
@@ -75,7 +75,7 @@ class Report_MinCnt extends BaseGSReport
 		
 		if($sklad)
 		{
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base_cnt`.`cnt`, 0, `doc_base_cnt`.`mincnt`
 			FROM `doc_base_cnt`
 			LEFT JOIN `doc_base` ON `doc_base_cnt`.`id`=`doc_base`.`id`
 			WHERE `doc_base_cnt`.`sklad`='$sklad' AND `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt`
@@ -83,7 +83,7 @@ class Report_MinCnt extends BaseGSReport
 		}
 		else
 		{
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base_cnt`.`cnt`, 0, `doc_base_cnt`.`mincnt`
 			FROM `doc_base_cnt`
 			LEFT JOIN `doc_base` ON `doc_base_cnt`.`id`=`doc_base`.`id`
 			WHERE `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt`
@@ -93,7 +93,8 @@ class Report_MinCnt extends BaseGSReport
 		$sum=0;
 		while($nxt=mysql_fetch_row($res))
 		{
-			$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], $nxt[4], $nxt[4]-$nxt[3]));
+			$nxt[4]=DocVPuti($nxt[0]);
+			$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], $nxt[4], $nxt[5], $nxt[5]-$nxt[3]));
 		}
 		//$this->tableRow(array("", "", "Всего", "","", "$sum р.", ""));
 		$this->tableEnd();

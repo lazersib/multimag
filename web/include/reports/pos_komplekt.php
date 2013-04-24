@@ -39,6 +39,7 @@ class Report_Pos_Komplekt extends BaseGSReport
 		while($nxt=mysql_fetch_row($res))
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
 		$tmpl->AddText("</select><br>
+		<label><input type='checkbox' name='show_all' value='1'>Отобразить всю номенклатуру</label><br>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>");
@@ -49,6 +50,7 @@ class Report_Pos_Komplekt extends BaseGSReport
 		global $CONFIG;
 		$this->loadEngine($engine);
 		$sklad=rcv('sklad');
+		$show_all=rcv('show_all');
 		
 		$this->header($this->getName());
 		$headers=array('ID','Код','Наименование','Остаток');
@@ -72,18 +74,31 @@ class Report_Pos_Komplekt extends BaseGSReport
 			$this->tableAltStyle();
 			$this->tableSpannedRow(array($col_cnt),array($group_line['id'].': '.$group_line['name']));
 			$this->tableAltStyle(false);
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base_cnt`.`cnt`
-			FROM `doc_base_kompl`
-			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
-			WHERE `doc_base`.`group`='{$group_line['id']}'
-			GROUP BY `doc_base_kompl`.`kompl_id`
-			ORDER BY $order
-			");
+			if($show_all)
+				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_kompl`.`kompl_id`
+				FROM `doc_base`
+				LEFT JOIN `doc_base_kompl` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
+				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+				WHERE `doc_base`.`group`='{$group_line['id']}'
+				GROUP BY `doc_base`.`id`
+				ORDER BY $order");
+			else
+				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base_cnt`.`cnt`
+				FROM `doc_base_kompl`
+				INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
+				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+				WHERE `doc_base`.`group`='{$group_line['id']}'
+				GROUP BY `doc_base_kompl`.`kompl_id`
+				ORDER BY $order");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 			while($nxt=mysql_fetch_row($res))
 			{
 				if(!$nxt[3])	continue;
+				if($show_all)
+				{
+					if($nxt[4])	$nxt[2]='(+) '.$nxt[2];
+					unset($nxt[4]);
+				}
 				$this->tableRow($nxt);
 				$cnt++;
 			}

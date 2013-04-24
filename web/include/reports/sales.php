@@ -112,7 +112,6 @@ class Report_Sales extends BaseGSReport
 		</fieldset>
 		Склад:<br>
 		<select name='sklad'>");
-		//$tmpl->AddText("<option value='0'>--не выбран--</option>");
 		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady`");
 		while($nxt=mysql_fetch_row($res))
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
@@ -125,6 +124,7 @@ class Report_Sales extends BaseGSReport
 		<option value='all'>Всей номенклатуре</option>
 		<option value='group'>Выбранной группе</option>
 		<option value='pos'>Выбранному наименованию</option>
+		<option value='agent'>Выбранному поставщику</option>
 		</select>
 		");
 		$this->GroupSelBlock();
@@ -133,6 +133,11 @@ class Report_Sales extends BaseGSReport
 		<input type='hidden' name='pos_id' id='pos_id' value=''>
 		<input type='text' id='posit' style='width: 400px;' value=''>
 		</div>
+		<div id='agent_sel' style='display: none;'>
+		<input type='hidden' name='agent' id='agent_id' value=''>
+		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
+		</div>
+		
 		</fieldset>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать отчёт</button>
@@ -146,12 +151,19 @@ class Report_Sales extends BaseGSReport
 		}
 		function selectChange(event)
 		{
-			if(this.value=='group')
-				document.getElementById('sb').style.display='block';
-			else	document.getElementById('sb').style.display='none';
-			if(this.value=='pos')
-				document.getElementById('pos_sel').style.display='block';
-			else	document.getElementById('pos_sel').style.display='none';			
+			var sb=document.getElementById('sb');
+			var ps=document.getElementById('pos_sel');
+			var as=document.getElementById('agent_sel');
+			sb.style.display='none';
+			ps.style.display='none';
+			as.style.display='none';
+			
+			switch(this.value)
+			{
+				case 'group':	sb.style.display='block';	break;
+				case 'pos':	ps.style.display='block';	break;
+				case 'agent':	as.style.display='block';	break;
+			}
 		}
 		
 		
@@ -184,6 +196,32 @@ class Report_Sales extends BaseGSReport
 			else var sValue = li.selectValue;
 			document.getElementById('pos_id').value=sValue;
 			
+		}
+		
+		$(\"#ag\").autocomplete(\"/docs.php\", {
+			delay:300,
+			minChars:1,
+			matchSubset:1,
+			autoFill:false,
+			selectFirst:true,
+			matchContains:1,
+			cacheLength:10,
+			maxItemsToShow:15, 	 
+			formatItem:agliFormat,
+			onItemSelect:agselectItem,
+			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+			});
+		
+		function agliFormat (row, i, num) {
+			var result = row[0] + \"<em class='qnt'>тел. \" +
+			row[2] + \"</em> \";
+			return result;
+		}
+		function agselectItem(li) {
+			if( li == null ) var sValue = \"Ничего не выбрано!\";
+			if( !!li.extra ) var sValue = li.extra[0];
+			else var sValue = li.selectValue;
+			document.getElementById('agent_id').value=sValue;
 		}
 		
 		</script>
@@ -437,6 +475,7 @@ class Report_Sales extends BaseGSReport
 		$this->sklad=rcv('sklad');
 		$this->w_docs=rcv('w_docs');
 		$this->div_dt=rcv('div_dt');
+		$agent_id=rcv('agent');
 		
 		$print_df=date('Y-m-d', $dt_f);
 		$print_dt=date('Y-m-d', $dt_t);
@@ -445,7 +484,7 @@ class Report_Sales extends BaseGSReport
 		if(mysql_errno())		throw MysqlException("Не удалось получить информацию о складе");
 		if(!mysql_num_rows($res))	throw new Exception("Склад не найден");
 		list($sklad_id,$sklad_name)=mysql_fetch_row($res);
-		
+
 		$this->header($this->getName()." с $print_df по $print_dt, склад: $sklad_name($sklad_id)");
 		
 		if(!$this->w_docs)	
@@ -513,6 +552,20 @@ class Report_Sales extends BaseGSReport
 				{
 					$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3]);
 				}
+			}
+		}
+		else if($sel_type=='agent')
+		{
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`
+			FROM `doc_list_pos`
+			INNER JOIN `doc_base` ON  `doc_base`.`id`=`doc_list_pos`.`tovar`
+			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`agent`='$agent_id' AND `doc_list`.`type`='1'
+			GROUP BY `doc_list_pos`.`tovar` ORDER BY $order ");
+			if(mysql_errno())		throw MysqlException("Не удалось получить информацию о товарах");
+
+			while($nxt=mysql_fetch_row($res))
+			{
+				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3]);
 			}
 		}
 		$this->tableEnd();

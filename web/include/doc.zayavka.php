@@ -22,6 +22,8 @@ $doc_types[3]="Заявка покупателя";
 /// Документ *Заявка покупателя*
 class doc_Zayavka extends doc_Nulltype
 {
+	/// Конструктор
+	/// @param doc id документа
 	function __construct($doc=0)
 	{
 		parent::__construct($doc);
@@ -39,7 +41,7 @@ class doc_Zayavka extends doc_Nulltype
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
 		);
 	}
-
+	
 	/// Функция обработки событий, связанных  с заказом
 	/// @param event_name Полное название события
 	public function dispatchZEvent($event_name)
@@ -49,34 +51,57 @@ class doc_Zayavka extends doc_Nulltype
 		{
 			$s=array('{DOC}','{SUM}','{DATE}');
 			$r=array($this->doc,$this->doc_data['sum'],date('Y-m-d',$this->doc_data['date']));
+			
+			// Проверка и повышение статуса. Если повышение не произошло - остальные действия не выполняются
+			if(isset($CONFIG['zstatus'][$event_name]['testup_status']))
+			{
+				$status_options=array(0=>'new', 1=>'inproc', 2=>'ready', 3=>'ok' ,4=>'err');
+				// Если устанавливаемый статус не стандартный - прервать тест
+				if(!in_array($status, $status_options))		return;
+				// Если текущий статус не стандартный - прервать тест
+				if( $this->dop_data['status']==$status )	return;
+				// Если устанавливаемый статус равен текущему - прервать тест
+				if( $this->dop_data['status']==$status )	return;
+				// Если статус меняется на уменьшение - прервать тест
+				if( array_search($this->dop_data['status'], $status_options) >= array_search($status, $status_options) )	return;
+				mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$value')");
+				if(mysql_errno())	throw new MysqlException("Не удалось записпть статус заказа");
+				$this->dop_data['status']=$value;
+			}
 
 			foreach($CONFIG['zstatus'][$event_name] as $trigger=>$value)
 			{
 				switch($trigger)
 				{
-					case 'set_status':
+					case 'set_status':	// Установить статус
 						mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$value')");
 						if(mysql_errno())	throw new MysqlException("Не удалось записпть статус заказа");
 						$this->dop_data['status']=$value;
 						break;
-					case 'send_sms':
+					case 'send_sms':	// Послать sms
 						$value=str_replace($s,$r,$value);
 						$this->sendSMSNotify($value);
 						break;
-					case 'send_email':
+					case 'send_email':	// Послать email
 						$value=str_replace($s,$r,$value);
 						$this->sendEmailNotify($value);
 						break;
-					case 'notify':
+					case 'notify':		// Известить всеми доступными способами
 						$value=str_replace($s,$r,$value);
 						$this->sendSMSNotify($value);
 						$this->sendEmailNotify($value);
 						break;
+					/// TODO:
+					/// Отправка по XMPP
+					/// Отправка по телефону (голосом)
+					/// Отправка по телефону (факсом)
 				}
 			}
 		}
 	}
+	
 	/// Отправить SMS с заданным текстом заказчику
+	/// @param text текст отправляемого сообщения
 	function sendSMSNotify($text)
 	{
 		global $CONFIG;
@@ -110,6 +135,7 @@ class doc_Zayavka extends doc_Nulltype
 	}
 
 	/// Отправить email с заданным текстом заказчику
+	/// @param text текст отправляемого сообщения
 	function sendEmailNotify($text)
 	{
 		global $CONFIG;
@@ -232,7 +258,7 @@ class doc_Zayavka extends doc_Nulltype
 			if(@$this->dop_data['status']!=$status)
 			{
 				$log_data.=@"status: {$this->dop_data['status']}=>$status, ";
-				$this->sentZEvent('cstatus');
+				$this->sentZEvent('cstatus:'.$status);
 			}
 			if(@$this->dop_data['buyer_email']!=$buyer_email)	$log_data.=@"buyer_email: {$this->dop_data['buyer_email']}=>$buyer_email, ";
 			if(@$this->dop_data['buyer_phone']!=$buyer_phone)	$log_data.=@"buyer_phone: {$this->dop_data['buyer_phone']}=>$mest, ";
@@ -308,7 +334,8 @@ class doc_Zayavka extends doc_Nulltype
 			$this->CSVExport();
 		else $tmpl->logger("Запрошена неизвестная опция!");
 	}
-	// Формирование другого документа на основании текущего
+	
+	/// Формирование другого документа на основании текущего
 	function MorphTo($doc, $target_type)
 	{
 		global $tmpl;
