@@ -64,9 +64,22 @@ $CONFIG['doc']['notify_sms']		= false;// Информировать покупа
 $CONFIG['doc']['default_unit']		= 135;	// ID единицы измерения по умолчанию
 
 // $CONFIG['doc']['status_list']=array('err'=>'Ошибочный','inproc'=>'В процессе','ready'=>'Готов','ok'=>'Отгружен');	// Список статусов
-// $CONFIG['zstatus']['doc:zayavka:apply']['set_status']='ready';							// Пример обработки события проведения заявки
-// $CONFIG['zstatus']['doc:zayavka:apply']['notify']='Ваш заказ {DOC} принят!';						// Пример обработки события проведения заявки
-// $CONFIG['zstatus']['doc:realizaciya:cstatus:ok']['notify']='Ваш заказ {DOC} готов!';					// Пример обработки события смены статуса реализации
+
+// Пример обработки событий
+// $CONFIG['zstatus']['doc:zayavka:apply']['testup_status']='inproc';
+// $CONFIG['zstatus']['doc:zayavka:apply']['notify']='Ваш заказ {DOC} принят в обработку';
+// 
+// $CONFIG['zstatus']['doc:zayavka:print']['testup_status']='inproc';
+// $CONFIG['zstatus']['doc:zayavka:print']['notify']='Ваш заказ {DOC} принят в обработку';
+// $CONFIG['zstatus']['doc:zayavka:apply']['testup_status']='inproc';
+// $CONFIG['zstatus']['doc:zayavka:apply']['notify']='Ваш заказ {DOC} принят в обработку';
+// 
+// $CONFIG['zstatus']['doc:realizaciya:cstatus:ok']['testup_status']='ready';
+// $CONFIG['zstatus']['doc:realizaciya:cstatus:ok']['notify']='Ваш заказ N{DOC} на сумму {SUM} готов';
+// 
+// $CONFIG['zstatus']['doc:realizaciya:apply']['testup_status']='ok';
+// $CONFIG['zstatus']['doc:realizaciya:apply']['notify']='Ваш заказ {DOC} отгружен';
+
 
 $CONFIG['stock']['default_cost']	= 0;	// Цена по умолчанию для доп.столбца на складе. По умолчанию 0 - не задано
 

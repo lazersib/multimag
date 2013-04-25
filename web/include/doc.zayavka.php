@@ -55,6 +55,7 @@ class doc_Zayavka extends doc_Nulltype
 			// Проверка и повышение статуса. Если повышение не произошло - остальные действия не выполняются
 			if(isset($CONFIG['zstatus'][$event_name]['testup_status']))
 			{
+				$status=$CONFIG['zstatus'][$event_name]['testup_status'];
 				$status_options=array(0=>'new', 1=>'inproc', 2=>'ready', 3=>'ok' ,4=>'err');
 				// Если устанавливаемый статус не стандартный - прервать тест
 				if(!in_array($status, $status_options))		return;
@@ -64,9 +65,9 @@ class doc_Zayavka extends doc_Nulltype
 				if( $this->dop_data['status']==$status )	return;
 				// Если статус меняется на уменьшение - прервать тест
 				if( array_search($this->dop_data['status'], $status_options) >= array_search($status, $status_options) )	return;
-				mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$value')");
+				mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'status','$status')");
 				if(mysql_errno())	throw new MysqlException("Не удалось записпть статус заказа");
-				$this->dop_data['status']=$value;
+				$this->dop_data['status']=$status;
 			}
 
 			foreach($CONFIG['zstatus'][$event_name] as $trigger=>$value)
