@@ -40,6 +40,7 @@ class Report_Pos_Komplekt extends BaseGSReport
 			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");		
 		$tmpl->AddText("</select><br>
 		<label><input type='checkbox' name='show_all' value='1'>Отобразить всю номенклатуру</label><br>
+		<label><input type='checkbox' name='show_conn' value='1'>Отобразить коды связанных товаров</label><br>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>");
@@ -51,6 +52,7 @@ class Report_Pos_Komplekt extends BaseGSReport
 		$this->loadEngine($engine);
 		$sklad=rcv('sklad');
 		$show_all=rcv('show_all');
+		$show_conn=rcv('show_conn');
 		
 		$this->header($this->getName());
 		$headers=array('ID','Код','Наименование','Остаток');
@@ -78,7 +80,7 @@ class Report_Pos_Komplekt extends BaseGSReport
 				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_kompl`.`kompl_id`
 				FROM `doc_base`
 				LEFT JOIN `doc_base_kompl` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
-				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+				INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 				WHERE `doc_base`.`group`='{$group_line['id']}'
 				GROUP BY `doc_base`.`id`
 				ORDER BY $order");
@@ -86,7 +88,7 @@ class Report_Pos_Komplekt extends BaseGSReport
 				$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base_cnt`.`cnt`
 				FROM `doc_base_kompl`
 				INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
-				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+				INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 				WHERE `doc_base`.`group`='{$group_line['id']}'
 				GROUP BY `doc_base_kompl`.`kompl_id`
 				ORDER BY $order");
@@ -100,6 +102,24 @@ class Report_Pos_Komplekt extends BaseGSReport
 					unset($nxt[4]);
 				}
 				$this->tableRow($nxt);
+				if($show_conn)
+				{
+					$r=mysql_query("SELECT `doc_base_kompl`.`pos_id`, `doc_base`.`vc`
+					FROM `doc_base_kompl`
+					LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`pos_id`
+					WHERE `doc_base_kompl`.`kompl_id`='$nxt[0]'");
+					if(mysql_errno())	throw new MysqlException("Не удалось получить список комплектующих");
+					if(mysql_num_rows($r))
+					{
+						$list='';
+						while($l=mysql_fetch_row($r))
+						{
+							if($list)	$list.=", ";
+							$list.="$l[0] ($l[1])";
+						}
+						$this->tableSpannedRow(array(2,$col_cnt-2),array('', $list));
+					}
+				}
 				$cnt++;
 			}
 		}

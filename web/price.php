@@ -352,7 +352,7 @@ class PriceWriterXLS
 			if($cost==0)	continue;
 			$str=iconv('UTF-8', 'windows-1251',$cost);
 			$this->worksheet->write($this->line, 3, $str, $this->format_line[$i]);		// цена
-// НАДО СДЕЛАТЬ ПОДСВЕТКУ ЦЕН
+///TODO: НАДО СДЕЛАТЬ ПОДСВЕТКУ ЦЕН
 // 			$dcc=strtotime($data['cost_date']);
 // 			if( ($dcc<(time()-60*60*24*30*6))|| ($str==0) ) $cce=128;
 // 			else $cce=0;

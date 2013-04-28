@@ -46,6 +46,47 @@ function getSummaryData($sklad, $dt_from, $dt_to, $header='', $sql_add='')
 	return $ret;
 }
 
+function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
+{
+	$res=mysql_query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, SUM(`fabric_data`.`cnt`) AS `cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
+	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' $sql_add
+	GROUP BY `fabric_data`.`pos_id`");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
+	
+	$i=$sum=$allcnt=0;
+	$ret='';
+	if(!mysql_num_rows($res))	return;
+	if($header)
+	{
+		$pdf->SetFillColor(0);
+		$pdf->SetTextColor(255);
+		$str = iconv('UTF-8', 'windows-1251', $header);
+		$pdf->MultiCell(0,4,$str,1,'L',1);
+		$pdf->SetFillColor(255);
+		$pdf->SetTextColor(0);
+	}
+	
+	while($line=mysql_fetch_assoc($res))
+	{
+		$i++;
+		$line['vc']=htmlentities($line['vc'],ENT_QUOTES,"UTF-8");
+		$line['name']=htmlentities($line['name'],ENT_QUOTES,"UTF-8");
+		$sumline=$line['cnt']*$line['zp'];
+		$sum+=$sumline;
+		$allcnt+=$line['cnt'];
+		$pdf->RowIconv( array($line['vc'], $line['name'], $line['cnt'], $line['zp'], $sumline) );
+	}
+	
+	
+	$pdf->SetFillColor(192);
+	$pdf->RowIconv( array('Итого', '', $allcnt, '', $sum) );
+	$pdf->SetFillColor(255);
+
+}
+
 try
 {
 if(!isAccess('doc_fabric','view'))	throw new AccessException('');
@@ -264,6 +305,9 @@ else if($mode=='summary')
 	$det_date_checked=$det_date?' checked':'';
 	$det_builder_checked=$det_builder?' checked':'';
 	
+	$print=@$_REQUEST['print']?1:0;
+	$sel_sklad_name='';
+	
 	$tmpl->SetText("<h1 id='page-title'>Производственный учёт - сводная информация</h1>
 	<div id='page-info'><a href='/fabric.php'>Назад</a></div>
 	<script type='text/javascript' src='/js/calendar.js'></script>
@@ -278,12 +322,18 @@ else if($mode=='summary')
 	$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
 	while($line=mysql_fetch_row($res))
 	{
-		$sel=$line[0]==$sklad?' selected':'';
+		if($line[0]==$sklad)
+		{
+			$sel=' selected';
+			$sel_sklad_name=$line[1];
+		}
+		else $sel='';
 		$tmpl->AddText("<option value='$line[0]'{$sel}>$line[1]</option>");
 	}
 	$tmpl->AddText("</select><br>
 	<label><input type='checkbox' name='det_date' value='1'{$det_date_checked}>Детализировать по датам</label><br>
 	<label><input type='checkbox' name='det_builder' value='1'{$det_builder_checked}>Детализировать по сборщикам</label><br>
+	<label><input type='checkbox' name='print' value='1'>Печатная форма PDF</label><br>
 	<script>
 	initCalendar('dt_from')
 	initCalendar('dt_to')
@@ -292,41 +342,123 @@ else if($mode=='summary')
 	</form>");
 	if(isset($_POST['get']))
 	{
-		$tmpl->AddText("<table class='list'>
-		<tr><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th><th>Сумма</th></tr>");
-		if($det_date)
+		if(!$print)
 		{
-			$dres=mysql_query("SELECT `fabric_data`.`date` FROM `fabric_data`
-			WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' GROUP BY `fabric_data`.`date`");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить список дат");
-			while($dline=mysql_fetch_row($dres))
+			$tmpl->AddText("<table class='list'>
+			<tr><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th><th>Сумма</th></tr>");
+			if($det_date)
 			{
-				if($det_builder)
+				$dres=mysql_query("SELECT `fabric_data`.`date` FROM `fabric_data`
+				WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' GROUP BY `fabric_data`.`date`");
+				if(mysql_errno())	throw new MysqlException("Не удалось получить список дат");
+				while($dline=mysql_fetch_row($dres))
 				{
-					$res=mysql_query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
-					if(mysql_errno())	throw new MysqlException("Не удалось получить список сборщиков");
-					while($line=mysql_fetch_row($res))
+					if($det_builder)
 					{
-						$data=getSummaryData($sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `fabric_data`.`date`='$dline[0]' AND `fabric_data`.`builder_id`={$line[0]}");
-						if($data)	$tmpl->AddText($data);
+						$res=mysql_query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+						if(mysql_errno())	throw new MysqlException("Не удалось получить список сборщиков");
+						while($line=mysql_fetch_row($res))
+						{
+							$data=getSummaryData($sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `fabric_data`.`date`='$dline[0]' AND `fabric_data`.`builder_id`={$line[0]}");
+							if($data)	$tmpl->AddText($data);
+						}
 					}
+					else	$tmpl->AddText(getSummaryData($sklad, $dt_from, $dt_to, $dline[0], " AND `fabric_data`.`date`='$dline[0]'"));
 				}
-				else	$tmpl->AddText(getSummaryData($sklad, $dt_from, $dt_to, $dline[0], " AND `fabric_data`.`date`='$dline[0]'"));
 			}
-		}
-		else if($det_builder)
-		{
-			$res=mysql_query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить список сборщиков");
-			while($line=mysql_fetch_row($res))
+			else if($det_builder)
 			{
-				$data=getSummaryData($sklad, $dt_from, $dt_to, $line[1], "AND `fabric_data`.`builder_id`={$line[0]}");
-				if($data)	$tmpl->AddText($data);
+				$res=mysql_query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+				if(mysql_errno())	throw new MysqlException("Не удалось получить список сборщиков");
+				while($line=mysql_fetch_row($res))
+				{
+					$data=getSummaryData($sklad, $dt_from, $dt_to, $line[1], "AND `fabric_data`.`builder_id`={$line[0]}");
+					if($data)	$tmpl->AddText($data);
+				}
 			}
+			else	$tmpl->AddText(getSummaryData($sklad, $dt_from, $dt_to));
+		
+			$tmpl->AddText("</table>");
 		}
-		else	$tmpl->AddText(getSummaryData($sklad, $dt_from, $dt_to));
-	
-		$tmpl->AddText("</table>");
+		else
+		{
+			$tmpl->ajax=1;
+			require('fpdf/fpdf_mc.php');
+			$header="Сводная информация по производству на складе $sel_sklad_name с $dt_from по $dt_to";
+			if($det_builder || $det_date)
+			{
+				$header.=" с детализацией";
+				if($det_date)	$header.=" по датам";
+				if($det_builder)	$header.=" по сборщикам";
+			}
+			$header.=".\nСоздано ".date("Y-m-d H:i:s");
+			$pdf=new PDF_MC_Table();
+			$pdf->Open();
+			$pdf->SetAutoPageBreak(1,12);
+			$pdf->AddFont('Arial','','arial.php');
+			$pdf->tMargin=5;
+			$pdf->AddPage();
+			$pdf->SetTextColor(0);
+			$pdf->SetFillColor(255);
+			$pdf->SetFont('Arial','',16);
+			$str = iconv('UTF-8', 'windows-1251', $header);
+			$pdf->MultiCell(0,6,$str,0,'C');
+			
+			$pdf->Ln(3);
+
+			$pdf->SetLineWidth(0.5);
+			$t_width=array(20,110,20,20,20);
+
+			$t_text=array('Код', 'Наименование', 'Кол-во', 'З/П', 'Сумма');
+
+			foreach($t_width as $id=>$w)
+			{
+				$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
+				$pdf->Cell($w,6,$str,1,0,'C',0);
+			}
+			$pdf->Ln();
+			$pdf->SetWidths($t_width);
+			$pdf->SetHeight(3.8);
+
+			$aligns=array('R','L','R','R','R');
+
+			$pdf->SetAligns($aligns);
+			$pdf->SetLineWidth(0.2);
+			$pdf->SetFont('','',8);
+			
+			if($det_date)
+			{
+				$dres=mysql_query("SELECT `fabric_data`.`date` FROM `fabric_data`
+				WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' GROUP BY `fabric_data`.`date`");
+				if(mysql_errno())	throw new MysqlException("Не удалось получить список дат");
+				while($dline=mysql_fetch_row($dres))
+				{
+					if($det_builder)
+					{
+						$res=mysql_query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+						if(mysql_errno())	throw new MysqlException("Не удалось получить список сборщиков");
+						while($line=mysql_fetch_row($res))
+						{
+							PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `fabric_data`.`date`='$dline[0]' AND `fabric_data`.`builder_id`={$line[0]}");
+						}
+					}
+					else	PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $dline[0], " AND `fabric_data`.`date`='$dline[0]'");
+				}
+			}
+			else if($det_builder)
+			{
+				$res=mysql_query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+				if(mysql_errno())	throw new MysqlException("Не удалось получить список сборщиков");
+				while($line=mysql_fetch_row($res))
+				{
+					PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $line[1], "AND `fabric_data`.`builder_id`={$line[0]}");
+				}
+			}
+			else	PDFSummaryData($pdf, $sklad, $dt_from, $dt_to);
+			
+			$pdf->Output();
+			exit(0);
+		}
 	}
 }
 else if($mode=='export')
