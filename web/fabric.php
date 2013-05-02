@@ -552,6 +552,8 @@ else if($mode=='export_submit')
 	$nasklad=rcv('nasklad');
 	$firm=rcv('firm');
 	$tov_id=rcv('tov_id');
+	$date=rcv('date');
+	$dt_to=rcv('dt_to');
 	$tim=time();
 	$res=mysql_query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
 			VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
@@ -563,13 +565,14 @@ else if($mode=='export_submit')
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
 	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
-	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' $sql_add
+	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date' $sql_add
 	GROUP BY `fabric_data`.`pos_id`");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить список наименований");
 	$ret='';
 	while($line=mysql_fetch_assoc($res))
 	{
 		mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `page`) VALUES ($doc, {$line['pos_id']}, {$line['cnt']}, 0)");
+		if(mysql_errno())	throw new MysqlException("Не удалось добавить наименование");
 	}
 	
 	header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad&not_a_p=$not_a_p");
