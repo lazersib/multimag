@@ -359,6 +359,11 @@ protected function ProductList($group, $page)
 	$rows=mysql_num_rows($res);
         if($rows)
         {
+		if($page<1 || $lim*($page-1)>$rows) 
+		{ 
+			header("Location: ".(empty($_SERVER['HTTPS'])?"http":"https")."://".$_SERVER['HTTP_HOST'].$this->GetGroupLink($group),false,301); 
+			exit(); 
+		}
 		$this->OrderAndViewBar($group,$page,$order,$view);
 
 		$this->PageBar($group, $rows, $lim, $page);
@@ -369,6 +374,11 @@ protected function ProductList($group, $page)
 		$this->PageBar($group, $rows, $lim, $page);
 		$tmpl->AddText("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}
+        elseif(isset ($page) && $page!=1)
+        {
+                header("Location: ".(empty($_SERVER['HTTPS'])?"http":"https")."://".$_SERVER['HTTP_HOST'].$this->GetGroupLink($group),false,301); 
+		exit(); ;
+        }
 }
 
 /// Блок товаров, выбранных по признаку, основанному на типе блока
