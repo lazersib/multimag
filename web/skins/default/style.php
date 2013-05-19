@@ -4,25 +4,25 @@ function rusdate($fstr,$rtime=-1)
 {
    if($rtime==-1) $rtime=time();
    $dstr=date($fstr,$rtime);
-   $dstr=eregi_replace("Monday","Понедельник",$dstr);
-   $dstr=eregi_replace("Tuesday","Вторник",$dstr);
-   $dstr=eregi_replace("Wednesday","Среда",$dstr);
-   $dstr=eregi_replace("Thursday","Четверг",$dstr);
-   $dstr=eregi_replace("Friday","Пятница",$dstr);
-   $dstr=eregi_replace("Saturday","Суббота",$dstr);
-   $dstr=eregi_replace("Sunday","Воскресенье",$dstr);
-   $dstr=eregi_replace("January","января",$dstr);
-   $dstr=eregi_replace("February","февраля",$dstr);
-   $dstr=eregi_replace("March","марта",$dstr);
-   $dstr=eregi_replace("April","апреля",$dstr);
-   $dstr=eregi_replace("May","мая",$dstr);
-   $dstr=eregi_replace("June","июня",$dstr);
-   $dstr=eregi_replace("July","июля",$dstr);
-   $dstr=eregi_replace("August","августа",$dstr);
-   $dstr=eregi_replace("September","сентября",$dstr);
-   $dstr=eregi_replace("October","октября",$dstr);
-   $dstr=eregi_replace("November","ноября",$dstr);
-   $dstr=eregi_replace("December","декабря",$dstr);
+   $dstr=str_ireplace("Monday","Понедельник",$dstr);
+   $dstr=str_ireplace("Tuesday","Вторник",$dstr);
+   $dstr=str_ireplace("Wednesday","Среда",$dstr);
+   $dstr=str_ireplace("Thursday","Четверг",$dstr);
+   $dstr=str_ireplace("Friday","Пятница",$dstr);
+   $dstr=str_ireplace("Saturday","Суббота",$dstr);
+   $dstr=str_ireplace("Sunday","Воскресенье",$dstr);
+   $dstr=str_ireplace("January","января",$dstr);
+   $dstr=str_ireplace("February","февраля",$dstr);
+   $dstr=str_ireplace("March","марта",$dstr);
+   $dstr=str_ireplace("April","апреля",$dstr);
+   $dstr=str_ireplace("May","мая",$dstr);
+   $dstr=str_ireplace("June","июня",$dstr);
+   $dstr=str_ireplace("July","июля",$dstr);
+   $dstr=str_ireplace("August","августа",$dstr);
+   $dstr=str_ireplace("September","сентября",$dstr);
+   $dstr=str_ireplace("October","октября",$dstr);
+   $dstr=str_ireplace("November","ноября",$dstr);
+   $dstr=str_ireplace("December","декабря",$dstr);
    return $dstr;
 }
 

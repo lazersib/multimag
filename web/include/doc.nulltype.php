@@ -568,7 +568,7 @@ class doc_Nulltype
 		$tmpl->AddText("<h1>{$this->doc_viewname} N{$this->doc}</h1>");
 
 		$this->DrawLHeadformStart();
-		$fields=split(' ',$this->header_fields);
+		$fields=explode(' ',$this->header_fields);
 		foreach($fields as $f)
 		{
 			switch($f)

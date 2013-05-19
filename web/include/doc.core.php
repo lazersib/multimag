@@ -24,7 +24,7 @@ function __autoload($class_name)
 	global $CONFIG;
 
 	$class_name= strtolower($class_name);
-	$nm2=split('_',$class_name,2);
+	$nm2=explode('_',$class_name,2);
 	if(is_array($nm2))
 	{
 		list($class_type, $class_name)=$nm2;

@@ -580,7 +580,6 @@ class doc_Postuplenie extends doc_Nulltype
 
 			while($nxt=mysql_fetch_row($res))
 			{
-				//echo"$nxt[5] - $nxt[1]<br>";
 				if($nxt[5]<$nxt[1])
 				{
 
@@ -614,6 +613,7 @@ class doc_Postuplenie extends doc_Nulltype
 
 	function Service($doc)
 	{
+		global $tmpl;
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
