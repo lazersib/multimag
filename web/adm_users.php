@@ -150,7 +150,7 @@ else if($mode=='view')
 		");
 	}
 	$tmpl->AddText("
-	<tr><th colspan='2'>Карточка сотрудника</th></tr>
+	<tr><th colspan='2'>Карточка сотрудника (<a href='/adm_users.php?mode=we&amp;id=$id'>править</a>)</th></tr>
 	<tr><td>Является сотрудником</td><td>$worker</td></tr>
 	<tr><td>Рабочий email</td><td><a href='mailto:{$line['worker_email']}'>{$line['worker_email']}</a></td></tr>
 	<tr><td>Рабочий телефон</td><td>{$line['worker_phone']}</td></tr>

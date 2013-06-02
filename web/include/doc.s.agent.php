@@ -163,7 +163,7 @@ class doc_s_Agent
 			}
 
 			$ext='';
-			if(isAccess('doc_agent_ext', 'write')) $ext='disabled';
+			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
 		
 			$tmpl->AddText("</select>
 			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='$nxt[3]' class='validate email'>

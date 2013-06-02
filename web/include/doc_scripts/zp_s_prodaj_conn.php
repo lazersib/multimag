@@ -17,10 +17,9 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-/// Расчёт заработной платы с продаж привязанных агентов.
+/// Расчёт заработной платы по финансовым поступленям от прикреплённых к сотруднику агентов
 /// Заработная плата расчитывается только для прикреплённых к сотруднику агентов.
 /// Позволятет настроить различные ставки для старых и новых агентов
-/// ПРоцент начисляется с оборота
 class ds_zp_s_prodaj_conn
 {
 	var $new_coeff=0.04;
@@ -147,11 +146,11 @@ function Run($mode)
 			list($fd_date)	=mysql_fetch_row($fd_res);
 		
 			$tmpl->AddText("<tr><th colspan='5'>{$agent_info['name']}</td></tr>");
-			$doc_res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`user`, `doc_list`. `date`, `doc_list`.`sum`, `n_data`.`value` AS `zp_s_prodaj`, `users`.`name` AS `user_name`, `doc_list`.`p_doc`, `doc_list`.`agent` AS `agent_id`
+			$doc_res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`user`, `doc_list`. `date`, `doc_list`.`sum`, `n_data`.`value` AS `zp_s_finansov`, `users`.`name` AS `user_name`, `doc_list`.`p_doc`, `doc_list`.`agent` AS `agent_id`
 			FROM `doc_list`
 			INNER JOIN `users`			ON `users`.`id`=`doc_list`.`user`
-			LEFT JOIN `doc_dopdata` AS `n_data`	ON `n_data`.`doc`=`doc_list`.`id` AND `n_data`.`param`='zp_s_prodaj'
-			WHERE `doc_list`.`ok`>'0' AND `doc_list`.`type`='2' AND `doc_list`.`date`>='$date_f' AND `doc_list`.`date`<='$date_t'
+			LEFT JOIN `doc_dopdata` AS `n_data`	ON `n_data`.`doc`=`doc_list`.`id` AND `n_data`.`param`='zp_s_finansov'
+			WHERE `doc_list`.`ok`>'0' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6') AND `doc_list`.`date`>='$date_f' AND `doc_list`.`date`<='$date_t'
 			AND `doc_list`.`agent`='{$agent_info['id']}'");
 			if(!$doc_res)	throw new MysqlException("Не удалось получить список документов");
 			while($doc_info=mysql_fetch_assoc($doc_res))
@@ -159,42 +158,15 @@ function Run($mode)
 				if($doc_info['date'] > ($fd_date+60*60*24*$this->new_days))	$coeff=$this->old_coeff;
 				else								$coeff=$this->new_coeff;
 				
-				// Проверка факта оплаты
-				$add='';
-				if($doc_info['p_doc']) $add=" OR (`p_doc`='{$doc_info['p_doc']}' AND (`type`='4' OR `type`='6'))";
-				$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE (`p_doc`='{$doc_info['id']}' AND (`type`='4' OR `type`='6'))
-				$add AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
-				$disable='';
-				if(@$prop=mysql_result($rs,0,0))
-				{
-					$prop=sprintf("%0.2f",$prop);
-					if($prop>=$doc_info['sum'])		$cl='f_green';
-					else
-					{
-						$cl='f_brown';
-						$disable='disabled';
-					}
-				}
-				else
-				{
-					if(DocCalcDolg($doc_info['agent_id'])<=0)$cl='f_green';
-					else
-					{
-						$cl='f_red';
-						$disable='disabled';
-					}
-
-				}
-
 				$date=date("Y-m-d H:i:s", $doc_info['date']);
-				$nach_sum=$doc_info['sum']*$coeff;
+				$nach_sum=sprintf("%0.2f",$doc_info['sum']*$coeff);
 				
-				$tmpl->AddText("<tr class='$cl'>
+				$tmpl->AddText("<tr>
 				<td><a href='/doc.php?mode=body&amp;doc={$doc_info['id']}'>{$doc_info['id']}</a></td>
 				<td><a href='/adm_users.php?mode=view&amp;id={$doc_info['user_name']}'>{$doc_info['user_name']}</a></td>
 				<td>$date</td><td>{$doc_info['sum']}</td>");
 
-				if(!$doc_info['zp_s_prodaj'])	$tmpl->AddText("<td><input type='text' name='sum_doc[{$doc_info['id']}]' value='$nach_sum' $disable></td>");
+				if(!$doc_info['zp_s_finansov'])	$tmpl->AddText("<td><input type='text' name='sum_doc[{$doc_info['id']}]' value='$nach_sum'></td>");
 				else				$tmpl->AddText("<td>{$doc_info['zp_s_prodaj']}</td>");
 				
 				$tmpl->AddText("</tr>");
@@ -246,7 +218,7 @@ function Run($mode)
 
 function getName()
 {
-	return "Расчёт и выплата зарплаты с продаж ответственному сотруднику";
+	return "Расчёт заработной платы по финансовым поступленям от прикреплённых к сотруднику агентов";
 }
 
 };

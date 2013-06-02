@@ -387,7 +387,7 @@ function getright($object,$uid)
 function isAccess($object, $action,$no_redirect=false)
 {
 	$uid=@$_SESSION['uid'];
-	if($uid==1)	return true;
+	//if($uid==1)	return true;
 	$res=mysql_query("(
 	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action'
 	) UNION (
