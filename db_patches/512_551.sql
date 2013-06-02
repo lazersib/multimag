@@ -1,4 +1,4 @@
-INSERT INTO `multimag`.`users_objects` (`object`, `desc`, `actions`) VALUES ('doc_agent_ext', 'Доступ к административным полям агентов', 'view,edit');
+INSERT INTO `users_objects` (`object`, `desc`, `actions`) VALUES ('doc_agent_ext', 'Доступ к административным полям агентов', 'view,edit');
 
 
 TRUNCATE `db_version`;
