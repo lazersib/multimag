@@ -110,7 +110,7 @@ function Run($mode)
 	{
 		$tov_id=rcv('tov_id');
 		$date_f=strtotime(rcv('date_f'));
-		$date_t=strtotime(rcv('date_t'));
+		$date_t=strtotime(rcv('date_t'))+60*60*24-1;
 		$user_id=$_REQUEST['user_id'];
 		settype($user_id,'int');
 
@@ -142,7 +142,7 @@ function Run($mode)
 			// Получение даты первого документа
 			$fd_res=mysql_query("SELECT `date` FROM `doc_list` WHERE `agent`='{$agent_info['id']}' ORDER BY `date` LIMIT 1");
 			if(!$fd_res)	throw new MysqlException("Не удалось получить дату первого документа");
-			if(!mysql_fetch_row($fd_res))	continue;	// Заодно не будет агентов без движения
+			if(!mysql_num_rows($fd_res))	continue;	// Заодно не будет агентов без движения
 			list($fd_date)	=mysql_fetch_row($fd_res);
 		
 			$tmpl->AddText("<tr><th colspan='5'>{$agent_info['name']}</td></tr>");
