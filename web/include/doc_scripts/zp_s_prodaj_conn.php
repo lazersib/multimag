@@ -127,7 +127,7 @@ function Run($mode)
 		<form action='' method='post' enctype='multipart/form-data'>
 		<input type='hidden' name='mode' value='exec'>
 		<input type='hidden' name='param' value='i'>
-		<input type='hidden' name='sn' value='zp_s_prodaj'>
+		<input type='hidden' name='sn' value='zp_s_prodaj_conn'>
 		<input type='hidden' name='tov_id' id='tov_id' value='$tov_id'>
 		<input type='hidden' name='user_id' id='tov_id' value='$user_id'>
 		<table width='100%' class='list'>
@@ -167,7 +167,7 @@ function Run($mode)
 				<td>$date</td><td>{$doc_info['sum']}</td>");
 
 				if(!$doc_info['zp_s_finansov'])	$tmpl->AddText("<td><input type='text' name='sum_doc[{$doc_info['id']}]' value='$nach_sum'></td>");
-				else				$tmpl->AddText("<td>{$doc_info['zp_s_prodaj']}</td>");
+				else				$tmpl->AddText("<td>{$doc_info['zp_s_finansov']}</td>");
 				
 				$tmpl->AddText("</tr>");
 			}
@@ -198,7 +198,7 @@ function Run($mode)
 			settype($doc,'int');
 			if(!$sum)	continue;
 			$all_sum+=$sum;
-			mysql_query("INSERT INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'zp_s_prodaj', '$sum')");
+			mysql_query("INSERT INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'zp_s_finansov', '$sum')");
 			if(mysql_errno())	throw new MysqlException("Не удалось установить пометку о выданной зарплате".mysql_error());
 		}
 
@@ -211,7 +211,7 @@ function Run($mode)
 		$post_doc=mysql_insert_id();
 		mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$all_sum')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить услугу");
-		//mysql_query("COMMIT");
+		mysql_query("COMMIT");
 		header("location: /doc.php?mode=body&doc=$post_doc");
 	}
 }

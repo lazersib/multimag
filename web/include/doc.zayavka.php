@@ -36,6 +36,7 @@ class doc_Zayavka extends doc_Nulltype
 		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$doc'");
 		if(mysql_errno())			throw new MysqlException("Не удалось получить подчинённые документы");
 		if(mysql_num_rows($res))		$this->dop_menu_buttons			="<a href='/doc.php?mode=srv&amp;opt=rewrite&amp;doc=$doc' title='Перезаписать номенклатурой из подчинённых документов' onclick='return confirm(\"Подтвертите перезапись номенклатуры документа\")'><img src='img/i_rewrite.png' alt='rewrite'></a>";
+		$this->dop_menu_buttons.="<a onclick='msgMenu(event, {$this->doc})'><img src='/img/i_mailsend.png' alt='msg'></a>";
 		settype($this->doc,'int');
 		$this->PDFForms=array(
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
@@ -498,6 +499,7 @@ class doc_Zayavka extends doc_Nulltype
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
+		/// TODO: Это уже не нужно?
 		if($opt=='fax')
 		{
 			$faxnum=rcv('faxnum');
@@ -528,6 +530,22 @@ class doc_Zayavka extends doc_Nulltype
 				$fs->setNotifyMail($email);
 				$res=$fs->send();
 				$tmpl->msg("Факс успешно передан на сервер факсов! Вам придёт отчёт о доставке на email.","ok");
+			}
+		}
+		else if($opt=='pmsg')
+		{
+			try
+			{
+				$text	= rcv('text');
+				if(rcv('sms'))
+					$this->sendSMSNotify($text);
+				if(rcv('mail'))
+					$this->sendEmailNotify($text);
+				$tmpl->SetText("{response: 'send'}");
+			}
+			catch(Exception $e)
+			{
+				$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
 			}
 		}
 		else if($opt=='rewrite')

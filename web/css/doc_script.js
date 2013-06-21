@@ -572,18 +572,18 @@ function MailMenu(event,doc)
 			menu.appendChild(mailtext)
 			menu.appendChild(document.createElement('br'))
 			var bcancel=document.createElement('button')
-			bcancel.innerText='Отменить'
+			bcancel.innerHTML='Отменить'
 			bcancel.onclick=function() {menu.parentNode.removeChild(menu)}
 			menu.appendChild(bcancel)
 			var bsend=document.createElement('button')
-			bsend.innerText='Отправить'
+			bsend.innerHTML='Отправить'
 			menu.appendChild(bsend)
 			bsend.onclick=function()
 			{
 				$.ajax({
 					type:   'GET',
 				       url:    '/doc.php',
-				       data:   'mode=email&doc='+doc+'&opt='+event.target.fname+'&email='+imail.value+'&comment='+mailtext.value,
+				       data:   'mode=email&doc='+doc+'&opt='+event.target.fname+'&email='+encodeURIComponent(imail.value)+'&comment='+encodeURIComponent(mailtext.value),
 				       success: function(msg) { rcvDataSuccess(msg) },
 				       error:   function() { jAlert('Ошибка соединения!','Отправка email сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
 				});
@@ -640,6 +640,72 @@ function MailMenu(event,doc)
 	       success: function(msg) { rcvDataSuccess(msg) },
 	       error:   function() { jAlert('Ошибка соединения!','Отправка email сообщения',{},'icon_err'); menu.parentNode.removeChild(menu);},
 	});
+	return false
+}
+
+function msgMenu(event,doc)
+{
+	var menu=CreateContextMenu(event)
+	var email=''
+	function showDialog()
+	{
+		var obj=event.target
+		menu.innerHTML="<div>Текст сообщения:</div><textarea id='mailtext'></textarea><br><label><input type='checkbox' id='sendmail' checked> Отправить по email</label><br><label><input type='checkbox' id='sendsms' checked> Отправить по sms</label><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button>";
+		menu.className='contextlayer';
+		
+		var otext	= document.getElementById('mailtext');
+		var ocmail	= document.getElementById('sendmail');
+		var ocsms	= document.getElementById('sendsms');
+		var obsend	= document.getElementById('bsend');
+		var obcancel	= document.getElementById('bcancel');
+		
+		obcancel.onclick=function() {menu.parentNode.removeChild(menu)}
+		obsend.onclick=function()
+		{
+			var mail= ocmail.checked?1:0;
+			var sms	= ocsms.checked?1:0;
+			$.ajax({
+				type:   'GET',
+				url:    '/doc.php',
+				data:   'mode=srv&doc='+doc+'&opt=pmsg&mail='+mail+'&sms='+sms+'&text='+encodeURIComponent(mailtext.value),
+				success: function(msg) { rcvDataSuccess(msg) },
+				error:   function() { jAlert('Ошибка соединения!','Отправка сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
+			});
+			menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...'
+		}
+	}
+
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			var json=eval('('+msg+')');
+			if(json.response=='err')
+			{
+				jAlert(json.text,"Ошибка", {}, 'icon_err');
+				menu.parentNode.removeChild(menu);
+			}
+			else if(json.response=='send')
+			{
+				jAlert('Сообщение успешно отправлено!',"Выполнено", {});
+				menu.parentNode.removeChild(menu)
+			}
+			else
+			{
+				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Отправка сообщения", {},  'icon_err');
+				menu.parentNode.removeChild(menu)
+			}
+		}
+		catch(e)
+		{
+			alert(msg)
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Отправка сообщения", {},  'icon_err');
+			menu.parentNode.removeChild(menu)
+		}
+	}
+
+	showDialog()
 	return false
 }
 

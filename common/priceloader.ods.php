@@ -27,13 +27,14 @@ class ODSPriceLoader extends PriceLoader
 	// Рабочие переменные
 	private $rowspan;		// Данные об объединённых вертикальных ячейках
 	private $inc_lines;		// Смещение после текущей ячейки (её ширина в столбцах)
-	
+	private $line_pos;		// Текущий столбец
 	function __construct($filename)
 	{
 		$zip = new ZipArchive;
 		$zip->open($filename,ZIPARCHIVE::CREATE);
 		$this->xml = $zip->getFromName("content.xml");
 		$zip->close();
+		$this->line_pos = 1;
 	}
 	
 	public function findSignature($signature)

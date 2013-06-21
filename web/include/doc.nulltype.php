@@ -272,7 +272,7 @@ class doc_Nulltype
 			if(!isAccess($object,'view'))	throw new AccessException("view");
 			doc_menu($this->dop_buttons());
 			$this->DrawHeadformStart();
-			$fields=split(' ',$this->header_fields);
+			$fields=explode(' ',$this->header_fields);
 			foreach($fields as $f)
 			{
 				switch($f)
@@ -351,7 +351,7 @@ class doc_Nulltype
 			$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
 		else
 		{
-			$fields=split(' ',$this->header_fields);
+			$fields=explode(' ',$this->header_fields);
 			$cena_update=false;
 			foreach($fields as $f)
 			{
@@ -479,7 +479,7 @@ class doc_Nulltype
 			else if($this->doc_data[14])	throw new Exception('Операция не допускается для документа, отмеченного для удаления!');
 			else
 			{
-				$fields=split(' ',$this->header_fields);
+				$fields=explode(' ',$this->header_fields);
 				$cena_update=false;
 				foreach($fields as $f)
 				{
@@ -643,7 +643,7 @@ class doc_Nulltype
 
 // 		$tmpl->AddText("<b>Дата:</b> $dt, ");
 //
-// 		$fields=split(' ',$this->header_fields);
+// 		$fields=explode(' ',$this->header_fields);
 // 		foreach($fields as $f)
 // 		{
 // 			switch($f)
