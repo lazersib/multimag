@@ -189,6 +189,7 @@ function ExecMode($mode)
 	}
 	else if($mode=='buy')		$this->Buy();
 	else if($mode=='delivery')	$this->Delivery();
+	else if($mode=='buyform')	$this->BuyMakeForm();
 	else if($mode=='makebuy')	$this->MakeBuy();
 	else if($mode=='pay')		$this->Payment();
 	else if($mode=='print_schet')
@@ -1307,7 +1308,7 @@ protected function MakeBuy()
 	}
 	else if(!$tel && !$email)
 	{
-		header("Location: /vitrina.php?mode=buy&step=1&cwarn=1");
+		header("Location: /vitrina.php?mode=buyform&step=1&cwarn=1");
 		return;
 	}
 
