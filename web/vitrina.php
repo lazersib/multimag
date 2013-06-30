@@ -188,6 +188,7 @@ function ExecMode($mode)
 		else	header('Location: /vitrina.php?mode=buy');
 	}
 	else if($mode=='buy')		$this->Buy();
+	else if($mode=='delivery')	$this->Delivery();
 	else if($mode=='makebuy')	$this->MakeBuy();
 	else if($mode=='pay')		$this->Payment();
 	else if($mode=='print_schet')
@@ -813,10 +814,9 @@ protected function Basket()
 		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
 		else	$comm='';
 		$s.="
-		<tr id='korz_ajax_item_$item' class='lin$cc'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
+		<tr id='korz_ajax_item_$item'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
 		
 		";
-// 		<tr class='lin$cc'><td class='right'>$i <a href='?mode=korz_del&amp;p=$item'><img src='/img/i_del.png' alt='Убрать'></a><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'>$sm<td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
 		$cc=1-$cc;
 		$exist=1;
 		$i++;
@@ -843,7 +843,6 @@ protected function Basket()
 			beforeSend: function() { $('#korz_item_clear_url_'+id).html('<img src=\"/img/icon_load.gif\" alt=\"обработка..\">'); },
 			success: function() { $('#korz_ajax_item_'+id).remove(); },
 			complete: function() {
-			alert('123');
 			sum = 0;
 			$('span.sum').each(function() {
 			var num = parseFloat($(this).text());
@@ -874,6 +873,85 @@ protected function Basket()
 		//else $tmpl->msg("Цены указаны со скидкой 3%. А при оформлении заказа на сумму более 20'000 рублей предоставляется скидка 6%","info");
 	}
 }
+
+/// Оформление доставки
+protected function Delivery()
+{
+	$this->basket_sum=0;
+	if(isset($_SESSION['basket']['cnt']))
+	foreach($_SESSION['basket']['cnt'] as $item => $cnt)
+	{
+		$this->basket_sum+=GetCostPos($item, $this->cost_id)*$cnt;
+	}
+	if(!isset($_REQUEST['delivery_type']))
+	{
+		$this->DeliveryTypeForm();
+	}
+	else if(!@$_REQUEST['delivery_region'])
+	{
+		$_SESSION['basket']['delivery_type']	= round($_REQUEST['delivery_type']);
+		if($_REQUEST['delivery_type']==0)	$this->BuyMakeForm();
+		else
+		{
+			if(isset($_SESSION['uid']))
+			{
+				$up=getUserProfile($_SESSION['uid']);
+				$this->basket_address	= @$up['main']['real_address'];
+			}
+			else	$this->basket_address='';
+			$this->DeliveryRegionForm();
+		}
+	}
+	else
+	{
+		$_SESSION['basket']['delivery_region']	= rcv('delivery_region');
+		$_SESSION['basket']['delivery_address']	= rcv('delivery_address');
+		$_SESSION['basket']['delivery_date']	= rcv('delivery_date');
+		$this->BuyMakeForm();
+	}
+}
+
+/// Форма *способ доставки*
+protected function DeliveryTypeForm()
+{
+	global $tmpl;
+	$tmpl->SetText("<h1>Способ доставки</h1>");
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='delivery'>
+	<label><input type='radio' name='delivery_type' value='0'> Самовывоз</label><br><small>Вы сможете забрать товар с нашего склала</small><br><br>");
+	$res=mysql_query("SELECT `id`, `name`, `min_price`, `description` FROM `delivery_types`");
+	if(!$res)	throw new MysqlException("Не удалось запростить виды доставки");
+	while($nxt=mysql_fetch_assoc($res))
+	{
+		$disabled=$this->basket_sum<$nxt['min_price']?' disabled':'';
+		$tmpl->AddText("<label><input type='radio' name='delivery_type' value='{$nxt['id']}'$disabled> {$nxt['name']}</label><br>Минимальная сумма заказа - {$nxt['min_price']} рублей.<br><small>{$nxt['description']}</small><br><br>");
+	}
+	$tmpl->AddText("<button type='submit'>Далее</button></form>");
+}
+
+/// Форма *регион доставки*
+protected function DeliveryRegionForm()
+{
+	global $tmpl;
+	$tmpl->SetText("<h1>Регион доставки</h1>");
+	$tmpl->AddText("<form action='' method='post'>
+	<input type='hidden' name='mode' value='delivery'>
+	<input type='hidden' name='delivery_type' value='{$_REQUEST['delivery_type']}'>");
+	$res=mysql_query("SELECT `id`, `name`, `price`, `description` FROM `delivery_regions` WHERE `delivery_type`='{$_SESSION['basket']['delivery_type']}'");
+	if(!$res)	throw new MysqlException("Не удалось запростить регионы доставки");
+	while($nxt=mysql_fetch_assoc($res))
+	{
+		$tmpl->AddText("<label><input type='radio' name='delivery_region' value='{$nxt['id']}'> {$nxt['name']} - {$nxt['price']} рублей.</label><br><small>{$nxt['description']}</small><br><br>");
+	}
+	$tmpl->AddText("
+	Желаемые дата и время доставки:<br>
+	<input type='text' name='delivery_date'><br>
+	Адрес доставки:<br>
+	<textarea name='delivery_address' rows='5' cols='80'>{$this->basket_address}</textarea><br>
+	<button type='submit'>Далее</button></form>");
+}
+
+
 /// Оформление покупки
 protected function Buy()
 {
@@ -898,7 +976,7 @@ protected function Buy()
 			$this->BuyAuthForm();
 		}
 	}
-	else	$this->BuyMakeForm($step);
+	else	$this->Delivery();
 }
 // -------- Вспомогательные функции ------------------
 /// Поэлементный список подгрупп
@@ -1081,23 +1159,15 @@ protected function BuyAuthForm()
 protected function BuyMakeForm()
 {
 	global $tmpl, $CONFIG;
-	$users_data=array();
 	if(@$_SESSION['uid'])
 	{
-		$res=mysql_query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
-		$user_data=mysql_fetch_assoc($res);
-		$rr=mysql_query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='".$_SESSION['uid']."'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
-		while($nn=mysql_fetch_row($rr))
-		{
-			$user_dopdata["$nn[0]"]=$nn[1];
-		}
+		$up=getUserProfile($_SESSION['uid']);
 		$str='Товар будет зарезервирован для Вас на 3 рабочих дня.';
 		$email_field='';
 	}
 	else
 	{
+		$up=getUserProfile(-1);	// Пустой профиль
 		$str='<b>Для незарегистрированных пользователей наличие товара на складе не гарантируется.</b>';
 		$email_field="e-mail:<br>
 		<input type='text' name='email' value=''><br>
@@ -1106,15 +1176,8 @@ protected function BuyMakeForm()
 
 	if(isset($_REQUEST['cwarn']))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
 
-	if(@$user_data['reg_phone'])
-	{
-		$phone=substr($user_data['reg_phone'],2);
-	}
-	else
-	{
-		$phone='';
-	}
-
+	if(@$up['main']['reg_phone'])	$phone=substr($up['main']['reg_phone'],2);
+	else				$phone='';
 
 	$tmpl->AddText("
 	<h4>Для оформления заказа требуется следующая информация</h4>
@@ -1122,7 +1185,7 @@ protected function BuyMakeForm()
 	<input type='hidden' name='mode' value='makebuy'>
 	<div>
 	Фамилия И.О.<br>
-	<input type='text' name='rname' value='".@$user_data['real_name']."'><br>
+	<input type='text' name='rname' value='".@$up['main']['real_name']."'><br>
 	Мобильный телефон: <span id='phone_num'></span><br>
 	<small>Российский, 10 цифр, без +7 или 8</small>
 	<br>
@@ -1169,13 +1232,13 @@ protected function BuyMakeForm()
 	Желаемые дата и время доставки:<br>
 	<input type='text' name='delivery_date'><br>
 	<br>Адрес доставки:<br>
-	<textarea name='adres' rows='5' cols='80'>".@$user_data['real_address']."</textarea><br>
+	<textarea name='adres' rows='5' cols='80'>".@$up['main']['real_address']."</textarea><br>
 	</div>
 
 
 
 	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='80'>".@$user_dopdata['dop_info']."</textarea><br>
+	<textarea name='dop' rows='5' cols='80'>".@$up['dop']['dop_info']."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
 	</form>
@@ -1213,12 +1276,11 @@ protected function MakeBuy()
 	}
 	$rname=@$_REQUEST['rname'];
 	$rname_sql=mysql_real_escape_string($rname);
-	$adres=@$_REQUEST['adres'];
-	$adres_sql=mysql_real_escape_string($adres);
+	$delivery=$_SESSION['basket']['delivery_type'];
+	$adres_sql=mysql_real_escape_string($_SESSION['basket']['delivery_address']);
+	$delivery_date=mysql_real_escape_string($_SESSION['basket']['delivery_date']);
 	$email=@$_REQUEST['email'];
 	$email_sql=mysql_real_escape_string($email);
-	$delivery=intval(@$_REQUEST['delivery']);
-	$delivery_date=mysql_real_escape_string(@$_REQUEST['delivery_date']);
 	$comment=@$_REQUEST['dop'];
 	$comment_sql=mysql_real_escape_string($comment);
 	$agent=1;
@@ -1254,7 +1316,6 @@ protected function MakeBuy()
 		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype="site";
 		else $subtype=$CONFIG['site']['vitrina_subtype'];
 		
-		
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
@@ -1286,6 +1347,23 @@ protected function MakeBuy()
 			$tov_info=mysql_fetch_row($res);
 			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
 			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
+		}
+		if($_SESSION['basket']['delivery_type'])
+		{
+			$res=mysql_query("SELECT `service_id` FROM `delivery_types` WHERE `id`='{$_SESSION['basket']['delivery_type']}'");
+			if(!$res)	throw new MysqlException("Не удалось запростить типы доставки");
+			list($d_service_id)=mysql_fetch_row($res);
+			$res=mysql_query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
+			if(!$res)	throw new MysqlException("Не удалось запростить регионы доставки");
+			list($d_price)=mysql_fetch_row($res);
+			mysql_query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
+			if(mysql_errno())	throw new MysqlException("Не удалось добавить услугу в заказ");
+			$res=mysql_query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name` FROM `doc_base`
+			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+			WHERE `doc_base`.`id`='$d_service_id'");
+			$zakaz_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
+			$admin_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 		}
 		$zakaz_sum=DocSumUpdate($doc);
 		$_SESSION['order_id']=$doc;

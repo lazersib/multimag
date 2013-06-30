@@ -61,7 +61,7 @@ class doc_Zayavka extends doc_Nulltype
 				// Если устанавливаемый статус не стандартный - прервать тест
 				if(!in_array($status, $status_options))		return;
 				// Если текущий статус не стандартный - прервать тест
-				if( $this->dop_data['status']==$status )	return;
+				if( @$this->dop_data['status']==$status )	return;
 				// Если устанавливаемый статус равен текущему - прервать тест
 				if( $this->dop_data['status']==$status )	return;
 				// Если статус меняется на уменьшение - прервать тест

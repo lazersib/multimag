@@ -387,7 +387,7 @@ function getright($object,$uid)
 function isAccess($object, $action,$no_redirect=false)
 {
 	$uid=@$_SESSION['uid'];
-	//if($uid==1)	return true;
+	if($uid==1)	return true;
 	$res=mysql_query("(
 	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action'
 	) UNION (
@@ -500,6 +500,30 @@ function SafeLoadTemplate($template)
 {
 	global $tmpl, $CONFIG;
 	if($template)	$tmpl->LoadTemplate($template);
+}
+
+/// Получить данные профиля пользователя по uid
+function getUserProfile($uid)
+{
+	settype($uid,'int');
+	$user_profile=array();
+	$user_profile['main']=array();
+	$user_profile['dop']=array();
+
+	$res=mysql_query("SELECT * FROM `users` WHERE `id`='$uid'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить основные данные пользователя!");
+	if(! mysql_num_rows($res))	return $user_profile;	// Если не найден
+	$user_profile['main']	= mysql_fetch_assoc($res);
+	unset($user_profile['main']['pass']);	// В целях безопасности
+	unset($user_profile['main']['pass_change']);
+	$rr=mysql_query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='$uid'");
+	if(mysql_errno())	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
+	while($nn=mysql_fetch_row($rr))
+	{
+		$user_profile['dop'][$nn[0]]=$nn[1];
+	}
+	
+	return $user_profile;
 }
 
 /// Класс шаблонизатора вывода страницы. Содержит методы, отвечающие за загрузку темы оформления, заполнения страницы содержимым и отправки в броузер

@@ -241,6 +241,7 @@ catch(Exception $e)
 	$tmpl->AddText("<br><br>");
 	$tmpl->logger($e->getMessage());
 }
+
 $tmpl->write();
 
 // ALTER TABLE `doc_base` ADD `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ,
