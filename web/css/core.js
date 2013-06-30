@@ -18,6 +18,18 @@ function newElement(tagName, parent, className, innerHTML)	{
 		return element
 }
 
+function newElementAfter(tagName, target, className, innerHTML)	{
+	var element=document.createElement(tagName)
+	element.className=className
+	if(target.nextSibling)
+	{
+		target.parentNode.insertBefore(element, target.nextSibling)
+	}
+	else target.parentNode.appendChild(element)
+	if(innerHTML)	element.innerHTML=innerHTML
+		return element
+}
+
 // Получение координат элемента на странице
 function getOffset(elem) {
 	if (elem.getBoundingClientRect)

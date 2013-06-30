@@ -114,7 +114,7 @@ function initCalendar(input_id, selectTime)
 	var months=Array('Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сертябрь','Октябрь','Ноябрь','Декабрь')
 	var days=Array('Вс','Пн','Вт','Чт','Пт','Сб')
 
-	var calendar=newElement('div', input.parentNode, 'calendar')
+	var calendar=newElementAfter('div', input, 'calendar')
 	calendar.onmousedown=retFalse
 	// header
 	var cal_header=newElement('div', calendar, 'header')
