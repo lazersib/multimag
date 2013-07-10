@@ -7,6 +7,7 @@ $CONFIG['site']['doc_adm_jid']	= '';
 $CONFIG['site']['name']		= 'example.com';
 $CONFIG['site']['display_name']	= 'Интернет-магазин';
 $CONFIG['site']['default_firm']	= 1;				// Организация по умолчанию для работы сайта
+$CONFIG['site']['default_bank']	= 6;				// Банк по умолчанию для работы сайта. Если парамер не указан - будет выбран произвольный банк организации
 $CONFIG['location']		= '/usr/share/multimag';
 $CONFIG['site']['location']	= $CONFIG['location'].'/web';
 $CONFIG['cli']['location']	= $CONFIG['location'].'/cli';

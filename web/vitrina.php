@@ -802,12 +802,33 @@ protected function Basket()
 	$sum=0;
 	$exist=0;
 	$i=1;
+	$lock=0;
 	if(isset($_SESSION['basket']['cnt']))
 	foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 	{
-		$res=mysql_query("SELECT `id`, `name`, `cost` FROM `doc_base` WHERE `id`='$item'");
+		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name` FROM `doc_base` WHERE `id`='$item'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 		$nx=mysql_fetch_row($res);
+		
+		if(@$CONFIG['site']['vitrina_cntlock'])
+		{
+			if(isset($CONFIG['site']['vitrina_sklad']))
+			{
+				$sklad_id=round($CONFIG['site']['vitrina_sklad']);
+				$res=mysql_query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
+				$sklad_cnt=mysql_result($res,0,0);
+			}
+			else
+			{
+				$res=mysql_query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
+				$sklad_cnt=mysql_result($res,0,0);
+			}
+			if($cnt>$sklad_cnt)	$lock=1;
+		}
+		if(@$CONFIG['site']['vitrina_pricelock'])
+		{
+			
+		}
 		$cena=GetCostPos($nx[0], $this->cost_id);
 		$sm=$cena*$cnt;
 		$sum+=$sm;
@@ -872,6 +893,7 @@ protected function Basket()
 		$_SESSION['korz_sum']=$sum;
 		//if( ($_SESSION['korz_sum']>20000) )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
 		//else $tmpl->msg("Цены указаны со скидкой 3%. А при оформлении заказа на сумму более 20'000 рублей предоставляется скидка 6%","info");
+		
 	}
 }
 
@@ -1320,11 +1342,14 @@ protected function MakeBuy()
 		$tm=time();
 		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
 		$ip=getenv("REMOTE_ADDR");
-		$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
-		if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
-		if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");
-		$bank=mysql_result($res,0,0);
-
+		if(isset($CONFIG['site']['default_bank']))	$bank=$CONFIG['site']['default_bank'];
+		else
+		{
+			$res=mysql_query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
+			if(mysql_errno())	throw new MysqlException("Не удалось определить банк");
+			if(mysql_num_rows($res)<1)	throw new Exception("Не найден банк выбранной организации");
+			$bank=mysql_result($res,0,0);
+		}
 		$res=mysql_query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
 		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 
