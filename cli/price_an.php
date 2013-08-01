@@ -223,7 +223,7 @@ try
 	while (false !== ($filename = readdir($dh)))
 	{
 		$path_info = pathinfo($filename);
-		$ext=strtolower($path_info['extension']);
+		$ext=isset($path_info['extension'])?strtolower($path_info['extension']):'';
 		if($ext=='xls')		$loader=new XLSPriceLoader($CONFIG['price']['dir'].'/'.$filename);
 		else if($ext=='ods')	$loader=new ODSPriceLoader($CONFIG['price']['dir'].'/'.$filename);
 		else continue;
@@ -332,7 +332,8 @@ try
 
 		$mincost=99999999;
 		$ok_line=0;
-		$rs=mysql_query("SELECT `parsed_price`.`cost`,`firm_info`.`type`, `firm_info_group`.`id`, `parsed_price`.`id`
+		$rrp=0;
+		$rs=mysql_query("SELECT `parsed_price`.`cost`,`firm_info`.`type`, `firm_info_group`.`id`, `parsed_price`.`id`, `firm_info`.`rrp`, `firm_info`.`id`
 		FROM  `parsed_price`
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm`
 		LEFT JOIN `firm_info_group` ON `firm_info_group`.`firm_id`=`parsed_price`.`firm` AND `firm_info_group`.`group_id`='$nxt[4]'
@@ -340,6 +341,12 @@ try
 		if(mysql_errno())	throw new Exception(mysql_error());
 		while($nx=mysql_fetch_row($rs))
 		{
+			if($nx[4])
+			{
+				$rrp=$nx[0];
+				$ok_line=$nx[3];
+				break;
+			}
 			if(($nx[1]==1 || ($nx[1]==2 &&  $nx[2]!='')) && $mincost>$nx[0])
 			{
 				$mincost=$nx[0];
@@ -348,6 +355,38 @@ try
 		}
 
 		if($ok_line==0)	$mincost=0;
+		
+		if($rrp)
+		{
+			$s_cost=0;
+			$cres=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
+			if(mysql_errno())	throw new Exception(mysql_error());
+			list($cost_id)=mysql_fetch_row($cres);
+			$cres=mysql_query("SELECT `value` FROM `doc_base_cost` WHERE `pos_id`='$nxt[0]' AND `cost_id`='$cost_id'");
+			if(mysql_errno())	throw new Exception(mysql_error());
+			if(mysql_num_rows($cres)>0)
+			{
+				list($s_cost)=mysql_fetch_row($cres);
+				
+			}
+			
+			if($s_cost!=$rrp)
+			{
+				if($s_cost)
+				{
+					mysql_query("UPDATE `doc_base_cost` SET `value`='$rrp' AND `rrp_firm_id`='$nx[5]' WHERE `pos_id`='$nxt[0]' AND `cost_id`='$cost_id'");
+					if(mysql_errno())	throw new Exception(mysql_error());
+				}
+				else
+				{
+					mysql_query("INSERT INTO `doc_base_cost` (`cost_id`, `pos_id`, `type`, `value`, `accuracy`, `direction`, `rrp_firm_id`)
+					VALUES ('$cost_id', '$nxt[0]', 'fix', '$rrp', '2', '0', '$nx[5]')");
+					if(mysql_errno())	throw new MysqlException("Не удалось записать заданную цену");
+				}
+				echo "У наименования ID:$nxt[0] изменена РОЗНИЧНАЯ цена с $s_cost на $rrp. Наименование: $nxt[2]\n";
+			}
+			continue;
+		}
 
 		if( $nxt[3]==0 )
 		{
@@ -359,7 +398,8 @@ try
 				mysql_query("UPDATE `doc_base` SET `cost`='$mincost', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
 				if(mysql_errno())	throw new Exception(mysql_error());
 				echo $txt;
-				$pp=($nxt[1]-$mincost)*100/$nxt[1];
+				if($nxt[1])	$pp=($nxt[1]-$mincost)*100/$nxt[1];
+				else		$pp=-1000;
 				if($pp>@$CONFIG['price']['notify_down'] && @$CONFIG['price']['notify_down'])	$mail_text.=$txt;
 				if(($pp*(-1))>@$CONFIG['price']['notify_up'] && @$CONFIG['price']['notify_up'])	$mail_text.=$txt;
 			}

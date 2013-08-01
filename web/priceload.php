@@ -79,12 +79,13 @@ function firmAddForm($id=0)
 	$nxt=array();
 	if($id)
 	{
-		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type`, `delivery_info` FROM `firm_info` WHERE `id`='$id'");
+		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp` FROM `firm_info` WHERE `id`='$id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные фирмы");
-		$nxt=mysql_fetch_row($res);
+		$nxt=mysql_fetch_array($res);
 	}
 
-	$disp=$nxt[5]==2?'block':'none';
+	$disp=$nxt['type']==2?'block':'none';
+	$rrp_checked=$nxt['rrp']?' checked':'';
 
 	$tmpl->AddStyle(".scroll_block
 	{
@@ -203,6 +204,8 @@ function firmAddForm($id=0)
 	<option value='1' $typesel[1]>Меняют все цены</option>
 	<option value='2' $typesel[2]>Меняют цены выбранных групп товаров</option>
 	</select><br>
+	
+	<label><input type='checkbox' name='rrp' value='1'$rrp_checked>Прайс содержит рекомендуемые розничные цены</label><br>
 
 
 	<div class='scroll_block' id='sb'>
@@ -417,6 +420,7 @@ else if($mode=='firms')
 	$curr=rcv('curr');
 	$coeff=rcv('coeff');
 	$type=rcv('type');
+	$rrp=rcv('rrp');
 	$table_name=rcv('table_name');
 	$delivery_info=rcv('delivery_info');
 	if(!$id)
@@ -427,8 +431,8 @@ else if($mode=='firms')
 		$col_nal=rcv('col_nal');
 		$col_curr=rcv('col_curr');
 		$col_info=rcv('col_info');
-		$res=mysql_query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`)
-		VALUES ('$nm', '$sign', '$curr', '$coeff', '$type', '$delivery_info')");
+		$res=mysql_query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp`)
+		VALUES ('$nm', '$sign', '$curr', '$coeff', '$type', '$delivery_info', '$rrp')");
 		if(mysql_errno())	throw new MysqlException("Не удалось добавить новую фирму");
 
 		$firm_id=mysql_insert_id();
@@ -439,7 +443,7 @@ else if($mode=='firms')
 	}
 	else
 	{
-		$res=mysql_query("UPDATE `firm_info` SET `name`='$nm', `signature`='$sign', `currency`='$curr', `coeff`='$coeff', `type`='$type', `delivery_info`='$delivery_info' WHERE `id`='$id'");
+		$res=mysql_query("UPDATE `firm_info` SET `name`='$nm', `signature`='$sign', `currency`='$curr', `coeff`='$coeff', `type`='$type', `delivery_info`='$delivery_info', `rrp`='$rrp' WHERE `id`='$id'");
 		if(mysql_errno())	throw new MysqlException("Не удалось обновить данные фирмы");
 		$tmpl->msg("Фирма обновлена!",'ok');
 	}

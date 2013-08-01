@@ -266,10 +266,13 @@ function DocHeadInit()
 			{
 				doc_left_block.style.backgroundColor='#bfa'
 				var agent_balance_info=document.getElementById("agent_balance_info")
-				agent_balance_info.innerHTML=json.agent_balance
-				if(json.agent_balance>0)	agent_balance_info.style.color='#f00'
-				else if(json.agent_balance<0)	agent_balance_info.style.color='#080'
-				else 	agent_balance_info.style.color=''
+				if(agent_balance_info)
+				{
+					agent_balance_info.innerHTML=json.agent_balance
+					if(json.agent_balance>0)	agent_balance_info.style.color='#f00'
+					else if(json.agent_balance<0)	agent_balance_info.style.color='#080'
+					else 	agent_balance_info.style.color=''
+				}
 			}
 			else
 			{

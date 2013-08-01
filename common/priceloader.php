@@ -41,7 +41,7 @@ abstract class PriceLoader
 	protected $html='';		// HTML - представление таблиц (опция build_html_data)
 	
 	// Абстрактный конструктор запрещает создание экземпляра класса
-	abstract function __construct();
+	abstract function __construct($filename);
 	
 	/// Включить/выключить создание HTML таблицы
 	public function setBuildHTMLData($lines=20)	{$this->build_html_data=$lines;}

@@ -92,7 +92,7 @@ $rf=mysql_real_escape_string(urldecode(getenv("HTTP_REFERER")));
 $qq=mysql_real_escape_string(urldecode($_SERVER['REQUEST_URI'].'?'.$_SERVER['QUERY_STRING']));
 $ff=mysql_real_escape_string($_SERVER['SCRIPT_NAME']);
 $tim=time();
-$skidka="";
+
 if(!isset($_REQUEST['ncnt'])) @mysql_query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 
 class ipv6
