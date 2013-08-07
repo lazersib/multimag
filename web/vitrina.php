@@ -25,6 +25,7 @@ include_once("include/imgresizer.php");
 class Vitrina
 {
 var $cost_id;
+
 function __construct()
 {
 	global $tmpl;
@@ -195,10 +196,12 @@ function ExecMode($mode)
 	else if($mode=='print_schet')
 	{
 		include_once("include/doc.nulltype.php");
+		
 		$doc=$_SESSION['order_id'];
 		if($doc)
 		{
 			$document=AutoDocument($doc);
+			
 			$document->PrintForm($doc, 'schet_pdf');
 		}
 		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
@@ -806,9 +809,10 @@ protected function Basket()
 	if(isset($_SESSION['basket']['cnt']))
 	foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 	{
-		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name` FROM `doc_base` WHERE `id`='$item'");
+		$lock_mark='';
+		$res=mysql_query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`='$item'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
-		$nx=mysql_fetch_row($res);
+		$nx=mysql_fetch_array($res);
 		
 		if(@$CONFIG['site']['vitrina_cntlock'])
 		{
@@ -816,18 +820,26 @@ protected function Basket()
 			{
 				$sklad_id=round($CONFIG['site']['vitrina_sklad']);
 				$res=mysql_query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
-				$sklad_cnt=mysql_result($res,0,0);
+				$sklad_cnt=mysql_result($res,0,0)-DocRezerv($item);
 			}
 			else
 			{
 				$res=mysql_query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
-				$sklad_cnt=mysql_result($res,0,0);
+				$sklad_cnt=mysql_result($res,0,0)-DocRezerv($item);
 			}
-			if($cnt>$sklad_cnt)	$lock=1;
+			if($cnt>$sklad_cnt)
+			{
+				$lock=1;
+				$lock_mark=1;
+			}
 		}
 		if(@$CONFIG['site']['vitrina_pricelock'])
 		{
-			
+			if(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))
+			{
+				$lock=1;
+				$lock_mark=1;
+			}
 		}
 		$cena=GetCostPos($nx[0], $this->cost_id);
 		$sm=$cena*$cnt;
@@ -835,8 +847,9 @@ protected function Basket()
 		$sm=sprintf("%0.2f",$sm);
 		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
 		else	$comm='';
+		$lock_mark=$lock_mark?'color: #f00':'';
 		$s.="
-		<tr id='korz_ajax_item_$item'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
+		<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]' style='$lock_mark'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
 		
 		";
 		$cc=1-$cc;
@@ -874,7 +887,9 @@ protected function Basket()
 			}
 		})
 		}
-		</script>
+		</script>");
+		if($lock)	$tmpl->msg("Обратите внимание, Ваша корзина содержит наименования, доступные только под заказ (выделены красным). Вы не сможете оплатить заказ до его подтверждения оператором.","info", "Предупреждение");
+		$tmpl->AddText("
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='basket_submit'>
 		<table width='100%' class='list'>
@@ -1178,6 +1193,7 @@ protected function BuyAuthForm()
 	<button type='submit'>Далее</button>
 	</form>");
 }
+
 /// Заключительная форма оформления покупки
 protected function BuyMakeForm()
 {
@@ -1245,7 +1261,6 @@ protected function BuyMakeForm()
 						break;
 				default:	$s='';
 			}
-		
 			$tmpl->AddText($s);
 		}
 	}
@@ -1357,7 +1372,7 @@ protected function MakeBuy()
 		$doc=mysql_insert_id();
 		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
 		if(mysql_errno())	throw new MysqlException("Не удалось установить цену документа");
-		$zakaz_items=$admin_items='';
+		$zakaz_items=$admin_items=$lock='';
 		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
 		{
 			$cena=GetCostPos($item, $this->cost_id);
@@ -1373,6 +1388,41 @@ protected function MakeBuy()
 			$tov_info=mysql_fetch_row($res);
 			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
 			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
+			
+			if(@$CONFIG['site']['vitrina_cntlock'] || @$CONFIG['site']['vitrina_pricelock'])
+			{
+				$res=mysql_query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`='$item'");
+				if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
+				$nx=mysql_fetch_array($res);
+				
+				if(@$CONFIG['site']['vitrina_cntlock'])
+				{
+					if(isset($CONFIG['site']['vitrina_sklad']))
+					{
+						$sklad_id=round($CONFIG['site']['vitrina_sklad']);
+						$res=mysql_query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
+						$sklad_cnt=mysql_result($res,0,0)-DocRezerv($item);
+					}
+					else
+					{
+						$res=mysql_query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
+						$sklad_cnt=mysql_result($res,0,0)-DocRezerv($item);
+					}
+					if($cnt>$sklad_cnt)
+					{
+						$lock=1;
+						$lock_mark=1;
+					}
+				}
+				if(@$CONFIG['site']['vitrina_pricelock'])
+				{
+					if(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))
+					{
+						$lock=1;
+						$lock_mark=1;
+					}
+				}
+			}
 		}
 		if($_SESSION['basket']['delivery_type'])
 		{
@@ -1430,20 +1480,20 @@ protected function MakeBuy()
 			mailto($email,"Message from {$CONFIG['site']['name']}", $user_msg);
 
 		$tmpl->SetText("<h1 id='page-title'>Заказ оформлен</h1>");
-		if($pay_type=='bank')
+		if(!$lock)
 		{
-			$tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>выписать счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
-			$tmpl->AddText("<a href='?mode=print_schet'>выписать счёт</a>");
+			switch($pay_type)
+			{
+				case 'bank':
+				case 'card_o':
+				case 'credit_brs':
+					$tmpl->AddText("<p>Заказ оформлен. Теперь вы можете оплатить его! <a href='/vitrina.php?mode=pay'>Перейти к оплате</a></p>");
+				break;
+				default:
+					$tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
+			}
 		}
-		else if($pay_type=='card_o')
-		{
-			$tmpl->AddText("<p>Заказ оформлен. Теперь вы можете оплатить его! <a href='/vitrina.php?mode=pay'>Перейти к оплате</a></p>");
-		}
-		else if($pay_type=='credit_brs')
-		{
-			$this->Payment();
-		}
-		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения деталей!");
+		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения цены и наличия товара! Оплатить заказ будет возможно после его подтверждения оператором.");
 		unset($_SESSION['basket']);
 	}
 	else $tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?","err");
@@ -1491,6 +1541,11 @@ protected function Payment()
 			$url="{$CONFIG['credit_brs']['address']}?idTpl={$CONFIG['credit_brs']['id_tpl']}&TTName={$CONFIG['site']['name']}&Order=$order_id&TCount={$cnt}{$pos_line}";
 			header("Location: $url");
 			exit();
+		}
+		else if($order_info['pay_type']=='bank')
+		{
+			$tmpl->msg("Номер счёта: $doc/$altnum. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
+			$tmpl->AddText("<a href='?mode=print_schet'>Получить счёт</a>");
 		}
 		else throw new Exception("Данный тип оплаты ({$order_info['pay_type']}) не поддерживается!");
 	}
