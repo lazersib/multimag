@@ -26,6 +26,7 @@ class doc_Zayavka extends doc_Nulltype
 	/// @param doc id документа
 	function __construct($doc=0)
 	{
+		global $CONFIG;
 		parent::__construct($doc);
 		$this->doc_type				=3;
 		$this->doc_name				='zayavka';
@@ -36,7 +37,10 @@ class doc_Zayavka extends doc_Nulltype
 		$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$doc'");
 		if(mysql_errno())			throw new MysqlException("Не удалось получить подчинённые документы");
 		if(mysql_num_rows($res))		$this->dop_menu_buttons			="<a href='/doc.php?mode=srv&amp;opt=rewrite&amp;doc=$doc' title='Перезаписать номенклатурой из подчинённых документов' onclick='return confirm(\"Подтвертите перезапись номенклатуры документа\")'><img src='img/i_rewrite.png' alt='rewrite'></a>";
-		$this->dop_menu_buttons.="<a href='#' onclick='msgMenu(event, {$this->doc})'><img src='/img/i_mailsend.png' alt='msg'></a>";
+		$this->dop_menu_buttons.="<a href='#' onclick='msgMenu(event, {$this->doc})' title='Отправить сообщение покупателю'><img src='/img/i_mailsend.png' alt='msg'></a>";
+		if(@$CONFIG['doc']['pie'] && !@$this->dop_data['pie'])
+			$this->dop_menu_buttons.="<a href='#' onclick='sendPie(event, {$this->doc})' title='Отправить благодарность покупателю'><img src='/img/i_pie.png' alt='pie'></a>";
+		
 		settype($this->doc,'int');
 		$this->PDFForms=array(
 			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF')
@@ -495,7 +499,7 @@ class doc_Zayavka extends doc_Nulltype
 
 	function Service()
 	{
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$tmpl->ajax=1;
 		$opt=rcv('opt');
 		$pos=rcv('pos');
@@ -570,6 +574,20 @@ class doc_Zayavka extends doc_Nulltype
 			mysql_query("COMMIT");
 			header("location: /doc.php?mode=body&doc=".$this->doc);
 			exit();
+		}
+		else if($opt=='pie')
+		{
+			try
+			{
+				$this->sendEmailNotify($CONFIG['doc']['pie']);
+				mysql_query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES	( '{$this->doc}' ,'pie','1')");
+				if(mysql_errno())	throw new MysqlException("Не удалось установить отметку об отправке");
+				$tmpl->SetText("{response: 'send'}");
+			}
+			catch(Exception $e)
+			{
+				$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
+			}
 		}
 		else parent::_Service($opt,$pos);
 	}

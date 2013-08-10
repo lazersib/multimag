@@ -205,7 +205,7 @@ function firmAddForm($id=0)
 	<option value='2' $typesel[2]>Меняют цены выбранных групп товаров</option>
 	</select><br>
 	
-	<label><input type='checkbox' name='rrp' value='1'$rrp_checked>Прайс содержит рекомендуемые розничные цены</label><br>
+	<label><input type='checkbox' name='rrp' value='1'$rrp_checked>Прайс содержит рекомендуемые розничные цены</label> ( <a href='?mode=pr&amp;firm=$id'>Сбросить цены</a> )<br>
 
 
 	<div class='scroll_block' id='sb'>
@@ -988,6 +988,16 @@ else if($mode=='replacess')
 	}
 
 	$tmpl->msg("Выполнено!<br><a href='?mode=replaces'>Вернуться к таблице</a> | <a href='?mode=replacese&amp;p=$p'>Продолжить редактирование</a>","ok","Сохранение подстановки");
+}
+else if($mode=='pr')
+{
+	$firm=rcv('firm');
+	settype($firm,'int');
+	mysql_query("DELETE FROM `doc_base_cost` WHERE `rrp_firm_id`='$firm'");
+	if(mysql_errno())	throw new MysqlException("Не удалось сбросить цены");
+	$cnt=mysql_affected_rows();
+	$tmpl->msg("Успешно сброшено $cnt цен","ok");
+	
 }
 else if($mode=='menu')
 {

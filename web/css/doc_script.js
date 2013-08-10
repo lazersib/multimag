@@ -712,6 +712,53 @@ function msgMenu(event,doc)
 	return false
 }
 
+function sendPie(event,doc)
+{
+	var menu=CreateContextMenu(event)
+	menu.className='contextlayer';
+	$.ajax({
+		type:   'GET',
+		url:    '/doc.php',
+		data:   'mode=srv&doc='+doc+'&opt=pie',
+		success: function(msg) { rcvDataSuccess(msg) },
+		error:   function() { jAlert('Ошибка соединения!','Отправка сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
+	});
+	menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...'
+		
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			var json=eval('('+msg+')');
+			if(json.response=='err')
+			{
+				jAlert(json.text,"Ошибка", {}, 'icon_err');
+				menu.parentNode.removeChild(menu);
+			}
+			else if(json.response=='send')
+			{
+				jAlert('Сообщение успешно отправлено!',"Выполнено", {});
+				menu.parentNode.removeChild(menu)
+				event.target.parentNode.removeChild(event.target);
+			}
+			else
+			{
+				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Отправка сообщения", {},  'icon_err');
+				menu.parentNode.removeChild(menu)
+			}
+		}
+		catch(e)
+		{
+			alert(msg)
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Отправка сообщения", {},  'icon_err');
+			menu.parentNode.removeChild(menu)
+		}
+	}
+
+	return false
+}
+
 // Сообщения
 
 // function MsgGet()

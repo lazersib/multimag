@@ -146,15 +146,14 @@ class Report_Profitability extends BaseGSReport
 		");
 	}
 	
-	/// Вычисляет прибыль по заданному наименованию за выбранный период
-	function calcPos($pos_id, $date_from, $date_to)
+	/// Вычисляет прибыль по заданному товару за выбранный период
+	function calcPosT($pos_id, $date_from, $date_to)
 	{
 		settype($pos_id,'int');
 		settype($date_from,'int');
 		settype($date_to,'int');
 		$cnt=$out_cnt=$cost=$profit=0;
 		$sum_extra=0;
-		
 
 		$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`, `doc_list`.`date`
 		FROM `doc_list_pos`
@@ -180,6 +179,31 @@ class Report_Profitability extends BaseGSReport
 		if($out_cnt)	$avg_extra_pp=round($sum_extra/$out_cnt,1);
 		else		$avg_extra_pp=0;
 		return array($profit,$out_cnt,$avg_extra_pp);
+	}
+	
+	/// Вычисляет прибыль по заданной услуге за выбранный период
+	function calcPosS($pos_id, $date_from, $date_to)
+	{
+		settype($pos_id,'int');
+		settype($date_from,'int');
+		settype($date_to,'int');
+		$out_cnt=$profit=0;
+
+		$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`, `doc_list`.`date`
+		FROM `doc_list_pos`
+		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
+		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list_pos`.`doc` AND `doc_dopdata`.`param`='return'
+		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' AND `doc_list`.`date`>='$date_from' AND `doc_list`.`date`<='$date_to' ORDER BY `doc_list`.`date`");
+		if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные движения");
+		while($nxt=mysql_fetch_row($res))
+		{
+			if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
+			if(!$nxt[4])
+				$profit+=-1*$nxt[0]*$nxt[1];
+			if($nxt[2]==2 && (!$nxt[4]))
+				$out_cnt-=$nxt[0];
+		}
+		return array($profit,$out_cnt,0);
 	}
 	
 	function Make($engine)
@@ -214,19 +238,21 @@ class Report_Profitability extends BaseGSReport
 		
 		if($sel_type=='all')
 		{
-			$res=mysql_query("SELECT `id` FROM `doc_base`");
+			$res=mysql_query("SELECT `id`, `pos_type` FROM `doc_base`");
 			if(mysql_errno())		throw MysqlException("Не удалось получить информацию о товарах");
 
 			while($nxt=mysql_fetch_row($res))
 			{
-				list($profit,$count,$avg_extra_pp)=$this->calcPos($nxt[0], $dt_f, $dt_t);
+				if($nxt[1]==0)
+					list($profit,$count,$avg_extra_pp)=$this->calcPosT($nxt[0], $dt_f, $dt_t);
+				else	list($profit,$count,$avg_extra_pp)=$this->calcPosS($nxt[0], $dt_f, $dt_t);
 				if($max_profit<$profit && $profit!=0xFFFFBADF00D)	$max_profit=$profit;
 				mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count, $avg_extra_pp)");
 			}
 		}
 		else if($sel_type=='group')
 		{
-			$res_group=mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+			$res_group=mysql_query("SELECT `id`, `name`, `pos_type` FROM `doc_group` ORDER BY `id`");
 			if(mysql_errno())	throw new MysqlException("Не удалось получить список групп");
 			while($group_line=mysql_fetch_assoc($res_group))
 			{
@@ -238,7 +264,10 @@ class Report_Profitability extends BaseGSReport
 				
 				while($nxt=mysql_fetch_row($res))
 				{
-					list($profit,$count,$avg_extra_pp)=$this->calcPos($nxt[0], $dt_f, $dt_t);
+					if($nxt[2]==0)
+						list($profit,$count,$avg_extra_pp)=$this->calcPosT($nxt[0], $dt_f, $dt_t);
+					else	list($profit,$count,$avg_extra_pp)=$this->calcPosS($nxt[0], $dt_f, $dt_t);
+				
 					if($max_profit<$profit && $profit!=0xFFFFBADF00D)	$max_profit=$profit;
 					mysql_query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count, $avg_extra_pp)");
 				}
