@@ -65,7 +65,7 @@ class doc_Kompredl extends doc_Nulltype
 		if($this->dop_data['shapka'])
 			$tmpl->AddText("<b>Текст шапки:</b> {$this->dop_data['shapka']}");
 		else 	$tmpl->AddText("<br><b style='color: #f00'>ВНИМАНИЕ! Текст шапки не указан!</b><br>");
-		$tmpl->AddText("Срок поставки можно указать в коментариях наименования<br>");
+		$tmpl->AddText("Срок поставки можно указать в комментариях наименования<br>");
 	}
 
 
