@@ -442,8 +442,7 @@ class doc_s_Agent
 				$log_start='UPDATE';
 
 				$sql_add='';
-				$rights=getright('doc_agent_ext',@$_SESSION['uid']);
-				if($rights['write'])
+				if(isAccess('doc_agent_ext', 'write'))
 				{
 					if($responsible!=$ag_info['responsible'])	$log_text.="responsible: ( {$ag_info['responsible']} => $responsible ), ";
 					if($data_sverki!=$ag_info['data_sverki'])	$log_text.="data_sverki: ( {$ag_info['data_sverki']} => $data_sverki ), ";
@@ -459,9 +458,8 @@ class doc_s_Agent
 				$log_start='CREATE';
 
 				$sql_c=$sql_v='';
-				$rights=getright('doc_agent_ext',@$_SESSION['uid']);
 				$uid=@$_SESSION['uid'];
-				if($rights['write'])
+				if(isAccess('doc_agent_ext', 'write'))
 				{
 					$sql_c=", `data_sverki`";
 					$sql_v=", '$data_sverki'";

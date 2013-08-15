@@ -560,38 +560,38 @@ function MailMenu(event,doc)
 		menu.className='contextlayer'
 		menu.onmouseover=menu.onmouseout=function() {  }
 		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
-			var elem=document.createElement('div')
-			elem.innerHTML='Адрес электронной почты:'
-			menu.appendChild(elem)
-			var imail=document.createElement('input')
-			imail.type='tel'
-			imail.value=email
-			imail.style.width='200px'
-			menu.appendChild(imail)
-			elem=document.createElement('div')
-			elem.innerHTML='Комментарий:'
-			menu.appendChild(elem)
-			var mailtext=document.createElement('textarea')
-			menu.appendChild(mailtext)
-			menu.appendChild(document.createElement('br'))
-			var bcancel=document.createElement('button')
-			bcancel.innerHTML='Отменить'
-			bcancel.onclick=function() {menu.parentNode.removeChild(menu)}
-			menu.appendChild(bcancel)
-			var bsend=document.createElement('button')
-			bsend.innerHTML='Отправить'
-			menu.appendChild(bsend)
-			bsend.onclick=function()
-			{
-				$.ajax({
-					type:   'GET',
-				       url:    '/doc.php',
-				       data:   'mode=email&doc='+doc+'&opt='+event.target.fname+'&email='+encodeURIComponent(imail.value)+'&comment='+encodeURIComponent(mailtext.value),
-				       success: function(msg) { rcvDataSuccess(msg) },
-				       error:   function() { jAlert('Ошибка соединения!','Отправка email сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
-				});
-				menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка email сообщения...'
-			}
+		var elem=document.createElement('div')
+		elem.innerHTML='Адрес электронной почты:'
+		menu.appendChild(elem)
+		var imail=document.createElement('input')
+		imail.type='tel'
+		imail.value=email
+		imail.style.width='200px'
+		menu.appendChild(imail)
+		elem=document.createElement('div')
+		elem.innerHTML='Комментарий:'
+		menu.appendChild(elem)
+		var mailtext=document.createElement('textarea')
+		menu.appendChild(mailtext)
+		menu.appendChild(document.createElement('br'))
+		var bcancel=document.createElement('button')
+		bcancel.innerHTML='Отменить'
+		bcancel.onclick=function() {menu.parentNode.removeChild(menu)}
+		menu.appendChild(bcancel)
+		var bsend=document.createElement('button')
+		bsend.innerHTML='Отправить'
+		menu.appendChild(bsend)
+		bsend.onclick=function()
+		{
+			$.ajax({
+				type:   'GET',
+				url:    '/doc.php',
+				data:   'mode=email&doc='+doc+'&opt='+event.target.fname+'&email='+encodeURIComponent(imail.value)+'&comment='+encodeURIComponent(mailtext.value),
+				success: function(msg) { rcvDataSuccess(msg) },
+				error:   function() { jAlert('Ошибка соединения!','Отправка email сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
+			});
+			menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка email сообщения...'
+		}
 	}
 
 	function rcvDataSuccess(msg)
@@ -655,7 +655,8 @@ function msgMenu(event,doc)
 		var obj=event.target
 		menu.innerHTML="<div>Текст сообщения:</div><textarea id='mailtext'></textarea><br><label><input type='checkbox' id='sendmail' checked> Отправить по email</label><br><label><input type='checkbox' id='sendsms' checked> Отправить по sms</label><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button>";
 		menu.className='contextlayer';
-		
+		menu.onmouseover=menu.onmouseout=function() {  }
+		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
 		var otext	= document.getElementById('mailtext');
 		var ocmail	= document.getElementById('sendmail');
 		var ocsms	= document.getElementById('sendsms');
@@ -716,6 +717,8 @@ function sendPie(event,doc)
 {
 	var menu=CreateContextMenu(event)
 	menu.className='contextlayer';
+	menu.onmouseover=menu.onmouseout=function() {  }
+	if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
 	$.ajax({
 		type:   'GET',
 		url:    '/doc.php',
