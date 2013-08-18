@@ -104,6 +104,7 @@ $CONFIG['payments']['types']['credit_brs']	= false;// Разрешить спо�
 $CONFIG['payments']['default']		= 'cash'; // Способ оплаты по умолчанию
 
 // Параметры приёма платежей через газпромбанк
+$CONFIG['gpb']['initial_url']	= '';
 $CONFIG['gpb']['merch_id']	= '';
 $CONFIG['gpb']['accounts_id']	= '';
 $CONFIG['gpb']['terminal_id']	= '';

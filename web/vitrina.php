@@ -1518,7 +1518,7 @@ protected function Payment()
 		$order_info=mysql_fetch_assoc($res);
 		if($order_info['pay_type']=='card_o')
 		{
-			$init_url="https://test.pps.gazprombank.ru:443/payment/start.wsm?lang=ru&merch_id={$CONFIG['gpb']['merch_id']}&back_url_s=http://{$CONFIG['site']['name']}/gpb_pay_success.php&back_url_f=http://{$CONFIG['site']['name']}/gpb_pay_failed.php&o.order_id=$order_id";
+			$init_url="{$CONFIG['gpb']['initial_url']}?lang=ru&merch_id={$CONFIG['gpb']['merch_id']}&back_url_s=http://{$CONFIG['site']['name']}/gpb_pay_success.php&back_url_f=http://{$CONFIG['site']['name']}/gpb_pay_failed.php&o.order_id=$order_id";
 			header("Location: $init_url");
 			exit();
 		}

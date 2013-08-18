@@ -15,13 +15,13 @@ try
 	}
 	else
 	{
-	if(@$_SERVER['PHP_AUTH_USER']!=@$CONFIG['gpb']['callback_login'] || @$_SERVER['PHP_AUTH_PW']!=@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_login'])
-	{
-		header('WWW-Authenticate: Basic realm="'.@$CONFIG['site']['name'].'"');
-		header('HTTP/1.0 401 Unauthorized');
-		echo 'Authentification error';
-		exit();
-	}
+		if(@$_SERVER['PHP_AUTH_USER']!=@$CONFIG['gpb']['callback_login'] || @$_SERVER['PHP_AUTH_PW']!=@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_login'])
+		{
+			header('WWW-Authenticate: Basic realm="'.@$CONFIG['site']['name'].'"');
+			header('HTTP/1.0 401 Unauthorized');
+			echo 'Authentification error';
+			exit();
+		}
 	}
 
 	$merch_id=@$_REQUEST['merch_id'];
@@ -45,8 +45,6 @@ try
 	if($merch_id!=$CONFIG['gpb']['merch_id'])	throw new Exception("Неверный ID магазина!");
 	if(!$trx_id)					throw new Exception("Не передан ID транзакции");
 	if(!$timestamp)					throw new Exception("Не передан timestamp");
-
-
 
 	$res=mysql_query("SELECT `doc_list`.`id`, `agent`, `sum`, `firm_id`, `contract`, `comment` FROM
 	`doc_list`

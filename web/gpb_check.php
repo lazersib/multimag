@@ -8,29 +8,20 @@ try
 {
 	if(!isset($_SERVER['PHP_AUTH_USER']))
 	{
-	header('WWW-Authenticate: Basic realm="'.@$CONFIG['site']['name'].'"');
-	header('HTTP/1.0 401 Unauthorized');
-	echo 'Authentification cancel by user';
-	$xmppclient->connect();
-		$xmppclient->processUntil('session_start');
-		$xmppclient->presence();
-		$xmppclient->message('lazersib@jabber.ru', 'au cancel');
-		$xmppclient->disconnect();
-	exit();
+		header('WWW-Authenticate: Basic realm="'.@$CONFIG['site']['name'].'"');
+		header('HTTP/1.0 401 Unauthorized');
+		echo 'Authentification cancel by user';
+		exit();
 	}
 	else
 	{
-	if(@$_SERVER['PHP_AUTH_USER']!=@$CONFIG['gpb']['callback_login'] || @$_SERVER['PHP_AUTH_PW']!=@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_login'])
-	{
-		header('WWW-Authenticate: Basic realm="'.@$CONFIG['site']['name'].'"');
-		header('HTTP/1.0 401 Unauthorized');
-		echo 'Authentification error';
-		$xmppclient->processUntil('session_start');
-		$xmppclient->presence();
-		$xmppclient->message('lazersib@jabber.ru', "user: {$_SERVER['PHP_AUTH_USER']}!={$CONFIG['gpb']['callback_login']}\npass: {$_SERVER['PHP_AUTH_PW']}!={$CONFIG['gpb']['callback_pass']}" );
-		$xmppclient->disconnect();
-		exit();
-	}
+		if(@$_SERVER['PHP_AUTH_USER']!=@$CONFIG['gpb']['callback_login'] || @$_SERVER['PHP_AUTH_PW']!=@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_login'])
+		{
+			header('WWW-Authenticate: Basic realm="'.@$CONFIG['site']['name'].'"');
+			header('HTTP/1.0 401 Unauthorized');
+			echo 'Authentification error';
+			exit();
+		}
 	}
 
 
