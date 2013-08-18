@@ -1521,7 +1521,7 @@ protected function Payment()
 	$order_id=$_SESSION['order_id'];
 	settype($order_id,'int');
 	$res=mysql_query("SELECT `doc_list`.`id` FROM `doc_list`
-	WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6')");
+	WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6') AND `doc_list`.`mark_del`='0'");
 	if(mysql_errno())	throw new MysqlException("Не удалось получить данные оплат");
 	if(mysql_num_rows($res))	$tmpl->msg("Этот заказ уже оплачен!");
 	else
