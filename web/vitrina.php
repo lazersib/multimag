@@ -576,7 +576,7 @@ protected function ProductCard($product)
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 	$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`transit_cnt`, `class_unit`.`rus_name1` AS `units_min`
+	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`transit_cnt`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`
 	FROM `doc_base`
 	INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -687,11 +687,16 @@ protected function ProductCard($product)
 			$tmpl->AddText("<tr><td valign='top' class='field'>Описание:<td>$text");
 		}
 		if($nxt[14]) $tmpl->AddText("<tr><td class='field'>Тип:<td>$nxt[14]");
+		
 		$cena=GetCostPos($nxt[0], $this->cost_id);
-		$tmpl->AddText("<tr><td class='field'>Цена:<td>$cena<br>");
+		if($cena<=0)	$cena='уточняйте';
+		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
+
+		$tmpl->AddText("<tr><td class='field'>Цена:<td{$cce}>$cena<br>");
+		
 		$tmpl->AddText("<tr><td class='field'>Единица измерения:<td>$nxt[15]<br>");
 		
-		$nal=$this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
+		$nal=$this->GetCountInfo($nxt['cnt'], $nxt['transit_cnt']);
 		if($nal) $tmpl->AddText("<tr><td class='field'>Наличие: <td><b>$nal</b><br>");
 		else $tmpl->AddText("<tr><td class='field'>Наличие:<td>Под заказ<br>");
 		if($nxt[6]) $tmpl->AddText("<tr><td class='field'>Внутренний диаметр: <td>$nxt[6] мм.<br>");
@@ -813,7 +818,13 @@ protected function Basket()
 		$res=mysql_query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`='$item'");
 		if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров!");
 		$nx=mysql_fetch_array($res);
+		$cena=GetCostPos($nx[0], $this->cost_id);
 		
+		if($cena<=0)
+		{
+			$lock=1;
+			$lock_mark=1;
+		}
 		if(@$CONFIG['site']['vitrina_cntlock'])
 		{
 			if(isset($CONFIG['site']['vitrina_sklad']))
@@ -841,15 +852,17 @@ protected function Basket()
 				$lock_mark=1;
 			}
 		}
-		$cena=GetCostPos($nx[0], $this->cost_id);
+		
 		$sm=$cena*$cnt;
 		$sum+=$sm;
 		$sm=sprintf("%0.2f",$sm);
 		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
 		else	$comm='';
 		$lock_mark=$lock_mark?'color: #f00':'';
+		if($cena<=0)	$cena='уточняйте';
+		$cce=(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
 		$s.="
-		<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]' style='$lock_mark'>$nx[1]</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
+		<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]' style='$lock_mark'>$nx[1]</a><td class='right' $cce>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>
 		
 		";
 		$cc=1-$cc;
@@ -1076,10 +1089,9 @@ protected function TovList_SimpleTable($res, $lim)
 	{
 		$nal=$this->GetCountInfo($nxt['count'], @$nxt['tranit']);
 		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
-		$cce='';
-		$dcc=strtotime($nxt['cost_date']);
-		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
 		$cost=GetCostPos($nxt['id'], $this->cost_id);
+		if($cost<=0)	$cost='уточняйте';
+		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
 		@$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a>
 		<td>{$nxt['proizv']}<td>$nal<td $cce>$cost
 		<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
@@ -1114,10 +1126,9 @@ protected function TovList_ImageList($res, $lim)
 	{
 		$nal=$this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
 		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
-		$cce='';
-		$dcc=strtotime($nxt['cost_date']);
-		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
 		$cost=GetCostPos($nxt['id'], $this->cost_id);
+		if($cost<=0)	$cost='уточняйте';
+		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
 		if($nxt['img_id'])
 		{
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
@@ -1167,10 +1178,9 @@ protected function TovList_ExTable($res, $lim)
 	{
 		$nal=$this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
 		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
-		$cce='';
-		$dcc=strtotime($nxt['cost_date']);
-		if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
 		$cost=GetCostPos($nxt['id'], $this->cost_id);
+		if($cost<=0)	$cost='уточняйте';
+		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
 		$tmpl->AddText("<tr class='lin$cc'><td><a href='$link'>{$nxt['name']}</a><td>{$nxt['proizv']}<td>$nal
 		<td $cce>$cost<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
@@ -1388,6 +1398,12 @@ protected function MakeBuy()
 			$tov_info=mysql_fetch_row($res);
 			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
 			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
+			
+			if($cena<=0)
+			{
+				$lock=1;
+				$lock_mark=1;
+			}
 			
 			if(@$CONFIG['site']['vitrina_cntlock'] || @$CONFIG['site']['vitrina_pricelock'])
 			{
