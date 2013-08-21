@@ -357,9 +357,12 @@ protected function FormatResult($res, $ret='')
 			else if($dcc>(time()-60*60*24*30*6)) $cc="c2";
 			else if($dcc>(time()-60*60*24*30*9)) $cc="c3";
 			else if($dcc>(time()-60*60*24*30*12)) $cc="c4";
-			$reserve=DocRezerv($nxt['id'],$this->doc);
-			$offer=DocPodZakaz($nxt['id'],$this->doc);
-			$transit=DocVPuti($nxt['id'],$this->doc);
+			if($this->show_rto)
+			{
+				$reserve=DocRezerv($nxt['id'],$this->doc);
+				$offer=DocPodZakaz($nxt['id'],$this->doc);
+				$transit=DocVPuti($nxt['id'],$this->doc);
+			}
 			$cost=$this->cost_id?GetCostPos($nxt['id'], $this->cost_id):$nxt['cost'];
 			$rcost=sprintf("%0.2f",$nxt['koncost']);
 			if($ret!='')	$ret.=', ';
