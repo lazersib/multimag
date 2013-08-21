@@ -61,12 +61,10 @@ class SearchPage
 				else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
 
 				$i=1-$i;
-				$cost = GetCostPos($nxt[0], $c_cena_id);;
+				$cost = GetCostPos($nxt[0], $c_cena_id);
+				if($cost<=0)	$cost='уточняйте';
 				$nal=$this->GetCountInfo($nxt[12], $nxt[13]);
-
-				$dcc=strtotime($nxt[5]);
-				$cce='';
-				if($dcc<(time()-60*60*24*30*6)) $cce="style='color:#888'";
+				$cce=(strtotime($nxt[5])<(time()-60*60*24*30*6))?" style='color:#888'":'';
 				$ret.="<tr><td><a href='$link'>$nxt[1] $nxt[2]</a>
 				<td>$nxt[3]<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
 				<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>";
