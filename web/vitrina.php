@@ -360,7 +360,7 @@ protected function ProductList($group, $page)
 
         if($res->num_rows)
         {
-		if($page<1 || $lim*($page-1)>$rows)
+		if($page<1 || $lim*($page-1)>$res->num_rows)
 		{
 			header("Location: ".(empty($_SERVER['HTTPS'])?"http":"https")."://".$_SERVER['HTTP_HOST'].$this->GetGroupLink($group),false,301);
 			exit();
