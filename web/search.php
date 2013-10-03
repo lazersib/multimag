@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,26 +17,25 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once("core.php");
-include_once("include/doc.core.php");
+require_once("core.php");
+require_once("include/doc.core.php");
 
+/// Класс, реализующий страницу поиска
 class SearchPage
 {
-	var $search_str;
+	var $search_str;	///< Искомая строка
 
-	function __construct($search_str)
-	{
+	/// Конструктор
+	/// @param search_str Искомая строка
+	function __construct($search_str)	{
 		$this->search_str=$search_str;
 	}
 
-	function SearchTovar($s)
-	{
-		global $uid, $CONFIG;
-		if($uid)
-			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
-		else
-			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-		$c_cena_id=mysql_result($res,0,0);
+	/// Поиск товара
+	/// @param s Подстрока поиска
+	function SearchTovar($s)	{
+		global $uid, $CONFIG, $db;
+		$c_cena_id=getCurrentUserCost();
 
 		$ret='';
 		$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
@@ -45,29 +44,29 @@ class SearchPage
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		WHERE (`doc_base_dop`.`analog` LIKE '%$s%' OR `doc_base`.`name` LIKE '%$s%' OR `doc_base`.`desc` LIKE '%$s%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base_dop`.`analog` LIKE '%$s%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
 		LIMIT 20";
-		$res=mysql_query($sql);
-		if(mysql_errno())	throw new MysqlException("Не удалось сделать выборку товаров");
+		$res=$db->query($sql);
+		if(!$res)	throw new MysqlException("Не удалось сделать выборку товаров");
 		$found_cnt=0;
 		$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
-		if($row=mysql_num_rows($res))
+		if($row=$res->num_rows)
 		{
 			$ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
 			<th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
 			$i=0;
 			$cl="lin0";
-			while($nxt=mysql_fetch_row($res))
+			while($nxt=$res->fetch_row())
 			{
 				if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 				else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
 
 				$i=1-$i;
-				$cost = GetCostPos($nxt[0], $c_cena_id);
+				$cost = getCostPos($nxt[0], $c_cena_id);
 				if($cost<=0)	$cost='уточняйте';
 				$nal=$this->GetCountInfo($nxt[12], $nxt[13]);
 				$cce=(strtotime($nxt[5])<(time()-60*60*24*30*6))?" style='color:#888'":'';
-				$ret.="<tr><td><a href='$link'>$nxt[1] $nxt[2]</a>
-				<td>$nxt[3]<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
-				<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>";
+				$ret.="<tr><td><a href='$link'>".html_out("$nxt[1] $nxt[2]")."</a></td>
+				<td>".html_out($nxt[3])."</td><td>".html_out($nxt[6])."</td><td>$nal</td><td $cce>$cost</td><td>$nxt[8]</td><td>$nxt[9]</td><td>$nxt[10]</td><td>$nxt[11]</td><td>
+				<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>";
 				$found_cnt++;
 			}
 			$ret.="</table><span style='color:#888'>Серая цена</span> требует уточнения<br>";
@@ -75,30 +74,31 @@ class SearchPage
 		return $ret;
 	}
 
-	function SearchText($s)
-	{
-		global $wikiparser;
-		mb_internal_encoding("UTF-8");
+	/// Поиск по статьям
+	/// @param s Подстрока поиска
+	function SearchText($s)	{
+		global $wikiparser, $db;
 		$ret='';
 		$i=1;
-		$res=mysql_query("SELECT `name`, `text` FROM `articles` WHERE `text` LIKE '%$s%' OR `name` LIKE '%$s'");
-		while($nxt=mysql_fetch_row($res))
+		$res=$db->query("SELECT `name`, `text` FROM `articles` WHERE `text` LIKE '%$s%' OR `name` LIKE '%$s'");
+		if(!$res)	throw new MysqlException("Не удалось сделать выборку статей");
+		while($nxt=$res->fetch_row())
 		{
-			$text=$wikiparser->parse(html_entity_decode($nxt[1],ENT_QUOTES,"UTF-8"));
-			$head=$wikiparser->title;
+			$text	= $wikiparser->parse( $nxt[1] );
+			$head	= $wikiparser->title;
 			if($head=='')	$head=$nxt[0];
-			$text=strip_tags($text);
-			$size=130;
-			$text=". $text .";
-			$pos= mb_stripos($text, $s);
+			$text	= strip_tags($text);
+			$size	= 130;
+			$text	= ". $text .";
+			$pos	= mb_stripos($text, $s);
 			if($pos===FALSE) $pos=0;
-			$start=$pos-$size;
+			$start	= $pos-$size;
 			if($start<0) $start=0;
-			$width=$size*2;
-			$str=mb_substr ($text, $start, $width);
+			$width	= $size*2;
+			$str	= mb_substr ($text, $start, $width);
 			$str_array=mb_split(' ',$str);
-			$c='';
-			$str='... ';
+			$c	= '';
+			$str	= '... ';
 			foreach($str_array as $id => $elem)
 			{
 				if($id==0) continue;
@@ -107,41 +107,47 @@ class SearchPage
 			}
 			$str.=" ...";
 			$str=mb_eregi_replace($s,"<b>$s</b>",$str);
-			$ret.="<li><a href='/wiki/$nxt[0].html'>$head</a><br>$str</li>";
+			$ret.="<li><a href='/wiki/$nxt[0].html'>".html_out($head)."</a><br>$str</li>";
 		}
 		return $ret;
 	}
 
+	/// Формирование html кода формы поиска
 	function SearchBlock()
 	{
 		$ret="<div class='searchblock'><h1>Поиск по сайту</h1>
 		<form action='/search.php' method='get'>
-		<input type='search' name='s' placeholder='Искать..' value='{$this->search_str}' class='sp' require> <input type='submit' value='Найти'><br>
-		<a href='/adv_search.php?s={$this->search_str}'>Расширенный поиск продукции</a>
+		<input type='search' name='s' placeholder='Искать..' value='".html_out($this->search_str)."' class='sp' require> <input type='submit' value='Найти'><br>
+		<a href='/adv_search.php?s=".html_out($this->search_str)."'>Расширенный поиск продукции</a>
 		</form>
 		</div>";
 		return $ret;
 	}
 
+	/// Выполнить поиск с заданными параметрами
 	function Exec()
 	{
 		global $tmpl;
-		$tmpl->AddText($this->SearchBlock());
-		if(strlen($this->search_str)>=2)
+		$tmpl->addContent($this->SearchBlock());
+		if(mb_strlen($this->search_str)>=2)
 		{
 			$str=$this->SearchTovar($this->search_str);
-			$tmpl->AddText("<h2>Поиск по предлагаемым товарам</h2>");
-			if($str) $tmpl->AddText($str."<br><a href='/adv_search.php?s={$this->search_str}'>Ещё товары по запросу *{$this->search_str}* &gt;&gt;&gt;</a>");
-			else $tmpl->AddText("Не дал результатов");
+			$tmpl->addContent("<h2>Поиск по предлагаемым товарам</h2>");
+			if($str) $tmpl->addContent($str."<br><a href='/adv_search.php?s=".html_out($this->search_str)."'>Ещё товары по запросу *".html_out($this->search_str)."* &gt;&gt;&gt;</a>");
+			else $tmpl->addContent("Не дал результатов");
 
 			$str=$this->SearchText($this->search_str);
-			$tmpl->AddText("<h2>Поиск по документации и статьям </h2>");
-			if($str) $tmpl->AddText("<ol>$str</ol>");
-			else $tmpl->AddText("Не дал результатов");
+			$tmpl->addContent("<h2>Поиск по документации и статьям </h2>");
+			if($str) $tmpl->addContent("<ol>$str</ol>");
+			else $tmpl->addContent("Не дал результатов");
 		}
 		else if($this->search_str)	$tmpl->msg("Поисковый запрос слишком короткий!",'info');
 	}
 
+	/// Получить отображаемую информацию о количестве товара
+	/// @param count Количество товара в наличиии
+	/// @param tranzit Количество товара в пути
+	/// @return Строка с информацией о наличии
 	protected function GetCountInfo($count, $tranzit)
 	{
 		global $CONFIG;
@@ -178,7 +184,7 @@ class SearchPage
 try
 {
 	$s=rcv('s');
-	$tmpl->SetTitle("Поиск по сайту: ".$s);
+	$tmpl->setTitle("Поиск по сайту: ".$s);
 
 	if(file_exists( $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/search.tpl.php' ) )
 		include_once($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/search.tpl.php');
@@ -189,13 +195,13 @@ try
 catch(MysqlException $e)
 {
 	mysql_query("ROLLBACK");
-	$tmpl->AddText("<br><br>");
+	$tmpl->addContent("<br><br>");
 	$tmpl->msg($e->getMessage(),"err");
 }
 catch(Exception $e)
 {
 	mysql_query("ROLLBACK");
-	$tmpl->AddText("<br><br>");
+	$tmpl->addContent("<br><br>");
 	$tmpl->logger($e->getMessage());
 }
 

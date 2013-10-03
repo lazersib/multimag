@@ -2,7 +2,7 @@
 
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,19 +24,22 @@ try
 {
 
 need_auth($tmpl);
-$tmpl->SetTitle("Администрирование пользователей");
+$tmpl->setTitle("Администрирование пользователей");
 if(!isAccess('admin_users','view'))	throw new AccessException("Недостаточно привилегий");
+
+$mode=request('mode');
 
 if($mode=='')
 {
-	$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users`.`reg_email`, `users`.`reg_email_confirm`, `users`.`reg_email_subscribe`, `users`.`reg_phone`, `users`.`reg_phone_confirm`, `users`.`reg_phone_subscribe`, `users`.`reg_date`, `users_worker_info`.`worker`,
+	$order='`users`.`id`';
+	$res=$db->query("SELECT `users`.`id`, `users`.`name`, `users`.`reg_email`, `users`.`reg_email_confirm`, `users`.`reg_email_subscribe`, `users`.`reg_phone`, `users`.`reg_phone_confirm`, `users`.`reg_phone_subscribe`, `users`.`reg_date`, `users_worker_info`.`worker`,
 	( SELECT `date` FROM `users_login_history` WHERE `user_id`=`users`.`id` ORDER BY `date` DESC LIMIT 1) AS `lastlogin_date`,
 	( SELECT `user_id` FROM `users_openid` WHERE `user_id`=`users`.`id` LIMIT 1) AS `openid`
 	FROM `users`
 	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
-	");
-	if(mysql_errno())			throw new MysqlException("Не удалось получить данные пользователей");
-	$tmpl->AddText("<h1 id='page-title'>Список пользователей</h1>
+	ORDER BY $order");
+	if(!$res)			throw new MysqlException("Не удалось получить данные пользователей");
+	$tmpl->addContent("<h1 id='page-title'>Список пользователей</h1>
 	<table class='list' width='100%'>
 	<tr><th rowspan='2'>ID</th>
 	<th rowspan='2'>Имя</th>
@@ -52,7 +55,7 @@ if($mode=='')
 	<th>номер</th><th>С</th><th>S</th>
 	</tr>
 	");
-	while($line=mysql_fetch_assoc($res))
+	while($line=$res->fetch_assoc())
 	{
 		$econfirm=$line['reg_email_confirm']=='1'?'Да':'Нет';
 		$esubscribe=$line['reg_email_subscribe']?'Да':'Нет';
@@ -65,24 +68,24 @@ if($mode=='')
 
 		$worker=$line['worker']?'Да':'Нет';
 
-		@$tmpl->AddText("<tr><td><a href='?mode=view&amp;id={$line['id']}'>{$line['id']}</a></td><td>{$line['name']}</td>
+		@$tmpl->addContent("<tr><td><a href='?mode=view&amp;id={$line['id']}'>{$line['id']}</a></td><td>{$line['name']}</td>
 		<td>$p_email</td><td>$econfirm</td><td>$esubscribe</td>
 		<td>{$line['reg_phone']}</td><td>$pconfirm</td><td>$psubscribe</td>
 		<td>$openid</td>
 		<td>{$line['lastlogin_date']}</td><td>$worker</td><td>{$line['reg_date']}</td></tr>");
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 }
 else if($mode=='view')
 {
 	if(!isAccess('admin_users','view'))	throw new AccessException("Недостаточно привилегий");
-	$id=rcv('id');
-	$res=mysql_query("SELECT * FROM `users`
+	$id=rcvint('id');
+	$res=$db->query("SELECT * FROM `users`
 	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 	WHERE `id`='$id'");
-	if(mysql_errno())			throw new MysqlException("Не удалось получить данные пользователя");
-	if(mysql_num_rows($res)<=0)		throw new Exception("Пользователь не найден!");
-	$line=mysql_fetch_assoc($res);
+	if(!$res)			throw new MysqlException("Не удалось получить данные пользователя");
+	if(!$res->num_rows)		throw new Exception("Пользователь не найден!");
+	$line=$res->fetch_assoc();
 
 	$passch=$line['pass_change']?'Да':'Нет';
 	$passexp=$line['pass_expired']?'Да':'Нет';
@@ -107,11 +110,11 @@ else if($mode=='view')
 
 	$worker=$line['worker']?'Да':'Нет';
 
-	$tmpl->AddText("<h1 id='page-title'>Данные пользователя</h1>
+	$tmpl->addContent("<h1 id='page-title'>Данные пользователя</h1>
 	<table class='list'>
 	<tr><th colspan='2'>Основная информация</th></tr>
 	<tr><td>ID</td><td>{$line['id']}</td></tr>
-	<tr><td>Имя</td><td>{$line['name']}</td></tr>
+	<tr><td>Имя</td><td>".html_out($line['name'])."</td></tr>
 	<tr><td>Дата регистрации</td><td>{$line['reg_date']}</td></tr>
 	<tr><td>Заблокирован (забанен)</td><td>$diasbled</td></tr>
 	<tr><td>Меняет пароль?</td><td>$passch</td></tr>
@@ -126,68 +129,70 @@ else if($mode=='view')
 	<tr><td>телефон подтверждён?</td><td>$pconfirm</td></tr>
 	<tr><td>телефон подписан?</td><td>$psubscribe</td></tr>
 	<tr><td>Jabber ID</td><td>{$line['jid']}</td></tr>
-	<tr><td>Настоящее имя</td><td>{$line['real_name']}</td></tr>
-	<tr><td>Адрес доставки заказов</td><td>{$line['real_address']}</td></tr>
+	<tr><td>Настоящее имя</td><td>".html_out($line['real_name'])."</td></tr>
+	<tr><td>Адрес доставки заказов</td><td>".html_out($line['real_address'])."</td></tr>
 	<tr><th colspan='2'>Связь с агентами</th></tr>");
 	if(!$line['agent_id'])
 	{
-		$tmpl->AddText("<tr><td>Связь отсутствует</td><td><a href='/adm_users.php?mode=agent&amp;id=$id'>Установить</a></td></tr>");
+		$tmpl->addContent("<tr><td>Связь отсутствует</td><td><a href='/adm_users.php?mode=agent&amp;id=$id'>Установить</a></td></tr>");
 	}
 	else
 	{
-		$res=mysql_query("SELECT `id`, `name`, `fullname`, `tel`, `fax_phone`, `sms_phone`, `adres`, `data_sverki` FROM `doc_agent` WHERE `id`='{$line['agent_id']}'");
-		if(mysql_errno())			throw new MysqlException("Не удалось получить данные агента");
-		$adata=mysql_fetch_assoc($res);
-		$tmpl->AddText("
+		$res=$db->query("SELECT `id`, `name`, `fullname`, `tel`, `fax_phone`, `sms_phone`, `adres`, `data_sverki` FROM `doc_agent` WHERE `id`='{$line['agent_id']}'");
+		if(!$res)			throw new MysqlException("Не удалось получить данные агента");
+		$adata=$res->fetch_assoc();
+		$tmpl->addContent("
 		<tr><td>ID агента</td><td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$adata['id']}'>{$adata['id']}</a> - <a href='/adm_users.php?mode=agent&amp;id=$id'>Убрать связь</a></td></tr>
-		<tr><td>Краткое название</td><td>{$adata['name']}</td></tr>
-		<tr><td>Полное название</td><td>{$adata['fullname']}</td></tr>
-		<tr><td>Телефон</td><td>{$adata['tel']}</td></tr>
-		<tr><td>Факс</td><td>{$adata['fax_phone']}</td></tr>
-		<tr><td>Телефон для SMS</td><td>{$adata['sms_phone']}</td></tr>
-		<tr><td>Адрес</td><td>{$adata['adres']}</td></tr>
-		<tr><td>Дата сверки</td><td>{$adata['data_sverki']}</td></tr>
+		<tr><td>Краткое название</td><td>".html_out($adata['name'])."</td></tr>
+		<tr><td>Полное название</td><td>".html_out($adata['fullname'])."</td></tr>
+		<tr><td>Телефон</td><td>".html_out($adata['tel'])."</td></tr>
+		<tr><td>Факс</td><td>".html_out($adata['fax_phone'])."</td></tr>
+		<tr><td>Телефон для SMS</td><td>".html_out($adata['sms_phone'])."</td></tr>
+		<tr><td>Адрес</td><td>".html_out($adata['adres'])."}</td></tr>
+		<tr><td>Дата сверки</td><td>".html_out($adata['data_sverki'])."</td></tr>
 		");
 	}
-	$tmpl->AddText("
+	$tmpl->addContent("
 	<tr><th colspan='2'>Карточка сотрудника (<a href='/adm_users.php?mode=we&amp;id=$id'>править</a>)</th></tr>
-	<tr><td>Является сотрудником</td><td>$worker</td></tr>
-	<tr><td>Рабочий email</td><td><a href='mailto:{$line['worker_email']}'>{$line['worker_email']}</a></td></tr>
-	<tr><td>Рабочий телефон</td><td>{$line['worker_phone']}</td></tr>
-	<tr><td>Рабочий Jabber</td><td>{$line['worker_jid']}</td></tr>
-	<tr><td>Рабочее имя</td><td>{$line['worker_real_name']}</td></tr>
-	<tr><td>Рабочий адрес</td><td>{$line['worker_real_address']}</td></tr>
-	<tr><th colspan='2'>Дополнительная информация</th></tr>");
-	$res=mysql_query("SELECT `param`, `value` FROM `users_data` WHERE `uid`='$id'");
-	if(mysql_errno())			throw new MysqlException("Не удалось получить дополнительные данные пользователя");
-	while($line=mysql_fetch_row($res))
+	<tr><td>Является сотрудником</td><td>$worker</td></tr>");
+	if($line['worker'])
+		$tmpl->addContent("<tr><td>Рабочий email</td><td><a href='mailto:{$line['worker_email']}'>{$line['worker_email']}</a></td></tr>
+		<tr><td>Рабочий телефон</td><td>".html_out($line['worker_phone'])."</td></tr>
+		<tr><td>Рабочий Jabber</td><td>".html_out($line['worker_jid'])."</td></tr>
+		<tr><td>Рабочее имя</td><td>".html_out($line['worker_real_name'])."</td></tr>
+		<tr><td>Рабочий адрес</td><td>".html_out($line['worker_real_address'])."</td></tr>");
+
+	$tmpl->addContent("<tr><th colspan='2'>Дополнительная информация</th></tr>");
+	$res=$db->query("SELECT `param`, `value` FROM `users_data` WHERE `uid`='$id'");
+	if(!$res)			throw new MysqlException("Не удалось получить дополнительные данные пользователя");
+	while($line=$res->fetch_row())
 	{
-		$tmpl->AddText("<tr><td>$line[0]</td><td>$line[1]</td></tr>");
+		$tmpl->addContent("<tr><td>$line[0]</td><td>".html_out($line[1])."</td></tr>");
 	}
-	$tmpl->AddText("<tr><th colspan='2'><a href='/adm_users.php?mode=view_login_history&amp;id=$id'>История входов</a></th></tr>");
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("<tr><th colspan='2'><a href='/adm_users.php?mode=view_login_history&amp;id=$id'>История входов</a></th></tr>");
+	$tmpl->addContent("</table>");
 }
 else if($mode=='view_login_history')
 {
 	if(!isAccess('admin_users','view'))	throw new AccessException("Недостаточно привилегий");
-	$id=rcv('id');
-	$tmpl->AddText("<h1 id='page-title'>Данные пользователя</h1>
+	$id=rcvint('id');
+	$tmpl->addContent("<h1 id='page-title'>Данные пользователя</h1>
 	<table class='list'>
 	<tr><th colspan='2'><a href='/adm_users.php?mode=view&amp;id=$id'>Основная информация</a></th></tr>
 	<tr><th colspan='2'>История входов</th></tr>");
-	$res=mysql_query("SELECT `date`, CONCAT(`ip`,' - ',`method`) FROM `users_login_history` WHERE `user_id`='$id' ORDER BY `date` DESC");
-	if(mysql_errno())			throw new MysqlException("Не удалось получить информацию об истории входов");
-	while($line=mysql_fetch_row($res))
+	$res=$db->query("SELECT `date`, CONCAT(`ip`,' - ',`method`) FROM `users_login_history` WHERE `user_id`='$id' ORDER BY `date` DESC");
+	if(!$res)			throw new MysqlException("Не удалось получить информацию об истории входов");
+	while($line=$res->fetch_row())
 	{
-		$tmpl->AddText("<tr><td>$line[0]</td><td>$line[1]</td></tr>");
+		$tmpl->addContent("<tr><td>$line[0]</td><td>$line[1]</td></tr>");
 	}
 
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 }
 else if($mode=='agent')
 {
 	if(!isAccess('admin_users','edit'))	throw new AccessException("Недостаточно привилегий");
-	$id=rcv('id');
+	$id=rcvint('id');
 	if(isset($_REQUEST['opt']))
 	{
 		if($_REQUEST['agent_nm'])
@@ -196,17 +201,17 @@ else if($mode=='agent')
 			settype($agent_id,'int');
 		}
 		else	$agent_id='NULL';
-		mysql_query("UPDATE `users` SET `agent_id`=$agent_id WHERE `id`='$id'");
-		if(mysql_errno())			throw new MysqlException("Не удалось обновить привязку");
+		$res=$db->query("UPDATE `users` SET `agent_id`=$agent_id WHERE `id`='$id'");
+		if(!$res)			throw new MysqlException("Не удалось обновить привязку");
 		$tmpl->msg("Привязка выполнена!",'ok');
 	}
-	$res=mysql_query("SELECT `users`.`agent_id`, `doc_agent`.`name` FROM `users`
+	$res=$db->query("SELECT `users`.`agent_id`, `doc_agent`.`name` FROM `users`
 	LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`users`.`agent_id`
 	WHERE `users`.`id`='$id'");
-	if(mysql_errno())			throw new MysqlException("Не удалось получить данные пользователя");
-	if(mysql_num_rows($res)<=0)		throw new Exception("Пользователь не найден!");
-	$line=mysql_fetch_assoc($res);
-	$tmpl->AddText("<h1 id='page-title'>Привязка пользователя к агенту</h1>
+	if(!$res)			throw new MysqlException("Не удалось получить данные пользователя");
+	if(!$res->num_rows)		throw new Exception("Пользователь не найден!");
+	$line=$res->fetch_assoc($res);
+	$tmpl->addContent("<h1 id='page-title'>Привязка пользователя к агенту</h1>
 	<div id='page-info'><a href='/adm_users.php?mode=view&amp;id=$id'>Назад</a></div>
 	<form action='' method='post'>
 	<input type='hidden' name='id' value='$id'>
@@ -216,7 +221,7 @@ else if($mode=='agent')
 	<script type='text/javascript' src='/css/jquery/jquery.js'></script>
 	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 	<input type='hidden' name='agent_id' id='agent_id' value='{$line['agent_id']}'>
-	<input type='text' id='agent_nm' name='agent_nm'  style='width: 450px;' value='{$line['name']}'><br>
+	<input type='text' id='agent_nm' name='agent_nm'  style='width: 450px;' value='".html_out($line['name'])."'><br>
 
 	<script type=\"text/javascript\">
 	$(document).ready(function(){
@@ -255,8 +260,8 @@ else if($mode=='agent')
 }
 catch(Exception $e)
 {
-	mysql_query("ROLLBACK");
-	$tmpl->AddText("<br><br>");
+	$db->query("ROLLBACK");
+	$tmpl->addContent("<br><br>");
 	$tmpl->logger($e->getMessage());
 }
 

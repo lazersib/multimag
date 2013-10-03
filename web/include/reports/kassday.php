@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.1 - Complex sales system
 //
 //	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
@@ -17,32 +18,28 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+/// Отчёт по кассе
+class Report_KassDay extends BaseReport {
 
-class Report_KassDay extends BaseReport
-{
-
-	function getName($short=0)
-	{
-		if($short)	return "Кассовый";
-		else		return "Кассовый отчёт";
+	function getName($short = 0) {
+		if ($short)	return "По кассе";
+		else		return "Отчёт по кассе";
 	}
 
-	function Form()
-	{
-		global $tmpl;
-		$curdate=date("Y-m-d");
-		$tmpl->AddText("<h1>".$this->getName()."</h1>
+	function Form() {
+		global $tmpl, $db;
+		$curdate = date("Y-m-d");
+		$tmpl->addContent("<h1>" . $this->getName() . "</h1>
 		<script src='/js/calendar.js'></script>
 		<form action=''>
 		<input type='hidden' name='mode' value='kassday'>
 		Выберите кассу:<br>
 		<select name='kass'>");
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'  ORDER BY `num`");
-		while($nxt=mysql_fetch_row($res))
-		{
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+		$res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'  ORDER BY `num`");
+		while ($nxt = $res->fetch_row()) {
+			$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
 		}
-		$tmpl->AddText("</select><br>
+		$tmpl->addContent("</select><br>
 		Начальная дата:<br>
 		<input type='text' name='date_f' id='datepicker_f' value='$curdate'><br>
 		Конечная дата:<br>
@@ -55,33 +52,32 @@ class Report_KassDay extends BaseReport
 		</script>
 		");
 	}
-	
-	function Make($engine)
-	{
-		global $CONFIG;
+
+	function Make($engine) {
+		global $db;
 		$this->loadEngine($engine);
-		
-		$dt_f=rcv('date_f');
-		$dt_t=rcv('date_t');
-		$kass=rcv('kass');
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить список касс");
-		$kass_list=array();
-		while($nxt=mysql_fetch_row($res))	$kass_list[$nxt[0]]=$nxt[1];
-		
+
+		$dt_f = rcvdate('date_f');
+		$dt_t = rcvdate('date_t');
+		$kass = rcvint('kass');
+		$kres = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'");
+		$kass_list = array();
+		while ($nxt = $kres->fetch_row())
+			$kass_list[$nxt[0]] = $nxt[1];
+
 		$this->header("Отчёт по кассе {$kass_list[$kass]} с $dt_f по $dt_t");
-	
-		$daystart=strtotime("$dt_f 00:00:00");
-		$dayend=strtotime("$dt_t 23:59:59");
-		
-		$widths=array(5,8,59, 9, 9, 9);
-		$headers=array('ID','Время','Документ','Приход','Расход','В кассе');
-		
-		$this->col_cnt=count($widths);
+
+		$daystart = strtotime("$dt_f 00:00:00");
+		$dayend = strtotime("$dt_t 23:59:59");
+
+		$widths = array(5, 8, 59, 9, 9, 9);
+		$headers = array('ID', 'Время', 'Документ', 'Приход', 'Расход', 'В кассе');
+
+		$this->col_cnt = count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
-		
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`, `doc_list`.`kassa`, `doc_dopdata`.`value` AS `vk_value`
+
+		$doc_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_types`.`name`, `doc_agent`.`name`, `doc_list`.`p_doc`, `t`.`name`, `p`.`altnum`, `p`.`subtype`, `p`.`date`, `p`.`sum`, `doc_list`.`kassa`, `doc_dopdata`.`value` AS `vk_value`
 		FROM `doc_list`
 		LEFT JOIN `doc_agent`		ON `doc_agent`.`id` = `doc_list`.`agent`
 		INNER JOIN `doc_types`		ON `doc_types`.`id` = `doc_list`.`type`
@@ -91,108 +87,95 @@ class Report_KassDay extends BaseReport
 		WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7' OR `doc_list`.`type`='9')
 		AND (`doc_list`.`kassa`='$kass' OR `doc_dopdata`.`value`='$kass')
 		ORDER BY `doc_list`.`date`");
-		$sum=$daysum=$prix=$rasx=0;
-		$flag=0;
-		while($nxt=mysql_fetch_array($res))
-		{
-			$csum_p=$csum_r='';
-			if( !$flag && $nxt[3]>=$daystart && $nxt[3]<=$dayend)
-			{
-				$flag=1;
-				$sum_p=sprintf("%0.2f",$sum);
+		$sum = $daysum = $prix = $rasx = 0;
+		$flag = 0;
+		while ($nxt = $doc_res->fetch_array()) {
+			$csum_p = $csum_r = '';
+			if (!$flag && $nxt[3] >= $daystart && $nxt[3] <= $dayend) {
+				$flag = 1;
+				$sum_p = sprintf("%0.2f", $sum);
 				$this->tableAltStyle();
-				$this->tableSpannedRow(array($this->col_cnt-1,1),array("На начало периода",$sum_p));
+				$this->tableSpannedRow(array($this->col_cnt - 1, 1), array("На начало периода", $sum_p));
 				$this->tableAltStyle(false);
 			}
-			if($nxt[1]==6)		$sum+=$nxt[2];
-			else if($nxt[1]==7)	$sum-=$nxt[2];
-			else if($nxt[1]==9)
-			{
-				if($nxt['kassa']==$kass)
+			if ($nxt[1] == 6)
+				$sum+=$nxt[2];
+			else if ($nxt[1] == 7)
+				$sum-=$nxt[2];
+			else if ($nxt[1] == 9) {
+				if ($nxt['kassa'] == $kass)
 					$sum-=$nxt[2];
-				else	$sum+=$nxt[2];
+				else
+					$sum+=$nxt[2];
 			}
-			if($nxt[3]>=$daystart && $nxt[3]<=$dayend)
-			{
-				if($nxt[1]==6)
-				{
+			if ($nxt[3] >= $daystart && $nxt[3] <= $dayend) {
+				if ($nxt[1] == 6) {
 					$daysum+=$nxt[2];
 					$prix+=$nxt[2];
-					$csum_p=sprintf("%0.2f",$nxt[2]);
-				}
-				else if($nxt[1]==7)
-				{
+					$csum_p = sprintf("%0.2f", $nxt[2]);
+				} else if ($nxt[1] == 7) {
 					$daysum-=$nxt[2];
 					$rasx+=$nxt[2];
-					$csum_r=sprintf("%0.2f",$nxt[2]);
-				}
-				else
-				{
-					if($nxt['kassa']==$kass)
-					{
+					$csum_r = sprintf("%0.2f", $nxt[2]);
+				} else {
+					if ($nxt['kassa'] == $kass) {
 						$daysum-=$nxt[2];
 						$rasx+=$nxt[2];
-						$csum_r=sprintf("%0.2f",$nxt[2]);
-					}
-					else
-					{
+						$csum_r = sprintf("%0.2f", $nxt[2]);
+					} else {
 						$daysum+=$nxt[2];
 						$prix+=$nxt[2];
-						$csum_p=sprintf("%0.2f",$nxt[2]);
+						$csum_p = sprintf("%0.2f", $nxt[2]);
 					}
 				}
-				if($nxt[8])	$sadd="\nк $nxt[9] N$nxt[10]$nxt[11] от ".date("d-m-Y H:i:s",$nxt[12])." на сумму ".sprintf("%0.2f руб",$nxt[13])."";
-				else		$sadd='';
-				if($nxt[1]==6)		$sadd.="\nот $nxt[7]";
-				else if($nxt[1]==7)	$sadd.="\nдля $nxt[7]";
-				else if($nxt[1]==9)
-				{
-					if($nxt['kassa']==$kass)	$sadd.="\nв кассу {$kass_list[$nxt['vk_value']]}";
-					else				$sadd.="\nиз кассы {$kass_list[$nxt['kassa']]}";
+				if ($nxt[8])
+					$sadd = "\nк $nxt[9] N$nxt[10]$nxt[11] от " . date("d-m-Y H:i:s", $nxt[12]) . " на сумму " . sprintf("%0.2f руб", $nxt[13]) . "";
+				else
+					$sadd = '';
+				if ($nxt[1] == 6)
+					$sadd.="\nот $nxt[7]";
+				else if ($nxt[1] == 7)
+					$sadd.="\nдля $nxt[7]";
+				else if ($nxt[1] == 9) {
+					if ($nxt['kassa'] == $kass)
+						$sadd.="\nв кассу {$kass_list[$nxt['vk_value']]}";
+					else
+						$sadd.="\nиз кассы {$kass_list[$nxt['kassa']]}";
 				}
-				$dt=date("H:i:s",$nxt[3]);
-				$sum_p=sprintf("%0.2f",$sum);
+				$dt = date("H:i:s", $nxt[3]);
+				$sum_p = sprintf("%0.2f", $sum);
 				$this->tableRow(array($nxt[0], $dt, "$nxt[6] N$nxt[4]$nxt[5]   $sadd", $csum_p, $csum_r, $sum_p));
 			}
 		}
-		if( !$flag)
-		{
-				$sum_p=sprintf("%0.2f",$sum);
-				$this->tableAltStyle();
-				$this->tableSpannedRow(array($this->col_cnt-1,1),array("На начало периода",$sum_p));
-				$this->tableAltStyle(false);
-		}
-		if($flag)
-		{
-			$dsum_p=sprintf("%0.2f",$daysum);
-			$psum_p=sprintf("%0.2f",$prix);
-			$rsum_p=sprintf("%0.2f",$rasx);
-			
+		if (!$flag) {
+			$sum_p = sprintf("%0.2f", $sum);
 			$this->tableAltStyle();
-			$this->tableSpannedRow(array(3,1,1,1),array("На конец периода",$psum_p,$rsum_p,$sum_p));
-			$this->tableSpannedRow(array(3,3),array("Разница за период",$dsum_p));
+			$this->tableSpannedRow(array($this->col_cnt - 1, 1), array("На начало периода", $sum_p));
 			$this->tableAltStyle(false);
- 		}
- 		else
- 		{
-			$this->tableSpannedRow(array($this->col_cnt),array("Нет данных по балансу за выбранный период"));
- 		}
- 		
- 		$res=mysql_query("SELECT `name` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
- 		$nm=mysql_result($res,0,0);
- 		
-		$this->tableSpannedRow(array($this->col_cnt),array("\nCоответствие сумм подтверждаю ___________________ ($nm)\nБез подписи не действителен!"));
+		}
+		if ($flag) {
+			$dsum_p = sprintf("%0.2f", $daysum);
+			$psum_p = sprintf("%0.2f", $prix);
+			$rsum_p = sprintf("%0.2f", $rasx);
+
+			$this->tableAltStyle();
+			$this->tableSpannedRow(array(3, 1, 1, 1), array("На конец периода", $psum_p, $rsum_p, $sum_p));
+			$this->tableSpannedRow(array(3, 3), array("Разница за период", $dsum_p));
+			$this->tableAltStyle(false);
+		} else {
+			$this->tableSpannedRow(array($this->col_cnt), array("Нет данных по балансу за выбранный период"));
+		}
+
+		$res = $db->query("SELECT `name` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		list($nm) = $res->fetch_row();
+		$this->tableSpannedRow(array($this->col_cnt), array("\nCоответствие сумм подтверждаю ___________________ ($nm)\nБез подписи не действителен!"));
+		
 		$this->tableEnd();
 		$this->output();
 		exit(0);
 	}
-	
-	function Run($opt)
-	{
-		if($opt=='')	$this->Form();
-		else		$this->Make($opt);
-	}
-};
+}
 
+;
 ?>
 

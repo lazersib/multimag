@@ -25,7 +25,7 @@ need_auth();
 if(!isAccess('doc_list','view'))	throw new AccessException("");
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
-$tmpl->HideBlock('left');
+$tmpl->hideBlock('left');
 
 function json_encode_line($line)
 {
@@ -42,13 +42,13 @@ function json_encode_line($line)
 
 if(!isset($_REQUEST['mode']))
 {
-	$tmpl->SetTitle("Новый журнал");
+	$tmpl->setTitle("Новый журнал");
 	doc_menu("<a href='?mode=print' title='Печать реестра'><img src='img/i_print.png' alt='Реестр документов' border='0'></a>");
-	$tmpl->AddText("<script type='text/javascript' src='/css/doc_script.js'></script>
+	$tmpl->addContent("<script type='text/javascript' src='/css/doc_script.js'></script>
 	<div id='doc_list_filter'></div>
 	<div class='clear'></div>
 	<div id='doc_list_status'></div>
-	
+
 	<table width='100%' cellspacing='1' onclick='hlThisRow(event)' id='doc_list' class='list'>
 	<thead>
 	<tr>
@@ -58,7 +58,7 @@ if(!isset($_REQUEST['mode']))
 	<tbody id='docj_list_body'>
 	</tbody>
 	</table>
-	
+
 	<br><b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
 	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
 	<script type='text/javascript' src='/js/doc_journal.js'></script>
@@ -70,7 +70,7 @@ else
 try
 {
 	ob_start();
-	mysql_query("RESET QUERY CACHE");
+	$db->query("RESET QUERY CACHE");
 	$sql="SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`user` AS `author_id`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_list`.`err_flag`, `doc_list`.`p_doc`, `doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`,
 	`doc_agent`.`name` AS `agent_name`,
 	`users`.`name` AS `author_name`,
@@ -92,10 +92,10 @@ try
 	ORDER by `doc_list`.`date` DESC
 	LIMIT 100";
 	$starttime=microtime(true);
-	$res=mysql_query($sql);
-	if(mysql_errno())	throw new MysqlException("Не удалость получить данные документов ");
+	$res=$db->query($sql);
+	if(!$res)	throw new MysqlException("Не удалость получить данные документов ");
 	$jdata="";
-	while($line=mysql_fetch_assoc($res))
+	while($line=$res->fetch_assoc())
 	{
 		$line['num_highlight']='';
 		$line['date']=date('Y-m-d H:i:s',$line['date']);
@@ -117,19 +117,19 @@ try
 			case 9:		$line['data1']='Касса: '.$line['kassa_name'];
 					break;
 			default:	$line['data1']='';
-		}		
+		}
 		if($line['type']==8)	$line['agent_name']='На склад: '.$line['nasklad_name'];
 		if($line['type']==3)	// Отгрузки
 		{
-			$r=mysql_query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+			$r=$db->query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 			INNER JOIN `doc_list` ON `doc_list_pos`.`doc`=`doc_list`.`id`
 			WHERE `doc_list_pos`.`tovar`=`pos_id` AND `doc_list`.`p_doc`=`doc_id` AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
 			) AS `r_cnt`
 			FROM `doc_list_pos`
 			WHERE `doc_list_pos`.`doc`='{$line['id']}'");
-			if(mysql_errno())	throw new MysqlException("Не удалость получить данные отгрузок");
+			if(!$r)	throw new MysqlException("Не удалость получить данные отгрузок");
 			$f=0;
-			while($nx=mysql_fetch_row($r))
+			while($nx=$r->fetch_row())
 			{
 				if($nx[3]<=0)	continue;
 				$f=1;
@@ -141,45 +141,53 @@ try
 			}
 			if($f==1)	$line['num_highlight']='f_green';
 			if($f==2)	$line['num_highlight']='f_brown';
-			mysql_free_result($r);
+			$r->free();
 		}
-		
+
 		// Проплаты
 		if(($line['type']==2)&&($line['sum']>0))
 		{
 			$add='';
 			if($line['p_doc']) $add=" OR (`p_doc`='{$line['p_doc']}' AND (`type`='4' OR `type`='6'))";
-			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE
+			$r=$db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
 			(`p_doc`='{$line['id']}' AND (`type`='4' OR `type`='6'))
 			$add
-				AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
-			if(@$prop=mysql_result($rs,0,0))
+			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if($p=$r->fetch_row())
 			{
-				$prop=round($prop,2);
-				if($prop==$line['sum'])		$line['num_highlight']='f_green';
-				else if($prop>$line['sum'])	$line['num_highlight']='f_purple';
-				else 				$line['num_highlight']='f_brown';
+				if($p[0])
+				{
+					$prop=round($p[0],2);
+					if($prop==$line['sum'])		$line['num_highlight']='f_green';
+					else if($prop>$line['sum'])	$line['num_highlight']='f_purple';
+					else 				$line['num_highlight']='f_brown';
+				}
+				else 					$line['num_highlight']='f_red';
 			}
 			else 					$line['num_highlight']='f_red';
+			$r->free();
 		}
 
 		if(($line['type']==1)&&($line['sum']>0))
 		{
 			$add='';
 			if($line['p_doc']) $add=" OR (`p_doc`='{$line['p_doc']}' AND (`type`='5' OR `type`='7'))";
-			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE
+			$r=$db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
 			(`p_doc`='{$line['id']}' AND (`type`='5' OR `type`='7'))
 			$add
-				AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
-			if(@$prop=mysql_result($rs,0,0))
+			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if($p=$r->fetch_row())
 			{
-				$prop=round($prop,1);
-				if($prop==$line['sum'])		$line['num_highlight']='f_green';
-				else if($prop>$line['sum'])	$line['num_highlight']='f_purple';
-				else 				$line['num_highlight']='f_brown';
+				if($p[0])
+				{
+					$prop=round($p[0],2);
+					if($prop==$line['sum'])		$line['num_highlight']='f_green';
+					else if($prop>$line['sum'])	$line['num_highlight']='f_purple';
+					else 				$line['num_highlight']='f_brown';
+				}
 			}
 		}
-		
+
 		if($jdata)	$jdata.=", ";
 		$jdata.=json_encode($line);
 	}
@@ -190,7 +198,6 @@ try
 }
 catch(Exception $e)
 {
-	mysql_query("ROLLBACK");
 	echo "{result: 'err', error: '".htmlentities($e->getMessage(),ENT_QUOTES)."'}";
 }
 exit();

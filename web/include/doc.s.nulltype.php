@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,72 +24,37 @@ include_once("include/doc.s.agent_dov.php");
 include_once("include/doc.s.inform.php");
 include_once("include/doc.s.price_an.php");
 
-$doc_types[0]="Неопределённый справочник";
-
 /// Неопределённый справочник
 /// TODO: сделать базовым классом справочников
 class doc_s_Nulltype
 {
-	function doc_s_Nulltype()
-	{
+	function __construct() {}
 	
+	function View() {
+		global $tmpl;
+	        $tmpl->msg("Неизвестный тип справочника, либо справочник в процессе разработки!", 'err');
 	}
 	
-	function View()
-	{
+	function Edit() {
 		global $tmpl;
-	        $tmpl->msg("Неизвестный тип справочника, либо справочник в процессе разработки!",err);
+	        $tmpl->msg("Неизвестный тип справочника, либо справочник в процессе разработки!", 'err');
 	}
-	// Применить изменения редактирования
-	function head_submit()
-	{
+	
+	function ESave() {
 		global $tmpl;
-        $tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
+	        $tmpl->msg("Неизвестный тип справочника, либо справочник в процессе разработки!", 'err');
 	}
-	// Редактирование тела докумнета
-	function body($doc)
-	{
+	
+	function Search() {
 		global $tmpl;
-        $tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
+	        $tmpl->msg("Неизвестный тип справочника, либо справочник в процессе разработки!", 'err');
 	}
-	// Провести
-	function Apply($doc, $silent=0)
-	{
-		global $tmpl;
-        $tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
-	}
-	// Отменить проведение
-	function Cancel($doc)
-	{
-		global $tmpl;
-        $tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
-	}
-	// Печать документа
-	function Printform($doc, $opt='')
-	{
-		global $tmpl;
-        $tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
-	}
-	// Формирование другого документа на основании текущего
-	function MorphTo($doc, $target_type)
-	{
-		global $tmpl;
-        $tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
-	}
-	// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
-	{
-		global $tmpl;
-		return 1;
-   	}
+	
 	// Служебные опции
-	function Service($doc)
-	{
+	function Service() {
 		global $tmpl;
-        $tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
+		$tmpl->msg("Неизвестный тип справочника, либо справочник в процессе разработки!", 'err');
 	}
-
 };
-
 
 ?>

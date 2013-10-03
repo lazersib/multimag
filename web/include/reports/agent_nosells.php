@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -18,29 +18,20 @@
 //
 
 /// Отчёт по агентам без движения
-class Report_Agent_NoSells extends BaseGSReport
-{
+class Report_Agent_NoSells extends BaseReport {
 	/// Получить имя отчёта
-	public function getName($short=0)
-	{
+	public function getName($short=0) {
 		if($short)	return "По агентам без движения";
 		else		return "Отчёт по агентам без движения";
 	}
-	
-	/// Запустить отчёт
-	public function Run($opt)
-	{
-		if($opt=='')	$this->Form();
-		else		$this->Make($opt);	
-	}
-	
+
 	/// Отобразить форму
-	protected function Form()
-	{
+	protected function Form() {
 		global $tmpl;
-		$d_t=date("Y-m-d");
-		$d_f=date("Y-m-d",time()-60*60*24*31);
-		$tmpl->AddText("<h1>".$this->getName()."</h1>
+		$d_t = date("Y-m-d");
+		$d_f = date("Y-m-d", time()-60*60*24*31);
+		
+		$tmpl->addContent("<h1>".$this->getName()."</h1>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='agent_nosells'>
 		<input type='hidden' name='opt' value='make'>
@@ -57,40 +48,38 @@ class Report_Agent_NoSells extends BaseGSReport
 	}
 	
 	/// Сформировать отчёт
-	protected function Make($engine)
-	{
-		global $CONFIG;
+	protected function Make($engine) {
+		global $db;
 		$this->loadEngine($engine);		
 
-		$dt_f=strtotime(rcv('dt_f'));
-		$dt_t=strtotime(rcv('dt_t')." 23:59:59");
-		$ag_group=rcv('ag_group');
-		settype($ag_group,"int");
+		$dt_f = strtotime(rcvdate('dt_f'));
+		$dt_t = strtotime(rcvdate('dt_t')." 23:59:59");
+		$ag_group = rcvint('ag_group');
 		
-		$print_df=date('Y-m-d', $dt_f);
-		$print_dt=date('Y-m-d', $dt_t);
+		$print_df = date('Y-m-d', $dt_f);
+		$print_dt = date('Y-m-d', $dt_t);
 		
-		$sql_add= (rcv('fix')==1) ? " AND `doc_agent`.`responsible`>'0' " : '';
+		$sql_add= (request('fix')==1) ? " AND `doc_agent`.`responsible`>'0' " : '';
 		if($ag_group>0)	$sql_add.=" AND `doc_agent`.`group`='$ag_group' ";
 		$this->header($this->getName()." с $print_df по $print_dt");
 
-		$widths=array(5,67,12,16);
-		$headers=array('ID','Агент','Телефон','Ответственный');
+		$widths = array(5,67,12,16);
+		$headers = array('ID','Агент','Телефон','Ответственный');
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
 		
-		$res=mysql_query("SELECT `doc_agent`.`id`, `doc_agent`.`name`, `doc_agent`.`responsible` AS `user_id`, `users_worker_info`.`worker_real_name`, `users`.`name` AS `user_name`, `doc_agent`.`tel`, `doc_agent`.`group` FROM `doc_agent`
-		LEFT JOIN `users` ON `users`.`id`=`doc_agent`.`responsible`
-		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_agent`.`responsible`
-
-		WHERE `doc_agent`.`id` NOT IN (SELECT `agent` FROM `doc_list` WHERE `date`>='$dt_f' AND `date`<='$dt_t'  ) $sql_add
-		ORDER BY `doc_agent`.`id`");
-		while($nxt=mysql_fetch_assoc($res))
-		{
-			if($nxt['worker_real_name'])			$resp=$nxt['worker_real_name'];
-			else if($nxt['user_id']>0 && $nxt['user_name'])	$resp=$nxt['user_name'];
-			else if($nxt['user_id']>0)			$resp="==удалён (id:{$nxt['user_id']})==";
-			else						$resp="**не назначен**";
+		$res = $db->query("SELECT `doc_agent`.`id`, `doc_agent`.`name`, `doc_agent`.`responsible` AS `user_id`, `users_worker_info`.`worker_real_name`,
+			`users`.`name` AS `user_name`, `doc_agent`.`tel`, `doc_agent`.`group` FROM `doc_agent`
+			LEFT JOIN `users` ON `users`.`id`=`doc_agent`.`responsible`
+			LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_agent`.`responsible`
+			WHERE `doc_agent`.`id` NOT IN (SELECT `agent` FROM `doc_list` WHERE `date`>='$dt_f' AND `date`<='$dt_t'  ) $sql_add
+			ORDER BY `doc_agent`.`id`");
+		while ($nxt = $res->fetch_assoc()) {
+			if ($nxt['worker_real_name'])	$resp = $nxt['worker_real_name'];
+			else if ($nxt['user_id'] > 0 && $nxt['user_name'])
+							$resp = $nxt['user_name'];
+			else if ($nxt['user_id'] > 0)	$resp = "==удалён (id:{$nxt['user_id']})==";
+			else				$resp = "**не назначен**";
 			$this->tableRow(array($nxt['id'], $nxt['name'], $nxt['tel'], $resp));
 		}
 		$this->tableEnd();

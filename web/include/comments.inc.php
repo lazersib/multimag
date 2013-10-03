@@ -2,7 +2,7 @@
 
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -25,19 +25,18 @@ class CommentDispatcher
 {
 	protected $object_name;
 	protected $object_id;
-	
+
 	function __construct($object_name, $object_id)
 	{
 		settype($object_id, 'int');
-		$object_name=mysql_real_escape_string($object_name);
 		$this->object_name=$object_name;
 		$this->object_id=$object_id;
 	}
-	
+
 	/// Сохранить коментарий в базу и отправить уведомление при необходимости
 	function WriteComment($text, $rate, $autor_name='', $autor_email='')
 	{
-		global $CONFIG;
+		global $CONFIG, $db;
 		$uid=@$_SESSION['uid'];
 		settype($uid, 'int');
 		settype($rate, 'int');
@@ -48,13 +47,14 @@ class CommentDispatcher
 
 		$ip=getenv("REMOTE_ADDR");
 		$ua=getenv("HTTP_USER_AGENT");
-		$text=mysql_real_escape_string($text);
-		$ua=mysql_real_escape_string($ua);
-		$autor_name=mysql_real_escape_string($autor_name);
-		$autor_email=mysql_real_escape_string($autor_email);
-		mysql_query("INSERT INTO `comments` (`date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`)
-		VALUES (NOW(), '{$this->object_name}', '{$this->object_id}', '$autor_name', '$autor_email', '$uid', '$text', '$rate', '$ip', '$ua')");
-		if(mysql_errno())	throw new MysqlException("Не удалось сохранить коментарий!");
+		$text=$db->real_escape_string($text);
+		$ua=$db->real_escape_string($ua);
+		$autor_name=$db->real_escape_string($autor_name);
+		$autor_email=$db->real_escape_string($autor_email);
+		$object_name_sql=$db->real_escape_string($this->object_name);
+		$db->query("INSERT INTO `comments` (`date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`)
+		VALUES (NOW(), '$object_name_sql', '{$this->object_id}', '$autor_name', '$autor_email', '$uid', '$text', '$rate', '$ip', '$ua')");
+		if(!$res)	throw new MysqlException("Не удалось сохранить коментарий!");
 		if($CONFIG['noify']['comments'])
 		{
 			switch($this->object_name)
@@ -64,20 +64,23 @@ class CommentDispatcher
 					break;
 				default:
 					$url='UNKNOWN';
-			
-			}			
-			$text="Object: {$this->object_name}|{$this->object_id}\nURL: $url\nAuthor: $autor_name <$autor_email>\nUID: $uid\nRate:$rate\nText: $text";		
-			sendAdmMessage($text,'New comments');
+
+			}
+			$text="Объект: {$this->object_name}|{$this->object_id}\nСсылка: $url\nАвтор: $autor_name <$autor_email>\nUID: $uid\nРейтинг:$rate\nТекст: $text";
+			sendAdmMessage($text,'Новый коментарий');
 		}
-		return mysql_insert_id();
+		return $db->insert_id();
 	}
-	
+
 	/// Получить рейтинг заданного объекта
 	function GetRating()
 	{
-		$res=mysql_query("SELECT SUM(`rate`)/COUNT(`rate`) FROM `comments` WHERE `object_name`='{$this->object_name}' AND `object_id`='{$this->object_id}'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить рейтинг");
-		return @ round(mysql_result($res,0,0));
+		global $db;
+		$res=$db->query("SELECT SUM(`rate`)/COUNT(`rate`) FROM `comments` WHERE `object_name`='{$this->object_name}' AND `object_id`='{$this->object_id}'");
+		if(!$res)	throw new MysqlException("Не удалось получить рейтинг");
+		if(!$res->num_rows)	return 0;
+		$r=$res->fetch_row();
+		return round($r[0]);
 	}
 };
 

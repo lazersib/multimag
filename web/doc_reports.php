@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,199 +24,165 @@ SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
 
 /// Генератор отчётов в html формате
-class ReportEngineHTML
-{
+class ReportEngineHTML {
 	private $buffer_body='';
 	var $styles_base;	// Стили стандартных элементов
 	var $styles_ext;	// Стили дополнительных элементов
 	var $rowstyle;
 	var $table_widths;
 
-	function __construct()
-	{
+	function __construct()	{
 		ob_start();
-		$this->styles_base=array();
-		$this->styles_ext=array();
-		$this->rowstyle='';
+		$this->styles_base = array();
+		$this->styles_ext = array();
+		$this->rowstyle = '';
 	}
 
-	function header($text, $type=1)
-	{
+	function header($text, $type=1)	{
 		settype($type, 'int');
-		if($type<1)	$type=1;
-		if($type>6)	$type=6;
-
+		if($type<1)	$type = 1;
+		if($type>6)	$type = 6;
+		$text = htmlentities($text, ENT_QUOTES, 'UTF-8', false );
 		$this->buffer_body.="<h{$type}>$text</h$type>";
 	}
 
-	function tableBegin($widths)
-	{
-		if(!is_array($widths))	$widths=array();
-		$this->table_widths=$widths;
-		$this->buffer_body.="<table>";
+	function tableBegin($widths) {
+		if(!is_array($widths))	$widths = array();
+		$this->table_widths = $widths;
+		$this->buffer_body .= "<table>";
 	}
 
-	function tableHeader($cells)
-	{
-		$this->buffer_body.="<tr>";
-		foreach($cells as $id => $value)
-		{
-			$width=isset($this->table_widths[$id])?" width='{$this->table_widths[$id]}%'":'';
-			$value=htmlentities($value, ENT_QUOTES, 'UTF-8', false );
-			$this->buffer_body.="<th{$width}>$value</th>";
+	function tableHeader($cells) {
+		$this->buffer_body .= "<tr>";
+		foreach($cells as $id => $value) {
+			$width = isset($this->table_widths[$id])?" width='{$this->table_widths[$id]}%'":'';
+			$value = htmlentities($value, ENT_QUOTES, 'UTF-8', false );
+			$this->buffer_body .= "<th{$width}>$value</th>";
 		}
-		$this->buffer_body.="</tr>";
+		$this->buffer_body .= "</tr>";
 	}
 
-	function tableAltStyle($use=true)
-	{
-		if($use)	$this->rowstyle=" class='alt'";
-		else		$this->rowstyle='';
+	function tableAltStyle($use = true) {
+		if($use)	$this->rowstyle = " class='alt'";
+		else		$this->rowstyle = '';
 	}
 
-	function tableRow($cells)
-	{
+	function tableRow($cells) {
+		$this->buffer_body .= "<tr{$this->rowstyle}>";
+		foreach($cells as $id => $value) {
+			$value = htmlentities($value, ENT_QUOTES, 'UTF-8', false );
+			$this->buffer_body .= "<td>$value</td>";
+		}
+		$this->buffer_body .= "</tr>";
+	}
+
+	function tableSpannedRow($span_info, $cells) {
+		if(!is_array($span_info))	$span_info = array();
 		$this->buffer_body.="<tr{$this->rowstyle}>";
-		foreach($cells as $id => $value)
-		{
-			$value=htmlentities($value, ENT_QUOTES, 'UTF-8', false );
-			$this->buffer_body.="<td>$value</td>";
+		foreach($cells as $id => $value) {
+			$value = htmlentities($value, ENT_QUOTES, 'UTF-8', false );
+			$span = @$span_info[$id]>1?" colspan='{$span_info[$id]}'":'';
+			$this->buffer_body .= "<td{$span}>$value</td>";
 		}
-		$this->buffer_body.="</tr>";
+		$this->buffer_body .= "</tr>";
 	}
 
-	function tableSpannedRow($span_info, $cells)
-	{
-		if(!is_array($span_info))	$span_info=array();
-		$this->buffer_body.="<tr{$this->rowstyle}>";
-		foreach($cells as $id => $value)
-		{
-			$value=htmlentities($value, ENT_QUOTES, 'UTF-8', false );
-			$span=@$span_info[$id]>1?" colspan='{$span_info[$id]}'":'';
-			$this->buffer_body.="<td{$span}>$value</td>";
-		}
-		$this->buffer_body.="</tr>";
+	function tableEnd() {
+		$this->buffer_body .= "</table>";
 	}
 
-	function tableEnd()
-	{
-		$this->buffer_body.="</table>";
-	}
-
-	function output($fname)
-	{
-$html="<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><style type=\"text/css\">
-body { font: 14px sans-serif; }
-h1, h2, h3, h4 {text-align: center;}
-table {width: 100%; border-collapse: collapse; border: 1px solid #000;}
-th { font-size: 16px; text-align: center; font-weight: bold; border: 2px solid #000; color: #fff; background-color: #000; padding: 2px;}
-td { text-align: left; font-weight: normal; border: 1px solid #000; padding: 1px 3px 1px 3px;}
-tr.alt { background-color: #ccc; }
-</style></head><body>".$this->buffer_body.'</body></html>';
+	function output($fname) {
+		$html = "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><style type=\"text/css\">body{font:14px sans-serif;}h1, h2, h3, h4 {text-align: center;}table{width: 100%; border-collapse: collapse; border: 1px solid #000;}th{ font-size: 16px; text-align: center; font-weight: bold; border: 2px solid #000; color: #fff; background-color: #000; padding: 2px;}td{ text-align: left; font-weight: normal; border: 1px solid #000; padding: 1px 3px 1px 3px;}tr.alt{background-color:#ccc;}</style></head><body>".$this->buffer_body.'</body></html>';
 		echo $html;
 	}
 }
 
 /// Генератор отчётов в PDF формате
-class ReportEnginePDF
-{
+class ReportEnginePDF {
 	var $pdf;
 	var $styles;	// Стили
 	var $rowstyle;
 
-	function __construct()
-	{
+	function __construct() {
 		global $CONFIG;
 		ob_start();
 		define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
 		require('fpdf/fpdf_mc.php');
-		$this->pdf=new PDF_MC_Table('P');
+		$this->pdf = new PDF_MC_Table('P');
 		$this->pdf->Open();
 		$this->pdf->SetAutoPageBreak(1,5);
 		$this->pdf->AddFont('Arial','','arial.php');
 		$this->pdf->tMargin=10;
 		$this->pdf->AddPage('P');
 
-		$this->styles=array();
+		$this->styles = array();
 
-		$this->styles['table-head']=	array('line-width'=>0.4, 'font-size'=>10);
-		$this->styles['table-row']=	array('line-width'=>0.2, 'font-size'=>7, 'background' => 255);
-		$this->styles['table-altrow']=	array('line-width'=>0.2, 'font-size'=>7, 'background' => 200);
+		$this->styles['table-head']	= array('line-width'=>0.4, 'font-size'=>10);
+		$this->styles['table-row']	= array('line-width'=>0.2, 'font-size'=>7, 'background' => 255);
+		$this->styles['table-altrow']	= array('line-width'=>0.2, 'font-size'=>7, 'background' => 200);
 
-		$this->rowstyle='table-row';
+		$this->rowstyle = 'table-row';
 	}
 
-	function header($text, $type=1)
-	{
+	function header($text, $type=1) {
 		settype($type, 'int');
-		if($type<1)	$type=1;
-		if($type>6)	$type=6;
-		$font_size=18-$type*2;
+		if($type<1)	$type = 1;
+		if($type>6)	$type = 6;
+		$font_size = 18-$type*2;
 		$this->pdf->SetFont('Arial','',$font_size);
 		$text = iconv('UTF-8', 'windows-1251', $text);
 		$this->pdf->MultiCell(0, $this->getCellHeight($font_size), $text, 0, 'C', 0);
 	}
 
-	function tableBegin($widths)
-	{
-		if(!is_array($widths))	$widths=array();
-		foreach($widths as $id => $w)	$widths[$id]=$w*1.95;
+	function tableBegin($widths) {
+		if(!is_array($widths))	$widths = array();
+		foreach($widths as $id => $w)	$widths[$id] = $w*1.95;
 		$this->pdf->SetWidths($widths);
 		$this->useStyle($this->rowstyle);
 	}
 
-	function tableHeader($cells)
-	{
+	function tableHeader($cells) {
 		$this->useStyle('table-head');
 		$this->pdf->RowIconv($cells);
 	}
 
-	function tableAltStyle($use=true)
-	{
+	function tableAltStyle($use=true) {
 		if($use)	$this->rowstyle='table-altrow';
 		else		$this->rowstyle='table-row';
 	}
 
-	function tableRow($cells)
-	{
+	function tableRow($cells) {
 		$this->useStyle($this->rowstyle);
 		$this->pdf->RowIconv($cells);
 	}
 
-	function tableSpannedRow($span_info, $cells)
-	{
-		if(!is_array($span_info))	$span_info=array();
-		$old_widths=$this->pdf->widths;
-		$cur=0;
-		$this->pdf->widths=array();
-		foreach($span_info as $value)
-		{
+	function tableSpannedRow($span_info, $cells) {
+		if(!is_array($span_info))	$span_info = array();
+		$old_widths = $this->pdf->widths;
+		$cur = 0;
+		$this->pdf->widths = array();
+		foreach($span_info as $value) {
 			$w=0;
-			for($i=0;$i<$value;$i++)	$w+=$old_widths[$i+$cur];
-			$this->pdf->widths[]=$w;
-			$cur+=$value;
+			for($i=0;$i<$value;$i++)	$w += $old_widths[$i+$cur];
+			$this->pdf->widths[] = $w;
+			$cur += $value;
 		}
 		$this->tableRow($cells);
-		$this->pdf->widths=$old_widths;
+		$this->pdf->widths = $old_widths;
 	}
 
-	function tableEnd()
-	{
+	function tableEnd() {
 		$this->pdf->Ln(5);
 	}
 
-	function output($fname)
-	{
-		$this->pdf->Output($fname.'.pdf','I');
+	function output($fname) {
+		$this->pdf->Output($fname.'.pdf', 'I');
 	}
 
 	// ********** Приватные функции
-	private function useStyle($style)
-	{
-		foreach($this->styles[$style] as $name => $value)
-		{
-			switch($name)
-			{
+	private function useStyle($style) {
+		foreach($this->styles[$style] as $name => $value) {
+			switch($name) {
 				case 'line-width':	$this->pdf->SetLineWidth($value);			break;
 				case 'font-size':	$this->pdf->SetFont('','',$value);
 							$this->pdf->SetHeight($this->getCellHeight($value));	break;
@@ -225,8 +191,7 @@ class ReportEnginePDF
 		}
 	}
 
-	private function getCellHeight($font_size)
-	{
+	private function getCellHeight($font_size) {
 		return $font_size/3+1;
 	}
 }
@@ -234,26 +199,27 @@ class ReportEnginePDF
 // Все стили доложны быть заданы ДО вызова header!!!
 
 /// Родительский класс для всех отчётов системы
-class BaseReport
-{
+class BaseReport {
 	protected $output_format='html';
 	protected $oe=null;			// output engine
 
-	function __construct()
-	{
+	function __construct()	{}
 
-	}
-
-	function loadEngine($engine='html')
-	{
-		switch($engine)
-		{
+	/// Выбрать движок вывода
+	function loadEngine($engine='html') {
+		switch($engine)	{
 			case 'pdf':	$this->output_format='pdf';
 					$this->oe=new ReportEnginePDF();
 					break;
 			default:	$this->output_format='html';
 					$this->oe=new ReportEngineHTML();
 		}
+	}
+	
+	/// Запустить отчёт
+	function Run($opt) {
+		if ($opt == '')	$this->Form();
+		else		$this->Make($opt);
 	}
 
 	function header($text, $type=1)	{ return $this->oe->header($text, $type); }
@@ -266,36 +232,33 @@ class BaseReport
 	function output($fname='report'){ return $this->oe->output($fname); }
 }
 
-class BaseGSReport extends BaseReport
-{
-	function draw_groups_tree($level)
-	{
-		$ret='';
-		$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `name`");
-		$i=0;
-		$r='';
-		if($level==0) $r='IsRoot';
-		$cnt=mysql_num_rows($res);
-		while($nxt=mysql_fetch_row($res))
-		{
-			if($nxt[0]==0) continue;
+/// Отчёт с блоком выбора складских групп
+class BaseGSReport extends BaseReport {
+	function draw_groups_tree($level) {
+		global $db;
+		$ret = '';
+		settype($level,'int');
+		$res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `name`");
+		$i = 0;
+		$r = '';
+		if($level == 0) $r = 'IsRoot';
+		$cnt = $res->num_rows;
+		while($nxt = $res->fetch_row()) {
+			if($nxt[0] == 0) continue;
 			$item="<label><input type='checkbox' name='g[]' value='$nxt[0]' id='cb$nxt[0]' class='cb' checked onclick='CheckCheck($nxt[0])'>$nxt[1]</label>";
 			if($i>=($cnt-1)) $r.=" IsLast";
 			$tmp=$this->draw_groups_tree($nxt[0]); // рекурсия
-			if($tmp)
-				$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container' id='cont$nxt[0]'>".$tmp.'</ul></li>';
-			else
-				$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
+			if($tmp)	$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container' id='cont$nxt[0]'>".$tmp.'</ul></li>';
+			else		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
 			$i++;
 		}
 		return $ret;
 	}
 
 
-	function GroupSelBlock()
-	{
+	function GroupSelBlock() {
 		global $tmpl;
-		$tmpl->AddStyle(".scroll_block
+		$tmpl->addStyle(".scroll_block
 		{
 			max-height:		250px;
 			overflow:		auto;
@@ -329,7 +292,7 @@ class BaseGSReport extends BaseReport
 		}
 
 		");
-		$tmpl->AddText("<script type='text/javascript'>
+		$tmpl->addContent("<script type='text/javascript'>
 		function gstoggle()
 		{
 			var gs=document.getElementById('cgs').checked;
@@ -377,117 +340,91 @@ class BaseGSReport extends BaseReport
 
 
 
-$tmpl->HideBlock('left');
-$mode=rcv('mode');
+$tmpl->hideBlock('left');
+$mode = request('mode');
 
-$dir=$CONFIG['site']['location'].'/include/reports/';
+$dir = $CONFIG['site']['location'].'/include/reports/';
 
-try
-{
-
-
-	if($mode=='')
-	{
+try {
+	if ($mode == '') {
 		doc_menu();
-		$tmpl->SetTitle("Отчёты");
-		$tmpl->AddText("<h1>Отчёты</h1>
+		$tmpl->setTitle("Отчёты");
+		$tmpl->addContent("<h1>Отчёты</h1>
 		<p>Внимание! Отчёты создают высокую нагрузку на сервер, поэтому не рекомендуеся генерировать отчёты во время интенсивной работы с базой данных, а так же не рекомендуется частое использование генератора отчётов по этой же причине!</p>");
-		$tmpl->AddText("<ul>");
-		if (is_dir($dir))
-		{
-			if ($dh = opendir($dir))
-			{
-				$reports=array();
-				while (($file = readdir($dh)) !== false)
-				{
-					if( preg_match('/.php$/',$file) )
-					{
-						$cn=explode('.',$file);
-						if(isAccess('report_'.$cn[0],'view'))
-						{
+		$tmpl->addContent("<ul>");
+		if (is_dir($dir)) {
+			if ($dh = opendir($dir)) {
+				$reports = array();
+				while (($file = readdir($dh)) !== false) {
+					if (preg_match('/.php$/', $file)) {
+						$cn = explode('.', $file);
+						if (isAccess('report_' . $cn[0], 'view')) {
 							include_once("$dir/$file");
-							$class_name='Report_'.$cn[0];
-							$class=new $class_name;
-							$nm=$class->getName();
+							$class_name = 'Report_' . $cn[0];
+							$class = new $class_name;
+							$nm = $class->getName();
 							//$tmpl->AddText("<li><a href='/doc_reports.php?mode=$cn[0]'>$nm</a></li>");
-							$reports[$cn[0]]=$nm;
+							$reports[$cn[0]] = $nm;
 						}
 					}
 				}
 				closedir($dh);
 				asort($reports);
-				foreach($reports AS $id => $name)
-					$tmpl->AddText("<li><a href='/doc_reports.php?mode=$id'>$name</a></li>");
+				foreach ($reports AS $id => $name)
+					$tmpl->addContent("<li><a href='/doc_reports.php?mode=$id'>$name</a></li>");
 			}
 		}
-		$tmpl->AddText("</ul>");
-	}
-	else if($mode=='pmenu')
-	{
-		$tmpl->ajax=1;
-		$tmpl->SetText("");
-		if (is_dir($dir))
-		{
-			if ($dh = opendir($dir))
-			{
-				$reports=array();
-				while (($file = readdir($dh)) !== false)
-				{
-					if( preg_match('/.php$/',$file) )
-					{
-						$cn=explode('.',$file);
-						if(isAccess('report_'.$cn[0],'view'))
-						{
+		$tmpl->addContent("</ul>");
+	} else if ($mode == 'pmenu') {
+		$tmpl->ajax = 1;
+		$tmpl->setContent("");
+		if (is_dir($dir)) {
+			if ($dh = opendir($dir)) {
+				$reports = array();
+				while (($file = readdir($dh)) !== false) {
+					if (preg_match('/.php$/', $file)) {
+						$cn = explode('.', $file);
+						if (isAccess('report_' . $cn[0], 'view')) {
 							include_once("$dir/$file");
-							$class_name='Report_'.$cn[0];
-							$class=new $class_name;
-							$nm=$class->getName(1);
-							$reports[$cn[0]]=$nm;
-							
+							$class_name = 'Report_' . $cn[0];
+							$class = new $class_name;
+							$nm = $class->getName(1);
+							$reports[$cn[0]] = $nm;
 						}
 					}
 				}
 				closedir($dh);
 				asort($reports);
-				foreach($reports AS $id => $name)
-					$tmpl->AddText("<div onclick='window.location=\"/doc_reports.php?mode=$id\"'>$name</div>");
+				foreach ($reports AS $id => $name)
+					$tmpl->addContent("<div onclick='window.location=\"/doc_reports.php?mode=$id\"'>$name</div>");
 			}
 		}
-		$tmpl->AddText("<hr><div onclick='window.location=\"/doc_reports.php\"'>Подробнее</div>");
-	}
-	else
-	{
+		$tmpl->addContent("<hr><div onclick='window.location=\"/doc_reports.php\"'>Подробнее</div>");
+	} else {
 		doc_menu();
-		if(!isAccess('report_'.$mode,'view'))	throw new AccessException("Недостаточно привилегий");
-		$tmpl->SetTitle("Отчёты");
-		$opt=rcv('opt');
-		$fn=$dir.$mode.'.php';
-		if(file_exists($fn))
-		{
+		if (!isAccess('report_' . $mode, 'view'))
+			throw new AccessException("Недостаточно привилегий");
+		$tmpl->setTitle("Отчёты");
+		$opt = request('opt');
+		$fn = $dir . $mode . '.php';
+		if (file_exists($fn)) {
 			include_once($fn);
-			$class_name='Report_'.$mode;
-			$class=new $class_name;
-			$tmpl->SetTitle($class->getName());
+			$class_name = 'Report_' . $mode;
+			$class = new $class_name;
+			$tmpl->setTitle($class->getName());
 			$class->Run($opt);
 		}
-		else $tmpl->msg("Сценарий $fn не найден!","err");
+		else	$tmpl->msg("Сценарий $fn не найден!", "err");
 	}
-
-}
-catch(AccessException $e)
-{
-	$tmpl->SetText('');
-	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
-}
-catch(MysqlException $e)
-{
-	$tmpl->SetText('');
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
-}
-catch (Exception $e)
-{
-	$tmpl->SetText('');
-	$tmpl->msg($e->getMessage(),'err',"Общая ошибка");
+} catch (AccessException $e) {
+	$tmpl->setContent('');
+	$tmpl->msg($e->getMessage(), 'err', "Нет доступа");
+} catch (MysqlException $e) {
+	$tmpl->setContent('');
+	$tmpl->msg($e->getMessage() . "<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+} catch (Exception $e) {
+	$tmpl->setContent('');
+	$tmpl->msg($e->getMessage(), 'err', "Общая ошибка");
 }
 
 

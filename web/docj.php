@@ -17,89 +17,100 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+/// TODO: файл к удалению или замене на docj_new.php
+/// по этой причине, документироваться файл не будет
+
 include_once("core.php");
 include_once("include/doc.core.php");
 include_once("include/doc.s.nulltype.php");
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
-$tmpl->HideBlock('left');
+$tmpl->hideBlock('left');
 
 function GetRootDocument($doc)
 {
+	global $db;
 	while($doc)
 	{
-		$res=mysql_query("SELECT `p_doc` FROM `doc_list` WHERE `id`='$doc'");
-		echo mysql_error();
-		$pdoc=mysql_result($res,0,0);
+		$res=$db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`='$doc' AND `p_doc`>'0' AND `p_doc` IS NOT NULL");
+		if(!$res)	throw new MysqlException("Не удалось найти родительский документ");
+		if(!$res->num_rows)	return $doc;
+		list($pdoc)=$res->fetch_row();
 		if(!$pdoc) return $doc;
 		$doc=$pdoc;
 	}
 	return $doc;
 }
 
-function DrawSubTreeDocument($doc,$cur_doc)
+function DrawSubTreeDocument($doc, $cur_doc)
 {
-	global $tmpl;
+	global $tmpl, $db;
+	settype($doc,'int');
+	settype($cur_doc,'int');
+
 	$sql="SELECT `doc_list`.`id`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_agent`.`name`, `doc_types`.`name`
 	FROM `doc_list`
 	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	WHERE `doc_list`.`id`='$doc'
 	ORDER by `doc_list`.`date` DESC";
-	echo mysql_error();
-	$res=mysql_query($sql);
-	$cnt=mysql_num_rows($res);
+	$res=$db->query($sql);
+	if(!$res)	throw new MysqlException("Не удалось выбрать данные документов");
+	$cnt=$res->num_rows;
 	$i=1;
 	$r='';
-	if($nxt=mysql_fetch_row($res))
+	if($nxt=$res->fetch_row())
 	{
 		$dt=date("Y.m.d H:i:s",$nxt[2]);
 		$pp="Непроведённый";
 		if($nxt[1]) $pp="Проведённый";
 		if($i>=$cnt) $r=" IsLast";
-		$tmpl->AddText("<ul class='Container'>");
-		$tmpl->AddText("<li class='Node'><div class='Expand'></div><div class='Content'>");
-		if($doc==$cur_doc) $tmpl->AddText("<b>");
-		$tmpl->AddText("<a href='doc.php?mode=body&doc=$doc'>$pp $nxt[7]</a> N $nxt[3]$nxt[4] от $dt. Агент: $nxt[6], на сумму $nxt[5] ");
-		if($doc==$cur_doc) $tmpl->AddText("</b>");
-		$tmpl->AddText("<ul class='Container'>");
+		$tmpl->addContent("<ul class='Container'>");
+		$tmpl->addContent("<li class='Node'><div class='Expand'></div><div class='Content'>");
+		if($doc==$cur_doc) $tmpl->addContent("<b>");
+		$tmpl->addContent("<a href='doc.php?mode=body&doc=$doc'>$pp $nxt[7]</a> N $nxt[3]$nxt[4] от $dt. Агент: $nxt[6], на сумму $nxt[5] ");
+		if($doc==$cur_doc) $tmpl->addContent("</b>");
+		$tmpl->addContent("<ul class='Container'>");
 		DrawSubTreeDocumentNode($doc,$cur_doc);
-		$tmpl->AddText("</ul>");
-		$tmpl->AddText("</div></li>");
-		$tmpl->AddText("</ul>");
+		$tmpl->addContent("</ul>");
+		$tmpl->addContent("</div></li>");
+		$tmpl->addContent("</ul>");
 		$i++;
 	}
 }
 
-function DrawSubTreeDocumentNode($doc,$cur_doc)
+function DrawSubTreeDocumentNode($doc, $cur_doc)
 {
-	global $tmpl;
+	global $tmpl, $db;
+	settype($doc,'int');
+	settype($cur_doc,'int');
+
 	$sql="SELECT `doc_list`.`id`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_agent`.`name`, `doc_types`.`name`
 	FROM `doc_list`
 	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	WHERE `doc_list`.`p_doc`='$doc'
 	ORDER by `doc_list`.`date` DESC";
-	echo mysql_error();
-	$res=mysql_query($sql);
-	$cnt=mysql_num_rows($res);
+	$res=$db->query($sql);
+	if(!$res)	throw new MysqlException("Не удалось выбрать данные документов");
+	$cnt=$res->num_rows();
 	$i=1;
 	$r='';
-	while($nxt=mysql_fetch_row($res))
+	while($nxt=$res->fetch_row())
 	{
 		$dt=date("Y.m.d H:i:s",$nxt[2]);
 		$pp="Непроведённый";
 		if($nxt[1]) $pp="Проведённый";
 		if($i>=$cnt) $r=" IsLast";
 
-		$tmpl->AddText("<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>");
-		if($doc==$cur_doc) $tmpl->AddText("<b>");
-		$tmpl->AddText("<a href='doc.php?mode=body&doc=$nxt[0]'>$pp $nxt[7]</a> N $nxt[3]$nxt[4] от $dt. Агент: $nxt[6], на сумму $nxt[5] ");
-		if($doc==$cur_doc) $tmpl->AddText("</b>");
+		$tmpl->addContent("<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>");
+		if($doc==$cur_doc) $tmpl->addContent("<b>");
+		$tmpl->addContent("<a href='doc.php?mode=body&doc=$nxt[0]'>$pp $nxt[7]</a> N $nxt[3]$nxt[4] от $dt. Агент: $nxt[6], на сумму $nxt[5] ");
+		if($doc==$cur_doc) $tmpl->addContent("</b>");
 		//$tmpl->AddText("</li>");
-		$tmpl->AddText("<ul class='Container'>");
+		$tmpl->addContent("<ul class='Container'>");
 		DrawSubTreeDocumentNode($nxt[0],$cur_doc);
-		$tmpl->AddText("</ul>");
-		$tmpl->AddText("</div></li>");
+		$tmpl->addContent("</ul>");
+		$tmpl->addContent("</div></li>");
 		$i++;
 	}
 
@@ -107,9 +118,9 @@ function DrawSubTreeDocumentNode($doc,$cur_doc)
 
 function FilterMenu()
 {
-	global $tmpl;
-//	return 0;
-	$tmpl->AddStyle("
+	global $tmpl, $db;
+
+	$tmpl->addStyle("
 		#doc_sel
 		{
 			width:	280px;
@@ -131,7 +142,7 @@ function FilterMenu()
 		}
 		");
 
-		$tmpl->AddTop("<script type='text/javascript' src='/css/doc_script.js'></script>
+		$tmpl->addTop("<script type='text/javascript' src='/css/doc_script.js'></script>
 		<script src='/css/jquery/jquery.js' type='text/javascript'></script>
 		<!-- Core files -->
 		<script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
@@ -162,8 +173,8 @@ function FilterMenu()
 		");
 
 		$doc_names=$doc_sel=$doc_cb='';
-		$res=mysql_query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
-		while($nxt=mysql_fetch_row($res))
+		$res=$db->query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
+		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_need_doctypes'][$nxt[0]])
 			{
@@ -176,15 +187,16 @@ function FilterMenu()
 
 		}
 
-		$tmpl->AddTop("
+		$tmpl->addTop("
 		Отбор по типу документа:<br>
 		<div id='doc_sel' onClick='ShowDocTypes(this)'>$doc_sel</div>
 		<div id='doc_sel_popup'>$doc_cb</div>
 		");
 
 		$sklad_options="<option value='0'>-</option>";
-		$res=mysql_query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
-		while($nxt=mysql_fetch_row($res))
+		$res=$db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
+		if(!$res)	throw new MysqlException("Не удалось получить список складов");
+		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_sklad']==$nxt[0])
 			{
@@ -195,8 +207,9 @@ function FilterMenu()
 			$sklad_options.="<option value='$nxt[0]' $ss>$nxt[0]: $nxt[1]</option>";
 		}
 		$bank_options="<option value='0'>-</option>";
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank' ORDER BY `num`");
-		while($nxt=mysql_fetch_row($res))
+		$res=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank' ORDER BY `num`");
+		if(!$res)	throw new MysqlException("Не удалось получить список банков");
+		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_bank']==$nxt[0])
 			{
@@ -207,8 +220,9 @@ function FilterMenu()
 			$bank_options.="<option value='$nxt[0]' $ss>$nxt[0]: $nxt[1]</option>";
 		}
 		$kassa_options="<option value='0'>-</option>";
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `num`");
-		while($nxt=mysql_fetch_row($res))
+		$res=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `num`");
+		if(!$res)	throw new MysqlException("Не удалось получить список касс");
+		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_kassa']==$nxt[0])
 			{
@@ -219,8 +233,9 @@ function FilterMenu()
 			$kassa_options.="<option value='$nxt[0]' $ss>$nxt[0]: $nxt[1]</option>";
 		}
 		$firm_options="<option value='0'>-</option>";
-		$res=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
-		while($nxt=mysql_fetch_row($res))
+		$res=$db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+		if(!$res)	throw new MysqlException("Не удалось получить данные фирм");
+		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_firm']==$nxt[0])
 			{
@@ -233,7 +248,7 @@ function FilterMenu()
 
 		$date_f=$date_t=date("Y-m-d");
 
-		@$tmpl->AddTop("
+		@$tmpl->addTop("
 		</td><td align='right'>
 		Альт.н.<br>
 		<input type='text' name='altnum' style='width: 50px;' value='{$_SESSION['j_select_altnum']}'><br>
@@ -416,12 +431,6 @@ function FilterMenu()
 }
 
 need_auth();
-$GLOBALS['m_left']=0;
-$type_doc=@$_POST['type_doc'];
-$sn=rcv('sn');
-$fam=rcv('fam');
-$cnam=rcv('cnam');
-
 
 if(!isAccess('doc_list','view'))	throw new AccessException("");
 
@@ -430,7 +439,7 @@ if($mode=="")
 	$info='';
 	$dp="";
 	$ds="";
-	$tmpl->SetTitle("Список документов");
+	$tmpl->setTitle("Список документов");
 	doc_menu("<a onclick=\"ShowJournalFilter(this); return false;\" href='' title='Фильтр'><img src='img/i_filter.png' alt='Фильтр документов' border='0'></a>
 	<a href='?mode=print' title='Печать реестра'><img src='img/i_print.png' alt='Реестр документов' border='0'></a>");
 
@@ -493,11 +502,6 @@ if($mode=="")
 	{
 		$ds.="AND `doc_list`.`firm_id`='{$_SESSION['j_select_firm']}'";
 		$info.=", <b>организация:</b> {$_SESSION['j_select_firm_name']}";
-
-		$res=mysql_query("SELECT `firm_skin` FROM `doc_vars` WHERE `id`='{$_SESSION['j_select_firm']}'");
-		$firm_vars=mysql_fetch_assoc($res);
-		if($firm_vars['firm_skin'])
-			$tmpl->LoadTemplate($firm_vars['firm_skin']);
 	}
 	if(@$_SESSION['j_select_autor_id'])
 	{
@@ -530,19 +534,19 @@ if($mode=="")
 		$dp="<th>Кол-во<th>Цена<th>Сумма";
 		$info.=", <b>товар:</b> {$_SESSION['j_select_tov_name']}";
 	}
-	$res=mysql_query($sql);
-	if(mysql_errno())	throw new MysqlException("Не удалось получить список документов!".mysql_error());
-	$row=mysql_num_rows($res);
+	$res=$db->query($sql);
+	if(!$res)	throw new MysqlException("Не удалось получить список документов!");
+	$row=$res->num_rows;
 
 	$i=0;
 	$pr=$ras=0;
 	$tpr=$tras=0;
 
-	$tmpl->AddText("<h1 id='page-title'>Список документов</h1><div id='page-info'>$info</div>");
+	$tmpl->addContent("<h1 id='page-title'>Список документов</h1><div id='page-info'>$info</div>");
 
-	$tmpl->AddText("<table width='100%' cellspacing='1' onclick='hlThisRow(event)'><tr>
+	$tmpl->addContent("<table width='100%' cellspacing='1' onclick='hlThisRow(event)'><tr>
 	<th width='75'>№<th width='20'>&nbsp;<th width='20'>&nbsp;<th>Тип<th>Доп.$dp<th>Агент<th>Сумма<th>Дата<th>Автор");
-	while($nxt=mysql_fetch_array($res))
+	while($nxt=$res->fetch_array())
 	{
 		$dop=$cl='';
 		$dt=date("d.m.Y H:i:s",$nxt[3]);
@@ -558,24 +562,24 @@ if($mode=="")
 			case 12:
 			case 15:
 			case 17:
-				$r=mysql_query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$nxt['sklad']}'");
-				$data=mysql_fetch_row($r);
-				mysql_free_result($r);
+				$r=$db->query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$nxt['sklad']}'");
+				$data=$r->fetch_row();
+				$r->free();
 				$dop="Склад: $data[1] /$data[0]";
 				break;
 			case 4:
 			case 5:
-				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['bank']}' AND `ids`='bank'");
-				$data=mysql_fetch_row($r);
-				mysql_free_result($r);
+				$r=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['bank']}' AND `ids`='bank'");
+				$data=$r->fetch_row();
+				$r->free();
 				$dop="Банк: $data[1] /$data[0]";
 				break;
 			case 6:
 			case 7:
 			case 9:
-				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['kassa']}' AND `ids`='kassa'");
-				$data=mysql_fetch_row($r);
-				mysql_free_result($r);
+				$r=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['kassa']}' AND `ids`='kassa'");
+				$data=$r->fetch_row();
+				$r->free();
 				$dop="Касса: $data[1] /$data[0]";
 				break;
 			case 10:
@@ -584,18 +588,18 @@ if($mode=="")
 			case 14:
 				break;
 		}
-	
+
 		switch($nxt['type'])
 		{
 			case 3:	// Отгрузки
-				$r=mysql_query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+				$r=$db->query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 				INNER JOIN `doc_list` ON `doc_list_pos`.`doc`=`doc_list`.`id`
 				WHERE `doc_list_pos`.`tovar`=`pos_id` AND `doc_list`.`p_doc`=`doc_id` AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
 				) AS `r_cnt`
 				FROM `doc_list_pos`
 				WHERE `doc_list_pos`.`doc`='$nxt[0]'");
 				$f=0;
-				while($nx=mysql_fetch_row($r))
+				while($nx=$r->fetch_row())
 				{
 					if($nx[3]<=0)	continue;
 					$f=1;
@@ -607,14 +611,14 @@ if($mode=="")
 				}
 				if($f==1)	$cl='f_green';
 				if($f==2)	$cl='f_brown';
-				mysql_free_result($r);
+				$r->free();
 				break;
 			case 8:
-				$r=mysql_query("SELECT `doc_sklady`.`name` FROM `doc_dopdata`
+				$r=$db->query("SELECT `doc_sklady`.`name` FROM `doc_dopdata`
 				LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_dopdata`.`value`
 				WHERE `doc_dopdata`.`doc`='$nxt[0]' AND `doc_dopdata`.`param`='na_sklad'");
-				$nxt[9]="На ".@mysql_result($r,0,0);
-				mysql_free_result($r);
+				list($nxt[9])=$r->fetch_row();
+				$r->free();
 				break;
 		}
 
@@ -631,21 +635,19 @@ if($mode=="")
 		}
 
 		// Проплаты
-
 		if(($nxt[1]==2)&&($nxt[7]>0))
 		{
 			$add='';
 			if($nxt[12]) $add=" OR (`p_doc`='$nxt[12]' AND (`type`='4' OR `type`='6'))";
-			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE
-			(`p_doc`='$nxt[0]' AND (`type`='4' OR `type`='6'))
-			$add
-				AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
-			if(@$prop=mysql_result($rs,0,0))
+			$rs=$db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE (`p_doc`='$nxt[0]' AND (`type`='4' OR `type`='6'))
+			$add AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if($r=$rs->fetch_row())
 			{
-				$prop=sprintf("%0.2f",$prop);
-				if($prop==$nxt[7])	$cl='f_green';
+				$prop=sprintf("%0.2f",$r[0]);
+				if(!$prop)		$cl='f_red';
+				else if($prop==$nxt[7])	$cl='f_green';
 				else if($prop>$nxt[7])	$cl='f_purple';
-				else $cl='f_brown';
+				else 			$cl='f_brown';
 			}
 			else $cl='f_red';
 		}
@@ -654,13 +656,11 @@ if($mode=="")
 		{
 			$add='';
 			if($nxt[12]) $add=" OR (`p_doc`='$nxt[12]' AND (`type`='5' OR `type`='7'))";
-			$rs=mysql_query("SELECT SUM(`sum`) FROM `doc_list` WHERE
-			(`p_doc`='$nxt[0]' AND (`type`='5' OR `type`='7'))
-			$add
-				AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
-			if(@$prop=mysql_result($rs,0,0))
+			$rs=$db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE (`p_doc`='$nxt[0]' AND (`type`='5' OR `type`='7'))
+			$add AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if($r=$rs->fetch_row())
 			{
-				$prop=sprintf("%0.2f",$prop);
+				$prop=sprintf("%0.2f",$r[0]);
 				if($prop==$nxt[7])	$cl='f_green';
 				else if($prop>$nxt[7])	$cl='f_purple';
 				else $cl='f_brown';
@@ -701,13 +701,13 @@ if($mode=="")
 
 		$deflink="doc.php?mode=body&amp;doc=$nxt[0]";
 
-		$tmpl->AddText("<tr class='$cc pointer'>
+		$tmpl->addContent("<tr class='$cc pointer'>
 		<td align='right' onclick='' class='$cl'>$nxt[4]$nxt[5]<a href='docj.php?mode=tree&amp;doc=$nxt[0]' title='Связи'><img src='img/i_tree.png' alt='Связи'></a>
 		<td><a href='$deflink' title='Изменить'><img src='img/i_edit.png' alt='Изменить'></a>
 		<td align='center' id='mo$nxt[0]'>$motions<td>$nxt[11]<td>$dop $dp<td>$nxt[9]<td align='right'>$nxt[7]<td>$dt<td>
 		<a href='/adm_users.php?mode=view&amp;id=$nxt[6]'>$nxt[10]</a>");
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 	$razn=$pr-$ras;
 	$trazn=$tpr-$tras;
 	$pr=sprintf("%0.2f руб.",$pr);
@@ -717,9 +717,9 @@ if($mode=="")
 	else
 		$razn=sprintf("%0.2f руб.",$razn);
 
-	$tmpl->AddText("Итого: приход: $pr, расход: $ras. Баланс: $razn.");
-	if($sel)	$tmpl->AddText(" приход товара: $tpr, расход товара: $tras. Разница: $trazn. Перемещения не учитываются.");
-	$tmpl->AddText("<br><b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
+	$tmpl->addContent("Итого: приход: $pr, расход: $ras. Баланс: $razn.");
+	if($sel)	$tmpl->addContent(" приход товара: $tpr, расход товара: $tras. Разница: $trazn. Перемещения не учитываются.");
+	$tmpl->addContent("<br><b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
 	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
 	");
 
@@ -727,109 +727,8 @@ if($mode=="")
 else if($mode=="filter")
 {
 	$tmpl->ajax=1;
-	$opt=rcv('opt');
-	if($opt=='')
-	{
-		$date_st=$_SESSION['j_date_st'];
-		$date_end=$_SESSION['j_date_end'];
-
-		$sel=$_SESSION['j_select_tov'];
-		if($sel==0) $tov="отсутствует";
-		else
-		{
-			$res=@mysql_query("SELECT `doc_base`.`name`,`doc_group`.`name` FROM `doc_base`
-			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			WHERE `doc_base`.`id`='$sel'");
-			$tov=": ".mysql_result($res,0,1)." ".mysql_result($res,0,0);
-		}
-
-		$asel=$_SESSION['j_agent'];
-		settype($asel,"int");
-		if($asel==0) $av='';
-		else
-		{
-			$res=mysql_query("SELECT `name` FROM `doc_agent` WHERE `id`='$asel'");
-			$av=mysql_result($res,0,0);
-		}
-
-		$tov=$_SESSION['j_select_tov'];
-		if($tov==0) $tv="";
-		else
-		{
-			$res=mysql_query("SELECT `name`,`proizv` FROM `doc_base` WHERE `id`='$tov'");
-			$tv=mysql_result($res,0,0).":".mysql_result($res,0,1);
-		}
-		$dsel=$_SESSION['j_select_doc'];
-		$subtype=$_SESSION['j_select_subtype'];
-
-
-		$tmpl->AddText("
-		<h1>Фильтры</h1>
-		<form action='docj.php'>
-		<input type='hidden' name='mode' value='filter'>
-		<input type='hidden' name='opt' value='fs'>
-		<p class='datetime'>Дата<br>
-		от:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_st' size='10' value='$date_st' maxlength='10'><br>
-		до:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_end' size='10' value='$date_end' maxlength='10'></p>
-		Отбор по типу документа:<br>
-		<select name='doc_types' id='dtt'>");
-			$ss='';
-		if($dsel==0) $ss='selected';
-		$tmpl->AddText("<option value='0' $ss>-- без отбора --</option>");
-		$res=mysql_query("SELECT * FROM `doc_types` ORDER BY `name`");
-		while($nxt=mysql_fetch_row($res))
-		{
-			$ss='';
-			if($dsel==$nxt[0]) $ss='selected';
-			$tmpl->AddText("<option value='$nxt[0]' $ss>$nxt[1]</option>");
-
-		}
-		$tmpl->AddText("</select>
-		<br>
-		Подтип:<br>
-		<input type='text' id='pds' name='ptip' value='$subtype' onkeydown=\"return AutoFill('/docj.php?mode=filter&opt=pds','pds','ddp')\">
-		<a onclick=\"ClearText('pds'); return false;\" href=''><img src='/img/i_del.png' alt='Очистить'></a>
-		<div id='ddp' class='dd'></div><br>
-
-		Агент-партнёр:<br>
-		<input type='text' id='aga' name='ag' value='$av' onkeydown=\"return AutoFill('/docj.php?mode=filter&opt=ags','aga','dda')\">
-		<a onclick=\"ClearText('aga'); return false;\" href=''><img src='/img/i_del.png' alt='Очистить'></a>
-		<div id='dda' class='dd'></div><br>
-
-		Товар:<br>
-		<input type='text' id='ts' name='tov' value='$tv' onkeydown=\"return AutoFill('/docj.php?mode=filter&opt=ts','ts','ddt')\">
-		<a onclick=\"ClearText('ts'); return false;\" href=''><img src='/img/i_del.png' alt='Очистить'></a>
-		<div id='ddt' class='dd' style='width:450px;'></div><br>
-
-
-
-		<div id='info'></div>
-		<br>
-		<input type='submit' value='Установить'>
-		</form>");
-	}
-	else if($opt=='fs')
-	{
-		$tov=rcv('tov');
-		if($tov)
-		{
-			$res=mysql_query("SELECT `id`, `name`, `proizv` FROM `doc_base` WHERE `id`='$tov'");
-			$tovar=mysql_fetch_row($res);
-			$_SESSION['j_select_tov']=$tovar[0];
-			$_SESSION['j_select_tov_name']=$tovar[1];
-		}
-		else
-		{
-			$_SESSION['j_select_tov']=0;
-			$_SESSION['j_select_tov_name']='';
-		}
-
-
-
-		header('location: docj.php');
-	}
-
-	else if($opt=='fsn')
+	$opt=request('opt');
+	if($opt=='fsn')
 	{
 		$dt=@$_POST['dt'];
 		if(is_array($dt))
@@ -842,21 +741,21 @@ else if($mode=="filter")
 		}
 		else $_SESSION['j_need_doctypes']='';
 
-		$date_from=rcv('date_from');
+		$date_from=request('date_from');
 		$_SESSION['j_date_from']=date("Y-m-d",strtotime($date_from));
 
-		$date_to=rcv('date_to');
+		$date_to=request('date_to');
 		$_SESSION['j_date_to']=date("Y-m-d",strtotime($date_to)+(24*60*60-1));
 
-		$_SESSION['j_select_altnum']=rcv('altnum');
-		$_SESSION['j_select_subtype']=rcv('subtype');
+		$_SESSION['j_select_altnum']=request('altnum');
+		$_SESSION['j_select_subtype']=request('subtype');
 
-		$agent_id=rcv('agent_id');
-		$agent_name=rcv('agent_name');
+		$agent_id=rcvint('agent_id');
+		$agent_name=request('agent_name');
 		if($agent_name)
 		{
-			$res=mysql_query("SELECT `id`, `name` FROM `doc_agent` WHERE `id`='$agent_id'");
-			$agent=mysql_fetch_row($res);
+			$res=$db->query("SELECT `id`, `name` FROM `doc_agent` WHERE `id`='$agent_id'");
+			$agent=$res->fetch_row();
 			$_SESSION['j_agent']=$agent[0];
 			$_SESSION['j_agent_name']=$agent[1];
 		}
@@ -866,11 +765,11 @@ else if($mode=="filter")
 			$_SESSION['j_agent_name']='';
 		}
 
-		$tov_id=rcv('tov_id');
-		if(rcv('tov_name'))
+		$tov_id=rcvint('tov_id');
+		if(request('tov_name'))
 		{
-			$res=mysql_query("SELECT `id`, `name`, `proizv` FROM `doc_base` WHERE `id`='$tov_id'");
-			$tovar=mysql_fetch_row($res);
+			$res=$db->query("SELECT `id`, `name`, `proizv` FROM `doc_base` WHERE `id`='$tov_id'");
+			$tovar=$res->fetch_row();
 			$_SESSION['j_select_tov']=$tovar[0];
 			$_SESSION['j_select_tov_name']=$tovar[1];
 		}
@@ -880,11 +779,11 @@ else if($mode=="filter")
 			$_SESSION['j_select_tov_name']='';
 		}
 
-		$autor_id=rcv('autor_id');
-		if(rcv('autor_name'))
+		$autor_id=rcvint('autor_id');
+		if(request('autor_name'))
 		{
-			$res=mysql_query("SELECT `id`, `name` FROM `users` WHERE `id`='$autor_id'");
-			$autor=mysql_fetch_row($res);
+			$res=$db->query("SELECT `id`, `name` FROM `users` WHERE `id`='$autor_id'");
+			$autor=$res->fetch_row();
 			$_SESSION['j_select_autor_id']=$autor[0];
 			$_SESSION['j_select_autor_name']=$autor[1];
 		}
@@ -894,152 +793,134 @@ else if($mode=="filter")
 			$_SESSION['j_select_autor_name']='';
 		}
 
-		$_SESSION['j_select_firm']=round(rcv('firm'));
-		$_SESSION['j_select_bank']=round(rcv('bank'));
-		$_SESSION['j_select_kassa']=round(rcv('kassa'));
-		$_SESSION['j_select_sklad']=round(rcv('sklad'));
+		$_SESSION['j_select_firm']=rcvint('firm');
+		$_SESSION['j_select_bank']=rcvint('bank');
+		$_SESSION['j_select_kassa']=rcvint('kassa');
+		$_SESSION['j_select_sklad']=rcvint('sklad');
 
 		header('location: docj.php');
 	}
-
-	else if($opt=='dts')
-	{
-			$s=rcv('s');
-			if($date_st) $_SESSION['j_date_st']=$s;
-			$tmpl->AddText("Дата установлена!");
-
-	}
 	else if($opt=='ags')
 	{
-			$s=rcv('s');
-			$res=mysql_query("SELECT `id`,`name` FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$s%') ORDER BY `name` LIMIT 100");
-			$row=mysql_numrows($res);
-			$tmpl->AddText("<div class='pointer' onclick=\"return AutoFillClick('aga','','dda');\">-- Убрать --</div>");
-			while($nxt=mysql_fetch_row($res))
-			{
-				$i=1;
-				$tmpl->AddText("<div class='pointer' onclick=\"return AutoFillClick('aga','$nxt[1]','dda');\">$nxt[1]</div>");
-			}
-			if(!$i) $tmpl->AddText("<b>Искомая комбинация не найдена!");
+		$s=$db->real_escape_strint(request('s'));
+		$res=$db->query("SELECT `id`,`name` FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$s%') ORDER BY `name` LIMIT 100");
+		$row=$res->num_rows;
+		$tmpl->addContent("<div class='pointer' onclick=\"return AutoFillClick('aga','','dda');\">-- Убрать --</div>");
+		while($nxt=$res->fetch_row())
+		{
+			$i=1;
+			$tmpl->addContent("<div class='pointer' onclick=\"return AutoFillClick('aga','$nxt[1]','dda');\">$nxt[1]</div>");
+		}
+		if(!$i) $tmpl->addContent("<b>Искомая комбинация не найдена!");
 
 	}
 	else if($opt=='ts')
 	{
-			$s=rcv('s');
-			$tov=split(':',$s);
-			$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base_dop`.`analog`
-			FROM `doc_base`
-			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-			WHERE `doc_base`.`name` LIKE '%$tov[0]%' AND `doc_base`.`proizv` LIKE '%$tov[1]%' ORDER BY `doc_base`.`name` LIMIT 100");
+		$s=request('s');
+		$tov=split(':',$s);
+		$tov[0]=$db->real_escape_string($tov[0]);
+		$tov[1]=$db->real_escape_string($tov[1]);
+		$res=$db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base_dop`.`analog`
+		FROM `doc_base`
+		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+		WHERE `doc_base`.`name` LIKE '%$tov[0]%' AND `doc_base`.`proizv` LIKE '%$tov[1]%' ORDER BY `doc_base`.`name` LIMIT 100");
 
-			echo mysql_error();
-			$tmpl->AddText("<table width='100%'>
-			<tr><th>наим.<th>произв.<th>Цена<th>Аналог
-			<tr class='pointer' onclick=\"return AutoFillClick('ts','','ddt');\"><td colspan='4'>-- Убрать --");
-			while($nxt=mysql_fetch_row($res))
-			{
-				$i=1;
-				$tmpl->AddText("<tr class='pointer' onclick=\"return AutoFillClick('ts','$nxt[1]:$nxt[2]','ddt');\"><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
-			}
-			if(!$i) $tmpl->AddText("<b>Искомая комбинация не найдена!");
+		$tmpl->addContent("<table width='100%'>
+		<tr><th>наим.<th>произв.<th>Цена<th>Аналог
+		<tr class='pointer' onclick=\"return AutoFillClick('ts','','ddt');\"><td colspan='4'>-- Убрать --");
+		while($nxt=$res->fetch_row())
+		{
+			$i=1;
+			$tmpl->addContent("<tr class='pointer' onclick=\"return AutoFillClick('ts','$nxt[1]:$nxt[2]','ddt');\"><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
+		}
+		if(!$i) $tmpl->addContent("<b>Искомая комбинация не найдена!");
 
 	}
 	else if($opt=='pds')
 	{
-			$s=rcv('s');
-			$res=mysql_query("SELECT `id`,`subtype` FROM `doc_list` WHERE LOWER(`subtype`) LIKE LOWER('%$s%')GROUP BY `subtype`  ORDER BY `subtype`  LIMIT 100");
-			$row=mysql_numrows($res);
-			$tmpl->AddText("<div class='pointer' onclick=\"return AutoFillClick('pds','','ddp');\">-- Убрать --</div>");
-			while($nxt=mysql_fetch_row($res))
-			{
-				$i=1;
-				$tmpl->AddText("<div class='pointer' onclick=\"return AutoFillClick('pds','$nxt[1]','ddp');\">$nxt[1]</div>");
-			}
-			if(!$i) $tmpl->AddText("<b>Искомая комбинация не найдена!");
-	}
-	else if($opt=='firm')
-	{
-		$_SESSION['firm']=$firm=rcv('firm');
-		if($firm)
-			mysql_query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('$uid', 'firm_id', '$firm') ");
-		header('location: docj.php');
+		$s=request('s');
+		$res=$db->query("SELECT `id`,`subtype` FROM `doc_list` WHERE LOWER(`subtype`) LIKE LOWER('%$s%')GROUP BY `subtype`  ORDER BY `subtype`  LIMIT 100");
+		$tmpl->addContent("<div class='pointer' onclick=\"return AutoFillClick('pds','','ddp');\">-- Убрать --</div>");
+		while($nxt=$res->fetch_row())
+		{
+			$i=1;
+			$tmpl->addContent("<div class='pointer' onclick=\"return AutoFillClick('pds','$nxt[1]','ddp');\">$nxt[1]</div>");
+		}
+		if(!$i) $tmpl->addContent("<b>Искомая комбинация не найдена!");
 	}
 }
 else if($mode=="del")
 {
 	$tmpl->ajax=1;
-	$_id=rcv('_id');
-	$ok=rcv('ok');
-	settype($_id,"int");
+	$_id=rcvint('_id');
+	$ok=rcvint('ok');
+
 	$tim=time();
 	if(!isAccess('doc_list','delete'))	throw new AccessException("");
-	$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$_id' AND `mark_del`='0'");
-	if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
+	$res=$db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$_id' AND `mark_del`='0'");
+	if(!$res->num_rows)
 	{
-		if(!$ok)	$tmpl->AddText("Удалить?<a href=''  onclick=\"EditThis('/docj.php?mode=del&_id=$_id&ok=1','mo$_id'); return false;\">Да!</a>");
+		if(!$ok)	$tmpl->addContent("Удалить?<a href=''  onclick=\"EditThis('/docj.php?mode=del&_id=$_id&ok=1','mo$_id'); return false;\">Да!</a>");
 		else
 		{
-			$res=mysql_query("UPDATE `doc_list` SET `mark_del`='$tim' WHERE `id`='$_id'");
-			if($res)
-			$tmpl->AddText("Установлена пометка на удаление!");
-			else $tmpl->msg("Не удалось отметить!","err");
+			$res=$db->query("UPDATE `doc_list` SET `mark_del`='$tim' WHERE `id`='$_id'");
+			if(!$res)	throw new MysqlException("Не удалось отменить");
+			$tmpl->addContent("Установлена пометка на удаление!");
 			doc_log("MARKDELETE doc:$_id","doc:$_id");
-
 		}
 	}
-	else	$tmpl->AddText("Есть подчинённые не удалённые документы. Удаление невозможно.");
+	else	$tmpl->addContent("Есть подчинённые не удалённые документы. Удаление невозможно.");
 }
 else if($mode=="undel")
 {
 	$tmpl->ajax=1;
-	$_id=rcv('_id');
-	$ok=rcv('ok');
-	settype($_id,"int");
+	$_id=rcvint('_id');
+	$ok=rcvint('ok');
+
 	if(!isAccess('doc_list','delete'))	throw new AccessException("");
 	if(!$ok)
-	$tmpl->AddText("Отменить удаление?<br><a href='' onclick=\"EditThis('/docj.php?mode=undel&_id=$_id&ok=1','mo$_id'); return false;\">Да, отменить!</a>");
+	$tmpl->addContent("Отменить удаление?<br><a href='' onclick=\"EditThis('/docj.php?mode=undel&_id=$_id&ok=1','mo$_id'); return false;\">Да, отменить!</a>");
 	else
 	{
-		$res=mysql_query("UPDATE `doc_list` SET `mark_del`='0' WHERE `id`='$_id'");
-		if($res)
-		$tmpl->AddText("Убрана пометка!");
-		else $tmpl->msg("Не удалось убрать метку!","err");
+		$res=$db->query("UPDATE `doc_list` SET `mark_del`='0' WHERE `id`='$_id'");
+		if(!$res)	throw new MysqlException("Не удалось убрать пометку на удаление");
+		$tmpl->addContent("Убрана пометка!");
 		doc_log("UNDELETE doc:$_id","doc:$_id");
-
 	}
 }
 else if($mode=='log')
 {
-	$doc=rcv('doc');
-	$res=mysql_query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
+	$doc=rcvint('doc');
+	$res=$db->query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
 	FROM `doc_log`
 	LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
 	WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='$doc'");
-	$tmpl->AddText("<h1>История документа $doc</h1>
+	if(!$res)	throw new MysqlException("Не удалось получить данные журнала");
+	$tmpl->addContent("<h1>История документа $doc</h1>
 	<table width=100%>
 	<tr><th>Выполненное действие<th>Описание действия<th>Дата<th>Пользователь<th>IP");
 	$i=0;
-	while($nxt=mysql_fetch_row($res))
+	while($nxt=$res->fetch_row())
 	{
 		$i=1-$i;
-		$tmpl->AddText("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
+		$tmpl->addContent("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
 
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 
 }
 else if($mode=="tree")
 {
-	doc_menu("");
-	$doc=rcv('doc');
+	doc_menu();
+	$doc=rcvште('doc');
 	$pdoc=GetRootDocument($doc);
-	$tmpl->AddText("<h1>Структура для $doc с $pdoc</h1>");
+	$tmpl->addContent("<h1>Структура для $doc с $pdoc</h1>");
 	DrawSubTreeDocument($pdoc,$doc);
 }
 else if($mode=='print')
 {
-	$tmpl->LoadTemplate('print');
-	$tmpl->SetText("<h1>Реестр документов</h1>");
+	$tmpl->loadTemplate('print');
+	$tmpl->setContent("<h1>Реестр документов</h1>");
 
 	$t_from=strtotime($_SESSION['j_date_from']);
 	$t_to=strtotime($_SESSION['j_date_to'])+60*60*24-1;
@@ -1056,9 +937,9 @@ else if($mode=='print')
 
 	if(is_array(@$_SESSION['j_need_doctypes']))
 	{
-		$res=mysql_query("SELECT `id`, `name` FROM `doc_types` ORDER BY `id`");
+		$res=$db->query("SELECT `id`, `name` FROM `doc_types` ORDER BY `id`");
 		$doc_names=array();
-		while($nxt=mysql_fetch_row($res))	$doc_names[$nxt[0]]=$nxt[1];
+		while($nxt=$res->fetch_row($res))	$doc_names[$nxt[0]]=$nxt[1];
 
 		$info.=", <b>документы: </b> ";
 		$ts='';
@@ -1101,10 +982,10 @@ else if($mode=='print')
 		$ds.="AND `doc_list`.`firm_id`='{$_SESSION['j_select_firm']}'";
 		$info.=", <b>организация:</b> {$_SESSION['j_select_firm_name']}";
 
-		$res=mysql_query("SELECT `firm_skin` FROM `doc_vars` WHERE `id`='{$_SESSION['j_select_firm']}'");
-		$firm_vars=mysql_fetch_assoc($res);
+		$res=$db->query("SELECT `firm_skin` FROM `doc_vars` WHERE `id`='{$_SESSION['j_select_firm']}'");
+		$firm_vars=$res->fetch_assoc($res);
 		if($firm_vars['firm_skin'])
-			$tmpl->LoadTemplate($firm_vars['firm_skin']);
+			$tmpl->loadTemplate($firm_vars['firm_skin']);
 	}
 	if(@$_SESSION['j_select_autor_id'])
 	{
@@ -1138,18 +1019,18 @@ else if($mode=='print')
 		$dp="<th>Кол-во<th>Цена<th>Сумма";
 		$info.=", <b>товар:</b> {$_SESSION['j_select_tov_name']}";
 	}
-	$res=mysql_query($sql);
-	if(mysql_errno())	throw new MysqlException("Не удалось получить список документов!".mysql_error());
-	$row=mysql_num_rows($res);
+	$res=$db->query($sql);
+	if(!$res)	throw new MysqlException("Не удалось получить список документов!");
+	$row=$res->num_rows;
 
 	$i=0;
 	$pr=$ras=0;
 
-	$tmpl->AddText("<h4'>$info</h4>");
+	$tmpl->addContent("<h4'>$info</h4>");
 
-	$tmpl->AddText("<table width='100%' cellspacing='1'><tr>
+	$tmpl->addContent("<table width='100%' cellspacing='1'><tr>
 	<th width='75'>Id<th width='20'>№<th>Документ<th>Дата<th>Агент<th>Сумма<th>Автор<th>Информация $dp");
-	while($nxt=mysql_fetch_array($res))
+	while($nxt=$res->fetch_array($res))
 	{
 		$dop=$cl='';
 		$dt=date("d.m.Y H:i:s",$nxt[3]);
@@ -1165,24 +1046,24 @@ else if($mode=='print')
 			case 12:
 			case 15:
 			case 17:
-				$r=mysql_query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$nxt['sklad']}'");
-				$data=mysql_fetch_row($r);
-				mysql_free_result($r);
+				$r=$db->query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$nxt['sklad']}'");
+				$data=$r->fetch_row();
+				$r->free();
 				$dop="Склад: $data[1] /$data[0]";
 				break;
 			case 4:
 			case 5:
-				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['bank']}' AND `ids`='bank'");
-				$data=mysql_fetch_row($r);
-				mysql_free_result($r);
+				$r=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['bank']}' AND `ids`='bank'");
+				$data=$r->fetch_row();
+				$r->free();
 				$dop="Банк: $data[1] /$data[0]";
 				break;
 			case 6:
 			case 7:
 			case 9:
-				$r=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['kassa']}' AND `ids`='kassa'");
-				$data=mysql_fetch_row($r);
-				mysql_free_result($r);
+				$r=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `num`='{$nxt['kassa']}' AND `ids`='kassa'");
+				$data=$r->fetch_row();
+				$r->free();
 				$dop="Касса: $data[1] /$data[0]";
 				break;
 			case 10:
@@ -1195,14 +1076,14 @@ else if($mode=='print')
 		switch($nxt['type'])
 		{
 			case 3:
-				$r=mysql_query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+				$r=$res->query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 				INNER JOIN `doc_list` ON `doc_list_pos`.`doc`=`doc_list`.`id`
 				WHERE `doc_list_pos`.`tovar`=`pos_id` AND `doc_list`.`p_doc`=`doc_id` AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
 				) AS `r_cnt`
 				FROM `doc_list_pos`
 				WHERE `doc_list_pos`.`doc`='$nxt[0]'");
 				$f=0;
-				while($nx=mysql_fetch_row($r))
+				while($nx=$r->fetch_row())
 				{
 					if($nx[3]<=0)	continue;
 					$f=1;
@@ -1214,14 +1095,14 @@ else if($mode=='print')
 				}
 				if($f==1)	$cl='f_green';
 				if($f==2)	$cl='f_brown';
-				mysql_free_result($r);
+				$r->free();
 				break;
 			case 8:
-				$r=mysql_query("SELECT `doc_sklady`.`name` FROM `doc_dopdata`
+				$r=$db->query("SELECT `doc_sklady`.`name` FROM `doc_dopdata`
 				LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_dopdata`.`value`
 				WHERE `doc_dopdata`.`doc`='$nxt[0]' AND `doc_dopdata`.`param`='na_sklad'");
-				$nxt[9]="На ".@mysql_result($r,0,0);
-				mysql_free_result($r);
+				list($nxt[9])=$r->fetch_row();
+				$r->free();
 				break;
 		}
 
@@ -1249,9 +1130,9 @@ else if($mode=='print')
 
 		if(!$nxt[4]) $nxt[4]=$nxt[0];
 
-		$tmpl->AddText("<tr><td>$nxt[0]<td align='right'>$nxt[4]$nxt[5]<td>$nxt[11]<td>$dt<td>$nxt[9]<td align='right'>$nxt[7]<td>$nxt[10]<td>$dop $dp</tr>");
+		$tmpl->addContent("<tr><td>$nxt[0]<td align='right'>$nxt[4]$nxt[5]<td>$nxt[11]<td>$dt<td>$nxt[9]<td align='right'>$nxt[7]<td>$nxt[10]<td>$dop $dp</tr>");
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 	$razn=$pr-$ras;
 	$pr=sprintf("%0.2f руб.",$pr);
 	$ras=sprintf("%0.2f руб.",$ras);
@@ -1260,7 +1141,7 @@ else if($mode=='print')
 	else
 		$razn=sprintf("%0.2f руб.",$razn);
 
-	$tmpl->AddText("Итого: приход: $pr, расход: $ras. Баланс: $razn<br>");
+	$tmpl->addContent("Итого: приход: $pr, расход: $ras. Баланс: $razn<br>");
 
 }
 else doc_log("ERROR","docj.php: Неверный mode!");

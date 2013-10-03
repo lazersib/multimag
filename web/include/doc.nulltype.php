@@ -22,8 +22,6 @@ include_once($CONFIG['site']['location']."/include/doc.core.php");
 include_once($CONFIG['site']['location']."/include/doc.predlojenie.php");
 include_once($CONFIG['site']['location']."/include/doc.v_puti.php");
 
-$doc_types[0]="Неопределённый документ";
-
 /// Базовый класс для всех документов системы. Содержит основные методы для работы с документами.
 class doc_Nulltype
 {
@@ -44,10 +42,11 @@ class doc_Nulltype
 	protected $doc_data;			///< Основные данные документа
 	protected $dop_data;			///< Дополнительные данные документа
 	protected $firm_vars;			///< информация с данными о фирме
+	protected $def_dop_data=array();	///< Список дополнительных параметров текущего документа со значениями по умолчанию
 
 	public function __construct($doc=0)
 	{
-		$this->doc				=$doc;
+		$this->doc				=(int)$doc;
 		$this->doc_type				=0;
 		$this->doc_name				='';
 		$this->doc_viewname			='Неопределенный документ';
@@ -61,99 +60,132 @@ class doc_Nulltype
 	}
 
 	public function getDocNum()	{return $this->doc;}
-	public function getDocData()	{return $this->doc_data;}
-	public function getDopData()	{return $this->dop_data;}
 	public function getViewName()	{return $this->doc_viewname;}
-	public function SetDocData($name, $value)
+	public function getDocDataA()	{return $this->doc_data;}	
+	
+	/// @brief Получить значение основного параметра документа.
+	/// Вернёт пустую строку в случае отсутствия параметра
+	/// @param name Имя параметра
+	public function getDoсData($name) {
+		if(isset($this->doс_data[$name]))
+			return $this->doс_data[$name];
+		else	return '';
+	}
+	
+	/// Установить основной параметр документа
+	public function setDocData($name, $value)
 	{
+		global $db;
 		if($this->doc)
 		{
-			$_name=mysql_real_escape_string($name);
-			$_value=mysql_real_escape_string($value);
-			mysql_query("UPDATE `doc_list` SET `$_name`='$_value' WHERE `id`='{$this->doc}'");
-			if(mysql_errno())		throw new MysqlException("Не удалось сохранить основной параметр документа");
+			$_name=$db->real_escape_string($name);
+			$db->update('doc_list', $this->doc, $_name, $value);
+			doc_log("UPDATE {$this->doc_name}","$name: ({$this->doc_data[$name]} => $value)",'doc',$this->doc);
 		}
 		$this->doc_data[$name]=$value;
 	}
 	
+	/// @brief Получить значение дополниетльного параметра документа.
+	/// Вернёт пустую строку в случае отсутствия параметра
+	/// @param name Имя параметра
+	public function getDopData($name) {
+		if(isset($this->dop_data[$name]))
+			return $this->dop_data[$name];
+		else	return '';
+	}
+	
+	/// Получить все дополнительные параметры документа в виде ассоциативного массива
+	public function getDopDataA() {
+		return $this->dop_data;
+	}
+	
 	/// Установить дополнительные данные текущего документа
-	/// TODO: Сделать аналогичную функцию с массивом key=>value изменяемых данных
-	public function SetDopData($name, $value)
+	public function setDopData($name, $value)
 	{
+		global $db;
 		if($this->doc && $this->dop_data[$name]!=$value)
 		{
-			$_name=mysql_real_escape_string($name);
-			$_value=mysql_real_escape_string($value);
-			$ovalue=mysql_real_escape_string($this->dop_data[$name]);
-			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'$_name','$_value')");
-			if(mysql_errno())		throw new MysqlException("Не удалось сохранить дополнительный параметр документа");
-			doc_log("UPDATE {$this->doc_name}","$_name: ($ovalue => $_value)",'doc',$this->doc);
+			$_name = $db->real_escape_string($name);
+			$_value = $db->real_escape_string($value);
+			$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'$_name','$_value')");
+			doc_log("UPDATE {$this->doc_name}","$name: ({$this->dop_data[$name]} => $value)",'doc',$this->doc);
 		}
 		$this->dop_data[$name]=$value;
 	}
+	
+	/// Установить дополнительные данные текущего документа
+	public function setDopDataA($array)
+	{
+		global $db;
+		if($this->doc)
+			foreach ($array as $name=>$value)
+			{
+				if(!isset($this->dop_data[$name]))	$this->dop_data[$name]='';
+				if($this->dop_data[$name] != $value)
+				{
+					$_name = $db->real_escape_string($name);
+					$_value = $db->real_escape_string($value);
+					$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'$_name','$_value')");
+					doc_log("UPDATE {$this->doc_name}","$name: ({$this->dop_data[$name]} => $value)",'doc',$this->doc);
+					$this->dop_data[$name]=$value;
+				}
+			}
+		
+	}
+	
 
 	/// Создать документ с заданными данными
-	public function Create($doc_data, $from='')
+	public function create($doc_data, $from='')
 	{
-		//var_dump($doc_data);
-		global $uid, $CONFIG;
-		if(!isAccess('doc_'.$this->doc_name,'create'))	throw new AccessException("");
+		global $db;
+		if(!isAccess('doc_'.$this->doc_name,'create'))	throw new AccessException();
 		$date=time();
-		$doc_data['altnum']=$this->GetNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
+		$doc_data['altnum']=$this->getNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
 
-		$fields = mysql_list_fields($CONFIG['mysql']['db'], "doc_list");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить структуру таблицы документов");
-		$columns = mysql_num_fields($fields);
+		$res = $db->query("SHOW COLUMNS FROM `doc_list`");
 		$col_array=array();
-		for ($i = 0; $i < $columns; $i++)	$col_array[mysql_field_name($fields, $i)]=mysql_field_name($fields, $i);
+		while($nxt=$res->fetch_row()){
+			$col_array[$nxt[0]]=$nxt[0];
+		}
+		// Эти поля копировать не нужно
 		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user'],$col_array['ok']);
 
-
-
-		$sqlinsert_keys="`date`, `type`, `user`";
-		$sqlinsert_value="'$date', '".$this->doc_type."', '$uid'";
-//  		echo"<br>";
-//  		var_dump($col_array);
-		foreach($col_array as $key)
-		{
-			if(isset($doc_data[$key]))
-			{
-				$sqlinsert_keys.=", `$key`";
-				$sqlinsert_value.=", '{$doc_data[$key]}'";
-			}
-		}
-		mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES ($sqlinsert_value)");
-		if(mysql_errno())	throw new MysqlException("Не удалось создать документ");
-		$this->doc=mysql_insert_id();
-		doc_log("CREATE", "FROM {$doc_data['p_doc']} {$from}", 'doc', $this->doc);
+		$data = array_intersect_key($doc_data, $col_array);
+		$data['date'] = $date;
+		$data['type'] = $this->doc_type;
+		$data['user'] = $_SESSION['uid'];
+		
+		$line_id = $db->insertA('doc_list', $data);
+		$this->doc = $line_id;
+		doc_log("CREATE", "FROM {$doc_data['id']} {$from}", 'doc', $this->doc);
 		$this->get_docdata();
 		return $this->doc;
 	}
 	
 	/// Создать документ на основе данных другого документа
-	public function CreateFrom($doc_obj)
+	public function createFrom($doc_obj)
 	{
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=$doc_obj->doc;
-		$this->Create($doc_data);
+		$this->create($doc_data);
 		return $this->doc;
 	}
 	
 	/// Создать документ с товарными остатками на основе другого документа
-	public function CreateFromP($doc_obj)
+	public function createFromP($doc_obj)
 	{
+		global $db;
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=$doc_obj->doc;
-		$this->Create($doc_data);
+		$this->create($doc_data);
 		if($this->sklad_editor_enable)
 		{
-			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
-			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
-			while($nxt=mysql_fetch_row($res))
+			$res=$db->query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
+			while($line = $res->fetch_assoc())
 			{
-				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`, `comm`)
-				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
-				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
+				$line['doc'] = $this->doc;
+				unset($line['id']);
+				$db->insertA('doc_list_pos', $line);				
 			}
 		}
 		return $this->doc;
@@ -164,16 +196,15 @@ class doc_Nulltype
 	{
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=0;
-		$this->Create($doc_data);
+		$this->create($doc_data);
 		if($this->sklad_editor_enable)
 		{
-			$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
-			if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
-			while($nxt=mysql_fetch_row($res))
+			$res=$db->query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
+			while($line = $res->fetch_assoc())
 			{
-				mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`, `comm`)
-				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
-				if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
+				$line['doc'] = $this->doc;
+				unset($line['id']);
+				$db->insertA('doc_list_pos', $line);				
 			}
 		}
 
@@ -186,57 +217,77 @@ class doc_Nulltype
 	/// В новый документ войдут только те наименования, которых нет в других подчинённых документах
 	public function CreateFromPDiff($doc_obj)
 	{
+		global $db;
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=$doc_obj->doc;
 		if($this->sklad_editor_enable)
 		{
-			$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$doc_obj->doc}' AND `type`='{$this->doc_type}'");
-			$child_count=mysql_num_rows($res);
+			$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$doc_obj->doc}' AND `type`='{$this->doc_type}'");
+			$child_count = $res->num_rows;
 		}
-		$this->Create($doc_data);
+		$this->create($doc_data);
 		if($this->sklad_editor_enable)
 		{
 			if($child_count<1)
 			{
-				$res=mysql_query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
-				if(mysql_errno())	throw new MysqlException("Не удалось выбрать номенклатуру!");
-				while($nxt=mysql_fetch_row($res))
+				$res = $db->query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
+				while($line = $res->fetch_assoc())
 				{
-					mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`, `comm`)
-					VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]')");
-					if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
+					$line['doc'] = $this->doc;
+					unset($line['id']);
+					$db->insertA('doc_list_pos', $line);				
 				}
 			}
 			else
 			{
-				$res=mysql_query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
+				$res = $db->query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 				( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
 				INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$doc_obj->doc}' AND `doc_list`.`mark_del`='0'
-				WHERE `b`.`tovar`=`a`.`tovar` ), `a`.`page`
+				WHERE `b`.`tovar`=`a`.`tovar` ) AS `doc_cnt`, `a`.`page`
 				FROM `doc_list_pos` AS `a`
 				WHERE `a`.`doc`='{$doc_obj->doc}'
 				ORDER BY `a`.`id`");
-
-				while($nxt=mysql_fetch_row($res))
+				while($line = $res->fetch_assoc())
 				{
-					if($nxt[4]<$nxt[1])
+					if($line['doc_cnt'] < $line['cnt'])
 					{
-						$n_cnt=$nxt[1]-$nxt[4];
-						mysql_query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`, `page`)
-						VALUES ('{$this->doc}', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]', '$nxt[5]' )");
-						if(mysql_errno())	throw new MysqlException("Не удалось сохранить номенклатуру!");
+						$line['cnt']-=$line['doc_cnt'];
+						unset($line['doc_cnt']);
+						$line['doc'] = $this->doc;
+						unset($line['id']);
+						$db->insertA('doc_list_pos', $line);				
 					}
 				}
 			}
+			$this->recalcSum();
 		}
 		return $this->doc;
+	}
+	
+	/// Пересчитать и вернуть сумму документа, исходя из товаров в нём. Работает только для документов, в которых могут быть товары.
+	/// Для безтоварных документов просто вернёт сумму.
+	public function recalcSum()
+	{
+		global $db;
+		if( !$this->doc )	return 0;
+		if( !$this->sklad_editor_enable )
+			return $this->doc_data['sum'];
+		$sum=0;
+		$res=$db->query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `page`='0'");
+		while($nxt=$res->fetch_row())
+			$sum+=$nxt[0]*$nxt[1];
+		$res->free();
+		$this->setDocData('sum', $sum);
+		return $sum;
 	}
 	
 	/// Послать в связанный заказ событие с заданным типом.
 	/// Полное название события будет doc:{$docname}:{$event_type}
 	/// @param event_type Название события
+	/// TODO: зависимость от дочернего класса выглядит некорректной
 	public function sentZEvent($event_type)
 	{
+		global $db;
 		$event_name="doc:{$this->doc_name}:$event_type";
 		if($this->doc_type==3)	$this->dispatchZEvent($event_name);
 		else
@@ -244,10 +295,9 @@ class doc_Nulltype
 			$pdoc=$this->doc_data['p_doc'];
 			while($pdoc)
 			{
-				$res=mysql_query("SELECT `id`, `type` FROM `doc_list` WHERE `id`=$pdoc");
-				if(mysql_errno())		throw new MysqlException("Не удалось получить тип документа");
-				if(!mysql_num_rows($res))	throw new Exception("Документ не найден");
-				list($pdoc_id, $pdoc_type)=mysql_fetch_row($res);
+				$res = $db->query("SELECT `id`, `type` FROM `doc_list` WHERE `id`='$pdoc'");
+				if(!$res->num_rows)	throw new Exception("Документ не найден");
+				list($pdoc_id, $pdoc_type) = $res->fetch_row();
 				if($pdoc_type==3)
 				{
 					$doc=new doc_Zayavka($pdoc_id);
@@ -258,20 +308,20 @@ class doc_Nulltype
 			}
 		}
 	}
-
+	
+	/// отобразить заголовок документа
 	public function head()
 	{
 		global $tmpl;
 		if($this->doc_type==0)
-			$tmpl->msg("Невозможно создать документ без типа!",'err');
+			throw new Exception("Невозможно создать документ без типа!");
 		else
 		{
-			$uid=@$_SESSION['uid'];
 			if($this->doc_name) $object='doc_'.$this->doc_name;
 			else $object='doc';
-			if(!isAccess($object,'view'))	throw new AccessException("view");
-			doc_menu($this->dop_buttons());
-			$this->DrawHeadformStart();
+			if(!isAccess($object,'view'))	throw new AccessException();
+			doc_menu($this->getDopButtons());
+			$this->drawHeadformStart();
 			$fields=explode(' ',$this->header_fields);
 			foreach($fields as $f)
 			{
@@ -279,11 +329,11 @@ class doc_Nulltype
 				{
 					case 'agent':	$this->DrawAgentField(); break;
 					case 'sklad':	$this->DrawSkladField(); break;
-					case 'kassa':	$this->DrawKassaField();  break;
-					case 'bank':	$this->DrawBankField();  break;
-					case 'cena':	$this->DrawCenaField();  break;
-					case 'sum':	$this->DrawSumField();  break;
-					case 'separator':	$tmpl->AddText("<hr>");  break;
+					case 'kassa':	$this->drawKassaField();  break;
+					case 'bank':	$this->drawBankField();  break;
+					case 'cena':	$this->drawCenaField();  break;
+					case 'sum':	$this->drawSumField();  break;
+					case 'separator':	$tmpl->addContent("<hr>");  break;
 				}
 			}
 			if(method_exists($this,'DopHead'))	$this->DopHead();
@@ -292,46 +342,44 @@ class doc_Nulltype
 		}
 	}
 	
-	/// Применить изменения редактирования
+	/// Применить изменения редактирования заголовка
 	public function head_submit()
 	{
-		global $tmpl;
-		global $uid;
-
+		global $tmpl, $uid, $db;
 		$doc=$this->doc;
 		$type=$this->doc_type;
 
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 
-		$firm_id=rcv('firm');
+		$firm_id=rcvint('firm');
 		settype($firm_id,'int');
 		if($firm_id<=0) $firm_id=1;
 		$tim=time();
 
-		$agent=rcv('agent');
-		$comment=rcv('comment');
+		$agent = rcvint('agent');
+		$date = @strtotime(request('datetime'));
+		$sklad = rcvint('sklad');
+		$subtype = request('subtype');
+		$altnum = rcvint('altnum');
+		$nds = rcvint('nds');
+		$sum = rcvrounded('sum');
+		$bank = rcvint('bank');
+		$kassa = rcvint('kassa');
+		$contract = rcvint('contract');
+		$comment = request('comment');
+		$cena=rcvint('cena');
+		$cost_recalc=rcvint('cost_recalc');
 
-		@$date=strtotime(rcv('datetime'));
+		if($date <= 0) $date=time();
+		if(!$altnum)	$altnum=$this->getNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
 
-		$sklad=rcv('sklad');
-		$subtype=rcv('subtype');
-		$altnum=rcv('altnum');
-		$nds=rcv('nds');
-		$sum=rcv('sum');
-		$bank=rcv('bank');
-		$kassa=rcv('kassa');
-		$contract=rcv('contract');
-
-		$cena=rcv('cena');
-		$cost_recalc=rcv('cost_recalc');
-
-		if($date<=0) $date=time();
-		if(!$altnum)	$altnum=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
-
-		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
+		$_comment=$db->real_escape_string($comment);
+		$_subtype=$db->real_escape_string($subtype);
+		
+		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$_comment', `altnum`='$altnum', `subtype`='$_subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
-		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$comment', '$uid', '$altnum', '$subtype'";
+		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$_comment', '$uid', '$altnum', '$_subtype'";
 		$log_data='';
 		
 		if($this->doc)
@@ -343,11 +391,11 @@ class doc_Nulltype
 			if($this->doc_data['subtype']!=$subtype)	$log_data.="subtype: {$this->doc_data['subtype']}=>$subtype, ";
 		}
 
-		doc_menu($this->dop_buttons());
+		doc_menu($this->getDopButtons());
 
-		if(@$this->doc_data[6])
+		if(@$this->doc_data['ok'])
 			$tmpl->msg("Операция не допускается для проведённого документа!","err");
-		else if(@$this->doc_data[14])
+		else if(@$this->doc_data['mark_del'])
 			$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
 		else
 		{
@@ -364,15 +412,10 @@ class doc_Nulltype
 					$sqlinsert_value.=", '$nds'";
 					if($cost_recalc)
 					{
-						$r=mysql_query("SELECT `id`, `tovar` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-						if(mysql_errno())	throw new MysqlException("Не удалось выбрать список наименований документа");
-						while($l=mysql_fetch_row($r))
-						{
-							$newcost=GetCostPos($l[1], $cena);
-							mysql_query("UPDATE `doc_list_pos` SET `cost`='$newcost' WHERE `id`='$l[0]'");
-							if(mysql_errno())	throw new MysqlException("Не удалось обновть цену строки документа");
-						}
-						DocSumUpdate($this->doc);
+						$r=$db->query("SELECT `id`, `tovar` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+						while($l=$res->fetch_row())
+							$db->update('doc_list_pos', $l[0], 'cost', getCostPos($l[1], $cena));
+						$this->recalcSum();
 					}
 					if($this->doc)
 					{
@@ -406,24 +449,22 @@ class doc_Nulltype
 			if($this->doc)
 			{
 				if(!isAccess($object,'edit'))	throw new AccessException("");
-				$res=mysql_query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='$doc'");
-				if(mysql_errno())	throw new MysqlException("Документ не сохранён");
+				$db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='$doc'");
 				$link="/doc.php?doc=$doc&mode=body";
 				if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 			}
 			else
 			{
 				if(!isAccess($object,'create'))	throw new AccessException("");
-				$res=mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
-				if(mysql_errno())	throw new MysqlException("Документ не сохранён");
-				$this->doc=$doc= mysql_insert_id();
+				$db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
+				$this->doc=$doc= $db->insert_id;
 				$link="/doc.php?doc=$doc&mode=body";
 				doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$doc);
 			}
 
 			if(method_exists($this,'DopSave'))	$this->DopSave();
-			if($cena_update)	mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','$cena')");
-			if(mysql_errno())	throw new MysqlException("Цена не сохранена");
+			if($cena_update)
+				$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','$cena')");
 			if($link) header("Location: $link");
 		}
 		return $this->doc=$doc;
@@ -432,36 +473,38 @@ class doc_Nulltype
 	/// Сохранение заголовка документа и возврат результата в json формате
 	public function json_head_submit()
 	{
-		global $uid, $tmpl;
+		global $uid, $tmpl, $db;
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
-		@$date=strtotime(rcv('datetime'));
+		$date = @strtotime(request('datetime'));
 
-		$firm_id=rcv('firm');
-		settype($firm_id,'int');
+		$firm_id=rcvint('firm', 1);
 		if($firm_id<=0) $firm_id=1;
 		$tim=time();
 
-		$agent=rcv('agent');
-		$comment=rcv('comment');
-		$sklad=rcv('sklad');
-		$subtype=rcv('subtype');
-		$altnum=rcv('altnum');
-		$nds=rcv('nds');
-		$sum=rcv('sum');
-		$bank=rcv('bank');
-		$kassa=rcv('kassa');
-		$cena=rcv('cena');
-		$contract=rcv('contract');
-		settype($contract,'int');
+		$agent = rcvint('agent');
+		$sklad = rcvint('sklad');
+		$altnum = rcvint('altnum');
+		$nds = rcvint('nds');
+		$sum = rcvrounded('sum');
+		$bank = rcvint('bank');
+		$kassa = rcvint('kassa');
+		$cena = rcvint('cena');
+		$contract = rcvint('contract');
 		if($date<=0)	$date=time();
 
-		if(!$altnum)	$altnum=$comment=$this->GetNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
+		$subtype = request('subtype');
+		$comment=request('comment');
+		
+		if(!$altnum)	$altnum=$comment=$this->getNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
+		
+		$_comment=$db->real_escape_string($comment);
+		$_subtype=$db->real_escape_string($subtype);
+		
 
-
-		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$comment', `altnum`='$altnum', `subtype`='$subtype'";
+		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$_comment', `altnum`='$altnum', `subtype`='$_subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
-		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$comment', '$uid', '$altnum', '$subtype'";
+		$sqlinsert_value="'$date', '0', '$firm_id', '".$this->doc_type."', '$_comment', '$uid', '$altnum', '$_subtype'";
 		$log_data='';
 		if($this->doc)
 		{
@@ -475,8 +518,8 @@ class doc_Nulltype
 		$tmpl->ajax=1;
 		try
 		{
-			if($this->doc_data[6])		throw new Exception('Операция не допускается для проведённого документа');
-			else if($this->doc_data[14])	throw new Exception('Операция не допускается для документа, отмеченного для удаления!');
+			if($this->doc_data['ok'])		throw new Exception('Операция не допускается для проведённого документа');
+			else if($this->doc_data['mark_del'])	throw new Exception('Операция не допускается для документа, отмеченного для удаления!');
 			else
 			{
 				$fields=explode(' ',$this->header_fields);
@@ -521,33 +564,31 @@ class doc_Nulltype
 
 				if($this->doc)
 				{
-					if(!isAccess($object,'edit'))	throw new AccessException("Недостаточно прав");
-					$res=mysql_query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->doc}'");
-					if(mysql_errno())	throw new MysqlException("Документ не сохранён");
+					if(!isAccess($object,'edit'))	throw new AccessException();
+					$res = $db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->doc}'");
 					$link="/doc.php?doc={$this->doc}&mode=body";
 					if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 				}
 				else
 				{
-					if(!isAccess($object,'create'))	throw new AccessException("Недостаточно прав");
-					$res=mysql_query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
-					if(mysql_errno())	throw new MysqlException("Документ не сохранён");
-					$this->doc= mysql_insert_id();
+					if(!isAccess($object,'create'))	throw new AccessException();
+					$res = $db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
+					$this->doc= $db->insert_id;
 					$link="/doc.php?doc={$this->doc}&mode=body";
 					doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$this->doc);
 				}
 
 				if(method_exists($this,'DopSave'))	$this->DopSave();
-				if($cena_update)	mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->doc}','cena','$cena')");
-				if(mysql_errno())	throw new MysqlException("Цена не сохранена");
-				if($agent)	$b=DocCalcDolg($agent);
+				if($cena_update)
+					$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->doc}','cena','$cena')");
+				if($agent)	$b=agentCalcDebt($agent);
 				else		$b=0;
-				$tmpl->SetText("{response: 'ok', agent_balance: '$b'}");
+				$tmpl->setContent("{response: 'ok', agent_balance: '$b'}");
 			}
 		}
 		catch( Exception $e)
 		{
-			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
+			$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
 		}
 
 	}
@@ -555,19 +596,18 @@ class doc_Nulltype
 	/// Редактирование тела докумнета
 	public function body()
 	{
-		global $tmpl, $uid;
+		global $tmpl, $db;
 
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 		if(!isAccess($object,'view'))	throw new AccessException("");
-		$doc_altnum=$this->doc_data[9].$this->doc_data[10];
-		$dt=date("Y-m-d H:i:s",$this->doc_data[5]);
-		doc_menu($this->dop_buttons());
-		$tmpl->AddText("<div id='doc_container'>
+		$dt=date("Y-m-d H:i:s",$this->doc_data['date']);
+		doc_menu($this->getDopButtons());
+		$tmpl->addContent("<div id='doc_container'>
 		<div id='doc_left_block'>");
-		$tmpl->AddText("<h1>{$this->doc_viewname} N{$this->doc}</h1>");
+		$tmpl->addContent("<h1>{$this->doc_viewname} N{$this->doc}</h1>");
 
-		$this->DrawLHeadformStart();
+		$this->drawLHeadformStart();
 		$fields=explode(' ',$this->header_fields);
 		foreach($fields as $f)
 		{
@@ -575,35 +615,33 @@ class doc_Nulltype
 			{
 				case 'agent':	$this->DrawAgentField(); break;
 				case 'sklad':	$this->DrawSkladField(); break;
-				case 'kassa':	$this->DrawKassaField();  break;
-				case 'bank':	$this->DrawBankField();  break;
-				case 'cena':	$this->DrawCenaField();  break;
-				case 'sum':	$this->DrawSumField();  break;
-				case 'separator':	$tmpl->AddText("<hr>");  break;
+				case 'kassa':	$this->drawKassaField();  break;
+				case 'bank':	$this->drawBankField();  break;
+				case 'cena':	$this->drawCenaField();  break;
+				case 'sum':	$this->drawSumField();  break;
+				case 'separator':	$tmpl->addContent("<hr>");  break;
 			}
 		}
 		if(method_exists($this,'DopHead'))	$this->DopHead();
 
 		$this->DrawLHeadformEnd();
 
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
+		$res=$db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 		WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные документа-основания");
-		if(@$nxt=mysql_fetch_row($res))
+		if($nxt=$res->fetch_row())
 		{
 			if($nxt[5]) $r='Проведённый';
 			else $r='Непроведённый';
 			$dt=date("d.m.Y H:i:s",$nxt[4]);
-			$tmpl->AddText("<b>Относится к:</b><br>$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt");
+			$tmpl->addContent("<b>Относится к:</b><br>$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt");
 		}
 
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
+		$res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 		WHERE `doc_list`.`p_doc`='{$this->doc}'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные подчинённых документов");
 		$pod='';
-		while(@$nxt=mysql_fetch_row($res))
+		while($nxt = $res->fetch_row())
 		{
 			if($nxt[5]) $r='Проведённый';
 			else $r='Непроведённый';
@@ -611,10 +649,11 @@ class doc_Nulltype
 			//if($pod!='')	$pod.=', ';
 			$pod.="$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt<br>";
 		}
-		if($pod)	$tmpl->AddText("<br><b>Зависящие документы:</b><br>$pod");
-		$tmpl->AddText("<br><b>Дата создания:</b>: {$this->doc_data['created']}<br>");
-		if($this->doc_data[6])$tmpl->AddText("<b>Дата проведения:</b> ".date("Y-m-d H:i:s",$this->doc_data[6])."<br>");
-		$tmpl->AddText("</div>
+		if($pod)	$tmpl->addContent("<br><b>Зависящие документы:</b><br>$pod");
+		$tmpl->addContent("<br><b>Дата создания:</b>: {$this->doc_data['created']}<br>");
+		if($this->doc_data['ok'])
+			$tmpl->addContent("<b>Дата проведения:</b> ".date("Y-m-d H:i:s",$this->doc_data['ok'])."<br>");
+		$tmpl->addContent("</div>
 		<script type=\"text/javascript\">
 
 		addEventListener('load',DocHeadInit,false)
@@ -628,164 +667,133 @@ class doc_Nulltype
 			$tmpl->msg($this->doc_data['agent_comment'].' ','err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
 		}
 
-		$res=@mysql_query("SELECT `doc_cost`.`name` FROM `doc_cost` WHERE `doc_cost`.`id`='{$this->dop_data['cena']}'");
-
-        	$cena=@mysql_result($res,0,0);
-
-        	$res=mysql_query("SELECT `doc_sklady`.`name` FROM `doc_sklady` WHERE `doc_sklady`.`id`='{$this->doc_data[7]}'");
-        	$sklad=@mysql_result($res,0,0);
-
-        	$res=@mysql_query("SELECT `doc_kassa`.`name` FROM `doc_kassa` WHERE `doc_kassa`.`ids`='bank' AND `doc_kassa`.`num`='{$this->doc_data[16]}'");
-        	$bank=@mysql_result($res,0,0);
-
-        	$res=@mysql_query("SELECT `doc_kassa`.`name` FROM `doc_kassa` WHERE `doc_kassa`.`ids`='kassa' AND `doc_kassa`.`num`='{$this->doc_data[15]}'");
-        	$kassa=@mysql_result($res,0,0);
-
-// 		$tmpl->AddText("<b>Дата:</b> $dt, ");
-//
-// 		$fields=explode(' ',$this->header_fields);
-// 		foreach($fields as $f)
-// 		{
-// 			switch($f)
-// 			{
-// 				case 'sklad':	$tmpl->AddText("<b>Склад:</b> $sklad, "); break;
-// 				case 'cena':	$tmpl->AddText("<b>Цена:</b> $cena, ");  break;
-// 				case 'bank':	$tmpl->AddText("<b>банк:</b> $bank, ");  break;
-// 				case 'kassa':	$tmpl->AddText("<b>касса:</b> $kassa, ");  break;
-// 				case 'sum':	$tmpl->AddText("<b>сумма:</b> ".$this->doc_data[11].", ");  break;
-// 			}
-// 		}
-		$tmpl->AddText("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'><br>");
+		$tmpl->addContent("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'><br>");
 		if(strstr($this->header_fields, 'agent'))
 		{
-			//$tmpl->AddText("<b>Агент-партнер:</b> ".$this->doc_data[3].", ");
-			$dolg=DocCalcDolg($this->doc_data[2]);
+			$dolg=agentCalcDebt($this->doc_data['agent']);
 			if($dolg>0)
-				$tmpl->AddText("<b>Общий долг агента:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'><b class=f_red>$dolg</b> рублей</a><br>");
+				$tmpl->addContent("<b>Общий долг агента:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'><b class=f_red>$dolg</b> рублей</a><br>");
 			else if($dolg<0)
-				$tmpl->AddText("<b>Наш общий долг:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data[2]}'>$dolg рублей</a><br>");
+				$tmpl->addContent("<b>Наш общий долг:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'>$dolg рублей</a><br>");
 		}
 
  		if(method_exists($this,'DopBody'))
  			$this->DopBody();
 
 
-		if($this->doc_data[4]) $tmpl->AddText("<b>Примечание:</b> ".$this->doc_data[4]."<br>");
+		if($this->doc_data['comment'])
+			$tmpl->addContent("<b>Примечание:</b> ".html_out($this->doc_data['comment'])."<br>");
 		if($this->sklad_editor_enable)
 		{
 			include_once('doc.poseditor.php');
 			$poseditor=new DocPosEditor($this);
 			$poseditor->cost_id=$this->dop_data['cena'];
 			$poseditor->sklad_id=$this->doc_data['sklad'];
-			$poseditor->SetEditable($this->doc_data[6]?0:1);
-			$tmpl->AddText($poseditor->Show());
+			$poseditor->SetEditable($this->doc_data['ok']?0:1);
+			$tmpl->addContent($poseditor->Show());
 		}
 
-		$tmpl->AddText("<div id='statusblock'>");
-		
-		$tmpl->AddText("</div>");
-		$tmpl->AddText("<br><br>
-		</div></div>");
+		$tmpl->addContent("<div id='statusblock'></div><br><br></div></div>");
 	}
 
 	public function Apply($doc=0, $silent=0)
 	{
-		global $tmpl;
-		global $uid;
+		global $tmpl, $db;
+		
 		$tmpl->ajax=1;
-		$cnt=0;
-		$tim=time();
 
 		try
 		{
-			mysql_query("START TRANSACTION");
-			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
-
-			if(method_exists($this,'DocApply'))     $this->DocApply($silent);
-			else    throw new Exception("Метод проведения данного документа не определён!");
-			mysql_query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
+			if($this->doc_data['mark_del'])	throw new Exception("Документ помечен на удаление!");
+			if(!method_exists($this,'DocApply'))
+				throw new Exception("Метод проведения данного документа не определён!");
+			$db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
+			$db->startTransaction();
+			$this->DocApply($silent);
+			$db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
 		catch(MysqlException $e)
 		{
-			mysql_query("ROLLBACK");
+			$db->rollback();
 			if(!$silent)
 			{
-				$tmpl->AddText("<h3>".$e->getMessage()."</h3>");
+				$tmpl->addContent("<h3>".$e->getMessage()."</h3>");
 				doc_log("ERROR APPLY {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
 			}
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			$db->query("UNLOCK TABLES");
 			return $e->getMessage().$e->sql_error;
 		}
 		catch( Exception $e)
 		{
-			mysql_query("ROLLBACK");
+			$db->rollback();
 			if(!$silent)
 			{
-				$tmpl->AddText("<h3>".$e->getMessage()."</h3>");
+				$tmpl->addContent("<h3>".$e->getMessage()."</h3>");
 				doc_log("ERROR APPLY {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
 			}
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			$db->query("UNLOCK TABLES");
 			return $e->getMessage();
 		}
 
-		mysql_query("COMMIT");
+		$db->commit();
 		if(!$silent)
 		{
 			doc_log("APPLY {$this->doc_name}", '', 'doc', $this->doc);
-			$tmpl->AddText("<h3>Докумен успешно проведён!</h3>");
+			$tmpl->addContent("<h3>Докумен успешно проведён!</h3>");
 		}
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+		$db->query("UNLOCK TABLES");
 		return;
 	}
 
 	public function ApplyJson()
 	{
-		global $uid;
-		$tim=time();
+		global $db;
 
-		try
-		{
+		try {
 			if($this->doc_name) $object='doc_'.$this->doc_name;
 			else $object='doc';
-			if(!isAccess($object,'apply'))	throw new AccessException("");
+			if(!isAccess($object,'apply'))	throw new AccessException();
 			if($this->doc_data['mark_del'])	throw new Exception("Документ помечен на удаление!");
-			$res=mysql_query("SELECT `recalc_active` FROM `variables`");
-			if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные блокировок!");
-			if(mysql_result($res,0,0))	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить данные блокировок!");
-
-			mysql_query("START TRANSACTION");
-			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
-			if(method_exists($this,'DocApply'))	$this->DocApply(0);
-			else	throw new Exception("Метод проведения данного документа не определён!");
-			mysql_query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
+			
+			$res = $db->query("SELECT `recalc_active` FROM `variables`");
+			if($res->num_rows)	list($lock)=$res->fetch_row();
+			else	$lock=0;
+			if($lock)	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
+			
+			if(!method_exists($this,'DocApply'))
+				throw new Exception("Метод проведения данного документа не определён!");
+			
+			$db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");			
+			$db->startTransaction();
+			
+			$this->DocApply(0);
+			$db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
-		catch(MysqlException $e)
-		{
-			mysql_query("ROLLBACK");
+		catch(MysqlException $e) {
+			$db->rollback();
 			$e->WriteLog();
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			$db->query("UNLOCK TABLES");
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
 			return $json;
 		}
-		catch( Exception $e)
-		{
-			mysql_query("ROLLBACK");
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+		catch( Exception $e) {
+			$db->rollback();
+			$db->query("UNLOCK TABLES");
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
 			return $json;
 		}
 
-		mysql_query("COMMIT");
+		$db->commit();
 		doc_log("APPLY {$this->doc_name}", '', 'doc', $this->doc);
-		$json=' { "response": "1", "message": "Документ успешно проведён!", "buttons": "'.$this->cancel_buttons().'", "sklad_view": "hide", "statusblock": "Дата проведения: '.date("Y-m-d H:i:s").'", "poslist": "refresh" }';
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+		$json=' { "response": "1", "message": "Документ успешно проведён!", "buttons": "'.$this->getCancelButtons().'", "sklad_view": "hide", "statusblock": "Дата проведения: '.date("Y-m-d H:i:s").'", "poslist": "refresh" }';
+		$db->query("UNLOCK TABLES");
 		return $json;
 	}
 
 	public function CancelJson()
 	{
-		global $uid;
+		global $db, $tmpl;
+		
 		$tim=time();
 		$dd=date_day($tim);
 		if($this->doc_name) $object='doc_'.$this->doc_name;
@@ -796,40 +804,41 @@ class doc_Nulltype
 
 			if( !isAccess($object,'cancel') )
 				if( (!isAccess($object,'cancel')) && ($dd>$this->doc_data['date']) )
-					throw new AccessException("");
-
-			$res=mysql_query("SELECT `recalc_active` FROM `variables`");
-			if(mysql_errno())	throw new MysqlException("Не удалось выбрать данные блокировок!");
-			if(mysql_result($res,0,0))	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить данные блокировок!");
-
-			mysql_query("START TRANSACTION");
-			mysql_query("LOCK TABLE `doc_list`, `doc_list_pos`, `doc_base_cnt`, `doc_kassy` WRITE ");
+					throw new AccessException();
+			if(!method_exists($this,'DocCancel'))
+				throw new Exception("Метод отмены данного документа не определён!");
+			
+			$res = $db->query("SELECT `recalc_active` FROM `variables`");
+			if($res->num_rows)	list($lock)=$res->fetch_row();
+			else	$lock=0;
+			if($lock)	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
+			
+			$db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
+			$db->startTransaction();
 			$this->get_docdata();
-			if(method_exists($this,'DocCancel'))	$this->DocCancel();
-			else	throw new Exception("Метод отмены данного документа не определён!");
-			mysql_query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
+			$this->DocCancel();
+			$db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
-		catch(MysqlException $e)
+		catch(mysqli_sql_exception $e)
 		{
-			mysql_query("ROLLBACK");
-			$e->WriteLog();
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			$db->rollback();
+			$id = $tmpl->logger($e->getMessage());
+			$db->query("UNLOCK TABLES");
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
 			return $json;
 		}
 		catch( AccessException $e)
 		{
-			mysql_query("ROLLBACK");
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			$db->rollback();
+			$db->query("UNLOCK TABLES");
 			doc_log("CANCEL-DENIED {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
 			$json=" { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>".$e->getMessage()."<br>Вы можете <a href='/message.php?mode=petition&doc={$this->doc}'>попросить руководителя</a> выполнить отмену этого документа.\" }";
 			return $json;
 		}
 		catch( Exception $e)
 		{
-			mysql_query("ROLLBACK");
-			mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+			$db->rollback();
+			$db->query("UNLOCK TABLES");
 			$msg='';
 			if( isAccess($object,'forcecancel') )
 				$msg="<br>Вы можете <a href='/doc.php?mode=forcecancel&amp;doc={$this->doc}'>принудительно снять проведение</a>.";
@@ -837,33 +846,54 @@ class doc_Nulltype
 			return $json;
 		}
 
-		mysql_query("COMMIT");
+		$db->commit();
 		doc_log("CANCEL {$this->doc_name}", '', 'doc', $this->doc);
-		$json=' { "response": "1", "message": "Документ успешно отменен!", "buttons": "'.$this->apply_buttons().'", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_list_pos`, `doc_base`");
+		$json=' { "response": "1", "message": "Документ успешно отменен!", "buttons": "'.$this->getApplyButtons().'", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
+		$db->query("UNLOCK TABLES");
 		return $json;
 	}
-
-	/// Отменить проведение
-	function Cancel($doc)
+	
+	/// Провести документ
+	/// @param silent Не менять отметку проведения
+	protected function DocApply($silent=0)
 	{
-		global $tmpl;
-		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",err);
+		global $db;
+		if($silent)	return;
+		$data = $db->selectRow('doc_list', $this->doc);
+		if(!$data)
+			throw new Exception('Ошибка выборки данных документа при проведении!');
+		if($data['ok'])
+			throw new Exception('Документ уже проведён!');
+		$db->update('doc_list', $this->doc, 'ok', time() );
+		$this->sentZEvent('apply');
+	}
+	
+	/// отменить проведение документа
+	protected function DocCancel()
+	{
+		global $db;
+		$data = $db->select('doc_list', $this->doc);
+		if(!$data)
+			throw new Exception('Ошибка выборки данных документа!');
+		if(!$data['ok'])
+			throw new Exception('Документ не проведён!');
+		$db->update('doc_list', $this->doc, 'ok', 0 );
+		$this->sentZEvent('cancel');			
 	}
 
 	/// Отменить проведение, не обращая внимание на структуру подчинённости
 	function ForceCancel()
 	{
-		global $tmpl, $uid;
+		global $tmpl, $db;
 
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 		if(!isAccess($object,'forcecancel'))	throw new AccessException("");
 
-		$opt=rcv('opt');
+		$opt = request('opt');
 		if($opt=='')
 		{
-			$tmpl->AddText("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
+			$tmpl->addContent("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
 			<center>
 			<a href='/docj.php' style='color: #0b0'>Нет</a> |
 			<a href='/doc.php?mode=forcecancel&amp;opt=yes&amp;doc={$this->doc}' style='color: #f00'>Да</a>
@@ -872,9 +902,8 @@ class doc_Nulltype
 		else
 		{
 			doc_log("FORCE CANCEL {$this->doc_name}",'', 'doc', $this->doc);
-			$res=mysql_query("UPDATE `doc_list` SET `ok`='0', `err_flag`='1' WHERE `id`='{$this->doc}'");
-			if(mysql_errno())	throw new MysqlException("Не удалось установить флаги!");
-			mysql_query("UPDATE `variables` SET `corrupted`='1'");
+			$db->query("UPDATE `doc_list` SET `ok`='0', `err_flag`='1' WHERE `id`='{$this->doc}'");
+			$db->query("UPDATE `variables` SET `corrupted`='1'");
 			$tmpl->msg("Всё, сделано.","err","Снятие отметки проведения");
 		}
 
@@ -883,7 +912,7 @@ class doc_Nulltype
 	/// Отправка документа по факсу
 	final function SendFax($opt='')
 	{
-		global $tmpl;
+		global $tmpl,$db;
 		$tmpl->ajax=1;
 		try
 		{
@@ -895,13 +924,13 @@ class doc_Nulltype
 					if($str)	$str.=",";
 					$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
 				}
-				$res=mysql_query("SELECT `fax_phone` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
-				$faxnum=@mysql_result($res,0,0);
-				$tmpl->SetText("{response: 'item_list', faxnum: '$faxnum', content: [$str]}");
+				$data = $db->selectRow('doc_agent', $this->doc_data['agent']);
+				if($data==0)	throw new Exception ("Агент не найден");
+				$tmpl->setContent("{response: 'item_list', faxnum: '{$data['fax_phone']}', content: [$str]}");
 			}
 			else
 			{
-				$faxnum=$_GET['faxnum'];
+				$faxnum=request('faxnum');
 				if($faxnum=='')		throw new Exception('Номер факса не указан');
 
 				if(!preg_match('/^\+\d{8,15}$/', $faxnum))
@@ -913,31 +942,32 @@ class doc_Nulltype
 					if($form['name']==$opt)	$method=$form['method'];
 				}
 				if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-				$res=@mysql_query("SELECT `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
-				$email=@mysql_result($res,0,0);
+				
 				include_once('sendfax.php');
 				$fs=new FaxSender();
 				$fs->setFileBuf($this->$method(1));
 				$fs->setFaxNumber($faxnum);
-				$fs->setNotifyMail($email);
+				
+				$res = $db->query("SELECT `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
+				if($res->num_rows){
+					list($email)=$res->fetch_row();
+					$fs->setNotifyMail($email);
+				}
 				$res=$fs->send();
-				$tmpl->SetText("{response: 'send'}");
+				$tmpl->setContent("{response: 'send'}");
 				doc_log("Send FAX", $faxnum, 'doc', $this->doc);
-
-
 			}
 		}
 		catch(Exception $e)
 		{
-			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
+			$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
 		}
-
 	}
 	
 	/// Отправка документа по электронной почте
 	final function SendEMail($opt='')
 	{
-		global $tmpl;
+		global $tmpl, $db;
 		$tmpl->ajax=1;
 		try
 		{
@@ -949,17 +979,17 @@ class doc_Nulltype
 					if($str)	$str.=",";
 					$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
 				}
-				$res=mysql_query("SELECT `email` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
-				$email=@mysql_result($res,0,0);
-				$tmpl->SetText("{response: 'item_list', email: '$email', content: [$str]}");
+				$data = $db->selectRow('doc_agent', $this->doc_data['agent']);
+				if($data == 0)	throw new Exception ("Агент не найден");
+				$tmpl->setContent("{response: 'item_list', email: '{$data['email']}', content: [$str]}");
 			}
 			else
 			{
-				$email=rcv('email');
-				$comment=rcv('comment');
+				$email=  request('email');
+				$comment=  request('comment');
 				if($email=='')
 				{
-					$tmpl->SetText("{response: 'err', text: 'Адрес электронной почты не указан!'}");
+					$tmpl->setContent("{response: 'err', text: 'Адрес электронной почты не указан!'}");
 				}
 				else
 				{
@@ -970,8 +1000,8 @@ class doc_Nulltype
 						if($form['name']==$opt)	$method=$form['method'];
 					}
 					if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-					$this->SendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->doc_name.".pdf");
-					$tmpl->SetText("{response: 'send'}");
+					$this->sendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->doc_name.".pdf");
+					$tmpl->setContent("{response: 'send'}");
 					doc_log("Send email", $email, 'doc', $this->doc);
 
 				}
@@ -979,51 +1009,69 @@ class doc_Nulltype
 		}
 		catch(Exception $e)
 		{
-			$tmpl->SetText("{response: 'err', text: '".$e->getMessage()."'}");
+			$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
 		}
 
 	}
 
 	/// Печать документа
-	function Printform($doc, $opt='')
+	function Printform($opt='')
 	{
 		global $tmpl;
 		$tmpl->ajax=1;
-		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",'err');
-	}
-	
-	/// Формирование другого документа на основании текущего
-	function MorphTo($doc, $target_type)
-	{
-		global $tmpl;
-		$tmpl->msg("Неизвестный тип документа, либо документ в процессе разработки!",'err');
+		if($opt=='')
+		{
+			$str='';
+			foreach($this->PDFForms as $form)
+			{
+				if($str)	$str.=",";
+				$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
+			}
+
+			$tmpl->setContent("{response: 'item_list', content: [$str]}");
+		}
+		else
+		{
+			$method='';
+			foreach($this->PDFForms as $form)
+			{
+				if($form['name']==$opt)	$method=$form['method'];
+			}
+			if(!method_exists($this, $method))
+				throw new Exception('Печатная форма не зарегистрирована');
+			doc_log("PRINT", $opt, 'doc', $this->doc);
+			$this->sentZEvent('print');
+			
+			$this->$method();
+		}
+
 	}
 	
 	/// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function DelExec($doc)
 	{
-		$res=mysql_query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(mysql_result($res,0,0)) 	throw new Exception("Нельзя удалить проведённый документ");
-		$res=mysql_query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-		if(mysql_num_rows($res)) 	throw new Exception("Нельзя удалить документ с неудалёнными потомками");
-		mysql_query("DELETE FROM `doc_list_pos` WHERE `doc`='$doc'");
-		if(mysql_errno())		throw new MysqlException("Не удалось удалить товарные наименования");
-		mysql_query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-		if(mysql_errno())		throw new MysqlException("Не удалось удалить дополнительные данные");
-		mysql_query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-		if(mysql_errno())		throw new MysqlException("Не удалось удалить документ");
+		global $db;
+		$res = $db->query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
+		if(!$res->num_rows)	throw new Exception("Документ не найден");
+		list($ok) = $res->fetch_row();
+		if($ok)			throw new Exception("Нельзя удалить проведённый документ");
+		$res = $db->query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
+		if($res->num_rows) 	throw new Exception("Нельзя удалить документ с неудалёнными потомками");
+		$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='$doc'");
+		$db->query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
+		$db->query("DELETE FROM `doc_list` WHERE `id`='$doc'");
    	}
 
    	/// Сделать документ потомком указанного документа
    	function Connect($p_doc)
    	{
-   		if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
-   		if($this->doc_data[6])	throw new Exception("Операция не допускается для проведённого документа!");
+		global $db;
+   		if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException();
+   		if($this->doc_data['ok'])	throw new Exception("Операция не допускается для проведённого документа!");
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 		if(!isAccess($object,'edit'))	throw new AccessException("");
-		mysql_query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
-   		if(mysql_errno())	throw new MysqlException("Не удалось обновить документ!");
+		$db->query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
    	}
 
    	function ConnectJson($p_doc)
@@ -1039,7 +1087,7 @@ class doc_Nulltype
 		}
 	}
 
-   	/// Получение информации, не связанной со складом, и допустимых для проведённых докеументов
+   	/// Получение информации, не связанной со складом, и допустимых для проведённых документов
    	function GetInfo()
    	{
 		global $tmpl;
@@ -1051,36 +1099,32 @@ class doc_Nulltype
 			if($opt=='jgetcontracts')
 			{
 
-				$agent=rcv('agent');
-				$res=mysql_query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
-				FROM `doc_list`
+				$agent = rcvint('agent');
+				$res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value` FROM `doc_list`
 				LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
 				WHERE `agent`='$agent' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
-				if(mysql_errno())	throw new MysqlException("Не удаётся получить список договоров");
 				$list='';
-				while($nxt=mysql_fetch_row($res))
+				while($nxt = $res->fetch_row())
 				{
 					if($list)	$list.=", ";
 					$list.="{ id: '$nxt[0]', name: '$nxt[1]' }";
 				}
 				$str="{ response: 'contract_list', content: [ $list ] }";
-				$tmpl->SetText($str);
+				$tmpl->setContent($str);
 			}
 		}
 		else	throw new AccessException('Недостаточно привилегий');
    	}
 
-   	function SendDocEMail($email, $comment, $docname, $data, $filename, $body='')
+	/// отправка документа по электронной почте
+   	function sendDocEMail($email, $comment, $docname, $data, $filename, $body='')
    	{
-		global $CONFIG;
+		global $CONFIG, $db;
 		require_once($CONFIG['location'].'/common/email_message.php');
 
-		$res=mysql_query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `id`='{$this->doc_data['user']}'");
-		$doc_autor=@mysql_fetch_assoc($res);
-
-		$res=mysql_query("SELECT `name`, `fullname`, `email` FROM `doc_agent` WHERE `id`='{$this->doc_data['agent']}'");
-		$agent=@mysql_fetch_assoc($res);
-
+		$doc_autor = $db->selectRowA('users_worker_info', $this->doc_data['user'], array('worker_real_name', 'worker_phone', 'worker_email'));
+		$agent = $db->selectRowA('doc_agent', $this->doc_data['agent'], array('name', 'fullname', 'email'));
+		
 		$email_message=new email_message_class();
 		$email_message->default_charset="UTF-8";
 		if($agent['fullname'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['fullname']);
@@ -1122,9 +1166,8 @@ class doc_Nulltype
 	/// Служебные опции
 	function _Service($opt, $pos)
 	{
-		//if(!$this->sklad_editor_enable) return 0;
-		global $tmpl;
-		global $uid;
+		global $tmpl, $uid, $db;
+		
 		$tmpl->ajax=1;
 		$doc=$this->doc;
 		include_once('doc.poseditor.php');
@@ -1137,26 +1180,24 @@ class doc_Nulltype
 			// Json-вариант списка товаров
 			if($opt=='jget')
 			{
-				$doc_sum=DocSumUpdate($this->doc);
+				$doc_sum = $this->recalcSum();
 				$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";
-				$tmpl->AddText($str);
+				$tmpl->addContent($str);
 			}
 			// Снять пометку на удаление
 			else if($opt=='jundeldoc')
 			{
 				try
 				{
-					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");
-
-					$res=mysql_query("UPDATE `doc_list` SET `mark_del`='0' WHERE `id`='{$this->doc}'");
-					if(!$res)	throw new MysqlException("Не удалось снять метку");
+					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");	
+					$db->update('doc_list', $this->doc, 'mark_del', 0);
 					doc_log("UNDELETE", '', "doc", $this->doc);
-					$json=' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "'.$this->apply_buttons().'", "statusblock": "Документ не будет удалён" }';
-					$tmpl->SetText($json);
+					$json=' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "'.$this->getApplyButtons().'", "statusblock": "Документ не будет удалён" }';
+					$tmpl->setContent($json);
 				}
 				catch(Exception $e)
 				{
-					$tmpl->SetText("{response: 0, message: '".$e->getMessage()."'}");
+					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
 				}
 			}
 			/// TODO: Это тоже переделать!
@@ -1167,64 +1208,64 @@ class doc_Nulltype
 			// Получение данных наименования
 			else if($opt=='jgpi')
 			{
-				$pos=rcv('pos');
-				$tmpl->AddText($poseditor->GetPosInfo($pos));
+				$pos=rcvint('pos');
+				$tmpl->addContent($poseditor->GetPosInfo($pos));
 			}
 			// Json вариант добавления позиции
 			else if($opt=='jadd')
 			{
 				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
-				$pos=rcv('pos');
-				$tmpl->SetText($poseditor->AddPos($pos));
+				$pos=rcvint('pos');
+				$tmpl->setContent($poseditor->AddPos($pos));
 			}
 			// Json вариант удаления строки
 			else if($opt=='jdel')
 			{
 				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
-				$line_id=rcv('line_id');
-				$tmpl->SetText($poseditor->Removeline($line_id));
+				$line_id=rcvint('line_id');
+				$tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
 			else if($opt=='jup')
 			{
 				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
-				$line_id=rcv('line_id');
-				$value=rcv('value');
-				$type=rcv('type');
-				$tmpl->SetText($poseditor->UpdateLine($line_id, $type, $value));
+				$line_id=rcvint('line_id');
+				$value = request('value');
+				$type = request('type');
+				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 			}
 			// Получение номенклатуры выбранной группы
 			else if($opt=='jsklad')
 			{
-				$group_id=rcv('group_id');
+				$group_id=rcvint('group_id');
 				$str="{ response: 'sklad_list', group: '$group_id',  content: [".$poseditor->GetSkladList($group_id)."] }";
-				$tmpl->SetText($str);
+				$tmpl->setContent($str);
 			}
 			// Поиск по подстроке по складу
 			else if($opt=='jsklads')
 			{
-				$s=rcv('s');
+				$s=request('s');
 				$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";
-				$tmpl->SetText($str);
+				$tmpl->setContent($str);
 			}
 			// Серийные номера
 			else if($opt=='jsn')
 			{
-				$action=rcv('a');
-				$line_id=rcv('line');
-				$data=rcv('data');
-				$tmpl->SetText($poseditor->SerialNum($action, $line_id, $data) );
+				$action=request('a');
+				$line_id=request('line');
+				$data=request('data');
+				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data) );
 			}
 			// Сброс цен
 			else if($opt=='jrc')
 			{
-				$this->ResetCost();
-				DocSumUpdate($this->doc);
+				$this->resetCost();
+				$this->recalcSum();
 			}
 			// Сортировка наименований
 			else if($opt=='jorder')
 			{
-				$by=rcv('by');
+				$by=request('by');
 				$poseditor->reOrder($by);
 			}
 			else if($opt=='jdeldoc')
@@ -1234,22 +1275,19 @@ class doc_Nulltype
 					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");
 					$tim=time();
 
-					$res=mysql_query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `mark_del`='0'");
-					if(!$res)	throw new MysqlException("Не удалось получить список потомков");
-					if(!mysql_num_rows($res)) // Если есть потомки - нельзя удалять
-					{
-						$res=mysql_query("UPDATE `doc_list` SET `mark_del`='$tim' WHERE `id`='{$this->doc}'");
-						if(!$res)	throw new MysqlException("Не удалось пометить на удаление");
-						doc_log("MARKDELETE",  '', "doc", $this->doc);
-						$this->doc_data['mark_del']=$tim;
-						$json=' { "response": "1", "message": "Пометка на удаление установлена!", "buttons": "'.$this->apply_buttons().'", "statusblock": "Документ помечен на удаление" }';
-						$tmpl->SetText($json);
-					}
-					else	throw new Exception("Есть подчинённые не удалённые документы. Удаление невозможно.");
+					$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `mark_del`='0'");
+					if($res->num_rows)
+						throw new Exception("Есть подчинённые не удалённые документы. Удаление невозможно.");
+					$db->update('doc_list', $this->doc, 'mark_del', $tim);
+					doc_log("MARKDELETE",  '', "doc", $this->doc);
+					$this->doc_data['mark_del']=$tim;
+					$json=' { "response": "1", "message": "Пометка на удаление установлена!", "buttons": "'.$this->getApplyButtons().'", "statusblock": "Документ помечен на удаление" }';
+					$tmpl->setContent($json);
+						
 				}
 				catch(Exception $e)
 				{
-					$tmpl->SetText("{response: 0, message: '".$e->getMessage()."'}");
+					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
 				}
 			}
 			// Не-json обработчики
@@ -1259,83 +1297,77 @@ class doc_Nulltype
 				if($this->doc_type==1)		$column='prix_list_pos';
 				else if($this->doc_type==2)	$column='rasx_list_pos';
 				else				throw new Exception("В данном документе серийные номера не используются!");
-				$res=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='$pos'");
-				$tmpl->AddText("<div style='width: 300px; height: 200px; border: 1px solid #ccc; overflow: auto;'><table width='100%' id='sn_list'>
+				$res = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='$pos'");
+				$tmpl->addContent("<div style='width: 300px; height: 200px; border: 1px solid #ccc; overflow: auto;'><table width='100%' id='sn_list'>
 				<tr><td style='width: 20px'><td>");
-				while($nxt=mysql_fetch_row($res))
+				while($nxt=$res->fetch_row())
 				{
-					$tmpl->AddText("<tr id='snl$nxt[0]'><td><img src='/img/i_del.png' alt='Удалить'><td>$nxt[1]");
+					$tmpl->addContent("<tr id='snl$nxt[0]'><td><img src='/img/i_del.png' alt='Удалить'><td>$nxt[1]");
 				}
-				$tmpl->AddText("</table></div>
+				$tmpl->addContent("</table></div>
 				<input type='text' name='sn' id='sn'><button type='button' onclick='DocSnAdd($doc,$pos);'>&gt;&gt;</button>");
 			}
 			else if($opt=='snp')
 			{
-				$pos=rcv('pos');
-				$sn=rcv('sn');
+				$pos=rcvint('pos');
 				$tmpl->ajax=1;
 
-				$tmpl->SetText("");
-				$res=mysql_query("SELECT `tovar` FROM `doc_list_pos` WHERE `id`='$pos'");
-				if(mysql_errno())	throw new MysqlException("Не удалось получить строку докумнета!");
-				$pos_id=mysql_result($res,0,0);
-				$res=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn`
+				$tmpl->setContent("");
+				$data = $db->selectRowA('doc_list_pos', $pos, array('tovar'));
+				list($pos_id) = $data;
+				if(!$pos_id)	throw new Exception ("Строка не найдена");
+				
+				$res = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn`
 				INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`prix_list_pos`
 				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`ok`>'0'
 				WHERE `pos_id`='$pos_id'  AND `rasx_list_pos` IS NULL");
-				if(mysql_errno())	throw new MysqlException("Не удалось выбрать номер");
-				while($nxt=mysql_fetch_row($res))
-				{
-					$nxt[1]=unhtmlentities($nxt[1]);
-					$tmpl->AddText("$nxt[1]|$nxt[0]\n");
+				
+				while($nxt=$res->fetch_row()){
+					$nxt[1]=html_in($nxt[1]);
+					$tmpl->addContent("$nxt[1]|$nxt[0]\n");
 				}
 
 			}
 			else if($opt=='sns')
 			{
-				$pos=rcv('pos');
-				$sn=rcv('sn');
+				$pos = rcvint('pos');
+				$sn = request('sn');
 				$tmpl->ajax=1;
 				try
 				{
-					$res=mysql_query("SELECT `tovar` FROM `doc_list_pos` WHERE `id`='$pos'");
-					if(mysql_errno())	throw new MysqlException("Не удалось получить строку докумнета!");
-					$pos_id=mysql_result($res,0,0);
+					$data = $db->selectRowA('doc_list_pos', $pos, array('tovar'));
+					list($pos_id) = $data;
+					if(!$pos_id)	throw new Exception ("Строка не найдена");
 					if($this->doc_type==1)
 					{
-						if($sn=='')		throw new Exception("Серийный номер не заполнен");
-						$res=mysql_query("INSERT INTO `doc_list_sn` (`num`, `pos_id`, `prix_list_pos`) VALUES ('$sn', '$pos_id', '$pos')");
-						if(mysql_errno())	throw new MysqlException("Не удалось добавить серийный номер");
-						$ins_id=mysql_insert_id();
-						$tmpl->SetText("{response: 1, sn_id: '$ins_id', sn: '$sn'}");
-
-						//$tmpl->msg("Добавлено!");
+						if($sn === '')		throw new Exception("Серийный номер не заполнен");
+						$data = array('num'=>$sn, 'pos_id'=>$pos_id, 'prix_list_pos'=>$pos);
+						$ins_id = $db->insertA('doc_list_sn', $data);
+						$tmpl->setContent("{response: 1, sn_id: '$ins_id', sn: '$sn'}");
 					}
 					else if($this->doc_type==2)
 					{
-						$res=mysql_query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn`
+						$res = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn`
 						INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`prix_list_pos`
 						INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`ok`>'0'
 						WHERE `pos_id`='$pos_id' AND `num`='$sn' AND `rasx_list_pos` IS NULL");
-						if(mysql_errno())	throw new MysqlException("Не удалось выбрать номер");
-						if(!$nxt=mysql_fetch_row($res))
+						if(!$res->num_rows)
 						{
-							$tmpl->SetText("{response: 0, message: 'Номер не найден, уже добавлен или находится в непроведённом документе!'}");
+							$tmpl->setContent("{response: 0, message: 'Номер не найден, уже добавлен или находится в непроведённом документе!'}");
 						}
 						else
 						{
-							mysql_query("UPDATE `doc_list_sn` SET `rasx_list_pos`='$pos' WHERE `id`='$nxt[0]'");
-							if(mysql_errno())	throw new MysqlException("Не удалось записать номер");
-							$tmpl->SetText("{response: 1, sn_id: '$nxt[0]', sn: '$sn'}");
+							$nxt = $res->fetch_row();
+							$db->update('doc_list_sn', $nxt[0], 'rasx_list_pos', $pos);
+							$tmpl->setContent("{response: 1, sn_id: '$nxt[0]', sn: '$sn'}");
 						}
 					}
 					else				throw new Exception("В данном документе серийные номера не используются!");
 				}
 				catch(Exception $e)
 				{
-					$tmpl->SetText("{response: 0, message: '".$e->getMessage()."'}");
+					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
 				}
-				//$tmpl->logger("Save sn",0,"doc:$doc, type:".$this->doc_name.", opt:$opt, pos:$pos, mysql:".mysql_error());
 			}
 			else return 0;
 			return 1;
@@ -1343,88 +1375,86 @@ class doc_Nulltype
 		else $tmpl->msg("Недостаточно привилегий для $uid выполнения операции над $object!","err");
 	}
 
-	protected function DrawLHeadformStart()
+	protected function drawLHeadformStart()
 	{
-		$this->DrawHeadformStart('j');
+		$this->drawHeadformStart('j');
 	}
 	
 	/// Отобразить заголовок шапки документа
-	protected function DrawHeadformStart($alt='')
+	protected function drawHeadformStart($alt='')
 	{
-		global $tmpl, $CONFIG;
-		if($this->doc_data[5])	$dt=date("Y-m-d H:i:s",$this->doc_data[5]);
+		global $tmpl, $CONFIG, $db;
+				
+		if($this->doc_data['date'])	$dt=date("Y-m-d H:i:s",$this->doc_data['date']);
 		else			$dt=date("Y-m-d H:i:s");
-		$tmpl->AddText("<form method='post' action='' id='doc_head_form'>
+		$tmpl->addContent("<form method='post' action='' id='doc_head_form'>
 		<input type='hidden' name='mode' value='{$alt}heads'>
 		<input type='hidden' name='type' value='".$this->doc_type."'>");
 		if(isset($this->doc_data['id']))
-			$tmpl->AddText("<input type='hidden' name='doc' value='".$this->doc_data[0]."'>");
-		if(@$this->doc_data['mark_del']) $tmpl->AddText("<h3>Документ помечен на удаление!</h3>");
-		$tmpl->AddText("
+			$tmpl->addContent("<input type='hidden' name='doc' value='".$this->doc_data['id']."'>");
+		if(@$this->doc_data['mark_del']) $tmpl->addContent("<h3>Документ помечен на удаление!</h3>");
+		$tmpl->addContent("
 		<table id='doc_head_main'>
 		<tr><td class='altnum'>А. номер</td><td class='subtype'>Подтип</td><td class='datetime'>Дата и время</td><tr>
 		<tr class='inputs'>
-		<td class='altnum'><input type='text' name='altnum' value='".@$this->doc_data['altnum']."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."', 'anum', 'sudata', 'datetime', 'firm_id')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
-		<td class='subtype'><input type='text' name='subtype' value='".@$this->doc_data['subtype']."' id='sudata'></td>
+		<td class='altnum'><input type='text' name='altnum' value='".$this->doc_data['altnum']."' id='anum'><a href='#' onclick=\"return GetValue('/doc.php?mode=incnum&type=".$this->doc_type."&amp;doc=".$this->doc."', 'anum', 'sudata', 'datetime', 'firm_id')\"><img border=0 src='/img/i_add.png' alt='Новый номер'></a></td>
+		<td class='subtype'><input type='text' name='subtype' value='".$this->doc_data['subtype']."' id='sudata'></td>
 		<td class='datetime'><input type='text' name='datetime' value='$dt' id='datetime'></td>
 		</tr>
 		</table>
 		Организация:<br><select name='firm' id='firm_id'>");
-		$rs=mysql_query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-
+		$res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 		if(@$this->doc_data['firm_id']==0) $this->doc_data['firm_id']=$CONFIG['site']['default_firm'];
-
-		while($nx=mysql_fetch_row($rs))
+		while($nx = $res->fetch_row())
 		{
 			if(@$this->doc_data['firm_id']==$nx[0]) $s=' selected'; else $s='';
-			$tmpl->AddText("<option value='$nx[0]' $s>$nx[1] / $nx[0]</option>");
+			$tmpl->addContent("<option value='$nx[0]' $s>$nx[1] / $nx[0]</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->addContent("</select><br>");
 	}
 
-	protected function DrawLHeadformEnd()
+	protected function drawLHeadformEnd()
 	{
 		global $tmpl;
-		$tmpl->AddText("<br>Комментарий:<br><textarea name='comment'>{$this->doc_data[4]}</textarea></form>");
+		$tmpl->addContent("<br>Комментарий:<br><textarea name='comment'>".html_out($this->doc_data['comment'])."</textarea></form>");
 	}
 
-	protected function DrawHeadformEnd()
+	protected function drawHeadformEnd()
 	{
 		global $tmpl;
-		$tmpl->AddText(@"<br>Комментарий:<br><textarea name='comment'>{$this->doc_data['comment']}</textarea><br><input type=submit value='Записать'></form>");
+		$tmpl->addContent(@"<br>Комментарий:<br><textarea name='comment'>".html_out($this->doc_data['comment'])."</textarea><br><input type=submit value='Записать'></form>");
 	}
 
-	protected function DrawAgentField()
+	protected function drawAgentField()
 	{
-		global $tmpl;
-		$balance=DocCalcDolg($this->doc_data[2]);
-		$bonus=DocCalcBonus($this->doc_data[2]);
+		global $tmpl, $db;
+		$balance = agentCalcDebt($this->doc_data['agent']);
+		$bonus = docCalcBonus($this->doc_data['agent']);
 		$col='';
 		if($balance>0)	$col="color: #f00; font-weight: bold;";
 		if($balance<0)	$col="color: #f08; font-weight: bold;";
 
-		$res=mysql_query(@"SELECT `doc_list`.`id`, `doc_dopdata`.`value`
+		$res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
 		FROM `doc_list`
 		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
-		WHERE `agent`='{$this->doc_data[2]}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
-		if(mysql_errno())	throw new MysqlException("Не удаётся получить список договоров");
+		WHERE `agent`='{$this->doc_data['agent']}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
 		$contr_content='';
-		while($nxt=mysql_fetch_row($res))
+		while($nxt=$res->fetch_row())
 		{
 			$selected=($this->doc_data['contract']==$nxt[0])?'selected':'';
 			$contr_content.="<option value='$nxt[0]' $selected>N$nxt[0]: $nxt[1]</option>";
 		}
 		if($contr_content)	$contr_content="Договор:<br><select name='contract'>$contr_content</select>";
 
-		$tmpl->AddText("
+		$tmpl->addContent("
 		<div>
 		<div style='float: right; $col' id='agent_balance_info'>$balance / $bonus</div>
 		Агент:
-		<a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data[2]}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>
+		<a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data['agent']}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>
 		<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a>
 		</div>
-		<input type='hidden' name='agent' id='agent_id' value='{$this->doc_data[2]}'>
-		<input type='text' id='agent_nm'  style='width: 100%;' value='{$this->doc_data[3]}'>
+		<input type='hidden' name='agent' id='agent_id' value='{$this->doc_data['agent']}'>
+		<input type='text' id='agent_nm'  style='width: 100%;' value='".  html_out($this->doc_data['agent_name']) ."'>
 		<div id='agent_contract'>$contr_content</div>
 		<br>
 
@@ -1459,7 +1489,7 @@ class doc_Nulltype
 			document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+sValue;
 			UpdateContractInfo({$this->doc},sValue)
 			");
-		if(!$this->doc)		$tmpl->AddText("
+		if(!$this->doc)		$tmpl->addContent("
 			var plat_id=document.getElementById('plat_id');
 			if(plat_id)	plat_id.value=li.extra[0];
 			var plat=document.getElementById('plat');
@@ -1468,173 +1498,195 @@ class doc_Nulltype
 			if(gruzop_id)	gruzop_id.value=li.extra[0];
 			var gruzop=document.getElementById('gruzop');
 			if(gruzop)	gruzop.value=li.selectValue;");
-		$tmpl->AddText("
+		$tmpl->addContent("
 		}
 		</script>");
 	}
 
-	protected function DrawSkladField()
+	protected function drawSkladField()
 	{
-		global $tmpl;
-		$tmpl->AddText("Склад:<br>
+		global $tmpl, $db;
+		$tmpl->addContent("Склад:<br>
 		<select name='sklad'>");
-		$res=mysql_query("SELECT `id`,`name` FROM `doc_sklady` ORDER BY `id`");
-		if(mysql_errno())	throw new Exception("Не удалось выбрать список складов");
-		while($nxt=mysql_fetch_row($res))
+		$res = $db->query("SELECT `id`,`name` FROM `doc_sklady` ORDER BY `id`");
+		
+		while($nxt = $res->fetch_row())
 		{
-			if($nxt[0]==$this->doc_data[7])
-				$tmpl->AddText("<option value='$nxt[0]' selected>$nxt[1]</option>");
+			if($nxt[0]==$this->doc_data['sklad'])
+				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
 			else
-				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->addContent("</select><br>");
 	}
 
-	protected function DrawBankField()
+	protected function drawBankField()
 	{
-		global $tmpl, $CONFIG;
-		if(@$this->doc_data['firm_id'])	$sql_add="AND ( `firm_id`='0' OR `num`='{$this->doc_data[16]}' OR `firm_id`='{$this->doc_data['firm_id']}' )";
-		else				$sql_add= '';
-		if(isset($this->doc_data[16]))	$bank	= $this->doc_data[16];
-		else				$bank	= @$CONFIG['site']['default_bank'];
-		$tmpl->AddText("Банк:<br>
-		<select name='bank'>");
-		$res=mysql_query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank'  $sql_add  ORDER BY `num`");
-		if(mysql_errno())	throw new Exception("Не удалось выбрать список банков");
-		while($nxt=mysql_fetch_row($res))
+		global $tmpl, $CONFIG, $db;
+		if( isset($this->doc_data['firm_id']) )
+			$sql_add="AND ( `firm_id`='0' OR `num`='{$this->doc_data['bank']}' OR `firm_id`='{$this->doc_data['firm_id']}' )";
+		else	$sql_add= '';
+		if( isset($this->doc_data['bank']) )		
+			$bank	= $this->doc_data['bank'];
+		else if( isset($CONFIG['site']['default_bank']) )
+			$bank	= $CONFIG['site']['default_bank'];
+		else	$bank = 0;
+		$tmpl->addContent("Банк:<br><select name='bank'>");
+		$res = $db->query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank' $sql_add  ORDER BY `num`");
+		while($nxt = $res->fetch_row())
 		{
 			if($nxt[0]==$bank)
-				$tmpl->AddText("<option value='$nxt[0]' selected>$nxt[1] / $nxt[2]</option>");
+				$tmpl->addContent("<option value='$nxt[0]' selected>".  html_out($nxt[1].' / '.$nxt[2])."</option>");
 			else
-				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] / $nxt[2]</option>");
+				$tmpl->addContent("<option value='$nxt[0]'>".  html_out($nxt[1].' / '.$nxt[2])."</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->addContent("</select><br>");
 	}
 
-	protected function DrawKassaField()
+	protected function drawKassaField()
 	{
-		global $tmpl;
-		$tmpl->AddText("Касса:<br>
-		<select name='kassa'>");
-		$res=mysql_query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND `firm_id`='0' OR `num`='{$this->doc_data[16]}' ORDER BY `num`");
-		if(mysql_errno())	throw new Exception("Не удалось выбрать список касс");
-		while($nxt=mysql_fetch_row($res))
+		global $tmpl, $db;
+		$tmpl->addContent("Касса:<br><select name='kassa'>");
+		$res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND `firm_id`='0' OR `num`='{$this->doc_data['kassa']}' ORDER BY `num`");
+		while($nxt = $res->fetch_row())
 		{
-			if($nxt[0]==$this->doc_data[15])
-				$tmpl->AddText("<option value='$nxt[0]' selected>$nxt[1]</option>");
+			if($nxt[0]==$this->doc_data['kassa'])
+				$tmpl->addContent("<option value='$nxt[0]' selected>".  html_out($nxt[1]) ."</option>");
 			else
-				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+				$tmpl->addContent("<option value='$nxt[0]'>".  html_out($nxt[1]) ."</option>");
 		}
-		$tmpl->AddText("</select><br>");
+		$tmpl->addContent("</select><br>");
 	}
 
-	protected function DrawSumField()
+	protected function drawSumField()
 	{
 		global $tmpl;
-		$tmpl->AddText(@"Сумма:<br>
-		<input type='text' name='sum' value='{$this->doc_data[11]}'><img src='/img/i_+-.png'><br>");
+		$tmpl->addContent("Сумма:<br>
+		<input type='text' name='sum' value='{$this->doc_data['sum']}'><img src='/img/i_+-.png'><br>");
 	}
 
-	protected function DrawCenaField()
+	protected function drawCenaField()
 	{
-		global $tmpl;
-		$tmpl->AddText("Цена:<a onclick='ResetCost(\"{$this->doc}\"); return false;' id='reset_cost'><img src='/img/i_reload.png'></a><br>
+		global $tmpl, $db;
+		$tmpl->addContent("Цена:<a onclick='ResetCost(\"{$this->doc}\"); return false;' id='reset_cost'><img src='/img/i_reload.png'></a><br>
 		<select name='cena'>");
-		$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` ORDER BY `name`");
-		if(mysql_errno())	throw new Exception("Не удалось выбрать список цен");
-		while($nxt=mysql_fetch_row($res))
+		$res = $db->query("SELECT `id`,`name` FROM `doc_cost` ORDER BY `name`");
+		while($nxt = $res->fetch_row())
 		{
 			if($this->dop_data['cena']==$nxt[0]) $s='selected';
 			else $s='';
-			$tmpl->AddText("<option value='$nxt[0]' $s>$nxt[1]</option>");
+			$tmpl->addContent("<option value='$nxt[0]' $s>".  html_out($nxt[1]) ."</option>");
 		}
 
-		if($this->doc_data[12])
-			$tmpl->AddText("<label><input type='radio' name='nds' value='0'>Выделять НДС</label>&nbsp;&nbsp;
+		if($this->doc_data['nds'])
+			$tmpl->addContent("<label><input type='radio' name='nds' value='0'>Выделять НДС</label>&nbsp;&nbsp;
 			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");
 		else
-			$tmpl->AddText("<label><input type='radio' name='nds' value='0' checked>Выделять НДС</label>&nbsp;&nbsp;
+			$tmpl->addContent("<label><input type='radio' name='nds' value='0' checked>Выделять НДС</label>&nbsp;&nbsp;
 			<label><input type='radio' name='nds' value='1'>Включать НДС</label><br>");
-		$tmpl->AddText("<br>");
+		$tmpl->addContent("<br>");
 	}
 
 	// ====== Получение данных, связанных с документом =============================
 	protected function get_docdata()
 	{
 		if($this->doc_data) return;
-		global $CONFIG;
-		if($this->doc)
-		{
-			$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`, `b`.`fullname` AS `agent_fullname`
+		global $CONFIG, $db;
+		if($this->doc)	{
+			$res = $db->query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`, `b`.`fullname` AS `agent_fullname`
 			FROM `doc_list` AS `a`
 			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
-			WHERE `a`.`id`='".$this->doc."'");
-			if(mysql_errno())	throw new MysqlException('Не удалось получить основные данные документа');
-			$this->doc_data=mysql_fetch_array($res);
-			$rr=mysql_query("SELECT `param`,`value` FROM `doc_dopdata` WHERE `doc`='".$this->doc."'");
-			while($nn=mysql_fetch_row($rr))
-			{
-				$this->dop_data["$nn[0]"]=$nn[1];
+			WHERE `a`.`id`='".(int)$this->doc."'");
+			if(!$res->num_rows)	throw new Exception("Документ не найден");
+			$this->doc_data = $res->fetch_assoc();
+			
+			$res = $db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`='".(int)$this->doc."'");
+			$this->dop_data = array();
+			while($nxt = $res->fetch_row())	{
+				$this->dop_data[$nxt[0]]=$nxt[1];
 			}
-			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='{$this->doc_data[17]}'");
-			$this->firm_vars=mysql_fetch_assoc($res);
+			$this->firm_vars = $db->selectRow('doc_vars', $this->doc_data['firm_id']);
+			
+			if(method_exists($this,'initDefDopData'))	$this->initDefDopData();
+			$this->dop_data = array_merge($this->def_dop_data, $this->dop_data);
+			
 		}
-		else
-		{
-			$this->doc_data=array();
-			$this->doc_data[2]=1;
-			$res=mysql_query("SELECT `name` FROM `doc_agent` WHERE `id`='1'");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить имя агента по умолчанию");
-			$this->doc_data[3]=@mysql_result($res,0,0);
-			$this->doc_data[5]=$this->doc_data['date']=time();
-			$this->doc_data[7]=1;
-			$this->doc_data[12]=1;
-			$res=mysql_query("SELECT `id`,`name` FROM `doc_cost` WHERE `vid`='1'");
-			$this->dop_data['cena']=@mysql_result($res,0,0);
-			$this->doc_data['contract']='';
-// 			$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='{$this->doc_data['firm_id']}'");
-// 			$this->firm_vars=mysql_fetch_assoc($res);
+		else {
+			if(method_exists($this,'initDefDopData'))	$this->initDefDopData();
+			$this->dop_data = $this->def_dop_data;
+			
+			$this->doc_data = array('id'=>0, 'type'=>'', 'agent'=>0, 'comment'=>'', 'date'=>time(), 'ok'=>0, 'sklad'=>0, 'user'=>0, 'altnum'=>0, 'subtype'=>'', 'sum'=>0, 'nds'=>1, 'p_doc'=>0, 'mark_del'=>0, 'kassa'=>0, 'bank'=>0, 'firm_id'=>0, 'contract'=>0, 'created'=>0, 'agent_name'=>'', 'agent_fullname'=>'', 'agent_dishonest'=>0, 'agent_comment'=>'');
+			
+			if( isset($CONFIG['site']['default_agent']) )
+				$this->doc_data['agent'] = (int) $CONFIG['site']['default_agent'];
+			else	$this->doc_data['agent'] = 1;
+			$agent_data = $db->selectRow('doc_agent', $this->doc_data['agent']);
+			if( is_array($agent_data) ){
+				$this->doc_data['agent_name'] = $agent_data['name'];
+			}
+			
+			if( isset($CONFIG['site']['default_sklad']) )
+				$this->doc_data['sklad'] = (int) $CONFIG['site']['default_sklad'];
+			else	$this->doc_data['sklad'] = 1;
+			
+			$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
+			if(!$res->num_rows)	throw new Exception ("Цена по умолчанию не найдена");
+			
+			list($this->dop_data['cena']) = $res->fetch_row();
 		}
 	}
 
 	/// Получение альтернативного порядкового номера документа
-	public function GetNextAltNum($doc_type, $subtype, $date, $firm_id)
+	public function getNextAltNum($doc_type, $subtype, $date, $firm_id)
 	{
-		global $CONFIG;
-		$start_date=strtotime(date("Y-01-01 00:00:00",strtotime($date)));
-		$end_date=strtotime(date("Y-12-31 23:59:59",strtotime($date)));
-		$res=@mysql_query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype' AND `id`!='{$this->doc}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id' ORDER BY `altnum` ASC");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить выборку альтернативных номеров");
-		$newnum=0;
-		while($nxt=mysql_fetch_row($res))
-		{
-			if(($nxt[0]-1 > $newnum)&& @$CONFIG['doc']['use_persist_altnum'])	break;
-			$newnum=$nxt[0];
+		global $CONFIG, $db;
+		$start_date = strtotime(date("Y-01-01 00:00:00", strtotime($date)));
+		$end_date = strtotime(date("Y-12-31 23:59:59", strtotime($date)));
+		$res = $db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype' AND `id`!='{$this->doc}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id' ORDER BY `altnum` ASC");
+		$newnum = 0;
+		while ($nxt = $res->fetch_row()) {
+			if (($nxt[0] - 1 > $newnum) && @$CONFIG['doc']['use_persist_altnum'])
+				break;
+			$newnum = $nxt[0];
 		}
 		$newnum++;
 		return $newnum;
 	}
-
+	
+	/// Получение альтернативного порядкового номера документа на оcнове данных текущего документа и текущей даты
+	public function getNextAltNumT($doc_type)
+	{
+		global $CONFIG, $db;
+		$start_date = strtotime(date("Y-01-01 00:00:00"));
+		$end_date = strtotime(date("Y-12-31 23:59:59"));
+		$_subtype = $db->real_escape_string($this->doc_data['subtype']);
+		$res = $db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='".(int)$doc_type."' AND `subtype`='$_subtype' AND `id`!='".(int)$this->doc."' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='".(int)$this->doc_data['firm_id'],"' ORDER BY `altnum` ASC");
+		$newnum = 0;
+		while ($nxt = $res->fetch_row()) {
+			if (($nxt[0] - 1 > $newnum) && @$CONFIG['doc']['use_persist_altnum'])
+				break;
+			$newnum = $nxt[0];
+		}
+		$newnum++;
+		return $newnum;
+	}
+	
 	/// Кнопки меню - провети / отменить
-	protected function dop_buttons()
+	protected function getDopButtons()
 	{
 		global $tmpl;
 		$ret='';
 		if($this->doc)
 		{
 			$ret.="<a href='/docj.php?mode=log&amp;doc={$this->doc}' title='История изменений документа'><img src='img/i_log.png' alt='История'></a>
-			<a onclick=\"DocConnect({$this->doc}, {$this->doc_data[13]}); return false;\" title='Связать документ'><img src='img/i_conn.png' alt='Связать'></a>";
+			<a onclick=\"DocConnect({$this->doc}, {$this->doc_data['p_doc']}); return false;\" title='Связать документ'><img src='img/i_conn.png' alt='Связать'></a>";
 			$ret.="<span id='provodki'>";
-			if($this->doc_data[6])
-				$ret.=$this->cancel_buttons();
-			else
-// 				$ret.="<a href='?mode=ehead&amp;doc={$this->doc}' title='Правка заголовка'><img src='img/i_docedit.png' alt='Правка'></a>
-// 				<a href='?mode=apply&amp;doc={$this->doc}' title='Провести документ' onclick=\"ShowPopupWin('/doc.php?mode=apply&amp;doc={$this->doc}'); return false;\"><img src='img/i_ok.png' alt='Провести'></a>";
-
-			$ret.=$this->apply_buttons();
+			if($this->doc_data['ok'])
+				$ret.=$this->getCancelButtons();
+			else	$ret.=$this->getApplyButtons();
 
 			$ret.="</span>
-			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=print&amp;doc={$this->doc}')\" title='Печать накладной'><img src='img/i_print.png' alt='Печать'></a>
+			<a href='#' onclick=\"return PrintMenu(event, '{$this->doc}')\" title='Печать'><img src='img/i_print.png' alt='Печать'></a>
 			<a href='#' onclick=\"return FaxMenu(event, '{$this->doc}')\" title='Отправить по факсу'><img src='img/i_fax.png' alt='Факс'></a>
 			<a href='#' onclick=\"return MailMenu(event, '{$this->doc}')\" title='Отправить по email'><img src='img/i_mailsend.png' alt='email'></a>
 			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=morphto&amp;doc={$this->doc}')\" title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
@@ -1644,7 +1696,7 @@ class doc_Nulltype
     		return $ret;
 	}
 
-	protected function apply_buttons()
+	protected function getApplyButtons()
 	{
 		if($this->doc_data['mark_del'])	$s="<a href='#' title='Отменить удаление' onclick='unMarkDelDoc({$this->doc}); return false;'><img src='img/i_trash_undo.png' alt='отменить удаление'></a>";
 		else	$s="<a href='#' title='Пометить на удаление' onclick='MarkDelDoc({$this->doc}); return false;'><img src='img/i_trash.png' alt='Пометить на удаление'></a>";
@@ -1652,66 +1704,54 @@ class doc_Nulltype
 		//<a href='?mode=ehead&amp;doc={$this->doc}' title='Правка заголовка'><img src='img/i_docedit.png' alt='Правка'></a>
 	}
 
-	protected function cancel_buttons()
+	protected function getCancelButtons()
 	{
 // 		$a='';
 		return "<a title='Отменить проводку' onclick='CancelDoc({$this->doc}); return false;'><img src='img/i_revert.png' alt='Отменить' /></a>";
 	}
 	
 	/// Вычисление, можно ли отменить кассовый документ
-	protected function CheckKassMinus()
+	protected function checkKassMinus()
 	{
-		$sum=0;
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`kassa` FROM `doc_list`
+		global $db;
+		$sum = $i = 0;
+		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`kassa` FROM `doc_list`
 		WHERE  `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='6' OR `doc_list`.`type`='7' OR `doc_list`.`type`='9')
 		ORDER BY `doc_list`.`date`");
-		$i=0;
-		while($nxt=mysql_fetch_row($res))
-		{
-			if($nxt[1]==6)
-			{
-				if($nxt[3]==$this->doc_data[15])	$sum+=$nxt[2];
+		while($nxt = $res->fetch_row()) {
+			if ($nxt[3] == $this->doc_data['kassa']) {
+				if ($nxt[1] == 6)
+					$sum += $nxt[2];
+				else if ($nxt[1] == 7 || $nxt[1]==9)
+					$sum -= $nxt[2];
 			}
-			else if($nxt[1]==7)
-			{
-				if($nxt[3]==$this->doc_data[15])	$sum-=$nxt[2];
-			}
-			else if($nxt[1]==9)
-			{
-				if($nxt[3]==$this->doc_data[15])	$sum-=$nxt[2];
-				else
-				{
-					$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[0]' AND `param`='v_kassu'");
-					$vkassu=mysql_result($rr,0,0);
-					if($vkassu==$this->doc_data[15])$sum+=$nxt[2];
-				}
+			else if($nxt[1] == 9){
+				$rr = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[0]' AND `param`='v_kassu'");
+				if(!$rr->num_rows)	throw new AutoLoggedException('Касса назначения не найдена в документе '.$this->doc);
+				$data = $rr->fetch-row();
+				if($data[0] == $this->doc_data['kassa'])
+					$sum+=$nxt[2];	
 			}
 
 			$sum = sprintf("%01.2f", $sum);
 			if($sum<0) break;
 			$i++;
 		}
-		mysql_free_result($res);
+		$res->free();
 		return $sum;
 	}
 
 	/// Сбросить цены в списке товаров документа к ценам по умолчанию
-	protected function ResetCost()
-	{
-		if(!$this->doc)			throw new Exception("Документ не определён!");
-		$res=mysql_query("SELECT `id`, `tovar`, `cnt` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-		if(mysql_errno())		throw new MysqlException("Не удалось выбрать товар в документе");
-		while($nxt=mysql_fetch_row($res))
-		{
-			$cost=GetCostPos($nxt[1], $this->dop_data['cena']);
-			mysql_query("UPDATE `doc_list_pos` SET `cost`='$cost' WHERE `id`='$nxt[0]'");
-			if(mysql_errno())	throw new MysqlException("Не удалось сбросить цену документа!");
+	protected function resetCost() {
+		global $db;
+		if (!$this->doc)
+			throw new Exception("Документ не определён!");
+		$res = $db->query("SELECT `id`, `tovar`, `cnt` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+		while ($nxt = $res->fetch_row()) {
+			$cost = getCostPos($nxt[1], $this->dop_data['cena']);
+			$db->update('doc_list_pos', $nxt[0], 'cost', $cost);
 		}
 	}
 };
-
-
-
-
 
 ?>

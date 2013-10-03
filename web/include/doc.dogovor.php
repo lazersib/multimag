@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,8 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
-$doc_types[14]="Договор";
 
 /// Документ *договор*
 class doc_Dogovor extends doc_Nulltype
@@ -38,7 +36,7 @@ class doc_Dogovor extends doc_Nulltype
 		);
 		if(!$doc)
 		{
-			$this->doc_data[4]=$this->doc_data['comment']="
+			$this->doc_data['comment']="
 = Договор поставки № {{DOCNUM}} =
 г. Новосибирск, {{DOCDATE}} .
 
@@ -75,17 +73,21 @@ class doc_Dogovor extends doc_Nulltype
 		}
 	}
 
+	function initDefDopdata() {
+		$this->def_dop_data = array('name'=>'', 'end_date'=>'', 'debt_control'=>0, 'debt_size'=>0, 'limit'=>0, 'received'=>0);
+	}
+	
 	function DopHead()
 	{
 		global $tmpl;
-		$name=@$this->dop_data['name'];
 		if($this->doc)	$end_date=@$this->dop_data['end_date'];
 		else		$end_date=date("Y-12-31");
-		$dchecked=@$this->dop_data['debt_control']?'checked':'';
-		$debt_size=@$this->dop_data['debt_size'];
-		$limit=@$this->dop_data['limit'];
-		$checked=$this->dop_data['received']?'checked':'';
-		$tmpl->AddText("
+		$name = $this->dop_data['name'];
+		$dchecked = $this->dop_data['debt_control']?'checked':'';
+		$debt_size = $this->dop_data['debt_size'];
+		$limit = $this->dop_data['limit'];
+		$checked = $this->dop_data['received']?'checked':'';
+		$tmpl->addContent("
 		Отображаемое наименование:<br>
 		<input type='text' name='name' value='$name'><br>
 		Дата истечения:<br>
@@ -97,182 +99,92 @@ class doc_Dogovor extends doc_Nulltype
 		<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
 	}
 
-	function DopSave()
-	{
-		$received=rcv('received');
-		$end_date=rcv('end_date');
-		$debt_control=rcv('debt_control');
-		$debt_size=rcv('debt_size');
-		$name=rcv('name');
-		$limit=rcv('limit');
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-		VALUES ( '{$this->doc}' ,'received','$received'), ( '{$this->doc}' ,'end_date','$end_date'), ( '{$this->doc}' ,'debt_control','$debt_control'), ( '{$this->doc}' ,'debt_size','$debt_size'), ( '{$this->doc}' ,'limit','$limit'), ( '{$this->doc}' ,'name','$name')");
-		if(mysql_errno())	throw new MysqlError("Невозможно сохранить дополнительные данные");
+	function DopSave() {
+		$new_data = array(
+			'received' => request('received'),
+			'end_date' => rcvdate('end_date'),
+			'debt_control' => rcvint('debt_control')?'1':'0',
+			'debt_size' => rcvint('debt_size'),
+			'name' => request('name'),
+			'limit' => rcvint('limit'),
+			'received' => rcvint('received')?'1':'0'
+		);
+		$old_data = array_intersect_key($new_data, $this->dop_data);
 		
-		
+		$log_data='';
 		if($this->doc)
 		{
-			$log_data='';
-			if($this->dop_data['received']!=$received)			$log_data.="received: {$this->dop_data['received']}=>$received, ";
-			if($this->dop_data['end_date']!=$end_date)			$log_data.="end_date: {$this->dop_data['end_date']}=>$end_date, ";
-			if($this->dop_data['debt_control']!=$debt_control)		$log_data.="debt_control: {$this->dop_data['debt_control']}=>$debt_control, ";
-			if($this->dop_data['debt_size']!=$debt_size)			$log_data.="debt_size: {$this->dop_data['debt_size']}=>$debt_size, ";
-			if($this->dop_data['name']!=$name)				$log_data.="name: {$this->dop_data['name']}=>$name, ";
-			if($this->dop_data['limit']!=$limit)				$log_data.="limit: {$this->dop_data['limit']}=>$limit, ";
-			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+			$log_data = getCompareStr($old_data, $new_data);
 		}
+		$this->setDopDataA($new_data);
+		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 	}
 
-	function DopBody()
-	{
-		global $tmpl;
-		global $wikiparser;
+	function DopBody() {
+		global $tmpl, $wikiparser, $db;
 		if($this->dop_data['received'])
-			$tmpl->AddText("<br><b>Документы подписаны и получены</b><br>");
-		if($this->doc_data[4])
+			$tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
+		if($this->doc_data['comment'])
 		{
-		$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`dir_fio`, `doc_agent`.`dir_fio_r`
-		FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
-		if(mysql_errno())		throw new MysqlException("Невозможно получить данные агента!");
+			$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
 
-		$agent_info=mysql_fetch_array($res);
-
-$str="==== Покупатель: {$agent_info[1]} ====
-$agent_info[2], тел. $agent_info[3]<br>
-ИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]<br>
-Р/С $agent_info[8], в банке $agent_info[10]<br>
-К/С $agent_info[9], БИК $agent_info[7]<br>
+$str="==== Покупатель: {$agent_info['fullname']} ====
+{$agent_info['adres']}, тел. {$agent_info['tel']}<br>
+ИНН/КПП {$agent_info['inn']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okevd']}<br>
+Р/С {$agent_info['rs']}, в банке {$agent_info['bank']}<br>
+К/С {$agent_info['ks']}, БИК {$agent_info['bik']}<br>
 ==== Поставщик: {$this->firm_vars['firm_name']} ====
 {$this->firm_vars['firm_adres']}<br>
 ИНН/КПП {$this->firm_vars['firm_inn']}<br>
 Р/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}<br>
 К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}";
 
-			$rekv=$wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
+			$rekv = $wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
 
 			$wikiparser->AddVariable('REKVIZITY', $rekv);
-			$wikiparser->AddVariable('DOCNUM', $this->doc_data[9]);
-			$wikiparser->AddVariable('DOCDATE', date("d.m.Y",$this->doc_data[5]));
-			$wikiparser->AddVariable('AGENT', $agent_info[1]);
+			$wikiparser->AddVariable('DOCNUM', $this->doc_data['altnum']);
+			$wikiparser->AddVariable('DOCDATE', date("d.m.Y",$this->doc_data['date']));
+			$wikiparser->AddVariable('AGENT', $agent_info['fullname']);
 			$wikiparser->AddVariable('AGENTDOL', 'директора');
 			$wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
-			$wikiparser->AddVariable('FIRMNAME', unhtmlentities($this->firm_vars['firm_name']));
-			$wikiparser->AddVariable('FIRMDIRECTOR', unhtmlentities($this->firm_vars['firm_director_r']));
+			$wikiparser->AddVariable('FIRMNAME', $this->firm_vars['firm_name']);
+			$wikiparser->AddVariable('FIRMDIRECTOR', $this->firm_vars['firm_director_r']);
 			$wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
-			$text=$wikiparser->parse(html_entity_decode($this->doc_data[4],ENT_QUOTES,"UTF-8"));
-			$tmpl->AddText("<b>Текст договора (форматирование может отличаться от форматирования при печати):</b> <p>$text</p>");
-			$this->doc_data[4]='';
+			$text=$wikiparser->parse($this->doc_data['comment'],ENT_QUOTES,"UTF-8");
+			$tmpl->addContent("<b>Текст договора (форматирование может отличаться от форматирования при печати):</b> <p>$text</p>");
+			$this->doc_data['comment']='';
 		}
-		else 	$tmpl->AddText("<br><b style='color: #f00'>ВНИМАНИЕ! Текст договора не указан!</b><br>");
+		else 	$tmpl->addContent("<br><b style='color: #f00'>ВНИМАНИЕ! Текст договора не указан!</b><br>");
 	}
 
-	function DocApply($silent=0)
+	/// Формирование другого документа на основании текущего
+	function MorphTo($target_type)
 	{
-		$tim=time();
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(!$res)			throw new MysqlException('Ошибка выборки данных документа при проведении!');
-		$nx=@mysql_fetch_row($res);
-		if(!$nx)			throw new Exception('Документ не найден!');
-		if( $nx[1] && (!$silent) )	throw new Exception('Документ уже был проведён!');
-		if($silent)	return;
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		if(!$res)			throw new MysqlException('Ошибка установки даты проведения документа!');
-	}
-
-	function DocCancel($doc)
-	{
-		global $uid;
-		$tim=time();
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
-		if(! ($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
-		if(! $nx[4])				throw new Exception('Документ НЕ проведён!');
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
-		if(!$res)				throw new MysqlException('Ошибка установки флага!');
-	}
-
-	function PrintForm($doc, $opt='')
-	{
-		if($opt=='')
-		{
-			global $tmpl;
-			$tmpl->ajax=1;
-			$tmpl->AddText("
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=pdf'\">Договор PDF</div>
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=html'\">Договор HTML</div>
-			");
-		}
-		else if($opt=='pdf')
-			$this->DogovorPDF();
-		else if($opt=='html')
-			$this->DogovorHTML();
-		else $tmpl->logger("Запрошена неизвестная опция!");
-	}
-
-	// Формирование другого документа на основании текущего
-	function MorphTo($doc, $target_type)
-	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
+		global $tmpl, $uid, $db;
 		$tmpl->ajax=1;
-		if($target_type=='')
-		{
+		if($target_type=='') {
 			$tmpl->ajax=1;
-			$tmpl->AddText("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->doc}&amp;tt=16'\">Спецификация</div>");
+			$tmpl->addContent("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->doc}&amp;tt=16'\">Спецификация</div>");
 		}
-		else if($target_type==16)
-		{
-			mysql_query("START TRANSACTION");
-			$tm=time();
-			$altnum=GetNextAltNum($target_type ,$this->doc_data[10]);
-			$res=mysql_query("INSERT INTO `doc_list`
-			(`type`, `agent`, `date`, `kassa`, `user`, `altnum`, `subtype`, `p_doc`, `sum`, `firm_id`)
-			VALUES ('$target_type', '{$this->doc_data[2]}', '$tm', '1', '$uid', '$altnum', '{$this->doc_data[10]}', '{$this->doc}', '0', '{$this->doc_data[17]}')");
-			$ndoc= mysql_insert_id();
-
-			if($res)
-			{
-				mysql_query("COMMIT");
-				$ref="Location: doc.php?mode=body&doc=$ndoc";
-				header($ref);
-			}
-			else
-			{
-				mysql_query("ROLLBACK");
-				$tmpl->msg("Не удалось создать подчинённый документ!","err");
-			}
+		else if($target_type == 16) {
+			if(!isAccess('doc_specific','create'))	throw new AccessException();
+			$new_doc = new doc_Specific();
+			$dd = $new_doc->createFrom($this);
+			$this->sentZEvent('morph_specific');
+			header("Location: doc.php?mode=body&doc=$dd");		
 		}
 	}
 
-	function Service($doc)
-	{
+	function Service($doc) {
 		$tmpl->ajax=1;
-		$opt=rcv('opt');
-		$pos=rcv('pos');
+		$opt=request('opt');
+		$pos=rcvint('pos');
 		parent::_Service($opt,$pos);
-	}
-//	================== Функции только этого класса ======================================================
-
-	function DogovorHTML($to_str=0)
-	{
-		global $CONFIG, $tmpl;
-
-		$tmpl->LoadTemplate('print');
-		global $wikiparser;
-		$rekv=$wikiparser->parse(html_entity_decode("''Поставщик: {$this->doc_data[3]}''",ENT_QUOTES,"UTF-8"));
-		$wikiparser->AddVariable('REKVIZITY', $rekv);
-
-		$text=$wikiparser->parse(html_entity_decode($this->doc_data[4],ENT_QUOTES,"UTF-8"));
-		$tmpl->AddText("$text");
 	}
 
 	function DogovorPDF($to_str=0)
 	{
-		global $CONFIG;
+		global $CONFIG, $db;
 		define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
 		require('fpdf/html2pdf.php');
 
@@ -280,43 +192,36 @@ $agent_info[2], тел. $agent_info[3]<br>
 		global $uid;
 		global $wikiparser;
 
-		$dt=date("d.m.Y",$this->doc_data[5]);
+		$dt=date("d.m.Y",$this->doc_data['date']);
 
-		if($coeff==0) $coeff=1;
 		if(!$to_str) $tmpl->ajax=1;
 
-		$res=mysql_query("SELECT `doc_agent`.`gruzopol`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`dir_fio`, `doc_agent`.`dir_fio_r`
-		FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
-		if(mysql_errno())		throw new MysqlException("Невозможно получить данные агента!");
+		$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
 
-		$agent_info=mysql_fetch_array($res);
-
-$str="==== Покупатель: {$agent_info[1]} ====
-$agent_info[2], тел. $agent_info[3]<br>
-ИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]<br>
-Р/С $agent_info[8], в банке $agent_info[10]<br>
-К/С $agent_info[9], БИК $agent_info[7]<br>
-От покупателя: _____________________________ ( {$agent_info['dir_fio']} )<br>
+$str="==== Покупатель: {$agent_info['fullname']} ====
+{$agent_info['adres']}, тел. {$agent_info['tel']}<br>
+ИНН/КПП {$agent_info['inn']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okevd']}<br>
+Р/С {$agent_info['rs']}, в банке {$agent_info['bank']}<br>
+К/С {$agent_info['ks']}, БИК {$agent_info['bik']}<br>
 ==== Поставщик: {$this->firm_vars['firm_name']} ====
 {$this->firm_vars['firm_adres']}<br>
 ИНН/КПП {$this->firm_vars['firm_inn']}<br>
 Р/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}<br>
-К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}<br>
-От поставщика: _____________________________ ( ".unhtmlentities($this->firm_vars['firm_director']).")<br>";
+К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}";
 
 		$rekv=$wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
 
 		$wikiparser->AddVariable('REKVIZITY', $rekv);
-		$wikiparser->AddVariable('DOCNUM', $this->doc_data[9]);
-		$wikiparser->AddVariable('DOCDATE', date("d.m.Y",$this->doc_data[5]));
-		$wikiparser->AddVariable('AGENT', $agent_info[1]);
+		$wikiparser->AddVariable('DOCNUM', $this->doc_data['altnum']);
+		$wikiparser->AddVariable('DOCDATE', date("d.m.Y",$this->doc_data['date']));
+		$wikiparser->AddVariable('AGENT', $agent_info['fullname']);
 		$wikiparser->AddVariable('AGENTDOL', 'директора' );
 		$wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
-		$wikiparser->AddVariable('FIRMNAME', unhtmlentities($this->firm_vars['firm_name']));
-		$wikiparser->AddVariable('FIRMDIRECTOR', unhtmlentities($this->firm_vars['firm_director_r']));
+		$wikiparser->AddVariable('FIRMNAME', $this->firm_vars['firm_name']);
+		$wikiparser->AddVariable('FIRMDIRECTOR', $this->firm_vars['firm_director_r']);
 		$wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
 
-		$text=$wikiparser->parse(html_entity_decode($this->doc_data[4],ENT_QUOTES,"UTF-8"));
+		$text=$wikiparser->parse($this->doc_data['comment']);
 		$pdf=new createPDF($text,'','','','');
 
 		$pdf->run();

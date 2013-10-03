@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -25,9 +25,9 @@ header('Status: 404 Not Found');
 $tmpl->logger("404: Not found",1);
 
 
-$tmpl->SetTitle("404: Страница не найдена");
+$tmpl->setTitle("404: Страница не найдена");
 
-$tmpl->SetText("<h1 id='page-title'>Страница не найдена</h1>
+$tmpl->setContent("<h1 id='page-title'>Страница не найдена</h1>
 <p id=text>
 Страница, запрашиваемая Вами, не найдена на нашем сервере! Возможно она была перемещена в другое место, или не существует больше! Если Вы пришли с другого сервера, значит Вам дали неверную ссылку! Если же вы перешли по ссылке, размещенной на нашем сервере, эта информация уже записана в лог, и администратор разберётся с проблемой в ближайшее время.
 </p>
@@ -35,19 +35,17 @@ $tmpl->SetText("<h1 id='page-title'>Страница не найдена</h1>
 try
 {
 	$map=new SiteMap();
-	$tmpl->AddText($map->getMap());
+	$tmpl->addContent($map->getMap());
 
 }
 catch(MysqlException $e)
 {
-	mysql_query("ROLLBACK");
-	$tmpl->AddText("<br><br>");
+	$tmpl->addContent("<br><br>");
 	$tmpl->msg($e->getMessage(),"err");
 }
 catch(Exception $e)
 {
-	mysql_query("ROLLBACK");
-	$tmpl->AddText("<br><br>");
+	$tmpl->addContent("<br><br>");
 	$tmpl->logger($e->getMessage());
 }
 

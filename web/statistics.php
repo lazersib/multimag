@@ -20,14 +20,14 @@
 include_once("core.php");
 $tim=time();
 $tt=$tim-60*60*24*30;
-$res=mysql_query("SELECT `id`, `ip`, `agent`, `refer` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
+$res=$db->query("SELECT `id`, `ip`, `agent`, `refer` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
 $max=0;
 $sum=0;
 $browsers=array();
 
 $others=array();
 
-while($nxt=mysql_fetch_row($res))
+while($nxt=$res->fetch_row())
 {
 	if(eregi("Toata dragostea",$nxt[2])|| eregi("NetcraftSurveyAgent",$nxt[2]) || eregi("Scanner",$nxt[2]) || eregi("SurveyBot",$nxt[2]) || $nxt[2]=='')
 		$browser='spam,viruses,scanners';
@@ -78,11 +78,11 @@ while($nxt=mysql_fetch_row($res))
 		$browser='z-other';
 		$others[$nxt[2]]++;
 	}
-	
+
 	$browsers[$browser]++;
-	
+
 	if($max<$browsers[$browser]) $max=$browsers[$browser];
-				
+
 	$sum++;
 }
 
@@ -99,14 +99,14 @@ foreach($browsers as $cur=> $cnt)
 	$pp/=100;
 	settype($ln,"int");
 	$color=rand(0,9).rand(0,9).rand(0,9);
-	$tmpl->AddText("$cur - $pp%
+	$tmpl->addContent("$cur - $pp%
 	<div style='width: $ln"."px; height: 10px; background-color: #$color; color: #ccc'></div><br>");
 }
-$tmpl->AddText("<hr>");
+$tmpl->addContent("<hr>");
 foreach($others as $cur=> $cnt)
 {
 
-	$tmpl->AddText("$cur - $cnt<br>");
+	$tmpl->addContent("$cur - $cnt<br>");
 }
 
 

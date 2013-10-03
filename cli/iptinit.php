@@ -1,11 +1,28 @@
 #!/usr/bin/php
 <?php
+//	MultiMag v0.1 - Complex sales system
+//
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//
+//	This program is free software: you can redistribute it and/or modify
+//	it under the terms of the GNU Affero General Public License as
+//	published by the Free Software Foundation, either version 3 of the
+//	License, or (at your option) any later version.
+//
+//	This program is distributed in the hope that it will be useful,
+//	but WITHOUT ANY WARRANTY; without even the implied warranty of
+//	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//	GNU Affero General Public License for more details.
+//
+//	You should have received a copy of the GNU Affero General Public License
+//	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
 
-if(!$CONFIG['route']['ext_ip'])
-{
+if(!$CONFIG['route']['ext_ip']){
     echo "External ip address NOT configured!\n";
     exit(0);
 }
@@ -131,9 +148,8 @@ if($CONFIG['route']['iplimit']['enable'])
 $date_time_array = getdate( time() );
 if( ($date_time_array['hours']>=$CONFIG['route']['iplimit']['hstart']) && ($date_time_array['hours']<$CONFIG['route']['iplimit']['hend']) )
 {
-	$res=mysql_query("SELECT * FROM `traffic_denyip`");
-	while($nxt=mysql_fetch_row($res))
-	{
+	$res = $db->query("SELECT * FROM `traffic_denyip`");
+	while($nxt = $res->fetch_row())	{
 		if($CONFIG['route']['iplimit']['toport'])
 			`$ipt -t nat -A PREROUTING -d $nxt[1] -p tcp -m multiport --dport 80 -j REDIRECT --to-port {$CONFIG['route']['iplimit']['toport']}`;
 		else	`$ipt -t nat -A PREROUTING -d $nxt[1] -p tcp -m multiport --dport 80 -j DROP`;
@@ -144,8 +160,7 @@ else echo"IP limit NOT set, now ".$date_time_array['hours']." hours!\n";
 }
 
 // Прозрачный прокси
-if($CONFIG['route']['transparent_proxy'])
-{
+if($CONFIG['route']['transparent_proxy']) {
     echo "Transparent proxy start\n";
     `$ipt -t nat -A PREROUTING -d ! {$CONFIG['route']['ext_ip']} -p tcp -m multiport --dport 80 -j REDIRECT --to-port 3128`;
 }

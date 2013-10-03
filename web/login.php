@@ -19,46 +19,54 @@
 //
 
 include_once("core.php");
-$login=@htmlentities($_POST['login'],ENT_QUOTES);
-$pass=@htmlentities($_POST['pass'],ENT_QUOTES);
+$login=request('login');
+$pass=request('pass');
+$mode=request('mode');
 
 function attack_test()
 {
+	global $db;
 	$lock=0;
 	$captcha=0;
 	$ip=getenv("REMOTE_ADDR");
 
 	$sql='SELECT `id` FROM `users_bad_auth`';
 
-	$tm=time()-60*60*3;
-	$res=mysql_query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
+	$tm = time()-60*60*3;
+	$res = $db->query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
+	if(!$res)	throw new MysqlException("Ошибка защиты 1. Продолжение невозможно.");
+	if($res->num_rows > 20)		return 2;	// Более 20 ошибок вводе пароля c данного IP за последние 3 часа. Блокируем аутентификацию.
+	$tm = time()-60*30;
+	$res = $db->query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
+	if(!$res)	throw new MysqlException("Ошибка защиты 2. Продолжение невозможно.");
+	if($res->num_rows > 2)		$captcha=1;	// Более двух ошибок ввода пароля c данного IP за последние 30 минут. Планируем запрос captcha.
 
-	if(mysql_num_rows($res)>20)	return 2;	// Lock
-	$tm=time()-60*5;
-	$res=mysql_query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
-	if(mysql_num_rows($res)>2)	$captcha=1;
+	$ip_a = explode(".",$ip);
+	if(!is_array($ip_a))	return $captcha;	// Если IP не удаётся разделить на элементы - завершаем тест
+	if(count($ip_a) < 2)	return $captcha;	// Если IP не удаётся разделить на элементы - завершаем тест
 
-	$ip_a=explode(".",$ip);
-	if(!is_array($ip_a))	return $captcha;
-	if(count($ip_a)<2)	return $captcha;
+	$tm = time()-60*60*3;
+	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
+	if(!$res)	throw new MysqlException("Ошибка защиты 3. Продолжение невозможно.");
+	if($res->num_rows > 100)	return 3;	// Более 100 ошибок вводе пароля c подсети /24 за последние 3 часа. Блокируем аутентификацию.
+	$tm = time()-60*30;
+	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
+	if(!$res)	throw new MysqlException("Ошибка защиты 4. Продолжение невозможно.");
+	if($res->num_rows > 6)		$captcha=1;	// Более 6 ошибок ввода пароля c подсети /24 за последние 30 минут. Планируем запрос captcha.
 
-	$tm=time()-60*60*3;
-	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
-	if(mysql_num_rows($res)>100)	return 3;	// Lock
-	$tm=time()-60*5;
-	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
-	if(mysql_num_rows($res)>6)	$captcha=1;
+	$tm = time()-60*60*3;
+	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
+	if(!$res)	throw new MysqlException("Ошибка защиты 5. Продолжение невозможно.");
+	if($res->num_rows > 500)	return 3;	// Более 500 ошибок вводе пароля c подсети /16 за последние 3 часа. Блокируем аутентификацию.
+	$tm = time()-60*30;
+	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
+	if(!$res)	throw new MysqlException("Ошибка защиты 6. Продолжение невозможно.");
+	if($res->num_rows > 30)		$captcha=1;	// Более 30 ошибок ввода пароля c подсети /16 за последние 30 минут. Планируем запрос captcha.
 
-	$tm=time()-60*60*3;
-	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
-	if(mysql_num_rows($res)>500)	return 3;	// Lock
-	$tm=time()-60*5;
-	$res=mysql_query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
-	if(mysql_num_rows($res)>30)	$captcha=1;
-
-	$tm=time()-60*5;
-	$res=mysql_query("$sql WHERE `time`>'$tm'");
-	if(mysql_num_rows($res)>100)	$captcha=1;
+	$tm = time()-60*15;
+	$res = $db->query("$sql WHERE `time`>'$tm'");
+	if(!$res)	throw new MysqlException("Ошибка защиты 7. Продолжение невозможно.");
+	if($res->num_rows > 100)	$captcha=1;	// Более 100 ошибок ввода пароля со всей сети за последние 15 минут. Планируем запрос captcha.
 
 	return $captcha;
 }
@@ -72,6 +80,7 @@ return "Вы получили это письмо потому, что в зая
 $conf
 или перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=conf&login=$login&e=$conf .
 Если не переходить по ссылке (например, если заявка подана не Вами), то регистрационные данные будут автоматически удалены через неделю.
+
 Ваш аккаунт:
 Логин: $login
 Пароль: $pass
@@ -83,9 +92,10 @@ $conf
 You have received this letter because in the form of registration in a site http://{$CONFIG['site']['name']} your e-mail address has been entered. For continuation of registration enter this key:
 $conf
 or pass under the link $proto://{$CONFIG['site']['name']}/login.php?mode=conf&login=$login&e=$conf .  If not going under the reference (for example if the form is submitted not by you) registration data will be automatically removed after a week.
+
 Your account:
-login: $login
-pass: $pass
+Login: $login
+Pass: $pass
 
 After confirmatoin of registration you can get access to the expanded functions of a site. Inactive accounts leave in 6 months.
 
@@ -108,9 +118,10 @@ class RegException extends Exception
 function RegForm($err_target='', $err_msg='')
 {
 	global $CONFIG, $tmpl;
-	$login=htmlentities(@$_REQUEST['login']);
-	$email=htmlentities(@$_REQUEST['email']);
-	$phone=htmlentities(@$_REQUEST['phone']);
+	$login	= html_out(request('login'));
+	$pass	= html_out(request('pass'));
+	$phone	= html_out(request('phone'));
+	$email	= html_out(request('email'));
 
 	$err_msgs=array('login'=>'', 'email'=>'','img'=>'','phone'=>'');
 	$err_msgs[$err_target]="<div style='color: #c00'>$err_msg</div>";
@@ -122,10 +133,10 @@ function RegForm($err_target='', $err_msg='')
 		$form_action='https://'.$host.'/login.php';
 	}
 
-	$tmpl->AddText("<p id='text'>
+	$tmpl->addContent("<p id='text'>
 	Для использования всех возможностей этого сайта, необходимо пройти процедуру регистрации. Регистрация не сложная,
 	и займёт всего несколько минут. Все зарегистрированные пользователи автоматически получают возможность приобретать товар по специальным ценам!</p>
-	<p>Регистрируясь, Вы даёте согласие на хранение, обработку и публикацию своей персональной информации, в соответствии с законом &quot;О персональных данных&quot;.</p>
+	<p>Регистрируясь, Вы даёте согласие на хранение, обработку и публикацию своей персональной информации, в соответствии с законом РФ &quot;О персональных данных&quot;.</p>
 	<form action='$form_action' method='post' id='reg-form'>
 	<h2>Для регистрации заполните следующую форму:</h2>
 	<input type='hidden' name='mode' value='regs'>
@@ -139,23 +150,23 @@ function RegForm($err_target='', $err_msg='')
 	<span id='login_valid' style='color: #c00'>{$err_msgs['login']}</span>");
 
 	if(@$CONFIG['site']['allow_phone_regist'])
-		$tmpl->AddText("<tr><td colspan='2'>Заполните хотя бы одно из полей: номер телефона и e-mail");
+		$tmpl->addContent("<tr><td colspan='2'>Заполните хотя бы одно из полей: номер телефона и e-mail");
 
-	$tmpl->AddText("<tr><td>
+	$tmpl->addContent("<tr><td>
 	<b>Адрес электронной почты e-mail</b><br>
 	<small>в формате user@host.zone</small>
 	<td><input type='text' name='email' value='$email' id='email'><br>
 	<span id='email_valid'>{$err_msgs['email']}</span>");
 
 	if(@$CONFIG['site']['allow_phone_regist'])
-		$tmpl->AddText("
+		$tmpl->addContent("
 	<tr><td><b>Мобильный телефон: <span id='phone_num'></span></b><br>
 	<small>Российский, 10 цифр, без +7 или 8</small>
 	<td>
 	+7<input type='text' name='phone' value='$phone' maxlength='10' placeholder='Номер' id='phone'><br>
 	<span id='phone_valid'>{$err_msgs['phone']}</span>");
 
-	$tmpl->AddText("<tr><td colspan='2'><input type='checkbox' name='subs' value='1' checked>Подписаться на новости и другую информацию
+	$tmpl->addContent("<tr><td colspan='2'><input type='checkbox' name='subs' value='1' checked>Подписаться на новости и другую информацию
 	<tr><td colspan='2'><b>Подтвердите что вы не робот, введя текст с картинки:</b>
 	<tr><td>
 	<img src='/kcaptcha/index.php'><br>
@@ -165,13 +176,13 @@ function RegForm($err_target='', $err_msg='')
 	<button type='submit'>Далее &gt;&gt;</button>
 	</form>
 	</table>");
-	if($CONFIG['site']['allow_openid'])
-		$tmpl->AddText("<b>Примечание:</b> Если Вы хоте зарегистрироваться, используя свой OpenID, Вам <a href='/login_oid.php'>сюда</a>!<br>");
-	$tmpl->AddText("<script type='text/javascript'>
+	if(@$CONFIG['site']['allow_openid'])
+		$tmpl->addContent("<b>Примечание:</b> Если Вы хоте зарегистрироваться, используя свой OpenID, Вам <a href='/login_oid.php'>сюда</a>!<br>");
+	$tmpl->addContent("<script type='text/javascript'>
 	");
 
 	if(@$CONFIG['site']['allow_phone_regist'])
-		$tmpl->AddText("
+		$tmpl->addContent("
 	var phone=document.getElementById('phone')
 	var phone_num=document.getElementById('phone_num')
 	var phone_valid=document.getElementById('phone_valid')
@@ -195,7 +206,7 @@ function RegForm($err_target='', $err_msg='')
 	}
 	phone.onkeyup=updatePhoneNum");
 
-	$tmpl->AddText("
+	$tmpl->addContent("
 	var email=document.getElementById('email')
 	var email_valid=document.getElementById('email_valid')
 	function updateEmail()
@@ -246,12 +257,12 @@ try
 
 if(!isset($_REQUEST['mode']))
 {
-	$pass=@$_REQUEST['pass'];
 	if(@$_SESSION['uid'])
 	{
 		include("user.php");
 		exit();
 	}
+	$pass = @$_REQUEST['pass'];
 
 	// Куда переходить после авторизации
 	$from=getenv("HTTP_REFERER");
@@ -263,19 +274,23 @@ if(!isset($_REQUEST['mode']))
 	}
 	$_SESSION['redir_to']=$from;
 
-	$tmpl->AddText("<h1 id='page-title'>Аутентификация</h1>");
-	$tmpl->SetTitle("Аутентификация");
-	if(isset($_REQUEST['cont']))	$tmpl->AddText("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутентификацию.</div>");
+	$tmpl->addContent("<h1 id='page-title'>Аутентификация</h1>");
+	$tmpl->setTitle("Аутентификация");
+	if(isset($_REQUEST['cont']))	$tmpl->addContent("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутентификацию.</div>");
 
-	$ip=getenv("REMOTE_ADDR");
-	$time=time()+60;
-	$at=attack_test();
-	if($at>1)	mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
-	if($at>=3)
+	$ip = $db->real_escape_string(getenv("REMOTE_ADDR"));
+	$time = time()+60;
+	$at = attack_test();
+	if($at > 1)
+	{
+		$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
+		if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
+	}
+	if($at >= 3)
 	{
 		$tmpl->msg("Из-за попыток подбора паролей к сайту доступ с вашей подсети заблокирован! Вы сможете авторизоваться через несколько часов после прекращения попыток подбора пароля. Если Вы не предпринимали попыток подбора пароля, обратитесь к Вашему поставщику интернет-услуг - возможно, кто-то другой пытается подобрать пароль, используя ваш адрес.","err","Доступ заблокирован");
 	}
-	else if($at==2)
+	else if($at == 2)
 	{
 		$tmpl->msg("Из-за попыток подбора паролей к сайту доступ с вашего адреса заблокирован! Вы сможете авторизоваться через несколько часов после прекращения попыток подбора пароля. Если Вы не предпринимали попыток подбора пароля, обратитесь к Вашему поставщику интернет-услуг - возможно, кто-то другой пытается подобрать пароль, используя ваш адрес.","err","Доступ заблокирован");
 	}
@@ -283,27 +298,27 @@ if(!isset($_REQUEST['mode']))
 	{
 		if(@$_REQUEST['opt']=='login')
 		{
-			if( ($at==1) && ( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring']=='') ) )
+			if( ($at == 1) && ( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring']=='') ) )
 			{
 				$tmpl->msg("Введите правильный код подтверждения, изображенный на картинке", "err");
-				mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
+				$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
+				if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
 			}
 			else
 			{
-				$login_sql=mysql_real_escape_string($_REQUEST['login']);
-				$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users`.`pass`, `users`.`pass_type`, `users`.`reg_email_confirm`, `users`.`reg_phone_confirm`, `users`.`disabled`, `users`.`disabled_reason`, `users`.`bifact_auth` FROM `users`
+				$login_sql = $db->real_escape_string($_REQUEST['login']);
+				$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users`.`pass`, `users`.`pass_type`, `users`.`reg_email_confirm`, `users`.`reg_phone_confirm`, `users`.`disabled`, `users`.`disabled_reason`, `users`.`bifact_auth` FROM `users`
 				WHERE `name`='$login_sql'");
-				if(mysql_errno())	throw new MysqlException("Не удалось получить данные");
-				if(@$nxt=mysql_fetch_assoc($res))
+				if(!$res)	throw new MysqlException("Не удалось получить данные");
+				if($res->num_rows)
 				{
+					$nxt = $res->fetch_assoc();
 					if($nxt['disabled'])	throw new Exception("Пользователь заблокирован (забанен). Причина блокировки: ".$nxt['disabled_reason']);
-
 
 					$pass_ok=0;
 					if($nxt['pass_type']=='CRYPT')
 					{
 						if(crypt($pass, $nxt['pass']) == $nxt['pass'])	$pass_ok=1;
-						else echo crypt($pass, $nxt['pass']);
 					}
 					else if($nxt['pass_type']=='SHA1')
 					{
@@ -316,7 +331,8 @@ if(!isset($_REQUEST['mode']))
 
 					if(!$pass_ok)
 					{
-						mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
+						$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
+						if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
 						$tmpl->msg("Неверная пара логин / пароль! Попробуйте снова!","err","Авторизоваться не удалось");
 					}
 					else
@@ -324,20 +340,20 @@ if(!isset($_REQUEST['mode']))
 
 						if( ($nxt['reg_email_confirm']=='1') || ($nxt['reg_phone_confirm']=='1') )
 						{
-							$ip=mysql_real_escape_string(getenv("REMOTE_ADDR"));
-							$ua=mysql_real_escape_string($_SERVER['HTTP_USER_AGENT']);
-							mysql_query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
+							$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
+							$ua=$db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
+							$res = $db->query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
 							VALUES ({$nxt['id']}, NOW(), '$ip', '$ua', 'password')");
-							if(mysql_errno())	throw new MysqlException("Не удалось выполнить вход.");
-							$_SESSION['uid']=$nxt['id'];
-							$_SESSION['name']=$nxt['name'];
-							if($_SESSION['last_page'])
+							if(!$res)	throw new MysqlException("Не удалось выполнить вход.");
+							$_SESSION['uid'] = $nxt['id'];
+							$_SESSION['name'] = $nxt['name'];
+							if(@$_SESSION['last_page'])
 							{
 								$lp=$_SESSION['last_page'];
 								unset($_SESSION['last_page']);
 								header("Location: ".$lp);
-							}
-							else if($_SESSION['redir_to'])	header("Location: ".$_SESSION['redir_to']);
+                                                        }
+							else if(@$_SESSION['redir_to'])	header("Location: ".$_SESSION['redir_to']);
 							else				header("Location: user.php");
 							exit();
 						}
@@ -350,17 +366,18 @@ if(!isset($_REQUEST['mode']))
 				}
 				else
 				{
-					mysql_query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
+					$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
+					if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
 					$tmpl->msg("Неверная пара логин / пароль! Попробуйте снова!","err","Авторизоваться не удалось");
 				}
 			}
 		}
-		$at=attack_test();
+		$at = attack_test();
 
-		if($at>0)
+		if($at > 0)
 			$m="<tr><td>
 			Введите код подтверждения, изображенный на картинке:<br>
-			<img src='kcaptcha/index.php' alt='Включите отображение картинок!'><td>
+			<img src='/kcaptcha/index.php' alt='Включите отображение картинок!'><td>
 			<input type='text' name='img'>";
 		else $m='';
 
@@ -370,8 +387,8 @@ if(!isset($_REQUEST['mode']))
 			$host=$_SERVER['HTTP_HOST'];
 			$form_action='https://'.$host.'/login.php';
 		}
-		$login_html=htmlentities(@$_REQUEST['login']);
-		$tmpl->AddText("
+		$login_html=html_out(request('login'));
+		$tmpl->addContent("
 		<form method='post' action='$form_action' id='login-form' name='fefe'>
 		<input type='hidden' name='opt' value='login'>
 		<table id='login-table'>
@@ -388,7 +405,7 @@ if(!isset($_REQUEST['mode']))
 		<button type='submit'>Вход!</button> ( <a class='wiki' href='/login.php?mode=rem'>Забыли пароль?</a> )
 		</table></form>");
 		if(@$CONFIG['site']['allow_openid'])
-			$tmpl->AddText("
+			$tmpl->addContent("
 			<table style='width: 800px'>
 			<tr><th colspan='4'><center>Войти через</center></th></tr>
 			<tr>
@@ -398,7 +415,7 @@ if(!isset($_REQUEST['mode']))
 			<td><a href='/login_oid.php?oid=loginza.ru'><img src='/img/oid/loginza.png' alt='Войти через Loginza'></a></td>
 			</tr>
 			</table>");
-		$tmpl->AddText("
+		$tmpl->addContent("
 		<script type=\"text/javascript\">
 
 		function focusInput()
@@ -412,21 +429,20 @@ if(!isset($_REQUEST['mode']))
 		window.setTimeout('focusInput()', 300);
 		</script>");
 	}
-
 }
 else if($mode=='logout')
 {
-    unset($_SESSION['uid']);
-    unset($_SESSION['name']);
-    header("Location: index.php");
-    exit();
+	unset($_SESSION['uid']);
+	unset($_SESSION['name']);
+	header("Location: index.php");
+	exit();
 }
 else if($mode=='reg')
 {
 	if(!$uid)
 	{
-		$tmpl->SetTitle("Регистрация");
-		$tmpl->AddText("<h1 id='page-title'>Регистрация</h1>");
+		$tmpl->setTitle("Регистрация");
+		$tmpl->addContent("<h1 id='page-title'>Регистрация</h1>");
 		RegForm();
 	}	else $tmpl->msg("Вы уже являетесь нашим зарегистрированным пользователем. Повторная регистрация не требуется.","info");
 }
@@ -434,13 +450,13 @@ else if($mode=='regs')
 {
 	try
 	{
-		$login=@$_REQUEST['login'];
-		$email=@$_REQUEST['email'];
-		$phone=@$_REQUEST['phone'];
-		$img=strtoupper(@$_REQUEST['img']);
-		$subs=@$_REQUEST['subs'];
-		$subs=$subs?1:0;
-		mysql_query("START TRANSACTION");
+		$login = request('login');
+		$email = request('email');
+		$phone = request('phone');
+		$img = strtoupper(@$_REQUEST['img']);
+		$subs = @$_REQUEST['subs'];
+		$subs = $subs?1:0;
+		$db->query("START TRANSACTION");
 		if($login=='')
 			throw new RegException('Поле login не заполнено','login');
 		if(strlen($login)<3)
@@ -450,8 +466,9 @@ else if($mode=='regs')
 		if( !preg_match('/^[a-zA-Z\d]*$/', $login))
 			throw new RegException('login должен состоять из латинских букв и цифр','login');
 
-		$res=mysql_query("SELECT `id` FROM `users` WHERE `name`='$login'");
-		if(mysql_num_rows($res))
+		$sql_login = $db->real_escape_string($login);
+		$res=$db->query("SELECT `id` FROM `users` WHERE `name`='$sql_login'");
+		if($res->num_rows($res))
 			throw new RegException('Такой login занят. Используйте другой.','login');
 
 		if(@$CONFIG['site']['allow_phone_regist'])
@@ -470,9 +487,9 @@ else if($mode=='regs')
 		{
 			if( !preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $email))
 				throw new RegException('Неверный формат адреса e-mail. Адрес должен быть в формате user@host.zone','email');
-			$res=mysql_query("SELECT `id` FROM `users` WHERE `reg_email`='$email'");
-			if(mysql_errno())	throw new MysqlException("Не удалось проверить уникальность email");
-			if(mysql_num_rows($res))
+			$res = $db->query("SELECT `id` FROM `users` WHERE `reg_email`='$email'");
+			if(!$res)	throw new MysqlException("Не удалось проверить уникальность email");
+			if($res->num_rows())
 				throw new RegException('Пользователь с таким email уже зарегистрирован. Используйте другой.','email');
 		}
 
@@ -481,9 +498,9 @@ else if($mode=='regs')
 			$phone='+7'.$phone;
 			if( !preg_match('/^\+79\d{9}$/', $phone))
 				throw new RegException('Неверный формат телефона. Номер должен быть в федеральном формате +79XXXXXXXXX '.$phone,'phone');
-			$res=mysql_query("SELECT `id` FROM `users` WHERE `reg_phone`='$phone'");
-			if(mysql_errno())	throw new MysqlException("Не удалось проверить уникальность телефона");
-			if(mysql_num_rows($res))
+			$res=$db->query("SELECT `id` FROM `users` WHERE `reg_phone`='$phone'");
+			if(!$res)	throw new MysqlException("Не удалось проверить уникальность телефона");
+			if($res->num_rows)
 				throw new RegException('Пользователь с таким телефоном уже зарегистрирован. Используйте другой.','phone');
 		}
 
@@ -495,10 +512,10 @@ else if($mode=='regs')
 		$email_conf=$email?substr(MD5(time()+rand(0,1000000)),0,8):'';
 		$phone_conf=$phone?rand(1000,99999):'';
 		$pass=keygen_unique(0,8,11);
-		$sql_email=mysql_real_escape_string($email);
-		$sql_phone=mysql_real_escape_string($phone);
+		$sql_email=$db->real_escape_string($email);
+		$sql_phone=$db->real_escape_string($phone);
 
-		$sql_login=mysql_real_escape_string($login);
+		$sql_login=$db->real_escape_string($login);
 		if(@$CONFIG['site']['pass_type']=='MD5')
 		{
 			$sql_pass_hash=MD5($pass);
@@ -519,9 +536,9 @@ else if($mode=='regs')
 			$sql_pass_type='CRYPT';
 		}
 
-		$res=mysql_query("INSERT INTO `users` (`name`, `pass`, `pass_type`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `reg_date`, `reg_email_subscribe`, `reg_phone_subscribe`)
+		$res=$db->query("INSERT INTO `users` (`name`, `pass`, `pass_type`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `reg_date`, `reg_email_subscribe`, `reg_phone_subscribe`)
 		VALUES ('$sql_login', '$sql_pass_hash', '$sql_pass_type',  NOW(), '$sql_email', '$email_conf', '$sql_phone', '$phone_conf', NOW(), $subs, $subs )");
-		if(mysql_errno())	throw new MysqlException("Не удалось добвать пользователя! Попробуйте позднее!");
+		if(!$res)	throw new MysqlException("Не удалось добвать пользователя! Попробуйте позднее!");
 
 		if($email)
 		{
@@ -534,21 +551,21 @@ else if($mode=='regs')
 			require_once('include/sendsms.php');
 			$sender=new SMSSender();
 			$sender->setNumber($phone);
-			$sender->setText("Ваш код: $phone_conf\nЛогин:$login\nПароль:$pass\n{$CONFIG['site']['name']}");
+			$sender->setContent("Ваш код: $phone_conf\r\nЛогин:$login\r\nПароль:$pass\r\n{$CONFIG['site']['name']}");
 			$sender->send();
 		}
-		mysql_query("COMMIT");
-		$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
+		$db->query("COMMIT");
+		$tmpl->addContent("<h1 id='page-title'>Завершение регистрации</h1>
 		<form action='/login.php' method='post'>
 		<input type='hidden' name='mode' value='conf'>
 		<input type='hidden' name='login' value='$login'>");
 		if($email)
-			$tmpl->AddText("Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по email:</b><br>
+			$tmpl->addContent("Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по email:</b><br>
 			<input type='text' name='e'><br>Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!<br><br>");
 		if($phone)
-			$tmpl->AddText("Для проверки, что номер телефона принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по SMS:</b><br>
+			$tmpl->addContent("Для проверки, что номер телефона принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по SMS:</b><br>
 			<input type='text' name='p'><br>SMS сообщения обычно приходят в течение 1 часа.<br><br>");
-		$tmpl->AddText("<button type='submit'>Продолжить</button>
+		$tmpl->addContent("<button type='submit'>Продолжить</button>
 		</form>");
 
 
@@ -560,16 +577,16 @@ else if($mode=='regs')
 	}
 	catch(RegException $e)
 	{
-		mysql_query("ROLLBACK");
-		$tmpl->SetTitle("Регистрация");
-		$tmpl->SetText("<h1 id='page-title'>Регистрация</h1>");
+		$db->query("ROLLBACK");
+		$tmpl->setTitle("Регистрация");
+		$tmpl->setContent("<h1 id='page-title'>Регистрация</h1>");
 		$tmpl->msg("Проверьте данные! ".$e->getMessage(),"err","Неверный ввод!");
 		RegForm($e->target, $e->getMessage());
 
 	}
 	catch(Exception $e)
 	{
-		mysql_query("ROLLBACK");
+		$db->query("ROLLBACK");
 		$tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
 	}
 
@@ -580,67 +597,63 @@ else if($mode=='conf')
 	$e=@$_REQUEST['e'];
 	$p=@$_REQUEST['p'];
 
-	$sql_login=mysql_real_escape_string($login);
-	$res=mysql_query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
-	if($nxt=mysql_fetch_assoc($res))
+	$sql_login=$db->real_escape_string($login);
+	$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
+	if(!$res)	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
+	if($nxt=$res->fetch_assoc())
 	{
 		$e_key=$p_key=0;
 		if($e && $e==$nxt['reg_email_confirm'])
 		{
-			mysql_query("UPDATE `users` SET `reg_email_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
+			$r=$db->query("UPDATE `users` SET `reg_email_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
+			if(!$r)	throw new MysqlException("Не удалось обновить данные. Попробуйте позднее!");
 		}
 		else if($e) $e_key=1;
 
 		if($p && $p==$nxt['reg_phone_confirm'])
 		{
-			mysql_query("UPDATE `users` SET `reg_phone_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
+			$r=$db->query("UPDATE `users` SET `reg_phone_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
+			if(!$r)	throw new MysqlException("Не удалось обновить данные. Попробуйте позднее!");
 		}
 		else if($p) $p_key=1;
 
-		$res=mysql_query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
-		$nxt=mysql_fetch_assoc($res);
+		$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
+		if(!$res)	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
+		$nxt=$res->fetch_assoc();
 
 		if(($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='') || ($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='') )
 		{
-			$tmpl->AddText("<h1 id='page-title'>Завершение регистрации</h1>
+			$tmpl->addContent("<h1 id='page-title'>Завершение регистрации</h1>
 			<form action='/login.php' method='post'>
 			<input type='hidden' name='mode' value='conf'>
 			<input type='hidden' name='login' value='$login'>");
 			if($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='')
 			{
-				$tmpl->AddText("Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по email:</b><br>
+				$tmpl->addContent("Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по email:</b><br>
 				<input type='text' name='e'>");
-				if($e_key)	$tmpl->AddText("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
-				$tmpl->AddText("<br>Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!<br><br>");
+				if($e_key)	$tmpl->addContent("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
+				$tmpl->addContent("<br>Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!<br><br>");
 			}
 			if($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='')
 			{
-				$tmpl->AddText("Для проверки, что номер телефона принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по SMS:</b><br>
+				$tmpl->addContent("Для проверки, что номер телефона принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по SMS:</b><br>
 				<input type='text' name='p'>");
-				if($e_key)	$tmpl->AddText("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
-				$tmpl->AddText("<br>SMS сообщения обычно приходят в течение 1 часа.<br><br>");
+				if($e_key)	$tmpl->addContent("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
+				$tmpl->addContent("<br>SMS сообщения обычно приходят в течение 1 часа.<br><br>");
 			}
-			$tmpl->AddText("<button type='submit'>Продолжить</button>
+			$tmpl->addContent("<button type='submit'>Продолжить</button>
 			</form>");
 		}
 		else
 		{
-			$ip=mysql_real_escape_string(getenv("REMOTE_ADDR"));
-			$ua=mysql_real_escape_string($_SERVER['HTTP_USER_AGENT']);
-			mysql_query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
+			$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
+			$ua=$db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
+			$res=$db->query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
 			VALUES ({$nxt['id']}, NOW(), '$ip', '$ua', 'register')");
-			if(mysql_errno())	throw new MysqlException("Не удалось выполнить вход.");
+			if(!$res)	throw new MysqlException("Не удалось выполнить вход.");
 			$_SESSION['uid']=$nxt['id'];
 			$_SESSION['name']=$nxt['name'];
-// 			if($_SESSION['last_page'])
-// 			{
-// 				$lp=$_SESSION['last_page'];
-// 				unset($_SESSION['last_page']);
-// 				header("Location: ".$lp);
-// 			}
-			//else
+
 			$tmpl->msg("Регистрация завершена! Теперь Вам доступны новые возможности!","ok");
 		}
 	}
@@ -652,7 +665,7 @@ else if($mode=='rem')
 
 	if(!isset($_REQUEST['login']))
 	{
-		$tmpl->SetText("<h1 id='page-title'>Восстановление доступа</h1>
+		$tmpl->setContent("<h1 id='page-title'>Восстановление доступа</h1>
 		<p id='text'>Для начала процедуры смены пароля введите логин на сайте, номер телефона, или адрес электронной почты, указанный при регистрации:</p>
 		<form method='post'>
 		<input type='hidden' name='mode' value='rem'>
@@ -671,36 +684,36 @@ else if($mode=='rem')
 		if(strtoupper($_SESSION['captcha_keystring'])!=strtoupper($_REQUEST['img']))
 			throw new Exception('Код подтверждения введён неверно');
 
-		$sql_login=mysql_real_escape_string($login);
-		$res=mysql_query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `disabled`, `disabled_reason` FROM `users` WHERE `name`='$sql_login' OR `reg_email`='$sql_login' OR `reg_phone`='$sql_login'");
-		if(mysql_errno())		throw new MysqlException("Не удалось получить данные пользователя");
-		if(!mysql_num_rows($res))	throw new Exception("Пользователь не найден!");
-		$user_info=mysql_fetch_assoc($res);
+		$sql_login=$db->real_escape_string($login);
+		$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `disabled`, `disabled_reason` FROM `users` WHERE `name`='$sql_login' OR `reg_email`='$sql_login' OR `reg_phone`='$sql_login'");
+		if(!$res)		throw new MysqlException("Не удалось получить данные пользователя");
+		if(! $res->num_rows )	throw new Exception("Пользователь не найден!");
+		$user_info=$res->fetch_assoc();
 		if($user_info['disabled'])	throw new Exception("Пользователь заблокирован (забанен). Причина блокировки: ".$user_info['disabled_reason']);
 
 		if(!isset($_REQUEST['method']))
 		{
-			$tmpl->AddText("<h1 id='page-title'>Восстановление доступа - шаг 2</h1>
+			$tmpl->addContent("<h1 id='page-title'>Восстановление доступа - шаг 2</h1>
 			<form method='post'>
 			<input type='hidden' name='mode' value='rem'>
 			<input type='hidden' name='login' value='$login'>
 			<input type='hidden' name='img' value='{$_REQUEST['img']}'>
 			<fieldset><legend>Восстановить доступ при помощи</legend>");
 			if($user_info['reg_email']!='' && $user_info['reg_email_confirm']=='1')
-				$tmpl->AddText("<label><input type='radio' name='method' value='email'>Электронной почты</label><br>");
+				$tmpl->addContent("<label><input type='radio' name='method' value='email'>Электронной почты</label><br>");
 			if(preg_match('/^\+79\d{9}$/', $user_info['reg_phone']) && $user_info['reg_phone_confirm']=='1' && @$CONFIG['site']['allow_phone_regist'])
-				$tmpl->AddText("<label><input type='radio' name='method' value='sms'>SMS на мобильный телефон</label><br>");
+				$tmpl->addContent("<label><input type='radio' name='method' value='sms'>SMS на мобильный телефон</label><br>");
 			if(@$CONFIG['site']['allow_openid'])
 			{
-				$res=mysql_query("SELECT `openid_identify` FROM `users_openid` WHERE `user_id`={$user_info['id']}");
-				if(mysql_errno())		throw new MysqlException("Не удалось получить данные openid");
-				while($openid_info=mysql_fetch_row($res))
+				$res=$db->query("SELECT `openid_identify` FROM `users_openid` WHERE `user_id`={$user_info['id']}");
+				if(!$res)		throw new MysqlException("Не удалось получить данные openid");
+				while($openid_info=$res->fetch_row())
 				{
 					$oid=htmlentities($openid_info[0],ENT_QUOTES);
-					$tmpl->AddText("<label><input type='radio' name='method' value='$oid'>OpenID аккаунта $oid</label><br>");
+					$tmpl->addContent("<label><input type='radio' name='method' value='$oid'>OpenID аккаунта $oid</label><br>");
 				}
 			}
-			$tmpl->AddText("</fieldset>
+			$tmpl->addContent("</fieldset>
 			<br><button type='submit'>Далее</button>
 			</form>");
 		}
@@ -709,13 +722,13 @@ else if($mode=='rem')
 			$method=$_REQUEST['method'];
 			if($method=='email')
 			{
-				mysql_query("START TRANSACTION");
+				$db->query("START TRANSACTION");
 				$key=substr(md5($user_info['id'].$user_info['name'].$user_info['reg_email'].time().rand(0,1000000)),8);
 				$proto='http';
 				if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
 
-				mysql_query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
-				if(mysql_errno())		throw new MysqlException("Не удалось включить режим смены пароля");
+				$res=$db->query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
+				if(!$res)		throw new MysqlException("Не удалось включить режим смены пароля");
 				$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта {$user_info['name']}.
 				Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&login={$user_info['name']}&s=$key
 
@@ -723,21 +736,21 @@ else if($mode=='rem')
 				Сообщение сгенерировано автоматически, отвечать на него не нужно!";
 				mailto($user_info['reg_email'],"Восстановление забытого пароля",$msg);
 				$tmpl->msg("Код для смены пароля выслан Вам по электронной почте. Проверьте почтовый ящик.","ok");
-				mysql_query("COMMIT");
+				$db->query("COMMIT");
 			}
 			else if($method=='sms')
 			{
 				require_once('include/sendsms.php');
-				mysql_query("START TRANSACTION");
+				$db->query("START TRANSACTION");
 				$key=rand(100000,99999999);
-				mysql_query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
-				if(mysql_errno())		throw new MysqlException("Не удалось включить режим смены пароля");
+				$res=$db->query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
+				if(! $res)		throw new MysqlException("Не удалось включить режим смены пароля");
 
 				$sender=new SMSSender();
 				$sender->setNumber($user_info['reg_phone']);
-				$sender->setText("Ваш код: $key\n{$CONFIG['site']['name']}");
+				$sender->setContent("Ваш код: $key\n{$CONFIG['site']['name']}");
 				$sender->send();
-				mysql_query("COMMIT");
+				$res->query("COMMIT");
 				$tmpl->msg("Код для смены пароля выслан Вам по SMS","ok");
 			}
 			else if(@$CONFIG['site']['allow_openid'])
@@ -749,7 +762,7 @@ else if($mode=='rem')
 
 			if($method!='openid')
 			{
-				$tmpl->AddText("<h1 id='page-title'>Восстановление доступа - шаг 3</h1>
+				$tmpl->addContent("<h1 id='page-title'>Восстановление доступа - шаг 3</h1>
 				<form method='post'>
 				<input type='hidden' name='mode' value='remn'>
 				<input type='hidden' name='login' value='$login'>
@@ -762,14 +775,13 @@ else if($mode=='rem')
 
 	}
 }
-/// До сюда сделано
 else if($mode=='remn')
 {
-	$sql_key=mysql_real_escape_string(@$_REQUEST['s']);
-	$sql_login=mysql_real_escape_string(@$_REQUEST['login']);
-	$res=mysql_query("SELECT `id`, `name` FROM `users` WHERE `pass_change`='$sql_key' AND `name`='$sql_login'");
-	if(mysql_errno())		throw new MysqlException("Не удалось получить данные смены пароля");
-	if($nxt=mysql_fetch_row($res))
+	$sql_key=$db->real_escape_string(@$_REQUEST['s']);
+	$sql_login=$db->real_escape_string(@$_REQUEST['login']);
+	$res=$db->query("SELECT `id`, `name` FROM `users` WHERE `pass_change`='$sql_key' AND `name`='$sql_login'");
+	if(! $res)		throw new MysqlException("Не удалось получить данные смены пароля");
+	if($nxt=$res->fetch_row())
 	{
 		$pass=keygen_unique(0,8,11);
 
@@ -793,37 +805,37 @@ else if($mode=='remn')
 			$sql_pass_type='CRYPT';
 		}
 
-		mysql_query("UPDATE `users` SET `pass`='$sql_pass_hash', `pass_type`='$sql_pass_type', `pass_change`='', `pass_date_change`=NOW() WHERE `id`='$nxt[0]'");
-		if(mysql_errno())		throw new MysqlException("Не удалось обновить пароль");
+		$res=$db->query("UPDATE `users` SET `pass`='$sql_pass_hash', `pass_type`='$sql_pass_type', `pass_change`='', `pass_date_change`=NOW() WHERE `id`='$nxt[0]'");
+		if(!$res)		throw new MysqlException("Не удалось обновить пароль");
 		$_SESSION['uid']=$nxt[0];
 		$_SESSION['name']=$nxt[1];
-		$tmpl->AddText("<h1>Завершение смены пароля</h1>
+		$tmpl->addContent("<h1>Завершение смены пароля</h1>
 		$nxt[1], ваш новый пароль:<br>
 		$pass<br>Не забудьте его!");
 	}
 	else
 	{
-		mysql_query("UPDATE `users` SET `pass_change`='' WHERE `login`='$sql_login'");
+		$res=$db->query("UPDATE `users` SET `pass_change`='' WHERE `login`='$sql_login'");
+		if(!$res)		throw new MysqlException("Не удалось сбросить код смены пароля");
 		$tmpl->msg("Код неверен или устарел","err");
 	}
-
 }
 else if($mode=='unsubscribe')
 {
-	$tmpl->SetText("<h1 id='page-title'>Отказ от рассылки</h1>");
-	$email=rcvstrsql('email');
+	$tmpl->setContent("<h1 id='page-title'>Отказ от рассылки</h1>");
+	$email=$db->real_escape_string($_REQUEST['email']);
 	$c=0;
-	$res=mysql_query("UPDATE `users` SET `reg_email_subscribe`='0' WHERE `reg_email`='$email'");
-	if(mysql_errno())		throw new MysqlException("Не удалось отписаться. Сообщите администратору о проблеме.");
-	if(mysql_affected_rows())
+	$res=$db->query("UPDATE `users` SET `reg_email_subscribe`='0' WHERE `reg_email`='$email'");
+	if(!$res)		throw new MysqlException("Не удалось отписаться. Сообщите администратору о проблеме.");
+	if($db->affected_rows())
 	{
 		$tmpl->msg("Вы успешно отказались от автоматической рассылки!","ok");
 		$c=1;
 	}
 
-	$res=mysql_query("UPDATE `doc_agent` SET `no_mail`='1' WHERE `email`='$email'");
-	if(mysql_errno())		throw new MysqlException("Не удалось отписаться. Сообщите администратору о проблеме.");
-	if(mysql_affected_rows())
+	$res=$db->query("UPDATE `doc_agent` SET `no_mail`='1' WHERE `email`='$email'");
+	if(! $res)		throw new MysqlException("Не удалось отписаться. Сообщите администратору о проблеме.");
+	if($db->affected_rows)
 	{
 		$tmpl->msg("В нашей клиентской базе Ваш адрес помечен, как нежелательный для рассылки.","ok");
 		$c=1;
@@ -833,17 +845,16 @@ else if($mode=='unsubscribe')
 }
 else $tmpl->logger("Uncorrect mode!");
 
-
 }
 catch(MysqlException $e)
 {
-	global $CONFIG;
+	$e->db->rollback();
 	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
 	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'], $e->getMessage());
 }
 catch(Exception $e)
 {
-	mysql_query("ROLLBACK");
+	$db->query("ROLLBACK");
 	$tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
 }
 

@@ -18,8 +18,9 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+exit(0);
 
-// СТАРЫЙ ФОРУМ, НЕОБХОДИМА ПОЛНАЯ ПЕРЕРАБОТКА
+// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 include_once("function.php");
 
@@ -61,17 +62,17 @@ function userinfo($userid,$kinf="")
         else if(file_exists(strtolower("/var/wwwroot/gate/cphoto/$nxt[0].jpg")))
         $ava=strtolower("<img src='cphoto/$nxt[0].jpg' width=90>");
         echo"<b>$nxt[0]</b><br>$ava<br><div class=mini>";
-        if($nxt[2]) echo"Администратор клуба<br>";
-        if($nxt[1]) echo"Менеджер<br>";
-        if($nxt[3]) echo"Из сетки<br>";
-        if($userid==@$kinf[4]) echo"Модератор раздела<br>";
-        if(@$nx[0]>0) echo"Сообщений: $nx[0]<br>";
+        if($nxt[2]) echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ<br>";
+        if($nxt[1]) echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ<br>";
+        if($nxt[3]) echo"пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ<br>";
+        if($userid==@$kinf[4]) echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ<br>";
+        if(@$nx[0]>0) echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: $nx[0]<br>";
         echo"</div>";
         if($nxt[4]) echo"<br>UIN:$nxt[4]<br>";
     }
     else
     {
-        echo"<b>Некто</b><br>";
+        echo"<b>пїЅпїЅпїЅпїЅпїЅ</b><br>";
     }
 }
 
@@ -129,15 +130,15 @@ if($k!=0)
 $arights=$urights|$defrights;
 
 
-top("Форум");
+top("пїЅпїЅпїЅпїЅпїЅ");
     echo"$arights<br>";
-echo"<a href='forum.php?mode=new'>Новые темы</a> | <a href='text.php?mid=pravilaforuma'>Правила форума</a><br>";
+echo"<a href='forum.php?mode=new'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ</a> | <a href='text.php?mid=pravilaforuma'>пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ</a><br>";
 
-if($mode=="") // ********************************* разделы
+if($mode=="") // ********************************* пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 {
     $res=mysql_query("SELECT * FROM forum_keys");
-    echo"Форум САЛЯРИС<br>";
-    echo"Разделы:<table cellSpacing=0 cellPadding=2 width='100%' border=0>";
+    echo"пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ<br>";
+    echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅ:<table cellSpacing=0 cellPadding=2 width='100%' border=0>";
     $i=0;
     while($nxt=mysql_fetch_row($res))
     { 
@@ -148,30 +149,30 @@ if($mode=="") // ********************************* разделы
            $rs=mysql_query("SELECT name FROM users WHERE id='$nxt[4]'");
            $nm=@mysql_result($rs,0,0);
         }
-        if($nm=="") $nm="Модератор: admin";
-        else $nm="Модератор: $nm";
+        if($nm=="") $nm="пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: admin";
+        else $nm="пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: $nm";
         echo"<tr class=lin$i><td><a href='forum.php?mode=lt&k=$nxt[0]'>
         <b>$nxt[1]</b></a><br>$nxt[2]<div class=mini>$nm</div></td></tr>";
     }
     echo"</table>";
     if(forum_rights("forum_createkey",$arights))
     {
-        echo"Создать раздел:<br><form action='forum.php'>       
+        echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ:<br><form action='forum.php'>       
         <input type='hidden' name='mode' value='ck'>
         <input type='text' name='txt'><br>
         <input type='text' name='txt2'><br>
-        <input type='submit' value='Создать'>
+        <input type='submit' value='пїЅпїЅпїЅпїЅпїЅпїЅпїЅ'>
         </form>";   
     }
-    else if($ll) echo"У тебя нет прав для создания разделов!";
-    else echo"Создавать темы в этом разделе могут только зарегистрированные пользователи!";
+    else if($ll) echo"пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!";
+    else echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!";
 }
-else if($mode=="lt") // ****************************** темы
+else if($mode=="lt") // ****************************** пїЅпїЅпїЅпїЅ
 {
     $res=mysql_query("SELECT * FROM forum_themes WHERE id_key='$k' ORDER BY last_date DESC");
-    echo"<a href='forum.php'>Форум САЛЯРИС</a> -&gt $kinf[1]<br>";
-    echo"Темы раздела:<table cellSpacing=0 cellPadding=2 width='100%' border=0>";
-    echo"<tr class=lin0><td>Тема</a></td><td width=100>Создана</td><td width=100>Ответов</td><td width=100>Последний</td></tr>";
+    echo"<a href='forum.php'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a> -&gt $kinf[1]<br>";
+    echo"пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ:<table cellSpacing=0 cellPadding=2 width='100%' border=0>";
+    echo"<tr class=lin0><td>пїЅпїЅпїЅпїЅ</a></td><td width=100>пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</td><td width=100>пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</td><td width=100>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</td></tr>";
     
     $i=0;
     while($nxt=mysql_fetch_row($res))
@@ -179,10 +180,10 @@ else if($mode=="lt") // ****************************** темы
         $i=1-$i;
         $rs=mysql_query("SELECT name FROM users WHERE id='$nxt[4]'");
         $nm=@mysql_result($rs,0,0);
-        if($nm=="") $nm="некто";
+        if($nm=="") $nm="пїЅпїЅпїЅпїЅпїЅ";
         $rs=mysql_query("SELECT name FROM users WHERE id='$nxt[11]'");
         $nm2=@mysql_result($rs,0,0);
-        if($nm2=="") $nm2="некто";
+        if($nm2=="") $nm2="пїЅпїЅпїЅпїЅпїЅ";
         $tt=date("d.m.y H:i:s",$nxt[5]);
         $tt2=date("d.m.y H:i:s",$nxt[8]);
         if($nxt[7]) $nn="$nm2<br>$tt2"; else $nn="---";
@@ -192,23 +193,23 @@ else if($mode=="lt") // ****************************** темы
     echo"</table>";
     if(forum_rights("forum_createtheme",$arights))
     {
-        echo"Создать тему:<br><form action='forum.php'>       
+        echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ:<br><form action='forum.php'>       
         <input type='hidden' name='mode' value='ct'>
         <input type='hidden' name='k' value='$k'>
         <input type='text' name='txt'><br>
         <textarea name='txt2'></textarea>
-        <input type='submit' value='Создать'>
+        <input type='submit' value='пїЅпїЅпїЅпїЅпїЅпїЅпїЅ'>
         </form>";   
     }
-    else if($ll) echo"У тебя нет прав для создания тем в этом разделе!";
-    else echo"Создавать темы в этом разделе могут только зарегистрированные пользователи!";
+    else if($ll) echo"пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ!";
+    else echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!";
 
 }
-else if($mode=="vt") // ****************************** сообщения
+else if($mode=="vt") // ****************************** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 {
     if($tinf[0])
     {
-        echo"<a href='forum.php'>Форум САЛЯРИС</a> -&gt <a href='forum.php?mode=lt&k=$kinf[0]'>$kinf[1]</a> -&gt $tinf[2]<br>";
+        echo"<a href='forum.php'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a> -&gt <a href='forum.php?mode=lt&k=$kinf[0]'>$kinf[1]</a> -&gt $tinf[2]<br>";
         echo"<table cellSpacing=0 cellPadding=2 width='100%' border=0>
         <tr><td width=200 class=lin1 valign=top>";
         userinfo($tinf[4],$kinf);
@@ -217,10 +218,10 @@ else if($mode=="vt") // ****************************** сообщения
         if($tinf[13]) 
         {  
            $tr=date("Y.m.d H:i:s",$tinf[13]); 
-           $tx.="<br><br><i>Отредактировано: $tr";
+           $tx.="<br><br><i>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: $tr";
         }
         if($ll) if($tinf[4]==@$GLOBALS['id'])
-           $tx.="<div width=100% align=right><a href='forum.php?mode=et&t=$tinf[0]'>Редактировать</a></div>";
+           $tx.="<div width=100% align=right><a href='forum.php?mode=et&t=$tinf[0]'>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a></div>";
         echo"<br>$tt<br>$tinf[12]</td><td class=lin0 valign=top>$tx</td></tr>
         </table>";       
         $s="";
@@ -228,7 +229,7 @@ else if($mode=="vt") // ****************************** сообщения
         {
            $ld=@$GLOBALS['lastdate'];
            $s="AND date>'$ld'";
-           echo"<center> ~~~~~~~~~~~~~~~ Новые сообщения в этой теме: ~~~~~~~~~~~~~~~ </center>";        
+           echo"<center> ~~~~~~~~~~~~~~~ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ: ~~~~~~~~~~~~~~~ </center>";        
         }
         $res=mysql_query("SELECT * FROM forum_messages WHERE id_t='$t'$s ORDER BY date");
         $i=0;
@@ -247,10 +248,10 @@ else if($mode=="vt") // ****************************** сообщения
             if($nx[6]) 
             {  
                 $tr=date("Y.m.d H:i:s",$nx[6]); 
-                $tx.="<br><br><i>Отредактировано: $tr";
+                $tx.="<br><br><i>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: $tr";
             }
             if($ll) if($nx[3]==@$GLOBALS['id'])
-               $tx.="<div width=100% align=right><a href='forum.php?mode=em&m=$nx[0]'>Редактировать</a></div>";
+               $tx.="<div width=100% align=right><a href='forum.php?mode=em&m=$nx[0]'>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a></div>";
             echo"<br>$tt<br>$nx[5]</td><td class=lin$i valign=top>$tx</td></tr>
             </table>";
         }
@@ -259,25 +260,25 @@ else if($mode=="vt") // ****************************** сообщения
 		if(forum_rights("forum_postmessage",$arights))
 		{  
 		
-		echo"Ответить:<br><form action='forum.php'>       
+		echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:<br><form action='forum.php'>       
 		<input type='hidden' name='mode' value='ms'>
 		<input type='hidden' name='t' value='$t'>
 		
 		<textarea name='txt'></textarea>
-		<input type='submit' value='Отправить'>
+		<input type='submit' value='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ'>
 		</form>";   
 		}
-		else if($ll) echo"У тебя нет прав для написания ответа в этой теме!";
-		else echo"Писать ответы в этой теме могут только зарегистрированные пользователи!";
+		else if($ll) echo"пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ!";
+		else echo"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!";
 	}
-	else echo"<br><b>Тема закрыта, писать ответы нельзя!</b>";
+	else echo"<br><b>пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ!</b>";
 
     }      
-    else msg("Тема не найдена!");
+    else msg("пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
 }
-else if($mode=="ms") // ****************************** отправка сообщения
+else if($mode=="ms") // ****************************** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 {
-    echo"<a href='forum.php'>Форум САЛЯРИС</a> -&gt <a href='forum.php?mode=lt&t=$kinf[0]'>$kinf[1]</a> -&gt
+    echo"<a href='forum.php'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a> -&gt <a href='forum.php?mode=lt&t=$kinf[0]'>$kinf[1]</a> -&gt
     <a href='forum.php?mode=vt&t=$tinf[0]'>$tinf[2]</a><br>";
     if(forum_rights("forum_postmessage",$arights))
     {
@@ -287,13 +288,13 @@ else if($mode=="ms") // ****************************** отправка сообщения
         $res=mysql_query("INSERT INTO users_data (id,forum_count) VALUES ('$uid','0')");
 	$res=mysql_query("UPDATE users_data SET forum_count=forum_count+'1' WHERE id='$uid'"); 
 
-        msg("Сообщение добавлено!");
+        msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
     }
-    else msg("У тебя нет прав на добавление cообщений!","error"); 
+    else msg("пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ cпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!","error"); 
 }
-else if($mode=="ct") // ******************************* создание темы
+else if($mode=="ct") // ******************************* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 {
-    echo"<a href='forum.php'>Форум САЛЯРИС</a> -&gt <a href='forum.php?mode=lt&k=$kinf[0]'>$kinf[1]</a><br>";
+    echo"<a href='forum.php'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a> -&gt <a href='forum.php?mode=lt&k=$kinf[0]'>$kinf[1]</a><br>";
     if(forum_rights("forum_createtheme",$arights))
     {
         $tm=time();
@@ -301,25 +302,25 @@ else if($mode=="ct") // ******************************* создание темы
 	$res=mysql_query("UPDATE users_data SET forum_count=forum_count+'1' WHERE id='$uid'"); 
         $res=mysql_query("INSERT INTO forum_themes (`id_key`,`name`,`text`,`autor`,`date`,`last_date`,`def_rights`,`ip`) VALUES ('$k','$txt','$txt2','$uid','$tm','$tm',$defrights,'$ip')");    
         
-        if($res)msg("Тема создана!");
-        else msg("Ошибка создания темы!");
+        if($res)msg("пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
+        else msg("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ!");
     }
-else msg("У тебя нет прав на создание темы!","error"); 
+else msg("пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ!","error"); 
 }
-else if($mode=="ck") // ******************************** создание раздела 
+else if($mode=="ck") // ******************************** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
 {
-    echo"<a href='forum.php'>Форум САЛЯРИС</a><br>";
+    echo"<a href='forum.php'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a><br>";
     if(forum_rights("forum_createkey",$arights))
     {
         $tm=time();
         $res=mysql_query("INSERT INTO forum_keys (`name`,`desc`,`def_rights`) VALUES ('$txt','$txt2',$defrights)");    
         
-        if($res)msg("Раздел создан!");
-        else msg("Ошибка создания раздела!");
+        if($res)msg("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ!");
+        else msg("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
     }
-else msg("У тебя нет прав на создание разделов!","error"); 
+else msg("пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!","error"); 
 }
-else if($mode=="new") // ****************************** новые темы
+else if($mode=="new") // ****************************** пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 {
     $lastdate=@$GLOBALS['lastdate'];
     $res=mysql_query("SELECT `forum_themes`.`id`,`forum_themes`.`id_key`,`forum_themes`.`name`,
@@ -327,9 +328,9 @@ else if($mode=="new") // ****************************** новые темы
     `forum_themes`.`lock`,`forum_themes`.`close`,`forum_themes`.`last_msg`,`forum_keys`.`name`
      FROM `forum_themes`,`forum_keys` WHERE last_date>'$lastdate' AND `forum_themes`.`id_key`=`forum_keys`.`id`
      ORDER BY `forum_themes`.`last_date` DESC");
-    echo"<a href='forum.php'>Форум САЛЯРИС</a> -&gt Темы с новыми сообщениями<br>";
-    echo"Новые темы:<table cellSpacing=0 cellPadding=2 width='100%' border=0>";
-    echo"<tr class=lin0><td>Тема</a></td><td width=100>Создана</td><td width=100>Ответов</td><td width=100>Последний</td></tr>";
+    echo"<a href='forum.php'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a> -&gt пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ<br>";
+    echo"пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ:<table cellSpacing=0 cellPadding=2 width='100%' border=0>";
+    echo"<tr class=lin0><td>пїЅпїЅпїЅпїЅ</a></td><td width=100>пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</td><td width=100>пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</td><td width=100>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</td></tr>";
     
     $i=0;
     while($nxt=mysql_fetch_row($res))
@@ -337,10 +338,10 @@ else if($mode=="new") // ****************************** новые темы
         $i=1-$i;
         $rs=mysql_query("SELECT name FROM users WHERE id='$nxt[3]'");
         $nm=@mysql_result($rs,0,0);
-        if($nm=="") $nm="некто";
+        if($nm=="") $nm="пїЅпїЅпїЅпїЅпїЅ";
         $rs=mysql_query("SELECT name FROM users WHERE id='$nxt[9]'");
         $nm2=@mysql_result($rs,0,0);
-        if($nm2=="") $nm2="некто";
+        if($nm2=="") $nm2="пїЅпїЅпїЅпїЅпїЅ";
         $tt=date("d.m.y H:i:s",$nxt[4]);
         $tt2=date("d.m.y H:i:s",$nxt[6]);
         if($nxt[9]) $nn="$nm2<br>$tt2"; else $nn="---";
@@ -350,16 +351,16 @@ else if($mode=="new") // ****************************** новые темы
 }
 else if($mode=="et")
 {
-    echo"<a href='forum.php'>Форум САЛЯРИС</a> -&gt <a href='forum.php?mode=lt&t=$kinf[0]'>$kinf[1]</a> -&gt
+    echo"<a href='forum.php'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ</a> -&gt <a href='forum.php?mode=lt&t=$kinf[0]'>$kinf[1]</a> -&gt
     <a href='forum.php?mode=vt&t=$tinf[0]'>$tinf[2]</a><br>";
     
     if($ll&&($tinf[4]==@$GLOBALS['id'])&&($t))
     {          
-        echo"Редактировать тему:<br><form action='forum.php'>       
+        echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ:<br><form action='forum.php'>       
         <input type='hidden' name='mode' value='ets'>
         <input type='hidden' name='t' value='$t'>
         <textarea name='txt2'>$tinf[3]</textarea><br>
-        <input type='submit' value='Сохранить'>
+        <input type='submit' value='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ'>
         </form>";   
     }
 }
@@ -369,8 +370,8 @@ else if($mode=="ets")
     { 
        $tm=time();
        $res=mysql_query("UPDATE forum_themes SET text='$txt2', edited='$tm' WHERE `id`='$t'");
-       if($res)msg("Изменения сохранены!");
-       else msg("Ошибка сохранения изменений!");   
+       if($res)msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
+       else msg("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");   
     }
 }
 else if($mode=="em")
@@ -382,21 +383,21 @@ else if($mode=="em")
         {
             if($nxt[3]==@$GLOBALS['id'])
             {          
-                echo"Редактировать сообщение:<br><form action='forum.php'>       
+                echo"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:<br><form action='forum.php'>       
                 <input type='hidden' name='mode' value='ems'>
                 <input type='hidden' name='m' value='$m'>
                 <textarea name='txt2'>$nxt[2]</textarea><br>
-                <input type='submit' value='Сохранить'>
+                <input type='submit' value='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ'>
                 </form>";   
             }
-            else msg("Внутренняя ошибка! Если ошибка будет повторяться - обратитесь к администратору!");
+            else msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
         }
-        else msg("Внутренняя ошибка! Если ошибка будет повторяться - обратитесь к администратору!");
+        else msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
         
     }
     else 
     {
-        msg("Внутренняя ошибка! Если ошибка будет повторяться - обратитесь к администратору!");
+        msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
         logadd("forum.php - incorrect mode ($mode), t=$t,k=$k,m=$m,ll=$ll,uid=$uid,ip=$ip");
     }
 }
@@ -411,24 +412,24 @@ else if($mode=="ems")
             {  
                 $tm=time();
                 $res=mysql_query("UPDATE forum_messages SET text='$txt2', edited='$tm' WHERE `id`='$m'");
-                if($res)msg("Изменения сохранены!");
-                else msg("Ошибка сохранения изменений!");  
+                if($res)msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
+                else msg("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");  
             }
-            else msg("Внутренняя ошибка! Если ошибка будет повторяться - обратитесь к администратору!");
+            else msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
         
         }
-        else msg("Внутренняя ошибка! Если ошибка будет повторяться - обратитесь к администратору!");
+        else msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
          
     }
-    else msg("Внутренняя ошибка! Если ошибка будет повторяться - обратитесь к администратору!");
+    else msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
         
 }
 else 
 {
-   msg("Внутренняя ошибка! Если ошибка будет повторяться - обратитесь к администратору!");
+   msg("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!");
    logadd("forum.php - incorrect mode ($mode), t=$t,k=$k,m=$m,ll=$ll,uid=$uid,ip=$ip");
 }
-echo"<br><br><a href='forum.php?mode=new'>Новые темы</a> | <a href='text.php?mid=pravilaforuma'>Правила форума</a>";
+echo"<br><br><a href='forum.php?mode=new'>пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ</a> | <a href='text.php?mid=pravilaforuma'>пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ</a>";
 
 bottom();
 ?>

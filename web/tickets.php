@@ -20,57 +20,64 @@
 include_once("core.php");
 need_auth();
 
-
-function p_menu($dop='')
+/// Класс, реализующий простейший треккер задач
+class TaskTracker
+{
+/// Меню треккера задач
+function PMenu($dop='')
 {
 	global $tmpl;
-	$tmpl->AddText("<h1>Планировщик задач - $dop</h1>");
-	$tmpl->SetTitle("Планировщик задач - $dop");
-	$tmpl->AddText("<a href='?mode='>Невыполненные задачи для меня</a> | <a href='?mode=new'>Новая задача</a> | <a href='?mode=viewall'>Все задачи</a> | <a href='?mode=my'>Мои задачи</a>");
+	$tmpl->addContent("<h1>Планировщик задач - $dop</h1>");
+	$tmpl->setTitle("Планировщик задач - $dop");
+	$tmpl->addContent("<a href='?mode='>Невыполненные задачи для меня</a> | <a href='?mode=new'>Новая задача</a> | <a href='?mode=viewall'>Все задачи</a> | <a href='?mode=my'>Мои задачи</a>");
 }
 
+/// Показать задачу
+/// @param n Номер задачи
 function ShowTicket($n)
 {
-	global $tmpl;
-	$res=mysql_query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `t`.`name`, `tickets`.`text`, `tickets`.`state`
+	global $tmpl, $db;
+	settype($n, 'int');
+	$res=$db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `t`.`name`, `tickets`.`text`, `tickets`.`state`
 	FROM `tickets`
 	LEFT JOIN `users` AS `a` ON `a`.`id`=`tickets`.`autor`
 	LEFT JOIN `users` AS `t` ON `t`.`id`=`tickets`.`to_uid`
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	WHERE `tickets`.`id`='$n'");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить данные задачи");
-	$nxt=mysql_fetch_row($res);
+	if(!$res)	throw new MysqlException("Не удалось получить данные задачи");
+	$nxt=$res->fetch_row();
 	if(!$nxt)	$tmpl->msg("Задача не найдена!","err");
 	else
 	{
-		$tmpl->AddText("<h2>$nxt[2]</h2>
+		$tmpl->addContent("<h2>".html_out($nxt[2])."</h2>
 		<b>Дата создания:</b> $nxt[1]<br>
 		<b>Важность:</b> $nxt[3]<br>
 		<b>Автор:</b> $nxt[4]<br>
-		<b>Исполнитель:</b> $nxt[7]<br>
+		<b>Исполнитель:</b> ".html_out($nxt[7])."<br>
 		<b>Срок:</b> $nxt[5]<br>
 		<b>Состояние:</b> $nxt[6]<br>
-		<b>Описание:</b> $nxt[8]<br>
+		<b>Описание:</b> ".html_out($nxt[8])."<br>
 		<ul>");
-		$res=mysql_query("SELECT `users`.`name`, `tickets_log`.`date`, `tickets_log`.`text` FROM `tickets_log`
+		$res=$db->query("SELECT `users`.`name`, `tickets_log`.`date`, `tickets_log`.`text` FROM `tickets_log`
 		LEFT JOIN `users` ON `users`.`id`=`tickets_log`.`uid`
 		WHERE `ticket`='$nxt[0]'");
-		while($nx=mysql_fetch_row($res))
-			$tmpl->AddText("<li><i>$nx[1]</i>, <b>$nx[0]:</b> $nx[2]</li>");
+		if(!$res)	throw new MysqlException("Не удалось порлучить историю задачи");
+		while($nx=$res->fetch_row())
+			$tmpl->addContent("<li><i>$nx[1]</i>, <b>$nx[0]:</b> $nx[2]</li>");
 
-		$tmpl->AddText("</ul><br><br><fieldset><legend>Установить статус</legend>
+		$tmpl->addContent("</ul><br><br><fieldset><legend>Установить статус</legend>
 		<form action=''>
 		<input type='hidden' name='mode' value='set'>
 		<input type='hidden' name='opt' value='state'>
 		<input type='hidden' name='n' value='$nxt[0]'>
 		<select name='state'>");
-		$res=mysql_query("SELECT `id`, `name` FROM `tickets_state` WHERE `id`!='$nxt[9]'");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные состояний");
-		while($nx=mysql_fetch_row($res))
-			$tmpl->AddText("<option value='$nx[0]'>$nx[1]</option>");
+		$res=$db->query("SELECT `id`, `name` FROM `tickets_state` WHERE `id`!='$nxt[9]'");
+		if(!$res)	throw new MysqlException("Не удалось получить данные состояний");
+		while($nx=$res->fetch_row())
+			$tmpl->addContent("<option value='$nx[0]'>$nx[1]</option>");
 
-		$tmpl->AddText("</select><input type='submit' value='Сменить'></form></fieldset>
+		$tmpl->addContent("</select><input type='submit' value='Сменить'></form></fieldset>
 		<fieldset><legend>Добавить коментарий:</legend>
 		<form action=''>
 		<input type='hidden' name='mode' value='set'>
@@ -93,17 +100,18 @@ function ShowTicket($n)
 		<input type='hidden' name='opt' value='to_user'>
 		<input type='hidden' name='n' value='$nxt[0]'>
 		<select name='user_id'>");
-		$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
+
+		$res=$db->query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
 		FROM `users`
 		INNER JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 		WHERE `users_worker_info`.`worker`>'0' ORDER BY `users`.`name`");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные сотрудников");
-		while($nxt=mysql_fetch_row($res))
+		if(!$res)	throw new MysqlException("Не удалось получить данные сотрудников");
+		while($nxt=$res->fetch_row())
 		{
 			if($nxt[0]==0) continue;
-			$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] - $nxt[2] ($nxt[0])</option>");
+			$tmpl->addContent("<option value='$nxt[0]'>$nxt[1] - $nxt[2] ($nxt[0])</option>");
 		}
-		$tmpl->AddText("</select>
+		$tmpl->addContent("</select>
 		<input type='submit' value='Изменить'></form></fieldset>
 
 		<fieldset><legend>Изменить приоритет:</legend>
@@ -112,80 +120,88 @@ function ShowTicket($n)
 		<input type='hidden' name='opt' value='prio'>
 		<input type='hidden' name='n' value='$nxt[0]'>
 		<select name='prio'>");
-		$res=mysql_query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные приоритетов");
-		while($nxt=mysql_fetch_row($res))
-			$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
-		$tmpl->AddText("</select>
-		<input type='submit' value='Изменить'></form></fieldset>
-		");
+		$res=$db->query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
+		if(!$res)	throw new MysqlException("Не удалось получить данные приоритетов");
+		while($nxt=$res->fetch_row())
+			$tmpl->addContent("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
+		$tmpl->addContent("</select><input type='submit' value='Изменить'></form></fieldset>");
 	}
 }
 
-if(!isAccess('generic_tickets','view'))	throw new AccessException("Недостаточно привилегий");
-
-if($mode=='')
+/// Формирует список задач текущего пользователя
+function ShowMyTickets()
 {
-	p_menu("Задачи для меня");
-
-	$tmpl->AddText("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Срок<th>Статус");
-	$res=mysql_query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
+	global $tmpl, $db;
+	$this->PMenu("Задачи для меня");
+	$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Срок<th>Статус");
+	$res=$db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
 	LEFT JOIN `users` ON `users`.`id`=`tickets`.`autor`
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	WHERE `to_uid`='{$_SESSION['uid']}' AND `tickets`.`state`<'2'
 	ORDER BY `tickets`.`priority` DESC, `tickets`.`to_date` DESC, `tickets`.`date`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить данные задач");
+	if(!$res)	throw new MysqlException("Не удалось получить данные задач");
 	$i=0;
-	while($nxt=mysql_fetch_row($res))
+	while($nxt=$res->fetch_row($res))
 	{
-		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");
+		$tmpl->addContent("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");
 		$i=1-$i;
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 }
-else if($mode=='new')
-{
-	if(!isAccess('generic_tickets','create'))	throw new AccessException("Недостаточно привилегий");
 
-	p_menu("Новая задача");
-	$tmpl->AddText("<form action='' method='post'>
+/// Формирует форму создания задачи
+function ShowNewTicketForm()
+{
+	global $tmpl, $db;
+	if(!isAccess('generic_tickets','create'))	throw new AccessException("Недостаточно привилегий");
+	$this->PMenu("Новая задача");
+	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='add'>
 	Задача для:<br>
 	<select name='to_uid'>");
-	$res=mysql_query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
+	$res=$db->query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
 	FROM `users`
 	INNER JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 	WHERE `users_worker_info`.`worker`>'0' ORDER BY `users`.`name`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить данные сотрудников");
-	while($nxt=mysql_fetch_row($res))
+	if(!$res)	throw new MysqlException("Не удалось получить данные сотрудников");
+	while($nxt=$res->fetch_row())
 	{
 		if($nxt[0]==0) continue;
-		$tmpl->AddText("<option value='$nxt[0]'>$nxt[1] - $nxt[2] ($nxt[0])</option>");
+		$tmpl->addContent("<option value='$nxt[0]'>$nxt[1] - $nxt[2] ($nxt[0])</option>");
 	}
-	$tmpl->AddText("</select><br>
-	Название:<br>
-	<input type='text' name='theme'><br>
-	Важность, приоритет:<br>
-	<select name='prio'>");
-	$res=mysql_query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить данные приоритетов");
-	while($nxt=mysql_fetch_row($res))
-		$tmpl->AddText("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
+	$tmpl->addContent("</select><br>Название:<br><input type='text' name='theme'><br>
+	Важность, приоритет:<br><select name='prio'>");
+	$res=$db->query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
+	if(!$res)	throw new MysqlException("Не удалось получить данные приоритетов");
+	while($nxt=$res->fetch_row())
+		$tmpl->addContent("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
 
-	$tmpl->AddText("</select><br>
+	$tmpl->addContent("</select><br>
 	Срок (указывать не обязательно):<br>
 	<input type='text' name='to_date'  class='vDateField'><br>
 	Описание задачи:<br>
 	<textarea name='text'></textarea><br>
 	<input type='submit' value='Назначить задачу'>
 	</form>");
+}
+};
+
+if(!isAccess('generic_tickets','view'))	throw new AccessException("Недостаточно привилегий");
+
+$tt=new TaskTracker();
+
+if($mode=='')
+	$tt->ShowMyTickets();
+else if($mode=='new')
+{
+
 
 }
 else if($mode=='add')
 {
 	if(!isAccess('generic_tickets','create'))	throw new AccessException("Недостаточно привилегий");
-	p_menu("Сохранение задачи");
+	$this->PMenu("Сохранение задачи");
 	$uid=@$_SESSION['uid'];
 	$to_uid=rcv('to_uid');
 	$theme=rcv('theme');
@@ -217,7 +233,7 @@ else if($mode=='my')
 {
 	p_menu("Мои задачи");
 
-	$tmpl->AddText("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Для<th>Срок<th>Статус");
+	$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Для<th>Срок<th>Статус");
 	$res=mysql_query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
 	LEFT JOIN `users` ON `users`.`id`=`tickets`.`to_uid`
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
@@ -228,16 +244,16 @@ else if($mode=='my')
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");
+		$tmpl->addContent("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[5]<td>$nxt[6]");
 		$i=1-$i;
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 }
 else if($mode=='viewall')
 {
 	p_menu("Все задачи");
 
-	$tmpl->AddText("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Для<th>Срок<th>Статус");
+	$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Для<th>Срок<th>Статус");
 	$res=mysql_query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color`, `t`.`name` FROM `tickets`
 	LEFT JOIN `users` AS `a` ON `a`.`id`=`tickets`.`autor`
 	LEFT JOIN `users` AS `t` ON `t`.`id`=`tickets`.`to_uid`
@@ -248,10 +264,10 @@ else if($mode=='viewall')
 	$i=0;
 	while($nxt=mysql_fetch_row($res))
 	{
-		$tmpl->AddText("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[8]<td>$nxt[5]<td>$nxt[6]");
+		$tmpl->addContent("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]<td>$nxt[8]<td>$nxt[5]<td>$nxt[6]");
 		$i=1-$i;
 	}
-	$tmpl->AddText("</table>");
+	$tmpl->addContent("</table>");
 }
 else if($mode=='view')
 {
@@ -332,6 +348,8 @@ else if($mode=='set')
 		{
 			try
 			{
+				require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
+				$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
 				$xmppclient->connect();
 				$xmppclient->processUntil('session_start');
 				$xmppclient->presence();

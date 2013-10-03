@@ -74,7 +74,7 @@ class createPDF {
         $this->pdf=new PDF('P','mm','A4',$this->title,$this->articleurl,false);
         $this->pdf->SetCreator("MultiMag 0.1, TND Team (© BlackLight)");
         $this->pdf->SetDisplayMode('real');
-        $this->pdf->SetTitle($this->_convert($this->title));
+        $this->pdf->setTitle($this->_convert($this->title));
         $this->pdf->SetAuthor($this->author);
         $this->pdf->AddPage();
         $this->pdf->SetY(5);

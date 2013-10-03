@@ -20,15 +20,14 @@
 
 include_once("core.php");
 include_once("include/sitemap.inc.php");
-$tmpl->SetTitle("Карта сайта");
+$tmpl->setTitle("Карта сайта");
 
 if($mode=='xml')
 {
 	$tmpl->ajax=1;
 	header("Content-type: application/xml");
 	$map=new SiteMap('xml');
-	$tmpl->SetText('');
-	$tmpl->AddText($map->getMap());
+	$tmpl->setContent( $map->getMap() );
 }
 else if($mode=='robots')
 {
@@ -59,9 +58,9 @@ else if($mode=='favicon')
 }
 else
 {
-	$tmpl->SetText("<h1 id='page-title'>Карта сайта</h1>");
+	$tmpl->setContent("<h1 id='page-title'>Карта сайта</h1>");
 	$map=new SiteMap();
-	$tmpl->AddText($map->getMap());
+	$tmpl->addContent($map->getMap());
 
 }
 $tmpl->write();

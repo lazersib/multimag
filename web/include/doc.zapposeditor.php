@@ -5,8 +5,7 @@ include_once('include/doc.poseditor.php');
 class SZapPosEditor extends DocPosEditor
 {
 
-function Show($param='')
-{
+	function Show($param='') {
 	global $CONFIG;
 	// Список товаров
 	$ret="
@@ -77,147 +76,121 @@ function Show($param='')
 	</script>";	
 	
 	return $ret;
-}
+	}
 
 // Получить весь текущий список товаров (документа)
-function GetAllContent()
-{
-	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_list_pos`.`gtd`
-	FROM `doc_list_pos`
-	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-	WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'");
-	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
-	$ret='';
-	while($nxt=mysql_fetch_assoc($res))
-	{
-		if($this->cost_id)	$scost=GetCostPos($nxt['pos_id'], $this->cost_id);
-		else			$scost=sprintf("%0.2f",$nxt['bcost']);
-		$nxt['cost']=		sprintf("%0.2f",$nxt['cost']);
-		if($ret)	$ret.=', ';
-		
-		// Расчитываем зарплату и выводим как место
-		$rs=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-		LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
-		WHERE `doc_base_params`.`param`='ZP'");
-		if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
-		if(mysql_num_rows($rs))
-		{
-			$zp=sprintf("%0.2f", mysql_result($rs,0,1));
-		}
-		else $zp='НЕТ';
-		
-		$ret.="{
-		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '$zp', gtd: '{$nxt['gtd']}'";
-		
-		$ret.="}";
+	function GetAllContent() {
+		global $db;
+		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`,
+			`doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`,
+			`doc_list_pos`.`gtd`
+			FROM `doc_list_pos`
+			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'");
+		$ret = '';
+		while ($nxt = $res->fetch_assoc()) {
+			if ($this->cost_id)	$scost = getCostPos($nxt['pos_id'], $this->cost_id);
+			else			$scost = sprintf("%0.2f", $nxt['bcost']);
+			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
+			if ($ret)		$ret.=', ';
 
+			// Расчитываем зарплату и выводим как место
+			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
+				WHERE `doc_base_params`.`param`='ZP'");
+			if ($rs->num_rows)	$zp = sprintf("%0.2f", mysql_result($rs, 0, 1));
+			else			$zp = 'НЕТ';
+
+			$ret.="{line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '$zp', gtd: '{$nxt['gtd']}'";
+
+			$ret.="}";
+		}
+		return $ret;
 	}
-	return $ret;
-}
 
-function GetPosInfo($pos)
-{
-	$ret='{response: 0}';
+	function GetPosInfo($pos) {
+		global $db;
+		settype($pos, 'int');
+		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`,
+			`doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`,
+			`doc_list_pos`.`gtd`
+			FROM `doc_base`
+			LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+			WHERE `doc_base`.`id`='$pos'");
+		$ret = '';
+		if ($nxt = $res->fetch_assoc()) {
+			if ($this->cost_id)	$scost = getCostPos($nxt['pos_id'], $this->cost_id);
+			else			$scost = sprintf("%0.2f", $nxt['bcost']);
+			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
+			if (!$nxt['cost'])	$nxt['cost'] = $scost;
+			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 
-	$res=mysql_query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_list_pos`.`gtd`
-	FROM `doc_base`
-	LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-	WHERE `doc_base`.`id`='$pos'");
-	if(mysql_errno())	throw new MysqlException("Ошибка получения имени");
-	$ret='';
-	if($nxt=mysql_fetch_assoc($res))
-	{
-		if($this->cost_id)	$scost=GetCostPos($nxt['pos_id'], $this->cost_id);
-		else			$scost=sprintf("%0.2f",$nxt['bcost']);
-		if(!$nxt['cnt'])	$nxt['cnt']=1;
-		if(!$nxt['cost'])	$nxt['cost']=$scost;
-		$nxt['cost']=		sprintf("%0.2f",$nxt['cost']);
-		
-		// Расчитываем зарплату и выводим как место
-		$rs=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-		LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
-		WHERE `doc_base_params`.`param`='ZP'");
-		if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
-		if(mysql_num_rows($rs))
-		{
-			$zp=sprintf("%0.2f", mysql_result($rs,0,1));
-		}
-		else $zp='НЕТ';
-		
-		$ret="{response: 3, data: {
+			// Расчитываем зарплату и выводим как место
+			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
+				WHERE `doc_base_params`.`param`='ZP'");
+			if ($rs->num_rows)	$zp = sprintf("%0.2f", mysql_result($rs, 0, 1));
+			else			$zp = 'НЕТ';
+
+			$ret = "{response: 3, data: {
 		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '$zp', gtd: '{$nxt['gtd']}'
 		} }";
+		}
+
+		return $ret;
 	}
-
-	return $ret;
-}
-
 
 /// Добавляет указанную складскую позицию в список
-function AddPos($pos)
-{
-	$cnt=rcv('cnt');
-	$cost=rcv('cost');
-	$add=0;
-	$ret='';
-		
-	$res=mysql_query("SELECT `id`, `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `tovar`='$pos'");
-	if(mysql_errno())	throw new MysqlException("Не удалось выбрать строку документа!");
-	if(mysql_num_rows($res)==0)
-	{
-		mysql_query("INSERT INTO doc_list_pos (`doc`,`tovar`,`cnt`,`cost`) VALUES ('{$this->doc}','$pos','$cnt','$cost')");
-		if(mysql_errno())	throw new MysqlException("Не удалось вставить строку в документ!");
-		$pos_line=mysql_insert_id();
-		doc_log("UPDATE","add pos: pos:$pos",'doc',$this->doc);
-		doc_log("UPDATE","add pos: pos:$pos",'pos',$pos);
-		$add=1;
-	}
-	else
-	{
-		$nxt=mysql_fetch_row($res);
-		$pos_line=$nxt[0];
-		mysql_query("UPDATE `doc_list_pos` SET `cnt`='$cnt', `cost`='$cost' WHERE `id`='$nxt[0]'");
-		if(mysql_errno())	throw MysqlException("Не удалось вставить строку в документ!");
-		doc_log("UPDATE","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1",'doc',$this->doc);
-		doc_log("UPDATE","change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1, doc:{$this->doc}",'pos',$nxt[1]);
-	}	
-	$doc_sum=DocSumUpdate($this->doc);
-	
-	if($add)
-	{
-		$res=mysql_query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
-		FROM `doc_list_pos`
-		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-		WHERE `doc_list_pos`.`id`='$pos_line'");
-		if(mysql_errno())	throw MysqlException("Не удалось получить строку документа");
-		$line=mysql_fetch_assoc($res);
-		
-		$rs=mysql_query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-		LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$line['id']}'
-		WHERE `doc_base_params`.`param`='ZP'");
-		if(mysql_errno())	throw new MysqlException("Не удалось выбрать доп.свойство товара");
-		if(mysql_num_rows($rs))
-		{
-			$zp=sprintf("%0.2f", mysql_result($rs,0,1));
+	function AddPos($pos) {
+		global $db;
+		$cnt = rcvrounded('cnt', 4);
+		$cost = rcvrounded('cost', 2);
+		settype($pos, 'int');
+		$add = 0;
+		$ret = '';
+
+		$res = $db->query("SELECT `id`, `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `tovar`='$pos'");
+		if (!$res->num_rows) {
+			$db->query("INSERT INTO doc_list_pos (`doc`,`tovar`,`cnt`,`cost`) VALUES ('{$this->doc}','$pos','$cnt','$cost')");
+			$pos_line = $db->insert_id;
+			doc_log("UPDATE", "add pos: pos:$pos", 'doc', $this->doc);
+			doc_log("UPDATE", "add pos: pos:$pos", 'pos', $pos);
+			$add = 1;
 		}
-		else 
-		$zp='НЕТ';
-		
-		$cost=$this->cost_id?GetCostPos($line['id'], $this->cost_id):$line['cost'];
-		$ret="{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '$zp', gtd: '' }, sum: '$doc_sum' }";
+		else {
+			$nxt = $res->fetch_row();
+			$pos_line = $nxt[0];
+			$db->query("UPDATE `doc_list_pos` SET `cnt`='$cnt', `cost`='$cost' WHERE `id`='$nxt[0]'");
+			doc_log("UPDATE", "change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1", 'doc', $this->doc);
+			doc_log("UPDATE", "change cnt: pos:$nxt[1], doc_list_pos:$nxt[0], cnt:$nxt[2]+1, doc:{$this->doc}", 'pos', $nxt[1]);
+		}
+		$doc_sum = $this->doc_obj->recalcSum();
+
+		if ($add) {
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`,
+				`doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
+				FROM `doc_list_pos`
+				INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+				WHERE `doc_list_pos`.`id`='$pos_line'");
+			$line = $res->fetch_assoc();
+
+			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$line['id']}'
+				WHERE `doc_base_params`.`param`='ZP'");
+			if ($rs->num_rows)	$zp = sprintf("%0.2f", mysql_result($rs, 0, 1));
+			else			$zp = 'НЕТ';
+
+			$cost = $this->cost_id ? getCostPos($line['id'], $this->cost_id) : $line['cost'];
+			$ret = "{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '$zp', gtd: '' }, sum: '$doc_sum' }";
+		}
+		else {
+			$cost = sprintf("%0.2f", $cost);
+			$ret = "{ response: '4', update: { line_id: '$pos_line', cnt: '{$cnt}', cost: '{$cost}'}, sum: '$doc_sum' }";
+		}
+		return $ret;
 	}
-	else
-	{
-		$cost=sprintf("%0.2f",$cost);
-		$ret="{ response: '4', update: { line_id: '$pos_line', cnt: '{$cnt}', cost: '{$cost}'}, sum: '$doc_sum' }";
-	}
-	return $ret;
-}
-
-
-
 };
 ?>

@@ -133,7 +133,7 @@ function PosEditorInit(base_url, editable)
 		linehtml+="</td><td>"
 		if(poslist.editable)	linehtml+="<input type='text' name='sum' value='"+sum+"'>"
 		else			linehtml+=sum
-		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.mesto+"</td>"
+		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.place+"</td>"
 		if(poslist.show_column['sn']>0)	linehtml+="<td id='sn"+row.lineIndex+"'>"+data.sn+"</td>"
 		if(poslist.show_column['gtd']>0)linehtml+="<td id='gtd"+row.lineIndex+"'>"+data.gtd+"</td>"
 		row.innerHTML=linehtml
@@ -668,7 +668,7 @@ function PladdInit()
 		pos_cnt.value=data.cnt
 		pos_sum.innerHTML=data.cost*data.cnt
 		pos_sklad_cnt.innerHTML=data.sklad_cnt
-		pos_mesto.innerHTML=data.mesto
+		pos_mesto.innerHTML=data.place
 		if(data.line_id>0)	$('#pladd').addClass('error')
 	}
 

@@ -22,60 +22,55 @@ $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
 
-require_once($CONFIG['site']['location']."/core.php"); 
-require_once($CONFIG['site']['location']."/include/doc.core.php"); 
+require_once($CONFIG['site']['location']."/core.php");
+require_once($CONFIG['site']['location']."/include/doc.core.php");
 
-$mail_text=array();
-$sum_dolga=array();
+$mail_text = array();
+$sum_dolga = array();
 
-$res=mysql_query("SELECT `id`, `name`, `responsible` FROM `doc_agent` ORDER BY `name`");
-while($nxt=mysql_fetch_row($res))
-{
-	$dolg=DocCalcDolg($nxt[0],0);
-	if( $dolg>0 )
-	{
-		$dolg=abs($dolg);
+$res = $db->query("SELECT `id`, `name`, `responsible` FROM `doc_agent` ORDER BY `name`");
+while ($nxt = $res->fetch_row()) {
+	$dolg = agentCalcDebt($nxt[0], 0);
+	if ($dolg > 0) {
+		$dolg = abs($dolg);
 		$sum_dolga[$nxt[2]]+=$dolg;
-		$dolg=sprintf("%0.2f",$dolg);
-		$a_name=html_entity_decode ($nxt[1],ENT_QUOTES,"UTF-8");
+		$dolg = sprintf("%0.2f", $dolg);
+		$a_name = html_entity_decode($nxt[1], ENT_QUOTES, "UTF-8");
 		$mail_text[$nxt[2]].="Агент $a_name (id:$nxt[0]) должен нам $dolg рублей\n";
 	}
 }
 
-try 
-{
-	$xmppclient->connect();
-	$xmppclient->processUntil('session_start');
-	$xmppclient->presence();
+try {
+	require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
+	$xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
+	$xmpp_connected = 0;
 
-	$res=mysql_query("SELECT `id`, `name`, `reg_email`, `jid` FROM `users`");
-	while($nxt=mysql_fetch_row($res))
-	{
-		if($mail_text[$nxt[0]])
-		{
-			$dolg=sprintf("%0.2f",$sum_dolga[$nxt[0]]);
-			$text="Уважаемый(ая) $nxt[1]!\nНекоторые из Ваших клиентов, для которых Вы являетесь ответственным менеджером, имеют непогашенные долги перед нашей компанией на общую сумму {$dolg} рублей.\nНеобходимо в кратчайший срок решить данную проблему!\n\nВот список этих клиентов:\n".$mail_text[$nxt[0]]."\n\nПожалуйста, не откладывайте решение проблемы на длительный срок!";
-			
+	$res = $db->query("SELECT `id`, `name`, `reg_email`, `jid` FROM `users`");
+	while ($nxt = $res->fetch_row()) {
+		if ($mail_text[$nxt[0]]) {
+			$dolg = sprintf("%0.2f", $sum_dolga[$nxt[0]]);
+			$text = "Уважаемый(ая) $nxt[1]!\nНекоторые из Ваших клиентов, для которых Вы являетесь ответственным менеджером, имеют непогашенные долги перед нашей компанией на общую сумму {$dolg} рублей.\nНеобходимо в кратчайший срок решить данную проблему!\n\nВот список этих клиентов:\n" . $mail_text[$nxt[0]] . "\n\nПожалуйста, не откладывайте решение проблемы на длительный срок!";
+
 			mailto($nxt[2], "Ваши долги", $text);
-			if($nxt[3])
-			{
+			if ($nxt[3]) {
+				if ($xmpp_connected) {
+					$xmppclient->connect();
+					$xmppclient->processUntil('session_start');
+					$xmppclient->presence();
+					$xmpp_connected = 1;
+				}
 				$xmppclient->message($nxt[3], $text);
 				echo "\nСообщение было отправлено через XMPP!";
 			}
-			echo $text."\n\n\n\n";
-
+			echo $text . "\n\n\n\n";
 		}
 	}
 	$xmppclient->disconnect();
 	echo "\nСообщение было отправлено через XMPP!";
-} 
-catch(XMPPHP_Exception $e) 
-{
+} catch (XMPPHP_Exception $e) {
 	echo"\nНевозможно отправить сообщение XMPP";
-}
-catch(Exception $e) 
-{
-	echo"Ошибка отправки почты!".$e->getMessage();
+} catch (Exception $e) {
+	echo"Ошибка отправки почты!" . $e->getMessage();
 }
 
 ?>

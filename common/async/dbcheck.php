@@ -82,7 +82,7 @@ class DbCheckWorker extends AsyncWorker
 		}
 		
 		// Заплонение дат первой покупки для раздела новинок
-		mysql_query("UPDATE `doc_base` SET `buy_time`='1970-01-01 00:00:00'");
+		mysql_query("UPDATE `doc_base` SET `buy_time`='1970-01-01 00:00:00', `transit_cnt`='0'");
 		if(mysql_errno()) 	throw new MysqlException('Ошибка сброса данных о покупке');
 		$res=mysql_query("SELECT `id` FROM `doc_base` WHERE `doc_base`.`pos_type`=0");
 		if(mysql_errno()) 	throw new MysqlException('Ошибка получения списка наименований');

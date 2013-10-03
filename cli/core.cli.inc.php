@@ -21,11 +21,20 @@ include_once($CONFIG['location']."/common/core.common.php");
 
 class MysqlException extends Exception
 {
-	function __construct($text)
-	{
-		parent::__construct($text.':'.mysql_error());
-	}
+
 };
+
+$db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
+
+if($db->connect_error)
+	die("Ошибка соединения с базой данных");
+
+// Включаем автоматическую генерацию исключений для mysql
+mysqli_report(MYSQLI_REPORT_STRICT | MYSQLI_REPORT_ERROR);
+
+if(!$db->set_charset("utf8"))
+    die("Невозможно задать кодировку соединения с базой данных: ".$db->error);
+
 
 
 ?>

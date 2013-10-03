@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,8 @@
 
 include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
+/// Автозагрузка классов документов
+/// TODO: Перенести автозагрузку в ядро, реализовать автозагрузку максимально возможного количества классов
 function __autoload($class_name)
 {
 	global $CONFIG;
@@ -31,11 +33,13 @@ function __autoload($class_name)
 		if($class_type=='doc')		include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
 		else if($class_type=='report')	include_once $CONFIG['site']['location']."/include/reports/".$class_name.'.php';
 	}
-	@include_once $CONFIG['site']['location']."/gate/include/doc.s.".$class_name.'.php';
+//	@include_once $CONFIG['site']['location']."/gate/include/doc.s.".$class_name.'.php';
 	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
 
 }
 
+/// Вывод числа прописью. Для внутреннего использования.
+/// @sa num2str
 function num2str_semantic($i,&$words,&$fem,$f)
 {
 	$_1_2[1]="одна ";
@@ -124,7 +128,10 @@ function num2str_semantic($i,&$words,&$fem,$f)
 	}
 }
 
-// Число прописью
+/// Возвращает число прописью
+/// @param L 	Число
+/// @param ed	Единица измерения
+/// @param sot	Кол-во знаков после запятой
 function num2str($L, $ed='rub', $sot=2)
 {
 	$ff=1;
@@ -261,16 +268,10 @@ function num2str($L, $ed='rub', $sot=2)
 	return $s;
 }
 
-$firm_id=@$_SESSION['firm'];
-//if(!$firm_id) $firm_id=$_SESSION['firm']=1;
-//if($firm_id>1) $tmpl->LoadTemplate('default2');
-
-// =========== Установки документов - УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ ================================
-global $dv;
-
-$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
-$dv=mysql_fetch_assoc($res);
-
+/// Округление в нужную сторону
+/// @param number Исходное число
+/// @param precision Точность округления
+/// @param direction Направление округления
 function roundDirect($number, $precision = 0, $direction = 0)
 {
 	if ($direction==0 )	return round($number, $precision);
@@ -283,47 +284,59 @@ function roundDirect($number, $precision = 0, $direction = 0)
 	}
 }
 
-function GetCostPos($pos_id, $cost_id)
+/// Получить неотрицательную цену в формате руб.коп заданной позиции
+/// @param pos_id ID товара/услуги
+/// @param cost_id ID цены
+function getCostPos($pos_id, $cost_id)
 {
-	$res=mysql_query("SELECT `doc_base`.`cost`, `doc_base`.`group` FROM `doc_base` WHERE `doc_base`.`id`='$pos_id'");
-	if(mysql_errno())		throw new MysqlException("Не удалось получить базовую цену товара");
-	if(!mysql_num_rows($res))	throw new Exception("Товар ID:$pos_id не найден!");
-	$base_cost=mysql_result($res,0,0);
-	$base_group=mysql_result($res,0,1);
-	$res=mysql_query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
-	FROM `doc_cost`
-	LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`='$pos_id'
-	WHERE `doc_cost`.`id`='$cost_id'");
-	if(mysql_errno())		throw new MysqlException("Не удалось получить цену из справочника цен товара");
-	if(!mysql_num_rows($res))	throw new Exception("Цена ID:$cost_id не найдена!");
-	$nxt=mysql_fetch_row($res);
+	global $db;
+	settype($pos_id,'int');
+	settype($cost_id,'int');
+	$res=$db->query("SELECT `doc_base`.`cost`, `doc_base`.`group` FROM `doc_base` WHERE `doc_base`.`id`=$pos_id");
+	if(!$res)			throw new MysqlException("Не удалось получить базовую цену товара");
+	if($res->num_rows==0)		throw new Exception("Товар ID:$pos_id не найден!");
+	list($base_cost,$base_group) =	$res->fetch_row();
 
+	$res=$db->query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
+	FROM `doc_cost`
+	LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`=$pos_id
+	WHERE `doc_cost`.`id`=$cost_id");
+	if(!$res)			throw new MysqlException("Не удалось получить цену из справочника цен товара");
+	if($res->num_rows==0)		throw new Exception("Цена ID:$cost_id не найдена!");
+	$nxt=$res->fetch_row();
+	$res->free();
 	if($nxt[1])
 	{
-		if($nxt[4]=='pp')	$cena= $base_cost+$base_cost*$nxt[5]/100;
-		else if($nxt[4]=='abs')	$cena= $base_cost+$nxt[5];
-		else if($nxt[4]=='fix')	$cena= $nxt[5];
-		else			$cena= 0;
-
+		switch($nxt[4])
+		{
+			case 'pp':	$cena= $base_cost+$base_cost*$nxt[5]/100;	break;
+			case 'abs':	$cena= $base_cost+$nxt[5];			break;
+			case 'fix':	$cena= $nxt[5];					break;
+			default:	$cena= 0;
+		}
 		if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[6],$nxt[7]));
 		else 		return 0;
 	}
 
 	while($base_group)
 	{
-		$res=mysql_query("SELECT `doc_group`.`id`, `doc_group_cost`.`id`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group`.`pid`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
+		$res=$db->query("SELECT `doc_group`.`id`, `doc_group_cost`.`id`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group`.`pid`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
 		FROM `doc_group`
-		LEFT JOIN `doc_group_cost` ON `doc_group`.`id`=`doc_group_cost`.`group_id`  AND `doc_group_cost`.`cost_id`='$cost_id'
-		WHERE `doc_group`.`id`='$base_group'");
-		if(mysql_errno())		throw new MysqlException("Не удалось получить цену из справочника цен группы");
-		if(!mysql_num_rows($res))	throw new Exception("Группа ID:$base_group не найдена");
-		$gdata=mysql_fetch_row($res);
+		LEFT JOIN `doc_group_cost` ON `doc_group`.`id`=`doc_group_cost`.`group_id`  AND `doc_group_cost`.`cost_id`=$cost_id
+		WHERE `doc_group`.`id`=$base_group");
+		if(!$res)			throw new MysqlException("Не удалось получить цену из справочника цен группы");
+		if($res->num_rows==0)		throw new Exception("Группа ID:$base_group не найдена");
+		$gdata=$res->fetch_row();
+		$res->free();
 		if($gdata[1])
 		{
-			if($gdata[2]=='pp')		$cena= $base_cost+$base_cost*$gdata[3]/100;
-			else if($gdata[2]=='abs')	$cena= $base_cost+$gdata[3];
-			else if($gdata[2]=='fix')	$cena= $gdata[3];
-			else				$cena= 0;
+			switch($gdata[2])
+			{
+				case 'pp':	$cena= $base_cost+$base_cost*$gdata[3]/100;	break;
+				case 'abs':	$cena= $base_cost+$gdata[3];			break;
+				case 'fix':	$cena= $gdata[3];				break;
+				default:	$cena= 0;
+			}
 
 			if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$gdata[5],$gdata[6]));
 			else 		return 0;
@@ -331,50 +344,54 @@ function GetCostPos($pos_id, $cost_id)
 		$base_group=$gdata[4];
 	}
 
-	if($nxt[2]=='pp')	$cena= $base_cost+$base_cost*$nxt[3]/100;
-	else if($nxt[2]=='abs')	$cena= $base_cost+$nxt[3];
-	else if($nxt[2]=='fix')	$cena= $nxt[3];
-	else			$cena= 0;
+	switch($nxt[2])
+	{
+		case 'pp':	$cena= $base_cost+$base_cost*$nxt[3]/100;	break;
+		case 'abs':	$cena= $base_cost+$nxt[3];			break;
+		case 'fix':	$cena= $nxt[3];					break;
+		default:	$cena= 0;
+	}
 
 	if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[8],$nxt[9]));
 	else 		return 0;
 }
 
-// =========== Запись событий документов в лог ======================
+/// Запись событий документов в лог
+/// @param motion	Выполненное действие
+/// @param desc		Описание выполненного действия
+/// @param object	Тип объекта, с которым выполнено действие
+/// @param oblect_id	ID объекта, с которым выполено действие
 function doc_log($motion,$desc,$object='',$object_id=0)
 {
+	global $db;
 	$uid=intval(@$_SESSION['uid']);
-	$motion=mysql_real_escape_string($motion);
-	$desc=mysql_real_escape_string($desc);
-	$object=mysql_real_escape_string($object);
+	$motion=$db->real_escape_string($motion);
+	$desc=$db->real_escape_string($desc);
+	$object=$db->real_escape_string($object);
 	$object_id=intval($object_id);
-	$ip=getenv("REMOTE_ADDR");
-	mysql_query("INSERT INTO `doc_log` (`user`, `ip`, `time`,`motion`,`desc`, `object`, `object_id`)
+	$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
+	$res=$db->query("INSERT INTO `doc_log` (`user`, `ip`, `time`,`motion`,`desc`, `object`, `object_id`)
 	VALUES ('$uid', '$ip', NOW(),'$motion','$desc', '$object', '$object_id')");
-}
-
-// == УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ ===
-function but_provodka($doc,$ok)
-{
-	if($ok)
-		return "<a href='?mode=cancel&amp;doc=$doc' title='Отменить проводку' onclick=\"ShowPopupWin('/doc.php?mode=cancel&amp;doc=$doc'); return false;\"><img src='img/i_revert.png' alt='Отменить' /></a>";
-	else
-		return "<a href='?mode=ehead&amp;doc=$doc' title='Правка заголовка'><img src='img/i_docedit.png' alt='Правка' /></a>
-		<a href='?mode=apply&amp;doc=$doc' title='Провести документ' onclick=\"ShowPopupWin('/doc.php?mode=apply&amp;doc=$doc'); return false;\"><img src='img/i_ok.png' alt='Провести' /></a>";
-
+	if(!$res)	throw new MysqlException("Не удалось записать событие в журнал");
 }
 
 function doc_menu($dop="", $nd=1, $doc=0)
 {
-	global $tmpl, $CONFIG;
+	global $tmpl, $CONFIG, $db;
 	// Индикатор нарушения целостности проводок
 	// Устанавливается при ошибке при проверке целостности и при принудительной отмене
 	// Снимается, если проверка целостности завершилась успешно
-	$res=@mysql_query("SELECT `corrupted` FROM `variables`");
-	if(@mysql_result($res,0,0))	$err="class='error'";
-	else				$err='';
+	$err='';
+	$res=$db->query("SELECT `corrupted` FROM `variables`");
+	if($res)
+	{
+		$row=$res->fetch_row();
+		if($row[0])	$err="class='error'";
+		$res->free();
+	}
+	else	$err="class='error'";
 
-	$tmpl->AddText("<div id='doc_menu' $err>
+	$tmpl->addContent("<div id='doc_menu' $err>
 	<div id='doc_menu_container'>
 	<div id='doc_menu_r'>
 	<!--<input type='text' id='quicksearch'>
@@ -411,117 +428,54 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
 	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
 	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
-	if($dop) $tmpl->AddText("<img src='/img/i_separator.png' alt=''> $dop");
+	if($dop) $tmpl->addContent("<img src='/img/i_separator.png' alt=''> $dop");
 
-	$tmpl->AddText("</div></div>");
+	$tmpl->addContent("</div></div>");
 
 	if($nd && @$CONFIG['doc']['mincount_info'])
 	{
-			$res=mysql_query("SELECT `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name` FROM `doc_base`
+			$res=$db->query("SELECT `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name` FROM `doc_base`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
 			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
 			WHERE `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt` LIMIT 100");
-			$row=mysql_num_rows($res);
-			if($row)
+			if(!$res)	throw new MysqlException("Не удалось получить минимально допустимые остатки");
+			if($res->num_rows)
 			{
-				mysql_data_seek($res,rand(0,$row-1));
-				$nxt=mysql_fetch_row($res);
+				$res->data_seek(rand(0,$res->num_rows-1));
+				$nxt=$res->fetch_row();
 				if($nxt[1]) $nxt[1]='всего '.$nxt[1].' штук';
 				else $nxt[1]='отсутствует';
 				$tmpl->msg("По крайней мере, у $row товаров, количество на складе меньше минимально рекомендуемого!<br>Например $nxt[0] на складе *$nxt[3]* $nxt[1], вместо $nxt[2] рекомендуемых!","err","Мало товара на складе!");
 			}
+			$res->free();
 	}
-}
-
-function getDocBaseGroupOptions($selected_id=0, $pid=0, $level=0)
-{
-	$ret='';
-	$res=mysql_query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `id`");
-	while($nxt=mysql_fetch_row($res))
-	{
-		if($nxt[0]==0) continue;
-		$pref='';
-		for($i=0;$i<$level;$i++,$pref.='|&nbsp;&nbsp;&nbsp;&nbsp;');
-		$sel=($selected_id==$nxt[0])?'selected':'';
-		$sel.=sprintf(" style='background-color: #%x%x%x'",0xf-$level,0xf-$level,0xf-$level);
-		$ret.="<option value='$nxt[0]' $sel>{$pref}{$nxt[1]}</option>\n";
-		$ret.=getDocBaseGroupOptions($selected_id, $nxt[0], $level+1); // рекурсия
-	}
-	return $ret;
 }
 
 /// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
 function GetNextAltNum($type, $subtype, $doc, $date, $firm)
 {
-	global $CONFIG;
+	global $CONFIG,$db;
 	$start_date=strtotime(date("Y-01-01 00:00:00",strtotime($date)));
 	$end_date=strtotime(date("Y-12-31 23:59:59",strtotime($date)));
-	$res=mysql_query("SELECT `altnum` FROM `doc_list` WHERE `type`='$type' AND `subtype`='$subtype' AND `id`!='$doc' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm' ORDER BY `altnum` ASC");
+	$res=$db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='$type' AND `subtype`='$subtype' AND `id`!='$doc' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm' ORDER BY `altnum` ASC");
+	if(!$res)	throw new MysqlException("Не удалось получить список документов");
 	$newnum=0;
-	while($nxt=mysql_fetch_row($res))
+	while($nxt=$res->fetch_row())
 	{
 		if(($nxt[0]-1 > $newnum)&& @$CONFIG['doc']['use_persist_altnum'])	break;
 		$newnum=$nxt[0];
 	}
 	$newnum++;
-	echo $newnum;
+	$res->free();
 	return $newnum;
 }
 
 /// ====== Получение данных, связанных с документом =============================
-/// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
-function get_docdata($doc)
-{
-	global $doc_data;
-	global $dop_data;
-	if($doc_data) return;
 
-	if($doc)
-	{
-		$res=mysql_query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`
-		FROM `doc_list` AS `a`
-		LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
-		WHERE `a`.`id`='$doc'");
-		$doc_data=mysql_fetch_row($res);
-		$rr=mysql_query("SELECT `param`,`value` FROM `doc_dopdata` WHERE `doc`='$doc'");
-		while($nn=mysql_fetch_row($rr))
-		{
-			$dop_data["$nn[0]"]=$nn[1];
-		}
-	}
-	else
-	{
-		$doc_data=array();
-		$doc_data[2]=641;
-		$doc_data[3]="Частное лицо";
-	}
-}
 
-/// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
-function DocInfo($p_doc)
-{
-	$res=mysql_query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
-	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-	WHERE `doc_list`.`id`='$p_doc'");
-	if(@$nxt=mysql_fetch_row($res))
-	{
-		if($nxt[5]) $r='Проведённый';
-		else $r='Непроведённый';
-		$dt=date("d.m.Y H:i:s",$nxt[4]);
-		return "<b>Относится к:</b> $r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt";
-	}
-	return '';
-}
-/// Ссылка на ajax перезагрузку складского блока
-/// Перенесено сюда из устаревшего файла doc.tovary.php
-/// ======== УСТАРЕЛО - УБРАТЬ ПОСЛЕ ТОГО, КАК НЕ БУДЕТ НИГДЕ ИСПОЛЬЗОВАТЬСЯ =============
-function link_sklad($doc, $link, $text)
-{
-	global $tmpl;
-	return "<a title='$link' href='' onclick=\"EditThis('/doc.php?mode=srv&opt=sklad&doc=$doc&$link','sklad'); return false;\" >$text</a> ";
-}
-
-// =========== Определение типа документа и создание соответствующего класса ====================
+/// Определение типа документа по ID типа и создание соответствующего класса
+/// @param doc_type ID типа документа
+/// @param doc ID документа
 function AutoDocumentType($doc_type, $doc)
 {
 	switch($doc_type)
@@ -571,17 +525,24 @@ function AutoDocumentType($doc_type, $doc)
 	}
 }
 
-// ========== Расчет и обновление суммы документа ===============================================
+/// Расчет и обновление суммы документа
+/// @param doc ID документа
+/// TODO: убрать в doc_Nulltype
 function DocSumUpdate($doc)
 {
+	global $db;
+	settype($doc,'int');
 	$sum=0;
-	$res=mysql_query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc' AND `page`='0'");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить список товаров");
-	while($nxt=mysql_fetch_row($res))
+	$res=$db->query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc' AND `page`='0'");
+	if(!$res)		throw new MysqlException("Не удалось получить список товаров");
+	while($nxt=$res->fetch_row())
 		$sum+=$nxt[0]*$nxt[1];
+	$res->free();
 	if($sum!=0)
-		mysql_query("UPDATE `doc_list` SET `sum`='$sum' WHERE `id`='$doc'");
-	if(mysql_errno())	throw new MysqlException("Не удалось обновить сумму документа");
+	{
+		$res=$db->query("UPDATE `doc_list` SET `sum`='$sum' WHERE `id`='$doc'");
+		if(!$res)	throw new MysqlException("Не удалось обновить сумму документа");
+	}
 	return $sum;
 }
 
@@ -589,16 +550,17 @@ function DocSumUpdate($doc)
 /// @param agent_id	ID агента, для которого расчитывается баланс
 /// @param no_cache	Не брать данные расчёта из кеша
 /// @param firm_id	ID собственной фирмы, для которой будет расчитан баланс. Если 0 - расчёт ведётся для всех фирм.
-function DocCalcDolg($agent_id, $no_cache=0, $firm_id=0)
+function agentCalcDebt($agent_id, $no_cache=0, $firm_id=0)
 {
-	global $tmpl, $doc_agent_dolg_cache_storage;
+	global $tmpl, $db, $doc_agent_dolg_cache_storage;
 	//if(!$no_cache && isset($doc_agent_dolg_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
-
+	settype($agent_id,'int');
+	settype($firm_id,'int');
 	$dolg=0;
 	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
-	$res=mysql_query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
-	if(mysql_errno())	throw new MysqlException("Не возможно выбрать документы агента");
-	while($nxt=mysql_fetch_row($res))
+	$res=$db->query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
+	if(!$res)	throw new MysqlException("Не возможно выбрать документы агента");
+	while($nxt=$res->fetch_row())
 	{
 		switch($nxt[0])
 		{
@@ -611,7 +573,7 @@ function DocCalcDolg($agent_id, $no_cache=0, $firm_id=0)
 			case 18: $dolg+=$nxt[1]; break;
 		}
 	}
-
+	$res->free();
 	$dolg=sprintf("%0.2f", $dolg);
 	//$doc_agent_dolg_cache_storage[$agent_id]=$dolg;
 	return $dolg;
@@ -620,17 +582,18 @@ function DocCalcDolg($agent_id, $no_cache=0, $firm_id=0)
 /// Расчёт бонусного баланса агента. Бонусы начисляются за поступления средств на баланс агента
 /// @param agent_id	ID агента, для которого расчитывается баланс
 /// @param no_cache	Не брать данные расчёта из кеша
-function DocCalcBonus($agent_id, $no_cache=0)
+function docCalcBonus($agent_id, $no_cache=0)
 {
-	global $tmpl, $doc_agent_dolg_cache_storage;
+	global $tmpl, $db, $doc_agent_dolg_cache_storage;
+	settype($agent_id,'int');
 	if(!$no_cache && isset($doc_agent_bonus_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
 
 	$bonus=0;
-	$res=mysql_query("SELECT `doc_list`.`type`, `doc_list`.`sum`, `doc_dopdata`.`value` AS `bonus` FROM `doc_list`
+	$res=$db->query("SELECT `doc_list`.`type`, `doc_list`.`sum`, `doc_dopdata`.`value` AS `bonus` FROM `doc_list`
 	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='bonus'
 	WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0'");
-	if(mysql_errno())	throw new MysqlException("Не возможно выбрать документы агента");
-	while($nxt=mysql_fetch_row($res))
+	if(!$res)	throw new MysqlException("Не возможно выбрать документы агента");
+	while($nxt=$res->fetch_row())
 	{
 		switch($nxt[0])
 		{
@@ -639,7 +602,7 @@ function DocCalcBonus($agent_id, $no_cache=0)
 			case 20:$bonus-=$nxt[1]; break;
 		}
 	}
-
+	$res->free();
 	$bonus=sprintf("%0.2f", $bonus);
 	$doc_agent_bonus_cache_storage[$agent_id]=$bonus;
 	return $bonus;
@@ -649,23 +612,26 @@ function DocCalcBonus($agent_id, $no_cache=0)
 /// @param pos_id 	ID складского наименования, для которого производится расчёт
 /// @param limit_date	Ограничить период расчёта указанной датой. Расчёт цены выполняется на указанную дату.
 /// @param serv_mode	Если true - функция возвращает для улуг их базовую цену. Иначе возвращает 0.
-function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
+function getInCost($pos_id, $limit_date=0, $serv_mode=0)
 {
+	global $db;
 	settype($pos_id,'int');
+	settype($limit_date,'int');
 	$cnt=$cost=0;
 	$sql_add='';
-	$res=mysql_query("SELECT `pos_type`, `cost` FROM `doc_base` WHERE `id`='$pos_id'");
-	list($type, $cost)=mysql_fetch_row($res);
+	$res=$db->query("SELECT `pos_type`, `cost` FROM `doc_base` WHERE `id`=$pos_id");
+	if(!$res)	throw new MysqlException("Не удалось получить информацию по наименованию");
+	list($type, $cost)=$res->fetch_row();
 	if($type==1)	return $serv_mode?$cost:0;
 
 	if($limit_date)	$sql_add="AND `doc_list`.`date`<='$limit_date'";
-	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`
+	$res=$db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`
 	FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
 	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list_pos`.`doc` AND `doc_dopdata`.`param`='return'
 	WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' $sql_add ORDER BY `doc_list`.`date`");
-
-	while($nxt=mysql_fetch_row($res))
+	if(!$res)	throw new MysqlException("Не удалось получить информацию из документов");
+	while($nxt=$res->fetch_row())
 	{
 		if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
 		if( ($cnt+$nxt[0])==0)	{}
@@ -676,18 +642,8 @@ function GetInCost($pos_id, $limit_date=0, $serv_mode=0)
 		}
 		$cnt+=$nxt[0];
 	}
+	$res->free();
 	return round($cost,2);
-}
-
-/// Проверка, не уходило ли когда-либо количество какого-либо товара в минус
-/// Используется при отмене документов, уменьшающих остатки на складе, напр. реализаций и перемещений
-/// TODO: Устарело. Заменить везде, где используется на getStoreCntOnDate
-/// @sa getStoreCntOnDate
-/// @param pos_id 		ID складского наименования, для которого производится расчёт
-/// @param sklad_id		ID склада, для которого производится расчёт
-function CheckMinus($pos_id, $sklad_id)
-{
-    return getStoreCntOnDate($pos_id, $sklad_id);
 }
 
 /// Получить количество товара на складе на заданную дату
@@ -697,14 +653,19 @@ function CheckMinus($pos_id, $sklad_id)
 /// @param noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
 function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 {
+	global $db;
+	settype($pos_id,'int');
+	settype($sklad_id,'int');
+	settype($unixtime,'int');
+
 	$cnt=0;
-	$sql_add=$unixtime?"AND `doc_list`.`date`<='$unixtime'":'';
-	$res=mysql_query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
+	$sql_add=$unixtime?"AND `doc_list`.`date`<=$unixtime":'';
+	$res=$db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`='$pos_id' AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
+	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
 	ORDER BY `doc_list`.`date`");
-	if(mysql_errno())	throw new MysqlException("Не удалось запросить список документов с товаром ID:$pos_id при проверке на отрицательные остатки");
-	while($nxt=mysql_fetch_row($res))
+	if(!$res)		throw new MysqlException("Не удалось запросить список документов с товаром ID:$pos_id при проверке на отрицательные остатки");
+	while($nxt=$res->fetch_row())
 	{
 		if($nxt[1]==1)
 		{
@@ -719,11 +680,13 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 			if($nxt[2]==$sklad_id)	$cnt-=$nxt[0];
 			else
 			{
-				$rr=mysql_query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[3]' AND `param`='na_sklad'");
-				if(mysql_errno())	throw new MysqlException("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
-				$nasklad=mysql_result($rr,0,0);
-				if(!$nasklad)		throw new Exceprion("Не удалось получить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+				$r=$db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
+				if(!$r)			throw new MysqlException("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+				if(!$r->num_rows)	throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
+				list($nasklad)=$r->fetch_row();
+				if(!$nasklad)		throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
 				if($nasklad==$sklad_id)	$cnt+=$nxt[0];
+				$r->free();
 			}
 		}
 		else if($nxt[1]==17)
@@ -736,92 +699,143 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 		}
 		if($cnt<0 && $noBreakIfMinus==0) break;
 	}
-	mysql_free_result($res);
+	$res->free();
 	return $cnt;
 }
 
-/// Кол-во товара в резерве
-function DocRezerv($pos,$doc=0)
+/// Возвращает количество товара в резерве
+/// @param pos_id ID товара. Для услуг поведение не определено.
+/// @param doc_id ID исключаемого документа
+/// @sa DocPodZakaz DocVPuti
+/// TODO: реализовать кеширование
+function DocRezerv($pos_id,$doc_id=0)
 {
-	// $doc - номер исключенного документа
+	global $db;
+	settype($pos_id,'int');
+	settype($doc_id,'int');
 
-	$rs=mysql_query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
-	INNER JOIN `doc_list` ON `doc_list`.`type`='3' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`=`doc_list_pos`.`doc`
+	$res=$db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+	INNER JOIN `doc_list` ON `doc_list`.`type`='3' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id`!=$doc_id
 	AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list`
 	INNER JOIN `doc_list_pos` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-	WHERE `ok` != '0' AND `type`='2' AND `doc_list_pos`.`tovar`='$pos' )
-	WHERE `doc_list_pos`.`tovar`='$pos'
+	WHERE `ok` != '0' AND `type`='2' AND `doc_list_pos`.`tovar`=$pos_id )
+	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	return @$rezerv=mysql_result($rs,0,0);
+	if(!$res)	throw new MysqlException("Не удалось получить данные по резервам");
+	if($res->num_rows)	list($reserved)=$res->fetch_row();
+	else			$reserved=0;
+	$res->free();
+	return $reserved;
 
 }
 
-/// Кол-во товара под заказ
-function DocPodZakaz($pos,$doc=0)
+/// Возвращает количество товара, доступного по данным предложений поставщиков
+/// @param pos_id ID товара
+/// @param doc_id ID исключаемого документа
+/// @sa DocRezerv DocVPuti
+/// TODO: реализовать кеширование
+function DocPodZakaz($pos_id,$doc_id=0)
 {
-	// $doc - номер исключенного документа
-	$rt=time()-60*60*24*365;
-	$rs=mysql_query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
-	INNER JOIN `doc_list` ON `doc_list`.`type`='11' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!='$doc' AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
-	WHERE `doc_list_pos`.`tovar`='$pos'
+	global $db, $CONFIG;
+	settype($pos_id,'int');
+	settype($doc_id,'int');
+	if(@$CONFIG['doc']['op_time'])	$rt=time()-60*60*24*$CONFIG['doc']['op_time'];
+	else				$rt=time()-60*60*24*365;
+	$res=$db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+	INNER JOIN `doc_list` ON `doc_list`.`type`='11' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!=$doc_id AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
+	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	return @$rezerv=mysql_result($rs,0,0);
+	if(!$res)		throw new MysqlException("Не удалось получить данные предложений поставщиков");
+	if($res->num_rows)	list($available)=$res->fetch_row();
+	else			$available=0;
+	$res->free();
+	return $available;
 }
 
-// Кол-во товара в пути
-function DocVPuti($pos,$doc=0)
+/// Возвращает количество товара, находящегося в пути, по данным документов *товар в пути*
+/// @param pos_id ID товара
+/// @param doc_id ID исключаемого документа
+/// @sa DocPodZakaz DocVPuti
+/// TODO: реализовать кеширование
+function DocVPuti($pos_id,$doc_id=0)
 {
-	// $doc - номер исключенного документа
-	$rt=time()-60*60*24*30;
-	$rs=mysql_query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
-	INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!='$doc'
+	global $db;
+	settype($pos_id,'int');
+	settype($doc_id,'int');
+
+	$res=$db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+	INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!=$doc_id
 	AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
-	WHERE `doc_list_pos`.`tovar`='$pos'
+	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	return @$rezerv=mysql_result($rs,0,0);
+	if(!$res)		throw new MysqlException("Не удалось получить данные предложений поставщиков");
+	if($res->num_rows)	list($transit)=$res->fetch_row();
+	else			$transit=0;
+	$res->free();
+	return $transit;
 }
 
-function AutoDocument($doc)
+/// Создаёт класс документа по ID документа, используя AutoDocumentType
+/// @sa AutoDocumentType
+function AutoDocument($doc_id)
 {
-	settype($doc,'int');
-	$res=mysql_query("SELECT `type` FROM `doc_list` WHERE `id`=$doc");
-	if(mysql_errno())		throw new MysqlException("Не удалось получить тип документа");
-	if(!mysql_num_rows($res))	throw new Exception("Документ не найден");
-	$type=mysql_result($res,0,0);
-	return AutoDocumentType($type, $doc);
+	global $db;
+	settype($doc_id,'int');
+	$res=$db->query("SELECT `type` FROM `doc_list` WHERE `id`=$doc_id");
+	if(!$res)		throw new MysqlException("Не удалось получить тип документа");
+	if(!$res->num_rows)	throw new Exception("Документ не найден");
+	list($type)=$res->fetch_row();
+	return AutoDocumentType($type, $doc_id);
 }
 
 /// Создаёт HTML код элемента select со списком групп агентов
+/// @param select_name 	Имя элемента select
+/// @param selected	ID выбранного элемента
+/// @param not_select	Если true - в выпадающий список будет добавлен пункт 'не выбран'
+/// @param select_id	Содержимое html аттрибута id элемента select
+/// @param select_class	Содержимое html аттрибута class элемента select
+/// @sa selectGroupPos
 function selectAgentGroup($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
 {
+	global $db;
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
 	if($not_select)	$ret.="<option value='0'>***не выбрана***</option>";
-	$res=mysql_query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
-	if(mysql_errno())		throw new MysqlException("Не удалось получить список агентов");
-	while($line=mysql_fetch_row($res))
+	$res=$db->query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
+	while($line=$res->fetch_row())
 	{
 		$sel=($selected==$line[0])?' selected':'';
-		$ret.="<option value='$line[0]'{$sel}>$line[1]</option>";
+		$ret.="<option value='$line[0]'{$sel}>".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
 	}
 	$ret.="</select>";
+	$res->free();
 	return $ret;
 }
 
+/// Для внутреннего использования
+/// @sa selectGroupPos
 function selectGroupPosRecursive($group_id,$prefix,$selected)
 {
-	$res=mysql_query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
-	if(mysql_errno())		throw new MysqlException("Не удалось получить список групп");
+	global $db;
+	// Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectAgentGroup
+	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
 	$ret='';
-	while($line=mysql_fetch_row($res))
+	while($line = $res->fetch_row())
 	{
 		$sel=($selected==$line[0])?' selected':'';
-		$ret.="<option value='$line[0]'{$sel}>{$prefix}{$line[1]}</option>";
+		$ret.="<option value='$line[0]'{$sel}>{$prefix}".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
 		$ret.=selectGroupPosRecursive($line[0],$prefix.'--',$selected);
 	}
+	$res->free();
 	return $ret;
 }
 
 /// Создаёт HTML код элемента select со списком групп наименований
+/// @param select_name 	Имя элемента select
+/// @param selected	ID выбранного элемента
+/// @param not_select	Если true - в выпадающий список будет добавлен пункт 'не выбран'
+/// @param select_id	Содержимое html аттрибута id элемента select
+/// @param select_class	Содержимое html аттрибута class элемента select
+/// @sa selectAgentGroup
 function selectGroupPos($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
 {
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
@@ -831,6 +845,23 @@ function selectGroupPos($select_name,$selected=0,$not_select=0,$select_id='',$se
 	return $ret;
 }
 
-
+/// @brief Возвращает строку с информацией о различиях между двумя наборами данных в массивах
+/// Массив new должен содержать все индексы массива old
+/// Используется для внесения информации в журнал
+/// @param old	Старый набор данных (массив)
+/// @param new	Новый набор данных (массив)
+function getCompareStr($old, $new) {
+	$ret = '';
+	foreach ($old as $key => $value) {
+		if ($new[$key] !== $value) {
+			if ($ret)
+				$ret.=", $key: ( $value => {$new[$key]})";
+			else {
+				$ret = ", $key: ( $value => {$new[$key]})";
+			}
+		}
+	}
+	return $ret;
+}
 
 ?>

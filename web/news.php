@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,11 +17,13 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once("core.php");
-include_once("include/imgresizer.php");
+require_once("core.php");
+require_once("include/imgresizer.php");
 
+/// Класс новостного модуля. Формирует ленты новостей. Предоставляет средства для добавления новостей и рассылки уведомлений.
 class NewsModule
 {
+
 /// Проверка и исполнение recode-запроса
 public function ProbeRecode()
 {
@@ -45,7 +47,7 @@ public function ProbeRecode()
 	}
 	else if($mode=='all' || $mode=='news' || $mode=='stocks' || $mode=='events')
 	{
-		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='/news.php?mode=add&amp;opt=$mode'>Добавить новость</a><br>");
+		if(isAccess('generic_news','create',1))	$tmpl->addContent("<a href='/news.php?mode=add&amp;opt=$mode'>Добавить новость</a><br>");
 		if(isAccess('generic_news','view'))
 		{
 			$this->ShowList($mode);
@@ -62,15 +64,15 @@ public function ProbeRecode()
 }
 
 /// Отобразить страницу новостей
-/// @param mode: '' - список новостей, 
+/// @param mode: '' - список новостей,
 public function ExecMode($mode='')
 {
 	global $tmpl, $CONFIG;
-	$tmpl->SetText("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
-	$tmpl->SetTitle("Новости сайта - ".$CONFIG['site']['display_name']);
+	$tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
+	$tmpl->setTitle("Новости сайта - ".$CONFIG['site']['display_name']);
 	if($mode=='')
 	{
-		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='/news.php?mode=add&amp;opt=".@$_REQUEST['type']."'>Добавить новость</a><br>");
+		if(isAccess('generic_news','create',1))	$tmpl->addContent("<a href='/news.php?mode=add&amp;opt=".@$_REQUEST['type']."'>Добавить новость</a><br>");
 		if(isAccess('generic_news','view'))
 		{
 			$this->ShowList(@$_REQUEST['type']);
@@ -103,7 +105,7 @@ public function ExecMode($mode='')
 /// @param type: '' - любые типы, news - только новости, stocks - только акции, events - только события
 protected function ShowList($type='')
 {
-	global $tmpl, $CONFIG, $wikiparser;
+	global $tmpl, $CONFIG, $wikiparser, $db;
 	switch($type)
 	{
 		case 'news':	$name='Новости';
@@ -119,32 +121,33 @@ protected function ShowList($type='')
 				$name='Новости, акции, события';
 				$where='';
 	}
-	$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
+	$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
 	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 	$where
 	ORDER BY `date` DESC LIMIT 50");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
-	if(mysql_num_rows($res))
+	if($res)	throw new MysqlException("Не удалось получить список новостей!");
+	if($res->num_rows())
 	{
-		$tmpl->SetText("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
-		$tmpl->SetTitle("$name сайта - ".$CONFIG['site']['display_name']);
-		if(isAccess('generic_news','create',1))	$tmpl->AddText("<a href='/news.php?mode=add&amp;opt=$type'>Добавить новость</a><br>");
-		while($nxt=mysql_fetch_assoc($res))
+		$tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
+		$tmpl->setTitle("$name сайта - ".$CONFIG['site']['display_name']);
+		if(isAccess('generic_news','create',1))
+			$tmpl->addContent("<a href='/news.php?mode=add&amp;opt=$type'>Добавить новость</a><br>");
+		while($nxt=$res->fetch_assoc())
 		{
 			$wikiparser->title='';
-			$tmpl->AddText("<div class='news-block'>");
-			$text=$wikiparser->parse(html_entity_decode($nxt['text'],ENT_QUOTES,"UTF-8"));
+			$tmpl->addContent("<div class='news-block'>");
+			$text=$wikiparser->parse( html_out($nxt['text']) );
 			if($nxt['img_ext'])
 			{
 				$miniimg=new ImageProductor($nxt['id'],'n', $nxt['img_ext']);
 				$miniimg->SetX(48);
 				$miniimg->SetY(48);
-				$tmpl->AddText("<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt=''>");
+				$tmpl->addContent("<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt=''>");
 			}
 			if($nxt['type']=='stock')	$do="<br><i><u>Действительно до:	{$nxt['ex_date']}</u></i>";
 			else if($nxt['type']=='event')	$do="<br><i><u>Дата проведения:	{$nxt['ex_date']}</u></i>";
 			else			$do='';
-			$tmpl->AddText("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i>$do</p></div>");
+			$tmpl->addContent("<h3>{$wikiparser->title}</h3><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i>$do</p></div>");
 			// <!--<br><a href='/forum.php'>Комментарии: 0</a>-->
 		}
 	}
@@ -154,24 +157,24 @@ protected function ShowList($type='')
 /// Отобразить заданную новость
 protected function View($id)
 {
-	global $tmpl, $wikiparser;
-	$res=mysql_query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
+	global $tmpl, $wikiparser, $db;
+	$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
 	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 	WHERE `news`.`id`='$id'");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить список новостей!");
-	if(mysql_num_rows($res))
+	if(!$res)	throw new MysqlException("Не удалось получить список новостей!");
+	if($res->num_rows)
 	{
-		while($nxt=mysql_fetch_assoc($res))
+		while($nxt=$res->fetch_assoc())
 		{
 			$wikiparser->title='';
-			$text=$wikiparser->parse(html_entity_decode($nxt['text'],ENT_QUOTES,"UTF-8"));
+			$text=$wikiparser->parse( html_out($nxt['text']) );
 			if($nxt['type'])	$do="<br><i><u>Действительно до:	{$nxt['ex_date']}</u></i>";
 			else			$do='';
-			$tmpl->SetText("<div id='breadcrumbs'><a href='/'>Главная</a><a href='/news.php'>Новости</a>{$wikiparser->title}</div><h1>{$wikiparser->title}</h1><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br>$do</p>");
+			$tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a><a href='/news.php'>Новости</a>{$wikiparser->title}</div><h1>{$wikiparser->title}</h1><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br>$do</p>");
 			// <a href='/forum.php'>Комментарии: 0</a>
 		}
 	}
-	else 
+	else
 	{
 		header('HTTP/1.0 404 Not Found');
 		header('Status: 404 Not Found');
@@ -193,7 +196,7 @@ protected function WriteForm()
 		case 'events':	$event_c=' checked';
 				break;
 	}
-	$tmpl->AddText("
+	$tmpl->addContent("
 	<form action='' method='post' enctype='multipart/form-data'>
 	<h2>Добавление новости</h2>
 	<input type='hidden' name='mode' value='write'>
@@ -221,21 +224,30 @@ protected function WriteForm()
 /// Запись новости в хранилище
 protected function SaveAndSend()
 {
-	global $tmpl,$wikiparser,$CONFIG;
-	$text=strip_tags(rcv('text'));
-	$type=rcv('type');
-	$ex_date=rcv('ex_date');
-	$no_mail=rcv('no_mail');
+	global $tmpl, $wikiparser, $CONFIG, $db;
+	$text		= strip_tags( request('text') );
+	$type		= request('type');
+	$ex_date	= date("Y-m-d", strtotime( request('ex_date') ) );
+	$no_mail	= request('no_mail');
+	$uwtext		= $wikiparser->parse( html_entity_decode($text,ENT_QUOTES,"UTF-8") );
+	$title		= $wikiparser->title;
+	$uwtext		= strip_tags($uwtext);
+	$uwtext		= $wikiparser->title."\n".$uwtext;
 	$ext='';
-	$uwtext=$wikiparser->parse(html_entity_decode($text,ENT_QUOTES,"UTF-8"));
-	$title=$wikiparser->title;
-	$uwtext=strip_tags($uwtext);
-	$uwtext=$wikiparser->title."\n".$uwtext;
-	mysql_query("START TRANSACTION");
-	mysql_query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
-	VALUES ('$type', '$title', '$text', NOW(), '{$_SESSION['uid']}','$ex_date' )");
-	if(mysql_errno())	throw new MysqlException("Не удалось добавить новость");
-	$news_id=mysql_insert_id();
+
+	if($type!='novelty' && $type!='stock' && $type!='event')
+		$type='novelty';
+
+	$db->query("START TRANSACTION");
+
+	$title_sql=$db->real_escape_string($title);
+	$text_sql=$db->real_escape_string($text);
+
+	$res=$db->query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
+	VALUES ('$type', '$title', '$text', NOW(), '{$_SESSION['uid']}', '$ex_date' )");
+	if(!$res)	throw new MysqlException("Не удалось добавить новость");
+
+	$news_id=$db->insert_id;
 	if(!$news_id)		throw new Exception("Не удалось получить ID новости");
 	if($type=='stock')	$uwtext.="\n\nАкция действует до: $ex_date\n";
 
@@ -254,15 +266,15 @@ protected function SaveAndSend()
 		@mkdir($CONFIG['site']['var_data_fs']."/news/",0755);
 		$m_ok=move_uploaded_file($_FILES['img']['tmp_name'], $CONFIG['site']['var_data_fs']."/news/$news_id.$ext");
 		if(!$m_ok)			throw new Exception("Не удалось записать изображение в хранилище");
-		mysql_query("UPDATE `news` SET `img_ext`='$ext' WHERE `id`='$news_id'");
-		if(mysql_errno())	throw new MysqlException("Не удалось сохранить тип изображения");
+		$res=$db->query("UPDATE `news` SET `img_ext`='$ext' WHERE `id`='$news_id'");
+		if(!$res)	throw new MysqlException("Не удалось сохранить тип изображения");
 	}
 	if(!$no_mail)
 	{
-		SendSubscribe("Новости сайта",$uwtext);
+		SendSubscribe("Новости сайта", $uwtext);
 		$tmpl->msg("Рассылка выполнена","ok");
 	}
-	mysql_query("COMMIT");
+	$db->commit();
 	$tmpl->msg("Новость добавлена!","ok");
 
 }
@@ -280,22 +292,22 @@ protected function GetNewsLink($id, $alt_param='')
 
 try
 {
-	$tmpl->SetTitle("Новости");
+	$tmpl->setTitle("Новости");
 	if(file_exists( $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/news.tpl.php' ) )
 		include_once($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/news.tpl.php');
-	if(!isset($news_module))		$news_module=new NewsModule();	
+	if(!isset($news_module))		$news_module=new NewsModule();
 	if(!$news_module->ProbeRecode())	$news_module->ExecMode($mode);
 }
 catch(MysqlException $e)
 {
-	mysql_query("ROLLBACK");
-	$tmpl->AddText("<br><br>");
+	$e->db->rollback();
+	$tmpl->addContent("<br><br>");
 	$tmpl->msg($e->getMessage(),"err");
 }
 catch(Exception $e)
 {
-	mysql_query("ROLLBACK");
-	$tmpl->AddText("<br><br>");
+	$db->rollback();
+	$tmpl->addContent("<br><br>");
 	$tmpl->logger($e->getMessage());
 }
 

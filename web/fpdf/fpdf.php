@@ -5,6 +5,8 @@
 * Version: 1.6                                                                 *
 * Date:    2008-08-03                                                          *
 * Author:  Olivier PLATHEY                                                     *
+* Date:    2013-08-29                                                          *
+* Author:  BlackLight                                                     *
 *******************************************************************************/
 
 define('FPDF_VERSION','1.6');
@@ -219,7 +221,7 @@ function SetCompression($compress)
 		$this->compress=false;
 }
 
-function SetTitle($title, $isUTF8=false)
+function setTitle($title, $isUTF8=false)
 {
 	//Title of document
 	if($isUTF8)
@@ -691,6 +693,11 @@ function Cell($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false, $link
 		$this->x+=$w;
 }
 
+function CellIconv($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false, $link='')
+{
+	return $this->Cell($w, $h, iconv('UTF-8', 'windows-1251', $txt), $border, $ln, $align, $fill, $link);
+}
+
 function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false)
 {
 	//Output text with automatic or explicit line breaks
@@ -802,6 +809,11 @@ function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false)
 		$b.='B';
 	$this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
 	$this->x=$this->lMargin;
+}
+
+function MultiCellIconv($w, $h, $txt, $border=0, $align='J', $fill=false)
+{
+	return $this->MultiCell($w, $h, iconv('UTF-8', 'windows-1251', $txt), $border, $align, $fill);
 }
 
 function Write($h, $txt, $link='')

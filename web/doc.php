@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -22,168 +22,154 @@ include_once("include/doc.nulltype.php");
 need_auth();
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
-$tmpl->HideBlock('left');
+$tmpl->hideBlock('left');
+$mode = request('mode');
+$doc = rcvint("doc");
 
-$GLOBALS['m_left']=0;
-$mode=rcv('mode');
-$doc=rcvint("doc");
-
-$tmpl->AddTop("
-<script src='/css/jquery/jquery.js' type='text/javascript'></script>
+$tmpl->addTop("
+<script type='text/javascript' src='/css/jquery/jquery.js'></script>
 <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+<script type='text/javascript' src='/css/jquery/jquery.alerts.js'></script>
 <script type='text/javascript' src='/css/doc_script.js'></script>
-
-<!-- Core files -->
-<script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
-<link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen' />
+<link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen'>
 ");
 
 try
 {
-if($mode=="")
-{
-	doc_menu();
-	$tmpl->AddText("<h1>Создание нового документа</h1><h3>Выберите тип документа</h3><ul>");
-	$res=mysql_query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
-	while($nxt=mysql_fetch_row($res))
+	if($mode=="")
 	{
-		$tmpl->AddText("<li><a href='?mode=new&amp;type=$nxt[0]'>$nxt[1]</a></li>");
+		doc_menu();
+		$tmpl->addContent("<h1>Создание нового документа</h1><h3>Выберите тип документа</h3><ul>");
+		$res=$db->query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
+		while($nxt=$res->fetch_row())
+		{
+			$tmpl->addContent("<li><a href='?mode=new&amp;type=$nxt[0]'>".html_out($nxt[1])."</a></li>");
+		}
+		$tmpl->addContent("</ul>");
 	}
-	$tmpl->AddText("</ul>");
-}
-else if($mode=='new')
-{
-	$type=rcvint('type');
-	$document=AutoDocumentType($type, 0);
-	$document->head();
-}
-else if($mode=="heads")
-{
-	if(!$doc)
+	else if($mode=='new')
 	{
-		$type=rcv('type');
+		$type=rcvint('type');
 		$document=AutoDocumentType($type, 0);
+		$document->head();
 	}
-	else	$document=AutoDocument($doc);
-	$document->head_submit($doc);
-}
-else if($mode=="jheads")
-{
-	if(!$doc)
+	else if($mode=="heads")
 	{
-		$type=rcv('type');
-		$document=AutoDocumentType($type, 0);
+		if(!$doc)
+		{
+			$type= request('type');
+			$document = AutoDocumentType($type, 0);
+		}
+		else	$document=AutoDocument($doc);
+		$document->head_submit($doc);
 	}
-	else	$document=AutoDocument($doc);
-	$document->json_head_submit($doc);
-}
-else if($mode=="ehead")
-{
-	$document=AutoDocument($doc);
-	$document->head($doc);
-}
-else if($mode=="body")
-{
-	$document=AutoDocument($doc);
-	$document->body($doc);
-}
-else if($mode=="srv")
-{
-	$document=AutoDocument($doc);
-	$document->Service($doc);
-}
-else if($mode=='applyj')
-{
-	$document=AutoDocument($doc);
-	$tmpl->ajax=1;
-	$tmpl->SetText($document->ApplyJson());
-}
-else if($mode=='cancelj')
-{
-	$document=AutoDocument($doc);
-	$tmpl->ajax=1;
-	$tmpl->SetText($document->CancelJson());
-}
-else if($mode=='conn')
-{
-	$document=AutoDocument($doc);
-	$tmpl->ajax=1;
-	$p_doc=rcv('p_doc');
-	$tmpl->SetText($document->ConnectJson($p_doc));
-}
-else if($mode=='forcecancel')
-{
-	$document=AutoDocument($doc);
-	$document->ForceCancel();
-}
-else if($mode=='print')
-{
-	$document=AutoDocument($doc);
-	$opt=rcv('opt');
-	$document->PrintForm($doc, $opt);
-}
-else if($mode=='fax')
-{
-	$document=AutoDocument($doc);
-	$opt=rcv('opt');
-	$document->SendFax($opt);
-}
-else if($mode=='email')
-{
-	$document=AutoDocument($doc);
-	$opt=rcv('opt');
-	$document->SendEmail($opt);
-}
-else if($mode=='morphto')
-{
-	$document=AutoDocument($doc);
-	$target_type=rcv('tt');
-	$document->MorphTo($doc, $target_type);
-}
-else if($mode=='getinfo')
-{
-	$document=AutoDocument($doc);
-	$document->GetInfo();
-}
-// Это переделать !!!!!!!!!!!!!!!!!!
-else if($mode=="incnum")
-{
-	$tmpl->ajax=1;
-	$type=rcv('type');
-	$sub=rcv('sub');
-	$date=rcv('date');
-	$firm=rcv('firm');
-// 	if($doc)
-// 	{
-// 		$res=mysql_query("SELECT `type`,`subtype`,`altnum` FROM `doc_list` WHERE `id`='$doc'");
-// 		$nxt=mysql_fetch_row($res);
-// 		$type=$nxt[0];
-// 	}
-	if(!$doc)
+	else if($mode=="jheads")
 	{
-		$type=rcv('type');
-		$document=AutoDocumentType($type, 0);
+		if(!$doc)
+		{
+			$type= request('type');
+			$document=AutoDocumentType($type, 0);
+		}
+		else	$document=AutoDocument($doc);
+		$document->json_head_submit($doc);
 	}
-	else	$document=AutoDocument($doc);
+	else if($mode=="ehead")
+	{
+		$document=AutoDocument($doc);
+		$document->head($doc);
+	}
+	else if($mode=="body")
+	{
+		$document=AutoDocument($doc);
+		$document->body($doc);
+	}
+	else if($mode=="srv")
+	{
+		$document=AutoDocument($doc);
+		$document->Service($doc);
+	}
+	else if($mode=='applyj')
+	{
+		$document=AutoDocument($doc);
+		$tmpl->ajax=1;
+		$tmpl->setContent($document->ApplyJson());
+	}
+	else if($mode=='cancelj')
+	{
+		$document=AutoDocument($doc);
+		$tmpl->ajax=1;
+		$tmpl->setContent($document->CancelJson());
+	}
+	else if($mode=='conn')
+	{
+		$document=AutoDocument($doc);
+		$tmpl->ajax=1;
+		$p_doc=rcvint('p_doc');
+		$tmpl->setContent($document->ConnectJson($p_doc));
+	}
+	else if($mode=='forcecancel')
+	{
+		$document=AutoDocument($doc);
+		$document->ForceCancel();
+	}
+	else if($mode=='print')
+	{
+		$document=AutoDocument($doc);
+		$opt=request('opt');
+		$document->PrintForm($opt);
+	}
+	else if($mode=='fax')
+	{
+		$document=AutoDocument($doc);
+		$opt=request('opt');
+		$document->SendFax($opt);
+	}
+	else if($mode=='email')
+	{
+		$document=AutoDocument($doc);
+		$opt=request('opt');
+		$document->SendEmail($opt);
+	}
+	else if($mode=='morphto')
+	{
+		$document=AutoDocument($doc);
+		$target_type=request('tt');
+		$document->MorphTo($target_type);
+	}
+	else if($mode=='getinfo')
+	{
+		$document=AutoDocument($doc);
+		$document->GetInfo();
+	}
+	else if($mode=="incnum")
+	{
+		$tmpl->ajax=1;
+		$type=request('type');
+		$sub=request('sub');
+		$date=rcvdate('date');
+		$firm=rcvint('firm');
+		if(!$doc)
+		{
+			$document=AutoDocumentType($type, 0);
+		}
+		else	$document=AutoDocument($doc);
 
-	$altnum=$document->GetNextAltNum($type,$sub,$date,$firm);
-	echo "$altnum";
-	exit(0);
+		$altnum=$document->getNextAltNum($type,$sub,$date,$firm);
+		echo "$altnum";
+		exit(0);
+	}
+	else $tmpl->msg("ERROR $mode","err");
 }
-else $tmpl->msg("ERROR $mode","err");
-}
-catch(AccessException $e)
-{
+catch(AccessException $e) {
 	$tmpl->ajax=0;
 	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
 }
-catch(MysqlException $e)
-{
+catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
-catch (Exception $e)
-{
+catch (Exception $e) {
 	$tmpl->ajax=0;
 	$tmpl->msg($e->getMessage(),'err',"Общая ошибка");
 }

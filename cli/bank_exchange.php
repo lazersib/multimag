@@ -2,7 +2,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -27,176 +27,162 @@ include_once("$base_path/config_cli.php");
 if(!$CONFIG['bank']['mountpoint'])	exit(0);
 
 `umount {$CONFIG['bank']['mountpoint']}`;
-`mount -t smbfs -o username={$CONFIG['bank']['login']},password={$CONFIG['bank']['pass']},iocharset=utf8 {$CONFIG['bank']['remotepoint']} {$CONFIG['bank']['mountpoint']}`;
+`mount -t cifs -o username={$CONFIG['bank']['login']},password={$CONFIG['bank']['pass']},iocharset=utf8 {$CONFIG['bank']['remotepoint']} {$CONFIG['bank']['mountpoint']}`;
 
 
-$file=file($CONFIG['bank']['mountpoint'].'/export/STATES.TXT');
-if($file)
-{
-$params=array();
-$parsing=0;
-foreach($file as $line)
-{
-	$line=iconv( 'windows-1251','UTF-8', $line);	
-	//echo $line.'<br>';
-	$line=trim($line);
-	$pl=split("=",$line,2);
-	switch($pl[0])
-	{
-		case 'СекцияДокумент':
-			if($pl[1]=="Платёжное поручение")
-			{
-				$parsing=1;
-				echo"Новый $pl[1]\n";
-			}
-			else echo"Неопознанный документ: $pl[1]\n";
-		break;
-		case 'КонецДокумента':
-			if($parsing)
-			{
-				doc_process($params);
-			}
-			$parsing=0;
-			$params=array();
-		break;
-		case 'Номер':
-			if($parsing)
-				$params['docnum']=$pl[1];
-		break;
-		case 'УникальныйНомерДокумента':
-			if($parsing)
-				$params['unique']=$pl[1];
-		break;
-		case 'ДатаПроведения':
-			if($parsing)
-				$params['date']=$pl[1];
-		break;	
-		case 'БИК':
-			if($parsing)
-				$params['bik']=$pl[1];
-		break;	
-		case 'Счет':
-			if($parsing)
-				$params['schet']=$pl[1];
-		break;
-		case 'КорреспондентБИК':
-			if($parsing)
-				$params['kbik']=$pl[1];
-		break;
-		case 'КорреспондентСчет':
-			if($parsing)
-				$params['kschet']=$pl[1];
-		break;	
-		case 'ДебетСумма':
-			if($parsing)
-				$params['debet']=$pl[1];
-		break;
-		case 'КредитСумма':
-			if($parsing)
-				$params['kredit']=$pl[1];
-		break;
-		case 'НазначениеПлатежа':
-			if($parsing)
-				$params['desc']=$pl[1];
-		break;
+$file = file($CONFIG['bank']['mountpoint'] . '/export/STATES.TXT');
+if ($file) {
+	$params = array();
+	$parsing = 0;
+	foreach ($file as $line) {
+		$line = iconv('windows-1251', 'UTF-8', $line);
+		//echo $line.'<br>';
+		$line = trim($line);
+		$pl = split("=", $line, 2);
+		switch ($pl[0]) {
+			case 'СекцияДокумент':
+				if ($pl[1] == "Платёжное поручение") {
+					$parsing = 1;
+					echo"Новый $pl[1]\n";
+				}
+				else
+					echo"Неопознанный документ: $pl[1]\n";
+				break;
+			case 'КонецДокумента':
+				if ($parsing) {
+					doc_process($params);
+				}
+				$parsing = 0;
+				$params = array();
+				break;
+			case 'Номер':
+				if ($parsing)
+					$params['docnum'] = $pl[1];
+				break;
+			case 'УникальныйНомерДокумента':
+				if ($parsing)
+					$params['unique'] = $pl[1];
+				break;
+			case 'ДатаПроведения':
+				if ($parsing)
+					$params['date'] = $pl[1];
+				break;
+			case 'БИК':
+				if ($parsing)
+					$params['bik'] = $pl[1];
+				break;
+			case 'Счет':
+				if ($parsing)
+					$params['schet'] = $pl[1];
+				break;
+			case 'КорреспондентБИК':
+				if ($parsing)
+					$params['kbik'] = $pl[1];
+				break;
+			case 'КорреспондентСчет':
+				if ($parsing)
+					$params['kschet'] = $pl[1];
+				break;
+			case 'ДебетСумма':
+				if ($parsing)
+					$params['debet'] = $pl[1];
+				break;
+			case 'КредитСумма':
+				if ($parsing)
+					$params['kredit'] = $pl[1];
+				break;
+			case 'НазначениеПлатежа':
+				if ($parsing)
+					$params['desc'] = $pl[1];
+				break;
+		}
 	}
-}
 }
 
 global $dv;
 
-$res=mysql_query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
-$dv=mysql_fetch_assoc($res);
-$innkpp=split('/',$dv['firm_inn']);
+$res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
+$dv = $res->fetch_assoc();
+$innkpp = split('/', $dv['firm_inn']);
 
 
-$i=0;
-$dt=date("d.m.Y");
-$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`sum`, `doc_list`.`comment`,
+$i = 0;
+$dt = date("d.m.Y");
+$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`sum`, `doc_list`.`comment`,
 `doc_agent`.`fullname`, `doc_agent`.`inn`, `doc_agent`.`rs`, `doc_agent`.`bik`, `doc_agent`.`ks`, `doc_agent`.`bank`
 FROM `doc_list`
 LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 WHERE `doc_list`.`type`='5' AND `doc_list`.`ok`>'0' AND `doc_list`.`nds`>'0'");
-echo mysql_error();
-while($nxt=mysql_fetch_row($res))
-{
-	if(!$i)
-	{
-		$i=1;
-		$fd=fopen("{$CONFIG['bank']['mountpoint']}/import/810pay.txt","a+");
-		fseek($fd,0,SEEK_END);
-		if(!ftell($fd))
-		{
-			$header="1CClientBankExchange\r\nВерсияФормата=1\r\nКодировка=Windows\r\n";
+while ($nxt = $res->fetch_row()) {
+	if (!$i) {
+		$i = 1;
+		$fd = fopen("{$CONFIG['bank']['mountpoint']}/import/810pay.txt", "a+");
+		fseek($fd, 0, SEEK_END);
+		if (!ftell($fd)) {
+			$header = "1CClientBankExchange\r\nВерсияФормата=1\r\nКодировка=Windows\r\n";
 			fwrite($fd, to_win($header));
 		}
 	}
-	$f_innkpp=split('/',$nxt[5]);
-	$str="СекцияДокумент=Платежное поручение\r\nНомер=$nxt[1]\r\nДата=$dt\r\nСумма=$nxt[2]\r\n". "ВидПлатежа=Электронный\r\nВидОплаты=01\r\nОчередность=6\r\nПлательщикИНН=$innkpp[0]\r\nПлательщикКПП=$innkpp[1]\r\n". "Плательщик=".$dv['firm_name']."\r\nПлательщикСчет=".$dv['firm_schet']."\r\nПлательщикБИК=0".$dv['firm_bik']."\r\n". "ПлательщикКорсчет=".$dv['firm_bank_kor_s']."\r\nПлательщикБанк1=".$dv['firm_bank']."\r\nПолучательИНН=$f_innkpp[0]\r\n". "ПолучательКПП=$f_innkpp[1]\r\nПолучатель=$nxt[4]\r\nПолучательСчет=$nxt[6]\r\nПолучательБИК=$nxt[7]\r\n". "ПолучательКорсчет=$nxt[8]\r\nПолучательБанк1=$nxt[9]\r\nНазначениеПлатежа=$nxt[3]\r\nКонецДокумента\r\n\r\n";
+	$f_innkpp = split('/', $nxt[5]);
+	$str = "СекцияДокумент=Платежное поручение\r\nНомер=$nxt[1]\r\nДата=$dt\r\nСумма=$nxt[2]\r\n" . "ВидПлатежа=Электронный\r\nВидОплаты=01\r\nОчередность=6\r\nПлательщикИНН=$innkpp[0]\r\nПлательщикКПП=$innkpp[1]\r\n" . "Плательщик=" . $dv['firm_name'] . "\r\nПлательщикСчет=" . $dv['firm_schet'] . "\r\nПлательщикБИК=0" . $dv['firm_bik'] . "\r\n" . "ПлательщикКорсчет=" . $dv['firm_bank_kor_s'] . "\r\nПлательщикБанк1=" . $dv['firm_bank'] . "\r\nПолучательИНН=$f_innkpp[0]\r\n" . "ПолучательКПП=$f_innkpp[1]\r\nПолучатель=$nxt[4]\r\nПолучательСчет=$nxt[6]\r\nПолучательБИК=$nxt[7]\r\n" . "ПолучательКорсчет=$nxt[8]\r\nПолучательБанк1=$nxt[9]\r\nНазначениеПлатежа=$nxt[3]\r\nКонецДокумента\r\n\r\n";
 	fwrite($fd, to_win($str));
 	echo "$nxt[0] ($nxt[4])\n";
-	mysql_query("UPDATE `doc_list` SET `nds`='0' WHERE `id`='$nxt[0]'");
+	$db->query("UPDATE `doc_list` SET `nds`='0' WHERE `id`='$nxt[0]'");
 }
-if($fd) fclose($fd);
+if ($fd)	fclose($fd);
 
-function to_win($str)
-{
-	return iconv( 'UTF-8', 'windows-1251', $str);	
+function to_win($str) {
+	return iconv('UTF-8', 'windows-1251', $str);
 }
 
-
-function doc_process($params)
-{
-	echo"result: doc: ".$params['docnum'];
+function doc_process($params) {
+	global $db;
+	echo"result: doc: " . $params['docnum'];
 	//var_dump($params);
 	//echo"\n";
-	if($params['debet']>0)
-	{
-		$type=5;
-		$sum=$params['debet'];
-	}
-	else
-	{
-		$type=4;
-		$sum=$params['kredit'];
+	if ($params['debet'] > 0) {
+		$type = 5;
+		$sum = $params['debet'];
+	} else {
+		$type = 4;
+		$sum = $params['kredit'];
 	}
 	echo", SUM: $sum\n";
-	$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_dopdata`.`value`
-	FROM `doc_list` 
-	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='unique'
-	WHERE `doc_list`.`altnum`='".$params['docnum']."' AND `doc_list`.`type`='$type'");
-	$i=0;
-	while($nxt=mysql_fetch_row($res))
-	{
+	$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_dopdata`.`value`
+		FROM `doc_list` 
+		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='unique'
+		WHERE `doc_list`.`altnum`='" . $params['docnum'] . "' AND `doc_list`.`type`='$type'");
+	$i = 0;
+	while ($nxt = $res->fetch_row()) {
 		echo"id: $nxt[0], altnum: $nxt[1], subtype: $nxt[2], sum: $nxt[3]\n";
-		if($nxt[4]==$params['unique']) $i++;
+		if ($nxt[4] == $params['unique'])	$i++;
 	}
 	echo "FIND: $i\n";
-	if(!$params['unique'])	echo"UINQUE IS NULL!\n";
-	if(($i==0) && ($type==4))
-	{
-			$res=mysql_query("SELECT `num`, `firm_id` FROM `doc_kassa` WHERE `ids`='bank' AND `rs`='{$params['schet']}'");
-			$b_data=mysql_fetch_row($res);
-			if(!$b_data[0])	$b_data[0]=1;
-			if(!$b_data[1])	$b_data[1]=1;
-			
-			$tm=time();
-			$res=mysql_query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' ORDER BY `id` DESC");
-			@$p_doc=mysql_result($res,0,0);
-			@$agent=mysql_result($res,0,1);
-			if(!$agent) $agent=1;
-			$desc=mysql_escape_string($params['desc']);
-			mysql_query("INSERT INTO `doc_list` ( `type`, `agent`, `comment`, `date`, `altnum`, `subtype`, `sum`, `p_doc`, `sklad`, `bank`, `firm_id`)
-			VALUES ('4', '$agent', '$desc', '$tm', '".$params['docnum']."', 'auto', '$sum', '$p_doc' , '1', '$b_data[0]', '$b_data[1]')");
-			$new_id=mysql_insert_id();
-			echo "insert_id: $new_id\n".mysql_error();
-			mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-			VALUES ('$new_id','unique','".$params['unique']."')");
+	if (!$params['unique'])
+		echo"UINQUE IS NULL!\n";
+	if (($i == 0) && ($type == 4)) {
+		$res = $db->query("SELECT `num`, `firm_id` FROM `doc_kassa` WHERE `ids`='bank' AND `rs`='{$params['schet']}'");
+		$b_data = $res->fetch_row();
+		if (!$b_data[0])	$b_data[0] = 1;
+		if (!$b_data[1])	$b_data[1] = 1;
+
+		$tm = time();
+		$res = mysql_query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' ORDER BY `id` DESC");
+		if($res->num_rows)
+			list($p_doc, $agent) = $res->fetch_row();
+		else {
+			$p_doc = 0;
+			$agent = 1;
+		}
+		$desc = $db->real_escape_string($params['desc']);
+		$db->query("INSERT INTO `doc_list` ( `type`, `agent`, `comment`, `date`, `altnum`, `subtype`, `sum`, `p_doc`, `sklad`, `bank`, `firm_id`)
+			VALUES ('4', '$agent', '$desc', '$tm', '" . $params['docnum'] . "', 'auto', '$sum', '$p_doc' , '1', '$b_data[0]', '$b_data[1]')");
+		$new_id = $db->insert_id;
+		echo "insert_id: $new_id\n";
+		$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`) VALUES ('$new_id','unique','" . $params['unique'] . "')");
 	}
-	
+
 	echo"\n";
 }
-
-
 
 ?>

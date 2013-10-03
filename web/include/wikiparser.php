@@ -3,6 +3,7 @@
  * Version 1.0
  * Copyright 2005, Steve Blinch
  * http://code.blitzaffe.com
+ * Modifed by Blacklight, 2006-2013, http://multimag.tndproject.org
  *
  * This class parses and returns the HTML representation of a document containing
  * basic MediaWiki-style wiki markup.
@@ -37,18 +38,17 @@
 /// Парсер викитекста с конвертацией в html формат
 class WikiParser {
 
-	function WikiParser() {
-		$this->reference_wiki = '';
-		$this->reference_site = '';
-		$this->image_uri = '';
-		$this->ignore_images = true;
+	function __construct() {
+		$this->reference_wiki = '/article/';
+		$this->reference_site = @($_SERVER['HTTPS']?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
+		$this->image_uri = "/share/var/wikiphoto/";
+		$this->ignore_images = false;
 		$this->variables=array();
 		$this->preformat=false;
 		$this->emphasis=array();
 	}
 
-	function AddVariable($var, $value)
-	{
+	function AddVariable($var, $value) {
 		$this->variables[$var]=$value;
 	}
 
@@ -176,7 +176,7 @@ class WikiParser {
 		$img_id=round($href);
 		$img=new ImageProductor($img_id,'w', 'jpg');
 		$img->SetX(250);
-		$imagetag = sprintf('<a href=\'/wikiphoto.php?mode=viewall&n=%s\'><img src="%s" alt="%s" /></a>',
+		$imagetag = sprintf('<a href=\'/wikiphoto.php?mode=view&n=%s\'><img src="%s" alt="%s" /></a>',
 			$href,$img->GetURI(),$title);
 		foreach ($options as $k=>$option) {
 			switch($option) {

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,10 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
-
 include_once("core.php");
 include_once("include/imgresizer.php");
 
 // URI: i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}&f={$this->fix_aspect}&n={$this->no_enlarge}
-
-
 
 $i=@$_GET['i'];
 $s=@$_GET['s'];

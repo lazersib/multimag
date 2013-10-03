@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,154 +17,65 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
-$doc_types[6]="Приходный кассовый ордер";
-
 /// Документ *приходный кассовый ордер*
-class doc_Pko extends doc_Nulltype
-{
-	function __construct($doc=0)
-	{
+class doc_Pko extends doc_Nulltype {
+	function __construct($doc=0) {
 		parent::__construct($doc);
 		$this->doc_type				=6;
 		$this->doc_name				='pko';
 		$this->doc_viewname			='Приходный кассовый ордер';
-		$this->sklad_editor_enable		=false;
 		$this->ksaas_modify			=1;
 		$this->header_fields			='kassa sum separator agent';
-		settype($this->doc,'int');
 		$this->PDFForms=array(
 			array('name'=>'pko','desc'=>'Приходный ордер','method'=>'PrintPKOPDF')
 		);
 	}
 
 	// Провести
-	function DocApply($silent=0)
-	{
-		$tim=time();
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`sum`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(!$res)	throw new MysqlException('Ошибка выборки данных документа при проведении!');
-		$nx=@mysql_fetch_row($res);
-		if(!$nx)	throw new Exception('Документ не найден!');
-		if( $nx[3] && (!$silent) )	throw new Exception('Документ уже был проведён!');
+	function DocApply($silent=0) {
+		global $db;
+		$data = $db->selectRow('doc_list', $this->doc);
+		if(!$data)
+			throw new Exception('Ошибка выборки данных документа при проведении!');
+		if($data['ok'] && (!$silent) )
+			throw new Exception('Документ уже проведён!');
+		
+		$res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+		if(!$res->num_rows)		throw new Exception('Ошибка получения суммы кассы!');
+		$nxt = $res->fetch_row();
+		if($nxt[0]<$nx['sum'])	throw new Exception("Не хватает денег в кассе N{$nx['kassa']} ($nxt[0] < {$nx['sum']})!");
 
-		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'$nx[4]'
-		WHERE `ids`='kassa' AND `num`='$nx[2]'");
-		if(!$res)			throw new MysqlException("Ошибка обновления суммы $nx[4] в кассе $nx[2]!");
-		if(! mysql_affected_rows())	throw new MysqlException("Cумма в кассе $nx[2] не изменилась!");
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$nx['sum']}'	WHERE `ids`='kassa' AND `num`='{$nx['kassa']}'");
+		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы!');
 		if($silent)	return;
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
+		
+		$db->update('doc_list', $this->doc, 'ok', time() );
+		$this->sentZEvent('apply');
 	}
 
 	// Отменить проведение
-	function DocCancel()
-	{
-		$tim=time();
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`sum`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(!$res)	throw new MysqlException('Ошибка выборки данных документа при проведении!');
-		if(!($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
-		if(!$nx[3])				throw new Exception('Документ не проведён!');
-		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'$nx[4]' WHERE `ids`='kassa' AND `num`='$nx[2]'");
-		if(! mysql_affected_rows())		throw new MysqlException("Cумма в кассе $nx[2] не изменилась!");
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
-		if(!$res)				throw new MysqlException('Ошибка установки флага!');
-		$budet=$this->CheckKassMinus();
+	function DocCancel() {
+		global $db;
+		$data = $db->selectRow('doc_list', $this->doc);
+		if(!$data)
+			throw new Exception('Ошибка выборки данных документа!');
+		if(!$data['ok'])
+			throw new Exception('Документ не проведён!');
+		
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$nx['sum']}'	WHERE `ids`='kassa' AND `num`='{$nx['kassa']}'");
+		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы!');
+		
+		$db->update('doc_list', $this->doc, 'ok', 0 );
+		$budet = $this->checkKassMinus();
 		if($budet<0)				throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
+		$this->sentZEvent('cancel');
 	}
-	// Отменить проведение
-	function Cancel($doc)
-	{
-		global $tmpl;
-		global $uid;
-
-		$tmpl->ajax=1;
-
- 		mysql_query("START TRANSACTION");
- 		mysql_query("LOCK TABLE `doc_list`, `doc_kassa` READ ");
-		$err='';
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`sum`
-		FROM `doc_list` WHERE `doc_list`.`id`='$doc'");
-		if($nx=@mysql_fetch_row($res))
-		{
-			if(($nx[3])||$silent)
-			{
-				$tim=time();
-				$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'$nx[4]'
-				WHERE `ids`='kassa' AND `num`='$nx[2]'");
-				if(mysql_affected_rows())
-				{
-					$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='$doc'");
-					if(!$res)
-						$err="Ошибка обновления 2!";
-					else
-					{
-						$budet=$this->CheckKassMinus();
-						if($budet<0)
-						{
-							$err="Невозможно, т.к. будет недостаточно ($budet) денег в кассе!";
-						}
-					}
-				}
-				else $err="Ошибка обновления 1!";
-			}
-			else $err="Документ НЕ проведён!";
-		}
-		if(!$err)
-		{
-			mysql_query("COMMIT");
-			if(!$silent)
-			{
-				doc_log("Cancel pko","doc:$doc");
-				$tmpl->AddText("<h3>Докумен успешно отменён!</h3>");
-			}
-		}
-		else
-		{
-			mysql_query("ROLLBACK");
-			if(!$silent)
-			{
-				doc_log("ERROR: Cancel pko - $err","doc:$doc");
-				$tmpl->AddText("<h3>$err</h3>");
-			}
-		}
-		mysql_query("UNLOCK TABLE `doc_list`, `doc_kassa`");
-		return $err;
-	}
-
-	// Печать документа
-	function Printform($doc, $opt='')
-	{
-		global $tmpl;
-
-		if(!$this->doc_data['ok'])
-		{
-			doc_menu(0,0);
-			$tmpl->AddText("<h1>Приходный кассовый ордер</h1>");
-			$tmpl->msg("Сначала нужно провести документ!","err");
-		}
-		else if($opt=='')
-		{
-			global $tmpl;
-			$tmpl->ajax=1;
-			$tmpl->AddText("
-			<div onclick=\"window.location='/doc.php?mode=print&amp;doc={$this->doc}&amp;opt=pko_pdf'\">Приходный ордер</div>");
-		}
-		else
-		if($opt=='pko_pdf')
-			$this->PrintPKOPDF();
-
-	}
-
-	function PrintPKOPDF($to_str=false)
-	{
-		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
-		require('fpdf/fpdf.php');
-		global $tmpl, $CONFIG, $uid;
+	
+	function PrintPKOPDF($to_str=false) {
+		global $tmpl, $CONFIG, $db;
 		if(!$to_str) $tmpl->ajax=1;
-
+		
+		require('fpdf/fpdf.php');
 		$pdf=new FPDF('P');
 		$pdf->Open();
 		$pdf->SetAutoPageBreak(0,10);
@@ -198,7 +109,7 @@ class doc_Pko extends doc_Nulltype
 		$pdf->Cell(115,4,$str,0,0,'R',0);
 		$pdf->Cell(0,4,'0310001',1,1,'C',0);
 
-		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($this->firm_vars['firm_name']));
+		$str = iconv('UTF-8', 'windows-1251', html_in($this->firm_vars['firm_name']));
 		$pdf->Cell(95,4,$str,0,0,'L',0);
 		$str = iconv('UTF-8', 'windows-1251', "по ОКПО");
 		$pdf->Cell(20,4,$str,0,0,'R',0);
@@ -320,21 +231,19 @@ class doc_Pko extends doc_Nulltype
 		$pdf->SetLineWidth(0.2);
 		$pdf->Ln(6);
 		$pdf->SetFont('','',7);
-		$res=mysql_query("SELECT `doc_agent`.`fullname`	FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data[2]}'	");
-		if(mysql_errno())		throw new MysqlException("Невозможно получить данные агента!");
-		$agent_info=mysql_fetch_array($res);
+		$res = $db->query("SELECT `doc_agent`.`fullname` FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data['agent']}'");
+		$agent_info = $res->fetch_assoc();
 		if(!$agent_info)		throw new Exception('Агент не найден');
 
 		$str = iconv('UTF-8', 'windows-1251', "Принято от");
 		$pdf->Cell(20,4,$str,'B',0,'L',0);
-		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($agent_info['fullname']));
+		$str = iconv('UTF-8', 'windows-1251', $agent_info['fullname']);
 		$pdf->Cell(0,4,$str,'B',1,'L',0);
 
-		if($this->doc_data['p_doc'])
-		{
-			$res=mysql_query("SELECT `doc_list`.`altnum`, `doc_list`.`date` FROM `doc_list`
+		if($this->doc_data['p_doc'])	{
+			$res = $db->query("SELECT `doc_list`.`altnum`, `doc_list`.`date` FROM `doc_list`
 			WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
-			$data=mysql_fetch_array($res);
+			$data = $res->fetch_assoc();
 			$ddate=date("d.m.Y",$data['date']);
 			$str_osn="Оплата к с/ф №{$data['altnum']} от $ddate";
 			$str_osn = iconv('UTF-8', 'windows-1251', $str_osn);
@@ -384,10 +293,13 @@ class doc_Pko extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', "(расшифровка подписи)");
 		$pdf->Cell(0,2,$str,0,1,'C',0);
 		$pdf->SetFont('','',7);
-
-		$res=mysql_query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `id`='{$this->doc_data[8]}'");
-		$name=@mysql_result($res,0,0);
-		if(!$name) $name=$this->firm_vars['firm_buhgalter'];
+		
+		$res = $db->query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data['user']}'");
+		if($res->num_rows) {
+			$worker_info = $res->fetch_assoc();
+			$name = $worker_info['worker_real_name'];
+		}
+		else $name=$this->firm_vars['firm_buhgalter'];
 
 		$str = iconv('UTF-8', 'windows-1251', "Получил кассир");
 		$pdf->Cell(20,4,$str,0,0,'L',0);
@@ -410,7 +322,7 @@ class doc_Pko extends doc_Nulltype
 		$pdf->SetY(5);
 		$pdf->Ln();
 
-		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($this->firm_vars['firm_name']));
+		$str = iconv('UTF-8', 'windows-1251', $this->firm_vars['firm_name']);
 		$pdf->MultiCell(0,4,$str,'B','L',0);
 
 		$pdf->SetFont('','',5);
@@ -432,7 +344,7 @@ class doc_Pko extends doc_Nulltype
 
 		$str = iconv('UTF-8', 'windows-1251', "Принято от");
 		$pdf->Cell(20,4,$str,0,0,'L',0);
-		$str = iconv('UTF-8', 'windows-1251', unhtmlentities($agent_info['fullname']));
+		$str = iconv('UTF-8', 'windows-1251', $agent_info['fullname']);
 		$pdf->Cell(0,4,'','B',1,'L',0);
 
 		$y=$pdf->GetY();
@@ -507,9 +419,12 @@ class doc_Pko extends doc_Nulltype
 		$pdf->Cell(0,2,$str,0,1,'C',0);
 		$pdf->SetFont('','',7);
 
-		$res=mysql_query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `id`='{$this->doc_data[8]}'");
-		$name=@mysql_result($res,0,0);
-		if(!$name) $name=$this->firm_vars['firm_buhgalter'];
+		$res = $db->query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data['user']}'");
+		if($res->num_rows) {
+			$worker_info = $res->fetch_assoc();
+			$name = $worker_info['worker_real_name'];
+		}
+		else $name=$this->firm_vars['firm_buhgalter'];
 
 		$str = iconv('UTF-8', 'windows-1251', "Кассир");
 		$pdf->Cell(10,4,$str,0,0,'L',0);
@@ -531,21 +446,6 @@ class doc_Pko extends doc_Nulltype
 		else
 			$pdf->Output('pko.pdf','I');
 	}
-	// Формирование другого документа на основании текущего
-	function MorphTo($doc, $target_type)
-	{
-		global $tmpl;
-		$tmpl->ajax=1;
-		$tmpl->AddText("<div class='disabled'>Не поддерживается для</div><div class='disabled'>данного типа документа</div>");
-	}
-
-	// Служебные опции
-	function Service($doc)
-	{
-		global $tmpl;
-        $tmpl->msg("В процессе разработки!",err);
-	}
-
 };
 
 

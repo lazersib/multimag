@@ -1,4 +1,22 @@
 <?php
+//	MultiMag v0.1 - Complex sales system
+//
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//
+//	This program is free software: you can redistribute it and/or modify
+//	it under the terms of the GNU Affero General Public License as
+//	published by the Free Software Foundation, either version 3 of the
+//	License, or (at your option) any later version.
+//
+//	This program is distributed in the hope that it will be useful,
+//	but WITHOUT ANY WARRANTY; without even the implied warranty of
+//	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//	GNU Affero General Public License for more details.
+//
+//	You should have received a copy of the GNU Affero General Public License
+//	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+
 include_once("core.php");
 include_once("include/doc.core.php");
 
@@ -24,56 +42,55 @@ try
 		}
 	}
 
-	$merch_id=@$_REQUEST['merch_id'];
-	$trx_id=@$_REQUEST['trx_id'];
-	$merchant_trx=@$_REQUEST['merchant_trx'];
-	settype($merchant_trx,'int');
-	$result_code=@$_REQUEST['result_code'];
-	settype($result_code,'int');
-	$amount=@$_REQUEST['amount'];
-	$account­_id=@$_REQUEST['account­_id'];
-	$p_rrn=@$_REQUEST['p_rrn'];
-	$order_id=@$_REQUEST['o_order_id'];
-	settype($order_id,'int');
-	$timestamp=@$_REQUEST['ts'];
-	$signature=@$_REQUEST['signature'];
-	$p_cardholder=@$_REQUEST['p_cardholder'];
-	$p_maskedPan=@$_REQUEST['p_maskedPan'];
-	$p_isFullyAuthenticated=@$_REQUEST['p_isFullyAuthenticated'];
+	$merch_id		= request('merch_id');
+	$trx_id			= request('trx_id');
+	$merchant_trx		= rcvint('merchant_trx');
+	$result_code		= rcvint('result_code');
+	$amount			= request('amount');
+	$account_id		= request('account­_id');
+	$p_rrn			= request('p_rrn');
+	$order_id		= rcvint('o_order_id');
+	$timestamp		= request('ts');
+	$signature		= request('signature');
+	$p_cardholder		= request('p_cardholder');
+	$p_maskedPan		= request('p_maskedPan');
+	$p_isFullyAuthenticated	= request('p_isFullyAuthenticated');
 
 	if(!$order_id)					throw new Exception("Не передан ID заказа");
 	if($merch_id!=$CONFIG['gpb']['merch_id'])	throw new Exception("Неверный ID магазина!");
 	if(!$trx_id)					throw new Exception("Не передан ID транзакции");
 	if(!$timestamp)					throw new Exception("Не передан timestamp");
 
-	$res=mysql_query("SELECT `doc_list`.`id`, `agent`, `sum`, `firm_id`, `contract`, `comment` FROM
-	`doc_list`
+	$res=$db->query("SELECT `doc_list`.`id`, `agent`, `sum`, `firm_id`, `contract`, `comment` FROM `doc_list`
 	WHERE `doc_list`.`id`='$merchant_trx' AND `doc_list`.`type`='4'");
-	if(mysql_errno())		throw new MysqlException("Невозможно получить данные документа");
-	if(!mysql_num_rows($res))	throw new Exception("Банк-приход не найден");
-	$b_info=mysql_fetch_assoc($res);
+	if(!$res)		throw new MysqlException("Невозможно получить данные документа");
+	if(!$res->num_rows)	throw new Exception("Банк-приход не найден");
+	$b_info=$res->fetch_assoc();
 
-	$desc_add="\n---------------\nresult:$result_code\namount:$amount\naccount_id:$account­_id\np_rnn:$p_rrn\nts:$timestamp\nsignature:$signature\np_cardholder:$p_cardholder\np_maskedPan:$p_maskedPan\n3d_secure:$p_isFullyAuthenticated";
-	$desc_sql=mysql_real_escape_string($b_info['comment'].$desc_add);
-	mysql_query("UPDATE `doc_list` SET `comment`='$desc_sql' WHERE `id`='$merchant_trx'");
-	if(mysql_errno())		throw new MysqlException("Невозможно обновить данные документа");
-	if($amount!=round($b_info['sum']*100))	throw new Exception("Неверная сумма платежа ($amount != {$b_info['sum']})");
+	$desc_add="\n---------------\nresult:$result_code\namount:$amount\naccount_id:$account_id\np_rnn:$p_rrn\nts:$timestamp\nsignature:$signature\np_cardholder:$p_cardholder\np_maskedPan:$p_maskedPan\n3d_secure:$p_isFullyAuthenticated";
+	$desc_sql=$db->real_escape_string($b_info['comment'].$desc_add);
+	$res=$db->query("UPDATE `doc_list` SET `comment`='$desc_sql' WHERE `id`='$merchant_trx'");
+	if(!$res)		throw new MysqlException("Невозможно обновить данные документа");
 
 	if($result_code==1)
 	{
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$merchant_trx', 'cardpay', '1'), ('$merchant_trx', 'cardholder', '$p_cardholder'), ('$merchant_trx', 'masked_pan', '$p_maskedPan'),  ('$merchant_trx', 'p_rnn', '$p_rrn'),  ('$merchant_trx', 'trx_id', '$trx_id')");
-		if(mysql_errno())		throw new MysqlException("Невозможно обновить данные документа");
+		if($amount!=round($b_info['sum']*100))	throw new Exception("Неверная сумма платежа ($amount != {$b_info['sum']})");
+
+		$p_cardholder_sql=$db->real_escape_string($p_cardholder);
+		$p_maskedPan_sql=$db->real_escape_string($p_maskedPan);
+		$p_rrn_sql=$db->real_escape_string($p_rrn);
+		$trx_id_sql=$db->real_escape_string($trx_id);
+
+		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$merchant_trx', 'cardpay', '1'), ('$merchant_trx', 'cardholder', '$p_cardholder_sql'), ('$merchant_trx', 'masked_pan', '$p_maskedPan_sql'),  ('$merchant_trx', 'p_rnn', '$p_rrn_sql'),  ('$merchant_trx', 'trx_id', '$trx_id_sql')");
+		if(!$res)		throw new MysqlException("Невозможно обновить данные документа");
 		$doc=new doc_PBank($merchant_trx);
 		$doc->DocApply();
 	}
 	else
 	{
-		mysql_query("UPDATE `doc_list` SET `mark_del`='".time()."' WHERE `id`='$merchant_trx'");
-		if(mysql_errno())		throw new MysqlException("Невозможно обновить данные документа");
-
+		$res=$db->query("UPDATE `doc_list` SET `mark_del`='".time()."' WHERE `id`='$merchant_trx'");
+		if(!$res)		throw new MysqlException("Невозможно обновить данные документа");
 	}
-
-
 	echo"<?xml version=\"1.0\" encoding=\"utf-8\"?><register-payment-response><result><code>1</code><desc>OK</desc></result></register-payment-response>";
 }
 catch(Exception $e)

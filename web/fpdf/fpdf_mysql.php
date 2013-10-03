@@ -31,10 +31,10 @@ function Footer()
     		global $CONFIG;
 		$this->SetFont('Arial','',8);
 		$this->SetTextColor(0);
-		$str = 'Стр. '.$this->PageNo().'.      Цены, выделенные серым, необходимо уточнять! Наш интернет-магазин: ';		
+		$str = 'Стр. '.$this->PageNo().'.      Цены, выделенные серым, необходимо уточнять! Наш интернет-магазин: ';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$this->SetY($this->GetY()+2);
-		$this->Write(4,$str,'');		
+		$this->Write(4,$str,'');
 		$this->SetTextColor(0,0,255);
 		$this->SetFont('','U');
 		$this->Write(4,'http://'.$CONFIG['site']['name'],'http://'.$CONFIG['site']['name']);
@@ -59,7 +59,7 @@ function TableHeader()
 		}
 		$this->SetX($this->x+2);
 		if($i==0)
-			$this->ColsWidth=$this->x-$this->lMargin;		
+			$this->ColsWidth=$this->x-$this->lMargin;
 	}
     $this->Ln();
     $this->headY=$this->GetY();
@@ -71,10 +71,10 @@ function Row($data, $divider=0, $cost_id=1)
     $this->SetX($this->TableX);
     $ci=$this->ColorIndex;
     $fill=!empty($this->RowColors[$ci]);
-	
+
     if(!$divider)
     {
-	$cost = GetCostPos($data['pos_id'], $cost_id);
+	$cost = getCostPos($data['pos_id'], $cost_id);
 	if($cost==0)	return;
 		if($fill)
 			$this->SetFillColor($this->RowColors[$ci][0],$this->RowColors[$ci][1],$this->RowColors[$ci][2]);
@@ -82,18 +82,18 @@ function Row($data, $divider=0, $cost_id=1)
 		{
 			$str=@$data[$col['f']];
 			if(($col['f']=='name')&&($data['proizv']!='')) $str.=' ('.$data['proizv'].')';
-			
+
 			if($col['f']=='cost')
 			{
-				$dcc=strtotime($data['cost_date']);				
+				$dcc=strtotime($data['cost_date']);
 				if( ($dcc<(time()-60*60*24*30*6))|| ($cost==0) ) $cce=128;
 				else $cce=0;
 				if(!$cost) $cost='Звоните!';
 				else	$cost.=" за ".$data['units_name'];
 				$str=$cost;
-			} else $cce=0;  
-			
-			$str = iconv('UTF-8', 'windows-1251',html_entity_decode ($str, ENT_QUOTES,"UTF-8") );
+			} else $cce=0;
+
+			$str = iconv('UTF-8', 'windows-1251', $str);
 			$this->SetTextColor($cce);
 			$this->Cell($col['w'],4,$str,1,0,$col['a'],$fill);
 		}
@@ -104,9 +104,9 @@ function Row($data, $divider=0, $cost_id=1)
 			$this->SetFillColor($this->HeaderColor[0],$this->HeaderColor[1],$this->HeaderColor[2]);
 		$str = iconv('UTF-8', 'windows-1251', $data);
 		$this->SetTextColor(0);
-		$this->Cell($this->aCols[0]['w']+$this->aCols[1]['w']+@$this->aCols[2]['w'],4,$str,1,0,'C',$fill);    
+		$this->Cell($this->aCols[0]['w']+$this->aCols[1]['w']+@$this->aCols[2]['w'],4,$str,1,0,'C',$fill);
     }
-    
+
     $this->Ln();
     if($this->y+5>$this->PageBreakTrigger)
     {
@@ -118,7 +118,7 @@ function Row($data, $divider=0, $cost_id=1)
 		}
 		else $this->AddPage();
     }
-    
+
     $this->ColorIndex=1-$ci;
 }
 
@@ -155,24 +155,11 @@ function AddCol($field=-1,$width=-1,$caption='',$align='L')
 
 function Table($query,$prop=array())
 {
-	//Issue query
-	
-	//Add all columns if none was specified
-	if(count($this->aCols)==0)
-	{
-	$nb=mysql_num_fields($res);
-	for($i=0;$i<$nb;$i++)
-		$this->AddCol();
-	}
 	//Retrieve column names when not specified
 	foreach($this->aCols as $i=>$col)
 	{
-		if($col['c']=='')
-		{
-			if(is_string($col['f']))
+		if($col['c']=='')	{
 			$this->aCols[$i]['c']=ucfirst($col['f']);
-			else
-			$this->aCols[$i]['c']=ucfirst(mysql_field_name($res,$col['f']));
 		}
 	}
 	//Handle properties
@@ -202,18 +189,7 @@ function Table($query,$prop=array())
 	$this->SetFont('Arial','',7);
 	$this->ColorIndex=0;
 	$this->ProcessingTable=true;
-// 	$rs=mysql_query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' ORDER BY `name`");
-// 	while($nxt=mysql_fetch_row($rs))
-// 	{
-// 		if(isset($prop['groups']) )
-// 			if( ! in_array($nxt[0],$prop['groups']) )	continue;
-// 		$this->Row($nxt[1],1,$prop['cost_id']);
-// 		$res=mysql_query($query."WHERE `group`='$nxt[0]' AND `doc_base`.`hidden`='0' ORDER BY `name`");
-// 		while($row=mysql_fetch_array($res))
-// 		{	
-// 			$this->Row($row,0,$prop['cost_id']);
-// 		}
-// 	}
+
 	$this->draw_groups_tree(0, $query, $prop);
 	$this->ProcessingTable=false;
 	$this->cMargin=$cMargin;
@@ -222,18 +198,19 @@ function Table($query,$prop=array())
 
 function draw_groups_tree($pid, $query, $prop)
 {
-	$res=mysql_query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' AND `hidelevel`='0' ORDER BY `id`");
-	if(mysql_errno())	throw new MysqlException("Невозможно выбрать список групп");
-	while($nxt=mysql_fetch_row($res))
+	global $db;
+	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' AND `hidelevel`='0' ORDER BY `id`");
+	if(!$res)	throw new MysqlException("Невозможно выбрать список групп");
+	while($nxt=$res->fetch_row())
 	{
 		if($nxt[0]==0) continue;
 		if(isset($prop['groups']) )
 			if( ! in_array($nxt[0],$prop['groups']) )	continue;
 		$this->Row($nxt[1],1,$prop['cost_id']);
-		$res2=mysql_query($query."WHERE `group`='$nxt[0]' AND `doc_base`.`hidden`='0' ORDER BY `name`");
-		if(mysql_errno())	throw new MysqlException("Невозможно выбрать список наименований");
-		while($row=mysql_fetch_array($res2))
-		{	
+		$res2=$db->query($query."WHERE `group`='$nxt[0]' AND `doc_base`.`hidden`='0' ORDER BY `name`");
+		if(!$res)	throw new MysqlException("Невозможно выбрать список наименований");
+		while($row=$res2->fetch_array())
+		{
 			$this->Row($row,0,$prop['cost_id']);
 		}
 		$this->draw_groups_tree($nxt[0], $query, $prop);

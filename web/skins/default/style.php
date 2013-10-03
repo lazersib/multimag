@@ -33,14 +33,14 @@ function skin_prepare()
 
 	if(@$_SESSION['uid'])
 	{
-		$tmpl->AddRight("<li class='noborder'><a href='/login.php?mode=logout' title='Покинуть сайт'>Выход</a></li>");
-		$tmpl->AddLeft("<p class='vspace sidehead'><a>{$_SESSION['name']}:</a></p>
+		$tmpl->addRight("<li class='noborder'><a href='/login.php?mode=logout' title='Покинуть сайт'>Выход</a></li>");
+		$tmpl->addLeft("<p class='vspace sidehead'><a>{$_SESSION['name']}:</a></p>
 		<ul><li><a href='/login.php?mode=logout' accesskey='q' title='Выйти с сайта'>Выход</a></li><li><a href='/user.php' accesskey='s' title='Дополнительные возможности'>Возможности</a></li></ul>");
 	}
 	else
 	{
-		$tmpl->AddRight("<li class='noborder'><a href='/login.php' title='Войти на сайт'>Вход</a></li>");
-		$tmpl->AddLeft("<ul><li><a href='/login.php' accesskey='l' title='Войти на сайт'>Вход на сайт</a></li><li><a href='/login.php?mode=reg'>Регистрация</a></li></ul>");
+		$tmpl->addRight("<li class='noborder'><a href='/login.php' title='Войти на сайт'>Вход</a></li>");
+		$tmpl->addLeft("<ul><li><a href='/login.php' accesskey='l' title='Войти на сайт'>Вход на сайт</a></li><li><a href='/login.php?mode=reg'>Регистрация</a></li></ul>");
 	}
 
 	$rr=$ll='';
@@ -50,7 +50,7 @@ function skin_prepare()
 		$ll="style='color: #fff; font-weight: bold;'";
 	}
 
-	$tmpl->AddLeft("<p class='vspace sidehead'><a class='wikilink' >Навигация</a></p>
+	$tmpl->addLeft("<p class='vspace sidehead'><a class='wikilink' >Навигация</a></p>
 	<ul>
 	<li><a class='selflink' href='/index.php'>Домашняя страница</a></li>
 	<li $rr><a class='selflink' href='/vitrina.php?mode=basket' $ll rel='nofollow'>Корзина</a></li>
@@ -77,7 +77,7 @@ function skin_prepare()
 	else $tmpl->tpl=str_replace("<!--site-content-->","<div id='wiki-page-nolmenu' class='wiki-page-nolmenu'><!--site-content--></div>",$tmpl->tpl);
 	if(!isset($tmpl->hide_blocks['right'])) $tmpl->tpl=str_replace("<!--site-right-->","<div id='info-right'><ul><!--site-right--></ul></div>",$tmpl->tpl);
 	
-	$tmpl->SetCustomBlockData('topleft', rusdate ("l, d.m.Y H:i"));
+	$tmpl->setCustomBlockData('topleft', rusdate ("l, d.m.Y H:i"));
 }
 
 

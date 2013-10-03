@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -50,24 +50,24 @@ function GetCountInfo($count, $tranzit)
 
 include_once("core.php");
 include_once("include/doc.core.php");
-$analog=rcv('analog');
-$proizv=rcv('proizv');
-$type=rcv('type');
-$di_min=rcv('di_min');
-$di_max=rcv('di_max');
-$de_min=rcv('de_min');
-$de_max=rcv('de_max');
-$size_min=rcv('size_min');
-$size_max=rcv('size_max');
-$m_min=rcv('m_min');
-$m_max=rcv('m_max');
-$cost_min=rcv('cost_min');
-$cost_max=rcv('cost_max');
-$name=rcv('name');
+$name=request('name');
+$analog=rcvint('analog');
+$proizv=request('proizv');
+$type=request('type');
+$di_min=rcvrounded('di_min');
+$di_max=rcvrounded('di_max');
+$de_min=rcvrounded('de_min');
+$de_max=rcvrounded('de_max');
+$size_min=rcvrounded('size_min');
+$size_max=rcvrounded('size_max');
+$m_min=rcvrounded('m_min');
+$m_max=rcvrounded('m_max');
+$cost_min=rcvrounded('cost_min');
+$cost_max=rcvrounded('cost_max');
 
 if(!$name)
 {
-	$name=rcv('s');
+	$name=request('s');
 	if($name)
 	{
 		$mode='s';
@@ -75,20 +75,24 @@ if(!$name)
 	}
 }
 
-if(@$_SESSION['uid'])	$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
-else			$res=mysql_query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-if(mysql_errno())	throw new MysqlException('Не удалось выбрать цену для пользователя');
-$cost_id=		mysql_result($res,0,0);
-if(!$cost_id)	$cost_id=1;
+$name_html=html_out($name);
+$name_sql=$db->real_escape_string($name);
+$proizv_html=html_out($proizv);
+$proizv_sql=$db->real_escape_string($proizv);
 
-$cstr=rcv('cstr');
+if($type!=='')	settype($type,'int');
+
+$cost_id=getCurrentUserCost();
+
+$cstr=rcvint('cstr');
 if(($cstr<=0)||($cstr>500)) $cstr=500;
 
-$tmpl->SetTitle("Поиск товара ".$name);
+$tmpl->setTitle("Поиск товара ".$name);
 
 if($analog) $an_ch='checked'; else $an_ch='';
 
-$tmpl->AddText("<h1>Поиск товаров</h1>
+
+$tmpl->addContent("<h1>Поиск товаров</h1>
 <form action='/adv_search.php' method='get'>
 <input type='hidden' name='mode' value='s'>
 <table width='100%' class='adv-search'>
@@ -96,9 +100,9 @@ $tmpl->AddText("<h1>Поиск товаров</h1>
 <th colspan='2'>Производитель
 <th>Тип
 <tr>
-<td colspan='2'><input type='text' name='name' value='$name'><br>
+<td colspan='2'><input type='text' name='name' value='$name_html'><br>
 <td colspan='2'>
-<input type=text name='proizv' value='$proizv'><br>
+<input type=text name='proizv' value='$proizv_html'><br>
 <td><input type='text' name='type' value='$type'>
 <tr>
 <th>Внутренний диаметр
@@ -127,9 +131,9 @@ if($mode)
 
 	if($name)
 	{
-		$sql.="AND (`doc_base_dop`.`analog` LIKE '%$name%' OR `doc_base`.`name` LIKE '%$name%' OR `doc_base`.`desc` LIKE '%$name%')";
+		$sql.="AND (`doc_base_dop`.`analog` LIKE '%$name_sql%' OR `doc_base`.`name` LIKE '%$name_sql%' OR `doc_base`.`desc` LIKE '%$name_sql%')";
 	}
-	if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv%'";
+	if($proizv)		$sql.="AND `doc_base`.`proizv` LIKE '%$proizv_sql%'";
 	if($type)		$sql.="AND `doc_base_dop`.`type` = '$type'";
 	if($di_min)		$sql.="AND `doc_base_dop`.`d_int` >= '$di_min'";
 	if($di_max)		$sql.="AND `doc_base_dop`.`d_int` <= '$di_max'";
@@ -142,33 +146,33 @@ if($mode)
 	if($cost_min)		$sql.="AND `doc_base`.`cost` >= '$cost_min'";
 	if($cost_max)		$sql.="AND `doc_base`.`cost` <= '$cost_max'";
 
-	$sql.=" LIMIT 1000";
-	$res=mysql_query($sql);
-	if(mysql_errno())	throw new MysqlException("Не удалось сделать выборку товаров");
-	if($row=mysql_numrows($res))
+	$sql.=" LIMIT 2000";
+	$res=$db->query($sql);
+	if(!$res)	throw new MysqlException("Не удалось сделать выборку товаров");
+	if($row=$res->num_rows)
 	{
 		$s="По запросу найдено $row товаров";
-		if($row>=1000) 	$s="Показаны только первые $row товаров, используйте более строгий запрос!";
-		$tmpl->AddText("<h1 id='page-title'>Результаты поиска</h1><div id='page-info'>$s</div>
+		if($row>=2000) 	$s="Показаны только первые $row товаров, используйте более строгий запрос!";
+		$tmpl->addContent("<h1 id='page-title'>Результаты поиска</h1><div id='page-info'>$s</div>
 		<table class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
 		<th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>");
 		$i=0;
 		$cl="lin0";
 		$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
-		while($nxt=mysql_fetch_row($res))
+		while($nxt=$res->fetch_row())
 		{
 			if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 			else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
 
-			$cost=GetCostPos($nxt[0], $cost_id);
+			$cost=getCostPos($nxt[0], $cost_id);
 			if($cost<=0)	$cost='уточняйте';
 			$nal=GetCountInfo($nxt[12], $nxt[13]);			
 			$cce=(strtotime($nxt[5])<(time()-60*60*24*30*6))?" style='color:#888'":'';
-			$tmpl->AddText("<tr><td><a href='$link'>$nxt[1] $nxt[2]</a>
-			<td>$nxt[3]<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
+			$tmpl->addContent("<tr><td><a href='$link'>".html_out($nxt[1].' '.$nxt[2])."</a>
+			<td>".html_out($nxt[3])."<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
 			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
 		}
-		$tmpl->AddText("</table><span style='color:#888'>Серая цена</span> требует уточнения<br>");
+		$tmpl->addContent("</table><span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}
 	else $tmpl->msg("По Вашему запросу ничего не найдено! Попробуйте использовать более мягкие условия поиска!");
 }

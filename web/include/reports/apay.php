@@ -1,7 +1,8 @@
 <?php
+
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -16,22 +17,19 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
 /// Отчёт по кладовщикам в реализациях
-class Report_Apay extends BaseGSReport
-{
-	function getName($short=0)
-	{
-		if($short)	return "По платежам агентов";
+class Report_Apay extends BaseGSReport {
+
+	function getName($short = 0) {
+		if ($short)	return "По платежам агентов";
 		else		return "Отчёт по платежам агентов";
 	}
-	
-	function Form()
-	{
+
+	function Form() {
 		global $tmpl;
-		$d_f=date("Y-m-d",time()-60*60*24*31);
-		$d_t=date("Y-m-d");
-		$tmpl->AddText("<h1>".$this->getName()."</h1>
+		$d_f = date("Y-m-d", time() - 60 * 60 * 24 * 31);
+		$d_t = date("Y-m-d");
+		$tmpl->addContent("<h1>" . $this->getName() . "</h1>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='apay'>
@@ -64,75 +62,64 @@ class Report_Apay extends BaseGSReport
 		</script>
 		");
 	}
-	
-	function Make($engine)
-	{
-		global $CONFIG;
-		$this->loadEngine($engine);		
 
-		$dt_f=strtotime(rcv('dt_f'));
-		$dt_t=strtotime(rcv('dt_t')." 23:59:59");
-		
-		$print_f=date('Y-m-d', $dt_f);
-		$print_t=date('Y-m-d', $dt_t);
-		
-		$this->header($this->getName().", с $print_f по $print_t");
-		
-		$widths=array(5,65,10,10, 10);
-		$headers=array('ID', 'Агент','По банку','По кассе','Сумма');
-		$order=rcv('order');
-		$direct=rcv('direct');
-		$orders=array('agent_id','agent_name','bank_sum','kass_sum','all_sum');
-		if(!in_array($order,$orders))	$order='agent_name';
-		$direct=$direct?'DESC':'ASC';
-		$this->col_cnt=count($widths);
+	function Make($engine) {
+		global $db;
+		$this->loadEngine($engine);
+
+		$dt_f = strtotime(rcvdate('dt_f'));
+		$dt_t = strtotime(rcvdate('dt_t') . " 23:59:59");
+
+		$print_f = date('Y-m-d', $dt_f);
+		$print_t = date('Y-m-d', $dt_t);
+
+		$this->header($this->getName() . ", с $print_f по $print_t");
+
+		$widths = array(5, 65, 10, 10, 10);
+		$headers = array('ID', 'Агент', 'По банку', 'По кассе', 'Сумма');
+		$order = request('order');
+		$direct = request('direct');
+		$orders = array('agent_id', 'agent_name', 'bank_sum', 'kass_sum', 'all_sum');
+		if (!in_array($order, $orders))
+			$order = 'agent_name';
+		$direct = $direct ? 'DESC' : 'ASC';
+		$this->col_cnt = count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
-		
-		mysql_query("CREATE TEMPORARY TABLE `apay_report` (`agent_id` INT NOT NULL ,
+
+		$db->query("CREATE TEMPORARY TABLE `apay_report` (`agent_id` INT NOT NULL ,
 		`agent_name` VARCHAR( 64 ) NOT NULL ,
 		`bank_sum` DECIMAL( 10, 2 ) NOT NULL ,
 		`kass_sum` DECIMAL( 10, 2 ) NOT NULL ,
 		`all_sum` DECIMAL( 10, 2 ) NOT NULL 
 		) ENGINE = MYISAM CHARACTER SET utf8 COLLATE utf8_general_ci");
-		if(mysql_errno())		throw new MysqlException("Не удалось создать таблицу");
-		
-		mysql_query("INSERT INTO `apay_report` (`agent_id`, `agent_name`, `bank_sum`, `kass_sum`) SELECT `doc_agent`.`id` AS `agent_id`, `doc_agent`.`name` AS `agent_name`,
+
+		$db->query("INSERT INTO `apay_report` (`agent_id`, `agent_name`, `bank_sum`, `kass_sum`) SELECT `doc_agent`.`id` AS `agent_id`, `doc_agent`.`name` AS `agent_name`,
 		( SELECT SUM(`doc_list`.`sum`) FROM `doc_list` WHERE `doc_list`.`agent`=`doc_agent`.`id` AND `doc_list`.`type`='4' AND `doc_list`.`ok`>0 AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t') AS `bank_sum`,
 		( SELECT SUM(`doc_list`.`sum`) FROM `doc_list` WHERE `doc_list`.`agent`=`doc_agent`.`id` AND `doc_list`.`type`='6' AND `doc_list`.`ok`>0 AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<='$dt_t') AS `kass_sum`		
 		FROM `doc_agent`");
-		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос");
-		
-		mysql_query("UPDATE `apay_report` SET `all_sum`=`bank_sum`+`kass_sum`");
-		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос");
-		
-		$res=mysql_query("SELECT `agent_id`, `agent_name`, `bank_sum`, `kass_sum`, `all_sum` FROM `apay_report` WHERE `all_sum`>0  ORDER BY $order $direct");
-		if(mysql_errno())		throw new MysqlException("Не удалось выполнить запрос ");
-		$sumb=$sumc=$count=0;
-		
-		while($nxt=mysql_fetch_row($res))
-		{
-			$this->tableRow(array($nxt[0], $nxt[1],$nxt[2],$nxt[3],$nxt[4]));
+
+		$db->query("UPDATE `apay_report` SET `all_sum`=`bank_sum`+`kass_sum`");
+
+		$res = $db->query("SELECT `agent_id`, `agent_name`, `bank_sum`, `kass_sum`, `all_sum` FROM `apay_report` WHERE `all_sum`>0  ORDER BY $order $direct");
+		$sumb = $sumc = $count = 0;
+
+		while ($nxt = $res->fetch_row()) {
+			$this->tableRow(array($nxt[0], $nxt[1], $nxt[2], $nxt[3], $nxt[4]));
 			$sumb+=$nxt[2];
 			$sumc+=$nxt[3];
 			$count++;
 		}
 		$this->tableAltStyle(true);
-		$sum=sprintf("%0.2f",$sumb+$sumc);
-		$sumb=sprintf("%0.2f",$sumb);
-		$sumc=sprintf("%0.2f",$sumc);
-		$this->tableSpannedRow(array(2,1,1,1),array("Итого: $count агентов",$sumb,$sumc,$sum)); 
+		$sum = sprintf("%0.2f", $sumb + $sumc);
+		$sumb = sprintf("%0.2f", $sumb);
+		$sumc = sprintf("%0.2f", $sumc);
+		$this->tableSpannedRow(array(2, 1, 1, 1), array("Итого: $count агентов", $sumb, $sumc, $sum));
 		$this->tableEnd();
 		$this->output();
 		exit(0);
 	}
-	
-	function Run($opt)
-	{
-		if($opt=='')	$this->Form();
-		else		$this->Make($opt);	
-	}
-};
+}
+
 
 ?>
-

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -19,27 +19,18 @@
 
 require_once("../config_site.php");
 
-if(!@mysql_connect($CONFIG['mysql']['host'],$CONFIG['mysql']['login'],$CONFIG['mysql']['pass']))
+$db = @ new mysqli($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
+if($db->connect_error)
 {
-	//echo"<h1>503 Сервис временно недоступен!</h1>Не удалось соединиться с сервером баз данных. Возможно он перегружен, и слишком медленно отвечает на запросы, либо выключен. Попробуйте подключиться через 5 минут. Если проблема сохранится - пожалуйста, напишите письмо по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
+	header("HTTP/1.0 503 Service temporary unavariable");
 	exit();
 }
-if(!@mysql_select_db($CONFIG['mysql']['db']))
+
+if(!$db->set_charset("utf8"))
 {
-    //echo"Невозможно активизировать базу данных! Возможно, база данных повреждена. Попробуйте подключиться через 5 минут. Если проблема сохранится - пожалуйста, напишите письмо по адресу <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы.";
-    exit();
+	header("HTTP/1.0 503 Service temporary unavariable");
+	exit();
 }
-
-mysql_query("SET CHARACTER SET UTF8");
-mysql_query("SET character_set_results = UTF8");
-
-$ip=getenv("REMOTE_ADDR");
-$ag=getenv("HTTP_USER_AGENT");
-$rf=getenv("HTTP_REFERER");
-$qq=$_SERVER['QUERY_STRING'];
-$ff=$_SERVER['PHP_SELF'];
-$tim=time();
-$skidka="";
 
 $cc=@$_GET['cc'];
 $im=imagecreatefrompng("img/counterbg.png");
@@ -47,16 +38,15 @@ $bg_c = imagecolorallocate ($im, 150,255, 150);
 $text_c = imagecolorallocate ($im, 0, 80, 0);
 $tim=time();
 $tt=$tim-60*60*24;
-$res=mysql_query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
-echo mysql_error();
-$all=mysql_num_rows($res);
-$res=mysql_query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
-$pip=mysql_num_rows($res);
+$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
+$all=$res->num_rows;
+$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
+$pip=$res->num_rows;
 $tt=$tim-60*60*24*7;
-$res=mysql_query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
-$ww=mysql_num_rows($res);
-$res=mysql_query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
-$aw=mysql_num_rows($res);
+$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
+$ww=$res->num_rows;
+$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
+$aw=$res->num_rows;
 
 
 header("Content-type: image/png");

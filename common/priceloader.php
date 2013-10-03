@@ -59,152 +59,130 @@ abstract class PriceLoader
 	abstract protected function parse();
 	
 	/// Определение принадлежности прайс-листа по сигнатуре
-	public function detectFirm()
-	{
-		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency` FROM `firm_info`");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные фирмы");
-		while($nxt=mysql_fetch_row($res))
-		{
-			if($this->findSignature($nxt[2]))
-			{
-				$this->def_currency=$nxt[3];
-				return	$this->firm_id=$nxt[0];
+	public function detectFirm() {
+		global $db;
+		$res = $db->query("SELECT `id`, `name`, `signature`, `currency` FROM `firm_info`");
+		while ($nxt = $res->fetch_row()) {
+			if ($this->findSignature($nxt[2])) {
+				$this->def_currency = $nxt[3];
+				return $this->firm_id = $nxt[0];
 			}
 		}
 		return false;
 	}
 	
 	/// Определение совпадений фирмы с несколькими сигнатурами. Для выполнения анализа для нужной фирмы использовать useFirmAndCurency(firm_id, currency_id)
-	public function detectSomeFirm()
-	{
-		$firm_list=array();
-		$res=mysql_query("SELECT `id`, `name`, `signature`, `currency` FROM `firm_info`");
-		if(mysql_errno())	throw new MysqlException("Не удалось получить данные фирмы");
-		while($nxt=mysql_fetch_row($res))
-		{
-			if($this->findSignature($nxt[2]))
-				$firm_list[]=array('firm_id'=>$nxt[0], 'firm_name'=>$nxt[1], 'curency_id'=>$nxt[3]);
+	public function detectSomeFirm() {
+		global $db;
+		$firm_list = array();
+		$res = $db->query("SELECT `id`, `name`, `signature`, `currency` FROM `firm_info`");
+		while ($nxt = $res->fetch_row()) {
+			if ($this->findSignature($nxt[2]))
+				$firm_list[] = array('firm_id' => $nxt[0], 'firm_name' => $nxt[1], 'curency_id' => $nxt[3]);
 		}
 		return $firm_list;
 	}
 	
 	/// Выбрать фирму и валюту для последующей загрузки прайса в базу
-	public function useFirmAndCurency($firm_id, $currency_id)
-	{
-		$this->firm_id=$firm_id;
-		$this->def_currency=$currency_id;		
+	public function useFirmAndCurency($firm_id, $currency_id) {
+		$this->firm_id = $firm_id;
+		$this->def_currency = $currency_id;
 	}
-	
+
 	/// Запуск анализа
-	public function Run()
-	{
-		$this->line_cnt=0;
-		if(($this->firm_id==0) && $this->insert_to_database)		throw new Exception("Принадлежность прайс-листа к фирме не задана");	
-		$this->table_parsing=0;
-		$this->html='';
+	public function Run() {
+		global $db;
+		$this->line_cnt = 0;
+		if (($this->firm_id == 0) && $this->insert_to_database)
+			throw new Exception("Принадлежность прайс-листа к фирме не задана");
+		$this->table_parsing = 0;
+		$this->html = '';
 
-		if($this->insert_to_database)
-		{
-			mysql_query("DELETE FROM `price` WHERE `firm` = '{$this->firm_id}'");
-			if(mysql_errno())	throw new MysqlException("Не удалось удалить старый прайс фирмы {$this->firm_id}");
-			mysql_query("UPDATE `firm_info` SET `last_update`=NOW() WHERE `id`='{$this->firm_id}'");
-			if(mysql_errno())	throw new MysqlException("Не удалось установить дату обновления прайса фирмы {$this->firm_id}");
-			$res=mysql_query("SELECT `id`, `name` FROM `currency`");
-			if(mysql_errno())	throw new MysqlException("Не удалось получить список валют");
-			$this->currencies=array();
-			while($nxt=mysql_fetch_row($res))
-				$this->currencies[$nxt[1]]=strtoupper($nxt[0]);
+		if ($this->insert_to_database) {
+			$db->query("DELETE FROM `price` WHERE `firm` = '{$this->firm_id}'");
+			$db->query("UPDATE `firm_info` SET `last_update`=NOW() WHERE `id`='{$this->firm_id}'");
+			$res = $db->query("SELECT `id`, `name` FROM `currency`");
+			$this->currencies = array();
+			while ($nxt = $res->fetch_row())
+				$this->currencies[$nxt[1]] = strtoupper($nxt[0]);
 		}
-		
 		$this->parse();
-
 		return $this->line_cnt;
 	}
 	
 // ===================== Функции, вызываемые парсером в процессе работы =============================================
 	
-	protected function tableBegin($table_name)
-	{
-				
-		if($this->insert_to_database)
-		{
-			$sql_table_name=mysql_real_escape_string($table_name);
-			$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` LIKE '$sql_table_name'");
-			if(mysql_errno())	throw new MysqlException("Ошибка получения данных фирмы для листа *$sql_table_name*");
-			if(!mysql_num_rows($res))
-			{
-				$res=mysql_query("SELECT `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` = ''");
-				if(mysql_errno())	throw new MysqlException("Ошибка получения данных фирмы для листа по умолчанию");
+	protected function tableBegin($table_name) {
+		global $db;
+		if ($this->insert_to_database) {
+			$sql_table_name = $db->real_escape_string($table_name);
+			$res = $db->query("SELECT `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` LIKE '$sql_table_name'");
+			if (!$res->num_rows) {
+				$res = $db->query("SELECT `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct` WHERE `firm_id`='{$this->firm_id}' AND `table_name` = ''");
 			}
-			if(!mysql_num_rows($res))	
-				//настройки для листа не найдены
-				$this->table_parsing=0;
-			else
-			{
-				$this->firm_cols=mysql_fetch_assoc($res);
-				$this->table_parsing=1;
-				
+			if (!$res->num_rows)
+			//настройки для листа не найдены
+				$this->table_parsing = 0;
+			else {
+				$this->firm_cols = mysql_fetch_assoc($res);
+				$this->table_parsing = 1;
 			}
 		}
-		if($this->build_html_data)
-		{
+		if ($this->build_html_data) {
 			$this->html.="<table class='list'><caption>$table_name</caption><thead><tr>";
-			for($i=1;$i<=$this->build_html_data;$i++)
-			{
+			for ($i = 1; $i <= $this->build_html_data; $i++) {
 				$this->html.="<th>$i</th>";
 			}
 			$this->html.="</tr></thead><tbody>";
 		}
 	}
-	
-	protected function tableEnd()
-	{
-		if($this->build_html_data)	$this->html.="</tbody></table><br>";
+
+	protected function tableEnd() {
+		if ($this->build_html_data)
+			$this->html.="</tbody></table><br>";
 	}
-	
-	protected function rowBegin()
-	{
+
+	protected function rowBegin() {
 		// Пока пусто
 	}
-	
-	protected function rowEnd()
-	{
-		if($this->insert_to_database && $this->table_parsing && isset($this->line[$this->firm_cols['cost']]))
-		{
-			$cost=$this->line[$this->firm_cols['cost']];
-			$cost=preg_replace("/[^,.\d]+/","",$cost);
-			$cost=str_replace(",",".",$cost);
-			settype($cost,"double");
-			
-			if(@$this->line[$this->firm_cols['name']] && (@$this->line[$this->firm_cols['nal']] || @$this->line[$this->firm_cols['cost']]) )
-			{
+
+	protected function rowEnd() {
+		global $db;
+		if ($this->insert_to_database && $this->table_parsing && isset($this->line[$this->firm_cols['cost']])) {
+			$cost = $this->line[$this->firm_cols['cost']];
+			$cost = preg_replace("/[^,.\d]+/", "", $cost);
+			$cost = str_replace(",", ".", $cost);
+			settype($cost, "double");
+
+			if (@$this->line[$this->firm_cols['name']] && (@$this->line[$this->firm_cols['nal']] || @$this->line[$this->firm_cols['cost']])) {
 				$this->line_cnt++;
-				$name=mysql_real_escape_string(@$this->line[$this->firm_cols['name']]);
-				$art=mysql_real_escape_string(@$this->line[$this->firm_cols['art']]);
-				$nal=mysql_real_escape_string(@$this->line[$this->firm_cols['nal']]);
-				$curr=strtoupper(trim(@$this->line[$this->firm_cols['currency']]));
-				$info=mysql_real_escape_string(@$this->line[$this->firm_cols['info']]);
-				if(strpos($curr, '$')!==false)		$curr='USD';
-				else if(stripos($curr, 'р')!==false)	$curr='RUR';	
-				if(isset($this->currencies[$curr]))	$curr=$this->currencies[$curr];
-				else					$curr=$this->def_currency;
-				mysql_query("INSERT INTO `price`
-				(`name`,`cost`,`firm`,`art`,`date`, `nal`, `currency`, `info`) VALUES 
+				$name = $db->real_escape_string(@$this->line[$this->firm_cols['name']]);
+				$art = $db->real_escape_string(@$this->line[$this->firm_cols['art']]);
+				$nal = $db->real_escape_string(@$this->line[$this->firm_cols['nal']]);
+				$curr = strtoupper(trim(@$this->line[$this->firm_cols['currency']]));
+				$info = $db->real_escape_string(@$this->line[$this->firm_cols['info']]);
+				if (strpos($curr, '$') !== false)
+					$curr = 'USD';
+				else if (stripos($curr, 'р') !== false)
+					$curr = 'RUR';
+				if (isset($this->currencies[$curr]))
+					$curr = $this->currencies[$curr];
+				else
+					$curr = $this->def_currency;
+				$db->query("INSERT INTO `price`	(`name`,`cost`,`firm`,`art`,`date`, `nal`, `currency`, `info`) VALUES 
 				('$name', '$cost', '{$this->firm_id}', '$art', NOW(), '$nal', '$curr', '$info')");
-				if(mysql_errno())	throw new MysqlException("Не удалось вставить строку прайса в базу!");
 			}
 		}
-		if($this->build_html_data)
-		{
+		if ($this->build_html_data) {
 			$this->html.="<tr>";
-			for($i=1;$i<=$this->build_html_data;$i++)
-			{
-				$val = @htmlentities($this->line[$i], ENT_COMPAT, 'UTF-8'); 
+			for ($i = 1; $i <= $this->build_html_data; $i++) {
+				$val = @htmlentities($this->line[$i], ENT_COMPAT, 'UTF-8');
 				$this->html.="<td>$val</td>";
 			}
 			$this->html.="</tr>";
 		}
 	}
+
 }
 
 ?>

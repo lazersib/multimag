@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,48 +17,35 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once("core.php");
+require_once("core.php");
 
 $actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение');
 
-if($mode=='upl')
-{
-	$s=@$_GET['s'];
-	$s=mysql_real_escape_string($s);
-	$res=mysql_query("SELECT `id`,`name`, `reg_email` FROM `users` WHERE `name` LIKE '%$s%'");
-	$i=0;
-	$row=mysql_numrows($res);
-	while($nxt=mysql_fetch_row($res))
-	{
-		$i=1;
-		echo"$nxt[1]|$nxt[0]|$nxt[2]\n";
-	}
-	exit();
-}
+try {
 
 if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
 
-$tmpl->SetText("<h1 id='page-title'>Настройка привилегий</h1>");
-$tmpl->SetTitle("Настройка привилегий");
+$tmpl->setContent("<h1>Настройка привилегий</h1>");
+$tmpl->setTitle("Настройка привилегий");
 if($mode=='')
 {
-	$tmpl->AddText("<h3>Группы пользователей</h3>
-	<table class='list'><tr><th>N<th>Название<th>Описание");
-	$res=mysql_query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
-	while($nxt=mysql_fetch_row($res))
+	$tmpl->addContent("<h3>Группы пользователей</h3><table class='list'><tr><th>N</th><th>Название</th><th>Описание</th></tr>");
+	$res=$db->query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
+	if(!$res)	throw new MysqlException("Не удалось получить список групп пользователей");
+	while($nxt=$res->fetch_row())
 	{
-		$tmpl->AddText("<tr><td>$nxt[0]<a href='?mode=gre&amp;g=$nxt[0]'><img src='/img/i_edit.png' alt='Изменить'></a> <td><a href='?mode=group_acl&amp;g=$nxt[0]'>$nxt[1]</a><td>$nxt[2]");
+		$tmpl->addContent("<tr><td>$nxt[0]<a href='?mode=gre&amp;g=$nxt[0]'><img src='/img/i_edit.png' alt='Изменить'></a></td><td><a href='?mode=group_acl&amp;g=$nxt[0]'>$nxt[1]</a></td><td>$nxt[2]</td></tr>");
 	}
-	$tmpl->AddText("</table><a href='?mode=gre'>Новая группа</a>");
+	$tmpl->addContent("</table><a href='?mode=gre'>Новая группа</a>");
 }
 else if($mode=='group_acl')
 {
-	$g=rcv('g');
-	$tmpl->AddText("<h2>Привилегии группы</h2>");
-	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions`
+	$g=rcvint('g');
+	$tmpl->addContent("<h2>Привилегии группы</h2>");
+	$res=$db->query("SELECT `id`, `object`, `desc`, `actions`
 	FROM `users_objects` ORDER BY `object`, `actions`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить список объектов");
-	$tmpl->AddText("<form action='' method='post'>
+	if(!$res)	throw new MysqlException("Не удалось получить список объектов");
+	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='group_acl_save'>
 	<input type='hidden' name='g' value='$g'>
 	<table width='100%' class='list'><tr><th>Объект");
@@ -67,7 +54,7 @@ else if($mode=='group_acl')
 	$object_actions=array();
 	$objects=array();
 
-	while($nxt=mysql_fetch_array($res))
+	while($nxt=$res->fetch_array())
 	{
 		$objects[$nxt['object']]=$nxt['desc'];
 		if($nxt['actions']!='')
@@ -81,39 +68,39 @@ else if($mode=='group_acl')
 		}
 	}
 
-	$res=mysql_query("SELECT `gid`, `object`, `action` FROM `users_groups_acl`
+	$res=$db->query("SELECT `gid`, `object`, `action` FROM `users_groups_acl`
 	WHERE `gid`='$g'");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить ACL группы");
-	while($nxt=mysql_fetch_row($res))
+	if(!$res)	throw new MysqlException("Не удалось получить ACL группы");
+	while($nxt=$res->fetch_row())
 	{
 		$object_actions[$nxt[1]][$nxt[2]]="style='border: #0f0 1px solid;' checked";
 	}
 	foreach($actions_show as $action => $v)
 	{
-		$tmpl->AddText("<th>{$actions[$action]}");
+		$tmpl->addContent("<th>{$actions[$action]}");
 	}
 	$colspan=count($actions_show)+1;
 	foreach($objects as $obj_name => $obj_desc)
 	{
-		$tmpl->AddText("<tr>");
+		$tmpl->addContent("<tr>");
 		if(array_key_exists($obj_name, $object_actions))
 		{
-			$tmpl->AddText("<td>$obj_desc");
+			$tmpl->addContent("<td>$obj_desc");
 			foreach($actions_show as $action => $v)
 			{
-				$tmpl->AddText("<td>");
+				$tmpl->addContent("<td>");
 				if(array_key_exists($action, $object_actions[$obj_name]))
 				{
-					$tmpl->AddText("<label><input type='checkbox' name='c_{$obj_name}_{$action}' value='1' {$object_actions[$obj_name][$action]}>Разрешить</label>");
+					$tmpl->addContent("<label><input type='checkbox' name='c_{$obj_name}_{$action}' value='1' {$object_actions[$obj_name][$action]}>Разрешить</label>");
 				}
 			}
 		}
 		else
 		{
-			$tmpl->AddText("<th colspan='$colspan'>$obj_desc");
+			$tmpl->AddConent("<th colspan='$colspan'>$obj_desc");
 		}
 	}
-	$tmpl->AddText("</table>
+	$tmpl->addContent("</table>
 	<button type='submit'>Сохранить</button>
 	</form>
 	<h2>Пользователи в группе</h2>
@@ -159,32 +146,32 @@ else if($mode=='group_acl')
 	</form>
 	");
 
-	$res=mysql_query("SELECT `users_in_group`.`uid`, `users`.`name`
+	$res=$db->query("SELECT `users_in_group`.`uid`, `users`.`name`
 	FROM `users_in_group`
 	LEFT JOIN `users` ON `users_in_group`.`uid`=`users`.`id`
 	WHERE `users_in_group`.`gid`='$g'");
-	while($nxt=mysql_fetch_row($res))
+	if(!$res)	throw new MysqlException("Не удалось получить список пользователей");
+	while($nxt=$res->fetch_row())
 	{
-		$tmpl->AddText("<a href='?mode=ud&amp;us_id=$nxt[0]&amp;g=$g'><img src='/img/i_del.png' alt='Удалить'></a> - $nxt[1]<br>");
+		$tmpl->addContent("<a href='?mode=ud&amp;us_id=$nxt[0]&amp;g=$g'><img src='/img/i_del.png' alt='Удалить'></a> - $nxt[1]<br>");
 	}
 
 }
 else if($mode=='group_acl_save')
 {
-	$g=rcv('g');
-	$tmpl->AddText("<h2>Группа $g: сохранение привилегий группы</h2>");
+	$g=rcvint('g');
+	$tmpl->AddConent("<h2>Группа $g: сохранение привилегий группы</h2>");
 	if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
 
-
-	$res=mysql_query("SELECT `id`, `object`, `desc`, `actions` FROM `users_objects`
+	$res=$db->query("SELECT `id`, `object`, `desc`, `actions` FROM `users_objects`
 	ORDER BY `object`, `actions`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить список объектов");
+	if(!$res)	throw new MysqlException("Не удалось получить список объектов");
 
 	$actions_show=array();
 	$object_actions=array();
 	$objects=array();
 
-	while($nxt=mysql_fetch_array($res))
+	while($nxt=$res->fetch_array())
 	{
 		$objects[$nxt['object']]=$nxt['desc'];
 		if($nxt['actions']!='')
@@ -198,27 +185,30 @@ else if($mode=='group_acl_save')
 		}
 	}
 
-	mysql_query("DELETE FROM `users_groups_acl` WHERE `gid`='$g'");
+	$res=$db->query("DELETE FROM `users_groups_acl` WHERE `gid`='$g'");
+	if($res)	throw new MysqlException("Не удалось удалить список объектов");
 	foreach($objects as $obj_name => $obj_desc)
 	{
 		if(array_key_exists($obj_name, $object_actions))
 		{
 			foreach($actions_show as $action => $v)
 			{
-				$var=rcv("c_{$obj_name}_{$action}");
-				if($var)
-					mysql_query("INSERT INTO `users_groups_acl` (`gid`, `object`, `action`)
-					VALUES ('$g', '$obj_name', '$action')");
+				if( request("c_{$obj_name}_{$action}") )
+				{
+					$res=$db->query("INSERT INTO `users_groups_acl` (`gid`, `object`, `action`) VALUES ('$g', '$obj_name', '$action')");
+					if(!$res)	throw new MysqlException("Не удалось добавить объект");
+				}
 			}
 		}
 	}
 }
 else if($mode=='gre')
 {
-	$g=rcv('g');
-	$res=mysql_query("SELECT `id`, `name`, `comment` FROM `users_grouplist` WHERE `id`='$g'");
-	$nxt=mysql_fetch_row($res);
-	$tmpl->AddText("<h2>Редактирование группы</h2>
+	$g=rcvint('g');
+	$res=$db->query("SELECT `id`, `name`, `comment` FROM `users_grouplist` WHERE `id`='$g'");
+	if(!$res)	throw new MysqlException("Не удалось получить данные группы");
+	$nxt=$res->fetch_row($res);
+	$tmpl->addContent("<h2>Редактирование группы</h2>
 	<form action='' method=post>
 	<input type=hidden name=mode value=grs>
 	<input type=hidden name=g value='$nxt[0]'>
@@ -231,48 +221,72 @@ else if($mode=='gre')
 }
 else if($mode=='grs')
 {
-	$g=rcv('g');
-	$gn=rcv('gn');
-	$comm=rcv('comm');
-	$res=mysql_query("SELECT `id` FROM `users_grouplist` WHERE `id`='$g'");
-	if((mysql_num_rows($res))&&($g))
+	$g	= rcvint('g');
+	$gn	= request('gn');
+	$comm	= request('comm');
+	$res = $db->query("SELECT `id` FROM `users_grouplist` WHERE `id`='$g'");
+	if(!$res)	throw new MysqlException("Не удалось получить данные группы");
+	if(($res->num_rows)&&($g))
 	{
-		$res=mysql_query("UPDATE `users_grouplist` SET `name`='$gn', `comment`='$comm' WHERE `id`='$g'");
-		if($res) $tmpl->msg("Группа обновлена","ok");
-		else $tmpl->msg("Группа НЕ обновлена","err");
+		$res=$db->query("UPDATE `users_grouplist` SET `name`='$gn', `comment`='$comm' WHERE `id`='$g'");
+		if(!$res)	throw new MysqlException("Группа НЕ обновлена");
+		$tmpl->msg("Группа обновлена","ok");
 	}
 	else
 	{
-		$res=mysql_query("INSERT INTO `users_grouplist`
-		( `name`, `comment`) VALUES ('$gn', '$comm')");
-		if($res) $tmpl->msg("Группа добавлена","ok");
-		else $tmpl->msg("Группа НЕ добавлена","err");
+		$res=$db->query("INSERT INTO `users_grouplist`	( `name`, `comment`) VALUES ('$gn', '$comm')");
+		if(!$res)	throw new MysqlException("Группа НЕ добавлена");
+		$tmpl->msg("Группа добавлена","ok");
 	}
 }
 else if($mode=='us')
 {
-	$g=rcv('g');
-	$us_id=rcv('us_id');
+	$g	= rcvint('g');
+	$us_id	= rcvint('us_id');
 	if($us_id<0) $tmpl->msg("Пользователь не выбран!","err");
 	else
 	{
-		$res=mysql_query("INSERT INTO `users_in_group` ( `uid`, `gid`) VALUES ('$us_id', '$g')");
-		if(mysql_errno())	throw new MysqlException("Пользователь не добавлен");
+		$res=$db->query("INSERT INTO `users_in_group` ( `uid`, `gid`) VALUES ('$us_id', '$g')");
+		if(!$res)	throw new MysqlException("Пользователь не добавлен");
 		$tmpl->msg("Пользователь добавлен","ok");
 	}
 }
 else if($mode=='ud')
 {
-	$g=rcv('g');
-	$us_id=rcv('us_id');
+	$g	= rcvint('g');
+	$us_id	= rcvint('us_id');
 	if($us_id<0) $tmpl->msg("Пользователь не выбран!");
 	else
 	{
-		$res=mysql_query("DELETE FROM `users_in_group` WHERE `uid`='$us_id' AND `gid`='$g'");
-		if($res) $tmpl->msg("Пользователь удалён","ok");
-		else $tmpl->msg("Пользователь НЕ удалён","err");
+		$res=$db->query("DELETE FROM `users_in_group` WHERE `uid`='$us_id' AND `gid`='$g'");
+		if(!$res)	throw new MysqlException("Пользователь не удалён");
+		$tmpl->msg("Пользователь удалён","ok");
 	}
 }
+else if($mode=='upl')
+{
+	$s=request('s');
+	$s=$db->real_escape_string($s);
+	$res=$db->query("SELECT `id`,`name`, `reg_email` FROM `users` WHERE `name` LIKE '%$s%'");
+	if(!$res)	throw new MysqlException("Не удалось получить список пользователей");
+	while($nxt=$res->fetch_row())
+	{
+		echo"$nxt[1]|$nxt[0]|$nxt[2]\n";
+	}
+	exit();
+}
+
+}
+catch(MysqlException $e)
+{
+	$tmpl->ajax=0;
+	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+}
+catch(Exception $e)
+{
+	$tmpl->msg($e->getMessage(),'err');
+}
+
 
 $tmpl->write();
 

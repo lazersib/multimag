@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,133 +17,82 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-$doc_types[5]="Расход средств из банка";
-
 /// Документ *Расход средств из банка*
 class doc_RBank extends doc_Nulltype
 {
-	function __construct($doc=0)
-	{
+	function __construct($doc=0) {
 		parent::__construct($doc);
-		$this->doc_type				=5;
-		$this->doc_name				='rbank';
-		$this->doc_viewname			='Расход средств из банка';
-		$this->sklad_editor_enable		=false;
-		$this->bank_modify			=-1;
-		$this->header_fields			='bank sum separator agent';
-		settype($this->doc,'int');
+		$this->doc_type				= 5;
+		$this->doc_name				= 'rbank';
+		$this->doc_viewname			= 'Расход средств из банка';
+		$this->bank_modify			= -1;
+		$this->header_fields			= 'bank sum separator agent';
 	}
 	
-	function DopHead()
-	{
-		global $tmpl;
-		$tmpl->AddText("Вид расхода:<br><select name=v_rasx>");
-		$res=mysql_query("SELECT * FROM `doc_rasxodi` WHERE `id`>'0'");
-		while($nxt=mysql_fetch_row($res))
-			if($nxt[0]==@$this->dop_data['rasxodi'])
-				$tmpl->AddText("<option value='$nxt[0]' selected>$nxt[1]</option>");
+	function initDefDopdata() {
+		$this->def_dop_data = array('rasxodi'=>0);
+	}
+	
+	function DopHead() {
+		global $tmpl, $db;
+		$tmpl->addContent("Вид расхода:<br><select name='rasxodi'>");
+		$res = $db->query("SELECT * FROM `doc_rasxodi` WHERE `id`>'0'");
+		while($nxt = $res->fetch_row($res))
+			if($nxt[0] = $this->dop_data['rasxodi'])
+				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
 			else
-				$tmpl->AddText("<option value='$nxt[0]'>$nxt[1]</option>");
+				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
 		
-		$tmpl->AddText("</select>");	
+		$tmpl->addContent("</select>");	
 	}
 
-	function DopSave()
-	{
-		$v_rasx=rcv('v_rasx');
+	function DopSave() {
+		$new_data = array(
+		    'rasxodi' => request('rasxodi')
+		);
+		$old_data = array_intersect_key($new_data, $this->dop_data);
 
-		mysql_query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
-			VALUES ('{$this->doc}','rasxodi','$v_rasx')");
-		if($this->doc)
-		{
-			$log_data='';
-			if(@$this->dop_data['rasxodi']!=$v_rasx)			$log_data.=@"rasxodi: {$this->dop_data['rasxodi']}=>$v_rasx, ";
-			if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
-		}
-	}
-	
-	function DopBody()
-	{
-		global $tmpl;
-		$res=mysql_query("SELECT `doc_rasxodi`.`name` FROM `doc_rasxodi`
-		WHERE `doc_rasxodi`.`id`='{$this->dop_data['rasxodi']}'");
-			
-        	$nxt=mysql_fetch_row($res);
-		$tmpl->AddText("<b>Статья расходов:</b> $nxt[0]");
+		$log_data = '';
+		if ($this->doc)
+			$log_data = getCompareStr($old_data, $new_data);
+		$this->setDopDataA($new_data);
+		if ($log_data)
+			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 	}
 	
 	// Провести
-	function DocApply($silent=0)
-	{
-		$tim=time();
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`ok`, `doc_list`.`sum`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(!$res)			throw new MysqlException('Ошибка выборки данных документа при проведении!');
-		$nx=@mysql_fetch_row($res);
-		if(!$nx)			throw new Exception('Документ не найден!');
-		if( $nx[3] && (!$silent) )	throw new Exception('Документ уже был проведён!');
-
-		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'$nx[4]'
-		WHERE `ids`='bank' AND `num`='$nx[2]'");
-		if(!$res)			throw new MysqlException("Ошибка обновления суммы $nx[4] в банке $nx[2]!");
-		if(! mysql_affected_rows())	throw new MysqlException("Cумма в банке $nx[2] не изменилась!");
+	function DocApply($silent=0) {
+		global $db;
+		
+		$data = $db->selectRow('doc_list', $this->doc);
+		if(!$data)
+			throw new Exception('Ошибка выборки данных документа при проведении!');
+		if($data['ok'] && (!$silent))
+			throw new Exception('Документ уже проведён!');
+		
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$this->doc_data['sum']}' WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
+		if($db->affected_rows)	throw new Exception("Cумма в банке {$this->doc_data['bank']} не изменилась!");
+		
 		if($silent)	return;
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		if(!$res)	throw new MysqlException('Ошибка установки даты проведения документа!');
+		$db->update('doc_list', $this->doc, 'ok', time() );
+		$this->sentZEvent('apply');
 	}
 
 	// Отменить проведение
-	function DocCancel()
-	{
-		global $uid;
-		$res=mysql_query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`ok`, `doc_list`.`sum`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
-		if(!$res)				throw new MysqlException('Ошибка выборки данных документа!');
-		if(!($nx=@mysql_fetch_row($res)))	throw new Exception('Документ не найден!');
-		if(!$nx[3])				throw new Exception('Документ не проведён!');
-		$res=mysql_query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'$nx[4]'
-		WHERE `ids`='bank' AND `num`='$nx[2]'");
-		if(!mysql_affected_rows())		throw new MysqlException('Ошибка обновления суммы в банке!');
-		$res=mysql_query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
-		if(!$res)				throw new MysqlException('Ошибка установки флага отмены!');
+	function DocCancel() {
+		global $db;
+		$data = $db->selectRow('doc_list', $this->doc);
+		if(!$data)
+			throw new Exception('Ошибка выборки данных документа!');
+		if(!$data['ok'])
+			throw new Exception('Документ не проведён!');
+		
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$this->doc_data['sum']}' WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
+		if($db->affected_rows)	throw new Exception("Cумма в банке {$this->doc_data['bank']} не изменилась!");
+		
+		$db->update('doc_list', $this->doc, 'ok', 0 );
+		$this->sentZEvent('cancel');
 	}
-
-	// Печать документа
-	function Printform($doc, $opt='')
-	{
-		get_docdata($doc);
-		global $tmpl;
-		global $uid;
-		global $doc_data;
-		global $dop_data;
-		global $dv;
-
-		if(!$doc_data[6])
-		{
-			doc_menu(0,0);
-			$tmpl->AddText("<h1>Строка выписки банка - приход</h1>");
-			$tmpl->msg("Сначала нужно провести документ!","err");
-		}
-		else
-		{
-			$tmpl->LoadTemplate('print');
-			$dt=date("d.m.Y",$doc_data[5]);
-			$sum_p=sprintf("%0.2f руб.",$doc_data[11]);
-			$sump_p=num2str($doc_data[11]);
-			$tmpl->AddText("<h1>Строка выписки банка - приход N $doc_data[9], от $dt </h1>
-			<b>Поступило от от: </b>$doc_data[3]<br>
-			<b>Сумма:</b> $sum_p ($sump_p)<br>
-			<b>Получатель средств: </b>".$dv['firm_name']);
-		}
-	}
-	// Формирование другого документа на основании текущего
-	function MorphTo($doc, $target_type)
-	{
-		global $tmpl;
-		$tmpl->ajax=1;
-		$tmpl->AddText("<div class='disabled'>Не поддерживается для</div><div class='disabled'>данного типа документа</div>");
-	}
-
 };
 
 

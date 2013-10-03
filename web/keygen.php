@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// цемепюрнп якнфмшу оюпнкеи. дкъ яксфеамшу жекеи.
    $sstr="bcdfghjklmnprstvwxz";
    $gstr="aeiouy1234567890aeiouy";
    $rstr="aeiouy1234567890aeiouybcdfghjklmnprstvwxz";
@@ -35,7 +34,7 @@
       else
       {
          $r=rand(0,18);
-         $s.=$sstr[$r];      
+         $s.=$sstr[$r];
       }
 
    }
@@ -43,7 +42,7 @@
    $im=imagecreate(200,50);
    $bg_c = imagecolorallocate ($im, 255,255, 255);
    $text_c = imagecolorallocate ($im, 0, 0, 80);
-   
+
    for($i=0;$i<500;$i++)
    {
    	imagesetpixel($im, rand(0,200), rand(0,50), $text_c);

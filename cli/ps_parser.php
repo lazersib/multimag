@@ -24,25 +24,19 @@ include_once("$base_path/config_cli.php");
 require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 require_once($CONFIG['location']."/common/async/psparser.php");
 
-try
-{
+try {
 	$worker=new PsParserWorker(0);
 	$worker->run();
 }
-catch(Exception $e)
-{
-	if($worker)
-	{
-		try
-		{
+catch(Exception $e) {
+	if($worker) {
+		try {
 			$worker->finalize();
 		}
-		catch(Exception $e)
-		{
+		catch(Exception $e) {
 			echo $e->getMessage()."\n";
 		}
 	}
-
 	echo $e->getMessage()."\n";
 }
 

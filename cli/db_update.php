@@ -2,7 +2,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -27,54 +27,45 @@ require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 unset($CONFIG['backup']['dirs']);
 include_once($CONFIG['cli']['location']."/backup.php");
 
-function applyPatch($patch)
-{
-	$file=file_get_contents($patch);
-	if(!$file)	throw new Exception("Не удаётся открыть файл патча!");
-	$queries=explode(";",$file);
-	mysql_query("START TRANSACTION");
-	foreach($queries as $query)
-	{
-		if(strlen(trim($query))==0) continue;
-		mysql_query($query);
-		if(mysql_errno())	throw new MysqlException("Не удалось исполнить запрос $query");
-	}	
-	mysql_query("COMMIT");
+function applyPatch($patch) {
+	$file = file_get_contents($patch);
+	if (!$file)
+		throw new Exception("Не удаётся открыть файл патча!");
+	$queries = explode(";", $file);
+	$db->query("START TRANSACTION");
+	foreach ($queries as $query) {
+		if (strlen(trim($query)) == 0)
+			continue;
+		$db->query($query);
+	}
+	$db->query("COMMIT");
 }
 
-
-try
-{
-$patches=scandir($CONFIG['location']."/db_patches/");
-if(!is_array($patches))	throw new Exception("Не удалось получить список файлов патчей!");
-for($i=0;$i<1000;$i++)
-{
-	$res=mysql_query("SELECT `version` FROM `db_version`");
-	if(mysql_errno())	throw new MysqlException("Не удалось получить версию базы данных! Вероятно, ваша база слишком стара, и не поддерживает автоматическое обновление. Обновите вручную.");
-	else
-	{
-		$db_version=@mysql_result($res,0,0);
-		if($db_version!=MULTIMAG_REV)
-		{
-			foreach($patches as $patch)
-			{
-				if(strpos($patch,'~')!==false)	continue;
-				if(strpos($patch,$db_version)===0)
-				{
+try {
+	$patches = scandir($CONFIG['location'] . "/db_patches/");
+	if (!is_array($patches))
+		throw new Exception("Не удалось получить список файлов патчей!");
+	for ($i = 0; $i < 1000; $i++) {
+		$res = $db->query("SELECT `version` FROM `db_version`");
+		if($res->num_rows)
+			list($db_version) = $res->fetch_row();
+		else	$db_version = 0;
+		if ($db_version != MULTIMAG_REV) {
+			foreach ($patches as $patch) {
+				if (strpos($patch, '~') !== false)
+					continue;
+				if (strpos($patch, $db_version) === 0) {
 					echo "Накладываем патч $patch\n";
-					applyPatch($CONFIG['location']."/db_patches/$patch");
+					applyPatch($CONFIG['location'] . "/db_patches/$patch");
 					break;
 				}
 			}
 		}
-		else break;
+		else	break;
+		
 	}
-}
-
-}
-catch(Exception $e)
-{
-	echo "\n\n==============================================\nОШИБКА ОБНОВЛЕНИЯ БАЗЫ: ".$e->getMessage()."\n==============================================\n\n";
+} catch (Exception $e) {
+	echo "\n\n==============================================\nОШИБКА ОБНОВЛЕНИЯ БАЗЫ: " . $e->getMessage() . "\n==============================================\n\n";
 }
 
 ?>

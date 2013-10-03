@@ -2,7 +2,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -23,39 +23,28 @@ for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 require_once("$base_path/config_cli.php");
 require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
-try
-{
-
-$res=mysql_query("SELECT `id`, `task` FROM `async_workers_tasks` WHERE `needrun`=1 LIMIT 1");
-if(mysql_errno())	throw new MysqlException("Не удалось получить информацию об асинхронных обработчиках");
-while($ainfo=mysql_fetch_assoc($res))
-{
-	mysql_query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='Запускается' WHERE `id`='{$ainfo['id']}'");
-	if(mysql_errno())	throw new MysqlException("Не удалось обновить статус");
-	require_once($CONFIG['location']."/common/async/".strtolower($ainfo['task']).".php");
-	$classname=$ainfo['task']."Worker";
-	$worker=new $classname($ainfo['id']);
-	$worker->run();
-	$worker->end();
-
+try {
+	$res = $db->query("SELECT `id`, `task` FROM `async_workers_tasks` WHERE `needrun`=1 LIMIT 1");
+	while ($ainfo = $res->fetch_assoc()) {
+		$db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='Запускается' WHERE `id`='{$ainfo['id']}'");
+		require_once($CONFIG['location'] . "/common/async/" . strtolower($ainfo['task']) . ".php");
+		$classname = $ainfo['task'] . "Worker";
+		$worker = new $classname($ainfo['id']);
+		$worker->run();
+		$worker->end();
+	}
 }
-
-}
-catch(Exception $e)
-{
-	if($worker) {
+catch (Exception $e) {
+	if ($worker) {
 		try {
 			$worker->finalize();
-		}
-		catch(Exception $e)
-		{
-			echo $e->getMessage()."\n";
-			mysql_query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='".$e->getMessage()."' WHERE `id`='{$ainfo['id']}'");
+		} catch (Exception $e) {
+			echo $e->getMessage() . "\n";
+			mysql_query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $e->getMessage() . "' WHERE `id`='{$ainfo['id']}'");
 		}
 	}
-
 	echo $e->getMessage();
-	mysql_query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='".$e->getMessage()."' WHERE `id`='{$ainfo['id']}'");
+	$db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $db->real_escape_string($e->getMessage()) . "' WHERE `id`='{$ainfo['id']}'");
 }
 
 

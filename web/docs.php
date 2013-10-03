@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2012, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,62 +17,62 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-include_once("core.php");
-include_once("include/doc.s.nulltype.php");
+require_once("core.php");
+require_once("include/doc.s.nulltype.php");
 need_auth();
-$tmpl->HideBlock('left');
+$tmpl->hideBlock('left');
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
-
-$l=rcv('l');
 
 try
 {
-
-if($l=='agent')
-	$sprav=new doc_s_Agent();
-else if($l=='dov')
-	$sprav=new doc_s_Agent_dov();
-else if($l=='inf')
-	$sprav=new doc_s_Inform();
-else if($l=='pran')
-	$sprav=new doc_s_Price_an();
-else
-	$sprav=new doc_s_Sklad();
-
-if($mode=='')
-	$sprav->View();
-else if($mode=='srv')
-	$sprav->Service();
-else if($mode=='edit')
-	$sprav->Edit();
-else if($mode=='esave')
-	$sprav->ESave();
-else if($mode=='search')
-	$sprav->Search();
-
+	switch (request('l')) {
+		case 'agent':
+			$sprav = new doc_s_Agent();
+			break;
+		case 'dov':
+			$sprav = new doc_s_Agent_dov();
+			break;
+		case 'inf':
+			$sprav = new doc_s_Inform();
+			break;
+		case 'pran':
+			$sprav = new doc_s_Price_an();
+			break;
+		default:$sprav = new doc_s_Sklad();
+	}
+	switch(request('mode'))
+	{
+		case '':
+			$sprav->View();
+			break;
+		case 'srv':
+			$sprav->Service();
+			break;
+		case 'edit':
+			$sprav->Edit();
+			break;
+		case 'esave':
+			$sprav->ESave();
+			break;
+		case 'search':
+			$sprav->Search();
+			break;
+		default:throw new Exception('Неверный параметр');
+	}
 }
-catch(AccessException $e)
-{
-	$tmpl->ajax=0;
-	//$tmpl->SetText('');
-	$tmpl->msg('Не достаточно привилегий: '.$e->getMessage(),'err',"Нет доступа");
-}
-catch(MysqlException $e)
-{
-	mysql_query("ROLLBACK");
+ catch (AccessException $e) {
+	$tmpl->ajax = 0;
+	$tmpl->msg('Не достаточно привилегий: ' . $e->getMessage(), 'err', "Нет доступа");
+} catch (MysqlException $e) {
+	$e->db->rollback();
 	$e->WriteLog();
-	$tmpl->SetText('');
-	$tmpl->msg($e->getMessage(),"err","Ошибка в базе данных!");
-}
-catch( Exception $e)
-{
-	mysql_query("ROLLBACK");
-	$tmpl->SetText('');
+	$tmpl->setContent('');
+	$tmpl->msg($e->getMessage(), "err", "Ошибка в базе данных!");
+} catch (Exception $e) {
+	$db->rollback();
+	$tmpl->setContent('');
 	$tmpl->logger($e->getMessage());
 }
 
 $tmpl->write();
-
-
-
 ?>

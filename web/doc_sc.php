@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,10 +24,10 @@ need_auth();
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
-$tmpl->HideBlock('left');
+$tmpl->hideBlock('left');
 $mode=rcv('mode');
 
-$tmpl->AddTop("<script type='text/javascript' src='/css/doc_script.js'></script>
+$tmpl->addTop("<script type='text/javascript' src='/css/doc_script.js'></script>
 <script src='/css/jquery/jquery.js' type='text/javascript'></script>
 <!-- Core files -->
 <script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
@@ -38,51 +38,50 @@ $dir=$CONFIG['site']['location'].'/include/doc_scripts/';
 try
 {
 
-if(isAccess('doc_scripts','view'))
+if(!isAccess('doc_scripts','view'))	throw new AccessException("Не достаточно привилегий");
+
+doc_menu();
+$tmpl->setTitle("Сценарии и операции");
+if($mode=='')
 {
-	doc_menu();
-	$tmpl->SetTitle("Сценарии и операции");
-	if($mode=='')
+	$tmpl->addContent("<h1>Сценарии и операции</h1>");
+	$tmpl->addContent("<ul>");
+	if (is_dir($dir))
 	{
-		$tmpl->AddText("<h1>Сценарии и операции</h1>");
-		$tmpl->AddText("<ul>");
-		if (is_dir($dir))
+		if ($dh = opendir($dir))
 		{
-			if ($dh = opendir($dir))
+			while (($file = readdir($dh)) !== false)
 			{
-				while (($file = readdir($dh)) !== false)
+				if( preg_match('/.php$/',$file) )
 				{
-					if( preg_match('/.php$/',$file) )
-					{
-						include_once("$dir/$file");
-						$cn=explode('.',$file);
-						$class_name='ds_'.$cn[0];
-						$class=new $class_name;
-						$nm=$class->getName();
-						$tmpl->AddText("<li><a href='/doc_sc.php?mode=view&amp;sn=$cn[0]'>$nm</a></li>");
-					}
+					include_once("$dir/$file");
+					$cn=explode('.',$file);
+					$class_name='ds_'.$cn[0];
+					$class=new $class_name;
+					$nm=$class->getName();
+					$tmpl->addContent("<li><a href='/doc_sc.php?mode=view&amp;sn=$cn[0]'>$nm</a></li>");
 				}
-				closedir($dh);
 			}
+			closedir($dh);
 		}
-		$tmpl->AddText("</ul>");
 	}
-	else
-	{
-		$sn=rcv('sn');
-		$fn=$dir.$sn.'.php';
-		if(file_exists($fn))
-		{
-			include_once($fn);
-			$cn=explode('.',$sn);
-			$class_name='ds_'.$sn;
-			$class=new $class_name;
-			$class->Run($mode);
-		}
-		else $tmpl->msg("Сценарий $fn не найден!","err");	
-	}
+	$tmpl->addContent("</ul>");
 }
-else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
+else
+{
+	$sn=rcv('sn');
+	$fn=$dir.$sn.'.php';
+	if(file_exists($fn))
+	{
+		include_once($fn);
+		$cn=explode('.',$sn);
+		$class_name='ds_'.$sn;
+		$class=new $class_name;
+		$class->Run($mode);
+	}
+	else $tmpl->msg("Сценарий $fn не найден!","err");
+}
+
 
 }
 catch(AccessException $e)

@@ -440,6 +440,63 @@ function UpdateContractInfo(doc, agent_id)
 	});
 }
 
+function PrintMenu(event,doc)
+{
+	var menu=CreateContextMenu(event);
+	function pickItem(event)
+	{
+		var fname=event.target.fname;
+		menu.parentNode.removeChild(menu);
+		window.location="/doc.php?mode=print&doc="+doc+"&opt="+fname;
+	}
+
+	function rcvDataSuccess(msg)
+	{
+		try
+		{
+			var json=eval('('+msg+')');
+			if(json.response=='err')
+			{
+				jAlert(json.text,"Ошибка", {}, 'icon_err');
+				menu.parentNode.removeChild(menu);
+			}
+			else if(json.response=='item_list')
+			{
+				menu.innerHTML=''
+				fax_number=json.faxnum
+				for(var i=0;i<json.content.length;i++)
+				{
+					var elem=document.createElement('div')
+					elem.innerHTML=json.content[i].desc
+					elem.fname=json.content[i].name
+					elem.onclick=pickItem
+					menu.appendChild(elem)
+				}
+			}
+			else
+			{
+				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Печать", {},  'icon_err');
+				menu.parentNode.removeChild(menu)
+			}
+		}
+		catch(e)
+		{
+			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Печать", {},  'icon_err');
+			menu.parentNode.removeChild(menu)
+		}
+	}
+
+	$.ajax({
+		type:   'GET',
+	       url:    '/doc.php',
+	       data:   'mode=fax&doc='+doc,
+	       success: function(msg) { rcvDataSuccess(msg) },
+	       error:   function() { jAlert('Ошибка соединения!','Печать',{},'icon_err'); menu.parentNode.removeChild(menu);},
+	});
+	return false
+}
+
 function FaxMenu(event,doc)
 {
 	var menu=CreateContextMenu(event)
