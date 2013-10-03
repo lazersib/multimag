@@ -183,7 +183,7 @@ class SearchPage
 
 try
 {
-	$s=rcv('s');
+	$s = request('s');
 	$tmpl->setTitle("Поиск по сайту: ".$s);
 
 	if(file_exists( $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/search.tpl.php' ) )

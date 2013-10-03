@@ -243,7 +243,6 @@ protected function ViewGroup($group, $page)
 	settype($group,'int');
 	settype($page,'int');
 	$res=$db->query("SELECT `name`, `pid`, `desc`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_group` WHERE `id`='$group' AND `hidelevel`='0'");
-	if(!$res)	throw new MysqlException('Не удалось выбрать информацию о группе');
 	if(!$res->num_rows)
 	{
 		header('HTTP/1.0 404 Not Found');
@@ -356,7 +355,6 @@ protected function ProductList($group, $page)
 	ORDER BY $sql_order";
 
 	$res=$db->query($sql);
-	if(!$res)	throw new MysqlException("Не удалось получить список товаров!");
 	$lim=intval($CONFIG['site']['vitrina_limit']);
 	if($lim==0)	$lim=100;
 
@@ -466,7 +464,6 @@ protected function ViewBlock($block)
 	}
 
 	$res=$db->query($sql);
-	if(!$res)	throw new MysqlException("Не удалось получить список товаров!");
 	$lim=1000;
         if($res->num_rows)
         {
@@ -542,7 +539,6 @@ protected function ProductCard($product)
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	WHERE `doc_base`.`id`=$product
 	ORDER BY `doc_base`.`name` ASC LIMIT 1");
-	if(!$res)	throw new MysqlException('Не удалось получить карточку товара!');
 	$i=0;
 	if($product_data=$res->fetch_assoc())
 	{
@@ -604,7 +600,6 @@ protected function ProductCard($product)
 			$res=$db->query("SELECT `doc_img`.`id` AS `img_id`, `doc_base_img`.`default`, `doc_img`.`name`, `doc_img`.`type` AS `img_type` FROM `doc_base_img`
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 			WHERE `doc_base_img`.`pos_id`='{$product_data['id']}'");
-			if(!$res)	throw new MysqlException('Не удалось выбрать информацию о изображениях');
 
 			while($img_data=$res->fetch_assoc())
 			{
@@ -667,21 +662,18 @@ protected function ProductCard($product)
 		$param_res=$db->query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
 		WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`pgroup_id`='0' AND `doc_base_params`.`system`='0'");
-		if(!$param_res)	throw new MysqlException("Не удалось получить список свойств!");
 		while($params=$param_res->fetch_row())
 		{
 			$tmpl->addContent("<tr><td class='field'>".html_out($params[0])."</td><td>".html_out($params[1])."</td></tr>");
 		}
 
 		$resg=$db->query("SELECT `id`, `name` FROM `doc_base_gparams`");
-		if(!$resg)	throw new MysqlException("Не удалось параметры групп складской номенклатуры");
 		while($nxtg=$resg->fetch_row())
 		{
 			$f=0;
 			$param_res=$db->query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
 			WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`pgroup_id`='$nxtg[0]' AND `doc_base_params`.`system`='0'");
-			if(!$param_res)	throw new MysqlException("Не удалось получить список свойств!");
 			while($params=$param_res->fetch_row())
 			{
 				if(!$f)
@@ -697,7 +689,6 @@ protected function ProductCard($product)
 		FROM `doc_base_attachments`
 		LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
 		WHERE `doc_base_attachments`.`pos_id`='$product'");
-		if(!$att_res)	throw new MysqlException("Не удалось получить список прикреплённых файлов");
 		if($att_res->num_rows>0)
 		{
 			$tmpl->addContent("<tr><th colspan='3'>Прикреплённые файлы</th></tr>");
@@ -775,7 +766,6 @@ protected function Basket()
 		settype($item,'int');
 		settype($cnt,'int');
 		$res=$db->query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`=$item");
-		if(!$res)	throw new MysqlException("Не удалось получить список товаров!");
 		$nx=$res->fetch_row();
 		$lock_mark='';
 		$cena=getCostPos($nx[0], $this->cost_id);
@@ -793,7 +783,6 @@ protected function Basket()
 				$res=$db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
 			}
 			else	$res=$db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
-			if(!$res)	throw new MysqlException("Ошибка получения информации о количестве товара");
 			if($res->num_rows)
 			{
 				$tmp=$res->fetch_row();
@@ -931,7 +920,6 @@ protected function DeliveryTypeForm()
 	<input type='hidden' name='mode' value='delivery'>
 	<label><input type='radio' name='delivery_type' value='0'> Самовывоз</label><br><small>Вы сможете забрать товар с нашего склала</small><br><br>");
 	$res=$db->query("SELECT `id`, `name`, `min_price`, `description` FROM `delivery_types`");
-	if(!$res)	throw new MysqlException("Не удалось запростить виды доставки");
 	while($nxt=$res->fetch_assoc())
 	{
 		$disabled=$this->basket_sum<$nxt['min_price']?' disabled':'';
@@ -949,7 +937,6 @@ protected function DeliveryRegionForm()
 	<input type='hidden' name='mode' value='delivery'>
 	<input type='hidden' name='delivery_type' value='{$_REQUEST['delivery_type']}'>");
 	$res=$db->query("SELECT `id`, `name`, `price`, `description` FROM `delivery_regions` WHERE `delivery_type`='{$_SESSION['basket']['delivery_type']}'");
-	if(!$res)	throw new MysqlException("Не удалось запростить регионы доставки");
 	while($nxt=$res->fetch_assoc())
 	{
 		$tmpl->addContent("<label><input type='radio' name='delivery_region' value='{$nxt['id']}'> {$nxt['name']} - {$nxt['price']} рублей.</label><br><small>{$nxt['description']}</small><br><br>");
@@ -996,7 +983,6 @@ protected function GroupList_ItemStyle($group)
 	global $tmpl, $CONFIG, $db;
 	settype($group,'int');
 	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
-	if(!$res)	throw new MysqlException('Не удалось выбрать список групп');
 	$tmpl->addStyle(".vitem { width: 250px; float: left; font-size:	14px; } .vitem:before{content: '\\203A \\0020' ; } hr.clear{border: 0 none; margin: 0;}");
 	while($nxt=$res->fetch_row())
 	{
@@ -1005,31 +991,26 @@ protected function GroupList_ItemStyle($group)
 	$tmpl->addContent("<hr class='clear'>");
 }
 /// Список групп с изображениями
-protected function GroupList_ImageStyle($group)
-{
+protected function GroupList_ImageStyle($group) {
 	global $tmpl, $CONFIG, $db;
 
-	$res=$db->query("SELECT * FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
-	if(!$res)	throw new MysqlException('Не удалось выбрать список групп');
+	$res = $db->query("SELECT * FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
 	$tmpl->addStyle(".vitem { width: 360px; float: left; font-size:	14px; margin: 10px;} .vitem img {float: left; padding-right: 8px;} hr.clear{border: 0 none; margin: 0;}");
-	while($nxt=$res->fetch_row())
-	{
-		$link=$this->GetGroupLink($nxt[0]);
+	while ($nxt = $res->fetch_row()) {
+		$link = $this->GetGroupLink($nxt[0]);
 		$tmpl->addContent("<div class='vitem'><a href='$link'>");
-		if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$nxt[0].jpg"))
-				$tmpl->addContent("<img src='{$CONFIG['site']['var_data_web']}/category/$nxt[0].jpg' alt='$nxt[1]'>");
-		else
-		{
-			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
-				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
-			else	$img_url='/img/no_photo.png';
+		if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$nxt[0].jpg"))
+			$tmpl->addContent("<img src='{$CONFIG['site']['var_data_web']}/category/$nxt[0].jpg' alt='$nxt[1]'>");
+		else {
+			if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png'))
+				$img_url = '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png';
+			else	$img_url = '/img/no_photo.png';
 			$tmpl->addContent("<img src='$img_url' alt='Изображение не доступно'>");
 		}
-		$tmpl->addContent("</a><div><a href='$link'><b>".html_out($nxt[1])."</b></a><br>");
-		if($nxt[2])
-		{
-			$desc=split('\.',$nxt[2],2);
-			if($desc[0])	$tmpl->addContent($desc[0]);
+		$tmpl->addContent("</a><div><a href='$link'><b>" . html_out($nxt[1]) . "</b></a><br>");
+		if ($nxt[2]) {
+			$desc = explode('.', $nxt[2], 2);
+			if ($desc[0])	$tmpl->addContent($desc[0]);
 			else		$tmpl->addContent($nxt[2]);
 		}
 		$tmpl->addContent("</div></div>");
@@ -1305,12 +1286,9 @@ protected function MakeBuy()
 	if(@$_SESSION['uid'])
 	{
 		$res=$db->query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='{$_SESSION['uid']}'");
-		if(!$res)	throw new MysqlException("Не удалось обновить основные данные пользователя!");
 		$res=$db->query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('{$_SESSION['uid']}', 'dop_info', '$comment_sql') ");
-		if(!$res)	throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
 		// Получить ID агента
 		$res=$db->query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `agent_id` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
-		if(!$res)	throw new MysqlException("Не удалось получить основные данные пользователя!");
 		$user_data=$res->fetch_assoc();
 		$agent=$user_data['agent_id'];
 		settype($agent,'int');
@@ -1333,17 +1311,14 @@ protected function MakeBuy()
 		else
 		{
 			$res=$db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
-			if(!$res)		throw new MysqlException("Не удалось определить банк");
 			if($res->num_rows<1)	throw new Exception("Не найден банк выбранной организации");
 			list($bank)=$res->fetch_row();
 		}
 		$res=$db->query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
 		VALUES ('3','$agent','$tm','1','{$_SESSION['uid']}','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
-		if(!$res)		throw new MysqlException("Не удалось создать документ заявки");
 		$doc=$db->insert_id;
 
 		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
-		if(!$res)	throw new MysqlException("Не удалось установить цену документа");
 
 		$zakaz_items=$admin_items=$lock='';
 		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
@@ -1352,13 +1327,11 @@ protected function MakeBuy()
 			if(isset($_SESSION['basket']['comments'][$item]))
 				$comm_sql=$db->real_escape_string($_SESSION['basket']['comments'][$item]);	else $comm_sql='';
 			$res=$db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$cena','$comm_sql')");
-			if(!$res)	throw new MysqlException("Не удалось добавить товар в заказ");
 
 			$res=$db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1`, `doc_base`.`cost_date` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$item'");
-			if(!$res)	throw new MysqlException("Не удалось получить информацию о товаре");
 
 			$tov_info=$db->fetch_array($res);
 			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
@@ -1380,7 +1353,6 @@ protected function MakeBuy()
 						$res=$db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
 					}
 					else	$res=$db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
-					if(!$res)	throw new MysqlException("Ошибка получения информации о количестве товара");
 					if($res->num_rows)
 					{
 						$tmp=$res->fetch_row();
@@ -1407,18 +1379,14 @@ protected function MakeBuy()
 		if($_SESSION['basket']['delivery_type'])
 		{
 			$res=$db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='{$_SESSION['basket']['delivery_type']}'");
-			if(!$res)	throw new MysqlException("Не удалось запростить типы доставки");
 			list($d_service_id)=$res->fetch_row();
 			$res=$db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
-			if(!$res)	throw new MysqlException("Не удалось запростить регионы доставки");
 			list($d_price)=$red->fetch_row();
 			$res=$db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
-			if(!$res)	throw new MysqlException("Не удалось добавить услугу в заказ");
 			$res=$db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$d_service_id'");
-			if(!$res)	throw new MysqlException("Не удалось получить информацию об услуге");
 			$tov_info=$db->fetch_array($res);
 			$zakaz_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 			$admin_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
@@ -1491,14 +1459,12 @@ protected function Payment()
 
 	$res=$db->query("SELECT `doc_list`.`id` FROM `doc_list`
 	WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6') AND `doc_list`.`mark_del`='0'");
-	if(!$res)			throw new MysqlException("Не удалось получить данные оплат");
 	if($res->num_rows)		$tmpl->msg("Этот заказ уже оплачен!");
 	else
 	{
 		$res=$db->query("SELECT `doc_list`.`id`, `dd_pt`.`value` AS `pay_type` FROM `doc_list`
 		LEFT JOIN `doc_dopdata` AS `dd_pt` ON `dd_pt`.`doc`=`doc_list`.`id` AND `dd_pt`.`param`='pay_type'
 		WHERE `doc_list`.`id`='$order_id' AND `doc_list`.`type`='3'");
-		if(!$res)		throw new MysqlException("Не удалось получить данные заказа");
 
 		$order_info=$res->fetch_assoc();
 		if($order_info['pay_type']=='card_o')
@@ -1514,7 +1480,6 @@ protected function Payment()
 			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			WHERE `doc_list_pos`.`doc`=$order_id");
-			if(!$res)	throw new MysqlException("Не удалось получить список товаров");
 			$pos_line='';
 			$cnt=0;
 			while($line=$res->fetch_assoc())
@@ -1573,7 +1538,6 @@ protected function GetVitPath($group_id)
 	global $db;
 	settype($group_id,'int');
 	$res=$db->query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `id`='$group_id'");
-	if(!$res)	throw new MysqlException("Не удалось выбрать группу при формировании пути!");
 	$nxt=$res->fetch_row();
 	if(!$nxt)	return "<a href='/vitrina.php'>Витрина</a>";
 	return $this->GetVitPath($nxt[2])." / <a href='".$this->GetGroupLink($nxt[0])."'>$nxt[1]</a>";
@@ -1658,13 +1622,6 @@ try
 
 	if(! $vitrina->ProbeRecode() )
 	$vitrina->ExecMode($mode);
-}
-catch(MysqlException $e)
-{
-	global $db;
-	$db->query("ROLLBACK");
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
 }
 catch(Exception $e)
 {

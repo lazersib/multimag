@@ -56,7 +56,6 @@ else
 	");
 	
 	$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news` LIMIT 1");
-	if(!$res)	throw new MysqlException("Не удалось получить список новостей!");
 	if($res->num_rows>0)
 	{
 		$res->free();
@@ -65,7 +64,6 @@ else
 		$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news`
 		WHERE `news`.`type`='stock'
 		ORDER BY `date` DESC LIMIT 3");
-		if(!$res)	throw new MysqlException("Не удалось получить список акций!");
 		if($res->num_rows>0)
 		{
 			$tmpl->addContent("<td><h3>Акции</h3>");
@@ -95,7 +93,6 @@ else
 		$res=$db->query("SELECT `name`, `date`, `text`, `img_ext`  FROM `articles`
 		WHERE `name` LIKE 'review:%'
 		ORDER BY `date` DESC LIMIT 3");
-		if(!$res)	throw new MysqlException("Не удалось получить список статей!");
 		if($res->num_rows>0)
 		{
 			$tmpl->addContent("<td><h3>Обзоры</h3>");
@@ -111,7 +108,7 @@ else
 					$img="<img src='".$miniimg->GetURI()."' alt=''>";
 				}
 				else $img='';
-				$text_a=mb_split( "[.!?]" , strip_tags($text), 2);
+				$text_a = mb_split( "[.!?]" , strip_tags($text), 2);
 				if(@$text_a)	$text=$text_a[0]."...";
 				$tmpl->addContent("<div class='news'><div class='image'><a href='/wiki/{$line['name']}'>$img</a></div>
 				<div class='text'><p class='date'>{$line['date']}</p><p class='title'><a href='/wiki/{$line['name']}'>{$wikiparser->title}</a></p><p>$text</p></div>
@@ -125,7 +122,6 @@ else
 		$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news`
 		WHERE `news`.`type`='novelty'
 		ORDER BY `date` DESC LIMIT 3");
-		if(!$res)	throw new MysqlException("Не удалось получить список новостей!");
 		if($res->num_rows>0)
 		{
 			$tmpl->addContent("<td><h3><a href='/news.php'>Новости</a></h3>");
@@ -141,7 +137,7 @@ else
 					$img="<img src='".$miniimg->GetURI()."' alt=''>";
 				}
 				else $img='';
-				$text_a=mb_split( "[.!?]" , strip_tags($text), 2);
+				$text_a = mb_split( "[.!?]" , strip_tags($text), 2);
 				if(@$text_a)	$text=$text_a[0]."...";
 				$tmpl->addContent("<div class='news'><div class='image'><a href='/news.php?mode=read&amp;id={$line['id']}'>$img</a></div>
 				<div class='text'><p class='date'>{$line['date']}</p><p class='title'><a href='/news.php?mode=read&amp;id={$line['id']}'>{$wikiparser->title}</a></p><p>$text</p></div>
@@ -160,7 +156,6 @@ else
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	WHERE `hidden`='0' AND `stock`!='0' LIMIT 12");
-	if(!$res)	throw new MysqlException("Выборка спецпредложений не удалась!");
 	if($res->num_rows>0)
 	{
 		$tmpl->addContent("<h1>Спецпредложения</h1>
@@ -204,7 +199,6 @@ else
 	WHERE `hidden`='0'
 	ORDER BY `likvid` DESC
 	LIMIT 12");
-	if(!$res)	throw new MysqlException("Выборка популярных товаров не удалась!");
 	$i=1;
 	while($line=$res->fetch_assoc())
 	{
@@ -235,12 +229,6 @@ else
 	$tmpl->addContent("<div class='clear'><br></div>");
 }
 
-}
-catch(MysqlException $e)
-{
-	$e->db->rollback();
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage().$e->sql_error,"err");
 }
 catch(Exception $e)
 {
