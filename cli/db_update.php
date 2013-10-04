@@ -28,6 +28,7 @@ unset($CONFIG['backup']['dirs']);
 include_once($CONFIG['cli']['location']."/backup.php");
 
 function applyPatch($patch) {
+	global $db;
 	$file = file_get_contents($patch);
 	if (!$file)
 		throw new Exception("Не удаётся открыть файл патча!");

@@ -495,7 +495,6 @@ class doc_Zayavka extends doc_Nulltype
 		global $tmpl, $CONFIG, $db;
 		if(!$to_str) $tmpl->ajax=1;
 		
-		$db = new MysqiExtended();		
 		$agent_data = $db->selectRow('doc_agent', $this->doc_data['agent']);
 		$res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
 		$bank_data = $res->fetch_assoc();
@@ -604,8 +603,9 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else	$t_text[]='Наименование';
 		$t_text=array_merge($t_text, array('Кол-во', 'Цена', 'Сумма'));
-		foreach($t_width as $w)
-			$pdf->CellIconv($w,6,$str,1,0,'C',0);
+		foreach($t_width as $id=>$w) {
+			$pdf->CellIconv($w,6,$t_text[$id],1,0,'C',0);
+		}
 		
 		$pdf->Ln();
 		$pdf->SetWidths($t_width);
@@ -680,7 +680,7 @@ class doc_Zayavka extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,6,$str,0,0,'L',0);
 
-		if($this->doc_data[12])
+		if($this->doc_data['nds'])
 		{
 			$nds=$sum/(100+$this->firm_vars['param_nds'])*$this->firm_vars['param_nds'];
 			$nds = sprintf("%01.2f", $nds);

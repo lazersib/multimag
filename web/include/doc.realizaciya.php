@@ -397,7 +397,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->SetFont('Arial','',10);
 		$pdf->SetFillColor(255);
 
-		$dt=date("d.m.Y",$this->doc_data['date']);
+		$dt = date("d.m.Y", $this->doc_data['date']);
 
 		$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
 		if(!$res->num_rows)			throw new Exception ("Цена по умолчанию не найдена");
@@ -433,8 +433,7 @@ class doc_Realizaciya extends doc_Nulltype
 		else	$t_text[]='Наименование';
 		$t_text=array_merge($t_text, array('Место', 'Кол-во', 'Стоимость', 'Сумма'));
 
-		foreach($t_width as $id=>$w)
-		{
+		foreach($t_width as $id=>$w) {
 			$pdf->CellIconv($w,6,$t_text[$id],1,0,'C',0);
 		}
 		$pdf->Ln();

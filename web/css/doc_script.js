@@ -463,7 +463,6 @@ function PrintMenu(event,doc)
 			else if(json.response=='item_list')
 			{
 				menu.innerHTML=''
-				fax_number=json.faxnum
 				for(var i=0;i<json.content.length;i++)
 				{
 					var elem=document.createElement('div')
@@ -490,7 +489,7 @@ function PrintMenu(event,doc)
 	$.ajax({
 		type:   'GET',
 	       url:    '/doc.php',
-	       data:   'mode=fax&doc='+doc,
+	       data:   'mode=print&doc='+doc,
 	       success: function(msg) { rcvDataSuccess(msg) },
 	       error:   function() { jAlert('Ошибка соединения!','Печать',{},'icon_err'); menu.parentNode.removeChild(menu);},
 	});

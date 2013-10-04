@@ -520,6 +520,8 @@ function AutoDocumentType($doc_type, $doc)
 			return new doc_Korbonus($doc);
 		case 20:
 			return new doc_Realiz_bonus($doc);
+		case 21:
+			return new doc_ZSbor($doc);
 		default:
 			return new doc_Nulltype();
 	}
