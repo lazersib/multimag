@@ -91,8 +91,7 @@ function DrawSubTreeDocumentNode($doc, $cur_doc)
 	WHERE `doc_list`.`p_doc`='$doc'
 	ORDER by `doc_list`.`date` DESC";
 	$res=$db->query($sql);
-	if(!$res)	throw new MysqlException("Не удалось выбрать данные документов");
-	$cnt=$res->num_rows();
+	$cnt=$res->num_rows;
 	$i=1;
 	$r='';
 	while($nxt=$res->fetch_row())
@@ -912,7 +911,7 @@ else if($mode=='log')
 else if($mode=="tree")
 {
 	doc_menu();
-	$doc=rcvште('doc');
+	$doc=rcvint('doc');
 	$pdoc=GetRootDocument($doc);
 	$tmpl->addContent("<h1>Структура для $doc с $pdoc</h1>");
 	DrawSubTreeDocument($pdoc,$doc);

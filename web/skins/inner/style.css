@@ -882,6 +882,19 @@ div.clear
 	clear:		both !important;
 }
 
+#doc_list td:first-child
+{
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+#doc_list td:last-child
+{
+	text-decoration: underline;	
+	cursor: pointer;
+}
+
+
 #doc_list_filter
 {
 	width:		100%;
@@ -891,12 +904,12 @@ div.clear
 }
 
 
-#doc_list_filter div
+#doc_list_filter div.bf
 {
 	float:			left;
-	width:			200px;
-	height:			55px;
-	border:			1px solid #eee;
+	width:			198px;
+	height:			30px;
+	border:			1px solid #ddd;
 	padding:		3px;
 	margin:			2px;
 }
@@ -912,10 +925,10 @@ div.clear
 
 #doc_list_filter input[type=text], #doc_list_filter select
 {
-	width:			187px;
+	width:			185px;
 }
 
 #doc_list_filter input.half[type=text]
 {
-	width:			80px;
+	width:			79px;
 }

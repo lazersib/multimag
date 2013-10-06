@@ -44,6 +44,7 @@ function initCalendar(input_id, selectTime)
 		if(input.selectTime)
 			val+=' '+pad(date.getHours())+':'+pad(date.getMinutes())+':'+pad(date.getSeconds())
 		input.value=val
+		if(input.updateCallback) input.updateCallback();
 	}
 
 	function updateHeader()	{
@@ -108,7 +109,7 @@ function initCalendar(input_id, selectTime)
 	var input = document.getElementById(input_id)
 	var date = new Date(input.value)
 	if(!date.getFullYear()) date=new Date()
-	input.oldstyle=input.style
+	input.oldcolor=input.style.color
 	input.selectTime = selectTime	// Возможность выбрать время
 
 	var months=Array('Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сертябрь','Октябрь','Ноябрь','Декабрь')
@@ -220,7 +221,7 @@ function initCalendar(input_id, selectTime)
 		if(newdate.getFullYear())
 		{
 			date=newdate
-			input.style=input.oldstyle
+			input.style.color=input.oldcolor
 			updateHeader()
 			draw()
 		}
