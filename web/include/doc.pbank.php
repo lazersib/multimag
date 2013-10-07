@@ -76,8 +76,8 @@ class doc_PBank extends doc_Nulltype
 		if($data['ok'] && (!$silent))
 			throw new Exception('Документ уже проведён!');
 		
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$this->doc_data['sum']}' WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
-		if($db->affected_rows)	throw new Exception("Cумма в банке {$this->doc_data['bank']} не изменилась!");
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}' WHERE `ids`='bank' AND `num`='{$data['bank']}'");
+		if($db->affected_rows)	throw new Exception("Cумма в банке {$data['bank']} не изменилась!");
 		
 		if($silent)	return;
 		$db->update('doc_list', $this->doc, 'ok', time() );
@@ -93,8 +93,8 @@ class doc_PBank extends doc_Nulltype
 		if(!$data['ok'])
 			throw new Exception('Документ не проведён!');
 		
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$this->doc_data['sum']}' WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
-		if($db->affected_rows)	throw new Exception("Cумма в банке {$this->doc_data['bank']} не изменилась!");
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}' WHERE `ids`='bank' AND `num`='{$data['bank']}'");
+		if($db->affected_rows)	throw new Exception("Cумма в банке {$data['bank']} не изменилась!");
 		
 		$db->update('doc_list', $this->doc, 'ok', 0 );
 		$this->sentZEvent('cancel');

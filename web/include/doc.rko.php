@@ -75,9 +75,9 @@ class doc_Rko extends doc_Nulltype {
 		$res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
 		if(!$res->num_rows)		throw new Exception('Ошибка получения суммы кассы!');
 		$nxt = $res->fetch_row();
-		if($nxt[0]<$nx['sum'])	throw new Exception("Не хватает денег в кассе N{$nx['kassa']} ($nxt[0] < {$nx['sum']})!");
+		if($nxt[0]<$data['sum'])	throw new Exception("Не хватает денег в кассе N{$data['kassa']} ($nxt[0] < {$data['sum']})!");
 
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$nx['sum']}'	WHERE `ids`='kassa' AND `num`='{$nx['kassa']}'");
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
 		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы!');
 		
 		$budet = $this->checkKassMinus();
@@ -98,7 +98,7 @@ class doc_Rko extends doc_Nulltype {
 		if(!$data['ok'])
 			throw new Exception('Документ не проведён!');
 		
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$nx['sum']}'	WHERE `ids`='kassa' AND `num`='{$nx['kassa']}'");
+		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
 		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы!');
 		
 		$db->update('doc_list', $this->doc, 'ok', 0 );

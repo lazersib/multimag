@@ -53,8 +53,8 @@ if($CONFIG['route']['ulog']['enable'])	`/sbin/modprobe ipt_ULOG nlbufsiz=800000`
 
 if(@$CONFIG['route']['ulog']['ext_enable'])
 {
-    `$ipt -A INPUT -s ! {$CONFIG['route']['lan_range']} -j ULOG`;
-    `$ipt -A OUTPUT -d ! {$CONFIG['route']['lan_range']} -j ULOG`;
+    `$ipt -A INPUT ! -s {$CONFIG['route']['lan_range']} -j ULOG`;
+    `$ipt -A OUTPUT ! -d {$CONFIG['route']['lan_range']} -j ULOG`;
     echo "Ext_Ulog enabled!\n";
 }
 // Create chain for bad tcp packets
@@ -171,9 +171,9 @@ foreach($CONFIG['route']['dnat_tcp'] as $port => $ip)
 foreach($CONFIG['route']['dnat_udp'] as $port => $ip)
 	`$ipt -t nat -A PREROUTING -d {$CONFIG['route']['ext_ip']} -i {$CONFIG['route']['ext_iface']} -p udp -m udp --dport $port -j DNAT --to-destination $ip`;
 // Основной канал
-`$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} -d ! {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['ext_iface']} -j SNAT --to-source {$CONFIG['route']['ext_ip']}`;
+`$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} ! -d {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['ext_iface']} -j SNAT --to-source {$CONFIG['route']['ext_ip']}`;
 // резервный канал
-`$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} -d ! {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['backup_ext_iface']} -j SNAT --to-source {$CONFIG['route']['backup_ext_ip']}`;
+`$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} ! -d {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['backup_ext_iface']} -j SNAT --to-source {$CONFIG['route']['backup_ext_ip']}`;
 echo"All ok!\n";
 
 ?>

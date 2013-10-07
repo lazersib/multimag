@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "595");
+define("MULTIMAG_REV", "597");
 define("MULTIMAG_VERSION", "0.2rc1.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
