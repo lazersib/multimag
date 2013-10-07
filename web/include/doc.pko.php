@@ -40,11 +40,6 @@ class doc_Pko extends doc_Nulltype {
 		if($data['ok'] && (!$silent) )
 			throw new Exception('Документ уже проведён!');
 		
-		$res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
-		if(!$res->num_rows)		throw new Exception('Ошибка получения суммы кассы!');
-		$nxt = $res->fetch_row();
-		if($nxt[0]<$data['sum'])	throw new Exception("Не хватает денег в кассе N{$data['kassa']} ($nxt[0] < {$data['sum']})!");
-
 		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
 		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы!');
 		if($silent)	return;
