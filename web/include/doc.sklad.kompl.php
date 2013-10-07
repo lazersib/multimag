@@ -87,7 +87,7 @@ function kompl_groups($pos) {
 
 function kompl_sklad($pos, $group, $sklad = 1) {
 	global $tmpl;
-	$s = rcv('s');
+	$s = request('s');
 	if ($s)	kompl_ViewSkladS($pos, $group, $s);
 	else	kompl_ViewSklad($pos, $group);
 }

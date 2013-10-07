@@ -104,13 +104,12 @@ class doc_Sborka extends doc_Nulltype {
 		}
 	}
 
-	function Service($doc) {
+	function Service() {
 		global $tmpl;
 		$tmpl->ajax = 1;
-		$opt = rcv('opt');
-		$pos = rcv('pos');
+		$opt = request('opt');
+		$pos = request('pos');
 		include_once('include/doc.zapposeditor.php');
-		$doc = $this->doc;
 		$poseditor = new SZapPosEditor($this);
 		$poseditor->cost_id = $this->dop_data['cena'];
 		$poseditor->sklad_id = $this->doc_data['sklad'];
@@ -125,47 +124,47 @@ class doc_Sborka extends doc_Nulltype {
 			}
 			// Получение данных наименования
 			else if ($opt == 'jgpi') {
-				$pos = rcv('pos');
+				$pos = rcvint('pos');
 				$tmpl->addContent($poseditor->GetPosInfo($pos));
 			}
 			// Json вариант добавления позиции
 			else if ($opt == 'jadd') {
 				if (!isAccess('doc_sborka', 'edit'))
 					throw new AccessException("Недостаточно привилегий");
-				$pos = rcv('pos');
+				$pos = rcvint('pos');
 				$tmpl->setContent($poseditor->AddPos($pos));
 			}
 			// Json вариант удаления строки
 			else if ($opt == 'jdel') {
 				if (!isAccess('doc_sborka', 'edit'))
 					throw new AccessException("Недостаточно привилегий");
-				$line_id = rcv('line_id');
+				$line_id = rcvint('line_id');
 				$tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
 			else if ($opt == 'jup') {
 				if (!isAccess('doc_sborka', 'edit'))
 					throw new AccessException("Недостаточно привилегий");
-				$line_id = rcv('line_id');
-				$value = rcv('value');
-				$type = rcv('type');
+				$line_id = rcvint('line_id');
+				$value = request('value');
+				$type = request('type');
 				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 			}
 			// Получение номенклатуры выбранной группы
 			else if ($opt == 'jsklad') {
-				$group_id = rcv('group_id');
+				$group_id = rcvint('group_id');
 				$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
 				$tmpl->setContent($str);
 			}
 			// Поиск по подстроке по складу
 			else if ($opt == 'jsklads') {
-				$s = rcv('s');
+				$s = request('s');
 				$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
 				$tmpl->setContent($str);
 			} else if ($opt == 'jsn') {
-				$action = rcv('a');
-				$line_id = rcv('line');
-				$data = rcv('data');
+				$action = request('a');
+				$line_id = request('line');
+				$data = request('data');
 				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
 			}
 		}

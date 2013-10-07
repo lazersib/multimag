@@ -73,12 +73,6 @@ class doc_Specific extends doc_Nulltype {
 		}
 	}
 
-	function Service() {
-		$opt = rcv('opt');
-		$pos = rcv('pos');
-		parent::_Service($opt, $pos);
-	}
-
 	function PrintPDF($to_str = 0) {
 		global $tmpl, $CONFIG, $db;;
 		

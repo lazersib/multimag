@@ -35,7 +35,6 @@ if($mode=='')
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	ORDER BY `comments`.`id` DESC");
-	if(!$res)	throw new MysqlException("Не удалось получить коментарии");
 
 	$tmpl->addContent("<h1 id='page-title'>Последние коментарии</h1>
 	<table class='list' width='100%'>
@@ -61,7 +60,6 @@ else if($mode=='rm')
 	$id=rcvint('id');
 
 	$db->query("DELETE FROM `comments` WHERE `id`='$id'");
-	if(!$res)					throw new MysqlException("Не удалось удалить строку");
 	$tmpl->msg("Строка удалена.<br><a href='/adm_comments.php'>Назад</a>","ok");
 }
 else if($mode=='response')
@@ -73,14 +71,12 @@ else if($mode=='response')
 	{
 		$sql_text=$db->real_escape_string(request('text'));
 		$res=$db->query("UPDATE `comments` SET `response`='$sql_text', `responser`='{$_SESSION['uid']}' WHERE `id`='$id'");
-		if(!$res)				throw new MysqlException("Не удалось сохранить коментарий");
 		$tmpl->msg("Коментарий сохранён успешно",'ok');
 	}
 	$res=$db->query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	WHERE `comments`.`id`='$id'");
-	if(!$res)		throw new MysqlException("Не удалось получить коментарии");
 	$line=$res->fetch_assoc();
 	if(!$line)		throw new Exception("Коментарий не найден!");
 	$autor=$line['autor_id']?"{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>":$line['autor_name'];
@@ -105,7 +101,7 @@ else if($mode=='response')
 catch(Exception $e)
 {
 	global $db, $tmpl;
-	$db->query("ROLLBACK");
+	$db->rollback();
 	$tmpl->addContent("<br><br>");
 	$tmpl->logger($e->getMessage());
 }

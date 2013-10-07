@@ -76,12 +76,5 @@ class doc_Doveren extends doc_Nulltype
 		else	$tmpl->msg("В разработке", "info");
 	}
 
-	function Service($doc) {
-		$tmpl->ajax = 1;
-		$opt = request('opt');
-		$pos = rcvint('pos');
-
-		parent::_Service($opt, $pos);
-	}
 };
 ?>

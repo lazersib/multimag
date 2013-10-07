@@ -56,14 +56,6 @@ class doc_ZSbor extends doc_Nulltype {
 		}
 	}
 
-	function Service() {
-		global $tmpl, $CONFIG, $db;
-		$tmpl->ajax = 1;
-		$opt = request('opt');
-		$pos = rcvint('pos');
-		parent::_Service($opt, $pos);
-	}
-
 	/// Заявка на комплектующие
 	/// @param to_str	Вернуть в виде строки (иначе - вывести в броузер)
 	function PrintKompl($to_str = 0) {

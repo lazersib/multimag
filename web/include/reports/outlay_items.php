@@ -91,7 +91,7 @@ class Report_Outlay_Items extends BaseReport {
 			ORDER BY `doc_list`.`date`");
 			while ($nxt = $res->fetch_assoc()) {
 				$dt = date("Y-m-d H:i:s", $nxt['date']);
-				$this->tableRow(array($nxt['doc_id'], $dt, unhtmlentities($nxt['agent_fullname']), $nxt['doc_name'], $nxt['sum']));
+				$this->tableRow(array($nxt['doc_id'], $dt, $nxt['agent_fullname'], $nxt['doc_name'], $nxt['sum']));
 				$sum+=$nxt['sum'];
 			}
 			$this->tableSpannedRow(array(2, 2, 1), array('', 'Итого по статье:', sprintf("%0.2f", $sum)));

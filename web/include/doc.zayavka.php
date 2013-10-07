@@ -415,20 +415,15 @@ class doc_Zayavka extends doc_Nulltype
 				header($ref);
 			}
 		}
-		else
-		{
-			$tmpl->msg("В разработке","info");
-		}
+		else	$tmpl->msg("В разработке","info");
 	}
 
-	function Service()
-	{
+	function Service() {
 		global $tmpl, $CONFIG, $db;
-		$tmpl->ajax=1;
-		$opt=request('opt');
-		$pos=rcvint('pos');
-		if($opt=='pmsg')
-		{
+		$tmpl->ajax = 1;
+		$opt = request('opt');
+		$pos = rcvint('pos');
+		if ($opt == 'pmsg') {
 			try
 			{
 				$text = request('text');

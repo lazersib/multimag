@@ -28,13 +28,13 @@ class Report_Komplekt_Zp {
 
 	function Form() {
 		global $tmpl, $db;
-		$tmpl->setContent("<h1>" . $this->getName() . "</h1>
+		$tmpl->addContent("<h1>" . $this->getName() . "</h1>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='komplekt_zp'>
 		<input type='hidden' name='opt' value='make'>
-		Группа товаров:<br>");
-		selectGroupPos('group', 0, 0, '', '');
-		$tmpl->addContent("<button type='submit'>Создать отчет</button></form>");
+		Группа товаров:<br>".
+		selectGroupPos('group', 0, 1, '', '')
+		."<button type='submit'>Создать отчет</button></form>");
 	}
 
 	function MakeHTML() {
@@ -48,7 +48,7 @@ class Report_Komplekt_Zp {
 		if ($zres->num_rows == 0)
 			throw new Exception("Данные о зарплате за сборку в базе не найдены. Необходим дополнительный параметр 'ZP'");
 		list($zp_id) = $zres->fetch_row();
-		switch ($CONFIG['doc']['sklad_default_order']) {
+		switch (@$CONFIG['doc']['sklad_default_order']) {
 			case 'vc': $order = '`doc_base`.`vc`';
 				break;
 			case 'cost': $order = '`doc_base`.`cost`';

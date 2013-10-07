@@ -195,14 +195,6 @@ class doc_Postuplenie extends doc_Nulltype {
 		}
 	}
 
-	function Service() {
-		global $tmpl;
-		$tmpl->ajax = 1;
-		$opt = request('opt');
-		$pos = rcvint('pos');
-		parent::_Service($opt, $pos);
-	}
-	
 /// Обычная накладная в PDF формате
 /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
 	function PrintNaklPDF($to_str = false) {

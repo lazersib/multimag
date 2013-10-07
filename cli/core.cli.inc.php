@@ -19,10 +19,10 @@
 
 include_once($CONFIG['location']."/common/core.common.php");
 
-class MysqlException extends Exception
-{
+/// Пустой шаблон для подавления предупреждений
+class ntpl {};
+$tmpl = new ntpl();
 
-};
 
 $db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
 

@@ -408,7 +408,7 @@ class Report_Sales extends BaseGSReport {
 		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
 		ORDER BY `doc_list`.`date`");
 		$sp = $sr = 0;
-		while ($nxt = $res->fetch_assoc($res)) {
+		while ($nxt = $res->fetch_assoc()) {
 			$p = $r = '';
 			$link = '';
 			switch ($nxt['type']) {

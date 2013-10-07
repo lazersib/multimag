@@ -326,8 +326,7 @@ class doc_Realizaciya extends doc_Nulltype
 		}
 	}
 
-	function Service($doc)
-	{
+	function Service() {
 		global $tmpl, $db;
 
 		$tmpl->ajax=1;
@@ -562,12 +561,12 @@ class doc_Realizaciya extends doc_Nulltype
 		$def_cost = $cost_row[0];
 
 		$pdf->SetFont('','',16);
-		$str="Товарный чек N {$this->doc_data[9]}, от $dt";
+		$str="Товарный чек N {$this->doc_data['altnum']}, от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
 		$str="Продавец: {$this->firm_vars['firm_name']}, ИНН-{$this->firm_vars['firm_inn']}-КПП, тел: {$this->firm_vars['firm_telefon']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$str="Покупатель: {$this->doc_data[3]}";
+		$str="Покупатель: {$this->doc_data['agent_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
 
@@ -720,11 +719,11 @@ class doc_Realizaciya extends doc_Nulltype
 		$str="Накладная на комплектацию N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
-		$str="К накладной N {$this->doc_data[9]}{$this->doc_data[10]} ({$this->doc})";
+		$str="К накладной N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc})";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Поставщик: {$this->firm_vars['firm_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$str="Покупатель: {$this->doc_data[3]}";
+		$str="Покупатель: {$this->doc_data['agent_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
 
@@ -781,7 +780,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$ii=1;
 		$sum=0;
 		$summass=0;
-		while($nxt = $res->mysql_fetch_assoc())
+		while($nxt = $res->fetch_assoc())
 		{
 			$sm=$nxt['cnt']*$nxt['cost'];
 			$cost = sprintf("%01.2f руб.", $nxt['cost']);
@@ -960,7 +959,7 @@ function PrintTg12PDF($to_str=0)
 	$pdf->SetFont('','',8);
 	$str="Грузополучатель";
 	$pdf->CellIconv(30,4,$str,0,0,'L');
-	$pdf->MultiCellIconv(190,4,$str,0,'L');
+	$pdf->MultiCellIconv(190,4,$gruzop,0,'L');
 	$pdf->Line(40, $pdf->GetY(), 230, $pdf->GetY());
 
 	$str="Поставщик";
@@ -971,7 +970,7 @@ function PrintTg12PDF($to_str=0)
 
 	$str="Плательщик";
 	$pdf->CellIconv(30,4,$str,0,0,'L');
-	$pdf->MultiCellIconv(190,4,$str,0,'L');
+	$pdf->MultiCellIconv(190,4,$platelshik,0,'L');
 	$pdf->Line(40, $pdf->GetY(), 230, $pdf->GetY());
 
 	$str="Основание";
@@ -1539,7 +1538,7 @@ function SfakPDF($to_str=0)
 	$pdf->Ln();
 	$pdf->SetFont('','',16);
 	$step=4;
-	$str = iconv('UTF-8', 'windows-1251', "Счёт - фактура N {$this->doc_data[9]}, от $dt");
+	$str = iconv('UTF-8', 'windows-1251', "Счёт - фактура N {$this->doc_data['altnum']}, от $dt");
 	$pdf->Cell(0,6,$str,0,1,'L');
 	$str = iconv('UTF-8', 'windows-1251', "Исправление N ---- от --.--.----");
 	$pdf->Cell(0,6,$str,0,1,'L');
@@ -1754,7 +1753,7 @@ function SfakPDF($to_str=0)
 
 			foreach($unigtd as $gtd => $cnt)
 			{
-				if($this->doc_data[12])
+				if($this->doc_data['nds'])
 				{
 					$cena = $nxt[4]/(1+$nds);
 					$stoimost = $cena*$cnt;

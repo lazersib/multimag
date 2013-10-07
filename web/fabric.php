@@ -28,7 +28,6 @@ function getSummaryData($sklad, $dt_from, $dt_to, $header='', $sql_add='')
 	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' $sql_add
 	GROUP BY `fabric_data`.`pos_id`");
-	if(!$res)	throw new MysqlException("Не удалось получить список наименований");
 
 	$i=$sum=$allcnt=0;
 	$ret='';
@@ -56,7 +55,6 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' $sql_add
 	GROUP BY `fabric_data`.`pos_id`");
-	if(!$res)	throw new MysqlException("Не удалось получить список наименований");
 
 	$i=$sum=$allcnt=0;
 	$ret='';
@@ -133,7 +131,6 @@ try
 				{
 					if(!isAccess('doc_fabric','edit'))	throw new AccessException('');
 					$r=$db->query("UPDATE `fabric_builders` SET $upd WHERE `id`=$line[0]");
-					if(!$r)	throw new MysqlException("Не удалось обновить список сборщиков");
 					$f=1;
 				}
 			}
@@ -145,11 +142,9 @@ try
 			$active=@$_POST['active_new']?1:0;
 			$name=$db->real_escape_string($_POST['name_new']);
 			$res=$db->query("INSERT INTO `fabric_builders` (`active`,`name`) VALUES ($active, '$name')");
-			if(!$res)	throw new MysqlException("Не удалось добавить сборщика");
 			if($f)	$tmpl->msg("Сборщик добавлен","ok");
 		}
 		$res=$db->query("SELECT `id`, `active`, `name` FROM `fabric_builders` ORDER BY `id`");
-		if(!$res)	throw new MysqlException("Не удалось получить список сборщиков");
 		$tmpl->addContent("<table class='list'>
 		<tr><th>ID</th><th>&nbsp;</th><th>Имя</th></tr>");
 		while($line=$res->fetch_row())
@@ -191,7 +186,6 @@ try
 		$tmpl->setContent("<h1 id='page-title'>Производственный учёт - ввод данных</h1>
 		<div id='page-info'><a href='/fabric.php?mode=prepare'>Назад</a></div>");
 		$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`=1 ORDER BY `name`");
-		if(!$res)	throw new MysqlException("Не удалось получить список сборщиков");
 		$tmpl->addContent("<table class='list'><tr><th>Сборщик</th><th>Собрано единиц</th><th>Из них различных</th><th>Вознаграждение</th></tr>");
 		$sv=$sc=0;
 		while($line=$res->fetch_row())
@@ -201,7 +195,6 @@ try
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 			LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 			WHERE `fabric_data`.`builder_id`=$line[0] AND `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date'");
-			if(!$result)	throw new MysqlException("Не удалось получить список наименований");
 			$i=$sum=$cnt=0;
 			while($nxt=$result->fetch_assoc())
 			{
@@ -228,7 +221,6 @@ try
 			$cnt=rcvint('cnt');
 
 			$res=$db->query("SELECT `id`, `name` FROM `doc_base` WHERE `vc`='$vc'");
-			if(!$res)	throw new MysqlException("Не удалось получить id наименования");
 			if($res->num_rows==0)	$tmpl->msg("Наименование с таким кодом отсутствует в базе",'err');
 			else
 			{
@@ -236,21 +228,18 @@ try
 				$line=$res->fetch_row();
 				$r=$db->query("REPLACE INTO `fabric_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
 				VALUES ($sklad, $builder, '$date', $line[0], $cnt)");
-				if(!$r)	throw new MysqlException("Не удалось добавить наименование");
 			}
 		}
 		if(isset($_REQUEST['del_id']))
 		{
 			$del_id=rcvint('del_id');
 			$res=$db->query("DELETE FROM `fabric_data` WHERE `id`=$del_id");
-			if(!$res)	throw new MysqlException("Не удалось удалить наименование");
 		}
 		$res=$db->query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, `fabric_data`.`cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 		WHERE `fabric_data`.`builder_id`=$builder AND `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date'");
-		if(!$res)	throw new MysqlException("Не удалось получить список наименований");
 
 		$tmpl->addContent("<table class='list'><thead><tr><th>N</th><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th><th>Сумма</th></tr></thead>
 		<tbody>");
@@ -330,15 +319,13 @@ try
 				<tr><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th><th>Сумма</th></tr>");
 				if($det_date)
 				{
-					$dres=$db->_query("SELECT `fabric_data`.`date` FROM `fabric_data`
+					$dres=$db->query("SELECT `fabric_data`.`date` FROM `fabric_data`
 					WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' GROUP BY `fabric_data`.`date`");
-					if(!$dres)	throw new MysqlException("Не удалось получить список дат");
 					while($dline=$dres->fetch_row())
 					{
 						if($det_builder)
 						{
 							$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
-							if(!$res)	throw new MysqlException("Не удалось получить список сборщиков");
 							while($line=$res->fetch_row())
 							{
 								$data=getSummaryData($sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `fabric_data`.`date`='$dline[0]' AND `fabric_data`.`builder_id`={$line[0]}");
@@ -351,7 +338,6 @@ try
 				else if($det_builder)
 				{
 					$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
-					if(!$res)	throw new MysqlException("Не удалось получить список сборщиков");
 					while($line=$res->fetch_row())
 					{
 						$data=getSummaryData($sklad, $dt_from, $dt_to, $line[1], "AND `fabric_data`.`builder_id`={$line[0]}");
@@ -380,7 +366,7 @@ try
 				$pdf->AddFont('Arial','','arial.php');
 				$pdf->tMargin=5;
 				$pdf->AddPage();
-				$pdf->SetContentColor(0);
+				$pdf->SetTextColor(0);
 				$pdf->SetFillColor(255);
 				$pdf->SetFont('Arial','',16);
 				$str = iconv('UTF-8', 'windows-1251', $header);
@@ -392,7 +378,7 @@ try
 				$t_width=array(20,110,20,20,20);
 
 				$t_text=array('Код', 'Наименование', 'Кол-во', 'З/П', 'Сумма');
-
+				$pdf->SetFont('','',14);
 				foreach($t_width as $id=>$w)
 				{
 					$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
@@ -412,13 +398,11 @@ try
 				{
 					$dres=$db->query("SELECT `fabric_data`.`date` FROM `fabric_data`
 					WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' GROUP BY `fabric_data`.`date`");
-					if(!$dres)	throw new MysqlException("Не удалось получить список дат");
 					while($dline=$dres->fetch_row())
 					{
 						if($det_builder)
 						{
 							$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
-							if(!$res)	throw new MysqlException("Не удалось получить список сборщиков");
 							while($line=$res->fetch_row())
 							{
 								PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `fabric_data`.`date`='$dline[0]' AND `fabric_data`.`builder_id`={$line[0]}");
@@ -430,7 +414,6 @@ try
 				else if($det_builder)
 				{
 					$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
-					if(!$res)	throw new MysqlException("Не удалось получить список сборщиков");
 					while($line=$res->fetch_row())
 					{
 						PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $line[1], "AND `fabric_data`.`builder_id`={$line[0]}");
@@ -461,7 +444,6 @@ try
 		Склад сборки:<br>
 		<select name='sklad'>");
 		$res=$db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
-		if(!$res)	throw new MysqlException("Не удалось получить список складов");
 		while($line=$res->fetch_row())
 		{
 			$tmpl->addContent("<option value='$line[0]'>".html_out($line[1])."</option>");
@@ -470,7 +452,6 @@ try
 		Поместить готовую продукцию на склад:<br>
 		<select name='nasklad'>");
 		$res=$db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
-		if(!$res)	throw new MysqlException("Не удалось получить список складов");
 		while($line=$res->fetch_row())
 		{
 			$tmpl->addContent("<option value='$line[0]'>".html_out($line[1])."</option>");
@@ -479,7 +460,6 @@ try
 		Услуга начисления зарплаты:<br>
 		<select name='tov_id'>");
 		$res=$db->query("SELECT `id`,`name` FROM `doc_base` WHERE `pos_type`=1 ORDER BY `name`");
-		if(!$res)	throw new MysqlException("Не удалось получить список услуг");
 		while($nxt=$res->fetch_row())
 		{
 			$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
@@ -487,7 +467,6 @@ try
 		$tmpl->addContent("</select><br>
 		Организация:<br><select name='firm'>");
 		$rs=$db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-		if(!$res)	throw new MysqlException("Не удалось получить список организаций");
 		while($nx=$res->fetch_row())
 		{
 			$tmpl->addContent("<option value='$nx[0]'>".html_out($nx[1])."</option>");
@@ -544,10 +523,8 @@ try
 		$tim=time();
 		$res=$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
 				VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
-		if(!$res)	throw new MysqlException("Не удалось создать документ");
 		$doc=$db->insert_id;
 		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id'), ('$doc','not_a_p','0')");
-		if(!$res)	throw new MysqlException("Не удалось сохранить дополнительные данные документа");
 
 		$res=$db->query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, SUM(`fabric_data`.`cnt`) AS `cnt`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
@@ -555,12 +532,10 @@ try
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 		WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date' $sql_add
 		GROUP BY `fabric_data`.`pos_id`");
-		if(!$res)	throw new MysqlException("Не удалось получить список наименований");
 		$ret='';
 		while($line=$res->fetch_assoc())
 		{
 			$r=$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `page`) VALUES ($doc, {$line['pos_id']}, {$line['cnt']}, 0)");
-			if(!$r)	throw new MysqlException("Не удалось добавить наименование");
 		}
 
 		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad&not_a_p=$not_a_p");
@@ -570,11 +545,11 @@ catch(AccessException $e)
 {
 	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
 }
-catch(MysqlException $e)
+catch(mysqli_sql_exception $e)
 {
 	$e->db->rollback();
 	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+	$tmpl->logger($e->getMessage(), false, " - sqlstate:".$e->sqlstate);
 }
 catch(Exception $e)
 {

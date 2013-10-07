@@ -55,13 +55,6 @@ class doc_Predlojenie extends doc_Nulltype
 		}
 	}
 
-	function Service($doc) {
-		$tmpl->ajax = 1;
-		$opt = request('opt');
-		$pos = rcvint('pos');
-		parent::_Service($opt, $pos);
-	}
-	
 // ================== Функции только этого класса ======================================================
 	function Postup() {
 		global $db;

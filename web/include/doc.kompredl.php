@@ -89,13 +89,6 @@ class doc_Kompredl extends doc_Nulltype
 		}
 	}
 
-	function Service($doc) {
-		$tmpl->ajax = 1;
-		$opt = request('opt');
-		$pos = rcvint('pos');
-		parent::_Service($opt, $pos);
-	}
-
 	function KomPredlPDF($to_str=0)	{
 		global $tmpl, $CONFIG, $db;
 

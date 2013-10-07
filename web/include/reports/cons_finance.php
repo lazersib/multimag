@@ -55,8 +55,8 @@ class Report_Cons_Finance
 		<h4>С $date_st_print по $date_end_print</h4>");
 
 		// Счётчики для обработки
-		$rasxody_nal = "";
-		$rasxody_bn = "";
+		$rasxody_nal = array();
+		$rasxody_bn = array();
 		$podotchet = 0;
 		$prixody_nal = 0;
 		$prixody_bn = 0;
@@ -69,21 +69,25 @@ class Report_Cons_Finance
 		while($nxt = $doc_res->fetch_row()) {
 			$dopdata = "";
 			$rr = $db->query("SELECT `param`,`value` FROM `doc_dopdata` WHERE `doc`='$nxt[0]'");
-			while($nx = $rr->fetch_row($rr))
+			while($nx = $rr->fetch_row())
 				$dopdata[$nx[0]] = $nx[1];
 
 			if($nxt[1]==4) // Банковский приход
 				$prixody_bn += $nxt[3];
 			if($nxt[1]==5) {	// Банковский расход
 				$vid = isset($dopdata['rasxodi'])?$dopdata['rasxodi']:0;
-				$rasxody_bn[$vid] += $nxt[3];
+				if(isset($rasxody_bn[$vid]))
+					$rasxody_bn[$vid] += $nxt[3];
+				else	$rasxody_bn[$vid] = $nxt[3];
 				if($vid==12) $podotchet += $nxt[3];
 			}
 			else if($nxt[1]==6) // Кассовый приход
 				$prixody_nal += $nxt[3];
 			else if($nxt[1]==7) {	// Кассовый расход
 				$vid = isset($dopdata['rasxodi'])?$dopdata['rasxodi']:0;
-				$rasxody_nal[$vid] += $nxt[3]; 
+				if(isset($rasxody_nal[$vid]))
+					$rasxody_nal[$vid] += $nxt[3]; 
+				else	$rasxody_nal[$vid] = $nxt[3]; 
 				if($vid==12) $podotchet += $nxt[3]; 
 			}
 		}

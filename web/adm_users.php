@@ -38,7 +38,6 @@ if($mode=='')
 	FROM `users`
 	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 	ORDER BY $order");
-	if(!$res)			throw new MysqlException("Не удалось получить данные пользователей");
 	$tmpl->addContent("<h1 id='page-title'>Список пользователей</h1>
 	<table class='list' width='100%'>
 	<tr><th rowspan='2'>ID</th>
@@ -55,8 +54,7 @@ if($mode=='')
 	<th>номер</th><th>С</th><th>S</th>
 	</tr>
 	");
-	while($line=$res->fetch_assoc())
-	{
+	while($line=$res->fetch_assoc()) {
 		$econfirm=$line['reg_email_confirm']=='1'?'Да':'Нет';
 		$esubscribe=$line['reg_email_subscribe']?'Да':'Нет';
 
@@ -139,7 +137,6 @@ else if($mode=='view')
 	else
 	{
 		$res=$db->query("SELECT `id`, `name`, `fullname`, `tel`, `fax_phone`, `sms_phone`, `adres`, `data_sverki` FROM `doc_agent` WHERE `id`='{$line['agent_id']}'");
-		if(!$res)			throw new MysqlException("Не удалось получить данные агента");
 		$adata=$res->fetch_assoc();
 		$tmpl->addContent("
 		<tr><td>ID агента</td><td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$adata['id']}'>{$adata['id']}</a> - <a href='/adm_users.php?mode=agent&amp;id=$id'>Убрать связь</a></td></tr>
@@ -164,7 +161,6 @@ else if($mode=='view')
 
 	$tmpl->addContent("<tr><th colspan='2'>Дополнительная информация</th></tr>");
 	$res=$db->query("SELECT `param`, `value` FROM `users_data` WHERE `uid`='$id'");
-	if(!$res)			throw new MysqlException("Не удалось получить дополнительные данные пользователя");
 	while($line=$res->fetch_row())
 	{
 		$tmpl->addContent("<tr><td>$line[0]</td><td>".html_out($line[1])."</td></tr>");
@@ -181,7 +177,6 @@ else if($mode=='view_login_history')
 	<tr><th colspan='2'><a href='/adm_users.php?mode=view&amp;id=$id'>Основная информация</a></th></tr>
 	<tr><th colspan='2'>История входов</th></tr>");
 	$res=$db->query("SELECT `date`, CONCAT(`ip`,' - ',`method`) FROM `users_login_history` WHERE `user_id`='$id' ORDER BY `date` DESC");
-	if(!$res)			throw new MysqlException("Не удалось получить информацию об истории входов");
 	while($line=$res->fetch_row())
 	{
 		$tmpl->addContent("<tr><td>$line[0]</td><td>$line[1]</td></tr>");
@@ -202,13 +197,11 @@ else if($mode=='agent')
 		}
 		else	$agent_id='NULL';
 		$res=$db->query("UPDATE `users` SET `agent_id`=$agent_id WHERE `id`='$id'");
-		if(!$res)			throw new MysqlException("Не удалось обновить привязку");
 		$tmpl->msg("Привязка выполнена!",'ok');
 	}
 	$res=$db->query("SELECT `users`.`agent_id`, `doc_agent`.`name` FROM `users`
 	LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`users`.`agent_id`
 	WHERE `users`.`id`='$id'");
-	if(!$res)			throw new MysqlException("Не удалось получить данные пользователя");
 	if(!$res->num_rows)		throw new Exception("Пользователь не найден!");
 	$line=$res->fetch_assoc($res);
 	$tmpl->addContent("<h1 id='page-title'>Привязка пользователя к агенту</h1>
@@ -260,7 +253,7 @@ else if($mode=='agent')
 }
 catch(Exception $e)
 {
-	$db->query("ROLLBACK");
+	$db->rollback();
 	$tmpl->addContent("<br><br>");
 	$tmpl->logger($e->getMessage());
 }

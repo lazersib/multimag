@@ -18,10 +18,12 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-$c=explode('/',__FILE__);$base_path='';
-for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
+$c = explode('/', __FILE__);
+$base_path = '';
+for ($i = 0; $i < (count($c) - 2); $i++)
+	$base_path.=$c[$i] . '/';
 require_once("$base_path/config_cli.php");
-require_once($CONFIG['cli']['location']."/core.cli.inc.php");
+require_once($CONFIG['cli']['location'] . "/core.cli.inc.php");
 
 try {
 	$res = $db->query("SELECT `id`, `task` FROM `async_workers_tasks` WHERE `needrun`=1 LIMIT 1");
@@ -46,7 +48,5 @@ catch (Exception $e) {
 	echo $e->getMessage();
 	$db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $db->real_escape_string($e->getMessage()) . "' WHERE `id`='{$ainfo['id']}'");
 }
-
-
 
 ?>

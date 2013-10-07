@@ -106,6 +106,9 @@ class Report_Dolgi extends BaseReport {
 		$this->tableAltStyle(true);
 		$this->tableSpannedRow(array(6), array("Итого: $i должников с общей суммой долга $sum_dolga_p  руб.\n" . num2str($sum_dolga) . ")"));
 		$this->tableAltStyle(false);
+		$this->tableEnd();
+		$this->output();
+		exit(0);
 	}
 }
 

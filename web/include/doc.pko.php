@@ -66,6 +66,9 @@ class doc_Pko extends doc_Nulltype {
 		$this->sentZEvent('cancel');
 	}
 	
+	
+	
+	
 	function PrintPKOPDF($to_str=false) {
 		global $tmpl, $CONFIG, $db;
 		if(!$to_str) $tmpl->ajax=1;

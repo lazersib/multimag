@@ -175,13 +175,6 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 		}
 	}
 
-	function Service($doc) {
-		$tmpl->ajax=1;
-		$opt=request('opt');
-		$pos=rcvint('pos');
-		parent::_Service($opt,$pos);
-	}
-
 	function DogovorPDF($to_str=0)
 	{
 		global $CONFIG, $db;

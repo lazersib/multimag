@@ -119,13 +119,6 @@ class doc_v_puti extends doc_Nulltype {
 		else	$tmpl->msg("В разработке", "info");
 	}
 
-	function Service() {
-		$opt = rcv('opt');
-		$pos = rcv('pos');
-		parent::_Service($opt, $pos);
-	}
-
-
 	function PrintPDF($to_str = 0) {
 		global $tmpl, $CONFIG, $db;
 

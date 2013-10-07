@@ -146,8 +146,8 @@ class Report_Profitability extends BaseGSReport {
 	function calcPosT($pos_id, $date_from, $date_to) {
 		global $db;
 		settype($pos_id, 'int');
-		settype($date_from, 'int');
-		settype($date_to, 'int');
+//		settype($date_from, 'int');
+//		settype($date_to, 'int');
 		$cnt = $out_cnt = $cost = $profit = 0;
 		$sum_extra = 0;
 

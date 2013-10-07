@@ -69,7 +69,7 @@ class doc_Peremeshenie extends doc_Nulltype
 
 	function DopSave() {
 		$new_data = array(
-			'nasklad' => request('nasklad'),
+			'na_sklad' => rcvint('nasklad'),
 			'mest' => rcvint('mest'),
 			'kladovshik' => rcvint('kladovshik')
 		);
@@ -129,7 +129,6 @@ class doc_Peremeshenie extends doc_Nulltype
 
 	function DocCancel() {
 		global $db;
-		$tim=time();
 		$nasklad = (int)$this->dop_data['na_sklad'];
 
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
@@ -147,19 +146,12 @@ class doc_Peremeshenie extends doc_Nulltype
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
 		while($nxt = $res->fetch_row()) {
 			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
-			$db->mysql_query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
+			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
 			if(!$nx['dnc'])	{
 				$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
 				if($budet<0)			throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]' !");
 			}
 		}
-	}
-
-	function Service($doc) {
-		$tmpl->ajax = 1;
-		$opt = rcv('opt');
-		$pos = rcv('pos');
-		parent::_Service($opt, $pos);
 	}
 
 /// Обычная накладная в PDF формате

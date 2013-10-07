@@ -295,12 +295,12 @@ class doc_Nulltype
 			$pdoc=$this->doc_data['p_doc'];
 			while($pdoc)
 			{
-				$res = $db->query("SELECT `id`, `type` FROM `doc_list` WHERE `id`='$pdoc'");
+				$res = $db->query("SELECT `id`, `type`, `p_doc` FROM `doc_list` WHERE `id`='$pdoc'");
 				if(!$res->num_rows)	throw new Exception("Документ не найден");
-				list($pdoc_id, $pdoc_type) = $res->fetch_row();
+				list($doc_id, $pdoc_type, $pdoc_id) = $res->fetch_row();
 				if($pdoc_type==3)
 				{
-					$doc=new doc_Zayavka($pdoc_id);
+					$doc=new doc_Zayavka($doc_id);
 					$doc->dispatchZEvent($event_name);
 					return;
 				}
@@ -1073,48 +1073,41 @@ class doc_Nulltype
 		if(!isAccess($object,'edit'))	throw new AccessException("");
 		$db->query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
    	}
-
-   	function ConnectJson($p_doc)
-	{
-		try
-		{
+	
+	/// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
+   	function ConnectJson($p_doc) {
+		try {
 			$this->Connect($p_doc);
 			return " { \"response\": \"1\" }";
-		}
-		catch(Exception $e)
-		{
-			return " { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
+		} catch (Exception $e) {
+			return " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
 		}
 	}
 
    	/// Получение информации, не связанной со складом, и допустимых для проведённых документов
-   	function GetInfo()
-   	{
-		global $tmpl;
-		$opt=rcv('opt');
-		$tmpl->ajax=1;
-		if( isAccess('doc_'.$this->doc_name,'view') )
-		{
+   	function GetInfo() {
+		global $tmpl, $db;
+		$opt = request('opt');
+		$tmpl->ajax = 1;
+		if (isAccess('doc_' . $this->doc_name, 'view')) {
 
-			if($opt=='jgetcontracts')
-			{
+			if ($opt == 'jgetcontracts') {
 
 				$agent = rcvint('agent');
 				$res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value` FROM `doc_list`
 				LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
 				WHERE `agent`='$agent' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
-				$list='';
-				while($nxt = $res->fetch_row())
-				{
-					if($list)	$list.=", ";
+				$list = '';
+				while ($nxt = $res->fetch_row()) {
+					if ($list)	$list.=", ";
 					$list.="{ id: '$nxt[0]', name: '$nxt[1]' }";
 				}
-				$str="{ response: 'contract_list', content: [ $list ] }";
+				$str = "{ response: 'contract_list', content: [ $list ] }";
 				$tmpl->setContent($str);
 			}
 		}
 		else	throw new AccessException('Недостаточно привилегий');
-   	}
+	}
 
 	/// отправка документа по электронной почте
    	function sendDocEMail($email, $comment, $docname, $data, $filename, $body='')
@@ -1162,18 +1155,32 @@ class doc_Nulltype
 		if(strcmp($error,""))	throw new Exception($error);
 		else			return 0;
    	}
+	
+	function Service() {
+		global $tmpl;
+		$tmpl->ajax = 1;
+		$opt = request('opt');
+		$pos = rcvint('pos');
+
+		$this->_Service($opt, $pos);
+	}
 
 	/// Служебные опции
 	function _Service($opt, $pos)
 	{
 		global $tmpl, $uid, $db;
 		
-		$tmpl->ajax=1;
-		$doc=$this->doc;
-		include_once('doc.poseditor.php');
-		$poseditor=new DocPosEditor($this);
-		$poseditor->cost_id=$this->dop_data['cena'];
-		$poseditor->sklad_id=$this->doc_data['sklad'];
+		$tmpl->ajax = 1;
+		$doc = $this->doc;
+		
+		if($this->sklad_editor_enable) {
+			include_once('doc.poseditor.php');
+			$poseditor = new DocPosEditor($this);
+			$poseditor->cost_id = @$this->dop_data['cena'];
+			$poseditor->sklad_id = $this->doc_data['sklad'];
+		}
+		
+		
 
 		if( isAccess('doc_'.$this->doc_name,'view') )
 		{
@@ -1728,7 +1735,7 @@ class doc_Nulltype
 			else if($nxt[1] == 9){
 				$rr = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`='$nxt[0]' AND `param`='v_kassu'");
 				if(!$rr->num_rows)	throw new AutoLoggedException('Касса назначения не найдена в документе '.$this->doc);
-				$data = $rr->fetch-row();
+				$data = $rr->fetch_row();
 				if($data[0] == $this->doc_data['kassa'])
 					$sum+=$nxt[2];	
 			}
