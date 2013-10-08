@@ -99,10 +99,13 @@ class SZapPosEditor extends DocPosEditor
 			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
 				WHERE `doc_base_params`.`param`='ZP'");
-			if ($rs->num_rows)	$zp = sprintf("%0.2f", mysql_result($rs, 0, 1));
+			if ($rs->num_rows) {
+				$rs_data = $rs->fetch_row();
+				$zp = sprintf("%0.2f", $rs_data[1]);
+			}
 			else			$zp = 'НЕТ';
 
-			$ret.="{line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '$zp', gtd: '{$nxt['gtd']}'";
+			$ret.="{line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', place: '$zp', gtd: '{$nxt['gtd']}'";
 
 			$ret.="}";
 		}
@@ -131,11 +134,14 @@ class SZapPosEditor extends DocPosEditor
 			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
 				WHERE `doc_base_params`.`param`='ZP'");
-			if ($rs->num_rows)	$zp = sprintf("%0.2f", mysql_result($rs, 0, 1));
+			if ($rs->num_rows) {
+				$rs_data = $rs->fetch_row();
+				$zp = sprintf("%0.2f", $rs_data[0]);
+			}
 			else			$zp = 'НЕТ';
 
 			$ret = "{response: 3, data: {
-		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', mesto: '$zp', gtd: '{$nxt['gtd']}'
+		line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', scost: '$scost', sklad_cnt: '{$nxt['sklad_cnt']}', place: '$zp', gtd: '{$nxt['gtd']}'
 		} }";
 		}
 
@@ -180,11 +186,14 @@ class SZapPosEditor extends DocPosEditor
 			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$line['id']}'
 				WHERE `doc_base_params`.`param`='ZP'");
-			if ($rs->num_rows)	$zp = sprintf("%0.2f", mysql_result($rs, 0, 1));
+			if ($rs->num_rows) {
+				$rs_data = $rs->fetch_row();
+				$zp = sprintf("%0.2f", $rs_data[0]);
+			}
 			else			$zp = 'НЕТ';
 
 			$cost = $this->cost_id ? getCostPos($line['id'], $this->cost_id) : $line['cost'];
-			$ret = "{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '$zp', gtd: '' }, sum: '$doc_sum' }";
+			$ret = "{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', place: '$zp', gtd: '' }, sum: '$doc_sum' }";
 		}
 		else {
 			$cost = sprintf("%0.2f", $cost);

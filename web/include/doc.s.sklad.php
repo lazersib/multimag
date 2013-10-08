@@ -648,7 +648,7 @@ class doc_s_Sklad {
 			$plm = request('plm');
 			include_once("include/doc.sklad.kompl.php");
 			if ($plm == '') {
-				$res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+				$res = $db->query("SELECT `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
 				 WHERE `doc_base_params`.`param`='ZP'");
 				if($res->num_rows)
@@ -701,7 +701,7 @@ class doc_s_Sklad {
 			else if ($plm == 'cc') {
 				$tmpl->ajax = 1;
 				$tmpl->setContent('');
-				$s = rcvint('s');
+				$s = rcvrounded('s', 6);
 				$vpos = rcvint('vpos');
 				if ($s <= 0)	$s = 1;
 				$res = $db->query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
@@ -783,7 +783,8 @@ class doc_s_Sklad {
 			$res = $db->query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
 			FROM `doc_log`
 			LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
-			WHERE `doc_log`.`object`='pos' AND `doc_log`.`object_id`='$pos'");
+			WHERE `doc_log`.`object`='pos' AND `doc_log`.`object_id`='$pos'
+				ORDER BY `doc_log`.`time` DESC");
 			$tmpl->addContent("<h1>История наименования $pos</h1>
 			<table width='100%' class='list'>
 			<tr><th>Выполненное действие</th><th>Описание действия</th><th>Дата</th><th>Пользователь</th><th>IP</th></tr>");
@@ -1159,6 +1160,7 @@ class doc_s_Sklad {
 				$fields = $this->pos_vars;
 				$cols = $values = $log = '';
 				foreach ($fields as $field) {
+					if($field=='cost_date')	continue;
 					$cols.="`$field`,";
 					$values.="'" . $db->real_escape_string(@$pd[$field]) . "',";
 					$log.="$field:" . @$pd[$field] . ", ";
@@ -1173,9 +1175,11 @@ class doc_s_Sklad {
 					FROM `doc_base_dop`
 					WHERE `doc_base_dop`.`id`='$opos'");
 					$nxt = $res->fetch_row();
-					$nxt[1] = $db->real_escape_string($nxt[1]);
-					$db->query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`)
-					VALUES ('$pos', '$nxt[1]', '0', '$nxt[0]', '$nxt[3]', '$nxt[4]', '$nxt[5]', '$nxt[6]')");
+					if($nxt) {
+						$nxt[1] = $db->real_escape_string($nxt[1]);
+						$db->query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`)
+						VALUES ('$pos', '$nxt[1]', '0', '$nxt[0]', '$nxt[3]', '$nxt[4]', '$nxt[5]', '$nxt[6]')");
+					}
 				}
 				doc_log("INSERT pos", $log, 'pos', $pos);
 				$this->PosMenu($pos, '');

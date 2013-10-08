@@ -643,7 +643,7 @@ protected function ProductCard($product)
 		if($product_data['dop_name']) $tmpl->addContent("<tr><td class='field'>Тип:<td>".html_out($product_data['dop_name']));
 		$cena=getCostPos($product_data['id'], $this->cost_id);
 		if($cena<=0)	$cena='уточняйте';
-		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
+		$cce=(strtotime($product_data['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
 
 		$tmpl->addContent("<tr><td class='field'>Цена:<td{$cce}>$cena<br>");
 		$tmpl->addContent("<tr><td class='field'>Единица измерения:<td>".html_out($product_data['units']));
@@ -761,60 +761,53 @@ protected function Basket()
 	$i=1;
 	$lock=0;
 	if(isset($_SESSION['basket']['cnt']))
-	foreach($_SESSION['basket']['cnt'] as $item => $cnt)
-	{
+	foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
 		settype($item,'int');
 		settype($cnt,'int');
 		$res=$db->query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`=$item");
-		$nx=$res->fetch_row();
+		$nx = $res->fetch_assoc();
 		$lock_mark='';
-		$cena=getCostPos($nx[0], $this->cost_id);
+		$cena = getCostPos($nx['id'], $this->cost_id);
 		
-		if($cena<=0)
-		{
+		if($cena<=0) {
 			$lock=1;
 			$lock_mark=1;
 		}
-		if(@$CONFIG['site']['vitrina_cntlock'])
-		{
-			if(isset($CONFIG['site']['vitrina_sklad']))
-			{
+		if(@$CONFIG['site']['vitrina_cntlock'])	{
+			if(isset($CONFIG['site']['vitrina_sklad'])) {
 				$sklad_id=round($CONFIG['site']['vitrina_sklad']);
 				$res=$db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
 			}
 			else	$res=$db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
-			if($res->num_rows)
-			{
+			if($res->num_rows) {
 				$tmp=$res->fetch_row();
 				$sklad_cnt=$tmp[0]-DocRezerv($item);
 			}
 			else	$sklad_cnt=DocRezerv($item)*(-1);
 			
-			if($cnt>$sklad_cnt)
-			{
+			if($cnt>$sklad_cnt) {
 				$lock=1;
 				$lock_mark=1;
 			}
 		}
 		if(@$CONFIG['site']['vitrina_pricelock'])
 		{
-			if(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))
-			{
+			if(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))	{
 				$lock=1;
 				$lock_mark=1;
 			}
 		}
 		
-		$sm=$cena*$cnt;
+		$sm = $cena * $cnt;
 		$sum+=$sm;
-		$sm=sprintf("%0.2f",$sm);
+		$sm = sprintf("%0.2f", $sm);
 		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
 		else	$comm='';
 		$lock_mark=$lock_mark?'color: #f00':'';
 		if($cena<=0)	$cena='уточняйте';
 		$cce=(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
 		$s.="
-		<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p=$nx[0]'>".html_out($nx[1])."</a><td class='right'>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
+		<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p={$nx['id']}'>".html_out($nx['name'])."</a><td class='right' $cce>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
 		$exist=1;
 		$i++;
 	}
@@ -904,9 +897,9 @@ protected function Delivery()
 	}
 	else
 	{
-		$_SESSION['basket']['delivery_region']	= rcv('delivery_region');
-		$_SESSION['basket']['delivery_address']	= rcv('delivery_address');
-		$_SESSION['basket']['delivery_date']	= rcv('delivery_date');
+		$_SESSION['basket']['delivery_region']	= request('delivery_region');
+		$_SESSION['basket']['delivery_address']	= request('delivery_address');
+		$_SESSION['basket']['delivery_date']	= request('delivery_date');
 		$this->BuyMakeForm();
 	}
 }
@@ -1249,14 +1242,12 @@ protected function BuyMakeForm()
 }
 
 /// Сделать покупку
-protected function MakeBuy()
-{
+protected function MakeBuy() {
 	global $tmpl, $CONFIG, $db;
 	if(!isset($CONFIG['site']['default_firm']))	$CONFIG['site']['default_firm']=1;
 	settype($CONFIG['site']['default_firm'],'int');
-	$pay_type=request('pay_type');
-	switch($pay_type)
-	{
+	$pay_type = request('pay_type');
+	switch($pay_type) {
 		case 'bank':
 		case 'cash':
 		case 'card_o':
@@ -1271,8 +1262,8 @@ protected function MakeBuy()
 	$comment	= request('dop');
 	
 	$rname_sql	= $db->real_escape_string($rname);
-	$adres_sql	= $db->real_escape_string($_SESSION['basket']['delivery_address']);
-	$delivery_date	= $db->real_escape_string($_SESSION['basket']['delivery_date']);
+	$adres_sql	= $db->real_escape_string(@$_SESSION['basket']['delivery_address']);
+	$delivery_date	= $db->real_escape_string(@$_SESSION['basket']['delivery_date']);
 	$email_sql	= $db->real_escape_string($email);
 	$comment_sql	= $db->real_escape_string($comment);
 	$agent=1;
@@ -1283,39 +1274,39 @@ protected function MakeBuy()
 	}
 	else	$tel='';
 
-	if(@$_SESSION['uid'])
-	{
-		$res=$db->query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='{$_SESSION['uid']}'");
-		$res=$db->query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('{$_SESSION['uid']}', 'dop_info', '$comment_sql') ");
+	if(@$_SESSION['uid']) {
+		$res = $db->query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='{$_SESSION['uid']}'");
+		$res = $db->query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('{$_SESSION['uid']}', 'dop_info', '$comment_sql') ");
 		// Получить ID агента
-		$res=$db->query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `agent_id` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
-		$user_data=$res->fetch_assoc();
+		$res = $db->query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `agent_id` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		$user_data = $res->fetch_assoc();
 		$agent=$user_data['agent_id'];
 		settype($agent,'int');
 		if($agent<1)	$agent=1;
 	}
-	else if(!$tel && !$email)
-	{
+	else if(!$tel && !$email) {
 		header("Location: /vitrina.php?mode=buyform&step=1&cwarn=1");
 		return;
 	}
 
-	if($_SESSION['basket']['cnt'])
-	{
+	if($_SESSION['basket']['cnt']) {
 		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype="site";
-		else $subtype=$CONFIG['site']['vitrina_subtype'];
-		$tm=time();
-		$altnum=GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
-		$ip=getenv("REMOTE_ADDR");
-		if(isset($CONFIG['site']['default_bank']))	$bank=$CONFIG['site']['default_bank'];
-		else
-		{
-			$res=$db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
+		else	$subtype = $CONFIG['site']['vitrina_subtype'];
+		$tm = time();
+		$altnum = GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
+		$ip = getenv("REMOTE_ADDR");
+		if(isset($CONFIG['site']['default_bank']))	$bank = $CONFIG['site']['default_bank'];
+		else {
+			$res = $db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$CONFIG['site']['default_firm']}'");
 			if($res->num_rows<1)	throw new Exception("Не найден банк выбранной организации");
 			list($bank)=$res->fetch_row();
 		}
-		$res=$db->query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
-		VALUES ('3','$agent','$tm','1','{$_SESSION['uid']}','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
+		
+		if(isset($_SESSION['uid']))	$uid = $_SESSION['uid'];
+		else				$uid = 0;
+		
+		$res = $db->query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
+		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 		$doc=$db->insert_id;
 
 		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
@@ -1326,68 +1317,59 @@ protected function MakeBuy()
 			$cena=getCostPos($item, $this->cost_id);
 			if(isset($_SESSION['basket']['comments'][$item]))
 				$comm_sql=$db->real_escape_string($_SESSION['basket']['comments'][$item]);	else $comm_sql='';
-			$res=$db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$cena','$comm_sql')");
+			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$cena','$comm_sql')");
 
-			$res=$db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1`, `doc_base`.`cost_date` FROM `doc_base`
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1`, `doc_base`.`cost_date` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$item'");
 
-			$tov_info=$db->fetch_array($res);
-			$zakaz_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
-			$admin_items.="$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
+			$tov_info = $res->fetch_array();
+			$zakaz_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
+			$admin_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
 			
-			if($cena<=0)
-			{
-				$lock=1;
-				$lock_mark=1;
+			if($cena<=0) {
+				$lock = 1;
+				$lock_mark = 1;
 			}
 			
-			if(@$CONFIG['site']['vitrina_cntlock'] || @$CONFIG['site']['vitrina_pricelock'])
-			{
-				if(@$CONFIG['site']['vitrina_cntlock'])
-				{
-					if(isset($CONFIG['site']['vitrina_sklad']))
-					{
+			if(@$CONFIG['site']['vitrina_cntlock'] || @$CONFIG['site']['vitrina_pricelock']) {
+				if(@$CONFIG['site']['vitrina_cntlock']) {
+					if(isset($CONFIG['site']['vitrina_sklad'])) {
 						$sklad_id=round($CONFIG['site']['vitrina_sklad']);
 						$res=$db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
 					}
 					else	$res=$db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
-					if($res->num_rows)
-					{
+					if($res->num_rows) {
 						$tmp=$res->fetch_row();
 						$sklad_cnt=$tmp[0]-DocRezerv($item);
 					}
 					else	$sklad_cnt=DocRezerv($item)*(-1);
 					
-					if($cnt>$sklad_cnt)
-					{
+					if($cnt>$sklad_cnt) {
 						$lock=1;
 						$lock_mark=1;
 					}
 				}
-				if(@$CONFIG['site']['vitrina_pricelock'])
-				{
-					if(strtotime($tov_info['cost_date'])<(time()-60*60*24*30*6))
-					{
+				if(@$CONFIG['site']['vitrina_pricelock']) {
+					if(strtotime($tov_info['cost_date'])<(time()-60*60*24*30*6)) {
 						$lock=1;
 						$lock_mark=1;
 					}
 				}
 			}
 		}
-		if($_SESSION['basket']['delivery_type'])
-		{
-			$res=$db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='{$_SESSION['basket']['delivery_type']}'");
-			list($d_service_id)=$res->fetch_row();
-			$res=$db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
-			list($d_price)=$red->fetch_row();
-			$res=$db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
-			$res=$db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name` FROM `doc_base`
+		if($_SESSION['basket']['delivery_type']) {
+			$res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='{$_SESSION['basket']['delivery_type']}'");
+			list($d_service_id) = $res->fetch_row();
+			$res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
+			list($d_price) = $red->fetch_row();
+			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$d_service_id'");
-			$tov_info=$db->fetch_array($res);
+			$tov_info = $db->fetch_array($res);
 			$zakaz_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 			$admin_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 		}

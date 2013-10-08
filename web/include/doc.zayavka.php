@@ -438,18 +438,16 @@ class doc_Zayavka extends doc_Nulltype
 				$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
 			}
 		}
-		else if($opt=='rewrite')
-		{
+		else if($opt=='rewrite') {
 			$db->startTransaction();
 			$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-			$res=$db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}'");
-			$docs="`doc`='-1'";
+			$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}'");
+			$docs = "`doc`='-1'";
 			while($nxt=$res->fetch_row())
 				$docs.=" OR `doc`='$nxt[0]'";
-			$res=$db->query("SELECT `doc`, `tovar`, `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs");
-			while($line = $res->fetch_assoc())
-			{
-				$nxt['doc']=$this->doc;
+			$res=$db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs GROUP BY `tovar`");
+			while($line = $res->fetch_assoc()) {
+				$line['doc']=$this->doc;
 				$db->insertA('doc_list_pos', $line);
 			}
 			doc_log("REWRITE", "", 'doc', $this->doc);

@@ -46,12 +46,11 @@ class doc_Realizaciya extends doc_Nulltype
 	
 	function initDefDopdata() {
 		$this->def_dop_data = array('platelshik'=>$this->doc_data['agent'], 'gruzop'=>$this->doc_data['agent'], 'status'=>'', 'kladovshik'=>'',
-			'mest'=>'', 'received'=>0, 'return'=>0, 'cenа'=>'', 'dov_agent'=>0, 'dov'=>'', 'dov_data'=>'');
+			'mest'=>'', 'received'=>0, 'return'=>0, 'cena'=>0, 'dov_agent'=>0, 'dov'=>'', 'dov_data'=>'');
 	}
 
 	// Создать документ с товарными остатками на основе другого документа
-	public function createFromP($doc_obj)
-	{
+	public function createFromP($doc_obj) {
 		parent::CreateFromP($doc_obj);
 		$this->setDopData('platelshik', $doc_obj->doc_data['agent']);
 		$this->setDopData('gruzop', $doc_obj->doc_data['agent']);
@@ -732,10 +731,10 @@ class doc_Realizaciya extends doc_Nulltype
 		if($CONFIG['poseditor']['vc'])
 		{
 			$t_width[]=20;
-			$t_width[]=76;
+			$t_width[]=72;
 		}
-		else	$t_width[]=96;
-		$t_width=array_merge($t_width, array(17,17,15,13,14,12));
+		else	$t_width[]=92;
+		$t_width=array_merge($t_width, array(17,17,15,13,14,16));
 
 		$t_text=array('№');
 		if($CONFIG['poseditor']['vc'])
@@ -819,14 +818,29 @@ class doc_Realizaciya extends doc_Nulltype
 		$mass_p=num2str($summass,'kg',3);
 		$summass = sprintf("%01.3f", $summass);
 		
-		$res = $db->selectRowA('users_worker_info', $_SESSION['uid'], array('worker_real_name'));
-		$vip_name = $res?$res[0]:'';
+		$res_uid = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
+			WHERE `user_id`='".$_SESSION['uid']."'");
+		if($res_uid->num_rows) {
+			$line = $res_uid->fetch_row();
+			$vip_name = $line[0];
+		}
+		else $vip_name = '';
 		
-		$res = $db->selectRowA('users_worker_info', $this->doc_data['user'], array('worker_real_name'));
-		$autor_name = $res?$res[0]:'';
+		$res_autor = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
+			WHERE `user_id`='".$this->doc_data['user']."'");
+		if($res_autor->num_rows) {
+			$line = $res_autor->fetch_row();
+			$autor_name = $line[0];
+		}
+		else $autor_name = '';
 		
-		$res = $db->selectRowA('users_worker_info', $this->dop_data['kladovshik'], array('worker_real_name'));
-		$klad_name = $res?$res[0]:'';
+		$res_klad = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
+			WHERE `user_id`='".$this->dop_data['kladovshik']."'");
+		if($res_klad->num_rows) {
+			$line = $res_klad->fetch_row();
+			$klad_name = $line[0];
+		}
+		else $klad_name = '';
 
 		$pdf->Ln(5);
 

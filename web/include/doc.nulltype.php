@@ -100,22 +100,19 @@ class doc_Nulltype
 	}
 	
 	/// Установить дополнительные данные текущего документа
-	public function setDopData($name, $value)
-	{
+	public function setDopData($name, $value) {
 		global $db;
-		if($this->doc && $this->dop_data[$name]!=$value)
-		{
+		if($this->doc && @$this->dop_data[$name]!=$value) {
 			$_name = $db->real_escape_string($name);
 			$_value = $db->real_escape_string($value);
 			$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'$_name','$_value')");
-			doc_log("UPDATE {$this->doc_name}","$name: ({$this->dop_data[$name]} => $value)",'doc',$this->doc);
+			doc_log("UPDATE {$this->doc_name}", @"$name: ({$this->dop_data[$name]} => $value)",'doc',$this->doc);
 		}
 		$this->dop_data[$name]=$value;
 	}
 	
 	/// Установить дополнительные данные текущего документа
-	public function setDopDataA($array)
-	{
+	public function setDopDataA($array) {
 		global $db;
 		if($this->doc)
 			foreach ($array as $name=>$value)
@@ -130,7 +127,6 @@ class doc_Nulltype
 					$this->dop_data[$name]=$value;
 				}
 			}
-		
 	}
 	
 
@@ -192,22 +188,19 @@ class doc_Nulltype
 	}
 	
 	/// Создать несвязанный документ с товарными остатками из другого документа
-	public function CreateParent($doc_obj)
-	{
-		$doc_data=$doc_obj->doc_data;
-		$doc_data['p_doc']=0;
+	public function CreateParent($doc_obj) {
+		global $db;
+		$doc_data = $doc_obj->doc_data;
+		$doc_data['p_doc'] = 0;
 		$this->create($doc_data);
-		if($this->sklad_editor_enable)
-		{
+		if($this->sklad_editor_enable) {
 			$res=$db->query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->doc}' ORDER BY `doc_list_pos`.`id`");
-			while($line = $res->fetch_assoc())
-			{
+			while($line = $res->fetch_assoc()) {
 				$line['doc'] = $this->doc;
 				unset($line['id']);
 				$db->insertA('doc_list_pos', $line);				
 			}
 		}
-
 		unset($this->doc_data);
 		$this->get_docdata();
 		return $this->doc;
@@ -1114,8 +1107,9 @@ class doc_Nulltype
    	{
 		global $CONFIG, $db;
 		require_once($CONFIG['location'].'/common/email_message.php');
-
-		$doc_autor = $db->selectRowA('users_worker_info', $this->doc_data['user'], array('worker_real_name', 'worker_phone', 'worker_email'));
+		$res_autor = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info`
+			WHERE `user_id`='".$this->doc_data['agent']."'");
+		$doc_autor = $res_autor->fetch_assoc();
 		$agent = $db->selectRowA('doc_agent', $this->doc_data['agent'], array('name', 'fullname', 'email'));
 		
 		$email_message=new email_message_class();
@@ -1597,7 +1591,7 @@ class doc_Nulltype
 	// ====== Получение данных, связанных с документом =============================
 	protected function get_docdata()
 	{
-		if($this->doc_data) return;
+		if(isset($this->doc_data)) return;
 		global $CONFIG, $db;
 		if($this->doc)	{
 			$res = $db->query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`, `b`.`fullname` AS `agent_fullname`

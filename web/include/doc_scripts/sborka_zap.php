@@ -39,7 +39,7 @@ class ds_sborka_zap {
 				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
 			$tmpl->addContent("</select><br>Организация:<br><select name='firm'>");
 			$rs = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-			while ($nx = mysql_fetch_row($rs))
+			while ($nx = $rs->fetch_row())
 				$tmpl->addContent("<option value='$nx[0]'>".html_out($nx[1])."</option>");
 			$tmpl->addContent("</select><br>
 			Агент:<br>
@@ -52,7 +52,7 @@ class ds_sborka_zap {
 			<select name='nasklad'>
 			<option value='0' selected>--не требуется--</option>");
 			$res = $db->query("SELECT `id`,`name` FROM `doc_sklady` ORDER BY `id`");
-			while ($nxt = $db->fetch_row())
+			while ($nxt = $res->fetch_row())
 				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
 			$tmpl->addContent("</select><br>
 			<label><input type='checkbox' name='not_a_p' value='1'>Не проводить перемещение</label><br>
@@ -132,7 +132,7 @@ class ds_sborka_zap {
 			$tim = time();
 			$res = $db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
 				VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
-			$doc = $db->insert_id();
+			$doc = $db->insert_id;
 			$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 				VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id'),
 				('$doc','not_a_p','$not_a_p')");
@@ -179,10 +179,10 @@ class ds_sborka_zap {
 
 			$document = new doc_Sborka($doc);
 			$poseditor = new SZapPosEditor($document);
-			$dd = $document->getDopDataA();
-			$poseditor->cost_id = $dd['cena'];
+			$dpd = $document->getDopDataA();
+			$poseditor->cost_id = $dpd['cena'];
 			$dd = $document->getDocDataA();
-			$poseditor->SetEditable($dd[6] ? 0 : 1);
+			$poseditor->SetEditable($dd['ok'] ? 0 : 1);
 			$poseditor->sklad_id = $dd['sklad'];
 			$tmpl->addContent($poseditor->Show());
 		} else if ($mode == 'exec') {
@@ -208,7 +208,7 @@ class ds_sborka_zap {
 				$altnum = GetNextAltNum(1, 'auto', 0, 0, 1);
 				$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
 			VALUES	('$tim', '$firm', '1', '$uid', '$altnum', 'auto', '$sklad', '$agent', '$doc', '$zp')");
-				$post_doc = $db->insert_id();
+				$post_doc = $db->insert_id;
 				$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$zp')");
 				$document2 = AutoDocument($post_doc);
 				$document2->DocApply();
@@ -235,7 +235,7 @@ class ds_sborka_zap {
 				$res = $db->query("SELECT `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc' AND `page`='0'");
 				while ($nxt = $res->fetch_row()) {
 					$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
-					VALUES ('$docnum', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]')");
+					VALUES ('$docnum', '$nxt[0]', '$nxt[1]', '$nxt[2]', '0')");
 				}
 				if (!$not_a_p)	$perem_doc->DocApply();
 			}
@@ -257,7 +257,7 @@ class ds_sborka_zap {
 
 			// Json-вариант списка товаров
 			if ($opt == 'jget') {
-				$doc_sum = $this->recalcSum();
+				$doc_sum = $document->recalcSum();
 				$str = "{ response: '2', content: [" . $poseditor->GetAllContent() . "], sum: '$doc_sum' }";
 				$tmpl->addContent($str);
 			}
@@ -340,7 +340,7 @@ class ds_sborka_zap {
 				$cost+=$zp;
 			}
 			else	$zp = 0;
-			$res->query("UPDATE `doc_list_pos` SET `cost`='$cost' WHERE `id`='$nxt[0]'");
+			$db->query("UPDATE `doc_list_pos` SET `cost`='$cost' WHERE `id`='$nxt[0]'");
 		}
 		DocSumUpdate($doc);
 	}
