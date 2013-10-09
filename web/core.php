@@ -233,7 +233,7 @@ function keygen_unique($num=0, $minlen=5, $maxlen=12)
 	$sig=0;
 	for($i=1;$i<$ln;$i++)
 	{
-		if(eregi($s[$i-1],$sstr))
+		if(stripos($s[$i-1],$sstr)!==false)
 		{
 			$r=rand(0,$gln);
 			$s.=$gstr[$r];

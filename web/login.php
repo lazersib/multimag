@@ -468,7 +468,7 @@ else if($mode=='regs')
 
 		$sql_login = $db->real_escape_string($login);
 		$res=$db->query("SELECT `id` FROM `users` WHERE `name`='$sql_login'");
-		if($res->num_rows($res))
+		if($res->num_rows)
 			throw new RegException('Такой login занят. Используйте другой.','login');
 
 		if(@$CONFIG['site']['allow_phone_regist'])
@@ -489,7 +489,7 @@ else if($mode=='regs')
 				throw new RegException('Неверный формат адреса e-mail. Адрес должен быть в формате user@host.zone','email');
 			$res = $db->query("SELECT `id` FROM `users` WHERE `reg_email`='$email'");
 			if(!$res)	throw new MysqlException("Не удалось проверить уникальность email");
-			if($res->num_rows())
+			if($res->num_rows)
 				throw new RegException('Пользователь с таким email уже зарегистрирован. Используйте другой.','email');
 		}
 
