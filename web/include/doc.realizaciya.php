@@ -518,7 +518,7 @@ class doc_Realizaciya extends doc_Nulltype
 
 		if($prop)
 		{
-			$pdf->Cell(0,5,$prop,0,1,'L',0);
+			$pdf->CellIconv(0,5,$prop,0,1,'L',0);
 		}
 
 		$str="Товар получил, претензий к качеству товара и внешнему виду не имею.";

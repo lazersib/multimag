@@ -511,7 +511,7 @@ function reOrder($by='name')
 		$by='name';
 	if($by=='loc')
 		$by='doc_base_cnt`.`mesto';
-	$db->startrTransaction();
+	$db->startTransaction();
 	$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_cnt`.`mesto`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`

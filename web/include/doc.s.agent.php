@@ -292,7 +292,7 @@ class doc_s_Agent {
 			if(request('p_agent_nm'))
 				$new_agent_info['p_agent'] = rcvint('p_agent');
 			else $new_agent_info['p_agent']='NULL';
-			
+			$new_agent_info['group'] = rcvint('g');
 			
 			settype($ag_info['group'],'int');
 			settype($ag_info['dishonest'],'int');

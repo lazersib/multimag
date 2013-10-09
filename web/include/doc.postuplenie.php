@@ -35,7 +35,7 @@ class doc_Postuplenie extends doc_Nulltype {
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('kladovshik'=>$this->firm_vars['firm_kladovshik_id'], 'input_doc'=>'', 'return'=>0);
+		$this->def_dop_data = array('kladovshik'=>$this->firm_vars['firm_kladovshik_id'], 'input_doc'=>'', 'return'=>0, 'cena'=>0);
 	}
 
 	function DopHead() {
@@ -198,7 +198,7 @@ class doc_Postuplenie extends doc_Nulltype {
 /// Обычная накладная в PDF формате
 /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
 	function PrintNaklPDF($to_str = false) {
-		global $tmpl, $CONFIG;
+		global $tmpl, $CONFIG, $db;
 
 		if (!$to_str)
 			$tmpl->ajax = 1;
@@ -278,7 +278,7 @@ class doc_Postuplenie extends doc_Nulltype {
 		ORDER BY `doc_list_pos`.`id`");
 		$ii = 1;
 		$sum = 0;
-		while ($nxt = $res->fetch_row($res)) {
+		while ($nxt = $res->fetch_row()) {
 			$sm = $nxt[3] * $nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);

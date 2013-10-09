@@ -36,7 +36,7 @@ class doc_Peremeshenie extends doc_Nulltype
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('kladovshik'=>0, 'na_sklad'=>1, 'mest'=>'');
+		$this->def_dop_data = array('kladovshik'=>0, 'na_sklad'=>0, 'mest'=>'', 'cena'=>0);
 	}
 
 	function DopHead() {
