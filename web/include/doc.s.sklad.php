@@ -1129,7 +1129,7 @@ class doc_s_Sklad {
 				$old_data = $db->selectRowA('doc_base', $pos, $this->pos_vars);
 
 				foreach ($old_data as $id => $value) {
-					if ($id == 'id' || $id == 'likvid')	continue;
+					if ($id == 'id' || $id == 'likvid' || $id=='cost_date')	continue;
 					if (!isset($pd[$id]))			$pd[$id] = 0;
 					if ($pd[$id] != $value) {
 						if ($id == 'country') {

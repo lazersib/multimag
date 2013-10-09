@@ -48,6 +48,9 @@ function initDocJournal(container_id) {
 		var subtype = document.getElementById('subtype');
 		if(subtype.value.length)
 			filter_request += '&st='+encodeURIComponent(subtype.value);
+		var firm_id = document.getElementById('firm_id');
+		if(firm_id.value.length)
+			filter_request += '&fi='+encodeURIComponent(firm_id.value);
 	}
 	
 	function restartRequest() {
@@ -187,14 +190,14 @@ function initDocJournal(container_id) {
 	
 	function initFilter(filter) {
 		var s="<div class='bf'><input type='text' class='half' name='date_from' id='datepicker_f' value='' placeholder='Дата от'>-<input type='text' class='half' name='date_to' id='datepicker_t' value='' placeholder='Дата до'></td></tr></table></div>";
-		s+="<div class='bf'><input type='text' name='type' placeholder='Тип документа'></div>";
+		s+="<div class='bf'><input type='text' name='type' placeholder='Тип документа' disabled></div>";
 		s+="<div class='bf'><input type='text' class='half' id='altnum' value='' placeholder='Альт. номер'>, <input type='text' class='half' id='subtype' value='' placeholder='Подтип'></div>";
 		s+="<div class='bf'><input type='text' name='agent' id='agent_filter' placeholder='Агент'></div>";
-		s+="<div class='bf'><input type='text' name='position' placeholder='Наименование'></div>";
-		s+="<div class='bf'><select name='firm_id'><option>Фирма 1</option></select></div>";
-		s+="<div class='bf'><select name='bk_id'><option>Банк 1</option><option>Касса 1</option></select></div>";
-		s+="<div class='bf'><select name='store_id'><option>Склад 1</option><option>Склад 2</option></select></div>";
-		s+="<div class='bf'><input type='text' name='author' placeholder='Автор'></div>";
+		s+="<div class='bf'><input type='text' name='position' placeholder='Наименование' disabled></div>";
+		s+="<div class='bf'><select id='firm_id'><option>Фирма 1</option></select></div>";
+		s+="<div class='bf'><select id='bank_id'><option>Банк 1</option><option>Касса 1</option></select></div>";
+		s+="<div class='bf'><select id='store_id'><option>Склад 1</option><option>Склад 2</option></select></div>";
+		s+="<div class='bf'><input type='text' name='author' placeholder='Автор' disabled></div>";
 		
 		filter.innerHTML=s;
 		var input = initCalendar('datepicker_f',false);
@@ -209,7 +212,9 @@ function initDocJournal(container_id) {
 		input = document.getElementById('subtype');
 		input.addEventListener( 'blur', beginDefferedRequest, false);
 		input.addEventListener( 'keyup', beginDefferedRequest, false);
-		
+		input = document.getElementById('firm_id');
+		input.addEventListener( 'blur', beginDefferedRequest, false);
+		input.addEventListener( 'change', beginDefferedRequest, false);
 	}
 	
 	requestData(0);

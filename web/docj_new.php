@@ -61,7 +61,8 @@ if (!isset($_REQUEST['mode'])) {
 	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
 	<script type='text/javascript' src='/js/doc_journal.js'></script>
 	");
-} else {
+}
+else if($_REQUEST['mode']=='get'){
 	try {
 		ob_start();
 		$db->query("RESET QUERY CACHE");
@@ -80,6 +81,8 @@ if (!isset($_REQUEST['mode'])) {
 			$sql_filter.=' AND `doc_list`.`altnum`='.$db->real_escape_string($_REQUEST['an']);
 		if(isset($_REQUEST['st']))
 			$sql_filter.=' AND `doc_list`.`subtype`=\''.$db->real_escape_string($_REQUEST['st']).'\'';
+		if(isset($_REQUEST['fi']))
+			$sql_filter.=' AND `doc_list`.`firm_id`='.intval($_REQUEST['fi']);
 		
 		$sql = "SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`,
 			`doc_list`.`user` AS `author_id`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_list`.`err_flag`, `doc_list`.`p_doc`,

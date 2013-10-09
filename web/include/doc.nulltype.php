@@ -865,7 +865,7 @@ class doc_Nulltype
 	protected function DocCancel()
 	{
 		global $db;
-		$data = $db->select('doc_list', $this->doc);
+		$data = $db->selectRow('doc_list', $this->doc);
 		if(!$data)
 			throw new Exception('Ошибка выборки данных документа!');
 		if(!$data['ok'])
