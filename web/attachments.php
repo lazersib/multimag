@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.1 - Complex sales system
 //
 //	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
@@ -19,53 +20,44 @@
 
 include_once("core.php");
 
-function rewrite_input($att_id)
-{
-	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
-	if(!is_array($arr))	return $att_id;
-	if(count($arr)<4)	return $att_id;
+function rewrite_input($att_id) {
+	$arr = explode('/', $_SERVER['REQUEST_URI']);
+	if (!is_array($arr))
+		return $att_id;
+	if (count($arr) < 4)
+		return $att_id;
 	return $arr[2];
 }
 
-$att_id=rewrite_input(rcv('att_id'));
+$att_id = rewrite_input(request('att_id'));
 
-settype($att_id,'int');
+settype($att_id, 'int');
 
-$res=mysql_query("SELECT `attachments`.`id`, `attachments`.`original_filename`
+$res = $db->query("SELECT `attachments`.`id`, `attachments`.`original_filename`
 FROM `attachments`
 WHERE `attachments`.`id`='$att_id'");
-if(mysql_errno())
-{
-	throw new MysqlException("Не удалось получить прикреплённый файл");
-}
 
-if(mysql_num_rows($res)<1)
-{
+if ($res->num_rows < 1) {
 	header('HTTP/1.0 404 Not Found');
 	header('Status: 404 Not Found');
-	$tmpl->msg("Файл не найден!","err");
-}
-else
-{
-	$nxt=mysql_fetch_row($res);
-	if(!file_exists($CONFIG['site']['var_data_fs'].'/attachments/'.$nxt[0]))
-	{
+	$tmpl->msg("Файл не найден!", "err");
+} else {
+	$nxt = $res->fetch_row();
+	if (!file_exists($CONFIG['site']['var_data_fs'] . '/attachments/' . $nxt[0])) {
 		header('HTTP/1.0 404 Not Found');
 		header('Status: 404 Not Found');
-		$tmpl->msg("Файл не найден!","err");
-	}
-	else
-	{
-		if($CONFIG['site']['dowload_attach_speed'])
-			$wait_length=1000000/($CONFIG['site']['dowload_attach_speed']/2);
-		else	$wait_length=150000;
-		$filesize=filesize($CONFIG['site']['var_data_fs'].'/attachments/'.$nxt[0]);
+		$tmpl->msg("Файл не найден!", "err");
+	} else {
+		if ($CONFIG['site']['dowload_attach_speed'])
+			$wait_length = 1000000 / ($CONFIG['site']['dowload_attach_speed'] / 2);
+		else
+			$wait_length = 150000;
+		$filesize = filesize($CONFIG['site']['var_data_fs'] . '/attachments/' . $nxt[0]);
 		header("Content-Type: application/octet-stream");
 		header("Content-Disposition: attachment; filename=$nxt[1]");
 		header("Content-Length: $filesize");
-		$handle = fopen($CONFIG['site']['var_data_fs'].'/attachments/'.$nxt[0], "rb");
-		while (!feof($handle) && !connection_aborted() )
-		{
+		$handle = fopen($CONFIG['site']['var_data_fs'] . '/attachments/' . $nxt[0], "rb");
+		while (!feof($handle) && !connection_aborted()) {
 			echo fread($handle, 2048);
 			flush();
 			usleep($wait_length);
@@ -74,6 +66,4 @@ else
 		exit();
 	}
 }
-
-
 ?>

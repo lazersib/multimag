@@ -102,27 +102,22 @@ try
 		$tmpl->setContent("<h1 id='page-title'>Статьи</h1>Здесь отображаются все статьи сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях, и служебные статьи. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
 		$tmpl->setTitle("Статьи");
 		$res=$db->query("SELECT `name` FROM `articles` ORDER BY `name`");
-		if(!$res)	throw new MysqlException("Выборка статей не удалась!");
 
 		$tmpl->addContent("<ul>");
-		while($nxt=$res->fetch_row())
-		{
+		while($nxt=$res->fetch_row()) {
 			$h=$wikiparser->unwiki_link($nxt[0]);
 			$tmpl->addContent("<li><a class='wiki' href='/article/$nxt[0].html'>$h</a></li>");
 		}
 		$tmpl->addContent("</ul>");
 	}
-	else
-	{
+	else {
 		$page_escaped=$db->real_escape_string($p);
 		$res=$db->query("SELECT `articles`.`name` AS `article_name`, `a`.`name` AS `author_name`, `articles`.`date`, `articles`.`changed`, `b`.`name` AS `editor_name`, `articles`.`text`, `articles`.`type`
 		FROM `articles`
 		LEFT JOIN `users` AS `a` ON `a`.`id`=`articles`.`autor`
 		LEFT JOIN `users` AS `b` ON `b`.`id`=`articles`.`changeautor`
 		WHERE `articles`.`name` LIKE '$page_escaped'");
-		if(!$res)	throw new MysqlException("Выборка статей не удалась!");
-		if($res->num_rows)
-		{
+		if($res->num_rows) {
 			$nxt=$res->fetch_assoc();
 			$h=$meta_description=$meta_keywords='';
 			$text=$nxt['text'];
@@ -176,28 +171,23 @@ try
 
 					$res=$db->query("UPDATE `articles` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text', `type`='$type'
 					WHERE `name` LIKE '$page_escaped'");
-					if(!$res)					throw new MysqlException("Ошибка сохранения");
 
 					header("Location: /articles.php?p=".$nxt['article_name']);
 					exit();
 				}
 			}
 		}
-		else
-		{
-			if($mode=='')
-			{
-				$res=$db->query("SELECT `name` FROM `articles` WHERE `name` LIKE '$page_escaped:%' ORDER BY `name`");
-				if($res->num_rows)
-				{
-					$tmpl->setContent("<h1>Раздел ".html_out($p)."</h1>");
+		else {
+			if($mode=='') {
+				$res = $db->query("SELECT `name` FROM `articles` WHERE `name` LIKE '$page_escaped:%' ORDER BY `name`");
+				if ($res->num_rows) {
+					$tmpl->setContent("<h1>Раздел " . html_out($p) . "</h1>");
 					$tmpl->setTitle(strip_tags($p));
 					$tmpl->addContent("<ul>");
-					while($nxt=mysql_fetch_row($res))
-					{
-						$h=explode(":",$nxt[0],2);
-						$h=$wikiparser->unwiki_link($h[1]);
-						$tmpl->addContent("<li><a href='/article/".html_out($nxt[0]).".html'>$h</a></li>");
+					while ($nxt = $res->fetch_row()) {
+						$h = explode(":", $nxt[0], 2);
+						$h = $wikiparser->unwiki_link($h[1]);
+						$tmpl->addContent("<li><a href='/article/" . html_out($nxt[0]) . ".html'>$h</a></li>");
 					}
 					$tmpl->addContent("</ul>");
 				}
@@ -226,7 +216,6 @@ try
 					$text=$db->real_escape_string($_REQUEST['text']);
 					$res=$db->query("INSERT INTO `articles` (`type`, `name`,`autor`,`date`,`text`)
 					VALUES ('$type', '$p','$uid', NOW(), '$text')");
-					if(!$res)	throw new MysqlException("Не удалось создать статью!");
 					header("Location: /articles.php?p=".$p);
 					exit();
 				}
@@ -234,14 +223,13 @@ try
 		}
 	}
 }
-catch(MysqlException $e)
-{
-	$db->query("ROLLBACK");
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+catch(mysqli_sql_exception $e) {
+	$db->rollback();
+	$tmpl->ajax=0;
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
-catch(Exception $e)
-{
+catch(Exception $e) {
 	$db->query("ROLLBACK");
 	$tmpl->addContent("<br><br>");
 	$tmpl->msg($e->getMessage(),"err");

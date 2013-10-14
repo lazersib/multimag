@@ -1475,7 +1475,7 @@ class doc_s_Sklad {
 			WHERE `doc_base_params`.`param`='ZP'");
 			if (! $res->num_rows ) {
 				$db->query("INSERT INTO `doc_base_params` (`param`, `type`, `system`, `pgroup_id`) VALUES ('ZP', 'double', '1','1')");
-				$nxt = array(0 => $db->insert_id(), 1 => 0);
+				$nxt = array(0 => $db->insert_id, 1 => 0);
 			}
 			else	$nxt = $res->fetch_row();
 			if ($zp != $nxt[1]) {
@@ -1636,7 +1636,7 @@ class doc_s_Sklad {
 				WHERE `doc_base_params`.`param`='ym_id'");
 				if (!$res->num_rows) {
 					$db->query("INSERT INTO `doc_base_params` (`param`, `type`, `system`, `pgroup_id`) VALUES ('ym_id', 'double', '1','1')");
-					$nxt = array(0 => $db->insert_id(), 1 => 0);
+					$nxt = array(0 => $db->insert_id, 1 => 0);
 				}
 				else
 					$nxt = $res->fetch_row();
@@ -1670,7 +1670,7 @@ class doc_s_Sklad {
 							list($g_id) = $gres->fetch_row();
 						else {
 							$db->query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$gname_sql')");
-							$g_id = $db->insert_id();
+							$g_id = $db->insert_id;
 						}
 						$res = $db->query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$g_id' AND `param`='$pname_sql'");
 						if (!$res->num_rows) {

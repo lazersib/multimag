@@ -42,7 +42,7 @@ catch (Exception $e) {
 			$worker->finalize();
 		} catch (Exception $e) {
 			echo $e->getMessage() . "\n";
-			mysql_query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $e->getMessage() . "' WHERE `id`='{$ainfo['id']}'");
+			$db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $e->getMessage() . "' WHERE `id`='{$ainfo['id']}'");
 		}
 	}
 	echo $e->getMessage();

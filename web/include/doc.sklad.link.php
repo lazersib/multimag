@@ -128,7 +128,7 @@ class LinkPosList extends PosEditor {
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
 			WHERE `doc_base_links`.`pos1_id`='{$this->linked_pos}'");
 		$ret = '';
-		while ($nxt = $res->fetch_assoc($res)) {
+		while ($nxt = $res->fetch_assoc()) {
 			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 			if ($ret) $ret.=', ';
 			$ret.="{line_id: '{$nxt['line_id']}', pos_id: '{$nxt['pos_id']}', vc: '{$nxt['vc']}', name: '{$nxt['name']} - {$nxt['proizv']}', cost: '{$nxt['cost']}', sklad_cnt: '{$nxt['sklad_cnt']}'";

@@ -32,7 +32,6 @@ function GetRootDocument($doc)
 	while($doc)
 	{
 		$res=$db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`='$doc' AND `p_doc`>'0' AND `p_doc` IS NOT NULL");
-		if(!$res)	throw new MysqlException("Не удалось найти родительский документ");
 		if(!$res->num_rows)	return $doc;
 		list($pdoc)=$res->fetch_row();
 		if(!$pdoc) return $doc;
@@ -54,12 +53,10 @@ function DrawSubTreeDocument($doc, $cur_doc)
 	WHERE `doc_list`.`id`='$doc'
 	ORDER by `doc_list`.`date` DESC";
 	$res=$db->query($sql);
-	if(!$res)	throw new MysqlException("Не удалось выбрать данные документов");
 	$cnt=$res->num_rows;
 	$i=1;
 	$r='';
-	if($nxt=$res->fetch_row())
-	{
+	if($nxt=$res->fetch_row()) {
 		$dt=date("Y.m.d H:i:s",$nxt[2]);
 		$pp="Непроведённый";
 		if($nxt[1]) $pp="Проведённый";
@@ -194,7 +191,6 @@ function FilterMenu()
 
 		$sklad_options="<option value='0'>-</option>";
 		$res=$db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
-		if(!$res)	throw new MysqlException("Не удалось получить список складов");
 		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_sklad']==$nxt[0])
@@ -207,7 +203,6 @@ function FilterMenu()
 		}
 		$bank_options="<option value='0'>-</option>";
 		$res=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank' ORDER BY `num`");
-		if(!$res)	throw new MysqlException("Не удалось получить список банков");
 		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_bank']==$nxt[0])
@@ -220,7 +215,6 @@ function FilterMenu()
 		}
 		$kassa_options="<option value='0'>-</option>";
 		$res=$db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `num`");
-		if(!$res)	throw new MysqlException("Не удалось получить список касс");
 		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_kassa']==$nxt[0])
@@ -233,7 +227,6 @@ function FilterMenu()
 		}
 		$firm_options="<option value='0'>-</option>";
 		$res=$db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
-		if(!$res)	throw new MysqlException("Не удалось получить данные фирм");
 		while($nxt=$res->fetch_row())
 		{
 			if(@$_SESSION['j_select_firm']==$nxt[0])
@@ -534,7 +527,6 @@ if($mode=="")
 		$info.=", <b>товар:</b> {$_SESSION['j_select_tov_name']}";
 	}
 	$res=$db->query($sql);
-	if(!$res)	throw new MysqlException("Не удалось получить список документов!");
 	$row=$res->num_rows;
 
 	$i=0;
@@ -863,7 +855,6 @@ else if($mode=="del")
 		else
 		{
 			$res=$db->query("UPDATE `doc_list` SET `mark_del`='$tim' WHERE `id`='$_id'");
-			if(!$res)	throw new MysqlException("Не удалось отменить");
 			$tmpl->addContent("Установлена пометка на удаление!");
 			doc_log("MARKDELETE doc:$_id","doc:$_id");
 		}
@@ -882,7 +873,6 @@ else if($mode=="undel")
 	else
 	{
 		$res=$db->query("UPDATE `doc_list` SET `mark_del`='0' WHERE `id`='$_id'");
-		if(!$res)	throw new MysqlException("Не удалось убрать пометку на удаление");
 		$tmpl->addContent("Убрана пометка!");
 		doc_log("UNDELETE doc:$_id","doc:$_id");
 	}
@@ -894,7 +884,6 @@ else if($mode=='log')
 	FROM `doc_log`
 	LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
 	WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='$doc'");
-	if(!$res)	throw new MysqlException("Не удалось получить данные журнала");
 	$tmpl->addContent("<h1>История документа $doc</h1>
 	<table width=100%>
 	<tr><th>Выполненное действие<th>Описание действия<th>Дата<th>Пользователь<th>IP");
@@ -934,11 +923,10 @@ else if($mode=='print')
 		$info.=", <b>агент:</b> {$_SESSION['j_agent_name']}";
 	}
 
-	if(is_array(@$_SESSION['j_need_doctypes']))
-	{
+	if(is_array(@$_SESSION['j_need_doctypes'])) {
 		$res=$db->query("SELECT `id`, `name` FROM `doc_types` ORDER BY `id`");
 		$doc_names=array();
-		while($nxt=$res->fetch_row($res))	$doc_names[$nxt[0]]=$nxt[1];
+		while($nxt = $res->fetch_row())	$doc_names[$nxt[0]]=$nxt[1];
 
 		$info.=", <b>документы: </b> ";
 		$ts='';
@@ -982,7 +970,7 @@ else if($mode=='print')
 		$info.=", <b>организация:</b> {$_SESSION['j_select_firm_name']}";
 
 		$res=$db->query("SELECT `firm_skin` FROM `doc_vars` WHERE `id`='{$_SESSION['j_select_firm']}'");
-		$firm_vars=$res->fetch_assoc($res);
+		$firm_vars = $res->fetch_assoc();
 		if($firm_vars['firm_skin'])
 			$tmpl->loadTemplate($firm_vars['firm_skin']);
 	}
@@ -1019,7 +1007,6 @@ else if($mode=='print')
 		$info.=", <b>товар:</b> {$_SESSION['j_select_tov_name']}";
 	}
 	$res=$db->query($sql);
-	if(!$res)	throw new MysqlException("Не удалось получить список документов!");
 	$row=$res->num_rows;
 
 	$i=0;
@@ -1029,8 +1016,7 @@ else if($mode=='print')
 
 	$tmpl->addContent("<table width='100%' cellspacing='1'><tr>
 	<th width='75'>Id<th width='20'>№<th>Документ<th>Дата<th>Агент<th>Сумма<th>Автор<th>Информация $dp");
-	while($nxt=$res->fetch_array($res))
-	{
+	while($nxt = $res->fetch_array()) {
 		$dop=$cl='';
 		$dt=date("d.m.Y H:i:s",$nxt[3]);
 		$cc="lin$i";
@@ -1145,10 +1131,6 @@ else if($mode=='print')
 }
 else doc_log("ERROR","docj.php: Неверный mode!");
 
-
-
-
 $tmpl->write();
-
 
 ?>

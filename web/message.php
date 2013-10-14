@@ -79,7 +79,6 @@ else if($mode=='call_request')
 					$ip_s		= $db->real_escape_string(getenv("REMOTE_ADDR"));
 					$res=$db->query("INSERT INTO `log_call_requests` (`name`, `phone`, `call_date`, `ip`, `request_date`)
 					VALUES ('$name_s', '$phone_s', '$call_date_s', '$ip_s', NOW())");
-					if(!$res)	throw new MysqlException("Не удалось записать запрос в журнал звонков");
 					$text="Посетитель сайта {$CONFIG['site']['name']} $name просит перезвонить на $phone в $call_date";
 
 					if(@$CONFIG['call_request']['email'])
@@ -190,23 +189,21 @@ else if($mode=='petition')
 }
 else if($mode=='petitions')
 {
+	need_auth();
 	$doc	= rcvint('doc');
 	$comment= request('comment');
 
-	if(mb_strlen($comment)>8)
-	{
-		$res=mysql_query("SELECT `reg_email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
-		echo mysql_error();
-		$from=mysql_result($res,0,0);
+	if(mb_strlen($comment)>8) {
+		$res = $db->query("SELECT `reg_email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
+		list($from) = $res->fetch_row();
 		if($from=='')	$from=$CONFIG['site']['doc_adm_email'];
 
-		$res=mysql_query("SELECT `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`date`, `doc_agent`.`name`, `doc_types`.`name`
+		$res = $db->query("SELECT `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`date`, `doc_agent`.`name`, `doc_types`.`name`
 		FROM `doc_list`
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 		WHERE `doc_list`.`id`='$doc'");
-		echo mysql_error();
-		$nxt=mysql_fetch_row($res);
+		$nxt = $res->fetch_row();
 
 		$date=date("d.m.Y H:i:s",$nxt[3]);
 
@@ -237,26 +234,9 @@ else if($mode=='petitions')
 			}
 		}
 	}
-	else $tmpl->msg("Опишите причину поподробнее!");
+	else $tmpl->msg("Опишите причину подробнее!");
 }
-else if($mode=='qmsgr')
-{
-	$tmpl->ajax=1;
-	if($uid)
-	{
-		$res=mysql_query("SELECT `id`, `sender`, `head`, `msg` FROM `messages` WHERE `user`='$uid' AND `ok`='0' LIMIT 1");
-		if($nxt=mysql_fetch_row($res))
-		{
-			$json=" { \"response\": \"1\", \"sender\": \"$nxt[1]\", \"head\": \"$nxt[2]\", \"message\": \"$nxt[3]\" }";
-			mysql_query("UPDATE `messages` SET `ok`='1' WHERE `id`='$nxt[0]'");
-		}
-		else	$json=" { \"response\": \"0\" }";
-		$tmpl->setContent($json);
-	}
-}
-
 
 $tmpl->write();
-
 
 ?>

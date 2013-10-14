@@ -275,7 +275,7 @@ class ds_sborka_zap {
 			// Json вариант удаления строки
 			else if ($opt == 'jdel') {
 				if (!isAccess('doc_sborka', 'edit'))	throw new AccessException("Недостаточно привилегий");
-				$line_id = rcv('line_id');
+				$line_id = rcvint('line_id');
 				$tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления

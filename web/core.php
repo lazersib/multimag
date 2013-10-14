@@ -18,13 +18,17 @@
 //
 
 // памятка по рефакторингу: к удалению:
-// mysql_
-// rcv
-// getright
-// getpost
-// проверить insert_id
-// AddText -> AddContent
-// SetText -> SetContent
+// mysql_ +
+// _row($ +
+// _assoc($ +
+// fetch_array($ +
+// rcv( +
+// getright +
+// getpost +
+// MysqlException +
+// проверить insert_id +
+// AddText -> AddContent +
+// SetText -> SetContent +
 // Контроль использования html_in
 // Для вывода из базы в html использовать html_out
 
@@ -316,17 +320,6 @@ function html_out($data)
 	return htmlentities($data, ENT_QUOTES, "UTF-8");
 }
 
-/// Получение пользовательского воода GET или POST методом
-/// TODO: Уже неакутально. Заменить на request в местах использования и удалить.
-function getpost($varname,$def="")
-{
-	$bt=debug_backtrace();
-	trigger_error("Function ".__FUNCTION__." is deprecated (called {$bt[0]['file']}:{$bt[0]['line']}) \n", E_USER_WARNING);
-	if(isset($_POST[$varname]))	return $_POST[$varname];
-	if(isset($_GET[$varname]))	return $_GET[$varname];
-	return $def;
-}
-
 // =================================== Аутентификация и контроль привилегий ============================================
 /// @brief Требование аутентификации.
 ///
@@ -347,37 +340,8 @@ function need_auth()
 }
 
 /// Проверка аутентификации
-function auth()
-{
+function auth() {
 	return (@$_SESSION['uid']==0)?0:1;
-}
-
-/// @brief Получить список привилегий (read, write, edit, delete) доступа к указанному объекту.
-/// Не используется для остальных.
-/// @param object Имя объекта, для которого необходимо получить список
-/// @param uid  ID пользователя, для которого необходимо получить список
-/// TODO: Устарело. Не рекомендуется к использованию с версии 0.0.1r221. Убрать использование и функцию.
-function getright($object,$uid)
-{
-	$bt=debug_backtrace();
-	trigger_error("Function ".__FUNCTION__." is deprecated (called {$bt[0]['file']}:{$bt[0]['line']}) \n", E_USER_WARNING);
-	global $db;
-	//throw new Exception("Проверка привилений доступа через удаляемую функцию getright($object,$uid)");
-	if($uid==1)
-	{
-		$nxt['read']=1;
-		$nxt['write']=1;
-		$nxt['edit']=1;
-		$nxt['delete']=1;
-		return $nxt;
-	}
-	return $db->query("
-	SELECT MAX(`users_grouprights`.`a_read`) AS `read`, MAX(`users_grouprights`.`a_write`) AS `write`, MAX(`users_grouprights`.`a_edit`) AS `edit`, MAX(`users_grouprights`.`a_delete`) AS `delete`
-	FROM `users_grouprights`
-	INNER JOIN `users_groups` ON `users_groups`.`gid`=`users_grouprights`.`gid` AND ( `users_groups`.`uid`='$uid'
-	OR `users_groups`.`uid`='0')
-	WHERE `users_grouprights`.`object`='$object'
-	GROUP BY `users_grouprights`.`object`")->fetch_assoc($res);;
 }
 
 /// Есть ли привилегия доступа к указанному объекту для указанной операции
@@ -401,7 +365,6 @@ function isAccess($object, $action,$no_redirect=false)
 	WHERE `uid`='0' AND `object`='$object' AND `action`='$action')
 	UNION(
 	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='0' AND `object`='$object' AND `action`='$action')");
-	if(!$res)	throw new MysqlException("Выборка привилегий не удалась");
 	$access=($res->num_rows>0)?true:false;
 	if((!$uid) && (!$access) && (!$no_redirect))	need_auth();
 	return $access;
@@ -444,15 +407,12 @@ function SendSubscribe($tema,$msg)
 {
 	global $CONFIG, $db;
 	$res=$db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
-	if(!$res)	throw new MysqlException("Ошибка получения наименования организации");
 	list($firm_name)=$res->fetch_row();
 	$res=$db->query("(SELECT `name`, `reg_email` AS `email`, `real_name` FROM `users` WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1')
 	UNION
 	(SELECT `name`, `email`, `fullname` AS `real_name` FROM `doc_agent` WHERE `no_mail`='0' AND `email`!='')
 	");
-	if(!$res)	throw new MysqlException("Ошибка получения списка подписчиков");
-	while($nxt=$res->fetch_assoc($res))
-	{
+	while($nxt = $res->fetch_assoc()) {
 		if($nxt['real_name'])	$nxt['name']="{$nxt['real_name']} ({$nxt['name']})";
         	$txt="
 Здравствуйте, {$nxt['name']}!
@@ -508,7 +468,6 @@ function getCurrentUserCost()
 	global $db;
 	if(@$_SESSION['uid'])	$res=$db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
 	else			$res=$db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-	if(!$res)		throw new MysqlException('Не удалось выбрать цену для пользователя');
 	if($res->num_rows<1)	throw new Exception("Не найдено связанных с пользователем цен!");
 	$row=$res->fetch_row();
 	return $row[0];
@@ -532,13 +491,11 @@ function getUserProfile($uid)
 	$user_profile['dop']=array();
 
 	$res=$db->query("SELECT * FROM `users` WHERE `id`='$uid'");
-	if(!$res)	throw new MysqlException("Не удалось получить основные данные пользователя!");
 	if(!$res->num_rows)	return $user_profile;	// Если не найден
 	$user_profile['main']	= $res->fetch_assoc();
 	unset($user_profile['main']['pass']);	// В целях безопасности
 	unset($user_profile['main']['pass_change']);
 	$res=$db->query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='$uid'");
-	if(!$res)	throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
 	while($nn=$res->fetch_row())
 	{
 		$user_profile['dop'][$nn[0]]=$nn[1];
@@ -792,7 +749,7 @@ class NotFoundException extends Exception
 	}
 };
 
-/// Класс-исключение используется для информирования об ошибке при выполнении myqsl запроса
+/// Класс-исключение для информирования об ошибке при выполнении myqsl запроса. Устарело, к удалению.
 class MysqlException extends Exception
 {
 	var $sql_error;

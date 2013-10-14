@@ -148,9 +148,7 @@ if($mode)
 
 	$sql.=" LIMIT 2000";
 	$res=$db->query($sql);
-	if(!$res)	throw new MysqlException("Не удалось сделать выборку товаров");
-	if($row=$res->num_rows)
-	{
+	if($row=$res->num_rows)	{
 		$s="По запросу найдено $row товаров";
 		if($row>=2000) 	$s="Показаны только первые $row товаров, используйте более строгий запрос!";
 		$tmpl->addContent("<h1 id='page-title'>Результаты поиска</h1><div id='page-info'>$s</div>

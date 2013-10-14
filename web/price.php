@@ -25,7 +25,6 @@ function draw_groups_tree($level)
 	global $db;
 	$ret='';
 	$res=$db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `name`");
-	if(!$res)	throw new MysqlException("Не удалось получить список групп наименований", $db);
 	$i=0;
 	$r='';
 	if($level==0) $r='IsRoot';
@@ -399,10 +398,12 @@ else if($mode=="get")
 }
 
 }
-catch(MysqlException $e)
+catch(mysqli_sql_exception $e)
 {
-	$tmpl->ajax=0;
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+	$db->rollback();
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->addContent("<br><br>");
+	$tmpl->msg("Ошибка базы данных, $id","err");
 }
 catch(Exception $e)
 {

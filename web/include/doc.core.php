@@ -21,7 +21,7 @@ include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
 /// Автозагрузка классов документов
 /// TODO: Перенести автозагрузку в ядро, реализовать автозагрузку максимально возможного количества классов
-function __autoload($class_name)
+function doc_autoload($class_name)
 {
 	global $CONFIG;
 
@@ -33,10 +33,10 @@ function __autoload($class_name)
 		if($class_type=='doc')		include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
 		else if($class_type=='report')	include_once $CONFIG['site']['location']."/include/reports/".$class_name.'.php';
 	}
-//	@include_once $CONFIG['site']['location']."/gate/include/doc.s.".$class_name.'.php';
 	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
-
 }
+
+spl_autoload_register('doc_autoload');
 
 /// Вывод числа прописью. Для внутреннего использования.
 /// @sa num2str
@@ -293,7 +293,6 @@ function getCostPos($pos_id, $cost_id)
 	settype($pos_id,'int');
 	settype($cost_id,'int');
 	$res=$db->query("SELECT `doc_base`.`cost`, `doc_base`.`group` FROM `doc_base` WHERE `doc_base`.`id`=$pos_id");
-	if(!$res)			throw new MysqlException("Не удалось получить базовую цену товара");
 	if($res->num_rows==0)		throw new Exception("Товар ID:$pos_id не найден!");
 	list($base_cost,$base_group) =	$res->fetch_row();
 
@@ -301,7 +300,6 @@ function getCostPos($pos_id, $cost_id)
 	FROM `doc_cost`
 	LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`=$pos_id
 	WHERE `doc_cost`.`id`=$cost_id");
-	if(!$res)			throw new MysqlException("Не удалось получить цену из справочника цен товара");
 	if($res->num_rows==0)		throw new Exception("Цена ID:$cost_id не найдена!");
 	$nxt=$res->fetch_row();
 	$res->free();
@@ -324,7 +322,6 @@ function getCostPos($pos_id, $cost_id)
 		FROM `doc_group`
 		LEFT JOIN `doc_group_cost` ON `doc_group`.`id`=`doc_group_cost`.`group_id`  AND `doc_group_cost`.`cost_id`=$cost_id
 		WHERE `doc_group`.`id`=$base_group");
-		if(!$res)			throw new MysqlException("Не удалось получить цену из справочника цен группы");
 		if($res->num_rows==0)		throw new Exception("Группа ID:$base_group не найдена");
 		$gdata=$res->fetch_row();
 		$res->free();
@@ -372,7 +369,6 @@ function doc_log($motion,$desc,$object='',$object_id=0)
 	$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
 	$res=$db->query("INSERT INTO `doc_log` (`user`, `ip`, `time`,`motion`,`desc`, `object`, `object_id`)
 	VALUES ('$uid', '$ip', NOW(),'$motion','$desc', '$object', '$object_id')");
-	if(!$res)	throw new MysqlException("Не удалось записать событие в журнал");
 }
 
 function doc_menu($dop="", $nd=1, $doc=0)
@@ -438,7 +434,6 @@ function doc_menu($dop="", $nd=1, $doc=0)
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
 			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
 			WHERE `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt` LIMIT 100");
-			if(!$res)	throw new MysqlException("Не удалось получить минимально допустимые остатки");
 			if($res->num_rows)
 			{
 				$res->data_seek(rand(0,$res->num_rows-1));
@@ -458,7 +453,6 @@ function GetNextAltNum($type, $subtype, $doc, $date, $firm)
 	$start_date=strtotime(date("Y-01-01 00:00:00",strtotime($date)));
 	$end_date=strtotime(date("Y-12-31 23:59:59",strtotime($date)));
 	$res=$db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='$type' AND `subtype`='$subtype' AND `id`!='$doc' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm' ORDER BY `altnum` ASC");
-	if(!$res)	throw new MysqlException("Не удалось получить список документов");
 	$newnum=0;
 	while($nxt=$res->fetch_row())
 	{
@@ -536,14 +530,12 @@ function DocSumUpdate($doc)
 	settype($doc,'int');
 	$sum=0;
 	$res=$db->query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc' AND `page`='0'");
-	if(!$res)		throw new MysqlException("Не удалось получить список товаров");
 	while($nxt=$res->fetch_row())
 		$sum+=$nxt[0]*$nxt[1];
 	$res->free();
 	if($sum!=0)
 	{
 		$res=$db->query("UPDATE `doc_list` SET `sum`='$sum' WHERE `id`='$doc'");
-		if(!$res)	throw new MysqlException("Не удалось обновить сумму документа");
 	}
 	return $sum;
 }
@@ -561,7 +553,6 @@ function agentCalcDebt($agent_id, $no_cache=0, $firm_id=0)
 	$dolg=0;
 	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
 	$res=$db->query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
-	if(!$res)	throw new MysqlException("Не возможно выбрать документы агента");
 	while($nxt=$res->fetch_row())
 	{
 		switch($nxt[0])
@@ -594,7 +585,6 @@ function docCalcBonus($agent_id, $no_cache=0)
 	$res=$db->query("SELECT `doc_list`.`type`, `doc_list`.`sum`, `doc_dopdata`.`value` AS `bonus` FROM `doc_list`
 	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='bonus'
 	WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0'");
-	if(!$res)	throw new MysqlException("Не возможно выбрать документы агента");
 	while($nxt=$res->fetch_row())
 	{
 		switch($nxt[0])
@@ -622,7 +612,6 @@ function getInCost($pos_id, $limit_date=0, $serv_mode=0)
 	$cnt=$cost=0;
 	$sql_add='';
 	$res=$db->query("SELECT `pos_type`, `cost` FROM `doc_base` WHERE `id`=$pos_id");
-	if(!$res)	throw new MysqlException("Не удалось получить информацию по наименованию");
 	list($type, $cost)=$res->fetch_row();
 	if($type==1)	return $serv_mode?$cost:0;
 
@@ -632,7 +621,6 @@ function getInCost($pos_id, $limit_date=0, $serv_mode=0)
 	INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
 	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list_pos`.`doc` AND `doc_dopdata`.`param`='return'
 	WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' $sql_add ORDER BY `doc_list`.`date`");
-	if(!$res)	throw new MysqlException("Не удалось получить информацию из документов");
 	while($nxt=$res->fetch_row())
 	{
 		if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
@@ -666,7 +654,6 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
 	ORDER BY `doc_list`.`date`");
-	if(!$res)		throw new MysqlException("Не удалось запросить список документов с товаром ID:$pos_id при проверке на отрицательные остатки");
 	while($nxt=$res->fetch_row())
 	{
 		if($nxt[1]==1)
@@ -683,7 +670,6 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 			else
 			{
 				$r=$db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
-				if(!$r)			throw new MysqlException("Не удалось запросить склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
 				if(!$r->num_rows)	throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
 				list($nasklad)=$r->fetch_row();
 				if(!$nasklad)		throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
@@ -723,7 +709,6 @@ function DocRezerv($pos_id,$doc_id=0)
 	WHERE `ok` != '0' AND `type`='2' AND `doc_list_pos`.`tovar`=$pos_id )
 	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	if(!$res)	throw new MysqlException("Не удалось получить данные по резервам");
 	if($res->num_rows)	list($reserved)=$res->fetch_row();
 	else			$reserved=0;
 	$res->free();
@@ -747,7 +732,6 @@ function DocPodZakaz($pos_id,$doc_id=0)
 	INNER JOIN `doc_list` ON `doc_list`.`type`='11' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!=$doc_id AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
 	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	if(!$res)		throw new MysqlException("Не удалось получить данные предложений поставщиков");
 	if($res->num_rows)	list($available)=$res->fetch_row();
 	else			$available=0;
 	$res->free();
@@ -770,7 +754,6 @@ function DocVPuti($pos_id,$doc_id=0)
 	AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
 	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	if(!$res)		throw new MysqlException("Не удалось получить данные предложений поставщиков");
 	if($res->num_rows)	list($transit)=$res->fetch_row();
 	else			$transit=0;
 	$res->free();
@@ -784,7 +767,6 @@ function AutoDocument($doc_id)
 	global $db;
 	settype($doc_id,'int');
 	$res=$db->query("SELECT `type` FROM `doc_list` WHERE `id`=$doc_id");
-	if(!$res)		throw new MysqlException("Не удалось получить тип документа");
 	if(!$res->num_rows)	throw new Exception("Документ не найден");
 	list($type)=$res->fetch_row();
 	return AutoDocumentType($type, $doc_id);

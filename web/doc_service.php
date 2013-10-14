@@ -58,36 +58,35 @@ else if($mode=='merge_agent')
 	ID второго агента:<br><input type='text' name='ag2'><br>
 	Группа для перемещения:<br><select name='gr'>");
 	$res=$db->query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
-	if(!$res)	throw new MysqlException("Не удалось получить список групп агентов");
 	while($nxt=$res->fetch_row())
 		$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])." (id:$nxt[0])</option>");
 	$tmpl->addContent("</select><br><br>
 	<button>Выполнить запрошенную операцию</button>
 	</fieldset></form>");
 }
-else if($mode=='merge_agent_ok')
-{
+else if ($mode == 'merge_agent_ok') {
 	doc_menu();
-	$ag1=rcvint('ag1');
-	$ag2=rcvint('ag2');
-	$gr=rcvint('gr');
-	if( ($ag1==0) || ($ag2==0) )	throw new Exception("не указан ID агента!");
-	if($ag1==$ag2)			throw new Exception("ID агентов должны быть разные!");
-	if($ag2<$ag1)			{$ag=$ag1;$ag1=$ag2;$ag2=$ag;}
-	$db->query("START TRANSACTION");
-	if(!$res)		throw new MysqlException("Не удалось открыть транзакцию!");
-	$res=$db->query("UPDATE `doc_list` SET `agent`='$ag1' WHERE `agent`='$ag2'");
-	if(!$res)		throw new MysqlException("Не удалось перенести документы на указанного агента!");
-	$af_doc=$res->affected_rows;
-	$res=$db->mysql_query("UPDATE `doc_agent_dov` SET `ag_id`='$ag1' WHERE `ag_id`='$ag2'");
-	if(!$res)		throw new MysqlException("Не удалось перенести доверенных лиц на указанного агента!");
-	$af_dov=$res->affected_rows;
-	$res=$db->query("UPDATE `doc_agent` SET `name`=CONCAT('old ',`name`), `group`='$gr' WHERE `id`='$ag2'");
-	if(!$res)		throw new MysqlException("Не удалось обновить данные агента!");
-	$res=$db->query("COMMIT");
-	if(!$res)		throw new MysqlException("Не удалось завершить транзакцию!");
+	$ag1 = rcvint('ag1');
+	$ag2 = rcvint('ag2');
+	$gr = rcvint('gr');
+	if (($ag1 == 0) || ($ag2 == 0))
+		throw new Exception("не указан ID агента!");
+	if ($ag1 == $ag2)
+		throw new Exception("ID агентов должны быть разные!");
+	if ($ag2 < $ag1) {
+		$ag = $ag1;
+		$ag1 = $ag2;
+		$ag2 = $ag;
+	}
+	$db->startTransaction();
+	$res = $db->query("UPDATE `doc_list` SET `agent`='$ag1' WHERE `agent`='$ag2'");
+	$af_doc = $res->affected_rows;
+	$res = $db->query("UPDATE `doc_agent_dov` SET `ag_id`='$ag1' WHERE `ag_id`='$ag2'");
+	$af_dov = $res->affected_rows;
+	$res = $db->query("UPDATE `doc_agent` SET `name`=CONCAT('old ',`name`), `group`='$gr' WHERE `id`='$ag2'");
+	$res = $db->commit();
 
-	$tmpl->msg("Операция выполнена - обновлено $af_doc документов и $af_dov доверенных лиц","ok");
+	$tmpl->msg("Операция выполнена - обновлено $af_doc документов и $af_dov доверенных лиц", "ok");
 }
 else if($mode=='merge_tovar')
 {
@@ -99,8 +98,7 @@ else if($mode=='merge_tovar')
 	ID первого объекта:<br><input type='text' name='tov1'><br>
 	ID второго объекта:<br><input type='text' name='tov2'><br>
 	Группа для перемещения:<br><select name='gr'>");
-	$res=$db->mysql_query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
-	if(!$res)	throw new MysqlException("Не удалось получить список групп товаров");
+	$res = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
 	while($nxt=$res->fetch_row())
 		$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])." (id:$nxt[0])</option>");
 	$tmpl->addContent("</select><br><br>
@@ -116,25 +114,18 @@ else if($mode=='merge_tovar_ok')
 	if( ($tov1==0) || ($tov2==0) )	throw new Exception("не указан ID объекта!");
 	if($tov1==$tov2)		throw new Exception("ID объектов должны быть разные!");
 	if($tov2<$tov1)			{$tov=$tov1;$tov1=$tov2;$tov2=$tov;}
-	$db->query("START TRANSACTION");
-	if(!$res)		throw new MysqlException("Не удалось открыть транзакцию!");
+	$db->startTransaction();
 	// Меняем товары в документах
 	$res=$db->query("UPDATE `doc_list_pos` SET `tovar`='$tov1' WHERE `tovar`='$tov2'");
-	if(!$res)		throw new MysqlException("Не удалось перенести документы на указанный объект!");
 	$af_doc=$res->affected_rows;
 	// Меняем информацию в комплектующих
 	$res=$db->query("UPDATE `doc_base_kompl` SET `pos_id`='$tov1' WHERE `pos_id`='$tov2'");
-	if(!$res)		throw new MysqlException("Не удалось перенести комплектующие на указанный объект!");
 	$af_cb=$res->affected_rows;
 	$res=$db->query("UPDATE `doc_base_kompl` SET `kompl_id`='$tov1' WHERE `kompl_id`='$tov2'");
-	if(!$res)		throw new MysqlException("Не удалось перенести указанный объект в комплектующих!");
 	$af_cc=$res->affected_rows;
-
 	$res=$db->query("UPDATE `doc_base` SET `name`=CONCAT('old ',`name`), `group`='$gr' WHERE `id`='$tov2'");
-	if(!$res)		throw new MysqlException("Не удалось обновить данные товара!");
 
-	$res=$db->query("COMMIT");
-	if(!$res)		throw new MysqlException("Не удалось завершить транзакцию!");
+	$res=$db->commit();
 
 	$tmpl->msg("Операция выполнена - обновлено $af_doc документов, $af_cb / $af_cc комплектующих","ok");
 }
@@ -195,7 +186,6 @@ else if($mode=='cost')
 	doc_menu();
 	$tmpl->addContent("<h1>Управление ценами</h1>");
 	$res=$db->query("SELECT `id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction` FROM `doc_cost`");
-	if(!$res)	throw new MysqlException("Не удалось получить список цен");
 
 	$tmpl->addContent("<table><tr><th>ID<th>Наименование<th>Тип<th>Значение<th>Вид<th>Точность<th>Округление<th>Действие");
 	$vidi=array('-2' => 'Интернет-цена (объём)', '-1' => 'Интернет-цена', '0' => 'Обычная', '1' => 'По умолчанию' );
@@ -301,7 +291,6 @@ else if($mode=='costs')
 		if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
 		$res=$db->query("INSERT INTO `doc_cost` (`name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES ('$name_sql', '$cost_type_sql', '$coeff', '$vid', '$accur', '$direct')");
 	}
-	if(!$res)	throw new MysqlException("Не удалось сохранить цену!");
 	header("Location: doc_service.php?mode=cost");
 }
 else if($mode=='firm')
@@ -312,7 +301,6 @@ else if($mode=='firm')
 	Выберите фирму:<br>
 	<select name='firm_id'>");
 	$res=$db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-	if(!$res)	throw new MysqlException("Не удалось получить список фирм!");
 	while($nx=$res->fetch_row())
 	{
 		$tmpl->addContent("<option value='$nx[0]'>".html_out($nx[1])."</option>");
@@ -321,21 +309,16 @@ else if($mode=='firm')
 	<input type='submit' value='Далее'>
 	</form>");
 }
-else if($mode=='firme')
-{
+else if($mode=='firme') {
 	$tmpl->setTitle("Настройки фирмы");
 	$tmpl->addStyle("input.dw{width:300px;}");
-	$firm_id=rcv('firm_id');
-	if($firm_id)
-	{
-		$res=$db->query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
-		if(!$res)	throw new MysqlException("Не удалось получить данные фирмы!");
+	$firm_id = rcvint('firm_id');
+	if($firm_id) {
+		$res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
 		$values = $res->fetch_assoc();
 	}
-	else
-	{
-		$res=$db->query("SELECT * FROM `doc_vars` LIMIT 1");
-		if(!$res)	throw new MysqlException("Не удалось получить данные фирмы!");
+	else {
+		$res = $db->query("SELECT * FROM `doc_vars` LIMIT 1");
 		$values = $res->fetch_assoc();
 		foreach($values as $id => $value)
 			$values[$id]='';
@@ -345,8 +328,7 @@ else if($mode=='firme')
 	<form action='doc_service.php' method='post'>
 	<input type='hidden' name='mode' value='firms'>
 	<input type='hidden' name='firm_id' value='$firm_id'>");
-	foreach($values as $id => $value)
-	{
+	foreach($values as $id => $value) {
 		if($id=='id') continue;
 		$tmpl->addContent("$id<br><input type='text' class='dw' name='v[$id]' value='$value'><br>");
 	}
@@ -390,7 +372,6 @@ else if($mode=='firms')
 
 	}
 	$res=$db->query($ss);
-	if(!$res)	throw new MysqlException("Не удалось сохранить данные! $ss");
 	$tmpl->msg("Данные сохранены!","ok");
 }
 else if($mode=='vrasx')
@@ -401,28 +382,23 @@ else if($mode=='vrasx')
 	{
 		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
 		$res=$db->query("SELECT `id`, `name`, `adm` FROM `doc_rasxodi` ORDER BY `id`");
-		if(!$res)	throw new MysqlException("Не удалось получить список расходов");
-		while($nxt=$res->fetch_row())
-		{
+		while($nxt=$res->fetch_row()) {
 			$name=request('nm'.$nxt[0]);
 			$adm=rcvint('ch'.$nxt[0]);
 			$name_sql=$db->real_escape_string($name);
 			if( ($name!=$nxt[1]) || ($adm!=$nxt[2]))
 			$res=$db->query("UPDATE `doc_rasxodi` SET `name`='$name_sql', `adm`='$adm' WHERE `id`='$nxt[0]'");
-			if(!$res)	throw new MysqlException("Не удалось изменить список расходов");
 		}
 		$name=request('nm_new');
 		$adm=rcvint('ch_new');
 		if($name)
 		{
 			$res=$db->query("INSERT INTO `doc_rasxodi` (`name`, `adm`) VALUES ('$name', '$adm')");
-			if(!$res)	throw new MysqlException("Не удалось пополнить список расходов");
 		}
 		$tmpl->msg("Информация обновлена!");
 	}
 
 	$res=$db->query("SELECT `id`, `name`, `adm` FROM `doc_rasxodi` ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Не удалось получить список расходов");
 	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='vrasx'>
 	<input type='hidden' name='opt'  value='save'>
@@ -441,27 +417,23 @@ else if($mode=='vrasx')
 	<button type='submit'>Записать</button>
 	</form>");
 }
-else if($mode=='store')
-{
+else if($mode=='store') {
 	doc_menu();
-	if(rcv('opt'))
-	{
-		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
-		$res=$db->query("SELECT `id`, `name`, `dnc` FROM `doc_sklady`");
-		if(!$res)	throw new MysqlException("Не удалось получить список складов");
-		while($nxt=$res->fetch_row())
-		{
-			if(!isset($_POST['sname'][$nxt[0]]))	continue;
-			$name=$db->real_escape_string($_POST['sname'][$nxt[0]]);
-			$dnc=isset($_POST['dnc'][$nxt[0]])?1:0;
-			$desc='';
-			if($_POST['sname'][$nxt[0]]!=$nxt[1])	$desc.="name:(".$db->real_escape_string($nxt[1])." => $name), ";
-			if($dnc!=$nxt[2])			$desc.="dnc: ($nxt[2] => $dnc)";
-			if($desc=='')	continue;
+	if (request('opt')) {
+		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
+		$res = $db->query("SELECT `id`, `name`, `dnc` FROM `doc_sklady`");
+		while ($nxt = $res->fetch_row()) {
+			if (!isset($_POST['sname'][$nxt[0]]))	continue;
+			$name = $db->real_escape_string($_POST['sname'][$nxt[0]]);
+			$dnc = isset($_POST['dnc'][$nxt[0]]) ? 1 : 0;
+			$desc = '';
+			if ($_POST['sname'][$nxt[0]] != $nxt[1])
+				$desc.="name:(" . $db->real_escape_string($nxt[1]) . " => $name), ";
+			if ($dnc != $nxt[2])	$desc.="dnc: ($nxt[2] => $dnc)";
+			if ($desc == '')	continue;
 
 			$db->query("UPDATE `doc_sklady` SET `name`='$name', `dnc`='$dnc' WHERE `id`='$nxt[0]'");
-			if(!$res)	throw new MysqlException("Не удалось обновить список складов");
-			doc_log('UPDATE',$desc,'sklad',$nxt[0]);
+			doc_log('UPDATE', $desc, 'sklad', $nxt[0]);
 		}
 		$tmpl->msg("Данные обновлены","ok");
 	}
@@ -472,9 +444,7 @@ else if($mode=='store')
 	<input type='hidden' name='opt' value='save'>
 	<table><tr><th>N</th><th>Наименование</th><th>Не контролировать остатки</th></tr>");
 	$res=$db->query("SELECT `id`, `name`, `dnc` FROM `doc_sklady` ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Не удалось получить список складов");
-	while($line=$res->fetch_row())
-	{
+	while($line=$res->fetch_row()) {
 		$c=$line[2]?'checked':'';
 		$tmpl->addContent("<tr><td>$line[0]</td><td><input type='text' name='sname[$line[0]]' value='$line[1]'></td><td><input type='checkbox' name='dnc[$line[0]]' value='1' $c></td></tr>");
 	}
@@ -483,69 +453,59 @@ else if($mode=='store')
 	<button>Сохранить</button>
 	</form>");
 }
-else if($mode=='params')
-{
-	$opt=rcv('opt');
-	$cur_group=round(rcv('group',1));
-	$types=array('text'=>'Текстовый', 'int'=>'Целый', 'bool'=>'Логический', 'float'=>'С плавающей точкой');
+else if($mode=='params') {
+	$opt = request('opt');
+	$cur_group = rcvint('group', 1);
+	$types = array('text' => 'Текстовый', 'int' => 'Целый', 'bool' => 'Логический', 'float' => 'С плавающей точкой');
 	doc_menu();
 	$tmpl->addContent("<h1 id='page-title'>Настройки параметров складской номенклатуры</h1>");
-	if($opt=='newg')
-	{
-		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
-		if(isset($_POST['name']))
-		{
-			$name=$db->real_escape_string($_POST['name']);
-			if(strlen($name)>0)
-			{
-				$res=$db->query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$name')");
-				if(!$res)	throw new MysqlException("Не удалось создать группу складской номенклатуры");
-				$cur_group=$db->insert_id;
-				$newg=1;
+	if ($opt == 'newg') {
+		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
+		if (isset($_POST['name'])) {
+			$name = $db->real_escape_string($_POST['name']);
+			if (strlen($name) > 0) {
+				$res = $db->query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$name')");
+				$cur_group = $db->insert_id;
+				$newg = 1;
 			}
 		}
-		if($newg)	$tmpl->msg("Группа создана","ok");
+		if ($newg)	$tmpl->msg("Группа создана", "ok");
 	}
-	if($opt=='save')
-	{
-		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
-		$res=$db->query("SELECT `id`, `param`, `type`, `pgroup_id` FROM `doc_base_params` WHERE `pgroup_id`='$cur_group'");
-		if(!$res)	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
-		$save=$newg=$newp=0;
-		while($nxt=$res->fetch_row())
-		{
-			$param=$db->real_escape_string($_POST['param'][$nxt[0]]);
-			$type=$db->real_escape_string($_POST['type'][$nxt[0]]);
-			if(!array_key_exists($type,$types))
-			{
+	if ($opt == 'save') {
+		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
+		$res = $db->query("SELECT `id`, `param`, `type`, `pgroup_id` FROM `doc_base_params` WHERE `pgroup_id`='$cur_group'");
+		$save = $newg = $newp = 0;
+		while ($nxt = $res->fetch_row()) {
+			$param = $db->real_escape_string($_POST['param'][$nxt[0]]);
+			$type = $db->real_escape_string($_POST['type'][$nxt[0]]);
+			if (!array_key_exists($type, $types)) {
 				echo "id: $nxt[0], $type: $type<br>";
-				$type='text';
+				$type = 'text';
 			}
-			$desc='';
-			if($_POST['param'][$nxt[0]]!=$nxt[1])	$desc.="param:(".mysql_real_escape_string($nxt[1])." => $param), ";
-			if($type!=$nxt[2])				$desc.="type: ($nxt[2] => $type)";
-			if($desc=='')	continue;
-			$save=1;
-			$res=$db->query("UPDATE `doc_base_params` SET `param`='$param', `type`='$type' WHERE `id`='$nxt[0]'");
-			if(!$res)	throw new MysqlException("Не удалось обновить параметры складской номенклатуры, id=$nxt[0]");
-			doc_log('UPDATE',$desc,'base_params',$nxt[0]);
+			$desc = '';
+			if ($_POST['param'][$nxt[0]] != $nxt[1])
+				$desc.="param:(" . $db->real_escape_string($nxt[1]) . " => $param), ";
+			if ($type != $nxt[2])
+				$desc.="type: ($nxt[2] => $type)";
+			if ($desc == '')
+				continue;
+			$save = 1;
+			$res = $db->query("UPDATE `doc_base_params` SET `param`='$param', `type`='$type' WHERE `id`='$nxt[0]'");
+			doc_log('UPDATE', $desc, 'base_params', $nxt[0]);
 		}
-		if($save)	$tmpl->msg("Данные обновлены","ok");
+		if ($save)
+			$tmpl->msg("Данные обновлены", "ok");
 
-		$param=$db->real_escape_string($_POST['param'][0]);
-		if(strlen($param)>0)
-		{
-			$type=$db->real_escape_string($_POST['type'][0]);
-			if(!array_key_exists($type,$types))	$type='text';
+		$param = $db->real_escape_string($_POST['param'][0]);
+		if (strlen($param) > 0) {
+			$type = $db->real_escape_string($_POST['type'][0]);
+			if (!array_key_exists($type, $types))
+				$type = 'text';
 
-			$res=$db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`) VALUES ('$param', '$type', '$cur_group')");
-			if(!$res)	throw new MysqlException("Не удалось создать параметр складской номенклатуры");
-			doc_log('INSERT',"param: $param, type: $type",'base_params',$cur_group);
-			$tmpl->msg("Параметр создан","ok");
+			$res = $db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`) VALUES ('$param', '$type', '$cur_group')");
+			doc_log('INSERT', "param: $param, type: $type", 'base_params', $cur_group);
+			$tmpl->msg("Параметр создан", "ok");
 		}
-
-
-
 	}
 
 	$tmpl->addStyle("
@@ -594,12 +554,9 @@ div.clear
 
 	$tmpl->addContent("<div class='tabeditor'><div class='group_menu' onclick='menuclick(event)'>");
 	$rgroups=$db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
-	if($rgroups)	throw new MysqlException("Не удалось получить группы складской номенклатуры");
 	$content='';
-	while($group=$res->fetch_row($rgroups))
-	{
-		if($group[0]==$cur_group)
-		{
+	while($group = $res->fetch_row()) {
+		if($group[0] == $cur_group) {
 			$gi="style='background-color: #fff; color: #66f;'";
 			$gc="style='display: block;'";
 		}
@@ -612,9 +569,7 @@ div.clear
 		<input type='hidden' name='group' value='{$group[0]}'>
 		<table><tr><th>ID</th><th>Название</th><th>Тип данных</th><th>Ассоциация с Яндекс.Маркет</th></tr>";
 		$rparams=$db->query("SELECT `id`, `param`, `type`, `pgroup_id`, `ym_assign` FROM  `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
-		if(!$rparams)	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
-		while($param=$db->fetch_row($rparams))
-		{
+		while($param = $db->fetch_row()) {
 			$content.="<tr><td>$param[0]:</td>
 			<td><input type='text' name='param[$param[0]]' value='$param[1]'></td>
 			<td><select name='type[$param[0]]'>";
@@ -696,7 +651,6 @@ else if($mode=='param_collections')
 			if(strlen($name)>0)
 			{
 				$res=$db->query("INSERT INTO `doc_base_pcollections_list` (`name`) VALUES ('$name')");
-				if(!$res)	throw new MysqlException("Не удалось создать набор свойств складской номенклатуры");
 				$collection_id=$db->insert_id;
 				doc_log('CREATE', "name: $name", 'base_pcollections', $collection_id);
 				$newc=1;
@@ -714,7 +668,6 @@ else if($mode=='param_collections')
 				if($param_id<1)	continue;
 
 				$res=$db->query("INSERT INTO `doc_base_pcollections_set` (`param_id`, `collection_id`) VALUES ('$param_id', '$collection_id')");
-				if(!$res)	throw new MysqlException("Не удалось добавить параметр в набор");
 				doc_log('INSERT',"param_id: $param_id",'base_pcollections',$collection_id);
 				$newp=1;
 			}
@@ -728,7 +681,6 @@ else if($mode=='param_collections')
 		$p=rcvint('p');
 		$c=rcvint('c');
 		$res=$db->query("DELETE FROM `doc_base_pcollections_set` WHERE `param_id`='$p' AND `collection_id`='$c'");
-		if(!$res)	throw new MysqlException("Не удалось удалить параметр из набора");
 		$tmpl->msg("Параметр удалён","ok");
 	}
 
@@ -737,30 +689,23 @@ else if($mode=='param_collections')
 	<input type='hidden' name='mode' value='param_collections'>
 	<input type='hidden' name='opt' value='save'>");
 	$rgroups=$db->query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
-	if(!$rgroups)	throw new MysqlException("Не удалось получить наборы свойств складской номенклатуры");
-	while($group=$rgroups->fetch_row())
-	{
+	while($group=$rgroups->fetch_row()) {
 		$tmpl->addContent("<fieldset><legend>$group[1]</legend><table>");
 		$rparams=$db->query("SELECT `doc_base_pcollections_set`.`param_id`, `doc_base_params`.`param`
 		FROM `doc_base_pcollections_set`
 		INNER JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_pcollections_set`.`param_id`
 		WHERE `collection_id`='$group[0]'");
-		if(!$rparams)	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
-		while($param=mysql_fetch_row($rparams))
+		while($param = $rparams->fetch_row())
 		{
 			$tmpl->addContent("<tr><td><a href='/doc_service.php?mode=param_collections&amp;opt=del&amp;p=$param[0]&amp;c=$group[0]'><img alt='Удалить' src='/img/i_del.png'></a></td><td>$param[1]</td></tr>");
 		}
 		$tmpl->addContent("<tr><td><b>+</b></td><td><select name='add[$group[0]]'>
 		<option value='0' selected>--не выбрано--</option>");
 		$res_group=$db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
-		if(!$res_group)	throw new MysqlException("Не удалось получить параметры групп складской номенклатуры");
-		while($group=$res_group->fetch_row())
-		{
+		while($group = $res_group->fetch_row())	{
 			$tmpl->addContent("<option value='-1' disabled>$group[1]</option>");
 			$res=$db->query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
-			if(!$res)	throw new MysqlException("Не удалось получить параметры складской номенклатуры");
-			while($param=$res->fetch_row())
-			{
+			while($param=$res->fetch_row())	{
 				$tmpl->addContent("<option value='$param[0]'>- $param[1]</option>");
 			}
 		}
@@ -773,11 +718,11 @@ else if($mode=='param_collections')
 }
 else if($mode=='auinfo')
 {
-	$dt_apply=strtotime(rcv('dt_apply',date("Y-m-d",time()-60*60*24*31)));
-	$dt_update=strtotime(rcv('dt_update',date("Y-m-d",time()-60*60*24*31)));
-	$print_dt_apply=date('Y-m-d', $dt_apply);
-	$print_dt_update=date('Y-m-d', $dt_update);
-	$ndd=rcv('ndd');
+	$dt_apply = strtotime(rcvdate('dt_apply', date("Y-m-d",time()-60*60*24*31)));
+	$dt_update = strtotime(rcvdate('dt_update',date("Y-m-d",time()-60*60*24*31)));
+	$print_dt_apply = date('Y-m-d', $dt_apply);
+	$print_dt_update = date('Y-m-d', $dt_update);
+	$ndd = rcvint('ndd');
 	$ndd_check=$ndd?'checked':'';
 	doc_menu();
 	$tmpl->addContent("<h1 id='page-title'>Информация по документам, изменённым после проведения</h1>
@@ -810,23 +755,19 @@ else if($mode=='auinfo')
 	LEFT JOIN `doc_types` ON `doc_list`.`type`=`doc_types`.`id`
 	WHERE `doc_log`.`object`='doc' AND `time`>='$print_dt_apply 00:00:00' AND `motion` LIKE 'APPLY%'
 	ORDER BY `doc_log`.`time`");
-	if(!$res)	throw new MysqlException("Не удалось получить данные истории проведений");
 	$docs=array();
-	while($nxt=$res->fetch_assoc())
-	{
+	while($nxt=$res->fetch_assoc()) {
 		if(in_array($nxt['doc_id'],$docs))	continue;
 		$update_res=$db->query("SELECT `doc_log`.`object_id` AS `doc_id`, `doc_log`.`time`, `doc_log`.`user`, `users`.`name` AS `user_name`, `doc_log`.`desc`
 		FROM `doc_log`
 		LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
 		WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='{$nxt['doc_id']}' AND `time`>='$print_dt_update 00:00:00' AND `time`>='{$nxt['time']}' AND `motion` LIKE 'UPDATE%'");
-		if(!$update_res)	throw new MysqlException("Не удалось получить данные истории изменений");
 		if($update_res->num_rows==0)	continue;
-		else
-		{
+		else {
 			$c_users=array();
 			$lastchange=$lastuser=$lastdesc='';
 			$datec=date('Y-m-d',strtotime($nxt['time']));
-			while($updates=mysql_fetch_array($update_res))
+			while($updates = $update_res->fetch_array())
 			{
 				if($ndd)	if(date('Y-m-d',strtotime($updates['time']))==$datec)	continue;
 
@@ -864,13 +805,11 @@ else if($mode=='pcinfo')
 	</form>
 	<table class='list'><tr><th>Пользователь</th><th>Затраченное время</th><th>Отредактировано наименований</th></tr>");
 	$res=$db->query("SELECT `id`, `name` FROM `users` ORDER BY `name`");
-	if(!$res)	throw new MysqlException("Не удалось получить список пользователей!");
 	while($user_data=$res->fetch_row())
 	{
 		$oldtime=$totaltime=0;
 		$pos=array();
 		$res_log=$db->query("SELECT `time`, `object_id` FROM `doc_log` WHERE `user`='{$user_data[0]}' AND `object`='pos' AND `time`>='$from' AND `time`<='$to' ORDER BY `time`");
-		if($res_log)	throw new MysqlException("Не удалось получить данные журнала!");
 		while($logline=$res_log->fetch_row())
 		{
 			$curtime=strtotime($logline[0]);
@@ -886,21 +825,18 @@ else if($mode=='pcinfo')
 	}
 	$tmpl->addContent("</table>");
 }
-else $tmpl->logger("Запрошена несуществующая опция!");
+else throw new NotFoundException("Несуществующая опция");
 }
-catch(MysqlException $e)
-{
-	$db->query("ROLLBACK");
-	$tmpl->msg($e->getMessage(),'err','Ошибка базы данных');
-	$tmpl->logger($e->getMessage());
+catch(mysqli_sql_exception $e) {
+	$tmpl->ajax=0;
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
-catch(AccessException $e)
-{
+catch(AccessException $e) {
 	$tmpl->msg($e->getMessage(),"err","У Вас недостаточно привилегий!");
 }
-catch(Exception $e)
-{
-	$db->query("ROLLBACK");
+catch(Exception $e) {
+	$db->rollback();
 	$tmpl->msg($e->getMessage(),'err','Ошибка выполнения операции');
 }
 

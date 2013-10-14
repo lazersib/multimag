@@ -54,7 +54,6 @@ class CommentDispatcher
 		$object_name_sql=$db->real_escape_string($this->object_name);
 		$db->query("INSERT INTO `comments` (`date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`)
 		VALUES (NOW(), '$object_name_sql', '{$this->object_id}', '$autor_name', '$autor_email', '$uid', '$text', '$rate', '$ip', '$ua')");
-		if(!$res)	throw new MysqlException("Не удалось сохранить коментарий!");
 		if($CONFIG['noify']['comments'])
 		{
 			switch($this->object_name)
@@ -69,7 +68,7 @@ class CommentDispatcher
 			$text="Объект: {$this->object_name}|{$this->object_id}\nСсылка: $url\nАвтор: $autor_name <$autor_email>\nUID: $uid\nРейтинг:$rate\nТекст: $text";
 			sendAdmMessage($text,'Новый коментарий');
 		}
-		return $db->insert_id();
+		return $db->insert_id;
 	}
 
 	/// Получить рейтинг заданного объекта
@@ -77,7 +76,6 @@ class CommentDispatcher
 	{
 		global $db;
 		$res=$db->query("SELECT SUM(`rate`)/COUNT(`rate`) FROM `comments` WHERE `object_name`='{$this->object_name}' AND `object_id`='{$this->object_id}'");
-		if(!$res)	throw new MysqlException("Не удалось получить рейтинг");
 		if(!$res->num_rows)	return 0;
 		$r=$res->fetch_row();
 		return round($r[0]);

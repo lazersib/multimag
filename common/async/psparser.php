@@ -62,7 +62,7 @@ class PsParserWorker extends AsyncWorker {
 
 				$true_ref = false;
 
-				$ps_settings = $db->query("select `id`, `name`, `template`, `template_like` from `ps_settings` order by `prioritet`"); // Избыточность: под каждый запрос мы постоянно запрашиваем одни и теже данные по шаблонам ПС, хотя мы их запросили в 44 строке, но не нашел как после прохода mysql_fetch_row возвращать маркер на первую строчку
+				$ps_settings = $db->query("select `id`, `name`, `template`, `template_like` from `ps_settings` order by `prioritet`"); // Избыточность: под каждый запрос мы постоянно запрашиваем одни и теже данные по шаблонам ПС, хотя мы их запросили в 44 строке, но не нашел как после прохода mysql _fetch_row возвращать маркер на первую строчку
 				while ($ps_settings_data = $ps_settings->fetch_row()) {
 					preg_match($ps_settings_data[2], $str, $matches);
 					if (count($matches) > 0) {

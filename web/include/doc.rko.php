@@ -388,8 +388,8 @@ class doc_Rko extends doc_Nulltype {
 
 		$pdf->Ln(2);
 
-		$res=mysql_query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `id`='{$this->doc_data['user']}'");
-		$name=@mysql_result($res,0,0);
+		$res = $db->query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `id`='{$this->doc_data['user']}'");
+		list($name) = $res->fetch_row();
 		if(!$name) $name=$this->firm_vars['firm_buhgalter'];
 
 		$str = iconv('UTF-8', 'windows-1251', "Выдал кассир");

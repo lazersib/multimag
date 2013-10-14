@@ -177,7 +177,7 @@ class doc_s_Agent_dov
 		ORDER BY `a`.`surname`";
 
 		$lim = 50;
-		$page = rcv('p');
+		$page = rcvint('p');
 		$res = $db->query($sql);
 		if ($res->num_rows > $lim) {
 			if ($page < 1)

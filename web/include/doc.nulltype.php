@@ -705,7 +705,7 @@ class doc_Nulltype
 			$this->DocApply($silent);
 			$db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
-		catch(MysqlException $e)
+		catch(mysqli_sql_exception $e)
 		{
 			$db->rollback();
 			if(!$silent)
@@ -714,7 +714,7 @@ class doc_Nulltype
 				doc_log("ERROR APPLY {$this->doc_name}", $e->getMessage(), 'doc', $this->doc);
 			}
 			$db->query("UNLOCK TABLES");
-			return $e->getMessage().$e->sql_error;
+			return $e->getMessage();
 		}
 		catch( Exception $e)
 		{
@@ -762,9 +762,9 @@ class doc_Nulltype
 			$this->DocApply(0);
 			$db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->doc}'");
 		}
-		catch(MysqlException $e) {
+		catch(mysqli_sql_exception $e) {
 			$db->rollback();
-			$e->WriteLog();
+			$tmpl->logger($e->getMessage(), 1);
 			$db->query("UNLOCK TABLES");
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
 			return $json;
@@ -1324,7 +1324,7 @@ class doc_Nulltype
 				WHERE `pos_id`='$pos_id'  AND `rasx_list_pos` IS NULL");
 				
 				while($nxt=$res->fetch_row()){
-					$nxt[1]=html_in($nxt[1]);
+					$nxt[1]=$nxt[1];
 					$tmpl->addContent("$nxt[1]|$nxt[0]\n");
 				}
 
@@ -1549,6 +1549,8 @@ class doc_Nulltype
 		global $tmpl, $db;
 		$tmpl->addContent("Касса:<br><select name='kassa'>");
 		$res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND `firm_id`='0' OR `num`='{$this->doc_data['kassa']}' ORDER BY `num`");
+		if($this->doc_data['kassa']==0)
+				$tmpl->addContent("<option value='0'>--не выбрана--</option>");
 		while($nxt = $res->fetch_row())
 		{
 			if($nxt[0]==$this->doc_data['kassa'])

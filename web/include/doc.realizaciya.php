@@ -227,7 +227,7 @@ class doc_Realizaciya extends doc_Nulltype
 			if(@$CONFIG['poseditor']['sn_restrict'])
 			{
 				$r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
-				$sn_cnt=mysql_result($r,0,0);
+				list($sn_cnt) = $r->fetch_row();
 				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
 			}
 			$bonus+=$nxt[8]*$nxt[1]*(@$CONFIG['bonus']['coeff']);
@@ -235,8 +235,8 @@ class doc_Realizaciya extends doc_Nulltype
 
 // 		if(@$CONFIG['bonus']['enable'] && $bonus>0)
 // 		{
-// 			mysql_query("UPDATE `doc_agent` SET `bonus`='$bonus' WHERE `id`='{$this->doc}'");
-// 			if(mysql_errno())				throw new MysqlException('Ошибка проведения, ошибка начисления бонусного вознаграждения');
+// 			mysql _query("UPDATE `doc_agent` SET `bonus`='$bonus' WHERE `id`='{$this->doc}'");
+// 			if(mysql _errno())				throw new MysqlException('Ошибка проведения, ошибка начисления бонусного вознаграждения');
 // 		}
 
 		if($silent)	return;

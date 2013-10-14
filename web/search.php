@@ -45,7 +45,6 @@ class SearchPage
 		WHERE (`doc_base_dop`.`analog` LIKE '%$s%' OR `doc_base`.`name` LIKE '%$s%' OR `doc_base`.`desc` LIKE '%$s%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base_dop`.`analog` LIKE '%$s%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
 		LIMIT 20";
 		$res=$db->query($sql);
-		if(!$res)	throw new MysqlException("Не удалось сделать выборку товаров");
 		$found_cnt=0;
 		$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
 		if($row=$res->num_rows)
@@ -81,7 +80,6 @@ class SearchPage
 		$ret='';
 		$i=1;
 		$res=$db->query("SELECT `name`, `text` FROM `articles` WHERE `text` LIKE '%$s%' OR `name` LIKE '%$s'");
-		if(!$res)	throw new MysqlException("Не удалось сделать выборку статей");
 		while($nxt=$res->fetch_row())
 		{
 			$text	= $wikiparser->parse( $nxt[1] );
@@ -192,15 +190,13 @@ try
 
 	$search->Exec();
 }
-catch(MysqlException $e)
-{
-	mysql_query("ROLLBACK");
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+catch(mysqli_sql_exception $e) {
+	$tmpl->ajax=0;
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
-catch(Exception $e)
-{
-	mysql_query("ROLLBACK");
+catch(Exception $e) {
+	$db->rollback();
 	$tmpl->addContent("<br><br>");
 	$tmpl->logger($e->getMessage());
 }

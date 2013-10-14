@@ -35,7 +35,7 @@ try {
 			LEFT JOIN `users_openid` ON `users_openid`.`user_id`=`users`.`id`
 			WHERE `users_openid`.`user_id` IS NULL AND `users`.`reg_date`<'$dtim' AND `users`.`reg_email_confirm`!='1' AND `reg_phone_confirm`!='1'");
 		while ($nxt = $res->fetch_row())
-			mysql_query("DELETE FROM `users` WHERE `id`='$nxt[0]'");
+			$db->query("DELETE FROM `users` WHERE `id`='$nxt[0]'");
 	}
 
 // Перемещение непроведённых реализаций на начало текущего дня

@@ -58,8 +58,6 @@ class BDocAgentDov {
 		if (!$update) {
 			$form_fields['ag_id'] = $ag_id;
 			$ins_id = $db->insertA('doc_agent_dov', $form_fields);
-			if ($ins_id === false)
-				throw new MysqlException("Ошибка добавления довереного лица.");
 			doc_log("INSERT doc_agent_dov", var_export($form_fields, true), 'agent_dov', $ins_id);
 			return $ins_id;
 		}
@@ -69,8 +67,6 @@ class BDocAgentDov {
 			if ($log) {
 				doc_log("UPDATE doc_agent_dov", $log);
 				$res = $db->updateA('doc_agent_dov', $_id, $form_fields);
-				if ($res === false)
-					throw new MysqlException("Ошибка редактирования довереного лица.");
 			}
 			return 1;
 		}

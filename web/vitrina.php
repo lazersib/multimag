@@ -1369,7 +1369,7 @@ protected function MakeBuy() {
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$d_service_id'");
-			$tov_info = $db->fetch_array($res);
+			$tov_info = $db->fetch_array();
 			$zakaz_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 			$admin_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 		}
@@ -1583,8 +1583,8 @@ protected function GetCountInfo($count, $tranzit)
 // 		$proizv=$pos[1];
 // 		$pos=$pos[0];
 // 		if($proizv) $proizv="AND `proizv` LIKE '$proizv'";
-// 		$res=mysql_query("SELECT `id` FROM `doc_base` WHERE `name`  LIKE '$pos' $proizv");
-// 		@$pos=mysql_result($res,0,0);
+// 		$res=mysql _query("SELECT `id` FROM `doc_base` WHERE `name`  LIKE '$pos' $proizv");
+// 		@$pos=mysql _result($res,0,0);
 // 		if($pos)
 // 		{
 // 			$p=$pos;

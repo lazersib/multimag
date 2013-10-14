@@ -53,7 +53,8 @@ Host: ".$CONFIG['site']['name'];
 }
 else if($mode=='favicon')
 {
-	header("Location: /skins/".$CONFIG['site']['skin']."/favicon.ico", true, 301);
+	$skin = $CONFIG['site']['skin']?$CONFIG['site']['skin']:'default';
+	header("Location: /skins/".$skin."/favicon.ico", true, 301);
 	exit();
 }
 else

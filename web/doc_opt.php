@@ -23,7 +23,7 @@ need_auth();
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
-$l=rcv('l');
+$l = request('l');
 if($l=='agent')
 	$sprav=new doc_s_Agent();
 else if($l=='dov')

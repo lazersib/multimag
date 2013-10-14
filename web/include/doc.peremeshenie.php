@@ -273,18 +273,18 @@ class doc_Peremeshenie extends doc_Nulltype
 		$pdf->Ln();
 
 		$str="Всего $ii наименований общей массой $sum";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 
 		$str="Выдал кладовщик: ____________________________________";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 
 		$str="Вид и количество принятого товара совпадает с накладной. Внешние дефекты не обнаружены.";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		$str="Принял кладовщик:_____________________________________";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 
 		if($to_str)

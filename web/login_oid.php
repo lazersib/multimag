@@ -99,7 +99,6 @@ elseif($openid->mode)
 		$res=$db->query("SELECT `users_openid`.`user_id`, `users_openid`.`openid_identify`, `users`.`name`, `users`.`reg_email`, `users`.`disabled`, `users`.`disabled_reason` FROM `users_openid`
 		LEFT JOIN `users` ON `users`.`id`=`users_openid`.`user_id`
 		WHERE `openid_identify`='$sql_oid'");
-		if(!$res)	throw new MysqlException("Не удалось получить регистрационные данные");
 
 		if($user_info=@$res->fetch_assoc())
 		{
@@ -122,7 +121,6 @@ elseif($openid->mode)
 			{
 				$sql_login=$db->real_escape_string(translitIt($oid_attr['namePerson/friendly']));
 				$res=$db->query("SELECT `id` FROM `users` WHERE `name`='$sql_login'");
-				if(!$res)	throw new MysqlException("Не удалось получить данные уникальности");
 				if(!$res->num_rows)	$login=$oid_attr['namePerson/friendly'];
 			}
 
@@ -132,7 +130,6 @@ elseif($openid->mode)
 				$np=translitIt(str_replace(' ','_',$oid_attr['namePerson']));
 				$sql_login=$db->real_escape_string($np);
 				$res=$db->query("SELECT `id` FROM `users` WHERE `name`='$sql_login'");
-				if(!$res)	throw new MysqlException("Не удалось получить данные уникальности");
 				if(!$res->num_rows)	$login=$np;
 			}
 
@@ -141,7 +138,6 @@ elseif($openid->mode)
 			{
 				$sql_login=$db->real_escape_string($oid_attr['contact/email']);
 				$res=$db->query("SELECT `id` FROM `users` WHERE `name`='$sql_login'");
-				if(!$res)	throw new MysqlException("Не удалось получить данные уникальности");
 				if(!$res->num_rows)	$login=$oid_attr['contact/email'];
 			}
 
@@ -150,7 +146,6 @@ elseif($openid->mode)
 			{
 				$sql_login=$db->real_escape_string($openid->identity);
 				$res=$db->query("SELECT `id` FROM `users` WHERE `name`='$sql_login'");
-				if(!$res)	throw new MysqlException("Не удалось получить данные уникальности");
 				if(!$res->num_rows)	$login=$openid->identity;
 			}
 
@@ -183,10 +178,8 @@ elseif($openid->mode)
 
 			$res=$db->query("INSERT INTO `users` (`name`, `pass`, `pass_type`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `reg_date`, `reg_email_subscribe`)
 			VALUES ('$sql_login',  '$sql_pass_hash', '$sql_pass_type',  NOW(), '$sql_email', '$email_conf', '$sql_phone', '$phone_conf', NOW(), 1 )");
-			if(!$res)	throw new MysqlException("Не удалось добавить пользователя! Попробуйте позднее!");
 			$user_id=$db->insert_id;
 			$res=$db->query("INSERT INTO `users_openid` (`user_id`, `openid_identify`, `openid_type`) VALUES ($user_id, '$sql_oid', '')");
-			if(!$res)	throw new MysqlException("Не удалось добавить openid! Попробуйте позднее!");
 			$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
 			$ua=$db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
 			$res=$db->query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
@@ -209,11 +202,12 @@ elseif($openid->mode)
 }
 
 }
-catch(MysqlException $e)
+catch(mysqli_sql_exception $e)
 {
-	$e->db->rollback();
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'], $e->getMessage());
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
+	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
+	$db->rollback();
 }
 catch(Exception $e)
 {

@@ -55,7 +55,6 @@ try
 
 	$res=$db->query("SELECT `doc_list`.`id`, `agent`, `sum`, `firm_id`, `contract` FROM `doc_list`
 	WHERE `doc_list`.`id`='$order_id' AND `doc_list`.`type`='3'");
-	if(!$res)		throw new MysqlException("Невозможно получить данные документа");
 	if(!$res->num_rows)	throw new Exception("Заказ не найден!");
 	$order_info=$res->fetch_assoc();
 
@@ -67,7 +66,6 @@ try
 	// Создаём документ банк-приход:
 	$res=$db->query("INSERT INTO `doc_list` (`type`, `agent`, `contract`, `p_doc`, `date`, `bank`, `sum`, `firm_id`, `comment` )
 	VALUES ('4', '{$order_info['agent']}', '{$order_info['contract']}', '{$order_info['id']}', '".time()."', '{$CONFIG['gpb']['bank_id']}', '{$order_info['sum']}', '{$order_info['firm_id']}', '$text_sql')");
-	if(!$res)		throw new MysqlException("Не удалось создать документ банка");
 	$doc_bank_id=$db->insert_id;
 
 	$sum=round($order_info['sum']*100);

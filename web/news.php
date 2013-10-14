@@ -125,7 +125,6 @@ protected function ShowList($type='')
 	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 	$where
 	ORDER BY `date` DESC LIMIT 50");
-	if($res)	throw new MysqlException("Не удалось получить список новостей!");
 	if($res->num_rows())
 	{
 		$tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
@@ -161,7 +160,6 @@ protected function View($id)
 	$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
 	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 	WHERE `news`.`id`='$id'");
-	if(!$res)	throw new MysqlException("Не удалось получить список новостей!");
 	if($res->num_rows)
 	{
 		while($nxt=$res->fetch_assoc())
@@ -245,7 +243,6 @@ protected function SaveAndSend()
 
 	$res=$db->query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
 	VALUES ('$type', '$title', '$text', NOW(), '{$_SESSION['uid']}', '$ex_date' )");
-	if(!$res)	throw new MysqlException("Не удалось добавить новость");
 
 	$news_id=$db->insert_id;
 	if(!$news_id)		throw new Exception("Не удалось получить ID новости");
@@ -267,7 +264,6 @@ protected function SaveAndSend()
 		$m_ok=move_uploaded_file($_FILES['img']['tmp_name'], $CONFIG['site']['var_data_fs']."/news/$news_id.$ext");
 		if(!$m_ok)			throw new Exception("Не удалось записать изображение в хранилище");
 		$res=$db->query("UPDATE `news` SET `img_ext`='$ext' WHERE `id`='$news_id'");
-		if(!$res)	throw new MysqlException("Не удалось сохранить тип изображения");
 	}
 	if(!$no_mail)
 	{
@@ -298,11 +294,12 @@ try
 	if(!isset($news_module))		$news_module=new NewsModule();
 	if(!$news_module->ProbeRecode())	$news_module->ExecMode($mode);
 }
-catch(MysqlException $e)
+catch(mysqli_sql_exception $e)
 {
-	$e->db->rollback();
+	$db->rollback();
+	$id = $tmpl->logger($e->getMessage(), 1);
 	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+	$tmpl->msg("Ошибка базы данных, $id","err");
 }
 catch(Exception $e)
 {

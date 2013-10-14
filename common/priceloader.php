@@ -124,7 +124,7 @@ abstract class PriceLoader
 			//настройки для листа не найдены
 				$this->table_parsing = 0;
 			else {
-				$this->firm_cols = mysql_fetch_assoc($res);
+				$this->firm_cols = $res->fetch_assoc();
 				$this->table_parsing = 1;
 			}
 		}

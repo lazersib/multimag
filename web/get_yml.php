@@ -26,11 +26,9 @@ try
 	$tmpl->ajax=1;
 	$yml_now = date("Y-m-d H:i");
 	$res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
-	if(!$res)		throw new MysqlException("Не удалось получить данные организаций");
 	if(!$res->num_rows)	throw new Exception("Организация не найдена");
 	$firm_vars = $res->fetch_assoc();
 	$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-	if(!$res)		throw new MysqlException("Не удалось получить данные цен");
 	if(!$res->num_rows)	throw new Exception("Цена не найдена");
 	list($cost_id) = $res->fetch_row();
 	if(!$cost_id)		$cost_id=1;
@@ -58,7 +56,6 @@ try
 	<categories>\n";
 
 	$res=$db->query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `hidelevel`='0' AND `no_export_yml`='0' ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Не удалось получить список групп!");
 	while($nxt=$res->fetch_row())
 	{
 		$nxt[1]=html_entity_decode($nxt[1],ENT_QUOTES,"UTF-8");
@@ -84,7 +81,6 @@ try
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	$join_add
 	WHERE `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND `doc_base`.`no_export_yml`='0' AND `doc_group`.`no_export_yml`='0'");
-	if(!$res)	throw new MysqlException("Не удалось получить список товаров!");
 	while($nxt=$res->fetch_assoc())
 	{
 		$avariable=($nxt['sklad_nal']>0)?'true':'false';
@@ -122,7 +118,6 @@ try
 		$param_res=$db->query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
 		WHERE `doc_base_values`.`id`='{$nxt['id']}'");
-		if(!$param_res)	throw new MysqlException("Не удалось получить список свойств!");
 		while($params=$param_res->fetch_row())
 		{
 			$params[1]=html_entity_decode($params[1],ENT_QUOTES,"UTF-8");
@@ -154,11 +149,11 @@ try
 	</yml_catalog>";
 
 }
-catch(MysqlException $e)
-{
+catch(mysqli_sql_exception $e) {
 	$db->rollback();
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+	$tmpl->ajax=0;
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {

@@ -36,7 +36,6 @@ if($mode==""||$mode=='view')
 	$res=$db->query("SELECT `photogalery`.`id`, `photogalery`.`uid`, `photogalery`.`comment`, `users`.`name`
 	FROM `photogalery`
 	LEFT JOIN `users` ON `users`.`id`=`photogalery`.`uid`");
-	if(!$res)	throw new MysqlException("Не удалось получить данные фотографий");
 	$row=$res->num_rows;
 	if($row>$lim)
 	{
@@ -65,7 +64,6 @@ if($mode==""||$mode=='view')
 		FROM `photogalery`
 		LEFT JOIN `users` ON `users`.`id`=`photogalery`.`uid`
 		LIMIT $sl,$lim");
-		if(!$res)	throw new MysqlException("Не удалось получить данные фотографий");
 	}
 	while($nxt=$res->fetch_row())
 	{
@@ -101,7 +99,6 @@ if($mode==""||$mode=='view')
 		FROM `photogalery`
 		LEFT JOIN `users` ON `users`.`id`=`photogalery`.`uid`
 		LIMIT $sl,$lim");
-		if(!$res)	throw new MysqlException("Не удалось получить данные фотографий");
 	}
 	if(isAccess('generic_galery','edit'))
 		$tmpl->addContent("<br><a href='?mode=add'>Добавить</a>");
@@ -172,11 +169,12 @@ else throw new Exception("Неверный параметр");
 $tmpl->write();
 
 }
-catch(MysqlException $e)
+catch(mysqli_sql_exception $e)
 {
-	$e->db->rollback();
+	$db->rollback();
+	$id = $tmpl->logger($e->getMessage(), 1);
 	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+	$tmpl->msg("Ошибка базы данных, $id","err");
 }
 catch(Exception $e)
 {

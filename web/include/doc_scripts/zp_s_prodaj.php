@@ -46,7 +46,7 @@ class ds_zp_s_prodaj {
 			<input type='text' name='date_t' id='datepicker_t' value='$curdate'><br>
 			Сотрудник:<br><select name='user_id'>");
 			$res = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
-			while ($nxt = $res->fetch_row($res))
+			while ($nxt = $res->fetch_row())
 				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
 			$tmpl->addContent("</select><br>
 
@@ -239,7 +239,7 @@ class ds_zp_s_prodaj {
 			$altnum = GetNextAltNum(1, 'auto', 0, $tim, 1);
 			$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
 				VALUES	('$tim', '1', '1', '$uid', '$altnum', 'auto', '1', '$agent_id', '0', '$all_sum')");
-			$post_doc = $db->insert_id();
+			$post_doc = $db->insert_id;
 			$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$all_sum')");
 			$db->commit();
 			header("location: /doc.php?mode=body&doc=$post_doc");

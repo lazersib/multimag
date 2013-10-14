@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.1 - Complex sales system
 //
 //	Copyright (C) 2005-2010, BlackLight, TND Team, http://tndproject.org
@@ -18,98 +19,90 @@
 //
 
 include_once("core.php");
-$tim=time();
-$tt=$tim-60*60*24*30;
-$res=$db->query("SELECT `id`, `ip`, `agent`, `refer` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
-$max=0;
-$sum=0;
-$browsers=array();
+$tim = time();
+$tt = $tim - 60 * 60 * 24 * 30;
+$res = $db->query("SELECT `id`, `ip`, `agent`, `refer` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
+$max = 0;
+$sum = 0;
+$browsers = array();
+$tmpl->setTitle("Статистика по броузерам");
 
-$others=array();
+$others = array();
 
-while($nxt=$res->fetch_row())
-{
-	if(eregi("Toata dragostea",$nxt[2])|| eregi("NetcraftSurveyAgent",$nxt[2]) || eregi("Scanner",$nxt[2]) || eregi("SurveyBot",$nxt[2]) || $nxt[2]=='')
-		$browser='spam,viruses,scanners';
-	else if(eregi("Opera mobi",$nxt[2]))
-		$browser='Opera mobile';
-	else if(eregi("Opera",$nxt[2]))
-		$browser='Opera';
-	else if(eregi("firefox",$nxt[2]))
-		$browser='Mozilla: firefox';
-	else if(eregi("Iceweasel",$nxt[2]))
-		$browser='Mozilla: Iceweasel';
-	else if(eregi("wget",$nxt[2]))
-		$browser='wget';
-	else if(eregi("Avant",$nxt[2]))
-		$browser='avant';
-	else if(eregi("HTC",$nxt[2]))
-		$browser='HTC Mobile';
-	else if(eregi("MSIE",$nxt[2]))
-		$browser='Internet Explorer';
-	else if(eregi("Yandex",$nxt[2]))
-		$browser='BOT: yandex';
-	else if(eregi("msnbot",$nxt[2]))
-		$browser='BOT: msnbot';
-	else if(eregi("googlebot",$nxt[2]))
-		$browser='BOT: googlebot';
-	else if(eregi("Yahoo",$nxt[2]))
-		$browser='BOT: yahoo';
-	else if(eregi("Baiduspider",$nxt[2]))
-		$browser='BOT: Baidu.jp';
-	else if(eregi("Bot",$nxt[2])||eregi("Spider",$nxt[2]))
-		$browser='BOT (spider): other';
-	else if(eregi("web.archive",$nxt[2]))
-		$browser='Web Archive';
-	else if(eregi("Sosospider",$nxt[2]))
-		$browser='BOT: Baidu.jp';
-	else if(eregi("Konqueror",$nxt[2]))
-		$browser='konqueror';
-	else if(eregi("Chrome",$nxt[2]))
-		$browser='Google Chrome';
-
-	else if(eregi("Mail.Ru",$nxt[2]))
-		$browser='mail_ru_agent';
-	else if(eregi("mozilla",$nxt[2]))
-		$browser='Mozilla';
-
-	else
-	{
-		$browser='z-other';
-		$others[$nxt[2]]++;
+while ($nxt = $res->fetch_row()) {
+	if ( stripos($nxt[2], "Toata dragostea")!==false || stripos($nxt[2], "NetcraftSurveyAgent")!==false
+		|| stripos($nxt[2], "Scanner")!=false || stripos($nxt[2], "SurveyBot")!=false || $nxt[2] == '')
+		$browser = 'spam,viruses,scanners';
+	else if (stripos($nxt[2], "Opera mobi")!==false)
+		$browser = 'Opera mobile';
+	else if (stripos($nxt[2], "Opera")!==false)
+		$browser = 'Opera';
+	else if (stripos($nxt[2], "firefox")!==false || stripos($nxt[2], "Iceweasel")!==false)
+		$browser = 'Mozilla';
+	else if (stripos($nxt[2], "wget")!==false)
+		$browser = 'wget';
+	else if (stripos($nxt[2], "Avant")!==false)
+		$browser = 'avant';
+	else if (stripos($nxt[2], "MSIE")!==false)
+		$browser = 'Internet Explorer';
+	else if (stripos($nxt[2], "Yandex")!==false)
+		$browser = 'BOT: yandex';
+	else if (stripos($nxt[2], "msnbot")!==false)
+		$browser = 'BOT: msnbot';
+	else if (stripos($nxt[2], "googlebot")!==false)
+		$browser = 'BOT: googlebot';
+	else if (stripos($nxt[2], "Yahoo")!==false)
+		$browser = 'BOT: yahoo';
+	else if (stripos($nxt[2], "Baiduspider")!==false)
+		$browser = 'BOT: Baidu.jp';
+	else if (stripos($nxt[2], "Bot")!==false || stripos("Spider", $nxt[2])!==false)
+		$browser = 'BOT (spider): other';
+	else if (stripos($nxt[2], "web.archive")!==false)
+		$browser = 'Web Archive';
+	else if (stripos($nxt[2], "Sosospider")!==false)
+		$browser = 'BOT: Baidu.jp';
+	else if (stripos($nxt[2], "Konqueror")!==false)
+		$browser = 'konqueror';
+	else if (stripos($nxt[2], "Chrome")!==false)
+		$browser = 'Google Chrome';
+	else if (stripos($nxt[2], "Mail.Ru")!==false)
+		$browser = 'mail_ru browser';
+	else if (stripos($nxt[2], "mozilla")!==false)
+		$browser = 'Mozilla';
+	else {
+		$browser = 'z-other';
+		@$others[$nxt[2]]++;
 	}
 
-	$browsers[$browser]++;
+	@$browsers[$browser]++;
 
-	if($max<$browsers[$browser]) $max=$browsers[$browser];
+	if ($max < $browsers[$browser])
+		$max = $browsers[$browser];
 
 	$sum++;
 }
 
 
 
-$coeff=100/$max;
-$coeff_p=100/$sum;
+$coeff = 100 / $max;
+$coeff_p = 100 / $sum;
 ksort($browsers);
-foreach($browsers as $cur=> $cnt)
-{
-	$ln=$cnt*$coeff*10;
-	$pp=$coeff_p*$cnt*100;
-	settype($pp,"int");
+foreach ($browsers as $cur => $cnt) {
+	$ln = $cnt * $coeff * 10;
+	$pp = $coeff_p * $cnt * 100;
+	settype($pp, "int");
 	$pp/=100;
-	settype($ln,"int");
-	$color=rand(0,9).rand(0,9).rand(0,9);
+	settype($ln, "int");
+	$color = rand(0, 9) . rand(0, 9) . rand(0, 9);
 	$tmpl->addContent("$cur - $pp%
-	<div style='width: $ln"."px; height: 10px; background-color: #$color; color: #ccc'></div><br>");
+	<div style='width: $ln" . "px; height: 10px; background-color: #$color; color: #ccc'></div><br>");
 }
 $tmpl->addContent("<hr>");
-foreach($others as $cur=> $cnt)
-{
+foreach ($others as $cur => $cnt) {
 
 	$tmpl->addContent("$cur - $cnt<br>");
 }
 
 
 $tmpl->write();
-
 ?>

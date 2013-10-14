@@ -160,7 +160,6 @@ class PriceWriterXLS extends BasePriceWriter
 	function write($group=0, $level=0)	{
 		if($level>2)	$level=2;
 		$res=$this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `id`");
-		if(!$res)	throw new MysqlException("Не удалось получить список групп наименований", $this->db);
 		while($nxt=$res->fetch_row())	{
 			if($nxt[0]==0) continue;
 			if(is_array($this->view_groups))
@@ -197,7 +196,6 @@ class PriceWriterXLS extends BasePriceWriter
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
-		if(!$res)	throw new MysqlException("Не удалось получить список наименований", $this->db);
 		$i=0;
 		while($nxt=$res->fetch_row())
 		{

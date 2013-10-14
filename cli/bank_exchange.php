@@ -167,7 +167,7 @@ function doc_process($params) {
 		if (!$b_data[1])	$b_data[1] = 1;
 
 		$tm = time();
-		$res = mysql_query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' ORDER BY `id` DESC");
+		$res = $db->query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' ORDER BY `id` DESC");
 		if($res->num_rows)
 			list($p_doc, $agent) = $res->fetch_row();
 		else {

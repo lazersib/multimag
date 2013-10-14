@@ -63,22 +63,4 @@ $CONFIG['auto']['move_no_to_end']	= false;// Перемещать непрове
 $CONFIG['auto']['doc_del_days']		= 2;	// Стирать отмеченные на удаление документы через X дней
 $CONFIG['auto']['liquidity_interval']	= 2;	// Расчитывать ликвидность за X дней
 
-
-// ======================== НИЖЕ НЕ ИСПРАВЛЯТЬ =============================
-// ======================== DO NOT EDIT AFTER THIS =========================
-if(!@mysql_connect($CONFIG['mysql']['host'],$CONFIG['mysql']['login'],$CONFIG['mysql']['pass']))
-{
-	echo"Нет связи с сервером баз данных!";
-	exit();
-}
-if(!@mysql_select_db($CONFIG['mysql']['db']))
-{
-	echo"Невозможно активизировать базу данных! Возможно, база данных повреждена или занята!";
-	exit();
-}
-
-mysql_query("SET CHARACTER SET UTF8");
-mysql_query("SET character_set_client = UTF8");
-mysql_query("SET character_set_results = UTF8");
-mysql_query("SET character_set_connection = UTF8");
 ?>

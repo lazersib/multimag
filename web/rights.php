@@ -31,7 +31,6 @@ if($mode=='')
 {
 	$tmpl->addContent("<h3>Группы пользователей</h3><table class='list'><tr><th>N</th><th>Название</th><th>Описание</th></tr>");
 	$res=$db->query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
-	if(!$res)	throw new MysqlException("Не удалось получить список групп пользователей");
 	while($nxt=$res->fetch_row())
 	{
 		$tmpl->addContent("<tr><td>$nxt[0]<a href='?mode=gre&amp;g=$nxt[0]'><img src='/img/i_edit.png' alt='Изменить'></a></td><td><a href='?mode=group_acl&amp;g=$nxt[0]'>$nxt[1]</a></td><td>$nxt[2]</td></tr>");
@@ -44,7 +43,6 @@ else if($mode=='group_acl')
 	$tmpl->addContent("<h2>Привилегии группы</h2>");
 	$res=$db->query("SELECT `id`, `object`, `desc`, `actions`
 	FROM `users_objects` ORDER BY `object`, `actions`");
-	if(!$res)	throw new MysqlException("Не удалось получить список объектов");
 	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='group_acl_save'>
 	<input type='hidden' name='g' value='$g'>
@@ -70,7 +68,6 @@ else if($mode=='group_acl')
 
 	$res=$db->query("SELECT `gid`, `object`, `action` FROM `users_groups_acl`
 	WHERE `gid`='$g'");
-	if(!$res)	throw new MysqlException("Не удалось получить ACL группы");
 	while($nxt=$res->fetch_row())
 	{
 		$object_actions[$nxt[1]][$nxt[2]]="style='border: #0f0 1px solid;' checked";
@@ -95,10 +92,7 @@ else if($mode=='group_acl')
 				}
 			}
 		}
-		else
-		{
-			$tmpl->AddConent("<th colspan='$colspan'>$obj_desc");
-		}
+		else	$tmpl->AddContent("<th colspan='$colspan'>$obj_desc");
 	}
 	$tmpl->addContent("</table>
 	<button type='submit'>Сохранить</button>
@@ -150,7 +144,6 @@ else if($mode=='group_acl')
 	FROM `users_in_group`
 	LEFT JOIN `users` ON `users_in_group`.`uid`=`users`.`id`
 	WHERE `users_in_group`.`gid`='$g'");
-	if(!$res)	throw new MysqlException("Не удалось получить список пользователей");
 	while($nxt=$res->fetch_row())
 	{
 		$tmpl->addContent("<a href='?mode=ud&amp;us_id=$nxt[0]&amp;g=$g'><img src='/img/i_del.png' alt='Удалить'></a> - $nxt[1]<br>");
@@ -160,12 +153,11 @@ else if($mode=='group_acl')
 else if($mode=='group_acl_save')
 {
 	$g=rcvint('g');
-	$tmpl->AddConent("<h2>Группа $g: сохранение привилегий группы</h2>");
+	$tmpl->AddContent("<h2>Группа $g: сохранение привилегий группы</h2>");
 	if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
 
 	$res=$db->query("SELECT `id`, `object`, `desc`, `actions` FROM `users_objects`
 	ORDER BY `object`, `actions`");
-	if(!$res)	throw new MysqlException("Не удалось получить список объектов");
 
 	$actions_show=array();
 	$object_actions=array();
@@ -186,7 +178,6 @@ else if($mode=='group_acl_save')
 	}
 
 	$res=$db->query("DELETE FROM `users_groups_acl` WHERE `gid`='$g'");
-	if($res)	throw new MysqlException("Не удалось удалить список объектов");
 	foreach($objects as $obj_name => $obj_desc)
 	{
 		if(array_key_exists($obj_name, $object_actions))
@@ -196,7 +187,6 @@ else if($mode=='group_acl_save')
 				if( request("c_{$obj_name}_{$action}") )
 				{
 					$res=$db->query("INSERT INTO `users_groups_acl` (`gid`, `object`, `action`) VALUES ('$g', '$obj_name', '$action')");
-					if(!$res)	throw new MysqlException("Не удалось добавить объект");
 				}
 			}
 		}
@@ -206,8 +196,7 @@ else if($mode=='gre')
 {
 	$g=rcvint('g');
 	$res=$db->query("SELECT `id`, `name`, `comment` FROM `users_grouplist` WHERE `id`='$g'");
-	if(!$res)	throw new MysqlException("Не удалось получить данные группы");
-	$nxt=$res->fetch_row($res);
+	$nxt = $res->fetch_row();
 	$tmpl->addContent("<h2>Редактирование группы</h2>
 	<form action='' method=post>
 	<input type=hidden name=mode value=grs>
@@ -225,17 +214,14 @@ else if($mode=='grs')
 	$gn	= request('gn');
 	$comm	= request('comm');
 	$res = $db->query("SELECT `id` FROM `users_grouplist` WHERE `id`='$g'");
-	if(!$res)	throw new MysqlException("Не удалось получить данные группы");
 	if(($res->num_rows)&&($g))
 	{
 		$res=$db->query("UPDATE `users_grouplist` SET `name`='$gn', `comment`='$comm' WHERE `id`='$g'");
-		if(!$res)	throw new MysqlException("Группа НЕ обновлена");
 		$tmpl->msg("Группа обновлена","ok");
 	}
 	else
 	{
 		$res=$db->query("INSERT INTO `users_grouplist`	( `name`, `comment`) VALUES ('$gn', '$comm')");
-		if(!$res)	throw new MysqlException("Группа НЕ добавлена");
 		$tmpl->msg("Группа добавлена","ok");
 	}
 }
@@ -247,7 +233,6 @@ else if($mode=='us')
 	else
 	{
 		$res=$db->query("INSERT INTO `users_in_group` ( `uid`, `gid`) VALUES ('$us_id', '$g')");
-		if(!$res)	throw new MysqlException("Пользователь не добавлен");
 		$tmpl->msg("Пользователь добавлен","ok");
 	}
 }
@@ -259,7 +244,6 @@ else if($mode=='ud')
 	else
 	{
 		$res=$db->query("DELETE FROM `users_in_group` WHERE `uid`='$us_id' AND `gid`='$g'");
-		if(!$res)	throw new MysqlException("Пользователь не удалён");
 		$tmpl->msg("Пользователь удалён","ok");
 	}
 }
@@ -268,7 +252,6 @@ else if($mode=='upl')
 	$s=request('s');
 	$s=$db->real_escape_string($s);
 	$res=$db->query("SELECT `id`,`name`, `reg_email` FROM `users` WHERE `name` LIKE '%$s%'");
-	if(!$res)	throw new MysqlException("Не удалось получить список пользователей");
 	while($nxt=$res->fetch_row())
 	{
 		echo"$nxt[1]|$nxt[0]|$nxt[2]\n";
@@ -277,10 +260,10 @@ else if($mode=='upl')
 }
 
 }
-catch(MysqlException $e)
-{
+catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {

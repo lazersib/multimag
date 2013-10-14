@@ -48,7 +48,6 @@ WHERE `doc_list`.`type`=3 AND `doc_list`.`mark_del`=0
 ORDER by `doc_list`.`date` DESC";
 
 $res=$db->query($sql);
-if(!$res)	throw new MysqlException("Не удалось получить список документов!");
 $row=$res->num_rows;
 
 $i=0;
@@ -100,7 +99,6 @@ WHERE `doc_list`.`type`=2 AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND 
 ORDER by `doc_list`.`date` DESC";
 
 $res=$db->query($sql);
-if(!$res)	throw new MysqlException("Не удалось получить список документов!");
 $row=$res->num_rows;
 
 $i=0;

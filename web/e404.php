@@ -38,10 +38,10 @@ try
 	$tmpl->addContent($map->getMap());
 
 }
-catch(MysqlException $e)
-{
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+catch(mysqli_sql_exception $e) {
+	$tmpl->ajax=0;
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {

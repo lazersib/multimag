@@ -133,7 +133,7 @@ class doc_Kompredl extends doc_Nulltype
 		$str='ИНН '.$this->firm_vars['firm_inn'].' КПП';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($table_c,5,$str,1,1,'L',0);
-		$str=html_in($this->firm_vars['firm_name']);
+		$str=$this->firm_vars['firm_name'];
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$tx=$pdf->GetX();
 		$ty=$pdf->GetY();
@@ -179,7 +179,7 @@ class doc_Kompredl extends doc_Nulltype
 		$pdf->Cell(0,5,$str,0,1,'C',0);
 		$pdf->Ln(10);
 		$pdf->SetFont('','',10);
-		$str=html_in('Поставщик: '.$this->firm_vars['firm_name'].', '.$this->firm_vars['firm_telefon']);
+		$str='Поставщик: '.$this->firm_vars['firm_name'].', '.$this->firm_vars['firm_telefon'];
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 		$pdf->Ln(10);
@@ -338,7 +338,7 @@ class doc_Kompredl extends doc_Nulltype
 		$str='ИНН '.$this->firm_vars['firm_inn'].' КПП';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($table_c,5,$str,1,1,'L',0);
-		$str=html_in($this->firm_vars['firm_name']);
+		$str=$this->firm_vars['firm_name'];
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$tx=$pdf->GetX();
 		$ty=$pdf->GetY();
@@ -384,7 +384,7 @@ class doc_Kompredl extends doc_Nulltype
 		$pdf->Cell(0,5,$str,0,1,'C',0);
 		$pdf->Ln(10);
 		$pdf->SetFont('','',10);
-		$str=html_in('Поставщик: '.$this->firm_vars['firm_name'].', '.$this->firm_vars['firm_telefon']);
+		$str='Поставщик: '.$this->firm_vars['firm_name'].', '.$this->firm_vars['firm_telefon'];
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 		$pdf->Ln(10);
@@ -431,9 +431,9 @@ class doc_Kompredl extends doc_Nulltype
 			$cost = sprintf("%01.2f р.", $nxt[3]);
 			$name=$nxt[0].' '.$nxt[1];
 			if($nxt[2]) $name.='('.$nxt[2].')';
-			$name = iconv('UTF-8', 'windows-1251', html_in($name));
-			$analog = iconv('UTF-8', 'windows-1251', html_in($nxt[4]));
-			$desc = iconv('UTF-8', 'windows-1251', html_in($nxt[5]));
+			$name = iconv('UTF-8', 'windows-1251', $name);
+			$analog = iconv('UTF-8', 'windows-1251', $nxt[4]);
+			$desc = iconv('UTF-8', 'windows-1251', $nxt[5]);
 			$cost = iconv('UTF-8', 'windows-1251', $cost);
 			$pdf->Row(array($i,$name,$analog,$desc,$cost));
 		}
@@ -538,7 +538,7 @@ class doc_Kompredl extends doc_Nulltype
 		$str='ИНН '.$this->firm_vars['firm_inn'].' КПП';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($table_c,5,$str,1,1,'L',0);
-		$str=html_in($this->firm_vars['firm_name']);
+		$str=$this->firm_vars['firm_name'];
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$tx=$pdf->GetX();
 		$ty=$pdf->GetY();
@@ -584,7 +584,7 @@ class doc_Kompredl extends doc_Nulltype
 		$pdf->Cell(0,5,$str,0,1,'C',0);
 		$pdf->Ln(10);
 		$pdf->SetFont('','',10);
-		$str=html_in('Поставщик: '.$this->firm_vars['firm_name'].', '.$this->firm_vars['firm_telefon']);
+		$str='Поставщик: '.$this->firm_vars['firm_name'].', '.$this->firm_vars['firm_telefon'];
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 		$pdf->Ln(10);

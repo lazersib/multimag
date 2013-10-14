@@ -107,7 +107,7 @@ class doc_Pko extends doc_Nulltype {
 		$pdf->Cell(115,4,$str,0,0,'R',0);
 		$pdf->Cell(0,4,'0310001',1,1,'C',0);
 
-		$str = iconv('UTF-8', 'windows-1251', html_in($this->firm_vars['firm_name']));
+		$str = iconv('UTF-8', 'windows-1251', $this->firm_vars['firm_name']);
 		$pdf->Cell(95,4,$str,0,0,'L',0);
 		$str = iconv('UTF-8', 'windows-1251', "по ОКПО");
 		$pdf->Cell(20,4,$str,0,0,'R',0);

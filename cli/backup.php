@@ -54,12 +54,10 @@ $tm = date("Y.m.d_H.i");
 
 if (@$CONFIG['backup']['mysql']) {
 	@mkdir("/tmp/mysql_dump", 0700);
-	$res = mysql_list_dbs();
-	while ($nxt = mysql_fetch_row($res)) {
-		if ($nxt[0] == 'mysql')
-			continue;
-		if ($nxt[0] == 'information_schema')
-			continue;
+	$res = $db->query("SHOW DATABASES");
+	while ($nxt = $res->fetch_row()) {
+		if ($nxt[0] == 'mysql')	continue;
+		if ($nxt[0] == 'information_schema')	continue;
 		echo"Dumping $nxt[0]...";
 		`mysqldump -u {$CONFIG['mysql']['login']} -p{$CONFIG['mysql']['pass']} -R -l --hex-blob -q -Q $nxt[0] > /tmp/mysql_dump/$nxt[0].dump`;
 		echo"Done!\n";

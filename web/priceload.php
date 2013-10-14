@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.1 - Complex sales system
 //
 //	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
@@ -16,7 +17,6 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
 ///TODO: Перенос на mysqli не завершен. Нужно сделать безопасный ввод/вывод.
 
 include_once('core.php');
@@ -30,70 +30,65 @@ SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
 $tmpl->hideBlock('left');
 
-$firm_id=0;
-$num_name=1;
-$num_cost=2;
-$num_art=3;
-$line_cnt=0;
+$firm_id = 0;
+$num_name = 1;
+$num_cost = 2;
+$num_art = 3;
+$line_cnt = 0;
 
 $line = array();
 $line_pos = 0;
 
-function topmenu($s='')
-{
+function topmenu($s = '') {
 	global $tmpl;
-	if(!$tmpl->ajax)
-	{
-		doc_menu($s,0);
+	if (!$tmpl->ajax) {
+		doc_menu($s, 0);
 	}
 }
 
-function draw_groups_tree($level, $firm)
-{
+function draw_groups_tree($level, $firm) {
 	global $db;
-	$ret='';
-	settype($leval,'int');
-	settype($firm,'int');
-	$res=$db->query("SELECT `doc_group`.`id`, `doc_group`.`name`, `firm_info_group`.`id` FROM `doc_group`
+	$ret = '';
+	settype($leval, 'int');
+	settype($firm, 'int');
+	$res = $db->query("SELECT `doc_group`.`id`, `doc_group`.`name`, `firm_info_group`.`id` FROM `doc_group`
 	LEFT JOIN `firm_info_group`	ON `firm_info_group`.`firm_id`='$firm' AND `firm_info_group`.`group_id`=`doc_group`.`id`
 	WHERE `doc_group`.`pid`='$level' ORDER BY `doc_group`.`name`");
-	if(!$res)	throw new MysqlException("Ошибка получния списка групп");
-	$i=0;
-	$r='';
-	if($level==0) $r='IsRoot';
-	$cnt=$res->num_rows;
-	while($nxt=$res->fetch_row())
-	{
-		if($nxt[0]==0) continue;
-		$checked=$nxt[2]?'checked':'';
-		$item="<label><input type='checkbox' name='g[]' value='$nxt[0]' id='cb$nxt[0]' class='cb' $checked onclick='CheckCheck($nxt[0])'>".html_out($nxt[1])."</label>";
-		if($i>=($cnt-1)) $r.=" IsLast";
-		$tmp=draw_groups_tree($nxt[0], $firm); // рекурсия
-		if($tmp)
-			$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container' id='cont$nxt[0]'>".$tmp.'</ul></li>';
-        	else
-        		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
+	$i = 0;
+	$r = '';
+	if ($level == 0)
+		$r = 'IsRoot';
+	$cnt = $res->num_rows;
+	while ($nxt = $res->fetch_row()) {
+		if ($nxt[0] == 0)
+			continue;
+		$checked = $nxt[2] ? 'checked' : '';
+		$item = "<label><input type='checkbox' name='g[]' value='$nxt[0]' id='cb$nxt[0]' class='cb' $checked onclick='CheckCheck($nxt[0])'>" . html_out($nxt[1]) . "</label>";
+		if ($i >= ($cnt - 1))
+			$r.=" IsLast";
+		$tmp = draw_groups_tree($nxt[0], $firm); // рекурсия
+		if ($tmp)
+			$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container' id='cont$nxt[0]'>" . $tmp . '</ul></li>';
+		else
+			$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
 		$i++;
 	}
 	return $ret;
 }
 
-
-function firmAddForm($id=0)
-{
+function firmAddForm($id = 0) {
 	global $tmpl, $db;
-	$nxt=array();
-	if($id)
-	{
-		$res=$db->query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp`  FROM `firm_info` WHERE `id`='$id'");
-		if(!$res)	throw new MysqlException("Не удалось выбрать данные фирмы");
-		if($res->num_rows)
-			$nxt=$res->fetch_row();
-		else	$nxt=array();
+	$nxt = array();
+	if ($id) {
+		$res = $db->query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp`  FROM `firm_info` WHERE `id`='$id'");
+		if ($res->num_rows)
+			$nxt = $res->fetch_row();
+		else
+			$nxt = array();
 	}
 
-	$disp=$nxt['type']==2?'block':'none';
-	$rrp_checked=$nxt['rrp']?' checked':'';
+	$disp = $nxt['type'] == 2 ? 'block' : 'none';
+	$rrp_checked = $nxt['rrp'] ? ' checked' : '';
 
 	$tmpl->addStyle(".scroll_block
 	{
@@ -133,25 +128,24 @@ function firmAddForm($id=0)
 	$tmpl->addContent("<h1>Данные фирмы</h1>
 	<form action='' method='post'>
 	<input type='hidden' name=mode value='firms'>");
-	if($id) $tmpl->addContent("<input type=hidden name=id value='$nxt[0]'>");
+	if ($id)
+		$tmpl->addContent("<input type=hidden name=id value='$nxt[0]'>");
 	$tmpl->addContent("Наименование:<br>
 	<input type='text' name='nm' value='$nxt[1]'><br>
 	Сигнатура:<br>
 	<input type='text' name='sign' value='$nxt[2]'><br>
 	Валюта:<br>
 	<select name='curr'>");
-	$res=$db->query("SELECT `id`, `name`, `coeff` FROM `currency` ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Ошибка получиения списка валют");
-	while($nx=$res->fetch_row())
-	{
-		if($nx[0]==$nxt[3])
-			$tmpl->addContent("<option style='background-color: #8f8;' selected value='$nx[0]'>".html_out($nx[1])."</option>");
+	$res = $db->query("SELECT `id`, `name`, `coeff` FROM `currency` ORDER BY `id`");
+	while ($nx = $res->fetch_row()) {
+		if ($nx[0] == $nxt[3])
+			$tmpl->addContent("<option style='background-color: #8f8;' selected value='$nx[0]'>" . html_out($nx[1]) . "</option>");
 		else
-			$tmpl->addContent("<option value='$nx[0]'>".html_out($nx[1])."</option>");
+			$tmpl->addContent("<option value='$nx[0]'>" . html_out($nx[1]) . "</option>");
 	}
 
-	$typesel=array( 0=>'', 1=>'', 2=>'');
-	$typesel[$nxt[5]]='selected';
+	$typesel = array(0 => '', 1 => '', 2 => '');
+	$typesel[$nxt[5]] = 'selected';
 
 	$tmpl->addContent("</select><br>
 	Валютный коэффициент:<br>
@@ -220,13 +214,12 @@ function firmAddForm($id=0)
 	<div class='scroll_block' id='sb'>
 	<ul class='Container'>
 	<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
-	".draw_groups_tree(0,$id)."</ul>");
+	" . draw_groups_tree(0, $id) . "</ul>");
 
 
 
 	$tmpl->addContent("</div>");
-	if(!$nxt)
-	{
+	if (!$nxt) {
 		$tmpl->addContent("<h2>Структура прайса</h2>
 		<table>
 		<thead>Номера колонок
@@ -239,11 +232,9 @@ function firmAddForm($id=0)
 		<td><input type='text' name='col_curr'>
 		<td><input type='text' name='col_info'>
 		</table>");
-
 	}
 	$tmpl->addContent("<input type=submit value='Записать!'></form>");
-	if($nxt)
-	{
+	if ($nxt) {
 		$tmpl->addContent("<h2>Структура прайса</h2>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='firmss'>
@@ -252,13 +243,11 @@ function firmAddForm($id=0)
 		<table>
 		<tr><th rowspan='2'>Имя листа<th colspan='6'>Номера колонок
 		<tr><th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием<th>С валютой<th>С информацией");
-		$res=$db->query("SELECT `id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct`
+		$res = $db->query("SELECT `id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct`
 		WHERE `firm_id`='$nxt[0]'");
-		if(!$res)	throw new MysqlException("Не удалось получить настройки столбцов!");
-		while($nx=$res->fetch_row())
-		{
-			foreach($nx as $id => $value)
-				$nx[$id]=html_out($value);
+		while ($nx = $res->fetch_row()) {
+			foreach ($nx as $id => $value)
+				$nx[$id] = html_out($value);
 			$tmpl->addContent("<tr><td>
 			<a href='?mode=firmsd&p=$nx[0]'><img src='/img/i_del.png' alt='Удалить'></a>
 			<a onclick=\"FillTextBoxes('$nx[0]', '$nx[1]', '$nx[2]', '$nx[3]', '$nx[4]', '$nx[5]', '$nx[6]', '$nx[7]');\"><img src='/img/i_edit.png'  alt='Правка'></a>
@@ -277,71 +266,71 @@ function firmAddForm($id=0)
 	}
 }
 
-try
-{
+try {
 
-if(!isAccess('generic_price_an','view'))	throw new AccessException("Недостаточно привилегий");
-topmenu();
-$tmpl->setTitle("Анализатор прайсов");
-if($mode=='')
-{
-	$i=0;
-	$tmpl->addContent("
+	if (!isAccess('generic_price_an', 'view'))
+		throw new AccessException("Недостаточно привилегий");
+	topmenu();
+	$tmpl->setTitle("Анализатор прайсов");
+	if ($mode == '') {
+		$i = 0;
+		$tmpl->addContent("
 	<h1>Редактор организаций</h1>
 	<table width='100%'>
 	<tr><th>ID<th>Наименование<th>Обновлено<th>Сигнатура<th>Валюта<th>Отчёты");
-	$res=$res->query("SELECT `firm_info`.`id`, `firm_info`.`name`, `firm_info`.`signature`, `currency`.`name`, `firm_info`.`coeff`, `firm_info`.`last_update`  FROM `firm_info`
+		$res = $res->query("SELECT `firm_info`.`id`, `firm_info`.`name`, `firm_info`.`signature`, `currency`.`name`, `firm_info`.`coeff`, `firm_info`.`last_update`  FROM `firm_info`
 	LEFT JOIN `currency` ON `currency`.`id`=`firm_info`.`currency`
 	ORDER BY `firm_info`.`last_update` DESC");
-	if(!$res)	throw new MysqlException("Не удалось получить список организаций");
-	while($nxt=$res->fetch_row())
-	{
-		$date_style='';
-		$date='';
-		$time=time();
-		$udate=strtotime($nxt[5]);
-		$days=floor( ($time-$udate)/(60*60*24));
-		if($days<30)
-		{
-			if($days<3)		$date_style="style='color: #0d0'";
-			else if($days<7)	$date_style="style='color: #d80'";
-			else			$date_style="style='color: #f00'";
+		while ($nxt = $res->fetch_row()) {
+			$date_style = '';
+			$date = '';
+			$time = time();
+			$udate = strtotime($nxt[5]);
+			$days = floor(($time - $udate) / (60 * 60 * 24));
+			if ($days < 30) {
+				if ($days < 3)
+					$date_style = "style='color: #0d0'";
+				else if ($days < 7)
+					$date_style = "style='color: #d80'";
+				else
+					$date_style = "style='color: #f00'";
 
-			if($days<1)
-			{
-				$hours=floor( ($time-$udate)/(60*60));
-				if($hours<1)
-				{
-					$minutes=floor( ($time-$udate)/60);
-					if($minutes<1)
-					{
-						$date='только что';
+				if ($days < 1) {
+					$hours = floor(($time - $udate) / (60 * 60));
+					if ($hours < 1) {
+						$minutes = floor(($time - $udate) / 60);
+						if ($minutes < 1) {
+							$date = 'только что';
+						}
+						else
+							$date = $minutes . ' мин. назад';
 					}
-					else $date=$minutes.' мин. назад';
+					else
+						$date = $hours . ' ч. назад';
 				}
-				else $date=$hours.' ч. назад';
+				else
+					$date = $days . ' дн. назад';
 			}
-			else $date=$days.' дн. назад';
-		}
-		else if($udate<2)	$date='никогда';
-		else			$date=date("Y-m-d", $udate);
+			else if ($udate < 2)
+				$date = 'никогда';
+			else
+				$date = date("Y-m-d", $udate);
 
-		$tmpl->addContent("<tr class='lin$i pointer'><td><a href='?mode=firme&amp;id=$nxt[0]'>$nxt[0]</a>
+			$tmpl->addContent("<tr class='lin$i pointer'><td><a href='?mode=firme&amp;id=$nxt[0]'>$nxt[0]</a>
 		<td>$nxt[1]<td $date_style>$date<td>$nxt[2]<td>$nxt[3], $nxt[4]<td>
 		<a href='?mode=r_noparsed&amp;f=$nxt[0]'>Необработанные</a> |
 		<a href='?mode=r_parsed&amp;f=$nxt[0]'>Обработанные</a> |
 		<a href='?mode=r_multiparsed&amp;f=$nxt[0]'>Дублирующиеся</a>
 
 		");
-		$i=1-$i;
-	}
+			$i = 1 - $i;
+		}
 
-	$tmpl->addContent("</table>");
-}
-else if($mode=='load')
-{
-	$m_upl_size=get_max_upload_filesize();
-	$tmpl->addContent("
+		$tmpl->addContent("</table>");
+	}
+	else if ($mode == 'load') {
+		$m_upl_size = get_max_upload_filesize();
+		$tmpl->addContent("
 	<form method=post enctype='multipart/form-data'>
 	<input type=hidden name=mode value='parse'>
 	<h1>Загрузить прайс в базу</h1>
@@ -353,425 +342,369 @@ else if($mode=='load')
 	<input type=submit value='Загрузить'>
 	</form>
 	<p><b>Важно!</b> Загруженный прайс заменит уже существующую информацию в базе по соответствующей организации. Загрузка будет выполнена немедленно, но проанализированны данные будут при следующем запуске анализатора (обычно в течение одного часа).</p>");
-}
-else if($mode=="parse")
-{
-	$bhtml=rcv('bhtml');
-	if(!is_uploaded_file($_FILES['file']['tmp_name']))
-		throw new Exception("Файл не получен. Возможно, его забыли выбрать, либо он слишком большой.");
+	} else if ($mode == "parse") {
+		$bhtml = rcvint('bhtml');
+		if (!is_uploaded_file($_FILES['file']['tmp_name']))
+			throw new Exception("Файл не получен. Возможно, его забыли выбрать, либо он слишком большой.");
 
-	require_once($CONFIG['location']."/common/priceloader.xls.php");
-	require_once($CONFIG['location']."/common/priceloader.ods.php");
+		require_once($CONFIG['location'] . "/common/priceloader.xls.php");
+		require_once($CONFIG['location'] . "/common/priceloader.ods.php");
 
-	$path_info = pathinfo($_FILES['file']['name']);
-	switch(strtolower($path_info['extension']))
-	{
-		case 'xls':	$loader=new XLSPriceLoader($_FILES['file']['tmp_name']);
+		$path_info = pathinfo($_FILES['file']['name']);
+		switch (strtolower($path_info['extension'])) {
+			case 'xls': $loader = new XLSPriceLoader($_FILES['file']['tmp_name']);
 				break;
-		case 'ods':	$loader=new ODSPriceLoader($_FILES['file']['tmp_name']);
+			case 'ods': $loader = new ODSPriceLoader($_FILES['file']['tmp_name']);
 				break;
-		default:	throw new Exception("Неверное расширение файла!");
-	}
-
-	$firm_array=$loader->detectSomeFirm();
-	$loader->setBuildHTMLData(40);
-	foreach($firm_array as $firm)
-	{
-		$loader->setInsertToDatabase();
-		$loader->useFirmAndCurency($firm['firm_id'],$firm['curency_id']);
-		$count=$loader->Run();
-		$tmpl->msg("Успешно обработано $count строк фирмы {$firm['firm_id']} ({$firm['firm_name']})","ok");
-		if($bhtml)	$tmpl->addContent("<h3>Загруженные данные:</h3>".$loader->getHTML());
-		$f=1;
-	}
-	if($f==0)
-	{
-		$tmpl->msg("Фирма не определена!","info");
-		if($bhtml)
-		{
-			$loader->Run();
-			$tmpl->addContent("<h3>Загруженные данные:</h3>".$loader->getHTML());
+			default: throw new Exception("Неверное расширение файла!");
 		}
 
-		firmAddForm();
-	}
-}
-else if($mode=='firme')
-{
-	$id=rcv('id');
-	firmAddForm($id);
-}
-else if($mode=='firms')
-{
-	$id=rcv('id');
-	$nm=rcv('nm');
-	$sign=rcv('sign');
-	$curr=rcv('curr');
-	$coeff=rcv('coeff');
-	$type=rcv('type');
-	$rrp=rcv('rrp');
-	$table_name=rcv('table_name');
-	$delivery_info=rcv('delivery_info');
-	if(!$id)
-	{
-		$col_art=rcv('col_art');
-		$col_name=rcv('col_name');
-		$col_cost=rcv('col_cost');
-		$col_nal=rcv('col_nal');
-		$col_curr=rcv('col_curr');
-		$col_info=rcv('col_info');
-
-		$res=$db->query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp`)
-		VALUES ('$nm', '$sign', '$curr', '$coeff', '$type', '$delivery_info')");
-		if($res)	throw new MysqlException("Не удалось добавить новую фирму");
-
-		$firm_id=$db->insert_id;
-		$res=$db->query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info`)
-		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr', '$col_info')");
-		if(!$res)	throw new MysqlException("Не удалось добавить структуру прайса");
-		$tmpl->msg("Фирма добавлена!",'ok');
-	}
-	else
-	{
-		$res=$db->query("UPDATE `firm_info` SET `name`='$nm', `signature`='$sign', `currency`='$curr', `coeff`='$coeff', `type`='$type', `delivery_info`='$delivery_info', `rrp`='$rrp' WHERE `id`='$id'");
-		if(!$res)	throw new MysqlException("Не удалось обновить данные фирмы");
-		$tmpl->msg("Фирма обновлена!",'ok');
-	}
-	if($type==2)	// Влияние цен для заданных групп товаров
-	{
-		$g=@$_POST['g'];
-		$res=$db->query("DELETE FROM `firm_info_group` WHERE `firm_id`='$id'");
-		if(!$res)	throw new MysqlException("Не удалось удалить устаревшие данные");
-		if(is_array($g))
-		foreach($g as $line)
-		{
-			$res=$db->query("INSERT INTO `firm_info_group` (`firm_id`, `group_id`) VALUES ('$id', '$line')");
-			if(!$res)	throw new MysqlException("Не удалось обновить привязки к группам");
+		$firm_array = $loader->detectSomeFirm();
+		$loader->setBuildHTMLData(40);
+		foreach ($firm_array as $firm) {
+			$loader->setInsertToDatabase();
+			$loader->useFirmAndCurency($firm['firm_id'], $firm['curency_id']);
+			$count = $loader->Run();
+			$tmpl->msg("Успешно обработано $count строк фирмы {$firm['firm_id']} ({$firm['firm_name']})", "ok");
+			if ($bhtml)
+				$tmpl->addContent("<h3>Загруженные данные:</h3>" . $loader->getHTML());
+			$f = 1;
 		}
-		$tmpl->msg("Привязки к группам обновлены!",'ok');
-	}
-}
-else if($mode=='firmss')
-{
-	$line_id=rcv('line_id');
-	$firm_id=rcv('firm_id');
-	$table_name=rcv('table_name');
-	$col_art=rcv('col_art');
-	$col_name=rcv('col_name');
-	$col_cost=rcv('col_cost');
-	$col_nal=rcv('col_nal');
-	$col_curr=rcv('col_curr');
-	$col_info=rcv('col_info');
-	if(!$line_id)
-	{
-		$res=$db->query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info`)
-		VALUES ('$firm_id', '$table_name', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr', '$col_info')");
-		if(!$res)	throw new MysqlException("Не удалось вставить строку");
-	}
-	else
-	{
-		$res=$db->query("UPDATE `firm_info_struct` SET `table_name`='$table_name', `art`='$col_art', `name`='$col_name', `cost`='$col_cost', `nal`='$col_nal', `currency`='$col_curr', `info`='$col_info' WHERE `id`='$line_id'");
-		if(!$res)	throw new MysqlException("Не удалось обновить данные");
-		if($db->affected_rows==0)	$tmpl->msg("Ничего не изменено","info");
-	}
-
-	$tmpl->msg("Операция выполнена успешно!",'ok');
-}
-else if($mode=='firmsd')
-{
-	$p=rcv('p');
-	$res=$db->query("DELETE FROM `firm_info_struct` WHERE `id`='$p'");
-	if($res) $tmpl->msg("Удалено!","ok");
-	else $tmpl->msg("Не удалось удалть!","err");
-}
-else if($mode=='viewall')
-{
-	$s=rcv('s');
-	if($rv=rcv('rv'))
-	{
-		$ch=' checked';
-		$ss='';
-	}
-	else
-	{
-		$ch='';
-		$ss="WHERE `price`.`name` LIKE '%$s%' OR `price`.`art` LIKE '%$s%'";
-	}
-	$tmpl->addContent("<h3>Поиск по критерию</h3>
-	<form action='' method=post>
-	<input type=hidden nmae=mode value=viewall>
-	Строка поиска:<br>
-	<input type=text name=s value='$s'><br>
-	<label><input type=checkbox name=rv value=1 $ch>Регулярное выражение</label><br>
-	<input type=submit value='Выполнить отбор'>
-	</form>");
-	$res=$db->query("SELECT `price`.`name`, `price`.`cost`, `price`.`art`, `firm_info`.`name`
-	FROM `price`
-	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
-	$ss
-	ORDER BY `price`.`name`");
-	if(!$res)	throw new MysqlException("Ошибка получения прайса");
-	echo $ss;
-	$tmpl->addContent("<table width=100%><tr><th>Наименование<th>Цена<th>Артикул<th>Фирма");
-	while($nxt=$res->fetch_row())
-	{
-		if($rv)
-		{
-			if(preg_match("/$s/",$nxt[0]))
-			{
-				$tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+		if ($f == 0) {
+			$tmpl->msg("Фирма не определена!", "info");
+			if ($bhtml) {
+				$loader->Run();
+				$tmpl->addContent("<h3>Загруженные данные:</h3>" . $loader->getHTML());
 			}
+
+			firmAddForm();
 		}
-		else $tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+	} else if ($mode == 'firme') {
+		$id = rcvint('id');
+		firmAddForm($id);
+	} else if ($mode == 'firms') {
+		$id = rcvint('id');
+		$nm = request('nm');
+		$sign = request('sign');
+		$curr = rcvint('curr');
+		$coeff = rcvrounded('coeff');
+		$type = rcvint('type');
+		$rrp = rcvint('rrp');
+		$table_name = request('table_name');
+		$delivery_info = request('delivery_info');
+
+		$nm_sql = $db->real_escape_string($nm);
+		$sign_sql = $db->real_escape_string($sign);
+		$table_name_sql = $db->real_escape_string($table_name);
+		$delivery_info_sql = $db->real_escape_string($delivery_info);
+
+		if (!$id) {
+			$col_art = rcvint('col_art');
+			$col_name = rcvint('col_name');
+			$col_cost = rcvint('col_cost');
+			$col_nal = rcvint('col_nal');
+			$col_curr = rcvint('col_curr');
+			$col_info = rcvint('col_info');
+
+			$res = $db->query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp`)
+		VALUES ('$nm_sql', '$sign_sql', '$curr', '$coeff', '$type', '$delivery_info_sql')");
+
+			$firm_id = $db->insert_id;
+			$res = $db->query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info`)
+		VALUES ('$firm_id', '$table_name_sql', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr', '$col_info')");
+			$tmpl->msg("Фирма добавлена!", 'ok');
+		} else {
+			$res = $db->query("UPDATE `firm_info` SET `name`='$nm_sql', `signature`='$sign_sql', `currency`='$curr', `coeff`='$coeff', `type`='$type', `delivery_info`='$delivery_info_sql', `rrp`='$rrp' WHERE `id`='$id'");
+			$tmpl->msg("Фирма обновлена!", 'ok');
+		}
+		if ($type == 2) { // Влияние цен для заданных групп товаров
+			$g = @$_POST['g'];
+			$res = $db->query("DELETE FROM `firm_info_group` WHERE `firm_id`='$id'");
+			if (is_array($g))
+				foreach ($g as $line) {
+					$res = $db->query("INSERT INTO `firm_info_group` (`firm_id`, `group_id`) VALUES ('$id', '$line')");
+				}
+			$tmpl->msg("Привязки к группам обновлены!", 'ok');
+		}
 	}
-	$tmpl->addContent("</table>");
-}
-else if($mode=='viewsort')
-{
-	$tmpl->addContent("<h3>Сортированная выборка</h3>");
+	else if ($mode == 'firmss') {
+		$line_id = rcvint('line_id');
+		$firm_id = rcvint('firm_id');
+		$table_name = request('table_name');
+		$col_art = rcvint('col_art');
+		$col_name = rcvint('col_name');
+		$col_cost = rcvint('col_cost');
+		$col_nal = rcvint('col_nal');
+		$col_curr = rcvint('col_curr');
+		$col_info = rcvint('col_info');
+		
+		$table_name_sql = $db->real_escape_string($table_name);
+		
+		if (!$line_id) {
+			$res = $db->query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info`)
+		VALUES ('$firm_id', '$table_name_sql', '$col_art', '$col_name', '$col_cost', '$col_nal', '$col_curr', '$col_info')");
+		}
+		else {
+			$res = $db->query("UPDATE `firm_info_struct` SET `table_name`='$table_name_sql', `art`='$col_art', `name`='$col_name', `cost`='$col_cost', `nal`='$col_nal', `currency`='$col_curr', `info`='$col_info' WHERE `id`='$line_id'");
+			if ($db->affected_rows == 0)
+				$tmpl->msg("Ничего не изменено", "info");
+		}
 
-	$header="<tr><th>Name";
-	$res=$db->query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Ошибка получения данных организации");
-	$f_max=$res->num_rows;
-	while($nxt=$res->fetch_row())
-		$header.="<th>$nxt[0]";
+		$tmpl->msg("Операция выполнена успешно!", 'ok');
+	}
+	else if ($mode == 'firmsd') {
+		$p = rcvint('p');
+		$res = $db->query("DELETE FROM `firm_info_struct` WHERE `id`='$p'");
+		$tmpl->msg("Удалено!", "ok");
+	}
+	else if ($mode == 'viewall') {
+		$s = request('s');
+		$s_sql = $db->real_escape_string($s);
+		if ($rv = rcvint('rv')) {
+			$ch = ' checked';
+			$ss = '';
+		} else {
+			$ch = '';
+			$ss = "WHERE `price`.`name` LIKE '%$s_sql%' OR `price`.`art` LIKE '%$s_sql%'";
+		}
+		$tmpl->addContent("<h3>Поиск по критерию</h3>
+		<form action='' method=post>
+		<input type=hidden nmae=mode value=viewall>
+		Строка поиска:<br>
+		<input type=text name=s value='".html_out($s)."'><br>
+		<label><input type=checkbox name=rv value=1 $ch>Регулярное выражение</label><br>
+		<input type=submit value='Выполнить отбор'>
+		</form>");
+		$res = $db->query("SELECT `price`.`name`, `price`.`cost`, `price`.`art`, `firm_info`.`name`
+		FROM `price`
+		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
+		$ss
+		ORDER BY `price`.`name`");
+		$tmpl->addContent("<table width=100%><tr><th>Наименование<th>Цена<th>Артикул<th>Фирма");
+		while ($nxt = $res->fetch_row()) {
+			if ($rv) {
+				if (preg_match("/$s/", $nxt[0])) {
+					$tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+				}
+			}
+			else
+				$tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+		}
+		$tmpl->addContent("</table>");
+	}
+	else if ($mode == 'viewsort') {
+		$tmpl->addContent("<h3>Сортированная выборка</h3>");
 
-	$tmpl->addContent("<table width=100%>$header");
-	$res=$db->query("SELECT `seekdata`.`name`,`seekdata`.`sql`,`seekdata`.`regex`,`seekdata`.`id`, `doc_group`.`name` FROM `seekdata`
+		$header = "<tr><th>Name";
+		$res = $db->query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
+		$f_max = $res->num_rows;
+		while ($nxt = $res->fetch_row())
+			$header.="<th>$nxt[0]";
+
+		$tmpl->addContent("<table width=100%>$header");
+		$res = $db->query("SELECT `seekdata`.`name`,`seekdata`.`sql`,`seekdata`.`regex`,`seekdata`.`id`, `doc_group`.`name` FROM `seekdata`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
 	ORDER BY `seekdata`.`name`");
-	$c=0;
-	if(!$res)	throw new MysqlException("Ошибка получения данных поиска");
-	while($nxt=$res->fetch_row())
-	{
-		$costar=array();
-		$rs=$db->query("SELECT `name`,`cost`,`firm` FROM `price`
-		WHERE `name` LIKE '%$nxt[1]%' ORDER BY `cost` LIMIT 1000");
-		if(!$rs)	throw new MysqlException("Ошибка получения данных прайса");
-		while($nx=$res->fetch_row())
-		{
-			if(preg_match("/$nxt[2]/",$nx[0]))
-			{
-				if($costar[$nx[2]])
-					$costar[$nx[2]].=" / <a title='$nx[0]'>".$nx[1]."</a>";
-				else
-					$costar[$nx[2]]="<a title='$nx[0]'>".$nx[1]."</a>";
-			}
-		}
-		$tmpl->addContent("<tr><td><a title='$nxt[2]' href='?mode=regve&amp;id=$nxt[3]'>$nxt[4] $nxt[0]</a>");
-		for($i=1;$i<=$f_max;$i++)
-			$tmpl->addContent("<td>$costar[$i]");
-		$c++;
-		if($c>=15)
-		{
-			$tmpl->addContent($header);
-			$c=0;
-		}
-	}
-	$tmpl->addContent("</div></table>");
-}
-else if($mode=='search')
-{
-	$s=rcv('s');
-	$g=rcv('g');
-	$tmpl->addContent("<h3>Поиск по строке</h3>
-	<form action='' mode='get'>
-	<input type='hidden' name='mode' value='search'>
-	<input type='text' name='s' value='$s'>
-	<input type='submit' value='Найти'></form></b>");
-	if($s)
-	{
-		$tmpl->addContent("<h3>Результаты:</h3>");
-		if(strlen($g)==0)
-		{
-			$tmpl->addContent("<h3>Интересующие Вас товары найдены в группах:</h3>");
-			$res=$db->query("SELECT `doc_group`.`id`, `doc_group`.`name` FROM `seekdata`
-			LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
-			WHERE `seekdata`.`name` LIKE '%$s%'
-			GROUP BY `seekdata`.`group`");
-			if(!$res)	throw new MysqlException("Ошибка получения данных поиска");
-			while($nxt=$res->fetch_row())
-			{
-				if($nxt[1]=='')
-				{
-					$nxt[1]='==Группа не указана==';
-					$nxt[0]=0;
+		$c = 0;
+		while ($nxt = $res->fetch_row()) {
+			$costar = array();
+			$rs = $db->query("SELECT `name`,`cost`,`firm` FROM `price`
+			WHERE `name` LIKE '%$nxt[1]%' ORDER BY `cost` LIMIT 1000");
+			while ($nx = $res->fetch_row()) {
+				if (preg_match("/$nxt[2]/", $nx[0])) {
+					if ($costar[$nx[2]])
+						$costar[$nx[2]].=" / <a title='$nx[0]'>" . $nx[1] . "</a>";
+					else
+						$costar[$nx[2]] = "<a title='$nx[0]'>" . $nx[1] . "</a>";
 				}
-				$tmpl->addContent("<a href='?mode=search&amp;s=$s&amp;g=$nxt[0]'>$nxt[1]</a><br>");
+			}
+			$tmpl->addContent("<tr><td><a title='$nxt[2]' href='?mode=regve&amp;id=$nxt[3]'>$nxt[4] $nxt[0]</a>");
+			for ($i = 1; $i <= $f_max; $i++)
+				$tmpl->addContent("<td>$costar[$i]");
+			$c++;
+			if ($c >= 15) {
+				$tmpl->addContent($header);
+				$c = 0;
 			}
 		}
-		else
-		{
-			$tmpl->addContent("<h3>Результаты в выбранной группе</h3>");
-			$res=$db->query("SELECT `seekdata`.`id`, `seekdata`.`name` FROM `seekdata`
+		$tmpl->addContent("</div></table>");
+	} else if ($mode == 'search') {
+		$s = request('s');
+		$s_sql = $db->real_escape_string($s);
+		$g = rcvint('g');
+		$tmpl->addContent("<h3>Поиск по строке</h3>
+		<form action='' mode='get'>
+		<input type='hidden' name='mode' value='search'>
+		<input type='text' name='s' value='".html_out($s)."'>
+		<input type='submit' value='Найти'></form></b>");
+		if ($s) {
+			$tmpl->addContent("<h3>Результаты:</h3>");
+			if (strlen($g) == 0) {
+				$tmpl->addContent("<h3>Интересующие Вас товары найдены в группах:</h3>");
+				$res = $db->query("SELECT `doc_group`.`id`, `doc_group`.`name` FROM `seekdata`
+				LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
+				WHERE `seekdata`.`name` LIKE '%$s_sql%'
+				GROUP BY `seekdata`.`group`");
+				while ($nxt = $res->fetch_row()) {
+					if ($nxt[1] == '') {
+						$nxt[1] = '==Группа не указана==';
+						$nxt[0] = 0;
+					}
+					$tmpl->addContent("<a href='?mode=search&amp;s=".html_out($s)."&amp;g=$nxt[0]'>$nxt[1]</a><br>");
+				}
+			} else {
+				$tmpl->addContent("<h3>Результаты в выбранной группе</h3>");
+				$res = $db->query("SELECT `seekdata`.`id`, `seekdata`.`name` FROM `seekdata`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`seekdata`.`group`
-			WHERE `seekdata`.`name` LIKE '%$s%' AND `seekdata`.`group`='$g'");
-			if(!$res)	throw new MysqlException("Ошибка получения данных поиска");
-			while($nxt=$res->fetch_row())
-			{
-				$tmpl->addContent("$nxt[1]<br>");
+			WHERE `seekdata`.`name` LIKE '%$s_sql%' AND `seekdata`.`group`='$g'");
+				while ($nxt = $res->fetch_row()) {
+					$tmpl->addContent("$nxt[1]<br>");
+				}
 			}
 		}
-	}
-}
-else if($mode=='regve')
-{
-	$id=rcv('id');
-	$nxt=array();
-	$tmpl->addContent("<h3>Правка условия выборки</h3>
+	} else if ($mode == 'regve') {
+		$id = rcvint('id');
+		$nxt = array();
+		$tmpl->addContent("<h3>Правка условия выборки</h3>
 	<form action='' method=post>
 	<input type=hidden name=mode value=regvs>");
-	if($id)
-	{
-		$tmpl->addContent("<input type=hidden name=id value='$id'>");
-		$res=$db->query("SELECT `name`,`sql`,`regex`, `group` FROM `seekdata` WHERE `id`='$id'");
-		if(!$res)	throw new MysqlException("Ошибка получения данных поиска");
-		$nxt=$res->fetch_row($res);
-	}
-	$tmpl->addContent("
-	Наименование:<br>
-	<input type=text name=nm value='$nxt[0]'><br>
-	Группа:<br>
-	<select name='group'>");
-	$res=$db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
-	if(!$res)	throw new MysqlException("Ошибка получения данных групп");
-	if(!$nxt[3])
-		$tmpl->addContent("<option style='background-color: #8f8;' selected disabled value='0'>--- не выбрана ---</option>");
-	while($nx=$res->fetch_row())
-	{
-		if($nx[0]==$nxt[3])
-			$tmpl->addContent("<option style='background-color: #8f8;' selected value='$nx[0]'>$nx[1] ($nx[0])</option>");
-		else
-			$tmpl->addContent("<option value='$nx[0]'>$nx[1] ($nx[0])</option>");
-	}
-
-	$tmpl->addContent("</select>
-	Строка отбора (можно использовать символ %):<br>
-	<input type=text name=ss value='$nxt[1]'><br>
-	Регулярное выражение поиска:<br>
-	<input type=text name=rv value='$nxt[2]' id='re' onkeydown=\"DelayedSave('/priceload.php?mode=regvt','regex_text', 're'); return true;\" ><br>
-	<input type=submit value='Записать'>
-	</form>
-	<div id='regex_text'>ss</div>");
-}
-else if($mode=='regvt')
-{
-	$tmpl->ajax=1;
-	$s=@$_GET['s'];
-	if($s=='')
-	{
-		echo"Пустой запрос!";
-		exit();
-
-	}
-	//$s='/'.$s.'/';
-
-	$costar=array();
-	$rs=$db->query("SELECT `name`,`cost`,`firm` FROM `price`");
-	if(!$rs)	throw new MysqlException("Ошибка получения данных прайса");
-	$cnt=$rs->num_rows;
-
-	$tmpl->addContent("<h3>Результаты отбора $s ($cnt совпадений, 100 максимум):</h3>");
-	$tmpl->addContent("<table width=100%><tr>");
-	$res=$db->query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Ошибка получения данных фирм");
-	$f_max=$res->num_rows;
-	while($nxt=$res->fetch_row())
-		$tmpl->addContent("<th>$nxt[0]");
-
-	while($nx=$rs->fetch_row())
-	{
-		if($a=preg_match("/$s/",$nx[0]))
-		{
-
-			if($costar[$nx[2]])
-				$costar[$nx[2]].="<hr>$nx[0] ($nx[1])";
-			else
-				$costar[$nx[2]]="$nx[0] ($nx[1])";
+		if ($id) {
+			$tmpl->addContent("<input type=hidden name=id value='$id'>");
+			$res = $db->query("SELECT `name`,`sql`,`regex`, `group` FROM `seekdata` WHERE `id`='$id'");
+			$nxt = $res->fetch_row();
 		}
-		if($a===FALSE) break;
-	}
-	$tmpl->addContent("<tr valign=top>");
-	for($i=1;$i<=$f_max;$i++)
-		$tmpl->addContent("<td>$costar[$i]");
-
-	$tmpl->addContent("</table>");
-}
-else if($mode=='regvs')
-{
-	$id=rcv('id');
-	$nm=rcv('nm');
-	$ss=rcv('ss');
-	$g=rcv('group');
-	$rv=@$_POST['rv'];
-	if($id)
-	{
-		$res=$db->query("UPDATE `seekdata` SET `name`='$nm', `sql`='$ss', `regex`='$rv', `group`='$g' WHERE `id`='$id'");
-		if(!$res)	throw new MysqlException("Ошибка обновления данных поиска");
-		$tmpl->msg("Данные обновлены!",'ok');
-	}
-	else
-	{
-		$res=$db->query("INSERT INTO `seekdata` (`name`, `sql`, `regex`, `group`)
-		VALUES ('$nm', '$ss', '$rv', '$g')");
-		if(!$res)	throw new MysqlException("Ошибка добавления данных поиска");
-		$tmpl->msg("Данные обновлены!",'ok');
-	}
-
-	$costar=array();
-	$rs=$db->query("SELECT `name`,`cost`,`firm` FROM `price`
-	WHERE `name` LIKE '$ss' ORDER BY `cost` LIMIT 100");
-	if(!$rs)	throw new MysqlException("Ошибка обновления данных поиска");
-	$cnt=$rs->num_rows;
-
-	$tmpl->addContent("<h3>Результаты отбора $rv ($cnt совпадений, 100 максимум):</h3>");
-	$tmpl->addContent("<table width=100%><tr>");
-	$res=$db->query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Ошибка получения данных фирм");
-	$f_max=$res->num_rows;
-	while($nxt=$res->fetch_row())
-		$tmpl->addContent("<th>$nxt[0]");
-
-	while($nx=$rs->fetch_row($rs))
-	{
-		if(preg_match("/$rv/",$nx[0]))
-		{
-			if($costar[$nx[2]])
-				$costar[$nx[2]].="<hr>$nx[0] ($nx[1])";
+		$tmpl->addContent("
+		Наименование:<br>
+		<input type=text name=nm value='$nxt[0]'><br>
+		Группа:<br>
+		<select name='group'>");
+		$res = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
+		if (!$nxt[3])
+			$tmpl->addContent("<option style='background-color: #8f8;' selected disabled value='0'>--- не выбрана ---</option>");
+		while ($nx = $res->fetch_row()) {
+			if ($nx[0] == $nxt[3])
+				$tmpl->addContent("<option style='background-color: #8f8;' selected value='$nx[0]'>$nx[1] ($nx[0])</option>");
 			else
-				$costar[$nx[2]]="$nx[0] ($nx[1])";
+				$tmpl->addContent("<option value='$nx[0]'>$nx[1] ($nx[0])</option>");
 		}
-	}
-	$tmpl->addContent("<tr valign=top>");
-	for($i=1;$i<=$f_max;$i++)
-		$tmpl->addContent("<td>$costar[$i]");
 
-	$tmpl->addContent("</table>");
-}
-else if($mode=='r_noparsed')
-{
-	$f=rcv('f');
-	$s1=rcv('s1');
-	$s2=rcv('s2');
-	$s3=rcv('s3');
-	$tmpl->addContent("<h1 id='page-title'>Необработанные позиции</h1>
+		$tmpl->addContent("</select>
+		Строка отбора (можно использовать символ %):<br>
+		<input type=text name=ss value='$nxt[1]'><br>
+		Регулярное выражение поиска:<br>
+		<input type=text name=rv value='$nxt[2]' id='re' onkeydown=\"DelayedSave('/priceload.php?mode=regvt','regex_text', 're'); return true;\" ><br>
+		<input type=submit value='Записать'>
+		</form>
+		<div id='regex_text'>ss</div>");
+	}
+	else if ($mode == 'regvt') {
+		$tmpl->ajax = 1;
+		$s = @$_GET['s'];
+		if ($s == '') {
+			echo"Пустой запрос!";
+			exit();
+		}
+		//$s='/'.$s.'/';
+
+		$costar = array();
+		$rs = $db->query("SELECT `name`,`cost`,`firm` FROM `price`");
+		$cnt = $rs->num_rows;
+
+		$tmpl->addContent("<h3>Результаты отбора $s ($cnt совпадений, 100 максимум):</h3>");
+		$tmpl->addContent("<table width=100%><tr>");
+		$res = $db->query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
+		$f_max = $res->num_rows;
+		while ($nxt = $res->fetch_row())
+			$tmpl->addContent("<th>$nxt[0]");
+
+		while ($nx = $rs->fetch_row()) {
+			if ($a = preg_match("/$s/", $nx[0])) {
+
+				if ($costar[$nx[2]])
+					$costar[$nx[2]].="<hr>$nx[0] ($nx[1])";
+				else
+					$costar[$nx[2]] = "$nx[0] ($nx[1])";
+			}
+			if ($a === FALSE)
+				break;
+		}
+		$tmpl->addContent("<tr valign=top>");
+		for ($i = 1; $i <= $f_max; $i++)
+			$tmpl->addContent("<td>$costar[$i]");
+
+		$tmpl->addContent("</table>");
+	}
+	else if ($mode == 'regvs') {
+		$id = rcvint('id');
+		$nm = request('nm');
+		$ss = request('ss');
+		$g = rcvint('group');
+		$rv = @$_POST['rv'];
+		
+		$nm_sql = $db->real_escape_string($nm);
+		$ss_sql = $db->real_escape_string($ss);
+		
+		if ($id) {
+			$res = $db->query("UPDATE `seekdata` SET `name`='$nm_sql', `sql`='$ss_sql', `regex`='$rv', `group`='$g' WHERE `id`='$id'");
+			$tmpl->msg("Данные обновлены!", 'ok');
+		}
+		else {
+			$res = $db->query("INSERT INTO `seekdata` (`name`, `sql`, `regex`, `group`)
+		VALUES ('$nm_sql', '$ss_sql', '$rv', '$g')");
+			$tmpl->msg("Данные обновлены!", 'ok');
+		}
+
+		$costar = array();
+		$rs = $db->query("SELECT `name`,`cost`,`firm` FROM `price`
+	WHERE `name` LIKE '$ss_sql' ORDER BY `cost` LIMIT 100");
+		$cnt = $rs->num_rows;
+
+		$tmpl->addContent("<h3>Результаты отбора $rv ($cnt совпадений, 100 максимум):</h3>");
+		$tmpl->addContent("<table width=100%><tr>");
+		$res = $db->query("SELECT `name` FROM `firm_info` WHERE `id`!='0' ORDER BY `id`");
+		$f_max = $res->num_rows;
+		while ($nxt = $res->fetch_row())
+			$tmpl->addContent("<th>$nxt[0]");
+
+		while ($nx = $rs->fetch_row()) {
+			if (preg_match("/$rv/", $nx[0])) {
+				if ($costar[$nx[2]])
+					$costar[$nx[2]].="<hr>$nx[0] ($nx[1])";
+				else
+					$costar[$nx[2]] = "$nx[0] ($nx[1])";
+			}
+		}
+		$tmpl->addContent("<tr valign=top>");
+		for ($i = 1; $i <= $f_max; $i++)
+			$tmpl->addContent("<td>$costar[$i]");
+
+		$tmpl->addContent("</table>");
+	}
+	else if ($mode == 'r_noparsed') {
+		$f = rcvint('f');
+		$s1 = request('s1');
+		$s2 = request('s2');
+		$s3 = request('s3');
+		
+		$s1_sql = $db->real_escape_string($s1);
+		$s2_sql = $db->real_escape_string($s2);
+		$s3_sql = $db->real_escape_string($s3);
+		
+		$tmpl->addContent("<h1 id='page-title'>Необработанные позиции</h1>
 	<div id='page-info'>Отметьте галочками нужные, и добавте на склад. Можно воспользоваться фильтром.</div>");
-	if($f) 	$sql_add=" AND `price`.`firm`='$f'";
-	else	$sql_add='';
-	if($s1)	$sql_add.="AND (`price`.`name` LIKE '%$s1%' OR `price`.`info` LIKE '%$s1%')";
-	if($s2)	$sql_add.="AND (`price`.`name` LIKE '%$s2%' OR `price`.`info` LIKE '%$s2%')";
-	if($s3)	$sql_add.="AND (`price`.`name` LIKE '%$s3%' OR `price`.`info` LIKE '%$s3%')";
-	$res=$db->query("SELECT `price`.`id`, `price`.`art`, `price`.`name`, `firm_info`.`name`, `price`.`info`
+		if ($f)	$sql_add = " AND `price`.`firm`='$f'";
+		else	$sql_add = '';
+		if ($s1)$sql_add.="AND (`price`.`name` LIKE '%$s1_sql%' OR `price`.`info` LIKE '%$s1_sql%')";
+		if ($s2)$sql_add.="AND (`price`.`name` LIKE '%$s2_sql%' OR `price`.`info` LIKE '%$s2_sql%')";
+		if ($s3)$sql_add.="AND (`price`.`name` LIKE '%$s3_sql%' OR `price`.`info` LIKE '%$s3_sql%')";
+		$res = $db->query("SELECT `price`.`id`, `price`.`art`, `price`.`name`, `firm_info`.`name`, `price`.`info`
 	FROM `price`
 	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
 	WHERE `seeked`='0' $sql_add
 	LIMIT 100000");
-	if(!$res)	throw new MysqlException("Ошибка выборки данных прайсов");
-	if($res->num_rows)
-	{
-		$i=0;
-		$tmpl->addContent("
+		if ($res->num_rows) {
+			$i = 0;
+			$tmpl->addContent("
 		<script type='text/javascript'>
 
 		function SelAll(flag)
@@ -789,241 +722,199 @@ else if($mode=='r_noparsed')
 		<form action='' method='get'>
 		<input type='hidden' name='mode' value='r_noparsed'>
 		<input type='hidden' name='f' value='$f'>
-		<input type='text' name='s1' value='$s1'> - <input type='text' name='s2' value='$s2'> - <input type='text' name='s3' value='$s3'>
+		<input type='text' name='s1' value='".html_out($s1)."'> - <input type='text' name='s2' value='".html_out($s2)."'> - <input type='text' name='s3' value='".html_out($s3)."'>
 		<button>Отфильтровать</button>
 		</form>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='adding'>
 		<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
 		<table width='100%'><tr><th>ID<th>Код произв.<th>Наименование<th>Инфо<th>Фирма");
-		while($nxt=$res->fetch_row())
-		{
-			$i=1-$i;
-			$tmpl->addContent("<tr class='lin$i'><td><label><input type='checkbox' name='p[]' value='$nxt[0]'>$nxt[0]</label><td>$nxt[1]<td>$nxt[2]<td>$nxt[4]<td>$nxt[3]");
+			while ($nxt = $res->fetch_row()) {
+				$i = 1 - $i;
+				$tmpl->addContent("<tr class='lin$i'><td><label><input type='checkbox' name='p[]' value='$nxt[0]'>$nxt[0]</label><td>$nxt[1]<td>$nxt[2]<td>$nxt[4]<td>$nxt[3]");
+			}
+			$tmpl->addContent("</table><button type='submit'>Далее</button></form>");
 		}
-		$tmpl->addContent("</table><button type='submit'>Далее</button></form>");
+		else
+			$tmpl->msg("Необработанных позиций не обнаружено!");
 	}
-	else $tmpl->msg("Необработанных позиций не обнаружено!");
-}
-else if($mode=='adding')
-{
-	$tmpl->addContent("<h1 id='page-title'>Добавление позиций на склад</h1>
+	else if ($mode == 'adding') {
+		$tmpl->addContent("<h1 id='page-title'>Добавление позиций на склад</h1>
 	<div id='page-info'>Назовите позиции так, как они должны называться в вашем прайсе</div>");
-	$p=@$_POST['p'];
-	if(!is_array($p))	throw new Exception("Список позиций не получен");
-	$res=$db->query("SELECT `price`.`id`, `price`.`art`, `price`.`name`
+		$p = @$_POST['p'];
+		if (!is_array($p))
+			throw new Exception("Список позиций не получен");
+		$res = $db->query("SELECT `price`.`id`, `price`.`art`, `price`.`name`
 	FROM `price`
 	WHERE `seeked`='0'");
-	if(!$res)	throw new MysqlException("Не удалось получить данные прайсов");
-	$tmpl->addContent("<form action='' method='post'>
+		$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='adding_s'>
 	<table width='100%'><tr><th>N<th>Код произв.<th>Оригинальное наименование<th style='width: 40%'>Наше наименование</th><th>Описание</th></tr>");
-	$i=0;
-	while($nxt=$res->fetch_row())
-	{
-		if(!in_array($nxt[0],$p))	continue;
-		$i++;
-		$nxt[1]=trim($nxt[1]);
-		$nxt[2]=trim($nxt[2]);
-		$name=mb_substr($nxt[2],0,128,"UTF-8");
-		$tmpl->addContent("<tr class='lin$i'><td>$i<td><input type='text' name='vc[$nxt[0]]' value='$nxt[1]'><td>$nxt[2]<td><input type='text' name='n[$nxt[0]]' value='$name' style='width: 95%'><td><textarea name='d[$nxt[0]]'>$nxt[2]</textarea>");
-	}
-	$tmpl->addContent("</table>Группа:<br><select name='group'>");
-	$res=$db->query("SELECT `id`, `name` FROM `doc_group`");
-	if(!$res)	throw new MysqlException("Ошибка получения данных групп");
-	while($nxt=$res->fetch_row())
-	{
-		$tmpl->addContent("<option value='$nxt[0]'>$nxt[1] ($nxt[0])</option>");
-	}
-	$tmpl->addContent("</select><br>Единицы измерения:<br><select name='units'>");
-	$res2=$db->query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
-	if(!$res2)	throw new MysqlException("Ошибка получения групп единиц измерения");
-	while($nx2=$res2->fetch_row())
-	{
-		$tmpl->addContent("<option disabled style='color:#fff; background-color:#000'>$nx2[1]</option>\n");
-		$res=$db->query("SELECT `id`, `name`, `rus_name1` FROM `class_unit` WHERE `class_unit_group_id`='$nx2[0]'");
-		if(!$res)	throw new MysqlException("Ошибка получения единиц измерения");
-		while($nx=$res->fetch_row())
-		{
-			$tmpl->addContent("<option value='$nx[0]'>$nx[1] ($nx[2])</option>");
+		$i = 0;
+		while ($nxt = $res->fetch_row()) {
+			if (!in_array($nxt[0], $p))
+				continue;
+			$i++;
+			$nxt[1] = trim($nxt[1]);
+			$nxt[2] = trim($nxt[2]);
+			$name = mb_substr($nxt[2], 0, 128, "UTF-8");
+			$tmpl->addContent("<tr class='lin$i'><td>$i<td><input type='text' name='vc[$nxt[0]]' value='$nxt[1]'><td>$nxt[2]<td><input type='text' name='n[$nxt[0]]' value='$name' style='width: 95%'><td><textarea name='d[$nxt[0]]'>$nxt[2]</textarea>");
 		}
-	}
-	$tmpl->addContent("</select><br><button type='submit'>Добавить</button></form>");
-}
-else if($mode=='adding_s')
-{
-	$group=rcv('group');
-	$units=rcv('units');
-	$tmpl->addContent("<h1 id='page-title'>Добавление позиций на склад - сохранение</h1>");
-	$n=@$_POST['n'];
-	if(!is_array($n))	throw new Exception("Список позиций не получен");
-	foreach($n as $id => $value)
-	{
-		$vc=$db->real_escape_string(@$_POST['vc'][$id]);
-		$desc=$db->real_escape_string(@$_POST['d'][$id]);
-		$value=$db->real_escape_string($value);
-		$res=$db->query("INSERT INTO `doc_base` (`group`, `name`, `vc`, `unit`, `desc`) VALUES ('$group', '$value', '$vc', '$units', '$desc')");
-		if(!$res)	throw new MysqlException("Не удалось добавить наименование $value");
-		$pos_id=$db->insert_id;
-		$tmpl->addContent("Добавлено $pos_id: $vc - $value<br>");
-		if($vc)
-		{
-			$res=$db->query("INSERT INTO `seekdata` (`id`, `sql`) VALUES ('$pos_id', '$vc')");
-			if(!$res)	throw new MysqlException("Не удалось добавить данные анализатора для наименования $value");
+		$tmpl->addContent("</table>Группа:<br><select name='group'>");
+		$res = $db->query("SELECT `id`, `name` FROM `doc_group`");
+		while ($nxt = $res->fetch_row()) {
+			$tmpl->addContent("<option value='$nxt[0]'>$nxt[1] ($nxt[0])</option>");
 		}
+		$tmpl->addContent("</select><br>Единицы измерения:<br><select name='units'>");
+		$res2 = $db->query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
+		while ($nx2 = $res2->fetch_row()) {
+			$tmpl->addContent("<option disabled style='color:#fff; background-color:#000'>$nx2[1]</option>\n");
+			$res = $db->query("SELECT `id`, `name`, `rus_name1` FROM `class_unit` WHERE `class_unit_group_id`='$nx2[0]'");
+			while ($nx = $res->fetch_row()) {
+				$tmpl->addContent("<option value='$nx[0]'>$nx[1] ($nx[2])</option>");
+			}
+		}
+		$tmpl->addContent("</select><br><button type='submit'>Добавить</button></form>");
+	} else if ($mode == 'adding_s') {
+		$group = rcvint('group');
+		$units = rcvint('units');
+		$tmpl->addContent("<h1 id='page-title'>Добавление позиций на склад - сохранение</h1>");
+		$n = @$_POST['n'];
+		if (!is_array($n))
+			throw new Exception("Список позиций не получен");
+		foreach ($n as $id => $value) {
+			$vc = $db->real_escape_string(@$_POST['vc'][$id]);
+			$desc = $db->real_escape_string(@$_POST['d'][$id]);
+			$value = $db->real_escape_string($value);
+			$res = $db->query("INSERT INTO `doc_base` (`group`, `name`, `vc`, `unit`, `desc`) VALUES ('$group', '$value', '$vc', '$units', '$desc')");
+			$pos_id = $db->insert_id;
+			$tmpl->addContent("Добавлено $pos_id: $vc - $value<br>");
+			if ($vc) {
+				$res = $db->query("INSERT INTO `seekdata` (`id`, `sql`) VALUES ('$pos_id', '$vc')");
+			}
+		}
+		$tmpl->msg("Все операции выполнены!", "ok");
 	}
-	$tmpl->msg("Все операции выполнены!","ok");
-}
-else if($mode=='r_parsed')
-{
-	$f=rcv('f');
-	$tmpl->addContent("<h1>Отчёт по обработаным позициям</h1>");
-	if($f) $f=" AND `price`.`firm`='$f'";
-	$res=$db->query("SELECT `price`.`id`, `price`.`name`, `price`.`art`, `firm_info`.`name`
-	FROM `price`
-	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
-	WHERE `seeked`='1' $f
-	LIMIT 100000");
-	if(!$res)	throw new MysqlException("Не удалось получить данные прайса");
-	if($res->num_rows)
-	{
-		$i=0;
-		$tmpl->addContent("<table width='100%'><tr><th>ID<th>Наименование<th>Артикул<th>Фирма");
-		while($nxt=$res->fetch_row())
-		{
-			$i=1-$i;
-			$tmpl->addContent("<tr class='lin$i'><td><a href='?mode=multi_view&amp;p=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+	else if ($mode == 'r_parsed') {
+		$f = rcvint('f');
+		$tmpl->addContent("<h1>Отчёт по обработаным позициям</h1>");
+		if ($f)	$f = " AND `price`.`firm`='$f'";
+		$res = $db->query("SELECT `price`.`id`, `price`.`name`, `price`.`art`, `firm_info`.`name`
+		FROM `price`
+		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
+		WHERE `seeked`='1' $f
+		LIMIT 100000");
+		if ($res->num_rows) {
+			$i = 0;
+			$tmpl->addContent("<table width='100%'><tr><th>ID<th>Наименование<th>Артикул<th>Фирма");
+			while ($nxt = $res->fetch_row()) {
+				$i = 1 - $i;
+				$tmpl->addContent("<tr class='lin$i'><td><a href='?mode=multi_view&amp;p=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+			}
+			$tmpl->addContent("</table>");
+		}
+		else	$tmpl->msg("Обработанных позиций не обнаружено!");
+	}
+	else if ($mode == 'r_multiparsed') {
+		$f = rcvint('f');
+		$tmpl->addContent("<h1>Отчёт по многократно обработанным позициям</h1>");
+		if ($f)	$f = " AND `price`.`firm`='$f'";
+		$res = $db->query("SELECT `price`.`id`, `price`.`name`, `price`.`art`, `firm_info`.`name`, `price`.`seeked`
+		FROM `price`
+		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
+		WHERE `seeked`>'1' $f
+		LIMIT 1000");
+		if ($res->num_rows) {
+			$i = 0;
+			$tmpl->addContent("<table width='100%'><tr><th>ID<th>Наименование<th>Артикул<th>Фирма<th>Срабатываний");
+			while ($nxt = $res->fetch_row()) {
+				$i = 1 - $i;
+				$tmpl->addContent("<tr class='lin$i'><td><a href='?mode=multi_view&amp;p=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
+			}
+			$tmpl->addContent("</table>");
+		}
+		else	$tmpl->msg("Многократно обработанных позиций не обнаружено!");
+	}
+	else if ($mode == 'multi_view') {
+		$price_id = rcvint('p');
+		$tmpl->addContent("<h1>Информация о совпадениях выбранной позиции прайса</h1>");
+		$res = $db->query("SELECT `parsed_price`.`pos`, `doc_group`.`name`, `doc_base`.`name`, `seekdata`.`sql`, `seekdata`.`regex` FROM `parsed_price`
+		LEFT JOIN `seekdata` ON `seekdata`.`id`=`parsed_price`.`pos`
+		LEFT JOIN `doc_base` ON `doc_base`.`id`=`parsed_price`.`pos`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		WHERE `parsed_price`.`from`='$price_id'");
+		$tmpl->addContent("<table width='100%'><tr><th>ID<th>Наименование<th>Строка поиска<th>Регулярное выражение");
+		while ($nxt = $res->fetch_row()) {
+			$i = 1 - $i;
+			$tmpl->addContent("<tr class='lin$i'><td><a href='/docs.php?l=pran&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a><td>$nxt[1] - $nxt[2]<td>$nxt[3]<td>$nxt[4]");
 		}
 		$tmpl->addContent("</table>");
-	}
-	else $tmpl->msg("Обработанных позиций не обнаружено!");
-}
-else if($mode=='r_multiparsed')
-{
-	$f=rcv('f');
-	$tmpl->addContent("<h1>Отчёт по многократно обработанным позициям</h1>");
-	if($f) $f=" AND `price`.`firm`='$f'";
-	$res=$db->query("SELECT `price`.`id`, `price`.`name`, `price`.`art`, `firm_info`.`name`, `price`.`seeked`
-	FROM `price`
-	LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
-	WHERE `seeked`>'1' $f
-	LIMIT 1000");
-	if($res->num_rows)
-	{
-		$i=0;
-		$tmpl->addContent("<table width='100%'><tr><th>ID<th>Наименование<th>Артикул<th>Фирма<th>Срабатываний");
-		while($nxt=$res->fetch_row())
-		{
-			$i=1-$i;
-			$tmpl->addContent("<tr class='lin$i'><td><a href='?mode=multi_view&amp;p=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
+	} else if ($mode == 'replaces') {
+		$tmpl->addContent("<h1>Подстановки для регулярных выражений</h1>
+		<table width='100%'><tr><th>ID<th>Поиск<th>Замена");
+		$res = $db->query("SELECT `id`, `search_str`, `replace_str` FROM `prices_replaces` ORDER BY `search_str`");
+		while ($nxt = $res->fetch_row()) {
+			$tmpl->addContent("<tr><td><a href='?mode=replacese&amp;p=$nxt[0]'>$nxt[0]</a> <a href='?mode=replacesd&amp;p=$nxt[0]' title='Удалить'><img src='/img/i_del.png' alt='Удалить'></a><td>{{{$nxt[1]}}}<td>$nxt[2]");
 		}
-		$tmpl->addContent("</table>");
+		$tmpl->addContent("</table><br>
+		<a href='?mode=replacese&amp;p=0'><img src='/img/i_add.png' alt='Добавить'> Добавить</a>");
+	} else if ($mode == 'replacese') {
+		$p = rcvint('p');
+		$res = $db->query("SELECT `id`, `search_str`, `replace_str` FROM `prices_replaces` WHERE `id`='$p'");
+		$nxt = $res->fetch_row();
+		$tmpl->addContent("<h1>Правка подстановки</h1>
+		<form action='' method='post'>
+		<input type='hidden' name='mode' value='replacess'>
+		<input type='hidden' name='p' value='$nxt[0]'>
+		Поиск:<br>
+		<input type='text' name='search_str' value='$nxt[1]'><br>
+		Замена:<br>
+		<input type='text' name='replace_str' value='$nxt[2]'><br>
+		<button>Сохранить</button>
+		</form>");
 	}
-	else $tmpl->msg("Многократно обработанных позиций не обнаружено!");
-}
-else if($mode=='multi_view')
-{
-	$price_id=rcv('p');
-	$tmpl->addContent("<h1>Информация о совпадениях выбранной позиции прайса</h1>");
-	$res=$db->query("SELECT `parsed_price`.`pos`, `doc_group`.`name`, `doc_base`.`name`, `seekdata`.`sql`, `seekdata`.`regex` FROM `parsed_price`
-	LEFT JOIN `seekdata` ON `seekdata`.`id`=`parsed_price`.`pos`
-	LEFT JOIN `doc_base` ON `doc_base`.`id`=`parsed_price`.`pos`
-	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-	WHERE `parsed_price`.`from`='$price_id'");
-	if(!$res)	throw new MysqlException("Не удалось получить обработанные данные");
-	$tmpl->addContent("<table width='100%'><tr><th>ID<th>Наименование<th>Строка поиска<th>Регулярное выражение");
-	while($nxt=$res->fetch_row())
-	{
-		$i=1-$i;
-		$tmpl->addContent("<tr class='lin$i'><td><a href='/docs.php?l=pran&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a><td>$nxt[1] - $nxt[2]<td>$nxt[3]<td>$nxt[4]");
-	}
-	$tmpl->addContent("</table>");
-}
-else if($mode=='replaces')
-{
-	$tmpl->addContent("<h1>Подстановки для регулярных выражений</h1>
-	<table width='100%'><tr><th>ID<th>Поиск<th>Замена");
-	$res=$db->query("SELECT `id`, `search_str`, `replace_str` FROM `prices_replaces` ORDER BY `search_str`");
-	if(!$res)	throw new MysqlException('Не удалось получить список подстановок!');
-	while($nxt=$res->fetch_row())
-	{
-		$tmpl->addContent("<tr><td><a href='?mode=replacese&amp;p=$nxt[0]'>$nxt[0]</a> <a href='?mode=replacesd&amp;p=$nxt[0]' title='Удалить'><img src='/img/i_del.png' alt='Удалить'></a><td>{{{$nxt[1]}}}<td>$nxt[2]");
-	}
-	$tmpl->addContent("</table><br>
-	<a href='?mode=replacese&amp;p=0'><img src='/img/i_add.png' alt='Добавить'> Добавить</a>");
-}
-else if($mode=='replacese')
-{
-	$p=rcv('p');
-	$res=$db->query("SELECT `id`, `search_str`, `replace_str` FROM `prices_replaces` WHERE `id`='$p'");
-	if(!$res)	throw new MysqlException('Не удалось получить данные подстановки!');
-	$nxt=$res->fetch_row();
-	$tmpl->addContent("<h1>Правка подстановки</h1>
-	<form action='' method='post'>
-	<input type='hidden' name='mode' value='replacess'>
-	<input type='hidden' name='p' value='$nxt[0]'>
-	Поиск:<br>
-	<input type='text' name='search_str' value='$nxt[1]'><br>
-	Замена:<br>
-	<input type='text' name='replace_str' value='$nxt[2]'><br>
-	<button>Сохранить</button>
-	</form>");
-}
-else if($mode=='replacess')
-{
-	$p=rcv('p');
-	$search_str=rcv('search_str');
-	$replace_str=rcv('replace_str');
+	else if ($mode == 'replacess') {
+		$p = rcvint('p');
+		$search_str = request('search_str');
+		$replace_str = request('replace_str');
 
-	if($p=='')
-	{
-		$res=$db->query("INSERT INTO `prices_replaces` (`search_str`, `replace_str`) VALUES ('$search_str', '$replace_str')");
-		if(!$res)	throw new MysqlException('Не удалось добавить данные подстановки!');
-		$p=$db->insert_id;
+		$search_sql = $db->real_escape_string($search_str);
+		$replace_sql = $db->real_escape_string($replace_str);
+		
+		if ($p == '') {
+			$res = $db->query("INSERT INTO `prices_replaces` (`search_str`, `replace_str`) VALUES ('$search_sql', '$replace_sql')");
+			$p = $db->insert_id;
+		}
+		else	$res = $db->query("UPDATE `prices_replaces` SET `search_str`='$search_sql', `replace_str`='$replace_sql' WHERE `id`='$p'");
+
+		$tmpl->msg("Выполнено!<br><a href='?mode=replaces'>Вернуться к таблице</a> | <a href='?mode=replacese&amp;p=$p'>Продолжить редактирование</a>", "ok", "Сохранение подстановки");
 	}
-	else
-	{
-		$res=$db->query("UPDATE `prices_replaces` SET `search_str`='$search_str', `replace_str`='$replace_str' WHERE `id`='$p'");
-		if(!$res)	throw new MysqlException('Не удалось обновить данные подстановки!');
+	else if ($mode == 'pr') {
+		$firm = rcvint('firm');
+		$db->query("DELETE FROM `doc_base_cost` WHERE `rrp_firm_id`='$firm'");
+		$cnt = $db->affected_rows;
+		$tmpl->msg("Успешно сброшено $cnt цен", "ok");
+	} else if ($mode == 'menu') {
+		$tmpl->ajax = 1;
+		$tmpl->setContent("
+		<div onclick=\"window.location='/docs.php?l=pran'\">Результаты анализа</div>
+		<div onclick=\"window.location='/priceload.php'\">Редактор организаций</div>
+		<div onclick=\"window.location='/priceload.php?mode=load'\">Загрузить прайс</div>
+		<div onclick=\"window.location='/priceload.php?mode=viewall'\">Просмотреть общий список</div>
+		<div onclick=\"window.location='/priceload.php?mode=search'\">Поиск</div>
+		<div onclick=\"window.location='/priceload.php?mode=replaces'\">Подстановки</div>
+		<div onclick=\"window.location='/priceload.php?mode=r_noparsed'\">Ошибки: необработанные</div>
+		<div onclick=\"window.location='/priceload.php?mode=r_multiparsed'\">Ошибки: дублирующиеся</div>");
 	}
-
-	$tmpl->msg("Выполнено!<br><a href='?mode=replaces'>Вернуться к таблице</a> | <a href='?mode=replacese&amp;p=$p'>Продолжить редактирование</a>","ok","Сохранение подстановки");
+	else	$tmpl->logger('Запрошен неверный режим! Возможно, вы указали неверные параметры, или же ссылка, по которой Вы обратились, неверна.');
 }
-else if($mode=='pr')
-{
-	$firm=rcv('firm');
-	settype($firm,'int');
-	mysql_query("DELETE FROM `doc_base_cost` WHERE `rrp_firm_id`='$firm'");
-	if(mysql_errno())	throw new MysqlException("Не удалось сбросить цены");
-	$cnt=mysql_affected_rows();
-	$tmpl->msg("Успешно сброшено $cnt цен","ok");
-	
-}
-else if($mode=='menu')
-{
-	$tmpl->ajax=1;
-	$tmpl->setContent("
-	<div onclick=\"window.location='/docs.php?l=pran'\">Результаты анализа</div>
-	<div onclick=\"window.location='/priceload.php'\">Редактор организаций</div>
-	<div onclick=\"window.location='/priceload.php?mode=load'\">Загрузить прайс</div>
-	<div onclick=\"window.location='/priceload.php?mode=viewall'\">Просмотреть общий список</div>
-	<div onclick=\"window.location='/priceload.php?mode=search'\">Поиск</div>
-	<div onclick=\"window.location='/priceload.php?mode=replaces'\">Подстановки</div>
-	<div onclick=\"window.location='/priceload.php?mode=r_noparsed'\">Ошибки: необработанные</div>
-	<div onclick=\"window.location='/priceload.php?mode=r_multiparsed'\">Ошибки: дублирующиеся</div>");
-}
-else $tmpl->logger('Запрошен неверный режим! Возможно, вы указали неверные параметры, или же ссылка, по которой Вы обратились, неверна.');
-
-
-}
-catch(MysqlException $e)
-{
+catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка в базе данных");
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
-catch(Exception $e)
-{
-	$tmpl->msg($e->getMessage(),'err');
+catch (Exception $e) {
+	$tmpl->msg($e->getMessage(), 'err');
 }
 
 $tmpl->write();

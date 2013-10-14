@@ -81,7 +81,6 @@ else if($mode=='view')
 	$res=$db->query("SELECT * FROM `users`
 	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 	WHERE `id`='$id'");
-	if(!$res)			throw new MysqlException("Не удалось получить данные пользователя");
 	if(!$res->num_rows)		throw new Exception("Пользователь не найден!");
 	$line=$res->fetch_assoc();
 
@@ -203,7 +202,7 @@ else if($mode=='agent')
 	LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`users`.`agent_id`
 	WHERE `users`.`id`='$id'");
 	if(!$res->num_rows)		throw new Exception("Пользователь не найден!");
-	$line=$res->fetch_assoc($res);
+	$line = $res->fetch_assoc();
 	$tmpl->addContent("<h1 id='page-title'>Привязка пользователя к агенту</h1>
 	<div id='page-info'><a href='/adm_users.php?mode=view&amp;id=$id'>Назад</a></div>
 	<form action='' method='post'>

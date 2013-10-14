@@ -34,11 +34,9 @@ function attack_test()
 
 	$tm = time()-60*60*3;
 	$res = $db->query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
-	if(!$res)	throw new MysqlException("Ошибка защиты 1. Продолжение невозможно.");
 	if($res->num_rows > 20)		return 2;	// Более 20 ошибок вводе пароля c данного IP за последние 3 часа. Блокируем аутентификацию.
 	$tm = time()-60*30;
 	$res = $db->query("$sql WHERE `ip`='$ip' AND `time`>'$tm'");
-	if(!$res)	throw new MysqlException("Ошибка защиты 2. Продолжение невозможно.");
 	if($res->num_rows > 2)		$captcha=1;	// Более двух ошибок ввода пароля c данного IP за последние 30 минут. Планируем запрос captcha.
 
 	$ip_a = explode(".",$ip);
@@ -47,25 +45,20 @@ function attack_test()
 
 	$tm = time()-60*60*3;
 	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
-	if(!$res)	throw new MysqlException("Ошибка защиты 3. Продолжение невозможно.");
 	if($res->num_rows > 100)	return 3;	// Более 100 ошибок вводе пароля c подсети /24 за последние 3 часа. Блокируем аутентификацию.
 	$tm = time()-60*30;
 	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].$ip_a[2].%' AND `time`>'$tm'");
-	if(!$res)	throw new MysqlException("Ошибка защиты 4. Продолжение невозможно.");
 	if($res->num_rows > 6)		$captcha=1;	// Более 6 ошибок ввода пароля c подсети /24 за последние 30 минут. Планируем запрос captcha.
 
 	$tm = time()-60*60*3;
 	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
-	if(!$res)	throw new MysqlException("Ошибка защиты 5. Продолжение невозможно.");
 	if($res->num_rows > 500)	return 3;	// Более 500 ошибок вводе пароля c подсети /16 за последние 3 часа. Блокируем аутентификацию.
 	$tm = time()-60*30;
 	$res = $db->query("$sql WHERE `ip`='$ip_a[0].$ip_a[1].%' AND `time`>'$tm'");
-	if(!$res)	throw new MysqlException("Ошибка защиты 6. Продолжение невозможно.");
 	if($res->num_rows > 30)		$captcha=1;	// Более 30 ошибок ввода пароля c подсети /16 за последние 30 минут. Планируем запрос captcha.
 
 	$tm = time()-60*15;
 	$res = $db->query("$sql WHERE `time`>'$tm'");
-	if(!$res)	throw new MysqlException("Ошибка защиты 7. Продолжение невозможно.");
 	if($res->num_rows > 100)	$captcha=1;	// Более 100 ошибок ввода пароля со всей сети за последние 15 минут. Планируем запрос captcha.
 
 	return $captcha;
@@ -284,7 +277,6 @@ if(!isset($_REQUEST['mode']))
 	if($at > 1)
 	{
 		$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
-		if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
 	}
 	if($at >= 3)
 	{
@@ -302,14 +294,12 @@ if(!isset($_REQUEST['mode']))
 			{
 				$tmpl->msg("Введите правильный код подтверждения, изображенный на картинке", "err");
 				$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
-				if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
 			}
 			else
 			{
 				$login_sql = $db->real_escape_string($_REQUEST['login']);
 				$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users`.`pass`, `users`.`pass_type`, `users`.`reg_email_confirm`, `users`.`reg_phone_confirm`, `users`.`disabled`, `users`.`disabled_reason`, `users`.`bifact_auth` FROM `users`
 				WHERE `name`='$login_sql'");
-				if(!$res)	throw new MysqlException("Не удалось получить данные");
 				if($res->num_rows)
 				{
 					$nxt = $res->fetch_assoc();
@@ -332,7 +322,6 @@ if(!isset($_REQUEST['mode']))
 					if(!$pass_ok)
 					{
 						$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
-						if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
 						$tmpl->msg("Неверная пара логин / пароль! Попробуйте снова!","err","Авторизоваться не удалось");
 					}
 					else
@@ -344,7 +333,6 @@ if(!isset($_REQUEST['mode']))
 							$ua=$db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
 							$res = $db->query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
 							VALUES ({$nxt['id']}, NOW(), '$ip', '$ua', 'password')");
-							if(!$res)	throw new MysqlException("Не удалось выполнить вход.");
 							$_SESSION['uid'] = $nxt['id'];
 							$_SESSION['name'] = $nxt['name'];
 							if(@$_SESSION['last_page'])
@@ -367,7 +355,6 @@ if(!isset($_REQUEST['mode']))
 				else
 				{
 					$res = $db->query("INSERT INTO `users_bad_auth` (`ip`, `time`) VALUES ('$ip', '$time')");
-					if(!$res)	throw new MysqlException("Ошибка защиты 8. Продолжение невозможно.");
 					$tmpl->msg("Неверная пара логин / пароль! Попробуйте снова!","err","Авторизоваться не удалось");
 				}
 			}
@@ -488,7 +475,6 @@ else if($mode=='regs')
 			if( !preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $email))
 				throw new RegException('Неверный формат адреса e-mail. Адрес должен быть в формате user@host.zone','email');
 			$res = $db->query("SELECT `id` FROM `users` WHERE `reg_email`='$email'");
-			if(!$res)	throw new MysqlException("Не удалось проверить уникальность email");
 			if($res->num_rows)
 				throw new RegException('Пользователь с таким email уже зарегистрирован. Используйте другой.','email');
 		}
@@ -499,7 +485,6 @@ else if($mode=='regs')
 			if( !preg_match('/^\+79\d{9}$/', $phone))
 				throw new RegException('Неверный формат телефона. Номер должен быть в федеральном формате +79XXXXXXXXX '.$phone,'phone');
 			$res=$db->query("SELECT `id` FROM `users` WHERE `reg_phone`='$phone'");
-			if(!$res)	throw new MysqlException("Не удалось проверить уникальность телефона");
 			if($res->num_rows)
 				throw new RegException('Пользователь с таким телефоном уже зарегистрирован. Используйте другой.','phone');
 		}
@@ -538,8 +523,6 @@ else if($mode=='regs')
 
 		$res=$db->query("INSERT INTO `users` (`name`, `pass`, `pass_type`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `reg_date`, `reg_email_subscribe`, `reg_phone_subscribe`)
 		VALUES ('$sql_login', '$sql_pass_hash', '$sql_pass_type',  NOW(), '$sql_email', '$email_conf', '$sql_phone', '$phone_conf', NOW(), $subs, $subs )");
-		if(!$res)	throw new MysqlException("Не удалось добвать пользователя! Попробуйте позднее!");
-
 		if($email)
 		{
 			$msg=regMsg($login, $pass, $email_conf);
@@ -570,10 +553,11 @@ else if($mode=='regs')
 
 
 	}
-	catch(MysqlException $e)
+	catch(mysqli_sql_exception $e)
 	{
-		$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-		mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'], $e->getMessage());
+		$id = $tmpl->logger($e->getMessage(), 1);
+		$tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
+		mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
 	}
 	catch(RegException $e)
 	{
@@ -599,26 +583,22 @@ else if($mode=='conf')
 
 	$sql_login=$db->real_escape_string($login);
 	$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
-	if(!$res)	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
 	if($nxt=$res->fetch_assoc())
 	{
 		$e_key=$p_key=0;
 		if($e && $e==$nxt['reg_email_confirm'])
 		{
 			$r=$db->query("UPDATE `users` SET `reg_email_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
-			if(!$r)	throw new MysqlException("Не удалось обновить данные. Попробуйте позднее!");
 		}
 		else if($e) $e_key=1;
 
 		if($p && $p==$nxt['reg_phone_confirm'])
 		{
 			$r=$db->query("UPDATE `users` SET `reg_phone_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
-			if(!$r)	throw new MysqlException("Не удалось обновить данные. Попробуйте позднее!");
 		}
 		else if($p) $p_key=1;
 
 		$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
-		if(!$res)	throw new MysqlException("Не удалось получить данные. Попробуйте позднее!");
 		$nxt=$res->fetch_assoc();
 
 		if(($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='') || ($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='') )
@@ -650,7 +630,6 @@ else if($mode=='conf')
 			$ua=$db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
 			$res=$db->query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
 			VALUES ({$nxt['id']}, NOW(), '$ip', '$ua', 'register')");
-			if(!$res)	throw new MysqlException("Не удалось выполнить вход.");
 			$_SESSION['uid']=$nxt['id'];
 			$_SESSION['name']=$nxt['name'];
 
@@ -686,7 +665,6 @@ else if($mode=='rem')
 
 		$sql_login=$db->real_escape_string($login);
 		$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `disabled`, `disabled_reason` FROM `users` WHERE `name`='$sql_login' OR `reg_email`='$sql_login' OR `reg_phone`='$sql_login'");
-		if(!$res)		throw new MysqlException("Не удалось получить данные пользователя");
 		if(! $res->num_rows )	throw new Exception("Пользователь не найден!");
 		$user_info=$res->fetch_assoc();
 		if($user_info['disabled'])	throw new Exception("Пользователь заблокирован (забанен). Причина блокировки: ".$user_info['disabled_reason']);
@@ -706,7 +684,6 @@ else if($mode=='rem')
 			if(@$CONFIG['site']['allow_openid'])
 			{
 				$res=$db->query("SELECT `openid_identify` FROM `users_openid` WHERE `user_id`={$user_info['id']}");
-				if(!$res)		throw new MysqlException("Не удалось получить данные openid");
 				while($openid_info=$res->fetch_row())
 				{
 					$oid=htmlentities($openid_info[0],ENT_QUOTES);
@@ -728,7 +705,6 @@ else if($mode=='rem')
 				if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
 
 				$res=$db->query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
-				if(!$res)		throw new MysqlException("Не удалось включить режим смены пароля");
 				$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта {$user_info['name']}.
 				Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&login={$user_info['name']}&s=$key
 
@@ -744,7 +720,6 @@ else if($mode=='rem')
 				$db->query("START TRANSACTION");
 				$key=rand(100000,99999999);
 				$res=$db->query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
-				if(! $res)		throw new MysqlException("Не удалось включить режим смены пароля");
 
 				$sender=new SMSSender();
 				$sender->setNumber($user_info['reg_phone']);
@@ -780,7 +755,6 @@ else if($mode=='remn')
 	$sql_key=$db->real_escape_string(@$_REQUEST['s']);
 	$sql_login=$db->real_escape_string(@$_REQUEST['login']);
 	$res=$db->query("SELECT `id`, `name` FROM `users` WHERE `pass_change`='$sql_key' AND `name`='$sql_login'");
-	if(! $res)		throw new MysqlException("Не удалось получить данные смены пароля");
 	if($nxt=$res->fetch_row())
 	{
 		$pass=keygen_unique(0,8,11);
@@ -806,7 +780,6 @@ else if($mode=='remn')
 		}
 
 		$res=$db->query("UPDATE `users` SET `pass`='$sql_pass_hash', `pass_type`='$sql_pass_type', `pass_change`='', `pass_date_change`=NOW() WHERE `id`='$nxt[0]'");
-		if(!$res)		throw new MysqlException("Не удалось обновить пароль");
 		$_SESSION['uid']=$nxt[0];
 		$_SESSION['name']=$nxt[1];
 		$tmpl->addContent("<h1>Завершение смены пароля</h1>
@@ -816,7 +789,6 @@ else if($mode=='remn')
 	else
 	{
 		$res=$db->query("UPDATE `users` SET `pass_change`='' WHERE `login`='$sql_login'");
-		if(!$res)		throw new MysqlException("Не удалось сбросить код смены пароля");
 		$tmpl->msg("Код неверен или устарел","err");
 	}
 }
@@ -826,7 +798,6 @@ else if($mode=='unsubscribe')
 	$email=$db->real_escape_string($_REQUEST['email']);
 	$c=0;
 	$res=$db->query("UPDATE `users` SET `reg_email_subscribe`='0' WHERE `reg_email`='$email'");
-	if(!$res)		throw new MysqlException("Не удалось отписаться. Сообщите администратору о проблеме.");
 	if($db->affected_rows())
 	{
 		$tmpl->msg("Вы успешно отказались от автоматической рассылки!","ok");
@@ -834,7 +805,6 @@ else if($mode=='unsubscribe')
 	}
 
 	$res=$db->query("UPDATE `doc_agent` SET `no_mail`='1' WHERE `email`='$email'");
-	if(! $res)		throw new MysqlException("Не удалось отписаться. Сообщите администратору о проблеме.");
 	if($db->affected_rows)
 	{
 		$tmpl->msg("В нашей клиентской базе Ваш адрес помечен, как нежелательный для рассылки.","ok");
@@ -846,11 +816,12 @@ else if($mode=='unsubscribe')
 else $tmpl->logger("Uncorrect mode!");
 
 }
-catch(MysqlException $e)
+catch(mysqli_sql_exception $e)
 {
-	$e->db->rollback();
-	$tmpl->msg($e->getMessage()."<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'], $e->getMessage());
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
+	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
+	$db->rollback();
 }
 catch(Exception $e)
 {

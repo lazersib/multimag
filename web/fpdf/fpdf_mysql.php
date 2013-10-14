@@ -200,7 +200,6 @@ function draw_groups_tree($pid, $query, $prop)
 {
 	global $db;
 	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' AND `hidelevel`='0' ORDER BY `id`");
-	if(!$res)	throw new MysqlException("Невозможно выбрать список групп");
 	while($nxt=$res->fetch_row())
 	{
 		if($nxt[0]==0) continue;
@@ -208,7 +207,6 @@ function draw_groups_tree($pid, $query, $prop)
 			if( ! in_array($nxt[0],$prop['groups']) )	continue;
 		$this->Row($nxt[1],1,$prop['cost_id']);
 		$res2=$db->query($query."WHERE `group`='$nxt[0]' AND `doc_base`.`hidden`='0' ORDER BY `name`");
-		if(!$res)	throw new MysqlException("Невозможно выбрать список наименований");
 		while($row=$res2->fetch_array())
 		{
 			$this->Row($row,0,$prop['cost_id']);

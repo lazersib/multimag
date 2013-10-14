@@ -128,7 +128,6 @@ class ds_zp_s_prodaj_conn {
 
 			// Получаем список агентов сотрудника
 			$ag_res = $db->query("SELECT `id`, `name` FROM `doc_agent` WHERE `responsible`='$user_id'");
-			if (!$ag_res)	throw new MysqlException("Не удалость запросить список агентов");
 
 			while ($agent_info = $ag_res->fetch_assoc()) {
 				// Получение даты первого документа
@@ -137,7 +136,7 @@ class ds_zp_s_prodaj_conn {
 				list($fd_date) = $fd_res->fetch_row();
 
 				$tmpl->addContent("<tr><th colspan='5'>".html_out($agent_info['name'])."</td></tr>");
-				$doc_res = mysql_query("SELECT `doc_list`.`id`, `doc_list`.`user`, `doc_list`. `date`, `doc_list`.`sum`,
+				$doc_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`user`, `doc_list`. `date`, `doc_list`.`sum`,
 					`n_data`.`value` AS `zp_s_finansov`, `users`.`name` AS `user_name`, `doc_list`.`p_doc`, `doc_list`.`agent` AS `agent_id`
 				FROM `doc_list`
 				INNER JOIN `users`			ON `users`.`id`=`doc_list`.`user`
@@ -196,7 +195,7 @@ class ds_zp_s_prodaj_conn {
 			$altnum = GetNextAltNum(1, 'auto', 0, $tim, 1);
 			$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
 				VALUES	('$tim', '1', '1', '$uid', '$altnum', 'auto', '1', '$worker_id', '0', '$all_sum')");
-			$post_doc = $db->insert_id();
+			$post_doc = $db->insert_id;
 			$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$all_sum')");
 			$db->commit();
 			header("location: /doc.php?mode=body&doc=$post_doc");

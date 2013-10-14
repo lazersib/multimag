@@ -39,7 +39,7 @@ if($mode=='')
 	$tmpl->addContent("<h1 id='page-title'>Последние коментарии</h1>
 	<table class='list' width='100%'>
 	<tr><th>ID</th><th>Дата</th><th>Объект</th><th>Автор</th><th>e-mail</th><th>Текст коментария</th><th>Оценка</th><th>Ответ</th><th>IP адрес</th><th>user-agent</th></tr>");
-	while($line=$res->fetch_assoc($res))
+	while($line=$res->fetch_assoc())
 	{
 		$object="{$line['object_name']}:{$line['object_id']}";
 		if($line['object_name']=='product')	$object="<a href='/vitrina.php?mode=product&amp;p={$line['object_id']}'>$object</a>";

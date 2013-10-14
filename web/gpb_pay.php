@@ -63,14 +63,12 @@ try
 
 	$res=$db->query("SELECT `doc_list`.`id`, `agent`, `sum`, `firm_id`, `contract`, `comment` FROM `doc_list`
 	WHERE `doc_list`.`id`='$merchant_trx' AND `doc_list`.`type`='4'");
-	if(!$res)		throw new MysqlException("Невозможно получить данные документа");
 	if(!$res->num_rows)	throw new Exception("Банк-приход не найден");
 	$b_info=$res->fetch_assoc();
 
 	$desc_add="\n---------------\nresult:$result_code\namount:$amount\naccount_id:$account_id\np_rnn:$p_rrn\nts:$timestamp\nsignature:$signature\np_cardholder:$p_cardholder\np_maskedPan:$p_maskedPan\n3d_secure:$p_isFullyAuthenticated";
 	$desc_sql=$db->real_escape_string($b_info['comment'].$desc_add);
 	$res=$db->query("UPDATE `doc_list` SET `comment`='$desc_sql' WHERE `id`='$merchant_trx'");
-	if(!$res)		throw new MysqlException("Невозможно обновить данные документа");
 
 	if($result_code==1)
 	{
@@ -82,14 +80,12 @@ try
 		$trx_id_sql=$db->real_escape_string($trx_id);
 
 		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$merchant_trx', 'cardpay', '1'), ('$merchant_trx', 'cardholder', '$p_cardholder_sql'), ('$merchant_trx', 'masked_pan', '$p_maskedPan_sql'),  ('$merchant_trx', 'p_rnn', '$p_rrn_sql'),  ('$merchant_trx', 'trx_id', '$trx_id_sql')");
-		if(!$res)		throw new MysqlException("Невозможно обновить данные документа");
 		$doc=new doc_PBank($merchant_trx);
 		$doc->DocApply();
 	}
 	else
 	{
 		$res=$db->query("UPDATE `doc_list` SET `mark_del`='".time()."' WHERE `id`='$merchant_trx'");
-		if(!$res)		throw new MysqlException("Невозможно обновить данные документа");
 	}
 	echo"<?xml version=\"1.0\" encoding=\"utf-8\"?><register-payment-response><result><code>1</code><desc>OK</desc></result></register-payment-response>";
 }

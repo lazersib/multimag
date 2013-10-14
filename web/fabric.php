@@ -113,7 +113,6 @@ try
 		if(is_array($_POST['name']))
 		{
 			$res=$db->query("SELECT `id`, `active`, `name` FROM `fabric_builders` ORDER BY `id`");
-			if(!$res)	throw new MysqlException("Не удалось получить список сборщиков");
 			$f=0;
 			while($line=$res->fetch_row())
 			{

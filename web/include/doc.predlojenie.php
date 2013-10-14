@@ -79,7 +79,7 @@ class doc_Predlojenie extends doc_Nulltype
 			FROM `doc_list_pos` AS `a`
 			WHERE `a`.`doc`='{$this->doc}'
 			ORDER BY `doc_list_pos`.`id`");
-			while($nxt=mysql_fetch_row($res)) {
+			while($nxt = $res->fetch_row()) {
 				if($nxt[4]<$nxt[1]) {
 					if(!$new_id) {
 						$new_doc = new doc_Realizaciya();
@@ -121,7 +121,7 @@ class doc_Predlojenie extends doc_Nulltype
 			FROM `doc_list_pos` AS `a`
 			WHERE `a`.`doc`='{$this->doc}'
 			ORDER BY `doc_list_pos`.`id`");
-			while($nxt=mysql_fetch_row($res)) {
+			while($nxt = $res->fetch_row()) {
 				if($nxt[4]<$nxt[1]) {
 					if(!$new_id) {
 						$new_doc = new doc_v_puti();
@@ -142,7 +142,7 @@ class doc_Predlojenie extends doc_Nulltype
 	function PrintPDF($to_str=0) {
 		global $tmpl, $CONFIG, $db;
 
-//		$res=mysql_query("SELECT `adres`, `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
+//		$res=mysql _query("SELECT `adres`, `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
 		$agent_data = $db->selectRow('dpc_agent', $this->doc_data['agent']);
 		$dt=date("d.m.Y",$this->doc_data['date']);
 		if(!$to_str) $tmpl->ajax=1;
@@ -180,7 +180,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'L',0);
 		$pdf->SetFont('','',8);
-		$str='Заказчик: '.html_in($this->firm_vars['firm_name'].', '.$this->firm_vars['firm_adres'].', тел:'.$this->firm_vars['firm_telefon']);
+		$str='Заказчик: '.$this->firm_vars['firm_name'].', '.$this->firm_vars['firm_adres'].', тел:'.$this->firm_vars['firm_telefon'];
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0,5,$str,0,1,'L',0);
 		$str="Поставщик: ".$this->doc_data['agent_name'].", адрес: {$agent_data['adres']}, телефон: {$agent_data['tel']}";

@@ -45,7 +45,6 @@ require_once("core.php");
 if(!$n)
 {
 	$res=$db->query("SELECT `id` FROM `photogalery`");
-	if(!$res)	throw new MysqlException("Не удалось получить список изображений");
 	$rnd=rand(0,$res->num_rows-1);
 	$res->field_seek($rnd);
 	list($n)=$res->fetch_row();
@@ -55,7 +54,6 @@ $res=$db->query("SELECT `photogalery`.`id`, `photogalery`.`uid`, `photogalery`.`
 FROM `photogalery`
 LEFT JOIN `users` ON `users`.`id`=`photogalery`.`uid`
 WHERE `photogalery`.`id`='$n' ");
-if(!$res)	throw new MysqlException("Не удалось получить данные изображения");
 if($nxt=$res->fetch_row())
 {
 

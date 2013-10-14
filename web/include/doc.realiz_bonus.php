@@ -75,10 +75,10 @@ class doc_Realiz_bonus extends doc_Realizaciya
 		$pdf->Cell(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
 		$str="Поставщик: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		$str="Покупатель: {$this->doc_data['agent']}";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
 

@@ -97,7 +97,6 @@ class doc_Specific extends doc_Nulltype {
 
 		$dres = $db->query("SELECT `altnum`, `date` FROM `doc_list` WHERE `id`='{$this->doc_data['p_doc']}'");
 		$dog = $dres->fetch_assoc();
-		if (!$dog)	throw new MysqlException("Спецификация должна быть подчинена договору!");
 
 		$dog['date'] = date("Y-m-d", $dog['date']);
 		$pdf->SetFont('', '', 12);

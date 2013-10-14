@@ -131,7 +131,7 @@ class doc_Postuplenie extends doc_Nulltype {
 		WHERE `doc_list`.`id`='{$this->doc}'");
 		if(! $rs->num_rows)
 			throw new Exception("Документ {$this->doc} не найден!");
-		$nx = $rs->mysql_fetch_assoc();
+		$nx = $rs->fetch_assoc();
 		if (!$nx['ok'])
 			throw new Exception("Документ ещё не проведён!");
 
@@ -221,10 +221,10 @@ class doc_Postuplenie extends doc_Nulltype {
 		$pdf->Cell(0, 8, $str, 0, 1, 'C', 0);
 		$pdf->SetFont('', '', 10);
 		$str = "Поставщик: {$this->doc_data['agent_name']}";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
 		$str = "Покупатель: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
 		$pdf->Ln();
 
@@ -304,17 +304,17 @@ class doc_Postuplenie extends doc_Nulltype {
 		$pdf->Ln();
 
 		$str = "Всего $ii наименований на сумму $cost";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
 
 		$str = "Товар получил, претензий к качеству товара и внешнему виду не имею.";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
 		$str = "Покупатель: ____________________________________";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
 		$str = "Поставщик:_____________________________________";
-		$str = iconv('UTF-8', 'windows-1251', html_in($str));
+		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
 
 		if ($to_str)

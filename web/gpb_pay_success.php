@@ -26,17 +26,17 @@ try
 	$tmpl->setContent("<h1>Оплата заказа</h1>");
 	$tmpl->msg("Оплата заказа завершена успешно","ok");
 	$res=$db->query("SELECT `doc_list`.`id`, `doc_list`.`ok` FROM `doc_list` WHERE `doc_list`.`p_doc`='$order_id' AND `doc_list`.`type`='4'");
-	if(!$res)		throw new MysqlException("Не удалось получить данные оплат");
 	if(!$res->num_rows)	throw new Exception("Обнаружена ошибка при выполнении платежа! Обратитесь к администратору магазина, сообщив номер заказа $order_id!");
-	$order_info=$res->fetch_assoc($res);
+	$order_info = $res->fetch_assoc();
 	if($order_info['ok'])		$tmpl->msg("Оплата выполнена. Заказ передан в обработку.","ok");
 	else				$tmpl->addContent("Информация о подтверждении оплаты пока не поступила. Подождите 1-2 минуты, и проверьте оплату. <a href='/gpb_pay_success.php'>Проверить оплату</a>");
 
 }
-catch(MysqlException $e)
-{
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+catch(mysqli_sql_exception $e) {
+	$db->rollback();
+	$tmpl->ajax=0;
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {

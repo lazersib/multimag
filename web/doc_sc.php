@@ -72,11 +72,16 @@ try {
 		}
 		else	$tmpl->msg("Сценарий $fn не найден!", "err");
 	}
-} catch (AccessException $e) {
+}
+catch (AccessException $e) {
 	$tmpl->msg($e->getMessage(), 'err', "Нет доступа");
-} catch (MysqlException $e) {
-	$tmpl->msg($e->getMessage() . "<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
-} catch (Exception $e) {
+}
+catch(mysqli_sql_exception $e) {
+	$tmpl->ajax=0;
+	$id = $tmpl->logger($e->getMessage(), 1);
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+}
+catch (Exception $e) {
 	$tmpl->msg($e->getMessage(), 'err', "Общая ошибка");
 }
 

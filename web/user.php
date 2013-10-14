@@ -94,28 +94,16 @@ else if($mode=='user_data'){
 		'real_address'=>	request('adres'),
 		'jid'=>			request('jid') );
 		
-		if(! $db->updateA('users', $uid, $data) )
-			throw new MysqlException("Не удалось обновить основные данные пользователя!");
-		
+		$db->updateA('users', $uid, $data);
 		$data=requestA( array('icq', 'skype', 'mra', 'site_name') );
-
-		if(! $db->replaceKA('users_data', 'uid', $uid, $data) )
-			throw new MysqlException("Не удалось обновить дополнительные данные пользователя!");
-
+		$db->replaceKA('users_data', 'uid', $uid, $data);
 		$tmpl->msg("Данные обновлены!","ok");
 	}
 
 
 	$user_data=$db->selectRowA('users', $uid,
 		array('name', 'reg_email', 'reg_date', 'reg_email_subscribe', 'real_name', 'reg_phone', 'real_address', 'jid', 'agent_id') );
-	if($user_data===false)
-		throw new MysqlException("Не удалось получить основные данные пользователя!");
-
 	$user_dopdata=$db->selectFieldKA('users_data', 'uid', $uid, array('icq', 'skype', 'mra', 'site_name') );
-
-	if($user_dopdata===false)
-		throw new MysqlException("Не удалось получить дополнительные данные пользователя!");
-		
 	$subs_checked=$user_data['reg_email_subscribe']?'checked':'';
 
 	$tmpl->addContent("<form action='' method='post'>
@@ -141,7 +129,6 @@ else if($mode=='user_data'){
 	
 	if($user_data['agent_id']){
 		$adata=$db->selectRowA('users', $uid, array('id', 'name', 'fullname', 'tel', 'fax_phone', 'sms_phone', 'adres', 'data_sverki') );
-		if($adata===false)	throw new MysqlException("Не удалось получить данные агента!");
 		$tmpl->addContent("<table border='0' width='500' class='list'>
 		<tr><th colspan='2'>Аккаунт прикреплён к агенту
 		<tr><td>ID агента</td><td>{$adata['id']}</td></tr>
@@ -163,7 +150,6 @@ else if($mode=='log_call_request'){
 	<table width='100%' class='list' cellspacing='0'>
 	<tr><th>Дата запроса</th><th>Кому звонить?</th><th>Куда звонить?</th><th>Когда звонить?</th><th>IP</th></tr>");
 	$res=$db->query("SELECT `id`, `request_date`, `name`, `phone`, `call_date`, `ip` FROM `log_call_requests` ORDER BY `request_date`");
-	if(!$res)			throw new MysqlException("Не удалось получить данные запросов");
 	while($line=$res->fetch_assoc())
 		$tmpl->addContent("<tr><td>".html_out($line['request_date'])."</td><td>".html_out($line['name'])."</td><td>". html_out($line['phone'])."</td><td>".html_out($line['call_date'])."</td><td>{$line['ip']}</td></tr>");
 	$tmpl->addContent("</table></div>");
@@ -179,7 +165,6 @@ else if($mode=='doc_hist'){
 	WHERE `doc_list`.`user`='{$_SESSION['uid']}'
 	ORDER BY `date`");
 	$i=0;
-	if(!$res)	throw new MysqlException("Не удалось получить данные документов");
 	while($nxt=$res->fetch_assoc())	{
 		$date=date("Y-m-d H:i:s",$nxt['date']);
 		$ok=$nxt['ok']?'Да':'Нет';
@@ -197,7 +182,6 @@ else if($mode=='doc_view'){
 		$doc=rcvint('doc');
 		if($doc){
 			$doc_data=$db->selectRowA('doc_list', $doc, array('id', 'type', 'user') );
-			if($doc_data===false)		throw new MysqlException("Документ не выбран");
 			if($doc_data['user']!=$uid)	throw new Exception("Документ не найден");
 
 			$document=AutoDocumentType($doc_data['type'], $doc);
@@ -393,14 +377,12 @@ else if($mode=="elog")
 	if(!isAccess('log_error','view'))	throw new AccessException();
 	$p=rcvint('p');
 	if($p<=0)	$p=1;
-	$lines=100;
+	$lines = 250;
 	$from=($p-1)*$lines;
 	$tmpl->addContent("<h1>Журнал ошибок</h1>");
-	$res=$db->query("SELECT SQL_CALC_FOUND_ROWS `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC LIMIT $from, $lines");
-	if(!$res)	throw new MysqlException("Не удалось получить данные журнала");
-	$fr=$db->query('SELECT FOUND_ROWS()');
-	if(!$res)	throw new MysqlException("Не удалось получить размер журнала");
-	list($total) = 
+	$res = $db->query("SELECT SQL_CALC_FOUND_ROWS `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC LIMIT $from, $lines");
+	$fr = $db->query('SELECT FOUND_ROWS()');
+	list($total) = $fr->fetch_row();
 	$tmpl->addContent("<table width='100%' class='list'>
 	<tr><th>ID</th><th>Page</th><th>Referer</th><th>Msg</th><th>Date</th><th>IP</th><th>Agent</th><th>UID</th></tr>");
 	$i=0;
@@ -428,29 +410,24 @@ else if($mode=="elog")
 	}
 
 }
-else if($mode=="clog")
-{
-	if(!isAccess('log_access','view'))	throw new AccessException();
+else if ($mode == "clog") {
+		if (!isAccess('log_access', 'view'))	throw new AccessException();
 
-	$tmpl->addContent("<h1>Журнал посещений</h1>");
-	if(request($m))
-	{
-		$g=" GROUP BY `ip`";
-		$tmpl->addContent("<a href='?mode=clog&m=ng'>Без группировки</a><br><br>");
-	}
-	else	$g='';
+		$tmpl->addContent("<h1>Журнал посещений</h1>");
+		if (request('m')) {
+			$g = " GROUP BY `ip`";
+			$tmpl->addContent("<a href='?mode=clog&m=ng'>Без группировки</a><br><br>");
+		}
+		else	$g = '';
 
-	$res=$db->query("SELECT * FROM `counter` $g ORDER BY `date` DESC");
-	if($res)	throw new MysqlException("Не удалость получить данные посещений");
-	$tmpl->addContent("<table class='list'>
-	<tr><th>IP</th><th>Страница</th><th>Ссылка (referer)</th><th>UserAgent</th><th>Дата</th></tr>");
-	while($nxt=$res->fetch_row())
-	{
-		$dt=date("Y-m-d H:i:s",$nxt[1]);
-		$tmpl->addContent("<tr><td>$nxt[2]</td><td>".html_out($nxt[5])."<br><small>".html_out($nxt[6])."</small></td><td>".html_out($nxt[4])."</td><td>". html_out($nxt[3])."</td><td>$dt</td></tr>");
+		$res = $db->query("SELECT * FROM `counter` $g ORDER BY `date` DESC");
+		$tmpl->addContent("<table class='list'><tr><th>IP</th><th>Страница</th><th>Ссылка (referer)</th><th>UserAgent</th><th>Дата</th></tr>");
+		while ($nxt = $res->fetch_row()) {
+			$dt = date("Y-m-d H:i:s", $nxt[1]);
+			$tmpl->addContent("<tr><td>$nxt[2]</td><td>" . html_out($nxt[5]) . "<br><small>" . html_out($nxt[6]) . "</small></td><td>" . html_out($nxt[4]) . "</td><td>" . html_out($nxt[3]) . "</td><td>$dt</td></tr>");
+		}
+		$tmpl->addContent("</table>");
 	}
-	$tmpl->addContent("</table>");
-}
 else if($mode=='async_task')
 {
 	if(!isAccess('sys_async_task','view'))	throw new AccessException();
@@ -460,7 +437,6 @@ else if($mode=='async_task')
 		if(!isAccess('sys_async_task','exec'))	throw new AccessException();
 		$sql_task=$db->real_escape_string($task);
 		$res=$db->query("INSERT INTO `async_workers_tasks` (`task`, `needrun`, `textstatus`) VALUES ('$sql_task', 1, 'Запланировано')");
-		if(!$res)	throw new MysqlException("Не удалось запланировать задачу");
 	}
 
 	$tmpl->addContent("<h1>Ассинхронные задачи</h1>");
@@ -490,7 +466,6 @@ else if($mode=='async_task')
 
 	$tmpl->addContent("<table class='list'><tr><th>ID</th><th>Задача</th><th>Ож.запуска</th><th>Состояние</th></tr>");
 	$res=$db->query("SELECT `id`, `task`, `needrun`, `textstatus` FROM `async_workers_tasks` ORDER BY `id` DESC");
-	if(!$res)	throw new MysqlException("Ошибка получения списка задач");
 	while($nxt=$res->fetch_row())
 	{
 		$tmpl->addContent("<tr><td>$nxt[0]</td><td>$nxt[1]</td><td>$nxt[2]</td><td>".html_out($nxt[3])."</td></tr>");
@@ -505,7 +480,6 @@ else if($mode=="denyip")
 
 	$tmpl->addContent("<table class='list'><tr><th>ID</th><th>IP</th><th>host</th><th>Действия</th></tr>");
 	$res=$db->query("SELECT * FROM `traffic_denyip`");
-	if(!$res)	throw new MysqlException("Ошибка получения списка ресурсов");
 	while($nxt=$res->fetch_row())
 	{
 		$tmpl->addContent("<tr><td>$nxt[0]</td><td>$nxt[1]</td><td>$nxt[2]</td><td><a href='?mode=denyipd&n=$nxt[0]'>Удалить</a></td></tr>");
@@ -530,7 +504,6 @@ else if($mode=='denyipa')
 		$sql_ip=$db->real_escape_string($ip);
 		$sql_host=$db->real_escape_string($host);
 		$res=$db->query("INSERT INTO `traffic_denyip` (`ip`,`host`) VALUES ('$sql_ip','$sql_host')");
-		if(!$res)	throw new MysqlException("Ошибка получения списка ресурсов");
 		if($db->insert_id) $tmpl->addContent("и он добавлен в список!<br>");
 		else $tmpl->addContent("и такой адрес уже есть в списке!<br>");
 	}
@@ -540,7 +513,6 @@ else if($mode=="denyipd")
 	if(!isAccess('sys_ip-blacklist','delete'))	throw new AccessException();
 	$n=rcvint('n');
 	$res=$db->query("DELETE FROM `traffic_denyip` WHERE `id`='$n'");
-	if(!$res)	throw new MysqlException("Ошибка удаления");
 	$tmpl->msg("Готово!","ok");
 }
 else if($mode=='iplog')
@@ -548,7 +520,6 @@ else if($mode=='iplog')
 	if(!isAccess('sys_ip-log','view'))	throw new AccessException();
 	$tmpl->addContent("<h1>25 часто используемых адресов</h1>");
 	$res=$db->query("SELECT `ip_daddr`, COUNT(`ip_daddr`) AS `cnt`, SUM(`ip_totlen`) AS `traf` FROM `ulog` GROUP BY `ip_daddr` ORDER BY `traf` DESC LIMIT 25");
-	if(!$res)	throw new MysqlException("Ошибка выборки");
 	$tmpl->addContent("<table class='list'><tr><th>Адрес</th><th>Возможное имя сервера</th><th>Количество обращений</th><th>Трафик запросов</th><th>Заблокировать</th></tr>");
 	while($nxt=$res->fetch_row())
 	{
@@ -636,7 +607,6 @@ else if($mode=='psstat')
 		order by `counter` DESC";
 
 		$counter_res = $db->query($counter_data);
-		if(!$counter_res)	throw new MysqlException("Не удалось выбрать статистику");
 		
 		while ($counter_data_row = $counter_res->fetch_row())
 		{

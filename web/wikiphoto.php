@@ -36,7 +36,6 @@ public function outList($page)	{
 	settype($page,'int');
 	$res=$db->query("SELECT `wikiphoto`.`id`, `wikiphoto`.`uid`, `wikiphoto`.`comment`, `users`.`name`
 	FROM `wikiphoto` LEFT JOIN `users` ON `users`.`id`=`wikiphoto`.`uid`");
-	if(!$res)	throw new MysqlException("Ошибка получения информации по фотографиям");
 	
 	$rows=$res->num_rows;
 	if($page<=1)				$page=1;
@@ -139,8 +138,7 @@ public function submitImageForm() {
 	$uid=(int)$_SESSION['uid'];
 	$sql_comm=$db->real_escape_string($comm);
 	$res=$db->query("INSERT INTO `wikiphoto` (`uid`,`comment`) VALUES ('$uid','$sql_comm')");
-	if(!$res)	throw new MysqlException("Ошибка записи в базу");
-	$fid=$db->insert_id();
+	$fid=$db->insert_id;
 	$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], "$gpath/$fid.jpg");
 	if(!$m_ok)	throw new AutoLoggedException("Не удалось сохранить изображение в хранилище");
 	$tmpl->msg("Изображение сохранено. Для вставки в статью используйте следующий код:<br>[[Image:$fid|frame|alternate text]]","ok");		
@@ -196,11 +194,12 @@ try{
 		default:	throw new NotFoundException('Данные не найдены');
 	}
 }
-catch(MysqlException $e){
-	global $db;
-	$db->query("ROLLBACK");
+catch(mysqli_sql_exception $e)
+{
+	$db->rollback();
+	$id = $tmpl->logger($e->getMessage(), 1);
 	$tmpl->addContent("<br><br>");
-	$tmpl->msg($e->getMessage(),"err");
+	$tmpl->msg("Ошибка базы данных, $id","err");
 }
 catch(Exception $e){
 	global $db;
