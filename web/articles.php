@@ -23,16 +23,16 @@ require_once("include/wikiparser.php");
 
 $wikiparser=new WikiParser();
 $wikiparser->reference_wiki	= "/article/";
-$wikiparser->reference_site	= @($_SERVER['HTTPS']?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
+$wikiparser->reference_site	= (isset($_SERVER['HTTPS'])?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
 $wikiparser->image_uri		= "/share/var/wikiphoto/";
 $wikiparser->ignore_images	= false;
 
-if(!isset($_REQUEST['p']))
-{
-	$arr = @explode( '/' , $_SERVER['REQUEST_URI'] );
-	$arr = @explode( '.' , $arr[2] );
-	$p=@urldecode(urldecode($arr[0]));
-}	else $p=$_REQUEST('p');
+if(!isset($_REQUEST['p'])) {
+	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
+	$arr = explode( '.' , $arr[2] );
+	$p=urldecode(urldecode($arr[0]));
+	$p='about';
+}	else $p=$_REQUEST['p'];
 
 function articles_form($p,$text='',$type=0)
 {
@@ -111,20 +111,20 @@ try
 		$tmpl->addContent("</ul>");
 	}
 	else {
-		$page_escaped=$db->real_escape_string($p);
-		$res=$db->query("SELECT `articles`.`name` AS `article_name`, `a`.`name` AS `author_name`, `articles`.`date`, `articles`.`changed`, `b`.`name` AS `editor_name`, `articles`.`text`, `articles`.`type`
+		$page_escaped = $db->real_escape_string($p);
+		$res = $db->query("SELECT `articles`.`name` AS `article_name`, `a`.`name` AS `author_name`, `articles`.`date`, `articles`.`changed`, `b`.`name` AS `editor_name`, `articles`.`text`, `articles`.`type`
 		FROM `articles`
 		LEFT JOIN `users` AS `a` ON `a`.`id`=`articles`.`autor`
 		LEFT JOIN `users` AS `b` ON `b`.`id`=`articles`.`changeautor`
 		WHERE `articles`.`name` LIKE '$page_escaped'");
 		if($res->num_rows) {
-			$nxt=$res->fetch_assoc();
-			$h=$meta_description=$meta_keywords='';
-			$text=$nxt['text'];
-			if($nxt['type']==0)	$text=strip_tags($text, '<nowiki>');
+			$nxt = $res->fetch_assoc();
+			$h = $meta_description = $meta_keywords='';
+			$text = $nxt['text'];
+			if($nxt['type']==0)		$text = html_out($text);
 			if($nxt['type']==0 || $nxt['type']==2)
 			{
-				$text=$wikiparser->parse( html_out($text) );
+				$text = $wikiparser->parse( $text );
 				$h=$wikiparser->title;
 				$meta_description=@$wikiparser->definitions['meta_description'];
 				$meta_keywords=@$wikiparser->definitions['meta_keywords'];
@@ -157,14 +157,14 @@ try
 			{
 				if($mode=='edit')
 				{
-					if(!isAccess('generic_articles','edit'))	throw new AccessException("");
+					if(!isAccess('generic_articles','edit'))	throw new AccessException();
 					$tmpl->addContent("<h1>Правим $h</h1>
 					<h2>=== Оригинальный текст ===</h2>$text<h2>=== Конец оригинального текста ===</h2>");
-					articles_form($p,$nxt[5],$nxt[6]);
+					articles_form($p, $nxt['text'], $nxt['type']);
 				}
 				else if($mode=='save')
 				{
-					if(!isAccess('generic_articles','edit'))	throw new AccessException("");
+					if(!isAccess('generic_articles','edit'))	throw new AccessException();
 					$type=rcvint('type');
 					if($type<0 || $type>2)	$type=0;
 					$text=$db->real_escape_string(@$_REQUEST['text']);
@@ -204,14 +204,14 @@ try
 			{
 				if($mode=='edit')
 				{
-					if(!isAccess('generic_articles','edit'))	throw new AccessException("");
+					if(!isAccess('generic_articles','edit'))	throw new AccessException();
 					$h=$wikiparser->unwiki_link($p);
 					$tmpl->addContent("<h1>Создаём ".html_out($h)."</h1>");
 					articles_form($p);
 				}
 				else if($mode=='save')
 				{
-					if(!isAccess('generic_articles','create'))	throw new AccessException("");
+					if(!isAccess('generic_articles','create'))	throw new AccessException();
 					$type=rcvint('type');
 					$text=$db->real_escape_string($_REQUEST['text']);
 					$res=$db->query("INSERT INTO `articles` (`type`, `name`,`autor`,`date`,`text`)
