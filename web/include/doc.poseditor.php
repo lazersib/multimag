@@ -163,7 +163,7 @@ function Show($param='')
 	<tr><thead>
 	<th>№";
 	if($this->show_vc>0)	$ret.="<th>Код";
-	$ret.="<th>Наименование<th>Марка<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог";
+	$ret.="<th>Наименование<th>Марка<th>Цена, р.<th>Ликв.<th>АЦП, р.<th>Аналог";
 	if($this->show_tdb>0)	$ret.="<th>Тип<th>d<th>D<th>B<th>Масса";
 	if($this->show_rto>0)	$ret.="<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Предложений'><th><img src='/img/i_truck.png' alt='В пути'>";
 	$ret.="<th>Склад<th>Всего<th>Место
@@ -353,6 +353,7 @@ function GetAllContent()
 				}
 				$nxt['cost'] = $this->cost_id ? getCostPos($nxt['id'], $this->cost_id) : $nxt['cost'];
 				$nxt['rcost'] = sprintf("%0.2f", $nxt['rcost']);
+				$nxt['in_cost'] = sprintf("%0.2f",  getInCost($nxt['id']));
 				
 				if ($ret != '')
 					$ret.=', ';

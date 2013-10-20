@@ -31,7 +31,6 @@ if(!isset($_REQUEST['p'])) {
 	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
 	$arr = explode( '.' , $arr[2] );
 	$p=urldecode(urldecode($arr[0]));
-	$p='about';
 }	else $p=$_REQUEST['p'];
 
 function articles_form($p,$text='',$type=0)

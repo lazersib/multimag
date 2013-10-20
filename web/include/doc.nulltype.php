@@ -1405,10 +1405,11 @@ class doc_Nulltype
 		</table>
 		Организация:<br><select name='firm' id='firm_id'>");
 		$res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-		if(@$this->doc_data['firm_id']==0) $this->doc_data['firm_id']=$CONFIG['site']['default_firm'];
+		if(! $this->doc_data['firm_id'])
+			$this->doc_data['firm_id']=$CONFIG['site']['default_firm'];
 		while($nx = $res->fetch_row())
 		{
-			if(@$this->doc_data['firm_id']==$nx[0]) $s=' selected'; else $s='';
+			if($this->doc_data['firm_id']==$nx[0]) $s=' selected'; else $s='';
 			$tmpl->addContent("<option value='$nx[0]' $s>$nx[1] / $nx[0]</option>");
 		}
 		$tmpl->addContent("</select><br>");
@@ -1524,10 +1525,10 @@ class doc_Nulltype
 	protected function drawBankField()
 	{
 		global $tmpl, $CONFIG, $db;
-		if( isset($this->doc_data['firm_id']) )
+		if( $this->doc_data['firm_id'] )
 			$sql_add="AND ( `firm_id`='0' OR `num`='{$this->doc_data['bank']}' OR `firm_id`='{$this->doc_data['firm_id']}' )";
 		else	$sql_add= '';
-		if( isset($this->doc_data['bank']) )		
+		if( $this->doc_data['bank'] )		
 			$bank	= $this->doc_data['bank'];
 		else if( isset($CONFIG['site']['default_bank']) )
 			$bank	= $CONFIG['site']['default_bank'];

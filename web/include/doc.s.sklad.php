@@ -1856,7 +1856,7 @@ class doc_s_Sklad {
 
 			$cheader_add = ($_SESSION['sklad_cost'] > 0) ? '<th>Выб. цена' : '';
 			$tmpl->addContent("$pagebar<table width='100%' cellspacing='1' cellpadding='2' class='list'><tr>
-			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
+			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>АЦП, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
 			$tmpl->addContent("<tr class='lin0'><th colspan='18' align='center'>В группе $row наименований, показаны " . ( ($sl + $lim) < $row ? $lim : ($row - $sl) ) . ", начиная с $sl");
 			$i = 0;
 			$this->DrawSkladTable($res, $s, $lim);
@@ -1892,7 +1892,7 @@ class doc_s_Sklad {
 		$rto_add = $CONFIG['poseditor']['rto'] ? "<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>" : '';
 		$cheader_add = ($_SESSION['sklad_cost'] > 0) ? '<th>Выб. цена' : '';
 		$tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'><tr>
-		<th>№{$vc_add}<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Рыноч.цена, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
+		<th>№{$vc_add}<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>АЦП, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
 
 		switch ($CONFIG['doc']['sklad_default_order']) {
 			case 'vc': $order = '`doc_base`.`vc`';
@@ -2079,7 +2079,7 @@ class doc_s_Sklad {
 
 			$cheader_add = ($_SESSION['sklad_cost'] > 0) ? '<th>Выб. цена' : '';
 			$tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'>
-			<tr><th>№</th><th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>Рыноч.цена, р.</th>$cheader_add<th>Аналог</th><th>Тип</th><th>d</th><th>D</th><th>B</th><th>Масса</th><th><img src='/img/i_lock.png' alt='В резерве'></th><th><img src='/img/i_alert.png' alt='Под заказ'></th><th><img src='/img/i_truck.png' alt='В пути'></th><th>Склад</th><th>Всего</th><th>Место</th></tr>");
+			<tr><th>№</th><th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>$cheader_add<th>Аналог</th><th>Тип</th><th>d</th><th>D</th><th>B</th><th>Масса</th><th><img src='/img/i_lock.png' alt='В резерве'></th><th><img src='/img/i_alert.png' alt='Под заказ'></th><th><img src='/img/i_truck.png' alt='В пути'></th><th>Склад</th><th>Всего</th><th>Место</th></tr>");
 
 			$res = $db->query($sql);
 			if ($cnt = $res->num_rows()) {
@@ -2103,6 +2103,7 @@ class doc_s_Sklad {
 			$rezerv = $CONFIG['poseditor']['rto'] ? DocRezerv($nxt['id'], 0) : '';
 			$pod_zakaz = $CONFIG['poseditor']['rto'] ? DocPodZakaz($nxt['id'], 0) : '';
 			$v_puti = $CONFIG['poseditor']['rto'] ? DocVPuti($nxt['id'], 0) : '';
+			
 
 			if ($rezerv)	$rezerv = "<a onclick=\"OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$rezerv</a>";
 			else		$rezerv = '';
@@ -2153,7 +2154,8 @@ class doc_s_Sklad {
 			$analog = SearchHilight( html_out($nxt['analog']), $s);
 
 			$cost_p = sprintf("%0.2f", $nxt['cost']);
-			$cost_r = sprintf("%0.2f", $nxt['koncost']);
+			$in_cost = sprintf("%0.2f", getInCost($nxt['id']));
+			
 			$vc_add = $CONFIG['poseditor']['vc'] ? "<td>{$nxt['vc']}</td>" : '';
 
 			if ($CONFIG['poseditor']['tdb'] == 1)
@@ -2171,7 +2173,7 @@ class doc_s_Sklad {
 		<td>$cb
 		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos={$nxt['id']}'>{$nxt['id']}</a>
 		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos={$nxt['id']}')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a></td>$vc_add
-		<td align='left'>$name $info</td><td>{$nxt['proizv']}</td><td $cc>$cost_p</td><td>{$nxt['likvid']}%</td><td>$cost_r{$cadd}<td>$analog</td>$tdb_add<td>{$nxt['mass']}</td>$rto_add<td>{$nxt['cnt']}</td><td>{$nxt['allcnt']}</td><td>{$nxt['mesto']}</td></tr>");
+		<td align='left'>$name $info</td><td>{$nxt['proizv']}</td><td $cc>$cost_p</td><td>{$nxt['likvid']}%</td><td>$in_cost{$cadd}<td>$analog</td>$tdb_add<td>{$nxt['mass']}</td>$rto_add<td>{$nxt['cnt']}</td><td>{$nxt['allcnt']}</td><td>{$nxt['mesto']}</td></tr>");
 			$i++;
 			if ($i > $lim)	break;
 		}

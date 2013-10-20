@@ -173,8 +173,8 @@ class WikiParser {
 		if (!$this->image_uri) return $title;
 
 		//$href = $this->image_uri . $href;
-		$img_id=round($href);
-		$img=new ImageProductor($img_id,'w', 'jpg');
+		$img_id = intval($href);
+		$img = new ImageProductor($img_id, 'w', 'jpg');
 		$img->SetX(250);
 		$imagetag = sprintf('<a href=\'/wikiphoto.php?mode=view&n=%s\'><img src="%s" alt="%s" /></a>',
 			$href,$img->GetURI(),$title);

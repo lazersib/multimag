@@ -798,9 +798,15 @@ function SkladViewInit(doc)
 			row.oncontextmenu=function(){ ShowPosContextMenu(event ,data.id,''); return false }
 			linehtml+="<td>"+data.id+"</td>"
 			if(skladview.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
-			linehtml+="<td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.rcost+"</td><td>"+data.analog+"</td>"
+			linehtml+="<td class='la'>"+data.name+"</td><td class='la'>"+data.vendor+"</td><td class='"+data.cost_class+"'>"+data.cost+"</td><td>"+data.liquidity+"</td><td>"+data.in_cost+"</td><td>"+data.analog+"</td>"
 			if(skladview.show_column['tdb']>0)	linehtml+="<td>"+data.type+"</td><td>"+data.d_int+"</td><td>"+data.d_ext+"</td><td>"+data.size+"</td><td>"+data.mass+"</td>"
-			if(skladview.show_column['rto']>0)	linehtml+="<td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td>"
+			if(skladview.show_column['rto']>0) {
+				if(!data.reserve)	data.reserve='';
+				if(!data.offer)		data.offer='';
+				if(!data.transit)	data.transit='';
+				
+				linehtml+="<td class='reserve'>"+data.reserve+"</td><td class='offer'>"+data.offer+"</td><td class='transit'>"+data.transit+"</td>"
+			}
 			linehtml+="<td>"+data.cnt+"</td><td>"+data.allcnt+"</td><td>"+data.place+"</td>"
 		}
 		else

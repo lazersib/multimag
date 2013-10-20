@@ -342,7 +342,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$tmpl->addContent("<form method='post' action=''>
 <input type=hidden name='mode' value='srv'>
 <input type=hidden name='opt' value='dovs'>
-<input type=hidden name='doc' value='$doc'>
+<input type=hidden name='doc' value='{$this->doc}'>
 <table>
 <tr><th>Доверенное лицо (<a href='docs.php?l=dov&mode=edit&ag_id={$this->doc_data['agent']}' title='Добавить'><img border=0 src='img/i_add.png' alt='add'></a>)
 <tr><td><input type=hidden name=dov_agent value='".$this->dop_data['dov_agent']."' id='sid' ><input type=text id='sdata' value='$agn' onkeydown=\"return RequestData('/docs.php?l=dov&mode=srv&opt=popup&ag={$this->doc_data['agent']}')\">
@@ -368,9 +368,9 @@ class doc_Realizaciya extends doc_Nulltype
 			$this->setDopData('dov', request('dov'));
 			$this->setDopData('dov_agent', request('dov_agent'));
 			$this->setDopData('dov_data', request('dov_data'));
-			$ref="Location: doc.php?mode=body&doc=$doc";
+			$ref="Location: doc.php?mode=body&doc={$this->doc}";
 			header($ref);
-			doc_log("UPDATE","dov:$dov, dov_agent:$dov_agent, dov_data:$dov_data",'doc', $doc);
+			doc_log("UPDATE","dov:$dov, dov_agent:$dov_agent, dov_data:$dov_data",'doc', $this->doc);
 		}
 		else $tmpl->msg("Неизвестная опция $opt!");
 		
