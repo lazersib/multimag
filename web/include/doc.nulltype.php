@@ -455,7 +455,8 @@ class doc_Nulltype
 				doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$doc);
 			}
 
-			if(method_exists($this,'DopSave'))	$this->DopSave();
+			if(method_exists($this,'DopSave'))
+				$this->DopSave();
 			if($cena_update)
 				$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','$cena')");
 			if($link) header("Location: $link");
@@ -571,7 +572,8 @@ class doc_Nulltype
 					doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$this->doc);
 				}
 
-				if(method_exists($this,'DopSave'))	$this->DopSave();
+				if(method_exists($this,'DopSave'))
+					$this->DopSave();
 				if($cena_update)
 					$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->doc}','cena','$cena')");
 				if($agent)	$b=agentCalcDebt($agent);

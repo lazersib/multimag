@@ -41,7 +41,7 @@ class doc_Rko extends doc_Nulltype {
 		$tmpl->addContent("Вид расхода:<br><select name='rasxodi'>");
 		$res = $db->query("SELECT * FROM `doc_rasxodi` WHERE `id`>'0'");
 		while($nxt = $res->fetch_row())
-			if($nxt[0] = $this->dop_data['rasxodi'])
+			if($nxt[0] == $this->dop_data['rasxodi'])
 				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
 			else
 				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");

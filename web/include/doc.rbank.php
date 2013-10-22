@@ -36,9 +36,9 @@ class doc_RBank extends doc_Nulltype
 	function DopHead() {
 		global $tmpl, $db;
 		$tmpl->addContent("Вид расхода:<br><select name='rasxodi'>");
-		$res = $db->query("SELECT * FROM `doc_rasxodi` WHERE `id`>'0'");
+		$res = $db->query("SELECT `id`, `name` FROM `doc_rasxodi` WHERE `id`>'0'");
 		while($nxt = $res->fetch_row())
-			if($nxt[0] = $this->dop_data['rasxodi'])
+			if($nxt[0] == $this->dop_data['rasxodi'])
 				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
 			else
 				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");

@@ -89,7 +89,7 @@ class ds_zp_s_prodaj {
 		} else if ($mode == 'create') {
 			$tov_id = rcvint('tov_id');
 			$date_f = strtotime(rcvdate('date_f'));
-			$date_t = strtotime(rcvdate('date_t'));
+			$date_t = strtotime(rcvdate('date_t')." 23:59:59");
 			$user_id = rcvint('user_id');
 
 			$tmpl->addContent("<h1>" . $this->getname() . "</h1>");
