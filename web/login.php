@@ -788,7 +788,7 @@ else if($mode=='remn')
 	}
 	else
 	{
-		$res=$db->query("UPDATE `users` SET `pass_change`='' WHERE `login`='$sql_login'");
+		$res = $db->query("UPDATE `users` SET `pass_change`='' WHERE `name`='$sql_login'");
 		$tmpl->msg("Код неверен или устарел","err");
 	}
 }

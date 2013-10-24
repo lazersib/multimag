@@ -63,7 +63,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->doc' AND `type`='$target_type'");
 		if(! $res->num_rows) {
 			DocSumUpdate($this->doc);
-			$new_doc = new doc_Realizaciya();
+			$new_doc = new doc_Postuplenie();
 			$x_doc_num = $new_doc->createFromP($this);
 			$new_doc->setDopData('cena', $this->dop_data['cena']);
 		}
@@ -82,7 +82,7 @@ class doc_Predlojenie extends doc_Nulltype
 			while($nxt = $res->fetch_row()) {
 				if($nxt[4]<$nxt[1]) {
 					if(!$new_id) {
-						$new_doc = new doc_Realizaciya();
+						$new_doc = new doc_Postuplenie();
 						$new_id = $new_doc->createFrom($this);
 						$new_doc->setDopData('cena', $this->dop_data['cena']);
 					}

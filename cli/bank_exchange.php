@@ -21,7 +21,7 @@
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
-
+include_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
 // если не настроена синхронизация
 if(!$CONFIG['bank']['mountpoint'])	exit(0);

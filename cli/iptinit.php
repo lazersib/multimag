@@ -21,6 +21,7 @@
 $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
+include_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
 if(!$CONFIG['route']['ext_ip']){
     echo "External ip address NOT configured!\n";

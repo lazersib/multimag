@@ -1547,19 +1547,21 @@ class doc_Nulltype
 		$tmpl->addContent("</select><br>");
 	}
 
-	protected function drawKassaField()
-	{
+	protected function drawKassaField() {
 		global $tmpl, $db;
 		$tmpl->addContent("Касса:<br><select name='kassa'>");
 		$res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND `firm_id`='0' OR `num`='{$this->doc_data['kassa']}' ORDER BY `num`");
-		if($this->doc_data['kassa']==0)
-				$tmpl->addContent("<option value='0'>--не выбрана--</option>");
-		while($nxt = $res->fetch_row())
-		{
-			if($nxt[0]==$this->doc_data['kassa'])
+		if( $this->doc_data['kassa'] )		
+			$kassa	= $this->doc_data['kassa'];
+		else if( isset($CONFIG['site']['default_kassa']) )
+			$kassa	= $CONFIG['site']['default_kassa'];
+		else	$kassa = 0;
+		
+		if($kassa==0)	$tmpl->addContent("<option value='0'>--не выбрана--</option>");
+		while($nxt = $res->fetch_row()) {
+			if($nxt[0]==$kassa)
 				$tmpl->addContent("<option value='$nxt[0]' selected>".  html_out($nxt[1]) ."</option>");
-			else
-				$tmpl->addContent("<option value='$nxt[0]'>".  html_out($nxt[1]) ."</option>");
+			else	$tmpl->addContent("<option value='$nxt[0]'>".  html_out($nxt[1]) ."</option>");
 		}
 		$tmpl->addContent("</select><br>");
 	}

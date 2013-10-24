@@ -45,7 +45,7 @@ class doc_Realizaciya extends doc_Nulltype
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('platelshik'=>$this->doc_data['agent'], 'gruzop'=>$this->doc_data['agent'], 'status'=>'', 'kladovshik'=>'',
+		$this->def_dop_data = array('platelshik'=>0, 'gruzop'=>0, 'status'=>'', 'kladovshik'=>0,
 			'mest'=>'', 'received'=>0, 'return'=>0, 'cena'=>0, 'dov_agent'=>0, 'dov'=>'', 'dov_data'=>'');
 	}
 
@@ -163,8 +163,8 @@ class doc_Realizaciya extends doc_Nulltype
 		$new_data = array(
 			'status' => request('status'),
 			'kladovshik' => rcvint('kladovshik'),
-			'plat_id' => rcvint('plat_id'),
-			'gruzop_id' => rcvint('gruzop_id'),
+			'platelshik' => rcvint('plat_id'),
+			'gruzop' => rcvint('gruzop_id'),
 			'received' => request('received')?'1':'0',
 			'return' => request('return')?'1':'0',
 			'mest' => rcvint('mest')
@@ -407,7 +407,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
 		$str="Поставщик: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
+		$pdf->MultiCellIconv(0,5,$str,0,'L',0);
 		$str="Покупатель: {$this->doc_data['agent_fullname']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
@@ -521,23 +521,21 @@ class doc_Realizaciya extends doc_Nulltype
 			$pdf->CellIconv(0,5,$prop,0,1,'L',0);
 		}
 
+		$str="Поставщик:_____________________________________";
+		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Товар получил, претензий к качеству товара и внешнему виду не имею.";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Покупатель: ____________________________________";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$str="Поставщик:_____________________________________";
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
+		
 
-		if($to_str)
-			return $pdf->Output('blading.pdf','S');
-		else
-			$pdf->Output('blading.pdf','I');
+		if($to_str)	return $pdf->Output('blading.pdf','S');
+		else		$pdf->Output('blading.pdf','I');
 	}
 
 /// Товарный чек в PDF формате
 /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
-	function PrintTcPDF($to_str=false)
-	{
+	function PrintTcPDF($to_str=false) {
 		require('fpdf/fpdf_mc.php');
 		global $tmpl, $CONFIG, $db;
 
@@ -564,7 +562,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
 		$str="Продавец: {$this->firm_vars['firm_name']}, ИНН-{$this->firm_vars['firm_inn']}-КПП, тел: {$this->firm_vars['firm_telefon']}";
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
+		$pdf->MultiCellIconv(0,5,$str,0,'L',0);
 		$str="Покупатель: {$this->doc_data['agent_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
@@ -681,12 +679,10 @@ class doc_Realizaciya extends doc_Nulltype
 
 
 		$str="Продавец:_____________________________________";
-		$pdf->Cell(0,5,$str,0,1,'L',0);
+		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 
-		if($to_str)
-			return $pdf->Output('tc.pdf','S');
-		else
-			$pdf->Output('tc.pdf','I');
+		if($to_str)	return $pdf->Output('tc.pdf','S');
+		else		$pdf->Output('tc.pdf','I');
 	}
 
 /// Накладная на комплектацию в PDF формате
