@@ -37,29 +37,29 @@ class TaskTracker {
 	function ShowTicket($n) {
 		global $tmpl, $db;
 		settype($n, 'int');
-		$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`,
-			`tickets`.`to_date`, `tickets_state`.`name`, `t`.`name`, `tickets`.`text`, `tickets`.`state`
+		$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name` AS `prio_name`,
+			`a`.`name` AS `author_name`, `tickets`.`to_date`, `tickets_state`.`name` AS `state_name`, `tickets`.`text`, `tickets`.`state`
 		FROM `tickets`
 		LEFT JOIN `users` AS `a` ON `a`.`id`=`tickets`.`autor`
-		LEFT JOIN `users` AS `t` ON `t`.`id`=`tickets`.`to_uid`
 		LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
 		LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 		WHERE `tickets`.`id`='$n'");
-		$nxt = $res->fetch_row();
+		$nxt = $res->fetch_assoc();
 		if (!$nxt)	$tmpl->msg("Задача не найдена!", "err");
 		else {
-			$tmpl->addContent("<h2>" . html_out($nxt[2]) . "</h2>
-			<b>Дата создания:</b> $nxt[1]<br>
-			<b>Важность:</b> $nxt[3]<br>
-			<b>Автор:</b> $nxt[4]<br>
-			<b>Исполнитель:</b> " . html_out($nxt[7]) . "<br>
-			<b>Срок:</b> $nxt[5]<br>
-			<b>Состояние:</b> $nxt[6]<br>
-			<b>Описание:</b> " . html_out($nxt[8]) . "<br>
+			//<b>Исполнитель:</b> " . html_out($nxt[7]) . "<br>
+			$tmpl->addContent("<h2>" . html_out($nxt['theme']) . "</h2>
+			<b>Дата создания:</b> {$nxt['date']}<br>
+			<b>Важность:</b> {$nxt['prio_name']}<br>
+			<b>Автор:</b> {$nxt['author_name']}<br>
+			
+			<b>Срок:</b> {$nxt['to_date']}<br>
+			<b>Состояние:</b> {$nxt['state_name']}<br>
+			<b>Описание:</b> " . html_out($nxt['text']) . "<br>
 			<ul>");
 			$res = $db->query("SELECT `users`.`name`, `tickets_log`.`date`, `tickets_log`.`text` FROM `tickets_log`
 			LEFT JOIN `users` ON `users`.`id`=`tickets_log`.`uid`
-			WHERE `ticket`='$nxt[0]'");
+			WHERE `ticket`='{$nxt['id']}'");
 			while ($nx = $res->fetch_row())
 				$tmpl->addContent("<li><i>".html_out($nx[1])."</i>, <b>$nx[0]:</b> ".html_out($nx[2])."</li>");
 
@@ -78,7 +78,7 @@ class TaskTracker {
 			<form action=''>
 			<input type='hidden' name='mode' value='set'>
 			<input type='hidden' name='opt' value='comment'>
-			<input type='hidden' name='n' value='$nxt[0]'>
+			<input type='hidden' name='n' value='{$nxt['id']}'>
 			<textarea name='comment'></textarea><br>
 			<input type='submit' value='Добавить'></form></fieldset>
 
@@ -86,21 +86,22 @@ class TaskTracker {
 			<form action=''>
 			<input type='hidden' name='mode' value='set'>
 			<input type='hidden' name='opt' value='to_date'>
-			<input type='hidden' name='n' value='$nxt[0]'>
-			<input type='text' name='to_date' class='vDateField' value='$nxt[5]'>
+			<input type='hidden' name='n' value='{$nxt['id']}'>
+			<input type='text' name='to_date' class='vDateField' value='{$nxt['to_date']}'>
 			<input type='submit' value='Изменить'></form></fieldset>
 
 			<fieldset><legend>Переназначить задачу на:</legend>
 			<form action=''>
 			<input type='hidden' name='mode' value='set'>
 			<input type='hidden' name='opt' value='to_user'>
-			<input type='hidden' name='n' value='$nxt[0]'>
+			<input type='hidden' name='n' value='{$nxt['id']}'>
 			<select name='user_id'>");
 
 			$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
 			FROM `users`
 			INNER JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 			WHERE `users_worker_info`.`worker`>'0' ORDER BY `users`.`name`");
+			// !!!!!!!!!!!!!!!!!!!
 			while ($nxt = $res->fetch_row()) {
 				if ($nxt[0] == 0)
 					continue;
@@ -176,7 +177,6 @@ class TaskTracker {
 
 }
 
-;
 
 if (!isAccess('generic_tickets', 'view'))	throw new AccessException();
 
@@ -217,7 +217,7 @@ else if ($mode == 'new') {
 	ShowTicket($n);
 }
 else if ($mode == 'my') {
-	p_menu("Мои задачи");
+	$tt->PMenu("Мои задачи");
 
 	$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Для<th>Срок<th>Статус");
 	$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
@@ -234,7 +234,7 @@ else if ($mode == 'my') {
 	$tmpl->addContent("</table>");
 }
 else if ($mode == 'viewall') {
-	p_menu("Все задачи");
+	$tt->PMenu("Все задачи");
 
 	$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Для<th>Срок<th>Статус");
 	$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color`, `t`.`name` FROM `tickets`
@@ -252,7 +252,7 @@ else if ($mode == 'viewall') {
 }
 else if ($mode == 'view') {
 	$n = rcvint('n');
-	p_menu("Просмотр задачи N$n");
+	$tt->PMenu("Просмотр задачи N$n");
 	ShowTicket($n);
 }
 else if ($mode == 'set') {
@@ -329,7 +329,7 @@ else if ($mode == 'set') {
 		}
 	}
 
-	p_menu("Корректировка задачи N$n");
+	$tt->PMenu("Корректировка задачи N$n");
 	$tmpl->msg("Сделано!");
 	ShowTicket($n);
 }

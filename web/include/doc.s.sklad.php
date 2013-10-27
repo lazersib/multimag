@@ -1955,7 +1955,7 @@ class doc_s_Sklad {
 
 	/// Поиск товаров по параметрам
 	function Search() {
-		global $tmpl, $CONFIG;
+		global $tmpl, $CONFIG, $db;
 		$opt = request("opt");
 		$name = request('name');
 		$analog = request('analog');
@@ -2039,7 +2039,7 @@ class doc_s_Sklad {
 				LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 				WHERE 1 ";
 
-			switch ($CONFIG['doc']['sklad_default_order']) {
+			switch (@$CONFIG['doc']['sklad_default_order']) {
 				case 'vc': $order = '`doc_base`.`vc`';
 					break;
 				case 'cost': $order = '`doc_base`.`cost`';
@@ -2079,10 +2079,21 @@ class doc_s_Sklad {
 
 			$cheader_add = ($_SESSION['sklad_cost'] > 0) ? '<th>Выб. цена' : '';
 			$tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'>
-			<tr><th>№</th><th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>$cheader_add<th>Аналог</th><th>Тип</th><th>d</th><th>D</th><th>B</th><th>Масса</th><th><img src='/img/i_lock.png' alt='В резерве'></th><th><img src='/img/i_alert.png' alt='Под заказ'></th><th><img src='/img/i_truck.png' alt='В пути'></th><th>Склад</th><th>Всего</th><th>Место</th></tr>");
+			<tr><th>№</th>");
+			
+			if(@$CONFIG['poseditor']['vc'])
+				$tmpl->addContent("<th>Код</th>");
+			$tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>$cheader_add<th>Аналог</th>");
+			
+			if (@$CONFIG['poseditor']['tdb'] == 1)
+				$tmpl->addContent("<th>Тип</th><th>d</th><th>D</th><th>B</th>");
+			$tmpl->addContent("<th>Масса</th>");
+			if(@$CONFIG['poseditor']['rto'])
+				$tmpl->addContent("<th><img src='/img/i_lock.png' alt='В резерве'></th><th><img src='/img/i_alert.png' alt='Под заказ'></th><th><img src='/img/i_truck.png' alt='В пути'></th>");
+			$tmpl->addContent("<th>Склад</th><th>Всего</th><th>Место</th></tr>");
 
 			$res = $db->query($sql);
-			if ($cnt = $res->num_rows()) {
+			if ($cnt = $res->num_rows) {
 				$tmpl->addContent("<tr><th colspan='16' align='center'>Параметрический поиск, найдено $cnt");
 				$this->DrawSkladTable($res, $name);
 				$sf = 1;
@@ -2158,11 +2169,11 @@ class doc_s_Sklad {
 			
 			$vc_add = $CONFIG['poseditor']['vc'] ? "<td>{$nxt['vc']}</td>" : '';
 
-			if ($CONFIG['poseditor']['tdb'] == 1)
+			if (@$CONFIG['poseditor']['tdb'] == 1)
 				$tdb_add = "<td>{$nxt['type']}</td><td>{$nxt['d_int']}</td><td>{$nxt['d_ext']}</td><td>{$nxt['size']}</td>";
 			else
 				$tdb_add = '';
-			if ($CONFIG['poseditor']['rto'] == 1)
+			if (@$CONFIG['poseditor']['rto'])
 				$rto_add = "<td>$rezerv</td><td>$pod_zakaz</td><td>$v_puti</td>";
 			else	$rto_add = '';
 

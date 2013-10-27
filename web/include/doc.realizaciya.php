@@ -39,7 +39,8 @@ class doc_Realizaciya extends doc_Nulltype
 			array('name'=>'tg12','desc'=>'Накладная ТОРГ-12','method'=>'PrintTg12PDF'),
 			array('name'=>'nak_kompl','desc'=>'Накладная на комплектацию','method'=>'PrintNaklKomplektPDF'),
 			array('name'=>'sfak','desc'=>'Счёт - фактура','method'=>'SfakPDF'),
-			array('name'=>'sfak2010','desc'=>'Счёт - фактура 2010','method'=>'Sfak2010PDF')
+			array('name'=>'sfak2010','desc'=>'Счёт - фактура 2010','method'=>'Sfak2010PDF'),
+			array('name'=>'nacenki','desc'=>'Наценки','method'=>'Nacenki')		    
 		);
 		$this->status_list			= array('in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
 	}
@@ -1892,6 +1893,148 @@ function SfakPDF($to_str=0)
 
 	if($to_str)	return $pdf->Output('s_faktura.pdf','S');
 	else		$pdf->Output('s_faktura.pdf','I');
+}
+
+function Nacenki($to_str=0)
+{
+	global $tmpl, $CONFIG, $db;
+	if (!$to_str)	$tmpl->ajax = 1;
+
+	define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
+	require('fpdf/fpdf_mc.php');
+
+	$pdf = new PDF_MC_Table('P');
+	$pdf->Open();
+	$pdf->SetAutoPageBreak(1, 12);
+	$pdf->AddFont('Arial', '', 'arial.php');
+	$pdf->tMargin = 5;
+	$pdf->AddPage('L');
+	$pdf->SetFillColor(255);
+
+	$pdf->SetFont('Arial','',16);
+	$str = iconv('UTF-8', 'windows-1251', "Наценки N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от ".date("d.m.Y", $this->doc_data['date']));
+	$pdf->Cell(0,6,$str,0,1,'C');
+	$pdf->SetFont('','',12);
+	
+	$str = "Поставщик: {$this->firm_vars['firm_name']}";
+	$pdf->CellIconv(0,5,$str,0,1,'L');
+	$str = "Покупатель: {$this->doc_data['agent_name']}";
+	$pdf->CellIconv(0,5,$str,0,1,'L');
+	$pdf->ln();
+	
+	$res = $db->query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`,
+		`doc_list`.`date`, `doc_list`.`sum`, `doc_list`.`id`
+		FROM `doc_list`
+		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
+		WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}' AND `doc_list`.`type`='3'");
+	if ($res->num_rows) {
+		$l = $res->fetch_assoc();
+		$l['date'] = date("Y-m-d", $l['date']);
+		$str = "К заявке: N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}";
+		$z_id = $l['id'];
+		$pdf->CellIconv(0,5,$str,0,1,'L');
+	}
+	else	$z_id = 0;
+
+	$res = $db->query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`,
+		`doc_list`.`date`, `doc_list`.`sum`
+		FROM `doc_list`
+		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
+		WHERE (`doc_list`.`p_doc`='{$this->doc}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='4' AND `doc_list`.`p_doc`>0");
+	while($l = $res->fetch_assoc()) {
+		$l['date'] = date("Y-m-d", $l['date']);		
+		$str = "Подчинённый банк-приход: N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}";
+		$pdf->CellIconv(0,5,$str,0,1,'L');
+	}
+
+	$res = $db->query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name`, CONCAT(`doc_list`.`altnum`,`doc_list`.`subtype`) AS `num`,
+		`doc_list`.`date`, `doc_list`.`sum`
+		FROM `doc_list`
+		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
+		WHERE (`doc_list`.`p_doc`='{$this->doc}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='5' AND `doc_list`.`p_doc`>0");
+	while($l = $res->fetch_assoc()) {
+		$l['date'] = date("Y-m-d", $l['date']);
+		$str = "Подчинённый расходно-кассовый ордер: N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}";
+		$pdf->CellIconv(0,5,$str,0,1,'L');
+	}
+
+	$pdf->SetLineWidth(0.7);
+	$t_width = array(8, 90, 18, 16, 19, 16, 20, 27, 19, 19, 27);
+	$t_text = array('№', 'Наименование', 'Кол-во', 'Цена', 'Сумма', 'АЦП', 'Наценка', 'Сум.наценки', 'П/закуп', 'Разница', 'Сум.разницы');
+	$aligns = array('R', 'L', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R');
+	
+	foreach ($t_width as $id => $w) {
+		$pdf->CellIconv($w, 6, $t_text[$id], 1, 0, 'C', 0);
+	}
+	$pdf->Ln();
+	$pdf->SetWidths($t_width);
+	$pdf->SetHeight(5);
+
+	$pdf->SetAligns($aligns);
+	$pdf->SetLineWidth(0.2);
+	$pdf->SetFont('', '', 9);
+	
+	$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
+		`class_unit`.`rus_name1` AS `units`, `doc_list_pos`.`tovar`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
+	$i = 0;
+	$ii = 1;
+	$sum = $snac = $srazn = $cnt = 0;
+	while ($nxt = $res->fetch_row()) {
+		$sm = $nxt[3] * $nxt[4];
+		$cost = sprintf("%01.2f", $nxt[4]);
+		$cost2 = sprintf("%01.2f", $sm);
+		$act_cost = sprintf('%0.2f', GetInCost($nxt[6]));
+		$nac = sprintf('%0.2f', $cost - $act_cost);
+		$sum_nac = sprintf('%0.2f', $nac * $nxt[3]);
+		$snac+=$sum_nac;
+
+		$r = $db->query("SELECT `doc_list`.`date`, `doc_list_pos`.`cost` FROM `doc_list_pos`
+			LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+			WHERE `doc_list`.`ok`>'0' AND `doc_list`.`type`='1' AND `doc_list_pos`.`tovar`='$nxt[6]' AND `doc_list`.`date`<'{$this->doc_data['date']}'
+			ORDER BY `doc_list`.`date` DESC");
+		if ($r->num_rows) {
+			$rr = $r->fetch_row();
+			$zakup = sprintf('%0.2f', $rr[1]);
+		}
+		else	$zakup = 0;
+		$razn = sprintf('%0.2f', $cost - $zakup);
+		$sum_razn = sprintf('%0.2f', $razn * $nxt[3]);
+		$srazn+=$sum_razn;
+		if (!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])
+			$nxt[1].=' / ' . $nxt[2];
+		if($nxt[0]) $nxt[1] = $nxt[0].' '.$nxt[1];
+		//$tmpl->AddText("<tr align=right><td>$ii</td><td align=left>$nxt[0] $nxt[1]<td>$nxt[3] $nxt[5]<td>$cost<td>$cost2<td>$act_cost<td>$nac<td>$sum_nac<td>$zakup<td>$razn<td>$sum_razn");
+		
+		$row = array($ii, $nxt[1], $nxt[3].' '.$nxt[5], $cost, $cost2, $act_cost, $nac, $sum_nac, $zakup, $razn, $sum_razn);
+		
+		$pdf->RowIconv($row);
+		
+		$i = 1 - $i;
+		$ii++;
+		$sum+=$sm;
+		$cnt+=$nxt[3];
+	}
+	$ii--;
+	$cost = sprintf("%01.2f", $sum);
+	$srazn = sprintf("%01.2f", $srazn);
+	$snac = sprintf("%01.2f", $snac);
+
+//	$tmpl->AddText("<tr>
+//<td colspan='2'><b>ИТОГО:</b><td>$cnt<td><td>$cost<td><td><td>$snac<td><td><td>$srazn
+//</table>
+//<p>Всего <b>$ii</b> наименований на сумму <b>$cost</b></p>
+//");
+	if($to_str)	return $pdf->Output('extra.pdf','S');
+	else		$pdf->Output('extra.pdf','I');
 }
 
 };
