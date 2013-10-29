@@ -278,7 +278,7 @@ try {
 	<h1>Редактор организаций</h1>
 	<table width='100%'>
 	<tr><th>ID<th>Наименование<th>Обновлено<th>Сигнатура<th>Валюта<th>Отчёты");
-		$res = $res->query("SELECT `firm_info`.`id`, `firm_info`.`name`, `firm_info`.`signature`, `currency`.`name`, `firm_info`.`coeff`, `firm_info`.`last_update`  FROM `firm_info`
+		$res = $db->query("SELECT `firm_info`.`id`, `firm_info`.`name`, `firm_info`.`signature`, `currency`.`name`, `firm_info`.`coeff`, `firm_info`.`last_update`  FROM `firm_info`
 	LEFT JOIN `currency` ON `currency`.`id`=`firm_info`.`currency`
 	ORDER BY `firm_info`.`last_update` DESC");
 		while ($nxt = $res->fetch_row()) {

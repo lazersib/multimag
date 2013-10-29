@@ -51,11 +51,18 @@ class TaskTracker {
 			$tmpl->addContent("<h2>" . html_out($nxt['theme']) . "</h2>
 			<b>Дата создания:</b> {$nxt['date']}<br>
 			<b>Важность:</b> {$nxt['prio_name']}<br>
-			<b>Автор:</b> {$nxt['author_name']}<br>
-			
-			<b>Срок:</b> {$nxt['to_date']}<br>
+			<b>Автор:</b> {$nxt['author_name']}<br>");
+			$res = $db->query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name` FROM `tickets_responsibles`
+				INNER JOIN `users` ON `users`.`id`=`tickets_responsibles`.`user_id`
+				LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`tickets_responsibles`.`user_id`
+				WHERE `tickets_responsibles`.`ticket_id` = $n");
+			while ($_line = $res->fetch_assoc()) {
+				$tmpl->addContent("<b>Исполнитель:</b> " . html_out($_line['worker_real_name']) . " (" . html_out($_line['name']) . ")<br>");
+			}
+			$tmpl->addContent("<b>Срок:</b> {$nxt['to_date']}<br>
 			<b>Состояние:</b> {$nxt['state_name']}<br>
 			<b>Описание:</b> " . html_out($nxt['text']) . "<br>
+			<b>История:</b>
 			<ul>");
 			$res = $db->query("SELECT `users`.`name`, `tickets_log`.`date`, `tickets_log`.`text` FROM `tickets_log`
 			LEFT JOIN `users` ON `users`.`id`=`tickets_log`.`uid`
@@ -63,19 +70,26 @@ class TaskTracker {
 			while ($nx = $res->fetch_row())
 				$tmpl->addContent("<li><i>".html_out($nx[1])."</i>, <b>$nx[0]:</b> ".html_out($nx[2])."</li>");
 
-			$tmpl->addContent("</ul><br><br><fieldset><legend>Установить статус</legend>
-			<form action=''>
+			$tmpl->addContent("</ul><br>
+			<form action='' method='post'>
+			<input type='hidden' name='mode' value='set'>
+			<input type='hidden' name='opt' value='accept'>
+			<input type='hidden' name='n' value='{$nxt['id']}'>
+			<input type='submit' value='Принять'></form>
+			
+			<br><fieldset><legend>Установить статус</legend>
+			<form action='' method='post'>
 			<input type='hidden' name='mode' value='set'>
 			<input type='hidden' name='opt' value='state'>
-			<input type='hidden' name='n' value='$nxt[0]'>
+			<input type='hidden' name='n' value='{$nxt['id']}'>
 			<select name='state'>");
-			$res = $db->query("SELECT `id`, `name` FROM `tickets_state` WHERE `id`!='$nxt[9]'");
+			$res = $db->query("SELECT `id`, `name` FROM `tickets_state` WHERE `id`!='{$nxt['state']}'");
 			while ($nx = $res->fetch_row())
 				$tmpl->addContent("<option value='$nx[0]'>$nx[1]</option>");
 
 			$tmpl->addContent("</select><input type='submit' value='Сменить'></form></fieldset>
 			<fieldset><legend>Добавить коментарий:</legend>
-			<form action=''>
+			<form action='' method='post'>
 			<input type='hidden' name='mode' value='set'>
 			<input type='hidden' name='opt' value='comment'>
 			<input type='hidden' name='n' value='{$nxt['id']}'>
@@ -83,42 +97,61 @@ class TaskTracker {
 			<input type='submit' value='Добавить'></form></fieldset>
 
 			<fieldset><legend>Изменить срок:</legend>
-			<form action=''>
+			<form action='' method='post'>
 			<input type='hidden' name='mode' value='set'>
 			<input type='hidden' name='opt' value='to_date'>
 			<input type='hidden' name='n' value='{$nxt['id']}'>
 			<input type='text' name='to_date' class='vDateField' value='{$nxt['to_date']}'>
 			<input type='submit' value='Изменить'></form></fieldset>
 
-			<fieldset><legend>Переназначить задачу на:</legend>
-			<form action=''>
+			<fieldset><legend>Добавить исполнителя:</legend>
+			<form action='' method='post'>
 			<input type='hidden' name='mode' value='set'>
-			<input type='hidden' name='opt' value='to_user'>
+			<input type='hidden' name='opt' value='add_user'>
 			<input type='hidden' name='n' value='{$nxt['id']}'>
 			<select name='user_id'>");
 
 			$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name`
 			FROM `users`
 			INNER JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
-			WHERE `users_worker_info`.`worker`>'0' ORDER BY `users`.`name`");
-			// !!!!!!!!!!!!!!!!!!!
-			while ($nxt = $res->fetch_row()) {
-				if ($nxt[0] == 0)
-					continue;
-				$tmpl->addContent("<option value='$nxt[0]'>$nxt[1] - $nxt[2] ($nxt[0])</option>");
+			WHERE `users_worker_info`.`worker`>'0' AND `users`.`id` NOT IN 
+				(SELECT `user_id` FROM `tickets_responsibles` WHERE `tickets_responsibles`.`ticket_id` = $n) 
+			ORDER BY `users`.`name`");
+			while ($nx = $res->fetch_row()) {
+				if ($nx[0] == 0)	continue;
+				$tmpl->addContent("<option value='$nx[0]'>$nx[1] - $nx[2] ($nx[0])</option>");
+			}
+			$tmpl->addContent("</select>
+			<input type='submit' value='Изменить'></form></fieldset>
+
+
+			<fieldset><legend>Убрать исполнителя:</legend>
+			<form action='' method='post'>
+			<input type='hidden' name='mode' value='set'>
+			<input type='hidden' name='opt' value='del_user'>
+			<input type='hidden' name='n' value='{$nxt['id']}'>
+			<select name='user_id'>");
+
+			$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users_worker_info`.`worker_real_name` FROM `tickets_responsibles`
+				INNER JOIN `users` ON `users`.`id`=`tickets_responsibles`.`user_id`
+				LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`tickets_responsibles`.`user_id`
+				WHERE `tickets_responsibles`.`ticket_id` = $n");
+			while ($nx = $res->fetch_row()) {
+				if ($nx[0] == 0)	continue;
+				$tmpl->addContent("<option value='$nx[0]'>$nx[1] - $nx[2] ($nx[0])</option>");
 			}
 			$tmpl->addContent("</select>
 			<input type='submit' value='Изменить'></form></fieldset>
 
 			<fieldset><legend>Изменить приоритет:</legend>
-			<form action=''>
+			<form action='' method='post'>
 			<input type='hidden' name='mode' value='set'>
 			<input type='hidden' name='opt' value='prio'>
-			<input type='hidden' name='n' value='$nxt[0]'>
+			<input type='hidden' name='n' value='{$nxt['id']}'>
 			<select name='prio'>");
 			$res = $db->query("SELECT `id`, `name`, `color` FROM `tickets_priority` ORDER BY `id`");
-			while ($nxt = $res->fetch_row())
-				$tmpl->addContent("<option value='$nxt[0]' style='color: #$nxt[2]'>$nxt[1] ($nxt[0])</option>");
+			while ($nx = $res->fetch_row())
+				$tmpl->addContent("<option value='$nx[0]' style='color: #$nx[2]'>$nx[1] ($nx[0])</option>");
 			$tmpl->addContent("</select><input type='submit' value='Изменить'></form></fieldset>");
 		}
 	}
@@ -130,11 +163,12 @@ class TaskTracker {
 		$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Срок<th>Статус");
 		$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`,
 			`tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
-		LEFT JOIN `users` ON `users`.`id`=`tickets`.`autor`
-		LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
-		LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
-		WHERE `to_uid`='{$_SESSION['uid']}' AND `tickets`.`state`<'2'
-		ORDER BY `tickets`.`priority` DESC, `tickets`.`to_date` DESC, `tickets`.`date`");
+			INNER JOIN `tickets_responsibles` ON `tickets_responsibles`.`ticket_id` = `tickets`.`id` AND `tickets_responsibles`.`user_id`='{$_SESSION['uid']}'
+			LEFT JOIN `users` ON `users`.`id`=`tickets`.`autor`
+			LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
+			LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
+			WHERE `tickets`.`state`<'2'
+			ORDER BY `tickets`.`priority` DESC, `tickets`.`to_date` DESC, `tickets`.`date`");
 		$i = 0;
 		while ($nxt = $res->fetch_row()) {
 			$tmpl->addContent("<tr class='lin$i pointer' style='color: #$nxt[7]'><td><a href='?mode=view&n=$nxt[0]'>$nxt[0]</a><td>$nxt[1]<td>".html_out($nxt[2])."<td>$nxt[3]<td>".html_out($nxt[4])."<td>$nxt[5]<td>$nxt[6]");
@@ -185,10 +219,11 @@ $tt = new TaskTracker();
 if ($mode == '')
 	$tt->ShowMyTickets();
 else if ($mode == 'new') {
+	$tt->ShowNewTicketForm();
 	
 } else if ($mode == 'add') {
 	if (!isAccess('generic_tickets', 'create'))	throw new AccessException();
-	$this->PMenu("Сохранение задачи");
+	$tt->PMenu("Сохранение задачи");
 	$uid = @$_SESSION['uid'];
 	$to_uid = rcvint('to_uid');
 	$theme = request('theme');
@@ -199,10 +234,12 @@ else if ($mode == 'new') {
 	$theme_sql = $db->real_escape_string($theme);
 	$text_sql = $db->real_escape_string($text);
 
-	$db->query("INSERT INTO `tickets` (`date`, `autor`, `priority`, `theme`, `text`, `to_uid`, `to_date`)
-	VALUES ( NOW(), '$uid', '$prio', '$theme_sql', '$text_sql', '$to_uid', '$to_date')");
-	$tmpl->msg("Задание назначено!", "ok");
+	$db->query("INSERT INTO `tickets` (`date`, `autor`, `priority`, `theme`, `text`, `to_date`)
+	VALUES ( NOW(), '$uid', '$prio', '$theme_sql', '$text_sql', '$to_date')");
 	$n = $db->insert_id;
+	$db->query("INSERT INTO `tickets_responsibles` (`ticket_id`, `user_id`) VALUES ($n, $to_uid)");
+	$tmpl->msg("Задание назначено!", "ok");
+	
 
 	$res = $db->query("SELECT `reg_email` FROM `users` WHERE `id`='$to_uid'");
 	list($email) = $res->fetch_row();
@@ -214,14 +251,13 @@ else if ($mode == 'new') {
 
 	mailto($email, "У Вас Новое задание - $theme", $msg);
 
-	ShowTicket($n);
+	$tt->ShowTicket($n);
 }
 else if ($mode == 'my') {
 	$tt->PMenu("Мои задачи");
 
 	$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Для<th>Срок<th>Статус");
-	$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `users`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
-	LEFT JOIN `users` ON `users`.`id`=`tickets`.`to_uid`
+	$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, '', `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color` FROM `tickets`
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	WHERE `autor`='{$_SESSION['uid']}'
@@ -237,9 +273,8 @@ else if ($mode == 'viewall') {
 	$tt->PMenu("Все задачи");
 
 	$tmpl->addContent("<table width='100%' class='list'><tr><th>N<th>Дата задачи<th>Тема<th>Важность<th>Автор<th>Для<th>Срок<th>Статус");
-	$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color`, `t`.`name` FROM `tickets`
+	$res = $db->query("SELECT `tickets`.`id`, `tickets`.`date`, `tickets`.`theme`, `tickets_priority`.`name`, `a`.`name`, `tickets`.`to_date`, `tickets_state`.`name`, `tickets_priority`.`color`, '' FROM `tickets`
 	LEFT JOIN `users` AS `a` ON `a`.`id`=`tickets`.`autor`
-	LEFT JOIN `users` AS `t` ON `t`.`id`=`tickets`.`to_uid`
 	LEFT JOIN `tickets_priority` ON `tickets_priority`.`id`=`tickets`.`priority`
 	LEFT JOIN `tickets_state` ON `tickets_state`.`id`=`tickets`.`state`
 	ORDER BY `tickets`.`priority` DESC, `tickets`.`to_date`, `tickets`.`date`");
@@ -253,13 +288,16 @@ else if ($mode == 'viewall') {
 else if ($mode == 'view') {
 	$n = rcvint('n');
 	$tt->PMenu("Просмотр задачи N$n");
-	ShowTicket($n);
+	$tt->ShowTicket($n);
 }
 else if ($mode == 'set') {
 	if (!isAccess('generic_tickets', 'edit'))	throw new AccessException();
 	$opt = request('opt');
 	$n = rcvint('n');
 	$txt = '';
+	if ($opt == 'accept') {
+		$txt = "принял задачу";
+	}
 	if ($opt == 'state') {
 		$state = rcvint('state');
 		$res = $db->query("SELECT `name` FROM `tickets_state` WHERE `id`='$state'");
@@ -270,7 +308,7 @@ else if ($mode == 'set') {
 	}
 	if ($opt == 'comment') {
 		$comment = request('comment');
-		$txt = "сказал: $comment";
+		$txt = "прокоментировал: $comment";
 	}
 	if ($opt == 'to_date') {
 		$to_date = rcvdate('to_date');
@@ -286,13 +324,21 @@ else if ($mode == 'set') {
 		$db->query("UPDATE `tickets` SET `priority`='$prio' WHERE `id`='$n'");
 		$txt = "Установил приоритет *$st_text ($prio)*";
 	}
-	if ($opt == 'to_user') {
+	if ($opt == 'add_user') {
 		$user_id = rcvint('user_id');
 		$res = $db->query("SELECT `name` FROM `users` WHERE `id`='$user_id'");
 		list($user_name) = $res->fetch_row();
 
-		$db->query("UPDATE `tickets` SET `to_uid`='$user_id' WHERE `id`='$n'");
-		$txt = " переназначил задачу на пользователя $user_name ID $user_id";
+		$db->query("INSERT INTO `tickets_responsibles` (`ticket_id`, `user_id`) VALUES ($n, $user_id)");
+		$txt = "добавил исполнителя $user_name ID $user_id";
+	}
+	if ($opt == 'del_user') {
+		$user_id = rcvint('user_id');
+		$res = $db->query("SELECT `name` FROM `users` WHERE `id`='$user_id'");
+		list($user_name) = $res->fetch_row();
+
+		$db->query("DELETE FROM `tickets_responsibles` WHERE `ticket_id`=$n AND `user_id`=$user_id");
+		$txt = "убрал исполнителя $user_name ID $user_id";
 	}
 	if ($txt) {
 		$txt_sql = $db->real_escape_string($txt);
@@ -308,12 +354,12 @@ else if ($mode == 'set') {
 		$msg.="Посмотреть задание можно здесь: http://{$CONFIG['site']['name']}/ticket.php/mode=view&n=$n";
 
 		try {
-			mailto($email, "Change ticket - $theme", $msg);
+			if($email) mailto($email, "Change ticket - $theme", $msg);
 		} catch (Exception $e) {
 			$tmpl->logger("Невозможно отправить сообщение email!");
 		}
 
-		if ($jid) {
+		if ($jid && @$CONFIG['xmpp']['host']) {
 			try {
 				require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
 				$xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
@@ -331,7 +377,7 @@ else if ($mode == 'set') {
 
 	$tt->PMenu("Корректировка задачи N$n");
 	$tmpl->msg("Сделано!");
-	ShowTicket($n);
+	$tt->ShowTicket($n);
 }
 
 $tmpl->write();

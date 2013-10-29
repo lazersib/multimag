@@ -125,8 +125,7 @@ protected function ShowList($type='')
 	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 	$where
 	ORDER BY `date` DESC LIMIT 50");
-	if($res->num_rows())
-	{
+	if($res->num_rows) {
 		$tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
 		$tmpl->setTitle("$name сайта - ".$CONFIG['site']['display_name']);
 		if(isAccess('generic_news','create',1))

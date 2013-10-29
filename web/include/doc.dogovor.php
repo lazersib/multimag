@@ -196,11 +196,13 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 ИНН/КПП {$agent_info['inn']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okevd']}<br>
 Р/С {$agent_info['rs']}, в банке {$agent_info['bank']}<br>
 К/С {$agent_info['ks']}, БИК {$agent_info['bik']}<br>
+От покупателя: _____________________________ ( {$agent_info['dir_fio']} )<br>
 ==== Поставщик: {$this->firm_vars['firm_name']} ====
 {$this->firm_vars['firm_adres']}<br>
 ИНН/КПП {$this->firm_vars['firm_inn']}<br>
 Р/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}<br>
-К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}";
+К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}<br>
+От поставщика: _____________________________ ( ".$this->firm_vars['firm_director'].")<br>";
 
 		$rekv=$wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
 
