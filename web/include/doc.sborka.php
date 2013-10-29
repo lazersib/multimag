@@ -83,7 +83,7 @@ class doc_Sborka extends doc_Nulltype {
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
 		WHERE `doc_list`.`id`='{$this->doc}'");
-		$nx = $res->fetch_row();
+		$nx = $pres->fetch_row();
 		if (!$nx)	throw new Exception("Документ {$this->doc} не найден!");
 		if (!$nx[4])	throw new Exception("Документ ещё не проведён!");
 

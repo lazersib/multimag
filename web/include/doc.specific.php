@@ -97,16 +97,16 @@ class doc_Specific extends doc_Nulltype {
 
 		$dres = $db->query("SELECT `altnum`, `date` FROM `doc_list` WHERE `id`='{$this->doc_data['p_doc']}'");
 		$dog = $dres->fetch_assoc();
-
-		$dog['date'] = date("Y-m-d", $dog['date']);
-		$pdf->SetFont('', '', 12);
-		$str = "К договору N{$dog['altnum']} от {$dog['date']}";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'R', 0);
-		$pdf->Ln(5);
-
+		if($dog) {
+			$dog['date'] = date("Y-m-d", $dog['date']);
+			$pdf->SetFont('', '', 12);
+			$str = "К договору N{$dog['altnum']} от {$dog['date']}";
+			$str = iconv('UTF-8', 'windows-1251', $str);
+			$pdf->Cell(0, 5, $str, 0, 1, 'R', 0);
+			$pdf->Ln(5);
+		}
 		$pdf->SetFont('', '', 20);
-		$str = 'Спецификация № ' . $this->doc_data[9] . ' от ' . $dt;
+		$str = 'Спецификация № ' . $this->doc_data['altnum'] . ' от ' . $dt;
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 6, $str, 0, 1, 'C', 0);
 		$str = "на поставку продукции";
