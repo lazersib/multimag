@@ -36,6 +36,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$this->PDFForms				= array(
 			array('name'=>'nak','desc'=>'Накладная','method'=>'PrintNaklPDF'),
 			array('name'=>'tc','desc'=>'Товарный чек','method'=>'PrintTcPDF'),
+		    array('name'=>'tc','desc'=>'Товарный чек без агента','method'=>'PrintTcPDFna'),
 			array('name'=>'tg12','desc'=>'Накладная ТОРГ-12','method'=>'PrintTg12PDF'),
 			array('name'=>'nak_kompl','desc'=>'Накладная на комплектацию','method'=>'PrintNaklKomplektPDF'),
 			array('name'=>'sfak','desc'=>'Счёт - фактура','method'=>'SfakPDF'),
@@ -566,6 +567,156 @@ class doc_Realizaciya extends doc_Nulltype
 		$pdf->MultiCellIconv(0,5,$str,0,'L',0);
 		$str="Покупатель: {$this->doc_data['agent_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
+		$pdf->Ln();
+
+		$pdf->SetLineWidth(0.5);
+		$t_width=array(8);
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_width[]=20;
+			$t_width[]=91;
+		}
+		else	$t_width[]=111;
+		$t_width=array_merge($t_width, array(12,15,23,23));
+
+		$t_text=array('№');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$t_text[]='Код';
+			$t_text[]='Наименование';
+		}
+		else	$t_text[]='Наименование';
+		$t_text=array_merge($t_text, array('Место', 'Кол-во', 'Стоимость', 'Сумма'));
+
+		foreach($t_width as $id=>$w)
+		{
+			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
+			$pdf->CellIconv($w,6,$t_text[$id],1,0,'C',0);
+		}
+		$pdf->Ln();
+		$pdf->SetWidths($t_width);
+		$pdf->SetHeight(3.8);
+
+		$aligns=array('R');
+		if($CONFIG['poseditor']['vc'])
+		{
+			$aligns[]='L';
+			$aligns[]='L';
+		}
+		else	$aligns[]='L';
+		$aligns=array_merge($aligns, array('C','R','R','R'));
+
+		$pdf->SetAligns($aligns);
+		$pdf->SetLineWidth(0.2);
+		$pdf->SetFont('','',8);
+
+		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`, `doc_base`.`vc`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `doc_list_pos`.`id`");
+		$i=0;
+		$ii=1;
+		$sum=0;
+		$skid_sum=0;
+		while($nxt = $res->fetch_row())
+		{
+			$sm=$nxt[3]*$nxt[4];
+			$cost = sprintf("%01.2f руб.", $nxt[4]);
+			$cost2 = sprintf("%01.2f руб.", $sm);
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+
+			$row=array($ii);
+			if(@$CONFIG['poseditor']['vc'])
+			{
+				$row[]=$nxt[8];
+				$row[]="$nxt[0] $nxt[1]";
+			}
+			else	$row[]="$nxt[0] $nxt[1]";
+			$row=array_merge($row, array($nxt[5], "$nxt[3] $nxt[6]", $cost, $cost2));
+
+			$pdf->RowIconv($row);
+			$i=1-$i;
+			$ii++;
+			$sum+=$sm;
+			$skid_sum+=getCostPos($nxt[7], $def_cost)*$nxt[3];
+		}
+		$ii--;
+		$cost = sprintf("%01.2f руб.", $sum);
+
+		$prop='';
+		if($sum>0)
+		{
+			$add='';
+			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
+			$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
+			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			$add
+			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+			if($rs->num_rows){
+				$prop_data = $rs->fetch_row();
+				$prop = sprintf("Оплачено: %0.2f руб.",$prop_data[0]);
+			}
+		}
+		$pdf->Ln();
+
+		$str="Всего $ii наименований на сумму $cost";
+		if($this->dop_data['mest'])	$str.=", мест: ".$this->dop_data['mest'];
+		$pdf->CellIconv(0,5,$str,0,1,'L',0);
+
+		if($sum!=$skid_sum)
+		{
+			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
+			$str="Скидка: $cost";
+			$pdf->CellIconv(0,5,$str,0,1,'L',0);
+		}
+
+		if($prop)
+		{
+			$pdf->CellIconv(0,5,$prop,0,1,'L',0);
+		}
+
+
+		$str="Продавец:_____________________________________";
+		$pdf->CellIconv(0,5,$str,0,1,'L',0);
+
+		if($to_str)	return $pdf->Output('tc.pdf','S');
+		else		$pdf->Output('tc.pdf','I');
+	}
+	
+	/// Товарный чек без агента в PDF формате
+/// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
+	function PrintTcPDFna($to_str=false) {
+		require('fpdf/fpdf_mc.php');
+		global $tmpl, $CONFIG, $db;
+
+		if(!$to_str) $tmpl->ajax=1;
+
+		$pdf=new PDF_MC_Table('P');
+		$pdf->Open();
+		$pdf->SetAutoPageBreak(0,10);
+		$pdf->AddFont('Arial','','arial.php');
+		$pdf->tMargin=10;
+		$pdf->AddPage();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(255);
+
+		$dt=date("d.m.Y",$this->doc_data['date']);
+
+		$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
+		if(!$res->num_rows)			throw new Exception ("Цена по умолчанию не найдена");
+		$cost_row = $res->fetch_row();
+		$def_cost = $cost_row[0];
+
+		$pdf->SetFont('','',16);
+		$str="Товарный чек N {$this->doc_data['altnum']}, от $dt";
+		$pdf->CellIconv(0,8,$str,0,1,'C',0);
+		$pdf->SetFont('','',10);
+		$str="Продавец: {$this->firm_vars['firm_name']}, ИНН-{$this->firm_vars['firm_inn']}-КПП, тел: {$this->firm_vars['firm_telefon']}";
+		$pdf->MultiCellIconv(0,5,$str,0,'L',0);
 		$pdf->Ln();
 
 		$pdf->SetLineWidth(0.5);

@@ -325,7 +325,7 @@ function FilterMenu()
 			extraParams:{'l':'sklad','mode':'srv','opt':'ac'}
 			});
 
-			$(\"#au\").autocomplete(\"/rights.php\", {
+			$(\"#au\").autocomplete(\"/docj.php\", {
 			delay:300,
 			minChars:1,
 			matchSubset:1,
@@ -336,7 +336,7 @@ function FilterMenu()
 			maxItemsToShow:15,
 			formatItem:tovliFormat,
 			onItemSelect:auselectItem,
-			extraParams:{'mode':'upl'}
+			extraParams:{'mode':'ul'}
 			});
 
 			initCalendar('datepicker_f',false)
@@ -1128,6 +1128,15 @@ else if($mode=='print')
 
 	$tmpl->addContent("Итого: приход: $pr, расход: $ras. Баланс: $razn<br>");
 
+}
+else if($mode=='ul') {
+	$s = request('s');
+	$s = $db->real_escape_string($s);
+	$res = $db->query("SELECT `id`,`name`, `reg_email` FROM `users` WHERE `name` LIKE '%$s%'");
+	while($nxt = $res->fetch_row()) {
+		echo"$nxt[1]|$nxt[0]|$nxt[2]\n";
+	}
+	exit();
 }
 else doc_log("ERROR","docj.php: Неверный mode!");
 

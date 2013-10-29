@@ -23,7 +23,7 @@ $actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сох�
 
 try {
 
-if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
+if(!isAccess('sys_acl','view'))	throw new AccessException("Недостаточно привилегий");
 
 $tmpl->setContent("<h1>Настройка привилегий</h1>");
 $tmpl->setTitle("Настройка привилегий");
@@ -154,7 +154,7 @@ else if($mode=='group_acl_save')
 {
 	$g=rcvint('g');
 	$tmpl->AddContent("<h2>Группа $g: сохранение привилегий группы</h2>");
-	if(!isAccess('sys_acl','edit'))	throw new AccessException("Недостаточно привилегий");
+	if(!isAccess('sys_acl','edit'))	throw new AccessException();
 
 	$res=$db->query("SELECT `id`, `object`, `desc`, `actions` FROM `users_objects`
 	ORDER BY `object`, `actions`");
@@ -210,6 +210,7 @@ else if($mode=='gre')
 }
 else if($mode=='grs')
 {
+	if(!isAccess('sys_acl','edit'))	throw new AccessException();
 	$g	= rcvint('g');
 	$gn	= request('gn');
 	$comm	= request('comm');
@@ -227,6 +228,7 @@ else if($mode=='grs')
 }
 else if($mode=='us')
 {
+	if(!isAccess('sys_acl','edit'))	throw new AccessException();
 	$g	= rcvint('g');
 	$us_id	= rcvint('us_id');
 	if($us_id<0) $tmpl->msg("Пользователь не выбран!","err");
@@ -238,6 +240,7 @@ else if($mode=='us')
 }
 else if($mode=='ud')
 {
+	if(!isAccess('sys_acl','delete'))	throw new AccessException();
 	$g	= rcvint('g');
 	$us_id	= rcvint('us_id');
 	if($us_id<0) $tmpl->msg("Пользователь не выбран!");
