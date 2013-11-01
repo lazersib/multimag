@@ -27,7 +27,7 @@ need_auth($tmpl);
 $tmpl->setTitle("Администрирование коментариев");
 if(!isAccess('admin_comments','view'))	throw new AccessException("Недостаточно привилегий");
 
-$mode=request($mode);
+$mode=request('mode');
 
 if($mode=='')
 {

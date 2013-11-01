@@ -38,7 +38,7 @@ if ($file) {
 		$line = iconv('windows-1251', 'UTF-8', $line);
 		//echo $line.'<br>';
 		$line = trim($line);
-		$pl = split("=", $line, 2);
+		$pl = explode("=", $line, 2);
 		switch ($pl[0]) {
 			case 'СекцияДокумент':
 				if ($pl[1] == "Платёжное поручение") {
@@ -103,7 +103,7 @@ global $dv;
 
 $res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
 $dv = $res->fetch_assoc();
-$innkpp = split('/', $dv['firm_inn']);
+$innkpp = explode('/', $dv['firm_inn']);
 
 
 $i = 0;
@@ -123,7 +123,7 @@ while ($nxt = $res->fetch_row()) {
 			fwrite($fd, to_win($header));
 		}
 	}
-	$f_innkpp = split('/', $nxt[5]);
+	$f_innkpp = explode('/', $nxt[5]);
 	$str = "СекцияДокумент=Платежное поручение\r\nНомер=$nxt[1]\r\nДата=$dt\r\nСумма=$nxt[2]\r\n" . "ВидПлатежа=Электронный\r\nВидОплаты=01\r\nОчередность=6\r\nПлательщикИНН=$innkpp[0]\r\nПлательщикКПП=$innkpp[1]\r\n" . "Плательщик=" . $dv['firm_name'] . "\r\nПлательщикСчет=" . $dv['firm_schet'] . "\r\nПлательщикБИК=0" . $dv['firm_bik'] . "\r\n" . "ПлательщикКорсчет=" . $dv['firm_bank_kor_s'] . "\r\nПлательщикБанк1=" . $dv['firm_bank'] . "\r\nПолучательИНН=$f_innkpp[0]\r\n" . "ПолучательКПП=$f_innkpp[1]\r\nПолучатель=$nxt[4]\r\nПолучательСчет=$nxt[6]\r\nПолучательБИК=$nxt[7]\r\n" . "ПолучательКорсчет=$nxt[8]\r\nПолучательБанк1=$nxt[9]\r\nНазначениеПлатежа=$nxt[3]\r\nКонецДокумента\r\n\r\n";
 	fwrite($fd, to_win($str));
 	echo "$nxt[0] ($nxt[4])\n";

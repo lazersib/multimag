@@ -36,7 +36,7 @@ class Bank1CPasrser
 		{
 			$line=iconv( 'windows-1251','UTF-8', $line);	
 			$line=trim($line);
-			$pl=split("=",$line,2);
+			$pl = explode("=", $line, 2);
 			if($pl[0]=='СекцияДокумент')
 			{
 				$params=array();

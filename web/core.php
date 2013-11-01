@@ -18,6 +18,7 @@
 //
 
 // памятка по рефакторингу: к удалению:
+// split
 // mysql_ +
 // _row($ +
 // _assoc($ +
@@ -189,14 +190,12 @@ set_exception_handler('exception_handler');
 /// Подсветка подстроки в строке, используя span class=b_selection
 /// @param str Исходная строка
 /// @param substr Строка, которую необходимо подсветить
-function SearchHilight($str,$substr)
-{
+function SearchHilight($str,$substr) {
 	if(!$substr) return $str;
-	$tmp=split($substr,' '.$str.' ');
-	$result='';
-	foreach($tmp as $t)
-	{
-		if(!$result) $result=$t;
+	$tmp = explode($substr,' '.$str.' ');
+	$result = '';
+	foreach($tmp as $t) {
+		if(!$result) $result = $t;
 		else $result.="<span class='b_selection'>$substr</span>$t";
 	}
 	return $result;

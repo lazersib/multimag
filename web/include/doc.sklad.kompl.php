@@ -156,7 +156,7 @@ function kompl_ViewSkladS($pos, $group, $s) {
 	$tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'><tr>
 	<th>№<th>Код<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
 	<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-	switch ($CONFIG['doc']['sklad_default_order']) {
+	switch (@$CONFIG['doc']['sklad_default_order']) {
 		case 'vc': $order = '`doc_base`.`vc`';
 			break;
 		case 'cost': $order = '`doc_base`.`cost`';
@@ -164,38 +164,39 @@ function kompl_ViewSkladS($pos, $group, $s) {
 		default: $order = '`doc_base`.`name`';
 	}
 	$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
-	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
-	`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`";
+		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
+		`doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+		(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`";
 	$s_sql = $db->real_escape_string($s);
 	$sqla = $sql . "FROM `doc_base`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
+	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ORDER BY $order LIMIT 100";
 	$res = $db->query($sqla);
 	if ($res->num_rows) {
-		$tmpl->addContent("<tr class=lin0><th colspan=18 align=center>Поиск по названию, начинающемуся на ".html_out($s).": найдено {$res->num_rows}");
+		$tmpl->addContent("<tr class=lin0><th colspan=19 align=center>Поиск по названию, начинающемуся на ".html_out($s).": найдено {$res->num_rows}");
 		kompl_DrawSkladTable($res, $s, $pos);
 		$sf = 1;
 	}
 
 	$sqla = $sql . "FROM `doc_base`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
+	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`vc` NOT LIKE '$s_sql%' ORDER BY $order LIMIT 30";
 	$res = $db->query($sqla);
 	if ($res->num_rows) {
-		$tmpl->addContent("<tr class=lin0><th colspan=18 align=center>Поиск по названию, содержащему ".html_out($s).": найдено {$res->num_rows}");
+		$tmpl->addContent("<tr class=lin0><th colspan=19 align=center>Поиск по названию, содержащему ".html_out($s).": найдено {$res->num_rows}");
 		kompl_DrawSkladTable($res, $s, $pos);
 		$sf = 1;
 	}
 
 	$sqla = $sql . "FROM `doc_base`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
+	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' AND `doc_base`.`vc` NOT LIKE '%$s%' ORDER BY $order LIMIT 30";
 	$res = $db->query($sqla);
 	if ($res->num_rows) {
-		$tmpl->addContent("<tr class=lin0><th colspan=18 align=center>Поиск аналога, для ".html_out($s).": найдено {$res->num_rows}");
+		$tmpl->addContent("<tr class=lin0><th colspan=19 align=center>Поиск аналога, для ".html_out($s).": найдено {$res->num_rows}");
 		kompl_DrawSkladTable($res, $s, $pos);
 		$sf = 1;
 	}

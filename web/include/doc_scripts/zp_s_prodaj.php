@@ -49,7 +49,13 @@ class ds_zp_s_prodaj {
 			while ($nxt = $res->fetch_row())
 				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
 			$tmpl->addContent("</select><br>
-
+			Показывать:<br>
+			<select name='show'>
+			<option value='all'>Все</option>
+			<option value='nach'>С выполненными начислениями</option>
+			<option value='nonach'>С невыполненными начислениями</option>
+			</select><br>
+			
 			<script type=\"text/javascript\">
 			initCalendar('datepicker_f',false);
 			initCalendar('datepicker_t',false);
@@ -91,6 +97,7 @@ class ds_zp_s_prodaj {
 			$date_f = strtotime(rcvdate('date_f'));
 			$date_t = strtotime(rcvdate('date_t')." 23:59:59");
 			$user_id = rcvint('user_id');
+			$show = request('show');
 
 			$tmpl->addContent("<h1>" . $this->getname() . "</h1>");
 			if (!$tov_id)	throw new Exception("Не указана услуга!");
@@ -109,94 +116,91 @@ class ds_zp_s_prodaj {
 			LEFT JOIN `doc_list` AS `zlist`		ON `zlist`.`id`=`curlist`.`p_doc` AND `zlist`.`type`='3'
 			LEFT JOIN `doc_list` AS `rkolist`	ON `rkolist`.`p_doc`=`curlist`.`id` AND `rkolist`.`type`='7'
 			LEFT JOIN `users` AS `zusers`		ON `zusers`.`id`=`zlist`.`user`
-			LEFT JOIN `doc_list` AS `pay_doc`	ON `pay_doc`.`p_doc`=`curlist`.`id`
 			LEFT JOIN `doc_dopdata` AS `n_data`	ON `n_data`.`doc`=`curlist`.`id` AND `n_data`.`param`='zp_s_prodaj'
 			WHERE `curlist`.`ok`>'0' AND `curlist`.`type`='2' AND `curlist`.`date`>='$date_f' AND `curlist`.`date`<='$date_t'
-			AND `curlist`.`id` NOT IN (SELECT `doc` FROM `doc_dopdata` WHERE `param`='nzp')  AND `zlist`.`user`=$user_id");
-			/// nsp (param) - начислена зарплата
+			AND `zlist`.`user`=$user_id");
+
 			$tmpl->addContent("
 			<form action='' method='post' enctype='multipart/form-data'>
 			<input type='hidden' name='mode' value='exec'>
 			<input type='hidden' name='param' value='i'>
 			<input type='hidden' name='sn' value='zp_s_prodaj'>
 			<input type='hidden' name='tov_id' id='tov_id' value='$tov_id'>
-			<input type='hidden' name='user_id' id='tov_id' value='$user_id'>
-			<table width='100%'>
-			<tr><th>ID<th>Автор<th>Агент<th>Дата<th>Сумма<th>Агентские<th>К начислению");
+			<input type='hidden' name='user_id' id='user_id' value='$user_id'>
+			<table width='100%' class='list'>
+			<tr><th>ID</th><th>Заявка</th><th>Реализация</th><th>Агент</th><th>Дата</th><th>Сумма</th><th>Агентские</th><th>К начислению</th><th>Начислить</th></tr>");
 			$i = 0;
 			$users = array();
+			$all_sum = 0;	// Общая сумма по всем документам, включая те, по которым не было оплаты
+			$no_sum = 0;	// Сумма не оплаченных документов, по которым не было начислений
+			$kn_sum = 0;	// Сумма к начислению
+			$nd_sum = 0;	// Сумма уже начисленного по документам
+			$ns_sum = 0;	// Сумма уже начисленного по сценарию
+			$ag_sum = 0;	// Сумма агентских вознаграждений
 			while ($nxt = $res->fetch_assoc()) {
-				if ($nxt['zuser'] > 0) {
-					if (!isset($users[$nxt['zuser']])) {
-						$users[$nxt['zuser']] = array();
-						$users[$nxt['zuser']]['name'] = $nxt['zuser_name'];
-						$users[$nxt['zuser']]['sum'] = 0;
-						$users[$nxt['zuser']]['nsum'] = 0;
-					}
-				} else {
-					if (!isset($users[$nxt['user']])) {
-						$users[$nxt['user']] = array();
-						$users[$nxt['user']]['name'] = $nxt['ruser_name'];
-						$users[$nxt['user']]['sum'] = 0;
-						$users[$nxt['user']]['nsum'] = 0;
-					}
-				}
 				$nxt['ag_sum'] = sprintf("%0.2f", $nxt['ag_sum']);
 
 				// Расчёт входящей стоимости
 				$res_tov = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_list_pos`.`cnt`
-			FROM `doc_list_pos`
-			WHERE `doc_list_pos`.`doc`='{$nxt['id']}'");
+					FROM `doc_list_pos`
+					WHERE `doc_list_pos`.`doc`='{$nxt['id']}'");
 				$nach_sum = 0;
 				while ($nxt_tov = $res_tov->fetch_assoc()) {
 					$incost = getInCost($nxt_tov['tovar'], $nxt['date']);
-					$nach_sum+=($nxt_tov['cost'] - $incost) * $this->coeff * $nxt_tov['cnt'];
+					$nach_sum += ($nxt_tov['cost'] - $incost) * $this->coeff * $nxt_tov['cnt'];
 				}
-				$nach_sum-=$nxt['ag_sum'] * $this->coeff;
+				$nach_sum -= $nxt['ag_sum'] * $this->coeff;
 				$nach_sum = sprintf("%0.2f", $nach_sum);
 				// Проверка факта оплаты
 				$add = '';
 				if ($nxt['p_doc'])
 					$add = " OR (`p_doc`='{$nxt['p_doc']}' AND (`type`='4' OR `type`='6'))";
-				$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
-				(`p_doc`='{$nxt['id']}' AND (`type`='4' OR `type`='6'))
-				$add AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
-				$disable = '';
+				$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list`
+					WHERE (`p_doc`='{$nxt['id']}' AND (`type`='4' OR `type`='6')) $add AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+				
+				$ok_pay = 0;
 				if($rs->num_rows) {
 					$pp = $rs->fetch_row();
-					$prop = sprintf("%0.2f", $pp[0]);
-					if ($prop >= $nxt['sum'])
-						$cl = 'f_green';
-					else {
-						$cl = 'f_brown';
-						$disable = 'disabled';
-					}
+					$prop = round($pp[0], 2);
+					if ($prop >= $nxt['sum']) $ok_pay = 1;
 					
-				}else {
-					if (agentCalcDebt($nxt['agent_id']) <= 0)
-						$cl = 'f_green';
-					else {
-						$cl = 'f_red';
-						$disable = 'disabled';
-					}
-				}
+				}else if (agentCalcDebt($nxt['agent_id']) <= 0)  $ok_pay = 1;
 
 				$date = date("Y-m-d H:i:s", $nxt['date']);
 
-				$tmpl->addContent("<tr class='lin$i $cl'><td><a href='/doc.php?mode=body&doc={$nxt['id']}'>{$nxt['id']}</a>
-			<td>".html_out($nxt['ruser_name']).' / '.html_out($nxt['zuser_name'])."<td>".html_out($nxt['agent_name'])."<td>$date<td>{$nxt['sum']}<td>{$nxt['ag_sum']}<td>");
-				if (!$nxt['zp_s_prodaj'])
-					$tmpl->addContent("{$nxt['zp_s_prodaj']} <input type='text' name='sum_doc[{$nxt['id']}]' value='$nach_sum' $disable>");
-				else 	$tmpl->addContent("{$nxt['zp_s_prodaj']}");
-				$i = 1 - $i;
-				if ($disable == '') {
-					if ($nxt['zuser'] > 0) {
-						$users[$nxt['zuser']]['sum']+=$nach_sum;
-						if (!$nxt['zp_s_prodaj'])
-							$users[$nxt['zuser']]['nsum']+=$nach_sum;
+				$cl = $ok_pay?'f_green':'f_red';
+
+				$out_line = "<tr class='$cl'>
+					<td><a href='/doc.php?mode=body&doc={$nxt['id']}'>{$nxt['id']}</a></td>
+					<td>".html_out($nxt['zuser_name'])."</td><td>".html_out($nxt['ruser_name'])."</td>
+					<td>".html_out($nxt['agent_name'])."</td><td>$date</td><td>{$nxt['sum']}</td><td>{$nxt['ag_sum']}</td><td>";
+				
+				if (!$nxt['zp_s_prodaj']) {
+					if($ok_pay) {
+						$n_check = ' checked';
+						$kn_sum += $nach_sum;
 					}
-					else	$users[$nxt['user']]['sum']+=$nach_sum;
+					else {
+						$n_check = '';
+						$no_sum += $nach_sum;
+					}
+					$out_line .= "<input type='text' name='sum_doc[{$nxt['id']}]' value='$nach_sum'></td>
+						<td><label><input type='checkbox' name='cb_doc[{$nxt['id']}]' value='1'$n_check>Ok</label></td></tr>";
+					
 				}
+				else {
+					$out_line .= "{$nxt['zp_s_prodaj']}</td><td></td></tr>";
+					$nd_sum += $nxt['zp_s_prodaj'];
+					$ns_sum += $nach_sum;
+				}
+				
+				$all_sum += $nach_sum;
+				$ag_sum += $nxt['ag_sum'];
+				
+				if($show == 'nach' && $nxt['zp_s_prodaj'])		$tmpl->addContent($out_line);
+				else if($show == 'nonach' && !$nxt['zp_s_prodaj'])	$tmpl->addContent($out_line);
+				else if($show == 'all')					$tmpl->addContent($out_line);
+				
 			}
 			$but_disabled = '';
 			if (!$agent_id)	$but_disabled = 'disabled';
@@ -205,10 +209,13 @@ class ds_zp_s_prodaj {
 			<button $but_disabled>Начислить зарплату</button>
 			</form>
 			<table>
-			<tr><th>Сотрудник</th><th>Расчёт</th><th>К начислению</th></tr>");
-			foreach ($users as $id => $data)
-				$tmpl->addContent("<tr><td>{$data['name']}</td><td>{$data['sum']}</td><td>{$data['nsum']}</td></tr>");
-			$tmpl->addContent("</table>");
+			<tr><th>К начислению</th><td>$kn_sum</td></tr>
+			<tr><th>Не оплачено</th><td>$no_sum</td></tr>
+			<tr><th>Агентские</th><td>$ag_sum</td></tr>
+			<tr><th>Начислено по док-там</th><td>$nd_sum</td></tr>
+			<tr><th>Начислено по сценарию</th><td>$ns_sum</td></tr>
+			<tr><th>Сумма</th><td>$all_sum</td></tr>
+			</table>");
 		} else if ($mode == 'exec') {
 			$tov_id = intval($_REQUEST['tov_id']);
 			$user_id = intval($_REQUEST['user_id']);
@@ -227,6 +234,7 @@ class ds_zp_s_prodaj {
 			$db->startTransaction();
 			$all_sum = 0;
 			foreach ($_REQUEST['sum_doc'] as $doc => $sum) {
+				if(!isset($_REQUEST['cb_doc'][$doc]))	continue;
 				$sum = round($sum, 2);
 				settype($doc, 'int');
 				if (!$sum)	continue;

@@ -808,7 +808,7 @@ else if($mode=="filter")
 	else if($opt=='ts')
 	{
 		$s=request('s');
-		$tov=split(':',$s);
+		$tov = explode(':',$s);
 		$tov[0]=$db->real_escape_string($tov[0]);
 		$tov[1]=$db->real_escape_string($tov[1]);
 		$res=$db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base_dop`.`analog`

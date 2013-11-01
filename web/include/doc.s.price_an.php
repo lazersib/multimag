@@ -197,7 +197,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 
 		if($param=='') {
 			$sql = request('sql');
-			$regex = reuqest('regex');
+			$regex = request('regex');
 			$regex_neg = request('regex_neg');
 			if ($sql == '') throw new Exception("Строка поиска совпадений пуста!");
 			if (preg_match("/$regex/", 'abc') === FALSE)

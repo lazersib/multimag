@@ -204,13 +204,11 @@ else if($mode=='petitions')
 		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 		WHERE `doc_list`.`id`='$doc'");
 		$nxt = $res->fetch_row();
-
+		if(!$nxt)	throw new Exception("Документ не найден");
+		
 		$date=date("d.m.Y H:i:s",$nxt[3]);
 
-		$txt="Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *$nxt[5]* с ID: $doc, $nxt[0]$nxt[1] от $date на сумму $nxt[2]. Клиент $nxt[4].\n
-		{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc \n
-		Цель отмены: $comment.\n IP: $ip\n
-		Пожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
+		$txt="Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *$nxt[5]* с ID: $doc, $nxt[0]$nxt[1] от $date на сумму $nxt[2]. Клиент $nxt[4].\n{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc \nЦель отмены: $comment.\n IP: $ip\nПожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
 
 		if($CONFIG['site']['doc_adm_email'])
 			mailto($CONFIG['site']['doc_adm_email'], 'Запрос на отмену проведения документа' ,$txt, $from);
