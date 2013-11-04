@@ -26,6 +26,7 @@ class PriceWriterXLS extends BasePriceWriter
 	var $worksheet;		// Лист XLS
 	var $line;		// Текущая строка
 	var $format_line;	// формат для строк наименований прайса
+	var $a_format_line;	// формат для строк наименований прайса для серой цены
 	var $format_group;	// формат для строк групп прайса
 	
 	/// Конструктор
@@ -60,6 +61,17 @@ class PriceWriterXLS extends BasePriceWriter
 		$this->format_line[1]->setColor(0);
 		$this->format_line[1]->setFgColor(41);
 		$this->format_line[1]->SetSize(12);
+		
+		// для серых цен
+		$this->a_format_line=array();
+		$this->a_format_line[0]=& $this->workbook->addFormat();
+		$this->a_format_line[0]->setColor('gray');
+		$this->a_format_line[0]->setFgColor(26);
+		$this->a_format_line[0]->SetSize(12);
+		$this->a_format_line[1]=& $this->workbook->addFormat();
+		$this->a_format_line[1]->setColor('gray');
+		$this->a_format_line[1]->setFgColor(41);
+		$this->a_format_line[1]->SetSize(12);
 
 		$this->format_group=array();
 		$this->format_group[0]=& $this->workbook->addFormat();
@@ -102,10 +114,13 @@ class PriceWriterXLS extends BasePriceWriter
 		$format_header->SetAlign('center');
 		$format_header->SetAlign('vcenter');
 		// Настройка ширины столбцов
-		$column_width=array(8,120,15,15);
+		
+		if(@$CONFIG['site']['price_show_vc'])
+			$column_width = array(8, 8, 112, 15, 15);
+		else	$column_width = array(8, 120, 15, 15);
 		foreach($column_width as $id=> $width)
 			$this->worksheet->setColumn($id,$id,$width);
-		$this->column_count=count($column_width);
+		$this->column_count = count($column_width);
 
 		if(is_array($CONFIG['site']['price_text']))
 		foreach($CONFIG['site']['price_text'] as $text)	{
@@ -149,7 +164,9 @@ class PriceWriterXLS extends BasePriceWriter
 
 		$this->line++;
 		$this->worksheet->write(8, 8, ' ');
-		$headers=array("Арт.", "Наименование", "Наличие", "Цена");
+		if(@$CONFIG['site']['price_show_vc'])
+			$headers = array("N", "Код", "Наименование", "Наличие", "Цена");
+		else	$headers = array("N", "Наименование", "Наличие", "Цена");
 		foreach($headers as $id => $item)
 			$headers[$id] = iconv('UTF-8', 'windows-1251', $item);
 		$this->worksheet->writeRow($this->line,0,$headers,$format_header);
@@ -170,14 +187,14 @@ class PriceWriterXLS extends BasePriceWriter
 			$this->worksheet->setMerge($this->line,0,$this->line,$this->column_count-1);
 			$this->line++;
 
-			$this->writepos($nxt[0], $nxt[2]?$nxt[2]:$nxt[1] );
-			$this->write($nxt[0], $level+1); // рекурсия
+			$this->writepos($nxt[0], $nxt[2] );
+			$this->write($nxt[0], $level+1);
 
 		}
 	}
 	
 	/// Сформировать завершающий блок прайса
-	function close()	{
+	function close() {
 		global $CONFIG;
 		$this->line+=5;
 		$this->worksheet->write($this->line, 0, "Generated from MultiMag (http://multimag.tndproject.org) via PHPExcelWriter, for http://".$CONFIG['site']['name'], $this->format_footer);
@@ -189,30 +206,46 @@ class PriceWriterXLS extends BasePriceWriter
 		$this->workbook->close();
 	}
 
-	/// Сформировать строку прайса
-	function writepos($group=0, $group_name='')
-	{
-		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`
+	/// Сформировать строки прайса
+	function writepos($group=0, $group_name=''){
+		global $CONFIG;
+		
+		$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
+		
+		$res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,
+			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_base`.`transit_cnt`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
-		$i=0;
-		while($nxt=$res->fetch_row())
-		{
-			$this->worksheet->write($this->line, 0, $nxt[0], $this->format_line[$i]);	// артикул
+		$i = 0;
+		while($nxt = $res->fetch_row()) {
+			$c=0;
+			$this->worksheet->write($this->line, $c++, $nxt[0], $this->format_line[$i]);	// номер
+			
+			if(@$CONFIG['site']['price_show_vc']) {
+				$str = iconv('UTF-8', 'windows-1251', $nxt[4]);
+				$this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]);	// код производителя
+			}
+				
+			
 			$name=iconv('UTF-8', 'windows-1251', "$group_name $nxt[1]".(($this->view_proizv&&$nxt[3])?" ($nxt[3])":''));
-			$this->worksheet->write($this->line, 1, $name, $this->format_line[$i]);		// наименование
-			$this->worksheet->write($this->line, 2, '', $this->format_line[$i]);		// наличие - пока не отображается
+			$this->worksheet->write($this->line, $c++, $name, $this->format_line[$i]);	// наименование
+			
+			$nal = $this->GetCountInfo($nxt[5], $nxt[6]);
+			$str = iconv('UTF-8', 'windows-1251',$nal);
+			$this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]);		// наличие - пока не отображается
+			
 			$cost = getCostPos($nxt[0], $this->cost_id);
 			if($cost==0)	continue;
 			$str=iconv('UTF-8', 'windows-1251',$cost);
-			$this->worksheet->write($this->line, 3, $str, $this->format_line[$i]);		// цена
-///TODO: НАДО СДЕЛАТЬ ПОДСВЕТКУ ЦЕН
-// 			$dcc=strtotime($data['cost_date']);
-// 			if( ($dcc<(time()-60*60*24*30*6))|| ($str==0) ) $cce=128;
-// 			else $cce=0;
+			
+			$dcc = strtotime($nxt[2]);
+ 			if( $dcc<(time()-60*60*24*30*6) ) $format = $this->a_format_line[$i];
+ 			else 	$format = $this->format_line[$i];
+			
+			$this->worksheet->write($this->line, $c++, $str, $format);		// цена
 
- 			$this->line++;
+			$this->line++;
  			$i=1-$i;
 		}
 	}

@@ -143,7 +143,7 @@ class doc_Predlojenie extends doc_Nulltype
 		global $tmpl, $CONFIG, $db;
 
 //		$res=mysql _query("SELECT `adres`, `tel` FROM `doc_agent` WHERE `id`='{$this->doc_data[2]}'");
-		$agent_data = $db->selectRow('dpc_agent', $this->doc_data['agent']);
+		$agent_data = $db->selectRow('doc_agent', $this->doc_data['agent']);
 		$dt=date("d.m.Y",$this->doc_data['date']);
 		if(!$to_str) $tmpl->ajax=1;
 		
@@ -176,7 +176,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$table_c2=15;
 
 		$pdf->SetFont('','',16);
-		$str='Заявка поставщику № '.$this->doc_data[9].', от '.$dt;
+		$str='Заявка поставщику № '.$this->doc_data['altnum'].', от '.$dt;
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'L',0);
 		$pdf->SetFont('','',8);

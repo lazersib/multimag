@@ -23,8 +23,7 @@ class PriceWriterHTML extends BasePriceWriter	{
 	var $span;		///< Количество столбцов таблицы
 
 	/// Конструктор
-	function __construct($db)
-	{
+	function __construct($db) {
 		parent::__construct($db);
 		$this->line=0;
 	}
@@ -72,15 +71,18 @@ class PriceWriterHTML extends BasePriceWriter	{
 
 		$this->line++;
 		echo"</center><table><tr>";
-		for($cur_col=0;$cur_col<$this->column_count;$cur_col++)
+		for($cur_col=0; $cur_col<$this->column_count; $cur_col++) {
+			if(@$CONFIG['site']['price_show_vc'])	echo"<th class='cost'>Код</th>";
 			echo"<th class='cost'>Наименование</th><th class='cost'>Цена</th>";
+		}
 		echo"</tr>";
-		$this->span=$this->column_count*2;
+		if(@$CONFIG['site']['price_show_vc'])
+			$this->span = $this->column_count*3;
+		else	$this->span = $this->column_count*2;
 	}
 
 	/// Сформирвать тело прайса
 	function write($group=0, $level=0)	{
-
 		if($level>3)	$level=3;
 		$res=$this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `id`");
 		while($nxt=$res->fetch_row()){
@@ -90,7 +92,8 @@ class PriceWriterHTML extends BasePriceWriter	{
 
 			$this->line++;
 			echo"<tr><th class='n$level' colspan='{$this->span}'>".html_out($nxt[1])."</th></tr>";
-			$this->writepos($nxt[0], $nxt[2]?$nxt[2]:$nxt[1] );
+			if($nxt[2])	$nxt[2] .= ' ';
+			$this->writepos($nxt[0], $nxt[2]);
 			$this->write($nxt[0], $level+1); // рекурсия
 
 		}
@@ -102,10 +105,10 @@ class PriceWriterHTML extends BasePriceWriter	{
 		echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), for <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a><br>Прайс создан системой MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), специально для <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a></td></tr></table>";
 	}
 
-	/// Сформировать строку прайса
-	function writepos($group=0, $group_name='')
-	{
-		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`
+	/// Сформировать строки прайса
+	function writepos($group=0, $group_name='') {
+		global $CONFIG;
+		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
@@ -119,7 +122,9 @@ class PriceWriterHTML extends BasePriceWriter	{
 			$c = getCostPos($nxt[0], $this->cost_id);
 			if($c==0)	continue;
 			if(($this->view_proizv)&&($nxt[3])) $pr=" (".$nxt[3].")"; else $pr="";
-			echo "<td>".html_out($nxt[1].$pr)."</td><td>".$c."</td>";
+			if(@$CONFIG['site']['price_show_vc'])
+				echo"<td>".html_out($nxt[4])."</td>";
+			echo "<td>".html_out($group_name.$nxt[1].$pr)."</td><td>".$c."</td>";
 
  			$this->line++;
  			$i=1-$i;

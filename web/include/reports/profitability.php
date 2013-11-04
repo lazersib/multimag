@@ -151,25 +151,29 @@ class Report_Profitability extends BaseGSReport {
 		$cnt = $out_cnt = $cost = $profit = 0;
 		$sum_extra = 0;
 
-		$res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`, `doc_list`.`date`
+		$res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`,
+			`doc_dopdata`.`value` AS `ret_flag`, `doc_list`.`date`
 		FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
 		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list_pos`.`doc` AND `doc_dopdata`.`param`='return'
 		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' AND `doc_list`.`date`<='$date_to' ORDER BY `doc_list`.`date`");
-		while ($nxt = $res->fetch_row()) {
-			if (($nxt[2] == 2) || ($nxt[2] == 17) && ($nxt[3] != '0'))
-				$nxt[0] = $nxt[0] * (-1);
-			if ($nxt[0] > 0 && (!$nxt[4]) && $cnt + $nxt[0] != 0)
-				$cost = ( ($cnt * $cost) + ($nxt[0] * $nxt[1])) / ($cnt + $nxt[0]);
-			if ($nxt[2] == 2 && $nxt[5] >= $date_from && (!$nxt[4])) {
-				$profit-=$nxt[0] * ($nxt[1] - $cost);
+		while ($nxt = $res->fetch_assoc()) {
+			if (($nxt['type'] == 2) || ($nxt['type'] == 17) && ($nxt['page'] != '0'))
+				$nxt['cnt'] = $nxt['cnt'] * (-1);
+			
+			if ($nxt['cnt'] > 0 && (!$nxt['ret_flag']) && (($cnt + $nxt['cnt']) != 0) )
+				$cost = ( ($cnt * $cost) + ($nxt['cnt'] * $nxt['cost'])) / ($cnt + $nxt['cnt']);
+			
+			if ($nxt['type'] == 2 && $nxt['date'] >= $date_from && (!$nxt['ret_flag'])) {
+				$profit -= $nxt['cnt'] * ($nxt['cost'] - $cost);
 				if ($cost)
-					$sum_extra-=($nxt[1] - $cost) * 100 * $nxt[0] / $cost;
-				$out_cnt-=$nxt[0];
+					$sum_extra -= ($nxt['cost'] - $cost) * 100 * $nxt['cnt'] / $cost;
+				$out_cnt -= $nxt['cnt'];
 			}
-			$cnt+=$nxt[0];
+			$cnt += $nxt['cnt'];
 			if ($cnt < 0)
 				return array(0xFFFFBADF00D, 0, 0); // Невозможно расчитать прибыль, если остатки уходили в минус
+			
 		}
 		if ($out_cnt)
 			$avg_extra_pp = round($sum_extra / $out_cnt, 1);
@@ -182,8 +186,8 @@ class Report_Profitability extends BaseGSReport {
 	function calcPosS($pos_id, $date_from, $date_to) {
 		global $db;
 		settype($pos_id, 'int');
-		settype($date_from, 'int');
-		settype($date_to, 'int');
+//		settype($date_from, 'int');
+//		settype($date_to, 'int');
 		$out_cnt = $profit = 0;
 
 		$res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`, `doc_list`.`date`

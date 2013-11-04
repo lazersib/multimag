@@ -193,6 +193,7 @@ class ds_sborka_zap {
 			$firm = rcvint('firm');
 			$nasklad = rcvint('nasklad');
 			$not_a_p = rcvint('not_a_p');
+			$db->startTransaction();
 			$this->ReCalcPosCost($doc, $tov_id);
 			$document = AutoDocument($doc);
 			$document->DocApply();
@@ -239,7 +240,7 @@ class ds_sborka_zap {
 				}
 				if (!$not_a_p)	$perem_doc->DocApply();
 			}
-
+			$db->commit();
 			$tmpl->ajax = 0;
 			$tmpl->msg("Все операции выполнены успешно. Размер зарплаты: $zp");
 		}

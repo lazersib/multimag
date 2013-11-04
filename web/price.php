@@ -176,6 +176,35 @@ class BasePriceWriter {
 		$this->cost_id=$cost;
 		settype($this->cost_id, "int");
 	}
+	
+	/// Получить информации о количестве товара. Формат информации - в конфигурационном файле
+	/// @param count	Количество единиц товара на складе
+	/// @param transit	Количество единиц товара в пути
+	protected function getCountInfo($count, $transit) {
+		global $CONFIG;
+		if(!isset($CONFIG['site']['vitrina_pcnt_limit']))	$CONFIG['site']['vitrina_pcnt_limit']	= array(1,10,100);
+		if($CONFIG['site']['vitrina_pcnt']==1) {
+			if($count<=0) {
+				if($transit) return 'в пути';
+				else	return 'уточняйте';
+			}
+			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][0]) return '*';
+			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][1]) return '**';
+			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][2]) return '***';
+			else return '****';
+		}
+		else if($CONFIG['site']['vitrina_pcnt']==2) {
+			if($count<=0) {
+				if($transit) return 'в пути';
+				else	return 'уточняйте';
+			}
+			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][0]) return 'мало';
+			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][1]) return 'есть';
+			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][2]) return 'много';
+			else return 'оч.много';
+		}
+		else	return round($count).($transit?('('.$transit.')'):'');
+	}
 };
 
 try {

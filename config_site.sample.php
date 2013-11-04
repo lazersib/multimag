@@ -14,12 +14,14 @@ $CONFIG['site']['pass_type']		= 'CRYPT';	// Варианты: CRYPT (по умо
 $CONFIG['site']['price_col_cnt']	= 0;	// 2 по умолчанию
 $CONFIG['site']['price_width_cost']	= 0;	// 12 по умлочанию
 $CONFIG['site']['price_width_name']	= 0;	// 0 по умолчанию (автоматически)
+$CONFIG['site']['price_width_vc']	= 0;	// Ширина колонки *код производителя* в PDF прайсе
 $CONFIG['site']['price_text']		= array(
 'Ваш адрес',
 'Ваши телефоны',
 'Ваши e-mail, jabber, ICQ',
 'Ещё какая-то информация'
 );
+$CONFIG['site']['price_show_vc']	= 0;	// Отображать ли столбец с кодом производителя в прайсах
 
 $CONFIG['site']['doc_header']		= '';	// Картинка - в шапке документов. {FN} будет заменён на номер фирмы
 $CONFIG['site']['doc_shtamp']		= '';	// Картинка - штамп в документах. {FN} будет заменён на номер фирмы

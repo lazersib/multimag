@@ -49,9 +49,12 @@ class PriceWriterCSV extends BasePriceWriter
 	
 	/// Сформировать шапку прайса
 	function open()	{
+		global $CONFIG;
 		header("Content-Type: text/csv; charset=utf-8");
 		header("Content-Disposition: attachment; filename=price_list.csv;");
 		for($i=0;$i<$this->column_count;$i++)	{
+			if(@$CONFIG['site']['price_show_vc'])
+				echo $this->shielder."Код".$this->shielder.$this->divider;
 			echo $this->shielder."Название".$this->shielder.$this->divider.$this->shielder."Цена".$this->shielder;
 			if($i<($this->column_count-1)) echo $this->divider.$this->shielder.$this->shielder.$this->divider;
 		}
@@ -61,17 +64,19 @@ class PriceWriterCSV extends BasePriceWriter
 	
 	/// Сформирвать тело прайса
 	function write($group=0)	{
+		global $CONFIG;
 		$res=$this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `id`");
-		while($nxt=$res->fetch_row())
-		{
+		while($nxt=$res->fetch_row()) {
 			if($nxt[0]==0) continue;
 			if(is_array($this->view_groups))
 				if(!in_array($nxt[0],$this->view_groups))	continue;
 
 			$this->line++;
+			if(@$CONFIG['site']['price_show_vc'])
+				echo $this->divider;
 			echo $this->shielder.$nxt[1].$this->shielder;
 			echo"\n";
-			$this->writepos($nxt[0], $nxt[2]?$nxt[2]:$nxt[1] );
+			$this->writepos($nxt[0], $nxt[2] );
 			$this->write($nxt[0]); // рекурсия
 
 		}
@@ -80,17 +85,22 @@ class PriceWriterCSV extends BasePriceWriter
 	/// Сформировать завершающий блок прайса
 	function close()	{
 		global $CONFIG;
-		echo"\n\n\n\n\n";
+		echo"\n\n";
 		$this->line+=5;
+		if(@$CONFIG['site']['price_show_vc'])
+			echo $this->divider;
 		echo $this->shielder."Generated from MultiMag (http://multimag.tndproject.org), for http://".$CONFIG['site']['name'].$this->shielder;
 		$this->line++;
 		echo"\n";
+		if(@$CONFIG['site']['price_show_vc'])
+			echo $this->divider;
 		echo $this->shielder."Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://".$CONFIG['site']['name'].$this->shielder;
 	}
 
-	/// Сформировать строку прайса
+	/// Сформировать строки прайса
 	function writepos($group=0)	{
-		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`
+		global $CONFIG;
+		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
@@ -107,6 +117,8 @@ class PriceWriterCSV extends BasePriceWriter
 			$c = getCostPos($nxt[0], $this->cost_id);
 			if($c==0)	continue;
 			if(($this->view_proizv)&&($nxt[3])) $pr=" (".$nxt[3].")"; else $pr="";
+			if(@$CONFIG['site']['price_show_vc'])
+				echo $this->shielder.$nxt[4].$this->shielder.$this->divider;
 			echo $this->shielder.$nxt[1].$pr.$this->shielder.$this->divider.$this->shielder.$c.$this->shielder;
 
  			$this->line++;
