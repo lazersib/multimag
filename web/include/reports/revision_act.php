@@ -402,22 +402,21 @@ class Report_Revision_Act extends BaseReport {
 
 			$pdf->Ln();
 			if (!$sendmail)
-				$pdf->Output('akt_sverki.pdf', 'I');
+				$pdf->Output('rev_act.pdf', 'I');
 			else {
 				/// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 				$data = $pdf->Output('rev_act.pdf', 'S');
-				;
 
 				require_once($CONFIG['location'] . '/common/email_message.php');
 
 				$email_message = new email_message_class();
 				$email_message->default_charset = "UTF-8";
-				if ($fn)	$email_message->SetEncodedEmailHeader("To", $email, $agent['fullname']);
+				if ($fn)	$email_message->SetEncodedEmailHeader("To", $email, $fn);
 				else		$email_message->SetEncodedEmailHeader("To", $email, $email);
 
 				$email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - акт сверки ({$CONFIG['site']['name']})");
 
-				$res = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `id`='{$_SESSION['uid']}'");
+				$res = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
 				if($res->num_rows)
 					$doc_autor = $res->fetch_assoc();
 				else	$doc_autor = array('worker_email'=>'');
@@ -425,11 +424,11 @@ class Report_Revision_Act extends BaseReport {
 				if (!$doc_autor['worker_email']) {
 					$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
 					$email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
-					$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!\nДля переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
+					$text_message = "Здравствуйте, {$fn}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!\nДля переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
 				} else {
 					$email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
 					$email_message->SetHeader("Sender", $doc_autor['worker_email']);
-					$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$CONFIG['site']['name']}\n\nОтветственный сотрудник: {$doc_autor['worker_real_name']}\nКонтактный телефон: {$doc_autor['worker_phone']}\nЭлектронная почта (e-mail): {$doc_autor['worker_email']}";
+					$text_message = "Здравствуйте, {$fn}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$CONFIG['site']['name']}\n\nОтветственный сотрудник: {$doc_autor['worker_real_name']}\nКонтактный телефон: {$doc_autor['worker_phone']}\nЭлектронная почта (e-mail): {$doc_autor['worker_email']}";
 					$text_message.="\nОтправитель: {$_SESSION['name']}";
 				}
 				$email_message->AddQuotedPrintableTextPart($text_message);
