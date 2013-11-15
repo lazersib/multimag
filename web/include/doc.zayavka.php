@@ -519,7 +519,7 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->SetFont('','U',10);
 		$str='Счёт действителен в течение трёх банковских дней!';
 		$pdf->CellIconv(0,5,$str,0,1,'C',0);
-		
+
 		$pdf->SetFont('','',11);
 		$str='Образец заполнения платёжного поручения:';
 		$pdf->CellIconv(0,5,$str,0,1,'C',0);
@@ -563,9 +563,17 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->lMargin=$old_margin;
 		$pdf->SetY($old_y+30);
 
+				
+		if( @$CONFIG['doc']['invoice_header'] ) {
+			$pdf->ln(2);
+			$pdf->SetFont('','',14);
+			$pdf->MultiCellIconv(0, 6, $CONFIG['doc']['invoice_header'], 1, 'C', 0);			
+		}
+		
+		
 		$pdf->SetFont('','',16);
 		$str='Счёт № '.$this->doc_data['altnum'].', от '.date("d.m.Y", $this->doc_data['date']);		
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
+		$pdf->CellIconv(0,6,$str,0,1,'L',0);
 		$pdf->SetFont('','',8);
 		$str="Поставщик: {$this->firm_vars['firm_name']}, {$this->firm_vars['firm_adres']}, тел: {$this->firm_vars['firm_telefon']}";
 		$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);
@@ -711,14 +719,17 @@ class doc_Zayavka extends doc_Nulltype
 			$pdf->CellIconv(0,4,$str,0,1,'L',0);
 		}
 
-		$res = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data['user']}'");
+		$res = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email`, `worker_post_name` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data['user']}'");
 		if($res->num_rows) {
 			$worker_info = $res->fetch_assoc();
 			$pdf->SetAutoPageBreak(0,10);
 			$pdf->SetY($pdf->h-18);
 			$pdf->Ln(1);
 			$pdf->SetFont('','',10);
-			$str="Отв. оператор ".$worker_info['worker_real_name'];
+			
+			if($worker_info['worker_post_name'])
+				$str = $worker_info['worker_post_name'].' '.$worker_info['worker_real_name'];
+			else	$str="Сотрудник ".$worker_info['worker_real_name'];
 			$pdf->CellIconv(0,4,$str,0,1,'R',0);
 			$str="Контактный телефон: ".$worker_info['worker_phone'];
 			$pdf->CellIconv(0,4,$str,0,1,'R',0);
