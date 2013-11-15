@@ -81,9 +81,57 @@ abstract class ajaxRequest {
 };
 
 /// Обработчик ajax запросов журнала документов
-class ajaxRequest_DocJournal extends ajaxRequest {
+/// Выдача содержит лишь данные документов, без связанных справочников
+class ajaxRequest_DocList extends ajaxRequest {
+	
+	/// @brief Получить строку фильтров
+	/// @return Возвращает WHERE часть SQL запроса к таблице журнала документов
+	protected function getFilter() {
+		$filter = '';
+		if(is_array($this->options)) {
+			foreach ($this->options as $key=>$value) {
+				switch($key) {
+					case 'df':	// Date from
+						$filter.=' AND `doc_list`.`date`>='.strtotime($value);
+						break;
+					case 'dt':	// Date to
+						$filter.=' AND `doc_list`.`date`>='.strtotime($value);
+						break;
+					case 'an':	// Alternative number
+						$filter.=' AND `doc_list`.`altnum`='.$db->real_escape_string($value);
+						break;
+					case 'st':	// Subtype
+						$filter.=' AND `doc_list`.`subtype`=\''.$db->real_escape_string($value).'\'';
+						break;
+					case 'fi':	// Firm id
+						$filter.=' AND `doc_list`.`firm_id`='.intval($value);
+						break;
+				}		
+			}
+		}
+		return $filter;
+	}
+	
+	/// @brief Получить json данные журнала документов
 	public function getJsonData($page = 0) {
+		$start = intval($page) * $this->limit + 1;		
+		$sql_filter = $this->getFilter();
 		
+		$sql = "SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`,
+			`doc_list`.`user` AS `author_id`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_list`.`err_flag`, `doc_list`.`p_doc`,
+			`doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`, `na_sklad_t`.`value` AS `nasklad_id`
+		FROM `doc_list`
+		LEFT JOIN `doc_dopdata` AS `na_sklad_t` ON `na_sklad_t`.`doc`=`doc_list`.`id` AND `na_sklad_t`.`param`='na_sklad'
+		WHERE 1 $sql_filter
+		ORDER by `doc_list`.`date` DESC
+		LIMIT $start,{$this->limit}";
+		
+		$result = '';
+		
+		while ($line = $res->fetch_assoc()) {
+			if ($result)	$result.=",";
+			$result .= json_encode($line, JSON_UNESCAPED_UNICODE);
+		}
 	}
 };
 

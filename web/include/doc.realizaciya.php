@@ -2178,6 +2178,8 @@ function Nacenki($to_str=0)
 	$cost = sprintf("%01.2f", $sum);
 	$srazn = sprintf("%01.2f", $srazn);
 	$snac = sprintf("%01.2f", $snac);
+	$row = array('', 'Итого:', '', '', $cost, '', '', $snac, '', '', $srazn);
+	$pdf->RowIconv($row);
 
 //	$tmpl->AddText("<tr>
 //<td colspan='2'><b>ИТОГО:</b><td>$cnt<td><td>$cost<td><td><td>$snac<td><td><td>$srazn

@@ -106,6 +106,7 @@ else if($_REQUEST['mode']=='get'){
 		WHERE 1 $sql_filter
 		ORDER by `doc_list`.`date` DESC
 		LIMIT $fl,$lines";
+		
 		$starttime = microtime(true);
 		$res = $db->query($sql);
 		$jdata = "";

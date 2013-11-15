@@ -154,9 +154,9 @@ class ds_zp_s_prodaj {
 				// Проверка факта оплаты
 				$add = '';
 				if ($nxt['p_doc'])
-					$add = " OR (`p_doc`='{$nxt['p_doc']}' AND (`type`='4' OR `type`='6'))";
+					$add = " OR `p_doc`='{$nxt['p_doc']}'";
 				$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list`
-					WHERE (`p_doc`='{$nxt['id']}' AND (`type`='4' OR `type`='6')) $add AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+					WHERE (`p_doc`='{$nxt['id']}' $add) AND (`type`='4' OR `type`='6') AND `ok`>0");
 				
 				$ok_pay = 0;
 				if($rs->num_rows) {
@@ -164,7 +164,8 @@ class ds_zp_s_prodaj {
 					$prop = round($pp[0], 2);
 					if ($prop >= $nxt['sum']) $ok_pay = 1;
 					
-				}else if (agentCalcDebt($nxt['agent_id']) <= 0)  $ok_pay = 1;
+				}
+				if (agentCalcDebt($nxt['agent_id']) <= 0)  $ok_pay = 1;
 
 				$date = date("Y-m-d H:i:s", $nxt['date']);
 
@@ -173,7 +174,7 @@ class ds_zp_s_prodaj {
 				$out_line = "<tr class='$cl'>
 					<td><a href='/doc.php?mode=body&doc={$nxt['id']}'>{$nxt['id']}</a></td>
 					<td>".html_out($nxt['zuser_name'])."</td><td>".html_out($nxt['ruser_name'])."</td>
-					<td>".html_out($nxt['agent_name'])."</td><td>$date</td><td>{$nxt['sum']}</td><td>{$nxt['ag_sum']}</td><td>";
+					<td>".html_out($nxt['agent_name'])."</td><td>$date</td><td>{$nxt['sum']} / $prop</td><td>{$nxt['ag_sum']}</td><td>";
 				
 				if (!$nxt['zp_s_prodaj']) {
 					if($ok_pay) {
