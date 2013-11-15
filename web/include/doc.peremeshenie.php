@@ -87,6 +87,10 @@ class doc_Peremeshenie extends doc_Nulltype
 		$tim = time();
 		$nasklad = (int) $this->dop_data['na_sklad'];
 		if(!$nasklad)	throw new Exception("Не определён склад назначения!");
+		
+		if($this->doc_data['sklad']==$nasklad)
+				throw new Exception("Исходный склад совпадает со складом назначения!");
+		
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`

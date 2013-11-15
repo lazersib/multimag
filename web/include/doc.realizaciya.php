@@ -64,7 +64,7 @@ class doc_Realizaciya extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl, $db;
-
+		
 		$cur_agent = $this->doc_data['agent'];
 		if(!$cur_agent)		$cur_agent=1;
 		$klad_id=@$this->dop_data['kladovshik'];
@@ -206,6 +206,10 @@ class doc_Realizaciya extends doc_Nulltype
 
 		if(!@$this->dop_data['kladovshik'] && @$CONFIG['doc']['require_storekeeper'] && !$silent)	throw new Exception("Кладовщик не выбран!");
 		if(!@$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent)	throw new Exception("Количество мест не задано");
+		
+		if(!$silent)
+			$db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
+		
 		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -218,12 +222,13 @@ class doc_Realizaciya extends doc_Nulltype
 			{
 				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])': на складе только $nxt[2] шт!");
 			}
+			
 			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
-
+			
 			if(!$nx['dnc'] && (!$silent))
 			{
-				$budet = getStoreCntOnDate($nxt[0], $nx['sklad']);
-				if( $budet<0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])'!");
+				$budet = getStoreCntOnDate($nxt[0], $nx['sklad'], $nx['date']);
+				if( $budet < 0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])'!");
 			}
 
 			if(@$CONFIG['poseditor']['sn_restrict'])
@@ -232,6 +237,9 @@ class doc_Realizaciya extends doc_Nulltype
 				list($sn_cnt) = $r->fetch_row();
 				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
 			}
+			
+			
+			
 			$bonus+=$nxt[8]*$nxt[1]*(@$CONFIG['bonus']['coeff']);
 		}
 
@@ -243,7 +251,7 @@ class doc_Realizaciya extends doc_Nulltype
 
 		if($silent)	return;
 		$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
-		$db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
+		
 		$this->sentZEvent('apply');
 	}
 

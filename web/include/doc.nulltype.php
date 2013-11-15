@@ -265,12 +265,14 @@ class doc_Nulltype
 		if( !$this->doc )	return 0;
 		if( !$this->sklad_editor_enable )
 			return $this->doc_data['sum'];
+		$old_sum = $this->doc_data['sum'];
 		$sum=0;
-		$res=$db->query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `page`='0'");
+		$res = $db->query("SELECT `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='{$this->doc}' AND `page`='0'");
 		while($nxt=$res->fetch_row())
 			$sum+=$nxt[0]*$nxt[1];
 		$res->free();
-		$this->setDocData('sum', $sum);
+		if(round($sum, 2) != round($old_sum, 2) )
+			$this->setDocData('sum', $sum);
 		return $sum;
 	}
 	
@@ -310,6 +312,7 @@ class doc_Nulltype
 			throw new Exception("Невозможно создать документ без типа!");
 		else
 		{
+			$tmpl->setTitle($this->doc_viewname . ' N' . $this->doc);
 			if($this->doc_name) $object='doc_'.$this->doc_name;
 			else $object='doc';
 			if(!isAccess($object,'view'))	throw new AccessException();
@@ -596,6 +599,7 @@ class doc_Nulltype
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 		if(!isAccess($object,'view'))	throw new AccessException("");
+		$tmpl->setTitle($this->doc_viewname . ' N' . $this->doc);
 		$dt=date("Y-m-d H:i:s",$this->doc_data['date']);
 		doc_menu($this->getDopButtons());
 		$tmpl->addContent("<div id='doc_container'>

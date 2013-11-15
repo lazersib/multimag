@@ -40,18 +40,36 @@ class doc_ZSbor extends doc_Nulltype {
 
 	/// Формирование другого документа на основании текущего
 	function MorphTo($target_type) {
-		global $tmpl;
+		global $tmpl, $db;
 
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
-			//$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=t2'\">Сборка</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=8'\">Перемещение</div>");
 		}
-		else if ($target_type == '1') {
-			if (!isAccess('doc_zayavka', 'create'))
+		else if ($target_type == '8') {
+			if (!isAccess('doc_peremeshenie', 'create'))
 				throw new AccessException();
-			$new_doc = new doc_Zayavka();
-			$dd = $new_doc->createFromP($this);
-			$new_doc->setDopData('cena', $this->dop_data['cena']);
+			$new_doc = new doc_Peremeshenie();
+			$dd = $new_doc->createFrom($this);
+			$new_doc->setDopData('na_sklad', $this->doc_data['sklad']);
+			$res = $db->query("SELECT `doc_base_kompl`.`kompl_id`, SUM(`doc_base_kompl`.`cnt`*`doc_list_pos`.`cnt`) AS `cnt`,
+				`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`cost`
+			FROM `doc_list_pos`
+			INNER JOIN `doc_base_kompl` ON `doc_base_kompl`.`pos_id` = `doc_list_pos`.`tovar`
+			INNER JOIN `doc_base` ON `doc_base_kompl`.`kompl_id` = `doc_base`.`id`
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id` = `doc_base_kompl`.`kompl_id` AND `doc_base_cnt`.`sklad` = '{$this->doc_data['sklad']}'
+			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`=0
+			GROUP BY  `doc_base_kompl`.`kompl_id`
+			ORDER BY `doc_list_pos`.`id`");
+			while($nxt = $res->fetch_assoc()) {
+				if($nxt['cnt'] > $nxt['sklad_cnt'])
+					$need_cnt = $nxt['cnt'] - $nxt['sklad_cnt'];
+				else	$need_cnt = 0;
+			
+				$db->insertA( 'doc_list_pos',  array('doc'=>$dd, 'tovar'=>$nxt['kompl_id'], 'cnt'=>$need_cnt, 'cost'=>$nxt['cost']));
+			}
+			
+			
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 	}
@@ -106,7 +124,7 @@ class doc_ZSbor extends doc_Nulltype {
 			INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			INNER JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id` = `doc_base_kompl`.`kompl_id` AND `doc_base_cnt`.`sklad` = '{$this->doc_data['sklad']}'
-			WHERE `doc_list_pos`.`doc`='{$this->doc}'
+			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`=0
 			GROUP BY  `doc_base_kompl`.`kompl_id`
 			ORDER BY `doc_list_pos`.`id`");
 		$i = 0;
