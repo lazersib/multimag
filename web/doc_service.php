@@ -32,6 +32,7 @@ if(!isAccess('doc_service','view'))	throw new AccessException("Нет досту
 if($mode=='')
 {
 	doc_menu();
+	$tmpl->setTitle("Служебные функции");
 	$tmpl->addContent("<h1>Служебные функции</h1>
 	<ul class='items'>
 	<li><a href='?mode=merge_agent'>Группировка агентов</a></li>
@@ -45,6 +46,7 @@ if($mode=='')
 	<li><a href='?mode=param_collections'>Настройки наборов свойств складской номенклатуры</a></li>
 	<li><a href='?mode=auinfo'>Документы, изменённые после проведения</a></li>
 	<li><a href='?mode=pcinfo'>Информация по изменениям в номеклатуре</a></li>
+	<li><a href='?mode=types'>Редактор типов товаров</a></li>
 	</ul>");
 }
 else if($mode=='merge_agent')
@@ -715,6 +717,57 @@ else if($mode=='param_collections')
 
 	$tmpl->addContent("Новый набор: <input type='text' name='name' value=''><br>");
 	$tmpl->addContent("<button>Сохранить</button></form>");
+}
+else if($mode=='types') {
+	
+	function typesTable($tmpl, $db) {
+		$res = $db->query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
+		if($res->num_rows) {
+			$tmpl->addContent("<table class='list'><th>ID</th><th>Название</th></tr>");
+			while($nxt = $res->fetch_row()) {
+				$tmpl->addContent("<tr><td><a href='/doc_service.php?mode=types&amp;opt=edit&amp;id=$nxt[0]'>$nxt[0]</a></td><td>$nxt[1]</td></tr>");
+			}
+			$tmpl->addContent("</table>");
+		}	
+	}
+	
+	function editForm($tmpl, $id = -1, $name = '') {
+		$tmpl->addContent("<form method='post'>
+		<input type='hidden' name='mode' value='types'>
+		<input type='hidden' name='opt' value='save'>
+		<input type='hidden' name='id' value='$id'>
+		<fieldset><legend>");
+		if($id>=0)	$tmpl->addContent("Правка типа");
+		else		$tmpl->addContent("Новый тип");
+		$tmpl->addContent("</legend>Наименование:<br>
+		<input type='text' name='name' value='".html_out($name)."'><br>
+		<button type='submit'>Сохранить</button>
+		</fieldset>
+		</form>");
+	}
+	
+	doc_menu();
+	$opt = request('opt');
+	$id = rcvint('id');
+	$tmpl->addContent("<h1>Редактор типов товаров</h1>");
+	$tmpl->setTitle("Редактор типов товаров");
+	
+	if($opt == 'save') {
+		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
+		if($id<0)	$db->insertA('doc_base_dop_type', array('name' => request('name')));
+		else		$db->update('doc_base_dop_type', $id, 'name', request('name'));
+		$tmpl->msg("Данные сохранены", "ok");
+	}
+	
+	if($opt == 'edit' && isAccess('doc_service', 'edit')) {
+		$row = $db->selectRow('doc_base_dop_type', $id);
+		if($row)	editForm($tmpl, $row['id'], $row['name']);
+	}
+	
+	typesTable($tmpl, $db);
+	
+	if(isAccess('doc_service','edit') && ($opt == '' || $opt == 'save'))
+		editForm($tmpl);
 }
 else if($mode=='auinfo')
 {
