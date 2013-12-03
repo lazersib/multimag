@@ -213,7 +213,7 @@ function PosEditorInit(base_url, editable)
 		{
 			var json=eval('('+msg+')');
 			if(json.response==0)
-				jAlert(json.message,"Ошибка", {}, 'icon_err');
+				jAlert(json.message,"Ошибка", null, 'icon_err');
 			else if(json.response==2)
 			{
 				for(var i=0;i<json.content.length;i++)

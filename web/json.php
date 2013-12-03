@@ -44,7 +44,7 @@ abstract class ajaxRequest {
 	protected $fields = ''; //< Набор полей
 	protected $order_field = false; //< Поле, по которому будет выполнена сортировка
 	protected $order_reverse = false; //< Обратное направление сортировки (от большего к меньшему)
-	protected $limit = 30; //< лимит на количество строк в ответе
+	protected $limit = 300; //< лимит на количество строк в ответе
 
 	/// Устанавливает опции в значение value
 	public function setOptions($value) {
@@ -80,7 +80,7 @@ abstract class ajaxRequest {
 	abstract public function getJsonData($page = 0);
 };
 
-/// Обработчик ajax запросов журнала документов
+/// Обработчик ajax запросов списка документов
 /// Выдача содержит лишь данные документов, без связанных справочников
 class ajaxRequest_DocList extends ajaxRequest {
 	
@@ -112,8 +112,9 @@ class ajaxRequest_DocList extends ajaxRequest {
 		return $filter;
 	}
 	
-	/// @brief Получить json данные журнала документов
+	/// @brief Получить json данные списка документов
 	public function getJsonData($page = 0) {
+		global $db;
 		$start = intval($page) * $this->limit + 1;		
 		$sql_filter = $this->getFilter();
 		
@@ -127,13 +128,36 @@ class ajaxRequest_DocList extends ajaxRequest {
 		LIMIT $start,{$this->limit}";
 		
 		$result = '';
-		
+		$res = $db->query($sql);
 		while ($line = $res->fetch_assoc()) {
 			if ($result)	$result.=",";
+			else		$result = '[';
+			$line['date'] = date("Y-m-d H:i:s", $line['date']);
 			$result .= json_encode($line, JSON_UNESCAPED_UNICODE);
 		}
+		$result .= ']';
+		return $result;
 	}
 };
+
+/// Обработчик ajax запросов списка типов документов
+class ajaxRequest_doctypes extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db;
+		$sql = "SELECT `id`, `name` FROM `doc_types` ORDER by `id` ASC";
+		$result = '';
+		$a = array('');
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			//if ($result)	$result.=",";
+			//$result .= json_encode($line, JSON_UNESCAPED_UNICODE);
+			$a[$line['id']] = $line['name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
 
 function ajax_autoload($class_name){
 	global $CONFIG;
@@ -145,10 +169,14 @@ try {
 	$tmpl->ajax = 1;
 	need_auth();
 	ob_start();
+	$starttime = microtime(true);
 	spl_autoload_register('ajax_autoload');
 	$c = request('c');
 	if(!$c)	throw new Exception ('Список компонентов не задан');
 	$components = explode(',', $c);
+	
+	$result = "{\"result\":\"ok\"";
+	
 	foreach($components as $component) {
 		$class_name = 'ajaxRequest_'.$component;
 		$request = new $class_name;
@@ -165,8 +193,11 @@ try {
 		
 		$p = rcvint('p');
 		$data = $request->getJsonData($p);
-		echo $data;
+		$result.=",\"$component\":$data";
 	}
+	$exec_time = round(microtime(true) - $starttime, 3);
+	$result .= ",\"exec_time\":\"$exec_time\"}";
+	echo $result;
 }
 catch(AccessException $e) {
 	ob_end_clean();

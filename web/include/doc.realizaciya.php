@@ -277,9 +277,9 @@ class doc_Realizaciya extends doc_Nulltype
 		$this->sentZEvent('cancel');
 	}
 
-	// Формирование другого документа на основании текущего
-	function MorphTo($target_type)
-	{
+	/// Формирование другого документа на основании текущего
+	/// @param target_type ID типа создаваемого документа
+	function MorphTo($target_type) {
 		global $tmpl, $db;
 	
 		if($target_type=='')
@@ -315,9 +315,9 @@ class doc_Realizaciya extends doc_Nulltype
 			if(!isAccess('doc_pbank','create'))	throw new AccessException("");
 			$sum = $this->recalcSum();
 			$db->startTransaction();			
-			$new_doc = new doc_Pko();
+			$new_doc = new doc_Pbank();
 			$dd = $new_doc->createFrom($this);
-			$new_doc->setDocData('kassa', 1);
+			$new_doc->setDocData('bank', 1);
 			$db->commit();
 			$ref="Location: doc.php?mode=body&doc=".$dd;
 			header($ref);
@@ -1678,9 +1678,9 @@ function SfakPDF($to_str=0)
 		(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6') AND `date`<='{$this->doc_data['date']}' ) OR
 		(`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6') AND `date`<='{$this->doc_data['date']}')
 		AND `ok`>'0' AND `p_doc`!='0' GROUP BY `p_doc`");
-		if($res->num_rows)
+		if($rs->num_rows)
 		{
-			$line = $res->fetch_row();
+			$line = $rs->fetch_row();
 			$pp = $line[1];
 			$ppdt = date("d.m.Y", $line[2]);
 			if(!$pp) $pp = $line[0];

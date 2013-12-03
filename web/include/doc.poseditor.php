@@ -400,6 +400,8 @@ function AddPos($pos) {
 		$line['line_id'] = $pos_line;
 		$line['pos_id'] = $line['id'];
 		$line['gtd'] = '';
+		if(! @$CONFIG['doc']['no_print_vendor'])
+				$line['name'].=' - '.$line['vendor'];
 		$ret="{ response: '1', add: ".json_encode($line, JSON_UNESCAPED_UNICODE).", sum: '$doc_sum' }";
 	}
 	else {
@@ -466,7 +468,7 @@ function UpdateLine($line_id, $type, $value)
 		$db->update('doc_list_pos', $line_id, 'gtd', $value);
 		$doc_sum = $this->doc_obj->recalcSum();
 		doc_log("UPDATE","change gtd: pos:{$nxt['tovar']}, line_id:$line_id, gtd:{$nxt['gtd']} => $value",'doc',$this->doc);
-		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt['cost']}', cost: '{$nxt['cost']}', gtd: '{$value}'}, sum: '$doc_sum' }";
+		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', gtd: '{$value}'}, sum: '$doc_sum' }";
 	}
 	else if($type=='comm' && $value!=$nxt[5])
 	{
@@ -474,7 +476,7 @@ function UpdateLine($line_id, $type, $value)
 		doc_log("UPDATE","change comm: pos:{$nxt['tovar']}, line_id:$line_id, comm:{$nxt['comm']} => $value",'doc',$this->doc);
 		return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', comm: '{$value}'} }";
 	}
-	else return "{ response: '0', message: 'value: $value, type:$type, line_id:$line_id'}";
+	else return "{ response: '4', update: { line_id: '$line_id', cnt: '{$nxt['cnt']}', cost: '{$nxt['cost']}', gtd: '{$nxt['gtd']}'}}";
 }
 
 function SerialNum($action, $line_id, $data)

@@ -36,7 +36,7 @@ function __construct()
 /// Проверка и исполнение recode-запроса
 function ProbeRecode()
 {
-	global $tmpl, $CONFIG;
+	global $CONFIG;
 	/// Обрабатывает запросы-ссылки  вида http://example.com/vitrina/ig/5.html
 	/// Возвращает false в случае неудачи.
 	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
@@ -540,7 +540,8 @@ protected function ProductCard($product)
 	WHERE `doc_base`.`id`=$product
 	ORDER BY `doc_base`.`name` ASC LIMIT 1");
 	$i=0;
-	if($product_data=$res->fetch_assoc())
+	$product_data=$res->fetch_assoc();
+	if($product_data)
 	{
 		$product_name_html=html_out($product_data['group_printname'].' '.$product_data['name']);
 
@@ -611,7 +612,7 @@ protected function ProductCard($product)
 				$midiimg->SetY(220);
 				$fullimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
 				$fullimg->SetY(800);
-				$originimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
+				//$originimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
 				if($res->num_rows>1)
 					$img_mini.="<a href='".$midiimg->GetURI()."' onclick=\"return setPhoto({$img_data['img_id']});\"><img src='".$miniimg->GetURI()."' alt='{$img_data['name']}'></a>";
 				$appends.="midiphoto.appendImage({$img_data['img_id']},'".$midiimg->GetURI(1)."', '".$fullimg->GetURI(1)."');\n";
@@ -632,7 +633,7 @@ protected function ProductCard($product)
 		}
 		</script>");
 
-		$tmpl->addContent("<td class='field'>Наименование:</td><td>".html_out($product_data['name']."</td></tr>"));
+		$tmpl->addContent("<td class='field'>Наименование:</td><td>".html_out($product_data['name'])."</td></tr>");
 		if($product_data['vc']) $tmpl->addContent("<tr><td class='field'>Код производителя:</td><td>".html_out($product_data['vc'])."</td></tr>");
 		if($product_data['desc'])
 		{
@@ -755,7 +756,6 @@ protected function Basket()
 {
 	global $tmpl, $CONFIG, $db;
 	$s='';
-	$cc=0;
 	$sum=0;
 	$exist=0;
 	$i=1;
@@ -924,7 +924,7 @@ protected function DeliveryTypeForm()
 /// Форма *регион доставки*
 protected function DeliveryRegionForm()
 {
-	global $tmpl;
+	global $tmpl, $db;
 	$tmpl->setContent("<h1>Регион доставки</h1>");
 	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='delivery'>
@@ -973,7 +973,7 @@ protected function Buy()
 /// Поэлементный список подгрупп
 protected function GroupList_ItemStyle($group)
 {
-	global $tmpl, $CONFIG, $db;
+	global $tmpl, $db;
 	settype($group,'int');
 	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
 	$tmpl->addStyle(".vitem { width: 250px; float: left; font-size:	14px; } .vitem:before{content: '\\203A \\0020' ; } hr.clear{border: 0 none; margin: 0;}");
@@ -1017,7 +1017,6 @@ protected function TovList_SimpleTable($res, $lim)
 	global $tmpl, $CONFIG;
 	$tmpl->addContent("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена<th>Купить</tr>");
 	$cc=$i=0;
-	$cl="lin0";
 	$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
 	while($nxt=$res->fetch_assoc())
 	{
@@ -1042,7 +1041,6 @@ protected function TovList_ImageList($res, $lim)
 {
 	global $tmpl, $CONFIG;
 	$cc=$i=0;
-	$cl="lin0";
 
 	$tmpl->addStyle(".pitem	{
 		float:			left;
@@ -1088,7 +1086,7 @@ protected function TovList_ImageList($res, $lim)
 		<a href='$link'>$img</a>
 		<a href='$link'>".html_out($nxt['name'])."</a><br>
 		<b>Код:</b> ".html_out($nxt['vc'])."<br>
-		<b>Цена:</b> $cost руб. / {$nxt['units']}<br>
+		<b>Цена:</b> <span{$cce}>$cost руб.</span> / {$nxt['units']}<br>
 		<b>Производитель:</b> ".html_out($nxt['proizv'])."<br>
 		<b>Кол-во:</b> $nal<br>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
@@ -1106,7 +1104,6 @@ protected function TovList_ExTable($res, $lim)
 	global $tmpl, $CONFIG;
 	$tmpl->addContent("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена <th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>Купить</tr>");
 	$cc=0;
-	$cl="lin0";
 	$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
 	while($nxt=$res->fetch_assoc())
 	{
@@ -1125,7 +1122,7 @@ protected function TovList_ExTable($res, $lim)
 /// Форма аутентификации при покупке. Выдаётся, только если посетитель не вошёл на сайт
 protected function BuyAuthForm()
 {
-	global $tmpl, $CONFIG;
+	global $tmpl;
 	$tmpl->setTitle("Оформление зкакза");
 	$tmpl->addContent("<p id='text'>Для использования всех возможностей этого сайта необходимо пройти процедуру регистрации. Регистрация не сложная, и займёт всего несколько минут.
 	Кроме того, все зарегистрированные пользователи получают возможность приобретать товары по специальным ценам.</p>
@@ -1141,7 +1138,7 @@ protected function BuyAuthForm()
 /// Заключительная форма оформления покупки
 protected function BuyMakeForm()
 {
-	global $tmpl, $CONFIG, $db;
+	global $tmpl, $CONFIG;
 	if(@$_SESSION['uid'])
 	{
 		$up=getUserProfile($_SESSION['uid']);
@@ -1444,7 +1441,7 @@ protected function Payment()
 	if($res->num_rows)		$tmpl->msg("Этот заказ уже оплачен!");
 	else
 	{
-		$res=$db->query("SELECT `doc_list`.`id`, `dd_pt`.`value` AS `pay_type` FROM `doc_list`
+		$res=$db->query("SELECT `doc_list`.`id`, `dd_pt`.`value` AS `pay_type`, `doc_list`.`altnum` FROM `doc_list`
 		LEFT JOIN `doc_dopdata` AS `dd_pt` ON `dd_pt`.`doc`=`doc_list`.`id` AND `dd_pt`.`param`='pay_type'
 		WHERE `doc_list`.`id`='$order_id' AND `doc_list`.`type`='3'");
 
@@ -1476,7 +1473,7 @@ protected function Payment()
 		}
 		else if($order_info['pay_type']=='bank')
 		{
-			$tmpl->msg("Номер счёта: $doc/$altnum. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
+			$tmpl->msg("Номер счёта: $order_id/{$order_info['altnum']}. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
 			$tmpl->addContent("<a href='?mode=print_schet'>Получить счёт</a>");
 		}
 		else throw new Exception("Данный тип оплаты ({$order_info['pay_type']}) не поддерживается!");
