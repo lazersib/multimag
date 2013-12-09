@@ -734,7 +734,8 @@ class AccessException extends Exception
 {
 	function __construct($text='')
 	{
-		parent::__construct($text);
+		header('HTTP/1.0 403 Forbidden');
+		parent::__construct("Нет доступа: ".$text);
 	}
 };
 

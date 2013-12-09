@@ -154,6 +154,8 @@ class doc_Nulltype
 		$line_id = $db->insertA('doc_list', $data);
 		$this->doc = $line_id;
 		doc_log("CREATE", "FROM {$doc_data['id']} {$from}", 'doc', $this->doc);
+		unset($this->doc_data);
+		unset($this->dop_data);
 		$this->get_docdata();
 		return $this->doc;
 	}
@@ -164,6 +166,7 @@ class doc_Nulltype
 		$doc_data=$doc_obj->doc_data;
 		$doc_data['p_doc']=$doc_obj->doc;
 		$this->create($doc_data);
+		
 		return $this->doc;
 	}
 	

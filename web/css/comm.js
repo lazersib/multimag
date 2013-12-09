@@ -540,15 +540,6 @@ function hasClass(elem, className) {
 //     else status.innerHTML="state "+httpRequest.readyState;
 // }
 
-function OpenW(url)
-{
-	window.open(url, '_blank',
-	 "width=400,height=200,left=900,resizable=no,scrollbars=yes,status=no");
-
-}
-
-
-
 function ShowHide(elID)
 {
    obj=document.getElementById(elID);

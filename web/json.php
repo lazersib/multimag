@@ -44,7 +44,7 @@ abstract class ajaxRequest {
 	protected $fields = ''; //< Набор полей
 	protected $order_field = false; //< Поле, по которому будет выполнена сортировка
 	protected $order_reverse = false; //< Обратное направление сортировки (от большего к меньшему)
-	protected $limit = 300; //< лимит на количество строк в ответе
+	protected $limit = 500; //< лимит на количество строк в ответе
 
 	/// Устанавливает опции в значение value
 	public function setOptions($value) {
@@ -87,6 +87,7 @@ class ajaxRequest_DocList extends ajaxRequest {
 	/// @brief Получить строку фильтров
 	/// @return Возвращает WHERE часть SQL запроса к таблице журнала документов
 	protected function getFilter() {
+		global $db;
 		$filter = '';
 		if(is_array($this->options)) {
 			foreach ($this->options as $key=>$value) {
@@ -95,7 +96,7 @@ class ajaxRequest_DocList extends ajaxRequest {
 						$filter.=' AND `doc_list`.`date`>='.strtotime($value);
 						break;
 					case 'dt':	// Date to
-						$filter.=' AND `doc_list`.`date`>='.strtotime($value);
+						$filter.=' AND `doc_list`.`date`<='.strtotime($value);
 						break;
 					case 'an':	// Alternative number
 						$filter.=' AND `doc_list`.`altnum`='.$db->real_escape_string($value);
@@ -106,6 +107,15 @@ class ajaxRequest_DocList extends ajaxRequest {
 					case 'fi':	// Firm id
 						$filter.=' AND `doc_list`.`firm_id`='.intval($value);
 						break;
+					case 'sk':	// Store
+						$filter.=' AND `doc_list`.`sklad`='.intval($value);
+						break;
+					case 'bk':{	// bank/kassa
+						if($value[0]=='b')
+							$filter.=' AND `doc_list`.`bank`='.intval(substr($value,1));
+						else if($value[0]=='k')
+							$filter.=' AND `doc_list`.`kassa`='.intval(substr($value,1));
+						}break;
 				}		
 			}
 		}
@@ -118,24 +128,30 @@ class ajaxRequest_DocList extends ajaxRequest {
 		$start = intval($page) * $this->limit + 1;		
 		$sql_filter = $this->getFilter();
 		
-		$sql = "SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`,
-			`doc_list`.`user` AS `author_id`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_list`.`err_flag`, `doc_list`.`p_doc`,
-			`doc_list`.`kassa`, `doc_list`.`bank`, `doc_list`.`sklad`, `na_sklad_t`.`value` AS `nasklad_id`
+		$sql = "SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent` AS `agent_id`, `doc_list`.`contract` AS `contract_id`, `doc_list`.`ok`,
+			`doc_list`.`date`, `doc_list`.`kassa` AS `kassa_id`, `doc_list`.`bank` AS `bank_id`, `doc_list`.`sklad` AS `sklad_id`,
+			`doc_list`.`user` AS `author_id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`mark_del`, `doc_list`.`firm_id`,
+			`doc_list`.`err_flag`, `doc_list`.`p_doc`, `na_sklad_t`.`value` AS `nasklad_id`, `v_kassu_t`.`value` AS `vkassu_id`
 		FROM `doc_list`
 		LEFT JOIN `doc_dopdata` AS `na_sklad_t` ON `na_sklad_t`.`doc`=`doc_list`.`id` AND `na_sklad_t`.`param`='na_sklad'
+		LEFT JOIN `doc_dopdata` AS `v_kassu_t` ON `v_kassu_t`.`doc`=`doc_list`.`id` AND `v_kassu_t`.`param`='v_kassu'
 		WHERE 1 $sql_filter
 		ORDER by `doc_list`.`date` DESC
 		LIMIT $start,{$this->limit}";
 		
-		$result = '';
+		$result = array();
 		$res = $db->query($sql);
 		while ($line = $res->fetch_assoc()) {
-			if ($result)	$result.=",";
-			else		$result = '[';
+			//if ($result)	$result.=",";
+			//else		$result = '[';
 			$line['date'] = date("Y-m-d H:i:s", $line['date']);
-			$result .= json_encode($line, JSON_UNESCAPED_UNICODE);
+			if($line['nasklad_id']=='null')	unset($line['nasklad_id']);
+			if($line['vkassu_id']=='null')	unset($line['vkassu_id']);
+			//$result .= json_encode($line, JSON_UNESCAPED_UNICODE);
+			$result[] = $line;
 		}
-		$result .= ']';
+		//$result .= ']';
+		$result = json_encode($result, JSON_UNESCAPED_UNICODE);
 		return $result;
 	}
 };
@@ -148,7 +164,7 @@ class ajaxRequest_doctypes extends ajaxRequest {
 		global $db;
 		$sql = "SELECT `id`, `name` FROM `doc_types` ORDER by `id` ASC";
 		$result = '';
-		$a = array('');
+		$a = array();
 		$res = $db->query($sql);
 		while ($line = $res->fetch_assoc()) {
 			//if ($result)	$result.=",";
@@ -158,6 +174,109 @@ class ajaxRequest_doctypes extends ajaxRequest {
 		return json_encode($a, JSON_UNESCAPED_UNICODE);;
 	}
 }
+
+/// Обработчик ajax запросов списка наименований агентов
+class ajaxRequest_agentnames extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db;
+		$sql = "SELECT `id`, `name` FROM `doc_agent` ORDER by `id` ASC";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$a[$line['id']] = $line['name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
+
+/// Обработчик ajax запросов списка наименований пользователей
+class ajaxRequest_usernames extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db;
+		$sql = "SELECT `id`, `name` FROM `users` ORDER by `id` ASC";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$a[$line['id']] = $line['name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
+
+/// Обработчик ajax запросов списка наименований складов
+class ajaxRequest_skladnames extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db;
+		$sql = "SELECT `id`, `name` FROM `doc_sklady` ORDER by `id` ASC";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$a[$line['id']] = $line['name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
+
+/// Обработчик ajax запросов списка наименований касс
+class ajaxRequest_kassnames extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db;
+		$sql = "SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' ORDER by `num` ASC";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$a[$line['num']] = $line['name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
+
+/// Обработчик ajax запросов списка наименований банков
+class ajaxRequest_banknames extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db;
+		$sql = "SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank' ORDER by `num` ASC";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$a[$line['num']] = $line['name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
+
+/// Обработчик ajax запросов списка наименований фирм
+class ajaxRequest_firmnames extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db;
+		$sql = "SELECT `id`, `firm_name` FROM `doc_vars` ORDER by `id` ASC";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$a[$line['id']] = $line['firm_name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
+
 
 function ajax_autoload($class_name){
 	global $CONFIG;

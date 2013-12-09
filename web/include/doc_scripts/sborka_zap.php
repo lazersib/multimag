@@ -238,6 +238,7 @@ class ds_sborka_zap {
 					$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
 					VALUES ('$docnum', '$nxt[0]', '$nxt[1]', '$nxt[2]', '0')");
 				}
+				
 				if (!$not_a_p)	$perem_doc->DocApply();
 			}
 			$db->commit();

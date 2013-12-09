@@ -45,6 +45,8 @@ function initCalendar(input_id, selectTime)
 			val+=' '+pad(date.getHours())+':'+pad(date.getMinutes())+':'+pad(date.getSeconds())
 		input.value=val
 		if(input.updateCallback) input.updateCallback();
+		input.blur();
+		
 	}
 
 	function updateHeader()	{

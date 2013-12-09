@@ -824,7 +824,7 @@ function SkladViewInit(doc)
 
 	skladlist.clickRow=function(event)
 	{
-		if(event.target.className=='reserve')		OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos='+this.data.id)
+		if(event.target.className=='reserve')		ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos='+this.data.id)
 		else if(event.target.className=='offer')	ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos='+this.data.id)
 		else if(event.target.className=='transit')	ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos='+this.data.id);
 		else

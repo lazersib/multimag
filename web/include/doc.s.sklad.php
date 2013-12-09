@@ -2116,7 +2116,7 @@ class doc_s_Sklad {
 			$v_puti = $CONFIG['poseditor']['rto'] ? DocVPuti($nxt['id'], 0) : '';
 			
 
-			if ($rezerv)	$rezerv = "<a onclick=\"OpenW('/docs.php?l=inf&mode=srv&opt=rezerv&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$rezerv</a>";
+			if ($rezerv)	$rezerv = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$rezerv</a>";
 			else		$rezerv = '';
 			if ($pod_zakaz)	$pod_zakaz = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$pod_zakaz</a>";
 			else		$pod_zakaz = '';

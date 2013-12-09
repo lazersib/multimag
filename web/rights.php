@@ -261,6 +261,7 @@ else if($mode=='upl')
 	}
 	exit();
 }
+else throw new NotFoundException();
 
 }
 catch(mysqli_sql_exception $e) {

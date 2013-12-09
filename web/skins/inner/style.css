@@ -739,8 +739,8 @@ table.list tr
 
 table.list tr td
 {
-	border-right:		#e0f0ff 1px solid;
-	padding:		1px 3px 1px 3px;
+	/*border-right:		#e0f0ff 1px solid;*/
+	padding:		3px 5px 2px 5px;
 }
 
 table.list tr:nth-child(odd)
@@ -750,7 +750,16 @@ table.list tr:nth-child(odd)
 
 table.list tr:nth-child(odd) td
 {
-	border-right: #fff 1px solid;
+	/*border-right: #fff 1px solid;*/
+}
+
+table.list div.ic {
+	color: #777;
+	width:	45px;
+	display: inline-block;
+	text-align: right;
+	margin: 0;
+	padding: 0;
 }
 
 .searchblock
