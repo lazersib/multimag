@@ -18,7 +18,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-
+/// Акт сверки
 class Report_Revision_Act extends BaseReport {
 
 	function getName($short = 0) {
@@ -219,7 +219,7 @@ class Report_Revision_Act extends BaseReport {
 			$pdf->Ln();
 			$pdf->SetFont('', '', 8);
 		}
-		$pr = $ras = 0;
+		$pr = $ras = $s_pr = $_ras = 0;
 		$f_print = false;
 		while ($nxt = $res->fetch_array()) {
 			$deb = $kr = "";
@@ -251,6 +251,9 @@ class Report_Revision_Act extends BaseReport {
 					$pdf->Cell($t_width[7], 4, '', 1, 0, 'L', 0);
 					$pdf->Ln();
 				}
+				$s_pr = $pr;
+				$s_ras = $ras;
+				$pr = $ras = 0;
 			}
 
 			if ($nxt[1] == 1) {
@@ -328,7 +331,10 @@ class Report_Revision_Act extends BaseReport {
 			$pdf->Cell($t_width[7], 4, '', 1, 0, 'L', 0);
 			$pdf->Ln();
 		}
-
+		
+		$pr += $s_pr;
+		$ras += $s_ras;
+		
 		if ($pr > $ras) {
 			$pr-=$ras;
 			$ras = '';

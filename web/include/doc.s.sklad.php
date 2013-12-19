@@ -1292,8 +1292,7 @@ class doc_s_Sklad {
 		}
 		else if ($param == 'i') {
 			$id = 0;
-			$max_fs = get_max_upload_filesize();
-			$max_img_size = min(8 * 1024 * 1204, $max_fs);
+			$max_img_size = get_max_upload_filesize();
 			$min_pix = 15;
 			$max_pix = 20000;
 			global $CONFIG;
@@ -1304,6 +1303,7 @@ class doc_s_Sklad {
 				$set_def = 0;
 				if ($def_img == $img_num)	$set_def = 1;
 				$nm = request('photoname_' . $img_num);
+				if(!$nm)	continue;
 				$nm_sql = $db->real_escape_string($nm);
 				$res = $db->query("SELECT `id` FROM `doc_img` WHERE `name`='$nm_sql'");
 				if ($res->num_rows) {

@@ -203,10 +203,10 @@ class doc_Peremeshenie extends doc_Nulltype
 		$t_width=array(8);
 		if($CONFIG['poseditor']['vc']) {
 			$t_width[]=20;
-			$t_width[]=91;
+			$t_width[]=90;
 		}
-		else	$t_width[]=111;
-		$t_width=array_merge($t_width, array(12,15,23,23));
+		else	$t_width[]=110;
+		$t_width=array_merge($t_width, array(14, 20, 20, 20));
 
 		$t_text=array('№');
 		if($CONFIG['poseditor']['vc'])
@@ -215,7 +215,7 @@ class doc_Peremeshenie extends doc_Nulltype
 			$t_text[]='Наименование';
 		}
 		else	$t_text[]='Наименование';
-		$t_text=array_merge($t_text, array('Место', 'Кол-во', 'Масса 1 ед.', 'Общ. масса'));
+		$t_text=array_merge($t_text, array('Кол-во', 'Место ист.', 'Место наз.', 'О. масса'));
 
 		foreach($t_width as $id=>$w)
 		{
@@ -233,7 +233,7 @@ class doc_Peremeshenie extends doc_Nulltype
 			$aligns[]='L';
 		}
 		else	$aligns[]='L';
-		$aligns=array_merge($aligns, array('C','R','R','R'));
+		$aligns=array_merge($aligns, array('R','R','R','R'));
 
 		$pdf->SetAligns($aligns);
 		$pdf->SetLineWidth(0.2);
@@ -241,35 +241,41 @@ class doc_Peremeshenie extends doc_Nulltype
 		
 		$to_sklad = (int) $this->dop_data['na_sklad'];
 			
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`, `doc_base`.`vc`
+		$res = $db->query("SELECT `doc_group`.`printname` AS `group_pname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
+			`doc_base_dop`.`mass`, `pt_s`.`mesto` AS `place_s`, `pt_d`.`mesto` AS `place_d`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`,
+			`doc_base`.`vc`, `doc_list_pos`.`comm`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_base_dop` ON `doc_list_pos`.`tovar`=`doc_base_dop`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$to_sklad}'
+		LEFT JOIN `doc_base_cnt` AS `pt_s` ON `pt_s`.`id`=`doc_list_pos`.`tovar` AND `pt_s`.`sklad`='{$this->doc_data['sklad']}'
+		LEFT JOIN `doc_base_cnt` AS `pt_d` ON `pt_d`.`id`=`doc_list_pos`.`tovar` AND `pt_d`.`sklad`='{$to_sklad}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
-		$ii=1;
-		$sum=0;
-		while($nxt = $res->fetch_row())
-		{
-			$sm=$nxt[3]*$nxt[4];
-			$cost = sprintf("%01.3f кг", $nxt[4]);
-			$cost2 = sprintf("%01.3f кг", $sm);
-			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
+		$ii = 1;
+		$sum = 0;
+		while($nxt = $res->fetch_assoc()) {
+			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt['vendor'])
+				$nxt['name'].=' / '.$nxt['vendor'];
 
-			$row=array($ii);
+			$row = array($ii);
+			$comment = array('');
 			if($CONFIG['poseditor']['vc']) {
-				$row[]=$nxt[8];
-				$row[]="$nxt[0] $nxt[1]";
+				$row[] = $nxt['vc'];
+				$row[] = $nxt['group_pname'].' '.$nxt['name'];
+				$comment[] = '';
 			}
-			else	$row[]="$nxt[0] $nxt[1]";
-			$row=array_merge($row, array($nxt[5], "$nxt[3] $nxt[6]", $cost, $cost2));
-
-			$pdf->RowIconv($row);
+			else	$row[] = $nxt['group_pname'].' '.$nxt['name'];
+			$comment[] = $nxt['comm'];
+				
+			$mass_p = sprintf("%01.3f кг", $nxt['cnt']*$nxt['mass']);
+			
+			$row = array_merge($row, array($nxt['cnt'].' '.$nxt['units'], $nxt['place_s'],  $nxt['place_d'], $mass_p));
+			$comment  = array_merge($comment, array('', '',  '', ''));
+			$pdf->RowIconvCommented($row, $comment);
 			$ii++;
-			$sum+=$sm;
+			$sum += $nxt['cnt']*$nxt['mass'];
 		}
 		$ii--;
 		$sum = sprintf("%01.3f кг.", $sum);

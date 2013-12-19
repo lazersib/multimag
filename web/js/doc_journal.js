@@ -19,6 +19,20 @@
 // Работа с журналом документов
 // Экспериментально!
 
+function autoCompleteField(input_id, data) {
+	var ac_input = document.getElementById(input_id);
+	var ac_result = document.createElement('div');
+	ac_input.parentNode.insertBefore(ac_result, ac_input.nextSibling);
+	//ac_result.style.cssText = "width: 200px; height: 200px; border: 1px #000 solid; background-color: #fff; position: relative; z-index: 999; overflow-x: hidden; overflow-y: auto;"
+	ac_result.className = 'cac_results';
+	var s='<ul>';
+	for (var i in data) {
+		s += "<li value='" + 1 + i + "'";
+		s += ">" + data[i] + "</li>";
+	}
+	ac_result.innerHTML = s + '</ul>';
+}
+
 function getCacheObject() {
 	var mmCacheObject = new Object;
 	mmCacheObject.storage = new Array;
@@ -382,6 +396,7 @@ function initDocJournal(container_id) {
 		s += "</select></div>";
 		s += "<div class='bf'><input type='text' name='author' placeholder='Автор' disabled></div>";
 
+		
 		filter.innerHTML = s;
 		var input = initCalendar('datepicker_f', false);
 		input.addEventListener('blur', beginDefferedRequest, false);
@@ -404,6 +419,8 @@ function initDocJournal(container_id) {
 		input = document.getElementById('store_id');
 		input.addEventListener('blur', beginDefferedRequest, false);
 		input.addEventListener('change', beginDefferedRequest, false);
+		
+		autoCompleteField('agent_filter', agentnames);
 	}
 
 	requestData(0);

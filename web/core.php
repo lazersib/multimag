@@ -402,12 +402,11 @@ function translitIt($str)
 /// В текст рассылки автоматически добавляется информация о том, как отказаться от рассылки
 /// @param tema Тема сообщения
 /// @param msg Тело сообщения
-function SendSubscribe($tema,$msg)
-{
+function SendSubscribe($tema, $msg) {
 	global $CONFIG, $db;
 	$res=$db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
 	list($firm_name)=$res->fetch_row();
-	$res=$db->query("(SELECT `name`, `reg_email` AS `email`, `real_name` FROM `users` WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `email`!='')
+	$res=$db->query("(SELECT `name`, `reg_email` AS `email`, `real_name` FROM `users` WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `reg_email`!='')
 	UNION
 	(SELECT `name`, `email`, `fullname` AS `real_name` FROM `doc_agent` WHERE `no_mail`='0' AND `email`!='')
 	");

@@ -235,7 +235,7 @@ protected function SaveAndSend()
 	if($type!='novelty' && $type!='stock' && $type!='event')
 		$type='novelty';
 
-	$db->query("START TRANSACTION");
+	$db->startTransaction();
 
 	$title_sql=$db->real_escape_string($title);
 	$text_sql=$db->real_escape_string($text);
