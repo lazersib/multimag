@@ -185,8 +185,8 @@ else if($mode=='doc_view'){
 			if($doc_data['user']!=$uid)	throw new Exception("Документ не найден");
 
 			$document=AutoDocumentType($doc_data['type'], $doc);
-			if($doc_data['type']==3)		$document->PrintForm('schet_pdf');
-			else if($doc_data['type']==2)		$document->PrintForm('sf_pdf');
+			if($doc_data['type']==3)		$document->PrintForm('schet');
+			else if($doc_data['type']==2)		$document->PrintForm('sfak');
 			else					throw new Exception("Способ просмотра не задан!");
 		}
 		else 	throw new Exception("Документ не указан");

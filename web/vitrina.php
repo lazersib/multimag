@@ -190,7 +190,7 @@ function ExecMode($mode)
 		if($doc)
 		{
 			$document=AutoDocument($doc);			
-			$document->PrintForm('schet_pdf');
+			$document->PrintForm('schet');
 		}
 		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
 	}

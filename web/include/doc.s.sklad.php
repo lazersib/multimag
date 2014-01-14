@@ -516,23 +516,23 @@ class doc_s_Sklad {
 			<tr><th width='10%'>По умолч.</th><th>Файл</th><th>Имя изображения</th></tr>
 			<tr><td><input type='radio' name='def_img' value='1' $checked></td>
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile1' type='file'></td>
-			<td><input type='text' name='photoname_1' value='photo_$pos'></td>
+			<td><input type='text' name='photoname_1' value=''></td>
 			</tr>
 			<tr><td><input type='radio' name='def_img' value='2'></td>
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile2' type='file'></td>
-			<td><input type='text' name='photoname_2' value='photo_$pos'></td>
+			<td><input type='text' name='photoname_2' value=''></td>
 			</tr>
 			<tr><td><input type='radio' name='def_img' value='3'></td>
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile3' type='file'></td>
-			<td><input type='text' name='photoname_3' value='photo_$pos'></td>
+			<td><input type='text' name='photoname_3' value=''></td>
 			</tr>
 			<tr><td><input type='radio' name='def_img' value='4'></td>
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile4' type='file'></td>
-			<td><input type='text' name='photoname_4' value='photo_$pos'></td>
+			<td><input type='text' name='photoname_4' value=''></td>
 			</tr>
 			<tr><td><input type='radio' name='def_img' value='5'></td>
 			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile5' type='file'></td>
-			<td><input type='text' name='photoname_5' value='photo_$pos'></td>
+			<td><input type='text' name='photoname_5' value=''></td>
 			</tr>
 			<tr><td colspan='3' align='center'>
 			<button type='submit'>Сохранить</button>

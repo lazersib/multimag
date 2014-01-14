@@ -26,8 +26,9 @@ $tmpl->setTitle("Фотографии к статьям");
 /// Формирует страницы просмотра изображений к статьям
 class articlesImagePage {
 public function __construct(){
+	global $CONFIG;
 	$this->lim	= 16;
-	$this->gpath	= "share/var/wikiphoto";
+	$this->gpath	= $CONFIG['site']['location']."/share/var/wikiphoto";
 }
 
 /// Получить список доступных изображений
@@ -139,7 +140,7 @@ public function submitImageForm() {
 	$sql_comm=$db->real_escape_string($comm);
 	$res=$db->query("INSERT INTO `wikiphoto` (`uid`,`comment`) VALUES ('$uid','$sql_comm')");
 	$fid=$db->insert_id;
-	$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], "$gpath/$fid.jpg");
+	$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], $this->gpath."/$fid.jpg");
 	if(!$m_ok)	throw new AutoLoggedException("Не удалось сохранить изображение в хранилище");
 	$tmpl->msg("Изображение сохранено. Для вставки в статью используйте следующий код:<br>[[Image:$fid|frame|alternate text]]","ok");		
 }
