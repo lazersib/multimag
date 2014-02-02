@@ -34,6 +34,7 @@ class doc_s_Sklad {
 		global $tmpl, $CONFIG, $db;
 		doc_menu();
 		if(!isAccess('list_sklad','view'))	throw new AccessException();
+		$tmpl->setTitle("Редактор склада");
 		if(rcvint('sklad')) $_SESSION['sklad_num'] = rcvint('sklad');
 		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num'] = 1;
 		$sklad = $_SESSION['sklad_num'];
@@ -245,7 +246,7 @@ class doc_s_Sklad {
 		$group = rcvint('g');
 		if (!isAccess('list_sklad', 'view'))	throw new AccessException();
 		if (($pos == 0) && ($param != 'g'))	$param = '';
-
+		$tmpl->setTitle("Правка складского наименования");
 		if ($pos != 0)		$this->PosMenu($pos, $param);
 
 		if ($param == '') {
@@ -1115,7 +1116,7 @@ class doc_s_Sklad {
 		$pos = rcvint('pos');
 		$param = request('param');
 		$group = rcvint('g');
-
+		$tmpl->setTitle("Правка складского наименования");
 		if ($pos != 0)
 			$this->PosMenu($pos, $param);
 

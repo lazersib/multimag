@@ -29,6 +29,7 @@ class doc_s_Agent_dov
 		global $tmpl;
 		doc_menu();
 		if(!isAccess('list_agent_dov','view'))	throw new AccessException();
+		$tmpl->setTitle("Редактор доверенных лиц");
 		$tmpl->addContent("<table width='100%'>
 		<tr><td><h1>Доверенные лица</h1></td>
 		<td align='right'>Отбор:<input type='text' id='f_search' onkeydown=\"DelayedSave('/docs.php?l=dov&mode=srv&opt=pl','list', 'f_search'); return true;\" >
@@ -77,7 +78,7 @@ class doc_s_Agent_dov
 		$param = request('param');
 		if (!isAccess('list_agent_dov', 'view'))	throw new AccessException();
 		if (($pos == 0) && ($param != 'g'))		$param = '';
-
+		$tmpl->setTitle("Правка доверенного лица");
 		if ($param == '') {
 			$res = $db->query("SELECT `id`, `ag_id` , `name` , `name2` , `surname` , `range` , `pasp_ser` , `pasp_num` , `pasp_kem` , `pasp_data` , `mark_del`
 			FROM `doc_agent_dov`
@@ -126,7 +127,7 @@ class doc_s_Agent_dov
 		doc_menu();
 		$pos = rcvint('pos');
 		$param = request('param');
-
+		$tmpl->setTitle("Правка доверенного лица");
 		if($param=='')	{
 			
 			$new_dl_info = array (

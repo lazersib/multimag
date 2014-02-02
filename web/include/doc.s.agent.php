@@ -27,6 +27,7 @@ class doc_s_Agent {
 		global $tmpl;
 		doc_menu(0,0);
 		if(!isAccess('list_agent','view'))	throw new AccessException();
+		$tmpl->setTitle("Редактор агентов");
 		$tmpl->addContent("<h1>Агенты</h1><table width=100%><tr><td id='groups' width='200' valign='top' class='lin0'>");
 		$this->draw_groups(0);
 		$tmpl->addContent("<td id='list' valign='top'  class='lin1'>");
@@ -87,6 +88,7 @@ class doc_s_Agent {
 		$param = request('param');
 		$group = rcvint('g');
 		if(!isAccess('list_agent','view'))	throw new AccessException();
+		$tmpl->setTitle("Правка агента");
 		if(($pos==0)&&($param!='g')) $param='';
 
 		if($pos!=0)
@@ -280,7 +282,7 @@ class doc_s_Agent {
 		$pos = rcvint('pos');
 		$param = request('param');
 		$group = rcvint('g');
-
+		$tmpl->setTitle("Правка агента");
 		if($param=='') {
 			$ag_info = $db->selectRowA('doc_agent', $pos, $this->agent_vars);
 			unset($ag_info['id']);

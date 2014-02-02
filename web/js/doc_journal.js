@@ -1,6 +1,6 @@
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -19,19 +19,153 @@
 // Работа с журналом документов
 // Экспериментально!
 
-function autoCompleteField(input_id, data) {
+function autoCompleteField(input_id, data, update_callback) {
+	var old_hl = 0;
+	var hidden = 1;
+	
 	var ac_input = document.getElementById(input_id);
+	ac_input.value_id = 0;
+	var ac_clear = document.createElement('div');
+	ac_input.parentNode.insertBefore(ac_clear, ac_input.nextSibling);
+	ac_clear.className = 'cac_clear';
+
 	var ac_result = document.createElement('div');
 	ac_input.parentNode.insertBefore(ac_result, ac_input.nextSibling);
-	//ac_result.style.cssText = "width: 200px; height: 200px; border: 1px #000 solid; background-color: #fff; position: relative; z-index: 999; overflow-x: hidden; overflow-y: auto;"
+	
+	var ac_list = document.createElement('ul');
+	hideList();
+	ac_result.appendChild(ac_list);
+	
 	ac_result.className = 'cac_results';
-	var s='<ul>';
-	for (var i in data) {
-		s += "<li value='" + 1 + i + "'";
-		s += ">" + data[i] + "</li>";
+	
+	var hide_timer = 0;
+	
+	function buildList() {
+		var substr = ac_input.value.toLowerCase();
+		var s='';
+		for (var i in data) {
+			if(data[i].toLowerCase().indexOf(substr) == -1) continue;
+			s += "<li value='" + i + "'";
+			s += ">" + data[i] + "</li>";
+		}
+		ac_list.innerHTML = s;
+		old_hl = 0;
 	}
-	ac_result.innerHTML = s + '</ul>';
+	
+	function showList() {
+		buildList();
+		ac_result.style.display = 'block';
+		ac_clear.style.display = 'block';
+		hidden = 0;
+	}
+	
+	function hideList() {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+		ac_result.style.display = 'none';
+		ac_clear.style.display =  'none';
+		hidden = 1;
+	}
+	
+	// События поля ввода
+	ac_input.onkeyup = function(event) {
+		if(hidden) {
+			if(event.keyCode == 40)
+				showList();
+			return;
+		}
+		else {
+			if(event.keyCode == 40) {
+				if(!old_hl) {
+					old_hl = ac_list.firstChild;
+					old_hl.className = 'cac_over';
+				}
+				else if(old_hl.nextSibling) {
+					old_hl.nextSibling.className = 'cac_over';
+					old_hl.className = '';
+					old_hl = old_hl.nextSibling;
+					ac_result.scrollTop += 18; 
+				}
+				return;
+			}
+			else if(event.keyCode == 38) {
+				if(!old_hl) {
+					old_hl = ac_list.lastChild;
+					old_hl.className = 'cac_over';
+				}
+				else if(old_hl.previousSibling) {
+					old_hl.previousSibling.className = 'cac_over';
+					old_hl.className = '';
+					old_hl = old_hl.previousSibling;
+					ac_result.scrollTop -= 18;
+				}
+				return;
+			}
+			else if(event.keyCode ==13) {
+				ac_input.value_id = old_hl.value;
+				ac_input.value = old_hl.innerHTML;
+				ac_input.blur();
+				hideList();
+				update_callback();
+			}
+			else if(event.keyCode == 27) {
+				ac_input.blur();
+				hideList();
+				
+			}
+				
+		}
+		//alert(event.keyCode);
+		buildList();
+	}	
+	
+	ac_input.onfocus = function(event) {
+		showList();
+	}
+	
+	ac_input.onblur = function(event) {
+		hide_timer = window.setTimeout(hideList, 300);
+	}
+	
+	// События списка
+	ac_list.onmouseover = function(event) {
+		if(event.target.tagName=='LI') {
+			if(old_hl)
+				old_hl.className = '';
+			old_hl = event.target;
+			old_hl.className = 'cac_over';
+		}
+	}
+	
+	ac_list.onclick = function(event) {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+		if(event.target.tagName!='LI') {
+			ac_input.focus();
+			return;
+		}
+		var value = event.target.value;
+		ac_input.value_id = value;
+		ac_input.value = event.target.innerHTML;
+		hideList();
+		update_callback();
+	}
+	
+	// Скролл блока
+	ac_result.onscroll = function(event) {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+		ac_input.focus();
+	}
+	
+	// События кнопки clear
+	ac_clear.onclick = function() {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+		ac_input.value = '';
+		ac_input.value_id = 0;
+		ac_input.focus();
+		update_callback();
+	}
 }
+
+
 
 function getCacheObject() {
 	var mmCacheObject = new Object;
@@ -72,6 +206,104 @@ function getCacheObject() {
 	return mmCacheObject;
 }
 
+function docTypeMultiSelect(div_id, data, update_callback) {
+	var hidden = 1;
+
+	var base_div = document.getElementById(div_id);
+	base_div.values = new Array();
+	
+	var done_button = document.createElement('div');
+	base_div.parentNode.insertBefore(done_button, base_div.nextSibling);
+	done_button.className = 'multiselect_done';
+	
+	var clear_button = document.createElement('div');
+	base_div.parentNode.insertBefore(clear_button, base_div.nextSibling);
+	clear_button.className = 'multiselect_clear';
+
+	var ac_result = document.createElement('div');
+	base_div.parentNode.insertBefore(ac_result, base_div.nextSibling);
+	
+	hideList();
+	buildList();
+	ac_result.className = 'doctype_multiselect';
+	
+	var hide_timer = 0;
+	
+	function buildList() {
+		var s='';
+		for (var i in data) {
+			s += "<label><input type='checkbox' value='" + i + "' checked>" + i + ": " + data[i] + "</label><br>";
+			base_div.values[i] = 1;
+		}
+		ac_result.innerHTML = s;
+	}
+	
+	function showList() {
+		ac_result.style.display = 'block';
+		clear_button.style.display = 'block';
+		hidden = 0;
+	}
+	
+	function hideList() {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+		ac_result.style.display = 'none';
+		clear_button.style.display =  'none';
+		hidden = 1;
+	}
+	
+	// События строки
+	base_div.onclick = function(event) {
+		if(hidden)	showList();
+		else {
+			update_callback();
+			hideList();
+		}
+	}
+	
+	// События списка
+	ac_result.onclick = function(event) {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+		if(event.target.tagName!='INPUT') {
+			return;
+		}
+		
+		if(event.target.checked)
+			base_div.values[event.target.value] = 1;
+		else	base_div.values[event.target.value] = 0;
+		update_callback();
+	}
+	
+	// Скролл блока
+	ac_result.onscroll = function(event) {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+	}
+	
+	// События кнопки clear
+	clear_button.onclick = function() {
+		if(hide_timer)	window.clearTimeout(hide_timer);
+		
+		var item = ac_result.firstChild;
+		while(item) {
+			//alert(item.firstChild.tagName);
+			if(item.tagName == 'LABEL')
+			if(item.firstChild.tagName == 'INPUT')
+			{
+				item.firstChild.checked = true;
+				base_div.values[item.firstChild.value] = 1;
+			}
+			
+			item = item.nextSibling;
+		}
+		
+		update_callback();
+	}
+	
+	done_button.onclick = function(event) {
+		hideList();
+		update_callback();
+	}
+}
+
 function initDocJournal(container_id) {
 	var container = document.getElementById(container_id);
 	var doc_list_status = document.getElementById('doc_list_status');
@@ -92,31 +324,61 @@ function initDocJournal(container_id) {
 	var kassnames = cache.get('kassnames');
 	var banknames = cache.get('banknames');
 	var firmnames = cache.get('firmnames');
-	
+	var posnames = cache.get('posnames');
 
 	function buildFilterQuery() {
 		filter_request = '';
 		var datepicker_f = document.getElementById('datepicker_f');
 		if (datepicker_f.value.length)
 			filter_request += '&doclist[df]=' + encodeURIComponent(datepicker_f.value);
+		
 		var datepicker_t = document.getElementById('datepicker_t');
 		if (datepicker_t.value.length)
 			filter_request += '&doclist[dt]=' + encodeURIComponent(datepicker_t.value);
+		
+		var doctypes_t = document.getElementById('doctype_filter');
+		var f_values = '';
+		var active_1 = 0;
+		var active_0 = 0;
+		for(var i=1; i<doctypes_t.values.length;i++) {
+			f_values += '&doclist[dct]['+i+']=' + encodeURIComponent(doctypes_t.values[i]);
+			if(doctypes_t.values[i])	active_1 = 1;
+			else				active_0 = 1;
+		}
+		if(active_1 & active_0)
+			filter_request += f_values;
+		
 		var altnum = document.getElementById('altnum');
 		if (altnum.value.length)
 			filter_request += '&doclist[an]=' + encodeURIComponent(altnum.value);
+		
 		var subtype = document.getElementById('subtype');
 		if (subtype.value.length)
 			filter_request += '&doclist[st]=' + encodeURIComponent(subtype.value);
+		
 		var firm_id = document.getElementById('firm_id');
 		if (firm_id.value!=0)
 			filter_request += '&doclist[fi]=' + encodeURIComponent(firm_id.value);
+		
 		var bk_id = document.getElementById('bk_id');
 		if (bk_id.value!=0)
 			filter_request += '&doclist[bk]=' + encodeURIComponent(bk_id.value);
+		
 		var store_id = document.getElementById('store_id');
 		if (store_id.value!=0)
 			filter_request += '&doclist[sk]=' + encodeURIComponent(store_id.value);
+		
+		var afilter_id = document.getElementById('agent_filter');
+		if (afilter_id.value_id!=0)
+			filter_request += '&doclist[ag]=' + encodeURIComponent(afilter_id.value_id);
+		
+		var posfilter_id = document.getElementById('pos_filter');
+		if (posfilter_id.value_id!=0)
+			filter_request += '&doclist[pos]=' + encodeURIComponent(posfilter_id.value_id);
+		
+		var userfilter_id = document.getElementById('user_filter');
+		if (userfilter_id.value_id!=0)
+			filter_request += '&doclist[au]=' + encodeURIComponent(userfilter_id.value_id);
 	}
 
 	function restartRequest() {
@@ -153,6 +415,8 @@ function initDocJournal(container_id) {
 			componetns = componetns + ',banknames';
 		if (!firmnames)
 			componetns = componetns + ',firmnames';
+		if (!posnames)
+			componetns = componetns + ',posnames';
 		
 		var url = '/json.php?c=' + componetns+filter_request;
 		
@@ -228,6 +492,12 @@ function initDocJournal(container_id) {
 					cache.set('firmnames', json.firmnames);
 					iff = 1;
 				}
+				if(!posnames) {
+					posnames = json.posnames;
+					cache.set('posnames', json.posnames);
+					iff = 1;
+				}
+				
 				if(iff)
 					initFilter(doc_list_filter);
 				render(json, part);
@@ -380,10 +650,10 @@ function initDocJournal(container_id) {
 		}
 		
 		var s = "<div class='bf'><input type='text' class='half' name='date_from' id='datepicker_f' value='' placeholder='Дата от'>-<input type='text' class='half' name='date_to' id='datepicker_t' value='' placeholder='Дата до'></td></tr></table></div>";
-		s += "<div class='bf'><input type='text' name='type' placeholder='Тип документа' disabled></div>";
+		s += "<div class='bf'><div class='input multiselect_div' id='doctype_filter' placeholder='Тип документа'>Тип документа</div></div>";
 		s += "<div class='bf'><input type='text' class='half' id='altnum' value='' placeholder='Альт. номер'>, <input type='text' class='half' id='subtype' value='' placeholder='Подтип'></div>";
 		s += "<div class='bf'><input type='text' name='agent' id='agent_filter' placeholder='Агент'></div>";
-		s += "<div class='bf'><input type='text' name='position' placeholder='Наименование' disabled></div>";
+		s += "<div class='bf'><input type='text' name='position' id='pos_filter' placeholder='Наименование'></div>";
 		s += "<div class='bf'><select id='firm_id'><option value='0'>- фирма не выбрана -</option>";
 		s += getSelectOptions(firmnames, 0, '');
 		s += "</select></div>";
@@ -394,7 +664,7 @@ function initDocJournal(container_id) {
 		s += "<div class='bf'><select id='store_id'><option value='0'>- склад не выбран -</option>";
 		s += getSelectOptions(skladnames, 0, '');
 		s += "</select></div>";
-		s += "<div class='bf'><input type='text' name='author' placeholder='Автор' disabled></div>";
+		s += "<div class='bf'><input type='text' id='user_filter' placeholder='Автор'></div>";
 
 		
 		filter.innerHTML = s;
@@ -420,7 +690,10 @@ function initDocJournal(container_id) {
 		input.addEventListener('blur', beginDefferedRequest, false);
 		input.addEventListener('change', beginDefferedRequest, false);
 		
-		autoCompleteField('agent_filter', agentnames);
+		autoCompleteField('agent_filter', agentnames, beginDefferedRequest);
+		autoCompleteField('pos_filter', posnames, beginDefferedRequest);
+		autoCompleteField('user_filter', usernames, beginDefferedRequest);
+		docTypeMultiSelect('doctype_filter', doc_types, beginDefferedRequest);
 	}
 
 	requestData(0);

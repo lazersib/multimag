@@ -911,7 +911,7 @@ protected function DeliveryTypeForm()
 	$tmpl->setContent("<h1>Способ доставки</h1>");
 	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='delivery'>
-	<label><input type='radio' name='delivery_type' value='0'> Самовывоз</label><br><small>Вы сможете забрать товар с нашего склала</small><br><br>");
+	<label><input type='radio' name='delivery_type' value='0'> Самовывоз</label><br><small>Вы сможете забрать товар с нашего склада</small><br><br>");
 	$res=$db->query("SELECT `id`, `name`, `min_price`, `description` FROM `delivery_types`");
 	while($nxt=$res->fetch_assoc())
 	{
@@ -1025,8 +1025,8 @@ protected function TovList_SimpleTable($res, $lim)
 		$cost=getCostPos($nxt['id'], $this->cost_id);
 		if($cost<=0)	$cost='уточняйте';
 		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
-		@$tmpl->addContent("<tr class='lin$cc'><td><a href='$link'>".html-out($nxt['name'])."</a>
-		<td>".html-out($nxt['proizv'])."<td>$nal<td $cce>$cost
+		@$tmpl->addContent("<tr class='lin$cc'><td><a href='$link'>".html_out($nxt['name'])."</a>
+		<td>".html_out($nxt['proizv'])."<td>$nal<td $cce>$cost
 		<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
 		<img src='$basket_img' alt='В корзину!'></a></tr>");
 		$i++;
@@ -1206,36 +1206,12 @@ protected function BuyMakeForm()
 		}
 	}
 
-	$tmpl->addContent("<label><input type='checkbox' name='delivery' id='delivery' value='1'>Нужна доставка</label><br>
-	<div id='delivery_fields'>
-	Желаемые дата и время доставки:<br>
-	<input type='text' name='delivery_date'><br>
-	<br>Адрес доставки:<br>
-	<textarea name='adres' rows='5' cols='80'>".@$up['main']['real_address']."</textarea><br>
-	</div>
-
-
-
+	$tmpl->addContent("
 	Другая информация:<br>
 	<textarea name='dop' rows='5' cols='80'>".@$up['dop']['dop_info']."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
-	</form>
-	<script>
-
-	var delivery=document.getElementById('delivery')
-	var delivery_fields=document.getElementById('delivery_fields')
-	function deliveryCheck()
-	{
-		if(delivery.checked)
-			delivery_fields.style.display='block';
-		else	delivery_fields.style.display='none';
-	}
-	delivery.onclick=deliveryCheck;
-	deliveryCheck();
-
-	</script>
-	");
+	</form>");
 }
 
 /// Сделать покупку
@@ -1360,13 +1336,13 @@ protected function MakeBuy() {
 			$res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='{$_SESSION['basket']['delivery_type']}'");
 			list($d_service_id) = $res->fetch_row();
 			$res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
-			list($d_price) = $red->fetch_row();
+			list($d_price) = $res>fetch_row();
 			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$d_service_id'");
-			$tov_info = $db->fetch_array();
+			$tov_info = $res->fetch_array();
 			$zakaz_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 			$admin_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
 		}

@@ -116,17 +116,50 @@ class ajaxRequest_DocList extends ajaxRequest {
 						else if($value[0]=='k')
 							$filter.=' AND `doc_list`.`kassa`='.intval(substr($value,1));
 						}break;
+					case 'ag':	// Agent
+						$filter.=' AND `doc_list`.`agent`='.intval($value);
+						break;
+					case 'au':	// Author
+						$filter.=' AND `doc_list`.`user`='.intval($value);
+						break;
+					case 'dct':{	if(!is_array($value))	continue;
+							$s = '';
+							foreach($value as $d_id => $d_show) {
+								if($d_show)	$s.=' OR `doc_list`.`type` = '.intval($d_id);
+							}
+							if($s)	$filter.=' AND (0 '.$s.')';
+							
+						}break;
 				}		
 			}
 		}
 		return $filter;
 	}
 	
+	/// @brief Получить строку дополнительных таблиц
+	/// @return Возвращает JOIN часть SQL запроса к таблице журнала документов
+	protected function getJoins() {
+		global $db;
+		$joins = '';
+		if(is_array($this->options)) {
+			foreach ($this->options as $key=>$value) {
+				switch($key) {
+					case 'pos':	// Store pos
+						$joins.='INNER JOIN `doc_list_pos` ON `doc_list_pos`.`tovar`='.intval($value).' AND `doc_list`.`id`=`doc_list_pos`.`doc`';
+						break;
+				}		
+			}
+		}
+		return $joins;
+	}
+
+
 	/// @brief Получить json данные списка документов
 	public function getJsonData($page = 0) {
 		global $db;
 		$start = intval($page) * $this->limit + 1;		
 		$sql_filter = $this->getFilter();
+		$sql_join = $this->getJoins();
 		
 		$sql = "SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent` AS `agent_id`, `doc_list`.`contract` AS `contract_id`, `doc_list`.`ok`,
 			`doc_list`.`date`, `doc_list`.`kassa` AS `kassa_id`, `doc_list`.`bank` AS `bank_id`, `doc_list`.`sklad` AS `sklad_id`,
@@ -135,6 +168,7 @@ class ajaxRequest_DocList extends ajaxRequest {
 		FROM `doc_list`
 		LEFT JOIN `doc_dopdata` AS `na_sklad_t` ON `na_sklad_t`.`doc`=`doc_list`.`id` AND `na_sklad_t`.`param`='na_sklad'
 		LEFT JOIN `doc_dopdata` AS `v_kassu_t` ON `v_kassu_t`.`doc`=`doc_list`.`id` AND `v_kassu_t`.`param`='v_kassu'
+		$sql_join
 		WHERE 1 $sql_filter
 		ORDER by `doc_list`.`date` DESC
 		LIMIT $start,{$this->limit}";
@@ -181,14 +215,14 @@ class ajaxRequest_agentnames extends ajaxRequest {
 	/// @brief Получить json данные
 	public function getJsonData($page = 0) {
 		global $db;
-		$sql = "SELECT `id`, `name` FROM `doc_agent` ORDER by `id` ASC";
+		$sql = "SELECT `id`, `name` FROM `doc_agent`";
 		$result = '';
 		$a = array();
 		$res = $db->query($sql);
 		while ($line = $res->fetch_assoc()) {
 			$a[$line['id']] = $line['name'];
 		}
-		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+		return json_encode($a, JSON_UNESCAPED_UNICODE);
 	}
 }
 
@@ -272,6 +306,29 @@ class ajaxRequest_firmnames extends ajaxRequest {
 		$res = $db->query($sql);
 		while ($line = $res->fetch_assoc()) {
 			$a[$line['id']] = $line['firm_name'];
+		}
+		return json_encode($a, JSON_UNESCAPED_UNICODE);;
+	}
+}
+
+/// Обработчик ajax запросов списка складских наименований
+class ajaxRequest_posnames extends ajaxRequest {
+	
+	/// @brief Получить json данные
+	public function getJsonData($page = 0) {
+		global $db, $CONFIG;
+		$sql = "SELECT `id`, `name`, `proizv` AS `vendor`, `vc` FROM `doc_base` ORDER BY `name`";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$str = '';
+			if (@$CONFIG['poseditor']['vc'] && $line['vc'])
+				$str = $line['vc'].' ';
+			$str .= $line['name'];
+			if($line['vendor'])
+				$str .= ' '.$line['vendor'];
+			$a[$line['id']] = $str;
 		}
 		return json_encode($a, JSON_UNESCAPED_UNICODE);;
 	}

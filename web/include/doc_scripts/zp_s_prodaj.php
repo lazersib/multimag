@@ -2,7 +2,7 @@
 
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -56,6 +56,12 @@ class ds_zp_s_prodaj {
 			<option value='nonach'>С невыполненными начислениями</option>
 			</select><br>
 			
+			Считать по:<br>
+			<select name='calc'>
+			<option value='z' selected>Заявкам</option>
+			<option value='r'>Реализациям</option>
+			</select><br>
+			
 			<script type=\"text/javascript\">
 			initCalendar('datepicker_f',false);
 			initCalendar('datepicker_t',false);
@@ -98,6 +104,7 @@ class ds_zp_s_prodaj {
 			$date_t = strtotime(rcvdate('date_t')." 23:59:59");
 			$user_id = rcvint('user_id');
 			$show = request('show');
+			$calc = request('calc');
 
 			$tmpl->addContent("<h1>" . $this->getname() . "</h1>");
 			if (!$tov_id)	throw new Exception("Не указана услуга!");
@@ -107,6 +114,10 @@ class ds_zp_s_prodaj {
 			list($agent_id) = $res->fetch_row();
 			if (!$agent_id)	$tmpl->msg("Пользователь не привязан к агенту. Вы не сможете начислить заработную плату!", 'err');
 
+			if($calc == 'z')
+				$lock = "`zlist`.`user`=$user_id";
+			else	$lock = "`curlist`.`user`=$user_id";
+			
 			$res = $db->query("SELECT `curlist`.`id`, `curlist`.`user`, `doc_agent`.`name` AS `agent_name`, `curlist`.`date`, `curlist`.`sum`,
 				`curusers`.`name` AS `ruser_name`, `zlist`.`user` AS `zuser`, `zusers`.`name` AS `zuser_name`, `curlist`.`p_doc`,
 				`rkolist`.`sum` AS `ag_sum`, `curlist`.`agent` AS `agent_id`, `n_data`.`value` AS `zp_s_prodaj`
@@ -118,7 +129,7 @@ class ds_zp_s_prodaj {
 			LEFT JOIN `users` AS `zusers`		ON `zusers`.`id`=`zlist`.`user`
 			LEFT JOIN `doc_dopdata` AS `n_data`	ON `n_data`.`doc`=`curlist`.`id` AND `n_data`.`param`='zp_s_prodaj'
 			WHERE `curlist`.`ok`>'0' AND `curlist`.`type`='2' AND `curlist`.`date`>='$date_f' AND `curlist`.`date`<='$date_t'
-			AND `zlist`.`user`=$user_id");
+			AND $lock");
 
 			$tmpl->addContent("
 			<form action='' method='post' enctype='multipart/form-data'>
