@@ -44,7 +44,7 @@ abstract class ajaxRequest {
 	protected $fields = ''; //< Набор полей
 	protected $order_field = false; //< Поле, по которому будет выполнена сортировка
 	protected $order_reverse = false; //< Обратное направление сортировки (от большего к меньшему)
-	protected $limit = 500; //< лимит на количество строк в ответе
+	protected $limit = 1000; //< лимит на количество строк в ответе
 
 	/// Устанавливает опции в значение value
 	public function setOptions($value) {

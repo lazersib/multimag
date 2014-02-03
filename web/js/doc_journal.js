@@ -171,14 +171,27 @@ function getCacheObject() {
 	var mmCacheObject = new Object;
 	mmCacheObject.storage = new Array;
 	var ls_flag = 0;
-	if(typeof(localStorage) != undefined )
-		ls_flag = 1;
-		
-	mmCacheObject.set = function (name, object) {
+	
+	function getExpires() {
+		var expires = new Object;
+		var expires_str = localStorage.getItem('__EXPIRES__');
+		if(expires_str)
+			expires = JSON.parse(expires_str);
+		return expires;
+	}
+	
+	function setTTL(name, ttl) {
+		var expires = getExpires();
+		expires[name] = new Date().getTime() + ttl;
+		localStorage.setItem('__EXPIRES__', JSON.stringify(expires) );
+	}
+	
+	mmCacheObject.set = function (name, object, ttl) {
+		if(!ttl)	ttl = 60000;	// miliseconds
 		try {
-			if(ls_flag)
-				localStorage.setItem(name, JSON.stringify(object) );
-			else	mmCacheObject.storage[name] = object;
+			localStorage.setItem(name, JSON.stringify(object) );
+			setTTL(name, ttl);
+			mmCacheObject.storage[name] = object;
 		}
 		catch (e) {
 			if (e == QUOTA_EXCEEDED_ERR)
@@ -188,9 +201,22 @@ function getCacheObject() {
 	
 	mmCacheObject.get = function (name) {
 		try {
-			if(ls_flag)
+			var expires = getExpires();
+			
+			if(!expires[name])	return undefined;
+			
+			if(expires[name]< (new Date().getTime())) {
+				localStorage.removeItem(name);
+				expires[name] = null;
+				localStorage.setItem('__EXPIRES__', JSON.stringify(expires) );
+				return undefined;
+			}
+			if(mmCacheObject.storage[name]) {
+				return mmCacheObject.storage[name];
+			}
+			else	{
 				return JSON.parse(localStorage.getItem(name));
-			else	return mmCacheObject.storage[name];
+			}
 		}
 		catch (e) {
 			return undefined;
@@ -198,9 +224,8 @@ function getCacheObject() {
 	};
 	
 	mmCacheObject.unset = function (name) {
-		if(ls_flag)
-			localStorage.removeItem(name);
-		else	mmCacheObject.storage[name] = null;
+		localStorage.removeItem(name);
+		mmCacheObject.storage[name] = null;
 	};
 	
 	return mmCacheObject;
@@ -325,6 +350,7 @@ function initDocJournal(container_id) {
 	var banknames = cache.get('banknames');
 	var firmnames = cache.get('firmnames');
 	var posnames = cache.get('posnames');
+	
 
 	function buildFilterQuery() {
 		filter_request = '';
@@ -554,7 +580,8 @@ function initDocJournal(container_id) {
 			}
 			if (!data.end) {
 				function execRequest() {
-					requestData(part + 1)
+					//alert('req '+(part+1));
+					requestData(part + 1);
 				}
 				//window.setTimeout(execRequest, 120);
 			}
