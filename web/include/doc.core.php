@@ -402,7 +402,7 @@ function doc_menu($dop="", $nd=1, $doc=0)
 
 	<img src='/img/i_separator.png' alt=''>
 
-	<a href='/docj.php' title='Журнал документов' accesskey=\"D\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
+	<a href='/docj_new.php' title='Журнал документов' accesskey=\"D\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
 	<a href='/incomp_orders.php' title='Журнал невыполненных заявок' accesskey=\"D\"><img src='/img/i_incomp_orders.png' alt='Журнал невыполненных заявок' border='0'></a>
 	<a href='/docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='/img/i_user.png' alt='Журнал агентов' border='0'></a>
 	<a href='/docs.php?l=dov' title='Работа с доверенными лицами'><img src='/img/i_users.png' alt='лица' border='0'></a>
