@@ -317,7 +317,7 @@ div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
 
 
 .lin0{
-    BACKGROUND-COLOR: #f0f8ff;
+    background-color: #f0f8ff;
 }
 
 .lin0 td
@@ -326,7 +326,7 @@ div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
 }
 
 .lin1 {
-    BACKGROUND-COLOR: #e0f0ff;
+    background-color: #e0f0ff;
 }
 
 .lin1 td
@@ -335,21 +335,11 @@ div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
 }
 
 .lin01 {
-    BACKGROUND-COLOR: #c0dfff;
+    background-color: #c0dfff;
 }
 
 .lin11 {
-    BACKGROUND-COLOR: #b0d8ff;
-}
-
-table.colorized tr:first-child(even)
-{
-	background: #f0f8ff;
-}
-
-table.colorized tr:first-child(odd)
-{
-	background: #e0f0ff;
+    background-color: #b0d8ff;
 }
 
 ul.tabs

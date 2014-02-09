@@ -49,7 +49,10 @@ function autoCompleteField(input_id, data, update_callback) {
 			s += ">" + data[i] + "</li>";
 		}
 		ac_list.innerHTML = s;
-		old_hl = 0;
+		old_hl = ac_list.firstChild;
+		if(old_hl)
+			old_hl.className = 'cac_over';
+		ac_result.scrollTop = 0;
 	}
 	
 	function showList() {
@@ -128,6 +131,8 @@ function autoCompleteField(input_id, data, update_callback) {
 	
 	// События списка
 	ac_list.onmouseover = function(event) {
+		if(old_hl == event.target)
+			return;
 		if(event.target.tagName=='LI') {
 			if(old_hl)
 				old_hl.className = '';
@@ -188,6 +193,7 @@ function getCacheObject() {
 	
 	mmCacheObject.set = function (name, object, ttl) {
 		if(!ttl)	ttl = 60000;	// miliseconds
+		else		ttl *= 1000;
 		try {
 			localStorage.setItem(name, JSON.stringify(object) );
 			setTTL(name, ttl);
@@ -257,8 +263,8 @@ function docTypeMultiSelect(div_id, data, update_callback) {
 	function buildList() {
 		var s='';
 		for (var i in data) {
-			s += "<label><input type='checkbox' value='" + i + "' checked>" + i + ": " + data[i] + "</label><br>";
-			base_div.values[i] = 1;
+			s += "<label><input type='checkbox' value='" + i + "'>" + i + ": " + data[i] + "</label><br>";
+			base_div.values[i] = 0;
 		}
 		ac_result.innerHTML = s;
 	}
@@ -313,8 +319,8 @@ function docTypeMultiSelect(div_id, data, update_callback) {
 			if(item.tagName == 'LABEL')
 			if(item.firstChild.tagName == 'INPUT')
 			{
-				item.firstChild.checked = true;
-				base_div.values[item.firstChild.value] = 1;
+				item.firstChild.checked = false;
+				base_div.values[item.firstChild.value] = 0;
 			}
 			
 			item = item.nextSibling;
@@ -329,7 +335,7 @@ function docTypeMultiSelect(div_id, data, update_callback) {
 	}
 }
 
-function initDocJournal(container_id) {
+function initDocJournal(container_id, default_filters) {
 	var container = document.getElementById(container_id);
 	var doc_list_status = document.getElementById('doc_list_status');
 	var doc_list_filter = document.getElementById('doc_list_filter');
@@ -444,7 +450,7 @@ function initDocJournal(container_id) {
 		if (!posnames)
 			componetns = componetns + ',posnames';
 		
-		var url = '/json.php?c=' + componetns+filter_request;
+		var url = '/json.php?c=' + componetns+filter_request+'&p/doclist='+part;
 		
 		httpRequest.abort();
 		httpRequest.onreadystatechange = receiveDataProcess;
@@ -485,42 +491,42 @@ function initDocJournal(container_id) {
 				var iff = 0;
 				if(!doc_types) {
 					doc_types = json.doctypes;
-					cache.set('doctypes', json.doctypes);
+					cache.set('doctypes', json.doctypes, 3600);
 					iff = 1;
 				}
 				if(!agentnames) {
 					agentnames = json.agentnames;
-					cache.set('agentnames', json.agentnames);
+					cache.set('agentnames', json.agentnames, 30);
 					iff = 1;
 				}
 				if(!usernames) {
 					usernames = json.usernames;
-					cache.set('usernames', json.usernames);
+					cache.set('usernames', json.usernames, 60);
 					iff = 1;
 				}
 				if(!skladnames) {
 					skladnames = json.skladnames;
-					cache.set('skladnames', json.skladnames);
+					cache.set('skladnames', json.skladnames, 3600);
 					iff = 1;
 				}
 				if(!kassnames) {
 					kassnames = json.kassnames;
-					cache.set('kassnames', json.kassnames);
+					cache.set('kassnames', json.kassnames, 3600);
 					iff = 1;
 				}
 				if(!banknames) {
 					banknames = json.banknames;
-					cache.set('banknames', json.banknames);
+					cache.set('banknames', json.banknames, 3600);
 					iff = 1;
 				}
 				if(!firmnames) {
 					firmnames = json.firmnames;
-					cache.set('firmnames', json.firmnames);
+					cache.set('firmnames', json.firmnames, 3600);
 					iff = 1;
 				}
 				if(!posnames) {
 					posnames = json.posnames;
-					cache.set('posnames', json.posnames);
+					cache.set('posnames', json.posnames, 60);
 					iff = 1;
 				}
 				
@@ -568,9 +574,10 @@ function initDocJournal(container_id) {
 				}
 
 				newLine(data.doclist[i], data.user_id)
+				
 				i++;
 				if (i % 40)
-					if (((new Date) - date_start) > 200)
+					if (((new Date) - date_start) > 50)
 					{
 						window.setTimeout(appendChunk, 5);
 						return;
@@ -578,12 +585,13 @@ function initDocJournal(container_id) {
 				if (stop)
 					return;
 			}
-			if (!data.end) {
+			if (!data.doclist_end) {
 				function execRequest() {
 					//alert('req '+(part+1));
 					requestData(part + 1);
 				}
-				//window.setTimeout(execRequest, 120);
+				if(part<40)
+				window.setTimeout(execRequest, 120);
 			}
 			doc_list_status.innerHTML = "Итого: приход: " + pr_sum.toFixed(2) + ", расход: " + ras_sum.toFixed(2) + ". Баланс: " + (pr_sum - ras_sum).toFixed(2) + ", запрос выполнен за:" + data.exec_time + "сек, отображено за: " + ((new Date - render_start_date) / 1000).toFixed(2) + " сек";
 		}
@@ -594,24 +602,36 @@ function initDocJournal(container_id) {
 	function infoCell(name, value) {
 		return "<div class='ic'>" + name + ":</div> " + value;
 	}
-
-	function newLine(line, user_id)
-	{
+	
+	function newLine(line, user_id) {
 		var tr = docj_list_body.insertRow(-1);
-		var tr_class = 'pointer';
+		
+		var tr_class = '';
+		var num_class = '';
 		if (line.author_id == user_id)
-			tr_class += ' lin11';
+			tr_class += ' u';
+		if(line.err_flag!=0)		tr_class += ' f_red';
+		else if(line.subtype == 'site')	tr_class += ' f_green';
+		
 		var source = '';
 		var target = '';
 		switch(parseInt(line.type)) {
 			case 1:	source = infoCell("Агент", agentnames[line.agent_id]);
 				target =  infoCell("Склад", skladnames[line.sklad_id]);
 				break;
-			case 2: 
+			case 2: if(Number(line.sum)>0) {
+					if(Number(line.pay_sum) > Number(line.sum))		num_class = 'f_purple';
+					else if(Number(line.pay_sum) == Number(line.sum))	num_class = 'f_green';
+					else if(Number(line.pay_sum) == 0)			num_class = 'f_red';
+					else							num_class = 'f_brown';
+				}
+				// тут не нужен break!
 			case 20:source = infoCell("Склад", skladnames[line.sklad_id]);
 				target = infoCell("Агент", agentnames[line.agent_id]);
 				break;
-			case 3:	
+			case 3:	if(line.out_status == 'a')	num_class = 'f_green';
+				else if(line.out_status == 'p')	num_class = 'f_brown';
+				// тут не нужен break!
 			case 11:
 			case 12:source = infoCell("Агент", agentnames[line.agent_id]);
 				target = infoCell("Фирма", firmnames[line.firm_id]);
@@ -654,7 +674,7 @@ function initDocJournal(container_id) {
 		}
 		
 		
-		var html = "<td style='text-align: right;' class='" + line.num_highlight + "' onclick=\"window.open('/doc.php?mode=body&amp;doc=" + line.id + "'); return false;\">" + line.altnum + line.subtype + "</td><td onclick=\"window.open('/docj.php?mode=tree&amp;doc=" + line.id + "'); return false;\"><img src='img/i_tree.png' alt='Связи'></td><td>" + line.id + "</td><td>";
+		var html = "<td style='text-align: right;' class='" + num_class + "' onclick=\"window.open('/doc.php?mode=body&amp;doc=" + line.id + "'); return false;\">" + line.altnum + line.subtype + "</td><td onclick=\"window.open('/docj.php?mode=tree&amp;doc=" + line.id + "'); return false;\"><img src='img/i_tree.png' alt='Связи'></td><td>" + line.id + "</td><td>";
 		if (line.ok > 0)
 			html += "<img src='/img/i_suc.png' alt='Проведен'>";
 		if (line.mark_del > 0)
@@ -662,6 +682,7 @@ function initDocJournal(container_id) {
 
 		html += "</td><td>" + doc_types[line.type] + "</td><td>" + source + "</td><td>" + target + "</td><td style='text-align: right;'>" + line.sum + "</td><td>" + line.date + "</td><td onclick=\"window.open('/adm_users.php?mode=view&amp;id=" + line.author_id + "'); return false;\">" + usernames[line.author_id] + "</td>";
 		tr.innerHTML = html;
+		tr.className = tr_class;
 	}
 
 	function initFilter(filter) {
@@ -675,8 +696,16 @@ function initDocJournal(container_id) {
 			}
 			return s;
 		}
+		var date_from = '';
+		var date_to = '';
+		if(default_filters) {
+			if(default_filters.dateFrom)
+				date_from = default_filters.dateFrom;
+			if(default_filters.dateTo)
+				date_to = default_filters.dateTo;
+		}
 		
-		var s = "<div class='bf'><input type='text' class='half' name='date_from' id='datepicker_f' value='' placeholder='Дата от'>-<input type='text' class='half' name='date_to' id='datepicker_t' value='' placeholder='Дата до'></td></tr></table></div>";
+		var s = "<div class='bf'><input type='text' class='half' name='date_from' id='datepicker_f' value='"+date_from+"' placeholder='Дата от'>-<input type='text' class='half' name='date_to' id='datepicker_t' value='"+date_to+"' placeholder='Дата до'></td></tr></table></div>";
 		s += "<div class='bf'><div class='input multiselect_div' id='doctype_filter' placeholder='Тип документа'>Тип документа</div></div>";
 		s += "<div class='bf'><input type='text' class='half' id='altnum' value='' placeholder='Альт. номер'>, <input type='text' class='half' id='subtype' value='' placeholder='Подтип'></div>";
 		s += "<div class='bf'><input type='text' name='agent' id='agent_filter' placeholder='Агент'></div>";
@@ -723,9 +752,8 @@ function initDocJournal(container_id) {
 		docTypeMultiSelect('doctype_filter', doc_types, beginDefferedRequest);
 	}
 
+	initFilter(doc_list_filter);
+	buildFilterQuery();
 	requestData(0);
 	initFilter(doc_list_filter);
 }
-
-initDocJournal(document.getElementById('docj_list_body'));
-

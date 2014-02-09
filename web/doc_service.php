@@ -47,6 +47,7 @@ if($mode=='')
 	<li><a href='?mode=auinfo'>Документы, изменённые после проведения</a></li>
 	<li><a href='?mode=pcinfo'>Информация по изменениям в номеклатуре</a></li>
 	<li><a href='?mode=types'>Редактор типов товаров</a></li>
+	<li><a href='?mode=cimage'>Замена изображений</a></li>
 	</ul>");
 }
 else if($mode=='merge_agent')
@@ -878,6 +879,100 @@ else if($mode=='pcinfo')
 	}
 	$tmpl->addContent("</table>");
 }
+else if($mode == 'cimage') {
+	doc_menu();
+	$tmpl->addContent("<h1 id='page-title'>Управление изображениями товаров</h1>");
+	$tmpl->setTitle("Управление изображениями товаров");
+	include_once("include/imgresizer.php");
+	$img = rcvint('img');
+	if($img=='') {
+		
+		$tmpl->addStyle(".fl {float: left; padding: 5px; margin: 10px; border: 1px solid #00f; width: 120px; height: 150px; text-align: center; background: #888;}");
+		$res = $db->query("SELECT * FROM `doc_img` ORDER BY `id`");
+		while($line = $res->fetch_assoc()) {
+			$img = new ImageProductor($line['id'], 'p', $line['type']);
+			$img->SetY(120);
+			$img->SetX(100);
+
+			$tmpl->addContent("<div class='fl'><a href='/doc_service.php?mode=cimage&amp;img={$line['id']}'><img src=\"".$img->GetURI()."\"></a>
+			<br>".html_out($line['name'])."<br><b>{$line['id']}.{$line['type']}</b></div>");
+		}
+		$tmpl->addContent("<div style='clear: both'></div>");
+	}
+	else {
+		if(request('save')) {
+			$db->startTransaction();
+			$res = $db->query("SELECT * FROM `doc_img` WHERE `id`=$img");
+			if($res->num_rows == 0)
+				throw new NotFoundException("Изображение не найдено");
+			$line = $res->fetch_assoc();
+			if ($_FILES['userfile']['size'] > 0) {
+				$iminfo = getimagesize($_FILES['userfile']['tmp_name']);
+				switch ($iminfo[2]) {
+					case IMAGETYPE_JPEG: $imtype = 'jpg';
+						break;
+					case IMAGETYPE_PNG: $imtype = 'png';
+						break;
+					case IMAGETYPE_GIF: $imtype = 'gif';
+						break;
+					default: $imtype = '';
+				}
+				if (!$imtype)
+					throw new Exception("Файл - не картинка, или неверный формат файла. Рекомендуется PNG и JPG, допустим но не рекомендуется GIF.");
+
+
+				if (!move_uploaded_file($_FILES['userfile']['tmp_name'], $CONFIG['site']['var_data_fs'] . '/pos/' . $img . '.' . $imtype))
+					throw new Exception("Файл не загружен, $img.$imtype", "err");
+				$line['type'] = $imtype;
+
+				$tmpl->msg("Файл загружен, $img.$imtype", "info");
+				if ($dh = opendir("{$CONFIG['site']['var_data_fs']}/cache/pos/")) {
+					while (($file = readdir($dh)) !== false) {
+						if($file=='.' || $file=='..')	continue;
+						unlink("{$CONFIG['site']['var_data_fs']}/cache/pos/$file");
+					}
+					closedir($dh);
+				}
+			}
+			$name_sql = $db->real_escape_string(request('name'));
+			$db->query("UPDATE `doc_img` SET `name` = '$name_sql', `type` = '{$line['type']}' WHERE `id`=$img");
+			$db->commit();
+			$tmpl->msg("Данные сохранены", "ок");
+		}
+		$res = $db->query("SELECT * FROM `doc_img` WHERE `id`=$img");
+		if($res->num_rows == 0)
+			throw new NotFoundException("Изображение не найдено");
+		$line = $res->fetch_assoc();
+		$max_fs = get_max_upload_filesize();
+		$max_fs_size = $max_fs;
+		if ($max_fs_size > 1024 * 1024)
+			$max_fs_size = ($max_fs_size / (1024 * 1024)) . ' Мб';
+		else if ($max_fs_size > 1024)
+			$max_fs_size = ($max_fs_size / (1024)) . ' Кб';
+		else
+			$max_fs_size.='байт';
+		$o_link = "{$CONFIG['site']['var_data_web']}/pos/{$line['id']}.{$line['type']}";
+		$tmpl->msg("Замена файла очистит кеш изображений!","err","Внимание");
+		$tmpl->addContent("<form method='post' enctype='multipart/form-data'>
+		<input type='hidden' name='mode' value='cimage'>
+		<input type='hidden' name='save' value='ok'>
+		<input type='hidden' name='img' value='$img'>
+		Новое название:<br>
+		<input type='text' name='name' value='".html_out($line['name'])."'><br>
+		Новый файл изображения:<br>
+		<input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br>
+		<b>Форматы</b>: Не более $max_fs_size, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
+		<button>Сохранить</button>
+		</form><br>
+		<a href='$o_link'>Скачать оригинал изображения</a><br><br>");
+		$img = new ImageProductor($line['id'], 'p', $line['type']);
+		$img->SetNoEnlarge(1);
+		$img->SetY(800);
+
+		$tmpl->addContent("<img src=\"".$img->GetURI()."\">");
+	}
+}
+
 else throw new NotFoundException("Несуществующая опция");
 }
 catch(mysqli_sql_exception $e) {

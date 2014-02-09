@@ -21,12 +21,13 @@
 // Можно формировать запрос одновременно к нескольким компонентам системы
 // Запросы исполняются в порядке перечисления компонентов
 // Обязательный параметр c - список компонетов, к которым формируется запрос, c разделителем "," (запятая)
-// Опциональные параметры o.Z, где Z - имя компонента - имя поля, по которому должен быть отсортирован результат
-// Опциональные параметры d.Z, где Z - имя компонента - если задан и не 0, сортировка будет от большего к меньшему
-// Опциональные параметры f.Z, где Z - имя компонента - список полей, которые нужно получить в ответе, c разделителем "," (запятая)
+// Опциональные параметры o/Z, где Z - имя компонента - имя поля, по которому должен быть отсортирован результат
+// Опциональные параметры d/Z, где Z - имя компонента - если задан и не 0, сортировка будет от большего к меньшему
+// Опциональные параметры f/Z, где Z - имя компонента - список полей, которые нужно получить в ответе, c разделителем "," (запятая)
+// Опциональные параметры p/Z, где Z - имя компонента - номер страницы запроса
+// Опциональные параметры l/Z, где Z - имя компонента - лимит на количество строк в ответе
 // Опциональные параметры Z[], где Z - имя компонента, передаются компонентам как option
-// Опциональный параметр p - номер страницы запроса
-// Опциональный параметр l - лимит на количество строк в ответе
+
 // Стандартные значения X:
 // X = id - получение данных об элементе с заданным id
 // X = s - получить список элементов, у которых название, или другое строковое поле содержит значение s
@@ -44,7 +45,10 @@ abstract class ajaxRequest {
 	protected $fields = ''; //< Набор полей
 	protected $order_field = false; //< Поле, по которому будет выполнена сортировка
 	protected $order_reverse = false; //< Обратное направление сортировки (от большего к меньшему)
+	protected $page = 0; //< Страница ответа
 	protected $limit = 1000; //< лимит на количество строк в ответе
+	
+	public $end = 0; //< признак последней страницы
 
 	/// Устанавливает опции в значение value
 	public function setOptions($value) {
@@ -72,18 +76,22 @@ abstract class ajaxRequest {
 		$this->limit = intval($limit);
 	}
 	
+	/// @brief Задать страницу выдачи
+	public function setPage($page) {
+		$this->page = intval($page);
+	}
+	
 	/// @brief Получить json данные
 	/// Если запрошено поле, которое нельзя вернуть по каким-либо причинам, метод выбрасывает исключение
 	/// Допускается возврат незапрошенных полей
 	/// Возвращает данные, отфильтрованные в соответствии с фильтрами 
-	/// @param page Номер страницы данных
-	abstract public function getJsonData($page = 0);
+	abstract public function getJsonData();
 };
 
 /// Обработчик ajax запросов списка документов
 /// Выдача содержит лишь данные документов, без связанных справочников
 class ajaxRequest_DocList extends ajaxRequest {
-	
+	protected $limit = 1000; //< лимит на количество строк в ответе
 	/// @brief Получить строку фильтров
 	/// @return Возвращает WHERE часть SQL запроса к таблице журнала документов
 	protected function getFilter() {
@@ -93,10 +101,11 @@ class ajaxRequest_DocList extends ajaxRequest {
 			foreach ($this->options as $key=>$value) {
 				switch($key) {
 					case 'df':	// Date from
+						
 						$filter.=' AND `doc_list`.`date`>='.strtotime($value);
 						break;
 					case 'dt':	// Date to
-						$filter.=' AND `doc_list`.`date`<='.strtotime($value);
+						$filter.=' AND `doc_list`.`date`<='.(strtotime($value)+60*60*24-1);
 						break;
 					case 'an':	// Alternative number
 						$filter.=' AND `doc_list`.`altnum`='.$db->real_escape_string($value);
@@ -153,11 +162,69 @@ class ajaxRequest_DocList extends ajaxRequest {
 		return $joins;
 	}
 
+	/// @brief Получить сумму оплаты реализации
+	/// Поведение для других документов не определено
+	/// @param doc_id	ID документа
+	/// @param p_doc_id	ID родительского документа
+	/// @return		сумма оплаты
+	protected function getPaySum($doc_id, $p_doc_id) {
+		global $db;
+		settype($p_doc_id,'int');
+		$add='';
+		if($p_doc_id)
+			$add = " OR (`p_doc`='$p_doc_id' AND (`type`='4' OR `type`='6'))";
+		$res = $db->query("SELECT SUM(`sum`)
+			FROM `doc_list`
+			WHERE ((`p_doc`='$doc_id' AND (`type`='4' OR `type`='6')) $add) AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+		if($r = $res->fetch_row())
+			return round($r[0], 2);
+		else return 0;
+	}
+	
+	/// @brief Получить состояние отгрузки заявки
+	/// Поведение для других документов не определено
+	/// @param doc_id	ID документа
+	/// @return		n - не отгружено, p - частичная отгрузка,  a - полная отгрузка
+	protected function getOutStatus($doc_id) {
+		//return '';
+		global $db;
+		$res = $db->query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`,
+			( SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+			INNER JOIN `doc_list` ON `doc_list_pos`.`doc`=`doc_list`.`id`
+			WHERE `doc_list_pos`.`tovar`=`pos_id` AND `doc_list`.`p_doc`=`doc_id` AND `doc_list`.`type`='2'	AND `doc_list`.`ok`>'0'
+			) AS `r_cnt`
+		FROM `doc_list_pos`
+		WHERE `doc_list_pos`.`doc`='$doc_id'");
+		$f = 0;
+		$n = 0;
+		while($nx = $res->fetch_assoc()) {
+			if($nx['r_cnt'] == 0)	{
+				$n = 1;
+				continue;
+			}
+			$f = 1;
+			if($nx['cnt'] > $nx['r_cnt']) {
+				$f = 2;
+				break;
+			}
+		}
+		switch($f) {
+			case 1: if($n)	$r = 'p';
+				else	$r = 'n';
+				break;
+			case 2:	$r = 'p';
+				break;
+			default:$r = 'n';
+		}
+		$res->free();
+		return $r;
+	}
+
 
 	/// @brief Получить json данные списка документов
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
-		$start = intval($page) * $this->limit + 1;		
+		$start = intval($this->page) * $this->limit;		
 		$sql_filter = $this->getFilter();
 		$sql_join = $this->getJoins();
 		
@@ -172,21 +239,47 @@ class ajaxRequest_DocList extends ajaxRequest {
 		WHERE 1 $sql_filter
 		ORDER by `doc_list`.`date` DESC
 		LIMIT $start,{$this->limit}";
-		
 		$result = array();
 		$res = $db->query($sql);
 		while ($line = $res->fetch_assoc()) {
-			//if ($result)	$result.=",";
-			//else		$result = '[';
-			$line['date'] = date("Y-m-d H:i:s", $line['date']);
+			$line['date'] = date("Y-m-d", $line['date']).'&nbsp'.date("H:i:s", $line['date']);
 			if($line['nasklad_id']=='null')	unset($line['nasklad_id']);
 			if($line['vkassu_id']=='null')	unset($line['vkassu_id']);
 			//$result .= json_encode($line, JSON_UNESCAPED_UNICODE);
+			
+			switch($line['type'])
+			{
+				case 2:	// Проплаты
+					$line['pay_sum'] = $this->getPaySum($line['id'], $line['p_doc']);
+					break;
+				case 3:	// Отгрузки
+					$line['out_status'] = $this->getOutStatus($line['id']);
+					break;
+				
+				
+
+//				if(($nxt[1]==1)&&($nxt[7]>0))
+//				{
+//					$add='';
+//					if($nxt[12]) $add=" OR (`p_doc`='$nxt[12]' AND (`type`='5' OR `type`='7'))";
+//					$rs=$db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE (`p_doc`='$nxt[0]' AND (`type`='5' OR `type`='7'))
+//					$add AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
+//					if($r=$rs->fetch_row())
+//					{
+//						$prop=sprintf("%0.2f",$r[0]);
+//						if($prop==$nxt[7])	$cl='f_green';
+//						else if($prop>$nxt[7])	$cl='f_purple';
+//						else $cl='f_brown';
+//					}
+//				}
+
+			}
+			
+			
 			$result[] = $line;
 		}
-		//$result .= ']';
-		$result = json_encode($result, JSON_UNESCAPED_UNICODE);
-		return $result;
+		if($res->num_rows < $this->limit)	$this->end = 1;
+		return json_encode($result, JSON_UNESCAPED_UNICODE);
 	}
 };
 
@@ -194,7 +287,7 @@ class ajaxRequest_DocList extends ajaxRequest {
 class ajaxRequest_doctypes extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
 		$sql = "SELECT `id`, `name` FROM `doc_types` ORDER by `id` ASC";
 		$result = '';
@@ -213,7 +306,7 @@ class ajaxRequest_doctypes extends ajaxRequest {
 class ajaxRequest_agentnames extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
 		$sql = "SELECT `id`, `name` FROM `doc_agent`";
 		$result = '';
@@ -230,7 +323,7 @@ class ajaxRequest_agentnames extends ajaxRequest {
 class ajaxRequest_usernames extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
 		$sql = "SELECT `id`, `name` FROM `users` ORDER by `id` ASC";
 		$result = '';
@@ -247,7 +340,7 @@ class ajaxRequest_usernames extends ajaxRequest {
 class ajaxRequest_skladnames extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
 		$sql = "SELECT `id`, `name` FROM `doc_sklady` ORDER by `id` ASC";
 		$result = '';
@@ -264,7 +357,7 @@ class ajaxRequest_skladnames extends ajaxRequest {
 class ajaxRequest_kassnames extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
 		$sql = "SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' ORDER by `num` ASC";
 		$result = '';
@@ -281,7 +374,7 @@ class ajaxRequest_kassnames extends ajaxRequest {
 class ajaxRequest_banknames extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
 		$sql = "SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='bank' ORDER by `num` ASC";
 		$result = '';
@@ -298,7 +391,7 @@ class ajaxRequest_banknames extends ajaxRequest {
 class ajaxRequest_firmnames extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db;
 		$sql = "SELECT `id`, `firm_name` FROM `doc_vars` ORDER by `id` ASC";
 		$result = '';
@@ -315,7 +408,7 @@ class ajaxRequest_firmnames extends ajaxRequest {
 class ajaxRequest_posnames extends ajaxRequest {
 	
 	/// @brief Получить json данные
-	public function getJsonData($page = 0) {
+	public function getJsonData() {
 		global $db, $CONFIG;
 		$sql = "SELECT `id`, `name`, `proizv` AS `vendor`, `vc` FROM `doc_base` ORDER BY `name`";
 		$result = '';
@@ -356,23 +449,27 @@ try {
 	foreach($components as $component) {
 		$class_name = 'ajaxRequest_'.$component;
 		$request = new $class_name;
-		$o = request('o.'.$component);
+		$o = request('o/'.$component);
 		if($o)	$request->setOrderField($o);
-		$d = request('d.'.$component);
+		$d = request('d/'.$component);
 		if($d)	$request->setReverseOrderDirection($true);
-		$f = request('f.'.$component);
+		$f = request('f/'.$component);
 		if($f)	$request->setFields($f);
+		$p = request('p/'.$component);
+		if($p)	$request->setPage($p);
+		$l = request('l/'.$component);
+		if($l)	$request->setLimit($f);
+		
 		$z = request($component);
 		if($z)	$request->setOptions($z);
-		if(isset($_REQUEST['l']))
-			$request->setLimit(request('l'));
 		
-		$p = rcvint('p');
-		$data = $request->getJsonData($p);
+		$data = $request->getJsonData();
 		$result.=",\"$component\":$data";
+		if($request->end)
+			$result.=",\"{$component}_end\":\"1\"";
 	}
 	$exec_time = round(microtime(true) - $starttime, 3);
-	$result .= ",\"exec_time\":\"$exec_time\"}";
+	$result .= ",\"exec_time\":\"$exec_time\",\"user_id\":\"{$_SESSION['uid']}\"}";
 	echo $result;
 }
 catch(AccessException $e) {

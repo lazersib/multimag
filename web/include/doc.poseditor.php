@@ -370,6 +370,7 @@ function AddPos($pos) {
 	settype($pos, 'int');
 	$cnt = rcvrounded('cnt', 5);
 	$cost = rcvrounded('cost', 2);
+	//echo $cost;
 	$add=0;
 	$ret='';
 
@@ -396,7 +397,7 @@ function AddPos($pos) {
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 		WHERE `doc_list_pos`.`id`='$pos_line'");
 		$line = $res->fetch_assoc();
-		$line['cost'] = $line['scost'] = $this->cost_id?getCostPos($line['id'], $this->cost_id):$line['cost'];
+		$line['scost'] = $this->cost_id?getCostPos($line['id'], $this->cost_id):$line['cost'];
 		$line['line_id'] = $pos_line;
 		$line['pos_id'] = $line['id'];
 		$line['gtd'] = '';

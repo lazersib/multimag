@@ -583,9 +583,8 @@ div#wiki-foot {
 
 div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
 
-
 .lin0{
-    BACKGROUND-COLOR: #f0f8ff;    
+    background-color: #f0f8ff;    
 }
 
 .lin0 td
@@ -594,7 +593,7 @@ div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
 }
 
 .lin1 {
-    BACKGROUND-COLOR: #e0f0ff;
+    background-color: #e0f0ff;
 }
 
 .lin1 td
@@ -603,21 +602,11 @@ div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
 }
 
 .lin01 {
-    BACKGROUND-COLOR: #c0dfff;
+    background-color: #c0dfff;
 }
 
 .lin11 {
-    BACKGROUND-COLOR: #b0d8ff;
-}
-
-table.colorized tr:first-child(even)
-{
-	background: #f0f8ff;
-}
-
-table.colorized tr:first-child(odd)
-{
-	background: #e0f0ff;
+    background-color: #b0d8ff;
 }
 
 ul.tabs
@@ -732,25 +721,29 @@ div.contextlayer
 	text-align:		left;
 }
 
-table.list tr
-{
+/* Таблицы */
+table.list tr{
 	background-color:	#f0f8ff;
 }
 
-table.list tr td
-{
-	/*border-right:		#e0f0ff 1px solid;*/
-	padding:		3px 5px 2px 5px;
-}
-
-table.list tr:nth-child(odd)
-{
+table.list tr:nth-child(odd) {
 	background-color:	#e0f0ff;
 }
 
-table.list tr:nth-child(odd) td
-{
-	/*border-right: #fff 1px solid;*/
+table.list tr.u {	/* выделение объекта текущего пользователя */
+    background-color: #d0efff;
+}
+
+table.list tr:nth-child(odd).u {	/* выделение объекта текущего пользователя */
+    background-color: #c0e8ff;
+}
+
+table.list tr td{
+	padding:		3px 5px 2px 5px;
+}
+
+table.list tr.u td {	/* выделение объекта текущего пользователя */
+    border-bottom: #ccc 1px solid;
 }
 
 table.list div.ic {

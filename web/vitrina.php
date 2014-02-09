@@ -1336,7 +1336,7 @@ protected function MakeBuy() {
 			$res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='{$_SESSION['basket']['delivery_type']}'");
 			list($d_service_id) = $res->fetch_row();
 			$res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
-			list($d_price) = $res>fetch_row();
+			list($d_price) = $res->fetch_row();
 			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`

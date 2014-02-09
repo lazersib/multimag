@@ -583,9 +583,10 @@ if($mode=="")
 		switch($nxt['type'])
 		{
 			case 3:	// Отгрузки
-				$r=$db->query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, (	SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
-				INNER JOIN `doc_list` ON `doc_list_pos`.`doc`=`doc_list`.`id`
-				WHERE `doc_list_pos`.`tovar`=`pos_id` AND `doc_list`.`p_doc`=`doc_id` AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
+				$r=$db->query("SELECT `doc_list_pos`.`doc` AS `doc_id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`,
+					( SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+					INNER JOIN `doc_list` ON `doc_list_pos`.`doc`=`doc_list`.`id`
+					WHERE `doc_list_pos`.`tovar`=`pos_id` AND `doc_list`.`p_doc`=`doc_id` AND `doc_list`.`type`='2' AND `doc_list`.`ok`>'0'
 				) AS `r_cnt`
 				FROM `doc_list_pos`
 				WHERE `doc_list_pos`.`doc`='$nxt[0]'");

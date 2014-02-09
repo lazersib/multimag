@@ -2,7 +2,7 @@
 
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -27,18 +27,6 @@ if (!isAccess('doc_list', 'view'))
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->hideBlock('left');
 
-function json_encode_line($line) {
-	$ret = '';
-	foreach ($line as $id => $value) {
-		if ($ret)
-			$ret.=',';
-		$value = str_replace("'", "\\'", $value);
-		//$ret.="'$id':'".htmlentities($value,ENT_QUOTES,"UTF-8")."'";
-		$ret.="'$id':'$value'";
-	}
-	return "{ $ret }";
-}
-
 if (!isset($_REQUEST['mode'])) {
 	$tmpl->setTitle("Реестр документов");
 	doc_menu("<a href='?mode=print' title='Печать реестра'><img src='img/i_print.png' alt='Реестр документов' border='0'></a>");
@@ -57,9 +45,13 @@ if (!isset($_REQUEST['mode'])) {
 	</tbody>
 	</table>
 
-	<br><b>Легенда</b>: строка - <span class='f_green'>с сайта</span>, <span class='f_red'>с ошибкой</span><br>Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
+	<br><b>Легенда</b>: строка - <span class='f_green'>интернет - магазин</span>, <span class='f_red'>с ошибкой</span><br>
+	Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
 	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
 	<script type='text/javascript' src='/js/doc_journal.js'></script>
+	<script>
+	initDocJournal(document.getElementById('docj_list_body'), {dateFrom: '".date("Y-01-01")."'});
+	</script>
 	");
 }
 

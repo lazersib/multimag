@@ -46,7 +46,7 @@ try {
 
 // Перемещение непроведённых заявок на начало текущего дня
 	if ($CONFIG['auto']['move_no_to_end'] == true) {
-		$end_day = strtotime(date("Y-m-d 00:00:01"));
+		$end_day = strtotime(date("Y-m-d 00:00:02"));
 		$db->query("UPDATE `doc_list` SET `date`='$end_day' WHERE `type`='3' AND `ok`='0'");
 	}
 
