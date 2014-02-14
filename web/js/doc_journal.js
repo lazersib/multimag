@@ -39,14 +39,41 @@ function autoCompleteField(input_id, data, update_callback) {
 	ac_result.className = 'cac_results';
 	
 	var hide_timer = 0;
+	var old_value;
+	var old_seeked = new Array;
 	
 	function buildList() {
 		var substr = ac_input.value.toLowerCase();
 		var s='';
-		for (var i in data) {
-			if(data[i].toLowerCase().indexOf(substr) == -1) continue;
-			s += "<li value='" + i + "'";
-			s += ">" + data[i] + "</li>";
+		if(substr == '') {
+			old_seeked = new Array;
+			for (var i in data) {
+				s += "<li value='" + i + "'";
+				s += ">" + data[i] + "</li>";
+				old_seeked.push(data[i]);
+			}
+			old_value = '';
+		}
+		else if(old_value != '' && substr.indexOf(old_value)==0) {
+			var cp = new Array;
+			for (var i in old_seeked) {
+				if(old_seeked[i].toLowerCase().indexOf(substr) == -1) continue;
+				s += "<li value='" + i + "'";
+				s += ">" + old_seeked[i] + "</li>";
+				cp.push(old_seeked[i]);
+			}
+			old_seeked = cp;
+			old_value = substr;
+		}
+		else {
+			old_seeked = new Array;
+			for (var i in data) {
+				if(data[i].toLowerCase().indexOf(substr) == -1) continue;
+				s += "<li value='" + i + "'";
+				s += ">" + data[i] + "</li>";
+				old_seeked.push(data[i]);
+			}
+			old_value = substr;
 		}
 		ac_list.innerHTML = s;
 		old_hl = ac_list.firstChild;

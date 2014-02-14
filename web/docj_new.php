@@ -50,7 +50,7 @@ if (!isset($_REQUEST['mode'])) {
 	Номер заявки - <span class='f_green'>Отгружено</span>, <span class='f_brown'>Частично отгружено</span>
 	<script type='text/javascript' src='/js/doc_journal.js'></script>
 	<script>
-	initDocJournal(document.getElementById('docj_list_body'), {dateFrom: '".date("Y-01-01")."'});
+	initDocJournal(document.getElementById('docj_list_body'), {dateFrom: '".date("Y-m-d")."'});
 	</script>
 	");
 }
