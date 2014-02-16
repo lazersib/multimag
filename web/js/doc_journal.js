@@ -50,7 +50,7 @@ function autoCompleteField(input_id, data, update_callback) {
 			for (var i in data) {
 				s += "<li value='" + i + "'";
 				s += ">" + data[i] + "</li>";
-				old_seeked.push(data[i]);
+				old_seeked[i] = data[i];
 			}
 			old_value = '';
 		}
@@ -60,7 +60,7 @@ function autoCompleteField(input_id, data, update_callback) {
 				if(old_seeked[i].toLowerCase().indexOf(substr) == -1) continue;
 				s += "<li value='" + i + "'";
 				s += ">" + old_seeked[i] + "</li>";
-				cp.push(old_seeked[i]);
+				cp[i] = old_seeked[i];
 			}
 			old_seeked = cp;
 			old_value = substr;
@@ -71,7 +71,7 @@ function autoCompleteField(input_id, data, update_callback) {
 				if(data[i].toLowerCase().indexOf(substr) == -1) continue;
 				s += "<li value='" + i + "'";
 				s += ">" + data[i] + "</li>";
-				old_seeked.push(data[i]);
+				old_seeked[i] = data[i];
 			}
 			old_value = substr;
 		}

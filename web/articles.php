@@ -120,7 +120,7 @@ try
 			$nxt = $res->fetch_assoc();
 			$h = $meta_description = $meta_keywords='';
 			$text = $nxt['text'];
-			if($nxt['type']==0)		$text = html_out($text);
+			//if($nxt['type']==0)		$text = html_out($text);
 			if($nxt['type']==0 || $nxt['type']==2)
 			{
 				$text = $wikiparser->parse( $text );

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@ class doc_s_Sklad {
 	
 	function __construct()	{
 		$this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty',
-		    'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date');
+		    'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt');
 		$this->dop_vars = array('type', 'analog', 'koncost', 'd_int', 'd_ext', 'size', 'mass', 'ntd');
 		$this->group_vars = array('name' , 'desc' , 'pid' , 'hidelevel' , 'printname', 'no_export_yml', 'title_tag', 'meta_keywords', 'meta_description');
 	}
@@ -250,7 +250,7 @@ class doc_s_Sklad {
 		if ($pos != 0)		$this->PosMenu($pos, $param);
 
 		if ($param == '') {
-			$pres = $db->query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`, `doc_base`.`cost_date`
+			$pres = $db->query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`, `doc_base`.`cost_date`, `doc_base`.`mult`, `doc_base`.`bulkcnt`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
@@ -308,7 +308,7 @@ class doc_s_Sklad {
 			<td><input type='text' name='pd[proizv]' value='".html_out($pos_info['proizv'])."' id='proizv_nm' style='width: 95%'><br>
 			<div id='proizv_p' class='dd'></div></td>
 			<td align='right'>Код изготовителя</td><td><input type='text' name='pd[vc]' value='".html_out($pos_info['vc'])."'></td></tr>
-			<tr><td align='right'>Единица измерения</td><td colspan='3'><select name='pd[unit]'>");
+			<tr><td align='right'>Единица измерения</td><td><select name='pd[unit]'>");
 
 			$res2 = $db->query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
 			while ($nx2 = $res2->fetch_row()) {
@@ -325,15 +325,22 @@ class doc_s_Sklad {
 					$tmpl->addContent("<option value='$nx[0]' $i>".html_out("$nx[1] ($nx[2])")."</option>");
 				}
 			}
-			$tmpl->addContent("</select></td></tr>
-			<tr><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small></td><td colspan='3'><select name='pd[country]'>");
+			$tmpl->addContent("</select></td>
+			<td align='right'>Кратность:</td>
+			<td><input type='text' name='pd[mult]' value='".html_out($pos_info['mult'])."'></td>
+			</tr>
+			
+			<tr><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small></td><td><select name='pd[country]'>");
 			$tmpl->addContent("<option value='0'>--не выбрана--</option>");
 			$res = $db->query("SELECT `id`, `name` FROM `class_country` ORDER BY `name`");
 			while ($nx = $res->fetch_row()) {
 				$selected = ($group == $nx[0]) || ($nx[0] == $pos_info['country']) ? 'selected' : '';
 				$tmpl->addContent("<option value='$nx[0]' $selected>".html_out($nx[1])."</option>");
 			}
-			$tmpl->addContent("</select></td></tr>
+			$tmpl->addContent("</select></td>
+			<td align='right'>Количество оптом:</td>
+			<td><input type='text' name='pd[bulkcnt]' value='".html_out($pos_info['bulkcnt'])."'></td>
+			</tr>
 			<tr><td align='right'>Ликвидность:</td><td colspan='3'><b>{$pos_info['likvid']}% <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b></td></tr>
 			<tr class='lin0'><td align='right'>Базовая цена</td><td><input type='text' name='pd[cost]' value='{$pos_info['cost']}'> с {$pos_info['cost_date']} </td>
 			<td align='right'>Актуальная цена поступления:</td><td><b>$act_cost</b></td></tr>

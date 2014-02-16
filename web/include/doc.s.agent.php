@@ -21,7 +21,7 @@
 class doc_s_Agent {
 	/// Просмотр списка агентов
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'email', 'fullname', 'tel', 'adres', 'gruzopol', 'inn', 'rs', 'ks', 'okevd', 'okpo',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone');
+		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'gruzopol', 'inn', 'rs', 'ks', 'okevd', 'okpo',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone');
 	}
 	function View() {
 		global $tmpl;
@@ -112,6 +112,8 @@ class doc_s_Agent {
 				$html_pagent_name = html_out($pagent_info[0]);
 			}
 			
+			
+			
 			$tmpl->setTitle("Правка агента ".html_out($agent_info['name']));
 			$tmpl->addContent("<form action='' method='post' id='agent_edit_form'>
 			<table cellpadding='0' width='100%' class='list'>
@@ -144,9 +146,11 @@ class doc_s_Agent {
 
 			$ext='';
 			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
-
+			
+			$no_mail_c = $agent_info['no_mail']?' checked':'';
+			
 			$tmpl->addContent("</select>
-			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='".html_out($agent_info['email'])."' class='validate email'>
+			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='".html_out($agent_info['email'])."' class='validate email'>&nbsp;<label><input type='checkbox' name='no_mail' value='1'{$no_mail_c}>Не отправлять рассылки</label>
 			<tr class=lin0><td align=right>Полное название / ФИО:<br><small>Так, как должно быть в документах</small><td><input type=text name='fullname' value='".html_out($agent_info['fullname'])."' style='width: 90%;'>
 			<tr class=lin1><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='tel' value='".html_out($agent_info['tel'])."' class='phone validate'>
 			<tr class=lin0><td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='fax_phone' value='".html_out($agent_info['fax_phone'])."' class='phone validate'>
@@ -300,6 +304,8 @@ class doc_s_Agent {
 			settype($ag_info['dishonest'],'int');
 			settype($new_agent_info['group'],'int');
 			settype($new_agent_info['dishonest'],'int');
+			settype($ag_info['no_mail'],'int');
+			settype($new_agent_info['no_mail'],'int');
 			
 			if(!isAccess('doc_agent_ext', 'edit'))	{
 				unset($new_agent_info['responsible']);
