@@ -2,7 +2,7 @@
 
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -281,7 +281,7 @@ class Report_Sales extends BaseGSReport {
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
 		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
-		`doc_list`.`type`='2' AND `doc_list`.`ok`>0
+		(`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`ok`>0
 		ORDER BY `doc_list`.`date`");
 		$realiz_cnt = $sum = 0;
 		while ($nxt = $res->fetch_assoc()) {
@@ -378,7 +378,8 @@ class Report_Sales extends BaseGSReport {
 			$this->tableRow(array('', 'На конец периода:', '', $end_cnt, '', ''));
 		} else {
 			$end_cnt = $start_cnt + $prix_cnt - $r_cnt;
-			$this->tableRow(array($pos_id, $vc, $name, $base_cost, $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt));
+			if($prix_cnt || $realiz_cnt || $perem_cnt || $sbor_cnt)
+				$this->tableRow(array($pos_id, $vc, $name, $base_cost, $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt));
 		}
 	}
 
@@ -403,7 +404,7 @@ class Report_Sales extends BaseGSReport {
 		LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
 		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
 		(`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
-		(`doc_list`.`type`='2' AND `doc_list`.`sklad`='{$this->sklad}') OR
+		((`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`sklad`='{$this->sklad}') OR
 		(`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
 		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
 		ORDER BY `doc_list`.`date`");
@@ -415,7 +416,8 @@ class Report_Sales extends BaseGSReport {
 				case 1: $p = $nxt['cnt'];
 					$link = 'От ' . $nxt['agent_name'];
 					break;
-				case 2: $r = $nxt['cnt'];
+				case 2: 
+				case 20:$r = $nxt['cnt'];
 					$link = 'Для ' . $nxt['agent_name'];
 					break;
 				case 8: {
@@ -463,6 +465,8 @@ class Report_Sales extends BaseGSReport {
 		$this->w_docs = rcvint('w_docs');
 		$this->div_dt = rcvint('div_dt');
 		$agent_id = rcvint('agent');
+		
+		if(!$this->sklad ) $this->sklad = 1;
 
 		$print_df = date('Y-m-d', $dt_f);
 		$print_dt = date('Y-m-d', $dt_t);

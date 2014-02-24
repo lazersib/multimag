@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -922,7 +922,7 @@ else if($mode == 'cimage') {
 
 
 				if (!move_uploaded_file($_FILES['userfile']['tmp_name'], $CONFIG['site']['var_data_fs'] . '/pos/' . $img . '.' . $imtype))
-					throw new Exception("Файл не загружен, $img.$imtype", "err");
+					throw new Exception("Файл не загружен, $img.$imtype");
 				$line['type'] = $imtype;
 
 				$tmpl->msg("Файл загружен, $img.$imtype", "info");

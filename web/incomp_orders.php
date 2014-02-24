@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -30,7 +30,7 @@ $tmpl->hideBlock('left');
 $tmpl->setTitle("Невыполненные заявки");
 doc_menu();
 
-$tmpl->msg("Модуль находится в стадии тестирования и анализа удобства. Это значит, что возможности, предоставляемые этим модулем, могут измениться без предупреждения. Вы можете повлиять на развиие этого модуля, оставив пожелания <a href='/user.php?mode=frequest'>здесь</a>.");
+$tmpl->msg("Модуль находится в стадии тестирования и анализа удобства. Это значит, что возможности, предоставляемые этим модулем, могут измениться без предупреждения. Вы можете поучаствовать в развиии этого модуля, оставив пожелания <a href='/user.php?mode=frequest'>здесь</a>.");
 
 $tmpl->addContent("<h1 id='page-title'>Невыполненные заявки</h1><div id='page-info'>...........</div>");
 
@@ -54,7 +54,7 @@ $i=0;
 $pr=$ras=0;
 $tpr=$tras=0;
 
-$tmpl->addContent("<table width='100%' cellspacing='1' id='doc_list' class='list'>
+$tmpl->addContent("<table width='100%' cellspacing='1' class='list'>
 <tr>
 <th width='70'>№</th><th width='50'>ID</th><th>Статус</th><th>Агент</th><th>Сумма</th><th>Расчёт</th><th>Доставка</th><th>Дата</th><th>С сайта</th><th>Автор</th>
 </tr>");
@@ -86,6 +86,36 @@ while($line=$res->fetch_assoc())
 }
 $tmpl->addContent("</table>");
 
+$tmpl->addContent("<h2>Реализации на комплектацию</h2>");
+
+$sql="SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`, `doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`, `dop_status`.`value` AS `status`
+FROM `doc_list`
+LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
+LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
+WHERE `doc_list`.`type`=2 AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND `dop_status`.`value`!='ok'
+ORDER by `doc_list`.`date` DESC";
+
+$res=$db->query($sql);
+
+$tmpl->addContent("<table width='100%' cellspacing='1' class='list'>
+<tr>
+<th width='70'>№</th><th width='50'>ID</th><th>К заявке</th><th>Агент</th><th>Сумма</th><th>Дата</th><th>Автор</th>
+</tr>");
+while($line=$res->fetch_assoc())
+{
+	$date=date('Y-m-d H:i:s',$line['date']);
+	$link="/doc.php?mode=body&amp;doc=".$line['id'];
+	if($line['p_doc'])	$z="<a href='/doc.php?mode=body&amp;doc={$line['p_doc']}'>{$line['p_doc']}</a>";
+	else			$z='--нет--';
+	$tmpl->addContent("<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
+	<td>$z</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
+	<td>$date</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
+	</tr>");
+}
+$tmpl->addContent("</table>");
+
 
 $tmpl->addContent("<h2>Готовые к отгрузке реализации</h2>");
 
@@ -105,7 +135,7 @@ $i=0;
 $pr=$ras=0;
 $tpr=$tras=0;
 
-$tmpl->addContent("<table width='100%' cellspacing='1' id='doc_list' class='list'>
+$tmpl->addContent("<table width='100%' cellspacing='1' сlass='list'>
 <tr>
 <th width='70'>№</th><th width='50'>ID</th><th>К заявке</th><th>Агент</th><th>Сумма</th><th>Дата</th><th>Автор</th>
 </tr>");

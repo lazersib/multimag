@@ -2,7 +2,7 @@
 
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-/// Документ *Заявка на сборку*
+/// Документ *Заявка на производство*
 class doc_ZSbor extends doc_Nulltype {
 
 	/// Конструктор
@@ -28,7 +28,7 @@ class doc_ZSbor extends doc_Nulltype {
 		parent::__construct($doc);
 		$this->doc_type = 21;
 		$this->doc_name = 'zsbor';
-		$this->doc_viewname = 'Заявка на сборку';
+		$this->doc_viewname = 'Заявка на производство';
 		$this->sklad_editor_enable = true;
 		$this->sklad_modify = 0;
 		$this->header_fields = 'sklad cena';

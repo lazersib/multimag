@@ -725,7 +725,7 @@ else if($mode=='rem')
 				$sender->setNumber($user_info['reg_phone']);
 				$sender->setContent("Ваш код: $key\n{$CONFIG['site']['name']}");
 				$sender->send();
-				$res->query("COMMIT");
+				$db->query("COMMIT");
 				$tmpl->msg("Код для смены пароля выслан Вам по SMS","ok");
 			}
 			else if(@$CONFIG['site']['allow_openid'])

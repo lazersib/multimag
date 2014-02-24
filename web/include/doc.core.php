@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -660,7 +660,7 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
 		{
 			if($nxt[2]==$sklad_id)	$cnt+=$nxt[0];
 		}
-		else if($nxt[1]==2)
+		else if($nxt[1]==2 || $nxt[1]==20)
 		{
 			if($nxt[2]==$sklad_id)	$cnt-=$nxt[0];
 		}

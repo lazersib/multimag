@@ -139,7 +139,8 @@ class doc_s_Sklad {
 			$dend = date("Y-m-d");
 			$tmpl->addContent("
 			<div onclick=\"ShowPopupWin('/docs.php?l=pran&mode=srv&opt=ceni&pos=$pos'); return false;\" >Где и по чём</div>
-			<div onclick=\"window.open('/docj.php?mode=filter&opt=fsn&tov_id=$pos&tov_name=$pos&date_to=$dend')\">Товар в журнале</div>
+			<div onclick=\"window.open('/docj_new.php?pos_id=$pos&date_to=$dend')\">Товар в журнале</div>
+			<div onclick=\"window.open('/doc_reports.php?mode=sales&amp;w_docs=1&amp;sel_type=pos&amp;opt=pdf&amp;sklad={$_SESSION['sklad_num']}&amp;dt_t=$dend&amp;pos_id=$pos')\">Отчёт по движению</div>
 			<div onclick=\"window.open('/docs.php?mode=srv&amp;opt=ep&amp;pos=$pos')\">Редактирование позиции</div>");
 		}
 		else if ($opt == 'ac') {
@@ -2188,10 +2189,10 @@ class doc_s_Sklad {
 			$cb = $go ? "<input type='checkbox' name='pos[{$nxt['id']}]' class='pos_ch' value='1'>" : '';
 			$cadd = ($_SESSION['sklad_cost'] > 0) ? ('<td>' . getCostPos($nxt['id'], $_SESSION['sklad_cost'])) : '';
 
-			$tmpl->addContent("<tr class='pointer' oncontextmenu=\"return ShowContextMenu(event, '/docs.php?mode=srv&opt=menu&doc=0&pos={$nxt['id']}'); return false;\">
+			$tmpl->addContent("<tr class='pointer' oncontextmenu=\"ShowPosContextMenu(event, {$nxt['id']}, ''); return false;\">
 		<td>$cb
 		<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos={$nxt['id']}'>{$nxt['id']}</a>
-		<a href='' onclick=\"return ShowContextMenu(event, '/docs.php?mode=srv&amp;opt=menu&amp;doc=0&amp;pos={$nxt['id']}')\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a></td>$vc_add
+		<a href='' onclick=\"ShowPosContextMenu(event, {$nxt['id']}, ''); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a></td>$vc_add
 		<td align='left'>$name $info</td><td>{$nxt['proizv']}</td><td $cc>$cost_p</td><td>{$nxt['likvid']}%</td><td>$in_cost{$cadd}<td>$analog</td>$tdb_add<td>{$nxt['mass']}</td>$rto_add<td>{$nxt['cnt']}</td><td>{$nxt['allcnt']}</td><td>{$nxt['mesto']}</td></tr>");
 			$i++;
 			if ($i > $lim)	break;

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.1 - Complex sales system
 //
-//	Copyright (C) 2005-2013, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,22 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// памятка по рефакторингу: к удалению:
-// split
-// mysql_ +
-// _row($ +
-// _assoc($ +
-// fetch_array($ +
-// rcv( +
-// getright +
-// getpost +
-// MysqlException +
-// проверить insert_id +
-// AddText -> AddContent +
-// SetText -> SetContent +
-// Контроль использования html_in
-// Для вывода из базы в html использовать html_out
-
 /**
 @mainpage Cистема комплексного учёта торговли multimag. Документация разработчика.
 <h2>Часто используемые классы</h2>
@@ -46,6 +30,15 @@ PosEditor содержит методы для работы с редактор�
 Смотри <a href='annotated.html'>структуры данных</a> и <a href='hierarchy.html'>иерархию классов</a>, чтобы получить полное представление о классах системы
 **/
 
+/// Автозагрузка классов для ядра
+function core_autoload($class_name){
+	global $CONFIG;
+	$class_name = strtolower($class_name);
+	$class_name = str_replace('\\', '/', $class_name);
+	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
+}
+
+spl_autoload_register('core_autoload');
 
 /// Класс для работы с IP адресами IPv6
 class ipv6

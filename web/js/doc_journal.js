@@ -375,7 +375,7 @@ function initDocJournal(container_id, default_filters) {
 	
 	var cache = getCacheObject();
 	
-	var doc_types = cache.get('doctypes');
+	var doc_types = cache.get('docnames');
 	var agentnames = cache.get('agentnames');
 	var usernames = cache.get('usernames');
 	var skladnames = cache.get('skladnames');
@@ -384,6 +384,10 @@ function initDocJournal(container_id, default_filters) {
 	var firmnames = cache.get('firmnames');
 	var posnames = cache.get('posnames');
 	
+		
+	var pr_sum = 0;
+	var ras_sum = 0;
+	var show_count_column = 0;
 
 	function buildFilterQuery() {
 		filter_request = '';
@@ -395,13 +399,13 @@ function initDocJournal(container_id, default_filters) {
 		if (datepicker_t.value.length)
 			filter_request += '&doclist[dt]=' + encodeURIComponent(datepicker_t.value);
 		
-		var doctypes_t = document.getElementById('doctype_filter');
+		var docnames_t = document.getElementById('doctype_filter');
 		var f_values = '';
 		var active_1 = 0;
 		var active_0 = 0;
-		for(var i=1; i<doctypes_t.values.length;i++) {
-			f_values += '&doclist[dct]['+i+']=' + encodeURIComponent(doctypes_t.values[i]);
-			if(doctypes_t.values[i])	active_1 = 1;
+		for(var i=1; i<docnames_t.values.length;i++) {
+			f_values += '&doclist[dct]['+i+']=' + encodeURIComponent(docnames_t.values[i]);
+			if(docnames_t.values[i])	active_1 = 1;
 			else				active_0 = 1;
 		}
 		if(active_1 & active_0)
@@ -432,8 +436,10 @@ function initDocJournal(container_id, default_filters) {
 			filter_request += '&doclist[ag]=' + encodeURIComponent(afilter_id.value_id);
 		
 		var posfilter_id = document.getElementById('pos_filter');
-		if (posfilter_id.value_id!=0)
+		if (posfilter_id.value_id!=0) {
 			filter_request += '&doclist[pos]=' + encodeURIComponent(posfilter_id.value_id);
+			show_count_column = 1;
+		}else	show_count_column = 0;
 		
 		var userfilter_id = document.getElementById('user_filter');
 		if (userfilter_id.value_id!=0)
@@ -444,6 +450,9 @@ function initDocJournal(container_id, default_filters) {
 		buildFilterQuery();
 		if (old_filter_request != filter_request) {
 			old_filter_request = filter_request;
+			pr_sum = 0;
+			ras_sum = 0;
+			initTableHead();
 			requestData(0);
 		}
 	}
@@ -461,7 +470,7 @@ function initDocJournal(container_id, default_filters) {
 		//var url='/docj_new.php?mode=get&p='+part+filter_request;
 		var componetns = 'doclist';
 		if (!doc_types)
-			componetns = componetns + ',doctypes';
+			componetns = componetns + ',docnames';
 		if (!agentnames)
 			componetns = componetns + ',agentnames';
 		if (!usernames)
@@ -517,8 +526,8 @@ function initDocJournal(container_id, default_filters) {
 				//alert('exec_time: '+json.exec_time)
 				var iff = 0;
 				if(!doc_types) {
-					doc_types = json.doctypes;
-					cache.set('doctypes', json.doctypes, 3600);
+					doc_types = json.docnames;
+					cache.set('docnames', json.docnames, 3600);
 					iff = 1;
 				}
 				if(!agentnames) {
@@ -575,8 +584,7 @@ function initDocJournal(container_id, default_filters) {
 		doc_list_status.innerHTML = "обработано за " + data.eval + ", запрос выполнен за:" + data.exec_time;
 		window.setTimeout(appendChunk, 0);
 		//appendChunk();
-		var pr_sum = 0
-		var ras_sum = 0
+		
 		function appendChunk()
 		{
 			var date_start = new Date
@@ -584,6 +592,7 @@ function initDocJournal(container_id, default_filters) {
 			{
 				if (data.doclist[i].ok > 0)
 				{
+					
 					switch (parseInt(data.doclist[i].type))
 					{
 						case 1:
@@ -640,11 +649,10 @@ function initDocJournal(container_id, default_filters) {
 		if(line.err_flag!=0)		tr_class += ' f_red';
 		else if(line.subtype == 'site')	tr_class += ' f_green';
 		
-		var source = '';
+		var source = infoCell("Агент", agentnames[line.agent_id]);
 		var target = '';
 		switch(parseInt(line.type)) {
-			case 1:	source = infoCell("Агент", agentnames[line.agent_id]);
-				target =  infoCell("Склад", skladnames[line.sklad_id]);
+			case 1:	target =  infoCell("Склад", skladnames[line.sklad_id]);
 				break;
 			case 2: if(Number(line.sum)>0) {
 					if(Number(line.pay_sum) > Number(line.sum))		num_class = 'f_purple';
@@ -653,27 +661,21 @@ function initDocJournal(container_id, default_filters) {
 					else							num_class = 'f_brown';
 				}
 				// тут не нужен break!
-			case 20:source = infoCell("Склад", skladnames[line.sklad_id]);
-				target = infoCell("Агент", agentnames[line.agent_id]);
+			case 20:target = infoCell("Склад", skladnames[line.sklad_id]);
 				break;
 			case 3:	if(line.out_status == 'a')	num_class = 'f_green';
 				else if(line.out_status == 'p')	num_class = 'f_brown';
 				// тут не нужен break!
 			case 11:
-			case 12:source = infoCell("Агент", agentnames[line.agent_id]);
-				target = infoCell("Фирма", firmnames[line.firm_id]);
+			case 12:target = infoCell("Фирма", firmnames[line.firm_id]);
 				break;
-			case 4:	source = infoCell("Агент", agentnames[line.agent_id]);
-				target = infoCell("Банк", banknames[line.bank_id]);
+			case 4:	target = infoCell("Банк", banknames[line.bank_id]);
 				break;
-			case 5:	source = infoCell("Банк", banknames[line.bank_id]);
-				target = infoCell("Агент", agentnames[line.agent_id]);
+			case 5:	target = infoCell("Банк", banknames[line.bank_id]);
 				break;
-			case 6:	source = infoCell("Агент", agentnames[line.agent_id]);
-				target = infoCell("Касса", kassnames[line.kassa_id]);
+			case 6:	target = infoCell("Касса", kassnames[line.kassa_id]);
 				break;
-			case 7:	source = infoCell("Касса", kassnames[line.kassa_id]);
-				target = infoCell("Агент", agentnames[line.agent_id]);
+			case 7:	target = infoCell("Касса", kassnames[line.kassa_id]);
 				break;
 			case 8:	source = infoCell("Склад", skladnames[line.sklad_id]);
 				target = infoCell("Склад", skladnames[line.nasklad_id]);
@@ -683,14 +685,12 @@ function initDocJournal(container_id, default_filters) {
 				break;
 			case 10:
 			case 18:
-			case 19:source = infoCell("Фирма", firmnames[line.firm_id]);
-				target = infoCell("Агент", agentnames[line.agent_id]);
+			case 19:target = infoCell("Фирма", firmnames[line.firm_id]);
 				break;
 			case 13:
 			case 14:
 			case 15:
-			case 16:source = infoCell("Фирма", firmnames[line.firm_id]);
-				target = infoCell("Агент", agentnames[line.agent_id]);
+			case 16:target = infoCell("Фирма", firmnames[line.firm_id]);
 				break;
 			case 17:source = infoCell("Склад", skladnames[line.sklad_id]);
 				target = infoCell("Склад", skladnames[line.sklad_id]);
@@ -707,9 +707,23 @@ function initDocJournal(container_id, default_filters) {
 		if (line.mark_del > 0)
 			html += "<img src='/img/i_alert.png' alt='Помечен на удаление'>";
 
-		html += "</td><td>" + doc_types[line.type] + "</td><td>" + source + "</td><td>" + target + "</td><td style='text-align: right;'>" + line.sum + "</td><td>" + line.date + "</td><td onclick=\"window.open('/adm_users.php?mode=view&amp;id=" + line.author_id + "'); return false;\">" + usernames[line.author_id] + "</td>";
+		html += "</td><td>" + doc_types[line.type] + "</td><td>" + source + "</td><td>" + target + "</td>";
+		if(show_count_column)
+			html += "<td style='text-align: right;'>" + line.pos_cnt + " / " + line.pos_page + "<td style='text-align: right;'>" + line.pos_cost + "</td>";
+		
+		html += "<td style='text-align: right;'>" + line.sum + "</td><td>" + line.date + "</td><td onclick=\"window.open('/adm_users.php?mode=view&amp;id=" + line.author_id + "'); return false;\">" + usernames[line.author_id] + "</td>";
 		tr.innerHTML = html;
 		tr.className = tr_class;
+	}
+
+	function initTableHead() {
+		var head = document.getElementById('doc_list_head');
+		if(show_count_column) {
+			head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='45'>id</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Дата</th><th>Автор</th></tr>";
+		}
+		else {
+			head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='45'>id</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Сумма</th><th>Дата</th><th>Автор</th></tr>";
+		}
 	}
 
 	function initFilter(filter) {
@@ -777,10 +791,26 @@ function initDocJournal(container_id, default_filters) {
 		autoCompleteField('pos_filter', posnames, beginDefferedRequest);
 		autoCompleteField('user_filter', usernames, beginDefferedRequest);
 		docTypeMultiSelect('doctype_filter', doc_types, beginDefferedRequest);
+		
+		if(default_filters) {
+			if(default_filters.agentId) {
+				var agent_input = document.getElementById('agent_filter');
+				agent_input.value = default_filters.agentName;
+				agent_input.value_id = default_filters.agentId;
+			}
+		}
+		
+		
+	}
+	
+	container.print = function() {
+		buildFilterQuery();
+		window.open('/docj_new.php?mode=print&'+filter_request);
 	}
 
 	initFilter(doc_list_filter);
 	buildFilterQuery();
 	requestData(0);
-	initFilter(doc_list_filter);
+	initFilter(doc_list_filter);	
+	return container;
 }
