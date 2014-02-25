@@ -17,7 +17,6 @@
 //
 
 // Работа с журналом документов
-// Экспериментально!
 
 function autoCompleteField(input_id, data, update_callback) {
 	var old_hl = 0;
@@ -701,7 +700,7 @@ function initDocJournal(container_id, default_filters) {
 		}
 		
 		
-		var html = "<td style='text-align: right;' class='" + num_class + "' onclick=\"window.open('/doc.php?mode=body&amp;doc=" + line.id + "'); return false;\">" + line.altnum + line.subtype + "</td><td onclick=\"window.open('/docj.php?mode=tree&amp;doc=" + line.id + "'); return false;\"><img src='img/i_tree.png' alt='Связи'></td><td>" + line.id + "</td><td>";
+		var html = "<td style='text-align: right;' class='" + num_class + "' onclick=\"window.open('/doc.php?mode=body&amp;doc=" + line.id + "'); return false;\">" + line.altnum + line.subtype + "</td><td onclick=\"window.open('/docj.php?mode=tree&amp;doc=" + line.id + "'); return false;\"><img src='img/i_tree.png' alt='Связи'></td><td>";
 		if (line.ok > 0)
 			html += "<img src='/img/i_suc.png' alt='Проведен'>";
 		if (line.mark_del > 0)
@@ -711,7 +710,7 @@ function initDocJournal(container_id, default_filters) {
 		if(show_count_column)
 			html += "<td style='text-align: right;'>" + line.pos_cnt + " / " + line.pos_page + "<td style='text-align: right;'>" + line.pos_cost + "</td>";
 		
-		html += "<td style='text-align: right;'>" + line.sum + "</td><td>" + line.date + "</td><td onclick=\"window.open('/adm_users.php?mode=view&amp;id=" + line.author_id + "'); return false;\">" + usernames[line.author_id] + "</td>";
+		html += "<td style='text-align: right;'>" + line.sum + "</td><td>" + line.date + "</td><td onclick=\"window.open('/adm_users.php?mode=view&amp;id=" + line.author_id + "'); return false;\">" + usernames[line.author_id] + "</td><td>" + line.id + "</td>";
 		tr.innerHTML = html;
 		tr.className = tr_class;
 	}
@@ -719,10 +718,10 @@ function initDocJournal(container_id, default_filters) {
 	function initTableHead() {
 		var head = document.getElementById('doc_list_head');
 		if(show_count_column) {
-			head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='45'>id</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Дата</th><th>Автор</th></tr>";
+			head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Дата</th><th>Автор</th><th width='45'>id</th></tr>";
 		}
 		else {
-			head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='45'>id</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Сумма</th><th>Дата</th><th>Автор</th></tr>";
+			head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Сумма</th><th>Дата</th><th>Автор</th><th width='45'>id</th></tr>";
 		}
 	}
 
@@ -798,6 +797,11 @@ function initDocJournal(container_id, default_filters) {
 				agent_input.value = default_filters.agentName;
 				agent_input.value_id = default_filters.agentId;
 			}
+			if(default_filters.posId) {
+				var pos_input = document.getElementById('pos_filter');
+				pos_input.value = default_filters.posName;
+				pos_input.value_id = default_filters.posId;
+			}
 		}
 		
 		
@@ -810,7 +814,9 @@ function initDocJournal(container_id, default_filters) {
 
 	initFilter(doc_list_filter);
 	buildFilterQuery();
+	initTableHead();
 	requestData(0);
+	old_filter_request = filter_request;
 	initFilter(doc_list_filter);	
 	return container;
 }

@@ -29,10 +29,15 @@ $tmpl->hideBlock('left');
 
 if (!isset($_REQUEST['mode'])) {
 	$f = '';
-	$agent_id = request('agent_id');
+	$agent_id = rcvint('agent_id');
+	$pos_id = rcvint('pos_id');
 	if($agent_id) {
 		$agent_info = $db->selectRow('doc_agent', $agent_id);
-		$f = "agentId: $agent_id, agentName: '".html_out($agent_info['name'])."'";
+		$f = "agentId: '$agent_id', agentName: '".html_out($agent_info['name'])."'";
+	}
+	else if($pos_id) {
+		$pos_info = $db->selectRow('doc_base', $pos_id);
+		$f = "posId: '$pos_id', posName: '".html_out($pos_info['name'])."'";
 	}
 	else $f = "dateFrom: '".date("Y-m-d")."'";
 	$tmpl->setTitle("Реестр документов");
@@ -45,7 +50,7 @@ if (!isset($_REQUEST['mode'])) {
 	<table width='100%' cellspacing='1' onclick='hlThisRow(event)' id='doc_list' class='list'>
 	<thead id='doc_list_head'>
 	<tr>
-	<th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='45'>id</th><th width='20'>&nbsp;<th>Тип<th>Участник 1<th>Участник 2<th>Сумма<th>Дата<th>Автор
+	<th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='20'>&nbsp;<th>Тип<th>Участник 1<th>Участник 2<th>Сумма<th>Дата<th>Автор<th width='45'>id</th>
 	</tr>
 	</thead>
 	<tbody id='docj_list_body'>
