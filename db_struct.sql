@@ -1,20 +1,12 @@
+SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
-
+SET time_zone = "+00:00";
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8 */;
 
---
--- База данных: `multimag`
---
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `articles`
---
 
 CREATE TABLE IF NOT EXISTS `articles` (
   `type` int(11) NOT NULL,
@@ -32,12 +24,6 @@ CREATE TABLE IF NOT EXISTS `articles` (
   KEY `changeautor` (`changeautor`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `async_workers_tasks`
---
-
 CREATE TABLE IF NOT EXISTS `async_workers_tasks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `task` varchar(32) NOT NULL,
@@ -48,24 +34,12 @@ CREATE TABLE IF NOT EXISTS `async_workers_tasks` (
   KEY `needrun` (`needrun`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `attachments`
---
-
 CREATE TABLE IF NOT EXISTS `attachments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `original_filename` varchar(64) NOT NULL,
   `comment` varchar(256) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Вложения' AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `class_country`
---
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='' AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `class_country` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'pk',
@@ -82,11 +56,7 @@ CREATE TABLE IF NOT EXISTS `class_country` (
   UNIQUE KEY `alfa3` (`alfa3`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Общероссийский классификатор стран мира ОКСМ' AUTO_INCREMENT=249 ;
 
---
--- Дамп данных таблицы `class_country`
---
-
-INSERT INTO `class_country` (`id`, `name`, `full_name`, `number_code`, `alfa2`, `alfa3`, `visible`, `comment`) VALUES
+INSERT IGNORE INTO `class_country` (`id`, `name`, `full_name`, `number_code`, `alfa2`, `alfa3`, `visible`, `comment`) VALUES
 (1, 'АФГАНИСТАН', 'Переходное Исламское Государство Афганистан', '004', 'AF', 'AFG', 1, NULL),
 (2, 'АЛБАНИЯ', 'Республика Албания', '008', 'AL', 'ALB', 1, NULL),
 (3, 'АНТАРКТИДА', NULL, '010', 'AQ', 'ATA', 1, NULL),
@@ -336,12 +306,6 @@ INSERT INTO `class_country` (`id`, `name`, `full_name`, `number_code`, `alfa2`, 
 (247, 'АБХАЗИЯ', 'Республика Абхазия', '895', 'AB', 'ABH', 1, NULL),
 (248, 'ЮЖНАЯ ОСЕТИЯ', 'Республика Южная Осетия', '896', 'OS', 'OST', 1, NULL);
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `class_unit`
---
-
 CREATE TABLE IF NOT EXISTS `class_unit` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'pk',
   `name` varchar(255) NOT NULL COMMENT 'Наименование единицы измерения',
@@ -360,11 +324,7 @@ CREATE TABLE IF NOT EXISTS `class_unit` (
   KEY `class_unit_type_id` (`class_unit_type_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Общероссийский классификатор единиц измерения ОКЕИ' AUTO_INCREMENT=431 ;
 
---
--- Дамп данных таблицы `class_unit`
---
-
-INSERT INTO `class_unit` (`id`, `name`, `number_code`, `rus_name1`, `eng_name1`, `rus_name2`, `eng_name2`, `class_unit_group_id`, `class_unit_type_id`, `visible`, `comment`) VALUES
+INSERT IGNORE INTO `class_unit` (`id`, `name`, `number_code`, `rus_name1`, `eng_name1`, `rus_name2`, `eng_name2`, `class_unit_group_id`, `class_unit_type_id`, `visible`, `comment`) VALUES
 (1, 'Миллиметр', '003', 'мм', 'mm', 'ММ', 'MMT', 1, 1, 1, NULL),
 (2, 'Сантиметр', '004', 'см', 'cm', 'СМ', 'CMT', 1, 1, 1, NULL),
 (4, 'Метр', '006', 'м', 'm', 'М', 'MTR', 1, 1, 1, NULL),
@@ -394,12 +354,6 @@ INSERT INTO `class_unit` (`id`, `name`, `number_code`, `rus_name1`, `eng_name1`,
 (364, 'Смена', '917', 'смен', NULL, 'СМЕН', NULL, 7, 2, 1, NULL),
 (430, 'Стандарт', '152', NULL, '-', NULL, 'WSD', 3, 3, 1, NULL);
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `class_unit_group`
---
-
 CREATE TABLE IF NOT EXISTS `class_unit_group` (
   `id` tinyint(4) NOT NULL AUTO_INCREMENT COMMENT 'pk',
   `name` varchar(255) NOT NULL COMMENT 'Наименование группы',
@@ -407,11 +361,7 @@ CREATE TABLE IF NOT EXISTS `class_unit_group` (
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Группы единиц измерения' AUTO_INCREMENT=8 ;
 
---
--- Дамп данных таблицы `class_unit_group`
---
-
-INSERT INTO `class_unit_group` (`id`, `name`) VALUES
+INSERT IGNORE INTO `class_unit_group` (`id`, `name`) VALUES
 (6, 'Единицы времени'),
 (1, 'Единицы длины'),
 (4, 'Единицы массы'),
@@ -420,32 +370,16 @@ INSERT INTO `class_unit_group` (`id`, `name`) VALUES
 (5, 'Технические единицы'),
 (7, 'Экономические единицы');
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `class_unit_type`
---
-
 CREATE TABLE IF NOT EXISTS `class_unit_type` (
   `id` tinyint(4) NOT NULL AUTO_INCREMENT COMMENT 'pk',
   `name` varchar(255) NOT NULL COMMENT 'Наименование раздела/приложения',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Разделы/приложения, в которые включены единицы измерения' AUTO_INCREMENT=4 ;
 
---
--- Дамп данных таблицы `class_unit_type`
---
-
-INSERT INTO `class_unit_type` (`id`, `name`) VALUES
+INSERT IGNORE INTO `class_unit_type` (`id`, `name`) VALUES
 (1, 'Международные единицы измерения, включенные в ЕСКК'),
 (2, 'Национальные единицы измерения, включенные в ЕСКК'),
 (3, 'Международные единицы измерения, не включенные в ЕСКК');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `comments`
---
 
 CREATE TABLE IF NOT EXISTS `comments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -459,7 +393,7 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `rate` tinyint(4) NOT NULL COMMENT 'Оценка объекта (0-5)',
   `ip` varchar(16) NOT NULL,
   `user_agent` varchar(128) NOT NULL,
-  `response` varchar(512) NOT NULL COMMENT 'Ответ администрации',
+  `response` text NOT NULL COMMENT 'Ответ администрации',
   `responser` int(11) NOT NULL COMMENT 'Автор ответа',
   PRIMARY KEY (`id`),
   KEY `object_name` (`object_name`),
@@ -468,19 +402,13 @@ CREATE TABLE IF NOT EXISTS `comments` (
   KEY `date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Коментарии к товарам, новостям, статьям и пр.' AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `counter`
---
-
 CREATE TABLE IF NOT EXISTS `counter` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` bigint(20) NOT NULL DEFAULT '0',
-  `ip` varchar(30) CHARACTER SET latin1 NOT NULL DEFAULT '',
+  `ip` varchar(32) CHARACTER SET latin1 NOT NULL DEFAULT '',
   `agent` varchar(128) NOT NULL DEFAULT '',
   `refer` varchar(512) NOT NULL DEFAULT '',
-  `file` varchar(20) CHARACTER SET latin1 NOT NULL DEFAULT '',
+  `file` varchar(32) CHARACTER SET latin1 NOT NULL DEFAULT '',
   `query` varchar(128) NOT NULL DEFAULT '',
   UNIQUE KEY `id` (`id`),
   KEY `time` (`date`),
@@ -490,88 +418,77 @@ CREATE TABLE IF NOT EXISTS `counter` (
   KEY `file` (`file`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `currency`
---
-
 CREATE TABLE IF NOT EXISTS `currency` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(10) NOT NULL,
   `coeff` decimal(8,4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
-
---
--- Дамп данных таблицы `currency`
---
-
-INSERT INTO `currency` (`id`, `name`, `coeff`) VALUES
-(1, 'RUR', 1.0000),
-(2, 'USD', 30.7194);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `db_version`
---
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `db_version` (
   `version` int(11) NOT NULL,
   PRIMARY KEY (`version`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
---
--- Дамп данных таблицы `db_version`
---
+INSERT IGNORE INTO `db_version` (`version`) VALUES
+(634);
 
-INSERT INTO `db_version` (`version`) VALUES
-(456);
+CREATE TABLE IF NOT EXISTS `delivery_regions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `delivery_type` int(11) NOT NULL,
+  `name` varchar(128) NOT NULL,
+  `price` int(11) NOT NULL,
+  `description` text NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_agent`
---
+CREATE TABLE IF NOT EXISTS `delivery_types` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) NOT NULL,
+  `min_price` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL,
+  `description` text NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `doc_agent` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `fullname` varchar(200) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `fullname` varchar(256) NOT NULL,
   `tel` varchar(64) NOT NULL,
   `sms_phone` varchar(16) NOT NULL,
   `fax_phone` varchar(16) NOT NULL,
   `alt_phone` varchar(16) NOT NULL,
-  `adres` varchar(300) NOT NULL,
-  `gruzopol` varchar(300) NOT NULL,
+  `adres` varchar(256) NOT NULL,
+  `gruzopol` varchar(512) NOT NULL,
   `inn` varchar(24) NOT NULL,
   `dir_fio` varchar(128) NOT NULL,
   `dir_fio_r` varchar(128) NOT NULL,
   `pfio` text NOT NULL,
   `pdol` text NOT NULL,
-  `okevd` varchar(5) NOT NULL,
-  `okpo` varchar(10) NOT NULL,
-  `rs` varchar(22) NOT NULL,
-  `bank` varchar(50) NOT NULL,
-  `ks` varchar(50) NOT NULL,
-  `bik` varchar(12) NOT NULL,
+  `okevd` varchar(8) NOT NULL,
+  `okpo` varchar(16) NOT NULL,
+  `rs` varchar(32) NOT NULL,
+  `bank` varchar(64) NOT NULL,
+  `ks` varchar(32) NOT NULL,
+  `bik` varchar(16) NOT NULL,
   `group` int(11) NOT NULL,
-  `email` varchar(50) NOT NULL,
+  `email` varchar(64) NOT NULL,
   `type` tinyint(4) NOT NULL DEFAULT '1',
-  `pasp_num` varchar(12) NOT NULL,
+  `pasp_num` varchar(16) NOT NULL,
   `pasp_date` date NOT NULL,
-  `pasp_kem` varchar(60) NOT NULL,
+  `pasp_kem` varchar(64) NOT NULL,
   `comment` text NOT NULL,
   `no_mail` tinyint(4) NOT NULL,
-  `responsible` int(11) NOT NULL,
+  `responsible` int(11) DEFAULT NULL,
   `data_sverki` date NOT NULL,
   `dishonest` tinyint(4) NOT NULL,
   `p_agent` int(11) DEFAULT NULL COMMENT 'Подчинение другому агенту',
+  `bonus` decimal(10,2) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`),
-  KEY `fullname` (`fullname`),
+  KEY `fullname` (`fullname`(255)),
   KEY `tel` (`tel`),
   KEY `inn` (`inn`),
   KEY `type` (`type`),
@@ -579,31 +496,21 @@ CREATE TABLE IF NOT EXISTS `doc_agent` (
   KEY `p_agent` (`p_agent`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='pcomment - printable comment' AUTO_INCREMENT=2 ;
 
---
--- Дамп данных таблицы `doc_agent`
---
-
-INSERT INTO `doc_agent` (`id`, `name`, `fullname`, `tel`, `sms_phone`, `fax_phone`, `alt_phone`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `no_mail`, `responsible`, `data_sverki`, `dishonest`, `p_agent`) VALUES
-(1, 'Частное лицо', 'Частное лицо', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 1, '', 1, '', '0000-00-00', '', '', 1, 0, '0000-00-00', 0, NULL);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_agent_dov`
---
+INSERT IGNORE INTO `doc_agent` (`id`, `name`, `fullname`, `tel`, `sms_phone`, `fax_phone`, `alt_phone`, `adres`, `gruzopol`, `inn`, `dir_fio`, `dir_fio_r`, `pfio`, `pdol`, `okevd`, `okpo`, `rs`, `bank`, `ks`, `bik`, `group`, `email`, `type`, `pasp_num`, `pasp_date`, `pasp_kem`, `comment`, `no_mail`, `responsible`, `data_sverki`, `dishonest`, `p_agent`, `bonus`) VALUES
+(1, 'Первый агент', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 0, '', 1, '', '0000-00-00', '', '', 0, NULL, '0000-00-00', 0, NULL, 0.00);
 
 CREATE TABLE IF NOT EXISTS `doc_agent_dov` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ag_id` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `name2` varchar(50) NOT NULL,
-  `surname` varchar(50) NOT NULL,
-  `range` varchar(50) NOT NULL,
-  `pasp_ser` varchar(5) NOT NULL,
-  `pasp_num` varchar(10) NOT NULL,
-  `pasp_kem` varchar(100) NOT NULL,
-  `pasp_data` varchar(15) NOT NULL,
-  `mark_del` bigint(20) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `name2` varchar(64) NOT NULL,
+  `surname` varchar(64) NOT NULL,
+  `range` varchar(64) NOT NULL,
+  `pasp_ser` varchar(8) NOT NULL,
+  `pasp_num` varchar(16) NOT NULL,
+  `pasp_kem` varchar(128) NOT NULL,
+  `pasp_data` varchar(16) NOT NULL,
+  `mark_del` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `ag_id` (`ag_id`),
   KEY `name` (`name`),
@@ -615,52 +522,27 @@ CREATE TABLE IF NOT EXISTS `doc_agent_dov` (
   KEY `pasp_kem` (`pasp_kem`),
   KEY `pasp_data` (`pasp_data`),
   KEY `mark_del` (`mark_del`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
-
---
--- Дамп данных таблицы `doc_agent_dov`
---
-
-INSERT INTO `doc_agent_dov` (`id`, `ag_id`, `name`, `name2`, `surname`, `range`, `pasp_ser`, `pasp_num`, `pasp_kem`, `pasp_data`, `mark_del`) VALUES
-(1, 1, 'Тест', 'Тестович', 'Тестов', '', '', '', '', '', 0);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_agent_group`
---
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `doc_agent_group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,
+  `name` varchar(32) NOT NULL,
   `pid` int(11) NOT NULL,
-  `desc` varchar(100) NOT NULL,
-  UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
-
---
--- Дамп данных таблицы `doc_agent_group`
---
-
-INSERT INTO `doc_agent_group` (`id`, `name`, `pid`, `desc`) VALUES
-(1, 'Покупатели', 0, '');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base`
---
+  `desc` varchar(128) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `pid` (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `doc_base` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group` int(11) NOT NULL DEFAULT '0',
-  `name` varchar(100) NOT NULL,
+  `name` varchar(128) NOT NULL,
   `vc` varchar(32) NOT NULL COMMENT 'Код производителя',
   `country` int(11) DEFAULT NULL,
   `desc` text NOT NULL,
   `cost` double(10,2) NOT NULL DEFAULT '0.00',
   `stock` tinyint(1) NOT NULL,
-  `proizv` varchar(20) NOT NULL,
+  `proizv` varchar(32) NOT NULL,
   `likvid` decimal(10,2) NOT NULL DEFAULT '0.00',
   `cost_date` datetime NOT NULL,
   `pos_type` tinyint(4) NOT NULL,
@@ -674,8 +556,12 @@ CREATE TABLE IF NOT EXISTS `doc_base` (
   `title_tag` varchar(128) NOT NULL,
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `buy_time` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
+  `transit_cnt` int(11) NOT NULL DEFAULT '0',
+  `mult` int(11) NOT NULL COMMENT 'Кратность',
+  `bulkcnt` int(11) NOT NULL COMMENT 'Количество оптом',
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `uniq` (`group`,`name`),
+  UNIQUE KEY `vc` (`vc`),
   KEY `group` (`group`),
   KEY `name` (`name`),
   KEY `cost_date` (`cost_date`),
@@ -685,35 +571,19 @@ CREATE TABLE IF NOT EXISTS `doc_base` (
   KEY `likvid` (`likvid`),
   KEY `country` (`country`),
   KEY `create_time` (`create_time`),
-  KEY `buy_time` (`buy_time`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT AUTO_INCREMENT=3 ;
+  KEY `buy_time` (`buy_time`),
+  KEY `transit_cnt` (`transit_cnt`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT AUTO_INCREMENT=4 ;
 
---
--- Дамп данных таблицы `doc_base`
---
-
-INSERT INTO `doc_base` (`id`, `group`, `name`, `vc`, `country`, `desc`, `cost`, `stock`, `proizv`, `likvid`, `cost_date`, `pos_type`, `hidden`, `no_export_yml`, `unit`, `warranty`, `warranty_type`, `meta_description`, `meta_keywords`, `title_tag`, `create_time`, `buy_time`) VALUES
-(1, 1, 'Первый товар', '', 1, '', 0.00, 0, '', 0.00, '0000-00-00 00:00:00', 0, 0, 0, 260, 0, 0, '', '', '', '2012-12-23 23:51:33', '1970-01-01 00:00:00'),
-(2, 2, 'Первая услуга', '', 1, '', 12.00, 0, '', 0.00, '0000-00-00 00:00:00', 1, 0, 0, 285, 0, 0, '', '', '', '2012-12-23 23:52:31', '1970-01-01 00:00:00');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_attachments`
---
+INSERT IGNORE INTO `doc_base` (`id`, `group`, `name`, `vc`, `country`, `desc`, `cost`, `stock`, `proizv`, `likvid`, `cost_date`, `pos_type`, `hidden`, `no_export_yml`, `unit`, `warranty`, `warranty_type`, `meta_description`, `meta_keywords`, `title_tag`, `create_time`, `buy_time`, `transit_cnt`, `mult`, `bulkcnt`) VALUES
+(3, 1, 'Первый товар', '', NULL, '', 0.00, 0, '', 0.00, '0000-00-00 00:00:00', 0, 0, 0, 1, 0, 0, '', '', '', '2014-02-26 14:08:36', '1970-01-01 00:00:00', 0, 0, 0);
 
 CREATE TABLE IF NOT EXISTS `doc_base_attachments` (
   `pos_id` int(11) NOT NULL,
   `attachment_id` int(11) NOT NULL,
   UNIQUE KEY `uni` (`pos_id`,`attachment_id`),
   KEY `attachment_id` (`attachment_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Присоединённые файлы';
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_cnt`
---
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `doc_base_cnt` (
   `id` int(11) NOT NULL,
@@ -727,12 +597,6 @@ CREATE TABLE IF NOT EXISTS `doc_base_cnt` (
   KEY `mincnt` (`mincnt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_cost`
---
-
 CREATE TABLE IF NOT EXISTS `doc_base_cost` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `pos_id` int(11) NOT NULL,
@@ -741,6 +605,7 @@ CREATE TABLE IF NOT EXISTS `doc_base_cost` (
   `value` decimal(8,2) NOT NULL,
   `accuracy` tinyint(4) NOT NULL,
   `direction` tinyint(4) NOT NULL,
+  `rrp_firm_id` int(11) DEFAULT NULL,
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `uniq` (`pos_id`,`cost_id`),
   KEY `group_id` (`pos_id`),
@@ -749,12 +614,6 @@ CREATE TABLE IF NOT EXISTS `doc_base_cost` (
   KEY `type` (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_dop`
---
-
 CREATE TABLE IF NOT EXISTS `doc_base_dop` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` int(11) DEFAULT '0',
@@ -762,10 +621,8 @@ CREATE TABLE IF NOT EXISTS `doc_base_dop` (
   `d_ext` double NOT NULL DEFAULT '0',
   `size` double NOT NULL DEFAULT '0',
   `mass` double NOT NULL DEFAULT '0',
-  `analog` varchar(20) NOT NULL,
+  `analog` varchar(32) NOT NULL,
   `koncost` double NOT NULL DEFAULT '0',
-  `strana` varchar(20) NOT NULL,
-  `tranzit` tinyint(4) NOT NULL,
   `ntd` varchar(32) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `type` (`type`),
@@ -777,37 +634,22 @@ CREATE TABLE IF NOT EXISTS `doc_base_dop` (
   KEY `koncost` (`koncost`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_dop_type`
---
-
 CREATE TABLE IF NOT EXISTS `doc_base_dop_type` (
-  `id` int(11) NOT NULL,
-  `name` varchar(70) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL,
   `desc` text NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_gparams`
---
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `doc_base_gparams` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_img`
---
+INSERT IGNORE INTO `doc_base_gparams` (`id`, `name`) VALUES
+(1, 'Основные');
 
 CREATE TABLE IF NOT EXISTS `doc_base_img` (
   `pos_id` int(11) NOT NULL,
@@ -816,12 +658,6 @@ CREATE TABLE IF NOT EXISTS `doc_base_img` (
   UNIQUE KEY `pos_id` (`pos_id`,`img_id`),
   KEY `default` (`default`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_kompl`
---
 
 CREATE TABLE IF NOT EXISTS `doc_base_kompl` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -833,12 +669,6 @@ CREATE TABLE IF NOT EXISTS `doc_base_kompl` (
   KEY `cnt` (`cnt`),
   KEY `pos_id` (`pos_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Комплектующие - из чего состоит эта позиция' AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_params`
---
 
 CREATE TABLE IF NOT EXISTS `doc_base_params` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -853,24 +683,12 @@ CREATE TABLE IF NOT EXISTS `doc_base_params` (
   KEY `ym_assign` (`ym_assign`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_pcollections_list`
---
-
 CREATE TABLE IF NOT EXISTS `doc_base_pcollections_list` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(128) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Наборы свойств складской номенклатуры' AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_pcollections_set`
---
 
 CREATE TABLE IF NOT EXISTS `doc_base_pcollections_set` (
   `collection_id` int(11) NOT NULL,
@@ -879,12 +697,6 @@ CREATE TABLE IF NOT EXISTS `doc_base_pcollections_set` (
   KEY `collection_id` (`collection_id`),
   KEY `param_id` (`param_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Список параметров в наборе';
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_base_values`
---
 
 CREATE TABLE IF NOT EXISTS `doc_base_values` (
   `id` int(11) NOT NULL,
@@ -902,16 +714,10 @@ CREATE TABLE IF NOT EXISTS `doc_base_values` (
   KEY `strval` (`strval`(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_cost`
---
-
 CREATE TABLE IF NOT EXISTS `doc_cost` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(25) NOT NULL,
-  `type` varchar(5) NOT NULL,
+  `type` varchar(4) NOT NULL,
   `value` decimal(8,2) NOT NULL COMMENT 'Значение цены',
   `vid` tinyint(4) NOT NULL COMMENT 'Вид цены определяет места её использования',
   `accuracy` int(11) NOT NULL,
@@ -919,33 +725,18 @@ CREATE TABLE IF NOT EXISTS `doc_cost` (
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=4 ;
 
---
--- Дамп данных таблицы `doc_cost`
---
-
-INSERT INTO `doc_cost` (`id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES
-(1, 'Для зарегистрированных', 'pp', 0.00, -1, 2, 0),
-(2, 'По умолчанию', 'pp', 0.00, 1, 2, 0);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_dopdata`
---
+INSERT IGNORE INTO `doc_cost` (`id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES
+(1, 'Розничная', 'pp', 0.00, 1, 2, 0),
+(2, 'Мелкий опт', 'pp', -3.00, -1, 2, 0),
+(3, 'Средний опт', 'pp', -5.00, -2, 2, 0);
 
 CREATE TABLE IF NOT EXISTS `doc_dopdata` (
   `doc` int(11) NOT NULL,
-  `param` varchar(20) NOT NULL,
-  `value` varchar(150) NOT NULL,
+  `param` varchar(32) NOT NULL,
+  `value` varchar(128) NOT NULL,
   UNIQUE KEY `doc` (`doc`,`param`),
   KEY `value` (`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_group`
---
 
 CREATE TABLE IF NOT EXISTS `doc_group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -962,27 +753,16 @@ CREATE TABLE IF NOT EXISTS `doc_group` (
   UNIQUE KEY `name` (`name`),
   KEY `pid` (`pid`),
   KEY `hidelevel` (`hidelevel`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
---
--- Дамп данных таблицы `doc_group`
---
-
-INSERT INTO `doc_group` (`id`, `name`, `desc`, `pid`, `hidelevel`, `no_export_yml`, `printname`, `meta_description`, `meta_keywords`, `title_tag`) VALUES
-(1, 'Товары', '', 0, 0, 0, '', '', '', ''),
-(2, 'Услуги', '', 0, 0, 0, '', '', '', '');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_group_cost`
---
+INSERT IGNORE INTO `doc_group` (`id`, `name`, `desc`, `pid`, `hidelevel`, `no_export_yml`, `printname`, `meta_description`, `meta_keywords`, `title_tag`) VALUES
+(1, 'товары', '', 0, 0, 0, '', '', '', '');
 
 CREATE TABLE IF NOT EXISTS `doc_group_cost` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_id` int(11) NOT NULL,
   `cost_id` int(11) NOT NULL,
-  `type` varchar(5) NOT NULL,
+  `type` varchar(4) NOT NULL,
   `value` decimal(8,2) NOT NULL,
   `accuracy` tinyint(4) NOT NULL,
   `direction` tinyint(4) NOT NULL,
@@ -993,12 +773,6 @@ CREATE TABLE IF NOT EXISTS `doc_group_cost` (
   KEY `value` (`value`),
   KEY `type` (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_group_params`
---
 
 CREATE TABLE IF NOT EXISTS `doc_group_params` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1011,51 +785,30 @@ CREATE TABLE IF NOT EXISTS `doc_group_params` (
   KEY `fk_doc_group_params_doc_base_params1` (`param_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_img`
---
-
 CREATE TABLE IF NOT EXISTS `doc_img` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
+  `name` varchar(64) NOT NULL,
   `type` varchar(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_kassa`
---
-
 CREATE TABLE IF NOT EXISTS `doc_kassa` (
-  `ids` varchar(50) CHARACTER SET latin1 NOT NULL,
+  `ids` varchar(8) CHARACTER SET latin1 NOT NULL,
   `num` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
+  `name` varchar(64) NOT NULL,
   `ballance` decimal(10,2) NOT NULL,
-  `bik` varchar(20) NOT NULL,
-  `rs` varchar(30) NOT NULL,
-  `ks` varchar(30) NOT NULL,
+  `bik` varchar(16) NOT NULL,
+  `rs` varchar(32) NOT NULL,
+  `ks` varchar(32) NOT NULL,
   `firm_id` int(11) NOT NULL,
   UNIQUE KEY `ids` (`ids`,`num`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Дамп данных таблицы `doc_kassa`
---
-
-INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `ballance`, `bik`, `rs`, `ks`, `firm_id`) VALUES
-('bank', 1, 'Основной банк', 0.00, '000000000', '00000000000000000000', '00000000000000000000', 0),
-('kassa', 1, 'Основная касса', 0.00, '', '', '', 0);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_list`
---
+INSERT IGNORE INTO `doc_kassa` (`ids`, `num`, `name`, `ballance`, `bik`, `rs`, `ks`, `firm_id`) VALUES
+('bank', 1, 'Первый банк', 0.00, '000000000', '00000000000000000000', '00000000000000000000', 0),
+('kassa', 1, 'Основная касса', 0.00, '', '', '', 0),
+('kassa', 2, 'Сейф', 0.00, '', '', '', 0);
 
 CREATE TABLE IF NOT EXISTS `doc_list` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1070,7 +823,7 @@ CREATE TABLE IF NOT EXISTS `doc_list` (
   `bank` tinyint(4) NOT NULL DEFAULT '0',
   `user` int(11) NOT NULL DEFAULT '0',
   `altnum` int(11) NOT NULL,
-  `subtype` varchar(5) NOT NULL,
+  `subtype` varchar(4) NOT NULL,
   `sum` decimal(10,2) NOT NULL DEFAULT '0.00',
   `nds` int(11) NOT NULL DEFAULT '0',
   `p_doc` int(11) NOT NULL,
@@ -1095,12 +848,6 @@ CREATE TABLE IF NOT EXISTS `doc_list` (
   KEY `created` (`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_list_pos`
---
-
 CREATE TABLE IF NOT EXISTS `doc_list_pos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `doc` int(11) NOT NULL DEFAULT '0',
@@ -1117,20 +864,27 @@ CREATE TABLE IF NOT EXISTS `doc_list_pos` (
   KEY `page` (`page`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_log`
---
+CREATE TABLE IF NOT EXISTS `doc_list_sn` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pos_id` int(11) NOT NULL COMMENT 'ID товара',
+  `num` varchar(64) NOT NULL COMMENT 'Серийный номер',
+  `prix_list_pos` int(11) NOT NULL COMMENT 'Строка поступления',
+  `rasx_list_pos` int(11) DEFAULT NULL COMMENT 'Строка реализации',
+  UNIQUE KEY `id` (`id`),
+  KEY `pos_id` (`pos_id`),
+  KEY `num` (`num`),
+  KEY `prix_list_pos` (`prix_list_pos`),
+  KEY `rasx_list_pos` (`rasx_list_pos`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Серийные номера' AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `doc_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user` int(11) NOT NULL,
-  `ip` varchar(20) NOT NULL,
-  `object` varchar(20) NOT NULL,
+  `ip` varchar(32) NOT NULL,
+  `object` varchar(32) NOT NULL,
   `object_id` int(11) NOT NULL,
-  `motion` varchar(100) NOT NULL,
-  `desc` varchar(500) NOT NULL,
+  `motion` varchar(128) NOT NULL,
+  `desc` varchar(512) NOT NULL,
   `time` datetime NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `user` (`user`),
@@ -1140,47 +894,28 @@ CREATE TABLE IF NOT EXISTS `doc_log` (
   KEY `ip` (`ip`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_rasxodi`
---
-
 CREATE TABLE IF NOT EXISTS `doc_rasxodi` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,
+  `name` varchar(64) NOT NULL,
   `adm` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`),
   KEY `adm` (`adm`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COMMENT='Статьи расходов' AUTO_INCREMENT=15 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COMMENT='Статьи расходов' AUTO_INCREMENT=12 ;
 
---
--- Дамп данных таблицы `doc_rasxodi`
---
-
-INSERT INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES
+INSERT IGNORE INTO `doc_rasxodi` (`id`, `name`, `adm`) VALUES
 (0, 'Прочие расходы', 1),
 (1, 'Аренда офиса, склада', 1),
-(2, 'Средства под отчёт', 1),
+(2, 'Зарплата', 0),
 (3, 'Канцелярские товары, хозяйственные материалы', 1),
-(4, 'Зарплата, премии (офис)', 1),
+(4, 'Расходы на рекламу', 1),
 (5, 'Расчетно кассовое обслуживание', 1),
 (6, 'Закупка товара на склад', 0),
 (7, ' Расходы Офиса', 1),
 (8, 'Расходы Склада', 1),
 (9, 'Расходы на связь', 1),
-(10, 'Расходы на автотранспорт (бензин, запчасти)', 1),
-(11, 'Налоги и сборы', 1),
-(12, 'Кредиты', 1),
-(13, 'Непредвиденные расходы', 0),
-(14, 'Премии по итогам квартала и года', 1);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_sklady`
---
+(10, 'Расходы на автотранспорт', 1),
+(11, 'Налоги и сборы', 1);
 
 CREATE TABLE IF NOT EXISTS `doc_sklady` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1190,30 +925,16 @@ CREATE TABLE IF NOT EXISTS `doc_sklady` (
   KEY `name` (`name`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
---
--- Дамп данных таблицы `doc_sklady`
---
-
-INSERT INTO `doc_sklady` (`id`, `name`, `dnc`) VALUES
+INSERT IGNORE INTO `doc_sklady` (`id`, `name`, `dnc`) VALUES
 (1, 'Основной склад', 0);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_types`
---
 
 CREATE TABLE IF NOT EXISTS `doc_types` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(30) NOT NULL,
+  `name` varchar(32) NOT NULL,
   KEY `id` (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=19 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=22 ;
 
---
--- Дамп данных таблицы `doc_types`
---
-
-INSERT INTO `doc_types` (`id`, `name`) VALUES
+INSERT IGNORE INTO `doc_types` (`id`, `name`) VALUES
 (1, 'Поступление'),
 (2, 'Реализация'),
 (3, 'Заявка покупателя'),
@@ -1231,54 +952,43 @@ INSERT INTO `doc_types` (`id`, `name`) VALUES
 (15, 'Реализация (оперативная)'),
 (16, 'Спецификация'),
 (17, 'Сборка'),
-(18, 'Корректировка долга');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `doc_vars`
---
+(18, 'Корректировка долга'),
+(19, 'Корректировка бонусов'),
+(20, 'Реализация за бонусы'),
+(21, 'Заявка на производство');
 
 CREATE TABLE IF NOT EXISTS `doc_vars` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `firm_name` varchar(150) NOT NULL,
-  `firm_director` varchar(100) NOT NULL,
-  `firm_manager` varchar(100) NOT NULL,
-  `firm_buhgalter` varchar(100) NOT NULL,
-  `firm_kladovshik` varchar(100) NOT NULL,
-  `firm_bank` varchar(100) NOT NULL,
-  `firm_bank_kor_s` varchar(25) NOT NULL,
-  `firm_bik` varchar(15) NOT NULL,
-  `firm_schet` varchar(25) NOT NULL,
-  `firm_inn` varchar(25) NOT NULL,
-  `firm_adres` varchar(150) NOT NULL,
-  `firm_realadres` varchar(150) NOT NULL,
-  `firm_gruzootpr` varchar(300) NOT NULL,
-  `firm_telefon` varchar(60) NOT NULL,
-  `firm_okpo` varchar(10) NOT NULL,
+  `firm_name` varchar(128) NOT NULL,
+  `firm_director` varchar(64) NOT NULL,
+  `firm_director_r` varchar(64) NOT NULL,
+  `firm_buhgalter` varchar(64) NOT NULL,
+  `firm_kladovshik` varchar(64) NOT NULL,
+  `firm_bank` varchar(128) NOT NULL,
+  `firm_bank_kor_s` varchar(32) NOT NULL,
+  `firm_bik` varchar(16) NOT NULL,
+  `firm_schet` varchar(32) NOT NULL,
+  `firm_inn` varchar(32) NOT NULL,
+  `firm_adres` varchar(256) NOT NULL,
+  `firm_realadres` varchar(256) NOT NULL,
+  `firm_gruzootpr` varchar(256) NOT NULL,
+  `firm_telefon` varchar(64) NOT NULL,
+  `firm_okpo` varchar(16) NOT NULL,
   `param_nds` double NOT NULL DEFAULT '0',
+  `firm_kladovshik_id` int(11) NOT NULL,
+  `firm_kladovshik_doljn` varchar(64) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
---
--- Дамп данных таблицы `doc_vars`
---
-
-INSERT INTO `doc_vars` (`id`, `firm_name`, `firm_director`, `firm_manager`, `firm_buhgalter`, `firm_kladovshik`, `firm_bank`, `firm_bank_kor_s`, `firm_bik`, `firm_schet`, `firm_inn`, `firm_adres`, `firm_realadres`, `firm_gruzootpr`, `firm_telefon`, `firm_okpo`, `param_nds`) VALUES
-(1, 'ООО Первая Фирма', 'Аноним И.О.', 'Аноним И.О.', 'Аноним И.О.', 'Аноним И.О.', '', '', '', '', '', '', '', '', '', '', 18);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `errorlog`
---
+INSERT IGNORE INTO `doc_vars` (`id`, `firm_name`, `firm_director`, `firm_director_r`, `firm_buhgalter`, `firm_kladovshik`, `firm_bank`, `firm_bank_kor_s`, `firm_bik`, `firm_schet`, `firm_inn`, `firm_adres`, `firm_realadres`, `firm_gruzootpr`, `firm_telefon`, `firm_okpo`, `param_nds`, `firm_kladovshik_id`, `firm_kladovshik_doljn`) VALUES
+(1, 'OOO "РиК"', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 0, 0, '');
 
 CREATE TABLE IF NOT EXISTS `errorlog` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `page` varchar(128) NOT NULL,
   `referer` varchar(128) NOT NULL,
   `agent` varchar(128) NOT NULL,
-  `ip` varchar(18) NOT NULL,
+  `ip` varchar(16) NOT NULL,
   `msg` text NOT NULL,
   `date` datetime NOT NULL,
   `uid` int(11) NOT NULL,
@@ -1289,24 +999,12 @@ CREATE TABLE IF NOT EXISTS `errorlog` (
   KEY `agent` (`agent`,`ip`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `fabric_builders`
---
-
 CREATE TABLE IF NOT EXISTS `fabric_builders` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL,
   `active` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `fabric_data`
---
 
 CREATE TABLE IF NOT EXISTS `fabric_data` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1319,46 +1017,39 @@ CREATE TABLE IF NOT EXISTS `fabric_data` (
   UNIQUE KEY `uni` (`sklad_id`,`builder_id`,`date`,`pos_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `firm_info`
---
-
 CREATE TABLE IF NOT EXISTS `firm_info` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL DEFAULT '',
+  `name` varchar(128) NOT NULL DEFAULT '',
   `num_name` int(11) NOT NULL DEFAULT '0' COMMENT 'Номер колонки с наименованиями в прайсе',
   `num_cost` int(11) NOT NULL DEFAULT '0',
   `num_art` int(11) NOT NULL DEFAULT '0',
   `num_nal` tinyint(4) NOT NULL,
-  `signature` varchar(200) NOT NULL DEFAULT '' COMMENT 'Сигнатура для определения принадлежности прайса',
+  `signature` varchar(256) NOT NULL DEFAULT '' COMMENT 'Сигнатура для определения принадлежности прайса',
   `currency` tinyint(4) NOT NULL,
   `coeff` decimal(10,3) NOT NULL,
   `last_update` datetime NOT NULL,
-  `delivery_info` int(11) NOT NULL,
+  `rrp` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `name` (`name`),
   KEY `sign` (`signature`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
---
--- Дамп данных таблицы `firm_info`
---
-
-INSERT INTO `firm_info` (`id`, `name`, `num_name`, `num_cost`, `num_art`, `num_nal`, `signature`, `currency`, `coeff`, `last_update`, `delivery_info`) VALUES
+INSERT IGNORE INTO `firm_info` (`id`, `name`, `num_name`, `num_cost`, `num_art`, `num_nal`, `signature`, `currency`, `coeff`, `last_update`, `rrp`) VALUES
 (1, 'test', 1, 2, 3, 4, 'test@example.com', 0, 0.000, '0000-00-00 00:00:00', 0);
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `firm_info_struct`
---
+CREATE TABLE IF NOT EXISTS `firm_info_group` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `firm_id` int(11) NOT NULL,
+  `group_id` int(11) NOT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `firm_id` (`firm_id`),
+  KEY `group_id` (`group_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `firm_info_struct` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm_id` int(11) NOT NULL COMMENT 'Номер фирмы',
-  `table_name` varchar(50) NOT NULL COMMENT 'Название листа прайса',
+  `table_name` varchar(64) NOT NULL COMMENT 'Название листа прайса',
   `name` mediumint(9) NOT NULL COMMENT 'N колонки наименований',
   `cost` mediumint(9) NOT NULL,
   `art` mediumint(9) NOT NULL,
@@ -1368,42 +1059,18 @@ CREATE TABLE IF NOT EXISTS `firm_info_struct` (
   KEY `table_name` (`table_name`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
---
--- Дамп данных таблицы `firm_info_struct`
---
-
-INSERT INTO `firm_info_struct` (`id`, `firm_id`, `table_name`, `name`, `cost`, `art`, `nal`) VALUES
+INSERT IGNORE INTO `firm_info_struct` (`id`, `firm_id`, `table_name`, `name`, `cost`, `art`, `nal`) VALUES
 (1, 1, 'test', 2, 3, 1, 4);
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `loginfo`
---
-
-CREATE TABLE IF NOT EXISTS `loginfo` (
+CREATE TABLE IF NOT EXISTS `log_call_requests` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `date` datetime NOT NULL,
-  `page` varchar(100) CHARACTER SET latin1 NOT NULL,
-  `query` varchar(100) CHARACTER SET latin1 NOT NULL,
-  `mode` varchar(20) CHARACTER SET latin1 NOT NULL,
-  `ip` varchar(30) CHARACTER SET latin1 NOT NULL,
-  `user` int(11) NOT NULL,
-  `text` varchar(500) CHARACTER SET latin1 NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `date` (`date`),
-  KEY `page` (`page`),
-  KEY `query` (`query`),
-  KEY `mode` (`mode`),
-  KEY `ip` (`ip`),
-  KEY `user` (`user`)
+  `name` varchar(64) NOT NULL,
+  `phone` varchar(32) NOT NULL,
+  `request_date` datetime NOT NULL,
+  `call_date` varchar(32) NOT NULL,
+  `ip` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `news`
---
 
 CREATE TABLE IF NOT EXISTS `news` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1419,72 +1086,31 @@ CREATE TABLE IF NOT EXISTS `news` (
   KEY `ex_date` (`ex_date`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `notes`
---
-
-CREATE TABLE IF NOT EXISTS `notes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user` int(11) NOT NULL,
-  `sender` int(11) NOT NULL,
-  `head` varchar(50) NOT NULL,
-  `msg` text NOT NULL,
-  `senddate` datetime NOT NULL,
-  `enddate` datetime NOT NULL,
-  `ok` tinyint(4) NOT NULL,
-  `comment` text NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `user` (`user`),
-  KEY `sender` (`sender`),
-  KEY `senddate` (`senddate`),
-  KEY `enddate` (`enddate`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `parsed_price`
---
-
 CREATE TABLE IF NOT EXISTS `parsed_price` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firm` int(11) NOT NULL,
   `pos` int(11) NOT NULL,
   `cost` decimal(10,2) NOT NULL,
-  `nal` varchar(10) NOT NULL,
+  `nal` varchar(16) NOT NULL,
   `from` int(11) NOT NULL,
   `selected` tinyint(4) DEFAULT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `photogalery`
---
-
 CREATE TABLE IF NOT EXISTS `photogalery` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL DEFAULT '0',
-  `comment` varchar(50) NOT NULL,
+  `comment` varchar(64) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `price`
---
-
 CREATE TABLE IF NOT EXISTS `price` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(200) NOT NULL DEFAULT '',
+  `name` varchar(256) NOT NULL DEFAULT '',
   `cost` double NOT NULL DEFAULT '0',
   `firm` int(11) NOT NULL DEFAULT '0',
-  `art` varchar(20) NOT NULL DEFAULT '',
-  `nal` varchar(20) NOT NULL,
+  `art` varchar(32) NOT NULL DEFAULT '',
+  `nal` varchar(32) NOT NULL,
   `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `seeked` int(11) NOT NULL,
   KEY `name` (`name`),
@@ -1495,26 +1121,13 @@ CREATE TABLE IF NOT EXISTS `price` (
   KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `prices_replaces`
---
-
 CREATE TABLE IF NOT EXISTS `prices_replaces` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `search_str` varchar(16) NOT NULL,
   `replace_str` varchar(256) NOT NULL,
-  PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `search_str` (`search_str`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Список замен для регулярных выражений анализатора прайсов' AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `ps_counter`
---
 
 CREATE TABLE IF NOT EXISTS `ps_counter` (
   `date` date NOT NULL DEFAULT '0000-00-00',
@@ -1524,29 +1137,13 @@ CREATE TABLE IF NOT EXISTS `ps_counter` (
   PRIMARY KEY (`date`,`query`,`ps`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `ps_parser`
---
-
 CREATE TABLE IF NOT EXISTS `ps_parser` (
-  `parametr` varchar(20) NOT NULL,
-  `data` varchar(50) NOT NULL DEFAULT '0'
+  `parametr` varchar(32) NOT NULL,
+  `data` varchar(64) NOT NULL DEFAULT '0'
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
---
--- Дамп данных таблицы `ps_parser`
---
-
-INSERT INTO `ps_parser` (`parametr`, `data`) VALUES
+INSERT IGNORE INTO `ps_parser` (`parametr`, `data`) VALUES
 ('last_time_counter', '0');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `ps_query`
---
 
 CREATE TABLE IF NOT EXISTS `ps_query` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
@@ -1554,27 +1151,17 @@ CREATE TABLE IF NOT EXISTS `ps_query` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `ps_settings`
---
-
 CREATE TABLE IF NOT EXISTS `ps_settings` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
-  `icon` varchar(3) NOT NULL,
-  `name` varchar(15) NOT NULL,
-  `template` varchar(150) NOT NULL,
-  `template_like` varchar(50) NOT NULL,
+  `icon` varchar(4) NOT NULL,
+  `name` varchar(16) NOT NULL,
+  `template` varchar(256) NOT NULL,
+  `template_like` varchar(64) NOT NULL,
   `prioritet` tinyint(4) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=8 ;
 
---
--- Дамп данных таблицы `ps_settings`
---
-
-INSERT INTO `ps_settings` (`id`, `icon`, `name`, `template`, `template_like`, `prioritet`) VALUES
+INSERT IGNORE INTO `ps_settings` (`id`, `icon`, `name`, `template`, `template_like`, `prioritet`) VALUES
 (1, 'Y', 'yandex', '/.*?yandex.*?text=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%yandex%text=%', 1),
 (2, 'G', 'google', '/.*?google.*?q=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%google%q=%', 2),
 (3, 'M', 'mail', '/.*?mail.*?q=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%mail%q=%', 3),
@@ -1583,75 +1170,11 @@ INSERT INTO `ps_settings` (`id`, `icon`, `name`, `template`, `template_like`, `p
 (6, 'Q', 'qip', '/.*?qip.*?query=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%qip%query=%', 6),
 (7, 'N', 'ngs', '/.*?ngs.*?q=[\\.\\s]*([-a-zа-я0-9"''_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,"''_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui', '%ngs%q=%', 7);
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `questions`
---
-
-CREATE TABLE IF NOT EXISTS `questions` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `text` varchar(200) NOT NULL,
-  `mode` int(11) NOT NULL,
-  UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `question_answ`
---
-
-CREATE TABLE IF NOT EXISTS `question_answ` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `q_id` int(11) NOT NULL,
-  `answer` varchar(500) NOT NULL,
-  `uid` int(11) NOT NULL,
-  `ip` varchar(15) NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `q_id` (`q_id`),
-  KEY `uid` (`uid`),
-  KEY `ip` (`ip`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `question_ip`
---
-
-CREATE TABLE IF NOT EXISTS `question_ip` (
-  `ip` varchar(15) NOT NULL,
-  `result` int(11) NOT NULL,
-  UNIQUE KEY `ip_2` (`ip`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `question_vars`
---
-
-CREATE TABLE IF NOT EXISTS `question_vars` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `q_id` int(11) NOT NULL,
-  `var_id` int(11) NOT NULL,
-  `text` varchar(500) NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `q_id` (`q_id`,`var_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `seekdata`
---
-
 CREATE TABLE IF NOT EXISTS `seekdata` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(200) NOT NULL,
-  `sql` varchar(200) NOT NULL,
-  `regex` varchar(200) NOT NULL,
+  `name` varchar(256) NOT NULL,
+  `sql` varchar(256) NOT NULL,
+  `regex` varchar(256) NOT NULL,
   `group` int(11) NOT NULL,
   `regex_neg` varchar(256) NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -1660,49 +1183,89 @@ CREATE TABLE IF NOT EXISTS `seekdata` (
   KEY `regex` (`regex`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `sys_cli_status`
---
-
-CREATE TABLE IF NOT EXISTS `sys_cli_status` (
+CREATE TABLE IF NOT EXISTS `survey` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `script` varchar(64) NOT NULL,
-  `status` text NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `script` (`script`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+  `name` varchar(128) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `start_text` text NOT NULL,
+  `end_text` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `start_date` (`start_date`),
+  KEY `end_date` (`end_date`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
--- --------------------------------------------------------
+INSERT IGNORE INTO `survey` (`id`, `name`, `start_date`, `end_date`, `start_text`, `end_text`) VALUES
+(1, 'Опрос 1', '2013-03-08', '2013-03-08', 'Это самый первый опрос', 'Спасибо за участие в опросе!');
 
---
--- Структура таблицы `tickets`
---
+CREATE TABLE IF NOT EXISTS `survey_answer` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `question_num` int(11) NOT NULL,
+  `answer_txt` varchar(64) NOT NULL,
+  `answer_int` int(11) NOT NULL,
+  `comment` varchar(256) NOT NULL,
+  `uid` int(11) DEFAULT NULL,
+  `ip_address` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq` (`survey_id`,`question_num`,`uid`,`ip_address`),
+  KEY `survey_id` (`survey_id`),
+  KEY `question_id` (`question_num`),
+  KEY `uid` (`uid`),
+  KEY `ip_addres` (`ip_address`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE IF NOT EXISTS `survey_ok` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `uid` int(11) DEFAULT NULL,
+  `ip` varchar(32) NOT NULL,
+  `result` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `survey_id` (`survey_id`),
+  KEY `uid` (`uid`),
+  KEY `ip` (`ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE IF NOT EXISTS `survey_question` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `question_num` int(11) NOT NULL,
+  `text` varchar(256) NOT NULL,
+  `type` tinyint(4) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `survey_id` (`survey_id`),
+  KEY `question_num` (`question_num`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE IF NOT EXISTS `survey_quest_option` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `option_num` int(11) NOT NULL,
+  `text` varchar(128) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq` (`survey_id`,`question_id`,`option_num`),
+  KEY `survey_id` (`survey_id`),
+  KEY `question_id` (`question_id`),
+  KEY `num` (`option_num`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `tickets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` datetime NOT NULL,
   `autor` int(11) NOT NULL,
   `priority` tinyint(4) NOT NULL,
-  `theme` varchar(100) NOT NULL,
+  `theme` varchar(128) NOT NULL,
   `text` text NOT NULL,
-  `to_uid` int(11) NOT NULL,
   `to_date` date NOT NULL,
   `state` tinyint(4) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `date` (`date`),
   KEY `autor` (`autor`),
   KEY `theme` (`theme`),
-  KEY `to_uid` (`to_uid`),
   KEY `to_date` (`to_date`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `tickets_log`
---
 
 CREATE TABLE IF NOT EXISTS `tickets_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1714,52 +1277,39 @@ CREATE TABLE IF NOT EXISTS `tickets_log` (
   KEY `uid` (`uid`,`ticket`,`date`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `tickets_priority`
---
-
 CREATE TABLE IF NOT EXISTS `tickets_priority` (
   `id` tinyint(4) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `color` varchar(6) NOT NULL,
-  `comment` varchar(200) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `color` varchar(8) NOT NULL,
+  `comment` text NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
+INSERT IGNORE INTO `tickets_priority` (`id`, `name`, `color`, `comment`) VALUES
+(1, 'Важно', '', '');
 
---
--- Структура таблицы `tickets_state`
---
+CREATE TABLE IF NOT EXISTS `tickets_responsibles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ticket_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uni` (`ticket_id`,`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `tickets_state` (
   `id` int(11) NOT NULL,
-  `name` varchar(30) NOT NULL,
+  `name` varchar(32) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `traffic_denyip`
---
-
 CREATE TABLE IF NOT EXISTS `traffic_denyip` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `ip` varchar(20) NOT NULL,
-  `host` varchar(50) NOT NULL,
+  `ip` varchar(16) NOT NULL,
+  `host` varchar(64) NOT NULL,
   UNIQUE KEY `id_2` (`id`),
   UNIQUE KEY `ip` (`ip`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COMMENT='Zapreshennie IP' AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `ulog`
---
 
 CREATE TABLE IF NOT EXISTS `ulog` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -1810,16 +1360,10 @@ CREATE TABLE IF NOT EXISTS `ulog` (
   KEY `oob_time_sec` (`oob_time_sec`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `users`
---
-
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL,
-  `pass` varchar(192) NOT NULL,
+  `pass` varchar(256) NOT NULL,
   `pass_type` varchar(8) NOT NULL COMMENT 'тип хэша',
   `pass_change` varchar(64) NOT NULL,
   `pass_expired` tinyint(4) NOT NULL DEFAULT '0',
@@ -1855,19 +1399,9 @@ CREATE TABLE IF NOT EXISTS `users` (
   KEY `agent_id` (`agent_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Spisok pol''zovatelei' AUTO_INCREMENT=2 ;
 
---
--- Дамп данных таблицы `users`
---
-
-INSERT INTO `users` (`id`, `name`, `pass`, `pass_type`, `pass_change`, `pass_expired`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_email_subscribe`, `reg_phone`, `reg_phone_subscribe`, `reg_phone_confirm`, `reg_date`, `disabled`, `disabled_reason`, `bifact_auth`, `real_name`, `real_address`, `jid`, `type`, `agent_id`) VALUES
-(0, 'anonymous', '--not-valid--', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', 1),
-(1, 'root', 'enter_md5_password', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', NULL);
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_acl`
---
+INSERT IGNORE INTO `users` (`id`, `name`, `pass`, `pass_type`, `pass_change`, `pass_expired`, `pass_date_change`, `reg_email`, `reg_email_confirm`, `reg_email_subscribe`, `reg_phone`, `reg_phone_subscribe`, `reg_phone_confirm`, `reg_date`, `disabled`, `disabled_reason`, `bifact_auth`, `real_name`, `real_address`, `jid`, `type`, `agent_id`) VALUES
+(0, 'anonymous', '', '', '', 0, '0000-00-00 00:00:00', '', '', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', NULL),
+(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', '', '', 0, '0000-00-00 00:00:00', 'test@example.com', '1', 0, '', 0, '', '0000-00-00 00:00:00', 0, '', 0, '', '', '', '', NULL);
 
 CREATE TABLE IF NOT EXISTS `users_acl` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1880,12 +1414,6 @@ CREATE TABLE IF NOT EXISTS `users_acl` (
   KEY `action` (`action`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_bad_auth`
---
-
 CREATE TABLE IF NOT EXISTS `users_bad_auth` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip` varchar(24) NOT NULL,
@@ -1895,12 +1423,6 @@ CREATE TABLE IF NOT EXISTS `users_bad_auth` (
   KEY `date` (`time`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_data`
---
-
 CREATE TABLE IF NOT EXISTS `users_data` (
   `uid` int(11) NOT NULL DEFAULT '0',
   `param` varchar(25) NOT NULL,
@@ -1908,12 +1430,6 @@ CREATE TABLE IF NOT EXISTS `users_data` (
   UNIQUE KEY `uid` (`uid`,`param`),
   KEY `value` (`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_grouplist`
---
 
 CREATE TABLE IF NOT EXISTS `users_grouplist` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1923,23 +1439,13 @@ CREATE TABLE IF NOT EXISTS `users_grouplist` (
   KEY `name` (`name`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 PACK_KEYS=0 COMMENT='Spisok grupp' AUTO_INCREMENT=6 ;
 
---
--- Дамп данных таблицы `users_grouplist`
---
-
-INSERT INTO `users_grouplist` (`id`, `name`, `comment`) VALUES
+INSERT IGNORE INTO `users_grouplist` (`id`, `name`, `comment`) VALUES
 (0, 'anonymous', 'Гости'),
 (1, 'root', 'Администраторы'),
 (2, 'seo', 'Специалисты продвижения сайта'),
 (3, 'sklad', 'Кладовщики'),
 (4, 'manager', 'Управленцы'),
 (5, 'buhgalter', 'Бухгалтерия');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_groups_acl`
---
 
 CREATE TABLE IF NOT EXISTS `users_groups_acl` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1951,12 +1457,6 @@ CREATE TABLE IF NOT EXISTS `users_groups_acl` (
   KEY `object` (`object`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Привилегии групп' AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_in_group`
---
-
 CREATE TABLE IF NOT EXISTS `users_in_group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL,
@@ -1965,12 +1465,6 @@ CREATE TABLE IF NOT EXISTS `users_in_group` (
   KEY `uid` (`uid`),
   KEY `gid` (`gid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Соответствие групп и пользователей' AUTO_INCREMENT=1 ;
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_login_history`
---
 
 CREATE TABLE IF NOT EXISTS `users_login_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1982,12 +1476,6 @@ CREATE TABLE IF NOT EXISTS `users_login_history` (
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_objects`
---
-
 CREATE TABLE IF NOT EXISTS `users_objects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `object` varchar(32) NOT NULL,
@@ -1995,13 +1483,9 @@ CREATE TABLE IF NOT EXISTS `users_objects` (
   `actions` varchar(128) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `object` (`object`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=74 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=83 ;
 
---
--- Дамп данных таблицы `users_objects`
---
-
-INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
+INSERT IGNORE INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
 (1, 'doc', 'Документы', ''),
 (2, 'doc_list', 'Журнал документов', 'view,delete'),
 (3, 'doc_postuplenie', 'Поступление', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
@@ -2072,13 +1556,16 @@ INSERT INTO `users_objects` (`id`, `object`, `desc`, `actions`) VALUES
 (70, 'report_mincnt', 'Отчёт по минимальному количеству', 'view'),
 (71, 'report_mincnt', 'Отчёт по минимальному количеству', 'view'),
 (72, 'report_pos_komplekt', 'Отчёт по остаткам комплектующих', 'view'),
-(73, 'report_ved_agentov', 'Ведомость по агентам', 'view');
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_openid`
---
+(73, 'report_ved_agentov', 'Ведомость по агентам', 'view'),
+(74, 'admin_comments', 'Администрирование комментариев', 'view,delete'),
+(75, 'doc_korbonus', 'Корректировка бонусного баланса', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(76, 'doc_realiz_bonus', 'Реализация за бонусы', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(77, 'log_call_request', 'Журнал запрошенных звонков', 'view,edit'),
+(78, 'report_outlay_items', 'Отчёт по статьям расходов', 'view'),
+(79, 'doc_agent_ext', 'Доступ к административным полям агентов', 'view,edit'),
+(80, 'doc_zsbor', 'Заявка на сборку', 'view,edit,create,apply,cancel,forcecancel,delete,today_cancel'),
+(81, 'generic_tickets', 'Задачи', 'view,create,edit'),
+(82, 'report_liquidity', 'Отчет по ликвидности', 'view');
 
 CREATE TABLE IF NOT EXISTS `users_openid` (
   `user_id` int(11) NOT NULL,
@@ -2088,12 +1575,6 @@ CREATE TABLE IF NOT EXISTS `users_openid` (
   KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Привязка к openid';
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `users_worker_info`
---
-
 CREATE TABLE IF NOT EXISTS `users_worker_info` (
   `user_id` int(11) NOT NULL,
   `worker` tinyint(4) NOT NULL,
@@ -2102,145 +1583,152 @@ CREATE TABLE IF NOT EXISTS `users_worker_info` (
   `worker_jid` varchar(32) NOT NULL,
   `worker_real_name` varchar(64) NOT NULL,
   `worker_real_address` varchar(256) NOT NULL,
+  `worker_post_name` varchar(64) NOT NULL COMMENT 'Должность',
   UNIQUE KEY `user_id` (`user_id`),
   KEY `worker_email` (`worker_email`),
   KEY `worker_phone` (`worker_phone`),
   KEY `worker_jid` (`worker_jid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `variables`
---
-
 CREATE TABLE IF NOT EXISTS `variables` (
   `corrupted` tinyint(4) NOT NULL COMMENT 'Признак нарушения целостности',
   `recalc_active` int(9) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
---
--- Дамп данных таблицы `variables`
---
-
-INSERT INTO `variables` (`corrupted`, `recalc_active`) VALUES
+INSERT IGNORE INTO `variables` (`corrupted`, `recalc_active`) VALUES
 (0, 0);
 
--- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `votings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Голосования' AUTO_INCREMENT=1 ;
 
---
--- Структура таблицы `wikiphoto`
---
+CREATE TABLE IF NOT EXISTS `votings_results` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `voting_id` int(11) NOT NULL,
+  `variant_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `ip_addr` varchar(32) NOT NULL,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq` (`voting_id`,`variant_id`,`user_id`,`ip_addr`),
+  KEY `voting_id` (`voting_id`),
+  KEY `vars_id` (`variant_id`),
+  KEY `user_id` (`user_id`),
+  KEY `ip_addr` (`ip_addr`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Голоса' AUTO_INCREMENT=1 ;
+
+CREATE TABLE IF NOT EXISTS `votings_vars` (
+  `voting_id` int(11) NOT NULL,
+  `variant_id` int(11) NOT NULL,
+  `text` varchar(128) NOT NULL,
+  UNIQUE KEY `uni` (`voting_id`,`variant_id`),
+  KEY `voting_id` (`voting_id`),
+  KEY `variant_id` (`variant_id`),
+  KEY `text` (`text`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `wikiphoto` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL DEFAULT '0',
-  `comment` varchar(50) NOT NULL,
+  `comment` varchar(64) NOT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
---
--- Ограничения внешнего ключа сохраненных таблиц
---
 
---
--- Ограничения внешнего ключа таблицы `articles`
---
 ALTER TABLE `articles`
   ADD CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`autor`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `articles_ibfk_2` FOREIGN KEY (`changeautor`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `class_unit`
---
 ALTER TABLE `class_unit`
   ADD CONSTRAINT `class_unit_ibfk_1` FOREIGN KEY (`class_unit_group_id`) REFERENCES `class_unit_group` (`id`),
   ADD CONSTRAINT `class_unit_ibfk_2` FOREIGN KEY (`class_unit_type_id`) REFERENCES `class_unit_type` (`id`);
 
---
--- Ограничения внешнего ключа таблицы `doc_base`
---
 ALTER TABLE `doc_base`
   ADD CONSTRAINT `doc_base_ibfk_1` FOREIGN KEY (`group`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_base_ibfk_2` FOREIGN KEY (`unit`) REFERENCES `class_unit` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_base_ibfk_3` FOREIGN KEY (`country`) REFERENCES `class_country` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_base_attachments`
---
 ALTER TABLE `doc_base_attachments`
   ADD CONSTRAINT `doc_base_attachments_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_base_attachments_ibfk_2` FOREIGN KEY (`attachment_id`) REFERENCES `attachments` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_base_cost`
---
 ALTER TABLE `doc_base_cost`
   ADD CONSTRAINT `doc_base_cost_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_base_cost_ibfk_2` FOREIGN KEY (`cost_id`) REFERENCES `doc_cost` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_base_kompl`
---
 ALTER TABLE `doc_base_kompl`
   ADD CONSTRAINT `doc_base_kompl_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_base_kompl_ibfk_2` FOREIGN KEY (`kompl_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_base_pcollections_set`
---
 ALTER TABLE `doc_base_pcollections_set`
   ADD CONSTRAINT `doc_base_pcollections_set_ibfk_1` FOREIGN KEY (`collection_id`) REFERENCES `doc_base_pcollections_list` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_base_pcollections_set_ibfk_2` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_base_values`
---
 ALTER TABLE `doc_base_values`
   ADD CONSTRAINT `doc_base_values_ibfk_1` FOREIGN KEY (`id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_base_values_ibfk_2` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_group_cost`
---
+ALTER TABLE `doc_dopdata`
+  ADD CONSTRAINT `doc_dopdata_ibfk_1` FOREIGN KEY (`doc`) REFERENCES `doc_list` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
 ALTER TABLE `doc_group_cost`
   ADD CONSTRAINT `doc_group_cost_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_group_cost_ibfk_2` FOREIGN KEY (`cost_id`) REFERENCES `doc_cost` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_group_params`
---
 ALTER TABLE `doc_group_params`
   ADD CONSTRAINT `fk_doc_group_params_doc_base_params1` FOREIGN KEY (`param_id`) REFERENCES `doc_base_params` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `fk_doc_group_params_doc_group1` FOREIGN KEY (`group_id`) REFERENCES `doc_group` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `doc_list_pos`
---
 ALTER TABLE `doc_list_pos`
   ADD CONSTRAINT `doc_list_pos_ibfk_2` FOREIGN KEY (`tovar`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `doc_list_pos_ibfk_3` FOREIGN KEY (`doc`) REFERENCES `doc_list` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `users`
---
+ALTER TABLE `doc_list_sn`
+  ADD CONSTRAINT `doc_list_sn_ibfk_3` FOREIGN KEY (`rasx_list_pos`) REFERENCES `doc_list_pos` (`id`) ON DELETE SET NULL ON UPDATE SET NULL,
+  ADD CONSTRAINT `doc_list_sn_ibfk_1` FOREIGN KEY (`pos_id`) REFERENCES `doc_base` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `doc_list_sn_ibfk_2` FOREIGN KEY (`prix_list_pos`) REFERENCES `doc_list_pos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `survey_answer`
+  ADD CONSTRAINT `survey_answer_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `survey` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `survey_answer_ibfk_3` FOREIGN KEY (`uid`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE SET NULL,
+  ADD CONSTRAINT `survey_answer_ibfk_4` FOREIGN KEY (`question_num`) REFERENCES `survey_question` (`question_num`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `survey_ok`
+  ADD CONSTRAINT `survey_ok_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `survey` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `survey_ok_ibfk_2` FOREIGN KEY (`uid`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE SET NULL;
+
+ALTER TABLE `survey_question`
+  ADD CONSTRAINT `survey_question_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `survey` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `survey_quest_option`
+  ADD CONSTRAINT `survey_quest_option_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `survey` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `survey_quest_option_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `survey_question` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
 ALTER TABLE `users`
   ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`agent_id`) REFERENCES `doc_agent` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `users_data`
---
 ALTER TABLE `users_data`
   ADD CONSTRAINT `users_data_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
---
--- Ограничения внешнего ключа таблицы `users_openid`
---
 ALTER TABLE `users_openid`
   ADD CONSTRAINT `users_openid_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
---
--- Ограничения внешнего ключа таблицы `users_worker_info`
---
 ALTER TABLE `users_worker_info`
   ADD CONSTRAINT `users_worker_info_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `votings_results`
+  ADD CONSTRAINT `votings_results_ibfk_1` FOREIGN KEY (`voting_id`) REFERENCES `votings` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `votings_results_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE SET NULL,
+  ADD CONSTRAINT `votings_results_ibfk_4` FOREIGN KEY (`variant_id`) REFERENCES `votings_vars` (`variant_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `votings_vars`
+  ADD CONSTRAINT `votings_vars_ibfk_1` FOREIGN KEY (`voting_id`) REFERENCES `votings` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+SET FOREIGN_KEY_CHECKS=1;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
