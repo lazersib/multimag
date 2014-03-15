@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -196,16 +196,18 @@ function Show($param='')
 function GetAllContent()
 {
 	global $db, $CONFIG;
-	$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`
+	$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 	FROM `doc_list_pos`
 	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 	WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'
 	ORDER BY `doc_list_pos`.`id`");
 	$ret='';
+	$pc = PriceCalc::getInstance();
+		
 	while ($nxt = $res->fetch_assoc()) {
-		if ($this->cost_id)	$nxt['scost'] = getCostPos($nxt['pos_id'], $this->cost_id);
-		else			$nxt['scost'] = sprintf("%0.2f", $nxt['bcost']);
+		if ($this->cost_id)	$nxt['scost'] = $pc->getPosDefaultPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+		else			$nxt['scost'] = sprintf("%0.2f", $nxt['base_price']);
 		$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 		if ($ret)	$ret.=', ';
 		
@@ -231,8 +233,8 @@ function GetAllContent()
 		global $db, $CONFIG;
 
 		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
-			`doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`
+			`doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
+			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 			FROM `doc_base`
 			LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
@@ -240,8 +242,12 @@ function GetAllContent()
 
 		$ret = '';
 		if ($res->num_rows) {
+			
 			$nxt = $res->fetch_assoc();
-			if ($this->cost_id)	$nxt['scost'] = getCostPos($nxt['pos_id'], $this->cost_id);
+			if ($this->cost_id) {
+				$pc = PriceCalc::getInstance();
+				$nxt['scost'] = $pc->getPosDefaultPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+			}
 			else			$nxt['scost'] = sprintf("%0.2f", $nxt['bcost']);
 			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
 			if (!$nxt['cost'])	$nxt['cost'] = $nxt['scost'];
@@ -272,10 +278,10 @@ function GetAllContent()
 		settype($group, 'int');
 		$ret = '';
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
-			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`koncost` AS `rcost`,  `doc_base_dop`.`analog`,
+			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date`, `doc_base_dop`.`koncost` AS `rcost`,  `doc_base_dop`.`analog`,
 			`doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 			`doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`,
-			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`
+			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`bulkcnt`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_cnt`  ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -292,10 +298,11 @@ function GetAllContent()
 		$s_json = json_encode($s, JSON_UNESCAPED_UNICODE);
 		$ret = '';
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
-			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`koncost` AS `rcost`, `doc_base_dop`.`analog`,
-			`doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
+			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date`, `doc_base_dop`.`koncost` AS `rcost`,
+			`doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 			`doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`,
-			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`";
+			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
+			`doc_base`.`bulkcnt`";
 
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
@@ -351,7 +358,11 @@ function GetAllContent()
 					$nxt['offer'] = DocPodZakaz($nxt['id'], $this->doc);
 					$nxt['transit'] = DocVPuti($nxt['id'], $this->doc);
 				}
-				$nxt['cost'] = $this->cost_id ? getCostPos($nxt['id'], $this->cost_id) : $nxt['cost'];
+				if($this->cost_id) {
+					$pc = PriceCalc::getInstance();
+					$nxt['cost'] = $pc->getPosDefaultPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+				}
+				else $nxt['cost'] = $nxt['base_price'];
 				$nxt['rcost'] = sprintf("%0.2f", $nxt['rcost']);
 				$nxt['in_cost'] = sprintf("%0.2f",  getInCost($nxt['id']));
 				
@@ -391,13 +402,14 @@ function AddPos($pos) {
 	$doc_sum = $this->doc_obj->recalcSum();
 
 	if($add) {
-		$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`
+		$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 		FROM `doc_list_pos`
 		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 		WHERE `doc_list_pos`.`id`='$pos_line'");
 		$line = $res->fetch_assoc();
-		$line['scost'] = $this->cost_id?getCostPos($line['id'], $this->cost_id):$line['cost'];
+		$pc = PriceCalc::getInstance();
+		$line['scost'] = $this->cost_id?$pc->getPosSelectedPriceValue($line['id'], $this->cost_id, $line):$line['cost'];
 		$line['line_id'] = $pos_line;
 		$line['pos_id'] = $line['id'];
 		$line['gtd'] = '';

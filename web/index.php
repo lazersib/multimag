@@ -1,6 +1,6 @@
 <?php
 
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -33,9 +33,8 @@ else
 	require_once("include/comments.inc.php");
 	require_once("include/wikiparser.php");
 	$tmpl->setTitle($CONFIG['site']['display_name']);
-
-	$cost_id=getCurrentUserCost();
-
+	
+	$pc = PriceCalc::getInstance();
 
 	$tmpl->addStyle(".pitem	{
 		float:			left;
@@ -160,7 +159,7 @@ else
 	{
 		$tmpl->addContent("<h1>Спецпредложения</h1>
 		<div class='sales'>");
-
+		
 		while($line=$res->fetch_assoc())
 		{
 			/// TODO: надо бы из класса витрины брать данные
@@ -174,7 +173,9 @@ else
 				$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='{$line['name']}'>";
 			}
 			else $img="<img src='/img/no_photo.png' alt='no photo' style='float: left; margin-right: 10px;'>";
-			$cost=getCostPos($line['id'], $cost_id);
+			
+			$cost = $pc->getPosDefaultPriceValue($line['id']);
+			if($cost<=0)	$cost='уточняйте';
 			$html_name=html_out($line['group_name'].' '.$line['name']);
 
 			$tmpl->addContent("<div class='pitem'>
@@ -214,7 +215,8 @@ else
 			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='{$line['name']}'>";
 		}
 		else $img="<img src='/img/no_photo.png' alt='no photo'  style='float: left; margin-right: 10px;'>";
-		$cost=getCostPos($line['id'], $cost_id);
+		$cost = $pc->getPosDefaultPriceValue($line['id']);
+		if($cost<=0)	$cost='уточняйте';
 		$html_name=html_out($line['group_name'].' '.$line['name']);
 		$tmpl->addContent("<div class='pitem'>
 		<a href='$link'>$img</a>

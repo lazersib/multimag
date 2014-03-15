@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -27,48 +27,59 @@ class SearchPage
 
 	/// Конструктор
 	/// @param search_str Искомая строка
-	function __construct($search_str)	{
+	function __construct($search_str) {
 		$this->search_str=$search_str;
 	}
 
 	/// Поиск товара
 	/// @param s Подстрока поиска
-	function SearchTovar($s)	{
+	function SearchTovar($s) {
 		global $uid, $CONFIG, $db;
-		$c_cena_id=getCurrentUserCost();
 
 		$ret='';
+		$s_sql = $db->real_escape_string($s);
 		$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE (`doc_base_dop`.`analog` LIKE '%$s%' OR `doc_base`.`name` LIKE '%$s%' OR `doc_base`.`desc` LIKE '%$s%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base_dop`.`analog` LIKE '%$s%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
+		WHERE (`doc_base_dop`.`analog` LIKE '%$s_sql%' OR `doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`desc` LIKE '%$s_sql%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base_dop`.`analog` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
 		LIMIT 20";
-		$res=$db->query($sql);
-		$found_cnt=0;
-		$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
-		if($row=$res->num_rows)
-		{
+		$res = $db->query($sql);
+		$found_cnt = 0;
+		$basket_img = "/skins/".$CONFIG['site']['skin']."/basket16.png";
+		
+		if(@$CONFIG['site']['grey_price_days'])
+			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+		
+		if($row = $res->num_rows) {
 			$ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
 			<th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
 			$i=0;
 			$cl="lin0";
-			while($nxt=$res->fetch_row())
-			{
+			$pc = PriceCalc::getInstance();
+			while($nxt=$res->fetch_row()) {
 				if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 				else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
 
 				$i=1-$i;
-				$cost = getCostPos($nxt[0], $c_cena_id);
+				$cost = $pc->getPosDefaultPriceValue($nxt[0]);
 				if($cost<=0)	$cost='уточняйте';
 				$nal=$this->GetCountInfo($nxt[12], $nxt[13]);
-				$cce=(strtotime($nxt[5])<(time()-60*60*24*30*6))?" style='color:#888'":'';
+				
+				$cce = '';
+				if(@$CONFIG['site']['grey_price_days']) {
+					if( strtotime($nxt[5]) < $cce_time )
+						$cce = ' style=\'color:#888\'';
+				}
+		
 				$ret.="<tr><td><a href='$link'>".html_out("$nxt[1] $nxt[2]")."</a></td>
 				<td>".html_out($nxt[3])."</td><td>".html_out($nxt[6])."</td><td>$nal</td><td $cce>$cost</td><td>$nxt[8]</td><td>$nxt[9]</td><td>$nxt[10]</td><td>$nxt[11]</td><td>
 				<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>";
 				$found_cnt++;
 			}
-			$ret.="</table><span style='color:#888'>Серая цена</span> требует уточнения<br>";
+			$ret.="</table>";
+			if(@$CONFIG['site']['grey_price_days'])
+				$ret.="<span style='color:#888'>Серая цена</span> требует уточнения<br>";
 		}
 		return $ret;
 	}

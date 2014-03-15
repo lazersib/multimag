@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -588,9 +588,11 @@ class doc_s_Sklad {
 		}
 		// Цены
 		else if ($param == 'c') {
-			$cres = $db->query("SELECT `doc_base`.`cost` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
+			$cres = $db->query("SELECT `cost` AS `base_price`, `group`, `bulkcnt` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
 			if(!$cres->num_rows)	throw new Exception("Позиция не найдена");
-			list($base_cost) = $cres->fetch_row();
+			$pos_info = $cres->fetch_assoc();
+			
+			//list($base_cost) = $cres->fetch_row();
 
 			$cost_types = array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
 			$direct = array((-1) => 'Вниз', 0 => 'K ближайшему', 1 => 'Вверх');
@@ -605,7 +607,8 @@ class doc_s_Sklad {
 			<input type='hidden' name='param' value='c'>
 			<table cellpadding='0' width='50%' class='list'>
 			<tr><th>Цена</th><th>Тип</th><th>Значение</th><th>Точность</th><th>Округление</th><th>Результат</th></tr>
-			<tr><td><b>Базовая</b><td>Базовая цена<td>$base_cost руб.<td>-<td>-<td>$base_cost руб.");
+			<tr><td><b>Базовая</b><td>Базовая цена<td>{$pos_info['base_price']} руб.<td>-<td>-<td>{$pos_info['base_price']} руб.");
+			$pc = PriceCalc::getInstance();
 			while ($cn = $res->fetch_row()) {
 				$sig = ($cn[4] > 0) ? '+' : '';
 				if ($cn[3] == 'pp')
@@ -646,7 +649,7 @@ class doc_s_Sklad {
 					$sel = $cn[8] == $i ? 'selected' : '';
 					$tmpl->addContent("<option value='$i' $sel>{$direct[$i]}</option>");
 				}
-				$result = getCostPos($pos, $cn[0]);
+				$result = $pc->getPosSelectedPriceValue($pos, $cn[0], $pos_info);
 				$tmpl->addContent("</select><td>$result руб.");
 			}
 			$tmpl->addContent("</table>
@@ -1813,7 +1816,8 @@ class doc_s_Sklad {
 			default: $order = '`doc_base`.`name`';
 		}
 
-		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
+		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
+			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`cost_date`,
 		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 		`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
 		(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock` $sql_add
@@ -1913,7 +1917,8 @@ class doc_s_Sklad {
 
 		$s_sql = $db->real_escape_string($s);
 		
-		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`,
+		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
+			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
 			`doc_base`.`cost_date`, `doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
 			`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
 			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`,
@@ -2038,7 +2043,8 @@ class doc_s_Sklad {
 			$tmpl->addContent("<h1>Результаты</h1>");
 			$sklad = $_SESSION['sklad_num'];
 			settype($sklad, 'int');
-			$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`,
+			$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`,
+				`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
 				`doc_base`.`cost_date`,	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
 				`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
 				(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
@@ -2119,6 +2125,8 @@ class doc_s_Sklad {
 		global $tmpl, $CONFIG;
 		$i = 0;
 		$go = rcvint('go');
+		if($_SESSION['sklad_cost'] > 0)
+			$pc = PriceCalc::getInstance();
 		while ($nxt = $res->fetch_assoc()) {
 			$rezerv = $CONFIG['poseditor']['rto'] ? DocRezerv($nxt['id'], 0) : '';
 			$pod_zakaz = $CONFIG['poseditor']['rto'] ? DocPodZakaz($nxt['id'], 0) : '';
@@ -2173,7 +2181,7 @@ class doc_s_Sklad {
 			$name = SearchHilight( html_out($nxt['name']) , $s);
 			$analog = SearchHilight( html_out($nxt['analog']), $s);
 
-			$cost_p = sprintf("%0.2f", $nxt['cost']);
+			$cost_p = sprintf("%0.2f", $nxt['base_price']);
 			$in_cost = sprintf("%0.2f", getInCost($nxt['id']));
 			
 			$vc_add = $CONFIG['poseditor']['vc'] ? "<td>{$nxt['vc']}</td>" : '';
@@ -2187,7 +2195,9 @@ class doc_s_Sklad {
 			else	$rto_add = '';
 
 			$cb = $go ? "<input type='checkbox' name='pos[{$nxt['id']}]' class='pos_ch' value='1'>" : '';
-			$cadd = ($_SESSION['sklad_cost'] > 0) ? ('<td>' . getCostPos($nxt['id'], $_SESSION['sklad_cost'])) : '';
+			if($_SESSION['sklad_cost'] > 0)
+				$cadd = '<td>' . $pc->getPosSelectedPriceValue($nxt['id'], $_SESSION['sklad_cost'], $nxt);
+			else	$cadd = '';
 
 			$tmpl->addContent("<tr class='pointer' oncontextmenu=\"ShowPosContextMenu(event, {$nxt['id']}, ''); return false;\">
 		<td>$cb

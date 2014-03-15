@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -209,6 +209,7 @@ function kompl_ViewSkladS($pos, $group, $s) {
 function kompl_DrawSkladTable($res, $s, $pos) {
 	global $tmpl, $dop_data;
 	$i = 0;
+	$pc = PriceCalc::getInstance();
 	while ($nxt = $res->fetch_row()) {
 		$rezerv = DocRezerv($nxt[0], 0);
 		$pod_zakaz = DocPodZakaz($nxt[0], 0);
@@ -239,7 +240,10 @@ function kompl_DrawSkladTable($res, $s, $pos) {
 		$nxt[2] = SearchHilight(html_out($nxt[2]), $s);
 		$nxt[8] = SearchHilight(html_out($nxt[8]), $s);
 		$i = 1 - $i;
-		$cost_p = $dop_data['cena'] ? getCostPos($nxt[0], $dop_data['cena']) : $nxt[5];
+		if($dop_data['cena']) {
+			$cost_p = $pc->getPosSelectedPriceValue($nxt[0], $dop_data['cena'], $pc->getPosInfo($nxt[0]));
+		}
+		else	$cost_p = $nxt[5];
 		$cost_r = sprintf("%0.2f", $nxt[7]);
 
 		$tmpl->addContent("<tr class='lin$i pointer'

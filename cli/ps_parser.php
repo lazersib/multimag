@@ -1,6 +1,6 @@
 #!/usr/bin/php
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, Sl_An, TND Team, http://tndproject.org
 //

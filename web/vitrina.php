@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -24,19 +24,15 @@ include_once("include/imgresizer.php");
 /// Класс витрины интернет-магазина
 class Vitrina
 {
-var $cost_id;
 
-function __construct()
-{
+/// Конструктор
+function __construct() {
 	global $tmpl;
-	$this->cost_id=		getCurrentUserCost();
-	if(!$this->cost_id)	$this->cost_id=1;
 	$tmpl->setTitle("Интернет - витрина");
 }
+
 /// Проверка и исполнение recode-запроса
-function ProbeRecode()
-{
-	global $CONFIG;
+function ProbeRecode() {
 	/// Обрабатывает запросы-ссылки  вида http://example.com/vitrina/ig/5.html
 	/// Возвращает false в случае неудачи.
 	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
@@ -78,156 +74,126 @@ function ProbeRecode()
 /// @param mode Название функции витрины
 function ExecMode($mode)
 {
-	global $tmpl, $CONFIG, $db;
-	$p=rcvint('p');
-	$g=rcvint('g');
-	if($mode=='')	// Верхний уровень. Никакая группа не выбрана.
-	{
+	global $tmpl, $db;
+	$p = rcvint('p');
+	$g = rcvint('g');
+	if ($mode == '') { // Верхний уровень. Никакая группа не выбрана.
 		$this->TopGroup();
-	}
-	else if($mode=='group')
-	{
+	} 
+	else if ($mode == 'group') {
 		$this->ViewGroup($g, $p);
-	}
-	else if($mode=='product')
-	{
+	} 
+	else if ($mode == 'product') {
 		$this->ProductCard($p);
-	}
-	else if($mode=='basket')
-	{
+	} 
+	else if ($mode == 'basket') {
 		$this->Basket();
-	}
-	else if($mode=='block')
-	{
+	} else if ($mode == 'block') {
 		$this->ViewBlock($_REQUEST['type']);
-	}
-	else if($mode=='korz_add')
-	{
-		$cnt=rcvint('cnt');
-		if($p)
-		{
-			@$_SESSION['basket']['cnt'][$p]+=$cnt;
-			$tmpl->ajax=1;
-			if(isset($_REQUEST['j']))
-			{
-				$korz_cnt=count(@$_SESSION['basket']['cnt']);
-				$sum=0;
-				if(is_array($_SESSION['basket']['cnt']))
-				foreach(@$_SESSION['basket']['cnt'] as $item => $cnt)
-				{
-					$cena=getCostPos($item, $this->cost_id);
-					$sum+=$cena*$cnt;
+	} 
+	else if ($mode == 'korz_add') {
+		$cnt = rcvint('cnt');
+		if ($p) {
+			@$_SESSION['basket']['cnt'][$p] += $cnt;
+			$tmpl->ajax = 1;
+			if (isset($_REQUEST['j'])) {
+				$korz_cnt = count(@$_SESSION['basket']['cnt']);
+				$sum = 0;
+				if (is_array($_SESSION['basket']['cnt'])) {
+					$pc = $this->priceCalcInit();
+					foreach (@$_SESSION['basket']['cnt'] as $item => $cnt) {
+						$price = $pc->getPosAutoPriceValue($item);
+						$sum += $price * $cnt;
+					}
 				}
 				echo "Товаров: $korz_cnt на $sum руб.";
 			}
-			else
-			{
-				if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
-				$tmpl->msg("Товар добавлен в корзину!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+			else {
+				if (getenv("HTTP_REFERER"))
+					header('Location: ' . getenv("HTTP_REFERER"));
+				$tmpl->msg("Товар добавлен в корзину!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 			}
 		}
-		else
-		{
-			header('HTTP/1.0 404 Not Found');
-			header('Status: 404 Not Found');
-			$tmpl->msg("Номер товара не задан!","err","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-		}
-	}
-	else if($mode=='korz_adj')
-	{
-		$tmpl->ajax=1;
-		$cnt=rcvint('cnt');
-		if($p)
-		{
+		else throw new NotFoundException("Номер товара не задан!");
+	} 
+	else if ($mode == 'korz_adj') {
+		$tmpl->ajax = 1;
+		$cnt = rcvint('cnt');
+		if ($p) {
 			@$_SESSION['basket']['cnt'][$p]+=$cnt;
 			$tmpl->addContent("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 		}
-		else
-		{
-			header('HTTP/1.0 404 Not Found');
-			header('Status: 404 Not Found');
-			$tmpl->addContent("Номер товара не задан!");
-		}
+		else throw new NotFoundException("Номер товара не задан!");
 	}
-	else if($mode=='korz_del')
-	{
+	else if ($mode == 'korz_del') {
 		unset($_SESSION['basket']['cnt'][$p]);
-		$tmpl->msg("Товар убран из корзины!","info","<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+		$tmpl->msg("Товар убран из корзины!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 	}
-	else if($mode=='korz_clear')
-	{
+	else if ($mode == 'korz_clear') {
 		unset($_SESSION['basket']['cnt']);
-		$tmpl->msg("Корзина очищена!","info","<a class='urllink' href='/vitrina.php'>Вернутья на витрину</a>");
+		$tmpl->msg("Корзина очищена!", "info", "<a class='urllink' href='/vitrina.php'>Вернутья на витрину</a>");
 	}
-	else if($mode=='basket_submit')
-	{
-		$tmpl->ajax=1;
-		if(isset($_SESSION['basket']['cnt']))
-			if(is_array($_SESSION['basket']['cnt']))
-				foreach($_SESSION['basket']['cnt'] as $item => $cnt)
-				{
-					$ncnt=request('cnt'.$item);
-					if($ncnt<=0) unset($_SESSION['basket']['cnt'][$item]);
-					else $_SESSION['basket']['cnt'][$item]=round($ncnt,3);
-					$_SESSION['basket']['comments'][$item]=@$_REQUEST['comm'.$item];
+	else if ($mode == 'basket_submit') {
+		$tmpl->ajax = 1;
+		if (isset($_SESSION['basket']['cnt']))
+			if (is_array($_SESSION['basket']['cnt']))
+				foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
+					$ncnt = request('cnt' . $item);
+					if ($ncnt <= 0)
+						unset($_SESSION['basket']['cnt'][$item]);
+					else	$_SESSION['basket']['cnt'][$item] = round($ncnt, 3);
+					$_SESSION['basket']['comments'][$item] = @$_REQUEST['comm' . $item];
 				}
-		if(@$_REQUEST['button']=='recalc')
-		{
-			if(getenv("HTTP_REFERER"))	header('Location: '.getenv("HTTP_REFERER"));
-			else 	header('Location: /vitrina.php?mode=basket');
+		if (@$_REQUEST['button'] == 'recalc') {
+			if (getenv("HTTP_REFERER"))
+				header('Location: ' . getenv("HTTP_REFERER"));
+			else	header('Location: /vitrina.php?mode=basket');
 		}
 		else	header('Location: /vitrina.php?mode=buy');
 	}
-	else if($mode=='buy')		$this->Buy();
-	else if($mode=='delivery')	$this->Delivery();
-	else if($mode=='buyform')	$this->BuyMakeForm();
-	else if($mode=='makebuy')	$this->MakeBuy();
-	else if($mode=='pay')		$this->Payment();
-	else if($mode=='print_schet')
-	{
-		include_once("include/doc.nulltype.php");		
-		$doc=$_SESSION['order_id'];
-		if($doc)
-		{
-			$document=AutoDocument($doc);			
+	else if ($mode == 'buy')
+		$this->Buy();
+	else if ($mode == 'delivery')
+		$this->Delivery();
+	else if ($mode == 'buyform')
+		$this->BuyMakeForm();
+	else if ($mode == 'makebuy')
+		$this->MakeBuy();
+	else if ($mode == 'pay')
+		$this->Payment();
+	else if ($mode == 'print_schet') {
+		include_once("include/doc.nulltype.php");
+		$doc = $_SESSION['order_id'];
+		if ($doc) {
+			$document = AutoDocument($doc);
 			$document->PrintForm('schet');
 		}
-		else $tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
+		else	$tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
 	}
-	else if($mode=='comm_add')
-	{
+	else if ($mode == 'comm_add') {
 		require_once("include/comments.inc.php");
-		if(!@$_SESSION['uid'])
-		{
-			if( (strtoupper($_SESSION['captcha_keystring'])!=strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring']=='') )
-			{
+		if (!@$_SESSION['uid']) {
+			if ((strtoupper($_SESSION['captcha_keystring']) != strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring'] == '')) {
 				unset($_SESSION['captcha_keystring']);
 				throw new Exception("Защитный код введён неверно!");
 			}
 			unset($_SESSION['captcha_keystring']);
-			$cd=new CommentDispatcher('product',$p);
+			$cd = new CommentDispatcher('product', $p);
 			$cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate'], @$_REQUEST['autor_name'], @$_REQUEST['autor_email']);
 		}
-		else
-		{
-			$cd=new CommentDispatcher('product',$p);
+		else {
+			$cd = new CommentDispatcher('product', $p);
 			$cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate']);
 		}
-		$tmpl->msg("Коментарий добавлен!","ok");
+		$tmpl->msg("Коментарий добавлен!", "ok");
 	}
-	else
-	{
-		header('HTTP/1.0 404 Not Found');
-		header('Status: 404 Not Found');
-		throw new Exception("Неверная опция. Возможно, вам дали неверную ссылку, или же это ошибка сайта. Во втором случае, сообщите администратору о возникшей проблеме.");
-	}
+	else throw new NotFoundException("Неверная ссылка!");
 }
 
 // ======== Приватные функции ========================
 // -------- Основные функции -------------------------
 /// Отобразить корень витрины
-protected function TopGroup()
-{
+protected function TopGroup() {
 	global $tmpl, $CONFIG;
 	$tmpl->addContent("<h1 id='page-title'>Витрина</h1>");
 	if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle(0);
@@ -243,12 +209,8 @@ protected function ViewGroup($group, $page)
 	settype($group,'int');
 	settype($page,'int');
 	$res=$db->query("SELECT `name`, `pid`, `desc`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_group` WHERE `id`='$group' AND `hidelevel`='0'");
-	if(!$res->num_rows)
-	{
-		header('HTTP/1.0 404 Not Found');
-		header('Status: 404 Not Found');
-		throw new Exception('Группа не найдена! Воспользуйтесь каталогом.');
-	}
+	if(!$res->num_rows)	throw new NotFoundException('Группа не найдена! Воспользуйтесь каталогом.');
+
 	$group_data=$res->fetch_assoc();
 	$group_name_html=html_out($group_data['name']);
 
@@ -301,8 +263,7 @@ protected function ViewGroup($group, $page)
 /// Список товаров в группе
 /// @param group ID группы, из которой нужно отбразить товары
 /// @param page Номер страницы отображаемой группы
-protected function ProductList($group, $page)
-{
+protected function ProductList($group, $page) {
 	global $tmpl, $CONFIG, $db;
 	settype($group,'int');
 	settype($page,'int');
@@ -370,13 +331,14 @@ protected function ProductList($group, $page)
 		$this->PageBar($group, $res->num_rows, $lim, $page);
 		if( ($lim < $res->num_rows) && $page )
 			$res->data_seek($lim*($page-1));
-
+		
 		if($view=='i')			$this->TovList_ImageList($res, $lim);
 		else if($view=='t')		$this->TovList_ExTable($res, $lim);
 		else				$this->TovList_SimpleTable($res, $lim);
 
 		$this->PageBar($group, $res->num_rows, $lim, $page);
-		$tmpl->addContent("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
+		if(@$CONFIG['site']['grey_price_days'])
+			$tmpl->addContent("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}
         elseif(isset ($page) && $page!=1)
         {
@@ -456,12 +418,7 @@ protected function ViewBlock($block)
 		ORDER BY `doc_base`.`name`";
 		$head='Товар в пути';
 	}
-	else
-	{
-		header('HTTP/1.0 404 Not Found');
-		header('Status: 404 Not Found');
-		throw new Exception('Блок не найден!');
-	}
+	else	throw new NotFoundException('Блок не найден!');
 
 	$res=$db->query($sql);
 	$lim=1000;
@@ -474,8 +431,9 @@ protected function ViewBlock($block)
 		if($view=='i')			$this->TovList_ImageList($res, $lim);
 		else if($view=='t')		$this->TovList_ExTable($res, $lim);
 		else				$this->TovList_SimpleTable($res, $lim);
-
-		$tmpl->addContent("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
+		
+		if(@$CONFIG['site']['grey_price_days'])
+			$tmpl->addContent("<span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}
 	else $tmpl->msg("Товары в данной категории отсутствуют");
 }
@@ -529,7 +487,7 @@ protected function ProductCard($product)
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 	$res=$db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`transit_cnt`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`
+	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`transit_cnt`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 	FROM `doc_base`
 	INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -642,14 +600,38 @@ protected function ProductCard($product)
 		}
 
 		if($product_data['dop_name']) $tmpl->addContent("<tr><td class='field'>Тип:<td>".html_out($product_data['dop_name']));
-		$cena=getCostPos($product_data['id'], $this->cost_id);
+		
+		$cce = '';
+		if(@$CONFIG['site']['grey_price_days']) {
+			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+			if( strtotime($product_data['cost_date']) < $cce_time )
+				$cce = ' style=\'color:#888\'';
+		}
+			
+		$pc = $this->priceCalcInit();
+		$cena = $pc->getPosDefaultPriceValue($product_data['id']);
 		if($cena<=0)	$cena='уточняйте';
-		$cce=(strtotime($product_data['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
+						
+		if($pc->getRetailPriceId() != $pc->getDefaultPriceID()) {
+			$ret_price = $pc->getPosRetailPriceValue($product_data['id']);
+			if($ret_price<=0)	$ret_price='уточняйте';
+			$tmpl->addContent("<tr><td class='field'>Розничная цена:<td{$cce}>$ret_price</td></tr>");
+			$tmpl->addContent("<tr><td class='field'>Оптовая цена:<td{$cce}>$cena</td></tr>");
+		}
+		else	$tmpl->addContent("<tr><td class='field'>Цена:<td{$cce}>$cena</td></tr>");
 
-		$tmpl->addContent("<tr><td class='field'>Цена:<td{$cce}>$cena<br>");
+		if($pc->getCurrentPriceId() != $pc->getDefaultPriceID()) {
+			$user_price = $pc->getPosUserPriceValue($product_data['id']);
+			if($user_price<=0)	$user_price='уточняйте';
+			$tmpl->addContent("<tr><td class='field'>Цена для Вас:<td{$cce}>$user_price</td></tr>");
+		}
+		
+		if($product_data['mult']>1)	
+			$tmpl->addContent("<tr><td class='field'>В упаковке:<td>{$product_data['mult']} штук</td></tr>");
+			
 		$tmpl->addContent("<tr><td class='field'>Единица измерения:<td>".html_out($product_data['units']));
 		
-		$nal=$this->GetCountInfo($product_data['cnt'], $product_data['transit_cnt']);
+		$nal = $this->GetCountInfo($product_data['cnt'], $product_data['transit_cnt']);
 
 		if($nal) $tmpl->addContent("<tr><td class='field'>Наличие: <td><b>$nal</b><br>");
 		else $tmpl->addContent("<tr><td class='field'>Наличие:<td>Под заказ<br>");
@@ -663,8 +645,7 @@ protected function ProductCard($product)
 		$param_res=$db->query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
 		WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`pgroup_id`='0' AND `doc_base_params`.`system`='0'");
-		while($params=$param_res->fetch_row())
-		{
+		while($params=$param_res->fetch_row()) {
 			$tmpl->addContent("<tr><td class='field'>".html_out($params[0])."</td><td>".html_out($params[1])."</td></tr>");
 		}
 
@@ -700,14 +681,21 @@ protected function ProductCard($product)
 				$tmpl->addContent("<tr><td><a href='$link'>$anxt[1]</a></td><td>$anxt[2]</td></tr>");
 			}
 		}
-
+		if($product_data['mult']>1) {
+			$ocnt = $product_data['mult'];
+			$k_info = "<br>должно быть кратно ".$ocnt;
+		}
+		else {
+			$ocnt = 1;
+			$k_info = '';
+		}
 		$tmpl->addContent("<tr><td colspan='3'>
 		<form action='/vitrina.php'>
 		<input type='hidden' name='mode' value='korz_add'>
 		<input type='hidden' name='p' value='$product'>
 		<div>
 		Добавить
-		<input type='text' name='cnt' value='1' class='mini'> штук <button type='submit'>В корзину!</button>
+		<input type='text' name='cnt' value='$ocnt' class='mini'> штук <button type='submit'>В корзину!</button>{$k_info}
 		</div>
 		</form>
 		</td></tr></table>");
@@ -743,77 +731,78 @@ protected function ProductCard($product)
 		$i++;
 	}
 
-	if($i==0)
-	{
+	if($i==0) {
 		$tmpl->addContent("<h1 id='page-title'>Информация о товаре</h1>");
-		header('HTTP/1.0 404 Not Found');
-		header('Status: 404 Not Found');
-		$tmpl->msg("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
+		throw new NotFoundException("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
 	}
 }
 /// Просмотр корзины
-protected function Basket()
-{
+protected function Basket() {
 	global $tmpl, $CONFIG, $db;
-	$s='';
-	$sum=0;
-	$exist=0;
-	$i=1;
-	$lock=0;
-	if(isset($_SESSION['basket']['cnt']))
-	foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
-		settype($item,'int');
-		settype($cnt,'int');
-		$res=$db->query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`=$item");
-		$nx = $res->fetch_assoc();
-		$lock_mark='';
-		$cena = getCostPos($nx['id'], $this->cost_id);
-		
-		if($cena<=0) {
-			$lock=1;
-			$lock_mark=1;
-		}
-		if(@$CONFIG['site']['vitrina_cntlock'])	{
-			if(isset($CONFIG['site']['vitrina_sklad'])) {
-				$sklad_id=round($CONFIG['site']['vitrina_sklad']);
-				$res=$db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
-			}
-			else	$res=$db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
-			if($res->num_rows) {
-				$tmp=$res->fetch_row();
-				$sklad_cnt=$tmp[0]-DocRezerv($item);
-			}
-			else	$sklad_cnt=DocRezerv($item)*(-1);
+	$s = '';
+	$sum = $exist = $lock = $lock_mark = 0;
+	$i = 1;
+	if(isset($_SESSION['basket']['cnt'])) {
+		$pc = $this->priceCalcInit();
+		foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
+			settype($item,'int');
+			settype($cnt,'int');
+			$res = $db->query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`=$item");
+			$nx = $res->fetch_assoc();
 			
-			if($cnt>$sklad_cnt) {
-				$lock=1;
-				$lock_mark=1;
+			$price = $pc->getPosAutoPriceValue($nx['id'], $cnt);
+
+			if($price<=0) {
+				$lock = 1;
+				$lock_mark = 1;
 			}
-		}
-		if(@$CONFIG['site']['vitrina_pricelock'])
-		{
-			if(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))	{
-				$lock=1;
-				$lock_mark=1;
+			else $lock_mark = 0;
+			
+			if(@$CONFIG['site']['vitrina_cntlock'])	{
+				if(isset($CONFIG['site']['vitrina_sklad'])) {
+					$sklad_id = round($CONFIG['site']['vitrina_sklad']);
+					$res = $db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
+				}
+				else	$res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
+				if($res->num_rows) {
+					$tmp = $res->fetch_row();
+					$sklad_cnt = $tmp[0] - DocRezerv($item);
+				}
+				else	$sklad_cnt = DocRezerv($item)*(-1);
+
+				if($cnt>$sklad_cnt) {
+					$lock=1;
+					$lock_mark=1;
+				}
 			}
+			$cce = '';
+			if(@$CONFIG['site']['grey_price_days']) {
+				$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+				if( strtotime($nx['cost_date']) < $cce_time ) {
+					if(@$CONFIG['site']['vitrina_pricelock']) {
+						$lock=1;
+						$lock_mark=1;
+					}
+					$cce = ' style=\'color:#888\'';
+				}
+			}
+
+			$sm = $price * $cnt;
+			$sum += $sm;
+			$sm = sprintf("%0.2f", $sm);
+			if(isset($_SESSION['basket']['comments'][$item]))
+				$comm = $_SESSION['basket']['comments'][$item];
+			else	$comm = '';
+			$lock_mark = $lock_mark?'color: #f00':'';
+			if($price<=0)	$price='уточняйте';
+			$s.="
+			<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p={$nx['id']}'>".html_out($nx['name'])."</a><td class='right' $cce>$price<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
+			$exist = 1;
+			$i++;
 		}
-		
-		$sm = $cena * $cnt;
-		$sum+=$sm;
-		$sm = sprintf("%0.2f", $sm);
-		if(isset($_SESSION['basket']['comments'][$item]))	$comm=$_SESSION['basket']['comments'][$item];
-		else	$comm='';
-		$lock_mark=$lock_mark?'color: #f00':'';
-		if($cena<=0)	$cena='уточняйте';
-		$cce=(strtotime($nx['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
-		$s.="
-		<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p={$nx['id']}'>".html_out($nx['name'])."</a><td class='right' $cce>$cena<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
-		$exist=1;
-		$i++;
 	}
 	if(!$exist) $tmpl->msg("Ваша корзина пуста! Выберите, пожалуйста интересующие Вас товары!","info");
-	else
-	{
+	else {
 		$tmpl->addContent("
 		<h1 id='page-title'>Ваша корзина</h1>
 		В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
@@ -860,7 +849,7 @@ protected function Basket()
 		</center><br><br>
 		");
 
-		$_SESSION['korz_sum']=$sum;
+		//$_SESSION['basket_sum'] = $sum;
 		//if( ($_SESSION['korz_sum']>20000) )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
 		//else $tmpl->msg("Цены указаны со скидкой 3%. А при оформлении заказа на сумму более 20'000 рублей предоставляется скидка 6%","info");
 		
@@ -871,32 +860,30 @@ protected function Basket()
 protected function Delivery()
 {
 	$this->basket_sum=0;
-	if(isset($_SESSION['basket']['cnt']))
-	foreach($_SESSION['basket']['cnt'] as $item => $cnt)
-	{
-		$this->basket_sum+=getCostPos($item, $this->cost_id)*$cnt;
+	if(isset($_SESSION['basket']['cnt'])) {
+		$pc = $this->priceCalcInit();
+		foreach($_SESSION['basket']['cnt'] as $item => $cnt) {
+			$this->basket_sum += $pc->getPosAutoPriceValue($item, $cnt) * $cnt;
+		}
 	}
-	if(!isset($_REQUEST['delivery_type']))
-	{
+	
+	if(!isset($_REQUEST['delivery_type'])) {
 		$this->DeliveryTypeForm();
 	}
-	else if(!@$_REQUEST['delivery_region'])
-	{
-		$_SESSION['basket']['delivery_type']	= round($_REQUEST['delivery_type']);
-		if($_REQUEST['delivery_type']==0)	$this->BuyMakeForm();
-		else
-		{
-			if(isset($_SESSION['uid']))
-			{
-				$up=getUserProfile($_SESSION['uid']);
+	else if(!@$_REQUEST['delivery_region']) {
+		$_SESSION['basket']['delivery_type'] = round($_REQUEST['delivery_type']);
+		if($_REQUEST['delivery_type']==0)	
+			$this->BuyMakeForm();
+		else {
+			if(isset($_SESSION['uid'])) {
+				$up = getUserProfile($_SESSION['uid']);
 				$this->basket_address	= @$up['main']['real_address'];
 			}
-			else	$this->basket_address='';
+			else	$this->basket_address = '';
 			$this->DeliveryRegionForm();
 		}
 	}
-	else
-	{
+	else {
 		$_SESSION['basket']['delivery_region']	= request('delivery_region');
 		$_SESSION['basket']['delivery_address']	= request('delivery_address');
 		$_SESSION['basket']['delivery_date']	= request('delivery_date');
@@ -905,17 +892,15 @@ protected function Delivery()
 }
 
 /// Форма *способ доставки*
-protected function DeliveryTypeForm()
-{
+protected function DeliveryTypeForm() {
 	global $tmpl, $db;
 	$tmpl->setContent("<h1>Способ доставки</h1>");
 	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='delivery'>
 	<label><input type='radio' name='delivery_type' value='0'> Самовывоз</label><br><small>Вы сможете забрать товар с нашего склада</small><br><br>");
-	$res=$db->query("SELECT `id`, `name`, `min_price`, `description` FROM `delivery_types`");
-	while($nxt=$res->fetch_assoc())
-	{
-		$disabled=$this->basket_sum<$nxt['min_price']?' disabled':'';
+	$res = $db->query("SELECT `id`, `name`, `min_price`, `description` FROM `delivery_types`");
+	while($nxt=$res->fetch_assoc()) {
+		$disabled = $this->basket_sum < $nxt['min_price']?' disabled':'';
 		$tmpl->addContent("<label><input type='radio' name='delivery_type' value='{$nxt['id']}'$disabled> {$nxt['name']}</label><br>Минимальная сумма заказа - {$nxt['min_price']} рублей.<br><small>{$nxt['description']}</small><br><br>");
 	}
 	$tmpl->addContent("<button type='submit'>Далее</button></form>");
@@ -929,40 +914,35 @@ protected function DeliveryRegionForm()
 	$tmpl->addContent("<form action='' method='post'>
 	<input type='hidden' name='mode' value='delivery'>
 	<input type='hidden' name='delivery_type' value='{$_REQUEST['delivery_type']}'>");
-	$res=$db->query("SELECT `id`, `name`, `price`, `description` FROM `delivery_regions` WHERE `delivery_type`='{$_SESSION['basket']['delivery_type']}'");
-	while($nxt=$res->fetch_assoc())
-	{
+	$res = $db->query("SELECT `id`, `name`, `price`, `description` FROM `delivery_regions` WHERE `delivery_type`='{$_SESSION['basket']['delivery_type']}'");
+	while($nxt = $res->fetch_assoc()) {
 		$tmpl->addContent("<label><input type='radio' name='delivery_region' value='{$nxt['id']}'> {$nxt['name']} - {$nxt['price']} рублей.</label><br><small>{$nxt['description']}</small><br><br>");
 	}
 	$tmpl->addContent("
 	Желаемые дата и время доставки:<br>
 	<input type='text' name='delivery_date'><br>
 	Адрес доставки:<br>
-	<textarea name='delivery_address' rows='5' cols='80'>{$this->basket_address}</textarea><br>
+	<textarea name='delivery_address' rows='5' cols='80'>".html_out($this->basket_address)."</textarea><br>
 	<button type='submit'>Далее</button></form>");
 }
 
 
 /// Оформление покупки
-protected function Buy()
-{
+protected function Buy() {
 	global $tmpl;
-	$step=rcvint('step');
+	$step = rcvint('step');
 	$tmpl->setContent("<h1 id='page-title'>Оформление заказа</h1>");
 	if((!@$_SESSION['uid'])&&($step!=1))
 	{
-		if($step==2)
-		{
+		if($step==2) {
 			$_SESSION['last_page']="/vitrina.php?mode=buy";
 			header("Location: /login.php?mode=reg");
 		}
-		if($step==3)
-		{
+		if($step==3) {
 			$_SESSION['last_page']="/vitrina.php?mode=buy";
 			header("Location: /login.php");
 		}
-		else
-		{
+		else {
 			$_SESSION['last_page']="/vitrina.php?mode=buy";
 			$this->BuyAuthForm();
 		}
@@ -977,8 +957,7 @@ protected function GroupList_ItemStyle($group)
 	settype($group,'int');
 	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
 	$tmpl->addStyle(".vitem { width: 250px; float: left; font-size:	14px; } .vitem:before{content: '\\203A \\0020' ; } hr.clear{border: 0 none; margin: 0;}");
-	while($nxt=$res->fetch_row())
-	{
+	while($nxt=$res->fetch_row()) {
 		$tmpl->addContent("<div class='vitem'><a href='".$this->GetGroupLink($nxt[0])."'>$nxt[1]</a></div>");
 	}
 	$tmpl->addContent("<hr class='clear'>");
@@ -1012,33 +991,71 @@ protected function GroupList_ImageStyle($group) {
 }
 
 /// Простая таблица товаров
-protected function TovList_SimpleTable($res, $lim)
-{
+/// @param res mysqli_result Список товарных предложений
+/// @param lim Максимальное количество выводимых строк
+protected function TovList_SimpleTable($res, $lim) {
 	global $tmpl, $CONFIG;
-	$tmpl->addContent("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена<th>Купить</tr>");
-	$cc=$i=0;
-	$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
-	while($nxt=$res->fetch_assoc())
-	{
-		$nal=$this->GetCountInfo($nxt['count'], @$nxt['tranit']);
-		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
-		$cost=getCostPos($nxt['id'], $this->cost_id);
-		if($cost<=0)	$cost='уточняйте';
-		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
-		@$tmpl->addContent("<tr class='lin$cc'><td><a href='$link'>".html_out($nxt['name'])."</a>
-		<td>".html_out($nxt['proizv'])."<td>$nal<td $cce>$cost
-		<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>
-		<img src='$basket_img' alt='В корзину!'></a></tr>");
+	
+	$s_retail = $s_current = $i = 0;
+	$pc = $this->priceCalcInit();
+	
+	$tmpl->addContent("<table width='100%' class='list'>
+		<tr class='title'><th>Наименование</th><th>Производитель</th><th>Наличие</th>");
+	
+	if($pc->getRetailPriceId() != $pc->getDefaultPriceID()) {
+		$tmpl->addContent("<th>В розницу</th><th>Оптом</th>");
+		$s_retail = 1;
+	}
+	else	$tmpl->addContent("<th>Цена</th>");
+	
+	if($pc->getCurrentPriceId() != $pc->getDefaultPriceID()) {
+		$tmpl->addContent("<th>Для Вас</th>");
+		$s_current = 1;
+	}
+	
+	$tmpl->addContent("<th>Купить</th></tr>");
+	
+	$basket_img = "/skins/".$CONFIG['site']['skin']."/basket16.png";
+	
+	if(@$CONFIG['site']['grey_price_days'])
+		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+	
+	while($nxt = $res->fetch_assoc()) {
+		$nal = $this->GetCountInfo($nxt['count'], @$nxt['tranit']);
+		$link = $this->GetProductLink($nxt['id'], $nxt['name']);
+		$price = $pc->getPosDefaultPriceValue($nxt['id']);
+		if($price<=0)	$price='уточняйте';
+		
+		$cce = '';
+		if(@$CONFIG['site']['grey_price_days']) {
+			if( strtotime($nxt['cost_date']) < $cce_time )
+				$cce = ' style=\'color:#888\'';
+		}
+		
+		@$tmpl->addContent("<tr><td><a href='$link'>".html_out($nxt['name'])."</a></td>
+		<td>".html_out($nxt['proizv'])."</td><td>$nal</td>");
+		if($s_retail) {
+			$ret_price = $pc->getPosRetailPriceValue($nxt['id']);
+			if($ret_price<=0)	$ret_price='уточняйте';
+			$tmpl->addContent("<td{$cce}>$ret_price</td><td{$cce}>$price</td>");
+		}
+		else $tmpl->addContent("<td{$cce}>$price</td>");
+		if($s_current) {
+			$user_price = $pc->getPosUserPriceValue($nxt['id']);
+			if($user_price<=0)	$user_price='уточняйте';
+			$tmpl->addContent("<td{$cce}>$user_price</td>");
+		}
+		@$tmpl->addContent("<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>");
 		$i++;
-		$cc=1-$cc;
-		if($i>=$lim)	break;
+		if($i >= $lim)	break;
 	}
 	$tmpl->addContent("</table>");
 }
 
 /// Список товаров в виде изображений
-protected function TovList_ImageList($res, $lim)
-{
+/// @param res mysqli_result Список товарных предложений
+/// @param lim Максимальное количество выводимых строк
+protected function TovList_ImageList($res, $lim) {
 	global $tmpl, $CONFIG;
 	$cc=$i=0;
 
@@ -1053,40 +1070,47 @@ protected function TovList_ImageList($res, $lim)
 		border-radius:		10px;
 		-moz-border-radius:	10px;
 	}");
-
-	while($nxt=$res->fetch_assoc())
-	{
-		$nal=$this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
-		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
-		$cost=getCostPos($nxt['id'], $this->cost_id);
-		if($cost<=0)	$cost='уточняйте';
-		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
-		if($nxt['img_id'])
-		{
+	
+	if(@$CONFIG['site']['grey_price_days'])
+		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+	
+	$pc = $this->priceCalcInit();	
+	
+	while($nxt=$res->fetch_assoc())	{
+		$nal = $this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
+		$link = $this->GetProductLink($nxt['id'], $nxt['name']);
+		
+		$price = $pc->getPosDefaultPriceValue($nxt['id']);
+		if($price<=0)	$price='уточняйте';
+		
+		$cce = '';
+		if(@$CONFIG['site']['grey_price_days']) {
+			if( strtotime($nxt['cost_date']) < $cce_time )
+				$cce = ' style=\'color:#888\'';
+		}
+		
+		if($nxt['img_id']) {
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(135);
 			$miniimg->SetY(180);
 			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='{$nxt['name']}'>";
 		}
-		else
-		{
+		else {
 			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
 				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
 			else	$img_url='/img/no_photo.png';
 			$img="<img src='$img_url' alt='no photo' style='float: left; margin-right: 10px; width: 135px;' alt='no photo'>";
 		}
 		$desc=$nxt['desc'];
-		if(strpos($desc,'.')!==false)
-		{
-			$desc=explode('.',$desc,2);
-			$desc=$desc[0];
+		if(strpos($desc,'.')!==false) {
+			list($desc) = explode('.',$desc,2);
 		}
 
 		$tmpl->addContent("<div class='pitem'>
 		<a href='$link'>$img</a>
 		<a href='$link'>".html_out($nxt['name'])."</a><br>
 		<b>Код:</b> ".html_out($nxt['vc'])."<br>
-		<b>Цена:</b> <span{$cce}>$cost руб.</span> / {$nxt['units']}<br>
+		<b>Цена:</b> <span{$cce}>$price руб.</span> / {$nxt['units']}<br>
 		<b>Производитель:</b> ".html_out($nxt['proizv'])."<br>
 		<b>Кол-во:</b> $nal<br>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
@@ -1098,30 +1122,41 @@ protected function TovList_ImageList($res, $lim)
 	}
 	$tmpl->addContent("<div class='clear'></div>");
 }
+
 /// Подробная таблица товаров
-protected function TovList_ExTable($res, $lim)
-{
+/// @param res mysqli_result Список товарных предложений
+/// @param lim Максимальное количество выводимых строк
+protected function TovList_ExTable($res, $lim) {
 	global $tmpl, $CONFIG;
+	
+	$pc = $this->priceCalcInit();
+	
 	$tmpl->addContent("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена <th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>Купить</tr>");
-	$cc=0;
-	$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
-	while($nxt=$res->fetch_assoc())
-	{
-		$nal=$this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
-		$link=$this->GetProductLink($nxt['id'], $nxt['name']);
-		$cost=getCostPos($nxt['id'], $this->cost_id);
-		if($cost<=0)	$cost='уточняйте';
-		$cce=(strtotime($nxt['cost_date'])<(time()-60*60*24*30*6))?" style='color:#888'":'';
-		$tmpl->addContent("<tr class='lin$cc'><td><a href='$link'>".html_out($nxt['name'])."</a><td>".html_out($nxt['proizv'])."<td>$nal
-		<td $cce>$cost<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
+	$basket_img = "/skins/".$CONFIG['site']['skin']."/basket16.png";
+	
+	if(@$CONFIG['site']['grey_price_days'])
+		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+	
+	while($nxt = $res->fetch_assoc()) {
+		$nal = $this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
+		$link = $this->GetProductLink($nxt['id'], $nxt['name']);
+		$price = $pc->getPosDefaultPriceValue($nxt['id']);
+		if($price<=0)	$price='уточняйте';
+		$cce = '';
+		
+		if(@$CONFIG['site']['grey_price_days']) {
+			if( strtotime($nxt['cost_date']) < $cce_time )
+				$cce = ' style=\'color:#888\'';
+		}
+		
+		$tmpl->addContent("<tr><td><a href='$link'>".html_out($nxt['name'])."</a><td>".html_out($nxt['proizv'])."<td>$nal
+		<td $cce>$price<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=1','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
-		$cc=1-$cc;
 	}
 	$tmpl->addContent("</table>");
 }
 /// Форма аутентификации при покупке. Выдаётся, только если посетитель не вошёл на сайт
-protected function BuyAuthForm()
-{
+protected function BuyAuthForm() {
 	global $tmpl;
 	$tmpl->setTitle("Оформление зкакза");
 	$tmpl->addContent("<p id='text'>Для использования всех возможностей этого сайта необходимо пройти процедуру регистрации. Регистрация не сложная, и займёт всего несколько минут.
@@ -1139,15 +1174,14 @@ protected function BuyAuthForm()
 protected function BuyMakeForm()
 {
 	global $tmpl, $CONFIG;
-	if(@$_SESSION['uid'])
-	{
-		$up=getUserProfile($_SESSION['uid']);
-		$str='Товар будет зарезервирован для Вас на 3 рабочих дня.';
-		$email_field='';
+	if(@$_SESSION['uid']) {
+		$up = getUserProfile($_SESSION['uid']);
+		$str = 'Товар будет зарезервирован для Вас на 3 рабочих дня.';
+		$email_field = '';
 	}
 	else
 	{
-		$up=getUserProfile(-1);	// Пустой профиль
+		$up = getUserProfile(-1);	// Пустой профиль
 		$str='<b>Для незарегистрированных пользователей наличие товара на складе не гарантируется.</b>';
 		$email_field="e-mail:<br>
 		<input type='text' name='email' value=''><br>
@@ -1156,8 +1190,8 @@ protected function BuyMakeForm()
 
 	if(isset($_REQUEST['cwarn']))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
 
-	if(@$up['main']['reg_phone'])	$phone=substr($up['main']['reg_phone'],2);
-	else				$phone='';
+	if(@$up['main']['reg_phone'])	$phone = substr($up['main']['reg_phone'],2);
+	else				$phone = '';
 
 	$tmpl->addContent("
 	<h4>Для оформления заказа требуется следующая информация</h4>
@@ -1173,16 +1207,13 @@ protected function BuyMakeForm()
 	<br>
 
 	$email_field");
-	if(is_array($CONFIG['payments']['types']))
-	{
+	if(is_array($CONFIG['payments']['types'])) {
 		$tmpl->addContent("<br>Способ оплаты:<br>");
-		foreach($CONFIG['payments']['types'] as $type => $val)
-		{
+		foreach($CONFIG['payments']['types'] as $type => $val) {
 			if(!$val)	continue;
 			if($type==@$CONFIG['payments']['default'])	$checked=' checked';
 			else						$checked='';
-			switch($type)
-			{
+			switch($type) {
 				case 'cash':	$s="<label><input type='radio' name='pay_type' value='$type' id='soplat_nal'$checked>Наличный расчет.
 				<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>";
 						break;
@@ -1217,7 +1248,7 @@ protected function BuyMakeForm()
 /// Сделать покупку
 protected function MakeBuy() {
 	global $tmpl, $CONFIG, $db;
-	if(!isset($CONFIG['site']['default_firm']))	$CONFIG['site']['default_firm']=1;
+	if(!isset($CONFIG['site']['default_firm']))	$CONFIG['site']['default_firm'] = 1;
 	settype($CONFIG['site']['default_firm'],'int');
 	$pay_type = request('pay_type');
 	switch($pay_type) {
@@ -1242,9 +1273,7 @@ protected function MakeBuy() {
 	$agent=1;
 
 	if(@$_REQUEST['phone'])
-	{
 		$tel='+7'.intval(@$_REQUEST['phone']);
-	}
 	else	$tel='';
 
 	if(@$_SESSION['uid']) {
@@ -1253,9 +1282,9 @@ protected function MakeBuy() {
 		// Получить ID агента
 		$res = $db->query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `agent_id` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
 		$user_data = $res->fetch_assoc();
-		$agent=$user_data['agent_id'];
+		$agent = $user_data['agent_id'];
 		settype($agent,'int');
-		if($agent<1)	$agent=1;
+		if($agent<1)	$agent = 1;
 	}
 	else if(!$tel && !$email) {
 		header("Location: /vitrina.php?mode=buyform&step=1&cwarn=1");
@@ -1263,10 +1292,12 @@ protected function MakeBuy() {
 	}
 
 	if($_SESSION['basket']['cnt']) {
-		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype="site";
+		$pc = $this->priceCalcInit();
+		$doc_price_id = $pc->getCurrentPriceID();
+		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype = "site";
 		else	$subtype = $CONFIG['site']['vitrina_subtype'];
 		$tm = time();
-		$altnum = GetNextAltNum(3,$subtype,0,date('Y-m-d'),$CONFIG['site']['default_firm']);
+		$altnum = GetNextAltNum(3, $subtype, 0, date('Y-m-d'), $CONFIG['site']['default_firm']);
 		$ip = getenv("REMOTE_ADDR");
 		if(isset($CONFIG['site']['default_bank']))	$bank = $CONFIG['site']['default_bank'];
 		else {
@@ -1282,15 +1313,15 @@ protected function MakeBuy() {
 		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 		$doc=$db->insert_id;
 
-		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '{$this->cost_id}'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
+		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '$doc_price_id'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
 
-		$zakaz_items=$admin_items=$lock='';
-		foreach($_SESSION['basket']['cnt'] as $item => $cnt)
-		{
-			$cena=getCostPos($item, $this->cost_id);
+		$order_items = $admin_items = $lock = '';
+		foreach($_SESSION['basket']['cnt'] as $item => $cnt) {			
+			$price = $pc->getPosAutoPriceValue($item, $cnt);
 			if(isset($_SESSION['basket']['comments'][$item]))
-				$comm_sql=$db->real_escape_string($_SESSION['basket']['comments'][$item]);	else $comm_sql='';
-			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$cena','$comm_sql')");
+				$comm_sql = $db->real_escape_string($_SESSION['basket']['comments'][$item]);
+			else	$comm_sql='';
+			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$price','$comm_sql')");
 
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1`, `doc_base`.`cost_date` FROM `doc_base`
 			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -1298,10 +1329,10 @@ protected function MakeBuy() {
 			WHERE `doc_base`.`id`='$item'");
 
 			$tov_info = $res->fetch_array();
-			$zakaz_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб.\n";
-			$admin_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $cena руб. (базовая - $tov_info[5]р.)\n";
+			$order_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $price руб.\n";
+			$admin_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $price руб. (базовая - $tov_info[5]р.)\n";
 			
-			if($cena<=0) {
+			if($price<=0) {
 				$lock = 1;
 				$lock_mark = 1;
 			}
@@ -1343,8 +1374,8 @@ protected function MakeBuy() {
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
 			WHERE `doc_base`.`id`='$d_service_id'");
 			$tov_info = $res->fetch_array();
-			$zakaz_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
-			$admin_items.="$tov_info[1] $tov_info[2] - $cena руб.\n";
+			$order_items.="$tov_info[1] $tov_info[2] - $d_price руб.\n";
+			$admin_items.="$tov_info[1] $tov_info[2] - $d_price руб.\n";
 		}
 		$zakaz_sum=DocSumUpdate($doc);
 		$_SESSION['order_id']=$doc;
@@ -1380,7 +1411,7 @@ protected function MakeBuy() {
 			$email=$user_data['reg_email'];
 		}
 		else $user_msg="Доброго времени суток, $rname!\nКто-то (возможно, вы) при оформлении заказа на сайте {$CONFIG['site']['name']}, указал Ваш адрес электронной почты.\nЕсли Вы не оформляли заказ, просто проигнорируйте это письмо.\n Номер заказа: $doc/$altnum\nЗаказ на сумму $zakaz_sum рублей\nЗаказано:\n";
-		$user_msg.="--------------------------------------\n$zakaz_items\n--------------------------------------\n";
+		$user_msg.="--------------------------------------\n$order_items\n--------------------------------------\n";
 		$user_msg.="\n\n\nСообщение отправлено роботом. Не отвечайте на это письмо.";
 
 		if($email)
@@ -1406,8 +1437,7 @@ protected function MakeBuy() {
 	else $tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?","err");
 }
 
-protected function Payment()
-{
+protected function Payment() {
 	global $tmpl, $CONFIG, $db;
 	$order_id=$_SESSION['order_id'];
 	settype($order_id,'int');
@@ -1415,40 +1445,34 @@ protected function Payment()
 	$res=$db->query("SELECT `doc_list`.`id` FROM `doc_list`
 	WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6') AND `doc_list`.`mark_del`='0'");
 	if($res->num_rows)		$tmpl->msg("Этот заказ уже оплачен!");
-	else
-	{
+	else {
 		$res=$db->query("SELECT `doc_list`.`id`, `dd_pt`.`value` AS `pay_type`, `doc_list`.`altnum` FROM `doc_list`
 		LEFT JOIN `doc_dopdata` AS `dd_pt` ON `dd_pt`.`doc`=`doc_list`.`id` AND `dd_pt`.`param`='pay_type'
 		WHERE `doc_list`.`id`='$order_id' AND `doc_list`.`type`='3'");
 
 		$order_info=$res->fetch_assoc();
-		if($order_info['pay_type']=='card_o')
-		{
+		if($order_info['pay_type'] == 'card_o') {
 			$init_url="{$CONFIG['gpb']['initial_url']}?lang=ru&merch_id={$CONFIG['gpb']['merch_id']}&back_url_s=http://{$CONFIG['site']['name']}/gpb_pay_success.php&back_url_f=http://{$CONFIG['site']['name']}/gpb_pay_failed.php&o.order_id=$order_id";
 			header("Location: $init_url");
 			exit();
 		}
-		else if($order_info['pay_type']=='credit_brs')
-		{
-			$res=$db->query("SELECT `doc_list_pos`.`tovar`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`, `doc_list_pos`.`cnt`
+		else if($order_info['pay_type'] == 'credit_brs') {
+			$res=$db->query("SELECT `doc_list_pos`.`tovar`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`
 			FROM `doc_list_pos`
 			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			WHERE `doc_list_pos`.`doc`=$order_id");
-			$pos_line='';
-			$cnt=0;
-			while($line=$res->fetch_assoc())
-			{
+			$pos_line = '';
+			$cnt = 0;
+			while($line=$res->fetch_assoc()) {
 				$cnt++;
-				$cena=getCostPos($line['tovar'], $this->cost_id);
-				$pos_line.="&TC_$cnt={$line['cnt']}&TPr_$cnt=$cena&TName_$cnt=".urlencode($line['name']);
+				$pos_line.="&TC_$cnt={$line['cnt']}&TPr_$cnt={$line['cost']}&TName_$cnt=".urlencode($line['name']);
 			}
 			$url="{$CONFIG['credit_brs']['address']}?idTpl={$CONFIG['credit_brs']['id_tpl']}&TTName={$CONFIG['site']['name']}&Order=$order_id&TCount={$cnt}{$pos_line}";
 			header("Location: $url");
 			exit();
 		}
-		else if($order_info['pay_type']=='bank')
-		{
+		else if($order_info['pay_type']=='bank') {
 			$tmpl->msg("Номер счёта: $order_id/{$order_info['altnum']}. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
 			$tmpl->addContent("<a href='?mode=print_schet'>Получить счёт</a>");
 		}
@@ -1541,6 +1565,25 @@ protected function GetCountInfo($count, $tranzit)
 		else return 'оч.много';
 	}
 	else	return round($count).($tranzit?('('.$tranzit.')'):'');
+}
+
+protected function priceCalcInit() {
+	$pc = PriceCalc::getInstance();
+	if(@$_SESSION['uid']) {
+		$pc->setFromSiteFlag(1);
+		$up = getUserProfile($_SESSION['uid']);
+		$pc->setAgentId($up['main']['agent_id']);
+	}
+
+	if (isset($_SESSION['basket']['cnt']))
+		if (is_array($_SESSION['basket']['cnt'])) {
+			$sum = 0;
+			foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
+				$sum += $pc->getPosDefaultPriceValue($item) * $cnt;
+			}
+			$pc->setOrderSum($sum);
+		}
+	return $pc;
 }
 
 };

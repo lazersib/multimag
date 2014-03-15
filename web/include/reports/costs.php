@@ -1,6 +1,6 @@
 <?php
 
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -77,20 +77,23 @@ class Report_Costs extends BaseGSReport {
 			$tmpl->addContent('<th>'.html_out($cost_name));
 			$col_count++;
 		}
+		
+		$pc = PriceCalc::getInstance();
+		
 		$res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 		while ($group_line = $res_group->fetch_assoc()) {
 			if ($gs && !in_array($group_line['id'], $g))		continue;
 			$tmpl->addContent("<tr><td colspan='$col_count' class='m1'>{$group_line['id']}. ".html_out($group_line['name'])."</td></tr>");
 
-			$res = $db->query("SELECT `id`, `vc`, `name`, `proizv`, `cost` FROM `doc_base`
+			$res = $db->query("SELECT `id`, `vc`, `name`, `proizv`, `cost` AS `base_price`, `group`, `bulkcnt` FROM `doc_base`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY $order");
-			while ($nxt = $res->fetch_row()) {
-				$act_cost = sprintf('%0.2f', getInCost($nxt[0]));
-				$tmpl->addContent("<tr><td>$nxt[0]</td><td>$nxt[1]</td><td>$nxt[2] / $nxt[3]</td><td align='right'>$nxt[4]</td>
-					<td align='right'>$act_cost</td>");
+			while ($nxt = $res->fetch_assoc()) {
+				$act_cost = sprintf('%0.2f', getInCost($nxt['id']));
+				$tmpl->addContent("<tr><td>{$nxt['id']}</td><td>{$nxt['vc']}</td><td>{$nxt['name']} / {$nxt['proizv']}</td>
+					<td align='right'>{$nxt['cost']}</td><td align='right'>$act_cost</td>");
 				foreach ($costs as $cost_id => $cost_name) {
-					$cost = getCostPos($nxt[0], $cost_id);
+					$cost = $pc->getPosSelectedPriceValue($nxt['id'], $cost_id);
 					$tmpl->addContent("<td align='right'>$cost</td>");
 				}
 				$tmpl->addContent('</tr>');

@@ -1,6 +1,6 @@
 <?php
 
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -24,147 +24,187 @@ class Report_PriceTags {
 	var $templates;
 
 	function __construct() {
+		global $CONFIG;
 		$this->templates = array();
 
 		$this->templates[] = array(
-		    'name' => 'Миниатюрные наклейки',
+		    'tagname' => 'Миниатюрные наклейки',
 		    'width' => 27,
 		    'height' => 18,
-		    'ident' => 1,
-		    'caption_fontsize' => 0,
-		    'vc_fontsize' => 0,
-		    'name_left' => 0,
-		    'name_top' => 1,
-		    'name_width' => 0,
-		    'name_lheight' => 2.2,
-		    'name_fontsize' => 7,
-		    'name_align' => 'C',
-		    'price_left' => 0,
-		    'price_top' => 14,
-		    'price_width' => 0,
-		    'price_lheight' => 4,
-		    'price_fontsize' => 9,
-		    'price_align' => 'R',
-		    'vendor_fontsize' => 0,
-		    'country_fontsize' => 0
+		    'margin' => 1,
+		    'name' => array(
+			'left' => 0,
+			'top' => 1,
+			'width' => 0,
+			'lheight' => 2.2,
+			'fontsize' => 7,
+			'align' => 'C' ),
+		    'price' => array(
+			'left' => 0,
+			'top' => 14,
+			'width' => 0,
+			'lheight' => 4,
+			'fontsize' => 9,
+			'align' => 'R')
 		);
 
 		$this->templates[] = array(
-		    'name' => 'Стандартный ценник',
+		    'tagname' => 'Стандартный ценник',
 		    'width' => 48,
 		    'height' => 55,
-		    'ident' => 2,
-		    'caption_height' => 5,
-		    'caption_fontsize' => 7,
-		    'vc_left' => 0,
-		    'vc_top' => 5,
-		    'vc_width' => 0,
-		    'vc_lheight' => 5,
-		    'vc_fontsize' => 8,
-		    'vc_align' => 'L',
-		    'name_left' => 0,
-		    'name_top' => 10,
-		    'name_width' => 0,
-		    'name_lheight' => 6,
-		    'name_fontsize' => 14,
-		    'name_align' => 'C',
-		    'price_left' => 0,
-		    'price_top' => 43,
-		    'price_width' => 0,
-		    'price_lheight' => 7,
-		    'price_fontsize' => 15,
-		    'price_align' => 'C',
-		    'vendor_left' => 0,
-		    'vendor_top' => 50,
-		    'vendor_width' => 0,
-		    'vendor_lheight' => 7,
-		    'vendor_fontsize' => 5,
-		    'vendor_align' => 'R',
-		    'country_left' => 0,
-		    'country_top' => 50,
-		    'country_width' => 0,
-		    'country_lheight' => 7,
-		    'country_fontsize' => 5,
-		    'country_align' => 'L'
+		    'margin' => 2,
+		    'caption' => array(
+			'height' => 5,
+			'fontsize' => 7),
+		    'vc' => array(
+			'left' => 0,
+			'top' => 5,
+			'width' => 0,
+			'lheight' => 5,
+			'fontsize' => 8,
+			'align' => 'L'),
+		    'name' => array(
+			'left' => 0,
+			'top' => 10,
+			'width' => 0,
+			'lheight' => 6,
+			'fontsize' => 14,
+			'align' => 'C'),
+		    'price' => array(
+			'left' => 0,
+			'top' => 43,
+			'width' => 0,
+			'lheight' => 7,
+			'fontsize' => 15,
+			'align' => 'C'),
+		    'vendor' => array(
+			'left' => 0,
+			'top' => 50,
+			'width' => 0,
+			'lheight' => 7,
+			'fontsize' => 5,
+			'align' => 'R'),
+		    'country' => array(
+			'left' => 0,
+			'top' => 50,
+			'width' => 0,
+			'lheight' => 7,
+			'fontsize' => 5,
+			'align' => 'L')
 		);
 
 		$this->templates[] = array(
-		    'name' => 'Увеличенный ценник',
+		    'tagname' => 'Увеличенный ценник',
 		    'width' => 64,
 		    'height' => 69,
-		    'ident' => 2,
-		    'caption_height' => 6,
-		    'caption_fontsize' => 10,
-		    'vc_left' => 0,
-		    'vc_top' => 9,
-		    'vc_width' => 0,
-		    'vc_lheight' => 8,
-		    'vc_fontsize' => 26,
-		    'vc_align' => 'C',
-		    'name_left' => 0,
-		    'name_top' => 27,
-		    'name_width' => 0,
-		    'name_lheight' => 6,
-		    'name_fontsize' => 16,
-		    'name_align' => 'C',
-		    'price_left' => 0,
-		    'price_top' => 56,
-		    'price_width' => 0,
-		    'price_lheight' => 7,
-		    'price_fontsize' => 24,
-		    'price_align' => 'C',
-		    'vendor_left' => 0,
-		    'vendor_top' => 65,
-		    'vendor_width' => 0,
-		    'vendor_lheight' => 4,
-		    'vendor_fontsize' => 5,
-		    'vendor_align' => 'R',
-		    'country_left' => 0,
-		    'country_top' => 65,
-		    'country_width' => 0,
-		    'country_lheight' => 4,
-		    'country_fontsize' => 5,
-		    'country_align' => 'L'
+		    'margin' => 2,
+		    'caption' => array(
+			'height' => 6,
+			'fontsize' => 10),
+		    'vc' => array(		// Код производителя
+			'left' => 0,
+			'top' => 9,
+			'width' => 0,
+			'lheight' => 8,
+			'fontsize' => 26,
+			'align' => 'C'),
+		    'name' => array(		// Наименование товара
+			'left' => 0,
+			'top' => 25,
+			'width' => 0,
+			'lheight' => 6,
+			'fontsize' => 16,
+			'align' => 'C'),
+		    'price' => array(		// Цена по умолчанию
+			'left' => 0,
+			'top' => 52,
+			'width' => 0,
+			'lheight' => 7,
+			'fontsize' => 22,
+			'align' => 'C'),
+		    'ret_price' => array(	// Розничная цена
+			'left' => 0,
+			'top' => 59,
+			'width' => 0,
+			'lheight' => 7,
+			'fontsize' => 8,
+			'align' => 'L'),
+		    'mult' => array(		// Кратность ( кол-во в упаковке )
+			'left' => 0,
+			'top' => 46,
+			'width' => 0,
+			'lheight' => 7,
+			'fontsize' => 10,
+			'align' => 'C'),
+		    'bulkcnt' => array(		// Количество оптом
+			'left' => 0,
+			'top' => 59,
+			'width' => 0,
+			'lheight' => 7,
+			'fontsize' => 8,
+			'align' => 'R'),
+		    'vendor' => array(		// Производитель
+			'left' => 0,
+			'top' => 65,
+			'width' => 0,
+			'lheight' => 4,
+			'fontsize' => 5,
+			'align' => 'R'),
+		    'country' => array(		// Страна происхождения
+			'left' => 0,
+			'top' => 65,
+			'width' => 0,
+			'lheight' => 4,
+			'fontsize' => 5,
+			'align' => 'L')
 		);
 
 		$this->templates[] = array(
-		    'name' => 'Большой (для крупногабаритного товара)',
+		    'tagname' => 'Большой (для крупногабаритного товара)',
 		    'width' => 98,
 		    'height' => 55,
-		    'ident' => 2,
-		    'caption_height' => 6,
-		    'caption_fontsize' => 10,
-		    'vc_left' => 0,
-		    'vc_top' => 7,
-		    'vc_width' => 0,
-		    'vc_lheight' => 5,
-		    'vc_fontsize' => 12,
-		    'vc_align' => 'L',
-		    'name_left' => 0,
-		    'name_top' => 12,
-		    'name_width' => 0,
-		    'name_lheight' => 6,
-		    'name_fontsize' => 18,
-		    'name_align' => 'C',
-		    'price_left' => 0,
-		    'price_top' => 40,
-		    'price_width' => 0,
-		    'price_lheight' => 10,
-		    'price_fontsize' => 30,
-		    'price_align' => 'C',
-		    'vendor_left' => 0,
-		    'vendor_top' => 50,
-		    'vendor_width' => 0,
-		    'vendor_lheight' => 5,
-		    'vendor_fontsize' => 10,
-		    'vendor_align' => 'R',
-		    'country_left' => 0,
-		    'country_top' => 50,
-		    'country_width' => 0,
-		    'country_lheight' => 5,
-		    'country_fontsize' => 10,
-		    'country_align' => 'L'
+		    'margin' => 2,
+		    'caption' => array(
+			'height' => 6,
+			'fontsize' => 10),
+		    'vc' => array(
+			'left' => 0,
+			'top' => 7,
+			'width' => 0,
+			'lheight' => 5,
+			'ontsize' => 12,
+			'align' => 'L'),
+		    'name'=>array(
+			'left' => 0,
+			'top' => 12,
+			'width' => 0,
+			'lheight' => 6,
+			'fontsize' => 18,
+			'align' => 'C'),
+		    'price' => array(
+			'left' => 0,
+			'top' => 40,
+			'width' => 0,
+			'lheight' => 10,
+			'fontsize' => 30,
+			'align' => 'C'),
+		    'vendor' => array(
+			'left' => 0,
+			'top' => 50,
+			'width' => 0,
+			'lheight' => 5,
+			'fontsize' => 10,
+			'align' => 'R'),
+		    'country' => array(
+			'left' => 0,
+			'top' => 50,
+			'width' => 0,
+			'lheight' => 5,
+			'fontsize' => 10,
+			'align' => 'L')
 		);
+		if(is_array(@$CONFIG['site']['tricetags']))
+			$this->templates = array_merge ($this->templates, $CONFIG['site']['tricetags']);
 	}
 
 	function getName($short = 0) {
@@ -271,20 +311,24 @@ class Report_PriceTags {
 		" . $this->draw_groups_tree(0) . "</ul></div>");
 	}
 
-	function drawPDFPriceTag($pdf, $template, $pos_id, $cost_id) {
+	function drawPDFPriceTag($pdf, $template, $pos_id) {
 		global $CONFIG, $db;
-		$res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`, `doc_base`.`vc`, `doc_base`.`proizv` AS `vendor`, `class_country`.`name` AS `country` FROM `doc_base`
-		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
-		LEFT JOIN `class_country` ON `doc_base`.`country`=`class_country`.`id`
-		WHERE `doc_base`.`id`='$pos_id'");
+		
+		$pc = PriceCalc::getInstance();
+		
+		$res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`, `doc_base`.`vc`,
+			`doc_base`.`proizv` AS `vendor`, `class_country`.`name` AS `country`, `doc_base`.`cost` AS `base_price`, `doc_base`.`group`,
+			`doc_base`.`bulkcnt`, `doc_base`.`mult`, `class_unit`.`rus_name1` AS `unit_name`
+			FROM `doc_base`
+			LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
+			LEFT JOIN `class_country` ON `doc_base`.`country`=`class_country`.`id`
+			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+			WHERE `doc_base`.`id`='$pos_id'");
 		if ($res->num_rows == 0)	throw new Exception("Наименование не найдено!");
 		$pos_info = $res->fetch_assoc();
-		$pos_info['price'] = getCostPos($pos_id, $cost_id);
+		
+		$pos_info['price'] = $pc->getPosSelectedPriceValue($pos_id, $pc->getDefaultPriceId(), $pos_info);
 
-		if (!@$template['vc_width'])
-			$template['vc_width'] = $template['width'];
-		if (!@$template['name_width'])
-			$template['name_width'] = $template['width'];
 		if (!@$template['price_width'])
 			$template['price_width'] = $template['width'];
 		if (!@$template['vendor_width'])
@@ -299,54 +343,59 @@ class Report_PriceTags {
 		$caption = $CONFIG['site']['display_name'];
 		if (!$caption)		$caption = $CONFIG['site']['name'];
 
-		if ($template['caption_fontsize'] && $caption) {
+		if ($template['caption'] && $caption) {
 			$pdf->SetFillColor(80);
 			$pdf->SetTextColor(255);
-			$pdf->SetFont('Arial', '', $template['caption_fontsize']);
+			$pdf->SetFont('Arial', '', $template['caption']['fontsize']);
 			$str = iconv('UTF-8', 'windows-1251', $caption);
-			$pdf->Cell($template['width'], $template['caption_height'], $str, 0, 0, 'C', true);
+			$pdf->Cell($template['width'], $template['caption']['height'], $str, 0, 0, 'C', true);
 		}
 
 		$pdf->SetTextColor(0);
-
-		$pdf->SetFont('', '', $template['name_fontsize']);
-		$pdf->SetXY($x + $template['name_left'], $y + $template['name_top']);
-		$str = iconv('UTF-8', 'windows-1251', $pos_info['name']);
-		$pdf->MultiCell($template['name_width'], $template['name_lheight'], $str, 0, $template['name_align']);
-
-		if ($template['vc_fontsize'] && $pos_info['vc']) {
-			$pdf->SetFont('', '', $template['vc_fontsize']);
-			$pdf->SetXY($x + $template['vc_left'], $y + $template['vc_top']);
-			$str = iconv('UTF-8', 'windows-1251', 'Код: ' . $pos_info['vc']);
-			$pdf->Cell($template['vc_width'], $template['vc_lheight'], $str, 0, 0, $template['vc_align']);
+		
+		$lines = array (
+		    'vc' => 'Код: ',
+		    'name' => '',
+		    'price' => 'Цена: ',
+		    'country' => 'Страна: ',
+		    'vendor' => 'Изготовитель: ',
+		    'bulkcnt' => 'Опт от: ',
+		    'mult' => 'В упаковке: '
+		);
+		
+		foreach($lines as $id=>$text) {
+			if (is_array($template[$id]) && $pos_info[$id]) {
+				$param = $template[$id];
+				if (!@$param['width'])
+					$param['width'] = $template['width'];
+				$pdf->SetFont('', '', $param['fontsize']);
+				$pdf->SetXY($x + $param['left'], $y + $param['top']);
+				if($id == 'bulkcnt' || $id == 'mult')
+					$pos_info[$id] .= ' '.$pos_info['unit_name'];
+				$str = iconv('UTF-8', 'windows-1251', $text . $pos_info[$id]);
+				$pdf->Cell($param['width'], $param['lheight'], $str, 0, 0, $param['align']);
+			}
 		}
 
-		if ($template['price_fontsize']) {
-			$pdf->SetFont('', '', $template['price_fontsize']);
-			$pdf->SetXY($x + $template['price_left'], $y + $template['price_top']);
-			$str = iconv('UTF-8', 'windows-1251', 'Цена: ' . $pos_info['price'] . 'р');
-			$pdf->Cell($template['price_width'], $template['price_lheight'], $str, 0, 0, $template['price_align']);
+		if($pc->getDefaultPriceId() != $pc->getRetailPriceId()) {			
+			$ret_price = $pc->getPosSelectedPriceValue($pos_id, $pc->getRetailPriceId(), $pos_info);
+			if($pos_info['price'] != $ret_price) {
+				$id = 'ret_price';
+				$param = $template[$id];
+				if (!@$param['width'])
+					$param['width'] = $template['width'];
+				$pdf->SetFont('', '', $param['fontsize']);
+				$pdf->SetXY($x + $param['left'], $y + $param['top']);
+				$str = iconv('UTF-8', 'windows-1251', 'В розницу: ' . $ret_price);
+				$pdf->Cell($param['width'], $param['lheight'], $str, 0, 0, $param['align']);
+			}
 		}
 
-		if ($template['vendor_fontsize'] && $pos_info['vendor']) {
-			$pdf->SetFont('', '', $template['vendor_fontsize']);
-			$pdf->SetXY($x + $template['vendor_left'], $y + $template['vendor_top']);
-			$str = iconv('UTF-8', 'windows-1251', 'Изготовитель: ' . $pos_info['vendor']);
-			$pdf->Cell($template['vendor_width'], $template['vendor_lheight'], $str, 0, 0, $template['vendor_align']);
-		}
-
-		if ($template['country_fontsize'] && $pos_info['country']) {
-			$pdf->SetFont('', '', $template['country_fontsize']);
-			$pdf->SetXY($x + $template['country_left'], $y + $template['country_top']);
-			$str = iconv('UTF-8', 'windows-1251', 'Страна: ' . $pos_info['country']);
-			$pdf->Cell($template['country_width'], $template['country_lheight'], $str, 0, 0, $template['country_align']);
-		}
-
-		$x+=$template['width'] + $template['ident'];
+		$x+= $template['width'] + $template['margin'];
 
 		if ($x + $template['width'] > $pdf->w - $pdf->rMargin) {
 			$x = $pdf->lMargin;
-			$y+=$template['height'] + $template['ident'];
+			$y+=$template['height'] + $template['margin'];
 		}
 
 		if ($y + $template['height'] > $pdf->h - $pdf->bMargin) {
@@ -363,16 +412,10 @@ class Report_PriceTags {
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='pricetags'>
 		<input type='hidden' name='opt' value='form2'>
-		Использовать цену:<br>
-		<select name='cost'>");
-		$res = $db->query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id");
-		while ($nxt = $res->fetch_row())
-			$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
-		$tmpl->addContent("</select><br>
 		Вид ценника:<br>
 		<select name='tag_id'>");
 		foreach ($this->templates as $id => $t) {
-			$tmpl->addContent("<option value='$id'>{$t['width']}мм X {$t['height']}мм - {$t['name']}</option>");
+			$tmpl->addContent("<option value='$id'>{$t['width']}мм X {$t['height']}мм - {$t['tagname']}</option>");
 		}
 		$tmpl->addContent("</select><br>
 		Группа товаров:<br>");
@@ -384,7 +427,6 @@ class Report_PriceTags {
 
 	function Form2() {
 		global $tmpl, $CONFIG, $db;
-		$cost_id = rcvint('cost');
 		$gs = rcvint('gs');
 		$g = @$_POST['g'];
 		$tag_id = rcvint('tag_id');
@@ -398,7 +440,6 @@ class Report_PriceTags {
 		$tmpl->addContent("<h1>" . $this->getName() . "</h1>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='pricetags'>
-		<input type='hidden' name='cost' value='$cost_id'>
 		<input type='hidden' name='tag_id' value='$tag_id'>
 		<input type='hidden' name='opt' value='make'>
 		Отметьте наименования, для которых требуется ценник:<br>
@@ -418,6 +459,8 @@ class Report_PriceTags {
 		<div class='selmenu'><a onclick='SelAll(true)' href='#'>Выбрать всё<a> | <a onclick='SelAll(false)' href='#'>Снять всё</a></div>
 		<table class='list'>");
 
+		$pc = PriceCalc::getInstance();
+		
 		$res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 		while ($group_line = $res_group->fetch_assoc()) {
 			if ($gs && is_array($g))
@@ -426,14 +469,15 @@ class Report_PriceTags {
 			$tmpl->addContent("<tr><th>ID</th><th>Код</th><th>Наименование</th><th>Цена</th></tr>
 			<tr><td colspan='8'>{$group_line['id']}. ".html_out($group_line['name'])."</td></tr>");
 
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`,
+				`doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY $order");
-			while ($nxt = $res->fetch_row()) {
-				$cost = getCostPos($nxt[0], $cost_id);
-				$tmpl->addContent("<tr><td>$nxt[0]</td><td>".html_out($nxt[1])."</td><td><label><input type='checkbox' name='pos_id[]' value='$nxt[0]' checked>".html_out($nxt[2])."</label></td><td>$cost</td></tr>");
+			while ($nxt = $res->fetch_assoc()) {
+				$cost = $pc->getPosSelectedPriceValue($nxt['id'], $pc->getDefaultPriceId(), $nxt);
+				$tmpl->addContent("<tr><td>{$nxt['id']}</td><td>".html_out($nxt['vc'])."</td><td><label><input type='checkbox' name='pos_id[]' value='{$nxt['id']}' checked>".html_out($nxt['name'])."</label></td><td>$cost</td></tr>");
 			}
 		}
 		$tmpl->addContent("</table>
@@ -443,7 +487,6 @@ class Report_PriceTags {
 
 	function MakePDF() {
 		global $tmpl, $CONFIG;
-		$cost = rcvint('cost');
 		$tag_id = rcvint('tag_id');
 		$pos_id = request('pos_id');
 
@@ -463,7 +506,7 @@ class Report_PriceTags {
 		if (!is_array($pos_id))		throw new Exception("Необходимо выбрать хотя бы одно наименование!");
 		foreach ($pos_id as $id => $val) {
 			settype($val, 'int');
-			$this->drawPDFPriceTag($pdf, $this->templates[$tag_id], $val, $cost);
+			$this->drawPDFPriceTag($pdf, $this->templates[$tag_id], $val);
 		}
 		$pdf->Output('pricetags.pdf', 'I');
 	}

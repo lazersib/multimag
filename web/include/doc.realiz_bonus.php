@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -133,7 +133,6 @@ class doc_Realiz_bonus extends doc_Realizaciya
 		ORDER BY `doc_list_pos`.`id`");
 		$ii=1;
 		$sum=0;
-		$skid_sum=0;
 		while($nxt = $res->fetch_row()) {
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f бонусов", $nxt[4]);
@@ -151,7 +150,6 @@ class doc_Realiz_bonus extends doc_Realizaciya
 			$pdf->RowIconv($row);
 			$ii++;
 			$sum+=$sm;
-			$skid_sum+=getCostPos($nxt[7], $def_cost)*$nxt[3];
 		}
 		$ii--;
 		$cost = sprintf("%01.2f бонусов", $sum);

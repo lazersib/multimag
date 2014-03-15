@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -282,75 +282,6 @@ function roundDirect($number, $precision = 0, $direction = 0)
 			? floor($number / $factor) * $factor
 			: ceil($number / $factor) * $factor;
 	}
-}
-
-/// Получить неотрицательную цену в формате руб.коп заданной позиции
-/// @param pos_id ID товара/услуги
-/// @param cost_id ID цены
-function getCostPos($pos_id, $cost_id)
-{
-	global $db;
-	settype($pos_id,'int');
-	settype($cost_id,'int');
-	$res=$db->query("SELECT `doc_base`.`cost`, `doc_base`.`group` FROM `doc_base` WHERE `doc_base`.`id`=$pos_id");
-	if($res->num_rows==0)		throw new Exception("Товар ID:$pos_id не найден!");
-	list($base_cost,$base_group) =	$res->fetch_row();
-
-	$res=$db->query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
-	FROM `doc_cost`
-	LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`=$pos_id
-	WHERE `doc_cost`.`id`=$cost_id");
-	if($res->num_rows==0)		throw new Exception("Цена ID:$cost_id не найдена!");
-	$nxt=$res->fetch_row();
-	$res->free();
-	if($nxt[1])
-	{
-		switch($nxt[4])
-		{
-			case 'pp':	$cena= $base_cost+$base_cost*$nxt[5]/100;	break;
-			case 'abs':	$cena= $base_cost+$nxt[5];			break;
-			case 'fix':	$cena= $nxt[5];					break;
-			default:	$cena= 0;
-		}
-		if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[6],$nxt[7]));
-		else 		return 0;
-	}
-
-	while($base_group)
-	{
-		$res=$db->query("SELECT `doc_group`.`id`, `doc_group_cost`.`id`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group`.`pid`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
-		FROM `doc_group`
-		LEFT JOIN `doc_group_cost` ON `doc_group`.`id`=`doc_group_cost`.`group_id`  AND `doc_group_cost`.`cost_id`=$cost_id
-		WHERE `doc_group`.`id`=$base_group");
-		if($res->num_rows==0)		throw new Exception("Группа ID:$base_group не найдена");
-		$gdata=$res->fetch_row();
-		$res->free();
-		if($gdata[1])
-		{
-			switch($gdata[2])
-			{
-				case 'pp':	$cena= $base_cost+$base_cost*$gdata[3]/100;	break;
-				case 'abs':	$cena= $base_cost+$gdata[3];			break;
-				case 'fix':	$cena= $gdata[3];				break;
-				default:	$cena= 0;
-			}
-
-			if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$gdata[5],$gdata[6]));
-			else 		return 0;
-		}
-		$base_group=$gdata[4];
-	}
-
-	switch($nxt[2])
-	{
-		case 'pp':	$cena= $base_cost+$base_cost*$nxt[3]/100;	break;
-		case 'abs':	$cena= $base_cost+$nxt[3];			break;
-		case 'fix':	$cena= $nxt[3];					break;
-		default:	$cena= 0;
-	}
-
-	if($cena>0)	return sprintf("%0.2f",roundDirect($cena,$nxt[8],$nxt[9]));
-	else 		return 0;
 }
 
 /// Запись событий документов в лог

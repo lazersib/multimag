@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -413,7 +413,8 @@ else if($mode=="get")
 	}	
 	$price->showProizv($proizv);
 	$price->setColCount($kol);
-	$price->SetCost( getCurrentUserCost() );	
+	$pc = PriceCalc::getInstance();
+	$price->SetCost( $pc->getDefaultPriceId() );	
 	if($f=='csv')	{
 		$price->setDivider( request('divider') );
 		$price->setShielder( request('shielder') );

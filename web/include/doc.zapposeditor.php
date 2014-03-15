@@ -82,16 +82,17 @@ class SZapPosEditor extends DocPosEditor
 	function GetAllContent() {
 		global $db;
 		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`,
-			`doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`,
-			`doc_list_pos`.`gtd`
+			`doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`,
+			`doc_list_pos`.`gtd`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 			FROM `doc_list_pos`
 			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'");
 		$ret = '';
+		$pc = PriceCalc::getInstance();
 		while ($nxt = $res->fetch_assoc()) {
-			if ($this->cost_id)	$scost = getCostPos($nxt['pos_id'], $this->cost_id);
-			else			$scost = sprintf("%0.2f", $nxt['bcost']);
+			if ($this->cost_id)	$scost = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+			else			$scost = sprintf("%0.2f", $nxt['base_cost']);
 			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 			if ($ret)		$ret.=', ';
 
@@ -117,15 +118,16 @@ class SZapPosEditor extends DocPosEditor
 		settype($pos, 'int');
 		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`,
 			`doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`,
-			`doc_list_pos`.`gtd`
+			`doc_list_pos`.`gtd`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 			FROM `doc_base`
 			LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 			WHERE `doc_base`.`id`='$pos'");
 		$ret = '';
+		$pc = PriceCalc::getInstance();
 		if ($nxt = $res->fetch_assoc()) {
-			if ($this->cost_id)	$scost = getCostPos($nxt['pos_id'], $this->cost_id);
-			else			$scost = sprintf("%0.2f", $nxt['bcost']);
+			if ($this->cost_id)	$scost = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+			else			$scost = sprintf("%0.2f", $nxt['base_cost']);
 			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
 			if (!$nxt['cost'])	$nxt['cost'] = $scost;
 			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
@@ -176,7 +178,8 @@ class SZapPosEditor extends DocPosEditor
 
 		if ($add) {
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`,
-				`doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
+				`doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`, `doc_base`.`bulkcnt`, `doc_base`.`group`,
+				`doc_base`.`cost` AS `base_price`
 				FROM `doc_list_pos`
 				INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
@@ -191,8 +194,9 @@ class SZapPosEditor extends DocPosEditor
 				$zp = sprintf("%0.2f", $rs_data[0]);
 			}
 			else			$zp = 'НЕТ';
-
-			$cost = $this->cost_id ? getCostPos($line['id'], $this->cost_id) : $line['cost'];
+			
+			$pc = PriceCalc::getInstance();
+			$cost = $this->cost_id ? $pc->getPosSelectedPriceValue($line['id'], $this->cost_id, $line) : $line['cost'];
 			$ret = "{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', place: '$zp', gtd: '' }, sum: '$doc_sum' }";
 		}
 		else {

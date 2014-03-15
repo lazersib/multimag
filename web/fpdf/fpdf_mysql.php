@@ -22,23 +22,23 @@ function Header()
         $this->TableHeader();
 }
 
-function Footer()
-{
-    //Print the table footer if necessary
-    if($this->ProcessingTable)
-    {
-    	//$this->Ln();
-    		global $CONFIG;
+function Footer() {
+	global $CONFIG;
+	if($this->ProcessingTable) {
+		global $CONFIG;
 		$this->SetFont('Arial','',8);
 		$this->SetTextColor(0);
-		$str = 'Стр. '.$this->PageNo().'.      Цены, выделенные серым, необходимо уточнять! Наш интернет-магазин: ';
+		$str = 'Стр. '.$this->PageNo().'.';
+		if(@$CONFIG['site']['grey_price_days'])
+			$str .= '   Цены, выделенные серым, необходимо уточнять!';
+		$str .= ' Наш интернет-магазин: ';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$this->SetY($this->GetY()+2);
 		$this->Write(4,$str,'');
 		$this->SetTextColor(0,0,255);
 		$this->SetFont('','U');
 		$this->Write(4,'http://'.$CONFIG['site']['name'],'http://'.$CONFIG['site']['name']);
-    }
+	}
 }
 
 function TableHeader()
@@ -66,60 +66,62 @@ function TableHeader()
     $this->curCol=0;
 }
 
-function Row($data, $divider=0, $cost_id=1)
-{
-    $this->SetX($this->TableX);
-    $ci=$this->ColorIndex;
-    $fill=!empty($this->RowColors[$ci]);
+function Row($data, $divider=0, $cost_id=1) {
+	global $CONFIG;
+	$this->SetX($this->TableX);
+	$ci = $this->ColorIndex;
+	$fill = !empty($this->RowColors[$ci]);
 
-    if(!$divider)
-    {
-	$cost = getCostPos($data['pos_id'], $cost_id);
-	if($cost==0)	return;
-		if($fill)
-			$this->SetFillColor($this->RowColors[$ci][0],$this->RowColors[$ci][1],$this->RowColors[$ci][2]);
-		foreach($this->aCols as $col)
-		{
-			$str=@$data[$col['f']];
-			if(($col['f']=='name')&&($data['proizv']!='')) $str.=' ('.$data['proizv'].')';
+	if (!$divider) {
+		$pc = $this->priceCalcInit();
+		$cost = $pc->getPosDefaultPriceValue($data['pos_id']);
 
-			if($col['f']=='cost')
-			{
-				$dcc=strtotime($data['cost_date']);
-				if( ($dcc<(time()-60*60*24*30*6))|| ($cost==0) ) $cce=128;
-				else $cce=0;
-				if(!$cost) $cost='Звоните!';
-				else	$cost.=" за ".$data['units_name'];
-				$str=$cost;
-			} else $cce=0;
+		if ($cost == 0)	return;
+		if ($fill)	$this->SetFillColor($this->RowColors[$ci][0], $this->RowColors[$ci][1], $this->RowColors[$ci][2]);
+		
+		
+		foreach ($this->aCols as $col) {
+			$str = @$data[$col['f']];
+			if (($col['f'] == 'name') && ($data['proizv'] != ''))
+				$str.=' (' . $data['proizv'] . ')';
+			$cce = 0;
+			if ($col['f'] == 'cost') {				
+				if(@$CONFIG['site']['grey_price_days']) {
+					$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+					if( strtotime($data['cost_date']) < $cce_time )
+						$cce = 128;
+				}
+				
+				if (!$cost)	$cost = 'Звоните!';
+				else		$cost.=" за " . $data['units_name'];
+				$str = $cost;
+			}
 
 			$str = iconv('UTF-8', 'windows-1251', $str);
 			$this->SetTextColor($cce);
-			$this->Cell($col['w'],4,$str,1,0,$col['a'],$fill);
+			$this->Cell($col['w'], 4, $str, 1, 0, $col['a'], $fill);
 		}
-    }
-    else
-    {
-    	if($fill)
-			$this->SetFillColor($this->HeaderColor[0],$this->HeaderColor[1],$this->HeaderColor[2]);
+	}
+	else {
+		if ($fill)
+			$this->SetFillColor($this->HeaderColor[0], $this->HeaderColor[1], $this->HeaderColor[2]);
 		$str = iconv('UTF-8', 'windows-1251', $data);
 		$this->SetTextColor(0);
-		$this->Cell($this->aCols[0]['w']+$this->aCols[1]['w']+@$this->aCols[2]['w'],4,$str,1,0,'C',$fill);
-    }
+		$this->Cell($this->aCols[0]['w'] + $this->aCols[1]['w'] + @$this->aCols[2]['w'], 4, $str, 1, 0, 'C', $fill);
+	}
 
-    $this->Ln();
-    if($this->y+5>$this->PageBreakTrigger)
-    {
-    	if($this->curCol<($this->numCols-1))
-    	{
+	$this->Ln();
+	if ($this->y + 5 > $this->PageBreakTrigger) {
+		if ($this->curCol < ($this->numCols - 1)) {
 			$this->curCol++;
 			$this->SetY($this->headY);
-			$this->TableX=$this->lMargin+($this->ColsWidth*$this->curCol);
+			$this->TableX = $this->lMargin + ($this->ColsWidth * $this->curCol);
 		}
-		else $this->AddPage();
-    }
+		else
+			$this->AddPage();
+	}
 
-    $this->ColorIndex=1-$ci;
+	$this->ColorIndex = 1 - $ci;
 }
 
 function CalcWidths($width,$align)

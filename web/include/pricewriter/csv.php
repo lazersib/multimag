@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -100,12 +100,14 @@ class PriceWriterCSV extends BasePriceWriter
 	/// Сформировать строки прайса
 	function writepos($group=0)	{
 		global $CONFIG;
-		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`
+		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,
+			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
 		$i=$cur_col=0;
-		while($nxt=$res->fetch_row())	{
+		$pc = PriceCalc::getInstance();
+		while($nxt=$res->fetch_assoc())	{
 			if($cur_col>=$this->column_count){
 				$cur_col=0;
 				echo"\n";
@@ -114,12 +116,12 @@ class PriceWriterCSV extends BasePriceWriter
 				echo $this->divider.$this->shielder.$this->shielder.$this->divider;
 			}
 
-			$c = getCostPos($nxt[0], $this->cost_id);
+			$c = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
 			if($c==0)	continue;
-			if(($this->view_proizv)&&($nxt[3])) $pr=" (".$nxt[3].")"; else $pr="";
+			if(($this->view_proizv)&&($nxt['proizv'])) $pr=" (".$nxt['proizv'].")"; else $pr="";
 			if(@$CONFIG['site']['price_show_vc'])
-				echo $this->shielder.$nxt[4].$this->shielder.$this->divider;
-			echo $this->shielder.$nxt[1].$pr.$this->shielder.$this->divider.$this->shielder.$c.$this->shielder;
+				echo $this->shielder.$nxt['vc'].$this->shielder.$this->divider;
+			echo $this->shielder.$nxt['name'].$pr.$this->shielder.$this->divider.$this->shielder.$c.$this->shielder;
 
  			$this->line++;
  			$i=1-$i;

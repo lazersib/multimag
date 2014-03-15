@@ -1,6 +1,6 @@
 <?php
 
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -312,10 +312,6 @@ class Report_Revision_Act extends BaseReport {
 			}
 		}
 
-		$razn = $pr - $ras;
-		$razn_p = abs($razn);
-		$razn_p = sprintf("%01.2f", $razn_p);
-
 		$pr = sprintf("%01.2f", $pr);
 		$ras = sprintf("%01.2f", $ras);
 
@@ -335,6 +331,10 @@ class Report_Revision_Act extends BaseReport {
 		$pr += $s_pr;
 		$ras += $s_ras;
 		
+		$razn = $pr - $ras;
+		$razn_p = abs($razn);
+		$razn_p = sprintf("%01.2f", $razn_p);
+		
 		if ($pr > $ras) {
 			$pr-=$ras;
 			$ras = '';
@@ -342,8 +342,7 @@ class Report_Revision_Act extends BaseReport {
 			$ras-=$pr;
 			$pr = '';
 		}
-		else
-			$pr = $ras = '';
+		else	$pr = $ras = '';
 		if ($pr)
 			$pr = sprintf("%01.2f", $pr);
 		if ($ras)

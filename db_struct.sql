@@ -719,16 +719,20 @@ CREATE TABLE IF NOT EXISTS `doc_cost` (
   `name` varchar(25) NOT NULL,
   `type` varchar(4) NOT NULL,
   `value` decimal(8,2) NOT NULL COMMENT 'Значение цены',
-  `vid` tinyint(4) NOT NULL COMMENT 'Вид цены определяет места её использования',
+  `context` varchar(8) NOT NULL COMMENT 'Контекст цены определяет места её использования',
+  `priority` tinyint(4) NOT NULL COMMENT 'Приоритет задаёт очерёдность цен с одним контекстом',
   `accuracy` int(11) NOT NULL,
   `direction` int(11) NOT NULL,
-  UNIQUE KEY `id` (`id`)
+  `bulk_threshold` int(11) NOT NULL COMMENT 'Порог включения цены по сумме заказа',
+  `acc_threshold` int(11) NOT NULL COMMENT 'Порог включения цены по накопленной сумме',
+  UNIQUE KEY `id` (`id`),
+  UNIQUE KEY `context_priority` (`context`,`priority`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=4 ;
 
-INSERT IGNORE INTO `doc_cost` (`id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES
-(1, 'Розничная', 'pp', 0.00, 1, 2, 0),
-(2, 'Мелкий опт', 'pp', -3.00, -1, 2, 0),
-(3, 'Средний опт', 'pp', -5.00, -2, 2, 0);
+INSERT IGNORE INTO `doc_cost` (`id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold`) VALUES
+(1, 'Розничная', 'pp', 0.00, 'rsd', 1, 2, 0, 0, 0),
+(2, 'Мелкий опт', 'pp', -3.00, 'b', 1, 2, 0, 1000, 10000),
+(3, 'Средний опт', 'pp', -5.00, 'b', 2, 2, 0, 5000, 50000);
 
 CREATE TABLE IF NOT EXISTS `doc_dopdata` (
   `doc` int(11) NOT NULL,

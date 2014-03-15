@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -396,45 +396,46 @@ class doc_Nulltype
 			$tmpl->msg("Операция не допускается для проведённого документа!","err");
 		else if(@$this->doc_data['mark_del'])
 			$tmpl->msg("Операция не допускается для документа, отмеченного для удаления!","err");
-		else
-		{
+		else {
 			$fields=explode(' ',$this->header_fields);
 			$cena_update=false;
 			foreach($fields as $f)
 			{
 				if($f=='separator')	continue;
-				if($f=='cena')
-				{
+				if($f=='cena') {
 					$cena_update=true;
 					$sqlupdate.=", `nds`='$nds'";
 					$sqlinsert_keys.=", `nds`";
 					$sqlinsert_value.=", '$nds'";
-					if($cost_recalc)
-					{
-						$r=$db->query("SELECT `id`, `tovar` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-						while($l=$res->fetch_row())
-							$db->update('doc_list_pos', $l[0], 'cost', getCostPos($l[1], $cena));
+					if($cost_recalc) {	// Чем это отличается от $this->resetCost() ? 
+						$r = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`,
+							`doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
+							FROM `doc_list_pos`
+							INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+							WHERE `doc`='{$this->doc}'");
+						$pc = PriceCalc::getInstance();
+						
+						while($l = $res->fetch_assoc()) {
+							$price = $pc->getPosSelectedPriceValue($l[1], $cena, $l);
+							$db->update('doc_list_pos', $l[0], 'cost', $price);
+						}
 						$this->recalcSum();
 					}
-					if($this->doc)
-					{
+					if($this->doc) {
 						if($this->doc_data['nds']!=$nds)	$log_data.="nds: {$this->doc_data['nds']}=>$nds, ";
 						if($this->dop_data['cena']!=$cena)	$log_data.="cena: {$this->doc_data['cena']}=>$cena, ";
 					}
 				}
-				else if($f=='agent')
-				{
+				else if($f=='agent') {
 					$sqlupdate.=", `$f`='${$f}', `contract`='$contract'";
 					$sqlinsert_keys.=", `$f`, `contract`";
 					$sqlinsert_value.=", '${$f}', '$contract'";
-					if($this->doc)
-					{
+					if($this->doc) {
 						if($this->doc_data[$f]!=$$f)			$log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
 						if($this->dop_data['contract']!=$contract)	$log_data.="contract: {$this->doc_data['contract']}=>$cena, ";
 					}
 				}
-				else
-				{
+				else {
 					$sqlupdate.=", `$f`='${$f}'";
 					$sqlinsert_keys.=", `$f`";
 					$sqlinsert_value.=", '${$f}'";
@@ -445,8 +446,7 @@ class doc_Nulltype
 				}
 			}
 
-			if($this->doc)
-			{
+			if($this->doc) {
 				if(!isAccess($object,'edit'))	throw new AccessException("");
 				$db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='$doc'");
 				$link="/doc.php?doc=$doc&mode=body";
@@ -1761,10 +1761,16 @@ class doc_Nulltype
 		global $db;
 		if (!$this->doc)
 			throw new Exception("Документ не определён!");
-		$res = $db->query("SELECT `id`, `tovar`, `cnt` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-		while ($nxt = $res->fetch_row()) {
-			$cost = getCostPos($nxt[1], $this->dop_data['cena']);
-			$db->update('doc_list_pos', $nxt[0], 'cost', $cost);
+		$r = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`,
+			`doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
+			FROM `doc_list_pos`
+			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+			WHERE `doc`='{$this->doc}'");
+		$pc = PriceCalc::getInstance();
+
+		while($l = $res->fetch_assoc()) {
+			$price = $pc->getPosSelectedPriceValue($l[1], $this->dop_data['cena'], $l);
+			$db->update('doc_list_pos', $l[0], 'cost', $price);
 		}
 	}
 };

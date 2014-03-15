@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -137,14 +137,16 @@ class PriceWriterXLS extends BasePriceWriter
 		$this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count-1);
 		$this->line++;
 
-//		$str = 'При заказе через сайт предоставляется скидка!';
-//		$str = iconv('UTF-8', 'windows-1251', $str);
-//		$this->worksheet->write($this->line, 0, $str, $format_info);
-//		$this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count-1);
-//		$this->line++;
+		$str = 'При заказе через сайт может быть предоставлена скидка!';
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$this->worksheet->write($this->line, 0, $str, $format_info);
+		$this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count-1);
+		$this->line++;
 
 		$dt=date("d.m.Y");
-		$str = 'Цены действительны на дату: '.$dt.'. Цены, выделенные серым цветом, необходимо уточнять.';
+		$str = 'Цены действительны на дату: '.$dt.'.';
+		if(@$CONFIG['site']['grey_price_days'])
+			$str .= ' Цены, выделенные серым цветом, необходимо уточнять.';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$this->worksheet->write($this->line, 0, $str, $format_info);
 		$this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count-1);
@@ -212,36 +214,44 @@ class PriceWriterXLS extends BasePriceWriter
 		
 		$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 		
-		$res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,
-			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_base`.`transit_cnt`
+		$res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,		
+			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`,
+				`doc_base`.`transit_cnt`, `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
 		$i = 0;
-		while($nxt = $res->fetch_row()) {
-			$c=0;
-			$this->worksheet->write($this->line, $c++, $nxt[0], $this->format_line[$i]);	// номер
+		
+		if(@$CONFIG['site']['grey_price_days'])
+			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+		
+		$pc = PriceCalc::getInstance();
+		while($nxt = $res->fetch_assoc()) {
+			$c = 0;
+			$this->worksheet->write($this->line, $c++, $nxt['id'], $this->format_line[$i]);	// номер
 			
 			if(@$CONFIG['site']['price_show_vc']) {
-				$str = iconv('UTF-8', 'windows-1251', $nxt[4]);
+				$str = iconv('UTF-8', 'windows-1251', $nxt['vc']);
 				$this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]);	// код производителя
 			}
 				
 			
-			$name=iconv('UTF-8', 'windows-1251', "$group_name $nxt[1]".(($this->view_proizv&&$nxt[3])?" ($nxt[3])":''));
+			$name=iconv('UTF-8', 'windows-1251', "$group_name {$nxt['name']}".(($this->view_proizv&&$nxt['proizv'])?" ({$nxt['proizv']})":''));
 			$this->worksheet->write($this->line, $c++, $name, $this->format_line[$i]);	// наименование
 			
-			$nal = $this->GetCountInfo($nxt[5], $nxt[6]);
+			$nal = $this->GetCountInfo($nxt['cnt'], $nxt['transit_cnt']);
 			$str = iconv('UTF-8', 'windows-1251',$nal);
 			$this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]);		// наличие - пока не отображается
 			
-			$cost = getCostPos($nxt[0], $this->cost_id);
+			$cost = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
 			if($cost==0)	continue;
 			$str=iconv('UTF-8', 'windows-1251',$cost);
 			
-			$dcc = strtotime($nxt[2]);
- 			if( $dcc<(time()-60*60*24*30*6) ) $format = $this->a_format_line[$i];
- 			else 	$format = $this->format_line[$i];
+			$format = $this->format_line[$i];;
+			if(@$CONFIG['site']['grey_price_days']) {
+				if( strtotime($nxt['cost_date']) < $cce_time )
+					$format = $this->a_format_line[$i];
+			}
 			
 			$this->worksheet->write($this->line, $c++, $str, $format);		// цена
 

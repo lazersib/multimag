@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -62,12 +62,14 @@ class PriceWriterPDF extends BasePriceWriter
 		$this->pdf->Cell(0,6,$str,0,1,'C',0,'http://'.$CONFIG['site']['name']);
 		$this->pdf->SetFont('','',10);
 		$this->pdf->SetTextColor(0);
-//		$str = 'При заказе через сайт предоставляется скидка!';
-//		$str = iconv('UTF-8', 'windows-1251', $str);
-//		$pdf->Cell(0,5,$str,0,1,'C');
+		$str = 'При заказе через сайт может быть предоставлена скидка!';
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell(0,5,$str,0,1,'C');
 
 		$dt=date("d.m.Y");
-		$str = 'Цены действительны на дату: '.$dt.'. Цены, выделенные серым цветом, необходимо уточнять.';
+		$str = 'Цены действительны на дату: '.$dt.'.';
+		if(@$CONFIG['site']['grey_price_days'])
+			$str .= ' Цены, выделенные серым цветом, необходимо уточнять.';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$this->pdf->Cell(0,4,$str,0,1,'C');
 

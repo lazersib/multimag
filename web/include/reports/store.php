@@ -1,6 +1,6 @@
 <?php
 
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -59,6 +59,8 @@ class Report_Store extends BaseGSReport {
 		ob_start();
 		define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
 		require('fpdf/fpdf_mc.php');
+		
+		$pc = PriceCalc::getInstance();
 
 		$pdf = new PDF_MC_Table('P');
 		$pdf->Open();
@@ -209,27 +211,27 @@ class Report_Store extends BaseGSReport {
 			$pdf->SetFillColor(255);
 
 
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`, {$cnt_field}, `doc_base_dop`.`mass`, `doc_base`.`vc`
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost` AS `base_price`, {$cnt_field}, `doc_base_dop`.`mass`, `doc_base`.`vc`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			$cnt_join
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY $order");
-			while ($nxt = $res->fetch_array()) {
-				if ($nxt[3] == 0 && (!$show_mincnt))
+			while ($nxt = $res->fetch_assoc()) {
+				if ($nxt['cnt'] == 0 && (!$show_mincnt))
 					continue;
 
-				$line = array($nxt[0]);
+				$line = array($nxt['id']);
 				if ($CONFIG['poseditor']['vc'])
 					$line[] = $nxt['vc'];
-				$line[] = $nxt[1];
-				$line[] = $nxt[3];
+				$line[] = $nxt['name'];
+				$line[] = $nxt['cnt'];
 				if ($show_mincnt) {
 					$line[] = $nxt['mincnt'];
 				}
 				if ($show_price || $show_sum || $show_add) {
-					$act_cost = sprintf('%0.2f', getInCost($nxt[0]));
-					$cost_p = sprintf("%0.2f", $nxt[2]);
+					$act_cost = sprintf('%0.2f', getInCost($nxt['id']));
+					$cost_p = sprintf("%0.2f", $nxt['base_price']);
 					if ($show_price) {
 						$line[] = $act_cost;
 						$line[] = $cost_p;
@@ -242,19 +244,19 @@ class Report_Store extends BaseGSReport {
 
 
 				if ($show_sum) {
-					$sum_p = sprintf("%0.2f", $act_cost * $nxt[3]);
-					$bsum_p = sprintf("%0.2f", $nxt[2] * $nxt[3]);
-					$sum+=$act_cost * $nxt[3];
-					$bsum+=$nxt[2] * $nxt[3];
+					$sum_p = sprintf("%0.2f", $act_cost * $nxt['cnt']);
+					$bsum_p = sprintf("%0.2f", $nxt['base_price'] * $nxt['cnt']);
+					$sum += $act_cost * $nxt['cnt'];
+					$bsum += $nxt['base_price'] * $nxt['cnt'];
 					$line[] = $sum_p;
 					$line[] = $bsum_p;
 				}
 
-				$summass+=$nxt[3] * $nxt['mass'];
+				$summass += $nxt['cnt'] * $nxt['mass'];
 
 				if (is_array($cost)) {
 					foreach ($cost as $id => $value) {
-						$line[] = getCostPos($nxt[0], $id);
+						$line[] = $pc->getPosSelectedPriceValue($nxt['id'], $id, $nxt);
 					}
 				}
 				$pdf->RowIconv($line);

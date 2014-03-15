@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -82,8 +82,6 @@ $proizv_sql=$db->real_escape_string($proizv);
 
 if($type!=='')	settype($type,'int');
 
-$cost_id=getCurrentUserCost();
-
 $cstr=rcvint('cstr');
 if(($cstr<=0)||($cstr>500)) $cstr=500;
 
@@ -157,15 +155,21 @@ if($mode)
 		$i=0;
 		$cl="lin0";
 		$basket_img="/skins/".$CONFIG['site']['skin']."/basket16.png";
-		while($nxt=$res->fetch_row())
-		{
+		
+		if(@$CONFIG['site']['grey_price_days'])
+			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+		$pc = PriceCalc::getInstance();
+		while($nxt=$res->fetch_row()) {
 			if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 			else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
-
-			$cost=getCostPos($nxt[0], $cost_id);
+			$cost = $pc->getPosDefaultPriceValue($nxt[0]);
 			if($cost<=0)	$cost='уточняйте';
 			$nal=GetCountInfo($nxt[12], $nxt[13]);			
-			$cce=(strtotime($nxt[5])<(time()-60*60*24*30*6))?" style='color:#888'":'';
+			$cce = '';
+			if(@$CONFIG['site']['grey_price_days']) {
+				if( strtotime($nxt[5]) < $cce_time )
+					$cce = ' style=\'color:#888\'';
+			}
 			$tmpl->addContent("<tr><td><a href='$link'>".html_out($nxt[1].' '.$nxt[2])."</a>
 			<td>".html_out($nxt[3])."<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
 			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");

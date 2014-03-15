@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -28,11 +28,9 @@ try
 	$res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
 	if(!$res->num_rows)	throw new Exception("Организация не найдена");
 	$firm_vars = $res->fetch_assoc();
-	$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-	if(!$res->num_rows)	throw new Exception("Цена не найдена");
-	list($cost_id) = $res->fetch_row();
-	if(!$cost_id)		$cost_id=1;
 
+	$pc = $this->priceCalcInit();
+	
 	$finds=array('"', '&', '>', '<', '\'');
 	$replaces=array('&quot;', '&amp;', '&gt;', '&lt;', '&apos;');
 
@@ -91,7 +89,8 @@ try
 
 		if($CONFIG['site']['recode_enable'])	$url= "http://{$CONFIG['site']['name']}/vitrina/ip/{$nxt['id']}.html";
 		else					$url= "http://{$CONFIG['site']['name']}/vitrina.php?mode=product&amp;p={$nxt['id']}";
-		$cost=getCostPos($nxt['id'], $cost_id);
+
+		$cost = $pc->getPosDefaultPriceValue($nxt['id']);
 	
 		if($cost==0)		continue;
 		if($nxt['img_id']) 

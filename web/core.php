@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -452,18 +452,6 @@ function sendAdmMessage($text,$subject='')
 		}
 	}
 }
-
-/// Получить ID цены текущего пользователя
-function getCurrentUserCost()
-{
-	global $db;
-	if(@$_SESSION['uid'])	$res=$db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='-1'");
-	else			$res=$db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-	if($res->num_rows<1)	throw new Exception("Не найдено связанных с пользователем цен!");
-	$row=$res->fetch_row();
-	return $row[0];
-}
-
 
 /// Загрузка шаблона с заданным названием
 function SafeLoadTemplate($template)

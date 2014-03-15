@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -108,23 +108,33 @@ class PriceWriterHTML extends BasePriceWriter	{
 	/// Сформировать строки прайса
 	function writepos($group=0, $group_name='') {
 		global $CONFIG;
-		$res=$this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`
+		$res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,
+			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 		FROM `doc_base`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
-		$i=$cur_col=0;
-		while($nxt=$res->fetch_row())	{
+		$i = $cur_col = 0;
+		
+		if(@$CONFIG['site']['grey_price_days'])
+			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+		
+		$pc = PriceCalc::getInstance();
+		while($nxt=$res->fetchassoc())	{
 			if($cur_col>=$this->column_count)	{
 				$cur_col=0;
 				echo"<tr>";
 			}
-
-			$c = getCostPos($nxt[0], $this->cost_id);
+			$cce = '';
+			if(@$CONFIG['site']['grey_price_days']) {
+				if( strtotime($nxt['cost_date']) < $cce_time )
+					$cce = ' style=\'color:#888\'';
+			}
+			$c =  $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
 			if($c==0)	continue;
-			if(($this->view_proizv)&&($nxt[3])) $pr=" (".$nxt[3].")"; else $pr="";
+			if(($this->view_proizv)&&($nxt['proizv'])) $pr=" (".$nxt['proizv'].")"; else $pr="";
 			if(@$CONFIG['site']['price_show_vc'])
-				echo"<td>".html_out($nxt[4])."</td>";
-			echo "<td>".html_out($group_name.$nxt[1].$pr)."</td><td>".$c."</td>";
+				echo"<td>".html_out($nxt['vc'])."</td>";
+			echo "<td>".html_out($group_name.$nxt['name'].$pr)."</td><td{$cce}>".$c."</td>";
 
  			$this->line++;
  			$i=1-$i;

@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -188,66 +188,67 @@ else if($mode=='cost')
 {
 	doc_menu();
 	$tmpl->addContent("<h1>Управление ценами</h1>");
-	$res=$db->query("SELECT `id`, `name`, `type`, `value`, `vid`, `accuracy`, `direction` FROM `doc_cost`");
+	$res = $db->query("SELECT `id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold` FROM `doc_cost`");
 
-	$tmpl->addContent("<table><tr><th>ID<th>Наименование<th>Тип<th>Значение<th>Вид<th>Точность<th>Округление<th>Действие");
-	$vidi=array('-2' => 'Интернет-цена (объём)', '-1' => 'Интернет-цена', '0' => 'Обычная', '1' => 'По умолчанию' );
-	$cost_types=array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
-	$direct=array(-1=>'Вниз', 0=>'K ближайшему', 1=>'Вверх');
-	while($nxt=$res->fetch_row())
-	{
-		$tmpl->addContent("<form><input type='hidden' name='mode' value='costs'><input type='hidden' name='n' value='$nxt[0]'>
-		<tr><td>$nxt[0]<td><input type='text' name='nm' value='".html_out($nxt[1])."'>
-		<td><select name='cost_type'>");
-		foreach($cost_types as $id => $type)
-		{
-			$sel=($id==$nxt[2])?' selected':'';
-			$tmpl->addContent("<option value='$id'$sel>$type</option>");
+	$tmpl->addContent("<form><input type='hidden' name='mode' value='costs'>
+		<table class='list'><tr><th>ID</th><th>Наименование</th><th>Тип</th><th>Значение</th><th>Вид</th><th>Точность</th><th>Округление</th>
+		<th>Порог разового заказа</th><th>Накопительный порог</th><th>Приоритет</th></tr>");
+	$cost_contexts = array('r'=>'Розничная', 's'=>'Интернет-цена', 'd'=>'По умолчанию', 'b'=>'Оптовая автоматическая');
+	$cost_types = array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
+	$direct = array(-1=>'Вниз', 0=>'K ближайшему', 1=>'Вверх');
+	
+	while($line = $res->fetch_assoc()) {
+		$tmpl->addContent("<tr><td>{$line['id']}</td>
+			<td><input type='text' name='name[{$line['id']}]' value='".html_out($line['name'])."'></td>
+		<td><select name='cost_type[{$line['id']}]'>");
+		foreach($cost_types as $id => $type) {
+			$sel= ($id==$line['type'])?' selected':'';
+			$tmpl->addContent("<option value='$id'{$sel}>$type</option>");
 		}
-		$tmpl->addContent("</select>
-		<td><input type='text' name='coeff' value='$nxt[3]'>
-		<td><select name='vid'>");
-		foreach($vidi as $id => $vid)
-		{
-			$sel=$id==$nxt[4]?'selected':'';
-			$tmpl->addContent("<option value='$id' $sel>$vid</option>");
+		$tmpl->addContent("</select></td>
+		<td><input type='text' name='value[{$line['id']}]' value='{$line['value']}'></td>
+		<td>");
+		foreach($cost_contexts as $id => $name) {
+			$sel = '';
+			if(strpos($line['context'], $id)!==false)	$sel=' checked';
+			$tmpl->addContent("<label><input type='checkbox' name='context[{$line['id']}][$id]' value='$id'{$sel}>$name</label></br>");
 		}
-		$tmpl->addContent("</select>
-		<td><select name='accur'>");
-		for($i=-3;$i<3;$i++)
-		{
+		$tmpl->addContent("</td>
+		<td><select name='accuracy[{$line['id']}]'>");
+		for($i=-3;$i<3;$i++) {
 			$a=sprintf("%0.2f",pow(10,$i*(-1)));
-			$sel=$nxt[5]==$i?'selected':'';
+			$sel = $line['accuracy']==$i?'selected':'';
 			$tmpl->addContent("<option value='$i' $sel>$a</option>");
 		}
-		$tmpl->addContent("</select>
-		<td><select name='direct'>");
-		for($i=(-1);$i<2;$i++)
-		{
-			$sel=$nxt[6]==$i?'selected':'';
+		$tmpl->addContent("</select></td>
+		<td><select name='direction[{$line['id']}]'>");
+		for($i=(-1);$i<2;$i++) {
+			$sel = $line['direction']==$i?'selected':'';
 			$tmpl->addContent("<option value='$i' $sel>{$direct[$i]}</option>");
 		}
-		$tmpl->addContent("</select>
-		<td><input type='submit' value='Сохранить'></form>");
+		$tmpl->addContent("</select></td>
+		<td><input type='text' name='bulk_threshold[{$line['id']}]' value='{$line['bulk_threshold']}'></td>
+		<td><input type='text' name='acc_threshold[{$line['id']}]' value='{$line['acc_threshold']}'></td>
+		<td><input type='text' name='priority[{$line['id']}]' value='{$line['priority']}'></td>
+		</tr>");
 	}
-	$tmpl->addContent("<form><input type='hidden' name='mode' value='costs'><input type='hidden' name='n' value='0'>
-	<tr><td>Новая<td><input type='text' name='nm' value=''>
-	<td><select name='cost_type'>");
+	$tmpl->addContent("
+	<tr><td>Новая<td><input type='text' name='name[0]' value=''>
+	<td><select name='cost_type[0]'>");
 	foreach($cost_types as $id => $type)
 	{
 		$sel=$id=='pp'?' selected':'';
 		$tmpl->addContent("<option value='$id'$sel>$type</option>");
 	}
 	$tmpl->addContent("</select>
-	<td><input type='text' name='coeff' value=''>
-	<td><select name='vid'>");
-	foreach($vidi as $id => $vid)
-	{
-		$sel=$id==0?'selected':'';
-		$tmpl->addContent("<option value='$id' $sel>$vid</option>");
+	<td><input type='text' name='value[0]' value=''>
+	<td>");
+	foreach($cost_contexts as $id => $name) {
+		$sel = '';
+		$tmpl->addContent("<label><input type='checkbox' name='context[0][$id]' value='$id'{$sel}>$name</label></br>");
 	}
-	$tmpl->addContent("</select>
-	<td><select name='accur'>");
+	$tmpl->addContent("</td>
+	<td><select name='accuracy[0]'>");
 	for($i=-3;$i<3;$i++)
 	{
 		$a=sprintf("%0.2f",pow(10,$i*(-1)));
@@ -255,44 +256,90 @@ else if($mode=='cost')
 		$tmpl->addContent("<option value='$i' $sel>$a</option>");
 	}
 	$tmpl->addContent("</select>
-	<td><select name='direct'>");
-	for($i=0;$i<3;$i++)
+	<td><select name='direction[0]'>");
+	for($i=-1;$i<2;$i++)
 	{
 		$sel=1==$i?'selected':'';
 		$tmpl->addContent("<option value='$i' $sel>{$direct[$i]}</option>");
 	}
-	$tmpl->addContent("</select><td><input type='submit' value='Добавить'></form></table>
+	$tmpl->addContent("</select></td>
+	<td><input type='text' name='bulk_threshold[0]' value='0'></td>
+	<td><input type='text' name='acc_threshold[0]' value='0'></td>
+	<td><input type='text' name='priority[0]' value='0'></td>	
+	</table>
+	<button type='submit'>Сохранить</button>
+	</form>
 	<fieldset><legend>Виды цен</legend>
 	<ul>
-	<li><b>По умолчанию</b> - устанавливается при создании нового документа по умолчанию. Так же по этой цене отображаются товары на витрине для неаутентифицированных пользователей. Относительно цены по умолчанию отображается размер скидки.</li>
-	<li><b>Интернет-цена</b> - применяется для всех аутентифицированных пользователей</li>
-	<li><b>Интернет-цена (объём)</b> - применяется для аутентифицированных пользователей, набравших в корзину товара на сумму болше пороговой</li>
-	<li><b>Обычная</b> - не обладает особыми свойствами. Можно использовать при создании документов или при формировании прайс-листа.</li>
+	<li><b>По умолчанию</b> - устанавливается при создании нового документа по умолчанию. Так же по этой цене отображаются товары на витрине для неаутентифицированных пользователей. Относительно цены по умолчанию отображается размер скидки. Должна быть единственной.</li>
+	<li><b>Интернет-цена</b> - применяется для всех аутентифицированных пользователей.  Должна быть единственной.</li>
+	<li><b>Розничная цена</b> используется в случаях, когда заказываемое количество меньше минимального оптового количества. Должна быть единственной.</li>
+	<li><b>Оптовая автоматическая</b> вкключается автоматически при превышении суммы заказа или накопительной суммы за период. Допустимо любое количество таких цен.</li>
 	</ul>
 	</fieldset>");
 }
 else if($mode=='costs')
 {
 	doc_menu();
-	$n=rcvint('n');
-	$nm=request('nm');
-	$cost_type=request('cost_type');
-	$coeff=rcvrounded('coeff');
-	$accur=rcvint('accur');
-	$direct=rcvint('direct');
-	$vid=rcvint('vid');
-
-	$name_sql=$db->real_escape_string($nm);
-	$cost_type_sql=$db->real_escape_string($cost_type);
-	if($n)
-	{
-		if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
-		$res=$db->query("UPDATE `doc_cost` SET `name`='$name_sql', `type`='$cost_type_sql', `value`='$coeff', `vid`='$vid', `accuracy`='$accur', `direction`='$direct' WHERE `id`='$n'");
+	if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
+	$context_a = array('r', 's', 'd', 'b');
+	
+	$name = $_REQUEST['name'];
+	$cost_type = $_REQUEST['cost_type'];
+	$value = $_REQUEST['value'];
+	$context_r = $_REQUEST['context'];
+	$priority = $_REQUEST['priority'];
+	$accuracy = $_REQUEST['accuracy'];
+	$direction = $_REQUEST['direction'];
+	$bulk_threshold = $_REQUEST['bulk_threshold'];
+	$acc_threshold = $_REQUEST['acc_threshold'];
+	
+	$res = $db->query("SELECT `id` FROM `doc_cost`");
+	
+	while($line = $res->fetch_assoc()) {
+			
+		$name_sql = $db->real_escape_string($name[$line['id']]);
+		$cost_type_sql = $db->real_escape_string($cost_type[$line['id']]);
+		$value_sql = round($value[$line['id']], 3);
+		$priority_sql = intval($priority[$line['id']]);
+		$accuracy_sql = intval($accuracy[$line['id']]);
+		$direction_sql = intval($direction[$line['id']]);
+		$bulk_threshold_sql = intval($bulk_threshold[$line['id']]);
+		$acc_threshold_sql = intval($acc_threshold[$line['id']]);
+		
+		$context_sql = '';
+		
+		if(is_array(@$context_r[$line['id']]))
+			foreach($context_r[$line['id']] as $item) {
+				if(in_array($item, $context_a))
+					$context_sql .= $item;
+			}
+		
+		$db->query("UPDATE `doc_cost` SET `name`='$name_sql', `type`='$cost_type_sql', `value`='$value_sql',  `context` = '$context_sql',
+			`priority` = '$priority_sql', `accuracy`='$accuracy_sql', `direction`='$direction_sql', `bulk_threshold` = '$bulk_threshold_sql',
+			`acc_threshold` = '$acc_threshold_sql' WHERE `id`='{$line['id']}'");
 	}
-	else
-	{
-		if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
-		$res=$db->query("INSERT INTO `doc_cost` (`name`, `type`, `value`, `vid`, `accuracy`, `direction`) VALUES ('$name_sql', '$cost_type_sql', '$coeff', '$vid', '$accur', '$direct')");
+	
+	if($name[0]!='') {
+		$name_sql = $db->real_escape_string($name[0]);
+		$cost_type_sql = $db->real_escape_string($cost_type[0]);
+		$value_sql = round($value[0], 3);
+		$priority_sql = intval($priority[0]);
+		$accuracy_sql = intval($accuracy[0]);
+		$direction_sql = intval($direction[0]);
+		$bulk_threshold_sql = intval($bulk_threshold[0]);
+		$acc_threshold_sql = intval($acc_threshold[0]);
+		
+		$context_sql = '';
+		
+		if(is_array(@$context_r[0]))
+			foreach($context_r[0] as $item) {
+				if(in_array($item, $context_a))
+					$context_sql .= $item;
+			}
+		
+		$db->query("INSERT INTO `doc_cost` (`name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold`)
+		VALUES ('$name_sql', '$cost_type_sql', '$value_sql', '$context_sql', '$priority_sql', '$accuracy_sql', '$direction_sql', '$bulk_threshold_sql', '$acc_threshold_sql')");
 	}
 	header("Location: doc_service.php?mode=cost");
 }

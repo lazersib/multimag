@@ -1,5 +1,5 @@
 <?php
-//	MultiMag v0.1 - Complex sales system
+//	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
 //
@@ -472,9 +472,9 @@ class doc_Realizaciya extends doc_Nulltype
 		$i=0;
 		$ii=1;
 		$sum=0;
-		$skid_sum=0;
-		while($nxt = $res->fetch_row())
-		{
+		$skid_sum = 0;
+		$pc = PriceCalc::getInstance();
+		while($nxt = $res->fetch_row())	{
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
@@ -493,7 +493,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
-			$skid_sum+=getCostPos($nxt[7], $def_cost)*$nxt[3];
+			$skid_sum += $pc->getPosDefaultPriceValue($nxt[7])*$nxt[3];
 		}
 		$ii--;
 		$cost = sprintf("%01.2f руб.", $sum);
@@ -630,8 +630,8 @@ class doc_Realizaciya extends doc_Nulltype
 		$ii=1;
 		$sum=0;
 		$skid_sum=0;
-		while($nxt = $res->fetch_row())
-		{
+		$pc = PriceCalc::getInstance();
+		while($nxt = $res->fetch_row())	{
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
 			$cost2 = sprintf("%01.2f руб.", $sm);
@@ -650,7 +650,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
-			$skid_sum+=getCostPos($nxt[7], $def_cost)*$nxt[3];
+			$skid_sum += $pc->getPosDefaultPriceValue($nxt[7])*$nxt[3];
 		}
 		$ii--;
 		$cost = sprintf("%01.2f руб.", $sum);
@@ -780,6 +780,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$ii=1;
 		$sum=0;
 		$skid_sum=0;
+		$pc = PriceCalc::getInstance();
 		while($nxt = $res->fetch_row())
 		{
 			$sm=$nxt[3]*$nxt[4];
@@ -800,7 +801,7 @@ class doc_Realizaciya extends doc_Nulltype
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
-			$skid_sum+=getCostPos($nxt[7], $def_cost)*$nxt[3];
+			$skid_sum += $pc->getPosDefaultPriceValue($nxt[7])*$nxt[3];
 		}
 		$ii--;
 		$cost = sprintf("%01.2f руб.", $sum);
