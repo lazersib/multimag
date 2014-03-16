@@ -62,5 +62,6 @@ $CONFIG['auto']['move_nr_to_end']	= true;	// Перемещать непрове
 $CONFIG['auto']['move_no_to_end']	= false;// Перемещать непроведенные заявки на последний день
 $CONFIG['auto']['doc_del_days']		= 2;	// Стирать отмеченные на удаление документы через X дней
 $CONFIG['auto']['liquidity_interval']	= 2;	// Расчитывать ликвидность за X дней
+$CONFIG['auto']['acc_agent_time']	= 180;	// Кол-во дней для расчета оборота агента
 
 ?>

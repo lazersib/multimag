@@ -75,6 +75,21 @@ try {
 		$value = round(str_replace(',', '.', $value), 4);
 		$db->query("UPDATE `currency` SET `coeff`='$value' WHERE `name`='$name'");
 	}
+// Расчет оборота агентов
+	if($CONFIG['auto']['acc_agent_time']) {
+		$acc = array();
+		$time_start = time() - $CONFIG['auto']['acc_agent_time']*60*60*24;
+		$res = $db->query("SELECT `agent`, `sum` FROM `doc_list` WHERE `date`>='$time_start' AND (`type`='1' OR `type`='4' OR `type`='6') AND `ok`>0
+			AND `agent`>0 AND `sum`>0");
+		while($line = $res->fetch_assoc()) {
+			if(isset($acc[$line['agent']]))
+				$acc[$line['agent']] += $line['sum'];
+			else $acc[$line['agent']] = $line['sum'];
+		}
+		foreach($acc as $agent => $sum) {
+			$db->update('doc_agent', $agent, 'avg_sum', $sum);
+		}
+	}
 } catch (Exception $e) {
 	mailto($CONFIG['site']['doc_adm_email'], "Error in daily.php", $e->getMessage());
 	echo $e->getMessage() . "\n";
