@@ -225,7 +225,7 @@ class PriceCalc {
 		WHERE `doc_base_cost`.`cost_id`=$price_id AND `doc_base_cost`.`pos_id`=$pos_id");
 		
 		if($res->num_rows!=0) {
-			$line = $res->fetch_row();			
+			$line = $res->fetch_assoc();			
 			switch($line['type']) {
 				case 'pp':	$price = $pos_info['base_price'] * $line['value'] / 100 + $pos_info['base_price'];
 						break;

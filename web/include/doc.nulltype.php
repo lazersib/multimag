@@ -1761,7 +1761,7 @@ class doc_Nulltype
 		global $db;
 		if (!$this->doc)
 			throw new Exception("Документ не определён!");
-		$r = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`,
+		$res = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`,
 			`doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
 			FROM `doc_list_pos`
 			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -1769,8 +1769,8 @@ class doc_Nulltype
 		$pc = PriceCalc::getInstance();
 
 		while($l = $res->fetch_assoc()) {
-			$price = $pc->getPosSelectedPriceValue($l[1], $this->dop_data['cena'], $l);
-			$db->update('doc_list_pos', $l[0], 'cost', $price);
+			$price = $pc->getPosSelectedPriceValue($l['tovar'], $this->dop_data['cena'], $l);
+			$db->update('doc_list_pos', $l['id'], 'cost', $price);
 		}
 	}
 };

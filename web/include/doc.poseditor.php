@@ -206,7 +206,7 @@ function GetAllContent()
 	$pc = PriceCalc::getInstance();
 		
 	while ($nxt = $res->fetch_assoc()) {
-		if ($this->cost_id)	$nxt['scost'] = $pc->getPosDefaultPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+		if ($this->cost_id)	$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
 		else			$nxt['scost'] = sprintf("%0.2f", $nxt['base_price']);
 		$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 		if ($ret)	$ret.=', ';
@@ -246,7 +246,7 @@ function GetAllContent()
 			$nxt = $res->fetch_assoc();
 			if ($this->cost_id) {
 				$pc = PriceCalc::getInstance();
-				$nxt['scost'] = $pc->getPosDefaultPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+				$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
 			}
 			else			$nxt['scost'] = sprintf("%0.2f", $nxt['bcost']);
 			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
@@ -360,7 +360,7 @@ function GetAllContent()
 				}
 				if($this->cost_id) {
 					$pc = PriceCalc::getInstance();
-					$nxt['cost'] = $pc->getPosDefaultPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+					$nxt['cost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
 				}
 				else $nxt['cost'] = $nxt['base_price'];
 				$nxt['rcost'] = sprintf("%0.2f", $nxt['rcost']);

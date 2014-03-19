@@ -373,7 +373,7 @@ class Report_PriceTags {
 				if($id == 'bulkcnt' || $id == 'mult')
 					$pos_info[$id] .= ' '.$pos_info['unit_name'];
 				$str = iconv('UTF-8', 'windows-1251', $text . $pos_info[$id]);
-				$pdf->Cell($param['width'], $param['lheight'], $str, 0, 0, $param['align']);
+				$pdf->MultiCell($param['width'], $param['lheight'], $str, 0, $param['align']);
 			}
 		}
 

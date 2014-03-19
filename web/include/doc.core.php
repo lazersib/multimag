@@ -268,21 +268,7 @@ function num2str($L, $ed='rub', $sot=2)
 	return $s;
 }
 
-/// Округление в нужную сторону
-/// @param number Исходное число
-/// @param precision Точность округления
-/// @param direction Направление округления
-function roundDirect($number, $precision = 0, $direction = 0)
-{
-	if ($direction==0 )	return round($number, $precision);
-	else
-	{
-		$factor = pow(10, -1 * $precision);
-		return ($direction<0)
-			? floor($number / $factor) * $factor
-			: ceil($number / $factor) * $factor;
-	}
-}
+
 
 /// Запись событий документов в лог
 /// @param motion	Выполненное действие

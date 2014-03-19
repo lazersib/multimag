@@ -194,9 +194,13 @@ else if($mode=='petitions')
 	$comment= request('comment');
 
 	if(mb_strlen($comment)>8) {
-		$res = $db->query("SELECT `reg_email` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
-		list($from) = $res->fetch_row();
-		if($from=='')	$from=$CONFIG['site']['doc_adm_email'];
+		$res = $db->query("SELECT `users`.`reg_email`, `users_worker_info`.`worker_email` FROM `users`
+			LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+			WHERE `id`='{$_SESSION['uid']}'");
+		$user_info = $res->fetch_array();
+		if($user_info['worker_email'] != '')	$from = $user_info['worker_email'];
+		else if($user_info['reg_email'] != '')	$from = $user_info['reg_email'];
+		else $from = $CONFIG['site']['doc_adm_email'];
 
 		$res = $db->query("SELECT `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`date`, `doc_agent`.`name`, `doc_types`.`name`
 		FROM `doc_list`
@@ -207,8 +211,8 @@ else if($mode=='petitions')
 		if(!$nxt)	throw new Exception("Документ не найден");
 		
 		$date=date("d.m.Y H:i:s",$nxt[3]);
-
-		$txt="Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *$nxt[5]* с ID: $doc, $nxt[0]$nxt[1] от $date на сумму $nxt[2]. Клиент $nxt[4].\n{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc \nЦель отмены: $comment.\n IP: $ip\nПожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
+		$proto=@$_SERVER['HTTPS']?'https':'http';
+		$txt="Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *$nxt[5]* с ID: $doc, $nxt[0]$nxt[1] от $date на сумму $nxt[2]. Клиент $nxt[4].\n{$proto}://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc \nЦель отмены: $comment.\n IP: $ip\nПожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
 
 		if($CONFIG['site']['doc_adm_email'])
 			mailto($CONFIG['site']['doc_adm_email'], 'Запрос на отмену проведения документа' ,$txt, $from);
