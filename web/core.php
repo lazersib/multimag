@@ -431,8 +431,8 @@ $msg
 
 ------------------------------------------
 
-Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']} ), либо являетесь клиентом $firm_name.
-Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$nxt['email']}
+Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']}?from=email ), либо являетесь клиентом $firm_name.
+Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$nxt['email']}&from=email
 ";
 		mailto($nxt['email'], $tema." - {$CONFIG['site']['name']}", $txt);
 		//mail($nxt['email'],$tema." - {$CONFIG['site']['name']}", $txt ,"Content-type: text/plain; charset=UTF-8\nFrom: {$CONFIG['site']['display_name']} <{$CONFIG['site']['admin_email']}>");
@@ -442,8 +442,7 @@ $msg
 /// Отправляет оповещение администратору сайта по всем доступным каналам связи
 /// @param text Тело сообщения
 /// @param subject Тема сообщения
-function sendAdmMessage($text,$subject='')
-{
+function sendAdmMessage($text,$subject='') {
 	global $CONFIG;
 	if($subject=='')	$subject="Admin mail from {$CONFIG['site']}";
 

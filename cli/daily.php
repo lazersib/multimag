@@ -76,11 +76,39 @@ try {
 		$db->query("UPDATE `currency` SET `coeff`='$value' WHERE `name`='$name'");
 	}
 // Расчет оборота агентов
-	if($CONFIG['auto']['acc_agent_time']) {
+	if($CONFIG['pricecalc']['acc_type']) {
+		if(isset($CONFIG['pricecalc']['acc_time']))
+			$cnt = intval($CONFIG['pricecalc']['acc_time']);
+		else	$cnt = 0;
+		$di = new DateCalcInterval();
+		switch($CONFIG['pricecalc']['acc_type']) {
+			case 'days':
+				$di->calcXDaysBack($cnt);
+				break;
+			case 'months':
+				$di->calcXMonthsBack($cnt);
+				break;
+			case 'years':
+				$di->calcXYearsBack($cnt);
+				break;
+			case 'prevmonth':
+				$di->calcPrevMonth();
+				break;
+			case 'prevquarter':
+				$di->calcPrevQuarter();
+				break;
+			case 'prevhalfyear':
+				$di->calcPrevHalfyear();
+				break;
+			case '':break;
+			case 'prevyear':
+			default:
+				$di->calcPrevYear();
+		}
+		
 		$acc = array();
-		$time_start = time() - $CONFIG['auto']['acc_agent_time']*60*60*24;
-		$res = $db->query("SELECT `agent`, `sum` FROM `doc_list` WHERE `date`>='$time_start' AND (`type`='1' OR `type`='4' OR `type`='6') AND `ok`>0
-			AND `agent`>0 AND `sum`>0");
+		$res = $db->query("SELECT `agent`, `sum` FROM `doc_list` WHERE `date`>='{$di->start}' AND `date`<='{$di->end}'
+			AND (`type`='1' OR `type`='4' OR `type`='6') AND `ok`>0 AND `agent`>0 AND `sum`>0");
 		while($line = $res->fetch_assoc()) {
 			if(isset($acc[$line['agent']]))
 				$acc[$line['agent']] += $line['sum'];

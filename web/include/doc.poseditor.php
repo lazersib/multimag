@@ -360,7 +360,7 @@ function GetAllContent()
 				}
 				if($this->cost_id) {
 					$pc = PriceCalc::getInstance();
-					$nxt['cost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+					$nxt['cost'] = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
 				}
 				else $nxt['cost'] = $nxt['base_price'];
 				$nxt['rcost'] = sprintf("%0.2f", $nxt['rcost']);
