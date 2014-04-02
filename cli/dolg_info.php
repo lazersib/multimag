@@ -53,7 +53,7 @@ try {
 
 			mailto($nxt[2], "Ваши долги", $text);
 			if ($nxt[3]) {
-				if ($xmpp_connected) {
+				if (!$xmpp_connected) {
 					$xmppclient->connect();
 					$xmppclient->processUntil('session_start');
 					$xmppclient->presence();
