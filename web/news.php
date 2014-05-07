@@ -266,7 +266,7 @@ protected function SaveAndSend()
 	}
 	if(!$no_mail)
 	{
-		SendSubscribe("Новости сайта", $uwtext);
+		SendSubscribe($title." - новости сайта", $uwtext);
 		$tmpl->msg("Рассылка выполнена","ok");
 	}
 	$db->commit();

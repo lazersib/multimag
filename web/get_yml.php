@@ -35,7 +35,11 @@ try
 	$replaces=array('&quot;', '&amp;', '&gt;', '&lt;', '&apos;');
 
 	header("Content-type: text/xml");
-
+	
+	if(isset($CONFIG['site']['yml_local_delivery_cost']))
+		$delivery_cost = intval($CONFIG['site']['yml_local_delivery_cost']);
+	else	$delivery_cost = 0;
+	
 	echo"<?xml version=\"1.0\" encoding=\"utf-8\"?>
 	<!DOCTYPE yml_catalog SYSTEM \"shops.dtd\">
 	<yml_catalog date=\"$yml_now\">
@@ -51,6 +55,7 @@ try
 	<currencies>
 	<currency id=\"RUR\" rate=\"1\"/>
 	</currencies>
+	
 	<categories>\n";
 
 	$res=$db->query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `hidelevel`='0' AND `no_export_yml`='0' ORDER BY `id`");
@@ -71,7 +76,7 @@ try
 		$join_add="LEFT JOIN `parsed_price` ON `parsed_price`.`pos`=`doc_base`.`id` AND `parsed_price`.`selected`='1'
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm`";
 	}
-	$res=$db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `class_country`.`full_name` AS `strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `sklad_nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`, `doc_img`.`type` AS `img_type` $cols_add
+	$res=$db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`group`, `doc_base`.`vc`, `doc_base`.`proizv`, `doc_img`.`id`  AS `img_id`, `doc_base`.`desc`, `class_country`.`name` AS `strana`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`) AS `sklad_nal`, `doc_base`.`cost`, `doc_base`.`warranty_type`, `doc_img`.`type` AS `img_type`, `doc_group`.`printname` AS `group_name` $cols_add
 	FROM `doc_base`
 	INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	LEFT JOIN `class_country` ON `doc_base`.`country` = `class_country`.`id`
@@ -79,9 +84,9 @@ try
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	$join_add
-	WHERE `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND `doc_base`.`no_export_yml`='0' AND `doc_group`.`no_export_yml`='0'");
-	while($nxt=$res->fetch_assoc())
-	{
+	WHERE `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND `doc_base`.`no_export_yml`='0' AND `doc_group`.`no_export_yml`='0'
+	GROUP BY `doc_base`.`id`");
+	while($nxt=$res->fetch_assoc()) {
 		$avariable=($nxt['sklad_nal']>0)?'true':'false';
 		if(@$CONFIG['ymarket']['av_from_prices'])
 			if($nxt['nal']>1 || strstr($nxt['nal'],'*') || strstr($nxt['nal'],'+'))
@@ -93,14 +98,18 @@ try
 		$cost = $pc->getPosDefaultPriceValue($nxt['id']);
 	
 		if($cost==0)		continue;
-		if($nxt['img_id']) 
-		{
+		if($nxt['img_id']) {
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(200);
 			
 			$picture="<picture>http://{$CONFIG['site']['name']}".$miniimg->GetURI()."</picture>";
 		}
 		else	$picture='';
+		
+		if($nxt['group_name'])
+			$nxt['name'] = $nxt['group_name'].' '.$nxt['name'];
+		if(@!$CONFIG['doc']['no_print_vendor'])
+			$nxt['name'] .= ' - '.$nxt['proizv'];
 		
 		$nxt['name']=html_entity_decode($nxt['name'],ENT_QUOTES,"UTF-8");
 		$nxt['name']=str_replace($finds, $replaces, $nxt['name']);
@@ -139,7 +148,6 @@ try
 		<vendor>{$nxt['proizv']}</vendor>
 		<vendorCode>{$nxt['vc']}</vendorCode>
 		<manufacturer_warranty>{$nxt['warranty_type']}</manufacturer_warranty>
-
 		$coo
 		</offer>\n";
 	//<description>{$nxt['desc']}</description>
