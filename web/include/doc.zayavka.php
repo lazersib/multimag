@@ -772,11 +772,6 @@ class doc_Zayavka extends doc_Nulltype
 
 		$dt=date("d.m.Y",$this->doc_data['date']);
 
-		$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-		if(!$res->num_rows)			throw new Exception ("Цена по умолчанию не найдена");
-		$cost_row = $res->fetch_row();
-		$def_cost = $cost_row[0];
-
 		$pdf->SetFont('','',16);
 		$str="Накладная на проверку наличия N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
@@ -891,11 +886,14 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else $autor_name = '';
 		
-		$res_klad = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
-			WHERE `user_id`='".$this->dop_data['kladovshik']."'");
-		if($res_klad->num_rows) {
-			$line = $res_klad->fetch_row();
-			$klad_name = $line[0];
+		if(isset($this->dop_data['kladovshik'])) {
+			$res_klad = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
+				WHERE `user_id`='".$this->dop_data['kladovshik']."'");
+			if($res_klad->num_rows) {
+				$line = $res_klad->fetch_row();
+				$klad_name = $line[0];
+			}
+			$klad_name = '';
 		}
 		else $klad_name = '';
 

@@ -330,7 +330,7 @@ class doc_Nulltype
 					case 'sklad':	$this->DrawSkladField(); break;
 					case 'kassa':	$this->drawKassaField();  break;
 					case 'bank':	$this->drawBankField();  break;
-					case 'cena':	$this->drawCenaField();  break;
+					case 'cena':	$this->drawPriceField();  break;
 					case 'sum':	$this->drawSumField();  break;
 					case 'separator':	$tmpl->addContent("<hr>");  break;
 				}
@@ -619,7 +619,7 @@ class doc_Nulltype
 				case 'sklad':	$this->DrawSkladField(); break;
 				case 'kassa':	$this->drawKassaField();  break;
 				case 'bank':	$this->drawBankField();  break;
-				case 'cena':	$this->drawCenaField();  break;
+				case 'cena':	$this->drawPriceField();  break;
 				case 'sum':	$this->drawSumField();  break;
 				case 'separator':	$tmpl->addContent("<hr>");  break;
 			}
@@ -1190,6 +1190,10 @@ class doc_Nulltype
 			// Json-вариант списка товаров
 			if($opt=='jget')
 			{
+				// TODO: пересчет цены перенести внутрь poseditor
+				$pc = PriceCalc::getInstance();
+				$pc->setAgentId($this->doc_data['agent']);
+				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$doc_sum = $this->recalcSum();
 				$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";
 				$tmpl->addContent($str);
@@ -1580,14 +1584,16 @@ class doc_Nulltype
 		<input type='text' name='sum' value='{$this->doc_data['sum']}'><img src='/img/i_+-.png'><br>");
 	}
 
-	protected function drawCenaField()
-	{
+	protected function drawPriceField() {
 		global $tmpl, $db;
 		$tmpl->addContent("Цена:<a onclick='ResetCost(\"{$this->doc}\"); return false;' id='reset_cost'><img src='/img/i_reload.png'></a><br>
 		<select name='cena'>");
+		$s = '';
+		if($this->dop_data['cena']==0)
+			$s=' selected';
+		$tmpl->addContent("<option value='0'{$s}>--авто--</option>");
 		$res = $db->query("SELECT `id`,`name` FROM `doc_cost` ORDER BY `name`");
-		while($nxt = $res->fetch_row())
-		{
+		while($nxt = $res->fetch_row()) {
 			if($this->dop_data['cena']==$nxt[0]) $s='selected';
 			else $s='';
 			$tmpl->addContent("<option value='$nxt[0]' $s>".  html_out($nxt[1]) ."</option>");
@@ -1603,8 +1609,7 @@ class doc_Nulltype
 	}
 
 	// ====== Получение данных, связанных с документом =============================
-	protected function get_docdata()
-	{
+	protected function get_docdata() {
 		if(isset($this->doc_data)) return;
 		global $CONFIG, $db;
 		if($this->doc)	{
@@ -1643,11 +1648,8 @@ class doc_Nulltype
 			if( isset($CONFIG['site']['default_sklad']) )
 				$this->doc_data['sklad'] = (int) $CONFIG['site']['default_sklad'];
 			else	$this->doc_data['sklad'] = 1;
-			
-			$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-			if(!$res->num_rows)	throw new Exception ("Цена по умолчанию не найдена");
-			
-			list($this->dop_data['cena']) = $res->fetch_row();
+	
+			$this->dop_data['cena'] = 0;
 		}
 	}
 

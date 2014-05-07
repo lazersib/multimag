@@ -64,7 +64,7 @@ class PriceWriterPDF extends BasePriceWriter
 		$this->pdf->SetTextColor(0);
 		$str = 'При заказе через сайт может быть предоставлена скидка!';
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,5,$str,0,1,'C');
+		$this->pdf->Cell(0,5,$str,0,1,'C');
 
 		$dt=date("d.m.Y");
 		$str = 'Цены действительны на дату: '.$dt.'.';

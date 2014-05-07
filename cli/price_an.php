@@ -338,9 +338,8 @@ try {
 			$mincost = 0;
 
 		if ($rrp) {
-			$s_cost = 0;
-			$cres = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-			list($cost_id) = $cres->fetch_row();
+			$pc = PriceCalc::getInstance();
+			$cost_id = $pc->getDefaultPriceId();
 			$cres = $db->query("SELECT `value` FROM `doc_base_cost` WHERE `pos_id`='$nxt[0]' AND `cost_id`='$cost_id'");
 			if ($cres->num_rows)
 				list($s_cost) = $cres->fetch_row();

@@ -644,9 +644,11 @@ else if($mode=='rem')
 
 	if(!isset($_REQUEST['login']))
 	{
+		$proto='http';
+		if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
 		$tmpl->setContent("<h1 id='page-title'>Восстановление доступа</h1>
 		<p id='text'>Для начала процедуры смены пароля введите логин на сайте, номер телефона, или адрес электронной почты, указанный при регистрации:</p>
-		<form method='post'>
+		<form method='post' action='$proto://{$CONFIG['site']['name']}/login.php'>
 		<input type='hidden' name='mode' value='rem'>
 		<input type='text' name='login'><br>
 		Подтвердите, что вы не робот, введите текст с картинки:<br>
@@ -705,13 +707,9 @@ else if($mode=='rem')
 				if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
 
 				$res=$db->query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='{$user_info['id']}'");
-				$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта {$user_info['name']}.
-				Если Вы действительно хотите сменить пароль, перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=remn&login={$user_info['name']}&s=$key
-
-				----------------------------------------
-				Сообщение сгенерировано автоматически, отвечать на него не нужно!";
+				$msg="Поступил запрос на смену пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта {$user_info['name']}.\nЕсли Вы действительно хотите сменить пароль, перейдите по ссылке\n$proto://{$CONFIG['site']['name']}/login.php?mode=remn&login={$user_info['name']}&s=$key ,\nлибо введите код подтверждения:\n$key\n----------------------------------------\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
 				mailto($user_info['reg_email'],"Восстановление забытого пароля",$msg);
-				$tmpl->msg("Код для смены пароля выслан Вам по электронной почте. Проверьте почтовый ящик.","ok");
+				$tmpl->msg("Сылка и код для смены пароля выслан Вам по электронной почте. Проверьте почтовый ящик.","ok");
 				$db->query("COMMIT");
 			}
 			else if($method=='sms')

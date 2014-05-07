@@ -73,7 +73,7 @@ function Row($data, $divider=0, $cost_id=1) {
 	$fill = !empty($this->RowColors[$ci]);
 
 	if (!$divider) {
-		$pc = $this->priceCalcInit();
+		$pc = PriceCalc::getInstance();
 		$cost = $pc->getPosDefaultPriceValue($data['pos_id']);
 
 		if ($cost == 0)	return;

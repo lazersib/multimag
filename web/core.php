@@ -216,42 +216,36 @@ function SearchHilight($str,$substr) {
 /// @param num Если true - использовать только цифры.
 /// @param minlen Минимальная длина кода.
 /// @param maxlen Максимальная длина кода.
-function keygen_unique($num=0, $minlen=5, $maxlen=12)
-{
-	if($minlen<1) $minlen=5;
-	if($maxlen>10000) $maxlen=10000;
-	if($maxlen<$minlen) $maxlen=$minlen;
-	if(!$num)
-	{
-		$sstr="bcdfghjklmnprstvwxz";
-		$gstr="aeiouy1234567890aeiouy";
-		$rstr="aeiouy1234567890aeiouybcdfghjklmnprstvwxz";
-		$sln=18; // +1
-		$gln=21; // +1
-		$rln=40; //+1
+function keygen_unique($num=0, $minlen=5, $maxlen=12) {
+	if($minlen<1) $minlen = 5;
+	if($maxlen>10000) $maxlen = 10000;
+	if($maxlen<$minlen) $maxlen = $minlen;
+	if(!$num) {
+		$sstr = "bcdfghjklmnprstvwxz";
+		$gstr = "aeiouy1234567890aeiouy";
+		$rstr = "aeiouy1234567890aeiouybcdfghjklmnprstvwxz";
+		$sln = strlen($sstr)-1;
+		$gln = strlen($gstr)-1;
+		$rln = strlen($rstr)-1;
 	}
-	else
-	{
+	else {
 		$sstr="135790";
 		$gstr="24680";
 		$rstr="1234567890";
-		$sln=5; // +1
-		$gln=4; // +1
-		$rln=9; //+1
+		$sln = strlen($sstr)-1;
+		$gln = strlen($gstr)-1;
+		$rln = strlen($rstr)-1;
 	}
-	$r=rand(0,$rln);
-	$s=$rstr[$r];
-	$ln=rand($minlen,$maxlen);
-	$sig=0;
-	for($i=1;$i<$ln;$i++)
-	{
-		if(stripos($s[$i-1],$sstr)!==false)
-		{
+	$r = rand(0,$rln);
+	$s = $rstr[$r];
+	$ln = rand($minlen,$maxlen);
+	for($i=1;$i<$ln;$i++) {
+		$a = strpos($sstr, $s[$i-1]);
+		if($a!==false) {
 			$r=rand(0,$gln);
 			$s.=$gstr[$r];
 		}
-		else
-		{
+		else {
 			$r=rand(0,$sln);
 			$s.=$sstr[$r];
 		}

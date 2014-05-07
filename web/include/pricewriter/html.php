@@ -119,7 +119,7 @@ class PriceWriterHTML extends BasePriceWriter	{
 			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
 		
 		$pc = PriceCalc::getInstance();
-		while($nxt=$res->fetchassoc())	{
+		while($nxt=$res->fetch_assoc())	{
 			if($cur_col>=$this->column_count)	{
 				$cur_col=0;
 				echo"<tr>";

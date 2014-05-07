@@ -64,10 +64,8 @@ class doc_Realiz_bonus extends doc_Realizaciya
 
 		$dt=date("d.m.Y",$this->doc_data['date']);
 
-		$res = $db->query("SELECT `id` FROM `doc_cost` WHERE `vid`='1'");
-		if(!$res->num_rows)			throw new Exception ("Цена по умолчанию не найдена");
-		$cost_row = $res->fetch_row();
-		$def_cost = $cost_row[0];
+		$pc = PriceCalc::getInstance();
+		$def_cost = $pc->getDefaultPriceId();
 
 		$pdf->SetFont('','',16);
 		$str="Бонусная накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";

@@ -22,7 +22,8 @@ $c = explode('/', __FILE__);
 $base_path = '';
 for ($i = 0; $i < (count($c) - 2); $i++)
 	$base_path.=$c[$i] . '/';
-include_once("$base_path/config_cli.php");
+require_once("$base_path/config_cli.php");
+require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
 $archiv_dir = $CONFIG['backup']['archiv_dir'];
 $zip_level = $CONFIG['backup']['ziplevel'];

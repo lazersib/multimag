@@ -5,6 +5,7 @@ for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
 require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
+if(!isset($CONFIG['route']['backup_ext_ip']) || !isset($CONFIG['route']['backup_ext_iface']))    exit(0);
 if(!$CONFIG['route']['backup_ext_ip'] || !$CONFIG['route']['backup_ext_iface'])    exit(0);
 
 $mail_text='';

@@ -193,8 +193,7 @@ function Show($param='')
 }
 
 /// Получить весь текущий список товаров (документа)
-function GetAllContent()
-{
+function GetAllContent() {
 	global $db, $CONFIG;
 	$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 	FROM `doc_list_pos`
@@ -204,10 +203,28 @@ function GetAllContent()
 	ORDER BY `doc_list_pos`.`id`");
 	$ret='';
 	$pc = PriceCalc::getInstance();
-		
+	
+	if(!$this->cost_id) {
+		$doc_sum = 0;
+		while ($nxt = $res->fetch_assoc()) {
+			$price = $pc->getPosDefaultPriceValue($nxt['pos_id']);
+			$doc_sum += $price*$nxt['cnt'];
+		}
+		$pc->setOrderSum($doc_sum);
+		$res->data_seek(0);
+	}
+	
 	while ($nxt = $res->fetch_assoc()) {
-		if ($this->cost_id)	$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
-		else			$nxt['scost'] = sprintf("%0.2f", $nxt['base_price']);
+		if ($this->cost_id)	
+			$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+		else {
+			$nxt['scost'] = $pc->getPosAutoPriceValue($nxt['pos_id'], $nxt['cnt']);
+			if($nxt['scost']!=$nxt['cost']) {
+				$nxt['cost'] = $nxt['scost'];					
+				$db->update('doc_list_pos', $nxt['line_id'], 'cost', $nxt['cost']);
+			}
+		}
+			//sprintf("%0.2f", $nxt['base_price']);
 		$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 		if ($ret)	$ret.=', ';
 		
@@ -244,11 +261,17 @@ function GetAllContent()
 		if ($res->num_rows) {
 			
 			$nxt = $res->fetch_assoc();
+			$pc = PriceCalc::getInstance();
 			if ($this->cost_id) {
-				$pc = PriceCalc::getInstance();
 				$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
 			}
-			else			$nxt['scost'] = sprintf("%0.2f", $nxt['bcost']);
+			else {
+				$nxt['scost'] = $pc->getPosDefaultPriceValue($nxt['pos_id']);
+				if($nxt['scost']!=$nxt['cost']) {
+					$nxt['cost'] = $pc->getPosAutoPriceValue($nxt['pos_id'], $nxt['cnt']);					
+					$db->update('doc_list_pos', $nxt['id'], 'cost', $nxt['cost']);
+				}
+			}
 			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
 			if (!$nxt['cost'])	$nxt['cost'] = $nxt['scost'];
 			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
@@ -358,11 +381,11 @@ function GetAllContent()
 					$nxt['offer'] = DocPodZakaz($nxt['id'], $this->doc);
 					$nxt['transit'] = DocVPuti($nxt['id'], $this->doc);
 				}
+				$pc = PriceCalc::getInstance();
 				if($this->cost_id) {
-					$pc = PriceCalc::getInstance();
 					$nxt['cost'] = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
 				}
-				else $nxt['cost'] = $nxt['base_price'];
+				else $nxt['cost'] = $pc->getPosDefaultPriceValue($nxt['id']);
 				$nxt['rcost'] = sprintf("%0.2f", $nxt['rcost']);
 				$nxt['in_cost'] = sprintf("%0.2f",  getInCost($nxt['id']));
 				

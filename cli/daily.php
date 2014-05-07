@@ -28,12 +28,11 @@ try {
 
 	// Очистка от неподтверждённых пользователей
 	if ($CONFIG['auto']['user_del_days'] > 0) {
-		$tim = time();
 		$dtim = time() - 60 * 60 * 24 * $CONFIG['auto']['user_del_days'];
-		$dtim = date('Y-m-d H:i:s', $dtim);
+		$dtim_p = date('Y-m-d H:i:s', $dtim);
 		$res = $db->query("SELECT `id` FROM `users`
 			LEFT JOIN `users_openid` ON `users_openid`.`user_id`=`users`.`id`
-			WHERE `users_openid`.`user_id` IS NULL AND `users`.`reg_date`<'$dtim' AND `users`.`reg_email_confirm`!='1' AND `reg_phone_confirm`!='1'");
+			WHERE `users_openid`.`user_id` IS NULL AND `users`.`reg_date`<'$dtim_p' AND `users`.`reg_email_confirm`!='1' AND `reg_phone_confirm`!='1'");
 		while ($nxt = $res->fetch_row())
 			$db->query("DELETE FROM `users` WHERE `id`='$nxt[0]'");
 	}

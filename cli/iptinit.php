@@ -174,7 +174,8 @@ foreach($CONFIG['route']['dnat_udp'] as $port => $ip)
 // Основной канал
 `$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} ! -d {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['ext_iface']} -j SNAT --to-source {$CONFIG['route']['ext_ip']}`;
 // резервный канал
-`$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} ! -d {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['backup_ext_iface']} -j SNAT --to-source {$CONFIG['route']['backup_ext_ip']}`;
+if(isset($CONFIG['route']['backup_ext_iface']))
+	`$ipt -t nat -A POSTROUTING -s {$CONFIG['route']['lan_range']} ! -d {$CONFIG['route']['lan_range']} -o {$CONFIG['route']['backup_ext_iface']} -j SNAT --to-source {$CONFIG['route']['backup_ext_ip']}`;
 echo"All ok!\n";
 
 ?>
