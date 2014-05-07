@@ -29,7 +29,7 @@ try
 	if(!$res->num_rows)	throw new Exception("Организация не найдена");
 	$firm_vars = $res->fetch_assoc();
 
-	$pc = $this->priceCalcInit();
+	$pc = PriceCalc::getInstance();
 	
 	$finds=array('"', '&', '>', '<', '\'');
 	$replaces=array('&quot;', '&amp;', '&gt;', '&lt;', '&apos;');

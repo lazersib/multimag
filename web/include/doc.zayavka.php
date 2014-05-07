@@ -576,10 +576,16 @@ class doc_Zayavka extends doc_Nulltype
 		$str='Счёт № '.$this->doc_data['altnum'].', от '.date("d.m.Y", $this->doc_data['date']);		
 		$pdf->CellIconv(0,6,$str,0,1,'L',0);
 		$pdf->SetFont('','',8);
+		if($this->doc_data['contract']) {
+			$contract = new doc_Dogovor($this->doc_data['contract']);
+			$str='К договору № '.$contract->doc_data['altnum'].', от '.date("d.m.Y", $contract->doc_data['date']);
+			$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);
+		}
+		
 		$str="Поставщик: {$this->firm_vars['firm_name']}, {$this->firm_vars['firm_adres']}, тел: {$this->firm_vars['firm_telefon']}";
 		$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);
 		$str="Покупатель: {$agent_data['fullname']}, адрес: {$agent_data['adres']}, телефон: {$agent_data['tel']}";
-		$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);
+		$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);	
 
 		$pdf->Ln(3);
 		$pdf->SetFont('','',11);

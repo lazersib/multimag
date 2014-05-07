@@ -35,7 +35,7 @@ class doc_v_puti extends doc_Nulltype {
 	}
 
 	function initDefDopdata() {
-		$this->def_dop_data = array('dataprib'=>'', 'transkom'=>0);
+		$this->def_dop_data = array('dataprib'=>'', 'transkom'=>0, 'input_doc'=>'');
 	}
 	
 	
@@ -84,12 +84,15 @@ class doc_v_puti extends doc_Nulltype {
 		document.getElementById('transkom_id').value=sValue;
 		}
 		</script>");
+		
+		$tmpl->addContent("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
 	}
 
 	function DopSave() {
 		$new_data = array(
 		    'dataprib' => rcvdate('dataprib'),
-		    'transkom' => request('transkom')
+		    'transkom' => request('transkom'),
+		    'input_doc' => request('input_doc')
 		);
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 
