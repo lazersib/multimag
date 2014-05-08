@@ -740,14 +740,14 @@ protected function ProductCard($product)
 protected function Basket() {
 	global $tmpl, $CONFIG, $db;
 	$s = '';
-	$sum = $exist = $lock = $lock_mark = 0;
+	$sum = $exist = $lock = $lock_mark = $mult_lock = 0;
 	$i = 1;
 	if(isset($_SESSION['basket']['cnt'])) {
 		$pc = $this->priceCalcInit();
 		foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
 			settype($item,'int');
 			settype($cnt,'int');
-			$res = $db->query("SELECT `id`, `name`, `cost_date` FROM `doc_base` WHERE `id`=$item");
+			$res = $db->query("SELECT `id`, `name`, `cost_date`, `mult` FROM `doc_base` WHERE `id`=$item");
 			$nx = $res->fetch_assoc();
 			
 			$price = $pc->getPosAutoPriceValue($nx['id'], $cnt);
@@ -757,6 +757,13 @@ protected function Basket() {
 				$lock_mark = 1;
 			}
 			else $lock_mark = 0;
+			
+			if($nx['mult']>1) {
+				if($cnt%$nx['mult']) {
+					$mult_lock = 1;
+					$lock_mark = 1;
+				}
+			}
 			
 			if(@$CONFIG['site']['vitrina_cntlock'])	{
 				if(isset($CONFIG['site']['vitrina_sklad'])) {
@@ -833,6 +840,11 @@ protected function Basket() {
 		}
 		</script>");
 		if($lock)	$tmpl->msg("Обратите внимание, Ваша корзина содержит наименования, доступные только под заказ (выделены красным). Вы не сможете оплатить заказ до его подтверждения оператором.","info", "Предупреждение");
+		if($mult_lock) {
+			$tmpl->msg("Количество заказанного Вами товара меньше, чем количество товара в упаковке. Строки с ошибкой выделены красным. Вы не сможете оормить заказ, пока не исправите ошибку.","err", "Предупреждение");
+			$buy_disable = ' disabled';
+		}
+		else	$buy_disable = '';
 		$tmpl->addContent("
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='basket_submit'>
@@ -843,7 +855,7 @@ protected function Basket() {
 		</table>
 		<br>
 		<center><button name='button' value='recalc' type='submit'>Пересчитать</button>
-		<button name='button' value='buy' type='submit'>Оформить заказ</button></center><br>
+		<button name='button' value='buy' type='submit'{$buy_disable}>Оформить заказ</button></center><br>
 		<center><span id='korz_clear_url'><a href='/vitrina.php?mode=korz_clear' onClick='korz_clear(); return false;'><b>Очистить корзину!</b></a></span></center><br>
 		</form>
 		</center><br><br>
@@ -1293,7 +1305,6 @@ protected function MakeBuy() {
 
 	if($_SESSION['basket']['cnt']) {
 		$pc = $this->priceCalcInit();
-		$doc_price_id = $pc->getCurrentPriceID();
 		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype = "site";
 		else	$subtype = $CONFIG['site']['vitrina_subtype'];
 		$tm = time();
@@ -1313,7 +1324,7 @@ protected function MakeBuy() {
 		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 		$doc=$db->insert_id;
 
-		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'cena', '$doc_price_id'), ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
+		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
 
 		$order_items = $admin_items = $lock = '';
 		foreach($_SESSION['basket']['cnt'] as $item => $cnt) {			
@@ -1582,6 +1593,7 @@ protected function priceCalcInit() {
 				$sum += $pc->getPosDefaultPriceValue($item) * $cnt;
 			}
 			$pc->setOrderSum($sum);
+			$this->base_basket_sum = $sum;
 		}
 	return $pc;
 }

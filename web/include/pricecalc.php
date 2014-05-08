@@ -147,7 +147,26 @@ class PriceCalc {
 			$find_id = $this->default_price_id;
 		return $find_id;
 	}
-
+	
+	/// Получить наименование текущей цены
+	public function getCurrentPriceName() {
+		$price_id = $this->getCurrentPriceID();
+		return $this->prices[$price_id]['name'];
+	}
+	
+	/// Получить ID следующей цены для текущего заказа
+	public function getNextPriceInfo() {
+		$next_price_id = 0;
+		foreach($this->bulk_prices as $price) {
+			if($this->order_sum>=$price['bulk_threshold'])
+				break;
+			$next_price_id = $price['id'];			
+		}
+		if(!$next_price_id)	return false;
+		return array('id'=>$next_price_id,
+			'name'=>$this->prices[$next_price_id]['name'],
+			'incsum'=>$this->prices[$next_price_id]['bulk_threshold']-$this->order_sum );
+	}
 
 	
 	/// Получить значение цены по умолчанию для товарного наименования
