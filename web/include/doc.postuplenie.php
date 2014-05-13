@@ -35,7 +35,7 @@ class doc_Postuplenie extends doc_Nulltype {
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('kladovshik'=>$this->firm_vars['firm_kladovshik_id'], 'input_doc'=>'', 'return'=>0, 'cena'=>0);
+		$this->def_dop_data = array('kladovshik'=>$this->firm_vars['firm_kladovshik_id'], 'input_doc'=>'', 'return'=>0, 'cena'=>1);
 	}
 
 	function DopHead() {

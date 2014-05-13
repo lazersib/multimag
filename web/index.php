@@ -201,8 +201,7 @@ else
 	ORDER BY `likvid` DESC
 	LIMIT 12");
 	$i=1;
-	while($line=$res->fetch_assoc())
-	{
+	while($line=$res->fetch_assoc()) {
 		if($line['cost']==0)	continue;
 		/// TODO: тут тоже надо бы из класса витрины брать данные
 		if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/{$line['id']}.html";

@@ -1648,8 +1648,6 @@ class doc_Nulltype
 			if( isset($CONFIG['site']['default_sklad']) )
 				$this->doc_data['sklad'] = (int) $CONFIG['site']['default_sklad'];
 			else	$this->doc_data['sklad'] = 1;
-	
-			$this->dop_data['cena'] = 0;
 		}
 	}
 
