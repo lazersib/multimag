@@ -405,11 +405,14 @@ function translitIt($str)
 /// В текст рассылки автоматически добавляется информация о том, как отказаться от рассылки
 /// @param tema Тема сообщения
 /// @param msg Тело сообщения
-function SendSubscribe($tema, $msg) {
+function SendSubscribe($tema, $msg, $list_id='') {
 	global $CONFIG, $db;
-	$res=$db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
-	list($firm_name)=$res->fetch_row();
-	$res=$db->query("(SELECT `name`, `reg_email` AS `email`, `real_name` FROM `users` WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `reg_email`!='')
+	if(!$list_id)
+		$list_id = md5($tema.$msg.microtime()).'.'.date("DDMMYYY").'.'.$CONFIG['site']['name'];
+	require_once($CONFIG['location'].'/common/email_message.php');
+	$res = $db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
+	list($firm_name) = $res->fetch_row();
+	$res = $db->query("(SELECT `name`, `reg_email` AS `email`, `real_name` FROM `users` WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `reg_email`!='')
 	UNION
 	(SELECT `name`, `email`, `fullname` AS `real_name` FROM `doc_agent` WHERE `no_mail`='0' AND `email`!='')
 	");
@@ -429,7 +432,22 @@ $msg
 Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$nxt['email']}&from=email
 ";
 		mailto($nxt['email'], $tema." - {$CONFIG['site']['name']}", $txt);
-		//mail($nxt['email'],$tema." - {$CONFIG['site']['name']}", $txt ,"Content-type: text/plain; charset=UTF-8\nFrom: {$CONFIG['site']['display_name']} <{$CONFIG['site']['admin_email']}>");
+
+		$email_message = new email_message_class();
+		$email_message->default_charset = "UTF-8";
+		$email_message->SetEncodedEmailHeader("To", $nxt['email'], $nxt['email']);
+		$email_message->SetEncodedHeader("Subject", $tema." - {$CONFIG['site']['name']}");
+		$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], $CONFIG['site']['display_name']);
+		$email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
+		$email_message->SetHeader("List-id", $list_id);
+		$email_message->SetHeader("List-Unsubscribe",
+			"http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$nxt['email']}&from=list_unsubscribe");
+		$email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
+		
+		$email_message->AddQuotedPrintableTextPart($msg);
+		$error = $email_message->Send();
+
+		if(strcmp($error,""))	throw new Exception($error);
 	}
 }
 

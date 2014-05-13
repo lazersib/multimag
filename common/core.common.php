@@ -39,6 +39,7 @@ function mailto($email, $subject, $msg, $from="")
 	if($from)	$email_message->SetEncodedEmailHeader("From", $from, $from);
 	else		$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['display_name']}");
 	$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
+	$email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
 	$email_message->AddQuotedPrintableTextPart($msg);
 	$error=$email_message->Send();
 

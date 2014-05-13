@@ -23,8 +23,7 @@ $login=request('login');
 $pass=request('pass');
 $mode=request('mode');
 
-function attack_test()
-{
+function attack_test() {
 	global $db;
 	$lock=0;
 	$captcha=0;
@@ -64,8 +63,7 @@ function attack_test()
 	return $captcha;
 }
 
-function regMsg($login, $pass, $conf)
-{
+function regMsg($login, $pass, $conf) {
 	global $CONFIG;
 	$proto='http';
 	if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
@@ -790,21 +788,23 @@ else if($mode=='remn')
 		$tmpl->msg("Код неверен или устарел","err");
 	}
 }
-else if($mode=='unsubscribe')
-{
+else if($mode=='unsubscribe') {
 	$tmpl->setContent("<h1 id='page-title'>Отказ от рассылки</h1>");
-	$email=$db->real_escape_string($_REQUEST['email']);
+	$email = $db->real_escape_string($_REQUEST['email']);
+	$source_sql = $db->real_escape_string($_REQUEST['from']);
 	$c=0;
-	$res=$db->query("UPDATE `users` SET `reg_email_subscribe`='0' WHERE `reg_email`='$email'");
-	if($db->affected_rows())
-	{
+	$res = $db->query("UPDATE `users` SET `reg_email_subscribe`='0' WHERE `reg_email`='$email'");
+	if($db->affected_rows()) {
+		$db->query("INSERT INTO `users_unsubscribe_log` (`email`, `time`, `source`, `is_user`)
+			VALUES ('$email', NOW(), '$source_sql', 1)");
 		$tmpl->msg("Вы успешно отказались от автоматической рассылки!","ok");
 		$c=1;
 	}
 
-	$res=$db->query("UPDATE `doc_agent` SET `no_mail`='1' WHERE `email`='$email'");
-	if($db->affected_rows)
-	{
+	$res = $db->query("UPDATE `doc_agent` SET `no_mail`='1' WHERE `email`='$email'");
+	if($db->affected_rows) {
+		$db->query("INSERT INTO `users_unsubscribe_log` (`email`, `time`, `source`, `is_user`)
+			VALUES ('$email', NOW(), '$source_sql', 0)");
 		$tmpl->msg("В нашей клиентской базе Ваш адрес помечен, как нежелательный для рассылки.","ok");
 		$c=1;
 	}
