@@ -23,104 +23,81 @@ $c=explode('/',__FILE__);$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
 include_once("$base_path/config_cli.php");
 require_once($CONFIG['cli']['location']."/core.cli.inc.php");
+//require_once($CONFIG['location']."/common/datecalcinterval.php");
+
+$verbose = 0;
 
 try {
-
-	// Очистка от неподтверждённых пользователей
-	if ($CONFIG['auto']['user_del_days'] > 0) {
-		$dtim = time() - 60 * 60 * 24 * $CONFIG['auto']['user_del_days'];
-		$dtim_p = date('Y-m-d H:i:s', $dtim);
-		$res = $db->query("SELECT `id` FROM `users`
-			LEFT JOIN `users_openid` ON `users_openid`.`user_id`=`users`.`id`
-			WHERE `users_openid`.`user_id` IS NULL AND `users`.`reg_date`<'$dtim_p' AND `users`.`reg_email_confirm`!='1' AND `reg_phone_confirm`!='1'");
-		while ($nxt = $res->fetch_row())
-			$db->query("DELETE FROM `users` WHERE `id`='$nxt[0]'");
-	}
-
-// Перемещение непроведённых реализаций на начало текущего дня
-	if ($CONFIG['auto']['move_nr_to_end'] == true) {
-		$end_day = strtotime(date("Y-m-d 00:00:01"));
-		$db->query("UPDATE `doc_list` SET `date`='$end_day' WHERE `type`='2' AND `ok`='0'");
-	}
-
-// Перемещение непроведённых заявок на начало текущего дня
-	if ($CONFIG['auto']['move_no_to_end'] == true) {
-		$end_day = strtotime(date("Y-m-d 00:00:02"));
-		$db->query("UPDATE `doc_list` SET `date`='$end_day' WHERE `type`='3' AND `ok`='0'");
-	}
-
-// Очистка счётчика посещений от старых данных
-	$tt = time() - 60 * 60 * 24 * 10;
-	$db->query("DELETE FROM `counter` WHERE `date` < '$tt'");
-
-// Загрузка курсов валют
-	$data = file_get_contents("http://www.cbr.ru/scripts/XML_daily.asp");
-	$doc = new DOMDocument('1.0');
-	$doc->loadXML($data);
-	$doc->normalizeDocument();
-	$valutes = $doc->getElementsByTagName('Valute');
-	foreach ($valutes as $valute) {
-		$name = $value = 0;
-		foreach ($valute->childNodes as $val) {
-			switch ($val->nodeName) {
-				case 'CharCode':
-					$name = $val->nodeValue;
-					break;
-				case 'Value':
-					$value = $val->nodeValue;
+	if($_SERVER['argc']>1) {
+		for($i=0;$i<$_SERVER['argc'];$i++) {
+			switch($_SERVER['argv'][$i]) {
+				case '-v':
+				case '--verbose':
+					$verbose = 1;
 					break;
 			}
 		}
-		$value = round(str_replace(',', '.', $value), 4);
-		$db->query("UPDATE `currency` SET `coeff`='$value' WHERE `name`='$name'");
 	}
-// Расчет оборота агентов
-	if($CONFIG['pricecalc']['acc_type']) {
-		if(isset($CONFIG['pricecalc']['acc_time']))
-			$cnt = intval($CONFIG['pricecalc']['acc_time']);
-		else	$cnt = 0;
-		$di = new DateCalcInterval();
-		switch($CONFIG['pricecalc']['acc_type']) {
-			case 'days':
-				$di->calcXDaysBack($cnt);
-				break;
-			case 'months':
-				$di->calcXMonthsBack($cnt);
-				break;
-			case 'years':
-				$di->calcXYearsBack($cnt);
-				break;
-			case 'prevmonth':
-				$di->calcPrevMonth();
-				break;
-			case 'prevquarter':
-				$di->calcPrevQuarter();
-				break;
-			case 'prevhalfyear':
-				$di->calcPrevHalfyear();
-				break;
-			case '':break;
-			case 'prevyear':
-			default:
-				$di->calcPrevYear();
-		}
-		
-		$acc = array();
-		$res = $db->query("SELECT `agent`, `sum` FROM `doc_list` WHERE `date`>='{$di->start}' AND `date`<='{$di->end}'
-			AND (`type`='1' OR `type`='4' OR `type`='6') AND `ok`>0 AND `agent`>0 AND `sum`>0");
-		while($line = $res->fetch_assoc()) {
-			if(isset($acc[$line['agent']]))
-				$acc[$line['agent']] += $line['sum'];
-			else $acc[$line['agent']] = $line['sum'];
-		}
-		foreach($acc as $agent => $sum) {
-			$db->update('doc_agent', $agent, 'avg_sum', $sum);
-		}
+	
+	if($verbose)	echo "Очистка счётчика посещений...\n";
+	// Очистка счётчика посещений от старых данных
+	$tt = time() - 60 * 60 * 24 * 10;
+	$db->query("DELETE FROM `counter` WHERE `date` < '$tt'");
+
+	// Очистка от неподтверждённых пользователей
+	if ($CONFIG['auto']['user_del_days'] > 0) {
+		if($verbose)	echo "Очистка от неподтверждённых пользователей...\n";
+		$action = new Actions\UserFree($CONFIG, $db);
+		$action->run();
 	}
+
+	// Перемещение непроведённых реализаций на начало текущего дня
+	if ($CONFIG['auto']['move_nr_to_end'] || $CONFIG['auto']['move_no_to_end']) {
+		if($verbose)	echo "Перемещение непроведённых реализаций на начало текущего дня...\n";
+		$action = new Actions\DocMove($CONFIG, $db);
+		$action->run();
+	}
+	
+	// Загрузка курсов валют
+	if ($CONFIG['auto']['update_currency']) {
+		if($verbose)	echo "Загрузка курсов валют...\n";
+		$action = new Actions\CurrencyUpdater($CONFIG, $db);
+		$action->run();
+	}
+	
+	// Расчет оборота агентов
+	if ($CONFIG['auto']['agent_calc_avgsum']) {
+		if($verbose)	echo "Расчет оборота агентов...\n";
+		$action = new Actions\AgentCalcAvgsum($CONFIG, $db);
+		$action->run();
+	}
+	
+	// Информирование ответственных сотрудников о задолженностях его агентов при помощи email и jabber
+	if ($CONFIG['auto']['resp_debt_notify']) {
+		if($verbose)	echo "Информирование ответственных сотрудников о задолженностях его агентов при помощи email и jabber...\n";
+		$action = new Actions\RespDebtNotify($CONFIG, $db);
+		$action->run();
+	}
+	
+	// Информирование агентов об их накопительных скидках при помощи email
+	if ($CONFIG['auto']['agent_discount_notify']) {
+		if($verbose)	echo "Информирование агентов об их накопительных скидках при помощи email\n";
+		$action = new Actions\AgentDiscountNotify($CONFIG, $db);
+		$action->run();
+	}
+	
+
+	
+} catch (XMPPHP_Exception $e) {
+	if($CONFIG['site']['admin_email'])
+		mailto($CONFIG['site']['admin_email'], "XMPP exception in daily.php", $e->getMessage());
+	echo "XMPP exception: ".$e->getMessage() . "\n";
+} catch (mysqli_sql_exception $e) {
+	if($CONFIG['site']['admin_email'])
+		mailto($CONFIG['site']['admin_email'], "Mysql exception in daily.php", $e->getMessage());
+	echo "Mysql exception: ".$e->getMessage() . "\n";
 } catch (Exception $e) {
-	mailto($CONFIG['site']['doc_adm_email'], "Error in daily.php", $e->getMessage());
-	echo $e->getMessage() . "\n";
+	if($CONFIG['site']['admin_email'])
+		mailto($CONFIG['site']['admin_email'], "General exception in daily.php", $e->getMessage());
+	echo "General exception: ".$e->getMessage() . "\n";
 }
-
-
-?>

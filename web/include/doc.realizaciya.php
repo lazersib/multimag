@@ -1037,9 +1037,10 @@ function PrintTg12PDF($to_str=0)
 		else				$gruzop.=$gruzop_info['name'];
 		if($gruzop_info['adres'])	$gruzop.=', адрес '.$gruzop_info['adres'];
 		if($gruzop_info['tel'])		$gruzop.=', тел. '.$gruzop_info['tel'];
-		if($gruzop_info['inn'])		$gruzop.=', ИНН/КПП '.$gruzop_info['inn'];
+		if($gruzop_info['inn'])		$gruzop.=', ИНН '.$gruzop_info['inn'];
+		if($gruzop_info['kpp'])		$gruzop.=', КПП '.$gruzop_info['kpp'];
 		if($gruzop_info['okpo'])	$gruzop.=', ОКПО '.$gruzop_info['okpo'];
-		if($gruzop_info['okevd'])	$gruzop.=', ОКВЭД '.$gruzop_info['okevd'];
+		if($gruzop_info['okved'])	$gruzop.=', ОКВЭД '.$gruzop_info['okved'];
 		if($gruzop_info['rs'])		$gruzop.=', Р/С '.$gruzop_info['rs'];
 		if($gruzop_info['bank'])	$gruzop.=', в банке '.$gruzop_info['bank'];
 		if($gruzop_info['bik'])		$gruzop.=', БИК '.$gruzop_info['bik'];
@@ -1053,9 +1054,10 @@ function PrintTg12PDF($to_str=0)
 		else					$platelshik.=$platelshik_info['name'];
 		if($platelshik_info['adres'])		$platelshik.=', адрес '.$platelshik_info['adres'];
 		if($platelshik_info['tel'])		$platelshik.=', тел. '.$platelshik_info['tel'];
-		if($platelshik_info['inn'])		$platelshik.=', ИНН/КПП '.$platelshik_info['inn'];
+		if($platelshik_info['inn'])		$platelshik.=', ИНН '.$platelshik_info['inn'];
+		if($platelshik_info['kpp'])		$platelshik.=', КПП '.$platelshik_info['kpp'];
 		if($platelshik_info['okpo'])		$platelshik.=', ОКПО '.$platelshik_info['okpo'];
-		if($platelshik_info['okevd'])		$platelshik.=', ОКВЭД '.$platelshik_info['okevd'];
+		if($platelshik_info['okved'])		$platelshik.=', ОКВЭД '.$platelshik_info['okved'];
 		if($platelshik_info['rs'])		$platelshik.=', Р/С '.$platelshik_info['rs'];
 		if($platelshik_info['bank'])		$platelshik.=', в банке '.$platelshik_info['bank'];
 		if($platelshik_info['bik'])		$platelshik.=', БИК '.$platelshik_info['bik'];
@@ -1723,7 +1725,7 @@ function SfakPDF($to_str=0)
 	$pdf->Cell(0,$step,$str,0,1,'L');
 	$str = iconv('UTF-8', 'windows-1251', "Адрес: ".$agent_info['adres']);
 	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "ИНН / КПП покупателя: ".$agent_info['inn']);
+	$str = iconv('UTF-8', 'windows-1251', "ИНН / КПП покупателя: ".$agent_info['inn'].'/'.$agent_info['kpp']);
 	$pdf->Cell(0,$step,$str,0,1,'L');
 
 	$str = "";

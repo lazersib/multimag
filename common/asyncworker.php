@@ -18,14 +18,13 @@
 //
 
 /// Родительский класс для ассинхронных обработчиков
-class AsyncWorker
-{
-	var $mail_text;
-	var $starttime;
-	var $task_id;
+class AsyncWorker {
+	var $mail_text;	// Информация, которую обработчик должен отправить администратору
+	var $starttime; // Время старта обработчика
+	var $task_id;	// ID задачи для сохранения статуса
+	var $db_link;	// Объект класса MysqiExtended
 
-	function __construct($task_id)
-	{
+	function __construct($task_id) {
 		$this->mail_text='';
 		$this->starttime=time();
 		$this->task_id=$task_id;
@@ -33,8 +32,7 @@ class AsyncWorker
 
 	/// Устанавливает статус исполнения обработчика в процентах для отображения в интерфейсе
 	/// Расчитывает примерное время исполнения
-	function SetStatus($status)
-	{
+	function SetStatus($status) {
 		$remains=(time()-$this->starttime)*(100/$status-1);
 		$remainm=round($remains/60);
 		$remains%=60;
@@ -48,7 +46,8 @@ class AsyncWorker
 		echo "\r$text             ";
 		flush();
 		/// Добавить код записи в базу данных
-		$res =$db->query("UPDATE `async_workers_tasks` SET `textstatus`='$text' WHERE `id`='{$this->task_id}'");
+		if($this->task_id)
+			$db->query("UPDATE `async_workers_tasks` SET `textstatus`='$text' WHERE `id`='{$this->task_id}'");
 	}
 	/// Устанавливает статус окончания исполнения
 	function end() {
@@ -56,8 +55,7 @@ class AsyncWorker
 	}
 
 	/// Осовобождает ресурсы
-	function finalize()
-	{
+	function finalize() {
 		return;
 	}
 

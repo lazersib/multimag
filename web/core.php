@@ -403,12 +403,14 @@ function translitIt($str)
 /// @brief Выполнение рассылки сообщения на электронную почту по базе агентов и зарегистрированных пользователей.
 ///
 /// В текст рассылки автоматически добавляется информация о том, как отказаться от рассылки
-/// @param tema Тема сообщения
+/// @param title Заголовок сообщения
+/// @param subject Тема email сообщения
 /// @param msg Тело сообщения
-function SendSubscribe($tema, $msg, $list_id='') {
+/// @param msg ID рассылки
+function SendSubscribe($title, $subject, $msg, $list_id='') {
 	global $CONFIG, $db;
 	if(!$list_id)
-		$list_id = md5($tema.$msg.microtime()).'.'.date("DDMMYYY").'.'.$CONFIG['site']['name'];
+		$list_id = md5($subject.$msg.microtime()).'.'.date("dmY").'.'.$CONFIG['site']['name'];
 	require_once($CONFIG['location'].'/common/email_message.php');
 	$res = $db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
 	list($firm_name) = $res->fetch_row();
@@ -421,7 +423,7 @@ function SendSubscribe($tema, $msg, $list_id='') {
         	$txt="
 Здравствуйте, {$nxt['name']}!
 
-$tema
+$title
 ------------------------------------------
 
 $msg
@@ -431,20 +433,18 @@ $msg
 Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']}?from=email ), либо являетесь клиентом $firm_name.
 Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$nxt['email']}&from=email
 ";
-		mailto($nxt['email'], $tema." - {$CONFIG['site']['name']}", $txt);
-
 		$email_message = new email_message_class();
 		$email_message->default_charset = "UTF-8";
 		$email_message->SetEncodedEmailHeader("To", $nxt['email'], $nxt['email']);
-		$email_message->SetEncodedHeader("Subject", $tema." - {$CONFIG['site']['name']}");
+		$email_message->SetEncodedHeader("Subject", $subject." - {$CONFIG['site']['name']}");
 		$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], $CONFIG['site']['display_name']);
 		$email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
-		$email_message->SetHeader("List-id", $list_id);
+		$email_message->SetHeader("List-id", '<'.$list_id.'>');
 		$email_message->SetHeader("List-Unsubscribe",
 			"http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$nxt['email']}&from=list_unsubscribe");
 		$email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
 		
-		$email_message->AddQuotedPrintableTextPart($msg);
+		$email_message->AddQuotedPrintableTextPart($txt);
 		$error = $email_message->Send();
 
 		if(strcmp($error,""))	throw new Exception($error);

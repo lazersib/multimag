@@ -294,6 +294,9 @@ class doc_s_Sklad {
 			$stock_check = $pos_info['stock'] ? 'checked' : '';
 			$wt0_check = (!$pos_info['warranty_type']) ? 'checked' : '';
 			$wt1_check = ($pos_info['warranty_type']) ? 'checked' : '';
+			
+			if(!isset($CONFIG['store']['pos_leaf_only']))
+				$CONFIG['store']['pos_leaf_only'] = false;
 
 			$tmpl->addContent("<form action='' method='post'>
 			<input type='hidden' name='mode' value='esave'>
@@ -304,7 +307,7 @@ class doc_s_Sklad {
         		<tr><td align='right' width='20%'>$n</td>
         		<td colspan='3'><input type='text' name='pd[name]' value='".html_out($pos_info['name'])."' style='width: 95%'>$cc
         		<tr><td align='right'>Группа</td>
-        		<td colspan='3'>" . selectGroupPos('pd[group]', $selected, 1) . "</td></tr>
+        		<td colspan='3'>" . selectGroupPos('pd[group]', $selected, false, '', '', $CONFIG['store']['pos_leaf_only']) . "</td></tr>
         		<tr><td align='right'>Изготовитель</td>
 			<td><input type='text' name='pd[proizv]' value='".html_out($pos_info['proizv'])."' id='proizv_nm' style='width: 95%'><br>
 			<div id='proizv_p' class='dd'></div></td>

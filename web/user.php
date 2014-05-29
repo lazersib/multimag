@@ -80,6 +80,7 @@ if($mode==''){
 	
 	$tmpl->addContent("<li><a href='/user.php?mode=user_data'>Личные данные</a></li>");
 	$tmpl->addContent("<li><a href='/user.php?mode=doc_hist'>История документов</a></li>");
+	$tmpl->addContent("<li><a href='/voting.php'>Голосования</a></li>");
 
 	$tmpl->addContent("</ul>");
 }

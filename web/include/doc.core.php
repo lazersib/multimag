@@ -457,43 +457,10 @@ function DocSumUpdate($doc)
 	return $sum;
 }
 
-/// Расчёт долга агента. Положительное число обозначает долг агента, отрицательное - долг перед агентом.
-/// @param agent_id	ID агента, для которого расчитывается баланс
-/// @param no_cache	Не брать данные расчёта из кеша
-/// @param firm_id	ID собственной фирмы, для которой будет расчитан баланс. Если 0 - расчёт ведётся для всех фирм.
-function agentCalcDebt($agent_id, $no_cache=0, $firm_id=0)
-{
-	global $tmpl, $db, $doc_agent_dolg_cache_storage;
-	//if(!$no_cache && isset($doc_agent_dolg_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
-	settype($agent_id,'int');
-	settype($firm_id,'int');
-	$dolg=0;
-	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
-	$res=$db->query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
-	while($nxt=$res->fetch_row())
-	{
-		switch($nxt[0])
-		{
-			case 1: $dolg-=$nxt[1]; break;
-			case 2: $dolg+=$nxt[1]; break;
-			case 4: $dolg-=$nxt[1]; break;
-			case 5: $dolg+=$nxt[1]; break;
-			case 6: $dolg-=$nxt[1]; break;
-			case 7: $dolg+=$nxt[1]; break;
-			case 18: $dolg+=$nxt[1]; break;
-		}
-	}
-	$res->free();
-	$dolg=sprintf("%0.2f", $dolg);
-	//$doc_agent_dolg_cache_storage[$agent_id]=$dolg;
-	return $dolg;
-}
-
 /// Расчёт бонусного баланса агента. Бонусы начисляются за поступления средств на баланс агента
 /// @param agent_id	ID агента, для которого расчитывается баланс
 /// @param no_cache	Не брать данные расчёта из кеша
-function docCalcBonus($agent_id, $no_cache=0)
-{
+function docCalcBonus($agent_id, $no_cache=0) {
 	global $tmpl, $db, $doc_agent_dolg_cache_storage;
 	settype($agent_id,'int');
 	if(!$no_cache && isset($doc_agent_bonus_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
@@ -714,17 +681,17 @@ function selectAgentGroup($select_name,$selected=0,$not_select=0,$select_id='',$
 
 /// Для внутреннего использования
 /// @sa selectGroupPos
-function selectGroupPosRecursive($group_id,$prefix,$selected)
-{
+function selectGroupPosRecursive($group_id, $prefix, $selected, $leaf_only) {
 	global $db;
-	// Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectAgentGroup
-	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
-	$ret='';
-	while($line = $res->fetch_row())
-	{
-		$sel=($selected==$line[0])?' selected':'';
-		$ret.="<option value='$line[0]'{$sel}>{$prefix}".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
-		$ret.=selectGroupPosRecursive($line[0],$prefix.'--',$selected);
+	// Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectGroupPos
+	$res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
+	$ret = '';
+	while($line = $res->fetch_row()) {
+		$sel = ($selected==$line[0])?' selected':'';
+		$deep = selectGroupPosRecursive($line[0], $prefix.'--', $selected, $leaf_only);
+		$dis = ($deep!='' && $leaf_only)?' disabled':'';
+		$ret .= "<option value='$line[0]'{$sel}{$dis}>{$prefix}".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
+		$ret .= $deep;
 	}
 	$res->free();
 	return $ret;
@@ -736,12 +703,13 @@ function selectGroupPosRecursive($group_id,$prefix,$selected)
 /// @param not_select	Если true - в выпадающий список будет добавлен пункт 'не выбран'
 /// @param select_id	Содержимое html аттрибута id элемента select
 /// @param select_class	Содержимое html аттрибута class элемента select
+/// @param leaf_only	Флаг возможности выбора только "листьев" в дереве групп
 /// @sa selectAgentGroup
-function selectGroupPos($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
+function selectGroupPos($select_name, $selected=0, $not_select=false, $select_id='', $select_class='', $leaf_only=false)
 {
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
 	if($not_select)	$ret.="<option value='0'>***не выбран***</option>";
-	$ret.=selectGroupPosRecursive(0,'',$selected);
+	$ret.=selectGroupPosRecursive(0, '', $selected, $leaf_only);
 	$ret.="</select>";
 	return $ret;
 }

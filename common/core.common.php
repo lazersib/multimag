@@ -17,18 +17,26 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "640");
+define("MULTIMAG_REV", "651");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
+
+/// Автозагрузка общих классов для ядра и cli
+function common_autoload($class_name){
+	global $CONFIG;
+	$class_name = strtolower($class_name);
+	$class_name = str_replace('\\', '/', $class_name);
+	@include_once $CONFIG['location']."/common/".$class_name.'.php';
+}
+spl_autoload_register('common_autoload');
 
 /// Отправить сообщение по электронной почте
 /// @param email Адрес получателя
 /// @param subject Тема сообщения
 /// @param msg Тело сообщения
 /// @param from Адрес отправителя
-function mailto($email, $subject, $msg, $from="")
-{
+function mailto($email, $subject, $msg, $from="") {
 	global $CONFIG;
 	require_once($CONFIG['location'].'/common/email_message.php');
 
@@ -49,8 +57,7 @@ function mailto($email, $subject, $msg, $from="")
 
 /// возвращает строковое представление интервала
 /// @param times - время в секундах
-function sectostrinterval($times)
-{
+function sectostrinterval($times) {
 	$ret=($times%60).' с.';
 	$times=round($times/60);
 	if(!$times)	return $ret;
@@ -63,14 +70,46 @@ function sectostrinterval($times)
 
 /// Получить unixtime начала указанных суток
 /// @param date произвольное время в UNIXTIME формате
-function date_day($date)
-{
+function date_day($date) {
    $ee=date("d M Y 00:00:00",$date);
    $tm=strtotime($ee);
    return $tm;
 }
 
-/// Класс расширяет функциональность mysqli
+/// Расчёт долга агента. Положительное число обозначает долг агента, отрицательное - долг перед агентом.
+/// @param agent_id	ID агента, для которого расчитывается баланс
+/// @param no_cache	Не брать данные расчёта из кеша
+/// @param firm_id	ID собственной фирмы, для которой будет расчитан баланс. Если 0 - расчёт ведётся для всех фирм.
+/// @param local_db	Дескриптор соединения с базой данных. Если не задан - используется глобальная переменная.
+function agentCalcDebt($agent_id, $no_cache=0, $firm_id=0, $local_db=0) {
+	global $tmpl, $db, $doc_agent_dolg_cache_storage;
+	//if(!$no_cache && isset($doc_agent_dolg_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
+	settype($agent_id,'int');
+	settype($firm_id,'int');
+	$dolg=0;
+	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
+	if($local_db)
+		$res = $local_db->query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
+	else	$res = $db->query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
+	while($nxt=$res->fetch_row()) {
+		switch($nxt[0])	{
+			case 1: $dolg-=$nxt[1]; break;
+			case 2: $dolg+=$nxt[1]; break;
+			case 4: $dolg-=$nxt[1]; break;
+			case 5: $dolg+=$nxt[1]; break;
+			case 6: $dolg-=$nxt[1]; break;
+			case 7: $dolg+=$nxt[1]; break;
+			case 18: $dolg+=$nxt[1]; break;
+		}
+	}
+	$res->free();
+	$dolg = sprintf("%0.2f", $dolg);
+	//$doc_agent_dolg_cache_storage[$agent_id]=$dolg;
+	return $dolg;
+}
+
+/// @brief Класс расширяет функциональность mysqli
+/// Т.к. используется почти везде, нет смысла выносить в отдельный файл
 class MysqiExtended extends mysqli {
 	
 	/// Начать транзакцию

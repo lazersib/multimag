@@ -130,7 +130,7 @@ class doc_Dogovor extends doc_Nulltype
 
 $str="==== Покупатель: {$agent_info['fullname']} ====
 {$agent_info['adres']}, тел. {$agent_info['tel']}<br>
-ИНН/КПП {$agent_info['inn']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okevd']}<br>
+ИНН {$agent_info['inn']}, КПП {$agent_info['kpp']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okved']}<br>
 Р/С {$agent_info['rs']}, в банке {$agent_info['bank']}<br>
 К/С {$agent_info['ks']}, БИК {$agent_info['bik']}<br>
 ==== Поставщик: {$this->firm_vars['firm_name']} ====
@@ -193,7 +193,7 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 
 $str="==== Покупатель: {$agent_info['fullname']} ====
 {$agent_info['adres']}, тел. {$agent_info['tel']}<br>
-ИНН/КПП {$agent_info['inn']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okevd']}<br>
+ИНН {$agent_info['inn']}, КПП {$agent_info['kpp']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okved']}<br>
 Р/С {$agent_info['rs']}, в банке {$agent_info['bank']}<br>
 К/С {$agent_info['ks']}, БИК {$agent_info['bik']}<br>
 От покупателя: _____________________________ ( {$agent_info['dir_fio']} )<br>

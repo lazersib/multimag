@@ -21,7 +21,7 @@
 class doc_s_Agent {
 	/// Просмотр списка агентов
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'gruzopol', 'inn', 'rs', 'ks', 'okevd', 'okpo',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone');
+		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'gruzopol', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone');
 	}
 	function View() {
 		global $tmpl;
@@ -158,22 +158,24 @@ class doc_s_Agent {
 			<tr class=lin0><td align=right>Дополнительный телефон:<td><input type=text name='alt_phone' value='".html_out($agent_info['alt_phone'])."'>
 			<tr class=lin0><td align=right>Юридический адрес / Адрес прописки<td colspan=2><textarea name='adres'>".html_out($agent_info['adres'])."</textarea>
 			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>".html_out($agent_info['gruzopol'])."</textarea>
-			<tr class=lin0><td align=right>ИНН/КПП или ИНН:<td><input type=text name='inn' value='".html_out($agent_info['inn'])."' style='width: 40%;' class='inn validate'>
-			<tr class=lin1><td align=right>Банк<td><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
-			<tr class=lin0><td align=right>Корр. счет<td><input type=text name='ks' value='".html_out($agent_info['ks'])."' style='width: 40%;' class='ks validate'>
-			<tr class=lin1><td align=right>БИК<td><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'>
-			<tr class=lin0><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small><td><input type=text name='rs' value='".html_out($agent_info['rs'])."' style='width: 40%;' class='rs validate'>
-			<tr class=lin1><td align=right>ОКВЭД<td><input type=text name='okevd' value='".html_out($agent_info['okevd'])."'>
-			<tr class=lin0><td align=right>ОКПО<td><input type=text name='okpo' value='".html_out($agent_info['okpo'])."' class='okpo validate'>
-			<tr class=lin1><td align=right>ФИО директора<td><input type=text name='dir_fio' value='".html_out($agent_info['dir_fio'])."'>
-			<tr class=lin0><td align=right>ФИО директора в родительном падеже<td><input type=text name='dir_fio_r' value='".html_out($agent_info['dir_fio_r'])."'>
-			<tr class=lin1><td align=right>Контактное лицо<td><input type=text name='pfio' value='".html_out($agent_info['pfio'])."'>
-			<tr class=lin0><td align=right>Должность контактног лица<td><input type=text name='pdol' value='".html_out($agent_info['pdol'])."'>
-			<tr class=lin1><td align=right>Паспорт: Номер<td><input type=text name='pasp_num' value='".html_out($agent_info['pasp_num'])."'>
-			<tr class=lin0><td align=right>Паспорт: Дата выдачи<td><input type=text name='pasp_date' value='".html_out($agent_info['pasp_date'])."' id='pasp_date'>
-			<tr class=lin1><td align=right>Паспорт: Кем выдан<td><input type=text name='pasp_kem' value='".html_out($agent_info['pasp_kem'])."'>
-			<tr class=lin0><td align=right>Дата последней сверки:<td><input type=text name='data_sverki' value='".html_out($agent_info['data_sverki'])."' id='data_sverki' $ext>
-			<tr class=lin1><td align=right>Ответственный:<td>
+			<tr class=lin0><td align=right>ИНН:<td><input type=text name='inn' value='".html_out($agent_info['inn'])."' style='width: 40%;' class='inn validate'>
+			<tr class=lin1><td align=right>КПП:<td><input type=text name='kpp' value='".html_out($agent_info['kpp'])."' style='width: 40%;'>	
+			<tr class=lin0><td align=right>Банк<td><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
+			<tr class=lin1><td align=right>Корр. счет<td><input type=text name='ks' value='".html_out($agent_info['ks'])."' style='width: 40%;' class='ks validate'>
+			<tr class=lin0><td align=right>БИК<td><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'>
+			<tr class=lin1><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small><td><input type=text name='rs' value='".html_out($agent_info['rs'])."' style='width: 40%;' class='rs validate'>
+			<tr class=lin0><td align=right>ОКВЭД<td><input type=text name='okved' value='".html_out($agent_info['okved'])."'>
+			<tr class=lin0><td align=right>ОГРН / ОГРНИП<td><input type=text name='ogrn' value='".html_out($agent_info['ogrn'])."'>
+			<tr class=lin1><td align=right>ОКПО<td><input type=text name='okpo' value='".html_out($agent_info['okpo'])."' class='okpo validate'>
+			<tr class=lin0><td align=right>ФИО директора<td><input type=text name='dir_fio' value='".html_out($agent_info['dir_fio'])."'>
+			<tr class=lin1><td align=right>ФИО директора в родительном падеже<td><input type=text name='dir_fio_r' value='".html_out($agent_info['dir_fio_r'])."'>
+			<tr class=lin0><td align=right>Контактное лицо<td><input type=text name='pfio' value='".html_out($agent_info['pfio'])."'>
+			<tr class=lin1><td align=right>Должность контактног лица<td><input type=text name='pdol' value='".html_out($agent_info['pdol'])."'>
+			<tr class=lin0><td align=right>Паспорт: Номер<td><input type=text name='pasp_num' value='".html_out($agent_info['pasp_num'])."'>
+			<tr class=lin1><td align=right>Паспорт: Дата выдачи<td><input type=text name='pasp_date' value='".html_out($agent_info['pasp_date'])."' id='pasp_date'>
+			<tr class=lin0><td align=right>Паспорт: Кем выдан<td><input type=text name='pasp_kem' value='".html_out($agent_info['pasp_kem'])."'>
+			<tr class=lin1><td align=right>Дата последней сверки:<td><input type=text name='data_sverki' value='".html_out($agent_info['data_sverki'])."' id='data_sverki' $ext>
+			<tr class=lin0><td align=right>Ответственный:<td>
 			<select name='responsible' $ext>
 			<option value='null'>--не назначен--</option>");
 			$rres = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
@@ -183,8 +185,8 @@ class doc_s_Agent {
 			}
 			$dish_checked=$agent_info['dishonest']?'checked':'';
 			$tmpl->addContent("</select>
-			<tr class='lin0'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
-			<tr class='lin1'><td align='right'>Связанные пользователи</td><td>");
+			<tr class='lin1'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
+			<tr class='lin0'><td align='right'>Связанные пользователи</td><td>");
 			$r = $db->query("SELECT `id`, `name` FROM `users` WHERE `agent_id`=$pos");
 			if(!$r->num_rows)	$tmpl->addContent("отсутствуют");
 			else {
@@ -192,12 +194,12 @@ class doc_s_Agent {
 					$tmpl->addContent("<a href='/adm_users.php?mode=view&amp;id={$nn['id']}'>".html_out($nn['name'])." ({$nn['id']})</a>, ");
 			}
 			$tmpl->addContent("</td></tr>
-			<tr class='lin1'><td align='right'>Относится к<td>
+			<tr class='lin0'><td align='right'>Относится к<td>
 			<input type='hidden' name='p_agent' id='agent_id' value='{$agent_info['p_agent']}'>
 			<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 50%;' value='$html_pagent_name'>
 			<div id='agent_info'></div>
-			<tr class=lin0><td align=right>Комментарий<td colspan=2><textarea name='comment'>".html_out($agent_info['comment'])."</textarea>
-			<tr class=lin1><td><td><button type='submit' id='b_submit'>Сохранить</button>
+			<tr class='lin1'><td align=right>Комментарий<td colspan=2><textarea name='comment'>".html_out($agent_info['comment'])."</textarea>
+			<tr class='lin0'><td><td><button type='submit' id='b_submit'>Сохранить</button>
 			</table></form>
 
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>

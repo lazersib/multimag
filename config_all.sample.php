@@ -22,11 +22,11 @@ $CONFIG['mysql']['db']		= 'dev_multimag';
 $CONFIG['mysql']['login']	= '';
 $CONFIG['mysql']['pass']	= '';
 
-// Настройки  XMPP клиента
-$CONFIG['xmpp']['host']		= '';
-$CONFIG['xmpp']['port']		= 5222;
-$CONFIG['xmpp']['login']	= '';
-$CONFIG['xmpp']['pass']		= '';
+// Настройки  XMPP клиента. Используется для мгновенных уведомлений.
+$CONFIG['xmpp']['host']		= '';	// Имя хоста XMPP сервера. Если не задан - все XMPP возможности будут отключены
+$CONFIG['xmpp']['port']		= 5222;	// Порт XMPP сервера
+$CONFIG['xmpp']['login']	= '';	// Логин на XMPP сервере
+$CONFIG['xmpp']['pass']		= '';	// Пароль на XMPP сервере
 
 // настройки отправки факсов
 // $CONFIG['sendfax']['username']	= '';	

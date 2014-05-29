@@ -267,16 +267,7 @@ function form_validator(form_id)
 			hlErrorField(input_bik,false)
 			hlErrorField(input_rs,false)
 			hlErrorField(input_ks,false)
-			if(input_ks.value!='')
-			{
-				if(test_str_schet('0'+input_bik.value.substr(4,2)+input_ks.value))	//ks
-				{
-					hlErrorField(input_bik,true)
-					hlErrorField(input_ks,true)
-					buttons_toggle()
-					return true
-				}
-			}
+
 			var bik_str=''
 			if(input_ks.value!='')		bik_str=input_bik.value.substr(-3)
 			else				bik_str='0'+input_bik.value.substr(4,2)
@@ -285,7 +276,6 @@ function form_validator(form_id)
 			{
 				hlErrorField(input_bik,true)
 				hlErrorField(input_rs,true)
-				hlErrorField(input_ks,true)
 				buttons_toggle()
 				return true
 			}

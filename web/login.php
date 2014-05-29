@@ -794,7 +794,7 @@ else if($mode=='unsubscribe') {
 	$source_sql = $db->real_escape_string($_REQUEST['from']);
 	$c=0;
 	$res = $db->query("UPDATE `users` SET `reg_email_subscribe`='0' WHERE `reg_email`='$email'");
-	if($db->affected_rows()) {
+	if($db->affected_rows) {
 		$db->query("INSERT INTO `users_unsubscribe_log` (`email`, `time`, `source`, `is_user`)
 			VALUES ('$email', NOW(), '$source_sql', 1)");
 		$tmpl->msg("Вы успешно отказались от автоматической рассылки!","ok");

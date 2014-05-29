@@ -234,12 +234,9 @@ class doc_Specific extends doc_Nulltype {
 
 		$pdf->Ln(5);
 		$pdf->SetFont('', '', 10);
-		$res = $db->query("SELECT `doc_agent`.`id`, `doc_agent`.`fullname`, `doc_agent`.`adres`,  `doc_agent`.`tel`, `doc_agent`.`inn`, `doc_agent`.`okpo`, `doc_agent`.`okevd`, `doc_agent`.`bik`, `doc_agent`.`rs`, `doc_agent`.`ks`, `doc_agent`.`bank`, `doc_agent`.`pfio`, `doc_agent`.`pdol`
-		FROM `doc_agent` WHERE `doc_agent`.`id`='{$this->doc_data['agent']}'");
+		$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
 
-		$agent_info = $res->fetch_array();
-
-		$str = "$agent_info[1]\n$agent_info[2], тел. $agent_info[3]\nИНН/КПП $agent_info[4], ОКПО $agent_info[5], ОКВЭД $agent_info[6]\nР/С $agent_info[8], в банке $agent_info[10]\nК/С $agent_info[9], БИК $agent_info[7]\n__________________ / _________________ /\n\n      М.П.";
+		$str = "{$agent_info['fullname']}\n{$agent_info['adres']}, тел. {$agent_info['tel']}\nИНН {$agent_info['inn']}, КПП {$agent_info['kpp']} ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okved']}\nР/С {$agent_info['rs']}, в банке {$agent_info['bank']}\nК/С {$agent_info['ks']}, БИК {$agent_info['bik']}\n__________________ / _________________ /\n\n      М.П.";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 
 		$y = $pdf->GetY();

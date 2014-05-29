@@ -45,28 +45,40 @@ try {
 	$xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
 	$xmpp_connected = 0;
 
-	$res = $db->query("SELECT `id`, `name`, `reg_email`, `jid` FROM `users`");
-	while ($nxt = $res->fetch_row()) {
-		if ($mail_text[$nxt[0]]) {
-			$dolg = sprintf("%0.2f", $sum_dolga[$nxt[0]]);
-			$text = "Уважаемый(ая) $nxt[1]!\nНекоторые из Ваших клиентов, для которых Вы являетесь ответственным менеджером, имеют непогашенные долги перед нашей компанией на общую сумму {$dolg} рублей.\nНеобходимо в кратчайший срок решить данную проблему!\n\nВот список этих клиентов:\n" . $mail_text[$nxt[0]] . "\n\nПожалуйста, не откладывайте решение проблемы на длительный срок!";
-
-			mailto($nxt[2], "Ваши долги", $text);
-			if ($nxt[3]) {
+	$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users`.`reg_email`, `users`.`jid`, `users`.`reg_email_subscribe`, `users`.`reg_email_confirm`,
+			`users`.`real_name`, `users_worker_info`.`worker_email`, `users_worker_info`.`worker_jid`, `users_worker_info`.`worker_real_name`
+		FROM `users`
+		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users_id`
+		WHERE `users_worker_info`.`worker`>0");
+	while ($nxt = $res->fetch_assoc()) {
+		if ($mail_text[$nxt['id']]) {
+			$dolg = sprintf("%0.2f", $sum_dolga[$nxt['id']]);
+			$name = $nxt['worker_real_name'];
+			if(!$name)	$name = $nxt['real_name'];
+			if(!$name)	$name = $nxt['name'];
+			$text = "Уважаемый(ая) $name!\nНекоторые из Ваших клиентов, для которых Вы являетесь ответственным сотрудником, имеют непогашенные долги перед нашей компанией на общую сумму {$dolg} рублей.\nНеобходимо в кратчайший срок решить данную проблему!\n\nВот список этих клиентов:\n" . $mail_text[$nxt['id']] . "\n\nПожалуйста, не откладывайте решение проблемы на длительный срок!";
+			if($nxt['worker_email'])
+				mailto($nxt['worker_email'], "Ваши долги", $text);
+			else if($nxt['email'] && $nxt['reg_email_subscribe'] && $nxt['reg_email_confirm']=='1')
+				mailto($nxt['email'], "Ваши долги", $text);
+			if ($nxt['worker_jid'])
+				$jid = $nxt['worker_jid'];
+			else if($nxt['jid'])
+				$jid = $nxt['jid'];
+			if($jid) {
 				if (!$xmpp_connected) {
 					$xmppclient->connect();
 					$xmppclient->processUntil('session_start');
 					$xmppclient->presence();
 					$xmpp_connected = 1;
 				}
-				$xmppclient->message($nxt[3], $text);
+				$xmppclient->message($jid, $text);
 				echo "\nСообщение было отправлено через XMPP!";
 			}
 			echo $text . "\n\n\n\n";
 		}
 	}
 	$xmppclient->disconnect();
-	echo "\nСообщение было отправлено через XMPP!";
 } catch (XMPPHP_Exception $e) {
 	echo"\nНевозможно отправить сообщение XMPP";
 } catch (Exception $e) {

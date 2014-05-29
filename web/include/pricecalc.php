@@ -67,9 +67,9 @@ class PriceCalc {
 						break;
 					case 'b':	// bulk
 						$this->bulk_prices[] = array(
-						    'id' => $line['id'],
-						    'bulk_threshold' => $line['bulk_threshold'],
-						    'acc_threshold' => $line['acc_threshold']
+						    'id' => intval($line['id']),
+						    'bulk_threshold' => intval($line['bulk_threshold']),
+						    'acc_threshold' => intval($line['acc_threshold'])
 						);
 						break;
 				}

@@ -266,8 +266,8 @@ protected function SaveAndSend()
 	}
 	if(!$no_mail)
 	{
-		$list_id = 'news'.$list_id.'.'.date("DDMMYYY").'.'.$CONFIG['site']['name'];
-		SendSubscribe($title." - новости сайта", $uwtext, $list_id);
+		$list_id = 'news'.$news_id.'.'.date("dmY").'.'.$CONFIG['site']['name'];
+		SendSubscribe($title, $title." - новости сайта", $uwtext, $list_id);
 		$tmpl->msg("Рассылка выполнена","ok");
 	}
 	$db->commit();

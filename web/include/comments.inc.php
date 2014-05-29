@@ -75,7 +75,7 @@ class CommentDispatcher
 	function GetRating()
 	{
 		global $db;
-		$res=$db->query("SELECT SUM(`rate`)/COUNT(`rate`) FROM `comments` WHERE `object_name`='{$this->object_name}' AND `object_id`='{$this->object_id}'");
+		$res=$db->query("SELECT SUM(`rate`)/COUNT(`rate`) FROM `comments` WHERE `object_name`='{$this->object_name}' AND `object_id`='{$this->object_id}' AND `rate`>0");
 		if(!$res->num_rows)	return 0;
 		$r=$res->fetch_row();
 		return round($r[0]);

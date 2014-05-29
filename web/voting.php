@@ -38,7 +38,7 @@ try {
 			$tmpl->addContent("<h2>Активные голосования на данный момент отсутствуют!</h2>");
 
 		$res = $db->query("SELECT `id`, `name`, `end_date` FROM `votings` WHERE `end_date`<=NOW()");
-		if ($res->nun_rows) {
+		if ($res->num_rows) {
 			$tmpl->addContent("<h2>Прошедшие голосования</h2><ul class='items'>");
 			while ($nxt = $res->fetch_row())
 				$tmpl->addContent("<li><a href='/voting.php?mode=vv&amp;vote_id=$nxt[0]'>$nxt[1]</a> - <i><b>Закончилось:</b> $nxt[2]</i></li>");
@@ -78,7 +78,7 @@ try {
 			$ip = $db->real_escape_string(getenv("REMOTE_ADDR"));
 			$where = "`votings_results`.`ip_addr`='$ip'";
 		}
-		$res = $db->query("SELECT `id` FROM `votings_results` WHERE $where");
+		$res = $db->query("SELECT `id` FROM `votings_results` WHERE `voting_id`='$vote_id' AND $where");
 		if (! $res->num_rows && (time() < strtotime($vote_data['end_date'] . ' 23:59:59')) && (time() > strtotime($vote_data['start_date']))) { //Выводим форму голосования
 			$tmpl->addContent("<form action='/voting.php' method='post'>
 			<input type='hidden' name='mode' value='vv'>
