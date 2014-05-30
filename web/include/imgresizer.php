@@ -105,10 +105,13 @@ class ImageProductor {
 		if(@isset($CONFIG['images']['watermark']))
 		{
 			if(is_array($CONFIG['images']['watermark'])) {
-				if(@isset($CONFIG['images']['watermark'][$img_stroage]))	$this->show_watermark=$CONFIG['images']['watermark'][$img_stroage];
+				if(isset($CONFIG['images']['watermark'][$this->storage]))
+					$this->show_watermark = $CONFIG['images']['watermark'][$this->storage];
+				else	$this->show_watermark = 0;
 			}
-			else	$this->show_watermark=$CONFIG['images']['watermark'];
+			else	$this->show_watermark = $CONFIG['images']['watermark'];
 		}
+		else	$this->show_watermark = 1;
 		if(@$CONFIG['images']['font_watermark'])	$this->font_watermark=$CONFIG['images']['font_watermark'];
 
 		$rs=0;
@@ -182,6 +185,7 @@ class ImageProductor {
 		if( $this->dim_x>=300 || $this->dim_y>=300)	imageinterlace($im, 1);
 
 		if($this->show_watermark) {
+			if(is_array)
 			$bg_c = imagecolorallocatealpha ($im, 64,64, 64, 96);
 			$text_c = imagecolorallocatealpha ($im, 192,192, 192, 96);
 			if($this->dim_x<$this->dim_y)	$font_size=$this->dim_x/10;
