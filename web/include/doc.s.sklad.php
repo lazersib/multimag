@@ -38,6 +38,10 @@ class doc_s_Sklad {
 		if(rcvint('sklad')) $_SESSION['sklad_num'] = rcvint('sklad');
 		if(!isset($_SESSION['sklad_num'])) $_SESSION['sklad_num'] = 1;
 		$sklad = $_SESSION['sklad_num'];
+		
+		if(isset($_REQUEST['store_only'])) $_SESSION['sklad_store_only'] = rcvint('store_only');
+		if(!isset($_SESSION['sklad_store_only'])) $_SESSION['sklad_store_only'] = false;
+		$store_only = $_SESSION['sklad_store_only'];
 
 		if(rcvint('cost')) $_SESSION['sklad_cost'] = rcvint('cost');
 		if(!isset($_SESSION['sklad_cost'])) {
@@ -94,8 +98,11 @@ class doc_s_Sklad {
 			$tmpl->addContent("<option value='$nxt[0]'$s>".html_out($nxt[1])."</option>");
 		}
 		$s_res->free();
-		$tmpl->addContent("</select>
-		<input type='submit' value='Выбрать'>
+		$tmpl->addContent("</select>");
+		$so_selected = $store_only?' selected':'';
+		$nso_selected = $store_only?'':' selected';
+		$tmpl->addContent("<select name='store_only'><option value='0'{$nso_selected}>Все</option><option value='1'{$so_selected}>Только в наличии</option></label>");
+		$tmpl->addContent("<input type='submit' value='Выбрать'>
 		</form></table>
 		<table width='100%'><tr><td id='groups' width='200' valign='top' class='lin0'>");
 		$this->draw_groups(0);
@@ -1755,6 +1762,7 @@ class doc_s_Sklad {
 	function ViewSklad($group=0,$s=''){
 		global $tmpl, $CONFIG, $db;
 		$sklad = $_SESSION['sklad_num'];
+
 		$go = request('go');
 		$lim = 200;
 		$vc_add = '';
@@ -1827,8 +1835,10 @@ class doc_s_Sklad {
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
-		WHERE `doc_base`.`group`='$group'
-		ORDER BY $order";
+		WHERE `doc_base`.`group`='$group' ";
+		if($_SESSION['sklad_store_only'])
+			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
+		$sql.=" ORDER BY $order";
 
 		$page = rcvint('p');
 		$res = $db->query($sql);
@@ -1930,7 +1940,10 @@ class doc_s_Sklad {
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ORDER BY $order LIMIT 100";
+		WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ";
+		if($_SESSION['sklad_store_only'])
+			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
+		$sql.=" ORDER BY $order LIMIT 100";
 		$ores = $db->query($sqla);
 		if ($ores->num_rows) {
 			$tmpl->addContent("<tr><th colspan='18' align='center'>Поиск по названию, начинающемуся на ".html_out($s).": {$ores->num_rows} строк найдено");
@@ -1943,7 +1956,10 @@ class doc_s_Sklad {
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' ORDER BY $order LIMIT 30";
+		WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' ";
+		if($_SESSION['sklad_store_only'])
+			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
+		$sql.=" ORDER BY $order LIMIT 30";
 		$tres = $db->query($sqla);
 		if ($tres->num_rows) {
 			$tmpl->addContent("<tr class='lin0'><th colspan='18' align='center'>Поиск аналога, для ".html_out($s).": {$tres->num_rows} строк найдено");
@@ -1957,7 +1973,10 @@ class doc_s_Sklad {
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		WHERE (`doc_base`.`name` LIKE '%$s_sql%'  OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`vc` NOT LIKE '$s_sql%' AND
-			`doc_base`.`name` NOT LIKE '$s_sql%' ORDER BY $order LIMIT 100";
+			`doc_base`.`name` NOT LIKE '$s_sql%' ";
+		if($_SESSION['sklad_store_only'])
+			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
+		$sql.=" ORDER BY $order LIMIT 100";
 		$res = $db->query($sqla);
 		if ($res->num_rows) {
 			$tmpl->addContent("<tr class='lin0'><th colspan='18' align='center'>Поиск по названию, содержащему ".html_out($s).": {$res->num_rows} строк найдено");

@@ -227,9 +227,11 @@ protected function SaveAndSend()
 	$ex_date	= date("Y-m-d", strtotime( request('ex_date') ) );
 	$no_mail	= request('no_mail');
 	$uwtext		= $wikiparser->parse( html_entity_decode($text,ENT_QUOTES,"UTF-8") );
+	if(!isset($wikiparser->title))
+		throw new Exception("Заголовок новости не задан");
 	$title		= $wikiparser->title;
 	$uwtext		= strip_tags($uwtext);
-	$uwtext		= $wikiparser->title."\n".$uwtext;
+	$uwtext		= $title."\n".$uwtext;
 	$ext='';
 
 	if($type!='novelty' && $type!='stock' && $type!='event')
@@ -240,10 +242,10 @@ protected function SaveAndSend()
 	$title_sql=$db->real_escape_string($title);
 	$text_sql=$db->real_escape_string($text);
 
-	$res=$db->query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
-	VALUES ('$type', '$title', '$text', NOW(), '{$_SESSION['uid']}', '$ex_date' )");
+	$res = $db->query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
+		VALUES ('$type', '$title_sql', '$text_sql', NOW(), '{$_SESSION['uid']}', '$ex_date' )");
 
-	$news_id=$db->insert_id;
+	$news_id = $db->insert_id;
 	if(!$news_id)		throw new Exception("Не удалось получить ID новости");
 	if($type=='stock')	$uwtext.="\n\nАкция действует до: $ex_date\n";
 

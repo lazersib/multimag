@@ -102,11 +102,23 @@ function ExecMode($mode)
 				if (is_array($_SESSION['basket']['cnt'])) {
 					$pc = $this->priceCalcInit();
 					foreach (@$_SESSION['basket']['cnt'] as $item => $cnt) {
-						$price = $pc->getPosAutoPriceValue($item);
+						$price = $pc->getPosAutoPriceValue($item, $cnt);
 						$sum += $price * $cnt;
 					}
 				}
 				echo "Товаров: $korz_cnt на $sum руб.";
+			}
+			else if (isset($_REQUEST['json'])) {
+				$korz_cnt = count(@$_SESSION['basket']['cnt']);
+				$sum = 0;
+				if (is_array($_SESSION['basket']['cnt'])) {
+					$pc = $this->priceCalcInit();
+					foreach (@$_SESSION['basket']['cnt'] as $item => $cnt) {
+						$price = $pc->getPosAutoPriceValue($item, $cnt);
+						$sum += $price * $cnt;
+					}
+				}
+				echo json_encode(array('cnt'=>$korz_cnt, 'sum'=>$sum), JSON_UNESCAPED_UNICODE);
 			}
 			else {
 				if (getenv("HTTP_REFERER"))

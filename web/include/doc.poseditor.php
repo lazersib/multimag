@@ -215,16 +215,19 @@ function GetAllContent() {
 	}
 	
 	while ($nxt = $res->fetch_assoc()) {
-		if ($this->cost_id)	
+		if ($this->cost_id)
 			$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
 		else {
-			$nxt['scost'] = $pc->getPosAutoPriceValue($nxt['pos_id'], $nxt['cnt']);
-			if($nxt['scost']!=$nxt['cost']) {
-				$nxt['cost'] = $nxt['scost'];					
-				$db->update('doc_list_pos', $nxt['line_id'], 'cost', $nxt['cost']);
+			$nxt['scost'] = $pc->getPosUserPriceValue($nxt['pos_id'], $nxt['cnt']);
+			if($this->editable) {
+				$need_cost = $pc->getPosAutoPriceValue($nxt['pos_id'], $nxt['cnt']);
+				if($nxt['cost'] != $need_cost ) {
+					$nxt['cost'] = $need_cost;					
+					$db->update('doc_list_pos', $nxt['line_id'], 'cost', $need_cost);
+				}
 			}
 		}
-			//sprintf("%0.2f", $nxt['base_price']);
+
 		$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 		if ($ret)	$ret.=', ';
 		
@@ -262,14 +265,16 @@ function GetAllContent() {
 			
 			$nxt = $res->fetch_assoc();
 			$pc = PriceCalc::getInstance();
-			if ($this->cost_id) {
+			if ($this->cost_id)
 				$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
-			}
 			else {
-				$nxt['scost'] = $pc->getPosDefaultPriceValue($nxt['pos_id']);
-				if($nxt['scost']!=$nxt['cost']) {
-					$nxt['cost'] = $pc->getPosAutoPriceValue($nxt['pos_id'], $nxt['cnt']);					
-					$db->update('doc_list_pos', $nxt['id'], 'cost', $nxt['cost']);
+				$nxt['scost'] = $pc->getPosUserPriceValue($nxt['pos_id'], $nxt['cnt']);
+				if($this->editable) {
+					$need_cost = $pc->getPosAutoPriceValue($nxt['pos_id'], $nxt['cnt']);
+					if($nxt['cost'] != $need_cost ) {
+						$nxt['cost'] = $need_cost;					
+						$db->update('doc_list_pos', $nxt['line_id'], 'cost', $need_cost);
+					}
 				}
 			}
 			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
@@ -283,17 +288,6 @@ function GetAllContent() {
 
 		return $ret;
 	}
-
-///// Возвращает выбранные данные, которые необходимо отобразить
-//function ShowPosContent($param='')
-//{
-//	global $db;
-//	$ret='';
-//	$res = $db->query("SELECT `id`, `pos`, `cost`, `cnt` FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-//	while($nxt = $res->fetch_row())
-//		$ret.="<tr><td>$nxt[0]</td><td>$nxt[1]</td><td>$nxt[2]</td><td>$nxt[3]</td></tr>";
-//	return $ret;
-//}
 
 /// Получить список номенклатуры заданной группы
 	function GetSkladList($group) {
@@ -391,7 +385,7 @@ function GetAllContent() {
 				
 				if ($ret != '')
 					$ret.=', ';
-//				$ret.="{ id: '{$nxt['id']}', name: '{$nxt['name']}', vc: '{$nxt['vc']}', vendor: '{$nxt['proizv']}', liquidity: '{$nxt['likvid']}', cost: '$cost', cost_class: '$cc', rcost: '$rcost', analog: '{$nxt['analog']}', type: '{$nxt['type']}', d_int: '{$nxt['d_int']}', d_ext: '{$nxt['d_ext']}', size: '{$nxt['size']}', mass: '{$nxt['mass']}', place: '{$nxt['mesto']}', cnt: '{$nxt['cnt']}', allcnt: '{$nxt['allcnt']}', reserve: '$reserve', offer: '$offer', transit: '$transit' }";		
+
 				$ret .= json_encode($nxt, JSON_UNESCAPED_UNICODE);
 			}
 		}

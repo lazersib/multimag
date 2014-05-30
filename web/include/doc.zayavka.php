@@ -310,6 +310,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->setDopData('cena', $this->dop_data['cena']);
 			$new_doc->setDopData('platelshik', $this->doc_data['agent']);
 			$new_doc->setDopData('gruzop', $this->doc_data['agent']);
+			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
 			$new_doc->setDopData('received', 0);
 			$this->sentZEvent('morph_realizaciya');
 			header("Location: doc.php?mode=body&doc=$dd");
@@ -329,6 +330,7 @@ class doc_Zayavka extends doc_Nulltype
 			$new_doc->setDopData('platelshik', $this->doc_data['agent']);
 			$new_doc->setDopData('gruzop', $this->doc_data['agent']);
 			$new_doc->setDopData('received', 0);
+			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
 			$this->sentZEvent('morph_realizaciya');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
@@ -357,6 +359,7 @@ class doc_Zayavka extends doc_Nulltype
 				throw new AccessException();
 			$new_doc=new doc_Realiz_op();
 			$dd=$new_doc->createFromP($this);
+			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
 			$this->sentZEvent('morph_oprealizaciya');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
@@ -366,6 +369,7 @@ class doc_Zayavka extends doc_Nulltype
 				throw new AccessException();
 			$new_doc=new doc_Specific();
 			$dd=$new_doc->createFromP($this);
+			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
 		else if($target_type==6)
@@ -385,7 +389,7 @@ class doc_Zayavka extends doc_Nulltype
 				$doc_data=$this->doc_data;
 				$doc_data['p_doc']=$base;
 				$dd = $new_doc->create($doc_data);
-
+				
 				$new_doc->setDocData('kassa', 1);
 				$db->commit();
 				$ref="Location: doc.php?mode=body&doc=".$dd;

@@ -1181,6 +1181,7 @@ class doc_Nulltype
 			$poseditor = new DocPosEditor($this);
 			$poseditor->cost_id = @$this->dop_data['cena'];
 			$poseditor->sklad_id = $this->doc_data['sklad'];
+			$poseditor->SetEditable($this->doc_data['ok']?0:1);
 		}
 		
 		

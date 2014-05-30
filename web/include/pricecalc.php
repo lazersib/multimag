@@ -57,13 +57,13 @@ class PriceCalc {
 			foreach($contexts as $context) {
 				switch($context) {
 					case 'r':	// retail
-						$this->retail_price_id = $line['id'];
+						$this->retail_price_id = intval($line['id']);
 						break;
 					case 's':	// site user
-						$this->siteuser_price_id = $line['id'];
+						$this->siteuser_price_id = intval($line['id']);
 						break;
 					case 'd':	// default
-						$this->default_price_id = $line['id'];
+						$this->default_price_id = intval($line['id']);
 						break;
 					case 'b':	// bulk
 						$this->bulk_prices[] = array(
@@ -201,6 +201,8 @@ class PriceCalc {
 	/// @return Значение цены
 	public function getPosAutoPriceValue($pos_id, $count=0) {
 		$pos_info = $this->getPosInfo($pos_id);
+		settype($pos_info['bulkcnt'], 'int');
+		settype($count, 'int');
 		
 		if($pos_info['bulkcnt']>1 && $pos_info['bulkcnt']>$count && $this->retail_price_id!=0)
 			$price_id = $this->retail_price_id;
