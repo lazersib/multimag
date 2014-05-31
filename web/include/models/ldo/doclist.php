@@ -47,7 +47,7 @@ class doclist extends \Models\ListDataObject {
 						$filter.=' AND `doc_list`.`firm_id`='.intval($value);
 						break;
 					case 'sk':	// Store
-						$filter.=' AND `doc_list`.`sklad`='.intval($value);
+						$filter.=' AND (`doc_list`.`sklad`='.intval($value).' OR `na_sklad_t`.`value`='.intval($value).')';
 						break;
 					case 'bk':{	// bank/kassa
 						if($value[0]=='b')
@@ -60,6 +60,12 @@ class doclist extends \Models\ListDataObject {
 						break;
 					case 'au':	// Author
 						$filter.=' AND `doc_list`.`user`='.intval($value);
+						break;
+					case 'ok':	// Ok status
+						if($value=='+')
+							$filter.=' AND `doc_list`.`ok`!=0';
+						else if($value=='-')
+							$filter.=' AND `doc_list`.`ok`=0';
 						break;
 					case 'dct':{	if(!is_array($value))	continue;
 							$s = '';

@@ -387,6 +387,9 @@ function initDocJournal(container_id, default_filters) {
 	var pr_sum = 0;
 	var ras_sum = 0;
 	var show_count_column = 0;
+	var pr_cnt = 0;
+	var ras_cnt = 0;
+	var selected_store = 0;
 
 	function buildFilterQuery() {
 		filter_request = '';
@@ -429,6 +432,7 @@ function initDocJournal(container_id, default_filters) {
 		var store_id = document.getElementById('store_id');
 		if (store_id.value!=0)
 			filter_request += '&doclist[sk]=' + encodeURIComponent(store_id.value);
+		selected_store = store_id.value;
 		
 		var afilter_id = document.getElementById('agent_filter');
 		if (afilter_id.value_id!=0)
@@ -443,6 +447,10 @@ function initDocJournal(container_id, default_filters) {
 		var userfilter_id = document.getElementById('user_filter');
 		if (userfilter_id.value_id!=0)
 			filter_request += '&doclist[au]=' + encodeURIComponent(userfilter_id.value_id);
+		
+		var okfilter_id = document.getElementById('ok_filter');		
+		if (okfilter_id.value!='0')
+			filter_request += '&doclist[ok]=' + encodeURIComponent(okfilter_id.value);
 	}
 
 	function restartRequest() {
@@ -451,6 +459,8 @@ function initDocJournal(container_id, default_filters) {
 			old_filter_request = filter_request;
 			pr_sum = 0;
 			ras_sum = 0;
+			pr_cnt = 0;
+			ras_cnt = 0;
 			initTableHead();
 			requestData(0);
 		}
@@ -589,11 +599,8 @@ function initDocJournal(container_id, default_filters) {
 			var date_start = new Date
 			for (var c = 0; i < data.doclist.length; c++)
 			{
-				if (data.doclist[i].ok > 0)
-				{
-					
-					switch (parseInt(data.doclist[i].type))
-					{
+				if (parseFloat(data.doclist[i].ok) > 0) {
+					switch (parseInt(data.doclist[i].type)) {
 						case 1:
 						case 4:
 						case 6:
@@ -605,6 +612,25 @@ function initDocJournal(container_id, default_filters) {
 						case 18:
 							ras_sum += parseFloat(data.doclist[i].sum);
 							break;
+					}
+					if(show_count_column) {
+						switch (parseInt(data.doclist[i].type)) {
+							case 1:	pr_cnt += parseFloat(data.doclist[i].pos_cnt);
+								break;
+							case 2:	ras_cnt += parseFloat(data.doclist[i].pos_cnt);
+								break;
+							case 8:	if(selected_store) {
+									if(selected_store==data.doclist[i].sklad_id)
+										ras_cnt += parseFloat(data.doclist[i].pos_cnt);
+									if(selected_store==data.doclist[i].nasklad_id)
+										pr_cnt += parseFloat(data.doclist[i].pos_cnt);
+								}
+								break;
+							case 17:if(data.doclist[i].pos_page==0) 
+									pr_cnt += parseFloat(data.doclist[i].pos_cnt);
+								else	ras_cnt += parseFloat(data.doclist[i].pos_cnt);
+								break;
+						}
 					}
 				}
 
@@ -628,7 +654,11 @@ function initDocJournal(container_id, default_filters) {
 				if(part<40)
 				window.setTimeout(execRequest, 120);
 			}
-			doc_list_status.innerHTML = "Итого: приход: " + pr_sum.toFixed(2) + ", расход: " + ras_sum.toFixed(2) + ". Баланс: " + (pr_sum - ras_sum).toFixed(2) + ", запрос выполнен за:" + data.exec_time + "сек, отображено за: " + ((new Date - render_start_date) / 1000).toFixed(2) + " сек";
+			var status_text = "<b>Итого</b>: приход: <b>" + pr_sum.toFixed(2) + "</b>, расход: <b>" + ras_sum.toFixed(2) + "</b>. Баланс: " + (pr_sum - ras_sum).toFixed(2);
+			if(show_count_column)
+				status_text += "<br>Приход товара: <b>" + pr_cnt.toFixed(2) + "</b>, расход товара: <b>" + ras_cnt.toFixed(2) + "</b>. Разность: " + (pr_cnt - ras_cnt).toFixed(2);
+			status_text +="<br>Запрос выполнен за:" + data.exec_time + "сек, отображено за: " + ((new Date - render_start_date) / 1000).toFixed(2) + " сек"
+			doc_list_status.innerHTML = status_text;
 		}
 
 		//form_container.appendChild(fragment)
@@ -761,7 +791,7 @@ function initDocJournal(container_id, default_filters) {
 		s += getSelectOptions(skladnames, 0, '');
 		s += "</select></div>";
 		s += "<div class='bf'><input type='text' id='user_filter' placeholder='Автор'></div>";
-
+		s += "<div class='bf'><select id='ok_filter'><option value='0'>Все документы</option><option value='+'>Только проведённые</option><option value='-'>Только непроведённые</option></div>";
 		
 		filter.innerHTML = s;
 		var input = initCalendar('datepicker_f', false);
@@ -783,6 +813,9 @@ function initDocJournal(container_id, default_filters) {
 		input.addEventListener('blur', beginDefferedRequest, false);
 		input.addEventListener('change', beginDefferedRequest, false);
 		input = document.getElementById('store_id');
+		input.addEventListener('blur', beginDefferedRequest, false);
+		input.addEventListener('change', beginDefferedRequest, false);		
+		input = document.getElementById('ok_filter');
 		input.addEventListener('blur', beginDefferedRequest, false);
 		input.addEventListener('change', beginDefferedRequest, false);
 		
