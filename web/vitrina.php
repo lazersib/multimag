@@ -94,31 +94,32 @@ function ExecMode($mode)
 	else if ($mode == 'korz_add') {
 		$cnt = rcvint('cnt');
 		if ($p) {
-			@$_SESSION['basket']['cnt'][$p] += $cnt;
+			$basket = Models\Basket::getInstance();
+			$basket->setItem($p, $cnt);
+			$basket->save();
 			$tmpl->ajax = 1;
-			if (isset($_REQUEST['j'])) {
-				$korz_cnt = count(@$_SESSION['basket']['cnt']);
+			
+			if(isset($_REQUEST['j']) || isset($_REQUEST['json'])) {
+				$basket_cnt = $basket->getCount();
 				$sum = 0;
-				if (is_array($_SESSION['basket']['cnt'])) {
+				if($basket_cnt) {
 					$pc = $this->priceCalcInit();
-					foreach (@$_SESSION['basket']['cnt'] as $item => $cnt) {
-						$price = $pc->getPosAutoPriceValue($item, $cnt);
+					$basket_items = $basket->getItems();
+					
+					foreach ($basket_items as $item) {
+						$price = $pc->getPosAutoPriceValue($item['pos_id'], $item['cnt']);
 						$sum += $price * $cnt;
 					}
 				}
-				echo "Товаров: $korz_cnt на $sum руб.";
-			}
-			else if (isset($_REQUEST['json'])) {
-				$korz_cnt = count(@$_SESSION['basket']['cnt']);
-				$sum = 0;
-				if (is_array($_SESSION['basket']['cnt'])) {
-					$pc = $this->priceCalcInit();
-					foreach (@$_SESSION['basket']['cnt'] as $item => $cnt) {
-						$price = $pc->getPosAutoPriceValue($item, $cnt);
-						$sum += $price * $cnt;
-					}
+				
+				
+				if(isset($_REQUEST['json']))
+					echo json_encode(array('cnt'=>$basket_cnt, 'sum'=>$sum), JSON_UNESCAPED_UNICODE);
+				else if(isset($_REQUEST['j'])) {
+					if($basket_cnt)
+						echo "Товаров: $basket_cnt на $sum руб.";
+					else	echo "Корзина пуста";
 				}
-				echo json_encode(array('cnt'=>$korz_cnt, 'sum'=>$sum), JSON_UNESCAPED_UNICODE);
 			}
 			else {
 				if (getenv("HTTP_REFERER"))
@@ -126,36 +127,46 @@ function ExecMode($mode)
 				$tmpl->msg("Товар добавлен в корзину!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 			}
 		}
-		else throw new NotFoundException("Номер товара не задан!");
+		else throw new NotFoundException("ID товара не задан!");
 	} 
 	else if ($mode == 'korz_adj') {
 		$tmpl->ajax = 1;
 		$cnt = rcvint('cnt');
 		if ($p) {
-			@$_SESSION['basket']['cnt'][$p]+=$cnt;
+			$basket = Models\Basket::getInstance();
+			$basket->setItem($p, $cnt);
+			$basket->save();
 			$tmpl->addContent("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 		}
 		else throw new NotFoundException("Номер товара не задан!");
 	}
 	else if ($mode == 'korz_del') {
-		unset($_SESSION['basket']['cnt'][$p]);
+		$basket = Models\Basket::getInstance();
+		$basket->removeItem($p);
+		$basket->save();
 		$tmpl->msg("Товар убран из корзины!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
 	}
 	else if ($mode == 'korz_clear') {
-		unset($_SESSION['basket']['cnt']);
+		$basket = Models\Basket::getInstance();
+		$basket->clear();
+		$basket->save();
 		$tmpl->msg("Корзина очищена!", "info", "<a class='urllink' href='/vitrina.php'>Вернутья на витрину</a>");
 	}
 	else if ($mode == 'basket_submit') {
 		$tmpl->ajax = 1;
-		if (isset($_SESSION['basket']['cnt']))
-			if (is_array($_SESSION['basket']['cnt']))
-				foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
-					$ncnt = request('cnt' . $item);
-					if ($ncnt <= 0)
-						unset($_SESSION['basket']['cnt'][$item]);
-					else	$_SESSION['basket']['cnt'][$item] = round($ncnt, 3);
-					$_SESSION['basket']['comments'][$item] = @$_REQUEST['comm' . $item];
-				}
+		$basket = Models\Basket::getInstance();
+		
+		if ($basket->getCount()) {
+			$basket_items = $basket->getItems();
+			foreach ($basket_items as $item) {
+				$new_cnt = request('cnt' . $item['pos_id']);
+				if ($new_cnt <= 0)
+					$basket->removeItem($item['pos_id']);
+				else	$basket->setItem($item['pos_id'], round($new_cnt), request('comm'.$item['pos_id']));
+			}
+			$basket->save();
+		}
+		
 		if (@$_REQUEST['button'] == 'recalc') {
 			if (getenv("HTTP_REFERER"))
 				header('Location: ' . getenv("HTTP_REFERER"));
@@ -754,50 +765,64 @@ protected function Basket() {
 	$s = '';
 	$sum = $exist = $lock = $lock_mark = $mult_lock = 0;
 	$i = 1;
-	if(isset($_SESSION['basket']['cnt'])) {
+	
+	$basket = Models\Basket::getInstance();
+	if($basket->getCount()) {
 		$pc = $this->priceCalcInit();
-		foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
-			settype($item,'int');
-			settype($cnt,'int');
-			$res = $db->query("SELECT `id`, `name`, `cost_date`, `mult` FROM `doc_base` WHERE `id`=$item");
-			$nx = $res->fetch_assoc();
+		$basket_items = $basket->getItems();
+		foreach ($basket_items as $item) {
+			settype($item['pos_id'], 'int');
+			settype($item['cnt'], 'int');
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`,
+				`doc_img`.`type` AS `img_type`, `mult`, `bulkcnt`, `class_unit`.`rus_name1` AS `unit_name`
+			FROM `doc_base`
+			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+			WHERE `doc_base`.`id`=".intval($item['pos_id']));
+			$line = $res->fetch_assoc();
 			
-			$price = $pc->getPosAutoPriceValue($nx['id'], $cnt);
-
+			$price = $pc->getPosAutoPriceValue($line['id'], $item['cnt']);
+			
+			// При нулевой цене предупреждать *товар под заказ*
 			if($price<=0) {
 				$lock = 1;
 				$lock_mark = 1;
 			}
 			else $lock_mark = 0;
 			
-			if($nx['mult']>1) {
-				if($cnt%$nx['mult']) {
+			// Не давать оформить заказ при нарушении кратности
+			if($line['mult']>1) {
+				if($item['cnt']%$line['mult']) {
 					$mult_lock = 1;
 					$lock_mark = 1;
 				}
 			}
 			
+			// Если параметр включен - при превышении кол-ва на складе(за вычетом резервов) тоже сообщать *товар под заказ*
 			if(@$CONFIG['site']['vitrina_cntlock'])	{
 				if(isset($CONFIG['site']['vitrina_sklad'])) {
 					$sklad_id = round($CONFIG['site']['vitrina_sklad']);
-					$res = $db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
+					$res = $db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='{$line['id']}' AND `sklad`='$sklad_id'");
 				}
-				else	$res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
+				else	$res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='{$line['id']}'");
 				if($res->num_rows) {
 					$tmp = $res->fetch_row();
-					$sklad_cnt = $tmp[0] - DocRezerv($item);
+					$sklad_cnt = $tmp[0] - DocRezerv($line['id']);
 				}
-				else	$sklad_cnt = DocRezerv($item)*(-1);
+				else	$sklad_cnt = DocRezerv($line['id'])*(-1);
 
-				if($cnt>$sklad_cnt) {
+				if($item['cnt']>$sklad_cnt) {
 					$lock=1;
 					$lock_mark=1;
 				}
 			}
+			
 			$cce = '';
+			// При *серой* цене информировать - *товар под заказ*
 			if(@$CONFIG['site']['grey_price_days']) {
 				$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
-				if( strtotime($nx['cost_date']) < $cce_time ) {
+				if( strtotime($line['cost_date']) < $cce_time ) {
 					if(@$CONFIG['site']['vitrina_pricelock']) {
 						$lock=1;
 						$lock_mark=1;
@@ -805,21 +830,37 @@ protected function Basket() {
 					$cce = ' style=\'color:#888\'';
 				}
 			}
-
-			$sm = $price * $cnt;
+			
+			$sm = $price * $item['cnt'];
 			$sum += $sm;
 			$sm = sprintf("%0.2f", $sm);
-			if(isset($_SESSION['basket']['comments'][$item]))
-				$comm = $_SESSION['basket']['comments'][$item];
-			else	$comm = '';
 			$lock_mark = $lock_mark?'color: #f00':'';
 			if($price<=0)	$price='уточняйте';
-			$s.="
-			<tr id='korz_ajax_item_$item' style='$lock_mark'><td class='right'>$i <span id='korz_item_clear_url_$item'><a href='/vitrina.php?mode=korz_del&p=$item' onClick='korz_item_clear($item); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span><td><a href='/vitrina.php?mode=product&amp;p={$nx['id']}'>".html_out($nx['name'])."</a><td class='right' $cce>$price<td class='right'><span class='sum'>$sm</span><td><input type='number' name='cnt$item' value='$cnt' class='mini'><td><input type='text' name='comm$item' style='width: 90%' value='$comm' maxlength='100'>";
+			
+			$link = $this->GetProductLink($item['pos_id'],'');
+			
+			if($line['img_id']) {
+				$miniimg=new ImageProductor($line['img_id'],'p', $line['img_type']);
+				$miniimg->SetX(24);
+				$miniimg->SetY(32);
+				$img="<img src='".$miniimg->GetURI()."' alt='".html_out($line['name'])."'>";
+			}
+			else $img="";
+			
+			$s.="<tr id='korz_ajax_item_{$item['pos_id']}' style='$lock_mark'>
+			<td class='right'>$i <span id='korz_item_clear_url_{$item['pos_id']}'><a href='/vitrina.php?mode=korz_del&p={$item['pos_id']}' onClick='korz_item_clear({$item['pos_id']}); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span></td>
+			<td>$img</td>
+			<td><a href='/vitrina.php?mode=product&amp;p={$line['id']}'>".html_out($line['name'])."</a></td>
+			<td class='right' $cce>$price</td>
+			<td class='right'><span class='sum'>$sm</span></td>
+			<td><input type='number' name='cnt{$item['pos_id']}' value='{$item['cnt']}' class='mini'></td>
+			<td><input type='text' name='comm{$item['pos_id']}' style='width: 90%' value='".html_out($item['comment'])."' maxlength='100'></td>
+			</tr>";
 			$exist = 1;
 			$i++;
 		}
 	}
+	
 	if(!$exist) $tmpl->msg("Ваша корзина пуста! Выберите, пожалуйста интересующие Вас товары!","info");
 	else {
 		$tmpl->addContent("
@@ -861,9 +902,9 @@ protected function Basket() {
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='basket_submit'>
 		<table width='100%' class='list'>
-		<tr class='title'><th>N</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
+		<tr class='title'><th>N</th><th>&nbsp;</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
 		$s
-		<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='3'><span class='sums'>$sum</span> рублей</td></tr>
+		<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='4'><span class='sums'>$sum</span> рублей</td></tr>
 		</table>
 		<br>
 		<center><button name='button' value='recalc' type='submit'>Пересчитать</button>
@@ -871,23 +912,20 @@ protected function Basket() {
 		<center><span id='korz_clear_url'><a href='/vitrina.php?mode=korz_clear' onClick='korz_clear(); return false;'><b>Очистить корзину!</b></a></span></center><br>
 		</form>
 		</center><br><br>
-		");
-
-		//$_SESSION['basket_sum'] = $sum;
-		//if( ($_SESSION['korz_sum']>20000) )	$tmpl->msg("Ваш заказ на сумму более 20'000, вам будет предоставлена удвоенная скидка!");
-		//else $tmpl->msg("Цены указаны со скидкой 3%. А при оформлении заказа на сумму более 20'000 рублей предоставляется скидка 6%","info");
-		
+		");		
 	}
 }
 
 /// Оформление доставки
-protected function Delivery()
-{
-	$this->basket_sum=0;
-	if(isset($_SESSION['basket']['cnt'])) {
+protected function Delivery() {
+	$this->basket_sum = 0;
+	$basket = Models\Basket::getInstance();
+	
+	if($basket->getCount()) {
 		$pc = $this->priceCalcInit();
-		foreach($_SESSION['basket']['cnt'] as $item => $cnt) {
-			$this->basket_sum += $pc->getPosAutoPriceValue($item, $cnt) * $cnt;
+		$basket_items = $basket->getItems();
+		foreach($basket_items as $item) {
+			$this->basket_sum += $pc->getPosAutoPriceValue($item['pos_id'], $item['cnt']) * $item['cnt'];
 		}
 	}
 	
@@ -1326,9 +1364,12 @@ protected function MakeBuy() {
 		header("Location: /vitrina.php?mode=buyform&step=1&cwarn=1");
 		return;
 	}
-
-	if($_SESSION['basket']['cnt']) {
+	
+	$basket = Models\Basket::getInstance();
+	if($basket->getCount()) {
 		$pc = $this->priceCalcInit();
+		$basket_items = $basket->getItems();
+
 		if(!isset($CONFIG['site']['vitrina_subtype']))		$subtype = "site";
 		else	$subtype = $CONFIG['site']['vitrina_subtype'];
 		$tm = time();
@@ -1351,21 +1392,29 @@ protected function MakeBuy() {
 		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
 
 		$order_items = $admin_items = $lock = '';
-		foreach($_SESSION['basket']['cnt'] as $item => $cnt) {			
-			$price = $pc->getPosAutoPriceValue($item, $cnt);
-			if(isset($_SESSION['basket']['comments'][$item]))
-				$comm_sql = $db->real_escape_string($_SESSION['basket']['comments'][$item]);
-			else	$comm_sql='';
-			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$item','$cnt','$price','$comm_sql')");
+		
+		foreach ($basket_items as $item) {			
+			settype($item['pos_id'], 'int');
+			
+			$price = $pc->getPosAutoPriceValue($item['pos_id'], $cnt);
+			$comm_sql = $db->real_escape_string($item['comment']);
+			
+			$db->insertA('doc_list_pos', array('doc'=>$doc, 'tovar'=>$item['pos_id'], 'cnt'=>$item['cnt'], 'cost'=>$price, 'comm'=>$item['comment']));
 
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`cost`, `class_unit`.`rus_name1`, `doc_base`.`cost_date` FROM `doc_base`
-			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
-			WHERE `doc_base`.`id`='$item'");
+			$res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_group`.`printname`, ' ' , `doc_base`.`name`) AS `pos_name`,
+				`doc_base`.`proizv` AS `vendor`, `doc_base`.`vc`, `doc_base`.`cost` AS `base_price`, `class_unit`.`rus_name1` AS `unit_name`, `doc_base`.`cost_date`
+				FROM `doc_base`
+				LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+				LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+				WHERE `doc_base`.`id`='{$item['pos_id']}'");
 
-			$tov_info = $res->fetch_array();
-			$order_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $price руб.\n";
-			$admin_items .= "$tov_info[1] $tov_info[2]/$tov_info[3] ($tov_info[4]), $cnt $tov_info[6] - $price руб. (базовая - $tov_info[5]р.)\n";
+			$pos_info = $res->fetch_assoc();
+			$item_str = $pos_info['pos_name'].'/'.$pos_info['vendor'];
+			if($pos_info['vc'])
+				$item_str .= ' ('.$pos_info['vc'].')';
+			$item_str .= ' - '.$cnt.' '.$pos_info['unit_name'].' - '.$price.' руб.';
+			$order_items .=  $item_str."\n";
+			$admin_items .= $item_str." (базовая - {$pos_info['base_price']} руб.)\n";
 			
 			if($price<=0) {
 				$lock = 1;
@@ -1375,25 +1424,25 @@ protected function MakeBuy() {
 			if(@$CONFIG['site']['vitrina_cntlock'] || @$CONFIG['site']['vitrina_pricelock']) {
 				if(@$CONFIG['site']['vitrina_cntlock']) {
 					if(isset($CONFIG['site']['vitrina_sklad'])) {
-						$sklad_id=round($CONFIG['site']['vitrina_sklad']);
-						$res=$db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='$item' AND `sklad`='$sklad_id'");
+						$sklad_id = round($CONFIG['site']['vitrina_sklad']);
+						$res = $db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='{$item['pos_id']}' AND `sklad`='$sklad_id'");
 					}
-					else	$res=$db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='$item'");
+					else	$res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='{$item['pos_id']}'");
 					if($res->num_rows) {
-						$tmp=$res->fetch_row();
-						$sklad_cnt=$tmp[0]-DocRezerv($item);
+						$tmp = $res->fetch_row();
+						$sklad_cnt = $tmp[0]-DocRezerv($item['pos_id']);
 					}
-					else	$sklad_cnt=DocRezerv($item)*(-1);
+					else	$sklad_cnt = DocRezerv($item['pos_id'])*(-1);
 					
 					if($cnt>$sklad_cnt) {
-						$lock=1;
-						$lock_mark=1;
+						$lock = 1;
+						$lock_mark = 1;
 					}
 				}
 				if(@$CONFIG['site']['vitrina_pricelock']) {
-					if(strtotime($tov_info['cost_date'])<(time()-60*60*24*30*6)) {
-						$lock=1;
-						$lock_mark=1;
+					if(strtotime($pos_info['cost_date'])<(time()-60*60*24*30*6)) {
+						$lock = 1;
+						$lock_mark = 1;
 					}
 				}
 			}
@@ -1404,16 +1453,17 @@ protected function MakeBuy() {
 			$res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
 			list($d_price) = $res->fetch_row();
 			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name` FROM `doc_base`
-			LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
-			WHERE `doc_base`.`id`='$d_service_id'");
-			$tov_info = $res->fetch_array();
-			$order_items.="$tov_info[1] $tov_info[2] - $d_price руб.\n";
-			$admin_items.="$tov_info[1] $tov_info[2] - $d_price руб.\n";
+			$res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `pos_name`
+				FROM `doc_base`
+				LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+				LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+				WHERE `doc_base`.`id`='$d_service_id'");
+			$pos_info = $res->fetch_assoc();
+			$order_items .= $pos_info['pos_name']." - $d_price руб.\n";
+			$admin_items .= $pos_info['pos_name']." - $d_price руб.\n";
 		}
-		$zakaz_sum=DocSumUpdate($doc);
-		$_SESSION['order_id']=$doc;
+		$zakaz_sum = DocSumUpdate($doc);
+		$_SESSION['order_id'] = $doc;
 
 		$text="На сайте {$CONFIG['site']['name']} оформлен новый заказ.\n";
 		$text.="Посмотреть можно по ссылке: http://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
@@ -1604,21 +1654,23 @@ protected function GetCountInfo($count, $tranzit)
 
 protected function priceCalcInit() {
 	$pc = PriceCalc::getInstance();
+	$basket = Models\Basket::getInstance();
+
 	if(@$_SESSION['uid']) {
 		$pc->setFromSiteFlag(1);
 		$up = getUserProfile($_SESSION['uid']);
 		$pc->setAgentId($up['main']['agent_id']);
 	}
-
-	if (isset($_SESSION['basket']['cnt']))
-		if (is_array($_SESSION['basket']['cnt'])) {
-			$sum = 0;
-			foreach ($_SESSION['basket']['cnt'] as $item => $cnt) {
-				$sum += $pc->getPosDefaultPriceValue($item) * $cnt;
-			}
-			$pc->setOrderSum($sum);
-			$this->base_basket_sum = $sum;
+	
+	if($basket->getCount()) {
+		$basket_items = $basket->getItems();		
+		$sum = 0;
+		foreach ($basket_items as $item) {
+			$sum += $pc->getPosDefaultPriceValue($item['pos_id']) * $item['cnt'];
 		}
+		$pc->setOrderSum($sum);
+		$this->base_basket_sum = $sum;
+	}
 	return $pc;
 }
 
