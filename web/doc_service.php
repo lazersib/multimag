@@ -603,9 +603,9 @@ div.clear
 
 
 	$tmpl->addContent("<div class='tabeditor'><div class='group_menu' onclick='menuclick(event)'>");
-	$rgroups=$db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+	$rgroups = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
 	$content='';
-	while($group = $res->fetch_row()) {
+	while($group = $rgroups->fetch_row()) {
 		if($group[0] == $cur_group) {
 			$gi="style='background-color: #fff; color: #66f;'";
 			$gc="style='display: block;'";
@@ -618,8 +618,8 @@ div.clear
 		<input type='hidden' name='opt' value='save'>
 		<input type='hidden' name='group' value='{$group[0]}'>
 		<table><tr><th>ID</th><th>Название</th><th>Тип данных</th><th>Ассоциация с Яндекс.Маркет</th></tr>";
-		$rparams=$db->query("SELECT `id`, `param`, `type`, `pgroup_id`, `ym_assign` FROM  `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
-		while($param = $db->fetch_row()) {
+		$rparams = $db->query("SELECT `id`, `param`, `type`, `pgroup_id`, `ym_assign` FROM  `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
+		while($param = $rparams->fetch_row()) {
 			$content.="<tr><td>$param[0]:</td>
 			<td><input type='text' name='param[$param[0]]' value='$param[1]'></td>
 			<td><select name='type[$param[0]]'>";

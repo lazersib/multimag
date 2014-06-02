@@ -19,8 +19,7 @@
 
 
 /// Документ *Реализация*
-class doc_Realizaciya extends doc_Nulltype
-{
+class doc_Realizaciya extends doc_Nulltype {
 	var $status_list;
 
 	function __construct($doc=0)
@@ -497,8 +496,7 @@ class doc_Realizaciya extends doc_Nulltype
 		$cost = sprintf("%01.2f руб.", $sum);
 
 		$prop='';
-		if($sum>0)
-		{
+		if($sum>0) {
 			$add='';
 			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
 			$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
@@ -517,10 +515,9 @@ class doc_Realizaciya extends doc_Nulltype
 		if($this->dop_data['mest'])	$str.=", мест: ".$this->dop_data['mest'];
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 
-		if($sum!=$skid_sum)
-		{
+		if($sum < $skid_sum) {
 			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
-			$str="Скидка: $cost";
+			$str = "В том числе, скидка: $cost";
 			$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		}
 

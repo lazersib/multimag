@@ -1942,8 +1942,8 @@ class doc_s_Sklad {
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ";
 		if($_SESSION['sklad_store_only'])
-			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
-		$sql.=" ORDER BY $order LIMIT 100";
+			$sqla .= " AND `doc_base_cnt`.`cnt`>0 ";
+		$sqla.=" ORDER BY $order LIMIT 100";
 		$ores = $db->query($sqla);
 		if ($ores->num_rows) {
 			$tmpl->addContent("<tr><th colspan='18' align='center'>Поиск по названию, начинающемуся на ".html_out($s).": {$ores->num_rows} строк найдено");
@@ -1958,8 +1958,8 @@ class doc_s_Sklad {
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' ";
 		if($_SESSION['sklad_store_only'])
-			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
-		$sql.=" ORDER BY $order LIMIT 30";
+			$sqla .= " AND `doc_base_cnt`.`cnt`>0 ";
+		$sqla.=" ORDER BY $order LIMIT 30";
 		$tres = $db->query($sqla);
 		if ($tres->num_rows) {
 			$tmpl->addContent("<tr class='lin0'><th colspan='18' align='center'>Поиск аналога, для ".html_out($s).": {$tres->num_rows} строк найдено");
@@ -1975,8 +1975,8 @@ class doc_s_Sklad {
 		WHERE (`doc_base`.`name` LIKE '%$s_sql%'  OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`vc` NOT LIKE '$s_sql%' AND
 			`doc_base`.`name` NOT LIKE '$s_sql%' ";
 		if($_SESSION['sklad_store_only'])
-			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
-		$sql.=" ORDER BY $order LIMIT 100";
+			$sqla .= " AND `doc_base_cnt`.`cnt`>0 ";
+		$sqla.=" ORDER BY $order LIMIT 100";
 		$res = $db->query($sqla);
 		if ($res->num_rows) {
 			$tmpl->addContent("<tr class='lin0'><th colspan='18' align='center'>Поиск по названию, содержащему ".html_out($s).": {$res->num_rows} строк найдено");
