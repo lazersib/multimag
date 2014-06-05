@@ -1920,7 +1920,7 @@ class doc_s_Sklad {
 		$tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'><tr>
 		<th>№{$vc_add}<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>АЦП, р. $cheader_add<th>Аналог{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
 
-		switch ($CONFIG['doc']['sklad_default_order']) {
+		switch (@$CONFIG['doc']['sklad_default_order']) {
 			case 'vc': $order = '`doc_base`.`vc`';
 				break;
 			case 'cost': $order = '`doc_base`.`cost`';
@@ -1940,7 +1940,7 @@ class doc_s_Sklad {
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ";
+		WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') ";
 		if($_SESSION['sklad_store_only'])
 			$sqla .= " AND `doc_base_cnt`.`cnt`>0 ";
 		$sqla.=" ORDER BY $order LIMIT 100";

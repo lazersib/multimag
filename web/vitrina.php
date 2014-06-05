@@ -1366,6 +1366,7 @@ protected function MakeBuy() {
 	}
 	
 	$basket = Models\Basket::getInstance();
+
 	if($basket->getCount()) {
 		$pc = $this->priceCalcInit();
 		$basket_items = $basket->getItems();
@@ -1396,7 +1397,7 @@ protected function MakeBuy() {
 		foreach ($basket_items as $item) {			
 			settype($item['pos_id'], 'int');
 			
-			$price = $pc->getPosAutoPriceValue($item['pos_id'], $cnt);
+			$price = $pc->getPosAutoPriceValue($item['pos_id'], $item['cnt']);
 			$comm_sql = $db->real_escape_string($item['comment']);
 			
 			$db->insertA('doc_list_pos', array('doc'=>$doc, 'tovar'=>$item['pos_id'], 'cnt'=>$item['cnt'], 'cost'=>$price, 'comm'=>$item['comment']));
@@ -1412,7 +1413,7 @@ protected function MakeBuy() {
 			$item_str = $pos_info['pos_name'].'/'.$pos_info['vendor'];
 			if($pos_info['vc'])
 				$item_str .= ' ('.$pos_info['vc'].')';
-			$item_str .= ' - '.$cnt.' '.$pos_info['unit_name'].' - '.$price.' руб.';
+			$item_str .= ' - '.$item['cnt'].' '.$pos_info['unit_name'].' - '.$price.' руб.';
 			$order_items .=  $item_str."\n";
 			$admin_items .= $item_str." (базовая - {$pos_info['base_price']} руб.)\n";
 			
@@ -1434,7 +1435,7 @@ protected function MakeBuy() {
 					}
 					else	$sklad_cnt = DocRezerv($item['pos_id'])*(-1);
 					
-					if($cnt>$sklad_cnt) {
+					if($item['cnt']>$sklad_cnt) {
 						$lock = 1;
 						$lock_mark = 1;
 					}
@@ -1517,7 +1518,9 @@ protected function MakeBuy() {
 			}
 		}
 		else $tmpl->msg("Ваш заказ оформлен! Номер заказа: $doc/$altnum. Запомните или запишите его. С вами свяжутся в ближайшее время для уточнения цены и наличия товара! Оплатить заказ будет возможно после его подтверждения оператором.");
-		unset($_SESSION['basket']);
+		//unset($_SESSION['basket']);
+		$basket->clear();
+		$basket->save();
 	}
 	else $tmpl->msg("Ваша корзина пуста! Вы не можете оформить заказ! Быть может, Вы его уже оформили?","err");
 }
