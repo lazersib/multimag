@@ -1112,7 +1112,7 @@ protected function TovList_SimpleTable($res, $lim) {
 		else if($nxt['mult']>1)	$buy_cnt = $nxt['mult'];
 		else			$buy_cnt = 1;
 		
-		@$tmpl->addContent("<td><a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>");
+		@$tmpl->addContent("<td><a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>");
 		$i++;
 		if($i >= $lim)	break;
 	}
@@ -1184,7 +1184,7 @@ protected function TovList_ImageList($res, $lim) {
 		<b>Цена:</b> <span{$cce}>$price руб.</span> / {$nxt['units']}<br>
 		<b>Производитель:</b> ".html_out($nxt['proizv'])."<br>
 		<b>Кол-во:</b> $nal<br>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
+		<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
 		</div>");
 
 		$i++;

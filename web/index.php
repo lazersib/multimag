@@ -182,7 +182,7 @@ else
 			<a href='$link'>$img</a>
 			<h2><a href='$link'>$html_name</a></h2>
 			<b>Цена:</b> $cost руб / {$line['units']}<br>
-			<a href='/vitrina.php?mode=korz_add&amp;p={$line['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$line['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
+			<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$line['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$line['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
 			</div>");
 		}
 		$tmpl->addContent("<div class='clear'><br></div>
@@ -221,7 +221,7 @@ else
 		<a href='$link'>$img</a>
 		<h2>$html_name</h2>
 		<b>Цена:</b> $cost руб / {$line['units']}<br>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$line['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$line['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
+		<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$line['id']}&amp;cnt=1' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$line['id']}&amp;cnt=1','popwin');\" rel='nofollow'>В корзину!</a>
 		</div>");
 
 		$i++;

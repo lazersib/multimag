@@ -69,7 +69,7 @@ if($mode==''){
 	if(isAccess('admin_comments','view'))
 		$tmpl->addContent("<li><a href='/adm_comments.php'>Администрирование коментариев</a></li>");
 	if(isAccess('admin_users','view'))
-		$tmpl->addContent("<li><a href='/adm_users.php'>Администрирование пользователей (в разработке)</a></li>");
+		$tmpl->addContent("<li><a href='/adm_users.php'>Администрирование пользователей</a></li>");
 
 	// Разное
 	if(isAccess('generic_articles','view') || isAccess('generic_tickets','view'))	$tmpl->addContent("<h2>Разное</h2>");

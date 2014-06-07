@@ -213,9 +213,9 @@ function SearchHilight($str,$substr) {
 /// @brief Генератор псевдоуникального кода.
 ///
 /// Используется для генерации легкозапоминаемых паролей.
-/// @param num Если true - использовать только цифры.
-/// @param minlen Минимальная длина кода.
-/// @param maxlen Максимальная длина кода.
+/// @param $num Если true - использовать только цифры.
+/// @param $minlen Минимальная длина кода.
+/// @param $maxlen Максимальная длина кода.
 function keygen_unique($num=0, $minlen=5, $maxlen=12) {
 	if($minlen<1) $minlen = 5;
 	if($maxlen>10000) $maxlen = 10000;
@@ -256,8 +256,8 @@ function keygen_unique($num=0, $minlen=5, $maxlen=12) {
 // ======================================= Обработчики ввода переменных ====================================
 
 /// Обёртка над $_REQUEST, позволяющая задать значение по умолчанию
-/// @param varname Имя элемента $_REQUEST
-/// @param dev Возвращаемое значение, если искомый элемент отсутствует
+/// @param $varname Имя элемента $_REQUEST
+/// @param $dev Возвращаемое значение, если искомый элемент отсутствует
 function request($varname,$def='')
 {
 	if(isset($_REQUEST[$varname]))	return $_REQUEST[$varname];
@@ -265,8 +265,8 @@ function request($varname,$def='')
 }
 
 /// Получает часть массива $_REQUEST, позволяет задать значение по умолчанию для отсутствующих элементов
-/// @param varname Массив значений ключенй $_REQUEST
-/// @param dev Возвращаемое значение, если искомый элемент отсутствует
+/// @param $varname Массив значений ключенй $_REQUEST
+/// @param $dev Возвращаемое значение, если искомый элемент отсутствует
 function requestA($var_array, $def='')
 {
 	$a=array_fill_keys($var_array, $def);
@@ -347,9 +347,9 @@ function auth() {
 }
 
 /// Есть ли привилегия доступа к указанному объекту для указанной операции
-/// @param object Имя объекта, для которого нужно проверить привилегии
-/// @param action Имя действия, для осуществления которого нужно проверить привилегии
-/// @param no_redirect Если false - то в случае отсутствия привилегий, и если не пройдена аутентификация, выполняет редирект на страницу аутентификации
+/// @param $object Имя объекта, для которого нужно проверить привилегии
+/// @param $action Имя действия, для осуществления которого нужно проверить привилегии
+/// @param $no_redirect Если false - то в случае отсутствия привилегий, и если не пройдена аутентификация, выполняет редирект на страницу аутентификации
 function isAccess($object, $action,$no_redirect=false)
 {
 	global $db;
@@ -403,10 +403,10 @@ function translitIt($str)
 /// @brief Выполнение рассылки сообщения на электронную почту по базе агентов и зарегистрированных пользователей.
 ///
 /// В текст рассылки автоматически добавляется информация о том, как отказаться от рассылки
-/// @param title Заголовок сообщения
-/// @param subject Тема email сообщения
-/// @param msg Тело сообщения
-/// @param msg ID рассылки
+/// @param $title Заголовок сообщения
+/// @param $subject Тема email сообщения
+/// @param $msg Тело сообщения
+/// @param $list_id ID рассылки
 function SendSubscribe($title, $subject, $msg, $list_id='') {
 	global $CONFIG, $db;
 	if(!$list_id)
@@ -452,8 +452,8 @@ $msg
 }
 
 /// Отправляет оповещение администратору сайта по всем доступным каналам связи
-/// @param text Тело сообщения
-/// @param subject Тема сообщения
+/// @param $text Тело сообщения
+/// @param $subject Тема сообщения
 function sendAdmMessage($text,$subject='') {
 	global $CONFIG;
 	if($subject=='')	$subject="Admin mail from {$CONFIG['site']}";
@@ -510,231 +510,239 @@ function getUserProfile($uid)
 }
 
 /// Класс шаблонизатора вывода страницы. Содержит методы, отвечающие за загрузку темы оформления, заполнения страницы содержимым и отправки в броузер
-class BETemplate
-{
-	var $tpl;			///< Шаблон
-	var $ajax=0;			///< Флаг ajax выдачи
-	var $tplname;			///< Наименование загруженного шаблона
-	var $page_blocks=array();	///< Новые блоки шаблонизатора. Ассоциативный массив. Замена устаревшего $page
-	var $hide_blocks=array();	///< Скрытые блоки. Блоки, отображать которые не нужно
+class BETemplate {
 
-	function __construct()
-	{
+	var $tpl;			///< Шаблон
+	var $ajax = 0;			///< Флаг ajax выдачи
+	var $tplname;			///< Наименование загруженного шаблона
+	var $page_blocks = array();	///< Новые блоки шаблонизатора. Ассоциативный массив. Замена устаревшего $page
+	var $hide_blocks = array();	///< Скрытые блоки. Блоки, отображать которые не нужно
+	var $breadcrumbs = array();	///< "Хлебные крошки" - массив в формате текст->ссылка
+
+	function __construct() {
 		global $CONFIG;
-		if($CONFIG['site']['skin'])	$this->loadTemplate($CONFIG['site']['skin']);
-		else				$this->loadTemplate('default');
+		if ($CONFIG['site']['skin'])
+			$this->loadTemplate($CONFIG['site']['skin']);
+		else
+			$this->loadTemplate('default');
 	}
+
 	/// Загрузка шаблона по его имени
-	function loadTemplate($s)
-	{
-		$this->tplname=$s;
-		$fd=@file('skins/'.$s.'/style.tpl');
-		if($fd)
-		{
-			$this->tpl="";
-			foreach($fd as $item)
+	function loadTemplate($s) {
+		$this->tplname = $s;
+		$fd = @file('skins/' . $s . '/style.tpl');
+		if ($fd) {
+			$this->tpl = "";
+			foreach ($fd as $item)
 				$this->tpl.=$item;
 		}
 	}
 
 	/// Установить флаг скрытия заданной части страницы
-	/// @param block Имя блока страницы
-	function hideBlock($block)
-	{
-		$this->hide_blocks[$block]=true;
+	/// @param $block Имя блока страницы
+	function hideBlock($block) {
+		$this->hide_blocks[$block] = true;
 	}
 
 	/// Снять флаг скрытия заданной части страницы
-	/// @param block Имя блока страницы
-	function showBlock($block)
-	{
+	/// @param $block Имя блока страницы
+	function showBlock($block) {
 		unset($this->hide_blocks[$block]);
 	}
 
 	/// Задать HTML содержимое шапки страницы
-	function setTop($s)
-	{
-		@$this->page_blocks['top']=$s;
+	function setTop($s) {
+		@$this->page_blocks['top'] = $s;
 	}
 
 	/// Добавить HTML содержимое в конец шапки страницы
-	function addTop($s)
-	{
+	function addTop($s) {
 		@$this->page_blocks['top'].=$s;
 	}
 
 	/// Задать HTML содержимое правой колонки страницы
-	function setRight($s)
-	{
-		@$this->page_blocks['right']=$s;
+	function setRight($s) {
+		@$this->page_blocks['right'] = $s;
 	}
 
 	/// Вставить HTML содержимое в начало правой колонки страницы
-	function insRight($s)
-	{
-		@$this->page_blocks['right']=$s.$this->page_blocks['right'];
+	function insRight($s) {
+		@$this->page_blocks['right'] = $s . $this->page_blocks['right'];
 	}
 
 	/// Добавить HTML содержимое в конец правой колонки страницы
-	function addRight($s)
-	{
+	function addRight($s) {
 		@$this->page_blocks['right'].=$s;
 	}
 
 	/// Вставить HTML содержимое в начало левой колонки страницы
-	function addLeft($s)
-	{
+	function addLeft($s) {
 		@$this->page_blocks['left'].=$s;
 	}
 
 	/// Задать HTML содержимое левой колонки страницы
-	function setLeft($s)
-	{
-		@$this->page_blocks['left']=$s;
+	function setLeft($s) {
+		@$this->page_blocks['left'] = $s;
 	}
 
 	/// Задать текст заголовка (обычно тэг title) страницы
-	function setTitle($s)
-	{
-		@$this->page_blocks['title']=$s;
+	function setTitle($s) {
+		@$this->page_blocks['title'] = $s;
 	}
 
 	/// Задать содержимое мета-тэга keywords
-	function setMetaKeywords($s)
-	{
-		@$this->page_blocks['meta_keywords']=$s;
+	function setMetaKeywords($s) {
+		@$this->page_blocks['meta_keywords'] = $s;
 	}
 
 	/// Задать содержимое мета-тэга description
-	function setMetaDescription($s)
-	{
-		@$this->page_blocks['meta_description']=$s;
+	function setMetaDescription($s) {
+		@$this->page_blocks['meta_description'] = $s;
 	}
 
 	/// Задать HTML содержимое основного блока страницы (content)
-	function setContent($s)
-	{
-		@$this->page_blocks['content']=$s;
+	function setContent($s) {
+		@$this->page_blocks['content'] = $s;
 	}
 
 	/// Добавить HTML содержимое к основному блоку страницы (content)
-	function addContent($s)
-	{
+	function addContent($s) {
 		@$this->page_blocks['content'].=$s;
 	}
 
 	/// Добавить содержимое к таблице стилей страницы (тэг style)
-	function addStyle($s)
-	{
+	function addStyle($s) {
 		@$this->page_blocks['stylesheet'].=$s;
 	}
 
 	/// Задать содержимое к пользовательского блока страницы
-	/// @param block_name Имя блока. Не должно совпадать с именами стандартных блоков.
-	/// @param data HTML данные блока
-	function setCustomBlockData($block_name, $data)
-	{
-		@$this->page_blocks[$block_name]=$data;
+	/// @param $block_name Имя блока. Не должно совпадать с именами стандартных блоков.
+	/// @param $data HTML данные блока
+	function setCustomBlockData($block_name, $data) {
+		@$this->page_blocks[$block_name] = $data;
 	}
+
 	/// Добавить содержимое к пользовательскому блоку страницы
-	/// @param block_name Имя блока. Не должно совпадать с именами стандартных блоков.
-	/// @param data HTML данные блока
-	function addCustomBlockData($block_name, $data)
-	{
+	/// @param $block_name Имя блока. Не должно совпадать с именами стандартных блоков.
+	/// @param $data HTML данные блока
+	function addCustomBlockData($block_name, $data) {
 		@$this->page_blocks[$block_name].=$data;
 	}
 
 	/// Добавить блок (div) с информацией к основному блоку страницы (content)
-	/// @param text Текст сообщения
-	/// @param mode Вид сообщения: ok - сообщение об успехе, err - сообщение об ошибке, info - информационное сообщение
-	/// @param head Заголовок сообшения
-	function msg($text="",$mode="",$head="")
-	{
-		if($text=="") return;
-		if($mode=="error") $mode="err";
-		if($mode=='info') $mode='notify';
-		if(($mode!="ok")&&($mode!="err")) $mode="notify";
-		if($head=="")
-		{
-			$msg="Информация:";
-			if($mode=="ok") $msg="Сделано!";
-			if($mode=="err") $msg="Ошибка!";
+	/// @param $text Текст сообщения
+	/// @param $mode Вид сообщения: ok - сообщение об успехе, err - сообщение об ошибке, info - информационное сообщение
+	/// @param $head Заголовок сообшения
+	function msg($text = "", $mode = "", $head = "") {
+		if ($text == "")
+			return;
+		if ($mode == "error")
+			$mode = "err";
+		if ($mode == 'info')
+			$mode = 'notify';
+		if (($mode != "ok") && ($mode != "err"))
+			$mode = "notify";
+		if ($head == "") {
+			$msg = "Информация:";
+			if ($mode == "ok")
+				$msg = "Сделано!";
+			if ($mode == "err")
+				$msg = "Ошибка!";
 		}
-		else $msg=$head;
+		else
+			$msg = $head;
 
 		@$this->page_blocks['content'].="<div class='$mode'><b>$msg</b><br>$text</div>";
 	}
 
+	/// Установить "хлебные крошки"
+	function setBrearcrumbs($data) {
+		if(is_array($data))
+			$this->breadcrumbs = $data;
+	}
+	
+	/// Добавить "хлебные крошки"
+	function addBreadcrumb($name, $link) {
+		$this->breadcrumbs[] = array('name'=>$name, 'link'=>$link);
+	}
+	
+
 	/// Сформировать HTML и отправить его, в соответствии с загруженным шаблоном и установленным содержимым блоков
-	function write()
-	{
+	function write() {
 		global $time_start;
-		if(stripos(getenv("HTTP_USER_AGENT"), "MSIE" )!==FALSE )
-		{
-			$this->page_blocks['notsupportbrowser']="<div style='background: #ffb; border: 1px #fff outset; padding: 3px; padding-right: 15px; text-align: right; font-size: 14px;'><img src='/img/win/important.png' alt='info' style='float: left'>
+		if (stripos(getenv("HTTP_USER_AGENT"), "MSIE") !== FALSE) {
+			$this->page_blocks['notsupportbrowser'] = "<div style='background: #ffb; border: 1px #fff outset; padding: 3px; padding-right: 15px; text-align: right; font-size: 14px;'><img src='/img/win/important.png' alt='info' style='float: left'>
 			Вероятно, Вы используете неподдерживаемую версию броузера.<br><b>Для правильной работы сайта, скачайте и установите последнюю версию <a href='http://mozilla.com'>Mozilla</a>, <a href='http://www.opera.com/download/'>Opera</a> или <a href='http://www.google.com/intl/ru/chrome/browser/'>Chrome</a></b><div style='clear: both'></div></div>";
 		}
 		$time = microtime(true) - $time_start;
-		$this->page_blocks['gentime']=round($time,4);
+		$this->page_blocks['gentime'] = round($time, 4);
 
-		@include_once("skins/".$this->tplname."/style.php");
-		if($this->ajax)		echo @$this->page_blocks['content'];
-		else
-		{
-			@include_once("skins/".$this->tplname."/style.php");
-			if(function_exists('skin_prepare'))
-			{
-				$res=skin_prepare();
-			}
-
-			if(function_exists('skin_render'))
-			{
-				$res=skin_render($this->page_blocks,$this->tpl);
-			}
-			else
-			{
-				$signatures=array();
-				foreach($this->page_blocks as $key => $value)
-				{
-					$signatures[]="<!--site-$key-->";
+		@include_once("skins/" . $this->tplname . "/style.php");
+		if ($this->ajax)
+			echo @$this->page_blocks['content'];
+		else {
+			@include_once("skins/" . $this->tplname . "/style.php");
+			$this->page_blocks['breadcrumbs'] = '';
+			if(count($this->breadcrumbs)) {
+				$this->page_blocks['breadcrumbs'] .= "<div class='breadcrumbs'>";
+				foreach($this->breadcrumbs as $item) {
+					if($item['link'])
+						$this->page_blocks['breadcrumbs'] .= "<a href='{$item['link']}'>{$item['name']}</a> ";
+					else	$this->page_blocks['breadcrumbs'] .= $item['name'];
 				}
-				$res=str_replace($signatures,$this->page_blocks,$this->tpl);
+				$this->page_blocks['breadcrumbs'] .= "</div>";
+			}
+			if (function_exists('skin_prepare')) {
+				$res = skin_prepare();
+			}
+
+			if (function_exists('skin_render')) {
+				$res = skin_render($this->page_blocks, $this->tpl);
+			} else {
+				$signatures = array();
+				foreach ($this->page_blocks as $key => $value) {
+					$signatures[] = "<!--site-$key-->";
+				}
+				$res = str_replace($signatures, $this->page_blocks, $this->tpl);
 			}
 			echo"$res";
 		}
 		$time = microtime(true) - $time_start;
-		if($time>=3)
-			$this->logger("Exec time: $time",1);	/// Записывам ошибку, если скрипт долго работает
+		if ($time >= 3)
+			$this->logger("Exec time: $time", 1); /// Записывам ошибку, если скрипт долго работает
 	}
 
 	/// Записать сообщение об ошибке в журнал и опционально вывести на страницу
-	/// @param s Основной текст сообщения
-	/// @param silent Если TRUE, то сообщение не выводится на страницу. FALSE по умолчанию.
-	/// @param hidden_data Скрытый текст сообщения об ошибке. Заносится в журнал, на страницу не выводится.
+	/// @param $s Основной текст сообщения
+	/// @param $silent Если TRUE, то сообщение не выводится на страницу. FALSE по умолчанию.
+	/// @param $hidden_data Скрытый текст сообщения об ошибке. Заносится в журнал, на страницу не выводится.
 	/// TODO: нужен класс регистрации ошибок, с уровнями ошибок, возможностью записи в файл, отправки на email, jabber, sms и пр.
-	function logger($s, $silent=0, $hidden_data='')
-	{
+	function logger($s, $silent = 0, $hidden_data = '') {
 		global $db;
-		if(isset($_SESSION['uid']))	$uid=$_SESSION['uid'];
-		else $uid=0;
+		if (isset($_SESSION['uid']))
+			$uid = $_SESSION['uid'];
+		else
+			$uid = 0;
 		settype($uid, "int");
-		$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
-		$s_sql=$db->real_escape_string($s);
-		$ag=$db->real_escape_string(getenv("HTTP_USER_AGENT"));
-		$rf=$db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
-		$ff=$db->real_escape_string($_SERVER['REQUEST_URI']);
+		$ip = $db->real_escape_string(getenv("REMOTE_ADDR"));
+		$s_sql = $db->real_escape_string($s);
+		$ag = $db->real_escape_string(getenv("HTTP_USER_AGENT"));
+		$rf = $db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
+		$ff = $db->real_escape_string($_SERVER['REQUEST_URI']);
 		$db->query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
 		('$ff','$rf','$s_sql',NOW(),'$ip','$ag', '$uid')");
 
-		if(!$silent)
-		{
-			$s=html_out($s);
-			$ff=html_out($_SERVER['REQUEST_URI']);
-			$this->msg("$s<br>Страница:$ff<br>Сообщение об ошибке передано администратору","err","Внутренняя ошибка!");
+		if (!$silent) {
+			$s = html_out($s);
+			$ff = html_out($_SERVER['REQUEST_URI']);
+			$this->msg("$s<br>Страница:$ff<br>Сообщение об ошибке передано администратору", "err", "Внутренняя ошибка!");
 		}
 		return $db->insert_id;
 	}
-};
+
+}
+
+;
 
 /// Класс-исключение используется для информирования о отсутствии привилегий на доступ к запрошенной функции
 class AccessException extends Exception

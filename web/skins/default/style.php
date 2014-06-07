@@ -57,13 +57,13 @@ function skin_prepare()
 	<li><a class='selflink' href='/adv_search.php'>Поиск по параметрам</a></li>
 	<li><a class='selflink' href='/message.php?to={$CONFIG['site']['doc_adm_email']}&amp;opt=email'>Задать вопрос</a></li>
 	<li><a class='selflink' href='/photogalery.php'>Фотогалерея</a></li>
-	<li><a class='wikilink' href='/wiki/ContactInfo.html'>Контактная информация</a></li>
+	<li><a class='wikilink' href='/article/ContactInfo.html'>Контактная информация</a></li>
 	</ul>
-	<p class='vspace sidehead'> <a class='wikilink' href='/wiki/'>Статьи</a></p>
+	<p class='vspace sidehead'> <a class='wikilink' href='/article/'>Статьи</a></p>
 	<ul>
-	<li><a class='wikilink' href='/wiki/Zakaz.html'>Как заказать</a></li>
-	<li><a class='wikilink' href='/wiki/Delivery.html'>Доставка</a></li>
-	<li><a class='wikilink' href='/wiki/Payment.html'>Оплата</a></li>
+	<li><a class='wikilink' href='/article/Zakaz.html'>Как заказать</a></li>
+	<li><a class='wikilink' href='/article/Delivery.html'>Доставка</a></li>
+	<li><a class='wikilink' href='/article/Payment.html'>Оплата</a></li>
 	</ul>
 	<p class='vspace sidehead'> <a class='wikilink' href='/index.php?n=Main.Links'>Наши друзья</a></p>
 	<ul>
