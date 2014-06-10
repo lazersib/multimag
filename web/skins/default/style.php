@@ -73,8 +73,8 @@ function skin_prepare()
 	<li><a class='urllink' href='http://tndproject.org'>tndproject.org</a></li>
 	</ul>");
 
-	if(!isset($tmpl->hide_blocks['left'])) $tmpl->tpl=str_replace("<!--site-content-->","<div id='wiki-menu' class='wiki-menu'><!--site-left--></div><div id='wiki-page' class='wiki-page'><!--site-content--></div>",$tmpl->tpl);
-	else $tmpl->tpl=str_replace("<!--site-content-->","<div id='wiki-page-nolmenu' class='wiki-page-nolmenu'><!--site-content--></div>",$tmpl->tpl);
+	if(!isset($tmpl->hide_blocks['left'])) $tmpl->tpl=str_replace("<!--site-content-->","<div id='wiki-menu' class='wiki-menu'><!--site-left--></div><div id='wiki-page' class='wiki-page'><!--site-breadcrumbs--><!--site-content--></div>",$tmpl->tpl);
+	else $tmpl->tpl=str_replace("<!--site-content-->","<div id='wiki-page-nolmenu' class='wiki-page-nolmenu'><!--site-breadcrumbs--><!--site-content--></div>",$tmpl->tpl);
 	if(!isset($tmpl->hide_blocks['right'])) $tmpl->tpl=str_replace("<!--site-right-->","<div id='info-right'><ul><!--site-right--></ul></div>",$tmpl->tpl);
 	
 	$tmpl->setCustomBlockData('topleft', rusdate ("l, d.m.Y H:i"));

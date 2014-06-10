@@ -684,7 +684,7 @@ class BETemplate {
 			@include_once("skins/" . $this->tplname . "/style.php");
 			$this->page_blocks['breadcrumbs'] = '';
 			if(count($this->breadcrumbs)) {
-				$this->page_blocks['breadcrumbs'] .= "<div class='breadcrumbs'>";
+				$this->page_blocks['breadcrumbs'] .= "<div id='breadcrumbs'>";
 				foreach($this->breadcrumbs as $item) {
 					if($item['link'])
 						$this->page_blocks['breadcrumbs'] .= "<a href='{$item['link']}'>{$item['name']}</a> ";

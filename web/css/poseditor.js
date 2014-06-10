@@ -104,7 +104,7 @@ function PosEditorInit(base_url, editable)
 		row.sklad_cnt=Number(data.sklad_cnt)
 		row.comm=data.comm
 		var addition_menu=''
-		//if(poslist.editable)	addition_menu="<div onclick=\"ShowPopupWin('/docs.php?l=pran&amp;mode=srv&amp;opt=ceni&amp;pos="+pos_id+"'); return false;\" >Правка комментария</div>"
+
 		row.ondblclick=row.oncontextmenu=function(event)
 		{
 			var menu=ShowPosContextMenu(event ,data.pos_id, addition_menu)
@@ -197,14 +197,16 @@ function PosEditorInit(base_url, editable)
 	poslist.doDeleteLine=function()
 	{
 		var line=this.parentNode.parentNode;
-		$('#'+line.id).addClass('dl')
-		$.ajax({
-			type:   'GET',
-			url:    base_url,
-			data:   'opt=jdel&line_id='+line.lineIndex,
-			success: function(msg) { rcvDataSuccess(msg); },
-			error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); },
-		});
+		if(confirm('Удалить строку '+line.lineIndex+'?')) {
+			$('#'+line.id).addClass('dl')
+			$.ajax({
+				type:   'GET',
+				url:    base_url,
+				data:   'opt=jdel&line_id='+line.lineIndex,
+				success: function(msg) { rcvDataSuccess(msg); },
+				error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); },
+			});
+		}
 	}
 
 	function rcvDataSuccess(msg)

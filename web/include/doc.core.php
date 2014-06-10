@@ -288,23 +288,23 @@ function doc_log($motion,$desc,$object='',$object_id=0)
 	VALUES ('$uid', '$ip', NOW(),'$motion','$desc', '$object', '$object_id')");
 }
 
-function doc_menu($dop="", $nd=1, $doc=0)
-{
+function doc_menu($dop = "", $nd = 1, $doc = 0) {
 	global $tmpl, $CONFIG, $db;
 	// Индикатор нарушения целостности проводок
 	// Устанавливается при ошибке при проверке целостности и при принудительной отмене
 	// Снимается, если проверка целостности завершилась успешно
-	$err='';
-	$res=$db->query("SELECT `corrupted` FROM `variables`");
-	if($res)
-	{
-		$row=$res->fetch_row();
-		if($row[0])	$err="class='error'";
+	$err = '';
+	$res = $db->query("SELECT `corrupted` FROM `variables`");
+	if ($res) {
+		$row = $res->fetch_row();
+		if ($row[0])
+			$err = "class='error'";
 		$res->free();
 	}
-	else	$err="class='error'";
+	else
+		$err = "class='error'";
 
-	$tmpl->addContent("<div id='doc_menu' $err>
+	$tmpl->addTop("<div id='doc_menu' $err>
 	<div id='doc_menu_container'>
 	<div id='doc_menu_r'>
 	<!--<input type='text' id='quicksearch'>
@@ -341,25 +341,26 @@ function doc_menu($dop="", $nd=1, $doc=0)
 	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
 	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
 	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
-	if($dop) $tmpl->addContent("<img src='/img/i_separator.png' alt=''> $dop");
+	if ($dop)
+		$tmpl->addTop("<img src='/img/i_separator.png' alt=''> $dop");
 
-	$tmpl->addContent("</div></div>");
+	$tmpl->addTop("</div></div>");
 
-	if($nd && @$CONFIG['doc']['mincount_info'])
-	{
-			$res=$db->query("SELECT `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name` FROM `doc_base`
+	if ($nd && @$CONFIG['doc']['mincount_info']) {
+		$res = $db->query("SELECT `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name` FROM `doc_base`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
 			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
 			WHERE `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt` LIMIT 100");
-			if($res->num_rows)
-			{
-				$res->data_seek(rand(0,$res->num_rows-1));
-				$nxt=$res->fetch_row();
-				if($nxt[1]) $nxt[1]='всего '.$nxt[1].' штук';
-				else $nxt[1]='отсутствует';
-				$tmpl->msg("По крайней мере, у {$res->num_rows} товаров, количество на складе меньше минимально рекомендуемого!<br>Например $nxt[0] на складе *$nxt[3]* $nxt[1], вместо $nxt[2] рекомендуемых!","err","Мало товара на складе!");
-			}
-			$res->free();
+		if ($res->num_rows) {
+			$res->data_seek(rand(0, $res->num_rows - 1));
+			$nxt = $res->fetch_row();
+			if ($nxt[1])
+				$nxt[1] = 'всего ' . $nxt[1] . ' штук';
+			else
+				$nxt[1] = 'отсутствует';
+			$tmpl->msg("По крайней мере, у {$res->num_rows} товаров, количество на складе меньше минимально рекомендуемого!<br>Например $nxt[0] на складе *$nxt[3]* $nxt[1], вместо $nxt[2] рекомендуемых!", "err", "Мало товара на складе!");
+		}
+		$res->free();
 	}
 }
 

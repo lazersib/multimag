@@ -1335,7 +1335,8 @@ protected function MakeBuy() {
 		default:	$pay_type='';
 	}
 	$rname		= request('rname');	
-	$delivery	= $_SESSION['basket']['delivery_type'];	
+	$delivery	= intval($_SESSION['basket']['delivery_type']);	
+	$delivery_region= $_SESSION['basket']['delivery_region'];
 	$email		= request('email');	
 	$comment	= request('dop');
 	
@@ -1390,7 +1391,7 @@ protected function MakeBuy() {
 		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 		$doc=$db->insert_id;
 
-		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'pay_type', '$pay_type') ");
+		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'delivery_region', '$delivery_region'), ('$doc', 'pay_type', '$pay_type') ");
 
 		$order_items = $admin_items = $lock = '';
 		
@@ -1449,9 +1450,9 @@ protected function MakeBuy() {
 			}
 		}
 		if($_SESSION['basket']['delivery_type']) {
-			$res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='{$_SESSION['basket']['delivery_type']}'");
+			$res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='$delivery'");
 			list($d_service_id) = $res->fetch_row();
-			$res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='{$_SESSION['basket']['delivery_region']}'");
+			$res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='$delivery_region'");
 			list($d_price) = $res->fetch_row();
 			$res = $db->query("INSERT INTO `doc_list_pos` (`doc`,`tovar`,`cnt`,`cost`,`comm`) VALUES ('$doc','$d_service_id','1','$d_price','')");
 			$res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `pos_name`

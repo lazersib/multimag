@@ -63,7 +63,6 @@
 <!--site-right-->
 <p><br clear='all'></p>
 </div>
-<!--site-breadcrumbs-->
 <!--site-content-->
 <div id='wiki-foot' class='wiki-foot'>
 <div  id='foot-left' class='hidebar' ><img src='/counter.php' alt='counter'>

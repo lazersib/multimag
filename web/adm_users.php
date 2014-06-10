@@ -28,8 +28,8 @@ try {
 		throw new AccessException("Недостаточно привилегий");
 
 	$tmpl->addBreadcrumb('Главная', '/');
-	$tmpl->addBreadcrumb('Личный кабинет', '/users.php');
-	$tmpl->addBreadcrumb('Администрирование пользователей', '/adm_users.php');
+	$tmpl->addBreadcrumb('Личный кабинет', '/user.php');
+	
 
 	$mode = request('mode');
 
@@ -84,6 +84,7 @@ try {
 		if (!isAccess('admin_users', 'view'))
 			throw new AccessException("Недостаточно привилегий");
 		$id = rcvint('id');
+		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $id, '');
 		$tmpl->setTitle('Информация о пользователе с ID ' . $id);
 
@@ -184,6 +185,7 @@ try {
 		if (!isAccess('admin_users', 'view'))
 			throw new AccessException("Недостаточно привилегий");
 		$id = rcvint('id');
+		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $id, '/adm_users.php?mode=view&amp;id=' . $id);
 		$tmpl->addBreadcrumb('История входов пользователя с ID ' . $id, '');
 		$tmpl->setTitle('История входов пользователя с ID ' . $id);
@@ -201,6 +203,7 @@ try {
 		if (!isAccess('admin_users', 'edit'))
 			throw new AccessException("Недостаточно привилегий");
 		$id = rcvint('id');
+		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $id, '/adm_users.php?mode=view&amp;id=' . $id);
 		$tmpl->addBreadcrumb("Привязка пользователя $id к агенту", '');
 		$tmpl->setTitle("Привязка пользователя $id к агенту");
@@ -268,6 +271,7 @@ try {
 			throw new AccessException("Недостаточно привилегий");
 		
 		$user_id = rcvint('id');
+		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $user_id, '/adm_users.php?mode=view&amp;id=' . $user_id);
 		$tmpl->addBreadcrumb('Редактирование сотрудника ID ' . $user_id, '');
 		$tmpl->setTitle('Редактирование сотрудника ID ' . $user_id);
@@ -318,6 +322,7 @@ try {
 			throw new AccessException("Недостаточно привилегий");
 		
 		$user_id = rcvint('id');
+		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $user_id, '/adm_users.php?mode=view&amp;id=' . $user_id);
 		$tmpl->addBreadcrumb('Правка', '');
 		$tmpl->setTitle('Редактирование пользователя с ' . $user_id);

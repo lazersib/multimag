@@ -26,7 +26,7 @@ class doc_Zayavka extends doc_Nulltype
 	{
 		global $CONFIG, $db;
 		$this->def_dop_data			=array('status'=>'', 'pie'=>0, 'buyer_phone'=>'', 'buyer_email'=>'',
-		    'delivery'=>0, 'delivery_address'=>'', 'delivery_date'=>'', 'ishop'=>0, 'buyer_rname'=>'', 'buyer_ip'=>'',
+		    'delivery'=>0, 'delivery_address'=>'', 'delivery_date'=>'', 'delivery_region'=>'', 'ishop'=>0, 'buyer_rname'=>'', 'buyer_ip'=>'',
 		    'pay_type'=>'', 'cena'=>'' );
 		parent::__construct($doc);
 		$this->doc_type				=3;
@@ -187,7 +187,6 @@ class doc_Zayavka extends doc_Nulltype
 		$klad_id = $this->getDopData('kladovshik');
 		if(!$klad_id)	$klad_id=@$this->firm_vars['firm_kladovshik_id'];
 		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
-		$delivery_checked=@$this->dop_data['delivery']?'checked':'';
 		$tmpl->addContent("Кладовщик:<br><select name='kladovshik'>");
 		
 		$res=$db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
@@ -201,13 +200,8 @@ class doc_Zayavka extends doc_Nulltype
 		if(@$this->dop_data['ishop'])		$tmpl->addContent("<b>Заявка с интернет-витрины</b><br>");
 		if(@$this->dop_data['buyer_rname'])	$tmpl->addContent("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
 		if(@$this->dop_data['buyer_ip'])	$tmpl->addContent("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
-		if(!isset($this->dop_data['buyer_email']))	$this->dop_data['buyer_email']='';
-		if(!isset($this->dop_data['buyer_phone']))	$this->dop_data['buyer_phone']='';
-		$tmpl->addContent("e-mail, прикреплённый к заявке<br><input type='text' name='buyer_email' style='width: 100%' value='{$this->dop_data['buyer_email']}'><br>");
- 		$tmpl->addContent("Телефон для sms, прикреплённый к заявке<input type='text' name='buyer_phone' style='width: 100%' value='{$this->dop_data['buyer_phone']}'><br>");
-		if(@$this->dop_data['pay_type'])
-		{
-			$tmpl->addContent("<b>Способ оплаты: </b>");
+		if(@$this->dop_data['pay_type']) {
+			$tmpl->addContent("<b>Выбранный способ оплаты: </b>");
 			switch($this->dop_data['pay_type'])
 			{
 				case 'bank':	$tmpl->addContent("безналичный");	break;
@@ -220,9 +214,33 @@ class doc_Zayavka extends doc_Nulltype
 			}
 			$tmpl->addContent("<br>");
 		}
+		if(!isset($this->dop_data['buyer_email']))	$this->dop_data['buyer_email']='';
+		if(!isset($this->dop_data['buyer_phone']))	$this->dop_data['buyer_phone']='';
+		$tmpl->addContent("e-mail, прикреплённый к заявке<br><input type='text' name='buyer_email' style='width: 100%' value='{$this->dop_data['buyer_email']}'><br>");
+ 		$tmpl->addContent("Телефон для sms, прикреплённый к заявке<input type='text' name='buyer_phone' style='width: 100%' value='{$this->dop_data['buyer_phone']}'><br>");
 
-		$tmpl->addContent("<label><input type='checkbox' name='delivery' value='1' $delivery_checked>Доставка</label><br>
-		Желаемая дата доставки:<br><input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br>");
+		$tmpl->addContent("Доставка:<br><select name='delivery'><option value='0'>Не требуется</option>");
+		$res = $db->query("SELECT `id`, `name` FROM `delivery_types` ORDER BY `id`");
+		while($nxt = $res->fetch_row()) {
+			if($nxt[0]==$this->dop_data['delivery'])
+				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
+			else
+				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
+		}
+		
+		$tmpl->addContent("</select>
+		Регион доставки:<br><select name='delivery_region'><option value='0'>Не задан</option>");
+		$res = $db->query("SELECT `id`, `name` FROM `delivery_regions` ORDER BY `id`");
+		while($nxt = $res->fetch_row()) {
+			if($nxt[0]==$this->dop_data['delivery_region'])
+				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
+			else
+				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
+		}
+		
+		$tmpl->addContent("</select>
+			Желаемая дата доставки:<br>
+			<input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br>");
 		if(@$this->dop_data['delivery_address'])$tmpl->addContent("<b>Адрес доставки: </b>{$this->dop_data['delivery_address']}<br>");
 
 		$tmpl->addContent("<br><hr>
@@ -243,8 +261,9 @@ class doc_Zayavka extends doc_Nulltype
 		$new_data = array(
 			'status' => request('status'),
 			'kladovshik' => rcvint('kladovshik'),
-			'delivery' => request('delivery')?'1':'0',
-		    	'delivery_date' => rcvdatetime('delivery_date'),
+			'delivery' => rcvint('delivery'),
+			'delivery_regions' => rcvint('delivery_regions'),
+		    	'delivery_date' => request('delivery_date'),
 			'buyer_email' => request('buyer_email'),
 			'buyer_phone' => request('buyer_phone')
 		);

@@ -34,7 +34,7 @@
 </head>
 <body><div id='wiki-wrap' class='wiki-wrap'>
 <!--site-top-->
-<!--site-right-->
+<!--site-breadcrumbs-->
 <!--site-content-->
 <hr>
 <div>Система <a href='http://multimag.tndproject.org'>MultiMag</a><br>Создано при поддержке <a href='http://tndproject.org'>TND team</a><br>
