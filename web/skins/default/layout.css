@@ -387,3 +387,17 @@ ul.tabs li a.selected
 	box-shadow: 		2px -2px 5px rgba(0,0,0,0.4);
 	-moz-box-shadow:	2px -2px 5px rgba(0,0,0,0.4);
 }
+
+.breadcrumbs,
+#breadcrumbs {
+	padding:3px;
+	color: #aaa;
+}
+
+#breadcrumbs a,
+.breadcrumbs a {
+	color: #30cc;
+	padding-right:13px;
+	margin-right:10px;
+	background:url(images/slash.png) no-repeat right 3px;
+}

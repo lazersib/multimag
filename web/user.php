@@ -325,11 +325,12 @@ else if($mode=='sendrequest')
 	'__FORM_TOKEN'		=> $_POST['token'],
 	'field_type' 		=> $_POST['field_type'],
 	'field_summary' 	=> $_POST['field_summary'],
-	'field_description'	=> $_POST['field_description']."\nUser: {$_SESSION['name']} at {$_SERVER['HTTP_HOST']}",
+	'field_description'	=> $_POST['field_description']."\nUser: {$_SESSION['name']} at {$_SERVER['HTTP_HOST']} ({$CONFIG['site']['name']})",
 	'field_component'	=> $_POST['field_component'],
 	'field_priority'	=> $_POST['field_priority'],
 	'field_milestone'	=> $_POST['field_milestone'],
 	'field_reporter'	=> $CONFIG['site']['trackticket_login'],
+	'field_cc'		=> $_SESSION['name'].'@'.$CONFIG['site']['name'],
 	'submit'		=> 'submit'
 	);
 

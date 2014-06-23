@@ -22,8 +22,7 @@
 class doc_Realizaciya extends doc_Nulltype {
 	var $status_list;
 
-	function __construct($doc=0)
-	{
+	function __construct($doc=0) {
 		parent::__construct($doc);
 		$this->doc_type				= 2;
 		$this->doc_name				= 'realizaciya';
@@ -40,7 +39,8 @@ class doc_Realizaciya extends doc_Nulltype {
 			array('name'=>'nak_kompl','desc'=>'Накладная на комплектацию','method'=>'PrintNaklKomplektPDF'),
 			array('name'=>'sfak','desc'=>'Счёт - фактура','method'=>'SfakPDF'),
 			array('name'=>'sfak2010','desc'=>'Счёт - фактура 2010','method'=>'Sfak2010PDF'),
-			array('name'=>'nacenki','desc'=>'Наценки','method'=>'Nacenki')		    
+			array('name'=>'nacenki','desc'=>'Наценки','method'=>'Nacenki'),
+			array('name'=>'label','desc'=>'Этикетки на упаковку','method'=>'PrintLabel')
 		);
 		$this->status_list			= array('in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
 	}
@@ -566,7 +566,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		$pdf->SetFont('','',10);
 		$str="Продавец: {$this->firm_vars['firm_name']}, ИНН-{$this->firm_vars['firm_inn']}-КПП, тел: {$this->firm_vars['firm_telefon']}";
 		$pdf->MultiCellIconv(0,5,$str,0,'L',0);
-		$str="Покупатель: {$this->doc_data['agent_name']}";
+		$str="Покупатель: {$this->doc_data['agent_fullname']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
 
@@ -868,7 +868,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Поставщик: {$this->firm_vars['firm_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$str="Покупатель: {$this->doc_data['agent_name']}";
+		$str="Покупатель: {$this->doc_data['agent_fullname']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$pdf->Ln();
 
@@ -2069,7 +2069,7 @@ function Nacenki($to_str=0)
 	
 	$str = "Поставщик: {$this->firm_vars['firm_name']}";
 	$pdf->CellIconv(0,5,$str,0,1,'L');
-	$str = "Покупатель: {$this->doc_data['agent_name']}";
+	$str = "Покупатель: {$this->doc_data['agent_fullname']}";
 	$pdf->CellIconv(0,5,$str,0,1,'L');
 	$pdf->ln();
 	
@@ -2188,6 +2188,87 @@ function Nacenki($to_str=0)
 //");
 	if($to_str)	return $pdf->Output('extra.pdf','S');
 	else		$pdf->Output('extra.pdf','I');
+}
+
+function PrintLabel($to_str=0) {
+	global $tmpl, $CONFIG, $db;
+	if (!$to_str)	$tmpl->ajax = 1;
+
+	require('fpdf/fpdf.php');
+	
+	$gruzop_info = $db->selectRow('doc_agent', $this->dop_data['gruzop']);
+	$gruzop='';
+	if($gruzop_info) {
+		if($gruzop_info['fullname'])	$gruzop.=$gruzop_info['fullname'];
+		else				$gruzop.=$gruzop_info['name'];
+		if($gruzop_info['inn'])		$gruzop.=', ИНН '.$gruzop_info['inn'];
+		if($gruzop_info['adres'])	$gruzop.=', адрес '.$gruzop_info['adres'];
+		if($gruzop_info['tel'])		$gruzop.=', тел. '.$gruzop_info['tel'];		
+	}
+	else	$gruzop = 'не задан';
+	
+	$maker = '';
+	if($this->dop_data['kladovshik']) {
+		$res = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email`, `worker_post_name` FROM `users_worker_info` WHERE `user_id`='{$this->dop_data['kladovshik']}'");
+
+		if($res->num_rows) {
+			$author_info = $res->fetch_assoc();
+
+			$maker = $author_info['worker_real_name'];
+			if($author_info['worker_phone'])
+				$maker .= ", тел: ".$author_info['worker_phone'];
+			if($author_info['worker_email'])
+				$maker .= ", email: ".$author_info['worker_email'];
+		}
+	}
+	else	throw new Exception("Кладовщик не задан");
+	
+	$pack_cnt = $this->dop_data['mest'];
+
+	$pdf = new FPDF();
+	$pdf->Open();
+	$pdf->SetAutoPageBreak(1, 12);
+	$pdf->AddFont('Arial', '', 'arial.php');
+	$pdf->tMargin = 5;
+	$pdf->AddPage('P');
+	$pdf->SetFillColor(255);
+
+	$pdf->SetFont('Arial','',10);
+	$str = "Этикетки к накладной N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от ".date("d.m.Y", $this->doc_data['date']);
+	$pdf->CellIconv(0,6,$str,0,1,'C');
+	$pdf->ln(10);
+	
+	$pdf->SetMargins(15, 15, 15 );
+	$pdf->SetFont('','',12);
+	$pdf->SetLineWidth(0.2);
+	
+	for($c=1;$c<=$pack_cnt;$c++) {
+		$start = $pdf->y -5;
+		$pdf->ln(0);
+		$str = "Отправитель: {$this->firm_vars['firm_gruzootpr']}, ИНН: {$this->firm_vars['firm_inn']}, тел.: {$this->firm_vars['firm_telefon']}";
+		$pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+		
+		$pdf->ln(2);
+		$str = "Грузополучатель: ".$gruzop;
+		$pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+
+		$pdf->ln(2);
+		$str = "Комплектовщик: ".$maker;
+		$pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+		
+		$pdf->ln(2);
+		$str = "Место: $c. Всего мест: $pack_cnt. Упаковано: ".date("d.m.Y H:i").". Накладная {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от ".date("d.m.Y", $this->doc_data['date']);
+		$pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+		
+		$pdf->ln(5);
+		$end = $pdf->y;
+		$pdf->Rect(10, $start, 190, $end - $start);
+		$pdf->Rect(9, $start-1, 192, $end - $start + 2);
+		$pdf->ln(10);
+	}
+
+	if($to_str)	return $pdf->Output('labels.pdf','S');
+	else		$pdf->Output('labels.pdf','I');
 }
 
 };

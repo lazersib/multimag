@@ -34,12 +34,12 @@ if (!$CONFIG['price']['dir']) {
 }
 $mail_text = '';
 
-$db->query("INSERT INTO `sys_cli_status` (`script`, `status`) VALUES ('" . $c[count($c) - 1] . "', 'Start')");
-$status_id = $db->insert_id;
+//$db->query("INSERT INTO `sys_cli_status` (`script`, `status`) VALUES ('" . $c[count($c) - 1] . "', 'Start')");
+$status_id = 0;// $db->insert_id;
 
 function SetStatus($status, $db) {
 	global $status_id;
-	$db->query("UPDATE `sys_cli_status` SET `status`='$status' WHERE `id`='$status_id'");
+//	$db->query("UPDATE `sys_cli_status` SET `status`='$status' WHERE `id`='$status_id'");
 }
 
 /// Фиктивный класс для анализатора прайсов. Надо переделать архитектуру так, чтобы он не требовался
@@ -274,7 +274,7 @@ try {
 	) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
 
 	if ($CONFIG['price']['mark_matched']) {
-		$db->query("DROP TABLE `price_seeked`");
+		$db->query("DROP TABLE IF EXISTS `price_seeked`");
 		$db->query("CREATE TABLE IF NOT EXISTS `price_seeked` (
 		`id` int(11) NOT NULL,
 		`seeked` int(11) NOT NULL,
@@ -421,5 +421,5 @@ if ($mail_text) {
 else
 	echo"Ошибок не найдено, не о чем оповещать!\n";
 
-$db->query("DELETE FROM `sys_cli_status` WHERE `id`='$status_id'");
+//$db->query("DELETE FROM `sys_cli_status` WHERE `id`='$status_id'");
 ?>

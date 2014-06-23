@@ -42,6 +42,8 @@ include_once("core.php");
 try {
 	$tmpl->ajax = 1;
 	need_auth();
+	if (!isAccess('doc_list', 'view'))
+		throw new AccessException();
 	ob_start();
 	$starttime = microtime(true);
 	$c = request('c');

@@ -82,7 +82,7 @@ class doc_s_Agent {
 
 	// Редактирование справочника
 	function Edit() {
-		global $tmpl, $db;
+		global $tmpl, $db, $CONFIG;
 		doc_menu();
 		$pos = rcvint('pos');
 		$param = request('param');
@@ -125,6 +125,12 @@ class doc_s_Agent {
 			<td><input type='text' name='name' value='".html_out($agent_info['name'])."' style='width: 90%;'>
 			<tr><td align=right>Тип:
 			<td>");
+			
+			$ext='';
+			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
+			
+			$no_mail_c = $agent_info['no_mail']?' checked':'';
+			
 			if($agent_info['type']==0)
 				$tmpl->addContent("<label><input type='radio' name='type' value='0' checked>Физическое лицо</label><br>
 				<label><input type='radio' name='type' value='1'>Юридическое лицо</label>");
@@ -132,24 +138,7 @@ class doc_s_Agent {
 				$tmpl->addContent("<label><input type='radio' name='type' value='0'>Физическое лицо</label><br>
 				<label><input type='radio' name='type' value='1' checked>Юридическое лицо</label>");
 			$tmpl->addContent("<tr><td align='right'>Группа</td>
-        		<td><select name='g'>");
-
-			if((($pos!=0)&&($agent_info['group']==0))||($group==0)) $i=" selected";
-			$tmpl->addContent("<option value='NULL' $i>--</option>");
-
-			$res = $db->query("SELECT * FROM `doc_agent_group`");
-			while($nx = $res->fetch_row()) {
-				$i="";
-				if((($pos!=0)&&($nx[0]==$agent_info['group']))||($group==$nx[0])) $i=" selected";
-				$tmpl->addContent("<option value='$nx[0]'$i>".html_out($nx[1])."</option>");
-			}
-
-			$ext='';
-			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
-			
-			$no_mail_c = $agent_info['no_mail']?' checked':'';
-			
-			$tmpl->addContent("</select>
+        		<td>" . selectAgentGroup('g', $agent_info['group'], false, '', '', @$CONFIG['agents']['leaf_only']) . "</select>
 			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='".html_out($agent_info['email'])."' class='validate email'>&nbsp;<label><input type='checkbox' name='no_mail' value='1'{$no_mail_c}>Не отправлять рассылки</label>
 			<tr class=lin0><td align=right>Полное название / ФИО:<br><small>Так, как должно быть в документах</small><td><input type=text name='fullname' value='".html_out($agent_info['fullname'])."' style='width: 90%;'>
 			<tr class=lin1><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='tel' value='".html_out($agent_info['tel'])."' class='phone validate'>

@@ -314,7 +314,7 @@ class doc_s_Sklad {
         		<tr><td align='right' width='20%'>$n</td>
         		<td colspan='3'><input type='text' name='pd[name]' value='".html_out($pos_info['name'])."' style='width: 95%'>$cc
         		<tr><td align='right'>Группа</td>
-        		<td colspan='3'>" . selectGroupPos('pd[group]', $selected, false, '', '', $CONFIG['store']['pos_leaf_only']) . "</td></tr>
+        		<td colspan='3'>" . selectGroupPos('pd[group]', $selected, false, '', '', @$CONFIG['store']['leaf_only']) . "</td></tr>
         		<tr><td align='right'>Изготовитель</td>
 			<td><input type='text' name='pd[proizv]' value='".html_out($pos_info['proizv'])."' id='proizv_nm' style='width: 95%'><br>
 			<div id='proizv_p' class='dd'></div></td>
@@ -856,18 +856,7 @@ class doc_s_Sklad {
 			<tr><td>Наименование группы $group:</td>
 			<td><input type='text' name='name' value='".html_out($group_info['name'])."'></td></tr>
 			<tr><td>Находится в группе:</td>
-			<td><select name='pid'>");
-
-			$i = '';
-			if ($group_info['pid'] == 0)			$i = " selected";
-			$tmpl->addContent("<option value='0' $i style='color: #fff; background-color: #000'>--</option>");
-			$gres = $db->query("SELECT * FROM `doc_group`");
-			while ($nx = $gres->fetch_row()) {
-				$i = "";
-				if ($nx[0] == $group)			continue;
-				if ($nx[0] == $group_info['pid'])	$i = " selected";
-				$tmpl->addContent("<option value='$nx[0]' $i>".html_out($nx[1])." ($nx[0])</option>");
-			}
+			<td>" . selectGroupPos('pid', $group_info['pid'], false));
 
 			if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img = "<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$group&amp;param=gid'>Удалить изображение</a>";
@@ -877,7 +866,7 @@ class doc_s_Sklad {
 			$hid_check = $group_info['hidelevel'] ? 'checked' : '';
 			$yml_check = $group_info['no_export_yml'] ? 'checked' : '';
 
-			$tmpl->addContent("</select></td></tr>
+			$tmpl->addContent("</td></tr>
 			<tr><td>Скрытие:</td>
 			<td><label><input type='checkbox' name='hid' value='3' $hid_check>Не отображать на витрине и в прайсах</label><br>
 			<label><input type='checkbox' name='no_export_yml' value='3' $yml_check>Не экспортировать в YML</label></td></tr>
@@ -1529,9 +1518,9 @@ class doc_s_Sklad {
 			$meta_keywords_sql = $db->real_escape_string($meta_keywords);
 			$meta_description_sql = $db->real_escape_string($meta_description);
 			
-			
-			
 			if ($group) {
+				if($pid==$group)
+					throw new Exception("Нельзя добавить группу саму в себя!");
 				$res = $db->query("UPDATE `doc_group` SET `name`='$name_sql', `desc`='$desc_sql', `pid`='$pid', `hidelevel`='$hid',
 					`printname`='$pname_sql', `no_export_yml`='$no_export_yml', `title_tag`='$title_tag_sql',
 					`meta_keywords`='$meta_keywords_sql', `meta_description`='$meta_description_sql' WHERE `id` = '$group'");
@@ -1802,7 +1791,7 @@ class doc_s_Sklad {
 			<label><input type='radio' name='yml_flag' value='unset'>Снять</label>
 			</fieldset></td>
 			<td width='25%'><fieldset><legend>Переместить в группу</legend>
-			" . selectGroupPos('to_group', 0, 1) . "
+			" . selectGroupPos('to_group', 0, false, '', '', @$CONFIG['store']['leaf_only']) . "
 			</fieldset></td>
 			</table>
 			<br><button type='submit'>Выполнить</button>

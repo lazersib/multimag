@@ -195,7 +195,10 @@ function Show($param='')
 /// Получить весь текущий список товаров (документа)
 function GetAllContent() {
 	global $db, $CONFIG;
-	$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_base`.`bulkcnt`, `doc_base`.`group`
+	$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
+		`doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
+		`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`,
+		`doc_base`.`bulkcnt`, `doc_base`.`group`
 	FROM `doc_list_pos`
 	INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'

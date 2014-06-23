@@ -657,26 +657,37 @@ function AutoDocument($doc_id)
 	return AutoDocumentType($type, $doc_id);
 }
 
+/// Для внутреннего использования
+/// @sa selectAgentGroup
+function selectAgentGroupRecursive($group_id, $prefix, $selected, $leaf_only) {
+	global $db;
+	// Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectAgentGroup
+	$res = $db->query("SELECT `id`, `name` FROM `doc_agent_group` WHERE `pid`='$group_id' ORDER BY `id`");
+	$ret = '';
+	while($line = $res->fetch_row()) {
+		$sel = ($selected==$line[0])?' selected':'';
+		$deep = selectAgentGroupRecursive($line[0], $prefix.'|&nbsp;&nbsp;', $selected, $leaf_only);
+		$dis = ($deep!='' && $leaf_only)?' disabled':'';
+		$ret .= "<option value='$line[0]'{$sel}{$dis}>{$prefix}".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
+		$ret .= $deep;
+	}
+	$res->free();
+	return $ret;
+}
+
 /// Создаёт HTML код элемента select со списком групп агентов
 /// @param select_name 	Имя элемента select
 /// @param selected	ID выбранного элемента
 /// @param not_select	Если true - в выпадающий список будет добавлен пункт 'не выбран'
 /// @param select_id	Содержимое html аттрибута id элемента select
 /// @param select_class	Содержимое html аттрибута class элемента select
+/// @param leaf_only	Флаг возможности выбора только "листьев" в дереве групп
 /// @sa selectGroupPos
-function selectAgentGroup($select_name,$selected=0,$not_select=0,$select_id='',$select_class='')
-{
-	global $db;
+function selectAgentGroup($select_name, $selected=0, $not_select=0, $select_id='', $select_class='', $leaf_only=false) {
 	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
 	if($not_select)	$ret.="<option value='0'>***не выбрана***</option>";
-	$res=$db->query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
-	while($line=$res->fetch_row())
-	{
-		$sel=($selected==$line[0])?' selected':'';
-		$ret.="<option value='$line[0]'{$sel}>".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
-	}
+	$ret.=selectAgentGroupRecursive(0, '', $selected, $leaf_only);
 	$ret.="</select>";
-	$res->free();
 	return $ret;
 }
 
@@ -689,7 +700,7 @@ function selectGroupPosRecursive($group_id, $prefix, $selected, $leaf_only) {
 	$ret = '';
 	while($line = $res->fetch_row()) {
 		$sel = ($selected==$line[0])?' selected':'';
-		$deep = selectGroupPosRecursive($line[0], $prefix.'--', $selected, $leaf_only);
+		$deep = selectGroupPosRecursive($line[0], $prefix.'|&nbsp;&nbsp;', $selected, $leaf_only);
 		$dis = ($deep!='' && $leaf_only)?' disabled':'';
 		$ret .= "<option value='$line[0]'{$sel}{$dis}>{$prefix}".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
 		$ret .= $deep;

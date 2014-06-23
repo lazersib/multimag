@@ -78,14 +78,16 @@ function draw_groups_tree($level, $firm) {
 
 function firmAddForm($id = 0) {
 	global $tmpl, $db;
-	$nxt = array();
+	$found = 0;
+	$nxt = array('id'=>0, 'name'=>'', 'signature'=>'', 'currency'=>0, 'coeff'=>0, 'type'=>0, 'delivery_info'=>'', 'rrp'=>0);
 	if ($id) {
 		$res = $db->query("SELECT `id`, `name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp`  FROM `firm_info` WHERE `id`='$id'");
-		if ($res->num_rows)
-			$nxt = $res->fetch_row();
-		else
-			$nxt = array();
+		if ($res->num_rows) {
+			$nxt = $res->fetch_assoc();
+			$found = 1;
+		}
 	}
+	
 
 	$disp = $nxt['type'] == 2 ? 'block' : 'none';
 	$rrp_checked = $nxt['rrp'] ? ' checked' : '';
@@ -129,29 +131,29 @@ function firmAddForm($id = 0) {
 	<form action='' method='post'>
 	<input type='hidden' name=mode value='firms'>");
 	if ($id)
-		$tmpl->addContent("<input type=hidden name=id value='$nxt[0]'>");
+		$tmpl->addContent("<input type='hidden' name='id' value='{$nxt['id']}'>");
 	$tmpl->addContent("Наименование:<br>
-	<input type='text' name='nm' value='$nxt[1]'><br>
+	<input type='text' name='nm' value='".html_out($nxt['name'])."'><br>
 	Сигнатура:<br>
-	<input type='text' name='sign' value='$nxt[2]'><br>
+	<input type='text' name='sign' value='".html_out($nxt['signature'])."'><br>
 	Валюта:<br>
 	<select name='curr'>");
 	$res = $db->query("SELECT `id`, `name`, `coeff` FROM `currency` ORDER BY `id`");
 	while ($nx = $res->fetch_row()) {
-		if ($nx[0] == $nxt[3])
+		if ($nx[0] == $nxt['currency'])
 			$tmpl->addContent("<option style='background-color: #8f8;' selected value='$nx[0]'>" . html_out($nx[1]) . "</option>");
 		else
 			$tmpl->addContent("<option value='$nx[0]'>" . html_out($nx[1]) . "</option>");
 	}
 
 	$typesel = array(0 => '', 1 => '', 2 => '');
-	$typesel[$nxt[5]] = 'selected';
+	$typesel[$nxt['type']] = 'selected';
 
 	$tmpl->addContent("</select><br>
 	Валютный коэффициент:<br>
-	<input type='text' name='coeff' value='$nxt[4]'><br>
+	<input type='text' name='coeff' value='{$nxt['coeff']}'><br>
 	Информация о доставке:<br>
-	<input type='text' name='delivery_info' value='$nxt[6]'><br>
+	<input type='text' name='delivery_info' value='".html_out($nxt['delivery_info'])."'><br>
 
 	<script type='text/javascript'>
 	function gstoggle()
@@ -219,7 +221,7 @@ function firmAddForm($id = 0) {
 
 
 	$tmpl->addContent("</div>");
-	if (!$nxt) {
+	if (!$found) {
 		$tmpl->addContent("<h2>Структура прайса</h2>
 		<table>
 		<thead>Номера колонок
@@ -234,17 +236,17 @@ function firmAddForm($id = 0) {
 		</table>");
 	}
 	$tmpl->addContent("<input type=submit value='Записать!'></form>");
-	if ($nxt) {
+	if ($found) {
 		$tmpl->addContent("<h2>Структура прайса</h2>
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='firmss'>
-		<input type='hidden' name='firm_id' value='$nxt[0]'>
+		<input type='hidden' name='firm_id' value='{$nxt['id']}'>
 		<input type='hidden' name='line_id' value='0' id='line_id'>
 		<table>
 		<tr><th rowspan='2'>Имя листа<th colspan='6'>Номера колонок
 		<tr><th>С кодом производителя<th>С названиями<th>С ценами<th>С наличием<th>С валютой<th>С информацией");
 		$res = $db->query("SELECT `id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info` FROM `firm_info_struct`
-		WHERE `firm_id`='$nxt[0]'");
+		WHERE `firm_id`='{$nxt['id']}'");
 		while ($nx = $res->fetch_row()) {
 			foreach ($nx as $id => $value)
 				$nx[$id] = html_out($value);
@@ -343,6 +345,7 @@ try {
 	</form>
 	<p><b>Важно!</b> Загруженный прайс заменит уже существующую информацию в базе по соответствующей организации. Загрузка будет выполнена немедленно, но проанализированны данные будут при следующем запуске анализатора (обычно в течение одного часа).</p>");
 	} else if ($mode == "parse") {
+		$f = 0;
 		$bhtml = rcvint('bhtml');
 		if (!is_uploaded_file($_FILES['file']['tmp_name']))
 			throw new Exception("Файл не получен. Возможно, его забыли выбрать, либо он слишком большой.");
@@ -407,7 +410,7 @@ try {
 			$col_info = rcvint('col_info');
 
 			$res = $db->query("INSERT INTO `firm_info` (`name`, `signature`, `currency`, `coeff`, `type`, `delivery_info`, `rrp`)
-		VALUES ('$nm_sql', '$sign_sql', '$curr', '$coeff', '$type', '$delivery_info_sql')");
+								VALUES ('$nm_sql', '$sign_sql', '$curr', '$coeff', '$type', '$delivery_info_sql', '$rrp')");
 
 			$firm_id = $db->insert_id;
 			$res = $db->query("INSERT INTO `firm_info_struct` (`firm_id`, `table_name`, `art`, `name`, `cost`, `nal`, `currency`, `info`)

@@ -24,10 +24,10 @@ include_once("include/doc.core.php");
 function getPaySum($doc_id) {
 	global $db;
 	settype($p_doc_id,'int');
-	
+
 	$docs = array($doc_id);
 	$sum = 0;
-	
+
 	while(count($docs)) {
 		$cur_doc = array_pop($docs);
 		$res = $db->query("SELECT `id`, `sum`, `type`, `ok` FROM `doc_list` WHERE `p_doc`='$cur_doc'");
@@ -68,7 +68,7 @@ $tmpl->addContent("
 </ul>");
 
 if ($mode == 'z') {
-	
+
 	$sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
 		`doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
 		`dop_delivery`.`value` AS `delivery`, `dop_delivery_date`.`value` AS `delivery_date`, `dop_status`.`value` AS `status`,
@@ -88,7 +88,7 @@ if ($mode == 'z') {
 	LEFT JOIN `delivery_regions` ON `delivery_regions`.`id` = `dop_delivery_region`.`value`
 	LEFT JOIN `doc_list` AS `r_list` ON `r_list`.`p_doc`=`doc_list`.`id` AND `r_list`.`type`=2
 	WHERE `doc_list`.`type`=3 AND `doc_list`.`mark_del`=0
-	ORDER by `doc_list`.`date` DESC";
+	ORDER by `doc_list`.`date` ASC";
 
 	$res = $db->query($sql);
 	$row = $res->num_rows;
@@ -97,11 +97,14 @@ if ($mode == 'z') {
 	$pr = $ras = 0;
 	$tpr = $tras = 0;
 
-	
+
 	$tmpl->addContent("<table width='100%' cellspacing='1' class='list'>
 	<tr>
 	<th width='70'>№</th><th width='50'>ID</th><th width='50'>Р-я</th><th>Статус</th><th>Агент</th><th>Сумма</th><th>Расчёт</th><th>Оплачено</th>
 	<th>Доставка</th><th>Дата</th><th>С сайта</th><th>Автор</th></tr>");
+	
+	$new_lines = $inproc_lines = $other_lines = $ready_lines = '';
+	
 	while ($line = $res->fetch_assoc()) {
 		if ($line['status'] == 'ok' || $line['status'] == 'err')
 			continue;
@@ -133,10 +136,10 @@ if ($mode == 'z') {
 		}
 		else if($line['region_name'])
 			$line['delivery_name'].= ' ('.html_out($line['region_name']).')';
-		
+
 		$ishop = $line['ishop'] ? 'Да' : 'Нет';
 		$link = "/doc.php?mode=body&amp;doc=" . $line['id'];
-		
+
 		$status_style = '';
 		switch($line['status']) {
 			case 'new':
@@ -149,48 +152,76 @@ if ($mode == 'z') {
 				$status_style = " style='color:#0c0'";
 				break;
 		}
-		
+
 		if ($line['r_id'])
 			$r_info = "<a href='/doc.php?mode=body&amp;doc={$line['r_id']}'>{$line['r_id']}</a>";
 		else
 			$r_info = '--нет--';
-		
+
 		$pay_sum = getPaySum($line['id']);
 		if(!$pay_sum)
 			$pay_sum = '-';
-		
-		$tmpl->addContent("<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
+
+		$str = "<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
 		<td>$r_info</td><td{$status_style}>$status</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td><td>$pay_type</td>
 		<td>$pay_sum</td><td>{$line['delivery_name']}</td>
 		<td>$date</td><td>$ishop</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
-		</tr>");
+		</tr>";
+		
+		switch($line['status']) {
+			case 'new':
+				$new_lines .= $str;
+				break;
+			case 'inproc':
+				$inproc_lines .= $str;
+				break;
+			case 'ready':
+				$ready_lines .= $str;
+				break;
+			default:
+				$other_lines .= '';
+		}
 	}
-	$tmpl->addContent("</table>");
+	$tmpl->addContent($new_lines.$inproc_lines.$other_lines.$ready_lines."</table>");
 	$tmpl->msg("В списке отображаются заявки, не отмеченные на удаления и с любым статусом, кроме &quot;отгружен&quot; и &quot;ошибочный&quot;");
 }
 else if ($mode == 'c') {
 	$sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
 		`doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
-		`dop_status`.`value` AS `status`
+		`dop_status`.`value` AS `status`, `doc_list`.`sklad`
 	FROM `doc_list`
 	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 	LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
 	WHERE `doc_list`.`type`=2 AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0
-	ORDER by `doc_list`.`date` DESC";
+	ORDER by `doc_list`.`date` ASC";
 
 	$res = $db->query($sql);
 
 	$tmpl->addContent("<table width='100%' class='list'><tr>
 <th width='70'>№</th><th width='55'>ID</th><th width='55'>Счёт</th><th width='100'>Статус</th><th>Агент</th><th width='90'>Сумма</th><th width='150'>Дата</th><th>Автор</th></tr>");
-	
+
 	while ($line = $res->fetch_assoc()) {
 		if($line['status']=='ok' || $line['status']=='err')
 			continue;
 		if($line['status']=='')
 			$line['status']='no';
+		$in_store = 1;
+		$pos_res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`
+			FROM `doc_list_pos`
+			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$line['sklad']}'
+			WHERE `doc_list_pos`.`doc`='{$line['id']}'");
+		while($pos_info = $pos_res->fetch_assoc()) {
+			if($pos_info['sklad_cnt']<$pos_info['cnt'])
+				$in_store = 0;
+		}
 		
+		$line_style ='';
+		if($in_store) {
+			$line_style = " style='background-color:#bfb'";
+		}
 		$status = $r_status_list[$line['status']];
 		$date = date('Y-m-d H:i:s', $line['date']);
 		$link = "/doc.php?mode=body&amp;doc=" . $line['id'];
@@ -198,8 +229,8 @@ else if ($mode == 'c') {
 			$z = "<a href='/doc.php?mode=body&amp;doc={$line['p_doc']}'>{$line['p_doc']}</a>";
 		else
 			$z = '--нет--';
-		$tmpl->addContent("<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
-	<td>$z</td><td>$status<td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
+		$tmpl->addContent("<tr{$line_style}><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
+	<td>$z</td><td>$status</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
 	<td>$date</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
 	</tr>");
 	}
@@ -215,7 +246,7 @@ else if ($mode == 'r') {
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
 	WHERE `doc_list`.`type`=2 AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND `dop_status`.`value`='ok'
-	ORDER by `doc_list`.`date` DESC";
+	ORDER by `doc_list`.`date` ASC";
 
 	$res = $db->query($sql);
 	$row = $res->num_rows;
