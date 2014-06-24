@@ -35,7 +35,7 @@ class doc_v_puti extends doc_Nulltype {
 	}
 
 	function initDefDopdata() {
-		$this->def_dop_data = array('dataprib'=>'', 'transkom'=>0, 'input_doc'=>'');
+		$this->def_dop_data = array('dataprib'=>'', 'transkom'=>0, 'input_doc'=>'', 'cena'=>0);
 	}
 	
 	
@@ -146,10 +146,6 @@ class doc_v_puti extends doc_Nulltype {
 			$pdf->Sety(54);
 		}
 
-		$str = 'Просим рассмотреть возможность поставки следующей продукции:';
-		$pdf->SetFont('', 'U', 14);
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'C', 0);
 
 		$old_x = $pdf->GetX();
 		$old_y = $pdf->GetY();
@@ -168,29 +164,38 @@ class doc_v_puti extends doc_Nulltype {
 		$str = "Поставщик: {$this->doc_data['agent_name']}, адрес: {$agent_data['adres']}, телефон: {$agent_data['tel']}";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0, 5, $str, 0, 1, 'L', 0);
+		
+		$str = 'Просим рассмотреть возможность поставки следующей продукции:';
+		$pdf->SetFont('', 'U', 14);
+		$str = iconv('UTF-8', 'windows-1251', $str);
+		$pdf->Cell(0, 8, $str, 0, 1, 'C', 0);
 
-		$t_width = array(8, 110, 20, 25, 0);
+		$t_width = array(8, 10, 100, 20, 25, 0);
 		$pdf->SetFont('', '', 12);
 		$str = '№';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[0], 5, $str, 1, 0, 'C', 0);
+		
+		$str = 'Код';
+		$pdf->CellIconv($t_width[1], 5, $str, 1, 0, 'C', 0);
+		
 		$str = 'Наименование';
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[1], 5, $str, 1, 0, 'C', 0);
+		$pdf->Cell($t_width[2], 5, $str, 1, 0, 'C', 0);
 		$str = 'Кол-во';
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[2], 5, $str, 1, 0, 'C', 0);
+		$pdf->Cell($t_width[3], 5, $str, 1, 0, 'C', 0);
 		$str = 'Цена';
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[3], 5, $str, 1, 0, 'C', 0);
+		$pdf->Cell($t_width[4], 5, $str, 1, 0, 'C', 0);
 		$str = 'Сумма';
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[4], 5, $str, 1, 0, 'C', 0);
+		$pdf->Cell($t_width[5], 5, $str, 1, 0, 'C', 0);
 		$pdf->Ln();
 
 		$pdf->SetFont('', '', 8);
 
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`
+		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `doc_base`.`vc`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -208,16 +213,19 @@ class doc_v_puti extends doc_Nulltype {
 			$smcost = sprintf("%01.2f р.", $sm);
 
 			$pdf->Cell($t_width[0], 5, $i, 1, 0, 'R', 0);
+			
+			$pdf->CellIconv($t_width[1], 5, $nxt[6], 1, 0, 'L', 0);
+			
 			$str = $nxt[0] . ' ' . $nxt[1];
 			if ($nxt[2])
 				$str.='(' . $nxt[2] . ')';
 			$str = iconv('UTF-8', 'windows-1251', $str);
-			$pdf->Cell($t_width[1], 5, $str, 1, 0, 'L', 0);
-			$pdf->Cell($t_width[2], 5, $nxt[3], 1, 0, 'C', 0);
+			$pdf->Cell($t_width[2], 5, $str, 1, 0, 'L', 0);
+			$pdf->Cell($t_width[3], 5, $nxt[3], 1, 0, 'C', 0);
 			$str = iconv('UTF-8', 'windows-1251', $cost);
-			$pdf->Cell($t_width[3], 5, $str, 1, 0, 'R', 0);
-			$str = iconv('UTF-8', 'windows-1251', $smcost);
 			$pdf->Cell($t_width[4], 5, $str, 1, 0, 'R', 0);
+			$str = iconv('UTF-8', 'windows-1251', $smcost);
+			$pdf->Cell($t_width[5], 5, $str, 1, 0, 'R', 0);
 			$pdf->Ln();
 		}
 
