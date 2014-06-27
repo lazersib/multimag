@@ -21,7 +21,7 @@
 class doc_s_Agent {
 	/// Просмотр списка агентов
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'gruzopol', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone');
+		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone', 'price_id', 'no_retail_prices', 'no_bulk_prices');
 	}
 	function View() {
 		global $tmpl;
@@ -95,11 +95,16 @@ class doc_s_Agent {
 			$this->PosMenu($pos, $param);
 
 		if($param=='') {
+			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+			
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
-			if($ares->num_rows)
-				$agent_info = $ares->fetch_assoc();
+			if($ares->num_rows) {
+				$agent_info = $ares->fetch_assoc();				
+				$tmpl->addBreadcrumb($agent_info['name'], '');
+			}
 			else {
-				$tmpl->addContent("<h3>Новая запись</h3>");
+				$tmpl->addBreadcrumb('Новая запись', '');
+				
 				$agent_info = array();
 				foreach ($this->agent_vars as $value)
 					$agent_info[$value] = '';				
@@ -109,12 +114,32 @@ class doc_s_Agent {
 	
 			if($agent_info['p_agent']>0) {
 				$pagent_info = $db->selectRowA('doc_agent', $agent_info['p_agent'], array('name'));
-				$html_pagent_name = html_out($pagent_info[0]);
+				$html_pagent_name = html_out($pagent_info['name']);
 			}
 			
 			
 			
 			$tmpl->setTitle("Правка агента ".html_out($agent_info['name']));
+			
+			$span = 5;
+			$ext='';
+			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
+			$no_mail_c = $agent_info['no_mail']?' checked':'';
+			$dish_checked = $agent_info['dishonest']?'checked':'';
+			$nbp_checked = $agent_info['no_bulk_prices']?'checked':'';
+			$nrp_checked = $agent_info['no_retail_prices']?'checked':'';
+			
+			$link_users = '';
+			$r = $db->query("SELECT `id`, `name` FROM `users` WHERE `agent_id`=$pos");
+			if($r->num_rows) {
+				while($nn = $r->fetch_assoc()) {
+					if($link_users)
+						$link_users .= ', ';
+					$link_users .= "<a href='/adm_users.php?mode=view&amp;id={$nn['id']}'>".html_out($nn['name'])." ({$nn['id']})</a>";
+				}
+			}
+			else	$link_users = 'отсутствуют';
+			
 			$tmpl->addContent("<form action='' method='post' id='agent_edit_form'>
 			<table cellpadding='0' width='100%' class='list'>
 			<input type='hidden' name='mode' value='esave'>
@@ -122,14 +147,13 @@ class doc_s_Agent {
 			<input type='hidden' name='pos' value='$pos'>
 			<tr><td align='right' width='20%'>Краткое наименование<br>
 			<small>По этому полю выполняется поиск. Не пишите здесь аббревиатуры вроде OOO, ИП, МУП, итд. а так же кавычки и подобные символы!</small>
-			<td><input type='text' name='name' value='".html_out($agent_info['name'])."' style='width: 90%;'>
-			<tr><td align=right>Тип:
-			<td>");
-			
-			$ext='';
-			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
-			
-			$no_mail_c = $agent_info['no_mail']?' checked':'';
+				<td colspan='3'><input type='text' name='name' value='".html_out($agent_info['name'])."' style='width: 90%;' maxlength='64'></td>
+				<td align='right'>Связанные пользователи</td>
+				<td>$link_users</td>
+				</tr>
+			<tr><td align=right>Полное название / ФИО:<br><small>Так, как должно быть в документах</small>
+				<td colspan='$span'><input type=text name='fullname' value='".html_out($agent_info['fullname'])."' style='width: 90%;' maxlength='256'></td></tr>
+			<tr><td align=right>Тип:</td><td>");
 			
 			if($agent_info['type']==0)
 				$tmpl->addContent("<label><input type='radio' name='type' value='0' checked>Физическое лицо</label><br>
@@ -137,58 +161,93 @@ class doc_s_Agent {
 			else
 				$tmpl->addContent("<label><input type='radio' name='type' value='0'>Физическое лицо</label><br>
 				<label><input type='radio' name='type' value='1' checked>Юридическое лицо</label>");
-			$tmpl->addContent("<tr><td align='right'>Группа</td>
+			$tmpl->addContent("<td align='right'>Группа</td>
         		<td>" . selectAgentGroup('g', $agent_info['group'], false, '', '', @$CONFIG['agents']['leaf_only']) . "</select>
-			<tr class=lin1><td align=right>Адрес электронной почты (e-mail)<td><input type=text name='email' value='".html_out($agent_info['email'])."' class='validate email'>&nbsp;<label><input type='checkbox' name='no_mail' value='1'{$no_mail_c}>Не отправлять рассылки</label>
-			<tr class=lin0><td align=right>Полное название / ФИО:<br><small>Так, как должно быть в документах</small><td><input type=text name='fullname' value='".html_out($agent_info['fullname'])."' style='width: 90%;'>
-			<tr class=lin1><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='tel' value='".html_out($agent_info['tel'])."' class='phone validate'>
-			<tr class=lin0><td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='fax_phone' value='".html_out($agent_info['fax_phone'])."' class='phone validate'>
-			<tr class=lin1><td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small><td><input type=text name='sms_phone' value='".html_out($agent_info['sms_phone'])."' class='phone validate'>
-			<tr class=lin0><td align=right>Дополнительный телефон:<td><input type=text name='alt_phone' value='".html_out($agent_info['alt_phone'])."'>
-			<tr class=lin0><td align=right>Юридический адрес / Адрес прописки<td colspan=2><textarea name='adres'>".html_out($agent_info['adres'])."</textarea>
-			<tr class=lin1><td align=right>Адрес проживания<td colspan=2><textarea name='gruzopol'>".html_out($agent_info['gruzopol'])."</textarea>
-			<tr class=lin0><td align=right>ИНН:<td><input type=text name='inn' value='".html_out($agent_info['inn'])."' style='width: 40%;' class='inn validate'>
-			<tr class=lin1><td align=right>КПП:<td><input type=text name='kpp' value='".html_out($agent_info['kpp'])."' style='width: 40%;'>	
-			<tr class=lin0><td align=right>Банк<td><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
-			<tr class=lin1><td align=right>Корр. счет<td><input type=text name='ks' value='".html_out($agent_info['ks'])."' style='width: 40%;' class='ks validate'>
-			<tr class=lin0><td align=right>БИК<td><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'>
-			<tr class=lin1><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small><td><input type=text name='rs' value='".html_out($agent_info['rs'])."' style='width: 40%;' class='rs validate'>
-			<tr class=lin0><td align=right>ОКВЭД<td><input type=text name='okved' value='".html_out($agent_info['okved'])."'>
-			<tr class=lin0><td align=right>ОГРН / ОГРНИП<td><input type=text name='ogrn' value='".html_out($agent_info['ogrn'])."'>
-			<tr class=lin1><td align=right>ОКПО<td><input type=text name='okpo' value='".html_out($agent_info['okpo'])."' class='okpo validate'>
-			<tr class=lin0><td align=right>ФИО директора<td><input type=text name='dir_fio' value='".html_out($agent_info['dir_fio'])."'>
-			<tr class=lin1><td align=right>ФИО директора в родительном падеже<td><input type=text name='dir_fio_r' value='".html_out($agent_info['dir_fio_r'])."'>
-			<tr class=lin0><td align=right>Контактное лицо<td><input type=text name='pfio' value='".html_out($agent_info['pfio'])."'>
-			<tr class=lin1><td align=right>Должность контактног лица<td><input type=text name='pdol' value='".html_out($agent_info['pdol'])."'>
-			<tr class=lin0><td align=right>Паспорт: Номер<td><input type=text name='pasp_num' value='".html_out($agent_info['pasp_num'])."'>
-			<tr class=lin1><td align=right>Паспорт: Дата выдачи<td><input type=text name='pasp_date' value='".html_out($agent_info['pasp_date'])."' id='pasp_date'>
-			<tr class=lin0><td align=right>Паспорт: Кем выдан<td><input type=text name='pasp_kem' value='".html_out($agent_info['pasp_kem'])."'>
-			<tr class=lin1><td align=right>Дата последней сверки:<td><input type=text name='data_sverki' value='".html_out($agent_info['data_sverki'])."' id='data_sverki' $ext>
-			<tr class=lin0><td align=right>Ответственный:<td>
-			<select name='responsible' $ext>
-			<option value='null'>--не назначен--</option>");
+				<td align='right'>Относится к:</td>
+				<td><input type='hidden' name='p_agent' id='agent_id' value='{$agent_info['p_agent']}'>
+					<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 95%;' value='$html_pagent_name'>
+					<div id='agent_info'></div>
+			<tr><td align=right>Адрес электронной почты (e-mail)
+				<br><label><input type='checkbox' name='no_mail' value='1'{$no_mail_c}>Не отправлять рассылки</label>
+				<td><input type=text name='email' value='".html_out($agent_info['email'])."' class='validate email' style='width: 90%;'>
+				<td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
+				<td colspan=3><input type=text name='sms_phone' value='".html_out($agent_info['sms_phone'])."' class='phone validate'>
+			<tr><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
+				<td><input type=text name='tel' value='".html_out($agent_info['tel'])."' class='phone validate'>
+				<td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
+				<td><input type=text name='fax_phone' value='".html_out($agent_info['fax_phone'])."' class='phone validate'>
+				<td align=right>Дополнительный телефон:
+				<td><input type=text name='alt_phone' value='".html_out($agent_info['alt_phone'])."'>
+			<tr><td align=right>Юридический адрес / Адрес прописки
+				<td colspan='2'><textarea name='adres'>".html_out($agent_info['adres'])."</textarea>
+				<td align=right>Адрес проживания
+				<td colspan='2'><textarea name='real_address'>".html_out($agent_info['real_address'])."</textarea>
+			<tr><td align=right>ИНН:
+				<td colspan='$span'><input type=text name='inn' value='".html_out($agent_info['inn'])."' style='width: 40%;' class='inn validate'>
+			<tr><td align=right>КПП:
+				<td colspan='$span'><input type=text name='kpp' value='".html_out($agent_info['kpp'])."' style='width: 40%;'>	
+			<tr><td align=right>Банк
+				<td colspan='$span'><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
+			<tr><td align=right>Корр. счет
+				<td colspan='$span'><input type=text name='ks' value='".html_out($agent_info['ks'])."' style='width: 40%;' class='ks validate'>
+			<tr><td align=right>БИК
+				<td colspan='$span'><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'>
+			<tr class=lin1><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small>
+				<td colspan='$span'><input type=text name='rs' value='".html_out($agent_info['rs'])."' style='width: 40%;' class='rs validate'>
+			<tr><td align=right>ОКВЭД
+				<td colspan='$span'><input type=text name='okved' value='".html_out($agent_info['okved'])."'>
+			<tr><td align=right>ОГРН / ОГРНИП
+				<td colspan='$span'><input type=text name='ogrn' value='".html_out($agent_info['ogrn'])."'>
+			<tr><td align=right>ОКПО
+				<td colspan='$span'><input type=text name='okpo' value='".html_out($agent_info['okpo'])."' class='okpo validate'>
+			<tr><td align=right>ФИО директора
+				<td colspan='$span'><input type=text name='dir_fio' value='".html_out($agent_info['dir_fio'])."'>
+			<tr><td align=right>ФИО директора в родительном падеже
+				<td colspan='$span'><input type=text name='dir_fio_r' value='".html_out($agent_info['dir_fio_r'])."'>
+			<tr><td align=right>Контактное лицо
+				<td colspan='$span'><input type=text name='pfio' value='".html_out($agent_info['pfio'])."'>
+			<tr><td align=right>Должность контактног лица
+				<td colspan='$span'><input type=text name='pdol' value='".html_out($agent_info['pdol'])."'>
+			<tr><td align=right>Паспорт: Номер
+				<td colspan='$span'><input type=text name='pasp_num' value='".html_out($agent_info['pasp_num'])."'>
+			<tr><td align=right>Паспорт: Дата выдачи
+				<td colspan='$span'><input type=text name='pasp_date' value='".html_out($agent_info['pasp_date'])."' id='pasp_date'>
+			<tr><td align=right>Паспорт: Кем выдан
+				<td colspan='$span'><input type=text name='pasp_kem' value='".html_out($agent_info['pasp_kem'])."'>
+			<tr><td align=right>Дата последней сверки:
+				<td><input type=text name='data_sverki' value='".html_out($agent_info['data_sverki'])."' id='data_sverki' $ext>
+				<td align=right>Ответственный:
+				<td><select name='responsible' $ext>
+				<option value='null'>--не назначен--</option>");
 			$rres = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
 			while($nx = $rres->fetch_row()) {
 				$s=($agent_info['responsible']==$nx[0])?'selected':'';
 				$tmpl->addContent("<option value='$nx[0]' $s>".  html_out($nx[1])."</option>");
 			}
-			$dish_checked=$agent_info['dishonest']?'checked':'';
-			$tmpl->addContent("</select>
-			<tr class='lin1'><td align='right'>Особые отметки<td><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
-			<tr class='lin0'><td align='right'>Связанные пользователи</td><td>");
-			$r = $db->query("SELECT `id`, `name` FROM `users` WHERE `agent_id`=$pos");
-			if(!$r->num_rows)	$tmpl->addContent("отсутствуют");
-			else {
-				while($nn = $r->fetch_assoc())
-					$tmpl->addContent("<a href='/adm_users.php?mode=view&amp;id={$nn['id']}'>".html_out($nn['name'])." ({$nn['id']})</a>, ");
+			
+			$tmpl->addContent("</select></td>
+				<td></td>
+				<td></td>
+			<tr><td align='right'>Фиксированная цена</td>
+				<td><select name='price_id'>
+					<option value='0'> -- не задана -- </option>");
+			$price_res = $db->query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
+			while($line = $price_res->fetch_row()) {
+				$s=($agent_info['price_id']==$line[0])?'selected':'';
+				$tmpl->addContent("<option value='$line[0]' $s>".  html_out($line[1])."</option>");
 			}
-			$tmpl->addContent("</td></tr>
-			<tr class='lin0'><td align='right'>Относится к<td>
-			<input type='hidden' name='p_agent' id='agent_id' value='{$agent_info['p_agent']}'>
-			<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 50%;' value='$html_pagent_name'>
-			<div id='agent_info'></div>
-			<tr class='lin1'><td align=right>Комментарий<td colspan=2><textarea name='comment'>".html_out($agent_info['comment'])."</textarea>
-			<tr class='lin0'><td><td><button type='submit' id='b_submit'>Сохранить</button>
+			
+			$tmpl->addContent("</select></td>
+				<td><label><input type='checkbox' name='no_bulk_prices' value='1' $nbp_checked>Отключить разовые скидки</label></td>
+				<td><label><input type='checkbox' name='no_retail_prices' value='1' $nrp_checked>Игнорировать розничные цены</label></td>
+				<td></td>
+				<td></td>
+			<tr><td align='right'>Особые отметки
+				<td colspan='$span'><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
+			
+			<tr><td align=right>Комментарий
+				<td colspan='$span'><textarea name='comment'>".html_out($agent_info['comment'])."</textarea>
+			<tr><td><td><button type='submit' id='b_submit'>Сохранить</button>
 			</table></form>
 
 			<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
@@ -204,17 +263,12 @@ class doc_s_Agent {
 					matchContains:1,
 					cacheLength:10,
 					maxItemsToShow:15,
-					formatItem:agliFormat,
 					onItemSelect:agselectItem,
 					extraParams:{'l':'agent','mode':'srv','opt':'ac'}
 				});
 			});
 
-			function agliFormat (row, i, num) {
-				var result = row[0] + \"<em class='qnt'>тел. \" +
-				row[2] + \"</em> \";
-				return result;
-			}
+
 
 			function agselectItem(li) {
 				if( li == null ) var sValue = \"Ничего не выбрано!\";
@@ -234,6 +288,15 @@ class doc_s_Agent {
 
 		}
 		else if($param=='h') {
+			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+			
+			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
+			if($ares->num_rows) {
+				$agent_info = $ares->fetch_assoc();				
+				$tmpl->addBreadcrumb($agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
+				$tmpl->addBreadcrumb('История правок', '');
+			}
+			else throw new NotFoundException('Агент не найден');
 			$tmpl->addContent("<table width='100%'>
 			<tr><th>id<th>Действие<th>Описание<th>Дата<th>Пользователь<th>IP");
 			$res = $db->query("SELECT `doc_log`.`id`, `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
@@ -420,7 +483,7 @@ class doc_s_Agent {
 			WHERE `doc_agent`.`group`='$group'
 			ORDER BY `doc_agent`.`name`";
 
-			$lim=50;
+			$lim=150;
 			$page = rcvint('p');
 			$res = $db->query($sql);
 			$row = $res->num_rows;

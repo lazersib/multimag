@@ -134,7 +134,7 @@ function ShowPosContextMenu(event, pos_id, addition)
 
 // Модуль просмотра картинок для витрины
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function tripleView(object_id)
+function tripleView(object_id, no_expand)
 {
 	var midiview=document.getElementById(object_id)
 	var body = document.getElementsByTagName('body')[0];
@@ -188,6 +188,9 @@ function tripleView(object_id)
 		var expand_btn=document.createElement('div')
 		expand_btn.style.cssText="width: 22px; height: 22px; position: absolute;";
 		expand_btn.innerHTML="<img src='/img/prettyPhoto/facebook/btnExpand.png' alt='Expand'>"
+		if(no_expand) {
+			expand_btn.style.display = 'none';
+		}
 
 		var image=document.createElement('img')
 		container.appendChild(image)
@@ -311,7 +314,6 @@ function tripleView(object_id)
 	midiview.onclick=function(event)
 	{
 		var popup=createPopup()
-		//popup.onclick=popup.destroy
 	}
 
 	midiview.appendImage=function(id,midi_url,full_url,origin_url)

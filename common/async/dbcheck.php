@@ -65,8 +65,8 @@ class DbCheckWorker extends AsyncWorker {
 					$db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)	VALUES ('$pline[0]', '$sline[0]', '0')");
 			}
 		}
-
-		// Заплонение дат первой покупки для раздела новинок
+		$this->SetStatusText("Расчет дат первой покупки...");
+		// Заполнение дат первой покупки для раздела новинок
 		$res = $db->query("SELECT `id` FROM `doc_base` WHERE `doc_base`.`pos_type`=0");
 		while ($pos_data = $res->fetch_row()) {
 			$doc_res = $db->query("SELECT `doc_list`.`date`
@@ -76,12 +76,14 @@ class DbCheckWorker extends AsyncWorker {
 			ORDER BY `doc_list`.`date`
 			LIMIT 1");
 			if ($doc_res->num_rows) {
-				$doc_info = $res->fetch_row();
+				$doc_info = $doc_res->fetch_row();
 				$buy_time = date("Y-m-d H:i:s", $doc_info[0]);
+				echo "$buy_time\n";
 				$db->query("UPDATE `doc_base` SET `buy_time`='$buy_time' WHERE `id`='$pos_data[0]'");
 			}
 		}
 		
+		$this->SetStatusText("Расчет транзитов...");
 		// Кеширование транзитов
 		$res = $db->query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0'

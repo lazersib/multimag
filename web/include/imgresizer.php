@@ -120,15 +120,17 @@ class ImageProductor {
 		$icname="{$CONFIG['site']['var_data_web']}/{$this->cache_fclosure}";
 
 		$this->source_file="{$CONFIG['site']['var_data_fs']}/{$this->storages[$this->storage]}/{$this->id}.{$this->type}";
-
+		if(!file_exists($this->source_file))
+			throw new NotFoundException('Изображение не найдено');
 		@mkdir("{$CONFIG['site']['var_data_fs']}/cache/{$this->storages[$this->storage]}/",0755);
 
 		$dx=$dy=0;
 
-		$sz=getimagesize($this->source_file);
+		$sz = getimagesize($this->source_file);
+
 		$sx=$sz[0];
 		$sy=$sz[1];
-		$stype=$sz[2];
+
 
 		if($this->dim_x || $this->dim_y) {
 		// Жёстко заданные размеры
@@ -185,31 +187,41 @@ class ImageProductor {
 		if( $this->dim_x>=300 || $this->dim_y>=300)	imageinterlace($im, 1);
 
 		if($this->show_watermark) {
-			if(is_array)
+			$text = strtoupper($CONFIG['site']['name']);
 			$bg_c = imagecolorallocatealpha ($im, 64,64, 64, 96);
 			$text_c = imagecolorallocatealpha ($im, 192,192, 192, 96);
 			if($this->dim_x<$this->dim_y)	$font_size=$this->dim_x/10;
 			else				$font_size=$this->dim_y/10;
-			$text_bbox=imageftbbox ( $font_size , 45 , $this->font_watermark , $CONFIG['site']['name'] );
+			
+			$text_bbox = imageftbbox ( $font_size , 45 , $this->font_watermark , $text );
+			$w = $text_bbox[2] - $text_bbox[6];
+			$h = $text_bbox[1] - $text_bbox[5];
 
-			$min_x=$max_x=$text_bbox[0];
-			$min_y=$max_y=$text_bbox[0];
-			for($i=0;$i<8;$i+=2)
-			{
-				if($text_bbox[$i]<$min_x)	$min_x=$text_bbox[$i];
-				if($text_bbox[$i]>$max_x)	$max_x=$text_bbox[$i];
-				if($text_bbox[$i+1]<$min_y)	$min_y=$text_bbox[$i+1];
-				if($text_bbox[$i+1]>$max_y)	$max_y=$text_bbox[$i+1];
-			}
-			$delta_x = $this->dim_x - $max_x + $min_x;
-			$delta_y = $this->dim_y - $min_y + $max_y;
+			if($this->dim_x<$this->dim_y)
+				$delta = $w / $this->dim_x / 0.9;
+			else	$delta = $h / $this->dim_y / 0.9;
 
-			imagefttext($im, $font_size, 45, $delta_x / 1.9, $delta_y / 2, $bg_c, $this->font_watermark, $CONFIG['site']['name']);
-			imagefttext($im, $font_size, 45, $delta_x / 1.9 + 2, $delta_y / 2 + 2, $text_c, $this->font_watermark, $CONFIG['site']['name']);
+			$font_size = round($font_size/$delta);
+			
+			$text_bbox = imageftbbox ( $font_size , 45 , $this->font_watermark , $text );
+
+			$width = $text_bbox[2] - $text_bbox[6];
+			$height = $text_bbox[1] - $text_bbox[5];			
+			$offset_x = $text_bbox[0] - $text_bbox[6];
+			
+			$bb_x = round( ($this->dim_x - $width) / 2);
+			$bb_y = round( ($this->dim_y - $height) / 2);
+			
+			$text_x = $bb_x + $offset_x;
+			$text_y = $bb_y + $height;
+			
+			imagefttext($im, $font_size, 45, $text_x, $text_y, $bg_c, $this->font_watermark, $text);
+			imagefttext($im, $font_size, 45, $text_x + 2, $text_y + 2, $text_c, $this->font_watermark, $text);
 		}
 // 		header("Content-type: image/jpg");
 // 		imagejpeg($im,"",$this->quality);
-		
+//		exit();
+				
 		imageinterlace($im ,1);	// Progressive JPEG
 		if($this->type == 'jpg')	imagejpeg($im, $cname, $this->quality);
 		else if($this->type == 'gif')	imagegif($im, $cname, $this->quality);

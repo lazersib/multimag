@@ -388,8 +388,7 @@ class doc_Realizaciya extends doc_Nulltype {
 
 /// Обычная накладная в PDF формате
 /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
-	function PrintNaklPDF($to_str=false)
-	{
+	function PrintNaklPDF($to_str=false) {
 		require('fpdf/fpdf_mc.php');
 		global $tmpl, $CONFIG, $db;
 
@@ -469,8 +468,11 @@ class doc_Realizaciya extends doc_Nulltype {
 		$i=0;
 		$ii=1;
 		$sum=0;
-		$skid_sum = 0;
+		$base_sum = 0;
 		$pc = PriceCalc::getInstance();
+		$pc->setAgentId($this->doc_data['agent']);
+		$pc->setFromSiteFlag(@$this->dop_data['ishop']);
+		
 		while($nxt = $res->fetch_row())	{
 			$sm=$nxt[3]*$nxt[4];
 			$cost = sprintf("%01.2f руб.", $nxt[4]);
@@ -490,12 +492,13 @@ class doc_Realizaciya extends doc_Nulltype {
 			$i=1-$i;
 			$ii++;
 			$sum+=$sm;
-			$skid_sum += $pc->getPosDefaultPriceValue($nxt[7])*$nxt[3];
+			$base_sum += $pc->getPosDefaultPriceValue($nxt[7])*$nxt[3];
 		}
+		$pc->setOrderSum($base_sum);
+		
 		$ii--;
-		$cost = sprintf("%01.2f руб.", $sum);
 
-		$prop='';
+		$pay_info='';
 		if($sum>0) {
 			$add='';
 			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
@@ -506,29 +509,56 @@ class doc_Realizaciya extends doc_Nulltype {
 			if($rs->num_rows)
 			{
 				$prop_data = $rs->fetch_row();
-				$prop = sprintf("Оплачено: %0.2f руб.",$prop_data[0]);
+				$pay_p = number_format($prop_data[0], 2, '.', ' ');
+				$pay_info = ", оплачено: $pay_p руб.";
 			}
 		}
 		$pdf->Ln();
-
-		$str="Всего $ii наименований на сумму $cost";
+		$pdf->SetFont('','',10);
+		$sum_p = number_format($sum, 2, '.', ' ');
+		$str="Всего наименований: $ii, на сумму $sum_p руб.";
+		if($pay_info)
+			$str.=$pay_info;
 		if($this->dop_data['mest'])	$str.=", мест: ".$this->dop_data['mest'];
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-
-		if($sum < $skid_sum) {
-			$cost = sprintf("%01.2f руб.", $skid_sum-$sum);
-			$str = "В том числе, скидка: $cost";
-			$pdf->CellIconv(0,5,$str,0,1,'L',0);
+		$pdf->CellIconv(0,4,$str,0,1,'L',0);
+		
+		$pdf->SetFont('','',7);
+		if($sum < $base_sum) {
+			$price_name = $pc->getCurrentPriceName();
+			$sk_p = number_format($base_sum-$sum, 2, '.', ' ');
+			$str = "Ваша цена: $price_name. Размер скидки: $sk_p руб.";
+			$pdf->CellIconv(0,3,$str,0,1,'L',0);
+		}
+		
+		$next_price_info = $pc->getNextPriceInfo();
+		if($next_price_info) {
+			if($next_price_info['incsum']<($base_sum/5)) {	// Если надо докупить на сумму менее 20%
+				$next_sum_p = number_format($next_price_info['incsum'], 2, '.', ' ');
+				$str = "При увеличении суммы покупки на $next_sum_p руб., вы можете получить цену \"{$next_price_info['name']}\"!";
+				$pdf->CellIconv(0, 3,$str,0,1,'L',0);
+			}
+		}
+		
+		$next_periodic_price_info = $pc->getNextPeriodicPriceInfo();
+		if($next_periodic_price_info) {
+			if($next_periodic_price_info['incsum']<($base_sum/5)) {	// Если надо докупить на сумму менее 20%
+				$next_sum_p = number_format($next_periodic_price_info['incsum'], 2, '.', ' ');
+				$str = "При осуществлении дополнительных оплат за {$next_periodic_price_info['period']} на $next_sum_p руб., вы получите цену \"{$next_periodic_price_info['name']}\"!";
+				$pdf->CellIconv(0, 3,$str,0,1,'L',0);
+			}
 		}
 
-		if($prop)
-		{
-			$pdf->CellIconv(0,5,$prop,0,1,'L',0);
-		}
-
+		
+		
+		$pdf->SetFont('','',10);
+		$pdf->ln(5);
 		$str="Поставщик:_____________________________________";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$str="Товар получил, претензий к качеству товара и внешнему виду не имею.";
+		$pdf->ln();
+		if($this->dop_data['mest'])
+			$str = "Получил {$this->dop_data['mest']} мест товара, ";
+		else	$str = "Товар получил, ";
+		$str .= "претензий к качеству товара и внешнему виду не имею.";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Покупатель: ____________________________________";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);

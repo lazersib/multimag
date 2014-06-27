@@ -374,7 +374,7 @@ protected function ProductList($group, $page) {
 /// @param block Тип отображаемого блока: stock - Распродажа, popular - Популярные товары, new - Новинки, transit - Товарв пути
 protected function ViewBlock($block)
 {
-	global $tmpl, $CONFIG, $db;
+	global $tmpl, $CONFIG, $db, $wikiparser;
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 	
 	// Определение типа блока
@@ -421,7 +421,7 @@ protected function ViewBlock($block)
 		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_base`.`hidden`='0' AND (`doc_base`.`create_time`>='$new_time' OR `doc_base`.`buy_time`>='$new_time')
+		WHERE `doc_base`.`hidden`='0' AND `doc_base`.`buy_time`>='$new_time'
 		ORDER BY `doc_base`.`buy_time` DESC
 		LIMIT 24";
 		$head='Новинки';
@@ -439,11 +439,32 @@ protected function ViewBlock($block)
 		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_base`.`hidden`='0' AND (`doc_base`.`create_time`>='$new_time' OR `doc_base`.`buy_time`>='$new_time') 
+		WHERE `doc_base`.`hidden`='0' AND `doc_base`.`create_time`>='$new_time' AND `doc_base`.`buy_time`='1970-01-01' 
 			AND ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`)=0
 		ORDER BY `doc_base`.`buy_time` DESC
 		LIMIT 24";
-		$head='Новинки';
+		$head='Новые образцы';
+	}
+	else if($block=='best')
+	{
+		$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
+		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
+		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`,
+		`doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`,
+		`doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		FROM `comments`
+		INNER JOIN `doc_base` ON `doc_base`.`id`=`comments`.`object_id` AND `comments`.`object_name`='product'
+		INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
+		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`comments`.`object_id`
+		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`comments`.`object_id` AND `doc_base_img`.`default`='1'
+		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `comments`.`rate`>0 AND `doc_base`.`hidden`='0'
+		GROUP BY `comments`.`object_id`
+		ORDER BY AVG(`comments`.`rate`)*3+COUNT(`comments`.`rate`)  DESC
+		LIMIT 24";
+		
+		$head='Товары с лучшим рейтингом';
 	}
 	else if($block=='transit')
 	{
@@ -462,8 +483,25 @@ protected function ViewBlock($block)
 	}
 	else	throw new NotFoundException('Блок не найден!');
 	
+	$page_name = $db->real_escape_string('vitrina:'.$block);
+	$text = '';
+	$wres = $db->query("SELECT `articles`.`name`, `a`.`name` AS `a_name`, `articles`.`date`, `articles`.`changed`, `b`.`name` AS `b_name`, `articles`.`text`, `articles`.`type`
+	FROM `articles`
+	LEFT JOIN `users` AS `a` ON `a`.`id`=`articles`.`autor`
+	LEFT JOIN `users` AS `b` ON `b`.`id`=`articles`.`changeautor`
+	WHERE `articles`.`name` = '$page_name'");
+	if($nxt = $wres->fetch_assoc()) {
+		$text=$nxt['text'];
+		if($nxt['type']==0)	$text=strip_tags($text, '<nowiki>');
+		if($nxt['type']==0 || $nxt['type']==2) {
+			$text=$wikiparser->parse($text);
+			if(@$wikiparser->title)
+				$head = $wikiparser->title;
+		}
+	}
+	
 	$tmpl->addContent("<div class='breadcrumbs'><a href='/vitrina.php'>Главная</a> <a href='/vitrina.php'>Витрина</a> $head</div>");
-	$tmpl->addContent("<h1 id='page-title'>$head</h1>");
+	$tmpl->addContent("<h1 id='page-title'>$head</h1><div>$text</div>");
 	$tmpl->SetTitle($head);
 
 	$res=$db->query($sql);
@@ -1084,8 +1122,10 @@ protected function TovList_SimpleTable($res, $lim) {
 	$s_retail = $s_current = $i = 0;
 	$pc = $this->priceCalcInit();
 	
-	$tmpl->addContent("<table width='100%' class='list'>
-		<tr class='title'><th>Наименование</th><th>Производитель</th><th>Наличие</th>");
+	$tmpl->addContent("<table width='100%' class='list'><tr class='title'>");
+	if(@$CONFIG['site']['vitrina_show_vc'])
+		$tmpl->addContent("<th>Код</th>");
+	$tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Наличие</th>");
 	
 	if($pc->getRetailPriceId() != $pc->getDefaultPriceID()) {
 		$tmpl->addContent("<th>В розницу</th><th>Оптом</th>");
@@ -1117,7 +1157,10 @@ protected function TovList_SimpleTable($res, $lim) {
 				$cce = ' style=\'color:#888\'';
 		}
 		
-		@$tmpl->addContent("<tr><td><a href='$link'>".html_out($nxt['name'])."</a></td>
+		$tmpl->addContent("<tr>");
+		if(@$CONFIG['site']['vitrina_show_vc'])
+			$tmpl->addContent("<td>".html_out($nxt['vc'])."</td>");
+		$tmpl->addContent("<td><a href='$link'>".html_out($nxt['name'])."</a></td>
 		<td>".html_out($nxt['proizv'])."</td><td>$nal</td>");
 		if($s_retail) {
 			$ret_price = $pc->getPosRetailPriceValue($nxt['id']);
@@ -1225,7 +1268,10 @@ protected function TovList_ExTable($res, $lim) {
 	
 	$pc = $this->priceCalcInit();
 	
-	$tmpl->addContent("<table width='100%' cellspacing='0' border='0' class='list'><tr class='title'><th>Наименование<th>Производитель<th>Наличие<th>Розничная цена <th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>Купить</tr>");
+	$tmpl->addContent("<table width='100%' class='list'><tr class='title'>");
+	if(@$CONFIG['site']['vitrina_show_vc'])
+		$tmpl->addContent("<th>Код</th>");
+	$tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Наличие</th><th>Цена</th><th>d, мм</th><th>D, мм</th><th>B, мм</th><th>m, кг</th><th>Купить</th></tr>");
 	$basket_img = "/skins/".$CONFIG['site']['skin']."/basket16.png";
 	
 	if(@$CONFIG['site']['grey_price_days'])
@@ -1246,12 +1292,17 @@ protected function TovList_ExTable($res, $lim) {
 		else if($nxt['mult']>1)	$buy_cnt = $nxt['mult'];
 		else			$buy_cnt = 1;
 		
-		$tmpl->addContent("<tr><td><a href='$link'>".html_out($nxt['name'])."</a><td>".html_out($nxt['proizv'])."<td>$nal
+		$tmpl->addContent("<tr>");
+		if(@$CONFIG['site']['vitrina_show_vc'])
+			$tmpl->addContent("<td>".html_out($nxt['vc'])."</td>");
+		$tmpl->addContent("<td><a href='$link'>".html_out($nxt['name'])."</a><td>".html_out($nxt['proizv'])."<td>$nal
 		<td $cce>$price<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
 		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
 	}
 	$tmpl->addContent("</table>");
 }
+
+
 /// Форма аутентификации при покупке. Выдаётся, только если посетитель не вошёл на сайт
 protected function BuyAuthForm() {
 	global $tmpl;

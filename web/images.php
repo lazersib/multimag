@@ -36,12 +36,21 @@ settype($x,"integer");
 settype($y,"integer");
 settype($q,"integer");
 
-$img=new ImageProductor($i,$s,$t);
-$img->SetX($x);
-$img->SetY($y);
-$img->SetQuality($q);
-$img->SetNoEnlarge($n);
-$img->SetFixAspect($f);
-$img->MakeAndStore();
+try {
+	$img=new ImageProductor($i,$s,$t);
+	$img->SetX($x);
+	$img->SetY($y);
+	$img->SetQuality($q);
+	$img->SetNoEnlarge($n);
+	$img->SetFixAspect($f);
+	$img->MakeAndStore();
+}
+catch(NotFoundException $e) {
+	die('Файл изображения не найден');
+}
+catch(Exception $e) {
+	header('HTTP/1.0 500 Internal error');
+	die('Внутренняя ошибка. Попробуйте позднее.');
+}
 
 ?>

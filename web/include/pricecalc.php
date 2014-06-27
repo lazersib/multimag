@@ -36,6 +36,9 @@ class PriceCalc {
 	protected $retail_price_id = 0;		//< id розничной цены.
 	protected $siteuser_price_id = 0;	//< id цены для зарегистрированного пользователя
 	protected $default_price_id = 0;	//< id цены по умолчанию
+	protected $agent_price_id = 0;		//< id фиксированной цены агента
+	protected $no_retail_prices = 0;	//< флаг, запрещающий автоматическое использование розничных цен
+	protected $no_bulk_prices = 0;		//< флаг, запрещающий автоматическое использование разовых скидочных цен
 	protected $bulk_prices;			//< Список автоматических цен, включаемых по разным факторам
 	protected $prices;			//< Все цены
 	protected $pos_info_cache;		//< Кеш информации о наименованиях
@@ -98,9 +101,27 @@ class PriceCalc {
 	public function setAgentId($agent_id) {
 		$this->agent_id = $agent_id;
 		$this->agent_avg_sum = false;
+		$this->agent_price_id = 0;
+		$this->no_retail_prices = 0;
+		$this->no_bulk_prices = 0;
 		$this->current_price_id = 0;		
 	}
 
+	/// Получить флаг no_bulk_prices
+	public function getNBPFlag() {
+		return $this->no_bulk_prices;
+	}
+	
+	/// Получить флаг no_retail_prices
+	public function getNRPFlag() {
+		return $this->no_retail_prices;
+	}
+	
+	/// Получить id фиксированной цены агента
+	public function getAgentPriceId() {
+		return $this->agent_price_id;
+	}
+	
 	/// Установить сумму заказа
 	/// @param order_sum сумма заказа
 	public function setOrderSum($order_sum) {
@@ -129,22 +150,40 @@ class PriceCalc {
 		if($this->agent_id>1 && $this->agent_avg_sum===false) {
 			$agent_info = $db->selectRow('doc_agent', $this->agent_id);
 			$this->agent_avg_sum = $agent_info['avg_sum'];
+			$this->agent_price_id = $agent_info['price_id'];
+			$this->no_retail_prices = $agent_info['no_retail_prices'];
+			$this->no_bulk_prices = $agent_info['no_bulk_prices'];
 		}
 		
-		foreach($this->bulk_prices as $price) {
-			if($this->order_sum>=$price['bulk_threshold']) {
-				$find_id = $price['id'];
-				break;
-			}
-			if($this->agent_avg_sum && $this->agent_avg_sum>=$price['acc_threshold']) {
-				$find_id = $price['id'];
-				break;
+		if($this->agent_price_id && $this->no_bulk_prices)
+			$find_id =  $this->agent_price_id;
+		else {
+			foreach($this->bulk_prices as $price) {
+				if($this->agent_price_id && $this->agent_price_id == $price['id']) {
+					$find_id = $price['id'];
+					break;
+				}
+				if($this->order_sum>=$price['bulk_threshold']) {
+					$find_id = $price['id'];
+					break;
+				}
+				if($this->agent_avg_sum && $this->agent_avg_sum>=$price['acc_threshold'] && !$this->agent_price_id) {
+					$find_id = $price['id'];
+					break;
+				}
+				if( $price['id'] == $this->from_site_flag ) {
+					$find_id = $price['id'];
+					break;
+				}
 			}
 		}
-		if( (!$find_id) && $this->from_site_flag )
-			$find_id = $this->siteuser_price_id;
+		if( (!$find_id) && $this->agent_price_id)
+			$find_id = $this->agent_price_id;
+		
 		if( !$find_id )
 			$find_id = $this->default_price_id;
+		
+		$this->current_price_id = $find_id;
 		return $find_id;
 	}
 	
@@ -157,7 +196,13 @@ class PriceCalc {
 	/// Получить ID следующей цены для текущего заказа
 	public function getNextPriceInfo() {
 		$next_price_id = 0;
+		if($this->no_bulk_prices)
+			return false;
 		foreach($this->bulk_prices as $price) {
+			if($this->agent_price_id && $this->agent_price_id == $price['id'])
+				break;
+			if($this->from_site_flag && $price['id'] == $this->siteuser_price_id)
+				break;
 			if($this->order_sum>=$price['bulk_threshold'])
 				break;
 			$next_price_id = $price['id'];			
@@ -168,6 +213,73 @@ class PriceCalc {
 			'incsum'=>$this->prices[$next_price_id]['bulk_threshold']-$this->order_sum );
 	}
 
+	/// Получить ID следующей цены для накопительной скидки
+	public function getNextPeriodicPriceInfo() {
+		global $CONFIG, $db;
+		$next_price_id = 0;
+		if($this->agent_price_id || !$this->agent_id)
+			return false;
+				
+		if(isset($CONFIG['pricecalc']['acc_time']))
+			$cnt = intval($CONFIG['pricecalc']['acc_time']);
+		else	$cnt = 0;
+		$print_period = '';
+
+		// Получение дат для выборки
+		$di = new \DateCalcInterval();
+		switch($CONFIG['pricecalc']['acc_type']) {
+			case 'months':
+				$di->calcXMonthsBack($cnt);
+				$print_period = "последние $cnt месяц(ев)";
+				$start_period = $di->start;
+				break;
+			case 'years':
+				$di->calcXYearsBack($cnt);
+				$print_period = "последние $cnt лет";
+				$start_period = $di->start;
+				break;
+			case 'prevmonth':
+				$di->calcPrevMonth();
+				$print_period = "текущий месяц";
+				$start_period = $di->end;
+				break;
+			case 'prevquarter':
+				$di->calcPrevQuarter();
+				$print_period = "текущий квартал";
+				$start_period = $di->end;
+				break;
+			case 'prevhalfyear':
+				$di->calcPrevHalfyear();
+				$print_period = "текущее полугодие";
+				$start_period = $di->end;
+				break;
+			case '':break;
+			case 'prevyear':
+			default:
+				$di->calcPrevYear();
+				$print_period = "текущий год";
+				$start_period = $di->end;
+		}
+		
+		// Получение суммы расчётов за текущий период
+		$acc_sum = 0;
+		$res = $db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE `date`>='$start_period'
+			AND (`type`='1' OR `type`='4' OR `type`='6') AND `ok`>0 AND `agent`>0 AND `sum`>0 AND `agent`=".intval($this->agent_id));
+		if($line = $res->fetch_row()) {
+			$acc_sum = $line[0];
+		}
+		
+		foreach($this->bulk_prices as $price) {
+			if($acc_sum >= $price['acc_threshold'])
+				break;
+			$next_price_id = $price['id'];			
+		}
+		if(!$next_price_id)	return false;
+		return array('id'=>$next_price_id,
+			'name'=>$this->prices[$next_price_id]['name'],
+			'incsum'=>$this->prices[$next_price_id]['acc_threshold']-$acc_sum,
+			'period'=>$print_period);
+	}
 	
 	/// Получить значение цены по умолчанию для товарного наименования
 	/// @param pos_id id товарного наименования
@@ -204,7 +316,7 @@ class PriceCalc {
 		settype($pos_info['bulkcnt'], 'int');
 		settype($count, 'int');
 		
-		if($pos_info['bulkcnt']>1 && $pos_info['bulkcnt']>$count && $this->retail_price_id!=0)
+		if($pos_info['bulkcnt']>1 && $pos_info['bulkcnt']>$count && $this->retail_price_id!=0 && !$this->no_retail_prices)
 			$price_id = $this->retail_price_id;
 		else $price_id = $this->getCurrentPriceID();
 		
