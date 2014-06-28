@@ -1,81 +1,80 @@
-function PosEditorInit(base_url, editable)
-{
-	var poslist=document.getElementById('poslist')
-	var p_sum=document.getElementById('sum')
-	//poslist.doc_id=doc
-	poslist.base_url=base_url
-	poslist.editable=editable
-	poslist.show_column=new Array()
-	var skladview=SkladViewInit(/*doc*/)
-	PladdInit()
+function PosEditorInit(base_url, editable) {
+	var poslist = document.getElementById('poslist');
+	var p_sum = document.getElementById('sum');
+	//poslist.doc_id=doc;
+	poslist.base_url = base_url;
+	poslist.editable = editable;
+	poslist.show_column = new Array();
+	poslist.auto_price = 1;
+	var skladview = SkladViewInit(/*doc*/);
+	PladdInit();
 
 	if(!poslist.editable)
-	{
-		skladview.style.display='none'
-	}
+		skladview.style.display = 'none';
 
-	poslist.refresh=function()
-	{
+	poslist.refresh = function() {
 		$.ajax({
 			type:   'GET',
 			url:    base_url,
 			data:   'opt=jget',
 			success: function(msg) { poslist.tBodies[0].innerHTML=''; rcvDataSuccess(msg); },
-			error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); },
+			error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); }
 		});
-	}
+	};
 
-	poslist.refresh()
+	poslist.refresh();
 
-	poslist.doInputKeyDown=function(e)
-	{
-		var e = e||window.event;
-		if(e.keyCode==40)
-		{
-			var row=this.parentNode.parentNode.nextSibling
-			if(row==null)		return false
-			if(row.nodeType!=1)	return false
-			var inputs=row.getElementsByTagName('input')
-			for(var i=0;i<inputs.length;i++)
-			{
-				if(inputs[i].name==this.name)	inputs[i].focus()
+	poslist.doInputKeyDown = function(e) {
+		var e = e || window.event;
+		if (e.keyCode == 40) {
+			var row = this.parentNode.parentNode.nextSibling;
+			if (row == null)
+				return false;
+			if (row.nodeType != 1)
+				return false;
+			var inputs = row.getElementsByTagName('input');
+			for (var i = 0; i < inputs.length; i++) {
+				if (inputs[i].name == this.name)
+					inputs[i].focus();
 			}
-			return false
+			return false;
 		}
-		else if(e.keyCode==38)
-		{
-			var row=this.parentNode.parentNode.previousSibling
-			if(row.nodeType!=1)	return false
-			var inputs=row.getElementsByTagName('input')
-			for(var i=0;i<inputs.length;i++)
-			{
-				if(inputs[i].name==this.name)	inputs[i].focus()
+		else if(e.keyCode==38) {
+			var row = this.parentNode.parentNode.previousSibling;
+			if (row.nodeType != 1)
+				return false;
+			var inputs = row.getElementsByTagName('input');
+			for (var i = 0; i < inputs.length; i++)	{
+				if (inputs[i].name == this.name)
+					inputs[i].focus();
 			}
-			return false
+			return false;
 		}
-		else if(e.keyCode==37 && e.shiftKey==true)
-		{
-			var row=this.parentNode.parentNode
-			if(row.nodeType!=1)	return false
-			var inputs=row.getElementsByTagName('input')
-			for(var i=0;i<inputs.length;i++)
-			{
-				if(this.name=='cnt' && inputs[i].name=='cost')	inputs[i].focus()
-				else if(this.name=='sum' && inputs[i].name=='cnt')	inputs[i].focus()
+		else if (e.keyCode == 37 && e.shiftKey == true) {
+			var row = this.parentNode.parentNode;
+			if (row.nodeType != 1)
+				return false;
+			var inputs = row.getElementsByTagName('input');
+			for (var i = 0; i < inputs.length; i++) {
+				if (this.name == 'cnt' && inputs[i].name == 'cost')
+					inputs[i].focus();
+				else if (this.name == 'sum' && inputs[i].name == 'cnt')
+					inputs[i].focus();
 			}
-			return false
+			return false;
 		}
-		else if(e.keyCode==39 && e.shiftKey==true)
-		{
-			var row=this.parentNode.parentNode
-			if(row.nodeType!=1)	return false
-				var inputs=row.getElementsByTagName('input')
-				for(var i=0;i<inputs.length;i++)
-				{
-					if(this.name=='cost' && inputs[i].name=='cnt')		inputs[i].focus()
-					else if(this.name=='cnt' && inputs[i].name=='sum')	inputs[i].focus()
-				}
-				return false
+		else if (e.keyCode == 39 && e.shiftKey == true)	{
+			var row = this.parentNode.parentNode;
+			if (row.nodeType != 1)
+				return false;
+			var inputs = row.getElementsByTagName('input');
+			for (var i = 0; i < inputs.length; i++) {
+				if (this.name == 'cost' && inputs[i].name == 'cnt')
+					inputs[i].focus();
+				else if (this.name == 'cnt' && inputs[i].name == 'sum')
+					inputs[i].focus();
+			}
+			return false;
 		}
 		//return false
 	}
@@ -117,29 +116,41 @@ function PosEditorInit(base_url, editable)
 			}
 			return false
 		}
-		var linehtml="<td>"+(row_cnt+1)
-		if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>"
-		linehtml+="</td>"
-		if(poslist.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>"
-		var posname=data.name
-		if(data.comm)	posname+="<br><small>"+data.comm+"</small>"
-		else		posname+="<br><small></small>"
-		linehtml+="<td class='la'>"+posname+"</td><td>"+data.scost+"</td><td>"
-		if(poslist.editable)	linehtml+="<input type='text' name='cost' value='"+data.cost+"'>"
-		else			linehtml+=data.cost
-		linehtml+="</td><td>"
-		if(poslist.editable)	linehtml+="<input type='text' name='cnt' value='"+data.cnt+"'>"
-		else			linehtml+=data.cnt
-		linehtml+="</td><td>"
-		if(poslist.editable)	linehtml+="<input type='text' name='sum' value='"+sum+"'>"
-		else			linehtml+=sum
-		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.place+"</td>"
-		if(poslist.show_column['sn']>0)	linehtml+="<td id='sn"+row.lineIndex+"'>"+data.sn+"</td>"
-		if(poslist.show_column['gtd']>0)linehtml+="<td id='gtd"+row.lineIndex+"'>"+data.gtd+"</td>"
-		row.innerHTML=linehtml
+		var linehtml="<td>"+(row_cnt+1);
+		if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>";
+		linehtml+="</td>";
+		if(poslist.show_column['vc']>0)	linehtml+="<td>"+data.vc+"</td>";
+		var posname=data.name;
+		if(data.comm)	posname+="<br><small>"+data.comm+"</small>";
+		else		posname+="<br><small></small>";
+		linehtml+="<td class='la'>"+posname+"</td><td>"+data.scost+"</td><td";
+		if(data.retail)
+			linehtml+=" class='retail'";
+		linehtml+=">";
+		if(poslist.editable){
+			linehtml+="<input type='text' name='cost' value='"+data.cost+"'";
+			if(poslist.auto_price)
+				linehtml+=" disabled";
+			linehtml+=">";
+		}
+		else			linehtml+=data.cost;
+		linehtml+="</td><td>";
+		if(poslist.editable)	linehtml+="<input type='text' name='cnt' value='"+data.cnt+"'>";
+		else			linehtml+=data.cnt;
+		linehtml+="</td><td>";
+		if(poslist.editable){
+			linehtml+="<input type='text' name='sum' value='"+sum+"'";
+			if(poslist.auto_price)
+				linehtml+=" disabled";
+			linehtml+=">";
+		}
+		else			linehtml+=sum;
+		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.place+"</td>";
+		if(poslist.show_column['sn']>0)	linehtml+="<td id='sn"+row.lineIndex+"'>"+data.sn+"</td>";
+		if(poslist.show_column['gtd']>0)linehtml+="<td id='gtd"+row.lineIndex+"'>"+data.gtd+"</td>";
+		row.innerHTML=linehtml;
 
-		if(poslist.editable)
-		{
+		if(poslist.editable) {
 			if(Number(data.cnt)>Number(data.sklad_cnt))	row.style.color="#f00";
 			var inputs=row.getElementsByTagName('input')
 			for(var i=0;i<inputs.length;i++)
@@ -177,8 +188,21 @@ function PosEditorInit(base_url, editable)
 		{
 			//alert(inputs[i].name)
 			if(inputs[i].name=='cnt')	inputs[i].value=data.cnt
-			else if(inputs[i].name=='cost')	inputs[i].value=Number(data.cost).toFixed(2)
-			else if(inputs[i].name=='sum')	inputs[i].value=Number(data.cost*data.cnt).toFixed(2)
+			else if(inputs[i].name=='cost') {
+				inputs[i].value=Number(data.cost).toFixed(2);
+				if(data.retail)
+					inputs[i].parentNode.className = 'retail';
+				else	inputs[i].parentNode.className = '';
+				if(poslist.auto_price)
+					inputs[i].disabled = 'disabled';
+				else	inputs[i].disabled = '';
+			}
+			else if(inputs[i].name=='sum'){
+				inputs[i].value = Number(data.cost*data.cnt).toFixed(2);
+				if(poslist.auto_price)
+					inputs[i].disabled = 'disabled';
+				else	inputs[i].disabled = '';
+			}
 			inputs[i].old_value=inputs[i].value
 		}
 		if(Number(data.cnt)>Number(line.sklad_cnt))	line.style.color="#f00";
@@ -187,7 +211,7 @@ function PosEditorInit(base_url, editable)
 		if(line.timeout)	window.clearTimeout(line.timeout)
 		line.timeout=window.setTimeout(function(){line.className='';}, 2000)
 	}
-
+	
 	poslist.RemoveLine=function(line_id)
 	{
 		var line=document.getElementById('posrow'+line_id)
@@ -208,33 +232,65 @@ function PosEditorInit(base_url, editable)
 			});
 		}
 	}
+	
+	poslist.updateSumInfo = function(json) {
+		var str = '';
+		str = 'Итого: <b>' + (poslist.tBodies[0].rows.length) + '</b> поз. на сумму <b>' + Number(json.sum).toFixed(2) + '</b> руб. ';
+		if(json.price_name)
+			str += ' Цена: <b>' + json.price_name + '</b>.';
+
+		if(json.doc_sum!=json.sum) {
+			var skid = json.base_sum - json.sum;
+			if(skid>0) {
+				var skid_p = skid.toFixed(2);
+				var skid_pp = ((json.base_sum - json.sum)/json.base_sum*100).toFixed(1);
+				str += ' Cкидка: <b>' + skid_p + '</b> руб. <b>( ' + skid_pp + '% )</b>';
+			}
+		}
+
+		if(json.nbp_info) {
+			str += '<br>До разовой спец.цены <b>' + json.nbp_info.name + '</b> осталось <b>'
+				+ (json.nbp_info.incsum).toFixed(2) + '</b> руб.';
+		}
+
+		if(json.npp_info) {
+			str += '<br>До накопительной спец.цены <b>' + json.npp_info.name + '</b> осталось <b>' 
+				+ (json.npp_info.incsum).toFixed(2) + '</b> руб.';
+		}
+
+		p_sum.innerHTML = str;
+	}
 
 	function rcvDataSuccess(msg)
 	{
 		try
 		{
 			var json=eval('('+msg+')');
+			var str = '';
 			if(json.response==0)
 				jAlert(json.message,"Ошибка", null, 'icon_err');
-			else if(json.response==2)
+			else if(json.response=='loadlist')
 			{
+				poslist.auto_price = json.auto_price;
 				for(var i=0;i<json.content.length;i++)
-				{
-					poslist.AddLine(json.content[i])
+					poslist.AddLine(json.content[i]);
+				poslist.updateSumInfo(json);
+			}
+			else if(json.response=='update') {
+				poslist.auto_price = json.auto_price;
+				if(json.update_line)
+					poslist.UpdateLine(json.update_line);
+				if(json.update_list) {
+					for(var i=0;i<json.update_list.length;i++)
+						poslist.UpdateLine(json.update_list[i]);
 				}
-				p_sum.innerHTML='Итого: <b>'+(poslist.tBodies[0].rows.length)+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
+				poslist.updateSumInfo(json);
 			}
-			else if(json.response==4)
-			{
-				poslist.UpdateLine(json.update)
-				p_sum.innerHTML='Итого: <b>'+(poslist.tBodies[0].rows.length)+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
-			}
-			else if(json.response==5)
-			{
+			else if(json.response==5) {
 				poslist.RemoveLine(json.remove.line_id)
-				p_sum.innerHTML='Итого: <b>'+(poslist.tBodies[0].rows.length)+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
+				poslist.updateSumInfo(json);
 			}
-			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Изменение списка товаров", null,  'icon_err');
+			else jAlert("Обработка полученного сообщения (" + json.response + ") не реализована!", "Изменение списка товаров", null,  'icon_err');
 		}
 		catch(e)
 		{
@@ -587,17 +643,17 @@ function PladdInit()
 			var json=eval('('+msg+')');
 			if(json.response==0)
 				jAlert(json.message,"Ошибка", {}, 'icon_err');
-			else if(json.response==1)	// Вставка строки
+			else if(json.response=='add')	// Вставка строки
 			{
-				poslist.AddLine(json.add)
-
-				p_sum.innerHTML='Итого: <b>'+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
-				pladd.Reset()
+				poslist.AddLine(json.line);
+				poslist.updateSumInfo(json);
+				pladd.Reset();
 			}
-			else if(json.response==4)
+			else if(json.response=='update')
 			{
-				poslist.UpdateLine(json.update)
-				pladd.Reset()
+				poslist.UpdateLine(json.update_line);
+				poslist.updateSumInfo(json);
+				pladd.Reset();
 			}
 			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Вставка строки в документ", null,  'icon_err');
 		}
@@ -861,15 +917,17 @@ function SkladViewInit(doc)
 				{
 					skladlist.AddLine(json.content[i])
 				}
+				poslist.updateSumInfo(json);
 			}
-			else if(json.response==1)	// Вставка строки
+			else if(json.response=='add')	// Вставка строки
 			{
-				poslist.AddLine(json.add)
-				p_sum.innerHTML='Итого: <b>'+'</b> поз. на сумму <b>'+json.sum+'</b> руб.'
+				poslist.AddLine(json.line)
+				poslist.updateSumInfo(json);
 			}
-			else if(json.response==4)
+			else if(json.response=='update')
 			{
-				poslist.UpdateLine(json.update)
+				poslist.UpdateLine(json.update_line);
+				poslist.updateSumInfo(json);
 			}
 			else jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Вставка строки в документ", null,  'icon_err');
 		}

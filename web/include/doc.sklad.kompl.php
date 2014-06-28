@@ -241,7 +241,7 @@ function kompl_DrawSkladTable($res, $s, $pos) {
 		$nxt[8] = SearchHilight(html_out($nxt[8]), $s);
 		$i = 1 - $i;
 		if($dop_data['cena']) {
-			$cost_p = $pc->getPosSelectedPriceValue($nxt[0], $dop_data['cena'], $pc->getPosInfo($nxt[0]));
+			$cost_p = $pc->getPosSelectedPriceValue($nxt[0], $dop_data['cena']);
 		}
 		else	$cost_p = $nxt[5];
 		$cost_r = sprintf("%0.2f", $nxt[7]);

@@ -1195,9 +1195,10 @@ class doc_Nulltype
 				$pc = PriceCalc::getInstance();
 				$pc->setAgentId($this->doc_data['agent']);
 				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
-				$doc_sum = $this->recalcSum();
-				$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";
-				$tmpl->addContent($str);
+				//$doc_sum = $this->recalcSum();
+				//$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";
+				$doc_content = $poseditor->GetAllContent();
+				$tmpl->addContent($doc_content);
 			}
 			// Снять пометку на удаление
 			else if($opt=='jundeldoc')
@@ -1231,6 +1232,10 @@ class doc_Nulltype
 			{
 				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
 				$pos=rcvint('pos');
+				// TODO: пересчет цены перенести внутрь poseditor
+				$pc = PriceCalc::getInstance();
+				$pc->setAgentId($this->doc_data['agent']);
+				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$tmpl->setContent($poseditor->AddPos($pos));
 			}
 			// Json вариант удаления строки
@@ -1238,6 +1243,10 @@ class doc_Nulltype
 			{
 				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
 				$line_id=rcvint('line_id');
+				// TODO: пересчет цены перенести внутрь poseditor
+				$pc = PriceCalc::getInstance();
+				$pc->setAgentId($this->doc_data['agent']);
+				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
@@ -1247,6 +1256,10 @@ class doc_Nulltype
 				$line_id=rcvint('line_id');
 				$value = request('value');
 				$type = request('type');
+				// TODO: пересчет цены перенести внутрь poseditor
+				$pc = PriceCalc::getInstance();
+				$pc->setAgentId($this->doc_data['agent']);
+				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 			}
 			// Получение номенклатуры выбранной группы

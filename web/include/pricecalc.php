@@ -284,16 +284,16 @@ class PriceCalc {
 	/// Получить значение цены по умолчанию для товарного наименования
 	/// @param pos_id id товарного наименования
 	/// @return Значение цены
-	public function getPosDefaultPriceValue($pos_id) {
-		$pos_info = $this->getPosInfo($pos_id);
+	public function getPosDefaultPriceValue($pos_id, $pos_info=false) {
+		$pos_info = $this->fixPosInfo($pos_id, $pos_info);
 		return $this->getPosSelectedPriceValue($pos_id, $this->default_price_id, $pos_info);
 	}
 	
 	/// Получить значение розничной цены для товарного наименования
 	/// @param pos_id id товарного наименования
 	/// @return Значение цены
-	public function getPosRetailPriceValue($pos_id) {
-		$pos_info = $this->getPosInfo($pos_id);
+	public function getPosRetailPriceValue($pos_id, $pos_info=false) {
+		$pos_info = $this->fixPosInfo($pos_id, $pos_info);
 		return $this->getPosSelectedPriceValue($pos_id, $this->retail_price_id, $pos_info);
 	}
 	
@@ -301,18 +301,20 @@ class PriceCalc {
 	/// Функция не учитывает заказываемое количество товара!
 	/// @param pos_id id товарного наименования
 	/// @return Значение цены
-	public function getPosUserPriceValue($pos_id) {
-		$pos_info = $this->getPosInfo($pos_id);
+	public function getPosUserPriceValue($pos_id, $pos_info=false) {
+		$pos_info = $this->fixPosInfo($pos_id, $pos_info);
 		$price_id = $this->getCurrentPriceID();
 		return $this->getPosSelectedPriceValue($pos_id, $price_id, $pos_info);
 	}
 	
-	/// Получить значение цены для товарного наименования при заданном приобретаемом количестве
-	/// @param pos_id id товарного наименования
-	/// @param count количество наименования в заказе
-	/// @return Значение цены
-	public function getPosAutoPriceValue($pos_id, $count=0) {
-		$pos_info = $this->getPosInfo($pos_id);
+	/// Получить ID цены для товарного наименования при заданном приобретаемом количестве
+	/// @param $pos_id id товарного наименования
+	/// @param $count количество наименования в заказе
+	/// @param $pos_info Массив с данными товарного наименования: base_price, group, bulkcnt. Если параметр не задан, или не имеет необходимых ключей - данные будут взяты из базы
+	/// @return ID цены
+	public function getPosAutoPriceID($pos_id, $count=0, $pos_info=false) {
+		$pos_info = $this->fixPosInfo($pos_id, $pos_info);
+		
 		settype($pos_info['bulkcnt'], 'int');
 		settype($count, 'int');
 		
@@ -320,31 +322,52 @@ class PriceCalc {
 			$price_id = $this->retail_price_id;
 		else $price_id = $this->getCurrentPriceID();
 		
+		return $price_id;
+	}
+	
+	/// Получить значение цены для товарного наименования при заданном приобретаемом количестве
+	/// @param pos_id id товарного наименования
+	/// @param count количество наименования в заказе
+	/// @return Значение цены
+	public function getPosAutoPriceValue($pos_id, $count=0, $pos_info=false) {
+		$pos_info = $this->fixPosInfo($pos_id, $pos_info);
+		$price_id = $this->getPosAutoPriceID($pos_id, $count, $pos_info);		
 		return $this->getPosSelectedPriceValue($pos_id, $price_id, $pos_info);
 	}
 	
-	/// Получить нужную для расчета цены информацию о наименовании. Данные кешируются.
-	/// @param pos_id id товарного наименования
-	/// @return массив с базовой ценой, id группы и оптовым количеством товарного наименования
-	public function getPosInfo($pos_id) {
+	/// @brief Тестирует информацию о наименовании на наличие необходимых данных. Если данные не переданы - запрашивает из базы. Если данных не достаточно - выбрасывает исключение.
+	/// Функция не оценивает корректность этих данных, только наличие необходимых ключей в массиве. Результат кешируется.
+	/// @param $pos_id id товарного наименования
+	/// @param $pos_info Массив с данными товарного наименования
+	/// @param $pos_info Массив с данными товарного наименования: base_price, group, bulkcnt.
+	protected function fixPosInfo($pos_id, $pos_info=false) {
 		global $db;
 		settype($pos_id,'int');
 		if(isset($this->pos_info_cache[$pos_id]))
 			return $this->pos_info_cache[$pos_id];
-		// TODO: оптимизировать, с учетом того, что эти данные могут быть в месте обращения к классу. А могут и не быть.
+		
+		if(is_array($pos_info)) {
+			if( isset($pos_info['base_price']) && isset($pos_info['group']) && isset($pos_info['bulkcnt']) ) {
+				$this->pos_info_cache[$pos_id] = $pos_info;
+				return $pos_info;
+			}
+			else throw new Exception('Не переданы необходимые данные для расчёта цены.');
+		}
 		$res = $db->query("SELECT `cost` AS `base_price`, `group`, `bulkcnt` FROM `doc_base` WHERE `doc_base`.`id`=$pos_id");
 		if($res->num_rows == 0)		throw new Exception("Товар ID:$pos_id не найден!");
 		$this->pos_info_cache[$pos_id] = $res->fetch_assoc();
+
 		return $this->pos_info_cache[$pos_id];
 	}
 	
 	/// Получить значение выбранной цены для товарного наименования. Данные кешируются.
 	/// @param pos_id id товарного наименования
 	/// @return Значение цены
-	public function getPosSelectedPriceValue($pos_id, $price_id, $pos_info) {
+	public function getPosSelectedPriceValue($pos_id, $price_id, $pos_info=false) {
 		global $db;
 		settype($pos_id,'int');
 		settype($price_id,'int');
+		$pos_info = $this->fixPosInfo($pos_id, $pos_info);
 		
 		if(!isset($this->ppc[$pos_id]))
 			$this->ppc[$pos_id] = array();

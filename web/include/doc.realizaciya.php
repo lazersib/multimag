@@ -345,8 +345,14 @@ class doc_Realizaciya extends doc_Nulltype {
 		if(parent::_Service($opt,$pos))	{}
 		else if($opt=='dov')
 		{
-			$res = $db->selectRowA('doc_agent_dov', $this->dop_data['dov_agent'], array('name', 'surname'));
-			$agn = $res?html_out($res['name'].' ' .$res['surname']):'';
+			$info = $db->selectRowA('doc_agent_dov', $this->dop_data['dov_agent'], array('name', 'surname'));
+			$agn = '';
+			if($info['name'])
+				$agn = $info['name'];
+			if($info['surname']) {
+				if($agn)$agn.=' ';
+				$agn.=$info['surname'];
+			}
 
 			$tmpl->addContent("<form method='post' action=''>
 <input type=hidden name='mode' value='srv'>
@@ -524,9 +530,11 @@ class doc_Realizaciya extends doc_Nulltype {
 		
 		$pdf->SetFont('','',7);
 		if($sum < $base_sum) {
-			$price_name = $pc->getCurrentPriceName();
+			if($this->dop_data['cena'])
+				$price_name = '';
+			else	$price_name = 'Ваша цена: '.$pc->getCurrentPriceName().'. ';
 			$sk_p = number_format($base_sum-$sum, 2, '.', ' ');
-			$str = "Ваша цена: $price_name. Размер скидки: $sk_p руб.";
+			$str = "{$price_name}Размер скидки: $sk_p руб.";
 			$pdf->CellIconv(0,3,$str,0,1,'L',0);
 		}
 		

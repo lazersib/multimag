@@ -51,6 +51,7 @@
 {
 	background-color:	#0f0 !important; 
 }
+
 /* deleted line*/
 #poslist tbody .dl, #poslist tbody .dl input
 {
@@ -67,8 +68,15 @@
 	width:			100%;
 	padding:		0px;
 	padding-right:		2px;
-	background:		inherit;
+	/*background:		inherit;*/
 	text-align:		right;
+}
+
+/* Подсветка включенной розничной цены */
+#poslist tbody .retail, #poslist tbody .retail:disabled, #poslist tbody .retail input:disabled {
+	background-color: #FFC !important;
+	color: #F80 !important;
+	font-weight: 700 !important;
 }
 
 #poslist tbody input:focus
