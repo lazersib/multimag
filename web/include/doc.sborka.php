@@ -117,7 +117,7 @@ class doc_Sborka extends doc_Nulltype {
 			// Json-вариант списка товаров
 			if ($opt == 'jget') {
 				$doc_sum = $this->recalcSum();
-				$str = "{ response: '2', content: [" . $poseditor->GetAllContent() . "], sum: '$doc_sum' }";
+				$str = "{ response: 'loadlist', content: [" . $poseditor->GetAllContent() . "], sum: '$doc_sum' }";
 				$tmpl->addContent($str);
 			}
 			// Получение данных наименования

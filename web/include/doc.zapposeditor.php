@@ -117,7 +117,7 @@ class SZapPosEditor extends DocPosEditor
 		global $db;
 		settype($pos, 'int');
 		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`,
-			`doc_base`.`cost` AS `bcost`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`,
+			`doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`,
 			`doc_list_pos`.`gtd`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 			FROM `doc_base`
 			LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
@@ -126,6 +126,7 @@ class SZapPosEditor extends DocPosEditor
 		$ret = '';
 		$pc = PriceCalc::getInstance();
 		if ($nxt = $res->fetch_assoc()) {
+
 			if ($this->cost_id)	$scost = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
 			else			$scost = sprintf("%0.2f", $nxt['base_cost']);
 			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
