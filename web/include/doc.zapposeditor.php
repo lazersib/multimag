@@ -197,11 +197,11 @@ class SZapPosEditor extends DocPosEditor
 			
 			$pc = PriceCalc::getInstance();
 			$cost = $this->cost_id ? $pc->getPosSelectedPriceValue($line['id'], $this->cost_id, $line) : $line['cost'];
-			$ret = "{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', place: '$zp', gtd: '' }, sum: '$doc_sum' }";
+			$ret = "{ response: 'add', line: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', place: '$zp', gtd: '' }, sum: '$doc_sum' }";
 		}
 		else {
 			$cost = sprintf("%0.2f", $cost);
-			$ret = "{ response: '4', update: { line_id: '$pos_line', cnt: '{$cnt}', cost: '{$cost}'}, sum: '$doc_sum' }";
+			$ret = "{ response: 'update', update_line: { line_id: '$pos_line', cnt: '{$cnt}', cost: '{$cost}'}, sum: '$doc_sum' }";
 		}
 		return $ret;
 	}

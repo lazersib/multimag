@@ -260,7 +260,7 @@ class ds_sborka_zap {
 			// Json-вариант списка товаров
 			if ($opt == 'jget') {
 				$doc_sum = $document->recalcSum();
-				$str = "{ response: '2', content: [" . $poseditor->GetAllContent() . "], sum: '$doc_sum' }";
+				$str = "{ response: 'loadlist', content: [" . $poseditor->GetAllContent() . "], sum: '$doc_sum' }";
 				$tmpl->addContent($str);
 			}
 			// Получение данных наименования
