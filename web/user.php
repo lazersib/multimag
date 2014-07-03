@@ -413,23 +413,23 @@ else if($mode=="elog")
 
 }
 else if ($mode == "clog") {
-		if (!isAccess('log_access', 'view'))	throw new AccessException();
+	if (!isAccess('log_access', 'view'))	throw new AccessException();
 
-		$tmpl->addContent("<h1>Журнал посещений</h1>");
-		if (request('m')) {
-			$g = " GROUP BY `ip`";
-			$tmpl->addContent("<a href='?mode=clog&m=ng'>Без группировки</a><br><br>");
-		}
-		else	$g = '';
-
-		$res = $db->query("SELECT * FROM `counter` $g ORDER BY `date` DESC");
-		$tmpl->addContent("<table class='list'><tr><th>IP</th><th>Страница</th><th>Ссылка (referer)</th><th>UserAgent</th><th>Дата</th></tr>");
-		while ($nxt = $res->fetch_row()) {
-			$dt = date("Y-m-d H:i:s", $nxt[1]);
-			$tmpl->addContent("<tr><td>$nxt[2]</td><td>" . html_out($nxt[5]) . "<br><small>" . html_out($nxt[6]) . "</small></td><td>" . html_out($nxt[4]) . "</td><td>" . html_out($nxt[3]) . "</td><td>$dt</td></tr>");
-		}
-		$tmpl->addContent("</table>");
+	$tmpl->addContent("<h1>Журнал посещений</h1>");
+	if (request('m')) {
+		$g = " GROUP BY `ip`";
+		$tmpl->addContent("<a href='?mode=clog&m=ng'>Без группировки</a><br><br>");
 	}
+	else	$g = '';
+	$p = 
+	$res = $db->query("SELECT * FROM `counter` $g ORDER BY `date` DESC");
+	$tmpl->addContent("<table class='list'><tr><th>IP</th><th>Страница</th><th>Ссылка (referer)</th><th>UserAgent</th><th>Дата</th></tr>");
+	while ($nxt = $res->fetch_row()) {
+		$dt = date("Y-m-d H:i:s", $nxt[1]);
+		$tmpl->addContent("<tr><td>$nxt[2]</td><td>" . html_out($nxt[5]) . "<br><small>" . html_out($nxt[6]) . "</small></td><td>" . html_out($nxt[4]) . "</td><td>" . html_out($nxt[3]) . "</td><td>$dt</td></tr>");
+	}
+	$tmpl->addContent("</table>");
+}
 else if($mode=='async_task')
 {
 	if(!isAccess('sys_async_task','view'))	throw new AccessException();

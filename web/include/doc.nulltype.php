@@ -1195,8 +1195,7 @@ class doc_Nulltype
 				$pc = PriceCalc::getInstance();
 				$pc->setAgentId($this->doc_data['agent']);
 				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
-				//$doc_sum = $this->recalcSum();
-				//$str="{ response: '2', content: [".$poseditor->GetAllContent()."], sum: '$doc_sum' }";
+				
 				$doc_content = $poseditor->GetAllContent();
 				$tmpl->addContent($doc_content);
 			}
@@ -1237,6 +1236,7 @@ class doc_Nulltype
 				$pc->setAgentId($this->doc_data['agent']);
 				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$tmpl->setContent($poseditor->AddPos($pos));
+				$this->recalcSum();
 			}
 			// Json вариант удаления строки
 			else if($opt=='jdel')
@@ -1248,6 +1248,7 @@ class doc_Nulltype
 				$pc->setAgentId($this->doc_data['agent']);
 				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$tmpl->setContent($poseditor->Removeline($line_id));
+				$this->recalcSum();
 			}
 			// Json вариант обновления
 			else if($opt=='jup')
@@ -1261,6 +1262,7 @@ class doc_Nulltype
 				$pc->setAgentId($this->doc_data['agent']);
 				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
+				$this->recalcSum();
 			}
 			// Получение номенклатуры выбранной группы
 			else if($opt=='jsklad')

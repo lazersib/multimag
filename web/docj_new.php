@@ -40,6 +40,13 @@ if (!isset($_REQUEST['mode'])) {
 		$f = "posId: '$pos_id', posName: '".html_out($pos_info['name'])."'";
 	}
 	else $f = "dateFrom: '".date("Y-m-d")."'";
+	
+	$no_new_page = 0;
+	$res = $db->query("SELECT `value` FROM `users_data` WHERE `param`='docj_no_new_page' AND `uid`=".intval($_SESSION['uid']));
+	if($line = $res->fetch_row()) {
+		$no_new_page = intval($line[0]);
+	}
+	
 	$tmpl->setTitle("Реестр документов");
 	doc_menu("<a href='?mode=print' title='Печать реестра' id='djprint_link'><img src='img/i_print.png' alt='Реестр документов' border='0'></a>");
 	$tmpl->addContent("<script type='text/javascript' src='/css/doc_script.js'></script>
@@ -61,7 +68,7 @@ if (!isset($_REQUEST['mode'])) {
 	Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
 	<script type='text/javascript' src='/js/doc_journal.js'></script>
 	<script>
-	var dj = initDocJournal('doc_list', { $f });
+	var dj = initDocJournal('doc_list', { $f }, {'no_new_page': $no_new_page});
 	var djprint_link=document.getElementById('djprint_link');
 	djprint_link.onclick = function() {
 		dj.print();
