@@ -109,9 +109,13 @@ public function __construct($doc) {
 	$this->doc = $doc->getDocNum();
 	$this->show_sn = 0;
 	$this->doc_obj = &$doc;
-	$doc_data=$this->doc_obj->getDocDataA();
+	$doc_data = $this->doc_obj->getDocDataA();
+	$dop_data = $this->doc_obj->getDopDataA();
 	if( @$CONFIG['poseditor']['sn_enable'] && ($doc_data['type']==1 || $doc_data['type']==2))	$this->show_sn=1;
 	if( @$CONFIG['poseditor']['true_gtd'] && $doc_data['type']==1)					$this->show_gtd=1;
+	$pc = PriceCalc::getInstance();
+	$pc->setAgentId($doc_data['agent']);
+	$pc->setFromSiteFlag(@$dop_data['ishop']);
 }
 
 /// Загрузить список товаров документа. Повторно не загружает.
@@ -161,11 +165,11 @@ protected function initPriceCalc() {
 	$this->doc_base_sum = 0;
 	$this->loadList();
 	$pc = PriceCalc::getInstance();
-	foreach ($this->list as $nxt) {
+	foreach ($this->list as $line) {
 		if ($this->cost_id)
-			$price = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
-		else	$price = $pc->getPosDefaultPriceValue($nxt['pos_id']);
-		$this->doc_base_sum += $price*$nxt['cnt'];
+			$price = $pc->getPosSelectedPriceValue($line['pos_id'], $this->cost_id, $line);
+		else	$price = $pc->getPosDefaultPriceValue($line['pos_id']);
+		$this->doc_base_sum += $price*$line['cnt'];
 	}
 	$pc->setOrderSum($this->doc_base_sum);
 	return $pc;
@@ -308,6 +312,7 @@ function GetAllContent() {
 		$ret_data['auto_price'] = 1;
 	}
 	// Не забыть обновить сумму документа
+	
 	return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 }
 
@@ -378,7 +383,7 @@ function AddPos($pos) {
 	}
 	
 	$ret_data = array ();
-	
+	$pc = $this->initPriceCalc();
 	if(!$found) {
 		$line_id = $db->insertA('doc_list_pos', array('doc'=>$this->doc, 'tovar'=>$pos, 'cnt'=>$cnt, 'cost'=>$cost) );
 		doc_log("UPDATE","add pos: pos:$pos",'doc',$this->doc);
@@ -400,7 +405,6 @@ function AddPos($pos) {
 				$line['name'].=' - '.$line['vendor'];
 		
 		if(!$this->cost_id) {
-			$pc = $this->initPriceCalc();
 			$retail_price_id = $pc->getRetailPriceId();
 			$auto_price_id = $pc->getPosAutoPriceID($line['pos_id'], $cnt);
 			if($auto_price_id == $retail_price_id)
@@ -430,7 +434,19 @@ function AddPos($pos) {
 		$ret_data['update_line'] = $this->list[$line_id];
 	}
 	
-	$ret_data['sum'] = $this->doc_obj->recalcSum();
+	if($this->cost_id) {
+		$ret_data['price_name'] = '';
+	}
+	else {
+		$ret_data['price_name']	= $pc->getCurrentPriceName();
+		$ret_data['nbp_info'] = $pc->getNextPriceInfo();
+		$ret_data['npp_info'] = $pc->getNextPeriodicPriceInfo();
+		$ret_data['auto_price'] = 1;
+	}
+	
+	$this->updateDocSum();
+	$ret_data['sum'] = $this->doc_obj->getDocData('sum');
+	$ret_data['base_sum'] = $this->doc_base_sum;
 	
 	return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 }
@@ -439,15 +455,33 @@ function AddPos($pos) {
 function RemoveLine($line_id)
 {
 	global $db;
-	$nxt = $db->selectRow('doc_list_pos', $line_id);
-	if($nxt)
-	{
-		if($nxt['doc']!=$this->doc)	throw new Exception("Строка отностися к другому документу. Удаление невозможно.");
+	$pc = $this->initPriceCalc();
+	if(array_key_exists($line_id, $this->list)) {
 		$db->delete('doc_list_pos', $line_id);
-		doc_log("UPDATE","del line: pos: {$nxt['tovar']}, line_id:$line_id, cnt:{$nxt['cnt']}, cost:{$nxt['cost']}",'doc',$this->doc);
+		doc_log("UPDATE","del line: pos: {$this->list[$line_id]['pos_id']}, line_id:$line_id, cnt:{$this->list[$line_id]['cnt']}, cost:{$this->list[$line_id]['cost']}",'doc',$this->doc);
+		unset($this->list[$line_id]);
+		$this->updateDocSum();
 	}
-	$doc_sum = $this->doc_obj->recalcSum();
-	return "{ response: '5', remove: { line_id: '$line_id' }, sum: '$doc_sum' }";
+	
+	
+	$ret_data = array (
+	    'response'	=> '5',
+	    'remove'	=> array('line_id'=>$line_id),
+	    'base_sum'	=> $this->doc_base_sum,
+	    'sum'	=> $this->doc_obj->getDocData('sum')
+	);
+	if($this->cost_id) {
+		$ret_data['price_name'] = '';
+	}
+	else {
+		$ret_data['price_name']	= $pc->getCurrentPriceName();
+		$ret_data['nbp_info'] = $pc->getNextPriceInfo();
+		$ret_data['npp_info'] = $pc->getNextPeriodicPriceInfo();
+		$ret_data['auto_price'] = 1;
+	}
+	// Не забыть обновить сумму документа
+	
+	return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 }
 
 /// Обновить строку документа с указанным ID
@@ -493,9 +527,9 @@ function UpdateLine($line_id, $type, $value) {
 				}
 				$ret_data['update_list'] = $new_list;
 			}
-		}
-				
+		}		
 		doc_log("UPDATE","change cnt: pos:{$this->list[$line_id]['pos_id']}, line_id:$line_id, cnt:$old_cnt => $value",'doc',$this->doc);
+		$this->updateDocSum();
 	}
 	else if($type=='cost' && $value != $this->list[$line_id]['comm'] && $this->cost_id) {
 		if($value <= 0) $value = 1;
@@ -503,6 +537,7 @@ function UpdateLine($line_id, $type, $value) {
 		
 		doc_log("UPDATE","change cost: pos:{$this->list[$line_id]['pos_id']}, line_id:$line_id, cost:{$this->list[$line_id]['cost']} => $value",'doc',$this->doc);
 		$this->list[$line_id]['cost'] = $value;
+		$this->updateDocSum();
 	}
 	else if($type=='sum' && $value!=($this->list[$line_id]['cost']*$this->list[$line_id]['cnt']) && $this->cost_id) {
 		if($value <= 0) $value = 1;
@@ -511,6 +546,7 @@ function UpdateLine($line_id, $type, $value) {
 
 		doc_log("UPDATE","change cost: pos:{$this->list[$line_id]['pos_id']}, line_id:$line_id, cost:{$this->list[$line_id]['cost']} => $value",'doc',$this->doc);
 		$this->list[$line_id]['cost'] = $value;
+		$this->updateDocSum();
 	}
 	else if($type=='gtd' && $value!=$this->list[$line_id]['gtd']) {
 		$db->update('doc_list_pos', $line_id, 'gtd', $value);
@@ -537,7 +573,7 @@ function UpdateLine($line_id, $type, $value) {
 	
 	if(!isset($ret_data['update_list']))
 		$ret_data['update_line'] = $this->list[$line_id];
-	$ret_data['sum'] = $this->doc_obj->recalcSum();
+	$ret_data['sum'] = $this->doc_obj->getDocData('sum');
 	return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 }
 
@@ -569,30 +605,72 @@ function SerialNum($action, $line_id, $data)
 	}
 }
 
-function reOrder($by='name')
-{
-	global $db;
-	if($by!=='name' && $by!=='cost' && $by!=='vc'&& $by!=='loc')
-		$by='name';
-	if($by=='loc')
-		$by='doc_base_cnt`.`mesto';
-	$db->startTransaction();
-	$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_cnt`.`mesto`
-	FROM `doc_list_pos`
-	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-	WHERE `doc_list_pos`.`doc`='{$this->doc}'
-	ORDER BY `$by`");
-	$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-	while($nxt = $res->fetch_row())
-	{
-		$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `gtd`, `comm`, `cost`, `page`)
-			VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]', '$nxt[5]')");
+	function reOrder($by='name') {
+		global $db;
+		if($by!=='name' && $by!=='cost' && $by!=='vc'&& $by!=='loc')
+			$by='name';
+		if($by=='loc')
+			$by='doc_base_cnt`.`mesto';
+		$db->startTransaction();
+		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_cnt`.`mesto`
+		FROM `doc_list_pos`
+		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		ORDER BY `$by`");
+		$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+		while($nxt = $res->fetch_row())
+		{
+			$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `gtd`, `comm`, `cost`, `page`)
+				VALUES ('{$this->doc}', '$nxt[0]', '$nxt[1]', '$nxt[2]', '$nxt[3]', '$nxt[4]', '$nxt[5]')");
+		}
+		$db->commit();
+		doc_log("UPDATE","ORDER poslist BY $by",'doc',$this->doc);
 	}
-	$db->commit();
-	doc_log("UPDATE","ORDER poslist BY $by",'doc',$this->doc);
-}
 
+	// Сбросить вручную заданные цены документа к выбранным ценам
+	public function resetPrices() {
+		global $db;
+		$updated = false;
+		if(!$this->editable)
+			return false;
+		if(!$this->cost_id) {
+			$pc = $this->initPriceCalc();	// И loadList заодно
+			$updated = $this->recalcPrices();
+		}
+		else {
+			$db->startTransaction();
+			$this->loadList();
+			$pc = PriceCalc::getInstance();
+			foreach ($this->list as $line_id=>$line) {
+				$need_price = $pc->getPosSelectedPriceValue($line['pos_id'], $this->cost_id, $line);
+				if($line['cost'] != $need_price ) {
+					$updated = true;
+					$this->list[$line_id]['cost'] = $need_price;					
+					$db->update('doc_list_pos', $line_id, 'cost', $need_price);
+				}
+			}
+			$db->commit();
+		}
+		$this->updateDocSum();
+		return $updated;
+	}
+	
+	/// Перерасчёт суммы документа и обновление её в баз, при необходимости
+	/// @return true, если обновление выполнено, false если обновление не требовалось
+	public function updateDocSum() {
+		$doc_sum = 0;
+		$this->loadList();
+		foreach ($this->list as $line_id=>$line) {
+			$doc_sum += $line['cost'] * $line['cnt'];
+		}
+		if(round($this->doc_obj->getDocData('sum'), 2) != round($doc_sum, 2)) {
+			$this->doc_obj->setDocData('sum', $doc_sum);
+			return true;
+		}
+		return false;
+	}
+	
 /// Получить список номенклатуры заданной группы
 	function GetSkladList($group) {
 		global $db;

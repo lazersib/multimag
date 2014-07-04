@@ -171,7 +171,7 @@ class PriceCalc {
 					$find_id = $price['id'];
 					break;
 				}
-				if( $price['id'] == $this->from_site_flag ) {
+				if( $price['id'] == $this->siteuser_price_id && $this->siteuser_price_id && $this->from_site_flag ) {
 					$find_id = $price['id'];
 					break;
 				}
@@ -201,7 +201,7 @@ class PriceCalc {
 		foreach($this->bulk_prices as $price) {
 			if($this->agent_price_id && $this->agent_price_id == $price['id'])
 				break;
-			if($this->from_site_flag && $price['id'] == $this->siteuser_price_id)
+			if($this->from_site_flag && $this->siteuser_price_id && $price['id'] == $this->siteuser_price_id)
 				break;
 			if($this->order_sum>=$price['bulk_threshold'])
 				break;

@@ -1,3 +1,5 @@
+// Зависит от jquery!
+
 function PosEditorInit(base_url, editable) {
 	var poslist = document.getElementById('poslist');
 	var p_sum = document.getElementById('sum');
@@ -79,11 +81,10 @@ function PosEditorInit(base_url, editable) {
 		//return false
 	}
 
-	poslist.doInputBlur=function()
-	{
-		if(this.old_value==this.value)	return
-		var line=this.parentNode.parentNode
-		line.className='el'
+	poslist.doInputBlur=function() {
+		if(this.old_value==this.value)	return;
+		var line=this.parentNode.parentNode;
+		line.className='el';
 		$.ajax({
 			type:   'GET',
 		       url:    base_url,
@@ -93,22 +94,18 @@ function PosEditorInit(base_url, editable) {
 		});
 	}
 
-	poslist.AddLine=function(data)
-	{
-		var row_cnt=poslist.tBodies[0].rows.length
-		var row=poslist.tBodies[0].insertRow(row_cnt)
-		row.lineIndex=data.line_id
-		row.id='posrow'+data.line_id
-		var sum=(data.cost*data.cnt).toFixed(2)
-		row.sklad_cnt=Number(data.sklad_cnt)
-		row.comm=data.comm
-		var addition_menu=''
+	poslist.AddLine=function(data) {
+		var row_cnt = poslist.tBodies[0].rows.length;
+		var row = poslist.tBodies[0].insertRow(row_cnt);
+		row.lineIndex = data.line_id;
+		row.id = 'posrow' + data.line_id;
+		var sum = (data.cost * data.cnt).toFixed(2);
+		row.sklad_cnt = Number(data.sklad_cnt);
+		row.comm = data.comm;
 
-		row.ondblclick=row.oncontextmenu=function(event)
-		{
-			var menu=ShowPosContextMenu(event ,data.pos_id, addition_menu)
-			if(poslist.editable)
-			{
+		row.ondblclick = row.oncontextmenu=function(event) {
+			var menu = ShowPosContextMenu(event ,data.pos_id, '');
+			if(poslist.editable) {
 				var menudiv=document.createElement('div')
 				menudiv.innerHTML='Правка комментария'
 				menudiv.onclick=function() { poslist.showCommEditor(row); }
@@ -116,6 +113,7 @@ function PosEditorInit(base_url, editable) {
 			}
 			return false
 		}
+		
 		var linehtml="<td>"+(row_cnt+1);
 		if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>";
 		linehtml+="</td>";
@@ -176,6 +174,161 @@ function PosEditorInit(base_url, editable) {
 			for(var i=0;i<smalltag.length;i++)
 			{
 				smalltag[i].onclick=function() { poslist.showCommEditor(row); }
+			}
+		}
+	}
+	
+	poslist.fastAddLine=function(data) {
+		var tmp = '';
+		var row_cnt = poslist.tBodies[0].rows.length;
+		var row = poslist.tBodies[0].insertRow(row_cnt);
+		row.lineIndex = data.line_id;
+		row.id = 'posrow' + data.line_id;
+		var sum = (data.cost * data.cnt).toFixed(2);
+		row.sklad_cnt = Number(data.sklad_cnt);
+		row.comm = data.comm;
+
+		row.ondblclick = row.oncontextmenu=function(event) {
+			var menu = ShowPosContextMenu(event ,data.pos_id, '');
+			if(poslist.editable) {
+				var menudiv=document.createElement('div')
+				menudiv.innerHTML='Правка комментария'
+				menudiv.onclick=function() { poslist.showCommEditor(row); }
+				menu.appendChild(menudiv)
+			}
+			return false
+		}
+		
+		var fragment = document.createDocumentFragment();
+		
+		// N линии и кнопка *удалить*
+		var td_id = document.createElement('td');
+		var textNode = document.createTextNode(row_cnt+1);
+		td_id.appendChild(textNode);
+		if(poslist.editable) {
+			var img_del = document.createElement('img');
+			img_del.src = '/img/i_del.png';
+			img_del.className = 'pointer';
+			img_del.id = 'del'+row.lineIndex;	// Это, вероятно, лишенее
+			img_del.onclick = poslist.doDeleteLine;
+			td_id.appendChild(img_id);
+		}
+		fragment.appendChild(td_id);
+		
+		//var linehtml="<td>"+(row_cnt+1);
+		//if(poslist.editable)	linehtml+="<img src='/img/i_del.png' class='pointer' alt='Удалить' id='del"+row.lineIndex+"'>";
+		//linehtml+="</td>";
+		
+		// Код производителя
+		if(poslist.show_column['vc']>0){
+			var td_vc = document.createElement('td');
+			textNode = document.createTextNode(data.vc);
+			td_vc.appendChild(textNode);
+			fragment.appendChild(td_vc);
+			//linehtml+="<td>"+data.vc+"</td>";
+		}
+		
+		// Наименование и комментарий
+		var td_name = document.createElement('td');
+		textNode = document.createTextNode(data.name);
+		td_name.appendChild(textNode);
+		if(!data.comm)
+			data.comm = '';
+		tmp = document.createElement('br');
+		td_name.appendChild(tmp);
+		var comment = document.createElement('small');
+		textNode = document.createTextNode(data.comm);
+		comment.appendChild(textNode);
+		td_name.appendChild(comment);
+		if(poslist.editable) {
+			comment.onclick = function() { poslist.showCommEditor(row); };
+		}
+		fragment.appendChild(td_name);
+		
+		//var posname = data.name;
+		//if(data.comm)	posname+="<br><small>"+data.comm+"</small>";
+		//else		posname+="<br><small></small>";
+		//linehtml+="<td class='la'>"+posname+"</td>
+		
+		// Складская цена
+		if(poslist.show_column['sprice'] > 0){
+			var td_sprice = document.createElement('td');
+			textNode = document.createTextNode(data.scost);
+			td_sprice.appendChild(textNode);
+			fragment.appendChild(td_sprice);
+			//<td>"+data.scost+"</td><td";
+		}
+		
+		// Цена. Редактируемое.
+		if(poslist.show_column['price'] > 0){
+			var td_price = document.createElement('td');
+			if(data.retail)
+				td_price.className = 'retail';
+			if(poslist.editable) {
+				var price_input = document.createElement('input');
+				price_input.type = 'text';
+				price_input.name = 'cost';
+				price_input.value = data.cost;
+				price_input.old_value = price_input.value;
+				price_input.onkeydown = poslist.doInputKeyDown;
+				price_input.onblur = poslist.doInputBlur;				
+				td_price.appendChild(textNode);
+			}
+			else {
+				textNode = document.createTextNode(data.cost);
+				td_price.appendChild(textNode);
+			}
+			fragment.appendChild(td_price);
+			//<td>"+data.scost+"</td><td";
+		}
+		
+		//if(data.retail)
+		//	linehtml+=" class='retail'";
+		//linehtml+=">";
+//		if(poslist.editable){
+//			linehtml+="<input type='text' name='cost' value='"+data.cost+"'";
+//			if(poslist.auto_price)
+//				linehtml+=" disabled";
+//			linehtml+=">";
+//		}
+//		else			linehtml+=data.cost;
+		
+		linehtml+="</td><td>";
+		if(poslist.editable)	linehtml+="<input type='text' name='cnt' value='"+data.cnt+"'>";
+		else			linehtml+=data.cnt;
+		linehtml+="</td><td>";
+		if(poslist.editable){
+			linehtml+="<input type='text' name='sum' value='"+sum+"'";
+			if(poslist.auto_price)
+				linehtml+=" disabled";
+			linehtml+=">";
+		}
+		else			linehtml+=sum;
+		linehtml+="</td><td>"+data.sklad_cnt+"</td><td>"+data.place+"</td>";
+		if(poslist.show_column['sn']>0)	linehtml+="<td id='sn"+row.lineIndex+"'>"+data.sn+"</td>";
+		if(poslist.show_column['gtd']>0)linehtml+="<td id='gtd"+row.lineIndex+"'>"+data.gtd+"</td>";
+		row.innerHTML=linehtml;
+
+		if(poslist.editable) {
+			if(Number(data.cnt)>Number(data.sklad_cnt))	row.style.color="#f00";
+			var inputs=row.getElementsByTagName('input')
+			for(var i=0;i<inputs.length;i++)
+			{
+				inputs[i].onkeydown=poslist.doInputKeyDown
+				inputs[i].onblur=poslist.doInputBlur
+				inputs[i].old_value=inputs[i].value
+			}
+
+			
+			if(poslist.show_column['sn']>0)
+			{
+				var sn_cell=document.getElementById('sn'+data.line_id)
+				sn_cell.onclick=poslist.showSnEditor
+			}
+			if(poslist.show_column['gtd']>0)
+			{
+				var gtd_cell=document.getElementById('gtd'+data.line_id)
+				gtd_cell.onclick=poslist.showGTDEditor
 			}
 		}
 	}

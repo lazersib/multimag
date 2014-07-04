@@ -62,13 +62,14 @@ class doc_Nulltype
 	public function getDocNum()	{return $this->doc;}
 	public function getViewName()	{return $this->doc_viewname;}
 	public function getDocDataA()	{return $this->doc_data;}	
-	
+	public function getDopDataA()	{return $this->dop_data;} //< Получить все дополнительные параметры документа в виде ассоциативного массива
+
 	/// @brief Получить значение основного параметра документа.
 	/// Вернёт пустую строку в случае отсутствия параметра
 	/// @param name Имя параметра
-	public function getDoсData($name) {
-		if(isset($this->doс_data[$name]))
-			return $this->doс_data[$name];
+	public function getDocData($name) {
+		if(isset($this->doc_data[$name]))
+			return $this->doc_data[$name];
 		else	return '';
 	}
 	
@@ -94,10 +95,7 @@ class doc_Nulltype
 		else	return '';
 	}
 	
-	/// Получить все дополнительные параметры документа в виде ассоциативного массива
-	public function getDopDataA() {
-		return $this->dop_data;
-	}
+	
 	
 	/// Установить дополнительные данные текущего документа
 	public function setDopData($name, $value) {
@@ -262,6 +260,7 @@ class doc_Nulltype
 	
 	/// Пересчитать и вернуть сумму документа, исходя из товаров в нём. Работает только для документов, в которых могут быть товары.
 	/// Для безтоварных документов просто вернёт сумму.
+	/// TODO: функция устарела. Перейти на использование DocPosEditor::updateDocSum()
 	public function recalcSum()
 	{
 		global $db;
@@ -687,7 +686,7 @@ class doc_Nulltype
 			$tmpl->addContent("<b>Примечание:</b> ".html_out($this->doc_data['comment'])."<br>");
 		if($this->sklad_editor_enable)
 		{
-			include_once('doc.poseditor.php');
+			include_once('doc.poseditor.php');			
 			$poseditor=new DocPosEditor($this);
 			$poseditor->cost_id=$this->dop_data['cena'];
 			$poseditor->sklad_id=$this->doc_data['sklad'];
@@ -1184,18 +1183,12 @@ class doc_Nulltype
 			$poseditor->SetEditable($this->doc_data['ok']?0:1);
 		}
 		
-		
-
-		if( isAccess('doc_'.$this->doc_name,'view') )
-		{
+		if( isAccess('doc_'.$this->doc_name,'view') ) {
 			// Json-вариант списка товаров
 			if($opt=='jget')
 			{
 				// TODO: пересчет цены перенести внутрь poseditor
-				$pc = PriceCalc::getInstance();
-				$pc->setAgentId($this->doc_data['agent']);
-				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
-				
+				$this->recalcSum();
 				$doc_content = $poseditor->GetAllContent();
 				$tmpl->addContent($doc_content);
 			}
@@ -1221,81 +1214,60 @@ class doc_Nulltype
 			else if($this->doc_data['mark_del'])
 				throw new Exception("Операция не допускается для документа, отмеченного для удаления!");
 			// Получение данных наименования
-			else if($opt=='jgpi')
-			{
-				$pos=rcvint('pos');
+			else if ($opt == 'jgpi') {
+				$pos = rcvint('pos');
 				$tmpl->addContent($poseditor->GetPosInfo($pos));
 			}
 			// Json вариант добавления позиции
-			else if($opt=='jadd')
-			{
-				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
-				$pos=rcvint('pos');
-				// TODO: пересчет цены перенести внутрь poseditor
-				$pc = PriceCalc::getInstance();
-				$pc->setAgentId($this->doc_data['agent']);
-				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
+			else if ($opt == 'jadd') {
+				if (!isAccess('doc_' . $this->doc_name, 'edit'))
+					throw new AccessException("Недостаточно привилегий");
+				$pos = rcvint('pos');
 				$tmpl->setContent($poseditor->AddPos($pos));
-				$this->recalcSum();
 			}
 			// Json вариант удаления строки
-			else if($opt=='jdel')
-			{
-				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
-				$line_id=rcvint('line_id');
-				// TODO: пересчет цены перенести внутрь poseditor
-				$pc = PriceCalc::getInstance();
-				$pc->setAgentId($this->doc_data['agent']);
-				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
+			else if ($opt == 'jdel') {
+				if (!isAccess('doc_' . $this->doc_name, 'edit'))
+					throw new AccessException("Недостаточно привилегий");
+				$line_id = rcvint('line_id');
 				$tmpl->setContent($poseditor->Removeline($line_id));
-				$this->recalcSum();
 			}
 			// Json вариант обновления
-			else if($opt=='jup')
-			{
-				if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException("Недостаточно привилегий");
-				$line_id=rcvint('line_id');
+			else if ($opt == 'jup') {
+				if (!isAccess('doc_' . $this->doc_name, 'edit'))
+					throw new AccessException("Недостаточно привилегий");
+				$line_id = rcvint('line_id');
 				$value = request('value');
 				$type = request('type');
 				// TODO: пересчет цены перенести внутрь poseditor
-				$pc = PriceCalc::getInstance();
-				$pc->setAgentId($this->doc_data['agent']);
-				$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
-				$this->recalcSum();
 			}
 			// Получение номенклатуры выбранной группы
-			else if($opt=='jsklad')
-			{
-				$group_id=rcvint('group_id');
-				$str="{ response: 'sklad_list', group: '$group_id',  content: [".$poseditor->GetSkladList($group_id)."] }";
+			else if ($opt == 'jsklad') {
+				$group_id = rcvint('group_id');
+				$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
 				$tmpl->setContent($str);
 			}
 			// Поиск по подстроке по складу
-			else if($opt=='jsklads')
-			{
-				$s=request('s');
-				$str="{ response: 'sklad_list', content: [".$poseditor->SearchSkladList($s)."] }";
+			else if ($opt == 'jsklads') {
+				$s = request('s');
+				$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
 				$tmpl->setContent($str);
 			}
 			// Серийные номера
-			else if($opt=='jsn')
-			{
-				$action=request('a');
-				$line_id=request('line');
-				$data=request('data');
-				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data) );
+			else if ($opt == 'jsn') {
+				$action = request('a');
+				$line_id = request('line');
+				$data = request('data');
+				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
 			}
 			// Сброс цен
-			else if($opt=='jrc')
-			{
-				$this->resetCost();
-				$this->recalcSum();
+			else if ($opt == 'jrc') {
+				$poseditor->resetPrices();
 			}
 			// Сортировка наименований
-			else if($opt=='jorder')
-			{
-				$by=request('by');
+			else if ($opt == 'jorder') {
+				$by = request('by');
 				$poseditor->reOrder($by);
 			}
 			else if($opt=='jdeldoc')
@@ -1337,82 +1309,18 @@ class doc_Nulltype
 				$tmpl->addContent("</table></div>
 				<input type='text' name='sn' id='sn'><button type='button' onclick='DocSnAdd($doc,$pos);'>&gt;&gt;</button>");
 			}
-			else if($opt=='snp')
-			{
-				$pos=rcvint('pos');
-				$tmpl->ajax=1;
-
-				$tmpl->setContent("");
-				$data = $db->selectRowA('doc_list_pos', $pos, array('tovar'));
-				list($pos_id) = $data;
-				if(!$pos_id)	throw new Exception ("Строка не найдена");
-				
-				$res = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn`
-				INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`prix_list_pos`
-				INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`ok`>'0'
-				WHERE `pos_id`='$pos_id'  AND `rasx_list_pos` IS NULL");
-				
-				while($nxt=$res->fetch_row()){
-					$nxt[1]=$nxt[1];
-					$tmpl->addContent("$nxt[1]|$nxt[0]\n");
-				}
-
-			}
-			else if($opt=='sns')
-			{
-				$pos = rcvint('pos');
-				$sn = request('sn');
-				$tmpl->ajax=1;
-				try
-				{
-					$data = $db->selectRowA('doc_list_pos', $pos, array('tovar'));
-					list($pos_id) = $data;
-					if(!$pos_id)	throw new Exception ("Строка не найдена");
-					if($this->doc_type==1)
-					{
-						if($sn === '')		throw new Exception("Серийный номер не заполнен");
-						$data = array('num'=>$sn, 'pos_id'=>$pos_id, 'prix_list_pos'=>$pos);
-						$ins_id = $db->insertA('doc_list_sn', $data);
-						$tmpl->setContent("{response: 1, sn_id: '$ins_id', sn: '$sn'}");
-					}
-					else if($this->doc_type==2)
-					{
-						$res = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn`
-						INNER JOIN `doc_list_pos` ON `doc_list_pos`.`id`=`doc_list_sn`.`prix_list_pos`
-						INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`ok`>'0'
-						WHERE `pos_id`='$pos_id' AND `num`='$sn' AND `rasx_list_pos` IS NULL");
-						if(!$res->num_rows)
-						{
-							$tmpl->setContent("{response: 0, message: 'Номер не найден, уже добавлен или находится в непроведённом документе!'}");
-						}
-						else
-						{
-							$nxt = $res->fetch_row();
-							$db->update('doc_list_sn', $nxt[0], 'rasx_list_pos', $pos);
-							$tmpl->setContent("{response: 1, sn_id: '$nxt[0]', sn: '$sn'}");
-						}
-					}
-					else				throw new Exception("В данном документе серийные номера не используются!");
-				}
-				catch(Exception $e)
-				{
-					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
-				}
-			}
 			else return 0;
 			return 1;
 		}
 		else $tmpl->msg("Недостаточно привилегий для $uid выполнения операции над $object!","err");
 	}
 
-	protected function drawLHeadformStart()
-	{
+	protected function drawLHeadformStart() {
 		$this->drawHeadformStart('j');
 	}
 	
 	/// Отобразить заголовок шапки документа
-	protected function drawHeadformStart($alt='')
-	{
+	protected function drawHeadformStart($alt='') {
 		global $tmpl, $CONFIG, $db;
 				
 		if($this->doc_data['date'])	$dt=date("Y-m-d H:i:s",$this->doc_data['date']);
@@ -1770,24 +1678,6 @@ class doc_Nulltype
 		}
 		$res->free();
 		return $sum;
-	}
-
-	/// Сбросить цены в списке товаров документа к ценам по умолчанию
-	protected function resetCost() {
-		global $db;
-		if (!$this->doc)
-			throw new Exception("Документ не определён!");
-		$res = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`,
-			`doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
-			FROM `doc_list_pos`
-			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-			WHERE `doc`='{$this->doc}'");
-		$pc = PriceCalc::getInstance();
-
-		while($l = $res->fetch_assoc()) {
-			$price = $pc->getPosSelectedPriceValue($l['tovar'], $this->dop_data['cena'], $l);
-			$db->update('doc_list_pos', $l['id'], 'cost', $price);
-		}
 	}
 };
 

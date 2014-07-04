@@ -29,8 +29,8 @@ $wikiparser->ignore_images	= false;
 
 if(!isset($_REQUEST['p'])) {
 	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
-	$arr = explode( '.' , $arr[2] );
-	$p=urldecode(urldecode($arr[0]));
+	$arr = explode( '.' , @$arr[2] );
+	$p=urldecode(urldecode(@$arr[0]));
 }	else $p=$_REQUEST['p'];
 
 function articles_form($p,$text='',$type=0)
@@ -100,11 +100,12 @@ try
 	{
 		$tmpl->setContent("<h1 id='page-title'>Статьи</h1>Здесь отображаются все статьи сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях, и служебные статьи. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
 		$tmpl->setTitle("Статьи");
-		$res=$db->query("SELECT `name` FROM `articles` ORDER BY `name`");
+		$res=$db->query("SELECT `name`, `text` FROM `articles` ORDER BY `name`");
 
-		$tmpl->addContent("<ul>");
-		while($nxt=$res->fetch_row()) {
-			$h=$wikiparser->unwiki_link($nxt[0]);
+		$tmpl->addContent("<ul class='items'>");
+		while($nxt = $res->fetch_row()) {
+			$text = $wikiparser->parse( $nxt[1] );
+			$h = $wikiparser->title.' ( '.$wikiparser->unwiki_link($nxt[0]).' )';
 			$tmpl->addContent("<li><a class='wiki' href='/article/$nxt[0].html'>$h</a></li>");
 		}
 		$tmpl->addContent("</ul>");
