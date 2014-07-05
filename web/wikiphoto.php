@@ -35,7 +35,7 @@ public function __construct(){
 public function outList($page)	{
 	global $db, $tmpl;
 	settype($page,'int');
-	$res=$db->query("SELECT `wikiphoto`.`id`, `wikiphoto`.`uid`, `wikiphoto`.`comment`, `users`.`name`
+	$res=$db->query("SELECT `wikiphoto`.`id`, `wikiphoto`.`uid`, `wikiphoto`.`comment`, `users`.`name`, `wikiphoto`.`ext`
 	FROM `wikiphoto` LEFT JOIN `users` ON `users`.`id`=`wikiphoto`.`uid`");
 	
 	$rows=$res->num_rows;
@@ -43,17 +43,17 @@ public function outList($page)	{
 	if($page>floor($rows/$this->lim))	$page=floor($rows/$this->lim);
 	
 	$this->pageBar($rows, $this->lim, $page);
-	
+	$tmpl->addContent("<div>");
 	$res->data_seek(($page-1)*$this->lim);	
 	while($nxt=$res->fetch_row()){
-		$img=new ImageProductor($nxt[0],'w', 'jpg');
+		$img=new ImageProductor($nxt[0],'w', $nxt[4]);
 		$img->setX(150);
 		$img->setY(112);
 		$img->setFixAspect(1);
 		$img->setNoEnlarge(0);
 		$tmpl->addContent("<div class='photomini'><a href='/wikiphoto.php?mode=view&n=$nxt[0]' title='Увеличить'><img src='".$img->GetURI()."' alt='Увеличить'></a></div>");
 	}
-	$tmpl->addContent("<div class='nofloat'>-</div>");
+	$tmpl->addContent("<div class='clear'>&nbsp;</div></div>");
 	$this->pageBar($rows, $this->lim, $page);
 	if(isAccess('generic_articles','edit',true))
 		$tmpl->addContent("<br><a href='?mode=add'>Добавить</a>");
@@ -61,18 +61,24 @@ public function outList($page)	{
 
 /// Показать страницу для заданного изображения
 public function viewImage($n) {
-	global $tmpl;
+	global $tmpl, $db;
 	settype($n,'int');
 	
-	$img=new ImageProductor($n,'w', 'jpg');
+	$img_info = $db->selectRow('wikiphoto', $n);
+	if(!$img_info)
+		throw new NotFoundException('Изображение не найдено в базе');
+	
+	$img = new ImageProductor($n, 'w', $img_info['ext']);
 	
 	$img->SetQuality(100);
 	$size=$img->getRealImageSize();
+	if(!$size)
+		throw new NotFoundException('Изображение не найдено на диске');
 	$img->setX($size[0]);
 	$img->setY($size[1]);
 	$full_uri=$img->getURI();
 	
-	$img=new ImageProductor($n,'w', 'jpg');
+	$img=new ImageProductor($n,'w', $img_info['ext']);
 	$img->setX(600);
 	$img->setY(0);
 	$page_uri=$img->getURI();
@@ -85,13 +91,27 @@ public function viewImage($n) {
 	foreach($sizes as $sx){
 		if($sx>$size[0])	break;
 		$sy=round($sx*$aspect);
-		$img=new ImageProductor($n,'w', 'jpg');
+		$img=new ImageProductor($n,'w', $img_info['ext']);
 		$img->setX($sx);
 		$img->setY($sy);
 		$img->SetNoEnlarge(1);
 		$tmpl->addContent("<a href='".$img->GetURI()."'>{$sx}x{$sy}</a>, ");
 	}
 	$tmpl->addContent("<a href='$full_uri'>{$size[0]}x{$size[1]}</a>");
+	if(isAccess('generic_articles','edit',true))
+		$tmpl->addContent("<br>Код вставки изображения: [[Image:$n|options|alt]]<br>
+		<ul class='items'>
+		<li>options - набор опций с разделителем |</li>
+		<li>alt - текст подписи и содержимое атрибута alt. Не должен быть пуст.</li>
+		</ul>
+		Опции:<br>
+		<ul class='items'>
+		<li>frame - в рамке с подписью справа</li>
+		<li>left - в рамке с подписью слева</li>
+		<li>right - справа без рамки и подписи</li>
+		<li>Xpx - изображение с шириной X px</li>
+		<li>link:X - задаёт ссылку для изображения (по умолчанию - эта страница). Если параметр пуст - ссылки не будет.</li>
+		</ul>");
 }
 
 /// Отобразить форму загрузки изображения
@@ -107,7 +127,7 @@ public function addImageForm() {
 	$tmpl->addContent("Изображения в этом разделе используются для последующего отображения в статьях. После добавления Вы получите код для вставки в статью.<br>
 	<form method=post action='wikiphoto.php' enctype='multipart/form-data'>
 	<input type=hidden name=mode value='save'>
-	Изображение (JPEG или PNG, до $max_fs, 150*150 - 10000*10000)<br>
+	Изображение (JPEG, PNG, GIF, до $max_fs, 150*150 - 10000*10000)<br>
 	<input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'>
 	<input name='fotofile' type='file'><br>
 	Коментарий к фото:<br>
@@ -131,14 +151,19 @@ public function submitImageForm() {
 				throw new Exception("Не передан файл. $an");
 	$aa=getimagesize($_FILES['fotofile']['tmp_name']);
 	if(!$aa)	throw new Exception("Файл не является изображением. $an");
-	if($aa[2]!=IMAGETYPE_JPEG &&  $aa[2]!=IMAGETYPE_PNG)
-			throw new Exception("Формат переданного изображения не поддерживается. $an");
+	$ext = '';
+	switch($aa[2]) {
+		case IMAGETYPE_GIF:	$ext='gif'; break;
+		case IMAGETYPE_JPEG:	$ext='jpg'; break;
+		case IMAGETYPE_PNG:	$ext='png'; break;
+		default:		throw new Exception('Формат изображения не поддерживается');
+	}
 	if(($aa[0]<150)||($aa[1]<150)||($aa[0]>10000)||($aa[1]>10000))
 			throw new Exception("Некорректное разрешение (должно быть > 150*150 и < 10000*10000)! $an");
 
 	$uid=(int)$_SESSION['uid'];
 	$sql_comm=$db->real_escape_string($comm);
-	$res=$db->query("INSERT INTO `wikiphoto` (`uid`,`comment`) VALUES ('$uid','$sql_comm')");
+	$res=$db->query("INSERT INTO `wikiphoto` (`uid`, `ext`, `comment`) VALUES ('$uid', '$ext', '$sql_comm')");
 	$fid=$db->insert_id;
 	$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], $this->gpath."/$fid.jpg");
 	if(!$m_ok)	throw new AutoLoggedException("Не удалось сохранить изображение в хранилище");

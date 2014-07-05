@@ -46,11 +46,24 @@ class WikiParser {
 		$this->variables=array();
 		$this->preformat=false;
 		$this->emphasis=array();
+		$this->imageinfo = false;
 	}
-
+	
+	function loadImageInfo() {
+		global $db;
+		if($this->imageinfo)
+			return;
+		$res = $db->query("SELECT `id`, `ext` FROM `wikiphoto` ORDER BY `id`");
+		$this->imageinfo = array();
+		while($nxt = $res->fetch_row())
+			$this->imageinfo[$nxt[0]] = $nxt[1];
+	}
+	
 	function AddVariable($var, $value) {
 		$this->variables[$var]=$value;
 	}
+	
+	
 
 	function handle_sections($matches) {
 		$level = strlen($matches[1]);
@@ -170,45 +183,68 @@ class WikiParser {
 
 	function handle_image($href,$title,$options) {
 		if ($this->ignore_images) return "";
-		if (!$this->image_uri) return $title;
-
-		//$href = $this->image_uri . $href;
 		$img_id = intval($href);
-		$img = new ImageProductor($img_id, 'w', 'jpg');
-		$img->SetX(250);
-		$imagetag = sprintf('<a href=\'/wikiphoto.php?mode=view&n=%s\'><img src="%s" alt="%s" /></a>',
-			$href,$img->GetURI(),$title);
+		$this->loadImageInfo();
+		
+		$img = new ImageProductor($img_id, 'w', $this->imageinfo[$img_id]);
+
+		$style = '';
+		$link = '/wikiphoto.php?mode=view&n='.$img_id;
+		$xsize = 250;
 		foreach ($options as $k=>$option) {
 			switch($option) {
 				case 'frame':
-					$imagetag = sprintf(
-						'<div style="float: right; background-color: #F5F5F5; border: 1px solid #D0D0D0; padding: 4px; margin: 4px; margin-left: 10px;">'.
-						'%s'.
-						'<div>%s</div>'.
-						'</div>',
-						$imagetag,
-						$title
-					);
-					break;
 				case 'left':
-					$imagetag = sprintf(
-						'<div style="float: left; background-color: #F5F5F5; border: 1px solid #D0D0D0; padding: 4px; margin: 4px; margin-right: 10px;">'.
-						'%s'.
-						'<div>%s</div>'.
-						'</div>',
-						$imagetag,
-						$title
-					);
-					break;
 				case 'right':
-					$imagetag = sprintf(
-						'<div style="float: right">%s</div>',
-						$imagetag
-					);
+					$style = $option;
 					break;
+				default: {
+					if(preg_match('/^link:/', $option)) {
+						$links = explode(':', $option, 2);
+						$link = $links[1];
+					}
+					else if(preg_match('/^(\d+)px$/', $option, $matches)) {
+						$val = intval($matches[1]);
+						if($val>0)
+							$xsize = $val;
+					}
+				}
 			}
 		}
 
+		$img->SetX($xsize);
+		$imagetag = "<img src='".$img->GetURI()."' alt='".html_out($title)."' width='{$xsize}px'>";
+		if($link)
+			$imagetag = "<a href='$link'>$imagetag</a>";
+		
+		switch($style) {
+			case 'frame':
+				$imagetag = sprintf(
+					'<div style="float: right; background-color: #F5F5F5; border: 1px solid #D0D0D0; padding: 4px; margin: 4px; margin-left: 10px;">'.
+					'%s'.
+					'<div>%s</div>'.
+					'</div>',
+					$imagetag,
+					$title
+				);
+				break;
+			case 'left':
+				$imagetag = sprintf(
+					'<div style="float: left; background-color: #F5F5F5; border: 1px solid #D0D0D0; padding: 4px; margin: 4px; margin-right: 10px;">'.
+					'%s'.
+					'<div>%s</div>'.
+					'</div>',
+					$imagetag,
+					$title
+				);
+				break;
+			case 'right':
+				$imagetag = sprintf(
+					'<div style="float: right">%s</div>',
+					$imagetag
+				);
+				break;
+		}
 		return $imagetag;
 	}
 

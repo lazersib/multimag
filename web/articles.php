@@ -146,10 +146,11 @@ try
 				if(@$_SESSION['uid'])
 				{
 					$tmpl->addContent("<div id='page-info'>Создал: {$nxt['author_name']}, date: {$nxt['date']} $ch");
-					if(isAccess('generic_articles','edit'))	$tmpl->addContent(", <a href='/articles.php?p=".html_out($nxt['article_name'])."&amp;mode=edit'>Исправить</a>");
+					if(isAccess('generic_articles','edit'))
+						$tmpl->addContent(", <a href='/articles.php?p=".html_out($nxt['article_name'])."&amp;mode=edit'>Исправить</a>");
 					$tmpl->addContent("</div>");
 				}
-				$tmpl->addContent("$text<br><br>");
+				$tmpl->addContent("<div class='article_text'>$text</div>");
 				$tmpl->setMetaKeywords($meta_keywords);
 				$tmpl->setMetaDescription($meta_description);
 			}

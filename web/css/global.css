@@ -56,7 +56,7 @@ input.mini
 .lfloat { float:left; margin-right:0.5em; }
 .rfloat { float:right; margin-left:0.5em; }
 
-.nofloat
+.nofloat, .clear
 {
 	margin: 0px;
 	padding: 0px;
