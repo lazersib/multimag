@@ -165,7 +165,7 @@ public function submitImageForm() {
 	$sql_comm=$db->real_escape_string($comm);
 	$res=$db->query("INSERT INTO `wikiphoto` (`uid`, `ext`, `comment`) VALUES ('$uid', '$ext', '$sql_comm')");
 	$fid=$db->insert_id;
-	$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], $this->gpath."/$fid.jpg");
+	$m_ok=move_uploaded_file($_FILES['fotofile']['tmp_name'], $this->gpath."/$fid.$ext");
 	if(!$m_ok)	throw new AutoLoggedException("Не удалось сохранить изображение в хранилище");
 	$tmpl->msg("Изображение сохранено. Для вставки в статью используйте следующий код:<br>[[Image:$fid|frame|alternate text]]","ok");		
 }
