@@ -268,6 +268,11 @@ class ds_sborka_zap {
 				$pos = rcvint('pos');
 				$tmpl->addContent($poseditor->GetPosInfo($pos));
 			}
+			else if($opt=='jgetgroups')
+			{
+				$doc_content = $poseditor->getGroupList();
+				$tmpl->addContent($doc_content);
+			}
 			// Json вариант добавления позиции
 			else if ($opt == 'jadd') {
 				if (!isAccess('doc_sborka', 'edit'))	throw new AccessException("Недостаточно привилегий");
@@ -305,6 +310,7 @@ class ds_sborka_zap {
 				$data = request('data');
 				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
 			}
+			else throw new NotFoundException();
 		}
 	}
 

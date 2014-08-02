@@ -199,10 +199,14 @@ class PriceCalc {
 		if($this->no_bulk_prices)
 			return false;
 		foreach($this->bulk_prices as $price) {
-			if($this->agent_price_id && $this->agent_price_id == $price['id'])
-				break;
+			if($this->agent_price_id) {
+				if($this->agent_price_id == $price['id'])
+					break;
+			}
+			else if($this->agent_avg_sum && $this->agent_avg_sum>=$price['acc_threshold'])
+				break;	
 			if($this->from_site_flag && $this->siteuser_price_id && $price['id'] == $this->siteuser_price_id)
-				break;
+				break;			
 			if($this->order_sum>=$price['bulk_threshold'])
 				break;
 			$next_price_id = $price['id'];			

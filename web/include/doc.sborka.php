@@ -103,7 +103,7 @@ class doc_Sborka extends doc_Nulltype {
 	}
 
 	function Service() {
-		global $tmpl;
+		global $tmpl, $db;
 		$tmpl->ajax = 1;
 		$opt = request('opt');
 		$pos = request('pos');
@@ -165,6 +165,45 @@ class doc_Sborka extends doc_Nulltype {
 				$data = request('data');
 				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
 			}
+			else if($opt=='jdeldoc')
+			{
+				try
+				{
+					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");
+					$tim=time();
+
+					$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `mark_del`='0'");
+					if($res->num_rows)
+						throw new Exception("Есть подчинённые не удалённые документы. Удаление невозможно.");
+					$db->update('doc_list', $this->doc, 'mark_del', $tim);
+					doc_log("MARKDELETE",  '', "doc", $this->doc);
+					$this->doc_data['mark_del']=$tim;
+					$json=' { "response": "1", "message": "Пометка на удаление установлена!", "buttons": "'.$this->getApplyButtons().'", "statusblock": "Документ помечен на удаление" }';
+					$tmpl->setContent($json);
+						
+				}
+				catch(Exception $e)
+				{
+					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
+				}
+			}
+			// Снять пометку на удаление
+			else if($opt=='jundeldoc')
+			{
+				try
+				{
+					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");	
+					$db->update('doc_list', $this->doc, 'mark_del', 0);
+					doc_log("UNDELETE", '', "doc", $this->doc);
+					$json=' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "'.$this->getApplyButtons().'", "statusblock": "Документ не будет удалён" }';
+					$tmpl->setContent($json);
+				}
+				catch(Exception $e)
+				{
+					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
+				}
+			}
+			else throw new NotFoundException();
 		}
 	}
 };

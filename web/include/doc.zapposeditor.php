@@ -6,76 +6,71 @@ class SZapPosEditor extends DocPosEditor
 {
 
 	function Show($param='') {
-	global $CONFIG;
-	// Список товаров
-	$ret="
-	<script src='/css/poseditor.js' type='text/javascript'></script>
-	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
-	<table width='100%' id='poslist'><thead><tr>
-	<th width='60px' align='left'>№</th>";
-	if($this->show_vc>0)	$ret.="<th width='90px' align='left' title='Код изготовителя'><div class='order_button' id='pl_order_vc'></div> Код</th>";
-	$ret.="<th><div class='order_button' id='pl_order_name'></div> Наименование</th>
-	<th width='90px' title='Выбранная цена'>Выбр. цена</th>
-	<th width='90px' class='hl'><div class='order_button' id='pl_order_cost'></div> Цена</th>
-	<th width='60px' class='hl'>Кол-во</th>
-	<th width='90px' class='hl'>Стоимость</th>
-	<th width='60px' title='Остаток товара на складе'>Остаток</th>
-	<th width='90px'>Зарплата</th>";
-	$ret.="</tr>
-	</thead>
-	<tfoot>
-	<tr id='pladd'>
-	<td><input type='text' id='pos_id' autocomplete='off' tabindex='1'></td>";
-	if($this->show_vc>0)	$ret.="<td><input type='text' id='pos_vc' autocomplete='off' tabindex='2'></td>";
-	$ret.="<td><input type='text' id='pos_name' autocomplete='off' tabindex='3'></td>
-	<td id='pos_scost'></td>
-	<td><input type='text' id='pos_cost' autocomplete='off' tabindex='4'></td>
-	<td><input type='text' id='pos_cnt' autocomplete='off' tabindex='5'></td>
-	<td id='pos_sum'></td>
-	<td id='pos_sklad_cnt'></td>
-	<td id='pos_mesto'></td>";
-	
-	$ret.="
-	</tr>
-	</tfoot>
-	<tbody>
-	<tr><td colspan='9' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'>
- 	</tbody>
-	</table>
-	<p align='right' id='sum'></p>";
-	
-	$ret.="
-	<table id='sklad_view'>
-	<tr><td id='groups_list' width='200' valign='top' class='lin0'>";
-	$ret.=$this->getGroupsTree();
-	$ret.="</td><td valign='top' class='lin1'>	
-	<table width='100%' cellspacing='1' cellpadding='2'>
-	<tr><thead>
-	<th>№";
-	if($this->show_vc>0)	$ret.="<th>Код";
-	$ret.="<th>Наименование<th>Марка<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог";
-	if($this->show_tdb>0)	$ret.="<th>Тип<th>d<th>D<th>B<th>Масса";
-	if($this->show_rto>0)	$ret.="<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Предложений'><th><img src='/img/i_truck.png' alt='В пути'>";
-	$ret.="<th>Склад<th>Всего<th>Место
-	</thead>
-	<tbody id='sklad_list'>
-	</tbody>
-	</table>
-	</td></tr>
-	</table>";
-	if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
-	else						$CONFIG['poseditor']['need_dialog']=1;
-	$ret.="<script type=\"text/javascript\">
-	var poslist=PosEditorInit('/doc_sc.php?mode=srv&sn=sborka_zap&doc={$this->doc}',{$this->editable})
-	poslist.show_column['vc']='{$this->show_vc}'
+		global $CONFIG;
+		// Список товаров
+		$ret="
+		<script src='/css/poseditor.js' type='text/javascript'></script>
+		<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
+		<div id='poseditor_div'></div>
+		<div id='storeview_container'></div>";
 
-	var skladview=document.getElementById('sklad_view')
-	skladview.show_column['vc']='{$this->show_vc}'
-	
-	skladlist=document.getElementById('sklad_list').needDialog={$CONFIG['poseditor']['need_dialog']};
-	</script>";	
-	
-	return $ret;
+		if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
+		else						$CONFIG['poseditor']['need_dialog']=1;
+
+		$p_setup = array(
+		    'base_url'	=> '/doc_sc.php?mode=srv&sn=sborka_zap&doc='.$this->doc,
+		    'editable'	=> $this->editable,
+		    'container'	=> 'poseditor_div',
+		    'store_container'	=> 'storeview_container',
+		    'fastadd_line'=> 1,		// Показывать строку быстрого подбора
+		);
+
+		$cols = array();
+		$col_names = array();
+		if($this->show_vc) {
+			$cols[] = 'vc';
+			$col_names[] = 'Код';
+		}
+		$cols[] = 'name';
+		$col_names[] = 'Наименование';
+		$cols[] = 'price';
+		$col_names[] = 'Цена';
+		$cols[] = 'cnt';
+		$col_names[] = 'Кол-во';
+		$cols[] = 'sum';
+		$col_names[] = 'Сумма';
+		$cols[] = 'store_cnt';
+		$col_names[] = 'Остаток';
+		$cols[] = 'place';
+		$col_names[] = 'Зарплата';
+
+		$p_setup['columns'] = $cols;
+		$p_setup['col_names'] = $col_names;
+
+		if($this->show_vc)
+			$p_setup['store_columns'] = array(
+			    'vc', 'name', 'vendor', 'price', 'liquidity'
+			);
+		else	$p_setup['store_columns'] = array(
+			    'name', 'vendor', 'price', 'liquidity'
+			);
+
+		if($this->show_rto) {
+			$p_setup['store_columns'][] = 'transit';
+			$p_setup['store_columns'][] = 'reserve';
+			$p_setup['store_columns'][] = 'offer';
+		}
+
+		$p_setup['store_columns'][] = 'cnt';
+		$p_setup['store_columns'][] = 'allcnt';
+		$p_setup['store_columns'][] = 'place';
+
+
+		$ret.="<script type=\"text/javascript\">
+		var poslist = PosEditorInit(".json_encode($p_setup, JSON_UNESCAPED_UNICODE).");
+		</script>";
+		
+		return $ret;
 	}
 
 // Получить весь текущий список товаров (документа)

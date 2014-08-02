@@ -1192,6 +1192,11 @@ class doc_Nulltype
 				$doc_content = $poseditor->GetAllContent();
 				$tmpl->addContent($doc_content);
 			}
+			else if($opt=='jgetgroups')
+			{
+				$doc_content = $poseditor->getGroupList();
+				$tmpl->addContent($doc_content);
+			}
 			// Снять пометку на удаление
 			else if($opt=='jundeldoc')
 			{

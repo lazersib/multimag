@@ -884,7 +884,8 @@ else if($mode=='log')
 	$res=$db->query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
 	FROM `doc_log`
 	LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
-	WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='$doc'");
+	WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='$doc'
+	ORDER BY `doc_log`.`time` DESC");
 	$tmpl->addContent("<h1>История документа $doc</h1>
 	<table width=100%>
 	<tr><th>Выполненное действие<th>Описание действия<th>Дата<th>Пользователь<th>IP");

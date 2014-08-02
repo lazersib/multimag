@@ -134,8 +134,8 @@ function forked_match_process($nproc, $limit, $res, $db) {
 				$db->query("INSERT INTO `parsed_price_tmp` (`firm`, `pos`, `cost`, `nal`, `from`)
 				VALUES ('$nx[3]', '$nxt[3]', '$cost', '$nx[4]', '$nx[0]' )");
 
-				if ($CONFIG['price']['mark_matched']) {
-					if ($CONFIG['price']['mark_doubles'])
+				if (@$CONFIG['price']['mark_matched']) {
+					if (@$CONFIG['price']['mark_doubles'])
 						$db->query("INSERT INTO `price_seeked` VALUES ($nx[0], 1) ON DUPLICATE KEY UPDATE `seeked`=`seeked`+1");
 					else
 						$db->query("INSERT IGNORE INTO `price_seeked` VALUES ($nx[0], 1)");
@@ -173,7 +173,7 @@ function parallel_match() {
 	$db->close();
 
 	// Подготовка к распараллеливанию
-	$numproc = $CONFIG['price']['numproc'];  // Включая родительский
+	$numproc = @$CONFIG['price']['numproc'];  // Включая родительский
 	if ($numproc < 1)
 		$numproc = 1;
 	if ($numproc > 128)
@@ -273,7 +273,7 @@ try {
 	UNIQUE KEY `id` (`id`)
 	) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
 
-	if ($CONFIG['price']['mark_matched']) {
+	if (@$CONFIG['price']['mark_matched']) {
 		$db->query("DROP TABLE IF EXISTS `price_seeked`");
 		$db->query("CREATE TABLE IF NOT EXISTS `price_seeked` (
 		`id` int(11) NOT NULL,
@@ -284,10 +284,10 @@ try {
 
 	parallel_match();
 
-	if ($CONFIG['price']['mark_matched'])
+	if (@$CONFIG['price']['mark_matched'])
 		$db->query("UPDATE `price`,`price_seeked` SET `price`.`seeked`=`price_seeked`.`seeked`  WHERE `price`.`id`=`price_seeked`.`id`");
 
-	$db->query("ALTER TABLE`parsed_price_tmp`
+	$db->query("ALTER TABLE `parsed_price_tmp`
 	ADD INDEX ( `firm` ),
 	ADD INDEX ( `pos` ),
 	ADD INDEX ( `cost` ),

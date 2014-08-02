@@ -56,10 +56,12 @@ class ImageProductor {
 		$this->dim_x = $x;
 	}
 
+	///
 	public function SetY($y) {
 		$this->dim_y = $y;
 	}
 
+	/// Задать качество изображения. Определяет уровень JPEG сжатия.
 	public function SetQuality($quality) {
 		if ($quality > 0)
 			$this->quality = $quality;
@@ -68,7 +70,8 @@ class ImageProductor {
 	public function SetNoEnlarge($flag) {
 		$this->no_enlarge = $flag;
 	}
-
+	
+	/// Установка разрешения изменения пропорций изображения. Если изменение пропорций запрещено - будут добавлены поля.
 	public function SetFixAspect($flag) {
 		$this->fix_aspect = $flag;
 	}
@@ -92,14 +95,20 @@ class ImageProductor {
 		$fn = "{$CONFIG['site']['var_data_fs']}/{$this->storages[$this->storage]}/{$this->id}.{$this->type}";
 		return @getimagesize($fn);
 	}
+	
+	/// Проверка, существует ли запрошенное хранилище
+	/// @return true, если существует, false в ином случае
+	//public function isStorageExists
 
-	// Есть ли изображение в кеше
+	/// Есть ли изображение в кеше
 	protected function CacheProbe() {
 		global $CONFIG;
 		$this->cache_fclosure = "cache/{$this->storages[$this->storage]}/{$this->id}-{$this->dim_x}-{$this->dim_y}-{$this->quality}.{$this->type}";
 		return $this->cached = file_exists($CONFIG['site']['var_data_fs'] . '/' . $this->cache_fclosure);
 	}
-	// Сделать изображение и сохранить в кеш
+	
+	
+	/// Сделать изображение и сохранить в кеш
 	public function MakeAndStore() {
 		global $CONFIG;
 		if(@isset($CONFIG['images']['watermark']))

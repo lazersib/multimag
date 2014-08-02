@@ -116,6 +116,12 @@
 	background-color:	#ff0;
 }
 
+div.doc_sum_info {
+	text-align:	right;
+	padding:	5px;
+	padding-right: 10px;
+}
+
 #pladd
 {
 	background-color:	#ffc;
@@ -188,45 +194,103 @@
 	background:	#e0f0ff;
 }
 
-#sklad_list td
-{
-	text-align:	right;
-}
-
-#sklad_list td.la
-{
-	text-align:	left;
-}
-
 /* Подстветка для кликабельных ячеек */
 .reserve, .offer, .transit
 {
-	cursor:		pointer;
+	cursor:		help;
 	color:		#06C;
 }
 
 .reserve:hover, .offer:hover, .transit:hover
 {
-	background:	#ffb;
+	background:	#ffe;
 	text-decoration:underline;
+	border:	1px #008 solid;
 }
 
-/*группы актуальности цен */
-#sklad_list td.c1
+/* Новый skladview */
+div.storeview_container {
+	width:	auto;
+	border: 0px none;
+	border-top: 1px solid #008;
+	border-bottom: 1px solid #008;
+	background:	#f0f8ff;
+	padding:	0;
+	margin:		0;
+}
+
+div.storeview_left {
+	float:	left;
+	width:	200px;
+	margin:		0;
+	padding:	2px;
+	min-height:	200px;
+}
+
+div.storeview_left input {
+	width:	190px;
+}
+
+div.storeview_right {
+	margin:		0;
+	margin-left:	210px;
+	border-left:	1px #ccc solid;
+	min-height:	200px;
+	background:	#e0f0ff;
+	padding:	0px 3px 1px 3px;
+}
+
+div.storeview_right table {
+	width:	100%;
+	border-spacing: 0;
+}
+
+div.storeview_right table tr
 {
+	height:	20px;
+}
+
+div.storeview_right table tr:nth-child(odd)
+{
+	background:	#f0f8ff;
+}
+
+div.storeview_right table tr:nth-child(even)
+{
+	background:	#e0f0ff;
+}
+
+div.storeview_right table th
+{
+	border-right: 2px solid #ccc;
+	padding: 1px 5px 1px 5px;
+}
+
+div.storeview_right table td
+{
+	border-right: 2px solid #fff;
+	padding: 1px 5px 1px 5px;
+}
+
+/*категории актуальности цен */
+div.storeview_right table td.c1 {
 	color: #0c0;
 }
-#sklad_list td.c2
-{
+div.storeview_right table td.c2 {
 	color: #c0c;
 }
-#sklad_list td.c3
-{
+div.storeview_right table td.c3 {
 	color: #730;
 }
-#sklad_list td.c4
-{
+div.storeview_right table td.c4 {
 	color: #3a8;
 }
 
-
+div.storeview_right table .searchinfo {
+	border-top:	1px solid #888;
+	border-bottom:	1px solid #888;
+	background-color:#f0f8ff;
+	color:	#888;
+	font-weight: bold;
+	padding:5px;
+}

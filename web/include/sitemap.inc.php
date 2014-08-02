@@ -106,11 +106,11 @@ class SiteMap {
 		global $wikiparser, $db;
 		$this->buf = '';
 		$this->startMap();
-		$this->AddLink('index.php', 'Главная', '1.0');
+		$this->AddLink('index.php', 'Главная', '0.5');
 		$this->AddLink('price.php', 'Прайсы', '0.2');
 		$this->AddLink('vitrina.php', 'Витрина', '0.8');
 		$this->addPriceGroup(0);
-		$this->AddLink('articles.php', 'Статьи', '0.1', 'weekly');
+		$this->AddLink('articles.php', 'Статьи', '0.5', 'weekly');
 		$this->startGroup();
 		$res = $db->query("SELECT `name`, `date`, `text` FROM `articles` ORDER BY `name`");
 		while ($nxt = $res->fetch_row()) {
@@ -119,11 +119,11 @@ class SiteMap {
 			$this->AddLink("article/$nxt[0].html", $h, '0.4', 'weekly', $nxt[1]);
 		}
 		$this->endGroup();
-		$this->AddLink('news.php', 'Новости');
-		$this->AddLink('photogalery.php', 'Фотогалерея');
+		$this->AddLink('news.php', 'Новости', '0.1');
+		$this->AddLink('photogalery.php', 'Фотогалерея', '0.1');
 		$this->AddLink('voting.php', 'Голосования', '0.1');
 		$this->AddLink('survey.php', 'Опросы', '0.1');
-		$this->AddLink('message.php', 'Отправить сообщение');
+		$this->AddLink('message.php', 'Отправить сообщение', '0.0');
 		$this->AddLink('sitemap.xml', 'XML Sitemap', '0.0');
 		$this->endMap();
 		return $this->buf;

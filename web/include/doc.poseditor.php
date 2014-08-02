@@ -52,7 +52,7 @@ function SetVC($vc) {
 function getGroupsTree()
 {
 	return "Отбор:<input type='text' id='sklsearch'><br>
-	<div onclick='tree_toggle(arguments[0])'>
+	<div onclick='tree_toggle()'>
 	<div><a href='' onclick=\"\">Группы</a></div>
 	<ul class='Container'>".$this->getGroupLevel(0)."</ul>
 	</div>";
@@ -78,6 +78,22 @@ function getGroupLevel($level)
 		$i++;
 	}
 	return $ret;
+}
+
+function getGroupData($pid) {
+	global $db;
+	settype($pid, 'int');
+	$data = array();
+	$res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `id`");
+	while($nxt = $res->fetch_row()){
+		if($nxt[0] == 0) continue;
+		$data[] = array(
+		    'id'	=> $nxt[0],
+		    'name'	=> $nxt[1],
+		    'childs'	=> $this->getGroupData($nxt[0])
+		);
+	}
+	return $data;
 }
 
 function getOrder(){
@@ -174,8 +190,15 @@ protected function initPriceCalc() {
 	$pc->setOrderSum($this->doc_base_sum);
 	return $pc;
 }
+	// Получить список групп в виде json
+	public function getGroupList() {
+		$ret_data = array (
+			'response'	=> 'group_list',
+			'content'	=> $this->getGroupData(0)
+		);
 
-
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+	}
 
 /// Формирует html код списка товаров документа
 function Show($param='')
@@ -188,69 +211,80 @@ function Show($param='')
 	$ret="
 	<script src='/css/poseditor.js' type='text/javascript'></script>
 	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
-	<table width='100%' id='poslist'><thead><tr>
-	<th width='60px' align='left'>№</th>";
-	if($this->show_vc>0)
-		$ret.="<th width='90px' align='left' title='Код изготовителя'><div class='order_button' id='pl_order_vc'></div> Код</th>";
-	$ret.="<th><div class='order_button' id='pl_order_name'></div> Наименование</th>
-	<th width='90px' title='Выбранная цена'>Выбр. цена</th>
-	<th width='90px' class='hl'><div class='order_button' id='pl_order_cost'></div> Цена</th>
-	<th width='60px' class='hl'>Кол-во</th>
-	<th width='90px' class='hl'>Стоимость</th>
-	<th width='60px' title='Остаток товара на складе'>Остаток</th>
-	<th width='90px'><div class='order_button' id='pl_order_loc'></div> Место</th>";
-	if($this->show_sn)	$ret.="<th>SN</th>";
-	if($this->show_gtd)	$ret.="<th>ГТД</th>";
-	$ret.="</tr></thead><tfoot><tr id='pladd'>
-	<td><input type='text' id='pos_id' autocomplete='off' tabindex='1'></td>";
-	if($this->show_vc>0)	$ret.="<td><input type='text' id='pos_vc' autocomplete='off' tabindex='2'></td>";
-	$ret.="<td><input type='text' id='pos_name' autocomplete='off' tabindex='3'></td>
-	<td id='pos_scost'></td>
-	<td><input type='text' id='pos_cost' autocomplete='off' tabindex='4'></td>
-	<td><input type='text' id='pos_cnt' autocomplete='off' tabindex='5'></td>
-	<td id='pos_sum'></td>
-	<td id='pos_sklad_cnt'></td>
-	<td id='pos_mesto'></td>";
-	if($this->show_sn)	$ret.="<td></td>";
-	if($this->show_gtd)	$ret.="<td></td>";
+	<div id='poseditor_div'></div>
+	<div id='storeview_container'></div>";
 
-	$ret.="</tr></tfoot><tbody>
-	<tr><td colspan='9' style='text-align: center;'><img src='/img/icon_load.gif' alt='Загрузка...'>
- 	</tbody></table>
-	<p align='right' id='sum'></p>";
-
-	$ret.="<table id='sklad_view'>
-	<tr><td id='groups_list' width='200' valign='top' class='lin0'>";
-	$ret.=$this->getGroupsTree();
-	$ret.="</td><td valign='top' class='lin1'>
-	<table width='100%' cellspacing='1' cellpadding='2'>
-	<tr><thead>
-	<th>№";
-	if($this->show_vc>0)	$ret.="<th>Код";
-	$ret.="<th>Наименование<th>Марка<th>Цена, р.<th>Ликв.<th>АЦП, р.<th>Аналог";
-	if($this->show_tdb>0)	$ret.="<th>Тип<th>d<th>D<th>B<th>Масса";
-	if($this->show_rto>0)	$ret.="<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Предложений'><th><img src='/img/i_truck.png' alt='В пути'>";
-	$ret.="<th>Склад<th>Всего<th>Место
-	</thead>
-	<tbody id='sklad_list'>
-	</tbody>
-	</table>
-	</td></tr>
-	</table>";
 	if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
 	else						$CONFIG['poseditor']['need_dialog']=1;
-	$ret.=@"<script type=\"text/javascript\">
-	var poslist=PosEditorInit('/doc.php?doc={$this->doc}&mode=srv',{$this->editable})
-	poslist.show_column['sn']='{$this->show_sn}'
-	poslist.show_column['vc']='{$this->show_vc}'
-	poslist.show_column['gtd']='{$this->show_gtd}'
-
-	var skladview=document.getElementById('sklad_view')
-	skladview.show_column['vc']='{$this->show_vc}'
-	skladview.show_column['tdb']='{$this->show_tdb}'
-	skladview.show_column['rto']='{$this->show_rto}'
-
-	skladlist=document.getElementById('sklad_list').needDialog={$CONFIG['poseditor']['need_dialog']};
+	
+	$p_setup = array(
+	    'base_url'	=> '/doc.php?doc='.$this->doc.'&mode=srv',
+	    'editable'	=> $this->editable,
+	    'container'	=> 'poseditor_div',
+	    'store_container'	=> 'storeview_container',
+	    'fastadd_line'=> 1,		// Показывать строку быстрого подбора
+	);
+	
+	$cols = array();
+	$col_names = array();
+	if($this->show_vc) {
+		$cols[] = 'vc';
+		$col_names[] = 'Код';
+	}
+	$cols[] = 'name';
+	$col_names[] = 'Наименование';
+	$cols[] = 'sprice';
+	$col_names[] = 'Выб. цена';
+	$cols[] = 'price';
+	$col_names[] = 'Цена';
+	$cols[] = 'cnt';
+	$col_names[] = 'Кол-во';
+	$cols[] = 'sum';
+	$col_names[] = 'Сумма';
+	$cols[] = 'store_cnt';
+	$col_names[] = 'Остаток';
+	$cols[] = 'place';
+	$col_names[] = 'Место';
+	if($this->show_gtd) {
+		$cols[] = 'gtd';
+		$col_names[] = 'ГТД';
+	}
+	if($this->show_sn) {
+		$cols[] = 'sn';
+		$col_names[] = 'SN';
+	}
+	
+	$p_setup['columns'] = $cols;
+	$p_setup['col_names'] = $col_names;
+	
+	if($this->show_vc)
+		$p_setup['store_columns'] = array(
+		    'vc', 'name', 'vendor', 'price', 'liquidity'
+		);
+	else	$p_setup['store_columns'] = array(
+		    'name', 'vendor', 'price', 'liquidity'
+		);
+	if($this->show_tdb) {
+		$p_setup['store_columns'][] = 'type';
+		$p_setup['store_columns'][] = 'd_int';
+		$p_setup['store_columns'][] = 'd_ext';
+		$p_setup['store_columns'][] = 'size';
+		$p_setup['store_columns'][] = 'mass';
+	}
+	
+	if($this->show_rto) {
+		$p_setup['store_columns'][] = 'transit';
+		$p_setup['store_columns'][] = 'reserve';
+		$p_setup['store_columns'][] = 'offer';
+	}
+	
+	$p_setup['store_columns'][] = 'cnt';
+	$p_setup['store_columns'][] = 'allcnt';
+	$p_setup['store_columns'][] = 'place';
+	
+	
+	$ret.="<script type=\"text/javascript\">
+	var poslist = PosEditorInit(".json_encode($p_setup, JSON_UNESCAPED_UNICODE).");
 	</script>";
 
 	return $ret;
@@ -607,10 +641,12 @@ function SerialNum($action, $line_id, $data)
 
 	function reOrder($by='name') {
 		global $db;
-		if($by!=='name' && $by!=='cost' && $by!=='vc'&& $by!=='loc')
+		if($by!=='name' && $by!=='price' && $by!=='vc'&& $by!=='place')
 			$by='name';
-		if($by=='loc')
+		if($by=='place')
 			$by='doc_base_cnt`.`mesto';
+		else if($by=='price')
+			$by='doc_list_pos`.`cost';
 		$db->startTransaction();
 		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`cost`, `doc_list_pos`.`page`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_cnt`.`mesto`
 		FROM `doc_list_pos`
@@ -677,7 +713,7 @@ function SerialNum($action, $line_id, $data)
 		settype($group, 'int');
 		$ret = '';
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
-			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date`, `doc_base_dop`.`koncost` AS `rcost`,  `doc_base_dop`.`analog`,
+			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`, `doc_base_dop`.`analog`,
 			`doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 			`doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`,
 			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`bulkcnt`
@@ -697,7 +733,7 @@ function SerialNum($action, $line_id, $data)
 		$s_json = json_encode($s, JSON_UNESCAPED_UNICODE);
 		$ret = '';
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
-			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date`, `doc_base_dop`.`koncost` AS `rcost`,
+			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`,
 			`doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
 			`doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`,
 			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
@@ -738,7 +774,6 @@ function SerialNum($action, $line_id, $data)
 			$ret.="{id: 'header', name: 'Поиск по аналогу($s_json) - $cnt наименований найдено'}";
 			$ret = $this->FormatResult($res, $ret);
 		}
-
 		return $ret;
 	}
 
@@ -746,24 +781,20 @@ function SerialNum($action, $line_id, $data)
 	protected function FormatResult($res, $ret = '') {
 		if ($res->num_rows) {
 			while ($nxt = $res->fetch_assoc()) {
-				$dcc = strtotime($nxt['cost_date']);
-				$cc = "";
-				if ($dcc > (time() - 60 * 60 * 24 * 30 * 3))		$nxt['cost_class'] = "c1";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 6))	$nxt['cost_class'] = "c2";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 9))	$nxt['cost_class'] = "c3";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 12))	$nxt['cost_class'] = "c4";
+				$dcc = strtotime($nxt['price_date']);
+				if ($dcc > (time() - 60 * 60 * 24 * 30 * 3))		$nxt['price_cat'] = "c1";
+				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 6))	$nxt['price_cat'] = "c2";
+				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 9))	$nxt['price_cat'] = "c3";
+				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 12))	$nxt['price_cat'] = "c4";
 				if ($this->show_rto) {
 					$nxt['reserve'] = DocRezerv($nxt['id'], $this->doc);
 					$nxt['offer'] = DocPodZakaz($nxt['id'], $this->doc);
 					$nxt['transit'] = DocVPuti($nxt['id'], $this->doc);
 				}
 				$pc = PriceCalc::getInstance();
-				if($this->cost_id) {
-					$nxt['cost'] = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
-				}
-				else $nxt['cost'] = $pc->getPosDefaultPriceValue($nxt['id']);
-				$nxt['rcost'] = sprintf("%0.2f", $nxt['rcost']);
-				$nxt['in_cost'] = sprintf("%0.2f",  getInCost($nxt['id']));
+				if($this->cost_id)
+					$nxt['price'] = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
+				else	$nxt['price'] = $pc->getPosDefaultPriceValue($nxt['id']);
 				
 				if ($ret != '')
 					$ret.=', ';

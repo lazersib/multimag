@@ -213,7 +213,7 @@ class WikiParser {
 		}
 
 		$img->SetX($xsize);
-		$imagetag = "<img src='".$img->GetURI()."' alt='".html_out($title)."' width='{$xsize}px'>";
+		$imagetag = "<img src=\"".$img->GetURI()."\" alt=\"".html_out($title)."\" width=\"{$xsize}px\">";
 		if($link)
 			$imagetag = "<a href='$link'>$imagetag</a>";
 		
