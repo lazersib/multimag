@@ -312,7 +312,7 @@ try {
 			$old_p = $p;
 			SetStatus("Cost change: $p pp", $db);
 		}
-		settype($nxt[3], 'int');
+		$nxt[3] = round($nxt[3], 5);
 
 		$mincost = 99999999;
 		$ok_line = 0;

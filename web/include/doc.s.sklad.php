@@ -242,7 +242,7 @@ class doc_s_Sklad {
 			}
 			else	$tmpl->msg("Не выбрано действие!", 'err');
 		}
-		else	$tmpl->msg("Неверная опция");
+		else	$tmpl->msg("Неверная опция - ".html_out($opt));
 	}
 
 	/// Отобразить форму редактирования

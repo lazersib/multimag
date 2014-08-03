@@ -88,8 +88,8 @@ class Report_OstatkiNaDatu extends BaseGSReport {
 			$col_count +=1;
 		}
 		
-		$headers = array_merge($headers, array('Количество', 'Базовая цена', 'Сумма по базовой'));
-		$widths = array_merge($widths, array(7, 10, 10));
+		$headers = array_merge($headers, array('Кол-во', 'Б. цена', 'Сумма'));
+		$widths = array_merge($widths, array(9, 9, 9));
 		$col_count+=3;
 		
 		$this->tableBegin($widths);
@@ -124,12 +124,13 @@ class Report_OstatkiNaDatu extends BaseGSReport {
 				if ($count < 0)		$zeroflag = 1;
 				$cost_p = sprintf("%0.2f", $nxt[2]);
 				$bsum_p = sprintf("%0.2f", $nxt[2] * $count);
+				$count_p = round($count, 3);
 				$bsum+=$nxt[2] * $count;
 				$summass+=$count * $nxt[3];
-
+				
 				if ($CONFIG['poseditor']['vc'])
-					$a = array($nxt[0], $nxt[4], $nxt[1], $count, $cost_p, $bsum_p);
-				else	$a = array($nxt[0], $nxt[1], $count, $cost_p, $bsum_p);
+					$a = array($nxt[0], $nxt[4], $nxt[1], $count_p, $cost_p, $bsum_p);
+				else	$a = array($nxt[0], $nxt[1], $count_p, $cost_p, $bsum_p);
 				$this->tableRow($a);
 			}
 		}

@@ -95,6 +95,7 @@ class Report_Pos_Komplekt extends BaseGSReport {
 					if ($nxt[4])	$nxt[2] = '(+) ' . $nxt[2];
 					unset($nxt[4]);
 				}
+				$nxt[3] = round($nxt[3], 3);
 				$this->tableRow($nxt);
 				if ($show_conn) {
 					$r = $db->query("SELECT `doc_base_kompl`.`pos_id`, `doc_base`.`vc`

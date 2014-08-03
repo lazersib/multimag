@@ -84,10 +84,13 @@ class Report_Komplekt_Zp {
 				else
 					$kompl_data.="<tr><td>$nx[4]<td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
 			}
+			$sum = round($sum, 2);
+			
 			$span = ($cnt > 1) ? "rowspan='$cnt'" : '';
 			if (!$kompl_data1)
 				$kompl_data1 = "<td><td><td><td><td>";
-			$zsum = $nxt['zp'] + $sum;
+			$zsum = round($nxt['zp'] + $sum, 2);
+			
 			$tmpl->addContent("<tr style='border-top: 2px solid #000'><td $span>{$nxt['id']}<td $span>{$nxt['vc']}<td $span>{$nxt['printname']} {$nxt['name']} / {$nxt['proizv']}<td $span>{$nxt['zp']} $kompl_data1<td $span>$sum<td $span>$zsum
 			$kompl_data");
 			$zp_sum+=$nxt['zp'];

@@ -103,8 +103,8 @@ class Report_Store extends BaseGSReport {
 		$haligns[] = 'C';
 		$aligns[] = 'L';
 		$aligns[] = 'R';
-		$col_sizes[] = 100;
-		$col_sizes[] = 10;
+		$col_sizes[] = 96;
+		$col_sizes[] = 14;
 		if ($show_mincnt) {
 			$headers[] = 'Мин.кол-во';
 			$haligns[] = 'R';
@@ -225,7 +225,7 @@ class Report_Store extends BaseGSReport {
 				if ($CONFIG['poseditor']['vc'])
 					$line[] = $nxt['vc'];
 				$line[] = $nxt['name'];
-				$line[] = $nxt['cnt'];
+				$line[] = round($nxt['cnt'], 3);
 				if ($show_mincnt) {
 					$line[] = $nxt['mincnt'];
 				}

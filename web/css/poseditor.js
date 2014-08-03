@@ -434,7 +434,8 @@ function PosEditorInit(poslist_setup) {
 	
 	poslist.updateSumInfo = function(json) {
 		var str = '';
-		str = 'Итого: <b>' + (poslist.tBodies[0].rows.length) + '</b> поз. на сумму <b>' + Number(json.sum).toFixed(2) + '</b> руб. ';
+		if(json.sum)
+			str = 'Итого: <b>' + (poslist.tBodies[0].rows.length) + '</b> поз. на сумму <b>' + Number(json.sum).toFixed(2) + '</b> руб. ';
 		if(json.price_name)
 			str += ' Цена: <b>' + json.price_name + '</b>.';
 

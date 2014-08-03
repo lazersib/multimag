@@ -27,85 +27,86 @@ class PosEditor
 	var $show_vc;		///< Показывать код производителя
 	var $show_tdb;		///< Показывать тип/размеры/массу
 	var $show_rto;		///< Показывать резерв/в пути/предложения
+	var $list;	// Список наименований
 
-/// Конструктор
-function __construct(){
-	global $CONFIG;
-	$this->editable=0;
-	$this->show_vc=@$CONFIG['poseditor']['vc'];
-	$this->show_tdb=@$CONFIG['poseditor']['tdb'];
-	$this->show_rto=@$CONFIG['poseditor']['rto'];
-}
-
-/// Разрешить или запретить изменение данных в списке наименований
-/// @param editable 0: запретить, 1: разрешить
-function SetEditable($editable)
-{
-	$this->editable=$editable;
-}
-
-
-function SetVC($vc) {
-	$this->show_vc = $vc;
-}
-
-function getGroupsTree()
-{
-	return "Отбор:<input type='text' id='sklsearch'><br>
-	<div onclick='tree_toggle()'>
-	<div><a href='' onclick=\"\">Группы</a></div>
-	<ul class='Container'>".$this->getGroupLevel(0)."</ul>
-	</div>";
-}
-
-function getGroupLevel($level)
-{
-	global $db;
-	settype($level, 'int');
-	$ret='';
-	$res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
-	$i=0;
-	$r='';
-	if($level==0) $r='IsRoot';
-	$cnt = $res->num_rows;
-	while($nxt = $res->fetch_row()){
-		if($nxt[0] == 0) continue;
-		$item="<a href='' title='$nxt[2]' onclick=\"return getSkladList(event, '$nxt[0]')\" >".html_out($nxt[1])."</a>";
-		if($i>=($cnt-1)) $r.=" IsLast";
-		$tmp=$this->getGroupLevel($nxt[0]); // рекурсия
-		if($tmp)	$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>$tmp</ul></li>\n";
-        	else   		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>\n";
-		$i++;
+	/// Конструктор
+	function __construct(){
+		global $CONFIG;
+		$this->editable=0;
+		$this->show_vc=@$CONFIG['poseditor']['vc'];
+		$this->show_tdb=@$CONFIG['poseditor']['tdb'];
+		$this->show_rto=@$CONFIG['poseditor']['rto'];
 	}
-	return $ret;
-}
 
-function getGroupData($pid) {
-	global $db;
-	settype($pid, 'int');
-	$data = array();
-	$res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `id`");
-	while($nxt = $res->fetch_row()){
-		if($nxt[0] == 0) continue;
-		$data[] = array(
-		    'id'	=> $nxt[0],
-		    'name'	=> $nxt[1],
-		    'childs'	=> $this->getGroupData($nxt[0])
-		);
-	}
-	return $data;
-}
-
-function getOrder(){
-	global $CONFIG;
-	switch(@$CONFIG['doc']['sklad_default_order'])
+	/// Разрешить или запретить изменение данных в списке наименований
+	/// @param editable 0: запретить, 1: разрешить
+	function SetEditable($editable)
 	{
-		case 'vc':	$order='`doc_base`.`vc`';	break;
-		case 'cost':	$order='`doc_base`.`cost`';	break;
-		default:	$order='`doc_base`.`name`';
+		$this->editable=$editable;
 	}
-	return $order;
-}
+
+
+	function SetVC($vc) {
+		$this->show_vc = $vc;
+	}
+
+	function getGroupsTree()
+	{
+		return "Отбор:<input type='text' id='sklsearch'><br>
+		<div onclick='tree_toggle()'>
+		<div><a href='' onclick=\"\">Группы</a></div>
+		<ul class='Container'>".$this->getGroupLevel(0)."</ul>
+		</div>";
+	}
+
+	function getGroupLevel($level)
+	{
+		global $db;
+		settype($level, 'int');
+		$ret='';
+		$res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
+		$i=0;
+		$r='';
+		if($level==0) $r='IsRoot';
+		$cnt = $res->num_rows;
+		while($nxt = $res->fetch_row()){
+			if($nxt[0] == 0) continue;
+			$item="<a href='' title='$nxt[2]' onclick=\"return getSkladList(event, '$nxt[0]')\" >".html_out($nxt[1])."</a>";
+			if($i>=($cnt-1)) $r.=" IsLast";
+			$tmp=$this->getGroupLevel($nxt[0]); // рекурсия
+			if($tmp)	$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>$tmp</ul></li>\n";
+			else   		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>\n";
+			$i++;
+		}
+		return $ret;
+	}
+
+	function getGroupData($pid) {
+		global $db;
+		settype($pid, 'int');
+		$data = array();
+		$res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `id`");
+		while($nxt = $res->fetch_row()){
+			if($nxt[0] == 0) continue;
+			$data[] = array(
+			    'id'	=> $nxt[0],
+			    'name'	=> $nxt[1],
+			    'childs'	=> $this->getGroupData($nxt[0])
+			);
+		}
+		return $data;
+	}
+
+	function getOrder(){
+		global $CONFIG;
+		switch(@$CONFIG['doc']['sklad_default_order'])
+		{
+			case 'vc':	$order='`doc_base`.`vc`';	break;
+			case 'cost':	$order='`doc_base`.`cost`';	break;
+			default:	$order='`doc_base`.`name`';
+		}
+		return $order;
+	}
 
 };
 
@@ -711,7 +712,6 @@ function SerialNum($action, $line_id, $data)
 	function GetSkladList($group) {
 		global $db;
 		settype($group, 'int');
-		$ret = '';
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
 			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`, `doc_base_dop`.`analog`,
 			`doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
