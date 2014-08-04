@@ -142,7 +142,7 @@ class Report_KassDay extends BaseReport {
 					else
 						$sadd.="\nиз кассы {$kass_list[$nxt['kassa']]}";
 				}
-				$dt = date("H:i:s", $nxt[3]);
+				$dt = date("Y-m-d H:i:s", $nxt[3]);
 				$sum_p = sprintf("%0.2f", $sum);
 				$this->tableRow(array($nxt[0], $dt, "$nxt[6] N$nxt[4]$nxt[5]   $sadd", $csum_p, $csum_r, $sum_p));
 			}

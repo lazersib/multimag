@@ -53,7 +53,7 @@ class doclist extends \Models\ListDataObject {
 						if($value[0]=='b')
 							$filter.=' AND `doc_list`.`bank`='.intval(substr($value,1));
 						else if($value[0]=='k')
-							$filter.=' AND `doc_list`.`kassa`='.intval(substr($value,1));
+							$filter.=' AND (`doc_list`.`kassa`='.intval(substr($value,1)).' OR `v_kassu_t`.`value`='.intval(substr($value,1)).')';
 						}break;
 					case 'ag':	// Agent
 						$filter.=' AND `doc_list`.`agent`='.intval($value);

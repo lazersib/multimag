@@ -34,55 +34,95 @@ class SearchPage
 	/// Поиск товара
 	/// @param s Подстрока поиска
 	function SearchTovar($s) {
-		global $uid, $CONFIG, $db;
+		global $CONFIG, $db;
 
 		$ret='';
+                $no_header = 1;
+                $this->all_cnt = 30;
 		$s_sql = $db->real_escape_string($s);
+                   
+                $sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
+		FROM `doc_base`
+		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+		WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`proizv` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s_sql%' OR `doc_base_dop`.`analog` LIKE '$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
+                ORDER BY `doc_base`.`name`
+		LIMIT 30";
+		$res = $db->query($sql);
+		
+		if($row = $res->num_rows) {
+                        if($no_header) {
+                                $no_header = 0;
+                                $ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
+                                <th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
+                        }
+			$i=0;
+			
+			$ret.=$this->searchOut($res);
+			
+		}
+                
+                $limit = $this->all_cnt+5;
+                
 		$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE (`doc_base_dop`.`analog` LIKE '%$s_sql%' OR `doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`desc` LIKE '%$s_sql%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base_dop`.`analog` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
-		LIMIT 20";
+		WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`desc` LIKE '%$s_sql%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base_dop`.`analog` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND (`doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`proizv` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s_sql%' AND `doc_base_dop`.`analog` NOT LIKE '$s_sql%')
+                ORDER BY `doc_base`.`name`
+		LIMIT 18";
 		$res = $db->query($sql);
-		$found_cnt = 0;
-		$basket_img = "/skins/".$CONFIG['site']['skin']."/basket16.png";
-		
-		if(@$CONFIG['site']['grey_price_days'])
-			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
 		
 		if($row = $res->num_rows) {
-			$ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
-			<th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
+                        if($no_header) {
+                                $no_header = 0;
+                                $ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
+                                <th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
+                        }
 			$i=0;
-			$cl="lin0";
-			$pc = PriceCalc::getInstance();
-			while($nxt=$res->fetch_row()) {
-				if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
-				else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
-
-				$i=1-$i;
-				$cost = $pc->getPosDefaultPriceValue($nxt[0]);
-				if($cost<=0)	$cost='уточняйте';
-				$nal=$this->GetCountInfo($nxt[12], $nxt[13]);
-				
-				$cce = '';
-				if(@$CONFIG['site']['grey_price_days']) {
-					if( strtotime($nxt[5]) < $cce_time )
-						$cce = ' style=\'color:#888\'';
-				}
-		
-				$ret.="<tr><td><a href='$link'>".html_out("$nxt[1] $nxt[2]")."</a></td>
-				<td>".html_out($nxt[3])."</td><td>".html_out($nxt[6])."</td><td>$nal</td><td $cce>$cost</td><td>$nxt[8]</td><td>$nxt[9]</td><td>$nxt[10]</td><td>$nxt[11]</td><td>
-				<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>";
-				$found_cnt++;
-			}
-			$ret.="</table>";
+			
+			$ret.=$this->searchOut($res);
+			
+		}
+                
+                if(!$no_header) {
+                        $ret.="</table>";
 			if(@$CONFIG['site']['grey_price_days'])
 				$ret.="<span style='color:#888'>Серая цена</span> требует уточнения<br>";
-		}
+                }
+                
 		return $ret;
 	}
+        
+        /// Вывод данных по поиску товаров
+        function searchOut($res) {
+                global $CONFIG;
+                if(@$CONFIG['site']['grey_price_days'])
+			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+                $basket_img = "/skins/".$CONFIG['site']['skin']."/basket16.png";
+                $pc = PriceCalc::getInstance();
+                $ret = '';
+                while($nxt=$res->fetch_row()) {
+                        if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
+                        else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
+
+                        $cost = $pc->getPosDefaultPriceValue($nxt[0]);
+                        if($cost<=0)	$cost='уточняйте';
+                        $nal=$this->GetCountInfo($nxt[12], $nxt[13]);
+
+                        $cce = '';
+                        if(@$CONFIG['site']['grey_price_days']) {
+                                if( strtotime($nxt[5]) < $cce_time )
+                                        $cce = ' style=\'color:#888\'';
+                        }
+
+                        $ret.="<tr><td><a href='$link'>".html_out("$nxt[1] $nxt[2]")."</a></td>
+                        <td>".html_out($nxt[3])."</td><td>".html_out($nxt[6])."</td><td>$nal</td><td $cce>$cost</td><td>$nxt[8]</td><td>$nxt[9]</td><td>$nxt[10]</td><td>$nxt[11]</td><td>
+                        <a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>";
+                        $this->all_cnt--;
+                }
+                return $ret;
+        }
 
 	/// Поиск по статьям
 	/// @param s Подстрока поиска
