@@ -96,6 +96,16 @@ class PosEditor
 		}
 		return $data;
 	}
+	
+	/// Получить список групп в виде json
+	public function getGroupList() {
+		$ret_data = array (
+			'response'	=> 'group_list',
+			'content'	=> $this->getGroupData(0)
+		);
+
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+	}
 
 	function getOrder(){
 		global $CONFIG;
@@ -191,15 +201,6 @@ protected function initPriceCalc() {
 	$pc->setOrderSum($this->doc_base_sum);
 	return $pc;
 }
-	// Получить список групп в виде json
-	public function getGroupList() {
-		$ret_data = array (
-			'response'	=> 'group_list',
-			'content'	=> $this->getGroupData(0)
-		);
-
-		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
-	}
 
 /// Формирует html код списка товаров документа
 function Show($param='')
@@ -417,7 +418,7 @@ function AddPos($pos) {
 		}
 	}
 	
-	$ret_data = array ();
+	$ret_data = array();
 	$pc = $this->initPriceCalc();
 	if(!$found) {
 		$line_id = $db->insertA('doc_list_pos', array('doc'=>$this->doc, 'tovar'=>$pos, 'cnt'=>$cnt, 'cost'=>$cost) );
@@ -780,6 +781,7 @@ function SerialNum($action, $line_id, $data)
 
 	protected function FormatResult($res, $ret = '') {
 		if ($res->num_rows) {
+			$pc = PriceCalc::getInstance();
 			while ($nxt = $res->fetch_assoc()) {
 				$dcc = strtotime($nxt['price_date']);
 				if ($dcc > (time() - 60 * 60 * 24 * 30 * 3))		$nxt['price_cat'] = "c1";
@@ -791,7 +793,7 @@ function SerialNum($action, $line_id, $data)
 					$nxt['offer'] = DocPodZakaz($nxt['id'], $this->doc);
 					$nxt['transit'] = DocVPuti($nxt['id'], $this->doc);
 				}
-				$pc = PriceCalc::getInstance();
+				
 				if($this->cost_id)
 					$nxt['price'] = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
 				else	$nxt['price'] = $pc->getPosDefaultPriceValue($nxt['id']);

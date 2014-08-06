@@ -28,9 +28,8 @@ class LinkPosList extends PosEditor {
 	/// Конструктор.
 	/// @param pos_id ID наименования, для которого требуется просмотр/редактирование списка связанных наименований
 	function __construct($pos_id) {
+		parent::__construct();
 		$this->linked_pos = $pos_id;
-		if( @$CONFIG['poseditor']['sn_enable'] && ($doc_data['type']==1 || $doc_data['type']==2))	$this->show_sn=1;
-		if( @$CONFIG['poseditor']['true_gtd'] && $doc_data['type']==1)					$this->show_gtd=1;
 	}
 
 	/// Установить ID связанного товара
@@ -46,7 +45,7 @@ class LinkPosList extends PosEditor {
 			return;
 		$this->list = array();
 		$res = $db->query("SELECT `doc_base_links`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`cost`,
-			`doc_base`.`proizv`, `doc_base`.`id`,
+			`doc_base`.`proizv` AS `vendor`, `doc_base`.`id`,
 			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `sklad_cnt`
 			FROM `doc_base_links`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
@@ -58,8 +57,6 @@ class LinkPosList extends PosEditor {
 /// Показать редактор.
 /// @return HTML код редактора
 	public function Show($param = '') {
-		global $CONFIG;
-		
 		$ret="
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 		<script type='text/javascript' src='/css/jquery/jquery.alerts.js'></script>
@@ -87,8 +84,6 @@ class LinkPosList extends PosEditor {
 		$col_names[] = 'Наименование';
 		$cols[] = 'store_cnt';
 		$col_names[] = 'Остаток';
-		$cols[] = 'place';
-		$col_names[] = 'Место';
 
 		$p_setup['columns'] = $cols;
 		$p_setup['col_names'] = $col_names;
@@ -115,10 +110,7 @@ class LinkPosList extends PosEditor {
 			$p_setup['store_columns'][] = 'offer';
 		}
 
-		$p_setup['store_columns'][] = 'cnt';
 		$p_setup['store_columns'][] = 'allcnt';
-		$p_setup['store_columns'][] = 'place';
-
 
 		$ret.="<script type=\"text/javascript\">
 		var poslist = PosEditorInit(".json_encode($p_setup, JSON_UNESCAPED_UNICODE).");
@@ -130,7 +122,7 @@ class LinkPosList extends PosEditor {
 /// Получить список наименований, связанных с выбранным наименованием.
 /// @return json-строка с данными о наименованиях
 	function GetAllContent() {
-		global $CONFIG, $db;
+		global $CONFIG;
 		$this->loadList();
 
 		$pos_array = array();
@@ -175,29 +167,57 @@ class LinkPosList extends PosEditor {
 	/// Добавляет указанную складскую позицию в список
 	function AddPos($pos) {
 		global $db;
-		$ret = '';
 		settype($pos, 'int');
+		$this->loadList();
+		$ret_data = array();
+		
 		if (!$pos)		throw new Exception("ID позиции не задан!");
+		
+		// Позиция с меньшим id - всегда pos1
+		$pos1 = min(array($pos, $this->linked_pos));
+		$pos2 = max(array($pos, $this->linked_pos));
 		
 		$res = $db->query("SELECT `id`, `pos1_id`, `pos2_id` FROM `doc_base_links`
 		WHERE (`pos1_id`='{$this->linked_pos}' AND `pos2_id`='$pos') OR (`pos1_id`='{$this->linked_pos}' AND `pos2_id`='$pos')");
 		if (! $res->num_rows) {
-			$db->query("INSERT INTO `doc_base_links` (`pos1_id`, `pos2_id`) VALUES ('{$this->linked_pos}','$pos')");
-			$pos_line = $db->insert_id;
+			$db->query("INSERT INTO `doc_base_links` (`pos1_id`, `pos2_id`) VALUES ('$pos1', '$pos2')");
+			$line_id = $db->insert_id;
 			doc_log("UPDATE", "add link: pos:$pos", 'pos', $this->linked_pos);
-			$add = 1;
 
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`,
-				`doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto`
+			$res = $db->query("SELECT `doc_base_links`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
+				`doc_base`.`proizv` AS `vendor`
 				FROM `doc_base_links`
 				INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
-				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-				WHERE `doc_list_pos`.`id`='$pos_line'");
+				WHERE `doc_base_links`.`id`='$line_id'");
 			$line = $res->fetch_assoc();
-			$ret = "{ response: '1', add: { line_id: '$pos_line', pos_id: '{$line['id']}', vc: '{$line['vc']}', name: '{$line['name']} - {$line['proizv']}', cnt: '{$line['cnt']}', scost: '$cost', cost: '{$line['cost']}', sklad_cnt: '{$line['sklad_cnt']}', mesto: '{$line['mesto']}', gtd: '' }, sum: '$doc_sum' }";
+			
+			$ret_data['response'] = 'add';
+			$ret_data['line'] = $line;
+		}
+		else {
+			$line = $res->fetch_assoc();
+			$line_id = $line['id'];
+			$ret_data['response'] = 'update';
+			$ret_data['update_line'] = $this->list[$line_id];
+		}
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+	}
+	
+	/// Удалить из списка строку с указанным ID
+	function RemoveLine($line_id) {
+		global $db;
+		$this->loadList();
+		if(array_key_exists($line_id, $this->list)) {
+			$db->delete('doc_base_links', $line_id);
+			doc_log("UPDATE","del link: pos: {$this->list[$line_id]['pos_id']}, line_id:$line_id, name:{$this->list[$line_id]['name']}", 'pos', $this->linked_pos);
+			unset($this->list[$line_id]);
 		}
 
-		return $ret;
+		$ret_data = array (
+		    'response'	=> '5',
+		    'remove'	=> array('line_id'=>$line_id),
+		);
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 	}
 
 	/// Получить список номенклатуры заданной группы
@@ -268,21 +288,9 @@ class LinkPosList extends PosEditor {
 	
 	protected function FormatResult($res, $ret = '') {
 		if ($res->num_rows) {
-			while ($nxt = $res->fetch_assoc()) {
-				$dcc = strtotime($nxt['price_date']);
-				if ($dcc > (time() - 60 * 60 * 24 * 30 * 3))		$nxt['price_cat'] = "c1";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 6))	$nxt['price_cat'] = "c2";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 9))	$nxt['price_cat'] = "c3";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 12))	$nxt['price_cat'] = "c4";
-				if ($this->show_rto) {
-					$nxt['reserve'] = DocRezerv($nxt['id'], $this->doc);
-					$nxt['offer'] = DocPodZakaz($nxt['id'], $this->doc);
-					$nxt['transit'] = DocVPuti($nxt['id'], $this->doc);
-				}
-				$pc = PriceCalc::getInstance();
-				if($this->cost_id)
-					$nxt['price'] = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
-				else	$nxt['price'] = $pc->getPosDefaultPriceValue($nxt['id']);
+			$pc = PriceCalc::getInstance();
+			while ($nxt = $res->fetch_assoc()) {				
+				$nxt['price'] = $pc->getPosDefaultPriceValue($nxt['id']);
 				
 				if ($ret != '')
 					$ret.=', ';

@@ -656,34 +656,14 @@ class doc_Nulltype
 			$tmpl->addContent("<b>Дата проведения:</b> ".date("Y-m-d H:i:s",$this->doc_data['ok'])."<br>");
 		$tmpl->addContent("</div>
 		<script type=\"text/javascript\">
-
-		addEventListener('load',DocHeadInit,false)
-
-		//DocHeadInit()
+		addEventListener('load',DocHeadInit,false);
 		</script>
 		<div id='doc_main_block'>");
-
-		if($this->doc_data['agent_dishonest'])
-		{
-			$tmpl->msg($this->doc_data['agent_comment'].' ','err',"Выбранный вами агент ({$this->doc_data['agent_name']}) - недобросовестный");
-		}
-
 		$tmpl->addContent("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'><br>");
-		if(strstr($this->header_fields, 'agent'))
-		{
-			$dolg=agentCalcDebt($this->doc_data['agent']);
-			if($dolg>0)
-				$tmpl->addContent("<b>Общий долг агента:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'><b class=f_red>$dolg</b> рублей</a><br>");
-			else if($dolg<0)
-				$tmpl->addContent("<b>Наш общий долг:</b> <a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'); return false;\"  title='Подробно' href='/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'>$dolg рублей</a><br>");
-		}
-
+		
  		if(method_exists($this,'DopBody'))
  			$this->DopBody();
 
-
-		if($this->doc_data['comment'])
-			$tmpl->addContent("<b>Примечание:</b> ".html_out($this->doc_data['comment'])."<br>");
 		if($this->sklad_editor_enable)
 		{
 			include_once('doc.poseditor.php');			
@@ -1168,7 +1148,7 @@ class doc_Nulltype
 	}
 
 	/// Служебные опции
-	function _Service($opt, $pos)
+	function _Service($peopt, $pos)
 	{
 		global $tmpl, $uid, $db;
 		
@@ -1183,22 +1163,24 @@ class doc_Nulltype
 			$poseditor->SetEditable($this->doc_data['ok']?0:1);
 		}
 		
+		$peopt = request('peopt');	// Опции редактора списка товаров
+		
 		if( isAccess('doc_'.$this->doc_name,'view') ) {
 			// Json-вариант списка товаров
-			if($opt=='jget')
+			if($peopt=='jget')
 			{
 				// TODO: пересчет цены перенести внутрь poseditor
 				$this->recalcSum();
 				$doc_content = $poseditor->GetAllContent();
 				$tmpl->addContent($doc_content);
 			}
-			else if($opt=='jgetgroups')
+			else if($peopt=='jgetgroups')
 			{
 				$doc_content = $poseditor->getGroupList();
 				$tmpl->addContent($doc_content);
 			}
 			// Снять пометку на удаление
-			else if($opt=='jundeldoc')
+			else if($peopt=='jundeldoc')
 			{
 				try
 				{
@@ -1219,26 +1201,26 @@ class doc_Nulltype
 			else if($this->doc_data['mark_del'])
 				throw new Exception("Операция не допускается для документа, отмеченного для удаления!");
 			// Получение данных наименования
-			else if ($opt == 'jgpi') {
+			else if ($peopt == 'jgpi') {
 				$pos = rcvint('pos');
 				$tmpl->addContent($poseditor->GetPosInfo($pos));
 			}
 			// Json вариант добавления позиции
-			else if ($opt == 'jadd') {
+			else if ($peopt == 'jadd') {
 				if (!isAccess('doc_' . $this->doc_name, 'edit'))
 					throw new AccessException("Недостаточно привилегий");
-				$pos = rcvint('pos');
-				$tmpl->setContent($poseditor->AddPos($pos));
+				$pe_pos = rcvint('pe_pos');
+				$tmpl->setContent($poseditor->AddPos($pe_pos));
 			}
 			// Json вариант удаления строки
-			else if ($opt == 'jdel') {
+			else if ($peopt == 'jdel') {
 				if (!isAccess('doc_' . $this->doc_name, 'edit'))
 					throw new AccessException("Недостаточно привилегий");
 				$line_id = rcvint('line_id');
 				$tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
-			else if ($opt == 'jup') {
+			else if ($peopt == 'jup') {
 				if (!isAccess('doc_' . $this->doc_name, 'edit'))
 					throw new AccessException("Недостаточно привилегий");
 				$line_id = rcvint('line_id');
@@ -1248,34 +1230,34 @@ class doc_Nulltype
 				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 			}
 			// Получение номенклатуры выбранной группы
-			else if ($opt == 'jsklad') {
+			else if ($peopt == 'jsklad') {
 				$group_id = rcvint('group_id');
 				$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
 				$tmpl->setContent($str);
 			}
 			// Поиск по подстроке по складу
-			else if ($opt == 'jsklads') {
+			else if ($peopt == 'jsklads') {
 				$s = request('s');
 				$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
 				$tmpl->setContent($str);
 			}
 			// Серийные номера
-			else if ($opt == 'jsn') {
+			else if ($peopt == 'jsn') {
 				$action = request('a');
 				$line_id = request('line');
 				$data = request('data');
 				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
 			}
 			// Сброс цен
-			else if ($opt == 'jrc') {
+			else if ($peopt == 'jrc') {
 				$poseditor->resetPrices();
 			}
 			// Сортировка наименований
-			else if ($opt == 'jorder') {
+			else if ($peopt == 'jorder') {
 				$by = request('by');
 				$poseditor->reOrder($by);
 			}
-			else if($opt=='jdeldoc')
+			else if($peopt=='jdeldoc')
 			{
 				try
 				{
@@ -1299,7 +1281,7 @@ class doc_Nulltype
 			}
 			// Не-json обработчики
 			// Серийный номер
-			else if($opt=='sn')
+			else if($peopt=='sn')
 			{
 				if($this->doc_type==1)		$column='prix_list_pos';
 				else if($this->doc_type==2)	$column='rasx_list_pos';
@@ -1390,15 +1372,19 @@ class doc_Nulltype
 		}
 		if($contr_content)	$contr_content="Договор:<br><select name='contract'>$contr_content</select>";
 
+		if($this->doc_data['agent_dishonest'])
+			$ag = "<span style='color: #f00; font-weight:bold;'>Был выбран недобросовестный агент!</span>";
+		else	$ag='';
 		$tmpl->addContent("
 		<div>
-		<div style='float: right; $col' id='agent_balance_info'>$balance / $bonus</div>
+		<div style='float: right; $col' id='agent_balance_info' onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'); return false;\">$balance / $bonus</div>
 		Агент:
 		<a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data['agent']}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>
 		<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a>
 		</div>
 		<input type='hidden' name='agent' id='agent_id' value='{$this->doc_data['agent']}'>
 		<input type='text' id='agent_nm'  style='width: 100%;' value='".  html_out($this->doc_data['agent_name']) ."'>
+		$ag
 		<div id='agent_contract'>$contr_content</div>
 		<br>
 

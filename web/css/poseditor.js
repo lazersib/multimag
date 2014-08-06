@@ -218,7 +218,7 @@ function PosEditorInit(poslist_setup) {
 		$.ajax({
 				type:   'GET',
 			url:    poslist.base_url,
-			data:   'opt=jorder&by=' + event.target.useFor,
+			data:   'peopt=jorder&by=' + event.target.useFor,
 			success: function(msg) { poslist.refresh() },
 			error:   function() { jAlert('Ошибка!','Сортировка наименований',{},'icon_err'); },
 			});
@@ -228,7 +228,7 @@ function PosEditorInit(poslist_setup) {
 		$.ajax({
 			type:   'GET',
 			url:    poslist.base_url,
-			data:   'opt=jget',
+			data:   'peopt=jget',
 			success: function(msg) { poslist.tBodies[0].innerHTML=''; rcvDataSuccess(msg); },
 			error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); }
 		});
@@ -296,7 +296,7 @@ function PosEditorInit(poslist_setup) {
 		$.ajax({
 			type:   'GET',
 		       url:    poslist.base_url,
-		       data:   'opt=jup&type='+this.name+'&value='+this.value+'&line_id='+line.lineIndex,
+		       data:   'peopt=jup&type='+this.name+'&value='+this.value+'&line_id='+line.lineIndex,
 		       success: function(msg) { rcvDataSuccess(msg); },
 		       error:   function() { jAlert('Ошибка соединения!','Обновление данных',function() {},'icon_err'); },
 		});
@@ -425,7 +425,7 @@ function PosEditorInit(poslist_setup) {
 			$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'opt=jdel&line_id='+line.lineIndex,
+				data:   'peopt=jdel&line_id='+line.lineIndex,
 				success: function(msg) { rcvDataSuccess(msg); },
 				error:   function() { jAlert('Ошибка соединения!','Получение списка товаров',null,'icon_err'); },
 			});
@@ -514,7 +514,7 @@ function PosEditorInit(poslist_setup) {
 			$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'opt=jup&type=gtd&value='+val+'&line_id='+line,
+				data:   'peopt=jup&type=gtd&value='+val+'&line_id='+line,
 				success: function(msg) { rcvDataSuccess(msg); },
 				error:   function() { jAlert('Ошибка соединения!','Обновление данных',function() {},'icon_err'); },
 			});
@@ -539,7 +539,7 @@ function PosEditorInit(poslist_setup) {
 				$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'opt=jup&type=comm&value='+encodeURIComponent(val)+'&line_id='+line,
+				data:   'peopt=jup&type=comm&value='+encodeURIComponent(val)+'&line_id='+line,
 				success: function(msg) { rcvDataSuccess(msg); },
 				error:   function() { jAlert('Ошибка соединения!','Обновление данных',function() {},'icon_err'); },
 				});
@@ -556,7 +556,7 @@ function PosEditorInit(poslist_setup) {
 		$.ajax({
 			type:   'GET',
 			url:    poslist.base_url,
-			data:   'opt=jsn&a=l&line='+line,
+			data:   'peopt=jsn&a=l&line='+line,
 			success: function(msg) { ShowSnEditorSuccess(msg); },
 			error:   function() { jAlert('Ошибка!','Редактор серийного номера',{},'icon_err'); },
 		});
@@ -599,7 +599,7 @@ function PosEditorInit(poslist_setup) {
 					matchContains:1,
 					cacheLength:10,
 					maxItemsToShow:15,
-					extraParams:{'mode':'srv','opt':'snp', 'doc': '1', 'pos': line}
+					extraParams:{'mode':'srv','peopt':'snp', 'doc': '1', 'pos': line}
 				});
 
 				document.getElementById('sn').onkeyup=function(event)
@@ -623,7 +623,7 @@ function PosEditorInit(poslist_setup) {
 			$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'opt=jsn&a=d&line='+line,
+				data:   'peopt=jsn&a=d&line='+line,
 				success: function(msg) {
 					var json=eval('('+msg+')')
 					if(json.response=='deleted')
@@ -647,7 +647,7 @@ function PosEditorInit(poslist_setup) {
 			$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'opt=sns&pos='+line+'&sn='+sn.value,
+				data:   'peopt=sns&pos='+line+'&sn='+sn.value,
 				success: function(msg) { DocAddSnSuccess(msg); },
 				error:   function() { jAlert('Ошибка!','Добавление серийного номера',{},'icon_err'); },
 			});
@@ -817,7 +817,7 @@ function PosEditorInit(poslist_setup) {
 			$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'opt=jadd&pos='+input_id.value+'&cnt='+input_cnt.value+'&cost='+input_price.value,
+				data:   'peopt=jadd&pos='+input_id.value+'&cnt='+input_cnt.value+'&cost='+input_price.value,
 				success: function(msg) { AddDataSuccess(msg); },
 				error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); },
 			});
@@ -879,7 +879,7 @@ function PosEditorInit(poslist_setup) {
 			$.ajax({
 				type: 'GET',
 				url: poslist.base_url,
-				data: 'opt=jgpi&pos=' + parseInt(input_id.value),
+				data: 'peopt=jgpi&pos=' + parseInt(input_id.value),
 				success: function(msg) {
 					pladd.doRefreshSuccess(msg);
 				},
@@ -976,7 +976,7 @@ function PosEditorInit(poslist_setup) {
 				$.ajax({
 					type:   'GET',
 					url:    poslist_setup.base_url,
-					data:   'opt=jadd&pos='+data.id+'&cost='+data.price+'&cnt='+data.cnt,
+					data:   'peopt=jadd&pe_pos='+data.id+'&cost='+data.price+'&cnt='+data.cnt,
 					success: function(msg) { rcvDataSuccess(msg); },
 					error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); },
 				});
@@ -1045,7 +1045,7 @@ function SkladViewInit(setup, callback) {
 		$.ajax({
 			type:   'GET',
 			url:    setup.base_url,
-			data:   'opt=jgetgroups',
+			data:   'peopt=jgetgroups',
 			success: function(msg) { rcvDataSuccess(msg); },
 			error:   function() { jAlert('Ошибка соединения!','Получение списка групп',null,'icon_err'); },
 		});
@@ -1058,7 +1058,7 @@ function SkladViewInit(setup, callback) {
 		}
 		var head_row = head.insertRow(0);
 		var th = document.createElement('th');
-		th.innerText = 'Id';
+		th.innerText = 'id';
 		th.style.width='60px';
 		head_row.appendChild(th);
 		
@@ -1148,7 +1148,7 @@ function SkladViewInit(setup, callback) {
 		$.ajax({
 			type: 'GET',
 			url: setup.base_url,
-			data: 'opt=jsklad&group_id=' + group,
+			data: 'peopt=jsklad&group_id=' + group,
 			success: function(msg) {
 				groupdata_cache[group] = msg;
 				rcvDataSuccess(msg);
@@ -1169,7 +1169,7 @@ function SkladViewInit(setup, callback) {
 		$.ajax({
 			type:   'GET',
 			url:    setup.base_url,
-			data:   'opt=jsklads&s='+encodeURIComponent(s_str),
+			data:   'peopt=jsklads&s='+encodeURIComponent(s_str),
 			success: function(msg) { rcvDataSuccess(msg); },
 			error:   function() { jAlert('Ошибка соединения!','Получение содержимого группы',null,'icon_err'); },
 		});

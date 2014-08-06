@@ -246,7 +246,7 @@ class ds_sborka_zap {
 			$tmpl->msg("Все операции выполнены успешно. Размер зарплаты: $zp");
 		}
 		else if ($mode == 'srv') {
-			$opt = request('opt');
+			$peopt = request('peopt');
 			$doc = rcvint('doc');
 			$document = new doc_Sborka($doc);
 			$poseditor = new SZapPosEditor($document);
@@ -258,35 +258,35 @@ class ds_sborka_zap {
 			$tmpl->setContent('');
 
 			// Json-вариант списка товаров
-			if ($opt == 'jget') {
+			if ($peopt == 'jget') {
 				$doc_sum = $document->recalcSum();
 				$str = "{ response: 'loadlist', content: [" . $poseditor->GetAllContent() . "], sum: '$doc_sum' }";
 				$tmpl->addContent($str);
 			}
 			// Получение данных наименования
-			else if ($opt == 'jgpi') {
+			else if ($peopt == 'jgpi') {
 				$pos = rcvint('pos');
 				$tmpl->addContent($poseditor->GetPosInfo($pos));
 			}
-			else if($opt=='jgetgroups')
+			else if($peopt=='jgetgroups')
 			{
 				$doc_content = $poseditor->getGroupList();
 				$tmpl->addContent($doc_content);
 			}
 			// Json вариант добавления позиции
-			else if ($opt == 'jadd') {
+			else if ($peopt == 'jadd') {
 				if (!isAccess('doc_sborka', 'edit'))	throw new AccessException("Недостаточно привилегий");
-				$pos = rcvint('pos');
-				$tmpl->setContent($poseditor->AddPos($pos));
+				$pe_pos = rcvint('pe_pos');
+				$tmpl->setContent($poseditor->AddPos($pe_pos));
 			}
 			// Json вариант удаления строки
-			else if ($opt == 'jdel') {
+			else if ($peopt == 'jdel') {
 				if (!isAccess('doc_sborka', 'edit'))	throw new AccessException("Недостаточно привилегий");
 				$line_id = rcvint('line_id');
 				$tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
-			else if ($opt == 'jup') {
+			else if ($peopt == 'jup') {
 				if (!isAccess('doc_sborka', 'edit'))	throw new AccessException("Недостаточно привилегий");
 				$line_id = rcvint('line_id');
 				$value = request('value');
@@ -294,21 +294,16 @@ class ds_sborka_zap {
 				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 			}
 			// Получение номенклатуры выбранной группы
-			else if ($opt == 'jsklad') {
+			else if ($peopt == 'jsklad') {
 				$group_id = rcvint('group_id');
 				$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
 				$tmpl->setContent($str);
 			}
 			// Поиск по подстроке по складу
-			else if ($opt == 'jsklads') {
+			else if ($peopt == 'jsklads') {
 				$s = request('s');
 				$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
 				$tmpl->setContent($str);
-			} else if ($opt == 'jsn') {
-				$action = request('a');
-				$line_id = rcvint('line');
-				$data = request('data');
-				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
 			}
 			else throw new NotFoundException();
 		}

@@ -752,52 +752,59 @@ class doc_s_Sklad {
 		}
 		// Связанные товары
 		else if ($param == 'l') {
-			$jparam = request('jparam');
+			$peopt = request('peopt');
 			require_once("include/doc.sklad.link.php");
 			$poseditor = new LinkPosList($pos);
 			$poseditor->SetEditable(1);
-			if ($jparam == '') {
+			if ($peopt == '') {
 				$tmpl->addContent($poseditor->Show());
 			} else {
 				$tmpl->ajax = 1;
-				if ($jparam == 'jget') {
-					$str = "{ response: '2', content: [" . $poseditor->GetAllContent() . "]}";
+				if ($peopt == 'jget') {
+					$str = $poseditor->GetAllContent();
 					$tmpl->setContent($str);
 				}
 				// Получение данных наименования
-				else if ($jparam == 'jgpi') {
+				else if ($peopt == 'jgpi') {
 					$pos = rcvint('pos');
-					$tmpl->addContent($poseditor->GetPosInfo($pos));
+					$tmpl->setContent($poseditor->GetPosInfo($pos));
 				}
 				// Json вариант добавления позиции
-				else if ($jparam == 'jadd') {
-					$pos = rcvint('pos');
-					$tmpl->setContent($poseditor->AddPos($pos));
+				else if ($peopt == 'jadd') {
+					$pe_pos = rcvint('pe_pos');
+					$tmpl->setContent($poseditor->AddPos($pe_pos));
 				}
 				// Json вариант удаления строки
-				else if ($jparam == 'jdel') {
+				else if ($peopt == 'jdel') {
 					$line_id = rcvint('line_id');
 					$tmpl->setContent($poseditor->Removeline($line_id));
 				}
 				// Json вариант обновления
-				else if ($jparam == 'jup') {
+				else if ($peopt == 'jup') {
 					$line_id = rcvint('line_id');
 					$value = request('value');
 					$type = request('type');
 					$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 				}
 				// Получение номенклатуры выбранной группы
-				else if ($jparam == 'jsklad') {
+				else if ($peopt == 'jsklad') {
 					$group_id = rcvint('group_id');
 					$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
 					$tmpl->setContent($str);
 				}
 				// Поиск по подстроке по складу
-				else if ($jparam == 'jsklads') {
+				else if ($peopt == 'jsklads') {
 					$s = request('s');
 					$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
 					$tmpl->setContent($str);
 				}
+				// Получение списка групп
+				else if($peopt=='jgetgroups')
+				{
+					$doc_content = $poseditor->getGroupList();
+					$tmpl->setContent($doc_content);
+				}
+				else throw new NotFoundException();
 			}
 		}
 		// История изменений
