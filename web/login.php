@@ -637,11 +637,9 @@ else if($mode=='conf')
 	else $tmpl->msg("Пользователь не найден в базе","err");
 }
 
-else if($mode=='rem')
-{
+else if($mode=='rem') {
 
-	if(!isset($_REQUEST['login']))
-	{
+	if(!isset($_REQUEST['login'])) {
 		$proto='http';
 		if($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https'])	$proto='https';
 		$tmpl->setContent("<h1 id='page-title'>Восстановление доступа</h1>
@@ -655,37 +653,39 @@ else if($mode=='rem')
 		<button type='submit'>Далее</button>
 		</form>");
 	}
-	else
-	{
+	else {
 		$login=$_REQUEST['login'];
-		if(@$_REQUEST['img']=='')
-			throw new Exception('Код подтверждения не введён');
-		if(strtoupper($_SESSION['captcha_keystring'])!=strtoupper($_REQUEST['img']))
-			throw new Exception('Код подтверждения введён неверно');
-
-		$sql_login=$db->real_escape_string($login);
-		$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `disabled`, `disabled_reason` FROM `users` WHERE `name`='$sql_login' OR `reg_email`='$sql_login' OR `reg_phone`='$sql_login'");
+		if(!isset($_SESSION['captcha_ok'])) {
+			if(@$_REQUEST['img']=='')
+				throw new Exception('Код с изображения не введён');
+			if(strtoupper($_SESSION['captcha_keystring'])!=strtoupper($_REQUEST['img']))
+				throw new Exception('Код с изображения введён неверно');
+		}
+		$_SESSION['captcha_ok'] = 1;
+		
+		$sql_login = $db->real_escape_string($login);
+		
+		$res = $db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm`, `disabled`, `disabled_reason` FROM `users` WHERE `name`='$sql_login' OR `reg_email`='$sql_login' OR `reg_phone`='$sql_login' OR MD5(CONCAT(`id`,`name`,`reg_email`,`reg_phone`))='$sql_login'");
 		if(! $res->num_rows )	throw new Exception("Пользователь не найден!");
-		$user_info=$res->fetch_assoc();
-		if($user_info['disabled'])	throw new Exception("Пользователь заблокирован (забанен). Причина блокировки: ".$user_info['disabled_reason']);
+		$user_info = $res->fetch_assoc();
+		if($user_info['disabled'])
+			throw new Exception("Пользователь заблокирован (забанен). Причина блокировки: ".$user_info['disabled_reason']);
 
-		if(!isset($_REQUEST['method']))
-		{
+		if(!isset($_REQUEST['method']))	{
+			$md5_hash = md5($user_info['id'].$user_info['name'].$user_info['reg_email'].$user_info['reg_phone']);
 			$tmpl->addContent("<h1 id='page-title'>Восстановление доступа - шаг 2</h1>
-			<form method='post'>
+			<form action='/login.php' method='post'>
 			<input type='hidden' name='mode' value='rem'>
-			<input type='hidden' name='login' value='$login'>
+			<input type='hidden' name='login' value='$md5_hash'>
 			<input type='hidden' name='img' value='{$_REQUEST['img']}'>
 			<fieldset><legend>Восстановить доступ при помощи</legend>");
 			if($user_info['reg_email']!='' && $user_info['reg_email_confirm']=='1')
 				$tmpl->addContent("<label><input type='radio' name='method' value='email'>Электронной почты</label><br>");
 			if(preg_match('/^\+79\d{9}$/', $user_info['reg_phone']) && $user_info['reg_phone_confirm']=='1' && @$CONFIG['site']['allow_phone_regist'])
 				$tmpl->addContent("<label><input type='radio' name='method' value='sms'>SMS на мобильный телефон</label><br>");
-			if(@$CONFIG['site']['allow_openid'])
-			{
+			if(@$CONFIG['site']['allow_openid']) {
 				$res=$db->query("SELECT `openid_identify` FROM `users_openid` WHERE `user_id`={$user_info['id']}");
-				while($openid_info=$res->fetch_row())
-				{
+				while($openid_info=$res->fetch_row()) {
 					$oid=htmlentities($openid_info[0],ENT_QUOTES);
 					$tmpl->addContent("<label><input type='radio' name='method' value='$oid'>OpenID аккаунта $oid</label><br>");
 				}
@@ -694,11 +694,9 @@ else if($mode=='rem')
 			<br><button type='submit'>Далее</button>
 			</form>");
 		}
-		else
-		{
+		else {
 			$method=$_REQUEST['method'];
-			if($method=='email')
-			{
+			if($method=='email') {
 				$db->query("START TRANSACTION");
 				$key=substr(md5($user_info['id'].$user_info['name'].$user_info['reg_email'].time().rand(0,1000000)),8);
 				$proto='http';
@@ -742,6 +740,7 @@ else if($mode=='rem')
 				<br><button type='submit'>Далее</button>
 				</form>");
 			}
+			unset($_SESSION['captcha_ok']);
 		}
 
 	}

@@ -29,13 +29,13 @@ class LinkPosList extends PosEditor {
 	/// @param pos_id ID наименования, для которого требуется просмотр/редактирование списка связанных наименований
 	function __construct($pos_id) {
 		parent::__construct();
-		$this->linked_pos = $pos_id;
+		$this->linked_pos = intval($pos_id);
 	}
 
 	/// Установить ID связанного товара
 	/// @param pos_id ID наименования, для которого требуется просмотр/редактирование списка связанных наименований
 	public function setLinkedPos($pos_id) {
-		$this->linked_pos = $pos_id;
+		$this->linked_pos = intval($pos_id);
 	}
 	
 	/// Загрузить список товаров. Повторно не загружает.
@@ -174,31 +174,30 @@ class LinkPosList extends PosEditor {
 		if (!$pos)		throw new Exception("ID позиции не задан!");
 		
 		// Позиция с меньшим id - всегда pos1
-		$pos1 = min(array($pos, $this->linked_pos));
-		$pos2 = max(array($pos, $this->linked_pos));
+		if($pos==$this->linked_pos) {
+			$ret_data['response'] = 'err';
+			$ret_data['message'] = "Нельзя связывать с самим собой!";
+			return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+		}
 		
 		$res = $db->query("SELECT `id`, `pos1_id`, `pos2_id` FROM `doc_base_links`
-		WHERE (`pos1_id`='{$this->linked_pos}' AND `pos2_id`='$pos') OR (`pos1_id`='{$this->linked_pos}' AND `pos2_id`='$pos')");
+		WHERE `pos1_id`='{$this->linked_pos}' AND `pos2_id`='$pos'");
 		if (! $res->num_rows) {
-			$db->query("INSERT INTO `doc_base_links` (`pos1_id`, `pos2_id`) VALUES ('$pos1', '$pos2')");
+			$db->query("INSERT INTO `doc_base_links` (`pos1_id`, `pos2_id`) VALUES ('{$this->linked_pos}', '$pos')");
 			$line_id = $db->insert_id;
 			doc_log("UPDATE", "add link: pos:$pos", 'pos', $this->linked_pos);
 
-			$res = $db->query("SELECT `doc_base_links`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
-				`doc_base`.`proizv` AS `vendor`
-				FROM `doc_base_links`
-				INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
-				WHERE `doc_base_links`.`id`='$line_id'");
+			$res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`
+				FROM `doc_base`
+				WHERE `doc_base`.`id`='$pos'");
 			$line = $res->fetch_assoc();
-			
+			$line['line_id'] = $line_id;
 			$ret_data['response'] = 'add';
 			$ret_data['line'] = $line;
 		}
 		else {
-			$line = $res->fetch_assoc();
-			$line_id = $line['id'];
-			$ret_data['response'] = 'update';
-			$ret_data['update_line'] = $this->list[$line_id];
+			$ret_data['response'] = 'err';
+			$ret_data['message'] = "Уже есть в списке!";
 		}
 		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 	}

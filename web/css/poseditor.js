@@ -468,6 +468,8 @@ function PosEditorInit(poslist_setup) {
 			var str = '';
 			if(json.response==0)
 				jAlert(json.message,"Ошибка", null, 'icon_err');
+			else if(json.response=='err')
+				jAlert(json.message,"Ошибка", null, 'icon_err');
 			else if(json.response=='loadlist')
 			{
 				poslist.auto_price = json.auto_price;
