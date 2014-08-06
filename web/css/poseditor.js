@@ -58,7 +58,7 @@ function PosEditorInit(poslist_setup) {
 		poslist.head = document.createElement('thead');
 		var head_row = poslist.head.insertRow(0);
 		var th = document.createElement('th');
-		th.innerText = 'N';
+		th.textContent = 'N';
 		th.style.width='50px';
 		head_row.appendChild(th);
 		
@@ -66,7 +66,7 @@ function PosEditorInit(poslist_setup) {
 		var i;
 		for(i=0;i<poslist_setup.col_names.length;i++) {
 			var th = document.createElement('th');
-			th.innerText = poslist_setup.col_names[i];
+			th.textContent = poslist_setup.col_names[i];
 			head_row.appendChild(th);
 			switch(poslist_setup.columns[i]) {
 				case 'vc':
@@ -1058,13 +1058,13 @@ function SkladViewInit(setup, callback) {
 		}
 		var head_row = head.insertRow(0);
 		var th = document.createElement('th');
-		th.innerText = 'id';
+		th.textContent = 'id';
 		th.style.width='60px';
 		head_row.appendChild(th);
 		
 		for(i=0;i<setup.store_columns.length;i++) {
 			th = document.createElement('th');
-			th.innerText = setup.store_columns[i];
+			th.textContent = setup.store_columns[i];
 //			switch(setup.store_columns[i]) {
 //				case 'price':
 //				case 'place':
@@ -1107,7 +1107,7 @@ function SkladViewInit(setup, callback) {
 					li.appendChild(d_e);
 					var d_c = document.createElement('div');
 					d_c.className = 'Content';
-					d_c.innerText = data_node[i].name;
+					d_c.textContent = data_node[i].name;
 					d_c.forId = data_node[i].id;
 					d_c.addEventListener('click', getGroupData, false);
 					d_c.style.cursor='pointer';
