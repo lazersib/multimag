@@ -819,7 +819,7 @@ function PosEditorInit(poslist_setup) {
 			$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'peopt=jadd&pos='+input_id.value+'&cnt='+input_cnt.value+'&cost='+input_price.value,
+				data:   'peopt=jadd&pe_pos='+input_id.value+'&cnt='+input_cnt.value+'&cost='+input_price.value,
 				success: function(msg) { AddDataSuccess(msg); },
 				error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); },
 			});
