@@ -24,7 +24,7 @@ include_once("include/imgresizer.php");
 /// Класс витрины интернет-магазина
 class Vitrina
 {
-
+	var $is_pc_init;
 /// Конструктор
 function __construct() {
 	global $tmpl;
@@ -569,9 +569,10 @@ protected function ProductCard($product)
 	settype($product,'int');
 
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
-	$res=$db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
+	$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	`doc_base_dop`.`mass`, `doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`transit_cnt`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+	`doc_base_dop`.`analog`, ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`transit_cnt`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`, `doc_base`.`bulkcnt`, `doc_base`.`mult`,
+		`doc_base`.`mass`, `doc_base`.`analog_group`
 	FROM `doc_base`
 	INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -807,6 +808,53 @@ protected function ProductCard($product)
 			$str.=$item[$i].' ';
 		}
 		$tmpl->addContent("<div class='description'>$str</div>");
+		
+		// Аналоги
+		if($product_data['analog_group']) {
+			$analog_group_sql = $db->real_escape_string($product_data['analog_group']);
+			$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
+			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
+			`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+			FROM `doc_base`
+			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+			LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+			WHERE `doc_base`.`analog_group`='$analog_group_sql' AND `doc_base`.`hidden`='0'
+			ORDER BY `doc_base`.`id`");
+			if($res->num_rows) {
+				$tmpl->addContent("<div><h2>Аналоги</h2>");		        
+				while($link_info = $res->fetch_assoc()) {
+					$tmpl->addContent($this->getProductMiniElement($link_info));
+				}
+				$tmpl->addContent("</div>");
+			}
+			$tmpl->addContent("<hr class='clear'>");
+		}
+		
+		// Сопутствующие товары
+		$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
+		$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
+		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
+		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		FROM `doc_base_links`
+		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
+		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+		WHERE `doc_base_links`.`pos1_id`='$product' AND `doc_base`.`hidden`='0'
+		ORDER BY `doc_base`.`id`");
+		if($res->num_rows) {
+			$tmpl->addContent("<div><h2>Сопутствующие товары</h2>");		        
+                        while($link_info = $res->fetch_assoc()) {
+				$tmpl->addContent($this->getProductMiniElement($link_info));
+			}
+			$tmpl->addContent("</div>");
+			$tmpl->addContent("<hr class='clear'>");
+		}
+		
 		$tmpl->addContent("<script type='text/javascript' charset='utf-8'>
 		$(document).ready(function(){
 		$(\"a[rel^='prettyPhoto']\").prettyPhoto({theme:'dark_rounded'});
@@ -820,6 +868,84 @@ protected function ProductCard($product)
 		throw new NotFoundException("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
 	}
 }
+
+/// Получить HTML код товарного предложения стандартного размера
+public function getProductBaseElement($product_info) {
+	global $CONFIG;
+	if(@$CONFIG['site']['grey_price_days'])
+		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+	$cce = '';
+	if(@$CONFIG['site']['grey_price_days']) {
+		if( strtotime($nxt['cost_date']) < $cce_time )
+			$cce = ' style=\'color:#888\'';
+	}
+	$pc = $this->priceCalcInit();
+	if($product_info['img_id']) {
+		$miniimg = new ImageProductor($product_info['img_id'], 'p', $product_info['img_type']);
+		$miniimg->SetX(135);
+		$miniimg->SetY(180);
+		$img="<img src='".$miniimg->GetURI()."' alt='".html_out($product_info['name'])."' width='13px' height='17px'>";
+	}
+	else $img="<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo_131.jpg' alt='no photo'>";
+	$nal = $this->GetCountInfo($product_info['count'], $product_info['transit_cnt']);
+	$link = $this->GetProductLink($product_info['id'], $product_info['name']);
+	$price = $pc->getPosDefaultPriceValue($product_info['id']);
+	$price = number_format($price, 2, '.', ' ');
+	if($price <= 0)	$price='уточняйте';
+	if($product_info['bulkcnt']>1)	$buy_cnt = $product_info['bulkcnt'];
+	else if($product_info['mult']>1)	$buy_cnt = $product_info['mult'];
+	else				$buy_cnt = 1;
+	
+	return "<div class='pitem'>
+	<a href='$link'>$img</a>
+	<a href='$link'>".html_out($product_info['name'])."</a><br>
+	<b>Код:</b> ".html_out($product_info['vc'])."<br>
+	<b>Цена:</b> <span{$cce}>$price руб.</span> / {$product_info['units']}<br>
+	<b>Производитель:</b> ".html_out($product_info['proizv'])."<br>
+	<b>Кол-во:</b> $nal<br>
+	<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$product_info['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
+	</div>";
+
+}
+
+/// Получить HTML код товарного предложения уменьшенного размера
+public function getProductMiniElement($product_info) {
+	global $CONFIG;
+	if(@$CONFIG['site']['grey_price_days'])
+		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
+	$cce = '';
+	if(@$CONFIG['site']['grey_price_days']) {
+		if( strtotime($nxt['cost_date']) < $cce_time )
+			$cce = ' style=\'color:#888\'';
+	}
+	$pc = $this->priceCalcInit();
+	if($product_info['img_id']) {
+		$miniimg = new ImageProductor($product_info['img_id'], 'p', $product_info['img_type']);
+		$miniimg->SetX(63);
+		$miniimg->SetY(85);
+		$img="<img src='".$miniimg->GetURI()."' alt='".html_out($product_info['name'])."' width='13px' height='17px'>";
+	}
+	else $img="<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo_131.jpg' alt='no photo'>";
+	$nal = $this->GetCountInfo($product_info['count'], $product_info['transit_cnt']);
+	$link = $this->GetProductLink($product_info['id'], $product_info['name']);
+	$price = $pc->getPosDefaultPriceValue($product_info['id']);
+	$price = number_format($price, 2, '.', ' ');
+	if($price <= 0)	$price='уточняйте';
+	if($product_info['bulkcnt']>1)	$buy_cnt = $product_info['bulkcnt'];
+	else if($product_info['mult']>1)	$buy_cnt = $product_info['mult'];
+	else				$buy_cnt = 1;
+	
+	return "<div class='pitem_mini'>
+	<a href='$link'>$img</a>
+	<a href='$link'>".html_out($product_info['name'])."</a><br>
+	<b>Код:</b> ".html_out($product_info['vc'])."<br>
+	<b>Цена:</b> <span{$cce}>$price руб.</span> / {$product_info['units']}<br>
+	<b>Производитель:</b> ".html_out($product_info['proizv'])."<br>
+	<b>Кол-во:</b> $nal<br>
+	<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$product_info['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
+	</div>";
+}
+
 /// Просмотр корзины
 protected function Basket() {
 	global $tmpl, $CONFIG, $db;
@@ -1192,18 +1318,6 @@ protected function TovList_ImageList($res, $lim) {
 	global $tmpl, $CONFIG;
 	$cc=$i=0;
 
-	$tmpl->addStyle(".pitem	{
-		float:			left;
-		width:			330px;
-		height:			180px;
-		border:			1px solid #ccc;
-		background:		#fafafa;
-		margin:			10px;
-		padding:		5px;
-		border-radius:		10px;
-		-moz-border-radius:	10px;
-	}");
-	
 	if(@$CONFIG['site']['grey_price_days'])
 		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
 	
@@ -1732,6 +1846,9 @@ protected function GetCountInfo($count, $tranzit)
 
 protected function priceCalcInit() {
 	$pc = PriceCalc::getInstance();
+	if($this->is_pc_init)
+		return $pc;
+	else $this->is_pc_init = 1;
 	$basket = Models\Basket::getInstance();
 
 	if(@$_SESSION['uid']) {

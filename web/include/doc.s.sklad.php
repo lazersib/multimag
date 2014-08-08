@@ -24,7 +24,8 @@ class doc_s_Sklad {
 	
 	function __construct()	{
 		$this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty',
-		    'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt');
+		    'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt',
+		    'analog_group', 'mass');
 		$this->dop_vars = array('type', 'analog', 'koncost', 'd_int', 'd_ext', 'size', 'mass', 'ntd');
 		$this->group_vars = array('name' , 'desc' , 'pid' , 'hidelevel' , 'printname', 'no_export_yml', 'title_tag', 'meta_keywords', 'meta_description');
 	}
@@ -258,7 +259,7 @@ class doc_s_Sklad {
 		if ($pos != 0)		$this->PosMenu($pos, $param);
 
 		if ($param == '') {
-			$pres = $db->query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`, `doc_base`.`cost_date`, `doc_base`.`mult`, `doc_base`.`bulkcnt`
+			$pres = $db->query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`, `doc_base`.`cost_date`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, `doc_base`.`analog_group`, `doc_base`.`mass`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
@@ -314,7 +315,21 @@ class doc_s_Sklad {
         		<tr><td align='right' width='20%'>$n</td>
         		<td colspan='3'><input type='text' name='pd[name]' value='".html_out($pos_info['name'])."' style='width: 95%'>$cc
         		<tr><td align='right'>Группа</td>
-        		<td colspan='3'>" . selectGroupPos('pd[group]', $selected, false, '', '', @$CONFIG['store']['leaf_only']) . "</td></tr>
+				<td>" . selectGroupPos('pd[group]', $selected, false, '', '', @$CONFIG['store']['leaf_only']) . "</td>
+				<td align='right'>Имя группы аналогов:<br><small>Аналогами будут товары<br>с совпадающим значением поля</small></td>
+				<td><input type='text' name='pd[analog_group]' value='".html_out($pos_info['analog_group'])."'></td>
+				</tr>
+			<tr><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small></td><td><select name='pd[country]'>");
+			$tmpl->addContent("<option value='0'>--не выбрана--</option>");
+			$res = $db->query("SELECT `id`, `name` FROM `class_country` ORDER BY `name`");
+			while ($nx = $res->fetch_row()) {
+				$selected = ($group == $nx[0]) || ($nx[0] == $pos_info['country']) ? 'selected' : '';
+				$tmpl->addContent("<option value='$nx[0]' $selected>".html_out($nx[1])."</option>");
+			}
+			$tmpl->addContent("</select></td>
+				<td align='right'>Масса, кг:<br><small>Используется в ТОРГ-12</small></td>
+				<td><input type='text' name='pd[bulkcnt]' value='".html_out($pos_info['mass'])."'></td>
+			</tr>
         		<tr><td align='right'>Изготовитель</td>
 			<td><input type='text' name='pd[proizv]' value='".html_out($pos_info['proizv'])."' id='proizv_nm' style='width: 95%'><br>
 			<div id='proizv_p' class='dd'></div></td>
@@ -337,24 +352,19 @@ class doc_s_Sklad {
 				}
 			}
 			$tmpl->addContent("</select></td>
-			<td align='right'>Кратность:</td>
-			<td><input type='text' name='pd[mult]' value='".html_out($pos_info['mult'])."'></td>
+				<td align='right'>Количество оптом:</td>
+				<td><input type='text' name='pd[bulkcnt]' value='".html_out($pos_info['bulkcnt'])."'></td>
 			</tr>
-			
-			<tr><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small></td><td><select name='pd[country]'>");
-			$tmpl->addContent("<option value='0'>--не выбрана--</option>");
-			$res = $db->query("SELECT `id`, `name` FROM `class_country` ORDER BY `name`");
-			while ($nx = $res->fetch_row()) {
-				$selected = ($group == $nx[0]) || ($nx[0] == $pos_info['country']) ? 'selected' : '';
-				$tmpl->addContent("<option value='$nx[0]' $selected>".html_out($nx[1])."</option>");
-			}
-			$tmpl->addContent("</select></td>
-			<td align='right'>Количество оптом:</td>
-			<td><input type='text' name='pd[bulkcnt]' value='".html_out($pos_info['bulkcnt'])."'></td>
+			<tr class='lin0'><td align='right'>Базовая цена</td>
+				<td><input type='text' name='pd[cost]' value='{$pos_info['cost']}'> с {$pos_info['cost_date']} </td>
+				<td align='right'>Кратность:</td>
+				<td><input type='text' name='pd[mult]' value='".html_out($pos_info['mult'])."'></td>	
 			</tr>
-			<tr><td align='right'>Ликвидность:</td><td colspan='3'><b>{$pos_info['likvid']}% <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b></td></tr>
-			<tr class='lin0'><td align='right'>Базовая цена</td><td><input type='text' name='pd[cost]' value='{$pos_info['cost']}'> с {$pos_info['cost_date']} </td>
-			<td align='right'>Актуальная цена поступления:</td><td><b>$act_cost</b></td></tr>
+			<tr><td align='right'>Ликвидность:</td>
+				<td><b>{$pos_info['likvid']}%
+					<small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b></td>
+				<td align='right'>Актуальная цена поступления:</td><td><b>$act_cost</b></td>
+			</tr>
 			<tr><td align='right'>Гарантийный срок:</td><td><input type='text' name='pd[warranty]' value='{$pos_info['warranty']}'> мес.</td>
 			<td align='right'>Гарантия:</td><td><label><input type='radio' name='pd[warranty_type]' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='pd[warranty_type]' value='1' $wt1_check>От производителя</label></td></tr>
 			<tr><td align='right'>Видимость:</td><td><label><input type='checkbox' name='pd[hidden]' value='1' $hid_check>Не отображать на витрине</label></td><td><label><input type='checkbox' name='pd[no_export_yml]' value='1' $yml_check>Не экспортировать в YML</label>
@@ -444,8 +454,15 @@ class doc_s_Sklad {
 			<tr><td><td><input type='submit' value='Сохранить'>
 			</tfoot>
 			<tbody>
-			<tr><td align='right'>Аналог<td><input type='text' name='analog' value='".html_out($pos_info['analog'])."' id='pos_analog'>
-			<tr><td align='right'>Рыночная цена<td><input type='text' name='koncost' value='".html_out($pos_info['koncost'])."' id='pos_koncost'>
+			<tr><td align='right'>Аналог<br>
+			<b style='color: #f00'>Поле запланировано к уделению!<br>Не заполняйте его, информация буде утеряна.<br>Используйте вкладку *аналоги* или строку *имя группы аналогов* в основных свойствах!</b>
+			
+			<td><input type='text' name='analog' value='".html_out($pos_info['analog'])."' id='pos_analog'>
+			<tr><td align='right'>Рыночная цена
+				<br><b style='color: #f00'>Поле запланировано к уделению!
+				<br>Не заполняйте его, информация буде утеряна.
+				<br>Замена полю не планируется.</b>
+			<td><input type='text' name='koncost' value='".html_out($pos_info['koncost'])."' id='pos_koncost'>
 			<tr><td align='right'>Тип<td><select name='type' id='pos_type' >
 			<option value='null'>--не задан--</option>");
 
@@ -461,8 +478,16 @@ class doc_s_Sklad {
 			<tr class='lin1'><td align='right'>Внутренний размер (d)<td><input type='text' name='d_int' value='{$pos_info['d_int']}' id='pos_d_int'></td></tr>
 			<tr class='lin0'><td align='right'>Внешний размер (D)<td><input type='text' name='d_ext' value='{$pos_info['d_ext']}' id='pos_d_ext'></td></tr>
 			<tr class='lin1'><td align='right'>Высота (B)<td><input type='text' name='size' value='{$pos_info['size']}' id='pos_size'></td></tr>
-			<tr class='lin0'><td align='right'>Масса<td><input type='text' name='mass' value='{$pos_info['mass']}' id='pos_mass'></td></tr>
-			<tr class='lin1'><td align='right'>Номер таможенной декларации<td><input type='text' name='ntd' value='{$pos_info['ntd']}'></td></tr>");
+			<tr class='lin0'><td align='right'>Масса
+				<br><b style='color: #f00'>Поле запланировано к уделению!
+				<br>Не заполняйте его, информация буде утеряна.<br>
+				Масса теперь задаётся в основных свойствах.</b>
+				<td><input type='text' name='mass' value='{$pos_info['mass']}' id='pos_mass'></td></tr>
+			<tr class='lin1'><td align='right'>Номер таможенной декларации
+				<br><b style='color: #f00'>Поле запланировано к уделению!
+				<br>Не заполняйте его, информация буде утеряна.<br>
+				Номер таможенной декларации задаётся при поступлении!</b>
+				<td><input type='text' name='ntd' value='{$pos_info['ntd']}'></td></tr>");
 			
 			$dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
@@ -809,60 +834,29 @@ class doc_s_Sklad {
 		}
 		// Аналоги
 		else if ($param == 'n') {
-			$peopt = request('peopt');
-			require_once("include/doc.sklad.analog.php");
-			$poseditor = new AnalogPosList($pos);
-			$poseditor->SetEditable(1);
-			if ($peopt == '') {
-				$tmpl->addContent($poseditor->Show());
-			} else {
-				$tmpl->ajax = 1;
-				if ($peopt == 'jget') {
-					$str = $poseditor->GetAllContent();
-					$tmpl->setContent($str);
-				}
-				// Получение данных наименования
-				else if ($peopt == 'jgpi') {
-					$pos = rcvint('pos');
-					$tmpl->setContent($poseditor->GetPosInfo($pos));
-				}
-				// Json вариант добавления позиции
-				else if ($peopt == 'jadd') {
-					$pe_pos = rcvint('pe_pos');
-					$tmpl->setContent($poseditor->AddPos($pe_pos));
-				}
-				// Json вариант удаления строки
-				else if ($peopt == 'jdel') {
-					$line_id = rcvint('line_id');
-					$tmpl->setContent($poseditor->Removeline($line_id));
-				}
-				// Json вариант обновления
-				else if ($peopt == 'jup') {
-					$line_id = rcvint('line_id');
-					$value = request('value');
-					$type = request('type');
-					$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
-				}
-				// Получение номенклатуры выбранной группы
-				else if ($peopt == 'jsklad') {
-					$group_id = rcvint('group_id');
-					$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
-					$tmpl->setContent($str);
-				}
-				// Поиск по подстроке по складу
-				else if ($peopt == 'jsklads') {
-					$s = request('s');
-					$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
-					$tmpl->setContent($str);
-				}
-				// Получение списка групп
-				else if($peopt=='jgetgroups')
-				{
-					$doc_content = $poseditor->getGroupList();
-					$tmpl->setContent($doc_content);
-				}
-				else throw new NotFoundException();
+			
+			$pos_info = $db->selectRow('doc_base', $pos);
+			
+			$analog_group = $pos_info['analog_group'];
+			$tmpl->addContent("<form action='' method='post'>
+			<input type='hidden' name='mode' value='esave'>
+			<input type='hidden' name='l' value='sklad'>
+			<input type='hidden' name='pos' value='$pos'>
+			<input type='hidden' name='param' value='n'>
+			Имя группы аналогов:<br>
+			<input type='text' name='analog_group' value='$analog_group'>
+			<button type='submit'>Записать</button>
+			</form>
+			<h3>Аналоги в группе</h3>
+			<table class='list'><tr><th>id</th><th>Код</th><th>Название</th><th>Производитель</th></tr>");
+			$analog_group_sql = $db->real_escape_string($analog_group);
+			$res = $db->query("SELECT `id`, `vc`, `name`, `proizv` FROM `doc_base`
+				WHERE `analog_group`='$analog_group_sql' AND `analog_group`!=''");
+			while($line = $res->fetch_assoc()) {
+				$tmpl->addContent("<tr><td>{$line['id']}</td><td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['proizv']}</td></tr>");
 			}
+			
+			$tmpl->addContent("</table>");
 		}
 		// История изменений
 		else if ($param == 'h') {
@@ -1364,6 +1358,20 @@ class doc_s_Sklad {
 				}
 			}
 			if ($log_add)	doc_log("UPDATE", "$log_add", 'pos', $pos);
+		}
+		else if ($param == 'n') {
+			if (!isAccess('list_sklad', 'edit'))
+				throw new AccessException();
+			$analog_group = request('analog_group');
+			$old_data = $db->selectRow('doc_base', $pos);
+			if($analog_group!=$old_data['analog_group']) {
+				$analog_group_sql = $db->real_escape_string($analog_group);
+				$db->query("UPDATE `doc_base` SET `analog_group`='$analog_group_sql' WHERE `id`='$pos'");
+				doc_log("UPDATE", "analog_group: {$old_data['analog_group']}=>$analog_group", 'pos', $pos);
+				$tmpl->msg("Данные сохранены", 'ok');
+			}
+			else	$tmpl->msg("Ничего не было изменено", 'info');
+				
 		}
 		else if ($param == 'i') {
 			$id = 0;
