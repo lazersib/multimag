@@ -19,239 +19,340 @@
 
 // Это временное решение для работы с комплектацией товаров
 
-function kompl_poslist($pos) {
-	global $tmpl, $db;
-	settype($pos, 'int');
-	$tmpl->addContent("<div id='poslist'><table width='100%' cellspacing='1' cellpadding='2' class='list'>
-	<tr><th align='left'>№<th>Код<th>Наименование<th>Цена<th width='80px'>Кол-во<th>Стоимость");
-	$res = $db->query("SELECT `doc_base_kompl`.`id`, `doc_base`.`name`, `doc_base`.`cost`, `doc_base_kompl`.`cnt`, `doc_base`.`proizv`, `doc_base`.`id`,
-		`doc_base`.`vc`
+include_once('include/doc.poseditor.php');
+
+/// Работа со связанными товарами.
+class KomplPosList extends PosEditor {
+
+	var $linked_pos;  ///< ID наименования, для которого формируется список связей
+
+	/// Конструктор.
+	/// @param pos_id ID наименования, для которого требуется просмотр/редактирование списка связанных наименований
+	function __construct($pos_id) {
+		parent::__construct();
+		$this->linked_pos = intval($pos_id);
+	}
+
+	/// Установить ID связанного товара
+	/// @param pos_id ID наименования, для которого требуется просмотр/редактирование списка связанных наименований
+	public function setLinkedPos($pos_id) {
+		$this->linked_pos = intval($pos_id);
+	}
+	
+	/// Загрузить список товаров. Повторно не загружает.
+	protected function loadList() {
+		global $db;
+		if(is_array($this->list))
+			return;
+		$this->list = array();
+		$res = $db->query("SELECT `doc_base_kompl`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`cost`,
+			`doc_base`.`proizv` AS `vendor`, `doc_base_kompl`.`cnt`,
+			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `sklad_cnt`
 		FROM `doc_base_kompl`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
-		WHERE `doc_base_kompl`.`pos_id`='$pos'");
-	$i = 0;
-	$ii = 1;
-	$sum = 0;
+		WHERE `doc_base_kompl`.`pos_id`='{$this->linked_pos}'");
 
-	while ($nxt = $res->fetch_array()) {
-		$nxt['cost'] = getInCost($nxt[5], 0, true);
-		$sumline = $nxt['cost'] * $nxt['cnt'];
-		$sum+=$sumline;
-		$sumline_p = sprintf("%01.2f", $sumline);
-		$cost_p = sprintf("%01.2f", $nxt['cost']);
-
-		$cl = 'lin' . $i;
-
-		$tmpl->addContent("<tr class='$cl'  align=right><td>$ii
-		<a href='' title='Удалить' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&plm=d&pos=$pos&vpos=$nxt[0]','poslist'); return false;\"><img src='/img/i_del.png' alt='Удалить'></a>
-		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&pos=$nxt[5]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a><td>".html_out($nxt['vc'])."</td>
-		<td align=left>".html_out($nxt['name'])." / ".html_out($nxt['proizv'])."<td>$cost_p
-		<td><input type=text class='tedit $cl' id='val$nxt[0]t' value='{$nxt['cnt']}' onblur=\"EditThisSave('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=cc&pos=$pos&vpos=$nxt[0]','poslist','val$nxt[0]t'); return false;\">
-		<td>$sumline_p");
-		$i = 1 - $i;
-		$ii++;
+		while ($nxt = $res->fetch_assoc())
+			$this->list[$nxt['line_id']] = $nxt;
 	}
 
-	$ii--;
-	$sum_p = sprintf("%01.2f", $sum);
-	$tmpl->addContent("</table><p align=right id=sum>Итого: $ii позиций на сумму $sum_p руб.</p></div>");
-}
+/// Показать редактор.
+/// @return HTML код редактора
+	public function Show($param, $zp) {
+		$ret="
+		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+		<script type='text/javascript' src='/css/jquery/jquery.alerts.js'></script>
+		<script src='/css/poseditor.js' type='text/javascript'></script>
+		<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
+		<link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen'>
+		<div id='poseditor_div'></div>
+		<form action='docs.php' method='post'>
+		<input type='hidden' name='mode' value='esave'>
+		<input type='hidden' name='l' value='sklad'>
+		<input type='hidden' name='pos' value='{$this->linked_pos}'>
+		<input type='hidden' name='param' value='k'>
+		Зарплата за сборку: <input type='text' name='zp' value='$zp'> руб. <button>Сохранить</button>
+		</form>
+		<div id='storeview_container'></div>";
 
-function kompl_draw_group_level($pos, $level) {
-	global $db;
-	$ret = '';
-	$res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
-	$i = 0;
-	$r = '';
-	if ($level == 0)	$r = 'IsRoot';
-	while ($nxt = $res->fetch_row()) {
-		if ($nxt[0] == 0)	continue;
-		$item = "<a href='#' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=$nxt[0]&pos=$pos','sklad'); return false;\" >"
-			.html_out($nxt[1])."</a>";
-		if ($i >= ($res->num_rows - 1))	$r.=" IsLast";
-		$tmp = kompl_draw_group_level($pos, $nxt[0]); // рекурсия
-		if ($tmp)	$ret.="<li class='Node ExpandClosed $r'><div class='Expand'></div><div class='Content'>$item</div><ul class='Container'>" . $tmp . '</ul></li>';
-		else		$ret.="<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>$item</div></li>";
-		$i++;
-	}
-	return $ret;
-}
+		$p_setup = array(
+		    'base_url'	=> '/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos='.$this->linked_pos,
+		    'editable'	=> $this->editable,
+		    'container'	=> 'poseditor_div',
+		    'store_container'	=> 'storeview_container',
+		    'fastadd_line'=> 1,		// Показывать строку быстрого подбора
+		);
 
-function kompl_groups($pos) {
-	global $tmpl;
-	$tmpl->addContent("<div onclick='tree_toggle(arguments[0])'>
-	<div><a href='#' onclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&plm=sg&group=0&pos=$pos','sklad'); return false;\">Группы</a></div>
-	<ul class='Container'>" . kompl_draw_group_level($pos, 0) . "</ul></div>
-	Или отбор:<input type=text id=sklsearch onkeydown=\"DelayedSave('/docs.php?mode=srv&opt=ep&param=k&pos=$pos','sklad', 'sklsearch'); return true;\">");
-}
-
-function kompl_sklad($pos, $group, $sklad = 1) {
-	global $tmpl;
-	$s = request('s');
-	if ($s)	kompl_ViewSkladS($pos, $group, $s);
-	else	kompl_ViewSklad($pos, $group);
-}
-
-function kompl_ViewSklad($pos, $group) {
-	global $tmpl, $CONFIG, $db;
-	settype($group, 'int');
-	settype($pos, 'int');
-	switch (@$CONFIG['doc']['sklad_default_order']) {
-		case 'vc': $order = '`doc_base`.`vc`';
-			break;
-		case 'cost': $order = '`doc_base`.`cost`';
-			break;
-		default: $order = '`doc_base`.`name`';
-	}
-	$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
-	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
-	`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` , (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`
-	FROM `doc_base`
-	LEFT JOIN `doc_base_cnt`  ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
-	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base`.`group`='$group'
-	ORDER BY $order";
-
-	$lim = 50;
-	$page = rcvint('p');
-	$res = $db->query($sql);
-	$row = $res->num_rows;
-	if ($row > $lim) {
-		if ($page < 1)	$page = 1;
-		if ($page > 1) {
-			$i = $page - 1;
-			$tmpl->addContent("<a href='' onclick=\"EditThis('docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=$group&pos=$pos&amp;p=$i','sklad'); return false;\">&lt;&lt;</a> ");
+		$cols = array();
+		$col_names = array();
+		if($this->show_vc) {
+			$cols[] = 'vc';
+			$col_names[] = 'Код';
 		}
-		$cp = $row / $lim;
-		for ($i = 1; $i < ($cp + 1); $i++) {
-			if ($i == $page)$tmpl->addContent(" <b>$i</b> ");
-			else		$tmpl->addContent("<a href='' onclick=\"EditThis('docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=$group&pos=$pos&amp;p=$i','sklad'); return false;\">$i</a> ");
-		}
-		if ($page < $cp) {
-			$i = $page + 1;
-			$tmpl->addContent("<a href='' onclick=\"EditThis('docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=sg&group=$group&pos=$pos&amp;p=$i','sklad'); return false;\">&gt;&gt;</a> ");
-		}
-		$tmpl->addContent("<br>");
-		$sl = ($page - 1) * $lim;
-		$res->data_seek($sl);
-	}
+		$cols[] = 'name';
+		$col_names[] = 'Наименование';
+		$cols[] = 'price';
+		$col_names[] = 'Цена';
+		$cols[] = 'cnt';
+		$col_names[] = 'Кол-во';
+		$cols[] = 'sum';
+		$col_names[] = 'Стоимость';
+		$cols[] = 'store_cnt';
+		$col_names[] = 'Остаток';
 
-	if ($row) {
-		$tmpl->addContent("<table width=100% cellspacing=1 cellpadding=2><tr>
-		<th>№</th><th>Код</th><th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>Р.цена, р.</th><th>Аналог</th>
-		<th>Тип</th><th>d</th><th>D</th><th>B</th><th>Масса</th><th><img src='/img/i_lock.png' alt='В резерве'></th>
-		<th><img src='/img/i_alert.png' alt='Под заказ'></th><th><img src='/img/i_truck.png' alt='В пути'></th><th>Склад</th><th>Всего</th>
-		<th>Место</th></tr>");
-		kompl_DrawSkladTable($res, '', $pos);
-		$tmpl->addContent("</table><a href='/docs.php?mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
-	}
-	else	$tmpl->msg("В выбранной группе товаров не найдено!");
-}
+		$p_setup['columns'] = $cols;
+		$p_setup['col_names'] = $col_names;
 
-function kompl_ViewSkladS($pos, $group, $s) {
-	global $tmpl, $CONFIG, $db;
-	$sf = 0;
-	$tmpl->ajax = 1;
-	$tmpl->setContent("<b>Показаны наименования изо всех групп!</b><br>");
-	$tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'><tr>
-	<th>№<th>Код<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>Р.цена, р.<th>Аналог<th>Тип<th>d<th>D<th>B
-	<th>Масса<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'><th>Склад<th>Всего<th>Место");
-	switch (@$CONFIG['doc']['sklad_default_order']) {
-		case 'vc': $order = '`doc_base`.`vc`';
-			break;
-		case 'cost': $order = '`doc_base`.`cost`';
-			break;
-		default: $order = '`doc_base`.`name`';
-	}
-	$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`cost`, `doc_base`.`cost_date`,
-		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-		`doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-		(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`vc`";
-	$s_sql = $db->real_escape_string($s);
-	$sqla = $sql . "FROM `doc_base`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
-	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ORDER BY $order LIMIT 100";
-	$res = $db->query($sqla);
-	if ($res->num_rows) {
-		$tmpl->addContent("<tr class=lin0><th colspan=19 align=center>Поиск по названию, начинающемуся на ".html_out($s).": найдено {$res->num_rows}");
-		kompl_DrawSkladTable($res, $s, $pos);
-		$sf = 1;
-	}
-
-	$sqla = $sql . "FROM `doc_base`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
-	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`vc` NOT LIKE '$s_sql%' ORDER BY $order LIMIT 30";
-	$res = $db->query($sqla);
-	if ($res->num_rows) {
-		$tmpl->addContent("<tr class=lin0><th colspan=19 align=center>Поиск по названию, содержащему ".html_out($s).": найдено {$res->num_rows}");
-		kompl_DrawSkladTable($res, $s, $pos);
-		$sf = 1;
-	}
-
-	$sqla = $sql . "FROM `doc_base`
-	LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='0'
-	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-	WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' AND `doc_base`.`vc` NOT LIKE '%$s%' ORDER BY $order LIMIT 30";
-	$res = $db->query($sqla);
-	if ($res->num_rows) {
-		$tmpl->addContent("<tr class=lin0><th colspan=19 align=center>Поиск аналога, для ".html_out($s).": найдено {$res->num_rows}");
-		kompl_DrawSkladTable($res, $s, $pos);
-		$sf = 1;
-	}
-
-	$tmpl->addContent("</table><a href='/docs.php?mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a>");
-
-	if ($sf == 0)	$tmpl->msg("По данным критериям товаров не найдено!");
-}
-
-function kompl_DrawSkladTable($res, $s, $pos) {
-	global $tmpl, $dop_data;
-	$i = 0;
-	$pc = PriceCalc::getInstance();
-	while ($nxt = $res->fetch_row()) {
-		$rezerv = DocRezerv($nxt[0], 0);
-		$pod_zakaz = DocPodZakaz($nxt[0], 0);
-		$v_puti = DocVPuti($nxt[0], 0);
-
-		if ($rezerv)
-			$rezerv = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$rezerv</a>";
-
-		if ($pod_zakaz)
-			$pod_zakaz = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$pod_zakaz</a>";
-
-		if ($v_puti)
-			$v_puti = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$v_puti</a>";
-		// Дата цены $nxt[5]
-		$dcc = strtotime($nxt[6]);
-		$cc = "";
-		if ($dcc > (time() - 60 * 60 * 24 * 30 * 3))
-			$cc = "class=f_green";
-		else if ($dcc > (time() - 60 * 60 * 24 * 30 * 6))
-			$cc = "class=f_purple";
-		else if ($dcc > (time() - 60 * 60 * 24 * 30 * 9))
-			$cc = "class=f_brown";
-		else if ($dcc > (time() - 60 * 60 * 24 * 30 * 12))
-			$cc = "class=f_more";
+		if($this->show_vc)
+			$p_setup['store_columns'] = array(
+			    'vc', 'name', 'vendor', 'price', 'liquidity'
+			);
+		else	$p_setup['store_columns'] = array(
+			    'name', 'vendor', 'price', 'liquidity'
+			);
 		
-		$end = date("Y-m-d");
-		$nxt[17] = SearchHilight(html_out($nxt[17]), $s);
-		$nxt[2] = SearchHilight(html_out($nxt[2]), $s);
-		$nxt[8] = SearchHilight(html_out($nxt[8]), $s);
-		$i = 1 - $i;
-		if($dop_data['cena']) {
-			$cost_p = $pc->getPosSelectedPriceValue($nxt[0], $dop_data['cena']);
+		if($this->show_tdb) {
+			$p_setup['store_columns'][] = 'type';
+			$p_setup['store_columns'][] = 'd_int';
+			$p_setup['store_columns'][] = 'd_ext';
+			$p_setup['store_columns'][] = 'size';
+			$p_setup['store_columns'][] = 'mass';
 		}
-		else	$cost_p = $nxt[5];
-		$cost_r = sprintf("%0.2f", $nxt[7]);
 
-		$tmpl->addContent("<tr class='lin$i pointer'
-		ondblclick=\"EditThis('/docs.php?l=sklad&mode=srv&opt=ep&param=k&pos=1&plm=pos&pos=$pos&vpos=$nxt[0]','poslist'); return false;\">
-		<td>$nxt[0]
-		<a href='' onclick=\"ShowContextMenu('/docs.php?mode=srv&opt=menu&doc=0&pos=$nxt[0]'); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a>
-		<td>$nxt[17]<td align=left>$nxt[2]<td>$nxt[3]<td $cc>$cost_p<td>$nxt[4]%<td>$cost_r<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>$nxt[12]<td>$nxt[13]<td>$rezerv<td>$pod_zakaz<td>$v_puti<td>$nxt[15]<td>$nxt[16]<td>$nxt[14]");
+		if($this->show_rto) {
+			$p_setup['store_columns'][] = 'transit';
+			$p_setup['store_columns'][] = 'reserve';
+			$p_setup['store_columns'][] = 'offer';
+		}
+
+		$p_setup['store_columns'][] = 'allcnt';
+
+		$ret.="<script type=\"text/javascript\">
+		var poslist = PosEditorInit(".json_encode($p_setup, JSON_UNESCAPED_UNICODE).");
+		</script>";
+
+		return $ret;
 	}
-}
+
+/// Получить список наименований, связанных с выбранным наименованием.
+/// @return json-строка с данными о наименованиях
+	function GetAllContent() {
+		global $CONFIG;
+		$this->loadList();
+
+		$pos_array = array();
+		foreach ($this->list as $nxt) {
+
+			if(! @$CONFIG['doc']['no_print_vendor'])
+				$nxt['name'].=' - '.$nxt['vendor'];
+			$pos_array[] = $nxt;
+		}
+
+		$ret_data = array (
+		    'response'	=> 'loadlist',
+		    'content'	=> $pos_array,
+		    'sum'	=> 0,
+		);
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+	}
+	
+	/// Получить информацию о наименовании
+	function GetPosInfo($pos) {
+		global $db, $CONFIG;
+
+		$res = $db->query("SELECT `doc_base_links`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
+			`doc_base`.`proizv` AS `vendor`, `doc_base`.`cost`, `doc_base`.`bulkcnt`, `doc_base`.`group`, 1 AS `cnt`,
+			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `sklad_cnt`
+			FROM `doc_base`
+			LEFT JOIN `doc_base_links` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
+			WHERE `doc_base`.`id`='$pos'");
+
+		$ret = '';
+		if ($res->num_rows) {
+			$nxt = $res->fetch_assoc();
+			
+			if(! @$CONFIG['doc']['no_print_vendor'])
+				$nxt['name'].=' - '.$nxt['vendor'];
+			
+			$ret = "{response: 3, data:".json_encode($nxt, JSON_UNESCAPED_UNICODE)."}";
+		}
+
+		return $ret;
+	}
+
+	/// Добавляет указанную складскую позицию в список
+	function AddPos($pos) {
+		global $db;
+		settype($pos, 'int');
+		$cnt = rcvrounded('cnt', 5);
+		$ret_data = array();
+		$this->loadList();
+		if (!$pos)		throw new Exception("ID позиции не задан!");
+		if($cnt<=0)	throw new Exception("Количество должно быть положительным!");
+		if($pos==$this->linked_pos) {
+			$ret_data['response'] = 'err';
+			$ret_data['message'] = "Нельзя добавить себя!";
+			return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+		}
+		
+		$res = $db->query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='{$this->linked_pos}' AND `kompl_id`='$pos'");
+		if ($res->num_rows == 0) {
+			$line_id = $db->insertA('doc_base_kompl', array('pos_id'=>$this->linked_pos, 'kompl_id'=>$pos, 'cnt'=>$cnt) );
+			doc_log("UPDATE komplekt", "add kompl: pos_id:$pos, cnt:$cnt", 'pos', $this->linked_pos);
+			
+			$res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, $cnt AS `cnt`,
+				`doc_base`.`cost`,
+				(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `sklad_cnt`
+				FROM `doc_base`
+				WHERE `doc_base`.`id`='$pos'");
+			$line = $res->fetch_assoc();
+			$line['line_id'] = $line_id;
+			$ret_data['response'] = 'add';
+			$ret_data['line'] = $line;
+		}
+		else {
+			$ret_data['response'] = 'err';
+			$ret_data['message'] = "Уже есть в списке!";
+		}
+		
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+	}
+	
+	/// Обновить строку документа с указанным ID
+	/// @param $line_id id строки
+	/// @param $type Идентификатор колонки
+	/// @param $value Записываемое значение
+	function UpdateLine($line_id, $type, $value) {
+		global $db;
+		$this->loadList();
+		// Тут надо removeline!
+		if(!isset($this->list[$line_id]))
+			throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+
+		$ret_data = array (
+			'response'	=> 'update'
+		);
+
+		if($type == 'cnt' && $value != $this->list[$line_id]['cnt']) {
+			if($value <= 0) $value = 1;
+			$value = round($value, 4);
+
+			$old_cnt = $this->list[$line_id]['cnt'];
+			$db->update('doc_base_kompl', $line_id, 'cnt', $value);
+			$this->list[$line_id]['cnt'] = $value;
+		
+			doc_log("UPDATE","change kompl cnt: pos:{$this->list[$line_id]['pos_id']}, line_id:$line_id, cnt:$old_cnt => $value",'pos',$this->linked_pos);
+		}
+		else if($type=='sum' && $value!=($this->list[$line_id]['cost']*$this->list[$line_id]['cnt'])) {
+			if($value <= 0) $value = 1;
+			$value = round($value/$this->list[$line_id]['cost'], 5);
+			$db->update('doc_base_kompl', $line_id, 'cnt', $value);
+			$old_cnt = $this->list[$line_id]['cnt'];
+			$this->list[$line_id]['cnt'] = $value;
+			doc_log("UPDATE","change kompl cnt: pos:{$this->list[$line_id]['pos_id']}, line_id:$line_id, cnt:$old_cnt => $value",'pos',$this->linked_pos);
+		}
+		
+		$ret_data['update_line'] = $this->list[$line_id];
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+	}
+	
+	/// Удалить из списка строку с указанным ID
+	function RemoveLine($line_id) {
+		global $db;
+		$this->loadList();
+		if(array_key_exists($line_id, $this->list)) {
+			$db->delete('doc_base_kompl', $line_id);
+			doc_log("UPDATE","del komplekt: pos: {$this->list[$line_id]['pos_id']}, line_id:$line_id, name:{$this->list[$line_id]['name']}", 'pos', $this->linked_pos);
+			unset($this->list[$line_id]);
+		}
+
+		$ret_data = array (
+		    'response'	=> '5',
+		    'remove'	=> array('line_id'=>$line_id),
+		);
+		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+	}
+
+	/// Получить список номенклатуры заданной группы
+	function GetSkladList($group) {
+		global $db;
+		settype($group, 'int');
+		$sql = "SELECT `doc_base`.`id`,`doc_base`.`vc`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
+			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
+			`doc_base`.`cost_date`,	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
+			`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
+			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`
+			FROM `doc_base`
+			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+			WHERE `doc_base`.`group`='$group'
+			ORDER BY `doc_base`.`name`";
+		$res = $db->query($sql);
+		return $this->FormatResult($res);
+	}
+
+/// Получить список номенклатуры, содержащей в названии заданную строку
+	function SearchSkladList($s) {
+		global $db;
+		$ret = '';
+		$sql = "SELECT `doc_base`.`id`,`doc_base`.`vc`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
+			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
+			`doc_base`.`cost_date`, `doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
+			`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`";
+		$s_sql = $db->real_escape_string($s);
+		$sqla = $sql . "FROM `doc_base`
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+			WHERE `doc_base`.`name` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s_sql%' ORDER BY `doc_base`.`name` LIMIT 200";
+		$res = $db->query($sqla);
+		if ($res->num_rows) {
+			if ($ret != '')
+				$ret.=', ';
+			$ret.="{id: 'header', name: 'Поиск по названию, начинающемуся на $s - {$res->num_rows} наименований найдено'}";
+			$ret = $this->FormatResult($res, $ret);
+		}
+		$sqla = $sql . "FROM `doc_base`
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+			WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`name` NOT LIKE '$s_sql%'
+			AND `doc_base`.`vc` NOT LIKE '$s_sql%' ORDER BY `doc_base`.`name` LIMIT 100";
+		$res = $db->query($sqla);
+		if ($res->num_rows) {
+			if ($ret != '')
+				$ret.=', ';
+			$ret.="{id: 'header', name: 'Поиск по названию, содержащему $s - {$res->num_rows} наименований найдено'}";
+			$ret = $this->FormatResult($res, $ret);
+		}
+		$sqla = $sql . "FROM `doc_base`
+			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+			WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' AND `doc_base`.`vc` NOT LIKE '%$s%'
+			ORDER BY `doc_base`.`name` LIMIT 100";
+		$res = $db->query($sqla);
+		if ($res->num_rows) {
+			if ($ret != '')
+				$ret.=', ';
+			$ret.="{id: 'header', name: 'Поиск по аналогу($s) - {$res->num_rows} наименований найдено'}";
+			$ret = $this->FormatResult($res, $ret);
+		}
+		return $ret;
+	}
+
+	
+	protected function FormatResult($res, $ret = '') {
+		if ($res->num_rows) {
+			$pc = PriceCalc::getInstance();
+			while ($nxt = $res->fetch_assoc()) {				
+				$nxt['price'] = $pc->getPosDefaultPriceValue($nxt['id']);
+				
+				if ($ret != '')
+					$ret.=', ';
+
+				$ret .= json_encode($nxt, JSON_UNESCAPED_UNICODE);
+			}
+		}
+		return $ret;
+	}
+};
 
 ?>

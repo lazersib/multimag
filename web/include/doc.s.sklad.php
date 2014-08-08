@@ -692,88 +692,156 @@ class doc_s_Sklad {
 		}
 		// Комплектующие
 		else if ($param == 'k') {
-			$plm = request('plm');
-			include_once("include/doc.sklad.kompl.php");
-			if ($plm == '') {
+			$peopt = request('peopt');
+			require_once("include/doc.sklad.kompl.php");
+			$poseditor = new KomplPosList($pos);
+			$poseditor->SetEditable(1);
+			if ($peopt == '') {
 				$res = $db->query("SELECT `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
 				 WHERE `doc_base_params`.`param`='ZP'");
 				if($res->num_rows)
 					list($zp) = $res->fetch_row();
 				else	$zp='';
-
-				kompl_poslist($pos);
-				$tmpl->addContent("
-				<script type=\"text/javascript\">
-				window.document.onkeydown = OnEnterBlur;
-				</script>
-				<form action='docs.php' method='post'>
-				<input type='hidden' name='mode' value='esave'>
-				<input type='hidden' name='l' value='sklad'>
-				<input type='hidden' name='pos' value='$pos'>
-				<input type='hidden' name='param' value='k'>
-				Зарплата за сборку: <input type='text' name='zp' value='$zp'> руб. <button>Сохранить</button>
-				</form>
-				<table width=100% id='sklad_editor'>
-				<tr><td id='groups' width=200 valign='top' class='lin0>'");
-				kompl_groups($pos);
-				$tmpl->addContent("<td id='sklad' valign='top' class='lin1'>");
-				kompl_sklad($pos, 0);
-				$tmpl->addContent("</table>");
-			}
-			else if ($plm == 'sg') {
+				$tmpl->addContent($poseditor->Show('', $zp));
+			} else {
 				$tmpl->ajax = 1;
-				$tmpl->setContent('');
-				$group = rcvint('group');
-				kompl_sklad($pos, $group);
-			} else if ($plm == 'pos') {
-				$tmpl->ajax = 1;
-				$tmpl->setContent('');
-				$vpos = rcvint('vpos');
-				if (!isAccess('list_sklad', 'edit'))
-					throw new AccessException();
-				$res = $db->query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
-				if ($res->num_rows == 0) {
-					$db->query("INSERT INTO `doc_base_kompl` (`pos_id`,`kompl_id`,`cnt`) VALUES ('$pos','$vpos','1')");
-					doc_log("UPDATE komplekt", "add kompl: pos_id:$vpos", 'pos', $pos);
+				if ($peopt == 'jget') {
+					$str = $poseditor->GetAllContent();
+					$tmpl->setContent($str);
 				}
-				else {
-					$nxt = $res->fetch_row();
-					$db->query("UPDATE `doc_base_kompl` SET `cnt`=`cnt`+'1' WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
-					doc_log("UPDATE komplekt", "change cnt: kompl_id:$nxt[1], cnt:$nxt[2]+1", 'pos', $nxt[1]);
+				// Получение данных наименования
+				else if ($peopt == 'jgpi') {
+					$pos = rcvint('pos');
+					$tmpl->setContent($poseditor->GetPosInfo($pos));
 				}
-
-				kompl_poslist($pos);
-			}
-			else if ($plm == 'cc') {
-				$tmpl->ajax = 1;
-				$tmpl->setContent('');
-				$s = rcvrounded('s', 6);
-				$vpos = rcvint('vpos');
-				if ($s <= 0)	$s = 1;
-				$res = $db->query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
-				if (!$res->num_rows)
-					throw new Exception("Строка $vpos не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-				$nxt = $res->fetch_row();
-				if ($s != $nxt[1]) {
-					$res = $db->query("UPDATE `doc_base_kompl` SET `cnt`='$s' WHERE `pos_id`='$pos' AND `id`='$vpos'");
-					kompl_poslist($pos);
-					doc_log("UPDATE komplekt", "change cnt: kompl_id:$nxt[1], cnt:$nxt[1] => $s", 'pos', $nxt[1]);
+				// Json вариант добавления позиции
+				else if ($peopt == 'jadd') {
+					if (!isAccess('list_sklad', 'edit'))
+						throw new AccessException();
+					$pe_pos = rcvint('pe_pos');
+					$tmpl->setContent($poseditor->AddPos($pe_pos));
 				}
-				else	kompl_poslist($pos);
+				// Json вариант удаления строки
+				else if ($peopt == 'jdel') {
+					if (!isAccess('list_sklad', 'edit'))
+						throw new AccessException();
+					$line_id = rcvint('line_id');
+					$tmpl->setContent($poseditor->Removeline($line_id));
+				}
+				// Json вариант обновления
+				else if ($peopt == 'jup') {
+					if (!isAccess('list_sklad', 'edit'))
+						throw new AccessException();
+					$line_id = rcvint('line_id');
+					$value = request('value');
+					$type = request('type');
+					$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
+				}
+				// Получение номенклатуры выбранной группы
+				else if ($peopt == 'jsklad') {
+					$group_id = rcvint('group_id');
+					$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
+					$tmpl->setContent($str);
+				}
+				// Поиск по подстроке по складу
+				else if ($peopt == 'jsklads') {
+					$s = request('s');
+					$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
+					$tmpl->setContent($str);
+				}
+				// Получение списка групп
+				else if($peopt=='jgetgroups')
+				{
+					$doc_content = $poseditor->getGroupList();
+					$tmpl->setContent($doc_content);
+				}
+				else throw new NotFoundException();
 			}
-			else if ($plm == 'd') {
-				$tmpl->ajax = 1;
-				$tmpl->setContent('');
-				$vpos = rcvint('vpos');
-				$res = $db->query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
-				if (!$res->num_rows)
-					throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-				$nxt = $res->fetch_row();
-				$db->delete('doc_base_kompl', $vpos);
-				doc_log("UPDATE komplekt", "del kompl: kompl_id:$nxt[0], doc_list_pos:$pos, cnt:$nxt[1], cost:$nxt[2]", 'pos', $pos);
-				kompl_poslist($pos);
-			}
+			
+			
+//			$plm = request('plm');
+//			include_once("include/doc.sklad.kompl.php");
+//			if ($plm == '') {
+//				$res = $db->query("SELECT `doc_base_values`.`value` FROM `doc_base_params`
+//				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
+//				 WHERE `doc_base_params`.`param`='ZP'");
+//				if($res->num_rows)
+//					list($zp) = $res->fetch_row();
+//				else	$zp='';
+//
+//				kompl_poslist($pos);
+//				$tmpl->addContent("
+//				<script type=\"text/javascript\">
+//				window.document.onkeydown = OnEnterBlur;
+//				</script>
+//				<form action='docs.php' method='post'>
+//				<input type='hidden' name='mode' value='esave'>
+//				<input type='hidden' name='l' value='sklad'>
+//				<input type='hidden' name='pos' value='$pos'>
+//				<input type='hidden' name='param' value='k'>
+//				Зарплата за сборку: <input type='text' name='zp' value='$zp'> руб. <button>Сохранить</button>
+//				</form>
+//				<table width=100% id='sklad_editor'>
+//				<tr><td id='groups' width=200 valign='top' class='lin0>'");
+//				kompl_groups($pos);
+//				$tmpl->addContent("<td id='sklad' valign='top' class='lin1'>");
+//				kompl_sklad($pos, 0);
+//				$tmpl->addContent("</table>");
+//			}
+//			else if ($plm == 'sg') {
+//				$tmpl->ajax = 1;
+//				$tmpl->setContent('');
+//				$group = rcvint('group');
+//				kompl_sklad($pos, $group);
+//			} else if ($plm == 'pos') {
+//				$tmpl->ajax = 1;
+//				$tmpl->setContent('');
+//				$vpos = rcvint('vpos');
+//				if (!isAccess('list_sklad', 'edit'))
+//					throw new AccessException();
+//				$res = $db->query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
+//				if ($res->num_rows == 0) {
+//					$db->query("INSERT INTO `doc_base_kompl` (`pos_id`,`kompl_id`,`cnt`) VALUES ('$pos','$vpos','1')");
+//					doc_log("UPDATE komplekt", "add kompl: pos_id:$vpos", 'pos', $pos);
+//				}
+//				else {
+//					$nxt = $res->fetch_row();
+//					$db->query("UPDATE `doc_base_kompl` SET `cnt`=`cnt`+'1' WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
+//					doc_log("UPDATE komplekt", "change cnt: kompl_id:$nxt[1], cnt:$nxt[2]+1", 'pos', $nxt[1]);
+//				}
+//
+//				kompl_poslist($pos);
+//			}
+//			else if ($plm == 'cc') {
+//				$tmpl->ajax = 1;
+//				$tmpl->setContent('');
+//				$s = rcvrounded('s', 6);
+//				$vpos = rcvint('vpos');
+//				if ($s <= 0)	$s = 1;
+//				$res = $db->query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
+//				if (!$res->num_rows)
+//					throw new Exception("Строка $vpos не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+//				$nxt = $res->fetch_row();
+//				if ($s != $nxt[1]) {
+//					$res = $db->query("UPDATE `doc_base_kompl` SET `cnt`='$s' WHERE `pos_id`='$pos' AND `id`='$vpos'");
+//					kompl_poslist($pos);
+//					doc_log("UPDATE komplekt", "change cnt: kompl_id:$nxt[1], cnt:$nxt[1] => $s", 'pos', $nxt[1]);
+//				}
+//				else	kompl_poslist($pos);
+//			}
+//			else if ($plm == 'd') {
+//				$tmpl->ajax = 1;
+//				$tmpl->setContent('');
+//				$vpos = rcvint('vpos');
+//				$res = $db->query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
+//				if (!$res->num_rows)
+//					throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
+//				$nxt = $res->fetch_row();
+//				$db->delete('doc_base_kompl', $vpos);
+//				doc_log("UPDATE komplekt", "del kompl: kompl_id:$nxt[0], doc_list_pos:$pos, cnt:$nxt[1], cost:$nxt[2]", 'pos', $pos);
+//				kompl_poslist($pos);
+//			}
 		}
 		// Связанные товары
 		else if ($param == 'l') {
@@ -796,16 +864,22 @@ class doc_s_Sklad {
 				}
 				// Json вариант добавления позиции
 				else if ($peopt == 'jadd') {
+					if (!isAccess('list_sklad', 'edit'))
+						throw new AccessException();
 					$pe_pos = rcvint('pe_pos');
 					$tmpl->setContent($poseditor->AddPos($pe_pos));
 				}
 				// Json вариант удаления строки
 				else if ($peopt == 'jdel') {
+					if (!isAccess('list_sklad', 'edit'))
+						throw new AccessException();
 					$line_id = rcvint('line_id');
 					$tmpl->setContent($poseditor->Removeline($line_id));
 				}
 				// Json вариант обновления
 				else if ($peopt == 'jup') {
+					if (!isAccess('list_sklad', 'edit'))
+						throw new AccessException();
 					$line_id = rcvint('line_id');
 					$value = request('value');
 					$type = request('type');

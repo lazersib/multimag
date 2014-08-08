@@ -521,9 +521,9 @@ function RemoveLine($line_id)
 }
 
 /// Обновить строку документа с указанным ID
-/// @param line_id id строки
-/// @param type Идентификатор колонки
-/// @param value Записываемое значение
+/// @param $line_id id строки
+/// @param $type Идентификатор колонки
+/// @param $value Записываемое значение
 function UpdateLine($line_id, $type, $value) {
 	global $db;
 	$this->loadList();
@@ -567,7 +567,7 @@ function UpdateLine($line_id, $type, $value) {
 		doc_log("UPDATE","change cnt: pos:{$this->list[$line_id]['pos_id']}, line_id:$line_id, cnt:$old_cnt => $value",'doc',$this->doc);
 		$this->updateDocSum();
 	}
-	else if($type=='cost' && $value != $this->list[$line_id]['comm'] && $this->cost_id) {
+	else if($type=='cost' && $value != $this->list[$line_id]['cost'] && $this->cost_id) {
 		if($value <= 0) $value = 1;
 		$db->update('doc_list_pos', $line_id, 'cost', $value);
 		

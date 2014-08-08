@@ -90,6 +90,9 @@ function PosEditorInit(poslist_setup) {
 				case 'store_cnt':
 					th.style.width='80px';
 					break;
+				case 'vc':
+					th.style.width='140px';
+					break;
 			}
 		}
 		poslist.appendChild(poslist.head);
