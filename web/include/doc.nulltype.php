@@ -1148,10 +1148,10 @@ class doc_Nulltype
 	}
 
 	/// Служебные опции
-	function _Service($peopt, $pos)
+	function _Service($opt, $pos)
 	{
 		global $tmpl, $uid, $db;
-		
+
 		$tmpl->ajax = 1;
 		$doc = $this->doc;
 		
@@ -1180,7 +1180,7 @@ class doc_Nulltype
 				$tmpl->addContent($doc_content);
 			}
 			// Снять пометку на удаление
-			else if($peopt=='jundeldoc')
+			else if($opt=='jundeldoc')
 			{
 				try
 				{
@@ -1257,7 +1257,7 @@ class doc_Nulltype
 				$by = request('by');
 				$poseditor->reOrder($by);
 			}
-			else if($peopt=='jdeldoc')
+			else if($opt=='jdeldoc')
 			{
 				try
 				{
@@ -1279,24 +1279,7 @@ class doc_Nulltype
 					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
 				}
 			}
-			// Не-json обработчики
-			// Серийный номер
-			else if($peopt=='sn')
-			{
-				if($this->doc_type==1)		$column='prix_list_pos';
-				else if($this->doc_type==2)	$column='rasx_list_pos';
-				else				throw new Exception("В данном документе серийные номера не используются!");
-				$res = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='$pos'");
-				$tmpl->addContent("<div style='width: 300px; height: 200px; border: 1px solid #ccc; overflow: auto;'><table width='100%' id='sn_list'>
-				<tr><td style='width: 20px'><td>");
-				while($nxt=$res->fetch_row())
-				{
-					$tmpl->addContent("<tr id='snl$nxt[0]'><td><img src='/img/i_del.png' alt='Удалить'><td>$nxt[1]");
-				}
-				$tmpl->addContent("</table></div>
-				<input type='text' name='sn' id='sn'><button type='button' onclick='DocSnAdd($doc,$pos);'>&gt;&gt;</button>");
-			}
-			else return 0;
+			else throw new NotFoundException('Параметр не найден!');
 			return 1;
 		}
 		else $tmpl->msg("Недостаточно привилегий для $uid выполнения операции над $object!","err");

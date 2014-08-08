@@ -85,7 +85,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 
 		if( $pos!=0 )	$this->PosMenu($pos, $param);
 		
-		if($param == '') {
+		if($param == 'a') {
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `seekdata`.`sql`, `seekdata`.`regex`,
 				`seekdata`.`regex_neg`
 				FROM `doc_base`
@@ -355,14 +355,14 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 	}
 	
 	function DrawSkladTable($res, $s = '', $limit = 1000000) {
-		global $tmpl;
+		global $tmpl, $CONFIG;
 		$i = $c = 0;
 		$old_id = $old_cost = 0;
 		$lin = $old_name = '';
 		while ($nxt = $res->fetch_row()) {
-			$rezerv = $CONFIG['poseditor']['rto'] ? DocRezerv($nxt[0], $doc) : '';
-			$pod_zakaz = $CONFIG['poseditor']['rto'] ? DocPodZakaz($nxt[0], $doc) : '';
-			$v_puti = $CONFIG['poseditor']['rto'] ? DocVPuti($nxt[0], $doc) : '';
+			$rezerv = $CONFIG['poseditor']['rto'] ? DocRezerv($nxt[0]) : '';
+			$pod_zakaz = $CONFIG['poseditor']['rto'] ? DocPodZakaz($nxt[0]) : '';
+			$v_puti = $CONFIG['poseditor']['rto'] ? DocVPuti($nxt[0]) : '';
 
 			if ($rezerv)
 				$rezerv = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$rezerv</a>";
@@ -387,7 +387,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 			if ($nxt[0] != $old_id) {
 				$i = 1 - $i;
 				if ($old_id)
-					$tmpl->addContent("<tr><td rowspan='$c'><a href='/docs.php?mode=srv&amp;l=pran&amp;opt=ep&amp;pos=$old_id'>$old_id</a></td><td align='left' rowspan='$c'>".html_out($old_name)."</td><td rowspan='$c'>$old_cost $lin");
+					$tmpl->addContent("<tr><td rowspan='$c'><a href='/docs.php?mode=srv&amp;l=pran&amp;opt=ep&amp;param=a&amp;pos=$old_id'>$old_id</a></td><td align='left' rowspan='$c'>".html_out($old_name)."</td><td rowspan='$c'>$old_cost $lin");
 				$old_id = $nxt[0];
 				$old_cost = $nxt[2];
 				$lin = '';

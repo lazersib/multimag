@@ -807,6 +807,63 @@ class doc_s_Sklad {
 				else throw new NotFoundException();
 			}
 		}
+		// Аналоги
+		else if ($param == 'n') {
+			$peopt = request('peopt');
+			require_once("include/doc.sklad.analog.php");
+			$poseditor = new AnalogPosList($pos);
+			$poseditor->SetEditable(1);
+			if ($peopt == '') {
+				$tmpl->addContent($poseditor->Show());
+			} else {
+				$tmpl->ajax = 1;
+				if ($peopt == 'jget') {
+					$str = $poseditor->GetAllContent();
+					$tmpl->setContent($str);
+				}
+				// Получение данных наименования
+				else if ($peopt == 'jgpi') {
+					$pos = rcvint('pos');
+					$tmpl->setContent($poseditor->GetPosInfo($pos));
+				}
+				// Json вариант добавления позиции
+				else if ($peopt == 'jadd') {
+					$pe_pos = rcvint('pe_pos');
+					$tmpl->setContent($poseditor->AddPos($pe_pos));
+				}
+				// Json вариант удаления строки
+				else if ($peopt == 'jdel') {
+					$line_id = rcvint('line_id');
+					$tmpl->setContent($poseditor->Removeline($line_id));
+				}
+				// Json вариант обновления
+				else if ($peopt == 'jup') {
+					$line_id = rcvint('line_id');
+					$value = request('value');
+					$type = request('type');
+					$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
+				}
+				// Получение номенклатуры выбранной группы
+				else if ($peopt == 'jsklad') {
+					$group_id = rcvint('group_id');
+					$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
+					$tmpl->setContent($str);
+				}
+				// Поиск по подстроке по складу
+				else if ($peopt == 'jsklads') {
+					$s = request('s');
+					$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
+					$tmpl->setContent($str);
+				}
+				// Получение списка групп
+				else if($peopt=='jgetgroups')
+				{
+					$doc_content = $poseditor->getGroupList();
+					$tmpl->setContent($doc_content);
+				}
+				else throw new NotFoundException();
+			}
+		}
 		// История изменений
 		else if ($param == 'h') {
 			$res = $db->query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
@@ -2252,7 +2309,7 @@ class doc_s_Sklad {
 	function PosMenu($pos, $param) {
 		global $tmpl, $CONFIG, $db;
 		settype($pos, 'int');
-		$sel = array('v' => '', 'd' => '', 'a' => '', 's' => '', 'i' => '', 'c' => '', 'k' => '', 'l' => '', 'h' => '', 'y' => '');
+		$sel = array('v' => '', 'd' => '', 'a' => '', 's' => '', 'i' => '', 'c' => '', 'k' => '', 'l' => '', 'n'=>'', 'h' => '', 'y' => '');
 		if ($param == '')
 			$param = 'v';
 		$sel[$param] = "class='selected'";
@@ -2271,12 +2328,13 @@ class doc_s_Sklad {
 		<ul class='tabs'>
 		<li><a {$sel['v']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Основные</a></li>
 		<li><a {$sel['d']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=d&amp;pos=$pos'>Дополнительные</a></li>
-		<li><a {$sel['a']} href='/docs.php?l=pran&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Анализатор</a></li>
-		<li><a {$sel['s']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=s&amp;pos=$pos'>Состояние складов</a></li>
+		<li><a {$sel['s']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=s&amp;pos=$pos'>Склады</a></li>
 		<li><a {$sel['i']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=i&amp;pos=$pos'>Картинки и файлы</a></li>
-		<li><a {$sel['c']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=c&amp;pos=$pos'>Цены</a></li>
-		<li><a {$sel['k']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=k&amp;pos=$pos'>Комплектующие</a></li>
+		<li><a {$sel['c']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=c&amp;pos=$pos'>Цены</a></li>		
 		<li><a {$sel['l']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=l&amp;pos=$pos'>Связи</a></li>
+		<li><a {$sel['n']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=n&amp;pos=$pos'>Аналоги</a></li>
+		<li><a {$sel['k']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=k&amp;pos=$pos'>Комплектующие</a></li>
+		<li><a {$sel['a']} href='/docs.php?l=pran&amp;mode=srv&amp;opt=ep&amp;param=a&amp;pos=$pos'>Анализатор</a></li>
 		<li><a {$sel['h']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
 		<li><a {$sel['y']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=y&amp;pos=$pos'>Импорт Я.Маркет</a></li>
 		</ul>");

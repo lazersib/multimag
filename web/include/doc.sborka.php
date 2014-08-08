@@ -106,7 +106,8 @@ class doc_Sborka extends doc_Nulltype {
 		global $tmpl, $db;
 		$tmpl->ajax = 1;
 		$opt = request('opt');
-		$pos = request('pos');
+		$peopt = request('peopt');
+		$pe_pos = request('pe_pos');
 		include_once('include/doc.zapposeditor.php');
 		$poseditor = new SZapPosEditor($this);
 		$poseditor->cost_id = $this->dop_data['cena'];
@@ -115,32 +116,37 @@ class doc_Sborka extends doc_Nulltype {
 		if (isAccess('doc_' . $this->doc_name, 'view')) {
 
 			// Json-вариант списка товаров
-			if ($opt == 'jget') {
+			if ($peopt == 'jget') {
 				$doc_sum = $this->recalcSum();
 				$str = "{ response: 'loadlist', content: [" . $poseditor->GetAllContent() . "], sum: '$doc_sum' }";
 				$tmpl->addContent($str);
 			}
+			else if($peopt=='jgetgroups')
+			{
+				$doc_content = $poseditor->getGroupList();
+				$tmpl->addContent($doc_content);
+			}
 			// Получение данных наименования
-			else if ($opt == 'jgpi') {
-				$pos = rcvint('pos');
-				$tmpl->addContent($poseditor->GetPosInfo($pos));
+			else if ($peopt == 'jgpi') {
+				$pe_pos = rcvint('pos');
+				$tmpl->addContent($poseditor->GetPosInfo($pe_pos));
 			}
 			// Json вариант добавления позиции
-			else if ($opt == 'jadd') {
+			else if ($peopt == 'jadd') {
 				if (!isAccess('doc_sborka', 'edit'))
 					throw new AccessException("Недостаточно привилегий");
-				$pos = rcvint('pos');
-				$tmpl->setContent($poseditor->AddPos($pos));
+				$pe_pos = rcvint('pos');
+				$tmpl->setContent($poseditor->AddPos($pe_pos));
 			}
 			// Json вариант удаления строки
-			else if ($opt == 'jdel') {
+			else if ($peopt == 'jdel') {
 				if (!isAccess('doc_sborka', 'edit'))
 					throw new AccessException("Недостаточно привилегий");
 				$line_id = rcvint('line_id');
 				$tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
-			else if ($opt == 'jup') {
+			else if ($peopt == 'jup') {
 				if (!isAccess('doc_sborka', 'edit'))
 					throw new AccessException("Недостаточно привилегий");
 				$line_id = rcvint('line_id');
@@ -149,17 +155,17 @@ class doc_Sborka extends doc_Nulltype {
 				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 			}
 			// Получение номенклатуры выбранной группы
-			else if ($opt == 'jsklad') {
+			else if ($peopt == 'jsklad') {
 				$group_id = rcvint('group_id');
 				$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
 				$tmpl->setContent($str);
 			}
 			// Поиск по подстроке по складу
-			else if ($opt == 'jsklads') {
+			else if ($peopt == 'jsklads') {
 				$s = request('s');
 				$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
 				$tmpl->setContent($str);
-			} else if ($opt == 'jsn') {
+			} else if ($peopt == 'jsn') {
 				$action = request('a');
 				$line_id = request('line');
 				$data = request('data');
@@ -203,7 +209,7 @@ class doc_Sborka extends doc_Nulltype {
 					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
 				}
 			}
-			else throw new NotFoundException();
+			else throw new NotFoundException('Параметр не найден!');
 		}
 	}
 };

@@ -170,13 +170,21 @@ catch(AccessException $e) {
 	$tmpl->msg($e->getMessage(),'err',"Нет доступа");
 }
 catch(mysqli_sql_exception $e) {
-	$tmpl->ajax=0;
 	$id = $tmpl->logger($e->getMessage(), 1);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+	if($tmpl->ajax) {
+		$ret_data = array('response'=>'err',
+			'message' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение передано администратору.");
+		$tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
+	}
+	else	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch (Exception $e) {
-	$tmpl->ajax=0;
-	$tmpl->msg($e->getMessage(),'err',"Общая ошибка");
+	if($tmpl->ajax) {
+		$ret_data = array('response'=>'err',
+			'message' => "Общая ошибка! ".$e->getMessage());
+		$tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
+	}
+	else	$tmpl->msg($e->getMessage(),'err',"Общая ошибка");
 }
 
 $tmpl->write();

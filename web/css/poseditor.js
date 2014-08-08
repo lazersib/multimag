@@ -693,13 +693,14 @@ function PosEditorInit(poslist_setup) {
 		pladd.id = 'pladd';
 		var tmp;
 		var tab_index = 1;
-
+		var last_input_name = 'nothhing';	// Для обработки enter на последнем поле
 		function createInput(useFor) {
 			var input = document.createElement('input');
 			input.useFor = useFor;
 			input.autocomplete = 'off';
 			input.addEventListener( 'keyup', KeyUp, false);
 			input.tabIndex = tab_index++;
+			last_input_name = useFor;
 			return input;
 		}
 
@@ -746,6 +747,7 @@ function PosEditorInit(poslist_setup) {
 					break;
 				default:;	
 			}
+			
 			pladd.appendChild(tmp);	
 		}
 		if(input_name) {
@@ -791,10 +793,13 @@ function PosEditorInit(poslist_setup) {
 
 				if( li == null ) var sValue = "Ничего не выбрано!";
 				else if( !!li.extra ) var sValue = li.extra[0];
-				input_id.value=sValue;
-				input_name.value=li.extra[2];
-				input_price.value=0.5;
-				input_cnt.value=1;
+				if(input_id)
+					input_id.value=sValue;
+				if(input_name)
+					input_name.value=li.extra[2];
+				//input_price.value=0.5;
+				//input_cnt.value=1;
+				
 				input_vc.focus();
 
 				pladd.doRefresh()
@@ -816,10 +821,16 @@ function PosEditorInit(poslist_setup) {
 		}
 
 		function AddData() {
+			var cnt = 1;
+			if(input_cnt)
+				cnt = input_cnt.value;
+			var price = 1;
+			if(input_price)
+				price = input_price.value;
 			$.ajax({
 				type:   'GET',
 				url:    poslist.base_url,
-				data:   'peopt=jadd&pe_pos='+input_id.value+'&cnt='+input_cnt.value+'&cost='+input_price.value,
+				data:   'peopt=jadd&pe_pos='+input_id.value+'&cnt='+cnt+'&cost='+price,
 				success: function(msg) { AddDataSuccess(msg); },
 				error:   function() { jAlert('Ошибка соединения!','Добавление наименования',null,'icon_err'); },
 			});
@@ -930,7 +941,7 @@ function PosEditorInit(poslist_setup) {
 		function KeyUp(_e) {
 			var e = _e||window.event;
 			if(e.keyCode==13) {
-				if(e.target.useFor == 'cnt')
+				if(e.target.useFor == last_input_name)
 					AddData();
 				else {
 					var td = e.target.parentNode.nextSibling;
@@ -963,7 +974,7 @@ function PosEditorInit(poslist_setup) {
 
 		function KeyDown(_e){
 			var e = _e||window.event;
-			if(e.keyCode==9 && this.useFor=='cnt')
+			if(e.keyCode==9 && this.useFor==last_input_name)
 				return false;
 		}
 
