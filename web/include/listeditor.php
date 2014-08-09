@@ -101,6 +101,12 @@ abstract class ListEditor {
 		else return '???';
 	}
 	
+	/// Возвращает HTML код checkbox элемента формы
+	public function getCheckboxInput($name, $label, $value) {
+		$checked = $value?' checked':'';
+		return "<label><input type='checkbox' name='$name' value='1'{$checked}>".html_out($label)."</label>";
+	}
+	
 	/// Возвращает HTML код формы редактирования элемента
 	public function getEditForm($id) {
 		global $tmpl;

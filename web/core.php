@@ -909,6 +909,9 @@ if(!$db->set_charset("utf8"))
 // m_ysql_query("SET character_set_connection = UTF8");
 
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
+// HSTS Mode
+if( (@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login']) && isset($_SERVER['HTTPS']))
+	header("Strict-Transport-Security \"max-age=31536000; includeSubDomains\"");
 
 /// TODO: Убрать обращения этих переменных из других файлов, и сделать их локальными
 $tim=time();

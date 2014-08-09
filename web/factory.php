@@ -22,12 +22,12 @@ include_once("include/doc.core.php");
 function getSummaryData($sklad, $dt_from, $dt_to, $header='', $sql_add='')
 {
 	global $db;
-	$res=$db->query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, SUM(`fabric_data`.`cnt`) AS `cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
-	LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+	$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
 	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
-	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' $sql_add
-	GROUP BY `fabric_data`.`pos_id`");
+	WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`>='$dt_from' AND `factory_data`.`date`<='$dt_to' $sql_add
+	GROUP BY `factory_data`.`pos_id`");
 
 	$i=$sum=$allcnt=0;
 	$ret='';
@@ -49,12 +49,12 @@ function getSummaryData($sklad, $dt_from, $dt_to, $header='', $sql_add='')
 function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 {
 	global $db;
-	$res=$db->query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, SUM(`fabric_data`.`cnt`) AS `cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
-	LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+	$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
 	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
-	WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' $sql_add
-	GROUP BY `fabric_data`.`pos_id`");
+	WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`>='$dt_from' AND `factory_data`.`date`<='$dt_to' $sql_add
+	GROUP BY `factory_data`.`pos_id`");
 
 	$i=$sum=$allcnt=0;
 	$ret='';
@@ -87,77 +87,46 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 
 try
 {
-	if(!isAccess('doc_fabric','view'))	throw new AccessException('');
+	if(!isAccess('doc_factory','view'))
+		throw new AccessException();
 	need_auth($tmpl);
 	$tmpl->hideBlock('left');
+	SafeLoadTemplate($CONFIG['site']['inner_skin']);
+	doc_menu();
+	$tmpl->addBreadcrumb('Документы', '/docj_new.php');
+	$tmpl->addBreadcrumb('Производственный учет', '/factory.php');
+	
 	$tmpl->setTitle("Производственный учёт (в разработке)");
-	if($mode=='')
-	{
-		$tmpl->setContent("<h1 id='page-title'>Производственный учёт</h1>
+	if($mode=='') {
+		$tmpl->addBreadcrumb('Производственный учет', '');
+		$tmpl->setContent("
 		<ul>
-		<li><a href='?mode=builders'>Список сборщиков</a></li>
+		<li><a href='?mode=builder_stores'>Список сборщиков</a></li>
 		<li><a href='?mode=prepare'>Внесение данных</a></li>
 		<li><a href='?mode=summary'>Сводная информация</a></li>
 		<li><a href='?mode=export'>Экспорт</a></li>
 		</ul>");
 	}
-	else if($mode=='builders')
-	{
-		$tmpl->setContent("<h1 id='page-title'>Производственный учёт - сборщики</h1>
-		<div id='page-info'><a href='/fabric.php'>Назад</a></div>
-		<form method='post'>
-		<input type='hidden' name='mode' value='builders'>
-		<input type='hidden' name='opt' value='save'>");
-
-		if(isset($_POST['name']))
-		if(is_array($_POST['name']))
-		{
-			$res=$db->query("SELECT `id`, `active`, `name` FROM `fabric_builders` ORDER BY `id`");
-			$f=0;
-			while($line=$res->fetch_row())
-			{
-				$upd='';
-				$active=@$_POST['active'][$line[0]]?1:0;
-				$name=@$_POST['name'][$line[0]];
-
-				if($name!=$line[2])	$upd="`name`='".$db->real_escape_string($name)."'";
-				if($active!=$line[1])
-				{
-					if($upd)	$upd.=',';
-					$upd.="`active`=$active";
-				}
-				if($upd)
-				{
-					if(!isAccess('doc_fabric','edit'))	throw new AccessException('');
-					$r=$db->query("UPDATE `fabric_builders` SET $upd WHERE `id`=$line[0]");
-					$f=1;
-				}
-			}
-			if($f)	$tmpl->msg("Данные обновлены","ok");
+	else if($mode=='builder_stores') {
+		$tmpl->addBreadcrumb('Склады сборки', '');
+		$res = $db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
+		$tmpl->addContent("<table class='list'><tr><th>id</th><th>Название склада сборки</th></tr>");
+		while($line = $res->fetch_assoc()) {
+			$tmpl->addContent("<tr><td><a href='/factory.php?mode=builders&amp;store_id={$line['id']}'>{$line['id']}</a></td><td>{$line['name']}</td></tr>");
 		}
-		if(@$_POST['name_new'])
-		{
-			if(!isAccess('doc_fabric','edit'))	throw new AccessException('');
-			$active=@$_POST['active_new']?1:0;
-			$name=$db->real_escape_string($_POST['name_new']);
-			$res=$db->query("INSERT INTO `fabric_builders` (`active`,`name`) VALUES ($active, '$name')");
-			if($f)	$tmpl->msg("Сборщик добавлен","ok");
-		}
-		$res=$db->query("SELECT `id`, `active`, `name` FROM `fabric_builders` ORDER BY `id`");
-		$tmpl->addContent("<table class='list'>
-		<tr><th>ID</th><th>&nbsp;</th><th>Имя</th></tr>");
-		while($line=$res->fetch_row())
-		{
-			$checked=$line[1]?'checked':'';
-			$tmpl->addContent("<tr><td>$line[0]</td><td><input type='checkbox' name='active[$line[0]]' value='1' $checked></td><td><input type='text' name='name[$line[0]]' value='".html_out($line[2])."' maxlength='32'></td></tr>");
-		}
-		$tmpl->addContent("<tr><td>новый</td><td><input type='checkbox' name='active_new' value='1' checked></td><td><input type='text' name='name_new' value='' maxlength='32'></td></tr>");
-		$tmpl->addContent("</table><button type='submit'>Сохранить</button></form>");
+		$tmpl->addContent("</table><a href='/factory.php?mode=builders'>Показать сборщиков со всех складов</a>");
 	}
-	else if($mode=='prepare')
-	{
-		$tmpl->setContent("<h1 id='page-title'>Производственный учёт - ввод данных</h1>
-		<div id='page-info'><a href='/fabric.php'>Назад</a></div>
+	else if($mode=='builders') {
+		$tmpl->addBreadcrumb('Склады сборки', '/factory.php?mode=builder_stores');
+		$editor = new \ListEditors\BuildersListEditor();
+		$editor->line_var_name = 'id';
+		$editor->store_id = rcvint('store_id');
+		$editor->link_prefix = '/factory.php?mode=builders&amp;store_id='.$editor->store_id;		
+		$editor->run();
+	}
+	else if($mode=='prepare'){
+		$tmpl->addBreadcrumb('Выбор даты и склада - Ввод данных', '');
+		$tmpl->setContent("
 		<script type='text/javascript' src='/js/calendar.js'></script>
 		<link rel='stylesheet' type='text/css' href='/css/core.calendar.css'>
 		<form method='post'>
@@ -182,18 +151,18 @@ try
 	{
 		$sklad	= rcvint('sklad');
 		$date	= rcvdate('date');
-		$tmpl->setContent("<h1 id='page-title'>Производственный учёт - ввод данных</h1>
-		<div id='page-info'><a href='/fabric.php?mode=prepare'>Назад</a></div>");
-		$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`=1 ORDER BY `name`");
+		$tmpl->addBreadcrumb("Выбор даты и склада", '/factory.php?mode=prepare');
+		$tmpl->addBreadcrumb("Выбор сборщика на дату $date и складе № $sklad", '');
+		$res=$db->query("SELECT `id`, `name` FROM `factory_builders` WHERE `active`=1 AND `store_id`=$sklad ORDER BY `name`");
 		$tmpl->addContent("<table class='list'><tr><th>Сборщик</th><th>Собрано единиц</th><th>Из них различных</th><th>Вознаграждение</th></tr>");
 		$sv=$sc=0;
 		while($line=$res->fetch_row())
 		{
-			$result=$db->query("SELECT `fabric_data`.`id`, `fabric_data`.`cnt`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
-			LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+			$result=$db->query("SELECT `factory_data`.`id`, `factory_data`.`cnt`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
+			LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 			LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
-			WHERE `fabric_data`.`builder_id`=$line[0] AND `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date'");
+			WHERE `factory_data`.`builder_id`=$line[0] AND `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'");
 			$i=$sum=$cnt=0;
 			while($nxt=$result->fetch_assoc())
 			{
@@ -203,7 +172,7 @@ try
 			}
 			$sv+=$sum;
 			$sc+=$cnt;
-			$tmpl->addContent("<tr><td><a href='/fabric.php?mode=enter_pos&amp;sklad=$sklad&amp;date=$date&amp;builder=$line[0]'>".html_out($line[1])."</a></td><td>$cnt</td><td>$i</td><td>$sum</td></tr>");
+			$tmpl->addContent("<tr><td><a href='/factory.php?mode=enter_pos&amp;sklad=$sklad&amp;date=$date&amp;builder=$line[0]'>".html_out($line[1])."</a></td><td>$cnt</td><td>$i</td><td>$sum</td></tr>");
 		}
 		$tmpl->addContent("<tr><th>Итого:</th><th>$sc</th><th></th><th>$sv</th></table>");
 	}
@@ -212,8 +181,9 @@ try
 		$builder	= rcvint('builder');
 		$sklad		= rcvint('sklad');
 		$date		= rcvdate('date');
-		$tmpl->setContent("<h1 id='page-title'>Производственный учёт - ввод данных</h1>
-		<div id='page-info'><a href='/fabric.php?mode=enter_day&amp;sklad=$sklad&amp;date=$date'>Назад</a></div>");
+		$tmpl->addBreadcrumb("Выбор даты и склада", '/factory.php?mode=prepare');
+		$tmpl->addBreadcrumb("Выбор сборщика на дату $date и складе № $sklad", '/factory.php?mode=enter_day&amp;date='.$date.'&amp;sklad='.$sklad);
+		$tmpl->addBreadcrumb("Ввод собранных наименований сборщика № $builder", '');		
 		if(isset($_REQUEST['vc']))
 		{
 			$vc=$db->real_escape_string($_REQUEST['vc']);
@@ -223,22 +193,22 @@ try
 			if($res->num_rows==0)	$tmpl->msg("Наименование с таким кодом отсутствует в базе",'err');
 			else
 			{
-				if(!isAccess('doc_fabric','edit'))	throw new AccessException('');
+				if(!isAccess('doc_factory','edit'))	throw new AccessException('');
 				$line=$res->fetch_row();
-				$r=$db->query("REPLACE INTO `fabric_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
+				$r=$db->query("REPLACE INTO `factory_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
 				VALUES ($sklad, $builder, '$date', $line[0], $cnt)");
 			}
 		}
 		if(isset($_REQUEST['del_id']))
 		{
 			$del_id=rcvint('del_id');
-			$res=$db->query("DELETE FROM `fabric_data` WHERE `id`=$del_id");
+			$res=$db->query("DELETE FROM `factory_data` WHERE `id`=$del_id");
 		}
-		$res=$db->query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, `fabric_data`.`cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+		$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, `factory_data`.`cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
+		LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
-		WHERE `fabric_data`.`builder_id`=$builder AND `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date'");
+		WHERE `factory_data`.`builder_id`=$builder AND `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'");
 
 		$tmpl->addContent("<table class='list'><thead><tr><th>N</th><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th><th>Сумма</th></tr></thead>
 		<tbody>");
@@ -249,7 +219,7 @@ try
 			$sumline=$line['cnt']*$line['zp'];
 			$sum+=$sumline;
 			$allcnt+=$line['cnt'];
-			$tmpl->addContent("<tr><td>$i<a href='/fabric.php?mode=enter_pos&amp;builder=$builder&amp;sklad=$sklad&amp;date=$date&amp;del_id={$line['id']}'><img src='/img/i_del.png' alt='del'></a></td><td>".html_out($line['vc'])."</td><td>".html_out($line['name'])."</td><td>{$line['cnt']}</td><td>{$line['zp']}</td><td>$sumline</td></tr>");
+			$tmpl->addContent("<tr><td>$i<a href='/factory.php?mode=enter_pos&amp;builder=$builder&amp;sklad=$sklad&amp;date=$date&amp;del_id={$line['id']}'><img src='/img/i_del.png' alt='del'></a></td><td>".html_out($line['vc'])."</td><td>".html_out($line['name'])."</td><td>{$line['cnt']}</td><td>{$line['zp']}</td><td>$sumline</td></tr>");
 		}
 		$tmpl->addContent("</tbody>
 		<form method='post'>
@@ -277,9 +247,8 @@ try
 
 
 		$sel_sklad_name='';
-
-		$tmpl->setContent("<h1 id='page-title'>Производственный учёт - сводная информация</h1>
-		<div id='page-info'><a href='/fabric.php'>Назад</a></div>
+		$tmpl->addBreadcrumb("Cводная информация", '');	
+		$tmpl->setContent("
 		<script type='text/javascript' src='/js/calendar.js'></script>
 		<link rel='stylesheet' type='text/css' href='/css/core.calendar.css'>
 		<form method='post'>
@@ -318,28 +287,28 @@ try
 				<tr><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Вознаграждение</th><th>Сумма</th></tr>");
 				if($det_date)
 				{
-					$dres=$db->query("SELECT `fabric_data`.`date` FROM `fabric_data`
-					WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' GROUP BY `fabric_data`.`date`");
+					$dres=$db->query("SELECT `factory_data`.`date` FROM `factory_data`
+					WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`>='$dt_from' AND `factory_data`.`date`<='$dt_to' GROUP BY `factory_data`.`date`");
 					while($dline=$dres->fetch_row())
 					{
 						if($det_builder)
 						{
-							$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+							$res=$db->query("SELECT `id`, `name` FROM `factory_builders` WHERE `active`>'0' ORDER BY `id`");
 							while($line=$res->fetch_row())
 							{
-								$data=getSummaryData($sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `fabric_data`.`date`='$dline[0]' AND `fabric_data`.`builder_id`={$line[0]}");
+								$data=getSummaryData($sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `factory_data`.`date`='$dline[0]' AND `factory_data`.`builder_id`={$line[0]}");
 								if($data)	$tmpl->addContent($data);
 							}
 						}
-						else	$tmpl->addContent(getSummaryData($sklad, $dt_from, $dt_to, $dline[0], " AND `fabric_data`.`date`='$dline[0]'"));
+						else	$tmpl->addContent(getSummaryData($sklad, $dt_from, $dt_to, $dline[0], " AND `factory_data`.`date`='$dline[0]'"));
 					}
 				}
 				else if($det_builder)
 				{
-					$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+					$res=$db->query("SELECT `id`, `name` FROM `factory_builders` WHERE `active`>'0' ORDER BY `id`");
 					while($line=$res->fetch_row())
 					{
-						$data=getSummaryData($sklad, $dt_from, $dt_to, $line[1], "AND `fabric_data`.`builder_id`={$line[0]}");
+						$data=getSummaryData($sklad, $dt_from, $dt_to, $line[1], "AND `factory_data`.`builder_id`={$line[0]}");
 						if($data)	$tmpl->addContent($data);
 					}
 				}
@@ -395,27 +364,27 @@ try
 
 				if($det_date)
 				{
-					$dres=$db->query("SELECT `fabric_data`.`date` FROM `fabric_data`
-					WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`>='$dt_from' AND `fabric_data`.`date`<='$dt_to' GROUP BY `fabric_data`.`date`");
+					$dres=$db->query("SELECT `factory_data`.`date` FROM `factory_data`
+					WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`>='$dt_from' AND `factory_data`.`date`<='$dt_to' GROUP BY `factory_data`.`date`");
 					while($dline=$dres->fetch_row())
 					{
 						if($det_builder)
 						{
-							$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+							$res=$db->query("SELECT `id`, `name` FROM `factory_builders` WHERE `active`>'0' ORDER BY `id`");
 							while($line=$res->fetch_row())
 							{
-								PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `fabric_data`.`date`='$dline[0]' AND `fabric_data`.`builder_id`={$line[0]}");
+								PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, "$dline[0] - $line[1]", " AND `factory_data`.`date`='$dline[0]' AND `factory_data`.`builder_id`={$line[0]}");
 							}
 						}
-						else	PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $dline[0], " AND `fabric_data`.`date`='$dline[0]'");
+						else	PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $dline[0], " AND `factory_data`.`date`='$dline[0]'");
 					}
 				}
 				else if($det_builder)
 				{
-					$res=$db->query("SELECT `id`, `name` FROM `fabric_builders` WHERE `active`>'0' ORDER BY `id`");
+					$res=$db->query("SELECT `id`, `name` FROM `factory_builders` WHERE `active`>'0' ORDER BY `id`");
 					while($line=$res->fetch_row())
 					{
-						PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $line[1], "AND `fabric_data`.`builder_id`={$line[0]}");
+						PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $line[1], "AND `factory_data`.`builder_id`={$line[0]}");
 					}
 				}
 				else	PDFSummaryData($pdf, $sklad, $dt_from, $dt_to);
@@ -427,8 +396,8 @@ try
 	}
 	else if($mode=='export')
 	{
-		$tmpl->setContent("<h1 id='page-title'>Производственный учёт - экспорт данных</h1>
-		<div id='page-info'><a href='/fabric.php'>Назад</a></div>
+		$tmpl->addBreadcrumb("Экспорт данных", '');	
+		$tmpl->setContent("
 		<script type='text/javascript' src='/js/calendar.js'></script>
 		<script type='text/javascript' src='/css/jquery/jquery.js'></script>
 		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
@@ -465,7 +434,7 @@ try
 		}
 		$tmpl->addContent("</select><br>
 		Организация:<br><select name='firm'>");
-		$rs=$db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
+		$res=$db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 		while($nx=$res->fetch_row())
 		{
 			$tmpl->addContent("<option value='$nx[0]'>".html_out($nx[1])."</option>");
@@ -525,19 +494,19 @@ try
 		$doc=$db->insert_id;
 		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id'), ('$doc','not_a_p','0')");
 
-		$res=$db->query("SELECT `fabric_data`.`id`, `fabric_data`.`pos_id`, SUM(`fabric_data`.`cnt`) AS `cnt`, `doc_base_values`.`value` AS `zp` FROM `fabric_data`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`fabric_data`.`pos_id`
+		$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
+		LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
-		WHERE `fabric_data`.`sklad_id`=$sklad AND `fabric_data`.`date`='$date' $sql_add
-		GROUP BY `fabric_data`.`pos_id`");
+		WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'
+		GROUP BY `factory_data`.`pos_id`");
 		$ret='';
 		while($line=$res->fetch_assoc())
 		{
 			$r=$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `page`) VALUES ($doc, {$line['pos_id']}, {$line['cnt']}, 0)");
 		}
 
-		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad&not_a_p=$not_a_p");
+		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad");
 	}
 }
 catch(AccessException $e)
@@ -546,9 +515,9 @@ catch(AccessException $e)
 }
 catch(mysqli_sql_exception $e)
 {
-	$e->db->rollback();
+	$db->rollback();
 	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage(), false, " - sqlstate:".$e->sqlstate);
+	$tmpl->logger($e->getMessage(), false);
 }
 catch(Exception $e)
 {

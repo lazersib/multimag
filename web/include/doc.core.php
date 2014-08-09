@@ -325,6 +325,7 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
 	<a href='/docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='/img/i_user.png' alt='Журнал агентов' border='0'></a>
 	<a href='/docs.php?l=dov' title='Работа с доверенными лицами'><img src='/img/i_users.png' alt='лица' border='0'></a>
 	<a href='/docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='/img/i_sklad.png' alt='Склад' border='0'></a>
+	<a href='/factory.php' title='Производство' accesskey=\"S\"><img src='/img/i_factory.png' alt='Производство' border='0'></a>
 	<a href='/docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='/img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
 	<img src='img/i_separator.png' alt=''>
 

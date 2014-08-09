@@ -40,8 +40,8 @@ if($mode==''){
 		$tmpl->addContent("<h2>Документы</h2>");
 	if(isAccess('doc_list','view'))
 		$tmpl->addContent("<li><a href='/docj_new.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
-	if(isAccess('doc_fabric','view'))
-		$tmpl->addContent("<li><a href='/fabric.php'>Учёт производства (экспериментально)</a></li>");
+	if(isAccess('doc_factory','view'))
+		$tmpl->addContent("<li><a href='/factory.php'>Учёт производства (экспериментально)</a></li>");
 	// Журналы
 	if(isAccess('log_browser','view') || isAccess('log_error','view') || isAccess('log_access','view') || isAccess('log_call_request','view'))
 		$tmpl->addContent("<h2>Журналы</h2>");

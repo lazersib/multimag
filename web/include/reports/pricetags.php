@@ -343,7 +343,7 @@ class Report_PriceTags {
 		$caption = $CONFIG['site']['display_name'];
 		if (!$caption)		$caption = $CONFIG['site']['name'];
 
-		if ($template['caption'] && $caption) {
+		if(isset($template['caption']) && $caption) {
 			$pdf->SetFillColor(80);
 			$pdf->SetTextColor(255);
 			$pdf->SetFont('Arial', '', $template['caption']['fontsize']);
@@ -364,6 +364,7 @@ class Report_PriceTags {
 		);
 		
 		foreach($lines as $id=>$text) {
+			if(isset($template[$id]) && isset($pos_info[$id]))
 			if (is_array($template[$id]) && $pos_info[$id]) {
 				$param = $template[$id];
 				if (!@$param['width'])
@@ -379,7 +380,7 @@ class Report_PriceTags {
 
 		if($pc->getDefaultPriceId() != $pc->getRetailPriceId()) {			
 			$ret_price = $pc->getPosSelectedPriceValue($pos_id, $pc->getRetailPriceId(), $pos_info);
-			if($pos_info['price'] != $ret_price) {
+			if($pos_info['price'] != $ret_price && isset($template['ret_price'])) {
 				$id = 'ret_price';
 				$param = $template[$id];
 				if (!@$param['width'])
@@ -466,7 +467,7 @@ class Report_PriceTags {
 			if ($gs && is_array($g))
 				if (!in_array($group_line['id'], $g))
 					continue;
-			$tmpl->addContent("<tr><th>ID</th><th>Код</th><th>Наименование</th><th>Цена</th></tr>
+			$tmpl->addContent("<tr><th>ID</th><th>Код</th><th>Наименование</th><th>Кол-во</th><th>Цена</th></tr>
 			<tr><td colspan='8'>{$group_line['id']}. ".html_out($group_line['name'])."</td></tr>");
 
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`,
@@ -477,7 +478,9 @@ class Report_PriceTags {
 			ORDER BY $order");
 			while ($nxt = $res->fetch_assoc()) {
 				$cost = $pc->getPosSelectedPriceValue($nxt['id'], $pc->getDefaultPriceId(), $nxt);
-				$tmpl->addContent("<tr><td>{$nxt['id']}</td><td>".html_out($nxt['vc'])."</td><td><label><input type='checkbox' name='pos_id[]' value='{$nxt['id']}' checked>".html_out($nxt['name'])."</label></td><td>$cost</td></tr>");
+				$tmpl->addContent("<tr><td>{$nxt['id']}</td><td>".html_out($nxt['vc'])."</td><td><label><input type='checkbox' name='pos_id[]' value='{$nxt['id']}' checked>".html_out($nxt['name'])."</label></td>
+					<td><input type='number' name='cnt[{$nxt['id']}]' value='1'></td>
+					<td>$cost</td></tr>");
 			}
 		}
 		$tmpl->addContent("</table>
@@ -506,7 +509,10 @@ class Report_PriceTags {
 		if (!is_array($pos_id))		throw new Exception("Необходимо выбрать хотя бы одно наименование!");
 		foreach ($pos_id as $id => $val) {
 			settype($val, 'int');
-			$this->drawPDFPriceTag($pdf, $this->templates[$tag_id], $val);
+			$cnt = intval(@$_REQUEST['cnt'][$val]);
+			if($cnt<1)	$cnt = 1;
+			for($i=0;$i<$cnt;$i++)
+				$this->drawPDFPriceTag($pdf, $this->templates[$tag_id], $val);
 		}
 		$pdf->Output('pricetags.pdf', 'I');
 	}
