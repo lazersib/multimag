@@ -27,11 +27,12 @@ function doc_autoload($class_name)
 
 	$class_name= strtolower($class_name);
 	$nm2=explode('_',$class_name,2);
-	if(is_array($nm2))
-	{
-		list($class_type, $class_name)=$nm2;
-		if($class_type=='doc')		include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
-		else if($class_type=='report')	include_once $CONFIG['site']['location']."/include/reports/".$class_name.'.php';
+	if(is_array($nm2)) {
+		if(count($nm2)>1) {
+			list($class_type, $class_name)=$nm2;
+			if($class_type=='doc')		include_once $CONFIG['site']['location']."/include/doc.".$class_name.'.php';
+			else if($class_type=='report')	include_once $CONFIG['site']['location']."/include/reports/".$class_name.'.php';
+		}
 	}
 	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
 }

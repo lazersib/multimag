@@ -28,31 +28,37 @@ try
 {
 $uid=@$_SESSION['uid'];
 if(!isAccess('doc_service','view'))	throw new AccessException("Нет доступа к странице");
-
+doc_menu();
+$tmpl->addBreadcrumb('Документы', '/docj_new.php');
+$tmpl->addBreadcrumb('Служебные функции', '/doc_service.php');
 if($mode=='')
 {
-	doc_menu();
+	$tmpl->addBreadcrumb('Служебные функции', '');
 	$tmpl->setTitle("Служебные функции");
 	$tmpl->addContent("<h1>Служебные функции</h1>
 	<ul class='items'>
+	<li>Справочники</li>
+	<li><a href='?mode=types'>Типы товаров</a></li>
+	<li><a href='?mode=cost'>Цены</a></li>
+	<li><a href='?mode=vrasx'>Виды расходов</a></li>
+	<li><a href='?mode=store'>Склады</a></li>
+	<li><a href='?mode=params'>Свойства складской номенклатуры</a></li>
+	<li><a href='?mode=param_collections'>Наборы свойств складской номенклатуры</a></li>
+	<li><a href='?mode=banks'>Банки</a></li>
+	<li><a href='?mode=kass'>Кассы</a></li>
+	<li><a href='?mode=firmss'>Организации</a></li>
+	<li>Обработки</li>
+	<li><a href='?mode=cimage'>Замена изображений</a></li>
 	<li><a href='?mode=merge_agent'>Группировка агентов</a></li>
 	<li><a href='?mode=merge_tovar'>Группировка складской номенклатуры</a></li>
-	<li><a href='?mode=doc_log'>Журнал изменений</a></li>
-	<li><a href='?mode=cost'>Управление ценами</a></li>
-	<li><a href='?mode=firm'>Настройки организаций</a></li>
-	<li><a href='?mode=vrasx'>Настройки видов расходов</a></li>
-	<li><a href='?mode=store'>Редактор складов</a></li>
-	<li><a href='?mode=params'>Настройки свойств складской номенклатуры</a></li>
-	<li><a href='?mode=param_collections'>Настройки наборов свойств складской номенклатуры</a></li>
+	<li>Отчёты</li>
 	<li><a href='?mode=auinfo'>Документы, изменённые после проведения</a></li>
 	<li><a href='?mode=pcinfo'>Информация по изменениям в номеклатуре</a></li>
-	<li><a href='?mode=types'>Редактор типов товаров</a></li>
-	<li><a href='?mode=cimage'>Замена изображений</a></li>
+	<li><a href='?mode=doc_log'>Журнал изменений</a></li>	
 	</ul>");
 }
 else if($mode=='merge_agent')
 {
-	doc_menu();
 	$tmpl->addContent("<h1>Группировка агентов</h1>
 	Данная функция перепривязывает все документы и доверенных лиц от агента с большим ID на агента с меньшим ID. После этого, имя агента с большим ID получает префикс old, и агент перемещается в указанную группу.<h2 style='color: #f00'>ВНИМАНИЕ! Данное действие необратимо, и может привести к ошибкам в документах! Перед выполнением убедитесь в том, что у Вас есть резервная копия базы данных! После выполнения действия рекомендуется выполнить процедуру оптимизации!</h2>
 	<form method='post'><input type='hidden' name='mode' value='merge_agent_ok'>
@@ -68,7 +74,6 @@ else if($mode=='merge_agent')
 	</fieldset></form>");
 }
 else if ($mode == 'merge_agent_ok') {
-	doc_menu();
 	$ag1 = rcvint('ag1');
 	$ag2 = rcvint('ag2');
 	$gr = rcvint('gr');
@@ -93,7 +98,6 @@ else if ($mode == 'merge_agent_ok') {
 }
 else if($mode=='merge_tovar')
 {
-	doc_menu();
 	$tmpl->addContent("<h1>Группировка складской номенклатуры</h1>
 	Данная функция перепривязывает всю номенклатуру в документах и комплектующих от объекта с большим ID на объект с меньшим ID. После этого, имя объекта с большим ID получает префикс old, и объекта перемещается в указанную группу.<h2 style='color: #f00'>ВНИМАНИЕ! Данное действие необратимо, и может привести к ошибкам в документах и на складе! Перед выполнением убедитесь в том, что Вы осознаёте, что делаете, и что у Вас есть резервная копия базы данных! После выполнения действия ОБЯЗАТЕЛЬНО выполнить процедуру оптимизации, иначе остатки на складе будут неверны!</h2>
 	<form method='post'><input type='hidden' name='mode' value='merge_tovar_ok'>
@@ -110,7 +114,6 @@ else if($mode=='merge_tovar')
 }
 else if($mode=='merge_tovar_ok')
 {
-	doc_menu();
 	$tov1=rcvint('tov1');
 	$tov2=rcvint('tov2');
 	$gr=rcvint('gr');
@@ -134,7 +137,6 @@ else if($mode=='merge_tovar_ok')
 }
 else if($mode=='doc_log')
 {
-	doc_menu();
 	$motions=$targets=array();
 	$res=$db->query("SELECT DISTINCT `motion` FROM `doc_log`");
 	while($nxt=$res->fetch_row())
@@ -186,7 +188,6 @@ else if($mode=='doc_log')
 }
 else if($mode=='cost')
 {
-	doc_menu();
 	$tmpl->addContent("<h1>Управление ценами</h1>");
 	$res = $db->query("SELECT `id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold` FROM `doc_cost`");
 
@@ -280,7 +281,6 @@ else if($mode=='cost')
 }
 else if($mode=='costs')
 {
-	doc_menu();
 	if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
 	$context_a = array('r', 's', 'd', 'b');
 	
@@ -343,87 +343,6 @@ else if($mode=='costs')
 	}
 	header("Location: doc_service.php?mode=cost");
 }
-else if($mode=='firm')
-{
-	$tmpl->addContent("<h1>Настройки фирм</h1>
-	<form action='' method='post'>
-	<input type='hidden' name='mode' value='firme'>
-	Выберите фирму:<br>
-	<select name='firm_id'>");
-	$res=$db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-	while($nx=$res->fetch_row())
-	{
-		$tmpl->addContent("<option value='$nx[0]'>".html_out($nx[1])."</option>");
-	}
-	$tmpl->addContent("<option value='0'>--Создаьть новую--</option></select><br>
-	<input type='submit' value='Далее'>
-	</form>");
-}
-else if($mode=='firme') {
-	$tmpl->setTitle("Настройки фирмы");
-	$tmpl->addStyle("input.dw{width:300px;}");
-	$firm_id = rcvint('firm_id');
-	if($firm_id) {
-		$res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='$firm_id'");
-		$values = $res->fetch_assoc();
-	}
-	else {
-		$res = $db->query("SELECT * FROM `doc_vars` LIMIT 1");
-		$values = $res->fetch_assoc();
-		foreach($values as $id => $value)
-			$values[$id]='';
-	}
-
-	$tmpl->addContent("
-	<form action='doc_service.php' method='post'>
-	<input type='hidden' name='mode' value='firms'>
-	<input type='hidden' name='firm_id' value='$firm_id'>");
-	foreach($values as $id => $value) {
-		if($id=='id') continue;
-		$tmpl->addContent("$id<br><input type='text' class='dw' name='v[$id]' value='$value'><br>");
-	}
-	$tmpl->addContent("<input type='submit' value='Сохранить'></form>");
-
-}
-else if($mode=='firms')
-{
-	$firm_id=rcvint('firm_id');
-
-	if($firm_id)
-	{
-		$ss='';
-		foreach($_REQUEST['v'] as $id => $value)
-		{
-			if($id=='id')	continue;
-			$sql_id=$db->real_escape_string($id);
-			$sql_value=$db->real_escape_string($value);
-			if($ss)	$ss.=', ';
-			$ss.="`$id`='$value'";
-		}
-		$ss="UPDATE `doc_vars` SET $ss WHERE `id`='$firm_id'";
-	}
-	else
-	{
-		$s1=$s2='';
-		foreach($_REQUEST['v'] as $id => $value)
-		{
-			if($id=='id')	continue;
-			$sql_id=$db->real_escape_string($id);
-			$sql_value=$db->real_escape_string($value);
-			if($s1)
-			{
-				$s1.=', ';
-				$s2.=', ';
-			}
-			$s1="`$id`";
-			$s2="'$value'";
-		}
-		$ss="INSERT INTO `doc_vars` ($s1) VALUES ($s2)";
-
-	}
-	$res=$db->query($ss);
-	$tmpl->msg("Данные сохранены!","ok");
-}
 else if($mode=='vrasx')
 {
 	$tmpl->addContent("<h1>Редактор видов расходов</h1>");
@@ -468,7 +387,6 @@ else if($mode=='vrasx')
 	</form>");
 }
 else if($mode=='store') {
-	doc_menu();
 	if (request('opt')) {
 		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
 		$res = $db->query("SELECT `id`, `name`, `dnc` FROM `doc_sklady`");
@@ -507,7 +425,6 @@ else if($mode=='params') {
 	$opt = request('opt');
 	$cur_group = rcvint('group', 1);
 	$types = array('text' => 'Текстовый', 'int' => 'Целый', 'bool' => 'Логический', 'float' => 'С плавающей точкой');
-	doc_menu();
 	$tmpl->addContent("<h1 id='page-title'>Настройки параметров складской номенклатуры</h1>");
 	if ($opt == 'newg') {
 		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
@@ -689,7 +606,6 @@ div.clear
 else if($mode=='param_collections')
 {
 	$opt=request('opt');
-	doc_menu();
 	if($opt=='save')
 	{
 		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
@@ -794,7 +710,6 @@ else if($mode=='types') {
 		</form>");
 	}
 	
-	doc_menu();
 	$opt = request('opt');
 	$id = rcvint('id');
 	$tmpl->addContent("<h1>Редактор типов товаров</h1>");
@@ -825,7 +740,7 @@ else if($mode=='auinfo')
 	$print_dt_update = date('Y-m-d', $dt_update);
 	$ndd = rcvint('ndd');
 	$ndd_check=$ndd?'checked':'';
-	doc_menu();
+
 	$tmpl->addContent("<h1 id='page-title'>Информация по документам, изменённым после проведения</h1>
 	<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 	<form action='' method='post'>
@@ -894,7 +809,6 @@ else if($mode=='auinfo')
 }
 else if($mode=='pcinfo')
 {
-	doc_menu();
 	$from=request('from', '1970-01-01');
 	$to=request('to', date('Y-m-d'));
 	$tmpl->addContent("<h1 id='page-title'>Информация по изменениям в номенклатуре</h1>
@@ -927,7 +841,6 @@ else if($mode=='pcinfo')
 	$tmpl->addContent("</table>");
 }
 else if($mode == 'cimage') {
-	doc_menu();
 	$tmpl->addContent("<h1 id='page-title'>Управление изображениями товаров</h1>");
 	$tmpl->setTitle("Управление изображениями товаров");
 	include_once("include/imgresizer.php");
@@ -1018,6 +931,24 @@ else if($mode == 'cimage') {
 
 		$tmpl->addContent("<img src=\"".$img->GetURI()."\">");
 	}
+}
+else if($mode=='banks') {
+	$editor = new \ListEditors\BankListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=banks';
+	$editor->run();
+}
+else if($mode=='kass') {
+	$editor = new \ListEditors\KassListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=kass';
+	$editor->run();
+}
+else if($mode=='firmss') {
+	$editor = new \ListEditors\FirmListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=firmss';
+	$editor->run();
 }
 
 else throw new NotFoundException("Несуществующая опция");

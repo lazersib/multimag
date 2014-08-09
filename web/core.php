@@ -35,7 +35,7 @@ function core_autoload($class_name){
 	global $CONFIG;
 	$class_name = strtolower($class_name);
 	$class_name = str_replace('\\', '/', $class_name);
-	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
+	include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
 }
 
 spl_autoload_register('core_autoload');
@@ -663,7 +663,7 @@ class BETemplate {
 	
 	/// Добавить "хлебные крошки"
 	function addBreadcrumb($name, $link) {
-		$this->breadcrumbs[] = array('name'=>$name, 'link'=>$link);
+		$this->breadcrumbs[$name] = array('name'=>$name, 'link'=>$link);
 	}
 	
 
@@ -687,8 +687,8 @@ class BETemplate {
 				$this->page_blocks['breadcrumbs'] .= "<div id='breadcrumbs'>";
 				foreach($this->breadcrumbs as $item) {
 					if($item['link'])
-						$this->page_blocks['breadcrumbs'] .= "<a href='{$item['link']}'>{$item['name']}</a> ";
-					else	$this->page_blocks['breadcrumbs'] .= $item['name'];
+						$this->page_blocks['breadcrumbs'] .= "<a href='{$item['link']}'>".html_out($item['name'])."</a> ";
+					else	$this->page_blocks['breadcrumbs'] .= html_out($item['name']);
 				}
 				$this->page_blocks['breadcrumbs'] .= "</div>";
 			}
