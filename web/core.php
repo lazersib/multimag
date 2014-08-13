@@ -35,7 +35,7 @@ function core_autoload($class_name){
 	global $CONFIG;
 	$class_name = strtolower($class_name);
 	$class_name = str_replace('\\', '/', $class_name);
-	include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
+	@include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
 }
 
 spl_autoload_register('core_autoload');

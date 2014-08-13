@@ -38,7 +38,7 @@ class doc_Kompredl extends doc_Nulltype
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('shapka'=>'');
+		$this->def_dop_data = array('shapka'=>'', 'cena'=>0);
 	}
 
 	function DopHead() {
@@ -174,7 +174,7 @@ class doc_Kompredl extends doc_Nulltype
 		$pdf->SetY($old_y+30);
 
 		$pdf->SetFont('','',20);
-		$str='Коммерческое предложение № '.$this->doc_data[9].' от '.$dt;
+		$str='Коммерческое предложение № '.$this->doc_data['altnum'].' от '.$dt;
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'C',0);
 		$pdf->Ln(10);
@@ -617,6 +617,7 @@ class doc_Kompredl extends doc_Nulltype
 		$i=0;
 		$aligns=array('R','L','C','R','R');
 		$pdf->SetAligns($aligns);
+		$all_sum = 0;
 		while($nxt = $res->fetch_row())
 		{
 			$i++;
@@ -625,8 +626,10 @@ class doc_Kompredl extends doc_Nulltype
 			if($nxt[2]) $name.='('.$nxt[2].')';
 			$a=array($i, $name, $nxt[3].' '.$nxt[7], $nxt[6], $cost);
 			$pdf->RowIconv($a);
+			$all_sum += $nxt[4]*$nxt[3];
 		}
-
+		$str = sprintf("Итого: %0.2f руб.", $all_sum);
+		$pdf->CellIconv(0,8,$str,0,1,'R',0);
 		if($pdf->h<=($pdf->GetY()+40)) $pdf->AddPage();
 
 		$pdf->SetFont('','',12);
