@@ -197,9 +197,11 @@ class doc_Realizaciya extends doc_Nulltype {
 	{
 		global $CONFIG, $db;
 		$tim = time();
-		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`, 
+			`doc_agent`.`no_bonuses`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+		LEFT JOIN `doc_agent` ON `doc_list`.`agent` = `doc_agent`.`id`
 		WHERE `doc_list`.`id`='{$this->doc}'");
 		$nx = $res->fetch_assoc();
 		$res->free();
@@ -252,7 +254,8 @@ class doc_Realizaciya extends doc_Nulltype {
 // 		}
 
 		if($silent)	return;
-		$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
+		if(!$nx['no_bonuses'])
+			$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
 		
 		$this->sentZEvent('apply');
 	}
@@ -276,6 +279,7 @@ class doc_Realizaciya extends doc_Nulltype {
 
 		while($nxt = $res->fetch_row())
 			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
+		$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','0')");
 		$this->sentZEvent('cancel');
 	}
 

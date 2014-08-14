@@ -21,8 +21,7 @@ include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
 /// Автозагрузка классов документов
 /// TODO: Перенести автозагрузку в ядро, реализовать автозагрузку максимально возможного количества классов
-function doc_autoload($class_name)
-{
+function doc_autoload($class_name) {
 	global $CONFIG;
 
 	$class_name= strtolower($class_name);

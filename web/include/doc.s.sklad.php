@@ -328,7 +328,7 @@ class doc_s_Sklad {
 			}
 			$tmpl->addContent("</select></td>
 				<td align='right'>Масса, кг:<br><small>Используется в ТОРГ-12</small></td>
-				<td><input type='text' name='pd[bulkcnt]' value='".html_out($pos_info['mass'])."'></td>
+				<td><input type='text' name='pd[mass]' value='".html_out($pos_info['mass'])."'></td>
 			</tr>
         		<tr><td align='right'>Изготовитель</td>
 			<td><input type='text' name='pd[proizv]' value='".html_out($pos_info['proizv'])."' id='proizv_nm' style='width: 95%'><br>

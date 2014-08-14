@@ -21,7 +21,7 @@
 class doc_s_Agent {
 	/// Просмотр списка агентов
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone', 'price_id', 'no_retail_prices', 'no_bulk_prices');
+		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
 	}
 	function View() {
 		global $tmpl;
@@ -128,6 +128,7 @@ class doc_s_Agent {
 			$dish_checked = $agent_info['dishonest']?'checked':'';
 			$nbp_checked = $agent_info['no_bulk_prices']?'checked':'';
 			$nrp_checked = $agent_info['no_retail_prices']?'checked':'';
+			$nbon_checked = $agent_info['no_bonuses']?'checked':'';
 			
 			$link_users = '';
 			$r = $db->query("SELECT `id`, `name` FROM `users` WHERE `agent_id`=$pos");
@@ -240,7 +241,7 @@ class doc_s_Agent {
 			$tmpl->addContent("</select></td>
 				<td><label><input type='checkbox' name='no_bulk_prices' value='1' $nbp_checked>Отключить разовые скидки</label></td>
 				<td><label><input type='checkbox' name='no_retail_prices' value='1' $nrp_checked>Игнорировать розничные цены</label></td>
-				<td></td>
+				<td><label><input type='checkbox' name='no_bonuses' value='1' $nbon_checked>Отключить бонусы</label></td>
 				<td></td>
 			<tr><td align='right'>Особые отметки
 				<td colspan='$span'><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
@@ -297,12 +298,12 @@ class doc_s_Agent {
 				$tmpl->addBreadcrumb('История правок', '');
 			}
 			else throw new NotFoundException('Агент не найден');
-			$tmpl->addContent("<table width='100%'>
+			$tmpl->addContent("<table width='100%' class='list'>
 			<tr><th>id<th>Действие<th>Описание<th>Дата<th>Пользователь<th>IP");
 			$res = $db->query("SELECT `doc_log`.`id`, `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
 			FROM `doc_log`
 			LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
-			WHERE `object`='AGENT' AND `object_id`='$pos'");
+			WHERE `object`='AGENT' AND `object_id`='$pos' ORDER BY `time` DESC");
 			while($nxt = $res->fetch_row())
 				$tmpl->addContent('<tr><td>'.$nxt[0].'</td><td>'.html_out($nxt[1]).'</td><td>'.html_out($nxt[2]).'</td><td>'.html_out($nxt[3]).'</td><td>'.html_out($nxt[4]).'</td><td>'.html_out($nxt[5]).'</td></tr>');
 			$tmpl->addContent("</table>");
@@ -360,6 +361,12 @@ class doc_s_Agent {
 			settype($new_agent_info['dishonest'],'int');
 			settype($ag_info['no_mail'],'int');
 			settype($new_agent_info['no_mail'],'int');
+			settype($ag_info['no_retail_prices'],'int');
+			settype($new_agent_info['no_retail_prices'],'int');
+			settype($ag_info['no_bulk_prices'],'int');
+			settype($new_agent_info['no_bulk_prices'],'int');
+			settype($ag_info['no_bonuses'],'int');
+			settype($new_agent_info['no_bonuses'],'int');
 			
 			if(!isAccess('doc_agent_ext', 'edit'))	{
 				unset($new_agent_info['responsible']);

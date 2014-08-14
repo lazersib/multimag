@@ -25,7 +25,7 @@ include_once('include/doc.poseditor.php');
 class KomplPosList extends PosEditor {
 
 	var $linked_pos;  ///< ID наименования, для которого формируется список связей
-
+	var $list_sum = 0; //< Сумма позиций из loadlist()
 	/// Конструктор.
 	/// @param pos_id ID наименования, для которого требуется просмотр/редактирование списка связанных наименований
 	function __construct($pos_id) {
@@ -51,9 +51,23 @@ class KomplPosList extends PosEditor {
 		FROM `doc_base_kompl`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_base_kompl`.`kompl_id`
 		WHERE `doc_base_kompl`.`pos_id`='{$this->linked_pos}'");
-
-		while ($nxt = $res->fetch_assoc())
+		$this->list_sum = 0;
+		while ($nxt = $res->fetch_assoc()) {
+			$nxt['cost'] = getInCost($nxt['pos_id'], 0, 1);
+			$this->list_sum += $nxt['cost'] * $nxt['cnt'];
 			$this->list[$nxt['line_id']] = $nxt;
+		}
+	}
+	
+	/// Получить сумму товаров в списке
+	protected function calcListSum() {
+		if(!is_array($this->list))
+			$this->loadList();
+		$this->list_sum = 0;
+		foreach ($this->list as $nxt) {
+			$this->list_sum += $nxt['cost'] * $nxt['cnt'];
+		}
+		return $this->list_sum;
 	}
 
 /// Показать редактор.
@@ -151,7 +165,7 @@ class KomplPosList extends PosEditor {
 		$ret_data = array (
 		    'response'	=> 'loadlist',
 		    'content'	=> $pos_array,
-		    'sum'	=> 0,
+		    'sum'	=> $this->list_sum,
 		);
 		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 	}
@@ -206,9 +220,11 @@ class KomplPosList extends PosEditor {
 				FROM `doc_base`
 				WHERE `doc_base`.`id`='$pos'");
 			$line = $res->fetch_assoc();
+			$line['cost'] = getInCost($line['pos_id'], 0, 1);;
 			$line['line_id'] = $line_id;
 			$ret_data['response'] = 'add';
 			$ret_data['line'] = $line;
+			$ret_data['sum'] = $this->list_sum + $cnt * $line['cost'];
 		}
 		else {
 			$ret_data['response'] = 'err';
@@ -251,7 +267,7 @@ class KomplPosList extends PosEditor {
 			$this->list[$line_id]['cnt'] = $value;
 			doc_log("UPDATE","change kompl cnt: pos:{$this->list[$line_id]['pos_id']}, line_id:$line_id, cnt:$old_cnt => $value",'pos',$this->linked_pos);
 		}
-		
+		$ret_data['sum'] = $this->calcListSum();
 		$ret_data['update_line'] = $this->list[$line_id];
 		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 	}
@@ -269,6 +285,7 @@ class KomplPosList extends PosEditor {
 		$ret_data = array (
 		    'response'	=> '5',
 		    'remove'	=> array('line_id'=>$line_id),
+		    'sum'	=> $this->calcListSum()
 		);
 		return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
 	}

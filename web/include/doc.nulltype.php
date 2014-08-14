@@ -1279,7 +1279,8 @@ class doc_Nulltype
 					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
 				}
 			}
-			else throw new NotFoundException('Параметр не найден!');
+			// Для наследования!!!
+			else return 0;
 			return 1;
 		}
 		else $tmpl->msg("Недостаточно привилегий для $uid выполнения операции над $object!","err");
