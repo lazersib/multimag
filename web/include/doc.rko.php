@@ -34,7 +34,7 @@ class doc_Rko extends doc_Nulltype {
 
 	function initDefDopdata() {
 		global $db;
-		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'rko');
+		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'kassa');
 		$acc = '';
 		if(is_array($def_acc)) {
 			$acc = $def_acc['account'];

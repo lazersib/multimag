@@ -32,7 +32,7 @@ class doc_PBank extends doc_Nulltype
 
 	function initDefDopdata() {
 		global $db;
-		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'pbank');
+		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'bank');
 		$acc = '';
 		if(is_array($def_acc)) {
 			$acc = $def_acc['account'];

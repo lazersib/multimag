@@ -33,7 +33,7 @@ class doc_Pko extends doc_Nulltype {
 	
 	function initDefDopdata() {
 		global $db;
-		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'pko');
+		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'kassa');
 		$acc = '';
 		if(is_array($def_acc)) {
 			$acc = $def_acc['account'];
