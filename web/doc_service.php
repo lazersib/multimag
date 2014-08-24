@@ -38,23 +38,32 @@ if($mode=='')
 	$tmpl->addContent("<h1>Служебные функции</h1>
 	<ul class='items'>
 	<li>Справочники</li>
-	<li><a href='?mode=types'>Типы товаров</a></li>
-	<li><a href='?mode=cost'>Цены</a></li>
-	<li><a href='?mode=vrasx'>Виды расходов</a></li>
-	<li><a href='?mode=store'>Склады</a></li>
-	<li><a href='?mode=params'>Свойства складской номенклатуры</a></li>
-	<li><a href='?mode=param_collections'>Наборы свойств складской номенклатуры</a></li>
+	<ul>
+	<li><a href='?mode=firms'>Организации</a></li>	
+	<li><a href='?mode=dtypes'>Виды расходов</a></li>
+	<li><a href='?mode=ctypes'>Виды доходов</a></li>
+	<li><a href='?mode=accounts'>Бухгалтерские счета</a></li>
 	<li><a href='?mode=banks'>Банки</a></li>
 	<li><a href='?mode=kass'>Кассы</a></li>
-	<li><a href='?mode=firmss'>Организации</a></li>
+	<li><a href='?mode=stores'>Склады</a></li>
+	<li><a href='?mode=pos_types'>Типы товаров</a></li>
+	<li><a href='?mode=cost'>Цены</a></li>
+	<li><a href='?mode=params'>Свойства складской номенклатуры</a></li>
+	<li><a href='?mode=param_collections'>Наборы свойств складской номенклатуры</a></li>	
+	
+	</ul>
 	<li>Обработки</li>
+	<ul>
 	<li><a href='?mode=cimage'>Замена изображений</a></li>
 	<li><a href='?mode=merge_agent'>Группировка агентов</a></li>
 	<li><a href='?mode=merge_tovar'>Группировка складской номенклатуры</a></li>
+	</ul>
 	<li>Отчёты</li>
+	<ul>
 	<li><a href='?mode=auinfo'>Документы, изменённые после проведения</a></li>
 	<li><a href='?mode=pcinfo'>Информация по изменениям в номеклатуре</a></li>
 	<li><a href='?mode=doc_log'>Журнал изменений</a></li>	
+	</ul>
 	</ul>");
 }
 else if($mode=='merge_agent')
@@ -343,84 +352,6 @@ else if($mode=='costs')
 	}
 	header("Location: doc_service.php?mode=cost");
 }
-else if($mode=='vrasx')
-{
-	$tmpl->addContent("<h1>Редактор видов расходов</h1>");
-
-	if(isset($_REQUEST['opt']))
-	{
-		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
-		$res=$db->query("SELECT `id`, `name`, `adm` FROM `doc_rasxodi` ORDER BY `id`");
-		while($nxt=$res->fetch_row()) {
-			$name=request('nm'.$nxt[0]);
-			$adm=rcvint('ch'.$nxt[0]);
-			$name_sql=$db->real_escape_string($name);
-			if( ($name!=$nxt[1]) || ($adm!=$nxt[2]))
-			$res=$db->query("UPDATE `doc_rasxodi` SET `name`='$name_sql', `adm`='$adm' WHERE `id`='$nxt[0]'");
-		}
-		$name=request('nm_new');
-		$adm=rcvint('ch_new');
-		if($name)
-		{
-			$res=$db->query("INSERT INTO `doc_rasxodi` (`name`, `adm`) VALUES ('$name', '$adm')");
-		}
-		$tmpl->msg("Информация обновлена!");
-	}
-
-	$res=$db->query("SELECT `id`, `name`, `adm` FROM `doc_rasxodi` ORDER BY `id`");
-	$tmpl->addContent("<form action='' method='post'>
-	<input type='hidden' name='mode' value='vrasx'>
-	<input type='hidden' name='opt'  value='save'>
-	<table class='list'>
-	<tr><th>ID<th>Наименование<th>Административный");
-	$i=0;
-	while($nxt=$res->fetch_row())
-	{
-		$checked=$nxt[2]?'checked':'';
-		$tmpl->addContent("<tr class='lin$i'><td>$nxt[0]<td><input type='text' name='nm$nxt[0]' value='$nxt[1]' style='width: 400px;'><td><label><input type='checkbox' name='ch$nxt[0]' $checked value='1'> Да</label>");
-		$i=1-$i;
-	}
-	$tmpl->addContent("<tr><td>Новый<td><input type='text' name='nm_new' value='' style='width: 400px;'><td><label><input type='checkbox' name='ch_new' value='1'> Да</label>");
-
-	$tmpl->addContent("</table>
-	<button type='submit'>Записать</button>
-	</form>");
-}
-else if($mode=='store') {
-	if (request('opt')) {
-		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
-		$res = $db->query("SELECT `id`, `name`, `dnc` FROM `doc_sklady`");
-		while ($nxt = $res->fetch_row()) {
-			if (!isset($_POST['sname'][$nxt[0]]))	continue;
-			$name = $db->real_escape_string($_POST['sname'][$nxt[0]]);
-			$dnc = isset($_POST['dnc'][$nxt[0]]) ? 1 : 0;
-			$desc = '';
-			if ($_POST['sname'][$nxt[0]] != $nxt[1])
-				$desc.="name:(" . $db->real_escape_string($nxt[1]) . " => $name), ";
-			if ($dnc != $nxt[2])	$desc.="dnc: ($nxt[2] => $dnc)";
-			if ($desc == '')	continue;
-
-			$db->query("UPDATE `doc_sklady` SET `name`='$name', `dnc`='$dnc' WHERE `id`='$nxt[0]'");
-			doc_log('UPDATE', $desc, 'sklad', $nxt[0]);
-		}
-		$tmpl->msg("Данные обновлены","ok");
-	}
-	
-	$tmpl->addContent("<h1>Редактор складов</h1>
-	<form action='' method='post'>
-	<input type='hidden' name='mode' value='store'>
-	<input type='hidden' name='opt' value='save'>
-	<table><tr><th>N</th><th>Наименование</th><th>Не контролировать остатки</th></tr>");
-	$res=$db->query("SELECT `id`, `name`, `dnc` FROM `doc_sklady` ORDER BY `id`");
-	while($line=$res->fetch_row()) {
-		$c=$line[2]?'checked':'';
-		$tmpl->addContent("<tr><td>$line[0]</td><td><input type='text' name='sname[$line[0]]' value='$line[1]'></td><td><input type='checkbox' name='dnc[$line[0]]' value='1' $c></td></tr>");
-	}
-	$tmpl->addContent("<tr><td>Новый</td><td><input type='text' name='sname[0]' value=''></td><td><input type='checkbox' name='dnc[0]' value='1'></td></tr>
-	</table>
-	<button>Сохранить</button>
-	</form>");
-}
 else if($mode=='params') {
 	$opt = request('opt');
 	$cur_group = rcvint('group', 1);
@@ -682,56 +613,6 @@ else if($mode=='param_collections')
 	$tmpl->addContent("Новый набор: <input type='text' name='name' value=''><br>");
 	$tmpl->addContent("<button>Сохранить</button></form>");
 }
-else if($mode=='types') {
-	
-	function typesTable($tmpl, $db) {
-		$res = $db->query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
-		if($res->num_rows) {
-			$tmpl->addContent("<table class='list'><th>ID</th><th>Название</th></tr>");
-			while($nxt = $res->fetch_row()) {
-				$tmpl->addContent("<tr><td><a href='/doc_service.php?mode=types&amp;opt=edit&amp;id=$nxt[0]'>$nxt[0]</a></td><td>$nxt[1]</td></tr>");
-			}
-			$tmpl->addContent("</table>");
-		}	
-	}
-	
-	function editForm($tmpl, $id = -1, $name = '') {
-		$tmpl->addContent("<form method='post'>
-		<input type='hidden' name='mode' value='types'>
-		<input type='hidden' name='opt' value='save'>
-		<input type='hidden' name='id' value='$id'>
-		<fieldset><legend>");
-		if($id>=0)	$tmpl->addContent("Правка типа");
-		else		$tmpl->addContent("Новый тип");
-		$tmpl->addContent("</legend>Наименование:<br>
-		<input type='text' name='name' value='".html_out($name)."'><br>
-		<button type='submit'>Сохранить</button>
-		</fieldset>
-		</form>");
-	}
-	
-	$opt = request('opt');
-	$id = rcvint('id');
-	$tmpl->addContent("<h1>Редактор типов товаров</h1>");
-	$tmpl->setTitle("Редактор типов товаров");
-	
-	if($opt == 'save') {
-		if(!isAccess('doc_service','edit'))	throw new AccessException("Недостаточно привилегий!");
-		if($id<0)	$db->insertA('doc_base_dop_type', array('name' => request('name')));
-		else		$db->update('doc_base_dop_type', $id, 'name', request('name'));
-		$tmpl->msg("Данные сохранены", "ok");
-	}
-	
-	if($opt == 'edit' && isAccess('doc_service', 'edit')) {
-		$row = $db->selectRow('doc_base_dop_type', $id);
-		if($row)	editForm($tmpl, $row['id'], $row['name']);
-	}
-	
-	typesTable($tmpl, $db);
-	
-	if(isAccess('doc_service','edit') && ($opt == '' || $opt == 'save'))
-		editForm($tmpl);
-}
 else if($mode=='auinfo')
 {
 	$dt_apply = strtotime(rcvdate('dt_apply', date("Y-m-d",time()-60*60*24*31)));
@@ -944,13 +825,42 @@ else if($mode=='kass') {
 	$editor->link_prefix = '/doc_service.php?mode=kass';
 	$editor->run();
 }
-else if($mode=='firmss') {
+else if($mode=='firms') {
 	$editor = new \ListEditors\FirmListEditor();
 	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=firmss';
+	$editor->link_prefix = '/doc_service.php?mode=firms';
 	$editor->run();
 }
-
+else if($mode=='ctypes') {
+	$editor = new \ListEditors\CTypesListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=ctypes';
+	$editor->run();
+}
+else if($mode=='dtypes') {
+	$editor = new \ListEditors\DTypesListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=dtypes';
+	$editor->run();
+}
+else if($mode=='accounts') {
+	$editor = new \ListEditors\AccountListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=accounts';
+	$editor->run();
+}
+else if($mode=='stores') {
+	$editor = new \ListEditors\StoresListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=stores';
+	$editor->run();
+}
+else if($mode=='pos_types') {
+	$editor = new \ListEditors\PosTypesListEditor();
+	$editor->line_var_name = 'id';
+	$editor->link_prefix = '/doc_service.php?mode=pos_types';
+	$editor->run();
+}
 else throw new NotFoundException("Несуществующая опция");
 }
 catch(mysqli_sql_exception $e) {

@@ -31,12 +31,30 @@ class doc_PBank extends doc_Nulltype
 	}
 
 	function initDefDopdata() {
-		$this->def_dop_data = array('unique'=>'', 'cardpay'=>'', 'cardholder'=>'', 'masked_pan'=>'', 'trx_id'=>'', 'p_rnn'=>'');
+		global $db;
+		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'pbank');
+		$acc = '';
+		if(is_array($def_acc)) {
+			$acc = $def_acc['account'];
+		}
+		$this->def_dop_data = array('unique'=>'', 'cardpay'=>'', 'cardholder'=>'', 'masked_pan'=>'', 'trx_id'=>'', 'p_rnn'=>'', 'credit_type'=>0,
+		    'account'=>$acc
+		);
 	}
 	
-	function DopHead()
-	{
-		global $tmpl;
+	function DopHead() {
+		global $tmpl, $db;		
+		$tmpl->addContent("Вид дохода:<br><select name='credit_type'>");
+		if(!$this->dop_data['credit_type'])
+			$tmpl->addContent("<option value='0' selected disabled>--не задан--</option>");
+		$res = $db->query("SELECT `id`, `account`, `name` FROM `doc_ctypes` WHERE `id`>'0'");
+		while($nxt = $res->fetch_assoc())
+			if($nxt['id'] == $this->dop_data['credit_type'])
+				$tmpl->addContent("<option value='{$nxt['id']}' selected>".html_out($nxt['name'])." (".html_out($nxt['account']).")</option>");
+			else
+				$tmpl->addContent("<option value='{$nxt['id']}'>".html_out($nxt['name'])." (".html_out($nxt['account']).")</option>");
+		$tmpl->addContent("</select><br>");	
+		$tmpl->addContent("Номер бухгалтерского счёта:<br><input type='text' name='account' value='{$this->dop_data['account']}'><br>");
 		$tmpl->addContent("Номер документа клиента банка:<br><input type='text' name='unique' value='{$this->dop_data['unique']}'><br>");
 		if($this->dop_data['cardpay']) {
 			$tmpl->addContent("<b>Владелец карты:</b>{$this->dop_data['cardholder']}><br>
@@ -46,18 +64,19 @@ class doc_PBank extends doc_Nulltype
 	}
 
 	function DopSave() {
-		$unique = request('unique');
-		if($unique)
-		{
-			$this->setDopData('unique', $unique);
-			if($this->doc)	{
-				if($this->dop_data['unique']!=$unique)
-				{
-					$log_data="unique: {$this->dop_data['unique']}=>$unique, ";
-					doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
-				}
-			}
-		}
+		$new_data = array(
+		    'unique' => request('unique'),
+		    'credit_type' => rcvint('credit_type'),
+		    'account' => request('account')
+		);
+		$old_data = array_intersect_key($new_data, $this->dop_data);
+
+		$log_data = '';
+		if ($this->doc)
+			$log_data = getCompareStr($old_data, $new_data);
+		$this->setDopDataA($new_data);
+		if ($log_data)
+			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 	}
 
 	function DopBody() {

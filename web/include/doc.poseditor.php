@@ -18,9 +18,7 @@
 //
 
 /// Редактор списка наименований
-class PosEditor
-{
-
+class PosEditor {
 	var $editable;		///< Разрешено ли редактирование и показ складского блока
 	var $cost_id;		///< id выбранной цены. 0 - базовая
 	var $sklad_id;		///< id склада
@@ -122,8 +120,7 @@ class PosEditor
 
 /// Редактор списка наименований документа.
 /// При создании экземпляра класса нужно указать ID существующеего документа
-class DocPosEditor extends PosEditor
-{
+class DocPosEditor extends PosEditor {
 	var $doc;	// Id документа
 	var $doc_obj;	// Объект ассоциированного документа
 	var $show_sn;	// Показать серийные номера
@@ -203,8 +200,7 @@ protected function initPriceCalc() {
 }
 
 /// Формирует html код списка товаров документа
-function Show($param='')
-{
+function Show($param='') {
 	global $CONFIG;
 	// Список товаров
 	/// @note TODO: возможность отключения редактирования в зависимости от статуса документа, настройка отображаемых столбцов из конфига. Не забыть про серийные номера.

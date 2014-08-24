@@ -74,7 +74,7 @@ class Report_Outlay_Items extends BaseReport {
 		
 		$sql_add = $firm?" AND `doc_list`.`firm_id` = '$firm'":'';
 		
-		$res_vr = $db->query("SELECT `id`, `name` FROM `doc_rasxodi` ORDER BY `id`");
+		$res_vr = $db->query("SELECT `id`, `name` FROM `doc_dtypes` ORDER BY `id`");
 		while ($vr = $res_vr->fetch_row()) {
 			$this->tableAltStyle();
 			$this->tableSpannedRow(array($this->col_cnt), array("$vr[0]. $vr[1]"));

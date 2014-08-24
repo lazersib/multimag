@@ -114,7 +114,7 @@ class Report_Cons_Finance
 		<tr><td>2</td><td id='lf'>Поступления в кассу</td><td>$nal_prn</td><td>$pod_prn</td><td>$nalsum_prn</td></tr>
 		<tr><th colspan='2'>Получено:</th><th>$nal_prn</th><th>$bn_prn</th><th>$sum_prn</th></tr>
 		<tr><th colspan='5'>Затраты</th></tr>");
-		$res = $db->query("SELECT * FROM `doc_rasxodi`");
+		$res = $db->query("SELECT `id`, `name`, `adm` FROM `doc_dtypes`");
 		while($nxt = $res->fetch_row()) {
 			$nal = @$rasxody_nal[$nxt[0]];
 			$bn = @$rasxody_bn[$nxt[0]];

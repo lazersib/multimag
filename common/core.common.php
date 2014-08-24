@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "692");
+define("MULTIMAG_REV", "695");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -128,6 +128,20 @@ class MysqiExtended extends mysqli {
 		if(!$res->num_rows)	return 0;
 		return	$res->fetch_assoc();
 	}
+	
+	/// Получить все значения строки из таблицы по ключу в виде массива
+	/// @param table	Имя таблицы
+	/// @param key_name	Имя ключа, по которому производится выборка.
+	/// @param key_value	Значение ключа, по которому производится выборка.
+	/// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае sql ошибки вернёт false. В случае, если искомой строки нет в таблице, вернет 0
+	function selectRowK($table, $key_name, $key_value) {
+		$key_value = $this->real_escape_string($key_value);
+		$res=$this->query('SELECT * FROM `'.$table.'` WHERE `'.$key_name.'`=\''.$key_value.'\'');
+		if(!$res)		return false;
+		if(!$res->num_rows)	return 0;
+		return	$res->fetch_assoc();
+	}
+	
 	
 	/// Получить заданные значения строки из таблицы по ключу в виде массива
 	/// @param table	Имя таблицы

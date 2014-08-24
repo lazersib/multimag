@@ -30,6 +30,47 @@ class doc_Pko extends doc_Nulltype {
 			array('name'=>'pko','desc'=>'Приходный ордер','method'=>'PrintPKOPDF')
 		);
 	}
+	
+	function initDefDopdata() {
+		global $db;
+		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'pko');
+		$acc = '';
+		if(is_array($def_acc)) {
+			$acc = $def_acc['account'];
+		}
+		$this->def_dop_data = array('credit_type'=>0, 'account'=>$acc);
+	}
+	
+	function DopHead() {
+		global $tmpl, $db;		
+		$tmpl->addContent("Вид дохода:<br><select name='credit_type'>");
+		if(!$this->dop_data['credit_type'])
+			$tmpl->addContent("<option value='0' selected disabled>--не задан--</option>");
+		$res = $db->query("SELECT `id`, `account`, `name` FROM `doc_ctypes` WHERE `id`>'0'");
+		while($nxt = $res->fetch_assoc())
+			if($nxt['id'] == $this->dop_data['credit_type'])
+				$tmpl->addContent("<option value='{$nxt['id']}' selected>".html_out($nxt['name'])." (".html_out($nxt['account']).")</option>");
+			else
+				$tmpl->addContent("<option value='{$nxt['id']}'>".html_out($nxt['name'])." (".html_out($nxt['account']).")</option>");
+		$tmpl->addContent("</select><br>");
+		
+		$tmpl->addContent("Номер бухгалтерского счёта:<br><input type='text' name='account' value='{$this->dop_data['account']}'><br>");
+	}
+
+	function DopSave() {
+		$new_data = array(
+		    'credit_type' => rcvint('credit_type'),
+		    'account' => request('account')
+		);
+		$old_data = array_intersect_key($new_data, $this->dop_data);
+
+		$log_data = '';
+		if ($this->doc)
+			$log_data = getCompareStr($old_data, $new_data);
+		$this->setDopDataA($new_data);
+		if ($log_data)
+			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+	}
 
 	// Провести
 	function DocApply($silent=0) {

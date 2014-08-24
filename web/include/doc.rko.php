@@ -33,25 +33,35 @@ class doc_Rko extends doc_Nulltype {
 	}
 
 	function initDefDopdata() {
-		$this->def_dop_data = array('rasxodi'=>0);
+		global $db;
+		$def_acc = $db->selectRowK('doc_accounts', 'usedby', 'rko');
+		$acc = '';
+		if(is_array($def_acc)) {
+			$acc = $def_acc['account'];
+		}
+		$this->def_dop_data = array('rasxodi'=>0, 'account'=>$acc);
 	}
 	
 	function DopHead() {
 		global $tmpl, $db;
 		$tmpl->addContent("Вид расхода:<br><select name='rasxodi'>");
-		$res = $db->query("SELECT * FROM `doc_rasxodi` WHERE `id`>'0'");
-		while($nxt = $res->fetch_row())
-			if($nxt[0] == $this->dop_data['rasxodi'])
-				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
+		$res = $db->query("SELECT `id`, `account`, `name` FROM `doc_dtypes` WHERE `id`>'0'");
+		if(!$this->dop_data['rasxodi'])
+			$tmpl->addContent("<option value='0' selected disabled>--не задан--</option>");
+		while($nxt = $res->fetch_assoc())
+			if($nxt['id'] == $this->dop_data['rasxodi'])
+				$tmpl->addContent("<option value='{$nxt['id']}' selected>".html_out($nxt['name'])." (".html_out($nxt['account']).")</option>");
 			else
-				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
+				$tmpl->addContent("<option value='{$nxt['id']}'>".html_out($nxt['name'])." (".html_out($nxt['account']).")</option>");
 		
-		$tmpl->addContent("</select>");	
+		$tmpl->addContent("</select><br>");	
+		$tmpl->addContent("Номер бухгалтерского счёта:<br><input type='text' name='account' value='{$this->dop_data['account']}'><br>");
 	}
 
 	function DopSave() {
 		$new_data = array(
-		    'rasxodi' => request('rasxodi')
+		    'rasxodi' => request('rasxodi'),
+		    'account' => request('account')
 		);
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 

@@ -715,6 +715,7 @@ function PosEditorInit(poslist_setup) {
 		var input_cnt;
 		var cell_sum;
 		var cell_store_cnt;
+		var cell_sprice;
 
 		// ID
 		tmp = document.createElement('td');
@@ -747,6 +748,9 @@ function PosEditorInit(poslist_setup) {
 					break;
 				case 'store_cnt':
 					cell_store_cnt = tmp;
+					break;
+				case 'sprice':
+					cell_sprice = tmp;
 					break;
 				default:;	
 			}
@@ -881,7 +885,8 @@ function PosEditorInit(poslist_setup) {
 				cell_sum.innerHTML = '';
 			if(cell_store_cnt)
 				cell_store_cnt.innerHTML = '';
-
+			if(cell_sprice)
+				cell_sprice.innerHTML = '';
 			if (input_vc)
 				input_vc.focus();
 			else	input_id.focus();
@@ -936,7 +941,9 @@ function PosEditorInit(poslist_setup) {
 			if(cell_sum)
 				cell_sum.innerHTML = data.cost * data.cnt;
 			if(cell_store_cnt)
-				cell_store_cnt.innerHTML = data.sklad_cnt
+				cell_store_cnt.innerHTML = data.sklad_cnt;
+			if(cell_sprice)
+				cell_sprice.innerHTML = data.scost;
 			if (data.line_id > 0)
 				pladd.className = 'error';
 		}
