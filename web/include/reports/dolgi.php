@@ -33,6 +33,8 @@ class Report_Dolgi extends BaseReport {
 		<form action=''>
 		<input type='hidden' name='mode' value='dolgi'>
 		<input type='hidden' name='opt' value='ok'>
+		Дата:<br>
+		<input type='text' name='date' id='date' value='$curdate'><br>
 		Организация:<br>
 		<select name='firm_id'>
 		<option value='0'>--все--</option>");
@@ -54,7 +56,10 @@ class Report_Dolgi extends BaseReport {
 		<label><input type='radio' name='vdolga' value='2'>Мы должны</label>
 		</fieldset><br>
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
-		<button type='submit'>Сформировать</button></form>");
+		<button type='submit'>Сформировать</button></form>
+		<script>
+		initCalendar('date',false);
+		</script>");
 	}
 
 	function Make($engine) {
@@ -62,10 +67,13 @@ class Report_Dolgi extends BaseReport {
 		$vdolga = request('vdolga');
 		$agroup = rcvint('agroup');
 		$firm_id = rcvint('firm_id');
+		$date = intval(strtotime(request('date')));	// Для безопасной передачи в БД
 		$this->loadEngine($engine);
+		
+		$date_p = date("Y-m-d", $date);
 				
-		if ($vdolga == 2)	$header = "Информация по нашей задолженности от " . date('d.m.Y');
-		else			$header = "Информация о задолженности перед нашей организацией от " . date('d.m.Y');
+		if ($vdolga == 2)	$header = "Информация по нашей задолженности на $date_p от " . date('d.m.Y');
+		else			$header = "Информация о задолженности перед нашей организацией на $date_p от " . date('d.m.Y');
 		$this->header($header);
 		
 		$widths = array(6, 46, 12, 12, 12, 12);
@@ -75,19 +83,20 @@ class Report_Dolgi extends BaseReport {
 		
 		$sql_add = $agroup ? " AND `group`='$agroup'" : '';
 		$res = $db->query("SELECT `id` AS `agent_id`, `name`, `data_sverki`
-		FROM `doc_agent` WHERE 1 $sql_add ORDER BY `name`");
+			FROM `doc_agent` WHERE 1 $sql_add ORDER BY `name`");
+		$date_limit = " AND `date`<=$date";
 		$i = 0;
 		$sum_dolga = 0;
 		while ($nxt = $res->fetch_array()) {
-			$dolg = agentCalcDebt($nxt[0], 0, $firm_id);
+			$dolg = agentCalcDebt($nxt[0], 0, $firm_id, $db, $date);
 			if ((($dolg > 0) && ($vdolga == 1)) || (($dolg < 0) && ($vdolga == 2))) {
 				$d_res = $db->query("SELECT `date` FROM `doc_list`
-				WHERE `agent`={$nxt['agent_id']} AND (`type`=4 OR `type`=5) ORDER BY `date` DESC LIMIT 1");
+				WHERE `agent`={$nxt['agent_id']} AND (`type`=4 OR `type`=5) $date_limit ORDER BY `date` DESC LIMIT 1");
 				if ($d_res->num_rows)
 					list($k_date) = $d_res->fetch_row();
 				else	$k_date = '';
 				$d_res = $db->query("SELECT `date` FROM `doc_list`
-				WHERE `agent`={$nxt['agent_id']} AND (`type`=6 OR `type`=7) ORDER BY `date` DESC LIMIT 1");
+				WHERE `agent`={$nxt['agent_id']} AND (`type`=6 OR `type`=7) $date_limit ORDER BY `date` DESC LIMIT 1");
 				if ($d_res->num_rows)
 					list($b_date) = $d_res->fetch_row();
 				else	$b_date = '';

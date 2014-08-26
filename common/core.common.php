@@ -77,20 +77,26 @@ function date_day($date) {
 }
 
 /// Расчёт долга агента. Положительное число обозначает долг агента, отрицательное - долг перед агентом.
-/// @param agent_id	ID агента, для которого расчитывается баланс
-/// @param no_cache	Не брать данные расчёта из кеша
-/// @param firm_id	ID собственной фирмы, для которой будет расчитан баланс. Если 0 - расчёт ведётся для всех фирм.
-/// @param local_db	Дескриптор соединения с базой данных. Если не задан - используется глобальная переменная.
-function agentCalcDebt($agent_id, $no_cache=0, $firm_id=0, $local_db=0) {
+/// @param $agent_id	ID агента, для которого расчитывается баланс
+/// @param $no_cache	Не брать данные расчёта из кеша
+/// @param $firm_id	ID собственной фирмы, для которой будет расчитан баланс. Если 0 - расчёт ведётся для всех фирм.
+/// @param $local_db	Дескриптор соединения с базой данных. Если не задан - используется глобальная переменная.
+/// @param $date	Дата, на которую расчитывается долг
+function agentCalcDebt($agent_id, $no_cache = 0, $firm_id = 0, $local_db = 0, $date = 0) {
 	global $tmpl, $db, $doc_agent_dolg_cache_storage;
 	//if(!$no_cache && isset($doc_agent_dolg_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
 	settype($agent_id,'int');
 	settype($firm_id,'int');
+	settype($date,'int');
 	$dolg=0;
-	$sql_add=$firm_id?"AND `firm_id`='$firm_id'":'';
+	$query = "SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0'";
+	if($firm_id)	
+		$query .= " AND `firm_id`='$firm_id'";
+	if($date)
+		$query .= " AND `date`<=$date";
 	if($local_db)
-		$res = $local_db->query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
-	else	$res = $db->query("SELECT `type`, `sum` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' $sql_add");
+		$res = $local_db->query($query);
+	else	$res = $db->query($query);
 	while($nxt=$res->fetch_row()) {
 		switch($nxt[0])	{
 			case 1: $dolg-=$nxt[1]; break;
