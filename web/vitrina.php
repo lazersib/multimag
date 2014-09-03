@@ -71,7 +71,7 @@ function ProbeRecode() {
 }
 
 /// Исполнение заданной функции
-/// @param mode Название функции витрины
+/// @param $mode Название функции витрины
 function ExecMode($mode)
 {
 	global $tmpl, $db;
@@ -224,8 +224,8 @@ protected function TopGroup() {
 }
 
 /// Отобразить список групп / подгрупп
-/// @param group ID группы, которую нужно отобразить
-/// @param page Номер страницы отображаемой группы
+/// @param $group ID группы, которую нужно отобразить
+/// @param $page Номер страницы отображаемой группы
 protected function ViewGroup($group, $page)
 {
 	global $tmpl, $CONFIG, $wikiparser, $db;
@@ -284,8 +284,8 @@ protected function ViewGroup($group, $page)
 }
 
 /// Список товаров в группе
-/// @param group ID группы, из которой нужно отбразить товары
-/// @param page Номер страницы отображаемой группы
+/// @param $group ID группы, из которой нужно отбразить товары
+/// @param $page Номер страницы отображаемой группы
 protected function ProductList($group, $page) {
 	global $tmpl, $CONFIG, $db;
 	settype($group,'int');
@@ -371,7 +371,7 @@ protected function ProductList($group, $page) {
 }
 
 /// Отобразить блок товаров, выбранных по признаку, основанному на типе блока
-/// @param block Тип отображаемого блока: stock - Распродажа, popular - Популярные товары, new - Новинки, transit - Товарв пути
+/// @param $block Тип отображаемого блока: stock - Распродажа, popular - Популярные товары, new - Новинки, transit - Товарв пути
 protected function ViewBlock($block)
 {
 	global $tmpl, $CONFIG, $db, $wikiparser;
@@ -523,10 +523,10 @@ protected function ViewBlock($block)
 }
 
 /// Отобразить блок ссылок смены вида отображения и сортировки предложений в группе
-/// @param group	ID текущей группы
-/// @param page 	Номер текущей страницы
-/// @param order	Установелнная сортировка
-/// @param view		Установелнный вид отображения
+/// @param $group	ID текущей группы
+/// @param $page 	Номер текущей страницы
+/// @param $order	Установелнная сортировка
+/// @param $view		Установелнный вид отображения
 protected function OrderAndViewBar($group, $page, $order, $view)
 {
 	global $tmpl;
@@ -562,9 +562,8 @@ protected function OrderAndViewBar($group, $page, $order, $view)
 }
 
 /// Отобразить карточку товара
-/// @param product ID отображаемого товара/услуги
-protected function ProductCard($product)
-{
+/// @param $product ID отображаемого товара/услуги
+protected function ProductCard($product) {
 	global $tmpl, $CONFIG, $wikiparser, $db;
 	settype($product,'int');
 
@@ -591,45 +590,8 @@ protected function ProductCard($product)
 		if($product_data['title_tag'])	$title=html_out($product_data['title_tag']);
 		else				$title="$product_name_html, цены и характеристики, купить";
 		$tmpl->setTitle($title);
-		$base=abs(crc32($product_data['name'].$product_data['group'].$product_data['proizv'].$product_data['vc'].$product_data['desc']));
-		if($product_data['meta_keywords'])	$tmpl->setMetaKeywords(html_out($product_data['meta_keywords']));
-		else
-		{
-			$k1=array('купить','цены','характеристики','фото','выбор','каталог','описания','отзывы','продажа','описание');
-			$l=count($k1);
-			$i1=$base%$l;
-			$base=floor($base/$l);
-			$i2=$base%$l;
-			$base=floor($base/$l);
-			$meta_key=$product_name_html.' '.$k1[$i1].' '.$k1[$i2];
-			$tmpl->setMetaKeywords($meta_key);
-		}
-
-		if($product_data['meta_description'])	$tmpl->setMetaDescription( html_out($product_data['meta_description']) );
-		else
-		{
-			$d=array();
-			$d[0]=array($product_name_html.' '.html_out($product_data['proizv']).' - ');
-			$d[1]=array('купить','заказать','продажа','приобрести');
-			$d[2]=array(' в интернет-магазине '.$CONFIG['site']['display_name'].' по ');
-			$d[3]=array('доступной','отличной','хорошей','разумной','выгодной');
-			$d[4]=array('цене.','стоимости.');
-			$d[5]=array('Большой','Широкий','Огромный');
-			$d[6]=array('выбор','каталог','ассортимент');
-			$d[7]=array('товаров.','продукции.');
-			$d[8]=array('Доставка','Экспресс-доставка','Доставка курьером','Почтовая доставка');
-			$d[9]=array('по всей России.','в любой город России.','по РФ.','в любой регион России.');
-			$str='';
-			foreach($d as $id => $item)
-			{
-				$l=count($item);
-				$i=$base%$l;
-				$base=floor($base/$l);
-				$str.=$item[$i].' ';
-			}
- 			$tmpl->setMetaDescription($str);
-		}
-
+		
+		$this->fillProductMetaTags($product_data);
 
 		$tmpl->addContent("<h1 id='page-title'>$product_name_html</h1>");
 		$tmpl->addContent("<div class='breadcrumbs'>".$this->GetVitPath($product_data['group'])."</div>");
@@ -784,29 +746,9 @@ protected function ProductCard($product)
 		</div>
 		</form>
 		</td></tr></table>");
-		$d=array();
-		$d[]=array('В нашем');
-		$d[]=array('магазине','интернет-магазине','каталоге','прайс-листе');
-		$d[]=array('Вы можете');
-		$d[]=array('купить','заказать','приобрести');
-		$d[]=array($product_data['group_printname'].' '.$product_data['name'].' '.$product_data['proizv'].' по ');
-		$d[]=array('доступной','отличной','хорошей','разумной','выгодной');
-		$d[]=array('цене за','стоимости за');
-		$d[]=array('наличный расчёт.','безналичный расчёт.','webmoney.');
-		$d[]=array('Так же можно');
-		$d[]=array('заказать','запросить','осуществить');
-		$d[]=array('доставку','экспресс-доставку','доставку транспортной компанией','почтовую доставку','доставку курьером');
-		$d[]=array('этого товара','выбранной продукции');
-		$d[]=array('по всей России.','в любой город России.','по РФ.','в любой регион России.');
-		$str='';
-		$base=abs(crc32($product_data['name'].$product_data['group'].$product_data['proizv'].$product_data['vc'].$product_data['desc']));
-		foreach($d as $id => $item)
-		{
-			$l=count($item);
-			$i=$base%$l;
-			$base=floor($base/$l);
-			$str.=$item[$i].' ';
-		}
+		
+		$str = $this->getProductAutoDescription($product_data);
+		
 		$tmpl->addContent("<div class='description'>$str</div>");
 		
 		// Аналоги
@@ -867,6 +809,77 @@ protected function ProductCard($product)
 		$tmpl->addContent("<h1 id='page-title'>Информация о товаре</h1>");
 		throw new NotFoundException("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
 	}
+}
+
+/// Заполнить title, keyword, description тэги для карточки товара
+/// @param $product_data Массив с информацией о товаре
+public function fillProductMetaTags($product_data) {
+	global $tmpl, $CONFIG;
+	$base = abs(crc32($product_data['name'] . $product_data['group'] . $product_data['proizv'] . $product_data['vc'] . $product_data['desc']));
+	if ($product_data['meta_keywords'])
+		$tmpl->setMetaKeywords(html_out($product_data['meta_keywords']));
+	else {
+		$k1 = array('купить', 'цены', 'характеристики', 'фото', 'выбор', 'каталог', 'описания', 'отзывы', 'продажа', 'описание');
+		$l = count($k1);
+		$i1 = $base % $l;
+		$base = floor($base / $l);
+		$i2 = $base % $l;
+		$base = floor($base / $l);
+		$meta_key = $product_data['group_printname'].' '.$product_data['name'] . ' ' . $k1[$i1] . ' ' . $k1[$i2];
+		$tmpl->setMetaKeywords(html_out($meta_key));
+	}
+
+	if ($product_data['meta_description'])
+		$tmpl->setMetaDescription(html_out($product_data['meta_description']));
+	else {
+		$d = array();
+		$d[0] = array($product_data['group_printname'].' '.$product_data['name'] . ' ' . $product_data['proizv'] . ' - ');
+		$d[1] = array('купить', 'заказать', 'продажа', 'приобрести');
+		$d[2] = array(' в интернет-магазине ' . $CONFIG['site']['display_name'] . ' по ');
+		$d[3] = array('доступной', 'отличной', 'хорошей', 'разумной', 'выгодной');
+		$d[4] = array('цене.', 'стоимости.');
+		$d[5] = array('Большой', 'Широкий', 'Огромный');
+		$d[6] = array('выбор', 'каталог', 'ассортимент');
+		$d[7] = array('товаров.', 'продукции.');
+		$d[8] = array('Доставка', 'Экспресс-доставка', 'Доставка курьером', 'Почтовая доставка');
+		$d[9] = array('по всей России.', 'в любой город России.', 'по РФ.', 'в любой регион России.');
+		$str = '';
+		foreach ($d as $id => $item) {
+			$l = count($item);
+			$i = $base % $l;
+			$base = floor($base / $l);
+			$str.=$item[$i] . ' ';
+		}
+		$tmpl->setMetaDescription(html_out($str));
+	}
+}
+
+/// Получить автоматически генерируемое дополнение к описанию товара
+/// @param $product_data Массив с информацией о товаре
+public function getProductAutoDescription($product_data) {
+	$d = array();
+	$d[] = array('В нашем');
+	$d[] = array('магазине', 'интернет-магазине', 'каталоге', 'прайс-листе');
+	$d[] = array('Вы можете');
+	$d[] = array('купить', 'заказать', 'приобрести');
+	$d[] = array($product_data['group_printname'] . ' ' . $product_data['name'] . ' ' . $product_data['proizv'] . ' по ');
+	$d[] = array('доступной', 'отличной', 'хорошей', 'разумной', 'выгодной');
+	$d[] = array('цене за', 'стоимости за');
+	$d[] = array('наличный расчёт.', 'безналичный расчёт.', 'webmoney.');
+	$d[] = array('Так же можно');
+	$d[] = array('заказать', 'запросить', 'осуществить');
+	$d[] = array('доставку', 'экспресс-доставку', 'доставку транспортной компанией', 'почтовую доставку', 'доставку курьером');
+	$d[] = array('этого товара', 'выбранной продукции');
+	$d[] = array('по всей России.', 'в любой город России.', 'по РФ.', 'в любой регион России.');
+	$str = '';
+	$base = abs(crc32($product_data['name'] . $product_data['group'] . $product_data['proizv'] . $product_data['vc'] . $product_data['desc']));
+	foreach ($d as $id => $item) {
+		$l = count($item);
+		$i = $base % $l;
+		$base = floor($base / $l);
+		$str.=$item[$i] . ' ';
+	}
+	return $str;
 }
 
 /// Получить HTML код товарного предложения стандартного размера
@@ -1240,8 +1253,8 @@ protected function GroupList_ImageStyle($group) {
 }
 
 /// Простая таблица товаров
-/// @param res mysqli_result Список товарных предложений
-/// @param lim Максимальное количество выводимых строк
+/// @param $res mysqli_result Список товарных предложений
+/// @param $lim Максимальное количество выводимых строк
 protected function TovList_SimpleTable($res, $lim) {
 	global $tmpl, $CONFIG;
 	
@@ -1312,8 +1325,8 @@ protected function TovList_SimpleTable($res, $lim) {
 }
 
 /// Список товаров в виде изображений
-/// @param res mysqli_result Список товарных предложений
-/// @param lim Максимальное количество выводимых строк
+/// @param $res mysqli_result Список товарных предложений
+/// @param $lim Максимальное количество выводимых строк
 protected function TovList_ImageList($res, $lim) {
 	global $tmpl, $CONFIG;
 	$cc=$i=0;
@@ -1375,8 +1388,8 @@ protected function TovList_ImageList($res, $lim) {
 }
 
 /// Подробная таблица товаров
-/// @param res mysqli_result Список товарных предложений
-/// @param lim Максимальное количество выводимых строк
+/// @param $res mysqli_result Список товарных предложений
+/// @param $lim Максимальное количество выводимых строк
 protected function TovList_ExTable($res, $lim) {
 	global $tmpl, $CONFIG;
 	
@@ -1501,7 +1514,7 @@ protected function BuyMakeForm()
 
 	$tmpl->addContent("
 	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='80'>".@$up['dop']['dop_info']."</textarea><br>
+	<textarea name='dop' rows='5' cols='80'>".html_out(@$up['dop']['dop_info'])."</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
 	</form>");
@@ -1524,7 +1537,7 @@ protected function MakeBuy() {
 	}
 	$rname		= request('rname');	
 	$delivery	= intval($_SESSION['basket']['delivery_type']);	
-	$delivery_region= $_SESSION['basket']['delivery_region'];
+	$delivery_region= @$_SESSION['basket']['delivery_region'];
 	$email		= request('email');	
 	$comment	= request('dop');
 	
@@ -1788,7 +1801,7 @@ protected function PageBar($group, $item_count, $per_page, $cur_page)
 }
 
 /// Возвращает html код *хлебных крошек* витрины
-/// @param group_id Текущая группа витрины
+/// @param $group_id Текущая группа витрины
 protected function GetVitPath($group_id)
 {
 	global $db;

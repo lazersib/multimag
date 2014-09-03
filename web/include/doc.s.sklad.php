@@ -988,7 +988,7 @@ class doc_s_Sklad {
 			<tr><td>Наименование группы $group:</td>
 			<td><input type='text' name='name' value='".html_out($group_info['name'])."'></td></tr>
 			<tr><td>Находится в группе:</td>
-			<td>" . selectGroupPos('pid', $group_info['pid'], false));
+			<td>" . selectGroupPos('pid', $group_info['pid'], true));
 
 			if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 				$img = "<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$group&amp;param=gid'>Удалить изображение</a>";
