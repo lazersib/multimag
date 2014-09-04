@@ -97,7 +97,7 @@ function PosEditorInit(poslist_setup) {
 		}
 		poslist.appendChild(poslist.head);
 		
-		if(poslist_setup.fastadd_line && poslist_setup.editable) {
+		if(poslist_setup.fastadd_line) {
 			PladdInit(poslist);
 		}
 		poslist.body = document.createElement('tbody');
@@ -990,6 +990,9 @@ function PosEditorInit(poslist_setup) {
 
 		input_id.old_value = 0;
 		pladd.Reset();
+		if(!poslist.editable) {
+			pladd.style.display = 'none';
+		}
 	}
 
 	// Callback для внешнего управления виджетом, например из skladlist
@@ -1011,9 +1014,9 @@ function PosEditorInit(poslist_setup) {
 	poslist.refresh();
 	var skladview = SkladViewInit(poslist_setup, poslist.exec);
 
-	if(!poslist.editable)
+	if(!poslist.editable) {
 		skladview.style.display = 'none';
-
+	}
 	return poslist;
 }
 

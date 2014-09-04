@@ -336,7 +336,7 @@ class doc_s_Agent {
 	}
 	function ESave()
 	{
-		global $tmpl, $db;
+		global $tmpl, $db, $CONFIG;
 		doc_menu();
 		$pos = rcvint('pos');
 		$param = request('param');
@@ -373,6 +373,13 @@ class doc_s_Agent {
 				unset($new_agent_info['data_sverki']);
 				unset($ag_info['responsible']);
 				unset($ag_info['data_sverki']);
+			}
+			
+			if(@$CONFIG['agents']['leaf_only']) {
+				$new_group = $new_agent_info['group'];
+				$res = $db->query("SELECT `id` FROM `doc_agent_group` WHERE `pid`=$new_group");
+				if($res->num_rows)
+					throw new Exception ("Запись агента возможна только в конечную группу!");
 			}
 
 			$log_text = getCompareStr($ag_info, $new_agent_info);

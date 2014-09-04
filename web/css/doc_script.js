@@ -98,14 +98,14 @@ function DocProcessRequest(httpRequest, doc)
 					if(json.sklad_view)
 					{
 
-						var sklad_view=document.getElementById("sklad_view")
+						var sklad_view=document.getElementById("storeview_container")
 						var poslist=document.getElementById('poslist')
 						var pladd=document.getElementById('pladd')
 						if(sklad_view)
 						{
 							if(json.sklad_view=='show')
 							{
-								sklad_view.style.display='table'
+								sklad_view.style.display='block'
 								poslist.editable=1
 								poslist.refresh()
 								pladd.style.display='table-row'

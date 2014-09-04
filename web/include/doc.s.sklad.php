@@ -1270,7 +1270,15 @@ class doc_s_Sklad {
 				if (!isAccess('list_sklad', 'edit'))	throw new AccessException();
 				$sql_add = $log_add = '';
 				$old_data = $db->selectRowA('doc_base', $pos, $this->pos_vars);
+				
+				if(@$CONFIG['agents']['leaf_only']) {
+					$new_group = intval($pd['group']);
+					$res = $db->query("SELECT `id` FROM `doc_group` WHERE `pid`=$new_group");
+					if($res->num_rows)
+						throw new Exception ("Запись наименования возможна только в конечную группу!");
+				}
 
+				
 				foreach ($old_data as $id => $value) {
 					if ($id == 'id' || $id == 'likvid' || $id=='cost_date')	continue;
 					if (!isset($pd[$id]))			$pd[$id] = 0;

@@ -60,7 +60,7 @@ class BankListEditor extends \ListEditor {
 	
 	public function getInputFirm_id($name, $value) {
 		global $db;
-		$res = $db->query("SELECT `id`, `name` FROM `firm_info` ORDER BY `id`");
+		$res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
 		$ret = "<select name='$name'>";
 		$ret .="<option value='0'>-- не задано --</option>";
 		while($line = $res->fetch_assoc()) {
