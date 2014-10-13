@@ -140,14 +140,14 @@ class ds_zp_s_prodaj {
 			<input type='hidden' name='user_id' id='user_id' value='$user_id'>
 			<table width='100%' class='list'>
 			<tr><th>ID</th><th>Заявка</th><th>Реализация</th><th>Агент</th><th>Дата</th><th>Сумма</th><th>Агентские</th><th>К начислению</th><th>Начислить</th></tr>");
-			$i = 0;
-			$users = array();
+
 			$all_sum = 0;	// Общая сумма по всем документам, включая те, по которым не было оплаты
 			$no_sum = 0;	// Сумма не оплаченных документов, по которым не было начислений
 			$kn_sum = 0;	// Сумма к начислению
 			$nd_sum = 0;	// Сумма уже начисленного по документам
 			$ns_sum = 0;	// Сумма уже начисленного по сценарию
 			$ag_sum = 0;	// Сумма агентских вознаграждений
+			$r_sum = 0;	// Сумма реализаций
 			while ($nxt = $res->fetch_assoc()) {
 				$nxt['ag_sum'] = sprintf("%0.2f", $nxt['ag_sum']);
 
@@ -208,6 +208,7 @@ class ds_zp_s_prodaj {
 				
 				$all_sum += $nach_sum;
 				$ag_sum += $nxt['ag_sum'];
+				$r_sum += $nxt['sum'];
 				
 				if($show == 'nach' && $nxt['zp_s_prodaj'])		$tmpl->addContent($out_line);
 				else if($show == 'nonach' && !$nxt['zp_s_prodaj'])	$tmpl->addContent($out_line);
@@ -227,6 +228,7 @@ class ds_zp_s_prodaj {
 			<tr><th>Начислено по док-там</th><td>$nd_sum</td></tr>
 			<tr><th>Начислено по сценарию</th><td>$ns_sum</td></tr>
 			<tr><th>Сумма</th><td>$all_sum</td></tr>
+			<tr><th>Сумма реализаций</th><td>$r_sum</td></tr>
 			</table>");
 		} else if ($mode == 'exec') {
 			$tov_id = intval($_REQUEST['tov_id']);
@@ -271,4 +273,3 @@ class ds_zp_s_prodaj {
 	}
 
 }
-?>
