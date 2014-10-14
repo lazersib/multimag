@@ -19,7 +19,8 @@ namespace ListEditors;
 
 class KassListEditor extends \ListEditor {
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник касс';
 	}
 	
@@ -34,30 +35,30 @@ class KassListEditor extends \ListEditor {
 	
 	/// Загрузить список всех элементов справочника
 	public function loadList() {
-		global $db;
-		$res = $db->query("SELECT `num` AS `id`, `name`, `firm_id`
+		$res = $this->db_link->query("SELECT `num` AS `id`, `name`, `firm_id`
 			FROM `doc_kassa`
 			WHERE `ids`='kassa'
 			ORDER BY `num`");
 		$this->list = array();
-		while($line = $res->fetch_assoc())
+		while ($line = $res->fetch_assoc()) {
 			$this->list[$line['id']] = $line;
+		}
 	}
 
 	public function getItem($id) {
-		global $db;
 		settype($id, 'int');
-		$res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `firm_id`
+		$res = $this->db_link->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `firm_id`
 			FROM `doc_kassa`
 			WHERE `ids`='kassa' AND `num`=$id");
-		if($res->num_rows)
-			return	$res->fetch_assoc();
-		else	return false; 
+		if ($res->num_rows) {
+			return $res->fetch_assoc();
+		} else {
+			return false;
+		}
 	}
 	
 	public function getInputFirm_id($name, $value) {
-		global $db;
-		$res = $db->query("SELECT `id`, `name` FROM `firm_info` ORDER BY `id`");
+		$res = $this->db_link->query("SELECT `id`, `name` FROM `firm_info` ORDER BY `id`");
 		$ret = "<select name='$name'>";
 		$ret .="<option value='0'>-- не задано --</option>";
 		while($line = $res->fetch_assoc()) {
@@ -69,23 +70,23 @@ class KassListEditor extends \ListEditor {
 	}
 
 	public function saveItem($id, $data) {
-		global $db;
 		settype($id, 'int');
-		$name_sql	= $db->real_escape_string($data['name']);
+		$name_sql	= $this->db_link->real_escape_string($data['name']);
 		$firm_id	= intval($data['firm_id']);
 		if($id) {
-			$db->query("UPDATE `doc_kassa` SET `name`='$name_sql', `firm_id`='$firm_id'
+			$this->db_link->query("UPDATE `doc_kassa` SET `name`='$name_sql', `firm_id`='$firm_id'
 				WHERE `ids`='kassa' AND `num`=$id");
 			return $id;
 		}
-		$res = $db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `num` DESC LIMIT 1");
-		if($res->num_rows) {
+		$res = $this->db_link->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `num` DESC LIMIT 1");
+		if ($res->num_rows) {
 			$line = $res->fetch_row();
-			$id = $line[0]+1;
+			$id = $line[0] + 1;
+		} else {
+			$id = 1;
 		}
-		else	$id = 1;
-		$db->query("INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `firm_id`)
-			VALUES ('kassa', $id, '$name_sql', '$bik_sql', '$ks_sql', '$rs_sql', '$firm_id')");
+		$this->db_link->query("INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `firm_id`) ".
+			"VALUES ('kassa', $id, '$name_sql', '$firm_id')");
 		return $id;
 	}	
-};
+}

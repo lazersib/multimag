@@ -19,7 +19,8 @@ namespace ListEditors;
 
 class PosTypesListEditor extends \ListEditor {
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник типов товаров';
 		$this->table_name = 'doc_base_dop_type';
 	}
@@ -32,4 +33,4 @@ class PosTypesListEditor extends \ListEditor {
 		);
 	}
 	
-};
+}

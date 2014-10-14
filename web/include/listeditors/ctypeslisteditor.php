@@ -19,7 +19,8 @@ namespace ListEditors;
 
 class CTypesListEditor extends \ListEditor {
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник видов доходов';
 		$this->table_name = 'doc_ctypes';
 	}
@@ -33,4 +34,4 @@ class CTypesListEditor extends \ListEditor {
 		);
 	}
 	
-};
+}

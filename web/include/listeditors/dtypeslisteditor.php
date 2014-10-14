@@ -19,7 +19,8 @@ namespace ListEditors;
 
 class DTypesListEditor extends \ListEditor {
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник видов расходов';
 		$this->table_name = 'doc_dtypes';
 	}
@@ -38,4 +39,4 @@ class DTypesListEditor extends \ListEditor {
 		return $this->getCheckboxInput($name, 'Да', $value);
 	}
 	
-};
+}

@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
@@ -15,27 +16,24 @@
 //
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 namespace ListEditors;
 
-class StoresListEditor extends \ListEditor {
-	
-	public function __construct($db_link) {
-		parent::__construct($db_link);
-		$this->print_name = 'Справочник складов';
-		$this->table_name = 'doc_sklady';
-	}
-	
-	/// Получить массив с именами колонок списка
-	public function getColumnNames() {
-		return array(
-		    'id'=>'id',
-		    'name'=>'Наименование',
-		    'dnc'=>'Не контролировать остатки'
-		);
-	}
-	
-	public function getInputDnc($name, $value) {
-		return $this->getCheckboxInput($name, 'Да', $value);
-	}
-	
+class MailDomainsEditor extends \ListEditor {
+
+    public function __construct($db_link) {
+        parent::__construct($db_link);
+        $this->print_name = 'Почтовые домены';
+        $this->table_name = 'virtual_domains';
+        $this->can_delete = true;
+    }
+
+    /// Получить массив с именами колонок списка
+    public function getColumnNames() {
+        return array(
+            'id' => 'id',
+            'name' => 'Название',
+        );
+    }
+
 }

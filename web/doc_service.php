@@ -814,51 +814,59 @@ else if($mode == 'cimage') {
 	}
 }
 else if($mode=='banks') {
-	$editor = new \ListEditors\BankListEditor();
+	$editor = new \ListEditors\BankListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=banks';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else if($mode=='kass') {
-	$editor = new \ListEditors\KassListEditor();
+	$editor = new \ListEditors\KassListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=kass';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else if($mode=='firms') {
-	$editor = new \ListEditors\FirmListEditor();
+	$editor = new \ListEditors\FirmListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=firms';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else if($mode=='ctypes') {
-	$editor = new \ListEditors\CTypesListEditor();
+	$editor = new \ListEditors\CTypesListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=ctypes';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else if($mode=='dtypes') {
-	$editor = new \ListEditors\DTypesListEditor();
+	$editor = new \ListEditors\DTypesListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=dtypes';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else if($mode=='accounts') {
-	$editor = new \ListEditors\AccountListEditor();
+	$editor = new \ListEditors\AccountListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=accounts';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else if($mode=='stores') {
-	$editor = new \ListEditors\StoresListEditor();
+	$editor = new \ListEditors\StoresListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=stores';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else if($mode=='pos_types') {
-	$editor = new \ListEditors\PosTypesListEditor();
+	$editor = new \ListEditors\PosTypesListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=pos_types';
+        $editor->acl_object_name = 'doc_service';
 	$editor->run();
 }
 else throw new NotFoundException("Несуществующая опция");
@@ -877,4 +885,4 @@ catch(Exception $e) {
 }
 
 $tmpl->write();
-?>
+

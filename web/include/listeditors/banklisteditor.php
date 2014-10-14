@@ -19,7 +19,8 @@ namespace ListEditors;
 
 class BankListEditor extends \ListEditor {
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник собственных банков';
 	}
 	
@@ -43,8 +44,9 @@ class BankListEditor extends \ListEditor {
 			WHERE `ids`='bank'
 			ORDER BY `num`");
 		$this->list = array();
-		while($line = $res->fetch_assoc())
+		while ($line = $res->fetch_assoc()) {
 			$this->list[$line['id']] = $line;
+		}
 	}
 
 	public function getItem($id) {
@@ -53,9 +55,11 @@ class BankListEditor extends \ListEditor {
 		$res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `firm_id`
 			FROM `doc_kassa`
 			WHERE `ids`='bank' AND `num`=$id");
-		if($res->num_rows)
-			return	$res->fetch_assoc();
-		else	return null; 
+		if ($res->num_rows) {
+			return $res->fetch_assoc();
+		} else {
+			return null;
+		}
 	}
 	
 	public function getInputFirm_id($name, $value) {
@@ -85,13 +89,14 @@ class BankListEditor extends \ListEditor {
 			return $id;
 		}
 		$res = $db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' ORDER BY `num` DESC LIMIT 1");
-		if($res->num_rows) {
+		if ($res->num_rows) {
 			$line = $res->fetch_row();
-			$id = $line[0]+1;
+			$id = $line[0] + 1;
+		} else {
+			$id = 1;
 		}
-		else	$id = 1;
 		$db->query("INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `bik`, `ks`, `rs`, `firm_id`)
 			VALUES ('bank', $id, '$name_sql', '$bik_sql', '$ks_sql', '$rs_sql', '$firm_id')");
 		return $id;
 	}	
-};
+}

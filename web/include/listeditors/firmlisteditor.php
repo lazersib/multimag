@@ -19,7 +19,8 @@ namespace ListEditors;
 
 class FirmListEditor extends \ListEditor {
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник организаций';
 		$this->table_name = 'doc_vars';
 	}
@@ -49,14 +50,15 @@ class FirmListEditor extends \ListEditor {
 		
 	/// @brief Возвращает имя текущего элемента
 	public function getItemName($item) {
-		if(isset($item['firm_name']))
+		if (isset($item['firm_name'])) {
 			return $item['firm_name'];
-		else return '???';
+		} else {
+			return '???';
+		}
 	}
 	
 	public function getInputFirm_id($name, $value) {
-		global $db;
-		$res = $db->query("SELECT `id`, `name` FROM `firm_info` ORDER BY `id`");
+		$res = $this->db_link->query("SELECT `id`, `name` FROM `firm_info` ORDER BY `id`");
 		$ret = "<select name='$name'>";
 		$ret .="<option value='0'>-- не задано --</option>";
 		while($line = $res->fetch_assoc()) {
@@ -66,4 +68,4 @@ class FirmListEditor extends \ListEditor {
 		$ret .="</select>";
 		return $ret;
 	}	
-};
+}

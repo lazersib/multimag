@@ -19,7 +19,8 @@ namespace ListEditors;
 
 class AccountListEditor extends \ListEditor {
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник бухгалтерских счетов';
 		$this->table_name = 'doc_accounts';
 	}
@@ -34,4 +35,4 @@ class AccountListEditor extends \ListEditor {
 		);
 	}
 	
-};
+}

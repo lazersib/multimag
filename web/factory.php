@@ -118,10 +118,11 @@ try
 	}
 	else if($mode=='builders') {
 		$tmpl->addBreadcrumb('Склады сборки', '/factory.php?mode=builder_stores');
-		$editor = new \ListEditors\BuildersListEditor();
+		$editor = new \ListEditors\BuildersListEditor($db);
 		$editor->line_var_name = 'id';
 		$editor->store_id = rcvint('store_id');
-		$editor->link_prefix = '/factory.php?mode=builders&amp;store_id='.$editor->store_id;		
+		$editor->link_prefix = '/factory.php?mode=builders&amp;store_id='.$editor->store_id;
+                $editor->acl_object_name = 'doc_factory_builders';
 		$editor->run();
 	}
 	else if($mode=='prepare'){
@@ -527,4 +528,3 @@ catch(Exception $e)
 }
 
 $tmpl->write();
-?>

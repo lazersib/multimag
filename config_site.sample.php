@@ -137,8 +137,14 @@ $CONFIG['call_request']['email']	= '';	// Адрес email уведомлени�
 $CONFIG['call_request']['xmpp']		= '';	// Адрес jabber уведомления
 $CONFIG['call_request']['sms']		= '';	// Адрес sms уведомления
 
+// Модуль управления настройками почтовыми аккаунтами
+$CONFIG['admin_mailconfig']['db_host']	= 'localhost';
+$CONFIG['admin_mailconfig']['db_port']	= '';
+$CONFIG['admin_mailconfig']['db_name']	= 'mail';
+$CONFIG['admin_mailconfig']['db_login']= 'root';
+$CONFIG['admin_mailconfig']['db_pass']	= 'waxilamid';
+
 // Расположение изменяемых доступных данных - изображения, итп
 $CONFIG['site']['var_data_web']		= '/share/var';		// по отношению к корню сайта
 $CONFIG['site']['var_data_fs']		= $CONFIG['site']['location'].$CONFIG['site']['var_data_web'];	// по отношению к корню файловой системы
 
-?>

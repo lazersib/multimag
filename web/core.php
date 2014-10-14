@@ -68,16 +68,22 @@ class ipv6
 	/// Преобразует заданный IPv6 адрес в полную форму
 	function uncompress_ipv6($ip ="")
 	{
-		if($ip=='')	return false;
+		if ($ip == '') {
+			return false;
+		}
 		if(strstr($ip,"::" ))
 		{
 			$e = explode(":", $ip);
 			$s = 8-sizeof($e)+1;
 			foreach($e as $key=>$val)
 			{
-				if ($val == "")
-					for($i==0;$i<=$s;$i++)		$newip[] = 0;
-				else	$newip[] = $val;
+				if ($val == "") {
+					for ($i = 0; $i <= $s; $i++) {
+						$newip[] = 0;
+					}
+				} else {
+					$newip[] = $val;
+				}
 			}
 			$ip = implode(":", $newip);
 		}
@@ -190,9 +196,10 @@ function exception_handler($exception)
 	header('Status: 500 Internal error');
 	$s=html_out($exception->getMessage());
 	$ff=html_out($_SERVER['REQUEST_URI']);
-	echo"<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><title>Error 500: Необработанная внутренняя ошибка</title>
-	<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
-	<h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
+	echo"<!DOCTYPE html><html><meta charset=\"utf-8\"><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
+		<head><title>Error 500: Необработанная внутренняя ошибка</title>
+		<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
+		<h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
 }
 set_exception_handler('exception_handler');
 
@@ -455,7 +462,7 @@ $msg
 /// @param $text Тело сообщения
 /// @param $subject Тема сообщения
 function sendAdmMessage($text,$subject='') {
-	global $CONFIG;
+	global $CONFIG, $tmpl;
 	if($subject=='')	$subject="Admin mail from {$CONFIG['site']}";
 
 	if($CONFIG['site']['doc_adm_email'])
@@ -742,74 +749,32 @@ class BETemplate {
 
 }
 
-;
-
 /// Класс-исключение используется для информирования о отсутствии привилегий на доступ к запрошенной функции
 class AccessException extends Exception
 {
-	function __construct($text='')
+	function __construct($text='', $code=0, $previous=NULL)
 	{
 		header('HTTP/1.0 403 Forbidden');
-		parent::__construct("Нет доступа: ".$text);
+		parent::__construct("Нет доступа: ".$text, $code, $previous);
 	}
-};
+}
 
 /// Класс-исключение используется для информирования о отсутствии запрашиваемого объекта. Устанавливает заголовок 404 Not found
 class NotFoundException extends Exception
 {
-	function __construct($text='')
+	function __construct($text='', $code=0, $previous=NULL)
 	{
 		header('HTTP/1.0 404 Not found');
-		parent::__construct($text);
+		parent::__construct($text, $code, $previous);
 	}
-};
-
-/// Класс-исключение для информирования об ошибке при выполнении myqsl запроса. Устарело, к удалению.
-class MysqlException extends Exception
-{
-	var $sql_error;
-	var $sql_errno;
-	var $db;
-	function __construct($text,$_db=0)
-	{
-		global $db;
-		if(!$_db)	$_db=$db;
-		$this->db=$_db;
-		$this->sql_error=$this->db->error;
-		$this->sql_errno=$this->db->errno;
-		switch($this->sql_errno)
-		{
-			case 1062:	$text.=" {$this->sql_errno}:Дублирование - такая запись уже существует в базе данных. Исправьте данные, и попробуйте снова.";	break;
-			case 1452:	$text.=" {$this->sql_errno}:Нарушение связи - введённые данные недопустимы, либо предпринята попытка удаления объекта, от которого зависят другие объекты. Проверьте правильность заполнения полей.";	break;
-		}
-		parent::__construct($text);
-		$this->WriteLog();
-	}
-
-	/// Записывает событие в журнал ошибок
-	/// TODO: нужен класс регистрации ошибок, с уровнями ошибок, возможностью записи в файл, отправки на email, jabber, sms и пр.
-	function WriteLog()
-	{
-	        global $db;
-	        $uid=@$_SESSION['uid'];
-		settype($uid,"int");
-		$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
-		$s=$db->real_escape_string(get_class($this).': '.$this->message .' '. $this->sql_errno . ': ' . $this->sql_error);
-		$ag=$db->real_escape_string(getenv("HTTP_USER_AGENT"));
-		$rf=$db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
-		$ff=$db->real_escape_string($_SERVER['REQUEST_URI']);
-		$db->query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-		('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
-	}
-};
-
+}
 
 /// Базовый класс для создания автожурналируемых исключений
 class AutoLoggedException extends Exception
 {
-	function __construct($text='')
+	function __construct($text='', $code=0, $previous=NULL)
 	{
-		parent::__construct($text);
+		parent::__construct($text, $code, $previous);
 		$this->WriteLog();
 	}
 
@@ -828,7 +793,7 @@ class AutoLoggedException extends Exception
 		$db->query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
 		('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
 	}
-};
+}
 
 //class DB extends MysqiExtended {
 //	protected static $_instance; 
@@ -890,7 +855,15 @@ $db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $
 if($db->connect_error)
 {
 	header("HTTP/1.0 503 Service temporary unavariable");
-	die("<h1>503 Сервис временно недоступен!</h1>Не удалось соединиться с сервером баз данных. Возможно он перегружен, и слишком медленно отвечает на запросы, либо выключен. Попробуйте подключиться через 5 минут. Если проблема сохранится - пожалуйста, напишите письмо <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы: ErrorCode: {$db->connect_errno} ({$db->connect_error})");
+	die("<!DOCTYPE html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
+<title>Error 500: Необработанная внутренняя ошибка</title>
+<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
+<h1>503 Сервис временно недоступен!</h1>Не удалось соединиться с сервером баз данных. Возможно он перегружен, и слишком медленно отвечает на запросы, либо выключен. Попробуйте подключиться через 5 минут. Если проблема сохранится - пожалуйста, напишите письмо <a href='mailto:{$CONFIG['site']['admin_email']}'>{$CONFIG['site']['admin_email']}</a> c описанием проблемы: ErrorCode: {$db->connect_errno} ({$db->connect_error})</body></html>"
+	);
 }
 
 // Включаем автоматическую генерацию исключений для mysql
@@ -898,8 +871,16 @@ mysqli_report(MYSQLI_REPORT_STRICT | MYSQLI_REPORT_ERROR);
 
 if(!$db->set_charset("utf8"))
 {
-    header("HTTP/1.0 503 Service temporary unavariable");
-    die("<h1>503 Сервис временно недоступен!</h1>Невозможно задать кодировку соединения с базой данных: ".$db->error);
+	header("HTTP/1.0 503 Service temporary unavariable");
+	die("<!DOCTYPE html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
+<title>Error 500: Необработанная внутренняя ошибка</title>
+<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
+<h1>503 Сервис временно недоступен!</h1>Невозможно задать кодировку соединения с базой данных: " . $db->error . "</body></html>"
+	);
 }
 
 
@@ -910,8 +891,9 @@ if(!$db->set_charset("utf8"))
 
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 // HSTS Mode
-if( (@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login']) && isset($_SERVER['HTTPS']))
+if ((@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login']) && isset($_SERVER['HTTPS'])) {
 	header("Strict-Transport-Security: max-age=31536000");
+}
 
 /// TODO: Убрать обращения этих переменных из других файлов, и сделать их локальными
 $tim=time();

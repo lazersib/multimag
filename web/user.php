@@ -34,50 +34,79 @@ if($mode==''){
 	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 	WHERE `users`.`id`='{$_SESSION['uid']}'");
 	$l = $res->fetch_row();
-	if($l)	if($l[0])	$tmpl->addContent("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
-	
-	if(isAccess('doc_list','view') || isAccess('doc_fabric','view'))
-		$tmpl->addContent("<h2>Документы</h2>");
-	if(isAccess('doc_list','view'))
-		$tmpl->addContent("<li><a href='/docj_new.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
-	if(isAccess('doc_factory','view'))
-		$tmpl->addContent("<li><a href='/factory.php'>Учёт производства (экспериментально)</a></li>");
-	// Журналы
-	if(isAccess('log_browser','view') || isAccess('log_error','view') || isAccess('log_access','view') || isAccess('log_call_request','view'))
-		$tmpl->addContent("<h2>Журналы</h2>");
-	if(isAccess('log_browser','view'))
-		$tmpl->addContent("<li><a href='/statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
-	if(isAccess('log_error','view'))
-		$tmpl->addContent("<li><a href='?mode=elog' accesskey='e' title='Ошибки'>Журнал ошибок (E)</a></li>");
-	if(isAccess('log_access','view'))
-		$tmpl->addContent("<li><a href='?mode=clog'>Журнал посещений</a></li>");
-	if(isAccess('log_call_request','view'))
-		$tmpl->addContent("<li><a href='?mode=log_call_request'>Журнал запрошенных звонков</a></li>");
-	// Системные функции
-	if(isAccess('sys_async_task','view') || isAccess('sys_ps-stat','view') || isAccess('sys_ip-blacklist','view') || isAccess('sys_acl','view'))
-		$tmpl->addContent("<h2>Системные функции</h2>");
-	if(isAccess('sys_async_task','view'))
-		$tmpl->addContent("<li><a href='?mode=async_task' title=''>Ассинхронные задачи</a></li>");
-	if(isAccess('sys_ps-stat','view'))
-		$tmpl->addContent("<li><a href='?mode=psstat' title=''>Статистика переходов с поисковиков</a></li>");
-	if(isAccess('sys_ip-blacklist','view'))
-		$tmpl->addContent("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
-	if(isAccess('sys_acl','view'))
-		$tmpl->addContent("<li><a href='/rights.php'>Привилегии доступа</a></li>");
-	// Администрирование
-	if(isAccess('admin_comments','view') || isAccess('admin_users','view'))	$tmpl->addContent("<h2>Администрирование</h2>");
-	if(isAccess('admin_comments','view'))
-		$tmpl->addContent("<li><a href='/adm_comments.php'>Администрирование коментариев</a></li>");
-	if(isAccess('admin_users','view'))
-		$tmpl->addContent("<li><a href='/adm_users.php'>Администрирование пользователей</a></li>");
+	if ($l) {
+		if ($l[0]) {
+			$tmpl->addContent("<li><a href='/user.php?mode=frequest' accesskey='w' style='color: #f00'>Сообщить об ошибке или заказать доработку программы</a></li>");
+	}
+	}
 
-	// Разное
-	if(isAccess('generic_articles','view') || isAccess('generic_tickets','view'))	$tmpl->addContent("<h2>Разное</h2>");
-	if(isAccess('generic_articles','view'))
-		$tmpl->addContent("<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>");
-	if(isAccess('generic_tickets','view'))
-		$tmpl->addContent("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");
+	if (isAccess('doc_list', 'view') || isAccess('doc_fabric', 'view')) {
+		$tmpl->addContent("<h2>Документы</h2>");
+	}
+	if (isAccess('doc_list', 'view')) {
+		$tmpl->addContent("<li><a href='/docj_new.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>");
+	}
+	if (isAccess('doc_factory', 'view')) {
+		$tmpl->addContent("<li><a href='/factory.php'>Учёт производства (экспериментально)</a></li>");
+	}
+	// Журналы
+	if (isAccess('log_browser', 'view') || isAccess('log_error', 'view') || isAccess('log_access', 'view') || isAccess('log_call_request', 'view')) {
+		$tmpl->addContent("<h2>Журналы</h2>");
+	}
+	if (isAccess('log_browser', 'view')) {
+		$tmpl->addContent("<li><a href='/statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>");
+	}
+	if (isAccess('log_error', 'view')) {
+		$tmpl->addContent("<li><a href='?mode=elog' accesskey='e' title='Ошибки'>Журнал ошибок (E)</a></li>");
+	}
+	if (isAccess('log_access', 'view')) {
+		$tmpl->addContent("<li><a href='?mode=clog'>Журнал посещений</a></li>");
+	}
+	if (isAccess('log_call_request', 'view')) {
+		$tmpl->addContent("<li><a href='?mode=log_call_request'>Журнал запрошенных звонков</a></li>");
+	}
+	// Системные функции
+	if (isAccess('sys_async_task', 'view') || isAccess('sys_ps-stat', 'view') || isAccess('sys_ip-blacklist', 'view') || isAccess('sys_acl', 'view')) {
+		$tmpl->addContent("<h2>Системные функции</h2>");
+	}
+	if (isAccess('sys_async_task', 'view')) {
+		$tmpl->addContent("<li><a href='?mode=async_task' title=''>Ассинхронные задачи</a></li>");
+	}
+	if (isAccess('sys_ps-stat', 'view')) {
+		$tmpl->addContent("<li><a href='?mode=psstat' title=''>Статистика переходов с поисковиков</a></li>");
+	}
+	if (isAccess('sys_ip-blacklist', 'view')) {
+		$tmpl->addContent("<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>");
+	}
+	if (isAccess('sys_acl', 'view')) {
+		$tmpl->addContent("<li><a href='/rights.php'>Привилегии доступа</a></li>");
+	}
 	
+	// Администрирование
+	if (isAccess('admin_comments', 'view') || isAccess('admin_users', 'view')) {
+		$tmpl->addContent("<h2>Администрирование</h2>");
+		if (isAccess('admin_comments', 'view')) {
+			$tmpl->addContent("<li><a href='/adm_comments.php'>Администрирование коментариев</a></li>");
+		}
+		if (isAccess('admin_users', 'view')) {
+			$tmpl->addContent("<li><a href='/adm_users.php'>Администрирование пользователей</a></li>");
+		}
+		if (isAccess('admin_mailconfig', 'view')) {
+			$tmpl->addContent("<li><a href='/adm.php?mode=mailconfig'>Настройка почтовых ящиков и алиасов</a></li>");
+		}
+	}
+
+
+		// Разное
+	if (isAccess('generic_articles', 'view') || isAccess('generic_tickets', 'view')) {
+		$tmpl->addContent("<h2>Разное</h2>");
+		if (isAccess('generic_articles', 'view')) {
+			$tmpl->addContent("<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>");
+		}
+		if (isAccess('generic_tickets', 'view')) {
+			$tmpl->addContent("<li><a href='/tickets.php' title='Задачи'>Планировщик задач</a></li>");
+		}
+	}
 	$tmpl->addContent("<li><a href='/user.php?mode=user_data'>Личные данные</a></li>");
 	$tmpl->addContent("<li><a href='/user.php?mode=doc_hist'>История документов</a></li>");
 	$tmpl->addContent("<li><a href='/voting.php'>Голосования</a></li>");
@@ -454,7 +483,7 @@ else if($mode=='async_task')
 				{
 					$cn=explode('.',$file);
 					include_once("$dir/$file");
-					$class_name=$cn[0]."Worker";;
+					$class_name=$cn[0]."Worker";
 					$class=new $class_name(0);
 					$nm=$class->getDescription();
 					$tmpl->addContent("<li><a href='/user.php?mode=async_task&amp;task=$cn[0]'>Запланировать $cn[0] ($nm)</a></li>");

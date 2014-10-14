@@ -20,7 +20,8 @@ namespace ListEditors;
 class BuildersListEditor extends \ListEditor {
 	var $store_id = 0;	//< ID фильтрации склада сброщиков. Допустимо нулевое значение 
 	
-	public function __construct() {
+	public function __construct($db_link) {
+		parent::__construct($db_link);
 		$this->print_name = 'Справочник сборщиков';
 		$this->table_name = 'factory_builders';
 	}
@@ -37,21 +38,21 @@ class BuildersListEditor extends \ListEditor {
 	
 	/// Загрузить список всех элементов справочника
 	public function loadList() {
-		global $db;
 		settype($this->store_id, 'int');
 		$where = $this->store_id?" WHERE `store_id`={$this->store_id} ":'';
-		$res = $db->query("SELECT `id`, `name`, `store_id`, `active` FROM `{$this->table_name}` $where ORDER BY `id`");
+		$res = $this->db_link->query("SELECT `id`, `name`, `store_id`, `active` FROM `{$this->table_name}` $where ORDER BY `id`");
 		$this->list = array();
-		while($line = $res->fetch_assoc())
+		while ($line = $res->fetch_assoc()) {
 			$this->list[$line['id']] = $line;
+		}
 	}
 	
 	public function getInputStore_id($name, $value) {
-		global $db;
 		settype($this->store_id, 'int');
-		if(!$value && $this->store_id)
+		if (!$value && $this->store_id) {
 			$value = $this->store_id;
-		$res = $db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
+		}
+		$res = $this->db_link->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `id`");
 		$ret = "<select name='$name'>";
 		$sel = $value==0?' selected':'';
 		$ret .="<option disabled value='0'{$sel}>-- не задан --</option>";
@@ -66,4 +67,4 @@ class BuildersListEditor extends \ListEditor {
 	public function getInputActive($name, $value) {
 		return $this->getCheckboxInput($name, 'Да', $value);
 	}
-};
+}

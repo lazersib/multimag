@@ -26,64 +26,98 @@ abstract class ListEditor {
 	var $line_var_name = '';	//< Имя переменной HTTP(S) запросов для id строки справочника
 	var $print_name = 'Абстрактный справочник'; //< Отображаемое имя справочника
 	var $table_name = '';		//< Имя таблицы справочника в БД
+	var $db_link = null;		//< Ссылка на объект соединения с базой данных
+	var $acl_object_name = '';	//< Имя объекта контроля привилегий
+        protected $can_delete = false;  //< Допустимо ли удаление строк справочника
+	
+	public function __construct($db_link) {
+		$this->db_link = $db_link;
+	}
 	
 	/// Получить массив с именами колонок списка
 	abstract public function getColumnNames();	
 	
 	/// Загрузить список всех элементов справочника
 	public function loadList() {
-		global $db;
 		$col_names = $this->getColumnNames();
 		$sql_names = '';
 		foreach($col_names as $name=>$value) {
-			if($sql_names)
+			if ($sql_names) {
 				$sql_names .= ', ';
+			}
 			$sql_names .= "`$name`";
 		}
-		$res = $db->query("SELECT $sql_names FROM {$this->table_name} ORDER BY `id`");
+		$res = $this->db_link->query("SELECT $sql_names FROM {$this->table_name} ORDER BY `id`");
 		$this->list = array();
-		while($line = $res->fetch_assoc())
+		while ($line = $res->fetch_assoc()) {
 			$this->list[$line['id']] = $line;
+		}
 	}
 	/// Получить данные элемента справочника
 	public function getItem($id) {
-		global $db;
-		return $db->selectRow($this->table_name, $id);
+		return $this->db_link->selectRow($this->table_name, $id);
 	}
 	/// Записать в базу строку справочника
 	public function saveItem($id, $data) {
-		global $db;
-		$write_data = array();
-		$col_names = $this->getColumnNames();
-		foreach($col_names as $col_id=>$col_value) {
-			if($col_id == 'id')
-					continue;
-			if(isset($data[$col_id]))
-				$write_data[$col_id] = $data[$col_id];
-			else	$write_data[$col_id] = '';
-		}
-		if($id)
-			$db->updateA($this->table_name, $id, $write_data);
-		else	$id = $db->insertA($this->table_name, $write_data);
-		return $id;
-	}
+            $write_data = array();
+            $col_names = $this->getColumnNames();
+            foreach ($col_names as $col_id => $col_value) {
+                if ($col_id == 'id') {
+                    continue;
+                }
+                if (isset($data[$col_id])) {
+                    $write_data[$col_id] = $data[$col_id];
+                } else {
+                    $write_data[$col_id] = '';
+                }
+            }
+            if ($id) {
+                if (!isAccess($this->acl_object_name, 'edit'))
+                    throw new AccessException();
+                $this->db_link->updateA($this->table_name, $id, $write_data);
+            } else {
+                if (!isAccess($this->acl_object_name, 'create'))
+                    throw new AccessException();
+                $id = $this->db_link->insertA($this->table_name, $write_data);
+            }
+            return $id;
+    }
+        
+        /// Удалить запись
+        public function removeItem($id) {
+            if(!$this->can_delete)
+                throw new Exception("Удаление строк данного справочника недопустимо!");
+            if(!isAccess($this->acl_object_name, 'delete'))
+                throw new AccessException();
+            return $this->db_link->delete($this->table_name, $id);
+        }
 	
 	/// Получить HTML код таблицы с элементами справочника
 	public function getListItems() {
+                if (!isAccess($this->acl_object_name, 'view'))
+                        throw new AccessException($this->acl_object_name);
 		$ret = "<table class='list'><tr>";
 		$col_names = $this->getColumnNames();
 		foreach($col_names as $id=>$name) {
 			$ret .= "<th>$name</th>";
 		}
+                if($this->can_delete) {
+                                $ret.="<th>&nbsp;</th>";
+                        }
 		$ret .= "</tr>";
 		$this->loadList();
 		foreach($this->list as $id=>$line) {
 			$ret.= "<tr><td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=e&amp;{$this->line_var_name}=$id'>$id</a></td>";
 			foreach($line as $cn=>$cv) {
-				if($cn == 'id')
+				if ($cn == 'id') {
 					continue;
+				}
 				$ret.="<td>".html_out($cv)."</td>";
 			}
+                        if($this->can_delete) {
+                                $ret.="<td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=d&amp;{$this->line_var_name}=$id'>"
+                                    . "<img src='/img/i_del.png' alt='del'></a></td>";
+                        }
 			$ret .= "</tr>";
 		}
 		$ret .= "</table>";
@@ -94,11 +128,13 @@ abstract class ListEditor {
 	/// @brief Возвращает имя текущего элемента
 	/// Нужно переопределить, если колонка с именем - не name
 	public function getItemName($item) {
-		if(isset($item['name']))
+		if (isset($item['name'])) {
 			return $item['name'];
-		else if(isset($item['id']))
+		} else if (isset($item['id'])) {
 			return $item['id'];
-		else return '???';
+		} else {
+			return '???';
+		}
 	}
 	
 	/// Возвращает HTML код checkbox элемента формы
@@ -129,14 +165,17 @@ abstract class ListEditor {
 		$ret .= "<table class='list' width='600px'><tr>";
 		$col_names = $this->getColumnNames();
 		foreach($col_names as $_id=>$cname) {
-			if($_id == 'id')
-					continue;
+			if ($_id == 'id') {
+				continue;
+			}
 			$method = 'getInput'.ucfirst($_id);
 			$ret .= "<tr><td align='right'>".html_out($cname)."</td><td>";
 			$input_name = $this->param_var_name."[$_id]";
-			if(method_exists($this, $method))
+			if (method_exists($this, $method)) {
 				$ret .= $this->$method($input_name, $item[$_id]);
-			else	$ret .= "<input type='text' name='$input_name' value='".html_out($item[$_id])."' style='width:95%;'>";
+			} else {
+				$ret .= "<input type='text' name='$input_name' value='" . html_out($item[$_id]) . "' style='width:95%;'>";
+			}
 			$ret .= "</td></tr>";
 		}
 		$ret .= "<tr><td>&nbsp;</td><td><button type='submit'>Записать</button></td></tr>";
@@ -148,9 +187,11 @@ abstract class ListEditor {
 	public function run() {
 		global $tmpl;
 		$opt = request($this->opt_var_name);
-		if($opt!='')
+		if ($opt != '') {
 			$tmpl->addBreadcrumb($this->print_name, $this->link_prefix);
-		else	$tmpl->addBreadcrumb($this->print_name, '');
+		} else {
+			$tmpl->addBreadcrumb($this->print_name, '');
+		}
 		$tmpl->setTitle($this->print_name);
 		switch($opt) {
 			case '':
@@ -169,8 +210,14 @@ abstract class ListEditor {
 				$tmpl->msg("Данные сохранены", "ok");
 				$tmpl->addContent($this->getEditForm($id));
 				break;
+                        case 'd':
+                                $id = rcvint($this->line_var_name);
+                                $this->removeItem($id);
+                                $tmpl->msg("Строка удалена", "ok");
+                                $tmpl->addContent($this->getListItems());
+                                break;
 			default:
 				throw new NotFoundException('Неверная опция '.$opt);
 		}
 	}
-};
+}
