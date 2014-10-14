@@ -141,8 +141,8 @@ $CONFIG['call_request']['sms']		= '';	// Адрес sms уведомления
 $CONFIG['admin_mailconfig']['db_host']	= 'localhost';
 $CONFIG['admin_mailconfig']['db_port']	= '';
 $CONFIG['admin_mailconfig']['db_name']	= 'mail';
-$CONFIG['admin_mailconfig']['db_login']= 'root';
-$CONFIG['admin_mailconfig']['db_pass']	= 'waxilamid';
+$CONFIG['admin_mailconfig']['db_login']= '';
+$CONFIG['admin_mailconfig']['db_pass']	= '';
 
 // Расположение изменяемых доступных данных - изображения, итп
 $CONFIG['site']['var_data_web']		= '/share/var';		// по отношению к корню сайта
