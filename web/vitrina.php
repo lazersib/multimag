@@ -237,9 +237,15 @@ protected function ViewGroup($group, $page)
 	$group_data=$res->fetch_assoc();
 	$group_name_html=html_out($group_data['name']);
 
-	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
-		$tmpl->addContent("<div style='float: right; margin: 35px 35px 20px 20px;'><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg' alt='$group_name_html'></div>");
-
+	if(file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg")) {
+            $miniimg = new ImageProductor($group, 'g', 'jpg');
+            $miniimg->SetX(160);
+            $miniimg->SetY(160);
+            $tmpl->addContent("<div style='float: right; margin: 35px 35px 20px 20px;'>"
+                . "<img src='" . $miniimg->GetURI() . "' alt='$group_name_html'>"
+                . "</div>");
+        }
+		
 	if($group_data['title_tag'])	$title=html_out($group_data['title_tag']);
 	else				$title=$group_name_html.', цены, купить';
 	if($page>1)	$title.=" - стр.$page";
@@ -1235,13 +1241,16 @@ protected function GroupList_ImageStyle($group) {
 	while ($nxt = $res->fetch_row()) {
 		$link = $this->GetGroupLink($nxt[0]);
 		$tmpl->addContent("<div class='vitem'><a href='$link'>");
-		if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$nxt[0].jpg"))
-			$tmpl->addContent("<img src='{$CONFIG['site']['var_data_web']}/category/$nxt[0].jpg' alt=''>");
-		else {
-			if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png'))
-				$img_url = '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png';
-			else	$img_url = '/img/no_photo.png';
-			$tmpl->addContent("<img src='$img_url' alt='Изображение не доступно'>");
+                if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$nxt[0].jpg")) {
+                    $miniimg = new ImageProductor($nxt[0], 'g', 'jpg');
+                    $miniimg->SetX(128);
+                    $miniimg->SetY(128);
+                    $tmpl->addContent("<img src='" . $miniimg->GetURI() . "' alt='" . html_out($nxt[1]) . "'>");
+                } else {
+                    if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png'))
+                            $img_url = '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png';
+                    else	$img_url = '/img/no_photo.png';
+                    $tmpl->addContent("<img src='$img_url' alt='Изображение не доступно'>");
 		}
 		$tmpl->addContent("</a><div><a href='$link'><b>" . html_out($nxt[1]) . "</b></a><br>");
 		if ($nxt[2]) {

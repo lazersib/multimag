@@ -948,6 +948,14 @@ class doc_s_Sklad {
 		}
 		// Правка описания группы
 		else if ($param == 'g') {
+                        $max_fs = get_max_upload_filesize();
+			$max_fs_size = $max_fs;
+			if ($max_fs_size > 1024 * 1024)
+				$max_fs_size = ($max_fs_size / (1024 * 1024)) . ' Мб';
+			else if ($max_fs_size > 1024)
+				$max_fs_size = ($max_fs_size / (1024)) . ' Кб';
+			else
+				$max_fs_size.='байт';
 			$res = $db->query("SELECT * FROM `doc_group` WHERE `id`='$group'");
 			if($res->num_rows)	$group_info = $res->fetch_assoc();
 			else {
@@ -1011,8 +1019,8 @@ class doc_s_Sklad {
 			<tr><td>Мета-тэг description группы на витрине:</td>
 			<td><input type='text' name='meta_description' value='".html_out($group_info['meta_description'])."' maxlength='256'></td></tr>
 
-			<tr><td>Изображение (jpg, до 100 кб, 50*50 - 200*200):</td>
-			<td><input type='hidden' name='MAX_FILE_SIZE' value='1000000'><input name='userfile' type='file'>$img</td></tr>
+			<tr><td>Изображение (jpg, до $max_fs_size, от 100*100):</td>
+			<td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'>$img</td></tr>
 			<tr><td>Описание:</td>
 			<td><textarea name='desc'>".html_out($group_info['desc'])."</textarea></td></tr>
 			<tr><td>Статические дополнительные свойства товаров группы<br><br>
@@ -1703,8 +1711,6 @@ class doc_s_Sklad {
 			}
 
 			if ($_FILES['userfile']['size'] > 0) {
-				if ($_FILES['userfile']['size'] > $max_size)
-					throw new Exception("Слишком большой файл! Допустимо не более $max_size!");
 				$iminfo = getimagesize($_FILES['userfile']['tmp_name']);
 				switch ($iminfo[2]) {
 					case IMAGETYPE_JPEG: $imtype = 'jpg';
@@ -1713,10 +1719,8 @@ class doc_s_Sklad {
 				}
 				if (!$imtype)
 					throw new Exception("Неверный формат файла! Допустимы только изображения в формате jpeg.");
-				else if (($iminfo[0] < 50) || ($iminfo[1] < 50))
-					throw new Exception("Слишком мелкая картинка! Минимальный размер - 50*50 пикселей!");
-				else if (($iminfo[0] > 200) || ($iminfo[1] > 200))
-					throw new Exception("Слишком большая картинка! Максимальный размер - 200*200 пикселей!");
+				else if (($iminfo[0] < 100) || ($iminfo[1] < 100))
+					throw new Exception("Слишком мелкая картинка! Минимальный размер - 100*100 пикселей!");
 				if (!move_uploaded_file($_FILES['userfile']['tmp_name'], "{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
 					throw new Exception("Не удалось записать изображение. Проверьте права доступа к директории {$CONFIG['site']['var_data_fs']}/category/");
 			}

@@ -25,7 +25,7 @@ class ImageProductor {
 	protected $id;
 	protected $storage;
 	protected $type;
-	protected $storages=array('p'=>'pos', 'w'=>'wikiphoto', 'f'=>'galery','g'=>'group','n'=>'news', 'a'=>'article');
+	protected $storages=array('p'=>'pos', 'w'=>'wikiphoto', 'f'=>'galery','g'=>'category','n'=>'news', 'a'=>'article');
 	protected $types=array('jpg','png', 'gif');
 	protected $source_file=null;
 	protected $source_exist=null;

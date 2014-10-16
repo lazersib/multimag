@@ -46,7 +46,7 @@ try {
 	$img->MakeAndStore();
 }
 catch(NotFoundException $e) {
-	die('Файл изображения не найден');
+	die('Файл изображения не найден'.$e->getMessage());
 }
 catch(Exception $e) {
 	header('HTTP/1.0 500 Internal error');
