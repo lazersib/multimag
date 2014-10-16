@@ -121,7 +121,7 @@ class doc_Dogovor extends doc_Nulltype
 	}
 
 	function DopBody() {
-		global $tmpl, $wikiparser, $db;
+		global $tmpl, $db;
 		if($this->dop_data['received'])
 			$tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
 		if($this->doc_data['comment'])
@@ -138,7 +138,7 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 ИНН/КПП {$this->firm_vars['firm_inn']}<br>
 Р/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}<br>
 К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}";
-
+                        $wikiparser = new WikiParser();
 			$rekv = $wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
 
 			$wikiparser->AddVariable('REKVIZITY', $rekv);
@@ -182,8 +182,6 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 		require('fpdf/html2pdf.php');
 
 		global $tmpl;
-		global $uid;
-		global $wikiparser;
 
 		$dt=date("d.m.Y",$this->doc_data['date']);
 
@@ -204,6 +202,7 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}<br>
 От поставщика: _____________________________ ( ".$this->firm_vars['firm_director'].")<br>";
 
+                $wikiparser = new WikiParser();
 		$rekv=$wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
 
 		$wikiparser->AddVariable('REKVIZITY', $rekv);

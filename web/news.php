@@ -105,7 +105,7 @@ public function ExecMode($mode='')
 /// @param type: '' - любые типы, news - только новости, stocks - только акции, events - только события
 protected function ShowList($type='')
 {
-	global $tmpl, $CONFIG, $wikiparser, $db;
+	global $tmpl, $CONFIG, $db;
 	switch($type)
 	{
 		case 'news':	$name='Новости';
@@ -130,6 +130,7 @@ protected function ShowList($type='')
 		$tmpl->setTitle("$name сайта - ".$CONFIG['site']['display_name']);
 		if(isAccess('generic_news','create',1))
 			$tmpl->addContent("<a href='/news.php?mode=add&amp;opt=$type'>Добавить новость</a><br>");
+                $wikiparser = new WikiParser();
 		while($nxt=$res->fetch_assoc())
 		{
 			$wikiparser->title='';
@@ -155,12 +156,13 @@ protected function ShowList($type='')
 /// Отобразить заданную новость
 protected function View($id)
 {
-	global $tmpl, $wikiparser, $db;
+	global $tmpl, $db;
 	$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`, `news`.`type` FROM `news`
 	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 	WHERE `news`.`id`='$id'");
 	if($res->num_rows)
 	{
+                $wikiparser = new WikiParser();
 		while($nxt=$res->fetch_assoc())
 		{
 			$wikiparser->title='';
@@ -221,7 +223,8 @@ protected function WriteForm()
 /// Запись новости в хранилище
 protected function SaveAndSend()
 {
-	global $tmpl, $wikiparser, $CONFIG, $db;
+	global $tmpl, $CONFIG, $db;
+        $wikiparser     = new WikiParser();
 	$text		= strip_tags( request('text') );
 	$type		= request('type');
 	$ex_date	= date("Y-m-d", strtotime( request('ex_date') ) );

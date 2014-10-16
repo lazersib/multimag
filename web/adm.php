@@ -42,7 +42,7 @@ try {
                         $class_name = "\\Modules\\Admin\\" . $cn[0];
                         $module = new $class_name;
                         if($module->isAllow()) {
-                            $printname = $module->getPrintName();
+                            $printname = $module->getName();
                             $modules[$cn[0]] = $printname;
                         }
                     }

@@ -127,9 +127,10 @@ class SearchPage
 	/// Поиск по статьям
 	/// @param s Подстрока поиска
 	function SearchText($s)	{
-		global $wikiparser, $db;
+		global $db;
 		$ret='';
 		$i=1;
+                $wikiparser = new WikiParser();
 		$res=$db->query("SELECT `name`, `text` FROM `articles` WHERE `text` LIKE '%$s%' OR `name` LIKE '%$s'");
 		while($nxt=$res->fetch_row())
 		{

@@ -103,7 +103,8 @@ class SiteMap {
 
 	/// Сформировать карту
 	function getMap() {
-		global $wikiparser, $db;
+		global $db;
+                $wikiparser = new WikiParser();
 		$this->buf = '';
 		$this->startMap();
 		$this->AddLink('index.php', 'Главная', '0.5');

@@ -36,12 +36,21 @@
 
 /// Автозагрузка классов для ядра
 function core_autoload($class_name){
-	global $CONFIG;
-	$class_name = strtolower($class_name);
-	$class_name = str_replace('\\', '/', $class_name);
-        if(file_exists($CONFIG['site']['location']."/include/".$class_name.'.php')) {
-            include_once $CONFIG['site']['location']."/include/".$class_name.'.php';
+    global $CONFIG;
+    $class_name = strtolower($class_name);
+    $class_name = str_replace('\\', '/', $class_name);
+    if($CONFIG['site']['skin']) {
+        $fname = $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/include/'.$class_name.'.php';
+        if(file_exists($fname)) {
+            include_once $fname;
+            return;
         }
+    }
+    $fname = $CONFIG['site']['location'].'/include/'.$class_name.'.php';
+    if(file_exists($fname)) {
+        include_once $fname;
+        return;
+    }
 }
 
 spl_autoload_register('core_autoload');
@@ -539,7 +548,7 @@ class BETemplate {
 		else
 			$this->loadTemplate('default');
 	}
-
+        
 	/// Загрузка шаблона по его имени
 	function loadTemplate($s) {
 		$this->tplname = $s;
@@ -929,15 +938,7 @@ else				$uid=0;
 
 /// Должно быть убрано, должно подключаться и создаваться по необходимости
 require_once("include/imgresizer.php");
-require_once("include/wikiparser.php");
-
-$wikiparser=new WikiParser();
-$wikiparser->reference_wiki	= "/wiki/";
-$wikiparser->reference_site	= @($_SERVER['HTTPS']?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
-$wikiparser->image_uri		= "/share/var/wikiphoto/";
-$wikiparser->ignore_images	= false;
 
 $dop_status=array('new'=>'Новый', 'err'=>'Ошибочный', 'inproc'=>'В процессе', 'ready'=>'Готов', 'ok'=>'Отгружен');
 if(is_array(@$CONFIG['doc']['status_list']))	$CONFIG['doc']['status_list']=array_merge($dop_status, $CONFIG['doc']['status_list']);
 else						$CONFIG['doc']['status_list']=$dop_status;
-?>

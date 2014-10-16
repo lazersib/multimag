@@ -31,10 +31,11 @@ else
 	require_once("include/doc.core.php");
 	require_once("include/imgresizer.php");
 	require_once("include/comments.inc.php");
-	require_once("include/wikiparser.php");
+
 	$tmpl->setTitle($CONFIG['site']['display_name']);
-	
-	$pc = PriceCalc::getInstance();
+        
+	$pc = PriceCalc::getInstance();        
+        $wikiparser = new WikiParser();
 
 	$tmpl->addStyle(".pitem	{
 		float:			left;

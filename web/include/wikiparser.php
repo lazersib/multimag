@@ -40,13 +40,14 @@ class WikiParser {
 
 	function __construct() {
 		$this->reference_wiki = '/article/';
-		$this->reference_site = @($_SERVER['HTTPS']?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
+		$this->reference_site = (isset($_SERVER['HTTPS'])?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
 		$this->image_uri = "/share/var/wikiphoto/";
 		$this->ignore_images = false;
 		$this->variables=array();
 		$this->preformat=false;
 		$this->emphasis=array();
 		$this->imageinfo = false;
+		$this->vitrinaWidjet=null;
 	}
 	
 	function loadImageInfo() {
@@ -363,30 +364,49 @@ class WikiParser {
 	}
 
 	function handle_eliminate($matches) {
-		return "";
+		return '';
 	}
 
-	function handle_variable($matches) {
-		if($this->variables[$matches[2]])
-			return $this->variables[$matches[2]];
+        function handle_variable($matches) {
+            switch ($matches[2]) {
+                case 'CURRENTMONTH': return date('m');
+                case 'CURRENTMONTHNAMEGEN':
+                case 'CURRENTMONTHNAME': return date('F');
+                case 'CURRENTDAY': return date('d');
+                case 'CURRENTDAYNAME': return date('l');
+                case 'CURRENTYEAR': return date('Y');
+                case 'CURRENTTIME': return date('H:i');
+                case 'NUMBEROFARTICLES': return 0;
+                case 'PAGENAME': return $this->page_title;
+                case 'NAMESPACE': return 'None';
+                case 'SITENAME': return $_SERVER['HTTP_HOST'];
+            }
 
-		switch($matches[2]) {
-			case 'CURRENTMONTH': return date('m');
-			case 'CURRENTMONTHNAMEGEN':
-			case 'CURRENTMONTHNAME': return date('F');
-			case 'CURRENTDAY': return date('d');
-			case 'CURRENTDAYNAME': return date('l');
-			case 'CURRENTYEAR': return date('Y');
-			case 'CURRENTTIME': return date('H:i');
-			case 'NUMBEROFARTICLES': return 0;
-			case 'PAGENAME': return $this->page_title;
-			case 'NAMESPACE': return 'None';
-			case 'SITENAME': return $_SERVER['HTTP_HOST'];
-			default: return '';
-		}
-	}
+            if (isset($this->variables[$matches[2]])) {
+                return $this->variables[$matches[2]];
+            }
 
-	function parse_line($line) {
+            if (preg_match('/^WIDGET:([a-zA-Z0-9]*):(.*)$/', $matches[2], $matches)) {
+                $class_name = '\\Widgets\\' . $matches[1];
+                if (class_exists($class_name)) {
+                    $widget = new $class_name;
+                    if (!$widget->isAllow()) {
+                        return '<i>{{Widget ' . $matches[1] . ' not allow for you!}}</i>';
+                    }
+                    if ($matches[2]) {
+                        if(!$widget->setParams($matches[2])) {
+                            return '<i>{{Widget ' . $matches[1] . ': bad params!}}</i>';
+                        }
+                    }
+                    return $widget->getHTML();
+                } else {
+                    return '<i>{{Widget ' . $matches[1] . ' not found!}}</i>';
+                }
+            }
+            return '';
+        }
+
+        function parse_line($line) {
 		$line_regexes = array(
 			'preformat'=>'^\s(.*?)$',
 			'definitionlist'=>'^([\;\:])\s*(.*?)$',
@@ -568,4 +588,3 @@ Done.
 		return array_pop($this->nowikis);
 	}
 }
-?>

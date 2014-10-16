@@ -17,29 +17,33 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-/// Базовый класс для модулей
-abstract class IModule {
-    protected $acl_object_name;     //< Имя объекта контроля привилегий
-    var $link_prefix;		//< Префикс для ссылок
+/// Базовый класс для виджетов
+abstract class IWidget {
+    protected $acl_object_name;         //< Имя объекта контроля привилегий
 
     public function __construct(){}
     
-    /// Получить название модуля
+    /// Получить название виджета
     /// @return Строка с именем
     abstract public function getName();
 
-    /// Получить описание модуля
+    /// Получить описание виджета
     /// @return Строка с описанием
     abstract public function getDescription();
     
-    /// Запустить модуль на исполнение
-    abstract function run();
+    /// Задать параметры отображения виджета
+    /// @param $param_str   Строка параметров отображения
+    /// @return true, если параметры допустимы, false в ином случае 
+    abstract public function setParams($param_str);
     
     /// Узнать, есть ли необходимые привилегии
     /// @param $view    Строка с наименованием привилегии. По умолчанию - view (просмотр)
     final function isAllow($mode='view') {
             if(!$this->acl_object_name)
                 return true;
-            return isAccess($this->acl_object_name, $mode);
+            return isAccess($this->acl_object_name, $mode, true);
     }
+
+    /// Получить HTML код виджета
+    abstract function getHTML();
 }

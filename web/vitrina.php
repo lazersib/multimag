@@ -228,7 +228,7 @@ protected function TopGroup() {
 /// @param $page Номер страницы отображаемой группы
 protected function ViewGroup($group, $page)
 {
-	global $tmpl, $CONFIG, $wikiparser, $db;
+	global $tmpl, $CONFIG, $db;
 	settype($group,'int');
 	settype($page,'int');
 	$res=$db->query("SELECT `name`, `pid`, `desc`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_group` WHERE `id`='$group' AND `hidelevel`='0'");
@@ -273,8 +273,9 @@ protected function ViewGroup($group, $page)
 	$tmpl->addContent("<div class='breadcrumbs'>".$this->GetVitPath($group_data['pid'])."</div>");
 	if($group_data['desc'])
 	{
-		$text=$wikiparser->parse($group_data['desc']);
-		$tmpl->addContent("<div class='group-description'>$text</div><br>");
+            $wikiparser = new WikiParser();
+            $text=$wikiparser->parse($group_data['desc']);
+            $tmpl->addContent("<div class='group-description'>$text</div><br>");
 	}
 	$tmpl->addContent("<div style='clear: right'></div>");
 	if($CONFIG['site']['vitrina_glstyle']=='item')	$this->GroupList_ItemStyle($group);
@@ -374,7 +375,7 @@ protected function ProductList($group, $page) {
 /// @param $block Тип отображаемого блока: stock - Распродажа, popular - Популярные товары, new - Новинки, transit - Товарв пути
 protected function ViewBlock($block)
 {
-	global $tmpl, $CONFIG, $db, $wikiparser;
+	global $tmpl, $CONFIG, $db;
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 	
 	// Определение типа блока
@@ -494,9 +495,10 @@ protected function ViewBlock($block)
 		$text=$nxt['text'];
 		if($nxt['type']==0)	$text=strip_tags($text, '<nowiki>');
 		if($nxt['type']==0 || $nxt['type']==2) {
-			$text=$wikiparser->parse($text);
-			if(@$wikiparser->title)
-				$head = $wikiparser->title;
+                    $wikiparser = new WikiParser();
+                    $text=$wikiparser->parse($text);
+                    if(@$wikiparser->title)
+                            $head = $wikiparser->title;
 		}
 	}
 	
@@ -564,7 +566,7 @@ protected function OrderAndViewBar($group, $page, $order, $view)
 /// Отобразить карточку товара
 /// @param $product ID отображаемого товара/услуги
 protected function ProductCard($product) {
-	global $tmpl, $CONFIG, $wikiparser, $db;
+	global $tmpl, $CONFIG, $db;
 	settype($product,'int');
 
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
@@ -640,10 +642,10 @@ protected function ProductCard($product) {
 
 		$tmpl->addContent("<td class='field'>Наименование:</td><td>".html_out($product_data['name'])."</td></tr>");
 		if($product_data['vc']) $tmpl->addContent("<tr><td class='field'>Код производителя:</td><td>".html_out($product_data['vc'])."</td></tr>");
-		if($product_data['desc'])
-		{
-			$text=$wikiparser->parse($product_data['desc']);
-			$tmpl->addContent("<tr><td valign='top' class='field'>Описание:<td>$text");
+		if($product_data['desc']) {
+                    $wikiparser = new WikiParser();
+                    $text=$wikiparser->parse($product_data['desc']);
+                    $tmpl->addContent("<tr><td valign='top' class='field'>Описание:<td>$text");
 		}
 
 		if($product_data['dop_name']) $tmpl->addContent("<tr><td class='field'>Тип:<td>".html_out($product_data['dop_name']));
@@ -1234,7 +1236,7 @@ protected function GroupList_ImageStyle($group) {
 		$link = $this->GetGroupLink($nxt[0]);
 		$tmpl->addContent("<div class='vitem'><a href='$link'>");
 		if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$nxt[0].jpg"))
-			$tmpl->addContent("<img src='{$CONFIG['site']['var_data_web']}/category/$nxt[0].jpg' alt='$nxt[1]'>");
+			$tmpl->addContent("<img src='{$CONFIG['site']['var_data_web']}/category/$nxt[0].jpg' alt=''>");
 		else {
 			if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png'))
 				$img_url = '/skins/' . $CONFIG['site']['skin'] . '/no_photo.png';
@@ -1353,17 +1355,13 @@ protected function TovList_ImageList($res, $lim) {
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(135);
 			$miniimg->SetY(180);
-			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='{$nxt['name']}'>";
+			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='".html_out($nxt['name'])."'>";
 		}
 		else {
 			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
 				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
 			else	$img_url='/img/no_photo.png';
 			$img="<img src='$img_url' alt='no photo' style='float: left; margin-right: 10px; width: 135px;' alt='no photo'>";
-		}
-		$desc=$nxt['desc'];
-		if(strpos($desc,'.')!==false) {
-			list($desc) = explode('.',$desc,2);
 		}
 
 		if($nxt['bulkcnt']>1)	$buy_cnt = $nxt['bulkcnt'];
@@ -1928,9 +1926,3 @@ catch(Exception $e)
 
 
 $tmpl->write();
-
-
-
-?>
-
-

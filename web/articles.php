@@ -22,10 +22,6 @@ require_once("include/imgresizer.php");
 require_once("include/wikiparser.php");
 
 $wikiparser=new WikiParser();
-$wikiparser->reference_wiki	= "/article/";
-$wikiparser->reference_site	= (isset($_SERVER['HTTPS'])?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
-$wikiparser->image_uri		= "/share/var/wikiphoto/";
-$wikiparser->ignore_images	= false;
 
 if(!isset($_REQUEST['p'])) {
 	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
