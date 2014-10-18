@@ -32,9 +32,9 @@ class MailAliasEditor extends \ListEditor {
     public function getColumnNames() {
         return array(
             'id' => 'id',
+            'alias_prefix' => 'Префикс алиаса',
             'domain_id' => 'Домен',
-            'source' => 'Пользователь ящика',
-            'destination' => 'Алиас'
+            'user_id' => 'Пользователь'
         );
     }
 
@@ -49,12 +49,12 @@ class MailAliasEditor extends \ListEditor {
         return $ret;
     }
     
-    public function getInputSource($name, $value) {
+    public function getInputUser_id($name, $value) {
         $ret = "<select name='$name'>";
-        $res = $this->db_link->query("SELECT `id`, `user` FROM `virtual_users` ORDER BY `id`");
+        $res = $this->db_link->query("SELECT `id`, `user` FROM `view_users_auth` ORDER BY `id`");
         while ($line = $res->fetch_assoc()) {
             $selected = $line['id'] == $value ? ' selected' : '';
-            $ret.= "<option value='{$line['id']}'{$selected}>" . html_out($line['user']) . "</option>";
+            $ret.= "<option value='" . html_out($line['id']) . "'{$selected}>" . html_out($line['user']) . "</option>";
         }
         $ret.= "</select>";
         return $ret;

@@ -33,9 +33,69 @@ class MailConfig extends \IModule {
     
     public function getDescription() {
         return 'Модуль для настройки подконтрольного почтового сервера. Для работы модуля в конфигурационном файле'
-        . ' необходимо указать параметры подключения к базе данных.';  
+        . ' необходимо указать параметры подключения к базе данных. Ящик доступен каждому пользователю, являющемуся сотрудником.';  
     }
 
+    protected function calcUMap($db) {
+        $umap = array();
+        $res = $db->query("SELECT `email`, `user` FROM `view_aliases`");
+        while ($line = $res->fetch_assoc()) {
+            $umap[$line['user']][] = $line['email'];
+        }
+        return $umap;
+    }
+
+    protected function calcAMap($db) {
+        $umap = array();
+        $res = $db->query("SELECT `email`, `user` FROM `view_aliases`");
+        while ($line = $res->fetch_assoc()) {
+            $umap[$line['email']][] = $line['user'];
+        }
+        return $umap;
+    }
+    
+    protected function renderUMap($tmpl, $db) {
+        $tmpl->addBreadcrumb('Карта почтовых ящиков', '');
+        $tmpl->addContent("<table class='list'>"
+            . "<tr><th>Ящик</th><th>Алиас</th>");
+        $map = $this->calcUMap($db);
+        foreach ($map as $email=>$users) {
+            $span = count($users);
+            $tmpl->addContent("<tr><td rowspan='$span'>".html_out($email)."</td>");
+            $fl = 1;
+            foreach($users as $user) {
+                if(!$fl) {
+                    $tmpl->addContent("<tr>");
+                    $fl = 0;
+                }
+                $tmpl->addContent("<td>".html_out($user)."</td></tr>");
+            }
+        }
+        
+        $tmpl->addContent("</table>");
+    }
+    
+    protected function renderAMap($tmpl, $db) {
+        $tmpl->addBreadcrumb('Карта почтовых алиасов', '');
+        $tmpl->addContent("<table class='list'>"
+            . "<tr><th>Алиас</th><th>Ящик</th>");
+        $map = $this->calcAMap($db);
+        foreach ($map as $email=>$users) {
+            $span = count($users);
+            $tmpl->addContent("<tr><td rowspan='$span'>".html_out($email)."</td>");
+            $fl = 1;
+            foreach($users as $user) {
+                if(!$fl) {
+                    $tmpl->addContent("<tr>");
+                    $fl = 0;
+                }
+                $tmpl->addContent("<td>".html_out($user)."</td></tr>");
+            }
+        }
+        
+        $tmpl->addContent("</table>");
+    }
+    
     public function run() {
         global $CONFIG, $tmpl;
         if (!isset($CONFIG['admin_mailconfig'])) {
@@ -57,19 +117,13 @@ class MailConfig extends \IModule {
                 $tmpl->addContent("<p>".$this->getDescription()."</p>"
                     . "<ul>"
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=domains'>Домены</li>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=users'>Пользователи</li>"
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=alias'>Алиасы</li>"
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=umap'>Карта почтовых ящиков</li>"
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=amap'>Карта почтовых алиасов</li>"
                     . "</ul>");
                 break;
             case 'domains':
                 $editor = new \ListEditors\MailDomainsEditor($db);
-                $editor->line_var_name = 'id';
-                $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;
-                $editor->acl_object_name = $this->acl_object_name;
-                $editor->run();
-                break;
-            case 'users':
-                $editor = new \ListEditors\MailUsersEditor($db);
                 $editor->line_var_name = 'id';
                 $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;
                 $editor->acl_object_name = $this->acl_object_name;
@@ -82,7 +136,12 @@ class MailConfig extends \IModule {
                 $editor->acl_object_name = $this->acl_object_name;
                 $editor->run();
                 break;
-
+            case 'umap':
+                $this->renderUMap($tmpl, $db);
+                break;
+            case 'amap':
+                $this->renderAMap($tmpl, $db);
+                break;
             default:
                 throw new \NotFoundException("Секция не найдена");
         }

@@ -373,7 +373,7 @@ protected function ProductList($group, $page) {
         elseif(isset ($page) && $page!=1)
         {
                 header("Location: ".(empty($_SERVER['HTTPS'])?"http":"https")."://".$_SERVER['HTTP_HOST'].$this->GetGroupLink($group),false,301);
-		exit(); ;
+		exit();
         }
 }
 
@@ -897,7 +897,7 @@ public function getProductBaseElement($product_info) {
 		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
 	$cce = '';
 	if(@$CONFIG['site']['grey_price_days']) {
-		if( strtotime($nxt['cost_date']) < $cce_time )
+		if( strtotime($product_info['cost_date']) < $cce_time )
 			$cce = ' style=\'color:#888\'';
 	}
 	$pc = $this->priceCalcInit();
@@ -936,7 +936,7 @@ public function getProductMiniElement($product_info) {
 		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
 	$cce = '';
 	if(@$CONFIG['site']['grey_price_days']) {
-		if( strtotime($nxt['cost_date']) < $cce_time )
+		if( strtotime($product_info['cost_date']) < $cce_time )
 			$cce = ' style=\'color:#888\'';
 	}
 	$pc = $this->priceCalcInit();
@@ -944,9 +944,9 @@ public function getProductMiniElement($product_info) {
 		$miniimg = new ImageProductor($product_info['img_id'], 'p', $product_info['img_type']);
 		$miniimg->SetX(63);
 		$miniimg->SetY(85);
-		$img="<img src='".$miniimg->GetURI()."' alt='".html_out($product_info['name'])."' width='13px' height='17px'>";
+		$img="<img src='".$miniimg->GetURI()."' alt='".html_out($product_info['name'])."'>";
 	}
-	else $img="<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo_131.jpg' alt='no photo'>";
+	else $img="<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo.jpg' alt='no photo'>";
 	$nal = $this->GetCountInfo($product_info['count'], $product_info['transit_cnt']);
 	$link = $this->GetProductLink($product_info['id'], $product_info['name']);
 	$price = $pc->getPosDefaultPriceValue($product_info['id']);
@@ -1889,7 +1889,7 @@ protected function priceCalcInit() {
 	return $pc;
 }
 
-};
+}
 
 // if(($mode=='')&&($gr==''))
 // {
