@@ -45,7 +45,8 @@ class Report_Ved_Agentov {
 		Дата c:<input type='text' name='dt_f' id='dt_f' value='$dt_f'>
 		по:<input type='text' name='dt_t' id='dt_t' value='$dt_t'>
 		</p>
-		Организация:<br><select name='firm'>");
+		Организация:<br><select name='firm_id'>"
+                    . "<option value='0'>--любая--</option>");
 		$rs = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
 		while ($nx = $rs->fetch_row()) {
 			$tmpl->addContent("<option value='$nx[0]'>".html_out($nx[1])."</option>");
@@ -141,37 +142,44 @@ class Report_Ved_Agentov {
 		$this->debt = intval(@$_REQUEST['debt']);
 		$detail_ag = intval(@$_REQUEST['detail_ag']);
 		$this->detail_doc = intval(@$_REQUEST['detail_doc']);
+                $firm_id = rcvint('firm_id');
+                
 		$tmpl->addContent("<h1 id='page-title'>Ведомость по агентам</h1>
 		<table class='list' width='100%'>
 		<tr><th rowspan='2'>Дата</th><th rowspan='2'>Документ</th><th rowspan='2'>Начальный долг</th><th rowspan='2'>Увеличение долга</th><th rowspan='2'>Уменьшение долга</th><th colspan='2'>На конец периода</th></tr>
 		<tr><th>Наш долг</th><th>Долг клиента</th></tr>");
-
+                
+                $aw = '';
+                if($firm_id) {
+                    $aw = " AND `doc_list`.`firm_id`=$firm_id";
+                }
+                
 		if ($this->sel_type == 'pos') {
 			$res = $db->query("SELECT `id`, `name` FROM `doc_agent` WHERE `id`='$agent' ORDER BY `name`");
 			while ($line = $res->fetch_assoc()) {
-				$tmpl->addContent($this->makeBlock($line['name'], "AND `doc_list`.`agent`='{$line['id']}'"));
+				$tmpl->addContent($this->makeBlock($line['name'], "AND `doc_list`.`agent`='{$line['id']}' $aw"));
 			}
 		} else if ($this->sel_type == 'group') {
 			if ($detail_ag) {
 				$res = $db->query("SELECT `id`, `name` FROM `doc_agent` WHERE `group`='$ag_sel_group' ORDER BY `name`");
 				while ($line = $res->fetch_assoc()) {
-					$tmpl->addContent($this->makeBlock($line['name'], "AND `doc_list`.`agent`='{$line['id']}'"));
+					$tmpl->addContent($this->makeBlock($line['name'], "AND `doc_list`.`agent`='{$line['id']}' $aw"));
 				}
 			} else {
 				$res = $db->query("SELECT `id` FROM `doc_agent` WHERE `group`='$ag_sel_group' ORDER BY `name`");
 				$where = '';
 				while ($line = $res->fetch_assoc()) {
-					if ($where)	$where.=',';
-					$where.="OR `doc_list`.`agent`='{$line['id']}'";
+					if ($where)	$where.=' OR ';
+					$where.="`doc_list`.`agent`='{$line['id']}'";
 				}
-				$tmpl->addContent($this->makeBlock('Выбранная группа:', "AND ($where)"));
+				$tmpl->addContent($this->makeBlock('Выбранная группа:', "AND ($where) $aw"));
 			}
 		}
 		else {
 			if ($detail_ag) {
 				$res = $db->query("SELECT `id`, `name` FROM `doc_agent` ORDER BY `name`");
 				while ($line = $res->fetch_assoc()) {
-					$tmpl->addContent($this->makeBlock($line['name'], "AND `doc_list`.`agent`='{$line['id']}'"));
+					$tmpl->addContent($this->makeBlock($line['name'], "AND `doc_list`.`agent`='{$line['id']}' $aw"));
 				}
 			} else	$tmpl->addContent($this->makeBlock('Итог:'));
 		}

@@ -116,6 +116,8 @@ class Report_Sales extends BaseGSReport {
 		$tmpl->addContent("</select><br>
 		<label><input type='checkbox' name='w_docs' value='1' checked>С документами</label><br>
 		<label><input type='checkbox' name='div_dt' value='1' checked>Разделить по типам документов</label><br>
+                Фильтр по подтипу документов:<br>
+                <input type='text' name='subtype' value=''><br>
 		<br>
 		<fieldset><legend>Отчёт по</legend>
 		<select name='sel_type' id='sel_type'>
@@ -226,10 +228,13 @@ class Report_Sales extends BaseGSReport {
 		");
 	}
 
-	function dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost) {
+	function dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost, $subtype) {
 		global $db;
 		$start_cnt = getStoreCntOnDate($pos_id, $this->sklad, $dt_f, 1);
-
+                $s_where = '';
+                if($subtype) {
+                    $s_where = " AND `doc_list`.`subtype` = '".$db->real_escape_string($subtype)."'";
+                }
 		if ($this->w_docs) {
 			$this->tableSpannedRow(array($this->col_cnt), array("$vc $name ($pos_id)"));
 			$this->tableRow(array('', 'На начало периода', '', $start_cnt, '', ''));
@@ -238,17 +243,18 @@ class Report_Sales extends BaseGSReport {
 			$this->tableAltStyle(false);
 		}
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-		FROM `doc_list_pos`
-		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-		INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
-		(`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
-		(`doc_list`.`type`='8' AND `ns`.`value`='{$this->sklad}') OR
-		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0
-		ORDER BY `doc_list`.`date`");
+                    FROM `doc_list_pos`
+                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                    INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                    LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+                    LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+                    LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+                    WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
+                    (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
+                    (`doc_list`.`type`='8' AND `ns`.`value`='{$this->sklad}') OR
+                    (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0
+                    $s_where
+                    ORDER BY `doc_list`.`date`");
 		$sum_cnt = $start_cnt;
 		$prix_cnt = $prix_sum = 0;
 		while ($nxt = $res->fetch_assoc()) {
@@ -274,15 +280,16 @@ class Report_Sales extends BaseGSReport {
 			$this->tableAltStyle(false);
 		}
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-		FROM `doc_list_pos`
-		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-		INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
-		(`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`ok`>0
-		ORDER BY `doc_list`.`date`");
+                    FROM `doc_list_pos`
+                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                    INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                    LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+                    LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+                    LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
+                    WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
+                    (`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`ok`>0
+                    $s_where
+                    ORDER BY `doc_list`.`date`");
 		$realiz_cnt = $sum = 0;
 		while ($nxt = $res->fetch_assoc()) {
 			if ($this->w_docs) {
@@ -309,14 +316,15 @@ class Report_Sales extends BaseGSReport {
 			$this->tableAltStyle(false);
 		}
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-		FROM `doc_list_pos`
-		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-		INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='8' AND `doc_list`.`ok`>0
-		ORDER BY `doc_list`.`date`");
+                    FROM `doc_list_pos`
+                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                    INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                    LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+                    LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+                    LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
+                    WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='8' AND `doc_list`.`ok`>0
+                    $s_where
+                    ORDER BY `doc_list`.`date`");
 		$perem_cnt = $sum = 0;
 		while ($nxt = $res->fetch_assoc()) {
 			if ($this->w_docs) {
@@ -342,14 +350,15 @@ class Report_Sales extends BaseGSReport {
 			$this->tableAltStyle(false);
 		}
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-		FROM `doc_list_pos`
-		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-		INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND (`doc_list`.`type`='17' AND `doc_list_pos`.`page`!='0') AND `doc_list`.`ok`>0
-		ORDER BY `doc_list`.`date`");
+                    FROM `doc_list_pos`
+                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                    INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                    LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+                    LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+                    LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
+                    WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND (`doc_list`.`type`='17' AND `doc_list_pos`.`page`!='0') AND `doc_list`.`ok`>0
+                        $s_where
+                    ORDER BY `doc_list`.`date`");
 		$sbor_cnt = $sum = 0;
 		while ($nxt = $res->fetch_assoc()) {
 			if ($this->w_docs) {
@@ -383,10 +392,13 @@ class Report_Sales extends BaseGSReport {
 		}
 	}
 
-	function serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t) {
+	function serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $subtype) {
 		global $tmpl, $db;
 		$cur_cnt = getStoreCntOnDate($pos_id, $this->sklad, $dt_f, 1);
-
+                $s_where = '';
+                if($subtype) {
+                    $s_where = " AND `doc_list`.`subtype` = '".$db->real_escape_string($subtype)."'";
+                }
 		if ($this->w_docs) {
 			$this->tableAltStyle();
 			$this->tableSpannedRow(array($this->col_cnt), array("$vc $name ($pos_id)"));
@@ -394,20 +406,22 @@ class Report_Sales extends BaseGSReport {
 			$this->tableSpannedRow(array($this->col_cnt - 1, 1), array('На начало периода:', $cur_cnt));
 		}
 		$res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`page`,
-		`doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-		FROM `doc_list_pos`
-		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-		INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-		LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-		LEFT JOIN `doc_sklady` AS `ds` ON `ds`.`id`=`doc_list`.`sklad`
-		LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
-		WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
-		(`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
-		((`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`sklad`='{$this->sklad}') OR
-		(`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
-		(`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
-		ORDER BY `doc_list`.`date`");
+                        `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`,
+                        `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
+                    FROM `doc_list_pos`
+                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                    INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                    LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+                    LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+                    LEFT JOIN `doc_sklady` AS `ds` ON `ds`.`id`=`doc_list`.`sklad`
+                    LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
+                    WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
+                        (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
+                        ((`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`sklad`='{$this->sklad}') OR
+                        (`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
+                        (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
+                        $s_where
+                    ORDER BY `doc_list`.`date`");
 		$sp = $sr = 0;
 		while ($nxt = $res->fetch_assoc()) {
 			$p = $r = '';
@@ -447,10 +461,10 @@ class Report_Sales extends BaseGSReport {
 		$this->tableSpannedRow(array($this->col_cnt - 3, 1, 1, 1), array('На конец периода:', $sp, $sr, $cur_cnt));
 	}
 
-	function outPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost) {
+	function outPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost, $subtype) {
 		if ($this->div_dt || !$this->w_docs)
-			$this->dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost);
-		else	$this->serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t);
+			$this->dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost, $subtype);
+		else	$this->serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $subtype);
 	}
 
 	function Make($engine) {
@@ -465,28 +479,38 @@ class Report_Sales extends BaseGSReport {
 		$this->w_docs = rcvint('w_docs');
 		$this->div_dt = rcvint('div_dt');
 		$agent_id = rcvint('agent');
+                $subtype = request('subtype');
 		
 		if(!$this->sklad ) $this->sklad = 1;
-
-		$print_df = date('Y-m-d', $dt_f);
-		$print_dt = date('Y-m-d', $dt_t);
 
 		$res = $db->query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$this->sklad}'");
 		if (!$res->num_rows)	throw new Exception("Склад не найден");
 		list($sklad_id, $sklad_name) = $res->fetch_row();
-
-		$this->header($this->getName() . " с $print_df по $print_dt, склад: $sklad_name($sklad_id)");
-
+                
+                $header = $this->getName();
+                if($dt_f>1) {
+                    $header .= ", с ".date('Y-m-d', $dt_f);
+                }
+                $header .= ", по ".date('Y-m-d', $dt_t).", склад: $sklad_name($sklad_id)";
+                if($subtype) {
+                    $header .= ", подтип документов: $subtype";
+                }
+                
 		if (!$this->w_docs) {
 			$widths = array(5, 8, 38, 7, 7, 7, 7, 7, 7, 7);
 			$headers = array('ID', 'Код', 'Наименование', 'Базов. цена', 'Нач. кол-во', 'Приход', 'Реализ.', 'Перем.', 'Сборка', 'Итог');
+                        $header .= ", без детализации по документам";
 		} else if ($this->div_dt) {
 			$widths = array(15, 25, 40, 7, 7, 7);
 			$headers = array('Дата', 'Документ', 'Источник', 'Кол-во', 'Цена', 'Сумма');
+                        $header .= ", c детализацей и делением по документам";
 		} else {
 			$widths = array(15, 21, 40, 8, 8, 8);
 			$headers = array('Дата', 'Документ', '', 'Приход', 'Расход', 'Кол-во');
+                        $header .= ", c детализацей по документам";
 		}
+                $this->header($header);
+                
 		$this->col_cnt = count($widths);
 		$this->tableBegin($widths);
 		$this->tableHeader($headers);
@@ -502,12 +526,12 @@ class Report_Sales extends BaseGSReport {
 			$res = $db->query("SELECT `vc`, `name`, `doc_base`.`cost`  FROM `doc_base` WHERE `id`='$pos_id'");
 			if ($res->num_rows == 0)	throw new Exception("Товар не найден!");
 			$tov_data = $res->fetch_row();
-			$this->outPos($pos_id, $tov_data[0], $tov_data[1], $dt_f, $dt_t, $tov_data[2]);
+			$this->outPos($pos_id, $tov_data[0], $tov_data[1], $dt_f, $dt_t, $tov_data[2], $subtype);
 		}
 		else if ($sel_type == 'all') {
 			$res = $db->query("SELECT `id`, `vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost` FROM `doc_base` ORDER BY $order");
 			while ($nxt = $res->fetch_row())
-				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3]);
+				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
 		} else if ($sel_type == 'group') {
 			$res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 			while ($group_line = $res_group->fetch_assoc()) {
@@ -523,7 +547,7 @@ class Report_Sales extends BaseGSReport {
 				WHERE `doc_base`.`group`='{$group_line['id']}'
 				ORDER BY $order");
 				while ($nxt = $res->fetch_row())
-					$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3]);
+					$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
 			}
 		} else if ($sel_type == 'agent') {
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`
@@ -532,7 +556,7 @@ class Report_Sales extends BaseGSReport {
 			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`agent`='$agent_id' AND `doc_list`.`type`='1'
 			GROUP BY `doc_list_pos`.`tovar` ORDER BY $order ");
 			while ($nxt = $res->fetch_row())
-				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3]);
+				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
 		}
 		$this->tableEnd();
 		$this->output();

@@ -392,7 +392,7 @@ try {
 		<tr><td>Пароль:</td><td><label><input type='checkbox' name='pass_expired' value='1'{$pe_check}> Требовать смену пароля</label></td></tr>
 		<tr><td>Блокировка:</td><td><label><input type='checkbox' name='disabled' value='1'{$disabled_check}> Пользователь заблокирован</label></td></tr>
 		<tr><td>Причина блокировки:</td><td><input type='text' name='disabled_reason' value='".html_out($user_info['disabled_reason'])."'></td></tr>
-		<tr><td>Защита:</td><td><label><input type='checkbox' name='bifact_auth' value='1'{$bfa_check}> Двухфактораня аутентификация</label></td></tr>
+		<tr><td>Защита:</td><td><label><input type='checkbox' name='bifact_auth' value='1'{$bfa_check}> Двухфакторная аутентификация</label></td></tr>
 		<tr><td></td><td><button type='submit'>Сохранить</button></td></tr>
 		</table>
 		</form>");

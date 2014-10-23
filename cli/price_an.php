@@ -55,7 +55,7 @@ class Foo {
 
 }
 
-;
+
 
 $tmpl = new Foo();
 
@@ -197,7 +197,7 @@ function parallel_match() {
 	$res->data_seek($limit_per_child * $i);
 	$db = mysql_reconnect();
 	forked_match_process(0, $row - $limit_per_child * $i, $res, $db);
-
+        $status = 0;
 	foreach ($pids_array as $pid)
 		pcntl_waitpid($pid, $status);
 
@@ -359,7 +359,7 @@ try {
 
 		if ($nxt[3] == 0) {
 			$db->query("UPDATE `parsed_price` SET `selected`='1' WHERE `id`='$ok_line'");
-			if ($nxt[1] != $mincost) {
+			if ($nxt[1] != $mincost && $mincost>0) {
 				$txt = "У наименования ID:$nxt[0] изменена цена с $nxt[1] на $mincost. Наименование: $nxt[2]\n";
 				$db->query("UPDATE `doc_base` SET `cost`='$mincost', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
 				echo $txt;
@@ -382,7 +382,6 @@ try {
 }
 
 $work_time = microtime(TRUE) - $start_time;
-;
 
 $h = $m = 0;
 $s = round($work_time * 100) / 100;
@@ -422,4 +421,3 @@ else
 	echo"Ошибок не найдено, не о чем оповещать!\n";
 
 //$db->query("DELETE FROM `sys_cli_status` WHERE `id`='$status_id'");
-?>
