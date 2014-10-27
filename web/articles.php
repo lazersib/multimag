@@ -155,8 +155,7 @@ try
 				if($mode=='edit')
 				{
 					if(!isAccess('generic_articles','edit'))	throw new AccessException();
-					$tmpl->addContent("<h1>Правим $h</h1>
-					<h2>=== Оригинальный текст ===</h2>$text<h2>=== Конец оригинального текста ===</h2>");
+					$tmpl->addContent("<h1>Правим $h</h1>");
 					articles_form($p, $nxt['text'], $nxt['type']);
 				}
 				else if($mode=='save')
