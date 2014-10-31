@@ -1085,12 +1085,15 @@ function SkladViewInit(setup, callback) {
 		var head_row = head.insertRow(0);
 		var th = document.createElement('th');
 		th.textContent = 'id';
-		th.style.width='60px';
+		th.style.width='40px';
 		head_row.appendChild(th);
 		
 		for(i=0;i<setup.store_columns.length;i++) {
 			th = document.createElement('th');
-			th.textContent = setup.store_columns[i];
+                        if(setup.store_col_names)
+                            th.textContent = setup.store_col_names[i];
+                        else
+                            th.textContent = setup.store_columns[i];
 //			switch(setup.store_columns[i]) {
 //				case 'price':
 //				case 'place':

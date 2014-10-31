@@ -9,7 +9,7 @@ class SZapPosEditor extends DocPosEditor
 		global $CONFIG;
 		// Список товаров
 		$ret="
-		<script src='/css/poseditor.js' type='text/javascript'></script>
+		<script src='/js/poseditor.js' type='text/javascript'></script>
 		<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
 		<div id='poseditor_div'></div>
 		<div id='storeview_container'></div>";
@@ -47,24 +47,34 @@ class SZapPosEditor extends DocPosEditor
 		$p_setup['columns'] = $cols;
 		$p_setup['col_names'] = $col_names;
 
-		if($this->show_vc)
-			$p_setup['store_columns'] = array(
-			    'vc', 'name', 'vendor', 'price', 'liquidity'
-			);
-		else	$p_setup['store_columns'] = array(
-			    'name', 'vendor', 'price', 'liquidity'
-			);
+                if ($this->show_vc) {
+                    $sc = array(
+                        'vc', 'name', 'vendor', 'price', 'liquidity'
+                    );
+                    $sc_names = array ('Код', 'Название', 'Произв.', 'Цена', 'Ликвидность');
+                } else {
+                    $sc = array(
+                        'name', 'vendor', 'price', 'liquidity'
+                    );
+                    $sc_names = array ('Название', 'Произв.', 'Цена', 'Ликв.');
+                }
+                if($this->show_rto) {
+                        $sc[] = 'transit';
+                        $sc[] = 'reserve';
+                        $sc[] = 'offer';
+                        $sc_names[] = 'Транзит';
+                        $sc_names[] = 'Резерв';
+                        $sc_names[] = 'П/зак.';
+                }
+                $sc[] = 'cnt';
+                $sc[] = 'allcnt';
+                $sc[] = 'place';
+                $sc_names[] = 'Склад';
+                $sc_names[] = 'Всего';
+                $sc_names[] = 'Место';
 
-		if($this->show_rto) {
-			$p_setup['store_columns'][] = 'transit';
-			$p_setup['store_columns'][] = 'reserve';
-			$p_setup['store_columns'][] = 'offer';
-		}
-
-		$p_setup['store_columns'][] = 'cnt';
-		$p_setup['store_columns'][] = 'allcnt';
-		$p_setup['store_columns'][] = 'place';
-
+                $p_setup['store_columns'] = $sc;
+                $p_setup['store_col_names'] = $sc_names;
 
 		$ret.="<script type=\"text/javascript\">
 		var poslist = PosEditorInit(".json_encode($p_setup, JSON_UNESCAPED_UNICODE).");

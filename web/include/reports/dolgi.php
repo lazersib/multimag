@@ -71,6 +71,7 @@ class Report_Dolgi extends BaseReport {
 		$this->loadEngine($engine);
 		
 		$date_p = date("Y-m-d", $date);
+                $date = strtotime($date_p.' 23:59:59');
 				
 		if ($vdolga == 2)	$header = "Информация по нашей задолженности на $date_p от " . date('d.m.Y');
 		else			$header = "Информация о задолженности перед нашей организацией на $date_p от " . date('d.m.Y');

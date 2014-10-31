@@ -390,6 +390,11 @@ class Report_Sales extends BaseGSReport {
 			if($prix_cnt || $realiz_cnt || $perem_cnt || $sbor_cnt)
 				$this->tableRow(array($pos_id, $vc, $name, $base_cost, $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt));
 		}
+                return array(
+                    'prix'=>$prix_cnt,
+                    'real'=>$realiz_cnt,
+                    'perem'=>$perem_cnt,
+                    'sbor'=>$sbor_cnt);
 	}
 
 	function serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $subtype) {
@@ -463,8 +468,8 @@ class Report_Sales extends BaseGSReport {
 
 	function outPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost, $subtype) {
 		if ($this->div_dt || !$this->w_docs)
-			$this->dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost, $subtype);
-		else	$this->serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $subtype);
+			return $this->dividedOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $base_cost, $subtype);
+		else	return $this->serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $subtype);
 	}
 
 	function Make($engine) {
@@ -521,17 +526,35 @@ class Report_Sales extends BaseGSReport {
 				break;
 			default: $order = '`doc_base`.`name`';
 		}
-		if ($sel_type == 'pos') {
+                
+                $ss = array(
+                    'prix' => 0,
+                    'real' => 0,
+                    'perem' => 0,
+                    'sbor' => 0);
+
+                if ($sel_type == 'pos') {
 			$pos_id = rcvint('pos_id');
 			$res = $db->query("SELECT `vc`, `name`, `doc_base`.`cost`  FROM `doc_base` WHERE `id`='$pos_id'");
 			if ($res->num_rows == 0)	throw new Exception("Товар не найден!");
 			$tov_data = $res->fetch_row();
-			$this->outPos($pos_id, $tov_data[0], $tov_data[1], $dt_f, $dt_t, $tov_data[2], $subtype);
+			$ret = $this->outPos($pos_id, $tov_data[0], $tov_data[1], $dt_f, $dt_t, $tov_data[2], $subtype);
+                        if ($this->div_dt || !$this->w_docs) {
+                            foreach($ss as $id=>$val) {
+                                $ss[$id]+= $ret[$id];
+                            }
+                        }
 		}
 		else if ($sel_type == 'all') {
 			$res = $db->query("SELECT `id`, `vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost` FROM `doc_base` ORDER BY $order");
-			while ($nxt = $res->fetch_row())
-				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
+			while ($nxt = $res->fetch_row()) {
+                            $ret = $this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
+                            if ($this->div_dt || !$this->w_docs) {
+                                foreach($ss as $id=>$val) {
+                                    $ss[$id]+= $ret[$id];
+                                }
+                            }   
+                        }
 		} else if ($sel_type == 'group') {
 			$res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
 			while ($group_line = $res_group->fetch_assoc()) {
@@ -546,8 +569,14 @@ class Report_Sales extends BaseGSReport {
 				FROM `doc_base`
 				WHERE `doc_base`.`group`='{$group_line['id']}'
 				ORDER BY $order");
-				while ($nxt = $res->fetch_row())
-					$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
+				while ($nxt = $res->fetch_row()) {
+                                    $ret = $this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
+                                    if ($this->div_dt || !$this->w_docs) {
+                                        foreach($ss as $id=>$val) {
+                                            $ss[$id]+= $ret[$id];
+                                        }
+                                    }
+                                }
 			}
 		} else if ($sel_type == 'agent') {
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base`.`cost`
@@ -555,9 +584,22 @@ class Report_Sales extends BaseGSReport {
 			INNER JOIN `doc_base` ON  `doc_base`.`id`=`doc_list_pos`.`tovar`
 			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`agent`='$agent_id' AND `doc_list`.`type`='1'
 			GROUP BY `doc_list_pos`.`tovar` ORDER BY $order ");
-			while ($nxt = $res->fetch_row())
-				$this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
+			while ($nxt = $res->fetch_row()) {
+                            $ret = $this->outPos($nxt[0], $nxt[1], $nxt[2], $dt_f, $dt_t, $nxt[3], $subtype);
+                            if ($this->div_dt || !$this->w_docs) {
+                                foreach($ss as $id=>$val) {
+                                    $ss[$id]+= $ret[$id];
+                                }
+                            }
+                        }
 		}
+                
+                if ($this->div_dt || !$this->w_docs) {
+                    $this->tableAltStyle();
+                    $end = $ss['prix'] - $ss['real'] - $ss['perem'] - $ss['sbor'];
+                    $this->tableRow(array('', '', 'Итого:', '', '', $ss['prix'], $ss['real'], $ss['perem'], $ss['sbor'], $end));
+                    $this->tableAltStyle(false);
+                }
 		$this->tableEnd();
 		$this->output();
 		exit(0);

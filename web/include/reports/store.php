@@ -211,7 +211,8 @@ class Report_Store extends BaseGSReport {
 			$pdf->SetFillColor(255);
 
 
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost` AS `base_price`, {$cnt_field}, `doc_base_dop`.`mass`, `doc_base`.`vc`
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost` AS `base_price`, {$cnt_field}, `doc_base_dop`.`mass`,
+                            `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`bulkcnt`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			$cnt_join

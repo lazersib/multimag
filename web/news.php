@@ -163,12 +163,13 @@ protected function View($id)
 	if($res->num_rows)
 	{
                 $wikiparser = new WikiParser();
-		while($nxt=$res->fetch_assoc())
-		{
+		while($nxt=$res->fetch_assoc())	{
 			$wikiparser->title='';
 			$text=$wikiparser->parse( html_out($nxt['text']) );
-			if($nxt['type'])	$do="<br><i><u>Действительно до:	{$nxt['ex_date']}</u></i>";
-			else			$do='';
+			if($nxt['type'] && $nxt['type']!='news')
+                            $do="<br><i><u>Действительно до:	{$nxt['ex_date']}</u></i>";
+			else
+                            $do='';
 			$tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a><a href='/news.php'>Новости</a>{$wikiparser->title}</div><h1>{$wikiparser->title}</h1><p>$text<br><i>{$nxt['date']}, {$nxt['autor_name']}</i><br>$do</p>");
 			// <a href='/forum.php'>Комментарии: 0</a>
 		}
