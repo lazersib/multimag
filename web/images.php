@@ -18,7 +18,6 @@
 //
 
 include_once("core.php");
-include_once("include/imgresizer.php");
 
 // URI: i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}&f={$this->fix_aspect}&n={$this->no_enlarge}
 

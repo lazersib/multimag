@@ -936,9 +936,6 @@ else				$mode='';
 if(isset($_SESSION['uid']))	$uid=$_SESSION['uid'];
 else				$uid=0;
 
-/// Должно быть убрано, должно подключаться и создаваться по необходимости
-require_once("include/imgresizer.php");
-
 $dop_status=array('new'=>'Новый', 'err'=>'Ошибочный', 'inproc'=>'В процессе', 'ready'=>'Готов', 'ok'=>'Отгружен');
 if(is_array(@$CONFIG['doc']['status_list']))	$CONFIG['doc']['status_list']=array_merge($dop_status, $CONFIG['doc']['status_list']);
 else						$CONFIG['doc']['status_list']=$dop_status;

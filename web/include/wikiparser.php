@@ -48,6 +48,7 @@ class WikiParser {
 		$this->emphasis=array();
 		$this->imageinfo = false;
 		$this->vitrinaWidjet=null;
+                $this->title = '';
 	}
 	
 	function loadImageInfo() {

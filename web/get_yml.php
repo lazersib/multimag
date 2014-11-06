@@ -19,7 +19,6 @@
 
 include_once("core.php");
 include_once("include/doc.core.php");
-include_once("include/imgresizer.php");
 
 try
 {

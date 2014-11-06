@@ -29,7 +29,6 @@ else
 {
 
 	require_once("include/doc.core.php");
-	require_once("include/imgresizer.php");
 	require_once("include/comments.inc.php");
 
 	$tmpl->setTitle($CONFIG['site']['display_name']);

@@ -284,7 +284,6 @@ class doc_s_Sklad {
 			$cc = '';
 	
 			if ($pos_info['img_id']) {
-				include_once("include/imgresizer.php");
 				$miniimg = new ImageProductor($pos_info['img_id'], 'p', $pos_info['img_type']);
 				$miniimg->SetY(320);
 				$miniimg->SetX(240);

@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
@@ -15,25 +16,8 @@
 //
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
 
-require_once("core.php");
+/// Обёртка-загрузчик для модуля новостей
+class News extends \Modules\Site\News {
 
-try {
-    $module = new \News();
-    $module->link_prefix = '/news.php?';
-    $module->run();
 }
-catch(mysqli_sql_exception $e) {
-    $db->rollback();
-    $id = $tmpl->logger($e->getMessage(), 1);
-    $tmpl->addContent("<br><br>");
-    $tmpl->msg("Ошибка базы данных, $id","err");
-}
-catch(Exception $e) {
-    $db->rollback();
-    $tmpl->addContent("<br><br>");
-    $tmpl->logger($e->getMessage());
-}
-
-$tmpl->write();

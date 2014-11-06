@@ -18,10 +18,8 @@
 //
 
 require_once("core.php");
-require_once("include/imgresizer.php");
-require_once("include/wikiparser.php");
 
-$wikiparser=new WikiParser();
+$wikiparser=new \WikiParser();
 
 if(!isset($_REQUEST['p'])) {
 	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
@@ -121,7 +119,7 @@ try
 			if($nxt['type']==0 || $nxt['type']==2)
 			{
 				$text = $wikiparser->parse( $text );
-				$h=$wikiparser->title;
+				$h = $wikiparser->title;
 				$meta_description=@$wikiparser->definitions['meta_description'];
 				$meta_keywords=@$wikiparser->definitions['meta_keywords'];
 			}

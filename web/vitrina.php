@@ -19,7 +19,6 @@
 
 include_once("core.php");
 include_once("include/doc.core.php");
-include_once("include/imgresizer.php");
 
 /// Класс витрины интернет-магазина
 class Vitrina
@@ -231,6 +230,10 @@ protected function ViewGroup($group, $page)
 	global $tmpl, $CONFIG, $db;
 	settype($group,'int');
 	settype($page,'int');
+        if($page<1) {
+                header("Location: ".(empty($_SERVER['HTTPS'])?"http":"https")."://".$_SERVER['HTTP_HOST'].html_in($this->GetGroupLink($group)),false,301);
+                exit();
+        }
 	$res=$db->query("SELECT `name`, `pid`, `desc`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_group` WHERE `id`='$group' AND `hidelevel`='0'");
 	if(!$res->num_rows)	throw new NotFoundException('Группа не найдена! Воспользуйтесь каталогом.');
 
@@ -353,7 +356,7 @@ protected function ProductList($group, $page) {
         {
 		if($page<1 || $lim*($page-1)>$res->num_rows)
 		{
-			header("Location: ".(empty($_SERVER['HTTPS'])?"http":"https")."://".$_SERVER['HTTP_HOST'].$this->GetGroupLink($group),false,301);
+			header("Location: ".(empty($_SERVER['HTTPS'])?"http":"https")."://".$_SERVER['HTTP_HOST'].html_in($this->GetGroupLink($group)),false,301);
 			exit();
 		}
 		$this->OrderAndViewBar($group,$page,$order,$view);

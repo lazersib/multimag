@@ -724,7 +724,6 @@ else if($mode=='pcinfo')
 else if($mode == 'cimage') {
 	$tmpl->addContent("<h1 id='page-title'>Управление изображениями товаров</h1>");
 	$tmpl->setTitle("Управление изображениями товаров");
-	include_once("include/imgresizer.php");
 	$img = rcvint('img');
 	if($img=='') {
 		
