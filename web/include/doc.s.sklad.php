@@ -26,7 +26,7 @@ class doc_s_Sklad {
 		$this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty',
 		    'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt',
 		    'analog_group', 'mass');
-		$this->dop_vars = array('type', 'analog', 'koncost', 'd_int', 'd_ext', 'size', 'mass', 'ntd');
+		$this->dop_vars = array('type', 'analog', 'd_int', 'd_ext', 'size', 'ntd');
 		$this->group_vars = array('name' , 'desc' , 'pid' , 'hidelevel' , 'printname', 'no_export_yml', 'title_tag', 'meta_keywords', 'meta_description');
 	}
 	
@@ -51,7 +51,7 @@ class doc_s_Sklad {
 		}
 		$cost = $_SESSION['sklad_cost'];
 		
-		$statistic_res = $db->query("SELECT COUNT(`doc_base`.`id`), SUM(`doc_base_cnt`.`cnt`), SUM(`doc_base_cnt`.`cnt`*`doc_base_dop`.`mass`) AS `mass`
+		$statistic_res = $db->query("SELECT COUNT(`doc_base`.`id`), SUM(`doc_base_cnt`.`cnt`), SUM(`doc_base_cnt`.`cnt`*`doc_base`.`mass`) AS `mass`
 				FROM `doc_base`
 				LEFT JOIN `doc_base_dop` ON `doc_base`.`id`=`doc_base_dop`.`id`
 				LEFT JOIN `doc_base_cnt` ON `doc_base`.`id`=`doc_base_cnt`.`id` AND `doc_base_cnt`.`sklad`=$sklad");
@@ -404,7 +404,7 @@ class doc_s_Sklad {
 		}
 		// Дополнительные свойства
 		else if ($param == 'd') {
-			$pres = $db->query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_dop`.`ntd`, `doc_base`.`group` AS `group_id`
+			$pres = $db->query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`ntd`, `doc_base`.`group` AS `group_id`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`='$pos'
 			WHERE `doc_base`.`id`='$pos'");
@@ -448,20 +448,17 @@ class doc_s_Sklad {
 			while ($p = $r->fetch_row()) {
 				$tmpl->addContent("<option value='$p[0]'>".html_out($p[1])."</option>");
 			}
+                        
+//                        			<tr><td align='right'>Аналог<br>
+//			<b style='color: #f00'>Поле запланировано к уделению!<br>Не заполняйте его, информация буде утеряна.<br>Используйте вкладку *аналоги* или строку *имя группы аналогов* в основных свойствах!</b>
+//			
+//			<td><input type='text' name='analog' value='".html_out($pos_info['analog'])."' id='pos_analog'>
+                        
 			$tmpl->addContent("</select></td><td><input type='text' id='value_add'><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
 			</td></tr>
 			<tr><td><td><input type='submit' value='Сохранить'>
 			</tfoot>
 			<tbody>
-			<tr><td align='right'>Аналог<br>
-			<b style='color: #f00'>Поле запланировано к уделению!<br>Не заполняйте его, информация буде утеряна.<br>Используйте вкладку *аналоги* или строку *имя группы аналогов* в основных свойствах!</b>
-			
-			<td><input type='text' name='analog' value='".html_out($pos_info['analog'])."' id='pos_analog'>
-			<tr><td align='right'>Рыночная цена
-				<br><b style='color: #f00'>Поле запланировано к уделению!
-				<br>Не заполняйте его, информация буде утеряна.
-				<br>Замена полю не планируется.</b>
-			<td><input type='text' name='koncost' value='".html_out($pos_info['koncost'])."' id='pos_koncost'>
 			<tr><td align='right'>Тип<td><select name='type' id='pos_type' >
 			<option value='null'>--не задан--</option>");
 
@@ -477,12 +474,7 @@ class doc_s_Sklad {
 			<tr class='lin1'><td align='right'>Внутренний размер (d)<td><input type='text' name='d_int' value='{$pos_info['d_int']}' id='pos_d_int'></td></tr>
 			<tr class='lin0'><td align='right'>Внешний размер (D)<td><input type='text' name='d_ext' value='{$pos_info['d_ext']}' id='pos_d_ext'></td></tr>
 			<tr class='lin1'><td align='right'>Высота (B)<td><input type='text' name='size' value='{$pos_info['size']}' id='pos_size'></td></tr>
-			<tr class='lin0'><td align='right'>Масса
-				<br><b style='color: #f00'>Поле запланировано к уделению!
-				<br>Не заполняйте его, информация буде утеряна.<br>
-				Масса теперь задаётся в основных свойствах.</b>
-				<td><input type='text' name='mass' value='{$pos_info['mass']}' id='pos_mass'></td></tr>
-			<tr class='lin1'><td align='right'>Номер таможенной декларации
+			<tr class='lin0'><td align='right'>Номер таможенной декларации
 				<br><b style='color: #f00'>Поле запланировано к уделению!
 				<br>Не заполняйте его, информация буде утеряна.<br>
 				Номер таможенной декларации задаётся при поступлении!</b>
@@ -496,9 +488,10 @@ class doc_s_Sklad {
 				$tmpl->addContent("<tr class='lin$i'><td align='right'>".$nx[1]."<td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'>");
 				$i = 1 - $i;
 			}
-			$gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
+			$gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter`
+                        FROM `doc_base_params`
 			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
-			WHERE  `doc_group_params`.`group_id`='{$pos_info['group_id']}' AND `doc_base_params`.`system`='0' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
+			WHERE `doc_group_params`.`group_id`='{$pos_info['group_id']}' AND `doc_base_params`.`system`='0' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
 			ORDER BY `doc_base_params`.`id`");
 			while ($nx = $gdp_res->fetch_row()) {
 				$tmpl->addContent("<tr class='lin$i'><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value=''>");
@@ -926,7 +919,7 @@ class doc_s_Sklad {
 			$res = $db->query("SELECT `id`, `vc`, `name`, `proizv` FROM `doc_base`
 				WHERE `analog_group`='$analog_group_sql' AND `analog_group`!=''");
 			while($line = $res->fetch_assoc()) {
-				$tmpl->addContent("<tr><td>{$line['id']}</td><td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['proizv']}</td></tr>");
+				$tmpl->addContent("<tr><td><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos={$line['id']}'>{$line['id']}</a></td><td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['proizv']}</td></tr>");
 			}
 			
 			$tmpl->addContent("</table>");
@@ -1329,7 +1322,7 @@ class doc_s_Sklad {
 				$opos = $pos;
 				$pos = $db->insert_id;
 				if ($opos) {
-					$res = $db->query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`
+					$res = $db->query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`
 					FROM `doc_base_dop`
 					WHERE `doc_base_dop`.`id`='$opos'");
 					$nxt = $res->fetch_row();
@@ -1339,7 +1332,7 @@ class doc_s_Sklad {
 						VALUES ('$pos', '$nxt[1]', '0', '$nxt[0]', '$nxt[3]', '$nxt[4]', '$nxt[5]', '$nxt[6]')");
 					}
 				}
-				doc_log("INSERT pos", $log, 'pos', $pos);
+				doc_log("CREATE", $log, 'pos', $pos);
 				$this->PosMenu($pos, '');
 
 				$res = $db->query("SELECT `id` FROM `doc_sklady`");
@@ -1351,11 +1344,9 @@ class doc_s_Sklad {
 		}
 		else if ($param == 'd') {
 			$analog = request('analog');
-			$koncost = request('koncost', 0);
 			$d_int = request('d_int', 0);
 			$d_ext = request('d_ext', 0);
 			$size = request('size', 0);
-			$mass = request('mass', 0);
 			$ntd = request('ntd');
 			if (!isAccess('list_sklad', 'edit'))	throw new AccessException();
 
@@ -1367,8 +1358,6 @@ class doc_s_Sklad {
 			$log_add = '';
 			if ($old_data['analog'] != $analog)
 				$log_add.=", analog:({$old_data['analog']} => $analog)";
-			if ($old_data['koncost'] != $koncost)
-				$log_add.=", koncost:({$old_data['koncost']} => $koncost)";
 			if ($old_data['type'] != $type && ($old_data['type'] != '' || $type != 'null'))
 				$log_add.=", type:({$old_data['type']} => $type)";
 			if ($old_data['d_int'] != $d_int)
@@ -1377,8 +1366,6 @@ class doc_s_Sklad {
 				$log_add.=", d_ext:({$old_data['d_ext']} => $d_ext)";
 			if ($old_data['size'] != $size)
 				$log_add.=", size:({$old_data['size']} => $size)";
-			if ($old_data['mass'] != $mass)
-				$log_add.=", mass:({$old_data['mass']} => $mass)";
 			if ($old_data['ntd'] != $ntd)
 				$log_add.=", ntd:({$old_data['ntd']} => $ntd)";
 
@@ -1386,15 +1373,13 @@ class doc_s_Sklad {
 				$type = "'$type'";
 			
 			$analog_sql = $db->real_escape_string($analog);
-			$koncost_sql = $db->real_escape_string($koncost);
 			$d_int_sql = $db->real_escape_string($d_int);
 			$d_ext_sql = $db->real_escape_string($d_ext);
 			$size_sql = $db->real_escape_string($size);
-			$mass_sql = $db->real_escape_string($mass);
 			$ntd_sql = $db->real_escape_string($ntd);
 			
-			$db->query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`, `ntd`)
-				VALUES ('$pos', '$analog_sql', '$koncost_sql', $type, '$d_int_sql', '$d_ext_sql', '$size_sql', '$mass_sql', '$ntd_sql')");
+			$db->query("REPLACE `doc_base_dop` (`id`, `analog`, `type`, `d_int`, `d_ext`, `size`, `ntd`)
+				VALUES ('$pos', '$analog_sql', $type, '$d_int_sql', '$d_ext_sql', '$size_sql', '$ntd_sql')");
 
 			$res = $db->query("SELECT `param_id`, `value` FROM `doc_base_values` WHERE `id`='$pos'");
 			$dp = array();
@@ -1974,10 +1959,10 @@ class doc_s_Sklad {
 		}
 
 		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
-			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`cost_date`,
-		`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`,
-		`doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-		(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock` $sql_add
+                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`,
+                    `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+                    (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`,
+                    `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock` $sql_add
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
@@ -2077,11 +2062,11 @@ class doc_s_Sklad {
 		$s_sql = $db->real_escape_string($s);
 		
 		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
-			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
-			`doc_base`.`cost_date`, `doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
-			`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`,
-			`doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`";
+                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
+                    `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
+                    `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+                    (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`,
+                    `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`";
 		
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
@@ -2213,8 +2198,8 @@ class doc_s_Sklad {
 			settype($sklad, 'int');
 			$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`,
 				`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
-				`doc_base`.`cost_date`,	`doc_base_dop`.`koncost`,  `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
-				`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+				`doc_base`.`cost_date`,	`doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
+				`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
 				(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
 				`doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
 				FROM `doc_base`
@@ -2252,8 +2237,8 @@ class doc_s_Sklad {
 			if ($de_max)	$sql.="AND `doc_base_dop`.`d_ext` <= '$de_max'";
 			if ($size_min)	$sql.="AND `doc_base_dop`.`size` >= '$size_min'";
 			if ($size_max)	$sql.="AND `doc_base_dop`.`size` <= '$size_max'";
-			if ($m_min)	$sql.="AND `doc_base_dop`.`mass` >= '$m_min'";
-			if ($m_max)	$sql.="AND `doc_base_dop`.`mass` <= '$m_max'";
+			if ($m_min)	$sql.="AND `doc_base`.`mass` >= '$m_min'";
+			if ($m_max)	$sql.="AND `doc_base`.`mass` <= '$m_max'";
 			if ($cost_min)	$sql.="AND `doc_base`.`cost` >= '$cost_min'";
 			if ($cost_max)	$sql.="AND `doc_base`.`cost` <= '$cost_max'";
 			if ($type != 'null')	$sql.="AND `doc_base_dop`.`type` = '$type'";

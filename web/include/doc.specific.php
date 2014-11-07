@@ -30,7 +30,8 @@ class doc_Specific extends doc_Nulltype {
 		$this->header_fields = 'agent cena';
 		settype($this->doc, 'int');
 		$this->PDFForms = array(
-		    array('name' => 'prn', 'desc' => 'Спецификация', 'method' => 'PrintPDF')
+		    array('name' => 'prn', 'desc' => 'Спецификация', 'method' => 'PrintPDF'),
+                    array('name' => 'prnws', 'desc' => 'Спецификация без печати', 'method' => 'PrintPDFwostamp'),
 		);
 	}
 
@@ -73,7 +74,11 @@ class doc_Specific extends doc_Nulltype {
 		}
 	}
 
-	function PrintPDF($to_str = 0) {
+        function PrintPDFwostamp($to_str = 0) {
+            return $this->PrintPDF($to_str, false);
+        }
+        
+	function PrintPDF($to_str = 0, $w_stamp = true) {
 		global $tmpl, $CONFIG, $db;
 		
 		$dt = date("d.m.Y", $this->doc_data['date']);
@@ -150,10 +155,10 @@ class doc_Specific extends doc_Nulltype {
 		$pdf->SetLineWidth(0.2);
 		$pdf->SetFont('', '', 7);
 
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `class_unit`.`rus_name1` AS `unit_print`
+		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
+                    `doc_base`.`mass`, `class_unit`.`rus_name1` AS `unit_print`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
@@ -249,7 +254,7 @@ class doc_Specific extends doc_Nulltype {
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0, 5, $str, 0, 'L', 0);
 
-		if ($CONFIG['site']['doc_shtamp']) {
+		if ($CONFIG['site']['doc_shtamp'] && $w_stamp) {
 			$delta = -15;
 			$shtamp_img = str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
 			$pdf->Image($shtamp_img, 95, $pdf->GetY() + $delta, 120);
@@ -289,6 +294,3 @@ class doc_Specific extends doc_Nulltype {
 	}
 
 }
-
-;
-?>

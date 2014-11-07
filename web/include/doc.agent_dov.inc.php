@@ -58,14 +58,14 @@ class BDocAgentDov {
 		if (!$update) {
 			$form_fields['ag_id'] = $ag_id;
 			$ins_id = $db->insertA('doc_agent_dov', $form_fields);
-			doc_log("INSERT doc_agent_dov", var_export($form_fields, true), 'agent_dov', $ins_id);
+			doc_log("CREATE", var_export($form_fields, true), 'agent_dov', $ins_id);
 			return $ins_id;
 		}
 		else {
 			$old = $db->selectRowAi('doc_agent_dov', $id, $form_fields);
 			$log = getCompareStr($old, $form_fields);
 			if ($log) {
-				doc_log("UPDATE doc_agent_dov", $log);
+				doc_log("UPDATE", $log, 'agent_dov', $_id);
 				$res = $db->updateA('doc_agent_dov', $_id, $form_fields);
 			}
 			return 1;

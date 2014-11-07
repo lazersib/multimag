@@ -113,9 +113,8 @@ class Report_OstatkiNaDatu extends BaseGSReport {
 			$this->tableAltStyle(false);
 			
 			$res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` , `doc_base`.`cost`,
-				`doc_base_dop`.`mass`, `doc_base`.`vc`
+				`doc_base`.`mass`, `doc_base`.`vc`
 			FROM `doc_base`
-			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			WHERE `doc_base`.`group`='{$group_line['id']}'
 			ORDER BY $order");
 			while ($nxt = $res->fetch_row()) {

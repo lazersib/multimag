@@ -210,7 +210,8 @@ class doc_Kompredl extends doc_Nulltype
 
 		$pdf->SetFont('','',10);
 
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `doc_list_pos`.`comm`
+		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
+                    `doc_base`.`mass`, `doc_list_pos`.`comm`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -606,7 +607,8 @@ class doc_Kompredl extends doc_Nulltype
 
 		$pdf->SetFont('','',10);
 
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_dop`.`mass`, `doc_list_pos`.`comm`, `class_unit`.`rus_name1`
+		$res = $db->query("SELECT `doc_group`.`printname` AS `group_pname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
+                    `doc_base`.`mass`, `doc_list_pos`.`comm`, `class_unit`.`rus_name1` AS `unit_name`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -618,17 +620,22 @@ class doc_Kompredl extends doc_Nulltype
 		$aligns=array('R','L','C','R','R');
 		$pdf->SetAligns($aligns);
 		$all_sum = 0;
-		while($nxt = $res->fetch_row())
-		{
-			$i++;
-			$cost = sprintf("%01.2f р.", $nxt[4]);
-			$name=$nxt[0].' '.$nxt[1];
-			if($nxt[2]) $name.='('.$nxt[2].')';
-			$a=array($i, $name, $nxt[3].' '.$nxt[7], $nxt[6], $cost);
-			$pdf->RowIconv($a);
-			$all_sum += $nxt[4]*$nxt[3];
+                $sum_mass = 0;
+		while($line = $res->fetch_assoc())	{
+                    $i++;
+                    $cost = sprintf("%01.2f р.", $line['cost']);
+                    $name = $line['group_pname'].' '.$line['name'];
+                    if($line['proizv']) $name.='('.$line['proizv'].')';
+                    $a = array($i, $name, $line['cnt'].' '.$line['unit_name'], $line['comm'], $cost);
+                    $pdf->RowIconv($a);
+                    $all_sum += $line['cnt']*$line['cost'];
+                    $sum_mass += $line['cnt']*$line['mass'];
 		}
+                $pdf->SetFont('','',14);
 		$str = sprintf("Итого: %0.2f руб.", $all_sum);
+		$pdf->CellIconv(0,8,$str,0,1,'R',0);
+                $pdf->SetFont('','',10);
+                $str = sprintf("Масса: %0.3f кг.", $sum_mass);
 		$pdf->CellIconv(0,8,$str,0,1,'R',0);
 		if($pdf->h<=($pdf->GetY()+40)) $pdf->AddPage();
 

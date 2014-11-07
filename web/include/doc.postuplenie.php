@@ -35,7 +35,7 @@ class doc_Postuplenie extends doc_Nulltype {
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('kladovshik'=>$this->firm_vars['firm_kladovshik_id'], 'input_doc'=>'', 'return'=>0, 'cena'=>1);
+		$this->def_dop_data = array('kladovshik'=>$this->firm_vars['firm_kladovshik_id'], 'input_doc'=>'', 'input_date'=>'', 'return'=>0, 'cena'=>1);
 	}
 
 	function DopHead() {
@@ -43,9 +43,11 @@ class doc_Postuplenie extends doc_Nulltype {
 		$klad_id = $this->dop_data['kladovshik'];
 		if (!$klad_id)
 			$klad_id = $this->firm_vars['firm_kladovshik_id'];
+                $tmpl->addContent("<hr>");
 		$tmpl->addContent("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
+                $tmpl->addContent("Дата. вх. документа:<br><input type='text' name='input_date' value='{$this->dop_data['input_date']}'><br>");
 		$checked = $this->dop_data['return'] ? 'checked' : '';
-		$tmpl->addContent("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><br>
+		$tmpl->addContent("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><hr>
 		Кладовщик:<br><select name='kladovshik'>
 		<option value='0'>--не выбран--</option>");
 		$res = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
@@ -59,6 +61,7 @@ class doc_Postuplenie extends doc_Nulltype {
 	function DopSave() {
 		$new_data = array(
 		    'input_doc' => request('input_doc'),
+                    'input_date'=> rcvdate('input_date'),
 		    'return' => rcvint('return'),
 		    'kladovshik' => rcvint('kladovshik')
 		);

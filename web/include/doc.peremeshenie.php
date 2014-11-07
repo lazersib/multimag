@@ -242,7 +242,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		$to_sklad = (int) $this->dop_data['na_sklad'];
 			
 		$res = $db->query("SELECT `doc_group`.`printname` AS `group_pname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
-			`doc_base_dop`.`mass`, `pt_s`.`mesto` AS `place_s`, `pt_d`.`mesto` AS `place_d`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`,
+			`doc_base`.`mass`, `pt_s`.`mesto` AS `place_s`, `pt_d`.`mesto` AS `place_d`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`,
 			`doc_base`.`vc`, `doc_list_pos`.`comm`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`

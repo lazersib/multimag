@@ -121,7 +121,7 @@ $tmpl->addContent("<h1>Поиск товаров</h1>
 
 if($mode)
 {
-	$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
+	$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
 	FROM `doc_base`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -139,8 +139,8 @@ if($mode)
 	if($de_max)		$sql.="AND `doc_base_dop`.`d_ext` <= '$de_max'";
 	if($size_min)		$sql.="AND `doc_base_dop`.`size` >= '$size_min'";
 	if($size_max)		$sql.="AND `doc_base_dop`.`size` <= '$size_max'";
-	if($m_min)		$sql.="AND `doc_base_dop`.`mass` >= '$m_min'";
-	if($m_max)		$sql.="AND `doc_base_dop`.`mass` <= '$m_max'";
+	if($m_min)		$sql.="AND `doc_base`.`mass` >= '$m_min'";
+	if($m_max)		$sql.="AND `doc_base`.`mass` <= '$m_max'";
 	if($cost_min)		$sql.="AND `doc_base`.`cost` >= '$cost_min'";
 	if($cost_max)		$sql.="AND `doc_base`.`cost` <= '$cost_max'";
 

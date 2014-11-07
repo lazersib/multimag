@@ -62,6 +62,7 @@ class Report_Revision_Act extends BaseReport {
 		<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
 		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>
 		<label><input type='radio' name='opt' value='email'>отправить по email</label><br>
+                <label><input type='checkbox' name='no_stamp' value='1'>Не ставить печать</label><br>
 		email адрес (не указывайте, чтобы взять из контактов):<br>
 		<input type='text' name='email' value=''><br>
 		<button type='submit'>Сформировать отчет</button></form>
@@ -109,6 +110,7 @@ class Report_Revision_Act extends BaseReport {
 	function Make($opt = 'html') {
 		global $tmpl, $CONFIG, $db;
 		$email = request('email');
+                $no_stamp = request('no_stamp');
 		if ($opt == 'email') {
 			$opt = 'pdf';
 			$sendmail = 1;
@@ -219,7 +221,7 @@ class Report_Revision_Act extends BaseReport {
 			$pdf->Ln();
 			$pdf->SetFont('', '', 8);
 		}
-		$pr = $ras = $s_pr = $_ras = 0;
+		$pr = $ras = $s_pr = $s_ras = 0;
 		$f_print = false;
 		while ($nxt = $res->fetch_array()) {
 			$deb = $kr = "";
@@ -398,7 +400,7 @@ class Report_Revision_Act extends BaseReport {
 			$pdf->setY($y);
 			$pdf->MultiCell(0, 5, $str, 0, 'L', 0);
 
-			if ($CONFIG['site']['doc_shtamp']) {
+			if ($CONFIG['site']['doc_shtamp'] && !$no_stamp) {
 				$delta = -15;
 				$shtamp_img = str_replace('{FN}', $firm_id, $CONFIG['site']['doc_shtamp']);
 				if (file_exists($shtamp_img))

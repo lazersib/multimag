@@ -157,7 +157,7 @@ class PDF_MC_Table extends FPDF
 	{
 		$data=array();
 		foreach($_data as $i => $s)
-			$data[$i]=iconv('UTF-8', 'windows-1251', $s );
+			$data[$i] = @iconv('UTF-8', 'windows-1251', $s );
 		$this->Row($data);
 	}
 

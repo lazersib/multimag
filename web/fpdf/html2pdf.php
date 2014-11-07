@@ -32,7 +32,7 @@ function txtentities($html){
 /* main class createPDF             */
 /************************************/
 class createPDF {
-
+    public $pdf;
     function createPDF($_html,$_title,$_articleurl,$_author,$_date) {
         // main vars
         $this->html=$_html;               // html text to convert to PDF
@@ -92,7 +92,7 @@ class createPDF {
         // html
         $this->pdf->WriteHTML($this->_convert(stripslashes($this->html)),$this->bi);
     }
-    
+     
     function Output($file,$param)
     {
 	return $this->pdf->Output($file,$param);

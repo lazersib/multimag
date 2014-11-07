@@ -50,7 +50,7 @@ class News extends \IModule {
 
     /// Проверка и исполнение recode-запроса
     public function ProbeRecode() {
-        global $tmpl, $CONFIG;
+        global $tmpl;
         /// Обрабатывает запросы-ссылки  вида http://example.com/news/news.html
         /// Возвращает false в случае неудачи.
         $arr = explode('/', $_SERVER['REQUEST_URI']);
@@ -75,7 +75,7 @@ class News extends \IModule {
         }
         else if ($mode == 'all' || $mode == 'news' || $mode == 'stocks' || $mode == 'events') {
             if (isAccess($this->acl_object_name, 'create', 1))
-            $tmpl->addContent("<a href='{$this->link_prefix}mode=add&amp;opt=$mode'>Добавить новость</a><br>");
+            $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$mode'>Добавить новость</a><br>");
             if ($this->isAllow()) {
                 $this->ShowList($mode);
             }
@@ -93,18 +93,21 @@ class News extends \IModule {
         $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
         $tmpl->setTitle("Новости сайта - " . $CONFIG['site']['display_name']);
         if ($mode == '') {
-            if (isAccess($this->acl_object_name, 'create', 1))
-                $tmpl->addContent("<a href='{$this->link_prefix}mode=add&amp;opt=" . request('type') . "'>Добавить новость</a><br>");
+            if (isAccess($this->acl_object_name, 'create', 1)) {
+                $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=" . request('type') . "'>Добавить новость</a><br>");
+            }
             if ($this->isAllow()) {
-                $this->ShowList(@$_REQUEST['type']);
+                $this->ShowList(request('type'));
             }
         } else if ($mode == 'read') {
-            if ($this->isAllow())
-                $this->View(@$_REQUEST['id']);
+            if ($this->isAllow()) {
+                $this->View(rcvint('id'));
+            }
         }
         else if ($mode == 'add') {
-            if ($this->isAllow('create'))
+            if ($this->isAllow('create')) {
                 $this->WriteForm(0, request('opt'));
+            }
         }
         else if ($mode == 'edit') {
             if ($this->isAllow('edit')) {
@@ -124,12 +127,16 @@ class News extends \IModule {
             }
         }
         else if ($mode == 'save') {
-            if ($this->isAllow('create'))
-                $this->Save();
+            if ($this->isAllow('create')) {
+                $news_id = $this->Save();
+                $this->View($news_id);
+            }
         }
-        else if ($mode == 'write') {
-            if ($this->isAllow('create'))
-                $this->SaveAndSend();
+        else if ($mode == 'pub') {
+            if ($this->isAllow('create')) {
+                $id = rcvint('id');
+                $this->Publish($id);
+            }
         }
         else {
             throw new \NotFoundException("Неверный $mode");
@@ -154,8 +161,9 @@ class News extends \IModule {
                 $name = 'Новости, акции, события';
                 $where = '1';
         }
-        if (!isAccess($this->acl_object_name, 'edit', 1))
-             $where .= " AND `hidden`=0";   
+        if (!isAccess($this->acl_object_name, 'edit', 1)) {
+            $where .= " AND `hidden`=0";
+        }
         $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`,
             `news`.`ex_date`, `news`.`img_ext`, `news`.`type`, `news`.`hidden`
         FROM `news`
@@ -165,8 +173,9 @@ class News extends \IModule {
         if ($res->num_rows) {
             $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
             $tmpl->setTitle("$name сайта - " . $CONFIG['site']['display_name']);
-            if (isAccess('generic_news', 'create', 1))
-                $tmpl->addContent("<a href='{$this->link_prefix}mode=add&amp;opt=$type'>Добавить новость</a><br>");
+            if (isAccess('generic_news', 'create', 1)) {
+                $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$type'>Добавить новость</a><br>");
+            }
             $wikiparser = new \WikiParser();
             while ($line = $res->fetch_assoc()) {
                 $wikiparser->title = '';
@@ -178,19 +187,21 @@ class News extends \IModule {
                     $miniimg->SetY(48);
                     $tmpl->addContent("<img src='" . $miniimg->GetURI() . "' style='float: left; margin-right: 10px;' alt=''>");
                 }
-                if ($line['type'] == 'stock')
-                    $do = "<br><i><u>Действительно до:	{$line['ex_date']}</u></i>";
-                else if ($line['type'] == 'event')
+                if ($line['type'] == 'stock') {
+                    $do = "<br><i><u>Действует до:	{$line['ex_date']}</u></i>";
+                } else if ($line['type'] == 'event') {
                     $do = "<br><i><u>Дата проведения:	{$line['ex_date']}</u></i>";
-                else
+                } else {
                     $do = '';
+                }
                 $link = $this->GetNewsLink($line['id']);
-                $hidden = $line['hidden']?'<b style="color: #f00;"> - не опубликовано</b>':'';
+                $hidden = $line['hidden'] ? '<b style="color: #f00;"> - не опубликовано</b>' : '';
                 $tmpl->addContent("<h3><a href='$link'>{$wikiparser->title}</a>$hidden</h3><p>$text<br><i>{$line['date']}, {$line['autor_name']}</i>$do</p></div>");
                 // <!--<br><a href='/forum.php'>Комментарии: 0</a>-->
             }
-        } else
+        } else {
             throw new \NotFoundException('Новость не найдена! Воспользуйтесь списком новостей.');
+        }
     }
 
 /// Отобразить заданную новость
@@ -202,35 +213,40 @@ class News extends \IModule {
 	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
 	WHERE `news`.`id`='$id'");
         if ($res->num_rows) {
-            $line = $res->fetch_assoc();
+            $news_info = $res->fetch_assoc();
             $edit_enable = false;
             
-            if($line['hidden']) {
+            if ($news_info['hidden']) {
                 if (!isAccess($this->acl_object_name, 'edit', 1)) {
-                   throw new \NotFoundException('Новость снята с публикации.'); 
-                }
-                else {
+                    throw new \NotFoundException('Новость снята с публикации.');
+                } else {
                     $edit_enable = true;
                     $hidden = '<b style="color: #f00;"> - не опубликовано</b>';
                 }
+            } else {
+                $hidden = '';
             }
-            else    $hidden = '';            
-            
+
             $wikiparser = new \WikiParser();
             $wikiparser->title = '';
-            $text = $wikiparser->parse(html_out($line['text']));
-            if ($line['type'] && $line['type'] != 'news')
-                $do = "<div id='page-info'>Действительно до: {$line['ex_date']}</div>";
-            else
+            $text = $wikiparser->parse(html_out($news_info['text']));
+            
+            if ($news_info['type'] == 'stock') {
+                $do = "<div id='page-info'>Действует до: {$news_info['ex_date']}</div>";
+            } else if ($news_info['type'] == 'event') {
+                $do = "<div id='page-info'>Дата проведения: {$news_info['ex_date']}</div>";
+            } else {
                 $do = '';
+            }
+
             $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a><a href='{$this->link_prefix}'>Новости</a>{$wikiparser->title}</div>"
                 . "<h1>{$wikiparser->title}$hidden</h1>" . $do
-                . "<p>$text</p><p align='right'><i>{$line['date']}, {$line['autor_name']}</i></p>");
+                . "<p>$text</p><p align='right'><i>{$news_info['date']}, {$news_info['autor_name']}</i></p>");
             // <a href='/forum.php'>Комментарии: 0</a>
             if($edit_enable) {
-                $tmpl->addContent("<a href='{$this->link_prefix}mode=edit&amp;id=$id'>Изменить</a><br>"
+                $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=edit&amp;id=$id'>Изменить</a><br>"
                 . "<fieldset><legend>Публикация</legend>"
-                . "<form action='{$this->link_prefix}mode=pub&amp;id=$id' method='post'>"
+                . "<form action='{$this->link_prefix}&amp;mode=pub&amp;id=$id' method='post'>"
                 . "<label><input type='checkbox' name='send' value='1' checked>Выполнить рассылку</label><br>"
                 . "<button type='submit'>Опубликовать</button>"
                 . "</form>"
@@ -242,12 +258,13 @@ class News extends \IModule {
         }
     }
 
-/// Форма создания новости
+    /// Форма создания новости
     protected function WriteForm($id=0, $type='news', $ex_date='', $text='') {
         global $tmpl;
         $novelty_c = $stock_c = $event_c = '';
         switch ($type) {
             case 'news':
+            case 'novelty':
                 $novelty_c = ' checked';
                 break;
             case 'stock': 
@@ -284,45 +301,61 @@ class News extends \IModule {
 	</form>");
     }
 
-/// Запись новости в хранилище
-    protected function SaveAndSend() {
+    /// Сохранить новость для публикации
+    protected function Save() {
         global $tmpl, $CONFIG, $db;
-        $wikiparser = new \WikiParser();
+        
+        $id = rcvint('id');
         $text = strip_tags(request('text'));
         $type = request('type');
         $ex_date = date("Y-m-d", strtotime(request('ex_date')));
-        $no_mail = request('no_mail');
-        $uwtext = $wikiparser->parse(html_entity_decode($text, ENT_QUOTES, "UTF-8"));
-        if (!isset($wikiparser->title))
+        
+        $wikiparser = new \WikiParser();
+        $wikiparser->parse(html_entity_decode($text, ENT_QUOTES, "UTF-8"));
+        if (!isset($wikiparser->title)) {
             throw new Exception("Заголовок новости не задан");
+        }
         $title = $wikiparser->title;
-        $uwtext = strip_tags($uwtext);
-        $uwtext = $title . "\n" . $uwtext;
-        $ext = '';
+        
 
-        if ($type != 'novelty' && $type != 'stock' && $type != 'event')
+        if ($type != 'novelty' && $type != 'stock' && $type != 'event') {
             $type = 'novelty';
+        }
 
         $db->startTransaction();
+        
+        $data = array(
+            'type'  => $type,
+            'title' => $title,
+            'text'  => $text,
+            'autor' => $_SESSION['uid'],
+            'ex_date'=> $ex_date
+        );
+        
+        if ($id) {
+            $db->updateA('news', $id, $data);
+            $news_id = $id;
+        } else {
+            $data['hidden'] = 1;
+            $data['date'] = date("Y-m-d H:i:s");
+            $news_id = $db->insertA('news', $data);
+        }
 
-        $title_sql = $db->real_escape_string($title);
-        $text_sql = $db->real_escape_string($text);
-
-        $res = $db->query("INSERT INTO `news` (`type`, `title`, `text`,`date`, `autor`, `ex_date`)
-		VALUES ('$type', '$title_sql', '$text_sql', NOW(), '{$_SESSION['uid']}', '$ex_date' )");
-
-        $news_id = $db->insert_id;
-        if (!$news_id)
+        if (!$news_id) {
             throw new Exception("Не удалось получить ID новости");
-        if ($type == 'stock')
-            $uwtext.="\n\nАкция действует до: $ex_date\n";
+        }
 
         if (is_uploaded_file($_FILES['img']['tmp_name'])) {
             $aa = getimagesize($_FILES['img']['tmp_name']);
-            if (!$aa)
+            if (!$aa) {
                 throw new Exception('Полученный файл не является изображением');
-            if ((@$aa[0] < 20) || (@$aa[1] < 20))
+            }
+            if(!is_array($aa)) {
+                throw new Exception('Ошибка анализа заголовков изображения');
+            }
+            if (($aa[0] < 20) || ($aa[1] < 20)) {
                 throw new Exception('Слишком мальенькое изображение');
+            }
             switch ($aa[2]) {
                 case IMAGETYPE_GIF: $ext = 'gif';
                     break;
@@ -334,28 +367,70 @@ class News extends \IModule {
             }
             @mkdir($CONFIG['site']['var_data_fs'] . "/news/", 0755);
             $m_ok = move_uploaded_file($_FILES['img']['tmp_name'], $CONFIG['site']['var_data_fs'] . "/news/$news_id.$ext");
-            if (!$m_ok)
+            if (!$m_ok) {
                 throw new Exception("Не удалось записать изображение в хранилище");
-            $res = $db->query("UPDATE `news` SET `img_ext`='$ext' WHERE `id`='$news_id'");
-        }
-        if (!$no_mail) {
-            $list_id = 'news' . $news_id . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
-            SendSubscribe($title, $title . " - новости сайта", $uwtext, $list_id);
-            $tmpl->msg("Рассылка выполнена", "ok");
+            }
+            $db->update('news', $news_id, 'img_ext', $ext);
         }
         $db->commit();
         $tmpl->msg("Новость добавлена!", "ok");
+        return $news_id;
     }
 
-/// Получить ссылку на новость с заданным ID
+
+    /// Запись новости в хранилище
+    protected function Publish($id) {
+        global $tmpl, $CONFIG, $db;
+        $send = request('send');
+        
+        $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`,
+            `news`.`type`, `news`.`hidden`
+        FROM `news`
+	INNER JOIN `users` ON `users`.`id`=`news`.`autor`
+	WHERE `news`.`id`='$id'");
+        if (!$res->num_rows) {
+            throw new \NotFoundException('Новость не найдена.');
+        }
+        $news_info = $res->fetch_assoc();
+        if(!$news_info['hidden'])   {
+            throw new \Exception('Новость уже была опубликована ранее.');
+        }
+        
+        $db->startTransaction();
+        $db->update('news', $id, 'hidden', 0);
+        
+        if($send) {
+            $wikiparser = new \WikiParser();
+            $uwtext = $wikiparser->parse(html_entity_decode($news_info['text'], ENT_QUOTES, "UTF-8"));
+            if (!isset($wikiparser->title)) {
+                throw new Exception("Заголовок новости не задан");
+            }
+            $title = $wikiparser->title;
+            $uwtext = strip_tags($uwtext);
+            $uwtext = $title . "\n" . $uwtext;
+            
+            if ($news_info['type'] == 'stock') {
+                $uwtext .= "\n\nАкция действует до: {$news_info['ex_date']}\n";
+            } else if ($news_info['type'] == 'event') {
+                $uwtext .= "\n\nСобытие пройдёт: {$news_info['ex_date']}\n";
+            }
+
+            $list_id = 'news' . $id . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
+            SendSubscribe($title, $title . " - новости сайта", $uwtext, $list_id);
+            $tmpl->msg("Рассылка выполнена успешно.", "ok");           
+        }
+        $db->commit();
+        $tmpl->msg("Новость опубликована!", "ok");
+    }
+
+    /// Получить ссылку на новость с заданным ID
     protected function GetNewsLink($id, $alt_param = '') {
         global $CONFIG;
-        if ($CONFIG['site']['recode_enable'])
+        if ($CONFIG['site']['recode_enable']) {
             return "/news/read/$id.html" . ($alt_param ? "?$alt_param" : '');
-        else
-            return "{$this->link_prefix}mode=read&amp;id=$id" . ($alt_param ? "&amp;$alt_param" : '');
+        } else {
+            return "{$this->link_prefix}&amp;mode=read&amp;id=$id" . ($alt_param ? "&amp;$alt_param" : '');
+        }
     }
 
 }
-
-;
