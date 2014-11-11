@@ -20,7 +20,7 @@
 
 include_once($CONFIG['location'] . "/common/bank1c.php");
 
-/// Сценарий автоматизации:  Сверка банковских документов
+/// Сценарий автоматизации:  Импорт банковской выписки
 class ds_bank_verify {
 
 	function Run($mode) {
@@ -42,9 +42,8 @@ class ds_bank_verify {
 			if ($_FILES['userfile']['size'] <= 0)
 				throw new Exception("Забыли выбрать файл?");
 			$file = file($_FILES['userfile']['tmp_name']);
-			$_SESSION['bankparser'] = new Bank1CPasrser($file);
-			$_SESSION['bankparser']->Parse();
-			$_SESSION['bp']['parsed_data'] = $_SESSION['bankparser']->parsed_data;
+			$_SESSION['bankparser'] = new Bank1CPasrser();
+			$_SESSION['bp']['parsed_data'] = $_SESSION['bankparser']->Parse($file);
 
 			$tmpl->addContent("<table width='100%'>
 			<tr><th colspan='5'>В выписке<th colspan='5'>В базе
@@ -52,7 +51,7 @@ class ds_bank_verify {
 			<th>ID<th>Номер<th>Дата<th>Сумма<th>Счёт
 			<th>ID<th>Номер<th>Дата<th>Сумма<th>Агент");
 
-			foreach ($_SESSION['bankparser']->parsed_data as $v_line) {
+			foreach ($_SESSION['bp']['parsed_data'] as $v_line) {
 				$u_sql = $db->real_escape_string($v_line['unique']);
 				$tmpl->addContent("<tr><td>{$v_line['unique']}</td><td>{$v_line['docnum']}</td><td>{$v_line['date']}</td>
 					<td>{$v_line['debet']} / {$v_line['kredit']}</td><td>{$v_line['kschet']}</td>");
@@ -79,4 +78,3 @@ class ds_bank_verify {
 		return "Сверка банковских документов";
 	}
 }
-?>

@@ -17,84 +17,91 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-class Bank1CPasrser
-{
-	var $raw_data;		// Массив строк выписки
-	var $parsed_data;	// Обработанные данные
-		
-	function __construct($data)
-	{
-		$this->raw_data=$data;
-		$parsed_data=array();
-	}
+/// Класс парсера и генератора банковских выписок в формате обмена 1С
+class Bank1CExchange {
 
-	function Parse()
-	{
-		$params=array();
-		$parsing=0;
-		foreach($this->raw_data as $line)
-		{
-			$line=iconv( 'windows-1251','UTF-8', $line);	
-			$line=trim($line);
-			$pl = explode("=", $line, 2);
-			if($pl[0]=='СекцияДокумент')
-			{
-				$params=array();
-				if($pl[1]=="Платёжное поручение")
-				{
-					$parsing=1;
-					$params['type']='pp';
-					//echo"Новый $pl[1]\n";
-				}
-				else
-				{
-					//echo"Неопознанный документ: $pl[1]\n";
-					$parsing=0;
-				}
-			}
-			else if($pl[0]=='КонецДокумента')
-			{
-				if($parsing)	$this->parsed_data[]=$params;
-				$parsing=0;
-				$params=array();
-			}
-			else if($parsing) switch($pl[0])
-			{
-				case 'Номер':
-					$params['docnum']=$pl[1];
-				break;
-				case 'УникальныйНомерДокумента':
-					$params['unique']=$pl[1];
-				break;
-				case 'ДатаПроведения':
-					$params['date']=$pl[1];
-				break;	
-				case 'БИК':
-					$params['bik']=$pl[1];
-				break;	
-				case 'Счет':
-					$params['schet']=$pl[1];
-				break;
-				case 'КорреспондентБИК':
-					$params['kbik']=$pl[1];
-				break;
-				case 'КорреспондентСчет':
-					$params['kschet']=$pl[1];
-				break;	
-				case 'ДебетСумма':
-					$params['debet']=$pl[1];
-				break;
-				case 'КредитСумма':
-					$params['kredit']=$pl[1];
-				break;
-				case 'НазначениеПлатежа':
-					$params['desc']=$pl[1];
-				break;
-			}
-		}
-	}
-};
+    function __construct() {
+    }
+    
+    /// Анализировать строку документа
+    protected function parseDocumentLine($name, $value, $params) {
+        switch ($name) {
+            case 'Номер':
+                $params['docnum'] = $value;
+                break;
+            case 'УникальныйНомерДокумента':
+                $params['unique'] = $value;
+                break;
+            case 'ДатаПроведения':
+                $params['date'] = $value;
+                break;
+            case 'БИК':
+                $params['bik'] = $value;
+                break;
+            case 'Счет':
+                $params['schet'] = $value;
+                break;
+            case 'КорреспондентБИК':
+                $params['kbik'] = $value;
+                break;
+            case 'КорреспондентСчет':
+                $params['kschet'] = $value;
+                break;
+            case 'ДебетСумма':
+                $params['debet'] = $value;
+                break;
+            case 'КредитСумма':
+                $params['kredit'] = $value;
+                break;
+            case 'НазначениеПлатежа':
+                $params['desc'] = $value;
+                break;
+        }
+        return $params;
+    }
+    
+    /// @biref Парсер выписки
+    /// Бросает исключение, если идентификатор не соответствует формату
+    function Parse($raw_data) {
+        $params = array();
+        $parsed_data = array();
+        $parsing = false;
+        $first_line = 1;
+        $version = 0;
+        foreach ($raw_data as $line) {
+            // Кодировку, установленную в файле не учитываем, т.к. параметр кодировки назван кириллицей. Получается, что для чтения кодировки нужно знать кодировку.
+            $line = iconv('windows-1251', 'UTF-8', $line);
+            $line = trim($line);
+            if($first_line) {
+                if($line != '1CClientBankExchange') {
+                    throw new \Exception('Файл не является банковской выпиской в формате 1C! ');
+                }
+                $first_line = 0;
+            }
+            else {
+                $pl = explode("=", $line, 2);
+                switch($pl[0]) {
+                    case 'СекцияДокумент':
+                        if ($pl[1] == "Платёжное поручение") {
+                            $parsing = true;
+                            $params = array();
+                            $params['type'] = 'pp';
+                        }    
+                        break;
+                    case 'КонецДокумента':
+                        if ($parsing) {
+                            $parsed_data[] = $params;
+                            $parsing = false;
+                        }
+                        break;
+                    default:
+                        if($parsing) {
+                            $params = $this->parseDocumentLine($pl[0], $pl[1], $params);
+                        }
+                }
+            }
+        }
+        return $parsed_data;
+    }
 
-
-
-?>
+}
