@@ -1307,39 +1307,42 @@ class doc_s_Sklad {
 				else	$tmpl->msg("Ничего не было изменено", 'info');
 			}
 			else {
-				if (!isAccess('list_sklad', 'create'))		throw new AccessException();
-				$fields = $this->pos_vars;
-				$cols = $values = $log = '';
-				foreach ($fields as $field) {
-					if($field=='cost_date')	continue;
-					$cols.="`$field`,";
-					$values.="'" . $db->real_escape_string(@$pd[$field]) . "',";
-					$log.="$field:" . @$pd[$field] . ", ";
-				}
-				$cols.="`cost_date`";
-				$values.="NOW()";
-				$db->query("INSERT INTO `doc_base` ($cols) VALUES ($values)");
-				$opos = $pos;
-				$pos = $db->insert_id;
-				if ($opos) {
-					$res = $db->query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`koncost`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`
-					FROM `doc_base_dop`
-					WHERE `doc_base_dop`.`id`='$opos'");
-					$nxt = $res->fetch_row();
-					if($nxt) {
-						$nxt[1] = $db->real_escape_string($nxt[1]);
-						$db->query("REPLACE `doc_base_dop` (`id`, `analog`, `koncost`, `type`, `d_int`, `d_ext`, `size`, `mass`)
-						VALUES ('$pos', '$nxt[1]', '0', '$nxt[0]', '$nxt[3]', '$nxt[4]', '$nxt[5]', '$nxt[6]')");
-					}
-				}
-				doc_log("CREATE", $log, 'pos', $pos);
-				$this->PosMenu($pos, '');
+                            if (!isAccess('list_sklad', 'create')) {
+                                throw new AccessException();
+                            }
 
-				$res = $db->query("SELECT `id` FROM `doc_sklady`");
-				while ($nxt = $res->fetch_row())
-					$db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
+                            $log = '';
+                            $data = array();
+                            foreach ($this->pos_vars as $field) {
+                                if($field != 'cost_date' && isset($pd[$field])) {
+                                    $data[$field] = $pd[$field];
+                                    $log.="$field:" . $pd[$field] . ", ";
+                                }
+                            }
+                            $data['cost_date'] = date("Y-m-d H:i:s");
+                            $opos = $pos;
+                            
+                            $db->startTransaction();
+                            $pos = $db->insertA('doc_base', $data);
+                            
+                            if ($opos) {
+                                $res = $db->query("SELECT `type`, `d_int`, `d_ext`, `size` FROM `doc_base_dop` WHERE `id`='$opos'");
+                                $nxt = $res->fetch_assoc();
+                                if($nxt) {
+                                    $db->query("REPLACE `doc_base_dop` (`id`, `type`, `d_int`, `d_ext`, `size`)
+                                        VALUES ('$pos', '{$nxt['type']}', '{$nxt['d_int']}', '{$nxt['d_ext']}', '{$nxt['size']})");
+                                }
+                            }
+                            doc_log("CREATE", $log, 'pos', $pos);
 
-				$tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
+                            $res = $db->query("SELECT `id` FROM `doc_sklady`");
+                            while ($nxt = $res->fetch_row()) {
+                                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
+                            }
+
+                            $this->PosMenu($pos, '');
+                            $tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
+                            $db->commit();
 			}
 		}
 		else if ($param == 'd') {
@@ -2418,7 +2421,5 @@ class doc_s_Sklad {
 		</ul>");
 	}
 
-};
+}
 
-
-?>

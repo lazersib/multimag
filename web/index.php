@@ -233,8 +233,9 @@ else
 }
 catch(Exception $e)
 {
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+    $tmpl->addContent("<br><br>");
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 $tmpl->write();

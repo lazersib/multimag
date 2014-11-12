@@ -84,15 +84,16 @@ catch(AccessException $e) {
 	echo json_encode($result, JSON_UNESCAPED_UNICODE);
 }
 catch(mysqli_sql_exception $e) {
-	$tmpl->logger($e->getMessage(), 1);
-	ob_end_clean();
-	$result = array('result'=>'err', 'error'=>'Ошибка в базе данных: '.$e->getMessage());
-	echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    writeLogException($e);
+    ob_end_clean();
+    $result = array('result'=>'err', 'error'=>'Ошибка в базе данных: '.$e->getMessage());
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
 }
 catch(Exception $e) {
-	ob_end_clean();
-	$result = array('result'=>'err', 'error'=>$e->getMessage());
-	echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    ob_end_clean();
+    writeLogException($e);
+    $result = array('result'=>'err', 'error'=>$e->getMessage());
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
 }
 
 

@@ -222,8 +222,9 @@ else if($mode=='doc_view'){
 		else 	throw new Exception("Документ не указан");
 	}
 	catch(Exception $e){
-		$tmpl->addContent("<br><br>");
-		$tmpl->logger($e->getMessage());
+            $tmpl->addContent("<br><br>");
+            writeLogException($e);
+            $tmpl->errorMessage($e->getMessage());
 	}
 }
 
@@ -403,43 +404,74 @@ else if($mode=='sendrequest')
 	}
 	else	$tmpl->msg("Не удалось создать задачу! Сообщите о проблеме своему системному администратору!","err");
 }
-else if($mode=="elog")
-{
-	if(!isAccess('log_error','view'))	throw new AccessException();
-	$p=rcvint('p');
-	if($p<=0)	$p=1;
-	$lines = 250;
-	$from=($p-1)*$lines;
-	$tmpl->addContent("<h1>Журнал ошибок</h1>");
-	$res = $db->query("SELECT SQL_CALC_FOUND_ROWS `id`, `page`, `referer`, `msg`, `date`, `ip`, `agent`, `uid` FROM `errorlog` ORDER BY `date` DESC LIMIT $from, $lines");
-	$fr = $db->query('SELECT FOUND_ROWS()');
-	list($total) = $fr->fetch_row();
-	$tmpl->addContent("<table width='100%' class='list'>
-	<tr><th>ID</th><th>Page</th><th>Referer</th><th>Msg</th><th>Date</th><th>IP</th><th>Agent</th><th>UID</th></tr>");
-	$i=0;
-	while($nxt=$res->fetch_row())
-	{
-		$tmpl->addContent('<tr><td>'.$nxt[0].'</td>');
-		for($i=1;$i<8;++$i)
-		{
-			$tmpl->addContent('<td>'.html_out($nxt[$i]).'</td>');
-		}
-		$tmpl->addContent('</tr>');
-	}
-	$tmpl->addContent('</table>');
+else if($mode=="elog") {
+    if (!isAccess('log_error', 'view')) {
+        throw new AccessException();
+    }
+    $id = rcvint('id');
+    if($id) {
+        $tmpl->addContent("<h1>Детализация ошибки $id</h1>");
+        $line = $db->selectRow('errorlog', $id);
+        $line['trace'] = str_replace("\n", '</li><li>', html_out($line['trace']));
+        $pref_len = strlen($CONFIG['location']);
+        $fname = substr($line['file'], $pref_len);
+        $link = 'http://multimag.tndproject.org/browser/trunk'.$fname.'?rev='.MULTIMAG_REV.'#L'.$line['line'];
+        $tmpl->addContent("<ui class='items'>"
+            . "<li>id: {$line['id']}</li>"
+            . "<li>Сообщение: ".html_out($line['msg'])."</li>"
+            . "<li>Класс: ".html_out($line['class'])."</li>"
+            . "<li>Кoд: ".html_out($line['code'])."</li>"
+            . "<li>Файл: <a href='$link'>".html_out($line['file'])."</a></li>"
+            . "<li>Строка: ".html_out($line['line'])."</li>"
+            . "<li>Страница: ".html_out($line['page'])."</li>"
+            . "<li>Ссылка: ".html_out($line['referer'])."</li>"
+            . "<li>Дата: ".html_out($line['date'])."</li>"
+            . "<li>IP: ".html_out($line['ip'])."</li>"
+            . "<li>Броузер: ".html_out($line['useragent'])."</li>"
+            . "<li>ID пользователя: ".html_out($line['uid'])."</li>"
+            . "<li>Стек:<ul><li>".$line['trace']."</li></ul></li>"
+            . "</ul>");
+    }
+    else {
+        $p = rcvint('p', 1);
+        if($p<=0)	$p=1;
+        $lines = 250;
+        $from=($p-1)*$lines;
+        $tmpl->addContent("<h1>Журнал ошибок</h1>");
+        $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `id`, `class`, `page`, `referer`, `code`, `msg`, `file`, `line`, `date`, `ip`, `useragent`, `uid` "
+            . "FROM `errorlog` "
+            . "ORDER BY `id` DESC LIMIT $from, $lines");
+        $fr = $db->query('SELECT FOUND_ROWS()');
+        list($total) = $fr->fetch_row();
+        $tmpl->addContent("<table width='100%' class='list'>
+        <tr><th>Дата</th><th>Класс</th><th>Код</th><th>Ошибка</th><th>Файл:строка</th><th>Страница</th><th>ID</th></tr>");
+        $i=0;
+        while($line = $res->fetch_assoc()) {
+            $line['date'] = str_replace(' ', '&nbsp', html_out($line['date']));
+            $tmpl->addContent('<tr>'
+            . '<td>'.$line['date'].'</td>'
+            . '<td>'.html_out($line['class']).'</td>'
+            . '<td>'.$line['code'].'</td>'
+            . '<td>'.html_out($line['msg']).'</td>'
+            . '<td>'.html_out(basename($line['file'])).':'.$line['line'].'</td>'
+            . '<td>'.html_out($line['page']).'</td>'
+            . '<td><a href="/user.php?mode=elog&amp;id='.$line['id'].'">'.$line['id'].'</a></td>'
+            . '</tr>');
+        }
+        $tmpl->addContent('</table>');
 
-	$pages_count = ceil($total/$lines);
-	if ($pages_count > 1)
-	{
-		$tmpl->addContent('<p>Страницы: ');
-		for ( $i = 1; $i <= $pages_count; ++$i )
-		{
-			if($i==$p)	$tmpl->addContent("<b>$i</b> ");
-			else		$tmpl->addContent("<a href='?mode=elog&amp;p=$i'>$i</a> ");
-		}
-		$tmpl->addContent("</p>");
-	}
-
+        $pages_count = ceil($total/$lines);
+        if ($pages_count > 1) {
+                $tmpl->addContent('<p>Страницы: ');
+                for ($i = 1; $i <= $pages_count; ++$i) {
+                    if ($i == $p)
+                        $tmpl->addContent("<b>$i</b> ");
+                    else
+                        $tmpl->addContent("<a href='?mode=elog&amp;p=$i'>$i</a> ");
+                }
+                $tmpl->addContent("</p>");
+            }
+        }
 }
 else if ($mode == "clog") {
 	if (!isAccess('log_access', 'view'))	throw new AccessException();
@@ -660,16 +692,14 @@ else if($mode=='psstat')
 else throw new NotFoundException("Неверный запрос");
 
 }
-catch(Exception $e)
-{
-	global $db;
-	$db->query("ROLLBACK");
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+catch(mysqli_sql_exception $e) {
+    $tmpl->ajax=0;
+    $id = writeLogException($e);
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
 }
-
+catch(Exception $e) {
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
+}
 $tmpl->write();
 
-
-
-?>

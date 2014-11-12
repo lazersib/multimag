@@ -390,6 +390,7 @@ function initDocJournal(container_id, default_filters, params) {
 	var pr_cnt = 0;
 	var ras_cnt = 0;
 	var selected_store = 0;
+        var order_sum = 0;
 
 	function buildFilterQuery() {
 		filter_request = '';
@@ -461,6 +462,7 @@ function initDocJournal(container_id, default_filters, params) {
 			ras_sum = 0;
 			pr_cnt = 0;
 			ras_cnt = 0;
+                        order_sum = 0;
 			initTableHead();
 			requestData(0);
 		}
@@ -612,6 +614,8 @@ function initDocJournal(container_id, default_filters, params) {
 						case 18:
 							ras_sum += parseFloat(data.doclist[i].sum);
 							break;
+                                                case 3:
+                                                        order_sum += parseFloat(data.doclist[i].sum);
 					}
 					if(show_count_column) {
 						switch (parseInt(data.doclist[i].type)) {
@@ -654,9 +658,11 @@ function initDocJournal(container_id, default_filters, params) {
 				if(part<40)
 				window.setTimeout(execRequest, 120);
 			}
-			var status_text = "<b>Итого</b>: приход: <b>" + pr_sum.toFixed(2) + "</b>, расход: <b>" + ras_sum.toFixed(2) + "</b>. Баланс: " + (pr_sum - ras_sum).toFixed(2);
+			var status_text = "<b>Итого</b>: приход: <b>" + pr_sum.toFixed(2) + "</b> р., расход: <b>" + ras_sum.toFixed(2) + "</b> р." +
+                                "Баланс: <b>" + (pr_sum - ras_sum).toFixed(2) + "</b> р. Заявок покупателя на: <b>" + (order_sum).toFixed(2) + "</b> р.";
 			if(show_count_column)
 				status_text += "<br>Приход товара: <b>" + pr_cnt.toFixed(2) + "</b>, расход товара: <b>" + ras_cnt.toFixed(2) + "</b>. Разность: " + (pr_cnt - ras_cnt).toFixed(2);
+                        
 			status_text +="<br>Запрос выполнен за:" + data.exec_time + "сек, отображено за: " + ((new Date - render_start_date) / 1000).toFixed(2) + " сек"
 			doc_list_status.innerHTML = status_text;
 		}

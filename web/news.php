@@ -26,14 +26,15 @@ try {
 }
 catch(mysqli_sql_exception $e) {
     $db->rollback();
-    $id = $tmpl->logger($e->getMessage(), 1);
+    $id = writeLogException($e);
     $tmpl->addContent("<br><br>");
     $tmpl->msg("Ошибка базы данных, $id","err");
 }
 catch(Exception $e) {
     $db->rollback();
     $tmpl->addContent("<br><br>");
-    $tmpl->logger($e->getMessage());
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 $tmpl->write();

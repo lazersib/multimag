@@ -516,15 +516,17 @@ catch(AccessException $e)
 }
 catch(mysqli_sql_exception $e)
 {
-	$db->rollback();
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage(), false);
+    $db->rollback();
+    $tmpl->addContent("<br><br>");
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 catch(Exception $e)
 {
-	$db->rollback();
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+    $db->rollback();
+    $tmpl->addContent("<br><br>");
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 $tmpl->write();

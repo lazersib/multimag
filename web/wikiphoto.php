@@ -220,18 +220,14 @@ try{
 		default:	throw new NotFoundException('Данные не найдены');
 	}
 }
-catch(mysqli_sql_exception $e)
-{
-	$db->rollback();
-	$id = $tmpl->logger($e->getMessage(), 1);
-	$tmpl->addContent("<br><br>");
-	$tmpl->msg("Ошибка базы данных, $id","err");
+catch(mysqli_sql_exception $e) {
+    $tmpl->ajax=0;
+    $id = writeLogException($e);
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
 }
-catch(Exception $e){
-	global $db;
-	$db->query("ROLLBACK");
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+catch(Exception $e) {
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 

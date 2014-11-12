@@ -35,13 +35,14 @@ try
 catch(mysqli_sql_exception $e) {
 	$db->rollback();
 	$tmpl->ajax=0;
-	$id = $tmpl->logger($e->getMessage(), 1);
+	$id = writeLogException($e);
 	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+    $tmpl->addContent("<br><br>");
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 

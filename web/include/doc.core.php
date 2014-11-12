@@ -275,16 +275,15 @@ function num2str($L, $ed='rub', $sot=2)
 /// @param desc		Описание выполненного действия
 /// @param object	Тип объекта, с которым выполнено действие
 /// @param oblect_id	ID объекта, с которым выполено действие
-function doc_log($motion,$desc,$object='',$object_id=0)
-{
-	global $db;
-	$uid=intval(@$_SESSION['uid']);
-	$motion=$db->real_escape_string($motion);
-	$desc=$db->real_escape_string($desc);
-	$object=$db->real_escape_string($object);
-	$object_id=intval($object_id);
-	$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
-	$res=$db->query("INSERT INTO `doc_log` (`user`, `ip`, `time`,`motion`,`desc`, `object`, `object_id`)
+function doc_log($motion, $desc, $object='', $object_id=0) {
+    global $db;
+    $uid = intval(@$_SESSION['uid']);
+    $motion = $db->real_escape_string($motion);
+    $desc = $db->real_escape_string($desc);
+    $object = $db->real_escape_string($object);
+    $object_id = intval($object_id);
+    $ip = $db->real_escape_string(getenv("REMOTE_ADDR"));
+    $res = $db->query("INSERT INTO `doc_log` (`user`, `ip`, `time`,`motion`,`desc`, `object`, `object_id`)
 	VALUES ('$uid', '$ip', NOW(),'$motion','$desc', '$object', '$object_id')");
 }
 

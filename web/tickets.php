@@ -211,6 +211,7 @@ class TaskTracker {
 
 }
 
+try {
 
 if (!isAccess('generic_tickets', 'view'))	throw new AccessException();
 
@@ -340,6 +341,9 @@ else if ($mode == 'set') {
 		$db->query("DELETE FROM `tickets_responsibles` WHERE `ticket_id`=$n AND `user_id`=$user_id");
 		$txt = "убрал исполнителя $user_name ID $user_id";
 	}
+        else {
+            throw new \NotFoundException('Неверная опция');
+        }
 	if ($txt) {
 		$txt_sql = $db->real_escape_string($txt);
 		$db->query("INSERT INTO `tickets_log` (`uid`, `ticket`, `date`, `text`)
@@ -356,7 +360,8 @@ else if ($mode == 'set') {
 		try {
 			if($email) mailto($email, "Change ticket - $theme", $msg);
 		} catch (Exception $e) {
-			$tmpl->logger("Невозможно отправить сообщение email!");
+                    writeLogException($e);
+                    $tmpl->errorMessage("Невозможно отправить сообщение email!");
 		}
 
 		if ($jid && @$CONFIG['xmpp']['host']) {
@@ -370,7 +375,8 @@ else if ($mode == 'set') {
 				$xmppclient->disconnect();
 				$tmpl->msg("Сообщение было отправлено!", "ok");
 			} catch (Exception $e) {
-				$tmpl->logger("Невозможно отправить сообщение XMPP!");
+                            writeLogException($e);
+                            $tmpl->errorMessage("Невозможно отправить сообщение XMPP!");
 			}
 		}
 	}
@@ -379,6 +385,18 @@ else if ($mode == 'set') {
 	$tmpl->msg("Сделано!");
 	$tt->ShowTicket($n);
 }
+    else {
+        throw new \NotFoundException('Неверный параметр');
+    }
+}
+catch(mysqli_sql_exception $e) {
+    $tmpl->ajax=0;
+    $id = writeLogException($e);
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+}
+catch(Exception $e) {
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
+}
 
 $tmpl->write();
-?>

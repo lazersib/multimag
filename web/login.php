@@ -553,13 +553,13 @@ else if($mode=='regs')
 	}
 	catch(mysqli_sql_exception $e)
 	{
-		$id = $tmpl->logger($e->getMessage(), 1);
-		$tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
+		$id =  writeLogException($e);
+		$tmpl->errorMessage("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору", "Ошибка при регистрации");
 		mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
 	}
 	catch(RegException $e)
 	{
-		$db->query("ROLLBACK");
+		$db->rollback();
 		$tmpl->setTitle("Регистрация");
 		$tmpl->setContent("<h1 id='page-title'>Регистрация</h1>");
 		$tmpl->msg("Проверьте данные! ".$e->getMessage(),"err","Неверный ввод!");
@@ -568,8 +568,9 @@ else if($mode=='regs')
 	}
 	catch(Exception $e)
 	{
-		$db->query("ROLLBACK");
-		$tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
+		$db->rollback();
+                $id =  writeLogException($e);
+		$tmpl->errorMessage("Ошибка при регистрации: ".$e->getMessage().". Порядковый номер - $id<br>Сообщение передано администратору", "Ошибка при регистрации");
 	}
 
 }
@@ -810,22 +811,22 @@ else if($mode=='unsubscribe') {
 
 	if(!$c)	$tmpl->msg("Ваш адрес не найден в наших базах рассылки! Возможно, Вы отказались от рассылки ранее, или не являетесь нашим зарегистрированным пользователем. За разяснением обратитесь по телефону или e-mail, указанному на странице <a class='wiki' href='/article/ContactInfo'>Контакты</a>, либо в письме, полученном от нас. Спасибо за понимание!","notify");
 }
-else $tmpl->logger("Uncorrect mode!");
+else {
+    throw new NotFoundException("Неверная опция");
+}
 
 }
 catch(mysqli_sql_exception $e)
 {
-	$id = $tmpl->logger($e->getMessage(), 1);
-	$tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
-	$db->rollback();
+    $id = writeLogException($e);
+    $tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
+    mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
+    
 }
-catch(Exception $e)
-{
-	$db->query("ROLLBACK");
-	$tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
+catch(Exception $e) {
+    writeLogException($e);
+    $db->rollback();
+    $tmpl->msg($e->getMessage(),"err","Ошибка при регистрации");
 }
 
 $tmpl->write();
-
-?>

@@ -29,23 +29,19 @@ $tmpl->setContent("<h1 id='page-title'>Страница не найдена</h1>
 Страница, запрашиваемая Вами, не найдена на нашем сервере! Возможно она была перемещена в другое место, или не существует больше! Если Вы пришли с другого сервера, значит Вам дали неверную ссылку! Если же вы перешли по ссылке, размещенной на нашем сервере, сообщите, пожалуйста, администратору о проблеме.
 </p>
 <p id='text'>Воспользуйтесь меню, чтобы найти нужную страницу:</p>");
-try
-{
+try {
 	$map=new SiteMap();
 	$tmpl->addContent($map->getMap());
-
 }
 catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
-	$id = $tmpl->logger($e->getMessage(), 1);
+	$id = writeLogException($e);
 	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
-catch(Exception $e)
-{
+catch(Exception $e) {
 	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+        $id = writeLogException($e);
+	$tmpl->errorMessage($e->getMessage());
 }
 
 $tmpl->write();
-
-?>

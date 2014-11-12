@@ -752,13 +752,14 @@ class doc_Nulltype
 		}
 		catch(mysqli_sql_exception $e) {
 			$db->rollback();
-			$tmpl->logger($e->getMessage(), 1);
+                        writeLogException($e);
 			$db->query("UNLOCK TABLES");
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
 			return $json;
 		}
 		catch( Exception $e) {
 			$db->rollback();
+                        writeLogException($e);
 			$db->query("UNLOCK TABLES");
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
 			return $json;
@@ -803,7 +804,7 @@ class doc_Nulltype
 		catch(mysqli_sql_exception $e)
 		{
 			$db->rollback();
-			$id = $tmpl->logger($e->getMessage());
+			$id = writeLogException($e);
 			$db->query("UNLOCK TABLES");
 			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
 			return $json;

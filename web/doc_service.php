@@ -872,7 +872,7 @@ else throw new NotFoundException("Несуществующая опция");
 }
 catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
-	$id = $tmpl->logger($e->getMessage(), 1);
+	$id = writeLogException($e);
 	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch(AccessException $e) {
@@ -880,6 +880,7 @@ catch(AccessException $e) {
 }
 catch(Exception $e) {
 	$db->rollback();
+        $id = writeLogException($e);
 	$tmpl->msg($e->getMessage(),'err','Ошибка выполнения операции');
 }
 

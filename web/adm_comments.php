@@ -100,10 +100,11 @@ else if($mode=='response')
 }
 catch(Exception $e)
 {
-	global $db, $tmpl;
-	$db->rollback();
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+    global $db, $tmpl;
+    $db->rollback();
+    $tmpl->addContent("<br><br>");
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 $tmpl->write();

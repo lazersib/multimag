@@ -909,16 +909,18 @@ try {
 		<div onclick=\"window.location='/priceload.php?mode=r_noparsed'\">Ошибки: необработанные</div>
 		<div onclick=\"window.location='/priceload.php?mode=r_multiparsed'\">Ошибки: дублирующиеся</div>");
 	}
-	else	$tmpl->logger('Запрошен неверный режим! Возможно, вы указали неверные параметры, или же ссылка, по которой Вы обратились, неверна.');
+	else {
+            throw new \NotFoundException('Запрошен неверный режим! Возможно, вы указали неверные параметры, или же ссылка, по которой Вы обратились, неверна.');
+        }
 }
 catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
-	$id = $tmpl->logger($e->getMessage(), 1);
+	$id = writeLogException($e);
 	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch (Exception $e) {
-	$tmpl->msg($e->getMessage(), 'err');
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 $tmpl->write();
-?>

@@ -2006,18 +2006,47 @@ function SfakPDF($to_str=0)
 		{
 			$gtd_array=array();
 			$gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
-			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`<='2' AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
-			WHERE `doc_list_pos`.`tovar`='$nxt[9]' ORDER BY `doc_list`.`id`");
-			while($line = $gres->fetch_row())
-			{
-				if($line[0]==1)
-					for($i=0;$i<$line[2];$i++)	$gtd_array[]=$line[1];
-				else
-					for($i=0;$i<$line[2];$i++)	array_shift($gtd_array);
+			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+			WHERE `doc_list_pos`.`tovar`='$nxt[9]' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
+                            AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
+                        ORDER BY `doc_list`.`date`");
+			while($line = $gres->fetch_assoc()) {
+                            if($line['type']==1) { // Поступление
+                                $gtd_array[] = array('num'=>$line['gtd'], 'cnt'=>$line['cnt']);
+                                var_dump($gtd_array);
+                            }
+                            else {
+                                $cnt = $line['cnt'];
+                                while($cnt>0) {
+                                    if(count($gtd_array)==0) {
+                                        throw new Exception("Не найден номер ГТД для $cnt штук товара ".html_out($nxt[1]));
+                                    }
+                                    if($gtd_array[0]['cnt'] == $cnt) {
+                                        array_shift($gtd_array);
+                                        $cnt = 0;
+                                    } elseif ($gtd_array[0]['cnt'] > $cnt) {
+                                        $gtd_array[0]['cnt'] -= $cnt;
+                                        $cnt = 0;
+                                    } else {
+                                        $cnt -= $gtd_array[0]['cnt'];
+                                        array_shift($gtd_array);
+                                    }
+                                }
+                            }
 			}
 
-			$unigtd=array();
-			for($i=0;$i<$nxt[3];$i++)	@$unigtd[array_shift($gtd_array)]++;
+			$unigtd = array();
+                        $cnt = $nxt[3];
+                        while($cnt>0 && count($gtd_array)>0) {
+                            if($gtd_array[0]['cnt'] >= $cnt) {
+                                $unigtd[$gtd_array[0]['num']] = $cnt;
+                                $cnt = 0;
+                            } else {
+                                $unigtd[$gtd_array[0]['num']] = $gtd_array[0]['cnt'];
+                                $cnt -= $gtd_array[0]['cnt'];
+                                array_shift($gtd_array);
+                            }
+                        }
 
 			foreach($unigtd as $gtd => $cnt)
 			{

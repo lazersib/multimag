@@ -423,13 +423,13 @@ catch (AccessException $e) {
 }
 catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
-	$id = $tmpl->logger($e->getMessage(), 1);
+	$id = writeLogException($e);
 	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
 }
 catch (Exception $e) {
-	$tmpl->setContent('');
-	$tmpl->msg($e->getMessage(), 'err', "Общая ошибка");
+    $tmpl->setContent('');
+    $id = writeLogException($e);
+    $tmpl->msg($e->getMessage(), 'err', "Общая ошибка");
 }
 
 $tmpl->write();
-?>

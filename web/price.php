@@ -431,16 +431,15 @@ else if($mode=="get")
 catch(mysqli_sql_exception $e)
 {
 	$db->rollback();
-	$id = $tmpl->logger($e->getMessage(), 1);
+	$id =  writeLogException($e);
 	$tmpl->addContent("<br><br>");
 	$tmpl->msg("Ошибка базы данных, $id","err");
 }
 catch(Exception $e)
 {
-	$tmpl->msg($e->getMessage(),'err');
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 
 $tmpl->Write();
-
-?>

@@ -243,14 +243,14 @@ try
 	$search->Exec();
 }
 catch(mysqli_sql_exception $e) {
-	$tmpl->ajax=0;
-	$id = $tmpl->logger($e->getMessage(), 1);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+    $tmpl->ajax=0;
+    $id = writeLogException($e);
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
 }
-catch(Exception $e) {
-	$db->rollback();
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+catch(Exception $e)
+{
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 

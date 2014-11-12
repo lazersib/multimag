@@ -204,17 +204,16 @@ elseif($openid->mode)
 }
 catch(mysqli_sql_exception $e)
 {
-	$id = $tmpl->logger($e->getMessage(), 1);
-	$tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-	mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
-	$db->rollback();
+    $id = writeLogException($e);
+    $tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
+    mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
+	
 }
 catch(Exception $e)
 {
 	$e->rollback();
+        writeLogException($e);
 	$tmpl->msg($e->getMessage(),"err","Ошибка");
 }
 
 $tmpl->write();
-
-?>

@@ -1696,7 +1696,8 @@ protected function MakeBuy() {
 			}
 			catch(XMPPHP_Exception $e)
 			{
-				$tmpl->logger("Невозможно отправить сообщение XMPP!","err");
+                            writeLogException($e);
+                            $tmpl->errorMessage("Невозможно отправить сообщение XMPP!","err");
 			}
 		}
 		if($CONFIG['site']['doc_adm_email'])
@@ -1926,12 +1927,14 @@ try
 	if(! $vitrina->ProbeRecode() )
 	$vitrina->ExecMode($mode);
 }
-catch(Exception $e)
-{
-	global $db;
-	$db->query("ROLLBACK");
-	$tmpl->addContent("<br><br>");
-	$tmpl->logger($e->getMessage());
+catch(mysqli_sql_exception $e) {
+    $tmpl->ajax=0;
+    $id = writeLogException($e);
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+}
+catch(Exception $e) {
+    writeLogException($e);
+    $tmpl->errorMessage($e->getMessage());
 }
 
 

@@ -111,7 +111,8 @@ else if($mode=='call_request')
 				}
 				catch(Exception $e)
 				{
-					$tmpl->logger("Невозможно отправить запрос. Попробуйте позднее.");
+                                    writeLogException($e);
+                                    $tmpl->errorMessage("Невозможно отправить запрос. Попробуйте позднее.");
 				}
 			}
 		}
@@ -163,7 +164,8 @@ else if($mode=='send')
 		}
 		catch(XMPPHP_Exception $e)
 		{
-			$tmpl->logger("Невозможно отправить сообщение XMPP!");
+                    writeLogException($e);
+                    $tmpl->errorMessage("Невозможно отправить сообщение XMPP!");
 		}
 	}
 	else
@@ -175,7 +177,8 @@ else if($mode=='send')
 		}
 		catch(Exception $e)
 		{
-			$tmpl->logger("Невозможно отправить сообщение email!");
+                    writeLogException($e);
+                    $tmpl->errorMessage("Невозможно отправить сообщение email!");
 		}
 	}
 }
@@ -232,7 +235,8 @@ else if($mode=='petitions')
 			}
 			catch(XMPPHP_Exception $e)
 			{
-				$tmpl->logger("Невозможно отправить сообщение по XMPP!","err");
+                            writeLogException($e);
+                            $tmpl->errorMessage("Невозможно отправить сообщение по XMPP!","err");
 			}
 		}
 	}
@@ -240,5 +244,3 @@ else if($mode=='petitions')
 }
 
 $tmpl->write();
-
-?>

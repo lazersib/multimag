@@ -195,26 +195,15 @@ function roundDirect($number, $precision = 0, $direction = 0)
 function exception_handler($exception)
 {
 	global $db;
-	if($db)
-	{
-		$uid=@$_SESSION['uid'];
-		settype($uid,"int");
-		$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
-		$s=$db->real_escape_string($exception->getMessage());
-		$ag=$db->real_escape_string(getenv("HTTP_USER_AGENT"));
-		$rf=$db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
-		$ff=$db->real_escape_string($_SERVER['REQUEST_URI']);
-		$db->query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-		('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
-	}
+	writeLogException($exception);
 	header('HTTP/1.0 500 Internal error');
 	header('Status: 500 Internal error');
-	$s=html_out($exception->getMessage());
-	$ff=html_out($_SERVER['REQUEST_URI']);
+	$s = html_out($exception->getMessage());
+	$ff = html_out($_SERVER['REQUEST_URI']);
 	echo"<!DOCTYPE html><html><meta charset=\"utf-8\"><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
-		<head><title>Error 500: Необработанная внутренняя ошибка</title>
-		<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
-		<h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
+            <head><title>Error 500: Необработанная внутренняя ошибка</title>
+            <style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
+            <h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
 }
 set_exception_handler('exception_handler');
 
@@ -495,9 +484,9 @@ function sendAdmMessage($text,$subject='') {
 			$xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
 			$xmppclient->disconnect();
 		}
-		catch(XMPPHP_Exception $e)
-		{
-			$tmpl->logger("Невозможно отправить сообщение по XMPP!","err");
+		catch(XMPPHP_Exception $e) {
+                    writeLogException($e);
+                    $tmpl->errorMessage("Невозможно отправить сообщение по XMPP!");
 		}
 	}
 }
@@ -656,26 +645,43 @@ class BETemplate {
 	/// @param $mode Вид сообщения: ok - сообщение об успехе, err - сообщение об ошибке, info - информационное сообщение
 	/// @param $head Заголовок сообшения
 	function msg($text = "", $mode = "", $head = "") {
-		if ($text == "")
-			return;
-		if ($mode == "error")
-			$mode = "err";
-		if ($mode == 'info')
-			$mode = 'notify';
-		if (($mode != "ok") && ($mode != "err"))
-			$mode = "notify";
-		if ($head == "") {
-			$msg = "Информация:";
-			if ($mode == "ok")
-				$msg = "Сделано!";
-			if ($mode == "err")
-				$msg = "Ошибка!";
-		}
-		else
-			$msg = $head;
-
-		@$this->page_blocks['content'].="<div class='$mode'><b>$msg</b><br>$text</div>";
+            if ($text == "") {
+                return;
+            }
+            switch($mode) {
+                case 'err':
+                case 'ok':
+                    break;
+                case 'error':
+                    $mode = 'err';
+                    break;
+                case 'info':
+                    $mode = 'notify';
+                    break;
+                default:
+                    $mode = "notify";
+            }
+            if ($head == "") {
+                switch($mode) {
+                    case 'err':
+                        $head = "Ошибка";
+                        break;
+                    case 'ok':
+                        $head = "Сделано";
+                        break;
+                    default:
+                        $head = "Информация";
+                }
+            }
+            @$this->page_blocks['content'].="<div class='$mode'><b>$head</b><br>$text</div>";
 	}
+        
+        /// Вывод сообщения об ошибке
+        /// @param $text Текст сообщения
+	/// @param $head Заголовок сообшения
+        function errorMessage($text, $head = "") {            
+            $this->msg($text, 'err', $head);
+        }
 
 	/// Установить "хлебные крошки"
 	function setBrearcrumbs($data) {
@@ -732,6 +738,7 @@ class BETemplate {
 		$time = microtime(true) - $time_start;
 		if ($time >= 3)
 			$this->logger("Exec time: $time", 1); /// Записывам ошибку, если скрипт долго работает
+                /// TODO: Сделать что-нибудь с этой записью
 	}
 
 	/// Записать сообщение об ошибке в журнал и опционально вывести на страницу
@@ -751,7 +758,7 @@ class BETemplate {
 		$ag = $db->real_escape_string(getenv("HTTP_USER_AGENT"));
 		$rf = $db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
 		$ff = $db->real_escape_string($_SERVER['REQUEST_URI']);
-		$db->query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
+		$db->query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`useragent`, `uid`) VALUES
 		('$ff','$rf','$s_sql',NOW(),'$ip','$ag', '$uid')");
 
 		if (!$silent) {
@@ -765,49 +772,61 @@ class BETemplate {
 }
 
 /// Класс-исключение используется для информирования о отсутствии привилегий на доступ к запрошенной функции
-class AccessException extends Exception
-{
-	function __construct($text='', $code=0, $previous=NULL)
-	{
-		header('HTTP/1.0 403 Forbidden');
-		parent::__construct("Нет доступа: ".$text, $code, $previous);
-	}
+class AccessException extends Exception {
+
+    function __construct($text = '', $code = 0, $previous = NULL) {
+        header('HTTP/1.0 403 Forbidden');
+        parent::__construct("Нет доступа: " . $text, $code, $previous);
+    }
+
 }
 
 /// Класс-исключение используется для информирования о отсутствии запрашиваемого объекта. Устанавливает заголовок 404 Not found
-class NotFoundException extends Exception
-{
-	function __construct($text='', $code=0, $previous=NULL)
-	{
-		header('HTTP/1.0 404 Not found');
-		parent::__construct($text, $code, $previous);
-	}
+class NotFoundException extends Exception {
+
+    function __construct($text = '', $code = 404, $previous = NULL) {
+        header('HTTP/1.0 404 Not found');
+        parent::__construct($text, $code, $previous);
+    }
+
 }
 
 /// Базовый класс для создания автожурналируемых исключений
-class AutoLoggedException extends Exception
-{
-	function __construct($text='', $code=0, $previous=NULL)
-	{
-		parent::__construct($text, $code, $previous);
-		$this->WriteLog();
-	}
+class AutoLoggedException extends Exception {
+    
+    function __construct($text='', $code=0, $previous=NULL) {
+        parent::__construct($text, $code, $previous);
+        writeLogException($this);
+    }
+}
 
-	/// Записывает событие в журнал ошибок
-	/// TODO: нужен класс регистрации ошибок, с уровнями ошибок, возможностью записи в файл, отправки на email, jabber, sms и пр.
-	protected function WriteLog()
-	{
-	        global $db;
-	        $uid=$_SESSION['uid'];
-		settype($uid,"int");
-		$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
-		$s=$db->real_escape_string (get_class($this).': '.$this->message);
-		$ag=$db->real_escape_string(getenv("HTTP_USER_AGENT"));
-		$rf=$db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
-		$ff=$db->real_escape_string($_SERVER['REQUEST_URI']);
-		$db->query("INSERT INTO `errorlog` (`page`,`referer`,`msg`,`date`,`ip`,`agent`, `uid`) VALUES
-		('$ff','$rf','$s',NOW(),'$ip','$ag', '$uid')");
-	}
+
+/// Записывает исключение в журнал ошибок
+/// @param $e   Объект класса Exception, или унаследованного класса
+function writeLogException($e) {
+    global $db;
+    if($db) {
+        if (isset($_SESSION['uid'])) {
+            $uid = intval($_SESSION['uid']);
+        } else {
+            $uid = null;
+        }
+
+        $data = array();
+        $data['page'] = urldecode($_SERVER['REQUEST_URI']);
+        $data['referer'] = urldecode(getenv("HTTP_REFERER"));
+        $data['class'] = get_class($e);
+        $data['code'] = $e->getCode();
+        $data['msg'] = $e->getMessage();
+        $data['file'] = $e->getFile();
+        $data['line'] = $e->getLine();
+        $data['trace'] = $e->getTraceAsString();
+        $data['ip'] = getenv("REMOTE_ADDR");
+        $data['useragent'] = getenv("HTTP_USER_AGENT");
+        $data['date'] = date('Y-m-d H:i:s');
+
+        return $db->insertA('errorlog', $data);
+    }
 }
 
 //class DB extends MysqiExtended {
