@@ -1330,7 +1330,7 @@ class doc_s_Sklad {
                                 $nxt = $res->fetch_assoc();
                                 if($nxt) {
                                     $db->query("REPLACE `doc_base_dop` (`id`, `type`, `d_int`, `d_ext`, `size`)
-                                        VALUES ('$pos', '{$nxt['type']}', '{$nxt['d_int']}', '{$nxt['d_ext']}', '{$nxt['size']})");
+                                        VALUES ('$pos', '{$nxt['type']}', '{$nxt['d_int']}', '{$nxt['d_ext']}', '{$nxt['size']}')");
                                 }
                             }
                             doc_log("CREATE", $log, 'pos', $pos);

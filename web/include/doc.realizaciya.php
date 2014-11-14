@@ -2013,13 +2013,13 @@ function SfakPDF($to_str=0)
 			while($line = $gres->fetch_assoc()) {
                             if($line['type']==1) { // Поступление
                                 $gtd_array[] = array('num'=>$line['gtd'], 'cnt'=>$line['cnt']);
-                                var_dump($gtd_array);
+                                //var_dump($gtd_array);
                             }
                             else {
                                 $cnt = $line['cnt'];
                                 while($cnt>0) {
                                     if(count($gtd_array)==0) {
-                                        throw new Exception("Не найден номер ГТД для $cnt штук товара ".html_out($nxt[1]));
+                                        throw new Exception("Не найден номер ГТД для $cnt штук товара {$nxt[1]}. Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
                                     }
                                     if($gtd_array[0]['cnt'] == $cnt) {
                                         array_shift($gtd_array);
