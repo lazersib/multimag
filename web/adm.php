@@ -26,12 +26,13 @@ try {
     $tmpl->setTitle("Администрирование");
     $tmpl->addBreadcrumb('ЛК', '/user.php');
     $tmpl->addBreadcrumb('Администрирование', '/adm.php');
-
+    $dir = "include/modules/admin/";
+    
     $mode = request('mode');
     if ($mode == '') {
         $tmpl->addBreadcrumb('Администрирование', '');
         $tmpl->addContent("<ul class='items'>");
-        $dir = "include/modules/admin";
+        
         if (is_dir($dir)) {
             $dh = opendir($dir);
             if ($dh) {
@@ -59,7 +60,19 @@ try {
         $module->link_prefix = '/adm.php?mode=mailconfig';
         $module->run();
     } else {
-        throw new \NotFoundException("Объект не найден");
+        if (!isAccess('admin_' . $mode, 'view'))
+            throw new AccessException("Недостаточно привилегий");
+        $opt = request('opt');
+        $fn = $dir . $mode . '.php';
+        if (file_exists($fn)) {
+            $class_name = '\\Modules\\Admin\\' . $mode;
+            $class = new $class_name;
+            $tmpl->setTitle($class->getName());
+            $class->link_prefix = '/adm.php?mode=' . html_out($mode);
+            $class->run($opt);
+        } else {
+            throw new \NotFoundException("Объект не найден");
+        }        
     }
 } catch (Exception $e) {
     global $db, $tmpl;

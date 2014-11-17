@@ -424,7 +424,11 @@ function FilterMenu()
 
 need_auth();
 
-if(!isAccess('doc_list','view'))	throw new AccessException("");
+if (!isAccess('doc_list', 'view')) {
+    throw new AccessException("");
+}
+
+$mode = request('mode');
 
 if($mode=="")
 {
@@ -537,6 +541,7 @@ if($mode=="")
 
 	$tmpl->addContent("<table width='100%' cellspacing='1' onclick='hlThisRow(event)'><tr>
 	<th width='75'>№<th width='20'>&nbsp;<th width='20'>&nbsp;<th>Тип<th>Доп.$dp<th>Агент<th>Сумма<th>Дата<th>Автор");
+        $uid = intval($_SESSION['uid']);
 	while($nxt=$res->fetch_array())
 	{
 		$dop=$cl='';

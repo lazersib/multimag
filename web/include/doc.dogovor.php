@@ -160,7 +160,7 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 	/// Формирование другого документа на основании текущего
 	function MorphTo($target_type)
 	{
-		global $tmpl, $uid, $db;
+		global $tmpl;
 		$tmpl->ajax=1;
 		if($target_type=='') {
 			$tmpl->ajax=1;

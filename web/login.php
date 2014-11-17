@@ -424,7 +424,7 @@ else if($mode=='logout')
 }
 else if($mode=='reg')
 {
-	if(!$uid)
+	if(!intval(@$_SESSION['uid']))
 	{
 		$tmpl->setTitle("Регистрация");
 		$tmpl->addContent("<h1 id='page-title'>Регистрация</h1>");

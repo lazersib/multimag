@@ -19,17 +19,19 @@
 
 require_once("core.php");
 
-$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение');
+$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'today_apply'=>'Проведение сев.', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение');
 
 try {
 
-if(!isAccess('sys_acl','view'))	throw new AccessException("Недостаточно привилегий");
+    if (!isAccess('sys_acl', 'view')) {
+        throw new AccessException("Недостаточно привилегий");
+    }
 
-$tmpl->setContent("<h1>Настройка привилегий</h1>");
-$tmpl->setTitle("Настройка привилегий");
-if($mode=='')
-{
-	$tmpl->addContent("<h3>Группы пользователей</h3><table class='list'><tr><th>N</th><th>Название</th><th>Описание</th></tr>");
+    $tmpl->setContent("<h1>Настройка привилегий</h1>");
+    $tmpl->setTitle("Настройка привилегий");
+    $mode = request('mode');
+    if ($mode == '') {
+        $tmpl->addContent("<h3>Группы пользователей</h3><table class='list'><tr><th>N</th><th>Название</th><th>Описание</th></tr>");
 	$res=$db->query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
 	while($nxt=$res->fetch_row())
 	{

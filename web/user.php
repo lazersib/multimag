@@ -23,13 +23,14 @@ need_auth($tmpl);
 try
 {
 
-$tmpl->setTitle("Личный кабинет");
-$tmpl->setContent("<h1>Личный кабинет</h1><p class=text>На этой странице представлены дополнительные возможности, доступные только зарегистрированным пользователям. Разделы с пометкой 'В разработке' и 'Тестирование' размещены здесь только в целях тестирования и не являются полностью рабочими.</p>");
+    $tmpl->setTitle("Личный кабинет");
+    $tmpl->setContent("<h1>Личный кабинет</h1><p class=text>На этой странице представлены дополнительные возможности, доступные только зарегистрированным пользователям. Разделы с пометкой 'В разработке' и 'Тестирование' размещены здесь только в целях тестирования и не являются полностью рабочими.</p>");
 
-$tmpl->hideBlock('left');
-
-if($mode==''){
-	$tmpl->addContent("<ul>");
+    $tmpl->hideBlock('left');
+    $mode = request('mode');
+    
+    if ($mode == '') {
+        $tmpl->addContent("<ul>");
 	$res=$db->query("SELECT `users_worker_info`.`worker` FROM `users`
 	LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
 	WHERE `users`.`id`='{$_SESSION['uid']}'");
@@ -123,7 +124,7 @@ else if($mode=='user_data'){
 		'reg_phone'=>		request('tel'),
 		'real_address'=>	request('adres'),
 		'jid'=>			request('jid') );
-		
+		$uid = intval($_SESSION['uid']);
 		$db->updateA('users', $uid, $data);
 		$data=requestA( array('icq', 'skype', 'mra', 'site_name') );
 		$db->replaceKA('users_data', 'uid', $uid, $data);
@@ -212,6 +213,7 @@ else if($mode=='doc_view'){
 		$doc=rcvint('doc');
 		if($doc){
 			$doc_data=$db->selectRowA('doc_list', $doc, array('id', 'type', 'user') );
+                        $uid = intval($_SESSION['uid']);
 			if($doc_data['user']!=$uid)	throw new Exception("Документ не найден");
 
 			$document=AutoDocumentType($doc_data['type'], $doc);

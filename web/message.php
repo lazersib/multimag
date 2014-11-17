@@ -21,19 +21,18 @@
 require_once("core.php");
 $to	= request('to');
 $opt	= request('opt');
+$mode = request('mode');
 
-if($opt!='email') $opt='jabber';
-if($opt=='jabber')
-{
-	//if($to!=$CONFIG['site']['doc_adm_email'])
-		$to=$CONFIG['site']['doc_adm_jid'];
+if ($opt != 'email') {
+    $opt = 'jabber';
 }
-else
-{
-	//if($CONFIG['site']['doc_adm_jid'])
-		$to=$CONFIG['site']['doc_adm_email'];
+if ($opt == 'jabber') {
+    //if($to!=$CONFIG['site']['doc_adm_email'])
+    $to = $CONFIG['site']['doc_adm_jid'];
+} else {
+    //if($CONFIG['site']['doc_adm_jid'])
+    $to = $CONFIG['site']['doc_adm_email'];
 }
-
 
 if($mode=="")
 {
@@ -213,9 +212,10 @@ else if($mode=='petitions')
 		$nxt = $res->fetch_row();
 		if(!$nxt)	throw new Exception("Документ не найден");
 		
-		$date=date("d.m.Y H:i:s",$nxt[3]);
-		$proto=@$_SERVER['HTTPS']?'https':'http';
-		$txt="Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *$nxt[5]* с ID: $doc, $nxt[0]$nxt[1] от $date на сумму $nxt[2]. Клиент $nxt[4].\n{$proto}://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc \nЦель отмены: $comment.\n IP: $ip\nПожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
+                $date = date("d.m.Y H:i:s", $nxt[3]);
+                $proto = @$_SERVER['HTTPS'] ? 'https' : 'http';
+                $ip = getenv("REMOTE_ADDR");
+                $txt="Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *$nxt[5]* с ID: $doc, $nxt[0]$nxt[1] от $date на сумму $nxt[2]. Клиент $nxt[4].\n{$proto}://{$CONFIG['site']['name']}/doc.php?mode=body&doc=$doc \nЦель отмены: $comment.\n IP: $ip\nПожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
 
 		if($CONFIG['site']['doc_adm_email'])
 			mailto($CONFIG['site']['doc_adm_email'], 'Запрос на отмену проведения документа' ,$txt, $from);

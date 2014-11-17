@@ -216,6 +216,7 @@ try {
 if (!isAccess('generic_tickets', 'view'))	throw new AccessException();
 
 $tt = new TaskTracker();
+$mode = request('mode');
 
 if ($mode == '')
 	$tt->ShowMyTickets();

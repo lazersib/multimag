@@ -343,17 +343,16 @@ class doc_Nulltype
 	/// Применить изменения редактирования заголовка
 	public function head_submit()
 	{
-		global $tmpl, $uid, $db;
-		$doc=$this->doc;
-		$type=$this->doc_type;
+		global $tmpl, $db;
+		$doc = $this->doc;
 
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 
 		$firm_id=rcvint('firm');
-		settype($firm_id,'int');
-		if($firm_id<=0) $firm_id=1;
-		$tim=time();
+		if ($firm_id <= 0) {
+                    $firm_id = 1;
+                }
 
 		$agent = rcvint('agent');
 		$date = @strtotime(request('datetime'));
@@ -370,10 +369,13 @@ class doc_Nulltype
 		$cost_recalc=rcvint('cost_recalc');
 
 		if($date <= 0) $date=time();
-		if(!$altnum)	$altnum=$this->getNextAltNum($this->doc_type, $subtype, date("Y-m-d",$date), $firm_id);
+                if (!$altnum) {
+                    $altnum = $this->getNextAltNum($this->doc_type, $subtype, date("Y-m-d", $date), $firm_id);
+                }
 
-		$_comment=$db->real_escape_string($comment);
+                $_comment=$db->real_escape_string($comment);
 		$_subtype=$db->real_escape_string($subtype);
+                $uid = intval($_SESSION['uid']);
 		
 		$sqlupdate="`date`='$date', `firm_id`='$firm_id', `comment`='$_comment', `altnum`='$altnum', `subtype`='$_subtype'";
 		$sqlinsert_keys="`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
@@ -414,7 +416,7 @@ class doc_Nulltype
 							WHERE `doc`='{$this->doc}'");
 						$pc = PriceCalc::getInstance();
 						
-						while($l = $res->fetch_assoc()) {
+						while($l = $r->fetch_assoc()) {
 							$price = $pc->getPosSelectedPriceValue($l[1], $cena, $l);
 							$db->update('doc_list_pos', $l[0], 'cost', $price);
 						}
@@ -472,7 +474,7 @@ class doc_Nulltype
 	/// Сохранение заголовка документа и возврат результата в json формате
 	public function json_head_submit()
 	{
-		global $uid, $tmpl, $db;
+		global $tmpl, $db;
 		if($this->doc_name) $object='doc_'.$this->doc_name;
 		else $object='doc';
 		$date = @strtotime(request('datetime'));
@@ -480,6 +482,7 @@ class doc_Nulltype
 		$firm_id=rcvint('firm', 1);
 		if($firm_id<=0) $firm_id=1;
 		$tim=time();
+                $uid = intval($_SESSION['uid']);
 
 		$agent = rcvint('agent');
 		$sklad = rcvint('sklad');
@@ -726,14 +729,23 @@ class doc_Nulltype
 		return;
 	}
 
-	public function ApplyJson()
-	{
-		global $db;
+	public function ApplyJson() {
+		global $db, $tmpl;
 
 		try {
 			if($this->doc_name) $object='doc_'.$this->doc_name;
 			else $object='doc';
-			if(!isAccess($object,'apply'))	throw new AccessException();
+                        
+                        $d_start = date_day(time());
+                        $d_end = $d_start + 60*60*24 - 1;
+                        if( !isAccess($object,'apply') ) {
+                            if(!isAccess($object,'today_apply')) {
+                                   throw new AccessException('Не достаточно привилегий для проведения документа');
+                            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date']>$d_end) {
+                                    throw new AccessException('Не достаточно привилегий для проведения документа произвольной датой');
+                            }
+                        }
+                        
 			if($this->doc_data['mark_del'])	throw new Exception("Документ помечен на удаление!");
 			
 			$res = $db->query("SELECT `recalc_active` FROM `variables`");
@@ -776,17 +788,20 @@ class doc_Nulltype
 	{
 		global $db, $tmpl;
 		
-		$tim=time();
-		$dd=date_day($tim);
-		if($this->doc_name) $object='doc_'.$this->doc_name;
-		else $object='doc';
+		$tim = time();
+                $dd = date_day($tim);
+                if ($this->doc_name) {
+                    $object = 'doc_' . $this->doc_name;
+                } else {
+                    $object='doc';
+                }
 
-		try
-		{
-
-			if( !isAccess($object,'cancel') )
-				if( (!isAccess($object,'cancel')) && ($dd>$this->doc_data['date']) )
+		try {
+			if( !isAccess($object,'cancel') ) {
+				if( (!isAccess($object,'today_cancel')) || ($dd>$this->doc_data['date']) ) {
 					throw new AccessException();
+                                }
+                        }
 			if(!method_exists($this,'DocCancel'))
 				throw new Exception("Метод отмены данного документа не определён!");
 			
@@ -1151,10 +1166,8 @@ class doc_Nulltype
 	/// Служебные опции
 	function _Service($opt, $pos)
 	{
-		global $tmpl, $uid, $db;
-
+		global $tmpl, $db;
 		$tmpl->ajax = 1;
-		$doc = $this->doc;
 		
 		if($this->sklad_editor_enable) {
 			include_once('doc.poseditor.php');
@@ -1284,7 +1297,7 @@ class doc_Nulltype
 			else return 0;
 			return 1;
 		}
-		else $tmpl->msg("Недостаточно привилегий для $uid выполнения операции над $object!","err");
+		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
 	}
 
 	protected function drawLHeadformStart() {
@@ -1459,7 +1472,7 @@ class doc_Nulltype
 	}
 
 	protected function drawKassaField() {
-		global $tmpl, $db;
+		global $tmpl, $db, $CONFIG;
 		$tmpl->addContent("Касса:<br><select name='kassa'>");
 		$res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND `firm_id`='0' OR `num`='{$this->doc_data['kassa']}' ORDER BY `num`");
 		if( $this->doc_data['kassa'] )		
@@ -1655,6 +1668,4 @@ class doc_Nulltype
 		$res->free();
 		return $sum;
 	}
-};
-
-?>
+}

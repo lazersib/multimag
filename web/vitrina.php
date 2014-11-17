@@ -1918,25 +1918,26 @@ protected function priceCalcInit() {
 
 try
 {
-	$tmpl->setTitle("Интернет - витрина");
+    $tmpl->setTitle("Интернет - витрина");
 
-	if(file_exists( $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/vitrina.tpl.php' ) )
-		include_once($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/vitrina.tpl.php');
-	if(!isset($vitrina))	$vitrina=new Vitrina();
+    if (file_exists($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/vitrina.tpl.php')) {
+        include_once($CONFIG['site']['location'] . '/skins/' . $CONFIG['site']['skin'] . '/vitrina.tpl.php');
+    }
+    if (!isset($vitrina)) {
+        $vitrina = new Vitrina();
+    }
 
-	if(! $vitrina->ProbeRecode() )
-	$vitrina->ExecMode($mode);
-}
-catch(mysqli_sql_exception $e) {
+    if (!$vitrina->ProbeRecode()) {
+        $mode = request('mode');
+        $vitrina->ExecMode($mode);
+    }
+} catch(mysqli_sql_exception $e) {
     $tmpl->ajax=0;
     $id = writeLogException($e);
     $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
-}
-catch(Exception $e) {
+} catch(Exception $e) {
     writeLogException($e);
     $tmpl->errorMessage($e->getMessage());
 }
-
-
 
 $tmpl->write();

@@ -90,6 +90,7 @@ function schange()
 
 try
 {
+        $mode = request('mode');
 	if($p=="")
 	{
 		$tmpl->setContent("<h1 id='page-title'>Статьи</h1>Здесь отображаются все статьи сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях, и служебные статьи. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
@@ -150,26 +151,32 @@ try
 			}
 			else
 			{
-				if($mode=='edit')
-				{
-					if(!isAccess('generic_articles','edit'))	throw new AccessException();
-					$tmpl->addContent("<h1>Правим $h</h1>");
-					articles_form($p, $nxt['text'], $nxt['type']);
-				}
-				else if($mode=='save')
-				{
-					if(!isAccess('generic_articles','edit'))	throw new AccessException();
-					$type=rcvint('type');
-					if($type<0 || $type>2)	$type=0;
-					$text=$db->real_escape_string(@$_REQUEST['text']);
+                            if ($mode == 'edit') {
+                                if (!isAccess('generic_articles', 'edit'))
+                                    throw new AccessException();
+                                $tmpl->addContent("<h1>Правим $h</h1>");
+                                articles_form($p, $nxt['text'], $nxt['type']);
+                            }
+                            elseif ($mode == 'save') {
+                                if (!isAccess('generic_articles', 'edit')) {
+                                    throw new AccessException();
+                                }
+                                $type = rcvint('type');
+                                if ($type < 0 || $type > 2) {
+                                    $type = 0;
+                                }
+                                $text = $db->real_escape_string(@$_REQUEST['text']);
+                                $uid = intval($_SESSION['uid']);
+                                $res = $db->query("UPDATE `articles` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text', `type`='$type'
+                                                    WHERE `name` LIKE '$page_escaped'");
 
-					$res=$db->query("UPDATE `articles` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text', `type`='$type'
-					WHERE `name` LIKE '$page_escaped'");
-
-					header("Location: /articles.php?p=".$nxt['article_name']);
-					exit();
-				}
-			}
+                                header("Location: /articles.php?p=" . $nxt['article_name']);
+                                exit();
+                            }
+                            else {
+                                throw new \NotFoundException('Неверный параметр');
+                            }
+                        }
 		}
 		else {
 			if($mode=='') {

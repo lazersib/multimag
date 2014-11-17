@@ -21,15 +21,14 @@ require_once("core.php");
 $lim=16;
 $gpath="img/galery";
 
-try
-{
+try {
+    $tmpl->setContent("<h1>Фотогалерея</h1>");
+    $tmpl->setTitle("Фотогалерея");
+    
+    $mode = request('mode');
 
-$tmpl->setContent("<h1>Фотогалерея</h1>");
-$tmpl->setTitle("Фотогалерея");
-
-if($mode==""||$mode=='view')
-{
-	$lt=1;
+    if ($mode == "" || $mode == 'view') {
+        $lt=1;
 	$pp="";
 
 	$page=rcvint('p');
@@ -154,7 +153,7 @@ else if($mode=="addo")
 	if((@$aa[0]<300)||(@$aa[1]<400)||(@$aa[0]>10000)||(@$aa[1]>10000))
 								throw new Exception("Некорректное разрешение (должно быть > 300*400 и < 10000*10000)!$an");
 	$sql_comm=$db->real_escape_string($comm);
-	$uid=round($_SESSION['uid']);
+	$uid = intval($_SESSION['uid']);
 	$db->query("START TRANSACTION");
 	$res=$db->query("INSERT INTO `photogalery` (`uid`,`comment`) VALUES ('$uid','$sql_comm')");
 	$fid=$db->insert_id;

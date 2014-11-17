@@ -24,7 +24,8 @@ include_once('include/doc.zapposeditor.php');
 class ds_sborka_zap {
 
 	function Run($mode) {
-		global $tmpl, $uid, $db;
+		global $tmpl, $db;
+                $uid = intval($_SESSION['uid']);
 		$tmpl->hideBlock('left');
 		if ($mode == 'view') {
 			$tmpl->addContent("<h1>" . $this->getname() . "</h1>

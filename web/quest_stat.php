@@ -19,6 +19,7 @@
 //
 
 require_once("core.php");
+$mode = request('mode');
 
 if ($mode == '') {
 	$tmpl->addContent("<h1>Статистика опросов</h1>");

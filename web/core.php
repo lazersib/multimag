@@ -55,77 +55,6 @@ function core_autoload($class_name){
 
 spl_autoload_register('core_autoload');
 
-/// Класс для работы с IP адресами IPv6
-class ipv6
-{
-	/// Является ли строка IPv6 адресом ?
-	function is_ipv6($ip = "")
-	{
-		if($ip=='')	return false;
-		if (substr_count($ip,":") > 0 && substr_count($ip,".") == 0)
-			return true;
-		else	return false;
-	}
-
-	/// Является ли строка IPv4 адресом ?
-	function is_ipv4($ip = "")
-	{
-		if($ip=='')	return false;
-		return !ipv6::is_ipv6($ip);
-	}
-
-	/// Возвращает IP адрес клиента
-	function get_ip()
-	{
-		return  getenv ("REMOTE_ADDR");
-	}
-
-	/// Преобразует заданный IPv6 адрес в полную форму
-	function uncompress_ipv6($ip ="")
-	{
-		if ($ip == '') {
-			return false;
-		}
-		if(strstr($ip,"::" ))
-		{
-			$e = explode(":", $ip);
-			$s = 8-sizeof($e)+1;
-			foreach($e as $key=>$val)
-			{
-				if ($val == "") {
-					for ($i = 0; $i <= $s; $i++) {
-						$newip[] = 0;
-					}
-				} else {
-					$newip[] = $val;
-				}
-			}
-			$ip = implode(":", $newip);
-		}
-		return $ip;
-	}
-
-	/// Преобразует заданный IPv6 адрес в краткую форму
-	function compress_ipv6($ip ="")
-	{
-		if($ip=='')	return false;
-		if(!strstr($ip,"::" ))
-		{
-			$e = explode(":", $ip);
-			$zeros = array(0);
-			$result = array_intersect ($e, $zeros );
-			if (sizeof($result) >= 6)
-			{
-				if ($e[0]==0) $newip[] = "";
-				foreach($e as $key=>$val)
-					if ($val !=="0") $newip[] = $val;
-				$ip = implode("::", $newip);
-			}
-		}
-		return $ip;
-	}
-}
-
 /// Вычисляет максимально допустимый размер вложений в байтах
 function get_max_upload_filesize()
 {
@@ -771,6 +700,8 @@ class BETemplate {
 
 }
 
+
+
 /// Класс-исключение используется для информирования о отсутствии привилегий на доступ к запрошенной функции
 class AccessException extends Exception {
 
@@ -875,10 +806,13 @@ if(! include_once("$base_path/config_site.php"))
 
 include_once($CONFIG['location']."/common/core.common.php");
 
-if($CONFIG['site']['force_https'])
-	header('Location: https://'.$_SERVER["HTTP_HOST"].$_SERVER['REQUEST_URI'], true, 301);
+if ($CONFIG['site']['force_https']) {
+    header('Location: https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'], true, 301);
+}
 
-if(!isset($CONFIG['site']['display_name']))	$CONFIG['site']['display_name']=$CONFIG['site']['name'];
+if (!isset($CONFIG['site']['display_name'])) {
+    $CONFIG['site']['display_name'] = $CONFIG['site']['name'];
+}
 
 
 
@@ -918,43 +852,28 @@ if(!$db->set_charset("utf8"))
 }
 
 
-// m_ysql_query("SET CHARACTER SET UTF8");
-// m_ysql_query("SET character_set_client = UTF8");
-// m_ysql_query("SET character_set_results = UTF8");
-// m_ysql_query("SET character_set_connection = UTF8");
-
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
 // HSTS Mode
 if ((@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login']) && isset($_SERVER['HTTPS'])) {
 	header("Strict-Transport-Security: max-age=31536000");
 }
 
-/// TODO: Убрать обращения этих переменных из других файлов, и сделать их локальными
-$tim=time();
-$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
-$ag=$db->real_escape_string(getenv("HTTP_USER_AGENT"));
-$rf=$db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
-$qq=$db->real_escape_string(urldecode($_SERVER['REQUEST_URI'].'?'.$_SERVER['QUERY_STRING']));
-$ff=$db->real_escape_string($_SERVER['SCRIPT_NAME']);
-
-if(!isset($_REQUEST['ncnt']))
-{
-	$db->query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
+// Счётчик-логгер посещений
+if(!isset($_REQUEST['ncnt'])) {
+    $ip = $db->real_escape_string(getenv("REMOTE_ADDR"));
+    $ag = $db->real_escape_string(getenv("HTTP_USER_AGENT"));
+    $rf = $db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
+    $qq = $db->real_escape_string(urldecode($_SERVER['REQUEST_URI'] . '?' . $_SERVER['QUERY_STRING']));
+    $ff = $db->real_escape_string($_SERVER['SCRIPT_NAME']);
+    $tim = time();
+    $db->query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 }
-
-/// TODO: Пересмотреть принцип работы со скидками
-$skidka="";
 
 $tmpl=new BETemplate;
 
-/// Глобальная переменная должна быть заменена в местах использования на $_REQUEST['mode']
-if(isset($_REQUEST['mode']))	$mode=$_REQUEST['mode'];
-else				$mode='';
-
-/// Нужно вычистить глобальную переменную UID везде
-if(isset($_SESSION['uid']))	$uid=$_SESSION['uid'];
-else				$uid=0;
-
 $dop_status=array('new'=>'Новый', 'err'=>'Ошибочный', 'inproc'=>'В процессе', 'ready'=>'Готов', 'ok'=>'Отгружен');
-if(is_array(@$CONFIG['doc']['status_list']))	$CONFIG['doc']['status_list']=array_merge($dop_status, $CONFIG['doc']['status_list']);
-else						$CONFIG['doc']['status_list']=$dop_status;
+if (is_array(@$CONFIG['doc']['status_list'])) {
+    $CONFIG['doc']['status_list'] = array_merge($dop_status, $CONFIG['doc']['status_list']);
+} else {
+    $CONFIG['doc']['status_list'] = $dop_status;
+}

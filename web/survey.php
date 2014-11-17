@@ -25,6 +25,7 @@ $colors = array('888', 'C40', '0C0', '00C', 'C90', 'C04', '80C', '08C', 'CF0');
 
 try {
 	$tmpl->SetTitle("Опросы");
+        $mode = request('mode');
 	if ($mode == '') {
 		$tmpl->addContent("<h1>Активные опросы</h1>");
 		$res = $db->query("SELECT `id`, `name`, `start_date`, `end_date` FROM `survey` WHERE `start_date`<=CURDATE() AND `end_date`>=CURDATE()");

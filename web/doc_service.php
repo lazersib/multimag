@@ -24,15 +24,15 @@ need_auth();
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->hideBlock('left');
 
-try
-{
-$uid=@$_SESSION['uid'];
-if(!isAccess('doc_service','view'))	throw new AccessException("Нет доступа к странице");
-doc_menu();
-$tmpl->addBreadcrumb('Документы', '/docj_new.php');
-$tmpl->addBreadcrumb('Служебные функции', '/doc_service.php');
-if($mode=='')
-{
+try {
+    $mode = request('mode');
+    $uid = intval($_SESSION['uid']);
+    if(!isAccess('doc_service','view'))	throw new AccessException("Нет доступа к странице");
+    doc_menu();
+    $tmpl->addBreadcrumb('Документы', '/docj_new.php');
+    $tmpl->addBreadcrumb('Служебные функции', '/doc_service.php');
+    if($mode=='')
+    {
 	$tmpl->addBreadcrumb('Служебные функции', '');
 	$tmpl->setTitle("Служебные функции");
 	$tmpl->addContent("<h1>Служебные функции</h1>
@@ -65,9 +65,9 @@ if($mode=='')
 	<li><a href='?mode=doc_log'>Журнал изменений</a></li>	
 	</ul>
 	</ul>");
-}
-else if($mode=='merge_agent')
-{
+    }
+    else if($mode=='merge_agent')
+    {
 	$tmpl->addContent("<h1>Группировка агентов</h1>
 	Данная функция перепривязывает все документы и доверенных лиц от агента с большим ID на агента с меньшим ID. После этого, имя агента с большим ID получает префикс old, и агент перемещается в указанную группу.<h2 style='color: #f00'>ВНИМАНИЕ! Данное действие необратимо, и может привести к ошибкам в документах! Перед выполнением убедитесь в том, что у Вас есть резервная копия базы данных! После выполнения действия рекомендуется выполнить процедуру оптимизации!</h2>
 	<form method='post'><input type='hidden' name='mode' value='merge_agent_ok'>
@@ -81,8 +81,8 @@ else if($mode=='merge_agent')
 	$tmpl->addContent("</select><br><br>
 	<button>Выполнить запрошенную операцию</button>
 	</fieldset></form>");
-}
-else if ($mode == 'merge_agent_ok') {
+    }
+    else if ($mode == 'merge_agent_ok') {
 	$ag1 = rcvint('ag1');
 	$ag2 = rcvint('ag2');
 	$gr = rcvint('gr');
@@ -104,9 +104,9 @@ else if ($mode == 'merge_agent_ok') {
 	$res = $db->commit();
 
 	$tmpl->msg("Операция выполнена - обновлено $af_doc документов и $af_dov доверенных лиц", "ok");
-}
-else if($mode=='merge_tovar')
-{
+    }
+    else if($mode=='merge_tovar')
+    {
 	$tmpl->addContent("<h1>Группировка складской номенклатуры</h1>
 	Данная функция перепривязывает всю номенклатуру в документах и комплектующих от объекта с большим ID на объект с меньшим ID. После этого, имя объекта с большим ID получает префикс old, и объекта перемещается в указанную группу.<h2 style='color: #f00'>ВНИМАНИЕ! Данное действие необратимо, и может привести к ошибкам в документах и на складе! Перед выполнением убедитесь в том, что Вы осознаёте, что делаете, и что у Вас есть резервная копия базы данных! После выполнения действия ОБЯЗАТЕЛЬНО выполнить процедуру оптимизации, иначе остатки на складе будут неверны!</h2>
 	<form method='post'><input type='hidden' name='mode' value='merge_tovar_ok'>
@@ -120,9 +120,9 @@ else if($mode=='merge_tovar')
 	$tmpl->addContent("</select><br><br>
 	<button>Выполнить запрошенную операцию</button>
 	</fieldset></form>");
-}
-else if($mode=='merge_tovar_ok')
-{
+    }
+    else if($mode=='merge_tovar_ok')
+    {
 	$tov1=rcvint('tov1');
 	$tov2=rcvint('tov2');
 	$gr=rcvint('gr');
@@ -143,9 +143,9 @@ else if($mode=='merge_tovar_ok')
 	$res=$db->commit();
 
 	$tmpl->msg("Операция выполнена - обновлено $af_doc документов, $af_cb / $af_cc комплектующих","ok");
-}
-else if($mode=='doc_log')
-{
+    }
+    else if($mode=='doc_log')
+    {
 	$motions=$targets=array();
 	$res=$db->query("SELECT DISTINCT `motion` FROM `doc_log`");
 	while($nxt=$res->fetch_row())
@@ -194,9 +194,9 @@ else if($mode=='doc_log')
 	$tmpl->addContent("</table>
 	<button>Отобразить</button>
 	</fieldset></form>");
-}
-else if($mode=='cost')
-{
+    }
+    else if($mode=='cost')
+    {
 	$tmpl->addContent("<h1>Управление ценами</h1>");
 	$res = $db->query("SELECT `id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold` FROM `doc_cost`");
 
@@ -287,9 +287,9 @@ else if($mode=='cost')
 	<li><b>Оптовая автоматическая</b> вкключается автоматически при превышении суммы заказа или накопительной суммы за период. Допустимо любое количество таких цен.</li>
 	</ul>
 	</fieldset>");
-}
-else if($mode=='costs')
-{
+    }
+    else if($mode=='costs')
+    {
 	if(!isAccess('doc_service','edit'))	throw new AccessException("Нет доступа к странице");
 	$context_a = array('r', 's', 'd', 'b');
 	
@@ -351,8 +351,8 @@ else if($mode=='costs')
 		VALUES ('$name_sql', '$cost_type_sql', '$value_sql', '$context_sql', '$priority_sql', '$accuracy_sql', '$direction_sql', '$bulk_threshold_sql', '$acc_threshold_sql')");
 	}
 	header("Location: doc_service.php?mode=cost");
-}
-else if($mode=='params') {
+    }
+    else if($mode=='params') {
 	$opt = request('opt');
 	$cur_group = rcvint('group', 1);
 	$types = array('text' => 'Текстовый', 'int' => 'Целый', 'bool' => 'Логический', 'float' => 'С плавающей точкой');
@@ -533,9 +533,9 @@ div.clear
 	</script>
 	");
 
-}
-else if($mode=='param_collections')
-{
+    }
+    else if($mode=='param_collections')
+    {
 	$opt=request('opt');
 	if($opt=='save')
 	{
@@ -612,9 +612,9 @@ else if($mode=='param_collections')
 
 	$tmpl->addContent("Новый набор: <input type='text' name='name' value=''><br>");
 	$tmpl->addContent("<button>Сохранить</button></form>");
-}
-else if($mode=='auinfo')
-{
+    }
+    else if($mode=='auinfo')
+    {
 	$dt_apply = strtotime(rcvdate('dt_apply', date("Y-m-d",time()-60*60*24*31)));
 	$dt_update = strtotime(rcvdate('dt_update',date("Y-m-d",time()-60*60*24*31)));
 	$print_dt_apply = date('Y-m-d', $dt_apply);
@@ -687,9 +687,9 @@ else if($mode=='auinfo')
 	}
 
 	$tmpl->addContent("</table>");
-}
-else if($mode=='pcinfo')
-{
+    }
+    else if($mode=='pcinfo')
+    {
 	$from=request('from', '1970-01-01');
 	$to=request('to', date('Y-m-d'));
 	$tmpl->addContent("<h1 id='page-title'>Информация по изменениям в номенклатуре</h1>
@@ -720,8 +720,8 @@ else if($mode=='pcinfo')
 		$tmpl->addContent("<tr><td>{$user_data[1]}</td><td>$ptotaltime</td><td>$poscnt</td></tr>");
 	}
 	$tmpl->addContent("</table>");
-}
-else if($mode == 'cimage') {
+    }
+    else if($mode == 'cimage') {
 	$tmpl->addContent("<h1 id='page-title'>Управление изображениями товаров</h1>");
 	$tmpl->setTitle("Управление изображениями товаров");
 	$img = rcvint('img');
@@ -811,78 +811,67 @@ else if($mode == 'cimage') {
 
 		$tmpl->addContent("<img src=\"".$img->GetURI()."\">");
 	}
-}
-else if($mode=='banks') {
+    } elseif($mode=='banks') {
 	$editor = new \ListEditors\BankListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=banks';
         $editor->acl_object_name = 'doc_service';
 	$editor->run();
-}
-else if($mode=='kass') {
+    } elseif($mode=='kass') {
 	$editor = new \ListEditors\KassListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=kass';
         $editor->acl_object_name = 'doc_service';
 	$editor->run();
-}
-else if($mode=='firms') {
+    } elseif($mode=='firms') {
 	$editor = new \ListEditors\FirmListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=firms';
         $editor->acl_object_name = 'doc_service';
 	$editor->run();
-}
-else if($mode=='ctypes') {
+    } elseif($mode=='ctypes') {
 	$editor = new \ListEditors\CTypesListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=ctypes';
         $editor->acl_object_name = 'doc_service';
 	$editor->run();
-}
-else if($mode=='dtypes') {
+    } elseif($mode=='dtypes') {
 	$editor = new \ListEditors\DTypesListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=dtypes';
         $editor->acl_object_name = 'doc_service';
 	$editor->run();
-}
-else if($mode=='accounts') {
+    } elseif($mode=='accounts') {
 	$editor = new \ListEditors\AccountListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=accounts';
         $editor->acl_object_name = 'doc_service';
 	$editor->run();
-}
-else if($mode=='stores') {
+    } elseif($mode=='stores') {
 	$editor = new \ListEditors\StoresListEditor($db);
 	$editor->line_var_name = 'id';
 	$editor->link_prefix = '/doc_service.php?mode=stores';
         $editor->acl_object_name = 'doc_service';
 	$editor->run();
-}
-else if($mode=='pos_types') {
-	$editor = new \ListEditors\PosTypesListEditor($db);
-	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=pos_types';
+    } elseif ($mode == 'pos_types') {
+        $editor = new \ListEditors\PosTypesListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=pos_types';
         $editor->acl_object_name = 'doc_service';
-	$editor->run();
-}
-else throw new NotFoundException("Несуществующая опция");
-}
-catch(mysqli_sql_exception $e) {
-	$tmpl->ajax=0;
-	$id = writeLogException($e);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
-}
-catch(AccessException $e) {
-	$tmpl->msg($e->getMessage(),"err","У Вас недостаточно привилегий!");
-}
-catch(Exception $e) {
-	$db->rollback();
-        $id = writeLogException($e);
-	$tmpl->msg($e->getMessage(),'err','Ошибка выполнения операции');
+        $editor->run();
+    } else {
+        throw new NotFoundException("Несуществующая опция");
+    }
+} catch (mysqli_sql_exception $e) {
+    $tmpl->ajax = 0;
+    $id = writeLogException($e);
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+} catch (AccessException $e) {
+    $tmpl->errorMessage($e->getMessage(), "У Вас недостаточно привилегий!");
+} catch (Exception $e) {
+    $db->rollback();
+    $id = writeLogException($e);
+    $tmpl->errorMessage($e->getMessage(), 'Ошибка выполнения операции');
 }
 
 $tmpl->write();
-

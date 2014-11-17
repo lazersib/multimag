@@ -198,39 +198,35 @@ protected function pageBar($item_count, $per_page, $cur_page) {
 	}
 }
 
-/// Возвращает ссылку на страницу модуля с заданным номером
-protected function getPageLink($p) {
-	return '/wikiphoto.php?p='.(int)$p;
+    /// Возвращает ссылку на страницу модуля с заданным номером
+    protected function getPageLink($p) {
+        return '/wikiphoto.php?p=' . (int) $p;
+    }
 }
-};
 
 
-try{
-	$aip=new articlesImagePage();
-	switch($mode)
-	{
-		case '':	$aip->outList(request('p'));
-				break;
-		case 'view':	$aip->viewImage(request('n'));
-				break;
-		case 'add':	$aip->addImageForm();
-				break;
-		case 'save':	$aip->submitImageForm();
-				break;
-		default:	throw new NotFoundException('Данные не найдены');
-	}
-}
-catch(mysqli_sql_exception $e) {
-    $tmpl->ajax=0;
+try {
+    $aip = new articlesImagePage();
+    $mode = request('mode');
+    switch ($mode) {
+        case '': $aip->outList(request('p'));
+            break;
+        case 'view': $aip->viewImage(request('n'));
+            break;
+        case 'add': $aip->addImageForm();
+            break;
+        case 'save': $aip->submitImageForm();
+            break;
+        default: throw new NotFoundException('Данные не найдены');
+    }
+} catch (mysqli_sql_exception $e) {
+    $tmpl->ajax = 0;
     $id = writeLogException($e);
     $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
-}
-catch(Exception $e) {
+} catch (Exception $e) {
     writeLogException($e);
     $tmpl->errorMessage($e->getMessage());
 }
 
-
 $tmpl->write();
-?>
 

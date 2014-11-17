@@ -97,6 +97,9 @@ try
 	$tmpl->addBreadcrumb('Производственный учет', '/factory.php');
 	
 	$tmpl->setTitle("Производственный учёт (в разработке)");
+        
+        $mode = request('mode');
+        
 	if($mode=='') {
 		$tmpl->addBreadcrumb('Производственный учет', '');
 		$tmpl->setContent("
@@ -489,7 +492,8 @@ try
 		$date	= rcvdate('date');
 		$dt_to	= rcvdate('dt_to');
 
-		$tim=time();
+		$tim = time();
+                $uid = intval($_SESSION['uid']);
 		$res=$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
 				VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
 		$doc=$db->insert_id;

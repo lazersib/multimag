@@ -24,7 +24,8 @@ class ds_zp_s_prodaj {
 	var $coeff = 0.05;
 
 	function Run($mode) {
-		global $tmpl, $uid, $CONFIG, $db;
+		global $tmpl, $CONFIG, $db;
+                $uid = intval($_SESSION['uid']);
 		if (isset($CONFIG['doc_scripts']['zp_s_prodaj.coeff']))
 			$this->coeff = $CONFIG['doc_scripts']['zp_s_prodaj.coeff'];
 		$tmpl->hideBlock('left');

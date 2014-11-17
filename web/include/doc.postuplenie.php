@@ -169,7 +169,7 @@ class doc_Postuplenie extends doc_Nulltype {
 
 	// Формирование другого документа на основании текущего
 	function MorphTo($target_type) {
-		global $tmpl, $uid, $db;
+		global $tmpl, $db;
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
 			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=2'\">Реализация</div>");
@@ -327,6 +327,3 @@ class doc_Postuplenie extends doc_Nulltype {
 	}
 
 }
-
-;
-?>

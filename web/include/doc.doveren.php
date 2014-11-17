@@ -33,7 +33,7 @@ class doc_Doveren extends doc_Nulltype
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('ot'=>'');
+		$this->def_dop_data = array('ot'=>'', 'cena'=>0);
 	}
 
 	function DopHead() {

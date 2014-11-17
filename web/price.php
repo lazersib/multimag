@@ -205,12 +205,13 @@ class BasePriceWriter {
 		}
 		else	return round($count).($transit?('('.$transit.')'):'');
 	}
-};
+}
 
 try {
-
-if($mode=="")
-{
+    $mode = request('mode');
+    
+    if($mode=="")
+    {
 	$tmpl->setTitle("Прайс-лист");
 	$tmpl->addContent("<h1 id='page-title'>Прайс-лист</h1><div id='page-info'>Формирование прайс-листа по вашим требованиям</div>
 	Для тех, кому не удобно просматривать товары в режиме онлайн, сделана возможность сформировать прайс - лист. Специально для Вас мы сделали возможность получить прайс-лист в наиболее удобном для Вас формате. Сейчас доступны <a class='wiki' href='/price.php?mode=gen&amp;f=pdf'>PDF</a>, <a class='wiki' href='/price.php?mode=gen&amp;f=csv'>CSV</a>, <a class='wiki' href='/price.php?mode=gen&amp;f=html'>HTML</a> и <a class='wiki' href='/price.php?mode=gen&amp;f=xls'>XLS</a> форматы. В ближайшее время планируется реализовать ODF. Для получения прайса выберите формат:<br>

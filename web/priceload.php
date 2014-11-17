@@ -269,10 +269,12 @@ function firmAddForm($id = 0) {
 }
 
 try {
-
-	if (!isAccess('generic_price_an', 'view'))
-		throw new AccessException("Недостаточно привилегий");
-	topmenu();
+        $mode = request('mode');
+        
+	if (!isAccess('generic_price_an', 'view')) {
+            throw new AccessException("Недостаточно привилегий");
+        }
+        topmenu();
 	$tmpl->setTitle("Анализатор прайсов");
 	if ($mode == '') {
 		$i = 0;

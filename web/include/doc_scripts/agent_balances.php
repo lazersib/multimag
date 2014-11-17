@@ -21,7 +21,7 @@
 class ds_agent_balances {
 
 	function Run($mode) {
-		global $tmpl, $uid, $db;
+		global $tmpl, $db;
 		$tmpl->hideBlock('left');
 		if ($mode == 'view') {
 			$date_from = date("Y-m-d", time() - 60 * 60 * 24 * 31);
@@ -100,4 +100,3 @@ class ds_agent_balances {
 		return "Балансы агентов c движением";
 	}
 }
-?>
