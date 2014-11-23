@@ -52,8 +52,9 @@ class DbCheckWorker extends AsyncWorker {
 		$db->query("UPDATE `doc_base_cnt` SET `cnt`='0'");
 		$db->query("UPDATE `doc_kassa` SET `ballance`='0'");
 		$db->query("UPDATE `doc_base` SET `buy_time`='1970-01-01 00:00:00', `likvid`=0, `transit_cnt`=0");
-		
-		// Заполнение нулевого количества для всех товаров
+                
+        	// Заполнение нулевого количества для всех товаров
+                
 		$res = $db->query("SELECT `id` FROM `doc_sklady`");
 		while ($sline = $res->fetch_row()) {
 			$pres = $db->query("SELECT `doc_base`.`id`, `doc_base_cnt`.`id`
@@ -65,8 +66,15 @@ class DbCheckWorker extends AsyncWorker {
 					$db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)	VALUES ('$pline[0]', '$sline[0]', '0')");
 			}
 		}
-		$this->SetStatusText("Расчет дат первой покупки...");
-		// Заполнение дат первой покупки для раздела новинок
+                
+		$this->SetStatusText("Расчет дат первой покупки...");                
+        	// Заполнение дат первой покупки для раздела новинок
+                $db->query("CREATE TEMPORARY TABLE `buytime_tmp` (
+                `id` int(11) NOT NULL,
+                `time` datetime NOT NULL,
+                UNIQUE KEY `id` (`id`)
+                ) ENGINE=memory  DEFAULT CHARSET=utf8;");
+                
 		$res = $db->query("SELECT `id` FROM `doc_base` WHERE `doc_base`.`pos_type`=0");
 		while ($pos_data = $res->fetch_row()) {
 			$doc_res = $db->query("SELECT `doc_list`.`date`
@@ -78,11 +86,13 @@ class DbCheckWorker extends AsyncWorker {
 			if ($doc_res->num_rows) {
 				$doc_info = $doc_res->fetch_row();
 				$buy_time = date("Y-m-d H:i:s", $doc_info[0]);
-				echo "$buy_time\n";
-				$db->query("UPDATE `doc_base` SET `buy_time`='$buy_time' WHERE `id`='$pos_data[0]'");
+				//echo "$buy_time\n";
+                                $db->query("INSERT INTO `buytime_tmp` VALUES ({$pos_data[0]}, '$buy_time')");
 			}
 		}
-		
+                $db->query("UPDATE `doc_base`, `buytime_tmp` SET `doc_base`.`buy_time`=`buytime_tmp`.`time` WHERE `doc_base`.`id`=`buytime_tmp`.`id`");
+                $db->query("DROP TABLE `buytime_tmp`");                
+                
 		$this->SetStatusText("Расчет транзитов...");
 		// Кеширование транзитов
 		$res = $db->query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
@@ -218,6 +228,3 @@ class DbCheckWorker extends AsyncWorker {
 	}
 
 }
-
-;
-?>

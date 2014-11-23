@@ -71,30 +71,60 @@ if (@$CONFIG['backup']['mysql']) {
 	}
 }
 
-if (@is_array($CONFIG['backup']['dirs']))
-	foreach ($CONFIG['backup']['dirs'] as $arch => $path) {
-		echo"Zipping $path => $arch...";
-		if ($CONFIG['backup']['archiver'] == '7z')
-			`7zr a -ssc -mx=$zip_level $archiv_dir/$yy/$tm/$arch.7z $path`;
-		else
-			`zip $archiv_dir/$yy/$tm/$arch.zip -r $path -$zip_level`;
-		echo"Done!\n";
-	}
+if (@is_array($CONFIG['backup']['dirs'])) {
+    foreach ($CONFIG['backup']['dirs'] as $arch_name => $info) {
+        $archiever = $CONFIG['backup']['archiver'];
+        $compress_level = $CONFIG['backup']['ziplevel'];
+        if(is_array($info)) {
+            $path = $info['path'];
+            if(isset($info['arch'])) {
+                $archiever = $info['arch'];
+            }
+            if(isset($info['level'])) {
+                $compress_level = $info['level'];
+            }
+        } else {
+            $path = $info;
+        }
+        echo"Packing $path => $arch_name...";
+        $fname = "$archiv_dir/$yy/$tm/$arch_name";
+        switch ($archiever) {
+            case '7z':
+                `7zr a -ssc -mx=$compress_level $fname.7z $path`;
+                break;
+            case 'tar':
+                `tar -cpS --ignore-failed-read --one-file-system --file=$fname.tar.gz $path`;
+                break;
+            case 'tgz':
+                `tar -cpSz --ignore-failed-read --one-file-system --file=$fname.tar.gz $path`;
+                break;
+            case 'tbz':
+                `tar -cpSj --ignore-failed-read --one-file-system --file=$fname.tar.bz2 $path`;
+                break;
+            default:
+                `zip $fname.zip -r $path -$compress_level`;
+        }
+        echo"Done!\n";
+    }
+}
 
 function dir_clean($dir_name) {
-	$i = 1;
+	$i = 0;
 	if ($handle = opendir($dir_name)) {
 		echo "Directory handle: $handle\n";
 		echo "Files:\n";
 		while (false !== ($file = readdir($handle))) {
 			if ($file[0] == '.')
 				continue;
-			if ($i) {
+			if ($i == 1) {
 				$fn = $dir_name . '/' . $file;
 				deleteDirectory($fn);
 				echo "Delete $fn\n";
 			}
-			$i = 1 - $i;
+			$i++;
+                        if($i>3) {
+                            $i = 0;
+                        }
 		}
 		closedir($handle);
 	}
@@ -114,7 +144,7 @@ function deleteDirectory($dir) {
 			chmod($dir . "/" . $item, 0777);
 			if (!deleteDirectory($dir . "/" . $item))
 				return false;
-		};
+		}
 	}
 	return rmdir($dir);
 }
@@ -154,5 +184,3 @@ if (@$CONFIG['backup']['ftp_host']) {
 	}
 	@ftp_close($conn_id);
 }
-
-?>

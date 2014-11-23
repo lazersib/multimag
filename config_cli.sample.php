@@ -20,12 +20,13 @@ $CONFIG['price']['mark_doubles']	= false;		// Ставить отметку 'п�
 								// Но поиск таких позиций значительно снижает быстрдействие
 
 // Архивация
-$CONFIG['backup']['archiver']		= 'zip';		// Варианты: zip, 7z
+$CONFIG['backup']['archiver']		= 'zip';		// Варианты: zip, 7z, tar, tbz, tgz
 $CONFIG['backup']['archiv_dir']		= '/mnt/backup';
 $CONFIG['backup']['ftp_host']		= '';
 $CONFIG['backup']['ftp_login']		= '';
 $CONFIG['backup']['ftp_pass']		= '';
-$CONFIG['backup']['dirs']		= array('doc'=>'/home/ftp/'); // array( arch_name => path, ... );
+$CONFIG['backup']['dirs']		= array('doc'=>'/home/ftp/');   // array( arch_name => info, ... ), где info - либо путь, 
+                                                                        // либо array('path' => '', 'arch' => '', 'level' => '')
 $CONFIG['backup']['mysql']		= true;
 $CONFIG['backup']['ziplevel']		= 1;	// 0 - 9
 $CONFIG['backup']['min_free_space']	= 2000; // Megabytes
