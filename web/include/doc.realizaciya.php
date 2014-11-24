@@ -43,8 +43,6 @@ class doc_Realizaciya extends doc_Nulltype {
 			array('name'=>'nacenki','desc'=>'Наценки','method'=>'Nacenki'),
 			array('name'=>'skidki','desc'=>'Скидки','method'=>'PrintSkidkiPDF'),
 			array('name'=>'label','desc'=>'Этикетки на упаковку','method'=>'PrintLabel')
-		    
-		    
 		);
 		$this->status_list			= array('in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
 	}

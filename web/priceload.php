@@ -480,20 +480,20 @@ try {
 		<label><input type=checkbox name=rv value=1 $ch>Регулярное выражение</label><br>
 		<input type=submit value='Выполнить отбор'>
 		</form>");
-		$res = $db->query("SELECT `price`.`name`, `price`.`cost`, `price`.`art`, `firm_info`.`name`
+		$res = $db->query("SELECT `price`.`name`, `price`.`cost`, `price`.`art`, `firm_info`.`name`, `price`.`nal`
 		FROM `price`
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
 		$ss
 		ORDER BY `price`.`name`");
-		$tmpl->addContent("<table width=100%><tr><th>Наименование<th>Цена<th>Артикул<th>Фирма");
+		$tmpl->addContent("<table width=100%><tr><th>Наименование<th>Цена<th>Артикул<th>Наличие<th>Фирма");
 		while ($nxt = $res->fetch_row()) {
 			if ($rv) {
 				if (preg_match("/$s/", $nxt[0])) {
-					$tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+					$tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[4]<td>$nxt[3]");
 				}
 			}
 			else
-				$tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]");
+				$tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[4]<td>$nxt[3]");
 		}
 		$tmpl->addContent("</table>");
 	}

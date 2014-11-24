@@ -96,6 +96,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 
 			$tmpl->addContent("<form action='' method='post'><table cellpadding='0' width='100%'>
 			<input type='hidden' name='mode' value='esave'>
+                        <input type='hidden' name='param' value='a'>
 			<input type='hidden' name='l' value='pran'>
 			<input type='hidden' name='pos' value='$pos'>
         		<tr><td align='right' width='20%'>Наименование</td><td>".html_out($nxt['name'])."</td></tr>
@@ -195,7 +196,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		if($pos!=0)
 			$this->PosMenu($pos, $param);
 
-		if($param=='') {
+		if($param=='a') {
 			$sql = request('sql');
 			$regex = request('regex');
 			$regex_neg = request('regex_neg');
@@ -420,7 +421,4 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		}
 	}
 	
-};
-
-
-?>
+}
