@@ -143,7 +143,7 @@ transfer(4, 3, 1);
 transfer(1, 3, 1);
 transfer(3, 4, 1);
 
-$db->rollback();
+$db->commit();
 
 
 //DELETE FROM `doc_list`

@@ -2000,87 +2000,84 @@ function SfakPDF($to_str=0)
 		if(!$nxt[11])	throw new Exception("Не допускается печать счёта-фактуры без указания страны происхождения товара");
 
 		$pdf->SetFont('','',8);
-		if(@$CONFIG['poseditor']['true_gtd'])
-		{
-			$gtd_array=array();
-			$gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
-			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-			WHERE `doc_list_pos`.`tovar`='$nxt[9]' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
-                            AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
+		if (@$CONFIG['poseditor']['true_gtd']) {
+                    $gtd_array = array();
+                    $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
+                        INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                        WHERE `doc_list_pos`.`tovar`='$nxt[9]' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
+                        AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
                         ORDER BY `doc_list`.`date`");
-			while($line = $gres->fetch_assoc()) {
-                            if($line['type']==1) { // Поступление
-                                $gtd_array[] = array('num'=>$line['gtd'], 'cnt'=>$line['cnt']);
-                                //var_dump($gtd_array);
-                            }
-                            else {
-                                $cnt = $line['cnt'];
-                                while($cnt>0) {
-                                    if(count($gtd_array)==0) {
-                                        throw new Exception("Не найден номер ГТД для $cnt штук товара {$nxt[1]}. Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
-                                    }
-                                    if($gtd_array[0]['cnt'] == $cnt) {
-                                        array_shift($gtd_array);
-                                        $cnt = 0;
-                                    } elseif ($gtd_array[0]['cnt'] > $cnt) {
-                                        $gtd_array[0]['cnt'] -= $cnt;
-                                        $cnt = 0;
-                                    } else {
-                                        $cnt -= $gtd_array[0]['cnt'];
-                                        array_shift($gtd_array);
-                                    }
+                    while ($line = $gres->fetch_assoc()) {
+                        if ($line['type'] == 1) { // Поступление
+                            $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $line['cnt']);
+                            //var_dump($gtd_array);
+                        } else {
+                            $cnt = $line['cnt'];
+                            while ($cnt > 0) {
+                                if (count($gtd_array) == 0) {
+                                    throw new Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации в прошлом). Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
+                                }
+                                if ($gtd_array[0]['cnt'] == $cnt) {
+                                    array_shift($gtd_array);
+                                    $cnt = 0;
+                                } elseif ($gtd_array[0]['cnt'] > $cnt) {
+                                    $gtd_array[0]['cnt'] -= $cnt;
+                                    $cnt = 0;
+                                } else {
+                                    $cnt -= $gtd_array[0]['cnt'];
+                                    array_shift($gtd_array);
                                 }
                             }
-			}
+                        }
+                    }
 
-			$unigtd = array();
-                        $cnt = $nxt[3];
-                        while($cnt>0 && count($gtd_array)>0) {
-                            if($gtd_array[0]['cnt'] >= $cnt) {
-                                $unigtd[$gtd_array[0]['num']] = $cnt;
-                                $cnt = 0;
-                            } else {
-                                $unigtd[$gtd_array[0]['num']] = $gtd_array[0]['cnt'];
-                                $cnt -= $gtd_array[0]['cnt'];
-                                array_shift($gtd_array);
-                            }
+                    $unigtd = array();
+                    $cnt = $nxt[3];
+                    while ($cnt > 0 && count($gtd_array) > 0) {
+                        if ($gtd_array[0]['cnt'] >= $cnt) {
+                            $unigtd[$gtd_array[0]['num']] = $cnt;
+                            $cnt = 0;
+                        } else {
+                            $unigtd[$gtd_array[0]['num']] = $gtd_array[0]['cnt'];
+                            $cnt -= $gtd_array[0]['cnt'];
+                            array_shift($gtd_array);
+                        }
+                    }
+                    if($cnt > 0) {
+                        throw new Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]}. Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
+                    }
+                    foreach ($unigtd as $gtd => $cnt) {
+                        if ($this->doc_data['nds']) {
+                            $cena = $nxt[4] / (1 + $nds);
+                            $stoimost = $cena * $cnt;
+                            $nalog = ($nxt[4] * $cnt) - $stoimost;
+                            $snalogom = $nxt[4] * $cnt;
+                        } else {
+                            $cena = $nxt[4];
+                            $stoimost = $cena * $cnt;
+                            $nalog = $stoimost * $nds;
+                            $snalogom = $stoimost + $nalog;
                         }
 
-			foreach($unigtd as $gtd => $cnt)
-			{
-				if($this->doc_data['nds'])
-				{
-					$cena = $nxt[4]/(1+$nds);
-					$stoimost = $cena*$cnt;
-					$nalog = ($nxt[4]*$cnt)-$stoimost;
-					$snalogom = $nxt[4]*$cnt;
-				}
-				else
-				{
-					$cena = $nxt[4];
-					$stoimost = $cena*$cnt;
-					$nalog = $stoimost*$nds;
-					$snalogom = $stoimost+$nalog;
-				}
+                        $i = 1 - $i;
+                        $ii++;
 
-				$i=1-$i;
-				$ii++;
+                        $cena = sprintf("%01.2f", $cena);
+                        $stoimost = sprintf("%01.2f", $stoimost);
+                        $nalog = sprintf("%01.2f", $nalog);
+                        $snalogom = sprintf("%01.2f", $snalogom);
 
-				$cena =		sprintf("%01.2f", $cena);
-				$stoimost =	sprintf("%01.2f", $stoimost);
-				$nalog = 	sprintf("%01.2f", $nalog);
-				$snalogom =	sprintf("%01.2f", $snalogom);
+                        $sum+=$snalogom;
+                        $sumnaloga+=$nalog;
+                        $sumbeznaloga+=$stoimost;
 
-				$sum+=$snalogom;
-				$sumnaloga+=$nalog;
-				$sumbeznaloga+=$stoimost;
-
-				if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
-				$row=array( "$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
-				$pdf->RowIconv($row);
-			}
-		}
-		else
+                        if (!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])
+                            $nxt[1].=' / ' . $nxt[2];
+                        $row = array("$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
+                        $pdf->RowIconv($row);
+                    }
+                }
+                else
 		{
 			if($this->doc_data['nds'])
 			{

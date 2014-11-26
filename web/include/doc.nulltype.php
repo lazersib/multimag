@@ -1063,11 +1063,20 @@ class doc_Nulltype
    	function Connect($p_doc)
    	{
 		global $db;
-   		if(!isAccess('doc_'.$this->doc_name,'edit'))	throw new AccessException();
-   		if($this->doc_data['ok'])	throw new Exception("Операция не допускается для проведённого документа!");
-		if($this->doc_name) $object='doc_'.$this->doc_name;
-		else $object='doc';
-		if(!isAccess($object,'edit'))	throw new AccessException("");
+   		if(!isAccess('doc_'.$this->doc_name,'edit')) {
+                    throw new AccessException();
+                }
+                if($this->doc == $p_doc) {
+                    throw new Exception('Нельзя связать с самим собой!');
+                }
+   		if($this->doc_data['ok']) {
+                    throw new Exception("Операция не допускается для проведённого документа!");
+                }
+                // Проверяем существование документа
+                $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`=$p_doc");
+                if(!$res->num_rows) {
+                    throw new Exception('Документ с ID '.$p_doc.' не найден.');
+                }
 		$db->query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
    	}
 	
