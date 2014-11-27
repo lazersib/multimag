@@ -391,7 +391,7 @@ class doc_Realizaciya extends doc_Nulltype {
 			$this->setDopData('dov_data', request('dov_data'));
 			$ref="Location: doc.php?mode=body&doc={$this->doc}";
 			header($ref);
-			doc_log("UPDATE","dov:$dov, dov_agent:$dov_agent, dov_data:$dov_data",'doc', $this->doc);
+			doc_log("UPDATE","dov:".request('dov').", dov_agent:".request('dov_agent').", dov_data:".request('dov_data'),'doc', $this->doc);
 		}
 		else $tmpl->msg("Неизвестная опция $opt!");
 		
@@ -1751,234 +1751,238 @@ function PrintTg12PDF($to_str=0)
 		$pdf->Output('torg12.pdf','I');
 }
 
-function SfakPDF($to_str=0)
-{
-	global $CONFIG, $tmpl, $db;
-	if(!$to_str) $tmpl->ajax=1;
+function SfakPDF($to_str = 0) {
+        global $CONFIG, $tmpl, $db;
+        if (!$to_str)
+            $tmpl->ajax = 1;
 
-	$dt = date("d.m.Y",$this->doc_data['date']);
+        $dt = date("d.m.Y", $this->doc_data['date']);
 
-	$gruzop_info = $db->selectRow('doc_agent', $this->dop_data['gruzop']);
-	$gruzop='';
-	if($gruzop_info) {
-		if($gruzop_info['fullname'])	$gruzop.=$gruzop_info['fullname'];
-		else				$gruzop.=$gruzop_info['name'];
-		if($gruzop_info['adres'])	$gruzop.=', адрес '.$gruzop_info['adres'];
-	}
+        $gruzop_info = $db->selectRow('doc_agent', $this->dop_data['gruzop']);
+        $gruzop = '';
+        if ($gruzop_info) {
+            if ($gruzop_info['fullname'])
+                $gruzop.=$gruzop_info['fullname'];
+            else
+                $gruzop.=$gruzop_info['name'];
+            if ($gruzop_info['adres'])
+                $gruzop.=', адрес ' . $gruzop_info['adres'];
+        }
 
-	$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
-	if(!$agent_info)	throw new Exception('Агент не найден');
-	
-	if($this->doc_data['p_doc'])	{
-		$rs = $db->query("SELECT `id`, `altnum`, `date` FROM `doc_list` WHERE
+        $agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
+        if (!$agent_info)
+            throw new Exception('Агент не найден');
+
+        if ($this->doc_data['p_doc']) {
+            $rs = $db->query("SELECT `id`, `altnum`, `date` FROM `doc_list` WHERE
 		(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6') AND `date`<='{$this->doc_data['date']}' ) OR
 		(`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6') AND `date`<='{$this->doc_data['date']}')
 		AND `ok`>'0' AND `p_doc`!='0' GROUP BY `p_doc`");
-		if($rs->num_rows)
-		{
-			$line = $rs->fetch_row();
-			$pp = $line[1];
-			$ppdt = date("d.m.Y", $line[2]);
-			if(!$pp) $pp = $line[0];
-		}
-		else $pp=$ppdt="__________";
-	}
-	else $pp=$ppdt="__________";
+            if ($rs->num_rows) {
+                $line = $rs->fetch_row();
+                $pp = $line[1];
+                $ppdt = date("d.m.Y", $line[2]);
+                if (!$pp)
+                    $pp = $line[0];
+            }
+            else {
+                $pp = $ppdt = "__________";
+            }
+        } else {
+            $pp = $ppdt = "__________";
+        }
 
-	define('FPDF_FONT_PATH',$CONFIG['site']['location'].'/fpdf/font/');
-	require('fpdf/fpdf_mc.php');
-	
-	$pdf=new PDF_MC_Table('P');
-	$pdf->Open();
-	$pdf->SetAutoPageBreak(1,12);
-	$pdf->AddFont('Arial','','arial.php');
-	$pdf->tMargin=5;
-	$pdf->AddPage('L');
-	$pdf->SetFillColor(255);
+        define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
+        require('fpdf/fpdf_mc.php');
 
-	$pdf->Setx(150);
-	$pdf->SetFont('Arial','',7);
-	$str = 'Приложение №1 к постановлению правительства РФ от 26 декабря 2011г N1137';
-	$str = iconv('UTF-8', 'windows-1251', $str);
-	$pdf->MultiCell(0,4,$str,0,'R');
-	$pdf->Ln();
-	$pdf->SetFont('','',16);
-	$step=4;
-	$str = iconv('UTF-8', 'windows-1251', "Счёт - фактура N {$this->doc_data['altnum']}, от $dt");
-	$pdf->Cell(0,6,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Исправление N ---- от --.--.----");
-	$pdf->Cell(0,6,$str,0,1,'L');
-	$pdf->Ln(5);
-	$pdf->SetFont('Arial','',10);
-	$str = iconv('UTF-8', 'windows-1251', "Продавец: ".$this->firm_vars['firm_name']);
-	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Адрес: ".$this->firm_vars['firm_adres']);
-	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "ИНН / КПП продавца: ".$this->firm_vars['firm_inn']);
-	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Грузоотправитель и его адрес: ".$this->firm_vars['firm_gruzootpr']);
-	$pdf->MultiCell(0,$step,$str,0,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Грузополучатель и его адрес: ".$gruzop);
-	$pdf->MultiCell(0,$step,$str,0,'L');
-	$str = iconv('UTF-8', 'windows-1251', "К платёжно-расчётному документу № $pp, от $ppdt");
-	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Покупатель: ".$agent_info['fullname']);
-	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "Адрес: ".$agent_info['adres']);
-	$pdf->Cell(0,$step,$str,0,1,'L');
-	$str = iconv('UTF-8', 'windows-1251', "ИНН / КПП покупателя: ".$agent_info['inn'].'/'.$agent_info['kpp']);
-	$pdf->Cell(0,$step,$str,0,1,'L');
+        $pdf = new PDF_MC_Table('P');
+        $pdf->Open();
+        $pdf->SetAutoPageBreak(1, 12);
+        $pdf->AddFont('Arial', '', 'arial.php');
+        $pdf->tMargin = 5;
+        $pdf->AddPage('L');
+        $pdf->SetFillColor(255);
 
-	$str = "";
+        $pdf->Setx(150);
+        $pdf->SetFont('Arial', '', 7);
+        $str = 'Приложение №1 к постановлению правительства РФ от 26 декабря 2011г N1137';
+        $str = iconv('UTF-8', 'windows-1251', $str);
+        $pdf->MultiCell(0, 4, $str, 0, 'R');
+        $pdf->Ln();
+        $pdf->SetFont('', '', 16);
+        $step = 4;
+        $str = iconv('UTF-8', 'windows-1251', "Счёт - фактура N {$this->doc_data['altnum']}, от $dt");
+        $pdf->Cell(0, 6, $str, 0, 1, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "Исправление N ---- от --.--.----");
+        $pdf->Cell(0, 6, $str, 0, 1, 'L');
+        $pdf->Ln(5);
+        $pdf->SetFont('Arial', '', 10);
+        $str = iconv('UTF-8', 'windows-1251', "Продавец: " . $this->firm_vars['firm_name']);
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "Адрес: " . $this->firm_vars['firm_adres']);
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "ИНН / КПП продавца: " . $this->firm_vars['firm_inn']);
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "Грузоотправитель и его адрес: " . $this->firm_vars['firm_gruzootpr']);
+        $pdf->MultiCell(0, $step, $str, 0, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "Грузополучатель и его адрес: " . $gruzop);
+        $pdf->MultiCell(0, $step, $str, 0, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "К платёжно-расчётному документу № $pp, от $ppdt");
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "Покупатель: " . $agent_info['fullname']);
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "Адрес: " . $agent_info['adres']);
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
+        $str = iconv('UTF-8', 'windows-1251', "ИНН / КПП покупателя: " . $agent_info['inn'] . '/' . $agent_info['kpp']);
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
 
-	$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`date` FROM `doc_list`
+        $str = "";
+
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`date` FROM `doc_list`
 	WHERE `doc_list`.`agent`='{$this->doc_data['agent']}' AND `doc_list`.`type`='14' AND `doc_list`.`ok`>'0'
 	ORDER BY  `doc_list`.`date` DESC");
 
-	if($res->num_rows)	{
-		$nxt = $res->fetch_row();
-		$str.="Договор N$nxt[1] от ".date("d.m.Y",$nxt[2]).", ";
-	}
+        if ($res->num_rows) {
+            $nxt = $res->fetch_row();
+            $str.="Договор N$nxt[1] от " . date("d.m.Y", $nxt[2]) . ", ";
+        }
 
-	if($this->doc_data['p_doc']) {
-		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`date`, `doc_list`.`p_doc`, `doc_list`.`type` FROM `doc_list`
+        if ($this->doc_data['p_doc']) {
+            $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`date`, `doc_list`.`p_doc`, `doc_list`.`type` FROM `doc_list`
 		WHERE `id`={$this->doc_data['p_doc']}");
-		if($res->num_rows)
-		{
-			$nxt = $res->fetch_row();
-			if($nxt[4]==1)		$str.="Счёт N$nxt[1] от ".date("d.m.Y",$nxt[2]).", ";
-			else if($nxt[4]==16)	$str.="Спецификация N$nxt[1] от ".date("d.m.Y",$nxt[2]).", ";
-			if($nxt[3])
-			{
-				$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`date`, `doc_list`.`p_doc` FROM `doc_list`
+            if ($res->num_rows) {
+                $nxt = $res->fetch_row();
+                if ($nxt[4] == 1)
+                    $str.="Счёт N$nxt[1] от " . date("d.m.Y", $nxt[2]) . ", ";
+                else if ($nxt[4] == 16)
+                    $str.="Спецификация N$nxt[1] от " . date("d.m.Y", $nxt[2]) . ", ";
+                if ($nxt[3]) {
+                    $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`date`, `doc_list`.`p_doc` FROM `doc_list`
 				WHERE `id`={$nxt[3]} AND `doc_list`.`type`='16'");
-				if($res->num_rows) {
-					$nxt = $res->fetch_row();
-					$str.="Спецификация N$nxt[1] от ".date("d.m.Y",$nxt[2]).", ";
-				}
-			}
-		}
-	}
-	
-	if($str) {
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,$step,$str,0,1,'L');
-	}
-	
-	$str = iconv('UTF-8', 'windows-1251', "Валюта: наименование, код: Российский рубль, 643");
-	$pdf->Cell(0,$step,$str,0,1,'L');
+                    if ($res->num_rows) {
+                        $nxt = $res->fetch_row();
+                        $str.="Спецификация N$nxt[1] от " . date("d.m.Y", $nxt[2]) . ", ";
+                    }
+                }
+            }
+        }
 
-	$pdf->Ln(3);
+        if ($str) {
+            $str = iconv('UTF-8', 'windows-1251', $str);
+            $pdf->Cell(0, $step, $str, 0, 1, 'L');
+        }
 
-	$y=$pdf->GetY();
+        $str = iconv('UTF-8', 'windows-1251', "Валюта: наименование, код: Российский рубль, 643");
+        $pdf->Cell(0, $step, $str, 0, 1, 'L');
+
+        $pdf->Ln(3);
+
+        $y = $pdf->GetY();
 
 
-	// ====== Основная таблица =============
-        $y=$pdf->GetY();
+        // ====== Основная таблица =============
+        $y = $pdf->GetY();
 
-        $t_all_offset=array();
+        $t_all_offset = array();
 
-	$pdf->SetLineWidth(0.3);
-	$t_width=array(88,22,10,15,20,10,10,16,28,26,0);
-	$t_ydelta=array(7,0,5,5,0,6,6,7,3,0,7);
-	$t_text=array(
-	'Наименование товара (описание выполненных работ, оказанных услуг, имущественного права)',
-	'Единица измерения',
-	'Количество (объ ём)',
-	'Цена (тариф) за единицу измерения',
-	'Стоимость товаров (работ, услуг), имуществен- ных прав, всего без налога',
-	'В том числе акциз',
-	'Нало- говая ставка',
-	'Сумма налога',
-	'Стоимость товаров (работ, услуг, имущественных прав), всего с учетом налога',
-	'Страна происхождения',
-	'Номер таможенной декларации');
+        $pdf->SetLineWidth(0.3);
+        $t_width = array(88, 22, 10, 15, 20, 10, 10, 16, 28, 26, 0);
+        $t_ydelta = array(7, 0, 5, 5, 0, 6, 6, 7, 3, 0, 7);
+        $t_text = array(
+            'Наименование товара (описание выполненных работ, оказанных услуг, имущественного права)',
+            'Единица измерения',
+            'Количество (объ ём)',
+            'Цена (тариф) за единицу измерения',
+            'Стоимость товаров (работ, услуг), имуществен- ных прав, всего без налога',
+            'В том числе акциз',
+            'Нало- говая ставка',
+            'Сумма налога',
+            'Стоимость товаров (работ, услуг, имущественных прав), всего с учетом налога',
+            'Страна происхождения',
+            'Номер таможенной декларации');
 
-	foreach($t_width as $w)
-	{
-		$pdf->Cell($w,20,'',1,0,'C',0);
-	}
-	$pdf->Ln();
-	$pdf->Ln(0.5);
-	$pdf->SetFont('','',7);
-	$offset=0;
-	foreach($t_width as $i => $w)
-	{
-		$t_all_offset[$offset]=$offset;
-		$pdf->SetY($y+$t_ydelta[$i]+0.2);
-		$pdf->SetX($offset+$pdf->lMargin);
-		$str = iconv('UTF-8', 'windows-1251', $t_text[$i] );
-		$pdf->MultiCell($w,2.7,$str,0,'C',0);
-		$offset+=$w;
-	}
+        foreach ($t_width as $w) {
+            $pdf->Cell($w, 20, '', 1, 0, 'C', 0);
+        }
+        $pdf->Ln();
+        $pdf->Ln(0.5);
+        $pdf->SetFont('', '', 7);
+        $offset = 0;
+        foreach ($t_width as $i => $w) {
+            $t_all_offset[$offset] = $offset;
+            $pdf->SetY($y + $t_ydelta[$i] + 0.2);
+            $pdf->SetX($offset + $pdf->lMargin);
+            $str = iconv('UTF-8', 'windows-1251', $t_text[$i]);
+            $pdf->MultiCell($w, 2.7, $str, 0, 'C', 0);
+            $offset+=$w;
+        }
 
-        $t2_width=array(7, 15, 7, 19);
-        $t2_start=array(1,1,9,9);
-        $t2_ydelta=array(2,1,2,3);
-        $t2_text=array(
-	"к\nо\nд",
-	'условное обозначение (наци ональное)',
-	"к\nо\nд",
-	'краткое наименование');
-	$offset=0;
-	$c_id=0;
-	$old_col=0;
-	$y+=6;
+        $t2_width = array(7, 15, 7, 19);
+        $t2_start = array(1, 1, 9, 9);
+        $t2_ydelta = array(2, 1, 2, 3);
+        $t2_text = array(
+            "к\nо\nд",
+            'условное обозначение (наци ональное)',
+            "к\nо\nд",
+            'краткое наименование');
+        $offset = 0;
+        $c_id = 0;
+        $old_col = 0;
+        $y+=6;
 
-	foreach($t2_width as $i => $w2)
-	{
-		while($c_id<$t2_start[$i])
-		{
-			$t_a[$offset]=$offset;
-			$offset+=$t_width[$c_id++];
-		}
+        foreach ($t2_width as $i => $w2) {
+            while ($c_id < $t2_start[$i]) {
+                $t_a[$offset] = $offset;
+                $offset+=$t_width[$c_id++];
+            }
 
-		if($old_col==$t2_start[$i])	$off2+=$t2_width[$i-1];
-		else				$off2=0;
-		$old_col=$t2_start[$i];
-		$t_all_offset[$offset+$off2]=$offset+$off2;
-		$pdf->SetY($y);
-		$pdf->SetX($offset+$off2+$pdf->lMargin);
-		$pdf->Cell($w2,14,'',1,0,'C',0);
+            if ($old_col == $t2_start[$i])
+                $off2+=$t2_width[$i - 1];
+            else
+                $off2 = 0;
+            $old_col = $t2_start[$i];
+            $t_all_offset[$offset + $off2] = $offset + $off2;
+            $pdf->SetY($y);
+            $pdf->SetX($offset + $off2 + $pdf->lMargin);
+            $pdf->Cell($w2, 14, '', 1, 0, 'C', 0);
 
-		$pdf->SetY($y+$t2_ydelta[$i]);
-		$pdf->SetX($offset+$off2+$pdf->lMargin);
-		$str = iconv('UTF-8', 'windows-1251', $t2_text[$i] );
-		$pdf->MultiCell($w2,3,$str,0,'C',0);
-	}
+            $pdf->SetY($y + $t2_ydelta[$i]);
+            $pdf->SetX($offset + $off2 + $pdf->lMargin);
+            $str = iconv('UTF-8', 'windows-1251', $t2_text[$i]);
+            $pdf->MultiCell($w2, 3, $str, 0, 'C', 0);
+        }
 
-	$t3_text=array(1,2,'2a',3,4,5,6,7,8,9,10,'10a',11);
-	$pdf->SetLineWidth(0.2);
-	sort ( $t_all_offset, SORT_NUMERIC );
-	$pdf->SetY($y+14);
-	$t_all_width=array();
-	$old_offset=0;
-	foreach($t_all_offset as $offset)
-	{
-		if($offset==0)	continue;
-		$t_all_width[]=	$offset-$old_offset;
-		$old_offset=$offset;
-	}
-	$t_all_width[]=32;
-	$i=1;
-	foreach($t_all_width as $id => $w)
-	{
-		$pdf->Cell($w,4,$t3_text[$i-1],1,0,'C',0);
-		$i++;
-	}
+        $t3_text = array(1, 2, '2a', 3, 4, 5, 6, 7, 8, 9, 10, '10a', 11);
+        $pdf->SetLineWidth(0.2);
+        sort($t_all_offset, SORT_NUMERIC);
+        $pdf->SetY($y + 14);
+        $t_all_width = array();
+        $old_offset = 0;
+        foreach ($t_all_offset as $offset) {
+            if ($offset == 0)
+                continue;
+            $t_all_width[] = $offset - $old_offset;
+            $old_offset = $offset;
+        }
+        $t_all_width[] = 32;
+        $i = 1;
+        foreach ($t_all_width as $id => $w) {
+            $pdf->Cell($w, 4, $t3_text[$i - 1], 1, 0, 'C', 0);
+            $i++;
+        }
 
-	$pdf->SetWidths($t_all_width);
+        $pdf->SetWidths($t_all_width);
 
-	$font_sizes=array();
-	$font_sizes[0]=8;
-	$font_sizes[11]=7;
-	$pdf->SetFSizes($font_sizes);
-	$pdf->SetHeight(4);
+        $font_sizes = array();
+        $font_sizes[0] = 8;
+        $font_sizes[11] = 7;
+        $pdf->SetFSizes($font_sizes);
+        $pdf->SetHeight(4);
 
-	$aligns=array('L','R','R','R','R','R','C','R','R','R','R','L','R');
-	$pdf->SetAligns($aligns);
+        $aligns = array('L', 'R', 'R', 'R', 'R', 'R', 'C', 'R', 'R', 'R', 'R', 'L', 'R');
+        $pdf->SetAligns($aligns);
 
-	$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name`, `doc_base_dop`.`ntd`, `class_unit`.`rus_name1`, `doc_list_pos`.`tovar`, `class_unit`.`number_code`, `class_country`.`number_code`
+        $res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name`, `doc_base_dop`.`ntd`, `class_unit`.`rus_name1`, `doc_list_pos`.`tovar`, `class_unit`.`number_code`, `class_country`.`number_code`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -1988,193 +1992,206 @@ function SfakPDF($to_str=0)
 	WHERE `doc_list_pos`.`doc`='{$this->doc}'
 	ORDER BY `doc_list_pos`.`id`");
 
-	$pdf->SetY($y+18);
-	$pdf->SetFillColor(255,255,255);
-	$i=0;
-	$ii=1;
-	$sum=$sumnaloga=$sumbeznaloga=0;
-	$nds=$this->firm_vars['param_nds']/100;
-	$ndsp=$this->firm_vars['param_nds'];
-	while($nxt = $res->fetch_row())
-	{
-		if(!$nxt[11])	throw new Exception("Не допускается печать счёта-фактуры без указания страны происхождения товара");
+        $pdf->SetY($y + 18);
+        $pdf->SetFillColor(255, 255, 255);
+        $i = 0;
+        $ii = 1;
+        $sum = $sumnaloga = $sumbeznaloga = 0;
+        $nds = $this->firm_vars['param_nds'] / 100;
+        $ndsp = $this->firm_vars['param_nds'];
+        while ($nxt = $res->fetch_row()) {
+            if (!$nxt[11])
+                throw new Exception("Не допускается печать счёта-фактуры без указания страны происхождения товара");
 
-		$pdf->SetFont('','',8);
-		if (@$CONFIG['poseditor']['true_gtd']) {
-                    $gtd_array = array();
-                    $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
+            $pdf->SetFont('', '', 8);
+            if (@$CONFIG['poseditor']['true_gtd']) {
+                $gtd_array = array();
+                $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
                         INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
                         WHERE `doc_list_pos`.`tovar`='$nxt[9]' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
                         AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
                         ORDER BY `doc_list`.`date`");
-                    while ($line = $gres->fetch_assoc()) {
-                        if ($line['type'] == 1) { // Поступление
-                            $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $line['cnt']);
-                            //var_dump($gtd_array);
-                        } else {
-                            $cnt = $line['cnt'];
-                            while ($cnt > 0) {
-                                if (count($gtd_array) == 0) {
-                                    throw new Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации в прошлом). Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
-                                }
-                                if ($gtd_array[0]['cnt'] == $cnt) {
-                                    array_shift($gtd_array);
-                                    $cnt = 0;
-                                } elseif ($gtd_array[0]['cnt'] > $cnt) {
-                                    $gtd_array[0]['cnt'] -= $cnt;
-                                    $cnt = 0;
-                                } else {
-                                    $cnt -= $gtd_array[0]['cnt'];
-                                    array_shift($gtd_array);
-                                }
+                while ($line = $gres->fetch_assoc()) {
+                    if ($line['type'] == 1) { // Поступление
+                        $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $line['cnt']);
+                        //var_dump($gtd_array);
+                    } else {
+                        $cnt = $line['cnt'];
+                        while ($cnt > 0) {
+                            if (count($gtd_array) == 0) {
+                                throw new Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации в прошлом). Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
+                            }
+                            if ($gtd_array[0]['cnt'] == $cnt) {
+                                array_shift($gtd_array);
+                                $cnt = 0;
+                            } elseif ($gtd_array[0]['cnt'] > $cnt) {
+                                $gtd_array[0]['cnt'] -= $cnt;
+                                $cnt = 0;
+                            } else {
+                                $cnt -= $gtd_array[0]['cnt'];
+                                array_shift($gtd_array);
                             }
                         }
                     }
+                }
 
-                    $unigtd = array();
-                    $cnt = $nxt[3];
-                    while ($cnt > 0 && count($gtd_array) > 0) {
-                        if ($gtd_array[0]['cnt'] >= $cnt) {
-                            $unigtd[$gtd_array[0]['num']] = $cnt;
-                            $cnt = 0;
-                        } else {
-                            $unigtd[$gtd_array[0]['num']] = $gtd_array[0]['cnt'];
-                            $cnt -= $gtd_array[0]['cnt'];
-                            array_shift($gtd_array);
+                $unigtd = array();
+                $need_cnt = $nxt[3];
+                while ($need_cnt > 0 && count($gtd_array) > 0) {
+                    $gtd_num = $gtd_array[0]['num'];
+                    $gtd_cnt = $gtd_array[0]['cnt'];
+                    if ($gtd_cnt >= $need_cnt) {
+                        if(isset($unigtd[$gtd_num])) {
+                            $unigtd[$gtd_num] += $need_cnt;
                         }
-                    }
-                    if($cnt > 0) {
-                        throw new Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]}. Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
-                    }
-                    foreach ($unigtd as $gtd => $cnt) {
-                        if ($this->doc_data['nds']) {
-                            $cena = $nxt[4] / (1 + $nds);
-                            $stoimost = $cena * $cnt;
-                            $nalog = ($nxt[4] * $cnt) - $stoimost;
-                            $snalogom = $nxt[4] * $cnt;
-                        } else {
-                            $cena = $nxt[4];
-                            $stoimost = $cena * $cnt;
-                            $nalog = $stoimost * $nds;
-                            $snalogom = $stoimost + $nalog;
+                        else {
+                            $unigtd[$gtd_num] = $need_cnt;
                         }
-
-                        $i = 1 - $i;
-                        $ii++;
-
-                        $cena = sprintf("%01.2f", $cena);
-                        $stoimost = sprintf("%01.2f", $stoimost);
-                        $nalog = sprintf("%01.2f", $nalog);
-                        $snalogom = sprintf("%01.2f", $snalogom);
-
-                        $sum+=$snalogom;
-                        $sumnaloga+=$nalog;
-                        $sumbeznaloga+=$stoimost;
-
-                        if (!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])
-                            $nxt[1].=' / ' . $nxt[2];
-                        $row = array("$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
-                        $pdf->RowIconv($row);
+                        $need_cnt = 0;
+                    } else {
+                        if(isset($unigtd[$gtd_num])) {
+                            $unigtd[$gtd_num] += $gtd_cnt;
+                        }
+                        else {
+                            $unigtd[$gtd_num] = $gtd_cnt;
+                        }
+                        $need_cnt -= $gtd_cnt;
+                        array_shift($gtd_array);
                     }
                 }
-                else
-		{
-			if($this->doc_data['nds'])
-			{
-				$cena = $nxt[4]/(1+$nds);
-				$stoimost = $cena*$nxt[3];
-				$nalog = ($nxt[4]*$nxt[3])-$stoimost;
-				$snalogom = $nxt[4]*$nxt[3];
-			}
-			else
-			{
-				$cena = $nxt[4];
-				$stoimost = $cena*$nxt[3];
-				$nalog = $stoimost*$nds;
-				$snalogom = $stoimost+$nalog;
-			}
+                if ($need_cnt > 0) {
+                    throw new Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]}. Это, вероятно, означает, что указанный товар был оприходован на другую организацию.");
+                }
+                foreach ($unigtd as $gtd => $cnt) {
+                    if ($this->doc_data['nds']) {
+                        $cena = $nxt[4] / (1 + $nds);
+                        $stoimost = $cena * $cnt;
+                        $nalog = ($nxt[4] * $cnt) - $stoimost;
+                        $snalogom = $nxt[4] * $cnt;
+                    } else {
+                        $cena = $nxt[4];
+                        $stoimost = $cena * $cnt;
+                        $nalog = $stoimost * $nds;
+                        $snalogom = $stoimost + $nalog;
+                    }
 
-			$i=1-$i;
-			$ii++;
+                    $i = 1 - $i;
+                    $ii++;
 
-			$cena =		sprintf("%01.2f", $cena);
-			$stoimost =	sprintf("%01.2f", $stoimost);
-			$nalog = 	sprintf("%01.2f", $nalog);
-			$snalogom =	sprintf("%01.2f", $snalogom);
+                    $cena = sprintf("%01.2f", $cena);
+                    $stoimost = sprintf("%01.2f", $stoimost);
+                    $nalog = sprintf("%01.2f", $nalog);
+                    $snalogom = sprintf("%01.2f", $snalogom);
 
-			$sum+=$snalogom;
-			$sumnaloga+=$nalog;
-			$sumbeznaloga+=$stoimost;
+                    $sum+=$snalogom;
+                    $sumnaloga+=$nalog;
+                    $sumbeznaloga+=$stoimost;
 
-			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])	$nxt[1].=' / '.$nxt[2];
-			$row=array( "$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
-			$pdf->RowIconv($row);
-		}
-	}
+                    if (!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])
+                        $nxt[1].=' / ' . $nxt[2];
+                    $row = array("$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $cnt, $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $gtd);
+                    $pdf->RowIconv($row);
+                }
+            }
+            else {
+                if ($this->doc_data['nds']) {
+                    $cena = $nxt[4] / (1 + $nds);
+                    $stoimost = $cena * $nxt[3];
+                    $nalog = ($nxt[4] * $nxt[3]) - $stoimost;
+                    $snalogom = $nxt[4] * $nxt[3];
+                } else {
+                    $cena = $nxt[4];
+                    $stoimost = $cena * $nxt[3];
+                    $nalog = $stoimost * $nds;
+                    $snalogom = $stoimost + $nalog;
+                }
 
-	if($pdf->h<=($pdf->GetY()+65)) $pdf->AddPage('L');
-	$delta=$pdf->h-($pdf->GetY()+55);
-	if($delta>7) $delta=7;
+                $i = 1 - $i;
+                $ii++;
 
-	$sum = sprintf("%01.2f", $sum);
-	$sumnaloga = sprintf("%01.2f", $sumnaloga);
-	$sumbeznaloga = sprintf("%01.2f", $sumbeznaloga);
-	$step=5.5;
-	$pdf->SetFont('','',9);
-	$pdf->SetLineWidth(0.3);
-	$str = iconv('UTF-8', 'windows-1251', "Всего к оплате:" );
-	$pdf->Cell($t_all_width[0]+$t_all_width[1]+$t_all_width[2]+$t_all_width[3]+$t_all_width[4],$step,$str,1,0,'L',0);
+                $cena = sprintf("%01.2f", $cena);
+                $stoimost = sprintf("%01.2f", $stoimost);
+                $nalog = sprintf("%01.2f", $nalog);
+                $snalogom = sprintf("%01.2f", $snalogom);
+
+                $sum+=$snalogom;
+                $sumnaloga+=$nalog;
+                $sumbeznaloga+=$stoimost;
+
+                if (!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])
+                    $nxt[1].=' / ' . $nxt[2];
+                $row = array("$nxt[0] $nxt[1]", $nxt[10], $nxt[8], $nxt[3], $cena, $stoimost, 'без акциз', "$ndsp%", $nalog, $snalogom, $nxt[11], $nxt[6], $nxt[7]);
+                $pdf->RowIconv($row);
+            }
+        }
+
+        if ($pdf->h <= ($pdf->GetY() + 65))
+            $pdf->AddPage('L');
+        $delta = $pdf->h - ($pdf->GetY() + 55);
+        if ($delta > 7)
+            $delta = 7;
+
+        $sum = sprintf("%01.2f", $sum);
+        $sumnaloga = sprintf("%01.2f", $sumnaloga);
+        $sumbeznaloga = sprintf("%01.2f", $sumbeznaloga);
+        $step = 5.5;
+        $pdf->SetFont('', '', 9);
+        $pdf->SetLineWidth(0.3);
+        $str = iconv('UTF-8', 'windows-1251', "Всего к оплате:");
+        $pdf->Cell($t_all_width[0] + $t_all_width[1] + $t_all_width[2] + $t_all_width[3] + $t_all_width[4], $step, $str, 1, 0, 'L', 0);
 // +$t_all_width[6]+$t_all_width[7]
-	$pdf->Cell($t_all_width[5],$step,$sumbeznaloga,1,0,'R',0);
-	$pdf->Cell($t_all_width[6]+$t_all_width[7],$step,'X',1,0,'C',0);
-	$pdf->Cell($t_all_width[8],$step,$sumnaloga,1,0,'R',0);
-	$pdf->Cell($t_all_width[9],$step,$sum,1,0,'R',0);
+        $pdf->Cell($t_all_width[5], $step, $sumbeznaloga, 1, 0, 'R', 0);
+        $pdf->Cell($t_all_width[6] + $t_all_width[7], $step, 'X', 1, 0, 'C', 0);
+        $pdf->Cell($t_all_width[8], $step, $sumnaloga, 1, 0, 'R', 0);
+        $pdf->Cell($t_all_width[9], $step, $sum, 1, 0, 'R', 0);
 
-	$pdf->Ln(10);
+        $pdf->Ln(10);
 
-	$pdf->SetFont('','',10);
-	$str = iconv('UTF-8', 'windows-1251', "Руководитель организации:");
-	$pdf->Cell(50,$step,$str,0,0,'L',0);
-	$str='_____________________';
-	$pdf->Cell(50,$step,$str,0,0,'L',0);
-	$str = iconv('UTF-8', 'windows-1251', "/".$this->firm_vars['firm_director']."/");
-	$pdf->Cell(40,$step,$str,0,0,'L',0);
+        $pdf->SetFont('', '', 10);
+        $str = iconv('UTF-8', 'windows-1251', "Руководитель организации:");
+        $pdf->Cell(50, $step, $str, 0, 0, 'L', 0);
+        $str = '_____________________';
+        $pdf->Cell(50, $step, $str, 0, 0, 'L', 0);
+        $str = iconv('UTF-8', 'windows-1251', "/" . $this->firm_vars['firm_director'] . "/");
+        $pdf->Cell(40, $step, $str, 0, 0, 'L', 0);
 
-	$str = iconv('UTF-8', 'windows-1251', "Главный бухгалтер:");
-	$pdf->Cell(40,$step,$str,0,0,'R',0);
-	$str='_____________________';
-	$pdf->Cell(50,$step,$str,0,0,'L',0);
-	$str = iconv('UTF-8', 'windows-1251', "/".$this->firm_vars['firm_buhgalter']."/");
-	$pdf->Cell(0,$step,$str,0,0,'L',0);
-	$pdf->Ln(4);
-	$pdf->SetFont('','',7);
-	$str = iconv('UTF-8', 'windows-1251', "или иное уполномоченное лицо");
-	$pdf->Cell(140,3,$str,0,0,'L',0);
-	$str = iconv('UTF-8', 'windows-1251', "или иное уполномоченное лицо");
-	$pdf->Cell(50,3,$str,0,0,'L',0);
-	$pdf->Ln(8);
+        $str = iconv('UTF-8', 'windows-1251', "Главный бухгалтер:");
+        $pdf->Cell(40, $step, $str, 0, 0, 'R', 0);
+        $str = '_____________________';
+        $pdf->Cell(50, $step, $str, 0, 0, 'L', 0);
+        $str = iconv('UTF-8', 'windows-1251', "/" . $this->firm_vars['firm_buhgalter'] . "/");
+        $pdf->Cell(0, $step, $str, 0, 0, 'L', 0);
+        $pdf->Ln(4);
+        $pdf->SetFont('', '', 7);
+        $str = iconv('UTF-8', 'windows-1251', "или иное уполномоченное лицо");
+        $pdf->Cell(140, 3, $str, 0, 0, 'L', 0);
+        $str = iconv('UTF-8', 'windows-1251', "или иное уполномоченное лицо");
+        $pdf->Cell(50, 3, $str, 0, 0, 'L', 0);
+        $pdf->Ln(8);
 
-	$pdf->SetFont('','',10);
-	$str = iconv('UTF-8', 'windows-1251', "Индивидуальный предприниматель:______________________ / ____________________________/");
-	$pdf->Cell(160,$step,$str,0,0,'L',0);
-	$pdf->Cell(0,$step,'____________________________________',0,1,'R',0);
+        $pdf->SetFont('', '', 10);
+        $str = iconv('UTF-8', 'windows-1251', "Индивидуальный предприниматель:______________________ / ____________________________/");
+        $pdf->Cell(160, $step, $str, 0, 0, 'L', 0);
+        $pdf->Cell(0, $step, '____________________________________', 0, 1, 'R', 0);
 
-	$pdf->SetFont('','',7);
-	$pdf->Cell(160,$step,'',0,0,'L',0);
-	$str = iconv('UTF-8', 'windows-1251', "реквизиты свидетельства о государственной регистрации ИП");
-	$pdf->Cell(0,3,$str,0,0,'R',0);
+        $pdf->SetFont('', '', 7);
+        $pdf->Cell(160, $step, '', 0, 0, 'L', 0);
+        $str = iconv('UTF-8', 'windows-1251', "реквизиты свидетельства о государственной регистрации ИП");
+        $pdf->Cell(0, 3, $str, 0, 0, 'R', 0);
 
 
-	$pdf->Ln(10);
-	$pdf->SetFont('','',7);
-	$str = iconv('UTF-8', 'windows-1251', "ПРИМЕЧАНИЕ. Первый экземпляр (оригинал) - покупателю, второй экземпляр (копия) - продавцу" );
-	$pdf->Cell(0,$step,$str,0,0,'R',0);
+        $pdf->Ln(10);
+        $pdf->SetFont('', '', 7);
+        $str = iconv('UTF-8', 'windows-1251', "ПРИМЕЧАНИЕ. Первый экземпляр (оригинал) - покупателю, второй экземпляр (копия) - продавцу");
+        $pdf->Cell(0, $step, $str, 0, 0, 'R', 0);
 
-	$pdf->Ln();
+        $pdf->Ln();
 
-	if($to_str)	return $pdf->Output('s_faktura.pdf','S');
-	else		$pdf->Output('s_faktura.pdf','I');
-}
+        if ($to_str)
+            return $pdf->Output('s_faktura.pdf', 'S');
+        else
+            $pdf->Output('s_faktura.pdf', 'I');
+    }
 
 function Nacenki($to_str=0)
 {

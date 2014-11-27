@@ -31,7 +31,7 @@ class doc_Kompredl extends doc_Nulltype
 		$this->header_fields = 'bank sklad separator agent cena';
 		$this->PDFForms = array(
 		    array('name' => 'kp', 'desc' => 'Коммерческое предложение', 'method' => 'KomPredlPDF'),
-		    array('name' => 'kpad', 'desc' => 'Коммерческое предложение с аналогом и описанием', 'method' => 'KomPredlAPPDF'),
+		    array('name' => 'kpad', 'desc' => 'Коммерческое предложение c описанием товара', 'method' => 'KomPredlDescPDF'),
 		    array('name' => 'kpc', 'desc' => 'Коммерческое предложение с количеством', 'method' => 'KomPredlPDF_Cnt'),
 		    array('name' => 'csv', 'desc' => 'Экспорт в csv', 'method' => 'CSVExport')		    
 		);
@@ -294,8 +294,8 @@ class doc_Kompredl extends doc_Nulltype
 		else
 			$pdf->Output('buisness_offer.pdf','I');
 	}
-	/// Коммерческое предложение с аналогом и описанием в PDF формате
-	function KomPredlAPPDF($to_str=0) {
+	/// Коммерческое предложение с описанием товара в PDF формате
+	function KomPredlDescPDF($to_str=0) {
 		global $tmpl, $CONFIG, $db;
 
 		$dt = date("d.m.Y",$this->doc_data['date']);
@@ -396,7 +396,7 @@ class doc_Kompredl extends doc_Nulltype
 			$pdf->MultiCell(0,7,$str,0,'C',0);
 		}
 
-		$t_width=array(8,30,30,100,20);
+		$t_width=array(8,40,120,20);
 		$pdf->SetWidths($t_width);
 		$pdf->SetFont('','',12);
 		$str='№';
@@ -405,21 +405,18 @@ class doc_Kompredl extends doc_Nulltype
 		$str='Наименование';
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell($t_width[1],5,$str,1,0,'C',0);
-		$str='Аналог';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[2],5,$str,1,0,'C',0);
 		$str='Описание';
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[3],5,$str,1,0,'C',0);
+		$pdf->Cell($t_width[2],5,$str,1,0,'C',0);
 		$str='Цена';
 		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell($t_width[4],5,$str,1,0,'C',0);
+		$pdf->Cell($t_width[3],5,$str,1,0,'C',0);
 		$pdf->Ln();
 
 		$pdf->SetFont('','',10);
 		$pdf->SetHeight(4);
 
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cost`,  `doc_base_dop`.`analog`, `doc_base`.`desc`
+		$res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cost`, `doc_base`.`desc`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -427,21 +424,25 @@ class doc_Kompredl extends doc_Nulltype
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
-		while($nxt = $res->fetch_row()) {
+		while($line = $res->fetch_assoc()) {
 			$i++;
-			$cost = sprintf("%01.2f р.", $nxt[3]);
-			$name=$nxt[0].' '.$nxt[1];
-			if($nxt[2]) $name.='('.$nxt[2].')';
-			$name = iconv('UTF-8', 'windows-1251', $name);
-			$analog = iconv('UTF-8', 'windows-1251', $nxt[4]);
-			$desc = iconv('UTF-8', 'windows-1251', $nxt[5]);
-			$cost = iconv('UTF-8', 'windows-1251', $cost);
-			$pdf->Row(array($i,$name,$analog,$desc,$cost));
+			$cost = sprintf("%01.2f р.", $line['cost']);
+			$name = '';
+                        if($line['group_printname']) {
+                            $name .= $line['group_printname'];
+                        }
+                        $name .= $line['name'];
+			if ($line['proizv']) {
+                            $name .= '(' . $line['proizv'] . ')';
+                        }                        
+			$pdf->RowIconv(array($i, $name, $line['desc'], $cost));
 		}
 
-		if($pdf->h<=($pdf->GetY()+40)) $pdf->AddPage();
+		if ($pdf->h <= ($pdf->GetY() + 40)) {
+                    $pdf->AddPage();
+                }
 
-		$pdf->ln(10);
+                $pdf->ln(10);
 
 		if($this->doc_data['comment']) {
 			$pdf->SetFont('','',10);
@@ -496,6 +497,7 @@ class doc_Kompredl extends doc_Nulltype
 			$pdf->Output('buisness_offer.pdf','I');
 	}
 
+        // Коммерческое предложение с количеством
 	function KomPredlPDF_Cnt($to_str=0) {
 		global $tmpl, $CONFIG, $db;
 

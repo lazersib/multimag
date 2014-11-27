@@ -473,6 +473,7 @@ try {
 			$ss = "WHERE `price`.`name` LIKE '%$s_sql%' OR `price`.`art` LIKE '%$s_sql%'";
 		}
 		$tmpl->addContent("<h3>Поиск по критерию</h3>
+                <div id='page-info'>Максимальное количество строк - 1000</div>
 		<form action='' method=post>
 		<input type=hidden nmae=mode value=viewall>
 		Строка поиска:<br>
@@ -484,7 +485,7 @@ try {
 		FROM `price`
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
 		$ss
-		ORDER BY `price`.`name`");
+		ORDER BY `price`.`name` LIMIT 1000");
 		$tmpl->addContent("<table width=100%><tr><th>Наименование<th>Цена<th>Артикул<th>Наличие<th>Фирма");
 		while ($nxt = $res->fetch_row()) {
 			if ($rv) {

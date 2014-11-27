@@ -751,7 +751,7 @@ class doc_Nulltype
 			$res = $db->query("SELECT `recalc_active` FROM `variables`");
 			if($res->num_rows)	list($lock)=$res->fetch_row();
 			else	$lock=0;
-			if($lock)	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
+			if($lock)	throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
 			
 			if(!method_exists($this,'DocApply'))
 				throw new Exception("Метод проведения данного документа не определён!");
@@ -808,7 +808,7 @@ class doc_Nulltype
 			$res = $db->query("SELECT `recalc_active` FROM `variables`");
 			if($res->num_rows)	list($lock)=$res->fetch_row();
 			else	$lock=0;
-			if($lock)	throw new Exception("Идёт пересчёт остатков. Проведение невозможно!");
+			if($lock)	throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
 			
 			$db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
 			$db->startTransaction();

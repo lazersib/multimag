@@ -60,7 +60,6 @@ function transfer($firm_from_id, $firm_to_id, $store_id) {
                     }
                     break;
             }
-
         }
         if($min<0) {
             echo "id:{$pos_info['id']}, {$pos_info['name']}: $min, date: $date_info\n";
