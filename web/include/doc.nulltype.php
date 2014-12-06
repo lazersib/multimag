@@ -1072,10 +1072,12 @@ class doc_Nulltype
    		if($this->doc_data['ok']) {
                     throw new Exception("Операция не допускается для проведённого документа!");
                 }
-                // Проверяем существование документа
-                $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`=$p_doc");
-                if(!$res->num_rows) {
-                    throw new Exception('Документ с ID '.$p_doc.' не найден.');
+                if($p_doc!=0) {
+                    // Проверяем существование документа
+                    $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`=$p_doc");
+                    if(!$res->num_rows) {
+                        throw new Exception('Документ с ID '.$p_doc.' не найден.');
+                    }
                 }
 		$db->query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
    	}
@@ -1096,7 +1098,6 @@ class doc_Nulltype
 		$opt = request('opt');
 		$tmpl->ajax = 1;
 		if (isAccess('doc_' . $this->doc_name, 'view')) {
-
 			if ($opt == 'jgetcontracts') {
 
 				$agent = rcvint('agent');
