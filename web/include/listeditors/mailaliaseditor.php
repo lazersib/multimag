@@ -26,6 +26,8 @@ class MailAliasEditor extends \ListEditor {
         $this->print_name = 'Почтовые алиасы';
         $this->table_name = 'virtual_aliases';
         $this->can_delete = true;
+        $this->initDomainList();
+        $this->initUserList();
     }
 
     /// Получить массив с именами колонок списка
@@ -38,25 +40,53 @@ class MailAliasEditor extends \ListEditor {
         );
     }
 
-    public function getInputDomain_id($name, $value) {
+    protected function getInputDomain_id($name, $value) {
         $ret = "<select name='$name'>";
-        $res = $this->db_link->query("SELECT `id`, `name` FROM `virtual_domains` ORDER BY `id`");
-        while ($line = $res->fetch_assoc()) {
-            $selected = $line['id'] == $value ? ' selected' : '';
-            $ret.= "<option value='{$line['id']}'{$selected}>" . html_out($line['name']) . "</option>";
+        foreach($this->domain_list as $id => $domain_name) {
+            $selected = $id == $value ? ' selected' : '';
+            $ret.= "<option value='{$id}'{$selected}>" . html_out($domain_name) . "</option>";
         }
         $ret.= "</select>";
         return $ret;
     }
     
-    public function getInputUser_id($name, $value) {
+    protected function getInputUser_id($name, $value) {
         $ret = "<select name='$name'>";
-        $res = $this->db_link->query("SELECT `id`, `user` FROM `view_users_auth` ORDER BY `id`");
-        while ($line = $res->fetch_assoc()) {
-            $selected = $line['id'] == $value ? ' selected' : '';
-            $ret.= "<option value='" . html_out($line['id']) . "'{$selected}>" . html_out($line['user']) . "</option>";
+        foreach($this->domain_list as $id => $user_name) {
+            $selected = $id == $value ? ' selected' : '';
+            $ret.= "<option value='{$id}'{$selected}>" . html_out($user_name) . "</option>";
         }
         $ret.= "</select>";
         return $ret;
+    }
+    
+    protected function getFieldDomain_id($data) {
+        return html_out($this->domain_list[$data['domain_id']]);
+    }
+    
+    protected function getFieldUser_id($data) {
+        return html_out($this->user_list[$data['domain_id']]);
+    }
+    
+    protected function initDomainList() {
+        if(isset($this->domain_list)) {
+            return;
+        }
+        $this->domain_list = array();
+        $res = $this->db_link->query("SELECT `id`, `name` FROM `virtual_domains` ORDER BY `id`");
+        while ($line = $res->fetch_assoc()) {
+            $this->domain_list[$line['id']] = $line['name'];
+        }
+    }
+    
+    protected function initUserList() {
+        if(isset($this->user_list)) {
+            return;
+        }
+        $this->user_list = array();
+        $res = $this->db_link->query("SELECT `id`, `user` FROM `view_users_auth` ORDER BY `id`");
+        while ($line = $res->fetch_assoc()) {
+            $this->user_list[$line['id']] = $line['user'];
+        }
     }
 }

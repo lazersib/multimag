@@ -19,7 +19,7 @@
 
 require_once("core.php");
 
-$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'today_apply'=>'Проведение сев.', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение');
+$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'today_apply'=>'Проведение сев.', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение', 'redirect'=>'Перенаправление');
 
 try {
 
@@ -90,7 +90,8 @@ else if($mode=='group_acl')
 				$tmpl->addContent("<td>");
 				if(array_key_exists($action, $object_actions[$obj_name]))
 				{
-					$tmpl->addContent("<label><input type='checkbox' name='c_{$obj_name}_{$action}' value='1' {$object_actions[$obj_name][$action]}>Разрешить</label>");
+					$tmpl->addContent("<label><input type='checkbox' name='c_{$obj_name}_{$action}' value='1' {$object_actions[$obj_name][$action]}>"
+                                        . $action."</label>");
 				}
 			}
 		}

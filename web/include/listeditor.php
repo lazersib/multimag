@@ -28,6 +28,7 @@ abstract class ListEditor {
 	var $table_name = '';		//< Имя таблицы справочника в БД
 	var $db_link = null;		//< Ссылка на объект соединения с базой данных
 	var $acl_object_name = '';	//< Имя объекта контроля привилегий
+        var $add_headers = null;        // Дополнительные поля в заголовке таблицы
         protected $can_delete = false;  //< Допустимо ли удаление строк справочника
 	
 	public function __construct($db_link) {
@@ -57,75 +58,101 @@ abstract class ListEditor {
 	public function getItem($id) {
 		return $this->db_link->selectRow($this->table_name, $id);
 	}
-	/// Записать в базу строку справочника
-	public function saveItem($id, $data) {
-            $write_data = array();
-            $col_names = $this->getColumnNames();
-            foreach ($col_names as $col_id => $col_value) {
-                if ($col_id == 'id') {
+
+    /// Записать в базу строку справочника
+    public function saveItem($id, $data) {
+        $write_data = array();
+        $col_names = $this->getColumnNames();
+        foreach ($col_names as $col_id => $col_value) {
+            if ($col_id == 'id') {
+                continue;
+            }
+            if (isset($data[$col_id])) {
+                $write_data[$col_id] = $data[$col_id];
+            } else {
+                $write_data[$col_id] = '';
+            }
+        }
+        if ($id) {
+            if (!isAccess($this->acl_object_name, 'edit'))
+                throw new AccessException();
+            $this->db_link->updateA($this->table_name, $id, $write_data);
+        } else {
+            if (!isAccess($this->acl_object_name, 'create'))
+                throw new AccessException();
+            $id = $this->db_link->insertA($this->table_name, $write_data);
+        }
+        return $id;
+    }
+
+    /// Удалить запись
+    public function removeItem($id) {
+        if (!$this->can_delete) {
+            throw new Exception("Удаление строк данного справочника недопустимо!");
+        }
+        if (!isAccess($this->acl_object_name, 'delete')) {
+            throw new AccessException();
+        }
+        return $this->db_link->delete($this->table_name, $id);
+    }
+
+    /// @broef Получить HTML код таблицы с элементами справочника
+    /// Вызывает (если определено) 'getField'.ucfirst($cn) для каждой ячейки таблицы
+    public function getListItems() {
+        if (!isAccess($this->acl_object_name, 'view')) {
+            throw new AccessException($this->acl_object_name);
+        }
+        $ret = "<table class='list'><tr>";
+        $col_names = $this->getColumnNames();
+        foreach ($col_names as $id => $name) {
+            $ret .= "<th>$name</th>";
+        }
+        if(is_array($this->add_headers)) {
+            foreach ($this->add_headers as $id => $name) {
+                $ret .= "<th>$name</th>";
+            }
+        }
+        if ($this->can_delete) {
+            $ret.="<th>&nbsp;</th>";
+        }
+        $ret .= "</tr>";
+        $this->loadList();
+        foreach ($this->list as $id => $line) {
+            $ret.= "<tr><td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=e&amp;{$this->line_var_name}=$id'>$id</a></td>";
+            foreach ($line as $cn => $cv) {
+                if ($cn == 'id') {
                     continue;
                 }
-                if (isset($data[$col_id])) {
-                    $write_data[$col_id] = $data[$col_id];
+
+                $method = 'getField' . ucfirst($cn);
+                if (method_exists($this, $method)) {
+                    $ret .= "<td>" . $this->$method($line) . "</td>";
                 } else {
-                    $write_data[$col_id] = '';
+                    $ret .= "<td>" . html_out($cv) . "</td>";
                 }
             }
-            if ($id) {
-                if (!isAccess($this->acl_object_name, 'edit'))
-                    throw new AccessException();
-                $this->db_link->updateA($this->table_name, $id, $write_data);
-            } else {
-                if (!isAccess($this->acl_object_name, 'create'))
-                    throw new AccessException();
-                $id = $this->db_link->insertA($this->table_name, $write_data);
+            if(is_array($this->add_headers)) {
+                foreach ($this->add_headers as $cn => $cv) {
+                    $method = 'getField' . ucfirst($cn);
+                    if (method_exists($this, $method)) {
+                        $ret .= "<td>" . $this->$method($line) . "</td>";
+                    } else {
+                        $ret .= "<td>&nbsp;</td>";
+                    }
+                }
             }
-            return $id;
-    }
-        
-        /// Удалить запись
-        public function removeItem($id) {
-            if(!$this->can_delete)
-                throw new Exception("Удаление строк данного справочника недопустимо!");
-            if(!isAccess($this->acl_object_name, 'delete'))
-                throw new AccessException();
-            return $this->db_link->delete($this->table_name, $id);
+            if ($this->can_delete) {
+                $ret.="<td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=d&amp;{$this->line_var_name}=$id'>"
+                    . "<img src='/img/i_del.png' alt='del'></a></td>";
+            }
+            $ret .= "</tr>";
         }
-	
-	/// Получить HTML код таблицы с элементами справочника
-	public function getListItems() {
-                if (!isAccess($this->acl_object_name, 'view'))
-                        throw new AccessException($this->acl_object_name);
-		$ret = "<table class='list'><tr>";
-		$col_names = $this->getColumnNames();
-		foreach($col_names as $id=>$name) {
-			$ret .= "<th>$name</th>";
-		}
-                if($this->can_delete) {
-                                $ret.="<th>&nbsp;</th>";
-                        }
-		$ret .= "</tr>";
-		$this->loadList();
-		foreach($this->list as $id=>$line) {
-			$ret.= "<tr><td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=e&amp;{$this->line_var_name}=$id'>$id</a></td>";
-			foreach($line as $cn=>$cv) {
-				if ($cn == 'id') {
-					continue;
-				}
-				$ret.="<td>".html_out($cv)."</td>";
-			}
-                        if($this->can_delete) {
-                                $ret.="<td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=d&amp;{$this->line_var_name}=$id'>"
-                                    . "<img src='/img/i_del.png' alt='del'></a></td>";
-                        }
-			$ret .= "</tr>";
-		}
-		$ret .= "</table>";
-		$ret .= "<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'>Новая запись</a>";
-		return $ret;
-	}
-	
-	/// @brief Возвращает имя текущего элемента
+        $ret .= "</table>";
+        $ret .= "<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'>Новая запись</a>";
+        return $ret;
+    }
+
+    /// @brief Возвращает имя текущего элемента
 	/// Нужно переопределить, если колонка с именем - не name
 	public function getItemName($item) {
 		if (isset($item['name'])) {

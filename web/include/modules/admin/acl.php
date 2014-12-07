@@ -51,22 +51,12 @@ class Acl extends \IModule {
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=reg'>Привилегии зарегистрированных (и авторизованных) пользователей</li>"
                     . "</ul>");
                 break;
-            case 'domains':
-                $editor = new \ListEditors\MailDomainsEditor($db);
+            case 'groups':
+                $editor = new \ListEditors\AccessGroupEditor($db);
                 $editor->line_var_name = 'id';
                 $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;
                 $editor->acl_object_name = $this->acl_object_name;
                 $editor->run();
-                break;
-            case 'alias':
-                $editor = new \ListEditors\MailAliasEditor($db);
-                $editor->line_var_name = 'id';
-                $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;
-                $editor->acl_object_name = $this->acl_object_name;
-                $editor->run();
-                break;
-            case 'umap':
-                $this->renderUMap($tmpl, $db);
                 break;
             case 'amap':
                 $this->renderAMap($tmpl, $db);
@@ -76,4 +66,14 @@ class Acl extends \IModule {
         }
     }
 
+    // Вывод списка групп пользователей
+    protected function renderUsersGroupsList($tmpl, $db) {
+        $tmpl->addBreadcrumb('Группы пользователей', '');
+        $tmpl->addContent("<table class='list'><tr><th>N</th><th>Название</th><th>Описание</th></tr>");
+	$res=$db->query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
+	while($nxt = $res->fetch_row()) {
+		$tmpl->addContent("<tr><td>$nxt[0]<a href='?mode=gre&amp;g=$nxt[0]'><img src='/img/i_edit.png' alt='Изменить'></a></td><td><a href='?mode=group_acl&amp;g=$nxt[0]'>$nxt[1]</a></td><td>$nxt[2]</td></tr>");
+	}
+	$tmpl->addContent("</table><a href='?mode=gre'>Новая группа</a>");
+    }
 }

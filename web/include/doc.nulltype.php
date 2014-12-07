@@ -134,8 +134,8 @@ class doc_Nulltype
 		global $db;
 		if(!isAccess('doc_'.$this->doc_name,'create'))	throw new AccessException();
 		$date=time();
-		$doc_data['altnum']=$this->getNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
-
+		$doc_data['altnum'] = $this->getNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
+                $doc_data['created'] = date("Y-m-d H:i:s");
 		$res = $db->query("SHOW COLUMNS FROM `doc_list`");
 		$col_array=array();
 		while($nxt=$res->fetch_row()){
@@ -189,7 +189,7 @@ class doc_Nulltype
 	}
 	
 	/// Создать несвязанный документ с товарными остатками из другого документа
-	public function CreateParent($doc_obj) {
+	public function createParent($doc_obj) {
 		global $db;
 		$doc_data = $doc_obj->doc_data;
 		$doc_data['p_doc'] = 0;
@@ -209,7 +209,7 @@ class doc_Nulltype
 
 	/// Создать документ с товарными остатками на основе другого документа
 	/// В новый документ войдут только те наименования, которых нет в других подчинённых документах
-	public function CreateFromPDiff($doc_obj)
+	public function createFromPDiff($doc_obj)
 	{
 		global $db;
 		$doc_data=$doc_obj->doc_data;
@@ -680,7 +680,7 @@ class doc_Nulltype
 		$tmpl->addContent("<div id='statusblock'></div><br><br></div></div>");
 	}
 
-	public function Apply($doc=0, $silent=0)
+	public function apply($doc=0, $silent=0)
 	{
 		global $tmpl, $db;
 		
@@ -729,7 +729,7 @@ class doc_Nulltype
 		return;
 	}
 
-	public function ApplyJson() {
+	public function applyJson() {
 		global $db, $tmpl;
 
 		try {
@@ -784,7 +784,7 @@ class doc_Nulltype
 		return $json;
 	}
 
-	public function CancelJson()
+	public function cancelJson()
 	{
 		global $db, $tmpl;
 		
@@ -852,7 +852,7 @@ class doc_Nulltype
 	
 	/// Провести документ
 	/// @param silent Не менять отметку проведения
-	protected function DocApply($silent=0)
+	protected function docApply($silent=0)
 	{
 		global $db;
 		if($silent)	return;
@@ -866,7 +866,7 @@ class doc_Nulltype
 	}
 	
 	/// отменить проведение документа
-	protected function DocCancel()
+	protected function docCancel()
 	{
 		global $db;
 		$data = $db->selectRow('doc_list', $this->doc);
@@ -879,7 +879,7 @@ class doc_Nulltype
 	}
 
 	/// Отменить проведение, не обращая внимание на структуру подчинённости
-	function ForceCancel()
+	function forceCancel()
 	{
 		global $tmpl, $db;
 
@@ -907,7 +907,7 @@ class doc_Nulltype
 	}
 	
 	/// Отправка документа по факсу
-	final function SendFax($opt='')
+	final function sendFax($opt='')
 	{
 		global $tmpl,$db;
 		$tmpl->ajax=1;
@@ -962,7 +962,7 @@ class doc_Nulltype
 	}
 	
 	/// Отправка документа по электронной почте
-	final function SendEMail($opt='')
+	final function sendEMail($opt='')
 	{
 		global $tmpl, $db;
 		$tmpl->ajax=1;
@@ -1012,7 +1012,7 @@ class doc_Nulltype
 	}
 
 	/// Печать документа
-	function Printform($opt='')
+	function printform($opt='')
 	{
 		global $tmpl;
 		$tmpl->ajax=1;
@@ -1045,7 +1045,7 @@ class doc_Nulltype
 	}
 	
 	/// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function DelExec($doc)
+	function delExec($doc)
 	{
 		global $db;
 		$res = $db->query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
@@ -1060,7 +1060,7 @@ class doc_Nulltype
    	}
 
    	/// Сделать документ потомком указанного документа
-   	function Connect($p_doc)
+   	function connect($p_doc)
    	{
 		global $db;
    		if(!isAccess('doc_'.$this->doc_name,'edit')) {
@@ -1083,7 +1083,7 @@ class doc_Nulltype
    	}
 	
 	/// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
-   	function ConnectJson($p_doc) {
+   	function connectJson($p_doc) {
 		try {
 			$this->Connect($p_doc);
 			return " { \"response\": \"1\" }";
@@ -1093,7 +1093,7 @@ class doc_Nulltype
 	}
 
    	/// Получение информации, не связанной со складом, и допустимых для проведённых документов
-   	function GetInfo() {
+   	function getInfo() {
 		global $tmpl, $db;
 		$opt = request('opt');
 		$tmpl->ajax = 1;
@@ -1164,7 +1164,7 @@ class doc_Nulltype
 		else			return 0;
    	}
 	
-	function Service() {
+	function service() {
 		global $tmpl;
 		$tmpl->ajax = 1;
 		$opt = request('opt');
@@ -1174,7 +1174,7 @@ class doc_Nulltype
 	}
 
 	/// Служебные опции
-	function _Service($opt, $pos)
+	function _service($opt, $pos)
 	{
 		global $tmpl, $db;
 		$tmpl->ajax = 1;

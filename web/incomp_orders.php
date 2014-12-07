@@ -22,26 +22,28 @@ include_once("core.php");
 include_once("include/doc.core.php");
 
 function getPaySum($doc_id) {
-	global $db;
-	settype($p_doc_id,'int');
+    global $db;
+    settype($doc_id, 'int');
 
-	$docs = array($doc_id);
-	$sum = 0;
+    $docs = array($doc_id);
+    $sum = 0;
 
-	while(count($docs)) {
-		$cur_doc = array_pop($docs);
-		$res = $db->query("SELECT `id`, `sum`, `type`, `ok` FROM `doc_list` WHERE `p_doc`='$cur_doc'");
+    while (count($docs)) {
+        $cur_doc = array_pop($docs);
+        $res = $db->query("SELECT `id`, `sum`, `type`, `ok` FROM `doc_list` WHERE `p_doc`='$cur_doc'");
 
-		while($line = $res->fetch_assoc()) {
-			array_push($docs, $line['id']);
-			if($line['type']!=4 && $line['type']!=6)
-				continue;
-			if($line['ok']==0)
-				continue;
-			$sum += $line['sum'];
-		}
-	}
-	return round($sum, 2);
+        while ($line = $res->fetch_assoc()) {
+            array_push($docs, $line['id']);
+            if ($line['type'] != 4 && $line['type'] != 6) {
+                continue;
+            }
+            if ($line['ok'] == 0) {
+                continue;
+            }
+            $sum += $line['sum'];
+        }
+    }
+    return round($sum, 2);
 }
 
 need_auth();
@@ -194,7 +196,7 @@ else if ($mode == 'c') {
 	LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
-	WHERE `doc_list`.`type`=2 AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0
+	WHERE (`doc_list`.`type`=2 OR `doc_list`.`type`=20) AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0
 	ORDER by `doc_list`.`date` ASC";
 
 	$res = $db->query($sql);
@@ -245,7 +247,7 @@ else if ($mode == 'r') {
 	LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
-	WHERE `doc_list`.`type`=2 AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND `dop_status`.`value`='ok'
+	WHERE (`doc_list`.`type`=2 OR `doc_list`.`type`=20) AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND `dop_status`.`value`='ok'
 	ORDER by `doc_list`.`date` ASC";
 
 	$res = $db->query($sql);
@@ -274,4 +276,3 @@ else if ($mode == 'r') {
 }
 
 $tmpl->write();
-?>
