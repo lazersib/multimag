@@ -211,7 +211,6 @@ catch(mysqli_sql_exception $e)
 }
 catch(Exception $e)
 {
-	$e->rollback();
         writeLogException($e);
 	$tmpl->msg($e->getMessage(),"err","Ошибка");
 }

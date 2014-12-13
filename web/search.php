@@ -157,7 +157,7 @@ class SearchPage
 			}
 			$str.=" ...";
 			$str=mb_eregi_replace($s,"<b>$s</b>",$str);
-			$ret.="<li><a href='/wiki/$nxt[0].html'>".html_out($head)."</a><br>$str</li>";
+			$ret.="<li><a href='/articles/$nxt[0].html'>".html_out($head)."</a><br>$str</li>";
 		}
 		return $ret;
 	}

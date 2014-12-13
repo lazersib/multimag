@@ -18,91 +18,116 @@
 //
 
 /// Документ *перемещение средств между кассами*
-class doc_PerKas extends doc_Nulltype
-{
-	function __construct($doc=0) {
-		parent::__construct($doc);
-		$this->doc_type				=9;
-		$this->doc_name				='perkas';
-		$this->doc_viewname			='Перемещение средств (касса)';
-		$this->header_fields			='sum separator kassa';
-	}
-	
-	function initDefDopdata() {
-		$this->def_dop_data = array('v_kassu'=>0);
-	}
+class doc_PerKas extends doc_Nulltype {
 
-	function DopHead() {
-		global $tmpl, $db;
-		$tmpl->addContent("В кассу:<br>
+    function __construct($doc = 0) {
+        parent::__construct($doc);
+        $this->doc_type = 9;
+        $this->doc_name = 'perkas';
+        $this->doc_viewname = 'Перемещение средств (касса)';
+        $this->header_fields = 'sum separator kassa';
+    }
+
+    function initDefDopdata() {
+        $this->def_dop_data = array('v_kassu' => 0);
+    }
+
+    function DopHead() {
+        global $tmpl, $db;
+        $tmpl->addContent("В кассу:<br>
 		<select name='v_kassu'>");
-		$res = $db->query("SELECT `num`, `name`, `ballance` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `name`");
-		while($nxt = $res->fetch_row())	{
-			$bal_p = sprintf("%0.2f р.", $nxt[2]);
-			if($nxt[0]==$this->dop_data['v_kassu'])
-				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out("$nxt[1] ($bal_p)")."</option>");
-			else
-				$tmpl->addContent("<option value='$nxt[0]'>".html_out("$nxt[1] ($bal_p)")."</option>");
-		}
-		$tmpl->addContent("</select>");
-	}
+        $res = $db->query("SELECT `num`, `name`, `ballance` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `name`");
+        while ($nxt = $res->fetch_row()) {
+            $bal_p = sprintf("%0.2f р.", $nxt[2]);
+            if ($nxt[0] == $this->dop_data['v_kassu']) {
+                $tmpl->addContent("<option value='$nxt[0]' selected>" . html_out("$nxt[1] ($bal_p)") . "</option>");
+            } else {
+                $tmpl->addContent("<option value='$nxt[0]'>" . html_out("$nxt[1] ($bal_p)") . "</option>");
+            }
+        }
+        $tmpl->addContent("</select>");
+    }
 
-	function DopSave() {
-		$new_data = array(
-		    'v_kassu' => rcvint('v_kassu')
-		);
-		$old_data = array_intersect_key($new_data, $this->dop_data);
+    function DopSave() {
+        $new_data = array(
+            'v_kassu' => rcvint('v_kassu')
+        );
+        $old_data = array_intersect_key($new_data, $this->dop_data);
 
-		$log_data = '';
-		if ($this->doc)
-			$log_data = getCompareStr($old_data, $new_data);
-		$this->setDopDataA($new_data);
-		if ($log_data)
-			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
-	}
+        $log_data = '';
+        if ($this->doc) {
+            $log_data = getCompareStr($old_data, $new_data);
+        }
+        $this->setDopDataA($new_data);
+        if ($log_data) {
+            doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+        }
+    }
 
-	function DocApply($silent=0) {
-		global $db;
-		$data = $db->selectRow('doc_list', $this->doc);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа при проведении!');
-		if($data['ok'] && (!$silent) )
-			throw new Exception('Документ уже проведён!');
-		
-		$res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
-		if(!$res->num_rows)		throw new Exception('Ошибка получения суммы кассы!');
-		$nxt = $res->fetch_row();
-		if($nxt[0]<$data['sum'])	throw new Exception("Не хватает денег в кассе N{$data['kassa']} ($nxt[0] < {$data['sum']})!");
+    function DocApply($silent = 0) {
+        global $db;
+        $data = $db->selectRow('doc_list', $this->doc);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа при проведении!');
+        }
+        if ($data['ok'] && (!$silent)) {
+            throw new Exception('Документ уже проведён!');
+        }
 
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
-		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы-источника!');
+        $res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        if (!$res->num_rows) {
+            throw new Exception('Ошибка получения суммы кассы!');
+        }
+        $nxt = $res->fetch_row();
+        if ($nxt[0] < $data['sum']) {
+            throw new Exception("Не хватает денег в кассе N{$data['kassa']} ($nxt[0] < {$data['sum']})!");
+        }
 
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
-		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы назначения!');
-		if($silent)	return;
-		
-		$db->update('doc_list', $this->doc, 'ok', time() );
-		$this->sentZEvent('apply');
-	}
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        if (!$db->affected_rows) {
+            throw new Exception('Ошибка обновления кассы-источника!');
+        }
 
-	function DocCancel() {
-		global $db;
-		$data = $db->selectRow('doc_list', $this->doc);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа!');
-		if(!$data['ok'])
-			throw new Exception('Документ не проведён!');
-		
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
-		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы-источника!');
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
+        if (!$db->affected_rows) {
+            throw new Exception('Ошибка обновления кассы назначения!');
+        }
 
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
-		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы назначения!');
-		
-		$db->update('doc_list', $this->doc, 'ok', 0 );
-		$this->sentZEvent('cancel');
-	}
-};
+        $budet = $this->checkKassMinus();
+        if ($budet < 0) {
+            throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
+        }
 
+        if ($silent) {
+            return;
+        }
 
-?>
+        $db->update('doc_list', $this->doc, 'ok', time());
+        $this->sentZEvent('apply');
+    }
+
+    function DocCancel() {
+        global $db;
+        $data = $db->selectRow('doc_list', $this->doc);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа!');
+        }
+        if (!$data['ok']) {
+            throw new Exception('Документ не проведён!');
+        }
+
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        if (!$db->affected_rows) {
+            throw new Exception('Ошибка обновления кассы-источника!');
+        }
+
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
+        if (!$db->affected_rows) {
+            throw new Exception('Ошибка обновления кассы назначения!');
+        }
+
+        $db->update('doc_list', $this->doc, 'ok', 0);
+        $this->sentZEvent('cancel');
+    }
+
+}

@@ -156,7 +156,7 @@ class DbCheckWorker extends AsyncWorker {
 		$opp = $cnt = 0;
 
 		while ($nxt = $res->fetch_row()) {
-			$pp = round(($cnt / $allcnt) * 100);
+			$pp = floor(($cnt / $allcnt) * 100);
 			if ($pp != $opp) {
 				$this->SetStatus($pp);
 				$opp = $pp;

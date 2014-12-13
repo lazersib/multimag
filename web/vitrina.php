@@ -773,7 +773,8 @@ protected function ProductCard($product) {
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 			LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-			WHERE `doc_base`.`analog_group`='$analog_group_sql' AND `doc_base`.`hidden`='0'
+                        INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+			WHERE `doc_base`.`analog_group`='$analog_group_sql' AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`=0
 			ORDER BY `doc_base`.`id`");
 			if($res->num_rows) {
 				$tmpl->addContent("<div><h2>Аналоги</h2>");		        
@@ -782,7 +783,7 @@ protected function ProductCard($product) {
 				}
 				$tmpl->addContent("</div>");
 			}
-			$tmpl->addContent("<hr class='clear'>");
+			$tmpl->addContent("<div class='clear'></div>");
 		}
 		
 		// Сопутствующие товары
@@ -1366,13 +1367,13 @@ protected function TovList_ImageList($res, $lim) {
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(135);
 			$miniimg->SetY(180);
-			$img="<img src='".$miniimg->GetURI()."' style='float: left; margin-right: 10px;' alt='".html_out($nxt['name'])."'>";
+			$img="<img src='".$miniimg->GetURI()."' alt='".html_out($nxt['name'])."'>";
 		}
 		else {
 			if(file_exists($CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/no_photo.png'))
 				$img_url='/skins/'.$CONFIG['site']['skin'].'/no_photo.png';
 			else	$img_url='/img/no_photo.png';
-			$img="<img src='$img_url' alt='no photo' style='float: left; margin-right: 10px; width: 135px;' alt='no photo'>";
+			$img="<img src='$img_url' alt='no photo' alt='no photo'>";
 		}
 
 		if($nxt['bulkcnt']>1)	$buy_cnt = $nxt['bulkcnt'];
@@ -1381,13 +1382,14 @@ protected function TovList_ImageList($res, $lim) {
 		
 		$tmpl->addContent("<div class='pitem'>
 		<a href='$link'>$img</a>
+                <div class='info'>
 		<a href='$link'>".html_out($nxt['name'])."</a><br>
 		<b>Код:</b> ".html_out($nxt['vc'])."<br>
 		<b>Цена:</b> <span{$cce}>$price руб.</span> / {$nxt['units']}<br>
 		<b>Производитель:</b> ".html_out($nxt['proizv'])."<br>
 		<b>Кол-во:</b> $nal<br>
 		<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
-		</div>");
+                    </div></div>");
 
 		$i++;
 		$cc=1-$cc;

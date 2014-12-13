@@ -70,7 +70,7 @@ class Report_KassDay extends BaseReport {
 		$daystart = strtotime("$dt_f 00:00:00");
 		$dayend = strtotime("$dt_t 23:59:59");
 
-		$widths = array(5, 8, 59, 9, 9, 9);
+		$widths = array(7, 8, 57, 9, 9, 9);
 		$headers = array('ID', 'Время', 'Документ', 'Приход', 'Расход', 'В кассе');
 
 		$this->col_cnt = count($widths);
@@ -175,7 +175,3 @@ class Report_KassDay extends BaseReport {
 		exit(0);
 	}
 }
-
-;
-?>
-

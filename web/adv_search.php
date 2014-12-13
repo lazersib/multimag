@@ -180,4 +180,3 @@ if($mode)
 }
 
 $tmpl->write();
-?>

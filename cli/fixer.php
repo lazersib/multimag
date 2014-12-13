@@ -19,14 +19,16 @@
 //
 
 
-$c=explode('/',__FILE__);$base_path='';
+$c=explode('/',__FILE__);
+$base_path='';
 for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
-include_once("$base_path/config_cli.php");
-require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 
+require_once("$base_path/config_cli.php");
+require_once($CONFIG['cli']['location']."/core.cli.inc.php");
+require_once("$base_path/web/include/doc.core.php");
 $sec = 0;
 
-function transfer($firm_from_id, $firm_to_id, $store_id) {
+function transfer($firm_from_id, $firm_to_id, $store_from_id, $store_to_id) {
     global $db, $sec;
     $sec++;
     $sum = 0;
@@ -42,7 +44,7 @@ function transfer($firm_from_id, $firm_to_id, $store_id) {
         $r = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`cost`, `doc_list`.`date` "
             . "FROM `doc_list` "
             . "INNER JOIN `doc_list_pos` ON `doc_list`.`id`=`doc_list_pos`.`doc` "
-            . "WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`firm_id`=$firm_from_id AND `doc_list`.`sklad`=$store_id AND `doc_list`.`type`<=2 AND `doc_list`.`ok`>0 "
+            . "WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`firm_id`=$firm_from_id AND `doc_list`.`type`<=2 AND `doc_list`.`ok`>0 "
             . "ORDER BY `doc_list`.`date`");
         while($doc_line = $r->fetch_assoc()) {
             switch($doc_line['type']) {
@@ -64,7 +66,7 @@ function transfer($firm_from_id, $firm_to_id, $store_id) {
         if($min<0) {
             echo "id:{$pos_info['id']}, {$pos_info['name']}: $min, date: $date_info\n";
             $unc_pos[$pos_info['id']] = abs($min);
-            $price_pos[$pos_info['id']] = $price;
+            $price_pos[$pos_info['id']] = getInCost($pos_info['id']);
             $sum += abs($min)*$price;
         }
     }
@@ -76,7 +78,7 @@ function transfer($firm_from_id, $firm_to_id, $store_id) {
             'date'  => strtotime("2005-01-10 12:01:$sec"),
             'created'=> date("Y-m-d H:i:s"),
             'ok'    => time(),
-            'sklad' => $store_id,
+            'sklad' => $store_from_id,
             'altnum'=> -1,
             'subtype'=>'bux',
             'firm_id'=>$firm_from_id,
@@ -102,8 +104,9 @@ function transfer($firm_from_id, $firm_to_id, $store_id) {
             $db->insertA('doc_list_pos', $pos_data);
         }
 
-        $doc_data['date'] = strtotime("2014-11-24 18:01:$sec");
+        $doc_data['date'] = strtotime("2014-12-14 18:01:$sec");
         $doc_data['type'] = 2;
+        $doc_data['sklad'] = $store_to_id;
         $doc_data['firm_id'] = $firm_to_id;
         $doc_data['p_doc'] = $doc_id;
 
@@ -124,23 +127,23 @@ function transfer($firm_from_id, $firm_to_id, $store_id) {
 }
 
 $db->startTransaction();
-transfer(3, 1, 1);
-transfer(1, 3, 1);
+transfer(3, 1, 1, 1);
+transfer(1, 3, 1, 1);
 
-transfer(4, 3, 1);
-transfer(3, 1, 1);
-transfer(1, 4, 1);
+transfer(4, 3, 2, 1);
+transfer(3, 1, 1, 1);
+transfer(1, 4, 1, 2);
 
-transfer(4, 3, 1);
-transfer(3, 1, 1);
-transfer(1, 4, 1);
+transfer(4, 3, 2, 1);
+transfer(3, 1, 1, 1);
+transfer(1, 4, 1, 2);
 
 
 echo"test:\n";
 sleep(1);
-transfer(4, 3, 1);
-transfer(1, 3, 1);
-transfer(3, 4, 1);
+transfer(4, 3, 1, 1);
+transfer(1, 3, 1, 1);
+transfer(3, 4, 1, 1);
 
 $db->commit();
 
