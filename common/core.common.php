@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "717");
+define("MULTIMAG_REV", "725");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -253,7 +253,7 @@ class MysqiExtended extends mysqli {
 	function updateA($table, $key_value, $array){
 		settype($key_value,'int');
 		$q=$this->updatePrepare($array);
-		return $this->query("UPDATE `$table` SET $q WHERE `id`=$key_value");
+ 		return $this->query("UPDATE `$table` SET $q WHERE `id`=$key_value");
 	}
 
 	/// Обновить данные в заданной таблице данными из массива по ключу с заданным именем
@@ -298,7 +298,7 @@ class MysqiExtended extends mysqli {
 	private function updatePrepare($array) {
 		$q=$f='';
 		foreach($array as $key => $value) {
-			if($value!=='NULL')
+			if($value!=='NULL' && $value!=='null')
 				$value = '\''.$this->real_escape_string($value).'\'';
 			if($f)	$q.=',`'.$key.'`='.$value;
 			else {	$q='`'.$key.'`='.$value; $f=1;}

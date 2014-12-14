@@ -20,20 +20,21 @@ namespace ListEditors;
 class BankListEditor extends \ListEditor {
 	
 	public function __construct($db_link) {
-		parent::__construct($db_link);
-		$this->print_name = 'Справочник собственных банков';
+            parent::__construct($db_link);
+            $this->print_name = 'Справочник собственных банков';
+            $this->initFirmList();
 	}
 	
 	/// Получить массив с именами колонок списка
 	public function getColumnNames() {
-		return array(
-		    'id'=>'id',
-		    'name'=>'Наименование',
-		    'bik'=>'Бик',
-		    'rs'=>'Р.счет',
-		    'ks'=>'К.счет',
-		    'firm_id'=>'Организация'
-		);
+            return array(
+                'id'=>'id',
+                'name'=>'Наименование',
+                'bik'=>'Бик',
+                'rs'=>'Р.счет',
+                'ks'=>'К.счет',
+                'firm_id'=>'Организация'
+            );
 	}
 	
 	/// Загрузить список всех элементов справочника
@@ -63,16 +64,23 @@ class BankListEditor extends \ListEditor {
 	}
 	
 	public function getInputFirm_id($name, $value) {
-		global $db;
-		$res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
 		$ret = "<select name='$name'>";
 		$ret .="<option value='0'>-- не задано --</option>";
-		while($line = $res->fetch_assoc()) {
-			$sel = $value==$line['id']?' selected':'';
-			$ret .="<option value='{$line['id']}'{$sel}>{$line['id']}: ".html_out($line['name'])."</option>";
+		foreach($this->firm_list as $id => $firm_name) {
+			$sel = $value==$id?' selected':'';
+			$ret .="<option value='$id'{$sel}>$id: ".html_out($firm_name)."</option>";
 		}
 		$ret .="</select>";
 		return $ret;
+	}
+        
+        public function getFieldFirm_id($data) {
+            if($data['firm_id']>0) {
+                return html_out($this->firm_list[$data['firm_id']]);
+            }
+            else {
+                return '-- не задано --';
+            }
 	}
 
 	public function saveItem($id, $data) {
@@ -98,5 +106,16 @@ class BankListEditor extends \ListEditor {
 		$db->query("INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `bik`, `ks`, `rs`, `firm_id`)
 			VALUES ('bank', $id, '$name_sql', '$bik_sql', '$ks_sql', '$rs_sql', '$firm_id')");
 		return $id;
-	}	
+	}
+        
+    protected function initFirmList() {
+        if(isset($this->firm_list)) {
+            return;
+        }
+        $this->firm_list = array();
+        $res = $this->db_link->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+        while ($line = $res->fetch_assoc()) {
+            $this->firm_list[$line['id']] = $line['firm_name'];
+        }
+    }
 }

@@ -68,9 +68,14 @@ abstract class ListEditor {
                 continue;
             }
             if (isset($data[$col_id])) {
-                $write_data[$col_id] = $data[$col_id];
+                if($data[$col_id]=='null') {
+                    $write_data[$col_id] = 'NULL';
+                }
+                else {
+                    $write_data[$col_id] = $data[$col_id];
+                }
             } else {
-                $write_data[$col_id] = '';
+                $write_data[$col_id] = 'NULL';
             }
         }
         if ($id) {

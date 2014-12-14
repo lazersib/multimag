@@ -18,24 +18,60 @@
 namespace ListEditors;
 
 class StoresListEditor extends \ListEditor {
-	
-	public function __construct($db_link) {
-		parent::__construct($db_link);
-		$this->print_name = 'Справочник складов';
-		$this->table_name = 'doc_sklady';
-	}
-	
-	/// Получить массив с именами колонок списка
-	public function getColumnNames() {
-		return array(
-		    'id'=>'id',
-		    'name'=>'Наименование',
-		    'dnc'=>'Не контролировать остатки'
-		);
-	}
-	
-	public function getInputDnc($name, $value) {
-		return $this->getCheckboxInput($name, 'Да', $value);
-	}
-	
+
+    public function __construct($db_link) {
+        parent::__construct($db_link);
+        $this->print_name = 'Справочник складов';
+        $this->table_name = 'doc_sklady';
+        $this->initFirmList();
+    }
+
+    /// Получить массив с именами колонок списка
+    public function getColumnNames() {
+        return array(
+            'id' => 'id',
+            'name' => 'Наименование',
+            'dnc' => 'Не контролировать остатки',
+            'firm_id' => 'Организация'
+        );
+    }
+
+    public function getInputDnc($name, $value) {
+        return $this->getCheckboxInput($name, 'Да', $value);
+    }
+
+    public function getFieldDnc($data) {
+        return $data['dnc'] ? "<b style='color:#f00'>Да</b>" : "<b style='color:#0c0'>Нет</b>";
+    }
+
+    public function getInputFirm_id($name, $value) {
+        $ret = "<select name='$name'>";
+        $ret .="<option value='null'>-- не задано --</option>";
+        foreach ($this->firm_list as $id => $firm_name) {
+            $sel = $value == $id ? ' selected' : '';
+            $ret .="<option value='$id'{$sel}>$id: " . html_out($firm_name) . "</option>";
+        }
+        $ret .="</select>";
+        return $ret;
+    }
+
+    public function getFieldFirm_id($data) {
+        if ($data['firm_id'] > 0) {
+            return html_out($this->firm_list[$data['firm_id']]);
+        } else {
+            return '-- не задано --';
+        }
+    }
+
+    protected function initFirmList() {
+        if (isset($this->firm_list)) {
+            return;
+        }
+        $this->firm_list = array();
+        $res = $this->db_link->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+        while ($line = $res->fetch_assoc()) {
+            $this->firm_list[$line['id']] = $line['firm_name'];
+        }
+    }
+
 }

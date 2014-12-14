@@ -191,60 +191,74 @@ class doc_Realizaciya extends doc_Nulltype {
 		if($this->dop_data['received'])
 			$tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
 	}
+        
+    /// Провести документ
+    function docApply($silent = 0) {
+        global $CONFIG, $db;
+        $tim = time();
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_list`.`firm_id`,
+                `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_agent`.`no_bonuses`, `doc_vars`.`firm_store_lock`
+            FROM `doc_list`
+            INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+            INNER JOIN `doc_agent` ON `doc_list`.`agent` = `doc_agent`.`id`
+            INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
+            WHERE `doc_list`.`id`='{$this->doc}'");
+        $doc_params = $res->fetch_assoc();
+        $res->free();
+        if ($doc_params['ok'] && (!$silent)) {
+            throw new Exception('Документ уже был проведён!');
+        }
+        if (!$this->dop_data['kladovshik'] && @$CONFIG['doc']['require_storekeeper'] && !$silent) {
+            throw new Exception("Кладовщик не выбран!");
+        }
+        if (!$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent) {
+            throw new Exception("Количество мест не задано");
+        }
+        // Запрет на списание со склада другой фирмы
+        if($doc_params['store_firm_id']!=null && $doc_params['store_firm_id']!=$doc_params['firm_id']) {
+            throw new Exception("Выбранный склад принадлежит другой организации!");
+        }
+        // Ограничение фирмы списком своих складов
+        if($doc_params['firm_store_lock'] && $doc_params['store_firm_id']!=$doc_params['firm_id']) {
+            throw new Exception("Выбранная организация может списывать только со своих складов!!");
+        }
+        
+        if (!$silent) {
+            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
+        }
 
-	function DocApply($silent=0)
-	{
-		global $CONFIG, $db;
-		$tim = time();
-		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`, 
-			`doc_agent`.`no_bonuses`
-		FROM `doc_list`
-		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-		LEFT JOIN `doc_agent` ON `doc_list`.`agent` = `doc_agent`.`id`
-		WHERE `doc_list`.`id`='{$this->doc}'");
-		$nx = $res->fetch_assoc();
-		$res->free();
-		if( $nx['ok'] && ( !$silent) )
-			throw new Exception('Документ уже был проведён!');
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
+                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`
+            FROM `doc_list_pos`
+            LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_params['sklad']}'
+        WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+        $bonus = 0;
+        while ($nxt = $res->fetch_row()) {
+            if (!$doc_params['dnc']) {
+                if ($nxt[1] > $nxt[2])
+                    throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])': на складе только $nxt[2] шт!");
+            }
 
-		if(!@$this->dop_data['kladovshik'] && @$CONFIG['doc']['require_storekeeper'] && !$silent)	throw new Exception("Кладовщик не выбран!");
-		if(!@$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent)	throw new Exception("Количество мест не задано");
-		
-		if(!$silent)
-			$db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
-		
-		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`
-		FROM `doc_list_pos`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
-		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
-		$bonus=0;
-		while($nxt = $res->fetch_row())
-		{
-			if(!$nx['dnc'])
-			{
-				if($nxt[1]>$nxt[2])	throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])': на складе только $nxt[2] шт!");
-			}
-			
-			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
-			
-			if(!$nx['dnc'] && (!$silent))
-			{
-				$budet = getStoreCntOnDate($nxt[0], $nx['sklad'], $nx['date']);
-				if( $budet < 0)		throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])'!");
-			}
+            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_params['sklad']}'");
 
-			if(@$CONFIG['poseditor']['sn_restrict'])
-			{
-				$r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
-				list($sn_cnt) = $r->fetch_row();
-				if($sn_cnt!=$nxt[1])	throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
-			}
-			
-			
-			
-			$bonus+=$nxt[8]*$nxt[1]*(@$CONFIG['bonus']['coeff']);
-		}
+            if (!$doc_params['dnc'] && (!$silent)) {
+                $budet = getStoreCntOnDate($nxt[0], $doc_params['sklad'], $doc_params['date']);
+                if ($budet < 0)
+                    throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])'!");
+            }
+
+            if (@$CONFIG['poseditor']['sn_restrict']) {
+                $r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
+                list($sn_cnt) = $r->fetch_row();
+                if ($sn_cnt != $nxt[1])
+                    throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
+            }
+
+
+
+            $bonus+=$nxt[8] * $nxt[1] * (@$CONFIG['bonus']['coeff']);
+        }
 
 // 		if(@$CONFIG['bonus']['enable'] && $bonus>0)
 // 		{
@@ -252,14 +266,15 @@ class doc_Realizaciya extends doc_Nulltype {
 // 			if(mysql _errno())				throw new MysqlException('Ошибка проведения, ошибка начисления бонусного вознаграждения');
 // 		}
 
-		if($silent)	return;
-		if(!$nx['no_bonuses'])
-			$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
-		
-		$this->sentZEvent('apply');
-	}
+        if ($silent)
+            return;
+        if (!$doc_params['no_bonuses'])
+            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
 
-	function DocCancel()
+        $this->sentZEvent('apply');
+    }
+
+        function DocCancel()
 	{
 		global $db;
 

@@ -18,54 +18,49 @@
 namespace ListEditors;
 
 class FirmListEditor extends \ListEditor {
-	
-	public function __construct($db_link) {
-		parent::__construct($db_link);
-		$this->print_name = 'Справочник организаций';
-		$this->table_name = 'doc_vars';
-	}
-	
-	/// Получить массив с именами колонок списка
-	public function getColumnNames() {
-		return array(
-		    'id'=>'id',
-		    'firm_name'=>'Наименование',
-		    'firm_inn' => 'ИНН',
-		    'firm_adres' => 'Юридический адрес',
-		    'firm_realadres' => 'Фактический адрес',
-		    'firm_gruzootpr' => 'Данные грузоотправителя',
-		    'firm_telefon' => 'Телефон',
-		    'firm_okpo' => 'ОКПО',
-		    'param_nds' => 'Ставка НДС',
-		    
-		    'firm_director'=>'ФИО директора',
-		    'firm_manager' => 'ФИО менеджера',
-		    'firm_buhgalter' => 'ФИО Бухгалтера',
-		    
-		    'firm_kladovshik' => 'ФИО Кладовщика',
-		    'firm_kladovshik_id' => 'ID пользователя-кладовщика',
-		    'firm_kladovshik_doljn' => 'Должность кладовщика'		    
-		);
-	}
-		
-	/// @brief Возвращает имя текущего элемента
-	public function getItemName($item) {
-		if (isset($item['firm_name'])) {
-			return $item['firm_name'];
-		} else {
-			return '???';
-		}
-	}
-	
-	public function getInputFirm_id($name, $value) {
-		$res = $this->db_link->query("SELECT `id`, `name` FROM `firm_info` ORDER BY `id`");
-		$ret = "<select name='$name'>";
-		$ret .="<option value='0'>-- не задано --</option>";
-		while($line = $res->fetch_assoc()) {
-			$sel = $value==$line['id']?' selected':'';
-			$ret .="<option value='{$line['id']}'{$sel}>{$line['id']}: ".html_out($line['name'])."</option>";
-		}
-		$ret .="</select>";
-		return $ret;
-	}	
+
+    public function __construct($db_link) {
+        parent::__construct($db_link);
+        $this->print_name = 'Справочник организаций';
+        $this->table_name = 'doc_vars';
+    }
+
+    /// Получить массив с именами колонок списка
+    public function getColumnNames() {
+        return array(
+            'id' => 'id',
+            'firm_name' => 'Наименование',
+            'firm_inn' => 'ИНН',
+            'firm_adres' => 'Юридический адрес',
+            'firm_realadres' => 'Фактический адрес',
+            'firm_gruzootpr' => 'Данные грузоотправителя',
+            'firm_telefon' => 'Телефон',
+            'firm_okpo' => 'ОКПО',
+            'param_nds' => 'Ставка НДС',
+            'firm_director' => 'ФИО директора',
+            'firm_manager' => 'ФИО менеджера',
+            'firm_buhgalter' => 'ФИО Бухгалтера',
+            'firm_kladovshik' => 'ФИО Кладовщика',
+            'firm_kladovshik_id' => 'ID пользователя-кладовщика',
+            'firm_kladovshik_doljn' => 'Должность кладовщика',
+            'firm_store_lock' => 'Списания только со своих складов'
+        );
+    }
+
+    /// @brief Возвращает имя текущего элемента
+    public function getItemName($item) {
+        if (isset($item['firm_name'])) {
+            return $item['firm_name'];
+        } else {
+            return '???';
+        }
+    }
+
+    public function getInputFirm_store_lock($name, $value) {
+        return $this->getCheckboxInput($name, 'Да', $value);
+    }
+
+    public function getFieldFirm_store_lock($data) {
+        return $data['firm_store_lock'] ? "<b style='color:#0c0'>Да</b>" : "<b style='color:#f00'>Нет</b>";
+    }
 }
