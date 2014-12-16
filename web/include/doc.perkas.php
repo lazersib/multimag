@@ -66,29 +66,50 @@ class doc_PerKas extends doc_Nulltype {
 
     function docApply($silent = 0) {
         global $db;
-        $data = $db->selectRow('doc_list', $this->doc);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа при проведении!');
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
+                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`
+            FROM `doc_list`
+            INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`bank` AND `ids`='kassa'
+            INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
+            WHERE `doc_list`.`id`='{$this->doc}'");
+        $doc_params = $res->fetch_assoc();
+        $res->free();
+
+        if (!$doc_params) {
+            throw new Exception('Документ ' . $this->doc . ' не найден');
         }
-        if ($data['ok'] && (!$silent)) {
+        if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
         }
+        $dest_till_info = $db->selectRow('doc_sklady', $this->dop_data['v_kassu']);
 
-        $res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        // Запрет для другой фирмы
+        if($doc_params['kassa_firm_id']!=null && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
+            throw new Exception("Исходная касса относится к другой организации!");
+        }
+        if ($dest_till_info['firm_id'] != null && $dest_till_info['firm_id'] != $doc_info['firm_id']) {
+            throw new Exception("Касса назначения относится к другой организации!");
+        }
+        // Ограничение фирмы списком своих банков
+        if($doc_params['firm_till_lock'] && ($doc_params['kassa_firm_id']!=$doc_params['firm_id'] || $dest_till_info['firm_id'] != $doc_info['firm_id']) ) {
+            throw new Exception("Выбранная организация может работать только со своими кассами!");
+        }
+        
+        $res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
         if (!$res->num_rows) {
             throw new Exception('Ошибка получения суммы кассы!');
         }
         $nxt = $res->fetch_row();
-        if ($nxt[0] < $data['sum']) {
-            throw new Exception("Не хватает денег в кассе N{$data['kassa']} ($nxt[0] < {$data['sum']})!");
+        if ($nxt[0] < $doc_params['sum']) {
+            throw new Exception("Не хватает денег в кассе N{$doc_params['kassa']} ($nxt[0] < {$doc_params['sum']})!");
         }
 
-        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}' WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$doc_params['sum']}' WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы-источника!');
         }
 
-        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}' WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$doc_params['sum']}' WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы назначения!');
         }

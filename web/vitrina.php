@@ -774,7 +774,7 @@ protected function ProductCard($product) {
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 			LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
                         INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-			WHERE `doc_base`.`analog_group`='$analog_group_sql' AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`=0
+			WHERE `doc_base`.`analog_group`='$analog_group_sql' AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`=0 AND `doc_base`.`id`!='$product'
 			ORDER BY `doc_base`.`id`");
 			if($res->num_rows) {
 				$tmpl->addContent("<div><h2>Аналоги</h2>");		        

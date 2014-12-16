@@ -76,7 +76,7 @@ class doc_Pko extends doc_Nulltype {
     function docApply($silent = 0) {
         global $db;
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
-                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_kassa_lock`
+                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`
             FROM `doc_list`
             INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`bank` AND `ids`='kassa'
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
@@ -97,7 +97,7 @@ class doc_Pko extends doc_Nulltype {
             throw new Exception("Выбранная касса относится другой организации!");
         }
         // Ограничение фирмы списком своих банков
-        if($doc_params['firm_kassa_lock'] && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
+        if($doc_params['firm_till_lock'] && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
             throw new Exception("Выбранная организация может работать только со своими кассами!");
         }
         
