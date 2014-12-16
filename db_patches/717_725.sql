@@ -5,6 +5,7 @@ ALTER TABLE `doc_sklady` ADD FOREIGN KEY ( `firm_id` ) REFERENCES `doc_vars` (`i
 ALTER TABLE `doc_vars` ADD `firm_store_lock` SMALLINT NOT NULL COMMENT 'Работать только со своими складами';
 ALTER TABLE `doc_vars` ADD `firm_bank_lock` SMALLINT NOT NULL COMMENT 'Работать только со своими банками';
 ALTER TABLE `doc_vars` ADD `firm_till_lock` SMALLINT NOT NULL COMMENT 'Работать только со своими кассами';
+UPDATE `doc_kassa` SET `firm_id`=null WHERE `firm_id`=0;
 
 TRUNCATE `db_version`;
 INSERT INTO `db_version` (`version`) VALUES (725);

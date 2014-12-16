@@ -43,7 +43,7 @@ class Report_Balance {
 		<form action=''>
 		<input type='hidden' name='mode' value='balance'>
 		<input type='hidden' name='opt' value='ok'>
-		Вычислить балланс на дату:
+		Вычислить баланс на дату:
 		<input type=text id='id_pub_date_date' class='vDateField required' name='dt' value='$dt'><br>
 		<label><input type=checkbox name=v value=1>Считать на вечер</label><br>
 		<button type='submit'>Вычислить</button></form>");
@@ -99,7 +99,4 @@ class Report_Balance {
 	}
 
 }
-
-;
-?>
 

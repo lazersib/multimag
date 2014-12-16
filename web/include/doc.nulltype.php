@@ -1484,7 +1484,8 @@ class doc_Nulltype
 	protected function drawKassaField() {
 		global $tmpl, $db, $CONFIG;
 		$tmpl->addContent("Касса:<br><select name='kassa'>");
-		$res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND `firm_id`='0' OR `num`='{$this->doc_data['kassa']}' ORDER BY `num`");
+		$res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND 
+                    (`firm_id`='0' OR `firm_id` IS NULL OR `firm_id`={$this->doc_data['firm_id']} OR `num`='{$this->doc_data['kassa']}') ORDER BY `num`");
 		if( $this->doc_data['kassa'] )		
 			$kassa	= $this->doc_data['kassa'];
 		else if( isset($CONFIG['site']['default_kassa']) )

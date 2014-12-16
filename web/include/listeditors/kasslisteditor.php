@@ -22,6 +22,7 @@ class KassListEditor extends \ListEditor {
 	public function __construct($db_link) {
 		parent::__construct($db_link);
 		$this->print_name = 'Справочник касс';
+                $this->initFirmList();
 	}
 	
 	/// Получить массив с именами колонок списка
@@ -44,29 +45,38 @@ class KassListEditor extends \ListEditor {
 			$this->list[$line['id']] = $line;
 		}
 	}
-
-	public function getItem($id) {
+        
+        public function getItem($id) {
+		global $db;
 		settype($id, 'int');
-		$res = $this->db_link->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `firm_id`
+		$res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `firm_id`
 			FROM `doc_kassa`
 			WHERE `ids`='kassa' AND `num`=$id");
 		if ($res->num_rows) {
 			return $res->fetch_assoc();
 		} else {
-			return false;
+			return null;
 		}
 	}
-	
-	public function getInputFirm_id($name, $value) {
-		$res = $this->db_link->query("SELECT `id`, `name` FROM `firm_info` ORDER BY `id`");
+
+        public function getInputFirm_id($name, $value) {
 		$ret = "<select name='$name'>";
 		$ret .="<option value='0'>-- не задано --</option>";
-		while($line = $res->fetch_assoc()) {
-			$sel = $value==$line['id']?' selected':'';
-			$ret .="<option value='{$line['id']}'{$sel}>{$line['id']}: ".html_out($line['name'])."</option>";
+		foreach($this->firm_list as $id => $firm_name) {
+			$sel = $value==$id?' selected':'';
+			$ret .="<option value='$id'{$sel}>$id: ".html_out($firm_name)."</option>";
 		}
 		$ret .="</select>";
 		return $ret;
+	}
+        
+        public function getFieldFirm_id($data) {
+            if($data['firm_id']>0) {
+                return html_out($this->firm_list[$data['firm_id']]);
+            }
+            else {
+                return '-- не задано --';
+            }
 	}
 
 	public function saveItem($id, $data) {
@@ -88,5 +98,16 @@ class KassListEditor extends \ListEditor {
 		$this->db_link->query("INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `firm_id`) ".
 			"VALUES ('kassa', $id, '$name_sql', '$firm_id')");
 		return $id;
-	}	
+	}
+        
+    protected function initFirmList() {
+        if(isset($this->firm_list)) {
+            return;
+        }
+        $this->firm_list = array();
+        $res = $this->db_link->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+        while ($line = $res->fetch_assoc()) {
+            $this->firm_list[$line['id']] = $line['firm_name'];
+        }
+    }
 }
