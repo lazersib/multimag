@@ -43,7 +43,9 @@ class FirmListEditor extends \ListEditor {
             'firm_kladovshik' => 'ФИО Кладовщика',
             'firm_kladovshik_id' => 'ID пользователя-кладовщика',
             'firm_kladovshik_doljn' => 'Должность кладовщика',
-            'firm_store_lock' => 'Списания только со своих складов'
+            'firm_store_lock' => 'Ограничить своими складами',
+            'firm_bank_lock' => 'Ограничить своими банками',
+            'firm_till_lock' => 'Ограничить своими кассами'
         );
     }
 
@@ -62,5 +64,21 @@ class FirmListEditor extends \ListEditor {
 
     public function getFieldFirm_store_lock($data) {
         return $data['firm_store_lock'] ? "<b style='color:#0c0'>Да</b>" : "<b style='color:#f00'>Нет</b>";
+    }
+    
+    public function getInputFirm_bank_lock($name, $value) {
+        return $this->getCheckboxInput($name, 'Да', $value);
+    }
+
+    public function getFieldFirm_bank_lock($data) {
+        return $data['firm_bank_lock'] ? "<b style='color:#0c0'>Да</b>" : "<b style='color:#f00'>Нет</b>";
+    }
+    
+    public function getInputFirm_till_lock($name, $value) {
+        return $this->getCheckboxInput($name, 'Да', $value);
+    }
+
+    public function getFieldFirm_till_lock($data) {
+        return $data['firm_till_lock'] ? "<b style='color:#0c0'>Да</b>" : "<b style='color:#f00'>Нет</b>";
     }
 }

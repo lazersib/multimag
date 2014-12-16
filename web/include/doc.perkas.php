@@ -32,7 +32,7 @@ class doc_PerKas extends doc_Nulltype {
         $this->def_dop_data = array('v_kassu' => 0);
     }
 
-    function DopHead() {
+    function dopHead() {
         global $tmpl, $db;
         $tmpl->addContent("В кассу:<br>
 		<select name='v_kassu'>");
@@ -48,7 +48,7 @@ class doc_PerKas extends doc_Nulltype {
         $tmpl->addContent("</select>");
     }
 
-    function DopSave() {
+    function dopSave() {
         $new_data = array(
             'v_kassu' => rcvint('v_kassu')
         );
@@ -64,7 +64,7 @@ class doc_PerKas extends doc_Nulltype {
         }
     }
 
-    function DocApply($silent = 0) {
+    function docApply($silent = 0) {
         global $db;
         $data = $db->selectRow('doc_list', $this->doc);
         if (!$data) {
@@ -83,12 +83,12 @@ class doc_PerKas extends doc_Nulltype {
             throw new Exception("Не хватает денег в кассе N{$data['kassa']} ($nxt[0] < {$data['sum']})!");
         }
 
-        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}' WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы-источника!');
         }
 
-        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}' WHERE `ids`='kassa' AND `num`='{$this->dop_data['v_kassu']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы назначения!');
         }
@@ -106,7 +106,7 @@ class doc_PerKas extends doc_Nulltype {
         $this->sentZEvent('apply');
     }
 
-    function DocCancel() {
+    function docCancel() {
         global $db;
         $data = $db->selectRow('doc_list', $this->doc);
         if (!$data) {

@@ -28,7 +28,7 @@ class doc_Rko extends doc_Nulltype {
 		$this->ksaas_modify			=-1;
 		$this->header_fields			='kassa sum separator agent';
 		$this->PDFForms=array(
-			array('name'=>'pko','desc'=>'Расходный ордер','method'=>'PrintRKOPDF')
+			array('name'=>'pko','desc'=>'Расходный ордер','method'=>'printRKOPDF')
 		);
 	}
 
@@ -42,7 +42,7 @@ class doc_Rko extends doc_Nulltype {
 		$this->def_dop_data = array('rasxodi'=>0, 'account'=>$acc);
 	}
 	
-	function DopHead() {
+	function dopHead() {
 		global $tmpl, $db;
 		$tmpl->addContent("Вид расхода:<br><select name='rasxodi'>");
 		$res = $db->query("SELECT `id`, `account`, `name` FROM `doc_dtypes` WHERE `id`>'0'");
@@ -58,7 +58,7 @@ class doc_Rko extends doc_Nulltype {
 		$tmpl->addContent("Номер бухгалтерского счёта:<br><input type='text' name='account' value='{$this->dop_data['account']}'><br>");
 	}
 
-	function DopSave() {
+	function dopSave() {
 		$new_data = array(
 		    'rasxodi' => request('rasxodi'),
 		    'account' => request('account')
@@ -73,34 +73,59 @@ class doc_Rko extends doc_Nulltype {
 			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 	}
 
-	// Провести
-	function DocApply($silent=0) {
-		global $db;
-		$data = $db->selectRow('doc_list', $this->doc);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа при проведении!');
-		if($data['ok'] && (!$silent) )
-			throw new Exception('Документ уже проведён!');
-		
-		$res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
-		if(!$res->num_rows)		throw new Exception('Ошибка получения суммы кассы!');
-		$nxt = $res->fetch_row();
-		if($nxt[0]<$data['sum'])	throw new Exception("Не хватает денег в кассе N{$data['kassa']} ($nxt[0] < {$data['sum']})!");
+    // Провести
+    function docApply($silent = 0) {
+        global $db;
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
+                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_kassa_lock`
+            FROM `doc_list`
+            INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`bank` AND `ids`='kassa'
+            INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
+            WHERE `doc_list`.`id`='{$this->doc}'");
+        $doc_params = $res->fetch_assoc();
+        $res->free();
 
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
-		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы!');
-		
-		$budet = $this->checkKassMinus();
-		if($budet<0)				throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
-				
-		if($silent)	return;
-		
-		$db->update('doc_list', $this->doc, 'ok', time() );
-		$this->sentZEvent('apply');
-	}
+        if (!$doc_params) {
+            throw new Exception('Документ ' . $this->doc . ' не найден');
+        }
+        if ($doc_params['ok'] && (!$silent)) {
+            throw new Exception('Документ уже проведён!');
+        }
+        // Запрет для другой фирмы
+        if($doc_params['kassa_firm_id']!=null && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
+            throw new Exception("Выбранная касса относится другой организации!");
+        }
+        // Ограничение фирмы списком своих банков
+        if($doc_params['firm_kassa_lock'] && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
+            throw new Exception("Выбранная организация может работать только со своими кассами!");
+        }
+        $res = $db->query("SELECT `ballance` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
+        if (!$res->num_rows) {
+            throw new Exception('Ошибка получения суммы кассы!');
+        }
+        $nxt = $res->fetch_row();
+        if ($nxt[0] < $doc_params['sum']) {
+            throw new Exception("Не хватает денег в кассе N{$doc_params['kassa']} ($nxt[0] < {$doc_params['sum']})!");
+        }
 
-	// Отменить проведение
-	function DocCancel() {
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$doc_params['sum']}'	WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
+        if (!$db->affected_rows) {
+            throw new Exception('Ошибка обновления кассы!');
+        }
+
+        $budet = $this->checkKassMinus();
+        if ($budet < 0) {
+            throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
+        }
+
+        if (!$silent) {
+            $db->update('doc_list', $this->doc, 'ok', time());
+            $this->sentZEvent('apply');
+        }
+    }
+
+    // Отменить проведение
+	function docCancel() {
 		global $db;
 		$data = $db->selectRow('doc_list', $this->doc);
 		if(!$data)
@@ -115,9 +140,8 @@ class doc_Rko extends doc_Nulltype {
 		$this->sentZEvent('cancel');
 	}
 
-	function PrintRKOPDF($to_str=false) {
+	function printRKOPDF($to_str=false) {
 		global $tmpl, $db;
-		define('FPDF_FONT_PATH','/var/www/gate/fpdf/font/');
 		require('fpdf/fpdf.php');
 		
 		if(!$to_str) $tmpl->ajax=1;
@@ -310,8 +334,8 @@ class doc_Rko extends doc_Nulltype {
 		$str = iconv('UTF-8', 'windows-1251', num2str($this->doc_data['sum']));
 		$pdf->Cell(0,4,$str,'B',1,'L',0);
 
-		$sum_r=round($this->doc_data['sum']);
-		$sum_c=round(($this->doc_data['sum']-$sum_r)*100);
+		$sum_r = floor($this->doc_data['sum']);
+		$sum_c = round(($this->doc_data['sum']-$sum_r)*100);
 		$str = iconv('UTF-8', 'windows-1251', "Сумма");
 		$pdf->Cell(90,4,'','B',0,'L',0);
 		$pdf->Cell(20,4,$sum_r,'B',0,'R',0);
@@ -428,7 +452,4 @@ class doc_Rko extends doc_Nulltype {
 		else
 			$pdf->Output('pko.pdf','I');
 	}
-};
-
-
-?>
+}

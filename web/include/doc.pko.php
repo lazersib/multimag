@@ -72,24 +72,46 @@ class doc_Pko extends doc_Nulltype {
 			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 	}
 
-	// Провести
-	function DocApply($silent=0) {
-		global $db;
-		$data = $db->selectRow('doc_list', $this->doc);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа при проведении!');
-		if($data['ok'] && (!$silent) )
-			throw new Exception('Документ уже проведён!');
-		
-		$res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
-		if(! $db->affected_rows)	throw new Exception('Ошибка обновления кассы!');
-		if($silent)	return;
-		
-		$db->update('doc_list', $this->doc, 'ok', time() );
-		$this->sentZEvent('apply');
-	}
+    // Провести
+    function docApply($silent = 0) {
+        global $db;
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
+                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_kassa_lock`
+            FROM `doc_list`
+            INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`bank` AND `ids`='kassa'
+            INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
+            WHERE `doc_list`.`id`='{$this->doc}'");
+        $doc_params = $res->fetch_assoc();
+        $res->free();
 
-	// Отменить проведение
+        if (!$doc_params) {
+            throw new Exception('Документ ' . $this->doc . ' не найден');
+        }
+
+        if ($doc_params['ok'] && (!$silent)) {
+            throw new Exception('Документ уже проведён!');
+        }
+
+        // Запрет для другой фирмы
+        if($doc_params['kassa_firm_id']!=null && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
+            throw new Exception("Выбранная касса относится другой организации!");
+        }
+        // Ограничение фирмы списком своих банков
+        if($doc_params['firm_kassa_lock'] && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
+            throw new Exception("Выбранная организация может работать только со своими кассами!");
+        }
+        
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$doc_params['sum']}'	WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
+        if (!$db->affected_rows)
+            throw new Exception('Ошибка обновления кассы!');
+        if ($silent)
+            return;
+
+        $db->update('doc_list', $this->doc, 'ok', time());
+        $this->sentZEvent('apply');
+    }
+
+    // Отменить проведение
 	function DocCancel() {
 		global $db;
 		$data = $db->selectRow('doc_list', $this->doc);
@@ -401,8 +423,8 @@ class doc_Pko extends doc_Nulltype {
 		$pdf->SetY($y);
 		$pdf->MultiCell(0,4,$str_osn,0,'L',0);
 		$pdf->SetY($y+8);
-		$sum_r=round($this->doc_data['sum']);
-		$sum_c=round(($this->doc_data['sum']-$sum_r)*100);
+		$sum_r = floor($this->doc_data['sum']);
+		$sum_c = round(($this->doc_data['sum']-$sum_r)*100);
 		$str = iconv('UTF-8', 'windows-1251', "Сумма");
 		$pdf->Cell(10,4,$str,0,0,'L',0);
 		$pdf->Cell(30,4,$sum_r,'B',0,'R',0);
@@ -485,7 +507,4 @@ class doc_Pko extends doc_Nulltype {
 		else
 			$pdf->Output('pko.pdf','I');
 	}
-};
-
-
-?>
+}

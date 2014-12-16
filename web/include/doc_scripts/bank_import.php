@@ -32,16 +32,25 @@ class ds_bank_import {
             <input type='hidden' name='sn' value='bank_import'>
 
             Файл банковской выписки:<br>
-            <input type='hidden' name='MAX_FILE_SIZE' value='10000000'><input name='userfile' type='file'>
+            <small>В формате 1с v 1.01</small><br>
+            <input type='hidden' name='MAX_FILE_SIZE' value='10000000'><input name='userfile' type='file'><br>
+            <label><input type='checkbox' name='process_in' value='1' checked>Обработать приходы</label><br>
+            <label><input type='checkbox' name='process_out' value='1'>Обработать расходы</label><br>
+            Подтип документов:<br>
+            <input type='text' name='subtype' maxlength='5'><br>
             <button type='submit'>Выполнить</button>
-            </form>";
+            </form>"; //При выполнении сценария отсутствующие агенты будут добавлены автоамтически!<br>
     }
     
-    function Run($mode) {
+    function run($mode) {
         global $tmpl, $db;
         if ($mode == 'view') {
             $tmpl->addContent($this->getForm());
         } else if ($mode == 'load') {
+            $process_in = rcvint('process_in');
+            $process_out = rcvint('process_out');
+            $subtype = request('subtype');
+            
             $tmpl->addContent("<h1>" . $this->getname() . "</h1>");
             if ($_FILES['userfile']['size'] <= 0) {
                 throw new Exception("Забыли выбрать файл?");
@@ -49,6 +58,7 @@ class ds_bank_import {
             $file = file($_FILES['userfile']['tmp_name']);
             $ex = new Bank1CExchange();
             $parsed_data = $ex->Parse($file);
+            //var_dump($parsed_data);
             
             // Список наших фирм и счетов
             $banks = array();
@@ -59,37 +69,68 @@ class ds_bank_import {
                 }
             }
             
+            // Список агентов
+            $agents_rs = array();
+            $res = $db->query("SELECT `id`, `rs` FROM `doc_agent`");
+            while($line = $res->fetch_assoc()) {
+                if($line['rs']) {
+                    $agents_rs[$line['rs']] = $line['id'];
+                }
+            }
+            
             $tmpl->addContent("<table width='100%' class='list'>
                 <tr>
-                <th>ID</th><th>Номер П/П</th><th>Дата</th><th>Сумма</th><th>Счёт</th><th>Назначение</th><th>Есть?</th>");
-
-            foreach ($parsed_data as $v_line) {
-                if($v_line['kredit']==0) { // Это не входящий документ
+                <th>ID</th><th>Тип</th><th>Номер П/П</th><th>Дата</th><th>Сумма</th><th>Счёт</th><th>Назначение</th><th>Есть?</th>");
+            $db->startTransaction();
+            foreach ($parsed_data as $import_doc) {
+                if(isset($banks[$import_doc['src']['rs']])) { // Исходящий
+                    if(!$process_out) {
+                        continue;
+                    }
+                    $agent_info = $import_doc['dst'];
+                    $curr_rs = $import_doc['src']['rs'];
+                    $doc_type = 5;
+                } elseif ($process_in) {
+                    $agent_info = $import_doc['src'];
+                    $curr_rs = $import_doc['dst']['rs'];
+                    $doc_type = 4;
+                } else {
                     continue;
                 }
                 
-                $uni = intval($v_line['unique']);
-                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_dopdata`.`value`
-		FROM `doc_list` 
-		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='unique'
-		WHERE `doc_dopdata`.`value`=$uni AND `doc_list`.`type`='4'");
+                $import_doc['docnum'] = intval($import_doc['docnum']);
+                $sum = sprintf("%0.2f", $import_doc['sum']);
+                list($d, $m, $y) = explode('.', $import_doc['date'], 3);
+                if(!checkdate($m, $d, $y)) {
+                    throw new Exception("Недопустимая дата в файле ($y-$m-$d)!");
+                }
+                $start_day_time = mktime(0, 0, 0, $m, $d, $y);
+                $end_day_time = mktime(23, 59, 59, $m, $d, $y);
+                $doc_time = mktime(12, 0, 0, $m, $d, $y);
+                
+                // Поиск документа в системе
+                $agent_rs_sql = $db->real_escape_string($agent_info['rs']);
+                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`agent`
+                    FROM `doc_list`
+                    INNER JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
+                    WHERE `doc_list`.`type`=$doc_type AND `doc_agent`.`rs`='$agent_rs_sql' AND `doc_list`.`date`>=$start_day_time AND `doc_list`.`date`<=$end_day_time");
                 $doc_nums = '';
+                $exist = 0;
                 while($doc_info = $res->fetch_assoc()) {
-                    $doc_nums .= $doc_info['id'] .' ';
+                    $doc_nums .= "<a href='/doc.php?mode=body&amp;doc={$doc_info['id']}'>{$doc_info['id']}</a> ";
+                    $exist = 1;
                 }
                 
                 if(!$doc_nums) {
-                    // Определяем агента
+                    // Определяем id агента
                     $agent_id = 1;
-                    $rs_sql = $db->real_escape_string($v_line['kschet']);
-                    $res = $db->query("SELECT `id` FROM `doc_agent` WHERE `rs` = '$rs_sql'");
-                    while($ag_info = $res->fetch_assoc()) {
-                        $agent_id = $ag_info['id'];
+                    if(isset($agents_rs[$agent_info['rs']])) {
+                        $agent_id = $agents_rs[$agent_info['rs']];
                     }
                     
-                    // Определяем номер счёта
+                    // Определяем номер заявки покупателя
                     $order_id = 0;
-                    $sum = $db->real_escape_string($v_line['kredit']);
+                    
                     if($agent_id>1) {
                         $res = $db->query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' AND `agent`=$agent_id ORDER BY `id` DESC LIMIT 1");
                         while($doc_info = $res->fetch_assoc()) {
@@ -99,29 +140,57 @@ class ds_bank_import {
                         $res = $db->query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' ORDER BY `id` DESC LIMIT 1");
                         while($doc_info = $res->fetch_assoc()) {
                             $order_id = $doc_info['id'];
-                            $agent_id = $doc_info['agent'];
                         }
                     }
-                    $desc = $db->real_escape_string($v_line['desc']);
-                    $docnum = $db->real_escape_string($v_line['docnum']);
-                    $time = time();
-                    $bank_id = $banks[$v_line['schet']]['bank_id'];
-                    $firm_id = $banks[$v_line['schet']]['firm_id'];
-                    $db->query("INSERT INTO `doc_list` ( `type`, `agent`, `comment`, `date`, `altnum`, `subtype`, `sum`, `p_doc`, `sklad`, `bank`, `firm_id`)
-                            VALUES ('4', '$agent_id', '$desc', '$time', '$docnum', 'auto', '$sum', '$order_id' , 0, '$bank_id', '$firm_id')");
-                    $new_id = $db->insert_id;
-                    echo "insert_id: $new_id\n";
-                    $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`) VALUES ('$new_id', 'unique', '$uni')");
-                    $doc_nums = $new_id;
+                    
+                    if($agent_id == 1) { //Автодобавление агента
+                        $repl = array('ООО', 'ОАО', 'ЗАО', 'ИП', '\'', '"');
+                        $agent_ins_data = array(
+                            'name'      => trim(str_replace($repl, '', $agent_info['name'])),
+                            'fullname'  => trim($agent_info['name']),
+                            'inn'       => $agent_info['inn'],
+                            'kpp'       => $agent_info['kpp'],
+                            'rs'        => $agent_info['rs'],
+                            'ks'        => $agent_info['ks'],
+                            'bik'       => $agent_info['bik'],
+                            'comment'   => 'Автоматически созданный агент'
+                        );
+                        $agent_id = $db->insertA('doc_agent', $agent_ins_data);
+                    }
+
+                    $doc_ins_data = array(
+                        'type'      => $doc_type,
+                        'date'      => $doc_time, // !!!!!!
+                        'altnum'    => intval($import_doc['docnum']),
+                        'subtype'   => $subtype,
+                        'sum'       => $sum,
+                        'bank'      => $banks[$curr_rs]['bank_id'],
+                        'agent'     => $agent_id,
+                        'firm_id'   => $banks[$curr_rs]['firm_id'],
+                        'comment'   => $import_doc['desc'],
+                        'ok'        => time()
+                    );
+                    $doc_id = $db->insertA('doc_list', $doc_ins_data);
+                    $doc_nums = $doc_nums .= "<a href='/doc.php?mode=body&amp;doc=$doc_id'>$doc_id</a>";
                 }
                 
-                $tmpl->addContent("<tr><td>{$v_line['unique']}</td><td>{$v_line['docnum']}</td><td>{$v_line['date']}</td>
-                    <td>{$v_line['kredit']}</td><td>{$v_line['kschet']}</td>"
-                    . "<td>".html_out($v_line['desc'])."</td><td>$doc_nums</td></tr>");
-
-                $tmpl->AddContent("</tr>");
+                if($exist) {
+                    $exist = 'Да';
+                } else {
+                    $exist = 'Нет';
+                }
+                
+                if($doc_type==4) {
+                    $print_type = 'Приход';
+                } else {
+                    $print_type = 'Расход';
+                }
+                
+                $tmpl->addContent("<tr><td>$doc_nums</td><td>$print_type</td><td>{$import_doc['docnum']}</td><td>".date("Y-m-d", $start_day_time)."</td>
+                    <td>$sum</td><td>".html_out($agent_info['rs'])."</td><td>".html_out($import_doc['desc'])."</td><td>$exist</td></tr>");
             }
             $tmpl->addContent("</table>");
+            $db->commit();
         }
     }
 

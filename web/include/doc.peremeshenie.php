@@ -39,7 +39,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		$this->def_dop_data = array('kladovshik'=>0, 'na_sklad'=>0, 'mest'=>'', 'cena'=>0);
 	}
 
-	function DopHead() {
+	function dopHead() {
 		global $tmpl, $db;
 		$klad_id = $this->dop_data['kladovshik'];
 		if(!$klad_id)	$klad_id=$this->firm_vars['firm_kladovshik_id'];
@@ -67,7 +67,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>");
 	}
 
-	function DopSave() {
+	function dopSave() {
 		$new_data = array(
 			'na_sklad' => rcvint('nasklad'),
 			'mest' => rcvint('mest'),
@@ -82,16 +82,15 @@ class doc_Peremeshenie extends doc_Nulltype
 		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 	}
 
-    function DocApply($silent = 0) {
+    function docApply($silent = 0) {
         global $CONFIG, $db;
         $tim = time();
-        $nasklad = (int) $this->dop_data['na_sklad'];
-        if (!$nasklad) {
+        $dest_store_id = intval($this->dop_data['na_sklad']);
+        if (!$dest_store_id) {
             throw new Exception("Не определён склад назначения!");
         }
-
-        if ($this->doc_data['sklad'] == $nasklad) {
-            throw new Exception("Исходный склад совпадает со складом назначения! {$this->doc_data['sklad']}==$nasklad");
+        if ($this->doc_data['sklad'] == $dest_store_id) {
+            throw new Exception("Исходный склад совпадает со складом назначения!");
         }
 
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`,
@@ -103,47 +102,51 @@ class doc_Peremeshenie extends doc_Nulltype
         if (!$res->num_rows) {
             throw new Exception('Документ не найден!');
         }
-        $nx = $res->fetch_assoc();
+        $doc_info = $res->fetch_assoc();
+        
+        $dest_store_info = $db->selectRow('doc_sklady', $dest_store_id);
 
-        if ($nx['ok'] && (!$silent)) {
+        if ($doc_info['ok'] && (!$silent)) {
             throw new Exception('Документ уже был проведён!');
         }
-        if (!@$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent) {
+        if (!$this->dop_data['mest'] && @$CONFIG['doc']['require_pack_count'] && !$silent) {
             throw new Exception("Количество мест не задано");
         }
 
         // Запрет на списание со склада другой фирмы
-        if ($nx['store_firm_id'] != null && $nx['store_firm_id'] != $nx['firm_id']) {
-            throw new Exception("Выбранный склад принадлежит другой организации!");
+        if ($doc_info['store_firm_id'] != null && $doc_info['store_firm_id'] != $doc_info['firm_id']) {
+            throw new Exception("Исходный склад принадлежит другой организации!");
+        }
+        if ($dest_store_info['firm_id'] != null && $dest_store_info['firm_id'] != $doc_info['firm_id']) {
+            throw new Exception("Склад назначения принадлежит другой организации!");
         }
         // Ограничение фирмы списком своих складов
-        if ($nx['firm_store_lock'] && $nx['store_firm_id'] != $nx['firm_id']) {
-            throw new Exception("Выбранная организация может списывать только со своих складов!!");
+        if ($doc_info['firm_store_lock'] && ($doc_info['store_firm_id'] != $doc_info['firm_id'] || $dest_store_info['firm_id'] != $doc_info['firm_id']) ) {
+            throw new Exception("Выбранная организация может работать только со своими складами!");
         }
-
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, 
                 `doc_base`.`pos_type`
             FROM `doc_list_pos`
             LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
             WHERE `doc_list_pos`.`doc`='{$this->doc}'");
         while ($nxt = $res->fetch_row()) {
             if ($nxt[5] > 0) {
                 throw new Exception("Перемещение услуги '$nxt[3]:$nxt[4]' недопустимо!");
             }
-            if (!$nx['dnc'] && ($nxt[1] > $nxt[2])) {
+            if (!$doc_info['dnc'] && ($nxt[1] > $nxt[2])) {
                 throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]' на складе($nxt[2])!");
             }
-            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
-            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
+            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_info['sklad']}'");
+            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$dest_store_id'");
             // Если это первое поступление
             if ($db->affected_rows == 0) {
-                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$nasklad', '$nxt[1]')");
+                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '$dest_store_id', '$nxt[1]')");
             }
 
-            if ((!$nx['dnc']) && (!$silent)) {
-                $budet = getStoreCntOnDate($nxt[0], $nx['sklad']);
+            if ((!$doc_info['dnc']) && (!$silent)) {
+                $budet = getStoreCntOnDate($nxt[0], $doc_info['sklad']);
                 if ($budet < 0) {
                     throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
                 }
@@ -157,7 +160,7 @@ class doc_Peremeshenie extends doc_Nulltype
         $this->sentZEvent('apply');
     }
 
-    function DocCancel() {
+    function docCancel() {
 		global $db;
 		$nasklad = (int)$this->dop_data['na_sklad'];
 
@@ -186,7 +189,7 @@ class doc_Peremeshenie extends doc_Nulltype
 
 /// Обычная накладная в PDF формате
 /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
-	function PrintNaklPDF($to_str = false) {
+	function printNaklPDF($to_str = false) {
 		require('fpdf/fpdf_mc.php');
 		global $tmpl, $CONFIG, $db;
 
@@ -282,10 +285,11 @@ class doc_Peremeshenie extends doc_Nulltype
 		$ii = 1;
 		$sum = 0;
 		while($nxt = $res->fetch_assoc()) {
-			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt['vendor'])
-				$nxt['name'].=' / '.$nxt['vendor'];
+                        if (!@$CONFIG['doc']['no_print_vendor'] && $nxt['vendor']) {
+                            $nxt['name'].=' / ' . $nxt['vendor'];
+                        }
 
-			$row = array($ii);
+                        $row = array($ii);
 			$comment = array('');
 			if($CONFIG['poseditor']['vc']) {
 				$row[] = $nxt['vc'];
@@ -323,10 +327,11 @@ class doc_Peremeshenie extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,5,$str,0,1,'L',0);
 
-		if($to_str)
-			return $pdf->Output('blading.pdf','S');
-		else
-			$pdf->Output('blading.pdf','I');
-	}
+		if ($to_str) {
+                    return $pdf->Output('blading.pdf', 'S');
+                } else {
+                    $pdf->Output('blading.pdf', 'I');
+                }
+    }
 
 }

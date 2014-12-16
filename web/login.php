@@ -95,12 +95,11 @@ After confirmatoin of registration you can get access to the expanded functions 
 The message is generated automatically, to answer it is not necessary!";
 }
 
-class RegException extends Exception
-{
+class RegException extends \Exception {
 	var $target;
-	function __construct($text='', $target='')
+	function __construct($text='', $target='', $prevous=null)
 	{
-		parent::__construct($text);
+		parent::__construct($text, 0, $prevous);
 		$this->target=$target;
 	}
 

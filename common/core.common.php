@@ -240,9 +240,10 @@ class MysqiExtended extends mysqli {
 	/// @return Возвращаемое значение аналогично mysqli::query
 	function update($table, $key_value, $field, $value){
 		settype($key_value,'int');
-		if($value!=='NULL')
-			$value = '\''.$this->real_escape_string($value).'\'';
-		return $this->query("UPDATE `$table` SET `$field`=$value WHERE `id`=$key_value");
+		if ($value !== 'NULL') {
+                    $value = '\'' . $this->real_escape_string($value) . '\'';
+                }
+                return $this->query("UPDATE `$table` SET `$field`=$value WHERE `id`=$key_value");
 	}
 	
 	/// Обновить данные в заданной таблице данными из массива по ключу с именем id
@@ -264,8 +265,9 @@ class MysqiExtended extends mysqli {
 	/// @return Возвращаемое значение аналогично mysqli::query
 	function updateKA($table, $key_name, $key_value, $array) {
 		settype($key_value,'int');
+                $key_name = $this->real_escape_string($key_name);
 		$q=$this->updatePrepare($array);
-		return $this->query("UPDATE `$table` SET $q WHERE `id`=$key_value");
+		return $this->query("UPDATE `$table` SET $q WHERE `$key_name`=$key_value");
 	}
 	
 	/// Заменить данные в заданной таблице данными из массива по ключу с заданным именем

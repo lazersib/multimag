@@ -20,11 +20,13 @@
 /// Класс парсера и генератора банковских выписок в формате обмена 1С
 class Bank1CExchange {
 
+    var $rs = '';
+    
     function __construct() {
     }
     
     /// Анализировать строку документа
-    protected function parseDocumentLine($name, $value, $params) {
+    protected function parseDocumentLineOld($name, $value, $params) {
         switch ($name) {
             case 'Номер':
                 $params['docnum'] = $value;
@@ -56,6 +58,78 @@ class Bank1CExchange {
             case 'НазначениеПлатежа':
                 $params['desc'] = $value;
                 break;
+            case 'РасчСчет':
+                $params['rs'] = $value;
+                break;
+        }
+        return $params;
+    }
+    
+    protected function parseDocumentLinev101($name, $value, $params) {
+        switch ($name) {
+            // Шапка
+            case 'Номер':
+                $params['docnum'] = $value;
+                break;
+            case 'Дата':
+                $params['date'] = $value;
+                break;
+            case 'ДатаПоступило':
+                $params['p_date'] = $value;
+                break;
+            case 'Сумма':
+                $params['sum'] = $value;
+                break;
+            // Плательщик
+            case 'ПлательщикСчет':
+                $params['src']['rs'] = $value;
+                break;
+            case 'ПлательщикИНН':
+                $params['src']['inn'] = $value;
+                break;
+            case 'ПлательщикКПП':
+                $params['src']['kpp'] = $value;
+                break;
+            case 'Плательщик1':
+                $params['src']['name'] = $value;
+                break;
+            case 'ПлательщикРасчСчет':
+                $params['src']['krs'] = $value;
+                break;
+            case 'ПлательщикБИК':
+                $params['src']['bik'] = $value;
+                break;
+            case 'ПлательщикКорсчет':
+                $params['src']['ks'] = $value;
+            // Получатель
+            case 'ПолучательСчет':
+                $params['dst']['rs'] = $value;
+                break;
+            case 'ПолучательИНН':
+                $params['dst']['inn'] = $value;
+                break;
+            case 'ПолучательКПП':
+                $params['dst']['kpp'] = $value;
+                break;
+            case 'Получатель1':
+                $params['dst']['name'] = $value;
+                break;
+            case 'ПолучательРасчСчет':
+                $params['dst']['rs'] = $value;
+                break;
+            case 'ПолучательБИК':
+                $params['dst']['bik'] = $value;
+                break;
+            case 'ПолучательКорсчет':
+                $params['dst']['ks'] = $value;
+                break;
+            // Хвост
+            case 'ВидОплаты':
+                $params['vid'] = $value;
+                break;
+            case 'НазначениеПлатежа':
+                $params['desc'] = $value;
+                break;
         }
         return $params;
     }
@@ -74,15 +148,28 @@ class Bank1CExchange {
             $line = trim($line);
             if($first_line) {
                 if($line != '1CClientBankExchange') {
-                    throw new \Exception('Файл не является банковской выпиской в формате 1C! ');
+                    throw new \Exception('Файл не является банковской выпиской в формате 1C!');
                 }
                 $first_line = 0;
             }
             else {
                 $pl = explode("=", $line, 2);
                 switch($pl[0]) {
+                    case 'СекцияРасчСчет':
+                            $parsing = true;
+                            $params = array();
+                            $params['type'] = 'rs';
+                        break;
+                    case 'КонецРасчСчет':
+                        if ($parsing) {
+                            if(isset($parsed_data['rs'])) {
+                                $this->rs = $parsed_data['rs'];
+                            }
+                            $parsing = false;
+                        }
+                        break;
                     case 'СекцияДокумент':
-                        if ($pl[1] == "Платёжное поручение") {
+                        if ($pl[1] == "Платёжное поручение" || $pl[1] == "Платежное поручение") {
                             $parsing = true;
                             $params = array();
                             $params['type'] = 'pp';
@@ -96,7 +183,7 @@ class Bank1CExchange {
                         break;
                     default:
                         if($parsing) {
-                            $params = $this->parseDocumentLine($pl[0], $pl[1], $params);
+                            $params = $this->parseDocumentLinev101($pl[0], $pl[1], $params);
                         }
                 }
             }

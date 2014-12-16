@@ -50,6 +50,7 @@ function GetCountInfo($count, $tranzit)
 
 include_once("core.php");
 include_once("include/doc.core.php");
+$mode=request('mode');
 $name=request('name');
 $analog=rcvint('analog');
 $proizv=request('proizv');

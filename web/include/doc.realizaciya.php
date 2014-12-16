@@ -185,13 +185,13 @@ class doc_Realizaciya extends doc_Nulltype {
 		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
 	}
 
-	function DopBody()
-	{
-		global $tmpl;
-		if($this->dop_data['received'])
-			$tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
-	}
-        
+    function dopBody() {
+        global $tmpl;
+        if ($this->dop_data['received']) {
+            $tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
+        }
+    }
+
     /// Провести документ
     function docApply($silent = 0) {
         global $CONFIG, $db;
@@ -255,20 +255,12 @@ class doc_Realizaciya extends doc_Nulltype {
                     throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
             }
 
-
-
             $bonus+=$nxt[8] * $nxt[1] * (@$CONFIG['bonus']['coeff']);
         }
 
-// 		if(@$CONFIG['bonus']['enable'] && $bonus>0)
-// 		{
-// 			mysql _query("UPDATE `doc_agent` SET `bonus`='$bonus' WHERE `id`='{$this->doc}'");
-// 			if(mysql _errno())				throw new MysqlException('Ошибка проведения, ошибка начисления бонусного вознаграждения');
-// 		}
-
         if ($silent)
             return;
-        if (!$doc_params['no_bonuses'])
+        if (!$doc_params['no_bonuses'] && $bonus>0)
             $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
 
         $this->sentZEvent('apply');
