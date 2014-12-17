@@ -87,11 +87,11 @@ class doc_PerKas extends doc_Nulltype {
         if($doc_params['kassa_firm_id']!=null && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
             throw new Exception("Исходная касса относится к другой организации!");
         }
-        if ($dest_till_info['firm_id'] != null && $dest_till_info['firm_id'] != $doc_info['firm_id']) {
+        if ($dest_till_info['firm_id'] != null && $dest_till_info['firm_id'] != $doc_params['firm_id']) {
             throw new Exception("Касса назначения относится к другой организации!");
         }
-        // Ограничение фирмы списком своих банков
-        if($doc_params['firm_till_lock'] && ($doc_params['kassa_firm_id']!=$doc_params['firm_id'] || $dest_till_info['firm_id'] != $doc_info['firm_id']) ) {
+        // Ограничение фирмы списком своих касс
+        if($doc_params['firm_till_lock'] && ($doc_params['kassa_firm_id']!=$doc_params['firm_id'] || $dest_till_info['firm_id'] != $doc_params['firm_id']) ) {
             throw new Exception("Выбранная организация может работать только со своими кассами!");
         }
         

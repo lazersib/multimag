@@ -108,7 +108,7 @@ class doc_Rko extends doc_Nulltype {
             throw new Exception("Не хватает денег в кассе N{$doc_params['kassa']} ($nxt[0] < {$doc_params['sum']})!");
         }
 
-        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$doc_params['sum']}'	WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$doc_params['sum']}' WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }

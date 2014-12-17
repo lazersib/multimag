@@ -112,9 +112,10 @@ class doc_PBank extends doc_Nulltype {
         }
         
         // Запрет для другой фирмы
-        if($doc_params['bank_firm_id']!=null && $doc_params['bank_firm_id']!=$doc_params['firm_id']) {
-            throw new Exception("Выбранный банк относится другой организации!");
-        }
+        // Проверка временно отключена
+        //if($doc_params['bank_firm_id']!=null && $doc_params['bank_firm_id']!=$doc_params['firm_id']) {
+        //    throw new Exception("Выбранный банк относится другой организации!");
+        //}
         // Ограничение фирмы списком своих банков
         if($doc_params['firm_bank_lock'] && $doc_params['bank_firm_id']!=$doc_params['firm_id']) {
             throw new Exception("Выбранная организация может работать только со своими банками!");
