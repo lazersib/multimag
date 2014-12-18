@@ -33,7 +33,7 @@ class doc_Kompredl extends doc_Nulltype
 		    array('name' => 'kp', 'desc' => 'Коммерческое предложение', 'method' => 'KomPredlPDF'),
 		    array('name' => 'kpad', 'desc' => 'Коммерческое предложение c описанием товара', 'method' => 'KomPredlDescPDF'),
 		    array('name' => 'kpc', 'desc' => 'Коммерческое предложение с количеством', 'method' => 'KomPredlPDF_Cnt'),
-                    array('name' => 'kpc', 'desc' => 'Коммерческое предложение с количеством без НДС', 'method' => 'KomPredlPDF_Cntnds'),
+                    array('name' => 'kpcnn', 'desc' => 'Коммерческое предложение с количеством без НДС', 'method' => 'KomPredlPDF_Cntnds'),
 		    array('name' => 'csv', 'desc' => 'Экспорт в csv', 'method' => 'CSVExport')		    
 		);
 	}

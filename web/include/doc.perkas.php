@@ -81,7 +81,8 @@ class doc_PerKas extends doc_Nulltype {
         if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
         }
-        $dest_till_info = $db->selectRow('doc_sklady', $this->dop_data['v_kassu']);
+        $dest_res = $db->query("SELECT `firm_id` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`=".intval($this->dop_data['v_kassu']));
+        $dest_till_info = $dest_res->fetch_assoc();
 
         // Запрет для другой фирмы
         if($doc_params['kassa_firm_id']!=null && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {

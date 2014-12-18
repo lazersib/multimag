@@ -32,8 +32,8 @@ class SearchPage
 	}
 
 	/// Поиск товара
-	/// @param s Подстрока поиска
-	function SearchTovar($s) {
+	/// @param $s Подстрока поиска
+	function searchTovar($s) {
 		global $CONFIG, $db;
 
 		$ret='';
@@ -45,7 +45,7 @@ class SearchPage
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`proizv` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s_sql%' OR `doc_base_dop`.`analog` LIKE '$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
+		WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`proizv` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
                 ORDER BY `doc_base`.`name`
 		LIMIT 30";
 		$res = $db->query($sql);
@@ -57,9 +57,7 @@ class SearchPage
                                 <th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
                         }
 			$i=0;
-			
 			$ret.=$this->searchOut($res);
-			
 		}
                 
                 $limit = $this->all_cnt+5;
@@ -68,7 +66,7 @@ class SearchPage
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`desc` LIKE '%$s_sql%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base_dop`.`analog` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND (`doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`proizv` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s_sql%' AND `doc_base_dop`.`analog` NOT LIKE '$s_sql%')
+		WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`desc` LIKE '%$s_sql%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND (`doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`proizv` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s_sql%')
                 ORDER BY `doc_base`.`name`
 		LIMIT 18";
 		$res = $db->query($sql);
@@ -255,4 +253,3 @@ catch(Exception $e)
 
 
 $tmpl->write();
-?>
