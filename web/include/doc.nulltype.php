@@ -63,6 +63,7 @@ class doc_Nulltype
 	public function getViewName()	{return $this->doc_viewname;}
 	public function getDocDataA()	{return $this->doc_data;}	
 	public function getDopDataA()	{return $this->dop_data;} //< Получить все дополнительные параметры документа в виде ассоциативного массива
+        public function getFirmVarsA()	{return $this->firm_vars;}
 
 	/// @brief Получить значение основного параметра документа.
 	/// Вернёт пустую строку в случае отсутствия параметра
@@ -1011,40 +1012,68 @@ class doc_Nulltype
 
 	}
 
-	/// Печать документа
-	function printform($opt='')
-	{
-		global $tmpl;
-		$tmpl->ajax=1;
-		if($opt=='')
-		{
-			$str='';
-			foreach($this->PDFForms as $form)
-			{
-				if($str)	$str.=",";
-				$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
-			}
+    /// Печать документа
+    function printForm($opt = '') {
+        global $tmpl, $CONFIG;
+        $tmpl->ajax = 1;
+        if ($opt == '') {
+            $ret_data = array(
+                'response'  => 'item_list',
+                'content'   => array()
+            );
+            foreach ($this->PDFForms as $form) {
+                $ret_data['content'][] = array('name' => 'int:'.$form['name'], 'desc'=>$form['desc']);
+            }
+            $dir = $CONFIG['site']['location'].'/include/doc/printforms/'.$this->doc_name.'/';
+            if (is_dir($dir)) {
+                $dh = opendir($dir);
+                if ($dh) {
+                    while (($file = readdir($dh)) !== false) {
+                        if (preg_match('/.php$/', $file)) {
+                            $cn = explode('.', $file);
+                            $class_name = '\\doc\\printforms\\'.$this->doc_name.'\\'.$cn[0];
+                            $class = new $class_name;
+                            $nm = $class->getName();
+                            $ret_data['content'][] = array('name' => 'ext:'.$cn[0], 'desc' => 'EXT: '.$nm);
+                        }
+                    }
+                    closedir($dh);
+                }
+            }
 
-			$tmpl->setContent("{response: 'item_list', content: [$str]}");
-		}
-		else
-		{
-			$method='';
-			foreach($this->PDFForms as $form)
-			{
-				if($form['name']==$opt)	$method=$form['method'];
-			}
-			if(!method_exists($this, $method))
-				throw new Exception('Печатная форма не зарегистрирована');
-			doc_log("PRINT", $opt, 'doc', $this->doc);
-			$this->sentZEvent('print');
-			
-			$this->$method();
-		}
+            $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
+        }
+        else {
+            $f_param = explode(':', $opt);
+            if($f_param[0]=='int') {
+                $method = '';
+                foreach ($this->PDFForms as $form) {
+                    if ($form['name'] == $opt)
+                        $method = $form['method'];
+                }
+                if (!method_exists($this, $method)) {
+                    throw new Exception('Печатная форма не зарегистрирована');
+                }
+                doc_log("PRINT", $opt, 'doc', $this->doc);
+                $this->sentZEvent('print');
 
-	}
-	
-	/// Выполнить удаление документа. Если есть зависимости - удаление не производится.
+                $this->$method();
+            }
+            elseif ($f_param[0]=='ext') {
+                $class_name = '\\doc\\printforms\\'.$this->doc_name.'\\'.$f_param[1];
+                $print_obj = new $class_name;
+                $print_obj->setDocument($this);
+                $print_obj->initForm();
+                $print_obj->make();
+                $print_obj->outData();
+            }
+            else {
+                throw new Exception('Неверный тип печатной формы');
+            }
+        }
+    }
+
+    /// Выполнить удаление документа. Если есть зависимости - удаление не производится.
 	function delExec($doc)
 	{
 		global $db;

@@ -34,6 +34,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		$this->PDFForms				= array(
 			array('name'=>'nak','desc'=>'Накладная','method'=>'PrintNaklPDF'),
 			array('name'=>'tc','desc'=>'Товарный чек','method'=>'PrintTcPDF'),
+                        array('name'=>'tcnkkt','desc'=>'Товарный чек без ККТ','method'=>'PrintTcPDFnkkt'),
                         array('name'=>'tcna','desc'=>'Товарный чек без агента','method'=>'PrintTcPDFna'),
                         array('name'=>'tcnd','desc'=>'Товарный чек без скидки','method'=>'PrintTcPDFnd'),
 			array('name'=>'tg12','desc'=>'Накладная ТОРГ-12','method'=>'PrintTg12PDF'),
@@ -789,6 +790,12 @@ class doc_Realizaciya extends doc_Nulltype {
             return $this->makeTcPDF($to_str);            
         }
         
+        /// Товарный чек в PDF формате без ККТ
+        /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
+        function PrintTcPDFnkkt($to_str=false) {
+            return $this->makeTcPDF($to_str, true, true, true);            
+        }
+        
         /// Товарный чек в PDF формате без скидки
         /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
         function PrintTcPDFnd($to_str=false) {
@@ -802,8 +809,11 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         
         /// Генерация товарного чека в PDF формате с параметрами
-        /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
-	protected function makeTcPDF($to_str = false, $show_disc = true, $show_agent = true) {
+        /// @param $to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
+        /// @param $show_disc Выводить ли информацию о скидках
+        /// @param $show_agent Выводить ли информацию о агенте-покупателе
+        /// @param $show_kkt Выводить ли информацию о работе без использования ККТ
+	protected function makeTcPDF($to_str = false, $show_disc = true, $show_agent = true, $show_kkt = false) {
 		require('fpdf/fpdf_mc.php');
 		global $tmpl, $CONFIG, $db;
 
@@ -937,6 +947,11 @@ class doc_Realizaciya extends doc_Nulltype {
 		if($prop) {
 			$pdf->CellIconv(0,5,$prop,0,1,'L',0);
 		}
+                
+                if($show_kkt) {
+                    $str = "Работа осуществляется без применения контрольно-кассовой техники в соответствии с ФЗ 162 от 07/07/2009.";
+                    $pdf->CellIconv(0,6,$str,0,1,'L',0);
+                }
 
 		$str="Продавец:_____________________________________";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);

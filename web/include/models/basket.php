@@ -138,4 +138,4 @@ class Basket {
 		if(isset($this->list[$pos_id]))
 			unset($this->list[$pos_id]);
 	}
-};
+}
