@@ -27,7 +27,7 @@ abstract class iPrintForm {
     // Параметы форм
     protected $line_normal_w = 0.25;   // Стандартная толщина линии
     protected $line_bold_w = 0.6;   // Толщина жирной линии
-    protected $line_thin_w = 0.15;   // Толщина тонкой линии
+    protected $line_thin_w = 0.18;   // Толщина тонкой линии
     
     
     /// Установить ссылку на распечатываемый документ
@@ -40,13 +40,22 @@ abstract class iPrintForm {
         require('fpdf/fpdf_mc.php');
         $this->pdf = new \PDF_MC_Table();
         $this->pdf->Open();
-        $this->pdf->SetAutoPageBreak(1, 12);
+        $this->pdf->SetAutoPageBreak(1, 5);
         $this->pdf->AddFont('Arial', '', 'arial.php');
         $this->pdf->SetFont('Arial', '', 10);
         $this->pdf->tMargin = 5;
         $this->pdf->SetFillColor(255);
     }
     
+    protected function addInfoFooter() {
+        $this->pdf->SetX($this->pdf->rMargin - 50);
+        $this->pdf->SetY($this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin);
+        $this->pdf->SetFont('Arial', '', 2);
+        $str = 'Подготовлено в multimag v:'.MULTIMAG_VERSION.' ('.get_class($this).')';
+        $this->pdf->CellIconv(0, 4, $str, 0, 0, 'R');
+    }
+
+
     /// Вывод данных
     /// @param $to_str Если истина - вернёт буфер с данными. Иначе - вывод в файл.
     public function outData($to_str=false) {

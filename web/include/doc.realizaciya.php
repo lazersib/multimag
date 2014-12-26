@@ -425,9 +425,6 @@ class doc_Realizaciya extends doc_Nulltype {
 
 		$dt = date("d.m.Y", $this->doc_data['date']);
 
-		$pc = PriceCalc::getInstance();
-		$def_cost = $pc->getDefaultPriceId();
-
 		$pdf->SetFont('','',16);
 		$str="Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
@@ -830,9 +827,6 @@ class doc_Realizaciya extends doc_Nulltype {
 
 		$dt=date("d.m.Y",$this->doc_data['date']);
 
-		$pc = PriceCalc::getInstance();
-		$def_cost = $pc->getDefaultPriceId();
-
 		$pdf->SetFont('','',16);
 		$str="Товарный чек N {$this->doc_data['altnum']}, от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
@@ -980,9 +974,6 @@ class doc_Realizaciya extends doc_Nulltype {
 
 		$dt=date("d.m.Y",$this->doc_data['date']);
 
-		$pc = PriceCalc::getInstance();
-		$def_cost = $pc->getDefaultPriceId();
-
 		$pdf->SetFont('','',16);
 		$str="Накладная на комплектацию N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
@@ -1054,7 +1045,6 @@ class doc_Realizaciya extends doc_Nulltype {
 		{
 			$sm=$nxt['cnt']*$nxt['cost'];
 			$cost = sprintf("%01.2f руб.", $nxt['cost']);
-			$cost2 = sprintf("%01.2f руб.", $sm);
 			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt['proizv'])	$nxt['name'].=' / '.$nxt['proizv'];
 			$summass+=$nxt['cnt']*$nxt['mass'];
 
@@ -1151,7 +1141,6 @@ function PrintTg12PDF($to_str=0)
 	
 	$dt = date("d.m.Y",$this->doc_data['date']);
 
-	$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
 	$gruzop_info = $db->selectRow('doc_agent', $this->dop_data['gruzop']);
 	$gruzop='';
 	if($gruzop_info) {
@@ -1421,7 +1410,6 @@ function PrintTg12PDF($to_str=0)
 	{
 		while($c_id<$t2_start[$i])
 		{
-			$t_a[$offset]=$offset;
 			$offset+=$t_width[$c_id++];
 		}
 
@@ -1450,7 +1438,7 @@ function PrintTg12PDF($to_str=0)
 	}
 	$t_all_width[]=0;
 	$i=1;
-	foreach($t_all_width as $id => $w)
+	foreach($t_all_width as $w)
 	{
 		$pdf->Cell($w,4,$i,1,0,'C',0);
 		$i++;
@@ -1607,7 +1595,6 @@ function PrintTg12PDF($to_str=0)
 		$pdf->AddPage('L');
 
 	$cnt_p=num2str($cnt,'sht',0);
-	$mass_p=num2str($summass,'kg',3);
 	$sum_p=num2str($sum);
 
 	// Левая часть с подписями
@@ -1772,6 +1759,165 @@ function PrintTg12PDF($to_str=0)
 	else
 		$pdf->Output('torg12.pdf','I');
 }
+    public function getDocumentNomenclatureWVAT() {
+        global $CONFIG, $db;
+        
+        $list = array();
+        $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
+            `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`,
+            `class_unit`.`number_code` AS `unit_code`, `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`
+	FROM `doc_list_pos`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
+	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+	LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
+	WHERE `doc_list_pos`.`doc`='{$this->doc}'
+	ORDER BY `doc_list_pos`.`id`");
+
+        $ndsp = $this->firm_vars['param_nds'];
+        $nds = $ndsp / 100;
+        
+        while ($nxt = $res->fetch_assoc()) {
+            if (!$nxt['country_code']) {
+                throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
+            }
+            
+            $pos_name = $nxt['name'];
+            if($nxt['group_printname']) {
+                $pos_name = $nxt['group_printname'].' '.$pos_name;
+            }
+
+            if (!@$CONFIG['doc']['no_print_vendor'] && $nxt['vendor']) {
+                $pos_name .= ' / ' . $nxt['vendor'];
+            }
+            
+            $pos_code = $nxt['pos_id'];
+            if($nxt['vc']) {
+                $pos_code .= ' / '.$nxt['vc'];
+            }
+
+            if (@$CONFIG['poseditor']['true_gtd']) {
+                $gtd_array = array();
+                $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
+                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                    WHERE `doc_list_pos`.`tovar`='{$nxt['pos_id']}' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
+                    AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
+                    ORDER BY `doc_list`.`date`");
+                while ($line = $gres->fetch_assoc()) {
+                    if ($line['type'] == 1) { // Поступление
+                        $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $line['cnt']);
+                    } else {
+                        $cnt = $nxt['cnt'];
+                        while ($cnt > 0) {
+                            if (count($gtd_array) == 0) {
+                                throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации в прошлом). Товар был оприходован на другую организацию?");
+                            }
+                            if ($gtd_array[0]['cnt'] == $cnt) {
+                                array_shift($gtd_array);
+                                $cnt = 0;
+                            } elseif ($gtd_array[0]['cnt'] > $cnt) {
+                                $gtd_array[0]['cnt'] -= $cnt;
+                                $cnt = 0;
+                            } else {
+                                $cnt -= $gtd_array[0]['cnt'];
+                                array_shift($gtd_array);
+                            }
+                        }
+                    }
+                }
+
+                $unigtd = array();
+                $need_cnt = $nxt['cnt'];
+                while ($need_cnt > 0 && count($gtd_array) > 0) {
+                    $gtd_num = $gtd_array[0]['num'];
+                    $gtd_cnt = $gtd_array[0]['cnt'];
+                    if ($gtd_cnt >= $need_cnt) {
+                        if(isset($unigtd[$gtd_num])) {
+                            $unigtd[$gtd_num] += $need_cnt;
+                        }
+                        else {
+                            $unigtd[$gtd_num] = $need_cnt;
+                        }
+                        $need_cnt = 0;
+                    } else {
+                        if(isset($unigtd[$gtd_num])) {
+                            $unigtd[$gtd_num] += $gtd_cnt;
+                        }
+                        else {
+                            $unigtd[$gtd_num] = $gtd_cnt;
+                        }
+                        $need_cnt -= $gtd_cnt;
+                        array_shift($gtd_array);
+                    }
+                }
+                if ($need_cnt > 0) {
+                    throw new Exception("Не найдены поступления для $need_cnt единиц товара {$pos_name}. Товар был оприходован на другую организацию?");
+                }
+                foreach ($unigtd as $gtd => $cnt) {
+                    if ($this->doc_data['nds']) {
+                        $pos_price = round($nxt['cost'] / (1 + $nds), 2);
+                        $pos_sum = $pos_price * $cnt;
+                        $nalog = ($nxt['cost'] * $cnt) - $pos_sum;
+                        $snalogom = $nxt['cost'] * $cnt;
+                    } else {
+                        $pos_price = $nxt['cost'];
+                        $pos_sum = $pos_price * $cnt;
+                        $nalog = $pos_sum * $nds;
+                        $snalogom = $pos_sum + $nalog;
+                    }
+
+                    $list[] = array(
+                        'code'      => $pos_code,
+                        'name'      => $pos_name,
+                        'unit_code' => $nxt['unit_code'],
+                        'unit_name' => $nxt['unit_name'],
+                        'cnt'       => $cnt,
+                        'price'     => $pos_price,
+                        'sum'       => $pos_sum,
+                        'excise'    => 'без акциза',
+                        'vat_p'     => $ndsp,
+                        'vat_s'     => $nalog,
+                        'sum_all'   => $snalogom,
+                        'country_code' => $nxt['country_code'],
+                        'country_name' => $nxt['country_name'],
+                        'ncd'       => $gtd
+                    );
+                }
+            }
+            else {
+                if ($this->doc_data['nds']) {
+                    $pos_price = $nxt['cost'] / (1 + $nds);
+                    $pos_sum = $pos_price * $nxt['cnt'];
+                    $nalog = ($nxt['cost'] * $nxt['cnt']) - $pos_sum;
+                    $snalogom = $nxt['cost'] * $nxt['cnt'];
+                } else {
+                    $pos_price = $nxt['cost'];
+                    $pos_sum = $pos_price * $nxt['cnt'];
+                    $nalog = $pos_sum * $nds;
+                    $snalogom = $pos_sum + $nalog;
+                }
+
+                $list[] = array(
+                    'code'      => $pos_code,
+                    'name'      => $pos_name,
+                    'unit_code' => $nxt['unit_code'],
+                    'unit_name' => $nxt['unit_name'],
+                    'cnt'       => $nxt['cnt'],
+                    'price'     => $pos_price,
+                    'sum'       => $pos_sum,
+                    'excise'    => 'без акциза',
+                    'vat_p'     => $ndsp,
+                    'vat_s'     => $nalog,
+                    'sum_all'   => $snalogom,
+                    'country_code' => $nxt['country_code'],
+                    'country_name' => $nxt['country_name'],
+                    'ncd'       => $nxt['ntd']
+                );
+            }
+        }
+        return $list;
+    }
 
 function SfakPDF($to_str = 0) {
         global $CONFIG, $tmpl, $db;
@@ -1954,7 +2100,6 @@ function SfakPDF($to_str = 0) {
 
         foreach ($t2_width as $i => $w2) {
             while ($c_id < $t2_start[$i]) {
-                $t_a[$offset] = $offset;
                 $offset+=$t_width[$c_id++];
             }
 
@@ -1988,7 +2133,7 @@ function SfakPDF($to_str = 0) {
         }
         $t_all_width[] = 32;
         $i = 1;
-        foreach ($t_all_width as $id => $w) {
+        foreach ($t_all_width as $w) {
             $pdf->Cell($w, 4, $t3_text[$i - 1], 1, 0, 'C', 0);
             $i++;
         }
@@ -2360,7 +2505,7 @@ function Nacenki($to_str=0)
 }
 
 function PrintLabel($to_str=0) {
-	global $tmpl, $CONFIG, $db;
+	global $tmpl, $db;
 	if (!$to_str)	$tmpl->ajax = 1;
 
 	require('fpdf/fpdf.php');

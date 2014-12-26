@@ -31,7 +31,44 @@ class upd extends \doc\printforms\iPrintForm {
         $this->pdf->CellIconv(0, $h, $info, 0, 1, 'C');
         
     }
-
+    
+    // Вывод элемента *должность/подпись/фио*
+    protected function makeDPFItem($name, $num, $step = 4, $microstep = 2) {
+        $p1_w = array(35, 2, 35, 2, 45, 0);
+        $this->pdf->SetFont('', '', 7);
+        $this->pdf->CellIconv(0, $step, $name, 0, 1, 'L', 0); 
+        $this->pdf->CellIconv($p1_w[0], $step, '', 'B', 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[1], $step, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[2], $step, '', 'B', 0, 'R', 0);
+        $this->pdf->CellIconv($p1_w[3], $step, '', 0, 0, 'L', 0);
+        $this->pdf->CellIconv($p1_w[4], $step, '', 'B', 0, 'С', 0);
+        $this->pdf->CellIconv($p1_w[5], $step, '['.$num.']', 0, 1, 'R', 0);
+        
+        $this->pdf->SetFont('', '', 5);
+        $this->pdf->CellIconv($p1_w[0], $microstep, '(должность)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[1], $microstep, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[2], $microstep, '(подпись)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[3], $microstep, '',0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[4], $microstep, '(ф.и.о.)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[5], $microstep, '', 0, 1, 'C', 0);
+    }
+    
+    // Вывод простого элемента блока подписей
+    protected function makeSimpleItem($name, $num, $desc, $step, $microstep) {
+        $this->pdf->SetFont('', '', 7);
+        $this->pdf->CellIconv(0, $step, $name, 0, 1, 'L', 0);
+        $this->pdf->CellIconv(120, $step, '', 'B', 0, 'L', 0);
+        $this->pdf->CellIconv(0, $step, '['.$num.']', 0, 1, 'R', 0);
+        $this->pdf->SetFont('', '', 5);
+        $this->pdf->CellIconv(120, $microstep, $desc, 0, 1, 'C', 0);
+    }
+    // Вывод простого элемента блока подписей *дата*
+    protected function makeDateItem($name, $num, $step) {
+        $this->pdf->SetFont('', '', 7);
+        $this->pdf->CellIconv(60, $step, $name, 0, 0, 'L', 0);
+        $this->pdf->CellIconv(60, $step, '"_____" _________________________ 20____г.', 0, 0, 'C', 0);
+        $this->pdf->CellIconv(0, $step, '['.$num.']', 0, 1, 'R', 0);
+    }
 
     /// Сформировать данные печатной формы
     public function make() {
@@ -41,15 +78,9 @@ class upd extends \doc\printforms\iPrintForm {
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         
-        $this->pdf->SetAutoPageBreak(1, 5);
         $this->pdf->AddPage('L');
-        $x = $this->pdf->getX();
         $y = $this->pdf->getY();
-        $this->pdf->SetX(200);
-        $this->pdf->SetY(200);
-        $this->pdf->SetFont('Arial', '', 2);
-        $str = 'Подготовлено в multimag v:'.MULTIMAG_VERSION;
-        $this->pdf->CellIconv(0, 4, $str, 0, 0, 'R');
+        $this->addInfoFooter();
         
         $this->pdf->SetLineWidth($this->line_bold_w);        
         $this->pdf->Line(40, 5, 40, 79);
@@ -101,7 +132,7 @@ class upd extends \doc\printforms\iPrintForm {
         }
         $agent_info = $db->selectRow('doc_agent', $doc_data['agent']);
         if (!$agent_info) {
-            throw new Exception('Агент не найден');
+            throw new \Exception('Агент не найден');
         }
         
         if ($doc_data['p_doc']) {
@@ -139,14 +170,13 @@ class upd extends \doc\printforms\iPrintForm {
         $this->pdf->lMargin = $old_l_margin;
         $this->pdf->Ln();
         
-        // Таблица номенклатуры
-        
+        // Таблица номенклатуры - шапка        
         $y = $this->pdf->GetY();
         $t_all_offset = array();
 
         $this->pdf->SetLineWidth($this->line_normal_w); 
         $t_width = array(10, 20, 58, 22, 10, 15, 20, 10, 10, 16, 28, 26, 0);
-        $t_ydelta = array(7, 7, 7, 0, 5, 5, 0, 6, 6, 7, 3, 0, 7);
+        $t_ydelta = array(7, 7, 7, 0.2, 5, 5, 0.5, 6, 6, 7, 3, 0.2, 7);
         $t_text = array(
             'N п/п',
             'Код товара/ работ, услуг',
@@ -173,8 +203,7 @@ class upd extends \doc\printforms\iPrintForm {
             $t_all_offset[$offset] = $offset;
             $this->pdf->SetY($y + $t_ydelta[$i] + 0.2);
             $this->pdf->SetX($offset + $this->pdf->lMargin);
-            $str = iconv('UTF-8', 'windows-1251', $t_text[$i]);
-            $this->pdf->MultiCell($w, 2.7, $str, 0, 'C', 0);
+            $this->pdf->MultiCellIconv($w, 2.7, $t_text[$i], 0, 'C', 0);
             $offset+=$w;
         }
 
@@ -193,14 +222,14 @@ class upd extends \doc\printforms\iPrintForm {
 
         foreach ($t2_width as $i => $w2) {
             while ($c_id < $t2_start[$i]) {
-                $t_a[$offset] = $offset;
                 $offset+=$t_width[$c_id++];
             }
 
-            if ($old_col == $t2_start[$i])
+            if ($old_col == $t2_start[$i]) {
                 $off2+=$t2_width[$i - 1];
-            else
+            } else {
                 $off2 = 0;
+            }
             $old_col = $t2_start[$i];
             $t_all_offset[$offset + $off2] = $offset + $off2;
             $this->pdf->SetY($y);
@@ -209,28 +238,221 @@ class upd extends \doc\printforms\iPrintForm {
 
             $this->pdf->SetY($y + $t2_ydelta[$i]);
             $this->pdf->SetX($offset + $off2 + $this->pdf->lMargin);
-            $str = iconv('UTF-8', 'windows-1251', $t2_text[$i]);
-            $this->pdf->MultiCell($w2, 3, $str, 0, 'C', 0);
+            $this->pdf->MultiCellIconv($w2, 3, $t2_text[$i], 0, 'C', 0);
         }
 
         $t3_text = array('А', 'Б', 1, 2, '2a', 3, 4, 5, 6, 7, 8, 9, 10, '10a', 11);
-        $this->pdf->SetLineWidth(0.2);
+        $this->pdf->SetLineWidth($this->line_normal_w);
         sort($t_all_offset, SORT_NUMERIC);
         $this->pdf->SetY($y + 14);
         $t_all_width = array();
         $old_offset = 0;
         foreach ($t_all_offset as $offset) {
-            if ($offset == 0)
+            if ($offset == 0) {
                 continue;
+            }
             $t_all_width[] = $offset - $old_offset;
             $old_offset = $offset;
         }
         $t_all_width[] = 32;
         $i = 1;
-        foreach ($t_all_width as $id => $w) {
-            $this->pdf->CellIconv($w, 3.5, $t3_text[$i - 1], 1, 0, 'C', 0);
+        foreach ($t_all_width as $w) {
+            $this->pdf->CellIconv($w, 4, $t3_text[$i - 1], 1, 0, 'C', 0);
             $i++;
         }
+        
+        // тело таблицы
+        $nomenclature = $this->doc->getDocumentNomenclatureWVAT();
+        
+        $this->pdf->SetWidths($t_all_width);
+        $font_sizes = array(0=>7);
+        $this->pdf->SetFSizes($font_sizes);
+        $this->pdf->SetHeight(3.5);
+
+        $aligns = array('R', 'C', 'L', 'C', 'L', 'R', 'R', 'R', 'C', 'R', 'R', 'R', 'R', 'L', 'R');
+        $this->pdf->SetAligns($aligns);
+        $this->pdf->SetY($y + 18);
+        $this->pdf->SetFillColor(255, 255, 255);
+        $i = 1;
+        $sumbeznaloga = $sumnaloga = $sum = 0;
+        foreach ($nomenclature as $line ) {
+            $sumbeznaloga += $line['sum'];
+            $sum += $line['sum_all'];
+            $sumnaloga += $line['vat_s'];
+            
+            $row = array(
+                $i,
+                $line['code'],
+                $line['name'],
+                $line['unit_code'],
+                $line['unit_name'],
+                $line['cnt'],
+                sprintf("%01.2f", $line['price']),
+                sprintf("%01.2f", $line['sum']),
+                $line['excise'],
+                $line['vat_p'].'%',
+                sprintf("%01.2f", $line['vat_s']),
+                sprintf("%01.2f", $line['sum_all']),
+                $line['country_code'],
+                $line['country_name'],
+                $line['ncd']);
+            $lsy = $this->pdf->GetY();
+            $this->pdf->RowIconv($row);
+            $this->pdf->SetLineWidth($this->line_bold_w);
+            $this->pdf->Line(40, $this->pdf->GetY() , 40, $lsy);
+            $this->pdf->SetLineWidth($this->line_normal_w);
+        }
+        // Контроль расстояния до конца листа
+        $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
+        if ($workspace_h  <= $this->pdf->GetY() + 81) {
+            $this->pdf->AddPage('L');
+        }
+        $this->pdf->SetAutoPageBreak(0);        
+
+        // Итоги
+        $sum = sprintf("%01.2f", $sum);
+        $sumnaloga = sprintf("%01.2f", $sumnaloga);
+        $sumbeznaloga = sprintf("%01.2f", $sumbeznaloga);
+        $step = 4;
+        $lsy = $this->pdf->GetY();
+        $this->pdf->SetFont('', '', 8);
+        $this->pdf->Cell($t_all_width[0], $step, '', 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[1], $step, '', 1, 0, 'R', 0);
+        $str = iconv('UTF-8', 'windows-1251', "Всего к оплате:");
+        $allpay_w = 0;
+        
+        for($c = 2; $c<7; $allpay_w += $t_all_width[$c++]) {}
+        $this->pdf->CellIconv($allpay_w, $step, "Всего к оплате:", 1, 0, 'L', 0);
+        $this->pdf->Cell($t_all_width[7], $step, $sumbeznaloga, 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[8] + $t_all_width[8], $step, 'X', 1, 0, 'C', 0);
+        $this->pdf->Cell($t_all_width[10], $step, $sumnaloga, 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[11], $step, $sum, 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[12], $step, '', 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[13], $step, '', 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[14], $step, '', 1, 0, 'R', 0);
+        $this->pdf->ln();
+        
+        // Подписи
+        $this->pdf->SetFont('', '', 7);
+        $step = 3;
+        $microstep = 2.5;
+        $y = $this->pdf->GetY();
+        $this->pdf->Ln(2);
+        $this->pdf->AliasNbPages();
+        $this->pdf->MultiCellIconv($t_all_width[0] + $t_all_width[1], 5, "Документ составлен на {nb} листах", 0, 'L');
+        
+        $p1_w = array(45, 35, 2, 40, 45, 35, 2, 40);
+        
+        $this->pdf->SetLineWidth($this->line_thin_w);
+        $this->pdf->lMargin = 42;
+        $this->pdf->SetY($y+2);
+        $this->pdf->SetX($this->pdf->lMargin);
+        $this->pdf->CellIconv($p1_w[0] + $p1_w[1] + $p1_w[2] + $p1_w[3], $step, 'Руководитель организации', 0, 0, 'L', 0);
+        $this->pdf->CellIconv(0, $step, 'Главный бухгалтер', 0, 1, 'L', 0);
+        $this->pdf->CellIconv($p1_w[0], $step, 'или иное уполномоченное лицо', 0, 0, 'L', 0);
+        $this->pdf->CellIconv($p1_w[1], $step, '', 'B', 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[2], $step, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[3], $step, $firm_vars['firm_director'], 'B', 0, 'R', 0);
+        $this->pdf->CellIconv($p1_w[4], $step, 'или иное уполномоченное лицо', 0, 0, 'L', 0);
+        $this->pdf->CellIconv($p1_w[5], $step, '', 'B', 0, 'С', 0);
+        $this->pdf->CellIconv($p1_w[6], $step, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[7], $step, $firm_vars['firm_buhgalter'], 'B', 1, 'R', 0);
+        
+        $this->pdf->SetFont('', '', 5);
+        $this->pdf->CellIconv($p1_w[0], $microstep, '', 0, 0, 'L', 0);
+        $this->pdf->CellIconv($p1_w[1], $microstep, '(подпись)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[2], $microstep, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[3], $microstep, '(ф.и.о.)',0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[4], $microstep, '', 0, 0, 'L', 0);
+        $this->pdf->CellIconv($p1_w[5], $microstep, '(подпись)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[6], $microstep, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[7], $microstep, '(ф.и.о.)', 0, 1, 'C', 0);
+        $this->pdf->Ln(2);
+        
+        $this->pdf->SetFont('', '', 7);
+        $this->pdf->CellIconv($p1_w[0], $step, 'Индивидуальный предприниматель', 0, 0, 'L', 0);
+        $this->pdf->CellIconv($p1_w[1], $step, '', 'B', 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[2], $step, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[3], $step, $firm_vars['firm_director'], 'B', 0, 'R', 0);
+        $this->pdf->CellIconv($p1_w[4] - 30, $step, '', 0, 0, 'L', 0);
+        $this->pdf->CellIconv(30 + $p1_w[5] + $p1_w[6] + $p1_w[7], $step, '', 'B', 1, 'С', 0);
+        
+        $this->pdf->SetFont('', '', 5);
+        $this->pdf->CellIconv($p1_w[0], $microstep, '', 0, 0, 'L', 0);
+        $this->pdf->CellIconv($p1_w[1], $microstep, '(подпись)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[2], $microstep, '', 0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[3], $microstep, '(ф.и.о.)',0, 0, 'C', 0);
+        $this->pdf->CellIconv($p1_w[4] - 30, $microstep, '', 0, 0, 'С', 0);
+        $this->pdf->CellIconv(20 + $p1_w[5] + $p1_w[6] + $p1_w[7],
+                $microstep, '(реквизиты свидетельства о государственной регистрации индивидуального предпринимателя)', 0, 1, 'C', 0);       
+        
+        $this->pdf->Ln(1);
+        $this->pdf->SetLineWidth($this->line_bold_w);
+        $this->pdf->Line(40, $this->pdf->GetY() , 40, $lsy);
+        $this->pdf->Line(40, $this->pdf->GetY() , $this->pdf->w - $this->pdf->rMargin , $this->pdf->GetY());
+        $this->pdf->SetLineWidth($this->line_thin_w);
+        
+        $reason_info = '';
+        if(isset($dop_data['dov_agent']))	{
+		$dov_data = $db->selectRow('doc_agent_dov', $dop_data['dov_agent']);
+		if($dov_data) {
+                    $reason_info = "Доверенность №{$this->dop_data['dov']} от {$this->dop_data['dov_data']}, ";
+                    $reason_info .= "выданной {$dov_data['range']} {$dov_data['surname']} {$dov_data['name']} {$dov_data['name2']}";
+		}
+	}
+        $this->pdf->lMargin = $old_l_margin;
+        $this->pdf->Ln(2);
+        $this->pdf->SetFont('', '', 7);
+        $this->pdf->CellIconv(70, $step, 'Основание передачи (сдачи) / получения (приёмки)', 0, 0, 'L', 0);
+        $this->pdf->CellIconv(200, $step, $reason_info, 'B', 0, 'C', 0);
+        $this->pdf->CellIconv(0, $step, '[8]', 0, 1, 'R', 0);
+        $this->pdf->SetFont('', '', 5);
+        $this->pdf->CellIconv(80, $microstep, '', 0, 0, 'L', 0);
+        $this->pdf->CellIconv(190, $microstep, '(договор; доверенность и др.)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv(0, $microstep, '', 0, 1, 'R', 0);
+        
+        $this->pdf->Ln(1);
+        $this->pdf->SetFont('', '', 7);
+        $this->pdf->CellIconv(50, $step, 'Данные о транспортировке и грузе', 0, 0, 'L', 0);
+        $this->pdf->CellIconv(220, $step, '', 'B', 0, 'C', 0);
+        $this->pdf->CellIconv(0, $step, '[9]', 0, 1, 'R', 0);
+        $this->pdf->SetFont('', '', 5);
+        $this->pdf->CellIconv(80, $microstep, '', 0, 0, 'L', 0);
+        $this->pdf->CellIconv(190, $microstep, '(транспортная накладная, поручение экспедитору, экспедиторская / складская расписка и др, / масса нетто/брутто груза, если не приведены ссылки на документы, содержащие эти сведения)', 0, 0, 'C', 0);
+        $this->pdf->CellIconv(0, $microstep, '', 0, 1, 'R', 0);
+        
+        $lsy = $this->pdf->GetY();
+        $old_r_margin = $this->pdf->rMargin;
+        $this->pdf->rMargin = 160;
+        
+        $step = 4;
+        $this->pdf->Ln(2);
+        $this->makeDPFItem('Товар (груз) передал / услуги, результаты работ, права сдал', 10, $step, $microstep);
+        $this->makeDateItem('Дата отгрузки, передачи (сдачи)', 11, $step);
+        $this->makeSimpleItem('Иные сведения об отгрузке, передаче', 12,
+                '(ссылки на неотъемлемые приложения, сопутствующие документы, иные документы и т.п.)', $step, $microstep);
+        $this->makeDPFItem('Ответственный за правильность оформления факта хозяйственной жизни', 13, $step, $microstep);
+        $this->makeSimpleItem('Наименование экономического субъекта - составителя документа (в т.ч. комиссионера / агента)', 14,
+                '(может не заполняться при проставлении печати в М.П., может быть указан ИНН / КПП)', $step, $microstep);
+        
+        $this->pdf->SetLineWidth($this->line_bold_w);
+        $this->pdf->Line(140, $this->pdf->GetY()+2, 140, $lsy);
+        $this->pdf->SetLineWidth($this->line_thin_w);
+        
+        $this->pdf->rMargin = $old_r_margin;
+        $this->pdf->SetY($lsy);
+        $this->pdf->lMargin = 145;
+        
+        $this->pdf->Ln(2);
+        $this->makeDPFItem('Товар (груз) получил / услуги, результаты работ, права принял', 15, $step, $microstep);
+        $this->makeDateItem('Дата получения (приёмки)', 16, $step);
+        $this->makeSimpleItem('Иные сведения о получении, приёмке', 17,
+                '(информация о наличии/отсутствии претензии; ссылки на неотъемлемые приложения, и другие документы и т.п.)', $step, $microstep);
+        $this->makeDPFItem('Ответственный за правильность оформления факта хозяйственной жизни', 18, $step, $microstep);
+        $this->makeSimpleItem('Наименование экономического субъекта - составителя документа', 19,
+                '(может не заполняться при проставлении печати в М.П., может быть указан ИНН / КПП)', $step, $microstep);
+        
     }
+    
     
 }

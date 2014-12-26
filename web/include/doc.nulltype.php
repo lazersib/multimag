@@ -1048,11 +1048,11 @@ class doc_Nulltype
             if($f_param[0]=='int') {
                 $method = '';
                 foreach ($this->PDFForms as $form) {
-                    if ($form['name'] == $opt)
+                    if ($form['name'] == $f_param[1])
                         $method = $form['method'];
                 }
                 if (!method_exists($this, $method)) {
-                    throw new Exception('Печатная форма не зарегистрирована');
+                    throw new Exception('Печатная форма '.html_out($opt).' не зарегистрирована');
                 }
                 doc_log("PRINT", $opt, 'doc', $this->doc);
                 $this->sentZEvent('print');
