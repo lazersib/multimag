@@ -303,7 +303,7 @@ class ds_sborka_zap {
 			// Поиск по подстроке по складу
 			else if ($peopt == 'jsklads') {
 				$s = request('s');
-				$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
+				$str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
 				$tmpl->setContent($str);
 			}
 			else throw new NotFoundException();

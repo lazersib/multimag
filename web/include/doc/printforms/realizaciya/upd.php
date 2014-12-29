@@ -54,10 +54,10 @@ class upd extends \doc\printforms\iPrintForm {
     }
     
     // Вывод простого элемента блока подписей
-    protected function makeSimpleItem($name, $num, $desc, $step, $microstep) {
+    protected function makeSimpleItem($name, $value, $num, $desc, $step, $microstep) {
         $this->pdf->SetFont('', '', 7);
         $this->pdf->CellIconv(0, $step, $name, 0, 1, 'L', 0);
-        $this->pdf->CellIconv(120, $step, '', 'B', 0, 'L', 0);
+        $this->pdf->CellIconv(120, $step, $value, 'B', 0, 'L', 0);
         $this->pdf->CellIconv(0, $step, '['.$num.']', 0, 1, 'R', 0);
         $this->pdf->SetFont('', '', 5);
         $this->pdf->CellIconv(120, $microstep, $desc, 0, 1, 'C', 0);
@@ -429,12 +429,12 @@ class upd extends \doc\printforms\iPrintForm {
         $this->pdf->Ln(2);
         $this->makeDPFItem('Товар (груз) передал / услуги, результаты работ, права сдал', 10, $step, $microstep);
         $this->makeDateItem('Дата отгрузки, передачи (сдачи)', 11, $step);
-        $this->makeSimpleItem('Иные сведения об отгрузке, передаче', 12,
+        $this->makeSimpleItem('Иные сведения об отгрузке, передаче', '', 12,
                 '(ссылки на неотъемлемые приложения, сопутствующие документы, иные документы и т.п.)', $step, $microstep);
         $this->makeDPFItem('Ответственный за правильность оформления факта хозяйственной жизни', 13, $step, $microstep);
-        $this->makeSimpleItem('Наименование экономического субъекта - составителя документа (в т.ч. комиссионера / агента)', 14,
+        $this->makeSimpleItem('Наименование экономического субъекта - составителя документа (в т.ч. комиссионера / агента)',
+                $firm_vars['firm_name'].', ИНН/КПП:'.$firm_vars['firm_inn'], 14,
                 '(может не заполняться при проставлении печати в М.П., может быть указан ИНН / КПП)', $step, $microstep);
-        
         $this->pdf->SetLineWidth($this->line_bold_w);
         $this->pdf->Line(140, $this->pdf->GetY()+2, 140, $lsy);
         $this->pdf->SetLineWidth($this->line_thin_w);
@@ -446,12 +446,11 @@ class upd extends \doc\printforms\iPrintForm {
         $this->pdf->Ln(2);
         $this->makeDPFItem('Товар (груз) получил / услуги, результаты работ, права принял', 15, $step, $microstep);
         $this->makeDateItem('Дата получения (приёмки)', 16, $step);
-        $this->makeSimpleItem('Иные сведения о получении, приёмке', 17,
+        $this->makeSimpleItem('Иные сведения о получении, приёмке', '', 17,
                 '(информация о наличии/отсутствии претензии; ссылки на неотъемлемые приложения, и другие документы и т.п.)', $step, $microstep);
         $this->makeDPFItem('Ответственный за правильность оформления факта хозяйственной жизни', 18, $step, $microstep);
-        $this->makeSimpleItem('Наименование экономического субъекта - составителя документа', 19,
-                '(может не заполняться при проставлении печати в М.П., может быть указан ИНН / КПП)', $step, $microstep);
-        
+        $this->makeSimpleItem('Наименование экономического субъекта - составителя документа', '', 19,
+                '(может не заполняться при проставлении печати в М.П., может быть указан ИНН / КПП)', $step, $microstep);      
     }
     
     

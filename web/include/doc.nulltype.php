@@ -1291,7 +1291,7 @@ class doc_Nulltype
 			// Поиск по подстроке по складу
 			else if ($peopt == 'jsklads') {
 				$s = request('s');
-				$str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
+				$str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
 				$tmpl->setContent($str);
 			}
 			// Серийные номера

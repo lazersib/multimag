@@ -747,82 +747,169 @@ function SerialNum($action, $line_id, $data)
 		global $db;
 		$s_sql = $db->real_escape_string($s);
 		$s_json = json_encode($s, JSON_UNESCAPED_UNICODE);
+                $found_ids = '0';   // Для NOT IN
+               
+                $result = array();
 		$ret = '';
-		$sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
-			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`,
-			`doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`,
-			`doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`,
-			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
-			`doc_base`.`bulkcnt`";
+		$sql = "SELECT SQL_CALC_FOUND_ROWS `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
+                    `doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`,
+                    `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`,
+                    `doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`, `doc_base`.`analog_group`,
+                    (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
+                    `doc_base`.`bulkcnt`
+                    FROM `doc_base`
+                    LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+                    LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id` ";
 
-		$sqla = $sql . "FROM `doc_base`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ORDER BY " . $this->getOrder() . " LIMIT 200";
-		$res = $db->query($sqla);
-		if ($cnt = $res->num_rows) {
-			if ($ret != '')
-				$ret.=', ';
-			$ret.="{id: 'header', name: 'Поиск по названию, начинающемуся на $s_json - $cnt наименований найдено'}";
-			$ret = $this->FormatResult($res, $ret);
-		}
-		$sqla = $sql . "FROM `doc_base`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`name` NOT LIKE '$s_sql%'
-			AND `doc_base`.`vc` NOT LIKE '$s_sql%' ORDER BY " . $this->getOrder() . " LIMIT 100";
-		$res = $db->query($sqla);
-		if ($cnt = $res->num_rows) {
-			if ($ret != '')
-				$ret.=', ';
-			$ret.="{id: 'header', name: 'Поиск по названию, содержащему $s_json - $cnt наименований найдено'}";
-			$ret = $this->FormatResult($res, $ret);
-		}
-		$sqla = $sql . "FROM `doc_base`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' AND `doc_base`.`vc` NOT LIKE '%$s_sql%'
-			ORDER BY " . $this->getOrder() . " LIMIT 100";
-		$res = $db->query($sqla);
-		if ($cnt = $res->num_rows) {
-			if ($ret != '')
-				$ret.=', ';
-			$ret.="{id: 'header', name: 'Поиск по аналогу($s_json) - $cnt наименований найдено'}";
-			$ret = $this->FormatResult($res, $ret);
-		}
-		return $ret;
+                $sqla = $sql . "WHERE `doc_base`.`name` = '$s_sql' OR `doc_base`.`vc` = '$s_sql' ORDER BY " . $this->getOrder();
+                $res = $db->query($sqla);
+                if ($cnt = $res->num_rows) {
+                    $result[] = array('id'=>'header', 'name'=>"Поиск совпадений с $s_json - $cnt наименований найдено");
+                    $groups_analog_list = '';
+                    while($line = $res->fetch_assoc()) {
+                        $result[] = $this->formatLine($line);
+                        $found_ids.=','.$line['id'];
+                        if($line['analog_group']) {
+                            if($groups_analog_list) {
+                                $groups_analog_list.=',';
+                            }
+                            $groups_analog_list.="'".$db->real_escape_string($line['analog_group'])."'";
+                        }
+                    }
+                    if($groups_analog_list) {
+                        $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) ORDER BY " . $this->getOrder();
+                        $res = $db->query($sqla);
+                        
+                        if ($cnt = $res->num_rows) {
+                            $result[] = array('id'=>'header', 'name'=>"Поиск аналогов $s_json - $cnt наименований найдено");
+                            $groups_analog_list = '';
+                            while($line = $res->fetch_assoc()) {
+                                $result[] = $this->formatLine($line);
+                                $found_ids.=','.$line['id'];
+                            }
+                        }
+                    }
+                }
+                
+                $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') AND `doc_base`.`id` NOT IN ($found_ids) "
+                    . "ORDER BY " . $this->getOrder() . " LIMIT 50";
+                $res = $db->query($sqla);
+                if ($cnt = $res->num_rows) {
+                    $rows_res = $db->query("SELECT FOUND_ROWS()");
+                    list($found_cnt) = $rows_res->fetch_row();
+                    $result[] = array('id'=>'header', 'name'=>"Поиск по названию, начинающемуся на $s_json - показано $cnt из $found_cnt");
+                    $groups_analog_list = '';
+                    while($line = $res->fetch_assoc()) {
+                        $result[] = $this->formatLine($line);
+                        $found_ids.=','.$line['id'];
+                        if($line['analog_group']) {
+                            if($groups_analog_list) {
+                                $groups_analog_list.=',';
+                            }
+                            $groups_analog_list.="'".$db->real_escape_string($line['analog_group'])."'";
+                        }
+                    }
+                    if($groups_analog_list) {
+                        $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) "
+                                . "ORDER BY " . $this->getOrder() ." LIMIT 50";
+                        $res = $db->query($sqla);
+                        
+                        if ($cnt = $res->num_rows) {
+                            $rows_res = $db->query("SELECT FOUND_ROWS()");
+                            list($found_cnt) = $rows_res->fetch_row();
+                            $result[] = array('id'=>'header', 'name'=>"Поиск аналогов предыдущего блока - показано $cnt из $found_cnt");
+                            $groups_analog_list = '';
+                            while($line = $res->fetch_assoc()) {
+                                $result[] = $this->formatLine($line);
+                                $found_ids.=','.$line['id'];
+                            }
+                        }
+                    }
+                }
+                
+                $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`id` NOT IN ($found_ids) "
+                    . "ORDER BY " . $this->getOrder() . " LIMIT 50";
+                $res = $db->query($sqla);
+                if ($cnt = $res->num_rows) {
+                    $rows_res = $db->query("SELECT FOUND_ROWS()");
+                    list($found_cnt) = $rows_res->fetch_row();
+                    $result[] = array('id'=>'header', 'name'=>"Поиск по вхождению $s_json - показано $cnt из $found_cnt");
+                    while($line = $res->fetch_assoc()) {
+                        $result[] = $this->formatLine($line);
+                    }
+                }
+                
+                return json_encode($result, JSON_UNESCAPED_UNICODE);
+                
+//		$sqla = $sql . "WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ORDER BY " . $this->getOrder() . " LIMIT 200";
+//		$res = $db->query($sqla);
+//		if ($cnt = $res->num_rows) {
+//			if ($ret != '')
+//				$ret.=', ';
+//			$ret.="{id: 'header', name: 'Поиск по названию, начинающемуся на $s_json - $cnt наименований найдено'}";
+//			$ret = $this->FormatResult($res, $ret);
+//		}
+//		$sqla = $sql . "WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`name` NOT LIKE '$s_sql%'
+//			AND `doc_base`.`vc` NOT LIKE '$s_sql%' ORDER BY " . $this->getOrder() . " LIMIT 100";
+//		$res = $db->query($sqla);
+//		if ($cnt = $res->num_rows) {
+//			if ($ret != '')
+//				$ret.=', ';
+//			$ret.="{id: 'header', name: 'Поиск по названию, содержащему $s_json - $cnt наименований найдено'}";
+//			$ret = $this->FormatResult($res, $ret);
+//		}
+//		$sqla = $sql . "WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' AND `doc_base`.`vc` NOT LIKE '%$s_sql%'
+//			ORDER BY " . $this->getOrder() . " LIMIT 100";
+//		$res = $db->query($sqla);
+//		if ($cnt = $res->num_rows) {
+//			if ($ret != '')
+//				$ret.=', ';
+//			$ret.="{id: 'header', name: 'Поиск по аналогу($s_json) - $cnt наименований найдено'}";
+//			$ret = $this->FormatResult($res, $ret);
+//		}
+//		return $ret;
 	}
 
+    /// Форматирует данные строки списка наименований перед последующей конвертацией в json
+    /// @param $line Массив с ниформацией о наименовании
+    protected function formatLine($line) {
+        $dcc = strtotime($line['price_date']);
+        if ($dcc > (time() - 60 * 60 * 24 * 30 * 3)) {
+            $line['price_cat'] = "c1";
+        } elseif ($dcc > (time() - 60 * 60 * 24 * 30 * 6)) {
+            $line['price_cat'] = "c2";
+        } elseif ($dcc > (time() - 60 * 60 * 24 * 30 * 9)) {
+            $line['price_cat'] = "c3";
+        } elseif ($dcc > (time() - 60 * 60 * 24 * 30 * 12)) {
+            $line['price_cat'] = "c4";
+        }
+        if ($this->show_rto) {
+            $line['reserve'] = DocRezerv($line['id'], $this->doc);
+            $line['offer'] = DocPodZakaz($line['id'], $this->doc);
+            $line['transit'] = DocVPuti($line['id'], $this->doc);
+        }
+        $pc = PriceCalc::getInstance();
+        if ($this->cost_id) {
+            $line['price'] = $pc->getPosSelectedPriceValue($line['id'], $this->cost_id, $line);
+        } else {
+            $line['price'] = $pc->getPosDefaultPriceValue($line['id']);
+        }
+        return $line;
+    }
 
-	protected function FormatResult($res, $ret = '') {
-		if ($res->num_rows) {
-			$pc = PriceCalc::getInstance();
-			while ($nxt = $res->fetch_assoc()) {
-				$dcc = strtotime($nxt['price_date']);
-				if ($dcc > (time() - 60 * 60 * 24 * 30 * 3))		$nxt['price_cat'] = "c1";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 6))	$nxt['price_cat'] = "c2";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 9))	$nxt['price_cat'] = "c3";
-				else if ($dcc > (time() - 60 * 60 * 24 * 30 * 12))	$nxt['price_cat'] = "c4";
-				if ($this->show_rto) {
-					$nxt['reserve'] = DocRezerv($nxt['id'], $this->doc);
-					$nxt['offer'] = DocPodZakaz($nxt['id'], $this->doc);
-					$nxt['transit'] = DocVPuti($nxt['id'], $this->doc);
-				}
-				
-				if($this->cost_id)
-					$nxt['price'] = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
-				else	$nxt['price'] = $pc->getPosDefaultPriceValue($nxt['id']);
-				
-				if ($ret != '')
-					$ret.=', ';
+        protected function FormatResult($res, $ret = '') {
+        if ($res->num_rows) {
+            while ($nxt = $res->fetch_assoc()) {
+                $nxt = $this->formatLine($nxt);
 
-				$ret .= json_encode($nxt, JSON_UNESCAPED_UNICODE);
-			}
-		}
-		return $ret;
-	}
+                if ($ret != '') {
+                    $ret.=', ';
+                }
 
-};
+                $ret .= json_encode($nxt, JSON_UNESCAPED_UNICODE);
+            }
+        }
+        return $ret;
+    }
 
-
-?>
+}

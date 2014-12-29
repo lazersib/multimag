@@ -1238,7 +1238,7 @@ function SkladViewInit(setup, callback) {
 		
 			// N линии и кнопка *удалить*
 			var td = document.createElement('td');
-			var textNode = document.createTextNode(row_cnt+1);
+			var textNode = document.createTextNode(data.id);
 			td.appendChild(textNode);
 			fragment.appendChild(td);
 

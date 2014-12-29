@@ -1882,7 +1882,7 @@ class doc_s_Sklad {
 	function draw_groups($select) {
 		global $tmpl;
 		$tmpl->addContent("
-		Отбор:<input type='text' id='sklsearch' onkeydown=\"DelayedSave('/docs.php?mode=srv&amp;opt=pl','sklad', 'sklsearch'); return true;\" >
+		<input type='text' id='sklsearch' placeholder='Глобальный фильтр...' onkeydown=\"DelayedSave('/docs.php?mode=srv&amp;opt=pl','sklad', 'sklsearch'); return true;\" >
 		<div onclick='tree_toggle(arguments[0])'>
 		<div><a href='' onclick=\"EditThis('/docs.php?mode=srv&amp;opt=pl&amp;g=0','sklad'); return false;\" >Группы</a>  (<a href='/docs.php?l=sklad&mode=edit&param=g&g=0'><img src='/img/i_add.png' alt=''></a>)</div>
 		<ul class='Container'>".$this->draw_level($select,0)."</ul></div>");
@@ -2039,9 +2039,7 @@ class doc_s_Sklad {
 
 	/// Отображает результаты поиска товаров по наименованию
 	/// Отображает список товаров группы, разбитый на страницы
-	/// @param group ID группы, куда должен быть добавлен товар при нажати кнопки добавить
-	/// @param s подстрока поиска
-	/// TODO: убрать обращения к параметру group и сам параметр
+	/// @param $s подстрока поиска
 	function ViewSkladS($s)	{
 		global $tmpl, $CONFIG, $db;
 		$sf = 0;
@@ -2062,26 +2060,30 @@ class doc_s_Sklad {
 			default: $order = '`doc_base`.`name`';
 		}
 
-		$s_sql = $db->real_escape_string($s);
-		
+		$search_sql = $db->real_escape_string($s);
+		$limit = 100;
 		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
                     `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
                     `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
                     `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
                     (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`,
                     `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`";
-		
+		$where_add = '';
+                if($_SESSION['sklad_store_only']) {
+                    $where_add .= " AND `doc_base_cnt`.`cnt`>0 ";
+                }
+                
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') ";
-		if($_SESSION['sklad_store_only'])
-			$sqla .= " AND `doc_base_cnt`.`cnt`>0 ";
-		$sqla.=" ORDER BY $order LIMIT 100";
+		WHERE (`doc_base`.`name` LIKE '$search_sql%' OR `doc_base`.`vc` LIKE '$search_sql%') $where_add
+                ORDER BY $order LIMIT $limit";
+                
+                
 		$ores = $db->query($sqla);
 		if ($ores->num_rows) {
 			$tmpl->addContent("<tr><th colspan='18' align='center'>Поиск по названию, начинающемуся на ".html_out($s).": {$ores->num_rows} строк найдено");
-			if ($ores->num_rows >= 100)
+			if ($ores->num_rows >= $limit)
 				$tmpl->addContent("<tr style='color: #f00'><td colspan='18' align='center'>Вероятно, показаны не все наименования. Уточните запрос.");
 			$this->DrawSkladTable($ores, $s);
 			$sf = 1;
@@ -2090,10 +2092,8 @@ class doc_s_Sklad {
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' ";
-		if($_SESSION['sklad_store_only'])
-			$sqla .= " AND `doc_base_cnt`.`cnt`>0 ";
-		$sqla.=" ORDER BY $order LIMIT 30";
+		WHERE `doc_base_dop`.`analog` LIKE '%$search_sql%' AND `doc_base`.`name` NOT LIKE '%$search_sql%' $where_add
+		ORDER BY $order LIMIT 30";
 		$tres = $db->query($sqla);
 		if ($tres->num_rows) {
 			$tmpl->addContent("<tr class='lin0'><th colspan='18' align='center'>Поиск аналога, для ".html_out($s).": {$tres->num_rows} строк найдено");
@@ -2106,11 +2106,9 @@ class doc_s_Sklad {
 		$sqla = $sql . "FROM `doc_base`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		WHERE (`doc_base`.`name` LIKE '%$s_sql%'  OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`vc` NOT LIKE '$s_sql%' AND
-			`doc_base`.`name` NOT LIKE '$s_sql%' ";
-		if($_SESSION['sklad_store_only'])
-			$sqla .= " AND `doc_base_cnt`.`cnt`>0 ";
-		$sqla.=" ORDER BY $order LIMIT 100";
+		WHERE (`doc_base`.`name` LIKE '%$search_sql%'  OR `doc_base`.`vc` LIKE '%$search_sql%') AND `doc_base`.`vc` NOT LIKE '$search_sql%' AND
+			`doc_base`.`name` NOT LIKE '$search_sql%' $where_add
+		ORDER BY $order LIMIT 100";
 		$res = $db->query($sqla);
 		if ($res->num_rows) {
 			$tmpl->addContent("<tr class='lin0'><th colspan='18' align='center'>Поиск по названию, содержащему ".html_out($s).": {$res->num_rows} строк найдено");
