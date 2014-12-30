@@ -48,22 +48,32 @@ abstract class iPrintForm {
     }
     
     protected function addInfoFooter() {
+        $x = $this->pdf->getX();
+        $y = $this->pdf->getY();
         $this->pdf->SetX($this->pdf->rMargin - 50);
         $this->pdf->SetY($this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin);
         $this->pdf->SetFont('Arial', '', 2);
         $str = 'Подготовлено в multimag v:'.MULTIMAG_VERSION.' ('.get_class($this).')';
         $this->pdf->CellIconv(0, 4, $str, 0, 0, 'R');
+        $this->pdf->SetX($x);
+        $this->pdf->SetY($y);
     }
 
 
     /// Вывод данных
     /// @param $to_str Если истина - вернёт буфер с данными. Иначе - вывод в файл.
     public function outData($to_str=false) {
+        $fname = get_class($this);
+        $matches = null;
+        if (preg_match('@\\\\([\w]+)$@', $fname, $matches)) {
+            $fname = $matches[1];
+        }
+        
         if ($to_str) {
-            return $this->pdf->Output('s_faktura.pdf', 'S');
+            return $this->pdf->Output($fname.'.pdf', 'S');
         }
         else {
-            $this->pdf->Output('s_faktura.pdf', 'I');
+            $this->pdf->Output($fname.'.pdf', 'I');
         }
     }
     

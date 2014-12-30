@@ -281,7 +281,7 @@ class upd extends \doc\printforms\iPrintForm {
             $sumnaloga += $line['vat_s'];
             
             $row = array(
-                $i,
+                $i++,
                 $line['code'],
                 $line['name'],
                 $line['unit_code'],
@@ -306,6 +306,7 @@ class upd extends \doc\printforms\iPrintForm {
         $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
         if ($workspace_h  <= $this->pdf->GetY() + 81) {
             $this->pdf->AddPage('L');
+            $this->addInfoFooter();
         }
         $this->pdf->SetAutoPageBreak(0);        
 
@@ -396,7 +397,7 @@ class upd extends \doc\printforms\iPrintForm {
         if(isset($dop_data['dov_agent']))	{
 		$dov_data = $db->selectRow('doc_agent_dov', $dop_data['dov_agent']);
 		if($dov_data) {
-                    $reason_info = "Доверенность №{$this->dop_data['dov']} от {$this->dop_data['dov_data']}, ";
+                    $reason_info = "Доверенность №{$dop_data['dov']} от {$dop_data['dov_data']}, ";
                     $reason_info .= "выданной {$dov_data['range']} {$dov_data['surname']} {$dov_data['name']} {$dov_data['name2']}";
 		}
 	}

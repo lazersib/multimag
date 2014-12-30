@@ -1034,13 +1034,13 @@ class doc_Nulltype
                             $class_name = '\\doc\\printforms\\'.$this->doc_name.'\\'.$cn[0];
                             $class = new $class_name;
                             $nm = $class->getName();
-                            $ret_data['content'][] = array('name' => 'ext:'.$cn[0], 'desc' => 'EXT: '.$nm);
+                            $ret_data['content'][] = array('name' => 'ext:'.$cn[0], 'desc' => 'Внеш: '.$nm);
                         }
                     }
                     closedir($dh);
                 }
             }
-
+            
             $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
         }
         else {
