@@ -35,24 +35,6 @@ else
         
 	$pc = PriceCalc::getInstance();        
         $wikiparser = new WikiParser();
-
-	$tmpl->addStyle(".pitem	{
-		float:			left;
-		width:			330px;
-		height:			180px;
-		border:			1px solid #ccc;
-		background:		#fafafa;
-		margin:			10px;
-		padding:		5px;
-		border-radius:		10px;
-		-moz-border-radius:	10px;
-	}
-	.pitem h2
-	{
-		margin:			3px;
-		font-size:		16px;
-	}
-	");
 	
 	$res=$db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `news`.`ex_date`, `news`.`img_ext` FROM `news` LIMIT 1");
 	if($res->num_rows>0)

@@ -170,15 +170,31 @@ table th
 
 /* My styles !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
+div.warn_bar {
+    width:  auto;
+    height: 18px;
+    border: none;
+    border-top: 	#e00 1px solid;
+    border-bottom: 	#e00 1px solid;
+    background-color: #fff8ee;
+    background-image: url(/img/i_alert.png);
+    background-repeat: no-repeat;
+    background-position:  5px 3px;
+    font-size: 	14px;
+    margin: 0;
+    padding: 3px 5px 3px 25px;
+    color:  #f00;
+}
+
 div.err
 {
 	width: 		auto;
-	border: 	#ee0000 1px solid;
+	border: 	#e00 1px solid;
 	border-radius:	2px;
 	font-size: 	16px;
 	text-align: 	center;
 	vertical-align: middle;
-	color: 		#ee0000;
+	color: 		#e00;
 	background-color: #fee;
 	padding: 	10px;
 	margin:		0px;

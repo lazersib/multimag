@@ -211,9 +211,6 @@ function Show($param='') {
 	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
 	<div id='poseditor_div'></div>
 	<div id='storeview_container'></div>";
-
-	if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
-	else						$CONFIG['poseditor']['need_dialog']=1;
 	
 	$p_setup = array(
 	    'base_url'	=> '/doc.php?doc='.$this->doc.'&mode=srv',

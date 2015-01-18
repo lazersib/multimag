@@ -49,7 +49,6 @@ $CONFIG['site']['force_https_login']	= false;	// Принудительно ис
 
 $CONFIG['poseditor']['sn_enable']	= false;// Включить поддержку работы с серийными номерами
 $CONFIG['poseditor']['sn_restrict']	= false;// Включить ограничения на выписку документов без серийных номеров
-$CONFIG['poseditor']['need_dialog']	= 0;	// Показывать диалог с запросом цены и количества при добавлении позиции
 $CONFIG['poseditor']['vc']		= 0;	// Показывать код производителя
 $CONFIG['poseditor']['tdb']		= 0;	// Показывать размеры
 $CONFIG['poseditor']['rto']		= 1;	// Показывать резервы/транзиты/заявки

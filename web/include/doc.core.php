@@ -347,20 +347,25 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
 	$tmpl->addTop("</div></div>");
 
 	if ($nd && @$CONFIG['doc']['mincount_info']) {
-		$res = $db->query("SELECT `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name` FROM `doc_base`
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
-			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
-			WHERE `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt` LIMIT 100");
-		if ($res->num_rows) {
-			$res->data_seek(rand(0, $res->num_rows - 1));
-			$nxt = $res->fetch_row();
-			if ($nxt[1])
-				$nxt[1] = 'всего ' . $nxt[1] . ' штук';
-			else
-				$nxt[1] = 'отсутствует';
-			$tmpl->msg("По крайней мере, у {$res->num_rows} товаров, количество на складе меньше минимально рекомендуемого!<br>Например $nxt[0] на складе *$nxt[3]* $nxt[1], вместо $nxt[2] рекомендуемых!", "err", "Мало товара на складе!");
-		}
-		$res->free();
+            $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name`
+                FROM `doc_base`
+                LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id`
+                LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
+                WHERE `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt` LIMIT 1000");
+            if ($res->num_rows) {
+                $res->data_seek(rand(0, $res->num_rows - 1));
+                $nxt = $res->fetch_row();
+                $info_res = $db->query("SELECT FOUND_ROWS()");
+                list($all_cnt) = $info_res->fetch_row();
+                if ($nxt[1]) {
+                    $nxt[1] = 'всего ' . $nxt[1] . ' штук';
+                } else {
+                    $nxt[1] = 'отсутствует';
+                }
+                $tmpl->addContent("<div class='warn_bar'>Количество у $all_cnt товаров на складе меньше минимально рекомендуемого. Например, &quot;".
+                    html_out($nxt[0])."&quot; в наличии ".html_out($nxt[1]).", вместо $nxt[2] рекомендуемых!</div>");
+            }
+            $res->free();
 	}
 }
 

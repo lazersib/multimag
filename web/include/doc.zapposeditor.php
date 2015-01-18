@@ -14,9 +14,6 @@ class SZapPosEditor extends DocPosEditor
 		<div id='poseditor_div'></div>
 		<div id='storeview_container'></div>";
 
-		if(!@$CONFIG['poseditor']['need_dialog'])	$CONFIG['poseditor']['need_dialog']=0;
-		else						$CONFIG['poseditor']['need_dialog']=1;
-
 		$p_setup = array(
 		    'base_url'	=> '/doc_sc.php?mode=srv&sn=sborka_zap&doc='.$this->doc,
 		    'editable'	=> $this->editable,

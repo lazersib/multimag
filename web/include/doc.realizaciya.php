@@ -1168,7 +1168,7 @@ class doc_Realizaciya extends doc_Nulltype {
 
             if (@$CONFIG['poseditor']['true_gtd']) {
                 $gtd_array = array();
-                $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt` FROM `doc_list_pos`
+                $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt`, `doc_list`.`id` FROM `doc_list_pos`
                     INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
                     WHERE `doc_list_pos`.`tovar`='{$nxt['pos_id']}' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
                     AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
@@ -1177,10 +1177,10 @@ class doc_Realizaciya extends doc_Nulltype {
                     if ($line['type'] == 1) { // Поступление
                         $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $line['cnt']);
                     } else {
-                        $cnt = $nxt['cnt'];
+                        $cnt = $line['cnt'];
                         while ($cnt > 0) {
                             if (count($gtd_array) == 0) {
-                                throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации в прошлом). Товар был оприходован на другую организацию?");
+                                throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
                             }
                             if ($gtd_array[0]['cnt'] == $cnt) {
                                 array_shift($gtd_array);
