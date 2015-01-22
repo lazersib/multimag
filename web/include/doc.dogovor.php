@@ -29,7 +29,7 @@ class doc_Dogovor extends doc_Nulltype
 		$this->doc_name				='dogovor';
 		$this->doc_viewname			='Договор';
 		$this->sklad_editor_enable		=false;
-		$this->header_fields			='separator agent cena';
+		$this->header_fields			='bank separator agent cena';
 		settype($this->doc,'int');
 		$this->PDFForms=array(
 			array('name'=>'dog','desc'=>'Договор','method'=>'DogovorPDF')
@@ -74,7 +74,7 @@ class doc_Dogovor extends doc_Nulltype
 	}
 
 	function initDefDopdata() {
-		$this->def_dop_data = array('name'=>'', 'end_date'=>'', 'debt_control'=>0, 'debt_size'=>0, 'limit'=>0, 'received'=>0);
+		$this->def_dop_data = array('name'=>'', 'end_date'=>'', 'debt_control'=>0, 'debt_size'=>0, 'limit'=>0, 'received'=>0, 'cena'=>0);
 	}
 	
 	function DopHead()
@@ -99,35 +99,37 @@ class doc_Dogovor extends doc_Nulltype
 		<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
 	}
 
-	function DopSave() {
-		$new_data = array(
-			'received' => request('received'),
-			'end_date' => rcvdate('end_date'),
-			'debt_control' => rcvint('debt_control')?'1':'0',
-			'debt_size' => rcvint('debt_size'),
-			'name' => request('name'),
-			'limit' => rcvint('limit'),
-			'received' => rcvint('received')?'1':'0'
-		);
-		$old_data = array_intersect_key($new_data, $this->dop_data);
-		
-		$log_data='';
-		if($this->doc)
-		{
-			$log_data = getCompareStr($old_data, $new_data);
-		}
-		$this->setDopDataA($new_data);
-		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
-	}
+    function DopSave() {
+        $new_data = array(
+            'received' => request('received'),
+            'end_date' => rcvdate('end_date'),
+            'debt_control' => rcvint('debt_control') ? '1' : '0',
+            'debt_size' => rcvint('debt_size'),
+            'name' => request('name'),
+            'limit' => rcvint('limit'),
+            'received' => rcvint('received') ? '1' : '0'
+        );
+        $old_data = array_intersect_key($new_data, $this->dop_data);
 
-	function DopBody() {
+        $log_data = '';
+        if ($this->doc) {
+            $log_data = getCompareStr($old_data, $new_data);
+        }
+        $this->setDopDataA($new_data);
+        if ($log_data)
+            doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+    }
+
+    function DopBody() {
 		global $tmpl, $db;
 		if($this->dop_data['received'])
 			$tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
 		if($this->doc_data['comment'])
 		{
 			$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
-
+                        $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
+                        $bank_info = $res->fetch_assoc();
+                        
 $str="==== Покупатель: {$agent_info['fullname']} ====
 {$agent_info['adres']}, тел. {$agent_info['tel']}<br>
 ИНН {$agent_info['inn']}, КПП {$agent_info['kpp']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okved']}<br>
@@ -136,8 +138,9 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 ==== Поставщик: {$this->firm_vars['firm_name']} ====
 {$this->firm_vars['firm_adres']}<br>
 ИНН/КПП {$this->firm_vars['firm_inn']}<br>
-Р/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}<br>
-К/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}";
+Р/С {$bank_info['rs']}, в банке {$bank_info['name']}<br>
+К/С {$bank_info['ks']}, БИК {$bank_info['bik']}";
+
                         $wikiparser = new WikiParser();
 			$rekv = $wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
 
@@ -188,6 +191,8 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 		if(!$to_str) $tmpl->ajax=1;
 
 		$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
+                $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
+                $bank_info = $res->fetch_assoc();
 
                 $wikiparser = new WikiParser();
 
@@ -228,7 +233,7 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 		$pdf->SetY($y);
 		$pdf->SetX(100);
 
-		$str = "{$this->firm_vars['firm_name']}\nАдрес: {$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С:{$this->firm_vars['firm_schet']} в банке {$this->firm_vars['firm_bank']}, БИК:{$this->firm_vars['firm_bik']}, К/С:{$this->firm_vars['firm_bank_kor_s']}\n_________________________ / {$this->firm_vars['firm_director']} /\n\n      М.П.";
+		$str = "{$this->firm_vars['firm_name']}\nАдрес: {$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С:{$bank_info['rs']} в банке {$bank_info['name']}, БИК:{$bank_info['bik']}, К/С:{$bank_info['ks']}\n_________________________ / {$this->firm_vars['firm_director']} /\n\n      М.П.";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0, 4, $str, 0, 'L', 0);
 

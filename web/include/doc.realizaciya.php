@@ -1180,7 +1180,12 @@ class doc_Realizaciya extends doc_Nulltype {
                         $cnt = $line['cnt'];
                         while ($cnt > 0) {
                             if (count($gtd_array) == 0) {
-                                throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
+                                if($CONFIG['poseditor']['true_gtd']!='easy') {
+                                    throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
+                                }
+                                else {
+                                    $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $cnt);
+                                }
                             }
                             if ($gtd_array[0]['cnt'] == $cnt) {
                                 array_shift($gtd_array);
@@ -1221,7 +1226,12 @@ class doc_Realizaciya extends doc_Nulltype {
                     }
                 }
                 if ($need_cnt > 0) {
-                    throw new Exception("Не найдены поступления для $need_cnt единиц товара {$pos_name}. Товар был оприходован на другую организацию?");
+                    if($CONFIG['poseditor']['true_gtd']!='easy') {
+                        throw new Exception("Не найдены поступления для $need_cnt единиц товара {$pos_name}. Товар был оприходован на другую организацию?");
+                    }
+                    else {
+                        $unigtd['   --   '] = $need_cnt;
+                    }
                 }
                 foreach ($unigtd as $gtd => $cnt) {
                     if ($this->doc_data['nds']) {
