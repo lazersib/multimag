@@ -29,7 +29,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		$this->doc_viewname			= 'Реализация товара';
 		$this->sklad_editor_enable		= true;
 		$this->sklad_modify			= -1;
-		$this->header_fields			= 'sklad cena separator agent';
+		$this->header_fields			= 'bank sklad cena separator agent';
 		$this->dop_menu_buttons			= "<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc=$doc'); return false;\" title='Доверенное лицо'><img src='img/i_users.png' alt='users'></a>";
 		$this->PDFForms				= array(
 			array('name'=>'nak','desc'=>'Накладная','method'=>'PrintNaklPDF'),

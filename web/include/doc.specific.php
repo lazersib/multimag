@@ -27,7 +27,7 @@ class doc_Specific extends doc_Nulltype {
 		$this->doc_name = 'specific';
 		$this->doc_viewname = 'Спецификация';
 		$this->sklad_editor_enable = true;
-		$this->header_fields = 'agent cena';
+		$this->header_fields = 'bank cena separator agent';
 		settype($this->doc, 'int');
 		$this->PDFForms = array(
 		    array('name' => 'prn', 'desc' => 'Спецификация', 'method' => 'PrintPDF'),
@@ -250,7 +250,10 @@ class doc_Specific extends doc_Nulltype {
 		$pdf->SetY($y);
 		$pdf->SetX(100);
 
-		$str = "{$this->firm_vars['firm_name']}\n{$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С {$this->firm_vars['firm_schet']}, в банке {$this->firm_vars['firm_bank']}\nК/С {$this->firm_vars['firm_bank_kor_s']}, БИК {$this->firm_vars['firm_bik']}\n__________________ / {$this->firm_vars['firm_director']} /\n\n      М.П.";
+                $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
+                $bank_info = $res->fetch_assoc();
+                
+		$str = "{$this->firm_vars['firm_name']}\n{$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С {$bank_info['rs']}, в банке {$bank_info['name']}\nК/С {$bank_info['ks']}, БИК {$bank_info['bik']}\n__________________ / {$this->firm_vars['firm_director']} /\n\n      М.П.";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->MultiCell(0, 5, $str, 0, 'L', 0);
 

@@ -138,6 +138,8 @@ class torg12 extends \doc\printforms\iPrintForm {
         $doc_data = $this->doc->getDocDataA();
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
+        $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
+        $bank_info = $res->fetch_assoc();
 
         $this->pdf->AddPage('L');
         $y = $this->pdf->getY();
@@ -151,7 +153,7 @@ class torg12 extends \doc\printforms\iPrintForm {
         // Шапка с реквизитами
         $t2_y = $this->pdf->GetY();
         $this->pdf->SetFont('', '', 8);
-        $str = $firm_vars['firm_gruzootpr'] . ", тел." . $firm_vars['firm_telefon'] . ", счёт " . $firm_vars['firm_schet'] . ", БИК " . $firm_vars['firm_bik'] . ", банк " . $firm_vars['firm_bank'] . ", К/С {$firm_vars['firm_bank_kor_s']}, адрес: {$firm_vars['firm_adres']}";
+        $str = $firm_vars['firm_gruzootpr'] . ", тел." . $firm_vars['firm_telefon'] . ", счёт " . $bank_info['rs'] . ", БИК " . $bank_info['bik'] . ", банк " . $bank_info['name'] . ", К/С {$bank_info['ks']}, адрес: {$firm_vars['firm_adres']}";
         $this->pdf->MultiCellIconv(230, 4, $str, 0, 'L');
         $y = $this->pdf->GetY();
         $this->pdf->Line(10, $this->pdf->GetY(), 230, $this->pdf->GetY());
@@ -215,7 +217,7 @@ class torg12 extends \doc\printforms\iPrintForm {
 
         $str = "Поставщик";
         $this->pdf->CellIconv(30, 4, $str, 0, 0, 'L');
-        $str = "{$firm_vars['firm_name']}, {$firm_vars['firm_adres']}, ИНН/КПП {$firm_vars['firm_inn']}, К/С {$firm_vars['firm_bank_kor_s']}, Р/С {$firm_vars['firm_schet']}, БИК {$firm_vars['firm_bik']}, в банке {$firm_vars['firm_bank']}";
+        $str = "{$firm_vars['firm_name']}, {$firm_vars['firm_adres']}, ИНН/КПП {$firm_vars['firm_inn']}, К/С {$bank_info['ks']}, Р/С {$bank_info['rs']}, БИК {$bank_info['bik']}, в банке {$bank_info['name']}";
         $this->pdf->MultiCellIconv(190, 4, $str, 0, 'L');
         $this->pdf->Line(40, $this->pdf->GetY(), 230, $this->pdf->GetY());
 
