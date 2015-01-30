@@ -156,12 +156,14 @@ class doc_s_Agent {
 				<td colspan='$span'><input type=text name='fullname' value='".html_out($agent_info['fullname'])."' style='width: 90%;' maxlength='256'></td></tr>
 			<tr><td align=right>Тип:</td><td>");
 			
-			if($agent_info['type']==0)
-				$tmpl->addContent("<label><input type='radio' name='type' value='0' checked>Физическое лицо</label><br>
-				<label><input type='radio' name='type' value='1'>Юридическое лицо</label>");
-			else
-				$tmpl->addContent("<label><input type='radio' name='type' value='0'>Физическое лицо</label><br>
-				<label><input type='radio' name='type' value='1' checked>Юридическое лицо</label>");
+                        $at_check = array(0=>'', 1=>'', 2=>'');
+                        $at_check[$agent_info['type']] = ' checked';
+                        
+			$tmpl->addContent("
+                        <label><input type='radio' name='type' value='0'{$at_check[0]} id='atype_rb0'>Физическое лицо</label><br>
+			<label><input type='radio' name='type' value='1'{$at_check[1]} id='atype_rb1'>Юридическое лицо</label><br>
+                        <label><input type='radio' name='type' value='2'{$at_check[2]} id='atype_rb2'>Нерезидент</label>");
+
 			$tmpl->addContent("<td align='right'>Группа</td>
         		<td>" . selectAgentGroup('g', $agent_info['group'], false, '', '', @$CONFIG['agents']['leaf_only']) . "</select>
 				<td align='right'>Относится к:</td>
@@ -277,15 +279,19 @@ class doc_s_Agent {
 				else var sValue = li.selectValue;
 				document.getElementById('agent_id').value=sValue;
 			}
-			initCalendar('pasp_date')
-			initCalendar('data_sverki')
-
-			var valid=form_validator('agent_edit_form')
-
-
-			</script>
-
-			");
+			initCalendar('pasp_date');
+			initCalendar('data_sverki');
+                        var valid=form_validator('agent_edit_form');
+                          
+                        var atype_rb0 = document.getElementById('atype_rb0');
+                        var atype_rb1 = document.getElementById('atype_rb1');
+                        var atype_rb2 = document.getElementById('atype_rb2');
+                        atype_rb0.onclick = atype_rb1.onclick = function () {valid.enable(true);};
+                        atype_rb2.onclick = function () {valid.enable(false);};
+                        if(atype_rb2.checked) {
+                            valid.enable(false);
+                        }
+                        </script>");
 
 		}
 		else if($param=='h') {

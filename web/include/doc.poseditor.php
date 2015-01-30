@@ -116,7 +116,7 @@ class PosEditor {
 		return $order;
 	}
 
-};
+}
 
 /// Редактор списка наименований документа.
 /// При создании экземпляра класса нужно указать ID существующеего документа
@@ -160,6 +160,12 @@ protected function loadList() {
 	while ($nxt = $res->fetch_assoc())
 		$this->list[$nxt['line_id']] = $nxt;
 }
+
+/// Перезагрузить список товаров
+    public function reloadList() {
+        unset($this->list);
+        $this->loadList();
+    }
 
 /// Пересчитывает авто-цены, обновляет их в базе, возвращает true, если хотя бы одна цена была обновлена
 /// initPriceCalc и loadList должны быть вызваны заранее.
@@ -404,10 +410,96 @@ function GetAllContent() {
 
 		return $ret;
 	}
-
-
+/// Увеличивает количество указанного наименования. Если наименование в списке отсутствует - будет добавлено.
+    function simpleIncrementPos($pos_id, $price, $cnt, $comm) {
+        global $db, $CONFIG;
+        $found = 0;
+        
+        if (!$pos_id) {
+            throw new Exception("ID позиции не задан!");
+        }
+        if ($cnt <= 0) {
+            throw new Exception("Количество должно быть положительным!");
+        }
+        
+        $this->loadList();
+        
+        foreach($this->list as $line_id=>$f_line) {
+            if ($f_line['pos_id'] == $pos_id) {
+                $found = $line_id;
+                break;
+            }
+        }
+        
+        if(!$found) {
+            $line_id = $db->insertA('doc_list_pos', array('doc'=>$this->doc, 'tovar'=>$pos_id, 'cnt'=>$cnt, 'cost'=>$price, 'comm'=>$comm) );
+            doc_log("UPDATE", "add pos: pos:$pos_id",'doc',$this->doc);
+            
+            $line = array(
+                'line_id'   => $line_id,
+                'pos_id'    => $pos_id,
+                'cnt'       => $cnt,
+                'cost'      => $price,
+                'comm'      => $comm
+                );
+            $this->list[$line_id] = $line;
+        } else {
+            $old_cnt = $this->list[$found]['cnt'];
+            $old_comm = $this->list[$found]['comm'];
+            $new_cnt = $this->list[$found]['cnt'] + $cnt;
+            $db->updateA('doc_list_pos', $found, array('cnt'=>$new_cnt, 'comm'=>$comm));
+            doc_log("UPDATE", "change cnt: pos:$pos_id, line_id:$line_id, cnt:$old_cnt => $new_cnt, comm:$old_comm => $comm",'doc',$this->doc);
+            $this->list[$found]['cnt'] += $cnt;
+        }
+    }
+    
+    /// Перезаписывает указанное наименование. Если наименование в списке отсутствует - будет добавлено.
+    function simpleRewritePos($pos_id, $price, $cnt, $comm='') {
+        global $db, $CONFIG;
+        $found = 0;
+        
+        if (!$pos_id) {
+            throw new Exception("ID позиции не задан!");
+        }
+        if ($cnt <= 0) {
+            throw new Exception("Количество должно быть положительным!");
+        }
+        
+        $this->loadList();
+        
+        foreach($this->list as $line_id=>$f_line) {
+            if ($f_line['pos_id'] == $pos_id) {
+                $found = $line_id;
+                break;
+            }
+        }
+        
+        if(!$found) {
+            $line_id = $db->insertA('doc_list_pos', array('doc'=>$this->doc, 'tovar'=>$pos_id, 'cnt'=>$cnt, 'cost'=>$price, 'comm'=>$comm) );
+            doc_log("UPDATE","add pos: pos:$pos_id",'doc',$this->doc);
+            
+            $line = array(
+                'line_id'   => $line_id,
+                'pos_id'    => $pos_id,
+                'cnt'       => $cnt,
+                'cost'      => $price,
+                'comm'      => $comm
+                );
+            $this->list[$line_id] = $line;
+        } else {
+            $old_cnt = $this->list[$found]['cnt'];
+            if($cnt!=$old_cnt) {
+                $old_comm = $this->list[$found]['comm'];
+                $db->updateA('doc_list_pos', $found, array('cnt'=>$cnt, 'comm'=>$comm));
+                doc_log("UPDATE", "change cnt: pos:$pos_id, line_id:$line_id, cnt:$old_cnt => $cnt, comm:$old_comm => $comm",'doc',$this->doc);
+                $this->list[$found]['cnt'] = $cnt;
+            }
+        }
+    }
 
 /// Добавляет указанную складскую позицию в список
+/// Получает дополнительные данные из окружения
+/// Формирует вывод для броузера
 function AddPos($pos) {
 	global $db;
 	settype($pos, 'int');

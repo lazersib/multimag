@@ -43,6 +43,7 @@ class doc_Nulltype
 	protected $dop_data;			///< Дополнительные данные документа
 	protected $firm_vars;			///< информация с данными о фирме
 	protected $def_dop_data=array();	///< Список дополнительных параметров текущего документа со значениями по умолчанию
+        protected $child_docs = array();        ///< Информация о документах-потомках
 
 	public function __construct($doc=0)
 	{
@@ -581,9 +582,10 @@ class doc_Nulltype
 					doc_log("CREATE {$this->doc_name}","$sqlupdate",'doc',$this->doc);
 				}
 
-				if(method_exists($this,'DopSave'))
-					$this->DopSave();
-				if($cena_update)
+				if (method_exists($this, 'DopSave')) {
+                                    $this->DopSave();
+                                }
+                                if($cena_update)
 					$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->doc}','cena','$cena')");
 				if($agent)	$b=agentCalcDebt($agent);
 				else		$b=0;
@@ -1115,9 +1117,9 @@ class doc_Nulltype
    	function connectJson($p_doc) {
 		try {
 			$this->Connect($p_doc);
-			return " { \"response\": \"1\" }";
+			return " { \"response\": \"connect_ok\" }";
 		} catch (Exception $e) {
-			return " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
+			return " { \"response\": \"error\", \"message\": \"" . $e->getMessage() . "\" }";
 		}
 	}
 
@@ -1310,6 +1312,7 @@ class doc_Nulltype
 				$by = request('by');
 				$poseditor->reOrder($by);
 			}
+                        // Пометка на удаление
 			else if($opt=='jdeldoc')
 			{
 				try
@@ -1332,8 +1335,73 @@ class doc_Nulltype
 					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
 				}
 			}
+                        // Загрузка номенклатурной таблицы
+                        else if($opt=='merge') {
+                            $from_doc = rcvint('from_doc');
+                            $clear = rcvint('clear');
+                            $no_sum = rcvint('no_sum');
+
+                            try {
+                                if($from_doc==0) {
+                                    throw new Exception("Документ не задан");
+                                }
+                                $db->startTransaction();
+                                
+                                $res = $db->query("SELECT `id` FROM `doc_list` WHERE `id`=$from_doc");
+                                if(!$res->num_rows) {
+                                    throw new Exception("Документ не найден");
+                                }
+                                
+                                if($clear) {
+                                    $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
+                                }
+                                
+                                $res=$db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos`"
+                                    . "WHERE `doc`=$from_doc AND `page`=0 GROUP BY `tovar`");
+                                while($line = $res->fetch_assoc()) {
+                                    if(!$no_sum) {
+                                        $poseditor->simpleIncrementPos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
+                                    } else {
+                                        $poseditor->simpleRewritePos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
+                                    }
+                                }
+                                doc_log("REWRITE", "", 'doc', $this->doc);
+                                $db->commit();
+                                $ret = array('response'=>'merge_ok');
+                            } catch (Exception $e) {
+                                $ret = array('response'=>'err', 'text'=>$e->getMessage());
+                                
+                            }
+                            $tmpl->setContent( json_encode($ret, JSON_UNESCAPED_UNICODE) );
+                        }
+                        // Связи документа
+                        else if($opt=='link_info') {
+                            $childs = array();
+                            $parent = null;
+                            if($this->doc_data['p_doc']) {
+                                $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
+                                    `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
+                                    LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                                    WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
+                                $parent = $res->fetch_assoc();
+                                $parent['vdate'] = date("d.m.Y", $parent['date']);
+                            }
+                            $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
+                                `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
+                                LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                                WHERE `doc_list`.`p_doc`='{$this->doc}'");
+                            
+                            while($line = $res->fetch_assoc()) {
+                                    $line['vdate'] = date("d.m.Y", $line['date']);
+                                    $childs[] = $line;
+                            }
+                            $ret = array('response'=>'link_info', 'parent'=>$parent, 'childs'=>$childs);
+                            $tmpl->setContent( json_encode($ret, JSON_UNESCAPED_UNICODE) );
+                        }
+                         
 			// Для наследования!!!
 			else return 0;
+                        
 			return 1;
 		}
 		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
@@ -1640,28 +1708,42 @@ class doc_Nulltype
 	}
 	
 	/// Кнопки меню - провети / отменить
-	protected function getDopButtons()
-	{
-		global $tmpl;
-		$ret='';
-		if($this->doc)
-		{
-			$ret.="<a href='/docj.php?mode=log&amp;doc={$this->doc}' title='История изменений документа'><img src='img/i_log.png' alt='История'></a>
-			<a onclick=\"DocConnect({$this->doc}, {$this->doc_data['p_doc']}); return false;\" title='Связать документ'><img src='img/i_conn.png' alt='Связать'></a>";
-			$ret.="<span id='provodki'>";
-			if($this->doc_data['ok'])
-				$ret.=$this->getCancelButtons();
-			else	$ret.=$this->getApplyButtons();
+	protected function getDopButtons() {
+            global $tmpl;
+            $ret='';
+            if($this->doc) {
+                $ret.="<a href='/docj.php?mode=log&amp;doc={$this->doc}' title='История изменений документа'><img src='img/i_log.png' alt='История'></a>";
+                $ret.="<span id='provodki'>";
+                if($this->doc_data['ok']) {
+                    $ret .= $this->getCancelButtons();
+                }
+                else	{
+                    $ret .= $this->getApplyButtons();
+                }
 
-			$ret.="</span>
-			<a href='#' onclick=\"return PrintMenu(event, '{$this->doc}')\" title='Печать'><img src='img/i_print.png' alt='Печать'></a>
-			<a href='#' onclick=\"return FaxMenu(event, '{$this->doc}')\" title='Отправить по факсу'><img src='img/i_fax.png' alt='Факс'></a>
-			<a href='#' onclick=\"return MailMenu(event, '{$this->doc}')\" title='Отправить по email'><img src='img/i_mailsend.png' alt='email'></a>
-			<a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=morphto&amp;doc={$this->doc}')\" title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
-		}
+                $ret .= "</span>
+                <img src='/img/i_separator.png' alt=''>
+                <a href='#' onclick=\"return PrintMenu(event, '{$this->doc}')\" title='Печать'>
+                    <img src='img/i_print.png' alt='Печать'></a>
+                <a href='#' onclick=\"return FaxMenu(event, '{$this->doc}')\" title='Отправить по факсу'>
+                    <img src='img/i_fax.png' alt='Факс'></a>
+                <a href='#' onclick=\"return MailMenu(event, '{$this->doc}')\" title='Отправить по email'>
+                    <img src='img/i_mailsend.png' alt='email'></a>
+                <img src='/img/i_separator.png' alt=''>
+                <a href='#' onclick=\"DocConnect({$this->doc}, {$this->doc_data['p_doc']}); return false;\" title='Связать документ'>
+                    <img src='img/i_conn.png' alt='Связать'></a>
+                <a href='#' onclick=\"return ShowContextMenu(event, '/doc.php?mode=morphto&amp;doc={$this->doc}')\"
+                    title='Создать связанный документ'><img src='img/i_to_new.png' alt='Связь'></a>";
+                if($this->sklad_editor_enable) {
+                    $ret .= " <a href='#' onclick=\"return addNomMenu(event, {$this->doc}, {$this->doc_data['p_doc']});\" title='Обновить номенклатурную таблицу'><img src='img/i_addnom.png' alt='Обновить номенклатурную таблицу'></a>";
+                }
+                $ret.="<img src='/img/i_separator.png' alt=''>";
+            }
 
-    		if($this->dop_menu_buttons) $ret.=$this->dop_menu_buttons;
-    		return $ret;
+            if($this->dop_menu_buttons) {
+                $ret .= $this->dop_menu_buttons;
+            }
+            return $ret;
 	}
 
 	protected function getApplyButtons()

@@ -35,10 +35,8 @@ class doc_Zayavka extends doc_Nulltype
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
 		$this->header_fields			='bank sklad separator agent cena';
-		// Избыточный запрос, есть блок отображения подчинённых документов
-		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}'");
-		if($res->num_rows)		$this->dop_menu_buttons			="<a href='/doc.php?mode=srv&amp;opt=rewrite&amp;doc=$doc' title='Перезаписать номенклатурой из подчинённых документов' onclick='return confirm(\"Подтвертите перезапись номенклатуры документа\")'><img src='img/i_rewrite.png' alt='rewrite'></a>";
-		$this->dop_menu_buttons.="<a href='#' onclick='msgMenu(event, {$this->doc})' title='Отправить сообщение покупателю'><img src='/img/i_mailsend.png' alt='msg'></a>";
+
+		$this->dop_menu_buttons="<a href='#' onclick='msgMenu(event, {$this->doc})' title='Отправить сообщение покупателю'><img src='/img/i_mailsend.png' alt='msg'></a>";
 		if(@$CONFIG['doc']['pie'] && !@$this->dop_data['pie'])
 			$this->dop_menu_buttons.="<a href='#' onclick='sendPie(event, {$this->doc})' title='Отправить благодарность покупателю'><img src='/img/i_pie.png' alt='pie'></a>";
 		
@@ -949,5 +947,4 @@ class doc_Zayavka extends doc_Nulltype
 		else
 			$pdf->Output('testcnt.pdf','I');
 	}
-};
-?>
+}

@@ -26,6 +26,28 @@ function form_validator(form_id)
 	var form=document.getElementById(form_id)
 	var form_buttons=form.getElementsByTagName('button')
 	var form_inputs=form.getElementsByTagName('input')
+        var enabled = true;
+        
+        validator.enable = function (val) {
+            enabled = val;
+            if(!enabled) {
+                for(var i=0; i<form_inputs.length; i++) {
+                    if(hasClass(form_inputs[i],'validate'))	{
+			hlErrorField(form_inputs[i],false);
+                    }
+                }
+                buttons_disable(false);
+            }
+            else {
+                for(var i=0; i<form_inputs.length; i++) {
+                    if(hasClass(form_inputs[i],'validate'))	{
+                        if(typeof(form_inputs[i].test_valid)=='function') {
+                            form_inputs[i].test_valid();
+                        }
+                    }
+                }
+            }
+        }
 
 	function buttons_disable(dis) {
 		for(var i=0; i<form_buttons.length; i++) {
@@ -75,6 +97,9 @@ function form_validator(form_id)
 	{
 		function test_valid()
 		{
+                    if(!enabled) {
+                        return true;
+                    }
 			if(input.value.length==0)
 			{
 				if(no_empty)
@@ -103,14 +128,18 @@ function form_validator(form_id)
 			return true
 		}
 		hlErrorField(input,false)
-		input.addEventListener( 'keyup', test_valid, false)
-		test_valid()
+		input.addEventListener( 'keyup', test_valid, false);
+                input.test_valid = test_valid;
+		test_valid();
 	}
 
 	function validateEmail(input,no_empty)
 	{
 		function test_valid()
 		{
+                    if(!enabled) {
+                        return true;
+                    }
 			if(input.value.length==0)
 			{
 				if(no_empty)
@@ -139,7 +168,8 @@ function form_validator(form_id)
 			return true
 		}
 		hlErrorField(input,false)
-		input.addEventListener( 'keyup', test_valid, false)
+		input.addEventListener( 'keyup', test_valid, false);
+                input.test_valid = test_valid;
 		test_valid()
 	}
 
@@ -147,6 +177,9 @@ function form_validator(form_id)
 	{
 		function test_valid()
 		{
+                    if(!enabled) {
+                        return true;
+                    }
 			var a=input.value.split('/')
 			var v=a[0]
 			if(a.length>1)
@@ -210,7 +243,8 @@ function form_validator(form_id)
 			return true
 		}
 		hlErrorField(input,false)
-		input.addEventListener( 'keyup', test_valid, false)
+		input.addEventListener( 'keyup', test_valid, false);
+                input.test_valid = test_valid;
 		test_valid()
 	}
 
@@ -230,7 +264,9 @@ function form_validator(form_id)
 
 		function test_valid()
 		{
-
+                    if(!enabled) {
+                        return true;
+                    }
 			if(input_bik.value.length==0 && input_rs.value.length==0 && input_ks.value.length==0 )
 			{
 				hlErrorField(input_bik,false)
@@ -286,16 +322,22 @@ function form_validator(form_id)
 		hlErrorField(input_bik,false)
 		hlErrorField(input_rs,false)
 		hlErrorField(input_ks,false)
-		input_ks.addEventListener( 'keyup', test_valid, false)
-		input_rs.addEventListener( 'keyup', test_valid, false)
-		input_bik.addEventListener( 'keyup', test_valid, false)
-		test_valid()
+		input_ks.addEventListener( 'keyup', test_valid, false);
+		input_rs.addEventListener( 'keyup', test_valid, false);
+		input_bik.addEventListener( 'keyup', test_valid, false);
+                input_ks.test_valid = test_valid;
+                input_rs.test_valid = test_valid;
+                input_bik.test_valid = test_valid;
+		test_valid();
 	}
 
 	function validateOkpo(input)
 	{
 		function test_valid()
 		{
+                    if(!enabled) {
+                        return true;
+                    }
 			if(input.value.length==0)
 			{
 				hlErrorField(input,false)
@@ -321,7 +363,8 @@ function form_validator(form_id)
 			return true
 		}
 		hlErrorField(input,false)
-		input.addEventListener( 'keyup', test_valid, false)
+		input.addEventListener( 'keyup', test_valid, false);
+                input.test_valid = test_valid;
 		test_valid()
 	}
 
@@ -346,5 +389,5 @@ function form_validator(form_id)
 	}
 	if(input_bik && input_rs && input_ks)
 		validateBikRs(input_bik,input_rs, input_ks)
-	return validator
+	return validator;
 }

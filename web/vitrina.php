@@ -1559,9 +1559,23 @@ protected function MakeBuy() {
 	$comment_sql	= $db->real_escape_string($comment);
 	$agent=1;
 
-	if(@$_REQUEST['phone'])
-		$tel='+7'.intval(@$_REQUEST['phone']);
-	else	$tel='';
+	if(@$_REQUEST['phone']) { // Пробуем выполнить нормализацию номера телефона
+            $phone = $_REQUEST['phone'];
+            $phone = preg_replace("/[^0-9+]/", "", $phone);
+            $phoneplus = $phone[0]=='+';
+            $phone = preg_replace("/[^0-9]/", "", $phone);
+            if($phoneplus && $phone[0]==7 && strlen($phone)==11) {
+                $phone = '+'.$phone;
+            } elseif(!$phoneplus && $phone[0]==8 && strlen($phone)==11) {
+                $phone = '+7'.substr($phone,1);
+            } elseif(!$phoneplus && $phone[0]==9 && strlen($phone)==10) {
+                $phone = '+7'.$phone; 
+            } else {
+                header("Location: /vitrina.php?mode=buyform&step=1&cwarn=1");
+		return;
+            }
+            echo $phone;
+        } else	$phone='';
 
 	if(@$_SESSION['uid']) {
 		$res = $db->query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='{$_SESSION['uid']}'");
@@ -1573,7 +1587,7 @@ protected function MakeBuy() {
 		settype($agent,'int');
 		if($agent<1)	$agent = 1;
 	}
-	else if(!$tel && !$email) {
+	else if(!$phone && !$email) {
 		header("Location: /vitrina.php?mode=buyform&step=1&cwarn=1");
 		return;
 	}
@@ -1603,7 +1617,7 @@ protected function MakeBuy() {
 		VALUES ('3','$agent','$tm','1','$uid','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$bank')");
 		$doc=$db->insert_id;
 
-		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$tel'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'delivery_region', '$delivery_region'), ('$doc', 'pay_type', '$pay_type')");
+		$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$phone'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'delivery_region', '$delivery_region'), ('$doc', 'pay_type', '$pay_type')");
 
 		$order_items = $admin_items = $lock = '';
 		

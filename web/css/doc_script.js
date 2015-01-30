@@ -1,6 +1,6 @@
 // javascript module for document system
 // This is part of "MultiMag" system
-// Copyright 2009, TND Project
+// Copyright 2009-2015, TND Project
 // This file distributed under GPLv3 license
 
 var old_provodki='';
@@ -98,24 +98,24 @@ function DocProcessRequest(httpRequest, doc)
 					if(json.sklad_view)
 					{
 
-						var sklad_view=document.getElementById("storeview_container")
-						var poslist=document.getElementById('poslist')
-						var pladd=document.getElementById('pladd')
+						var sklad_view=document.getElementById("storeview_container");
+						var poslist=document.getElementById('poslist');
+						var pladd=document.getElementById('pladd');
 						if(sklad_view)
 						{
-							if(json.sklad_view=='show')
+							if(json.sklad_view==='show')
 							{
-								sklad_view.style.display='block'
-								poslist.editable=1
-								poslist.refresh()
-								pladd.style.display='table-row'
+								sklad_view.style.display='block';
+								poslist.editable=1;
+								poslist.refresh();
+								pladd.style.display='table-row';
 							}
 							else
 							{
-								sklad_view.style.display='none'
-								pladd.style.display='none'
-								poslist.editable=0
-								poslist.refresh()
+								sklad_view.style.display='none';
+								pladd.style.display='none';
+								poslist.editable=0;
+								poslist.refresh();
 							}
 						}
 					}
@@ -144,42 +144,37 @@ function DocProcessRequest(httpRequest, doc)
 
 
 // Установка / снятие связи
-function DocConnect(doc, p_doc)
-{
-	jPrompt("Укажите <b>системный</b> номер документа,<br>потомком которого должен стать<br>текущий документ:",p_doc,"Связываение документов",  function(result) { DocConnectCallback(doc, result); });
+function DocConnect(doc, p_doc) {
+    jPrompt("Укажите <b>системный</b> номер документа,<br>потомком которого должен стать<br>текущий документ:",
+        p_doc,"Связываение документов",  function(result) { DocConnectCallback(doc, result); });
 }
 
-function DocConnectCallback(doc, result)
-{
-	if(result==null)	return;
-	$.ajax({
-		type:   'POST',
-		url:    '/doc.php',
-		data:   'doc='+doc+'&mode=conn&p_doc='+result,
-		success: function(msg) { DocConnectProcess(msg); },
-		error:   function() { jAlert('Ошибка соединения!','Связываение документов',{},'icon_err'); },
-	});
+function DocConnectCallback(doc, result) {
+    if(result===null)	return;
+    $.ajax({
+        type:   'POST',
+        url:    '/doc.php',
+        data:   'doc='+doc+'&mode=conn&p_doc='+result,
+        success: function(msg) { DocConnectProcess(msg); },
+        error:   function() { jAlert('Ошибка соединения!','Связываение документов',{},'icon_err'); }
+    });
 }
 
-function DocConnectProcess(msg)
-{
-	try
-	{
-		var json=eval('('+msg+')');
-		if(json.response==0)
-			jAlert(json.message,"Ошибка", {}, 'icon_err');
-		else if(json.response==1)	// Проведение
-		{
-			if(json.message)	jAlert(json.message,"Связываение документов", {});
-			else			jAlert("Сделано!","Связываение документов", {});
-		}
-	}
-	catch(e)
-	{
-		jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-		"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message, "Связываение документов", {},  'icon_err');
-	}
-
+function DocConnectProcess(msg) {
+    try {
+        var json = JSON.parse(msg);
+        if(json.response==='error') {
+            jAlert(json.message,"Ошибка", {}, 'icon_err');
+        }
+        else if(json.response==='connect_ok') {	// Связывание
+            if(json.message)	jAlert(json.message,"Связываение документов", {});
+            else			jAlert("Сделано!","Связываение документов", {});
+        }
+    }
+    catch(e) {
+        jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
+        "<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message, "Связываение документов", {},  'icon_err');
+    }
 }
 
 
@@ -380,7 +375,7 @@ function ResetCost(doc)
 	$.ajax({
 		type:   'GET',
 		url:    '/doc.php',
-		data:   'mode=srv&opt=jrc&doc='+doc,
+		data:   'mode=srv&peopt=jrc&doc='+doc,
 		success: function(msg) { document.getElementById('poslist').refresh(); jAlert('Цены обновлены успешно!',"Сделано!", function() {}); },
 		error:   function() { jAlert('Ошибка соединения!','Сохранение данных',null,'icon_err'); },
 	});
@@ -727,7 +722,7 @@ function msgMenu(event,doc)
 			$.ajax({
 				type:   'GET',
 				url:    '/doc.php',
-				data:   'mode=srv&doc='+doc+'&opt=pmsg&mail='+mail+'&sms='+sms+'&text='+encodeURIComponent(mailtext.value),
+				data:   'mode=srv&doc='+doc+'&opt=pmsg&mail='+mail+'&sms='+sms+'&text='+encodeURIComponent(otext.value),
 				success: function(msg) { rcvDataSuccess(msg) },
 				error:   function() { jAlert('Ошибка соединения!','Отправка сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
 			});
@@ -769,6 +764,123 @@ function msgMenu(event,doc)
 	return false
 }
 
+function addNomMenu(event, doc, pdoc_id) {
+    var menu = CreateContextMenu(event);
+    function showDialog() {
+        var obj = event.target;
+        menu.innerHTML = "Введите ID документа, из которго нужно<br>загрузить номенклатнурную таблицу:<br>" +
+            "<input type='text' id='doc_num_field' value=''><br>" +
+            "<fieldset><legend>или выберите из списка</legend><div id='menu_link_div'></div></fieldset>" +
+            "<label><input type='checkbox' id='p_clear_cb'> Предварительно очистить текущий документ</label><br>" +
+            "<label><input type='checkbox' id='nsum_cb'> Не суммировать количество</label><br><button id='bcancel'>Отменить</button>" +
+            "<button id='bok'>Выполнить</button>";
+        menu.className = 'contextlayer';
+        menu.onmouseover = menu.onmouseout = function () {};
+        if (menu.waitHideTimer) {
+            window.clearTimeout(menu.waitHideTimer);
+        }
+        var odoc_num_field = document.getElementById('doc_num_field');
+        var op_clear_cb = document.getElementById('p_clear_cb');
+        var onsum_cb = document.getElementById('nsum_cb');
+        var obok = document.getElementById('bok');
+        var obcancel = document.getElementById('bcancel');
+
+        obcancel.onclick = function () {
+            menu.parentNode.removeChild(menu);
+        };
+        obok.onclick = function ()
+        {
+            var f_clear = op_clear_cb.checked ? 1 : 0;
+            var f_sum = onsum_cb.checked ? 1 : 0;
+            $.ajax({
+                type: 'POST',
+                url: '/doc.php',
+                data: 'mode=srv&opt=merge&doc=' + doc + '&from_doc=' + odoc_num_field.value + '&clear=' + f_clear + '&no_sum=' + f_sum,
+                success: function (msg) {
+                    rcvDataSuccess(msg);
+                },
+                error: function () {
+                    jAlert('Ошибка соединения!', 'Объединение номенклатурных таблиц', null, 'icon_err');
+                    menu.parentNode.removeChild(menu);
+                }
+            });
+            menu.innerHTML = '<img src="/img/icon_load.gif" alt="Загрузка">Загрузка...';
+        };
+        
+        $.ajax({
+            type: 'POST',
+            url: '/doc.php',
+            data: 'mode=srv&opt=link_info&doc=' + doc,
+            success: function (msg) {
+                rcvDataSuccess(msg);
+            },
+            error: function () {
+                jAlert('Ошибка соединения!', 'Объединение номенклатурных таблиц', null, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            }
+        });
+    }
+    
+    function selectNum(event) {
+        var odoc_num_field = document.getElementById('doc_num_field');
+        odoc_num_field.value = event.target.doc_id;
+    }
+
+    function rcvDataSuccess(msg) {
+        try {
+            var json = JSON.parse(msg);
+            if (json.response == 'err') {
+                jAlert(json.text, "Ошибка", {}, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            }
+            else if (json.response == 'merge_ok') {
+                jAlert('Таблица загружена', "Выполнено", {});
+                menu.parentNode.removeChild(menu)
+                poslist.refresh();
+            }
+            else if(json.response == 'link_info') {
+                var menu_link_div = document.getElementById('menu_link_div');
+                menu_link_div.innerHTML = '';
+                if(json.parent) {
+                    var elem=document.createElement('a');
+                    elem.href='#';
+                    elem.doc_id = json.parent.id;
+                    elem.innerHTML = 'От: ' + json.parent.name + ' ' + json.parent.altnum + json.parent.subtype + ' от ' + json.parent.vdate + ' на сумму ' +  json.parent.sum;
+                    elem.onclick = selectNum;
+                    elem.style.display = 'block';
+                    menu_link_div.appendChild(elem);
+                }
+                if(json.childs) {
+                    for(var i=0;i<json.childs.length;i++) {
+                        var doc_info = json.childs[i];
+                        var elem=document.createElement('a');
+                        elem.href='#';
+                        elem.doc_id = doc_info.id;
+                        elem.innerHTML = 'К: ' + doc_info.name + ' ' + doc_info.altnum + doc_info.subtype + ' от ' + doc_info.vdate + ' на сумму ' +  doc_info.sum;
+                        elem.onclick = selectNum;
+                        elem.style.display = 'block';
+                        menu_link_div.appendChild(elem);
+                    }
+                }
+            }
+            else {
+                jAlert("Обработка полученного сообщения не реализована<br>" + msg, "Отправка сообщения", {}, 'icon_err');
+                menu.parentNode.removeChild(menu)
+            }
+        }
+        catch (e) {
+            jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
+                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Объединение номенклатурных таблиц", {}, 'icon_err');
+            menu.parentNode.removeChild(menu)
+        }
+    }
+
+    showDialog();
+    
+    return false;
+}
+
+
 function sendPie(event,doc)
 {
 	var menu=CreateContextMenu(event)
@@ -788,7 +900,7 @@ function sendPie(event,doc)
 	{
 		try
 		{
-			var json=eval('('+msg+')');
+			var json=JSON.parse(msg);
 			if(json.response=='err')
 			{
 				jAlert(json.text,"Ошибка", {}, 'icon_err');
