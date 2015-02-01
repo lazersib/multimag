@@ -124,6 +124,10 @@ $CONFIG['gpb']['bank_id']	= 1;
 $CONFIG['gpb']['callback_login']= '';
 $CONFIG['gpb']['callback_pass']	= '';
 
+// настройки модуля 1с синхронизации
+$CONFIG['1csync']['login']      = '';
+$CONFIG['1csync']['pass']       = '';
+
 $CONFIG['doc_scripts']['zp_s_prodaj.coeff']=	0.05;	// Коэффициент начислений для зарплаты с продаж
 $CONFIG['doc_scripts']['zp_s_prodaj_conn.new_coeff']=0.02;
 $CONFIG['doc_scripts']['zp_s_prodaj_conn.new_days']=90;

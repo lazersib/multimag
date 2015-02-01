@@ -25,7 +25,7 @@ class doc_s_Sklad {
 	function __construct()	{
 		$this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty',
 		    'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt',
-		    'analog_group', 'mass');
+		    'analog_group', 'mass', 'nds');
 		$this->dop_vars = array('type', 'analog', 'd_int', 'd_ext', 'size', 'ntd');
 		$this->group_vars = array('name' , 'desc' , 'pid' , 'hidelevel' , 'printname', 'no_export_yml', 'title_tag', 'meta_keywords', 'meta_description');
 	}
@@ -259,7 +259,7 @@ class doc_s_Sklad {
 		if ($pos != 0)		$this->PosMenu($pos, $param);
 
 		if ($param == '') {
-			$pres = $db->query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`, `doc_base`.`cost_date`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, `doc_base`.`analog_group`, `doc_base`.`mass`
+			$pres = $db->query("SELECT `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`likvid`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base`.`pos_type`, `doc_base`.`hidden`, `doc_base`.`unit`, `doc_base`.`vc`, `doc_base`.`stock`, `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`no_export_yml`, `doc_base`.`country`, `doc_base`.`title_tag`, `doc_base`.`meta_keywords`, `doc_base`.`meta_description`, `doc_base`.`cost_date`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, `doc_base`.`analog_group`, `doc_base`.`mass`, `doc_base`.`nds`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
@@ -282,6 +282,10 @@ class doc_s_Sklad {
 			}
 
 			$cc = '';
+                        
+                        if($pos_info['nds']===null) {
+                            $pos_info['nds'] = '';
+                        }
 	
 			if ($pos_info['img_id']) {
 				$miniimg = new ImageProductor($pos_info['img_id'], 'p', $pos_info['img_type']);
@@ -354,10 +358,14 @@ class doc_s_Sklad {
 				<td align='right'>Количество оптом:</td>
 				<td><input type='text' name='pd[bulkcnt]' value='".html_out($pos_info['bulkcnt'])."'></td>
 			</tr>
-			<tr class='lin0'><td align='right'>Базовая цена</td>
+			<tr><td align='right'>Базовая цена</td>
 				<td><input type='text' name='pd[cost]' value='{$pos_info['cost']}'> с {$pos_info['cost_date']} </td>
 				<td align='right'>Кратность:</td>
 				<td><input type='text' name='pd[mult]' value='".html_out($pos_info['mult'])."'></td>	
+			</tr>
+                        <tr><td align='right'>Ставка НДС</td>
+				<td><input type='text' name='pd[nds]' value='{$pos_info['nds']}'></td>
+				<td align='right' colspan=2></td>
 			</tr>
 			<tr><td align='right'>Ликвидность:</td>
 				<td><b>{$pos_info['likvid']}%
@@ -1292,6 +1300,14 @@ class doc_s_Sklad {
 							$cost = sprintf("%0.2f", $pd[$id]);
 							$new_val = "'$cost', `cost_date`=NOW()";
 						}
+                                                else if($id == 'nds') {
+                                                    if($pd[$id]==='') {
+                                                        $new_val = 'NULL';
+                                                    }
+                                                    else {
+                                                        $new_val = intval($pd[$id]);
+                                                    }
+                                                }
 						else	$new_val = "'" . $db->real_escape_string($pd[$id]) . "'";
 
 						$log_add.=", $id:($value => {$pd[$id]})";

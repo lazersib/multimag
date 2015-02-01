@@ -188,7 +188,7 @@ function ExecMode($mode)
 		$doc = $_SESSION['order_id'];
 		if ($doc) {
 			$document = AutoDocument($doc);
-			$document->PrintForm('schet');
+			$document->PrintForm('int:schet');
 		}
 		else	$tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
 	}
