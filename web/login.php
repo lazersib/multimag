@@ -573,57 +573,77 @@ else if($mode=='regs')
 	}
 
 }
-else if($mode=='conf')
-{
-	$login=$_REQUEST['login'];
-	$e=@$_REQUEST['e'];
-	$p=@$_REQUEST['p'];
+else if($mode=='conf') {
+	$login = $_REQUEST['login'];
+        $e = @$_REQUEST['e'];
+        $p = @$_REQUEST['p'];
 
-	$sql_login=$db->real_escape_string($login);
-	$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
-	if($nxt=$res->fetch_assoc())
-	{
-		$e_key=$p_key=0;
-		if($e && $e==$nxt['reg_email_confirm'])
-		{
-			$r=$db->query("UPDATE `users` SET `reg_email_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
-		}
-		else if($e) $e_key=1;
+        $sql_login = $db->real_escape_string($login);
+        $res = $db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
+        if($nxt = $res->fetch_assoc()) {
+                $bad_e_key = $bad_p_key = $auto_auth = 0;
+                $need_e_key = $need_p_key = 0;
+                
+                if($nxt['reg_email'] && $nxt['reg_email_confirm']!=1) {
+                    if($e) {
+                        if($e == $nxt['reg_email_confirm']) {
+                            $db->update('users', $nxt['id'], 'reg_email_confirm', 1);
+                            $auto_auth = 1;
+                        }
+                        else {
+                            $bad_e_key = 1;
+                            $need_e_key = 1;
+                        }
+                    } 
+                    else {
+                        $need_e_key = 1;
+                    }
+                }
+                
+                if($nxt['reg_phone'] && $nxt['reg_phone_confirm']!=1) {
+                    $auto_auth = 0;
+                    if($p) {
+                        if($p == $nxt['reg_phone_confirm']) {
+                            $db->update('users', $nxt['id'], 'reg_phone_confirm', 1);
+                            $auto_auth = 1;
+                        }
+                        else {
+                            $bad_p_key = 1;
+                            $need_p_key = 1;
+                        }
+                    }
+                    else {
+                        $need_p_key = 1;
+                    }
+                }
 
-		if($p && $p==$nxt['reg_phone_confirm'])
-		{
-			$r=$db->query("UPDATE `users` SET `reg_phone_confirm`='1' WHERE `id` = '{$nxt['id']}' ");
-		}
-		else if($p) $p_key=1;
-
-		$res=$db->query("SELECT `id`, `name`, `reg_email`, `reg_email_confirm`, `reg_phone`, `reg_phone_confirm` FROM `users` WHERE `name`='$sql_login'");
-		$nxt=$res->fetch_assoc();
-
-		if(($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='') || ($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='') )
-		{
+		if( $need_e_key || $need_p_key ) {
 			$tmpl->addContent("<h1 id='page-title'>Завершение регистрации</h1>
 			<form action='/login.php' method='post'>
 			<input type='hidden' name='mode' value='conf'>
 			<input type='hidden' name='login' value='$login'>");
-			if($nxt['reg_email_confirm']!='1' && $nxt['reg_email_confirm']!='')
-			{
-				$tmpl->addContent("Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по email:</b><br>
-				<input type='text' name='e'>");
-				if($e_key)	$tmpl->addContent("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
-				$tmpl->addContent("<br>Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. Сообщите о проблеме администратору своего почтового сервера, или используйте другой!<br><br>");
+			if($need_e_key)	{
+                            $tmpl->addContent("Для проверки, что указанный адрес электронной почты принадлежит Вам, на него было выслано сообщение.<br>
+                                <b>Введите код, полученный по email:</b><br>
+                                <input type='text' name='e'>");
+                            if ($bad_e_key) {
+                                    $tmpl->addContent("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
+                            }
+                            $tmpl->addContent("<br>Если Вы не получите письмо в течение трёх часов, возможно ваш сервер не принимает наше сообщение. "
+                                . "Сообщите о проблеме администратору своего почтового сервера, или используйте другой!<br><br>");
 			}
-			if($nxt['reg_phone_confirm']!='1' && $nxt['reg_phone_confirm']!='')
-			{
-				$tmpl->addContent("Для проверки, что номер телефона принадлежит Вам, на него было выслано сообщение.<br><b>Введите код, полученный по SMS:</b><br>
-				<input type='text' name='p'>");
-				if($e_key)	$tmpl->addContent("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
-				$tmpl->addContent("<br>SMS сообщения обычно приходят в течение 1 часа.<br><br>");
+			if($need_p_key)	{
+                            $tmpl->addContent("Для проверки, что номер телефона принадлежит Вам, на него было выслано сообщение.<br>
+                                <b>Введите код, полученный по SMS:</b><br>
+                                <input type='text' name='p'>");
+                            if ($bad_p_key) {
+                                $tmpl->addContent("<br><span style='color: #f00;'>Вы ввели неверный код подтверждения!");
+                            }
+                            $tmpl->addContent("<br>SMS сообщения обычно приходят в течение 1 часа.<br><br>");
 			}
 			$tmpl->addContent("<button type='submit'>Продолжить</button>
 			</form>");
-		}
-		else
-		{
+		} elseif($auto_auth) {
 			$ip=$db->real_escape_string(getenv("REMOTE_ADDR"));
 			$ua=$db->real_escape_string($_SERVER['HTTP_USER_AGENT']);
 			$res=$db->query("INSERT INTO `users_login_history` (`user_id`, `date`, `ip`, `useragent`, `method`)
@@ -633,8 +653,9 @@ else if($mode=='conf')
 
 			$tmpl->msg("Регистрация завершена! Теперь Вам доступны новые возможности!","ok");
 		}
+                else $tmpl->msg("Пользователь не найден в базе, либо код подтверждения устарел","err");
 	}
-	else $tmpl->msg("Пользователь не найден в базе","err");
+	else $tmpl->msg("Пользователь не найден в базе, либо код подтверждения устарел","err");
 }
 
 else if($mode=='rem') {
