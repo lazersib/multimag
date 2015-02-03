@@ -423,7 +423,11 @@ class doc_Realizaciya extends doc_Nulltype {
 		$dt = date("d.m.Y", $this->doc_data['date']);
 
 		$pdf->SetFont('','',16);
-		$str="Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                if(!$this->dop_data['return']) {
+                    $str="Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                } else {
+                    $str="Возврат поставщику N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                }
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
 		$str="Поставщик: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";

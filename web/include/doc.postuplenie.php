@@ -241,7 +241,11 @@ class doc_Postuplenie extends doc_Nulltype {
 		$dt = date("d.m.Y", $this->doc_data['date']);
 
 		$pdf->SetFont('', '', 16);
-		$str = "Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от $dt";
+		if(!$this->dop_data['return']) {
+                    $str = "Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                } else {
+                    $str = "Возврат от покупателя N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                }
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 8, $str, 0, 1, 'C', 0);
 		$pdf->SetFont('', '', 10);
