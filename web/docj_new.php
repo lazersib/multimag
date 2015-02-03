@@ -37,6 +37,9 @@ if (!isset($_REQUEST['mode'])) {
 	}
 	else if($pos_id) {
 		$pos_info = $db->selectRow('doc_base', $pos_id);
+                if(@$CONFIG['poseditor']['vc']) {
+                    $pos_info['name'] = $pos_info['vc'].' '.$pos_info['name'];
+                }
 		$f = "posId: '$pos_id', posName: '".html_out($pos_info['name'])."'";
 	}
 	else $f = "dateFrom: '".date("Y-m-d")."'";

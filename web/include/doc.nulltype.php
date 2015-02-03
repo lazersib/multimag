@@ -930,6 +930,14 @@ class doc_Nulltype
 			}
 			else
 			{
+                                if ($this->doc_name) {
+                                    $object = 'doc_' . $this->doc_name;
+                                } else {
+                                    $object = 'doc';
+                                }
+                                if(!isAccess($object,'printna')) {
+                                    throw new AccessException("Нет привилегий для печати непроведённых документов");
+                                }
 				$faxnum=request('faxnum');
 				if($faxnum=='')		throw new Exception('Номер факса не указан');
 
@@ -985,26 +993,31 @@ class doc_Nulltype
 			}
 			else
 			{
-				$email=  request('email');
-				$comment=  request('comment');
-				if($email=='')
-				{
-					$tmpl->setContent("{response: 'err', text: 'Адрес электронной почты не указан!'}");
-				}
-				else
-				{
-					$tmpl->ajax=1;
-					$method='';
-					foreach($this->PDFForms as $form)
-					{
-						if($form['name']==$opt)	$method=$form['method'];
-					}
-					if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-					$this->sendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->doc_name.".pdf");
-					$tmpl->setContent("{response: 'send'}");
-					doc_log("Send email", $email, 'doc', $this->doc);
-
-				}
+                            if ($this->doc_name) {
+                                $object = 'doc_' . $this->doc_name;
+                            } else {
+                                $object = 'doc';
+                            }
+                            if(!isAccess($object,'printna')) {
+                                throw new AccessException("Нет привилегий для печати непроведённых документов");
+                            }
+                            $email = request('email');
+                            $comment = request('comment');
+                            if($email=='') {
+                                    $tmpl->setContent("{response: 'err', text: 'Адрес электронной почты не указан!'}");
+                            }
+                            else {
+                                $tmpl->ajax=1;
+                                $method='';
+                                foreach($this->PDFForms as $form)
+                                {
+                                        if($form['name']==$opt)	$method=$form['method'];
+                                }
+                                if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
+                                $this->sendDocEMail($email, $comment, $this->doc_viewname, $this->$method(1), $this->doc_name.".pdf");
+                                $tmpl->setContent("{response: 'send'}");
+                                doc_log("Send email", $email, 'doc', $this->doc);
+                            }
 			}
 		}
 		catch(Exception $e)
@@ -1046,6 +1059,15 @@ class doc_Nulltype
             $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
         }
         else {
+            if ($this->doc_name) {
+                $object = 'doc_' . $this->doc_name;
+            } else {
+                $object = 'doc';
+            }
+            if(!isAccess($object,'printna')) {
+                throw new AccessException("Нет привилегий для печати непроведённых документов");
+            }
+            
             $f_param = explode(':', $opt);
             if($f_param[0]=='int') {
                 $method = '';
@@ -1712,7 +1734,7 @@ class doc_Nulltype
             global $tmpl;
             $ret='';
             if($this->doc) {
-                $ret.="<a href='/docj.php?mode=log&amp;doc={$this->doc}' title='История изменений документа'><img src='img/i_log.png' alt='История'></a>";
+                $ret.="<a href='/doc.php?mode=log&amp;doc={$this->doc}' title='История изменений документа'><img src='img/i_log.png' alt='История'></a>";
                 $ret.="<span id='provodki'>";
                 if($this->doc_data['ok']) {
                     $ret .= $this->getCancelButtons();
@@ -1790,4 +1812,25 @@ class doc_Nulltype
 		$res->free();
 		return $sum;
 	}
+        
+    public function showLog() {
+        global $db, $tmpl;
+        if ($this->doc_name) {
+            $object = 'doc_' . $this->doc_name;
+        } else {
+            $object = 'doc';
+        }
+        if (!isAccess($object, 'view')) {
+            throw new AccessException("");
+        }
+        $tmpl->setTitle($this->doc_viewname . ' N' . $this->doc);
+        doc_menu($this->getDopButtons());
+        $tmpl->addContent("<h1>{$this->doc_viewname} N{$this->doc} - история документа</h1>");
+        
+        $logview = new \LogView();
+        $logview->setObject('doc');
+        $logview->setObjectId($this->doc);
+        $logview->showLog();
+    }
+
 }

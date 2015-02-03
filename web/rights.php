@@ -19,7 +19,7 @@
 
 require_once("core.php");
 
-$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'today_apply'=>'Проведение сев.', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение', 'redirect'=>'Перенаправление');
+$actions=array('read'=>'Чтение', 'write'=>'Запись', 'save'=>'Сохранение', 'view'=>'Просмотр', 'edit'=>'Изменение', 'apply'=>'Проведение', 'today_apply'=>'Проведение сев.', 'cancel'=>'Отмена', 'forcecancel'=>'П.отмена','today_cancel'=>'Отмена сев.', 'create'=>'Создание', 'delete'=>'Удаление', 'exec'=>'Выполнение', 'redirect'=>'Перенаправление', 'printna'=>'Печать непроведённого');
 
 try {
 

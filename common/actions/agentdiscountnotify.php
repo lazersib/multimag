@@ -110,21 +110,21 @@ class AgentDiscountNotify extends \Action {
 		$res = $this->db->query("SELECT `id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold`
 			FROM `doc_cost` ORDER BY `priority`");
 		while($line = $res->fetch_assoc()) {
-			$contexts = str_split($line['context']);
-			foreach($contexts as $context) {
-				if($context=='b') {	// bulk
-						$bulk_prices[] = $line;
-						break;
-				}
-			}
+                    $contexts = str_split($line['context']);
+                    foreach($contexts as $context) {
+                        if($context=='b') {	// bulk
+                            $bulk_prices[] = $line;
+                            break;
+                        }
+                    }
 		}
 		
 		// Получить название фирмы, от которой выполняется рассылка
 		$res = $this->db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$this->config['site']['default_firm']}'");
 		list($firm_name) = $res->fetch_row();
 		
-		// Оповещаем только подписанных агентов, у которых были специальные цены в предыдущем периоде
-		$res = $this->db->query("SELECT `id`, `fullname`, `pfio`, `avg_sum`, `email` FROM `doc_agent` WHERE `no_mail`=0 AND `avg_sum`>0");
+		// Оповещаем только подписанных агентов с нефиксированной ценой, у которых были специальные цены в предыдущем периоде
+		$res = $this->db->query("SELECT `id`, `fullname`, `pfio`, `avg_sum`, `email` FROM `doc_agent` WHERE `no_mail`=0 AND `price_id`>0 AND `avg_sum`>0");
 		while($agent_info = $res->fetch_assoc()) {
 			$no_notify = $next_price_sum = $cur_price_sum = 0;
 			$cur_price_sum_name = $next_price_name = $sum_spec_price_name = '';

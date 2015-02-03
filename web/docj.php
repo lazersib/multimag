@@ -885,20 +885,24 @@ else if($mode=="undel")
 }
 else if($mode=='log')
 {
-	$doc=rcvint('doc');
-	$res=$db->query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
+	$doc = rcvint('doc');
+	$res=$db->query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`, `doc_log`.`user`
 	FROM `doc_log`
 	LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
 	WHERE `doc_log`.`object`='doc' AND `doc_log`.`object_id`='$doc'
 	ORDER BY `doc_log`.`time` DESC");
 	$tmpl->addContent("<h1>История документа $doc</h1>
-	<table width=100%>
+	<table width=100% class='list'>
 	<tr><th>Выполненное действие<th>Описание действия<th>Дата<th>Пользователь<th>IP");
 	$i=0;
-	while($nxt=$res->fetch_row())
-	{
-		$i=1-$i;
-		$tmpl->addContent("<tr class='lin$i'><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td>$nxt[3]<td>$nxt[4]");
+        
+        $users_ib = array();
+        
+	while($nxt=$res->fetch_row()) {
+            if(!isset($users_ib[$nxt[5]])) {
+                $users_ib[$nxt[5]] = substr(md5($nxt[3]), 0, 3);
+            }
+            $tmpl->addContent("<tr><td>$nxt[0]<td>$nxt[1]<td>$nxt[2]<td><div class='iblock' style='background-color: #{$users_ib[$nxt[5]]}'>&nbsp;</div> $nxt[3]<td>$nxt[4]");
 
 	}
 	$tmpl->addContent("</table>");

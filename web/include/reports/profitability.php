@@ -106,8 +106,8 @@ class Report_Profitability extends BaseGSReport {
 		</fieldset>
 		Не показывать с прибылью менее <input type='text' name='ren_min_abs'> руб.<br>
 		Не показывать с рентабельностью менее <input type='text' name='ren_min_pp'> %<br>
-		<label><input type='checkbox' name='neg_pos' checked>Поместить наименования с отрицательной прибылью в начало списка</label>
-		<br>
+		<label><input type='checkbox' name='neg_pos' checked>Поместить наименования с отрицательной прибылью в начало списка</label><br>
+                <label><input type='checkbox' name='no_serv' value='1'>Не отображать услуги</label><br>
 		<fieldset><legend>Отчёт по</legend>
 		<select name='sel_type' id='sel_type'>
 		<option value='all'>Всей номенклатуре</option>
@@ -116,7 +116,8 @@ class Report_Profitability extends BaseGSReport {
 		");
 		$this->GroupSelBlock();
 		$tmpl->addContent("
-		</fieldset>
+		</fieldset><br>
+                
 		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
 		<button type='submit'>Сформировать отчёт</button>
 		</form>
@@ -217,7 +218,8 @@ class Report_Profitability extends BaseGSReport {
 		$ren_min_abs = rcvint('ren_min_abs');
 		$ren_min_pp = rcvint('ren_min_pp');
 		$neg_pos = rcvint('neg_pos');
-
+                $no_serv = rcvint('no_serv');
+                
 		$max_profit = 0;
 
 		$print_df = date('Y-m-d', $dt_f);
@@ -236,12 +238,17 @@ class Report_Profitability extends BaseGSReport {
 		if ($sel_type == 'all') {
 			$res = $db->query("SELECT `id`, `pos_type` FROM `doc_base`");
 			while ($nxt = $res->fetch_row()) {
-				if ($nxt[1] == 0)
-					list($profit, $count, $avg_extra_pp) = $this->calcPosT($nxt[0], $dt_f, $dt_t);
-				else	list($profit, $count, $avg_extra_pp) = $this->calcPosS($nxt[0], $dt_f, $dt_t);
-				if ($max_profit < $profit && $profit != 0xFFFFBADF00D)
-					$max_profit = $profit;
-				$db->query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count, $avg_extra_pp)");
+                            if ($nxt[1] == 0) {
+                                list($profit, $count, $avg_extra_pp) = $this->calcPosT($nxt[0], $dt_f, $dt_t);
+                            } else if ($no_serv) {
+                                continue;
+                            } else {
+                                list($profit, $count, $avg_extra_pp) = $this->calcPosS($nxt[0], $dt_f, $dt_t);
+                            }
+
+                            if ($max_profit < $profit && $profit != 0xFFFFBADF00D)
+                                $max_profit = $profit;
+                            $db->query("INSERT INTO `temp_report_profit` VALUES ( $nxt[0], $profit, $count, $avg_extra_pp)");
 			}
 		}
 		else if ($sel_type == 'group') {
@@ -251,9 +258,15 @@ class Report_Profitability extends BaseGSReport {
 
 				$res = $db->query("SELECT `doc_base`.`id` FROM `doc_base` WHERE `doc_base`.`group`='{$group_line['id']}'");
 				while ($nxt = $res->fetch_row()) {
-					if ($nxt[2] == 0)
-						list($profit, $count, $avg_extra_pp) = $this->calcPosT($nxt[0], $dt_f, $dt_t);
-					else	list($profit, $count, $avg_extra_pp) = $this->calcPosS($nxt[0], $dt_f, $dt_t);
+					if ($nxt[2] == 0) {
+                                            list($profit, $count, $avg_extra_pp) = $this->calcPosT($nxt[0], $dt_f, $dt_t);
+                                        }
+                                        else if($no_serv) {
+                                            continue;
+                                        }
+					else {
+                                            list($profit, $count, $avg_extra_pp) = $this->calcPosS($nxt[0], $dt_f, $dt_t);
+                                        }
 
 					if ($max_profit < $profit && $profit != 0xFFFFBADF00D)
 						$max_profit = $profit;
@@ -295,4 +308,3 @@ class Report_Profitability extends BaseGSReport {
 		exit(0);
 	}
 }
-?>

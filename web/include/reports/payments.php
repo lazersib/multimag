@@ -33,18 +33,21 @@ class Report_Payments {
 		<form action='' method='post'>
 		<input type='hidden' name='mode' value='payments'>
 		<input type='hidden' name='opt' value='make'>
-		<p class='datetime'>
-		Дата от:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_st' size='10' value='1970-01-01' maxlength='10'><br>
-		до:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_end' size='10' value='$date_end' maxlength='10'>
-		</p>
-		<label><input type=checkbox name=tov value=1>Товары в документах</label><br>
-		<button type='submit'>Создать отчет</button></form>");
+                Начальная дата:<br>
+		<input type='text' name='date_st' id='datepicker_f' value='1970-01-01'><br>
+		Конечная дата:<br>
+		<input type='text' name='date_end' id='datepicker_t' value='$date_end'><br>
+                <label><input type=checkbox name=tov value=1>Товары в документах</label><br>
+		<button type='submit'>Создать отчет</button></form>
+                <script type=\"text/javascript\">
+		initCalendar('datepicker_f',false);
+		initCalendar('datepicker_t',false);
+		</script>");
 	}
 
 	function MakeHTML() {
 		global $tmpl, $db;
 		$tov = rcvint("tov");
-		$agent = rcvint('agent');
 		$date_st = strtotime(rcvdate('date_st'));
 		$date_end = strtotime(rcvdate('date_end')) + 60 * 60 * 24 - 1;
 		if (!$date_end)		$date_end = time();
@@ -69,35 +72,33 @@ class Report_Payments {
 				$tp = "Поступление";
 				$pr+=$nxt[3];
 				$deb = $nxt[3];
-			} else if ($nxt[1] == 2) {
+			} elseif ($nxt[1] == 2) {
 				$tp = "Реализация";
 				$ras+=$nxt[3];
 				$kr = $nxt[3];
-			}
-			if ($nxt[1] == 3) {
+			} elseif  ($nxt[1] == 3) {
 				$tp = "-";
 				continue;
-			}
-			if ($nxt[1] == 4) {
+			} elseif  ($nxt[1] == 4) {
 				$tp = "Оплата";
 				$pr+=$nxt[3];
 				$deb = $nxt[3];
-			}
-			if ($nxt[1] == 5) {
+			} elseif  ($nxt[1] == 5) {
 				$tp = "Возврат";
 				$ras+=$nxt[3];
 				$kr = $nxt[3];
-			}
-			if ($nxt[1] == 6) {
+			} elseif  ($nxt[1] == 6) {
 				$tp = "Оплата";
 				$pr+=$nxt[3];
 				$deb = $nxt[3];
-			}
-			if ($nxt[1] == 7) {
+			} elseif  ($nxt[1] == 7) {
 				$tp = "Возврат";
 				$ras+=$nxt[3];
 				$kr = $nxt[3];
-			}
+			} else {
+                            continue;
+                        }
+                        
 
 			if ($tov) {
 				$rs = $db->query("SELECT `doc_base`.`name`,`doc_list_pos`.`cnt`,`doc_list_pos`.`cost` FROM `doc_list_pos`
@@ -133,4 +134,3 @@ class Report_Payments {
 		else		$this->MakeHTML();
 	}
 }
-?>

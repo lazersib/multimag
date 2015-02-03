@@ -1099,8 +1099,16 @@ div.doctype_multiselect label {
 
 #breadcrumbs a,
 .breadcrumbs a {
-	color: #30cc;
+	color: #30c;
 	padding-right:13px;
 	margin-right:10px;
 	background:url(images/slash.png) no-repeat right 3px;
+}
+
+div.iblock {
+    width:  10px;
+    height: 10px;
+    border: 1px solid #000;
+    float: left;
+    margin: 3px;
 }

@@ -31,6 +31,10 @@ class DocMove extends \Action {
 
 		// Перемещение непроведённых заявок на начало текущего дня
 		if ($this->config['auto']['move_no_to_end'] == true)
-			$this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=3 AND `ok`=0 AND `mark_del`=0");		
+			$this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=3 AND `ok`=0 AND `mark_del`=0");	
+                
+                // Перемещение непроведённых перемещений товаров на начало текущего дня
+		if ($this->config['auto']['move_ntp_to_end'] == true)
+			$this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=8 AND `ok`=0 AND `mark_del`=0");
 	}
 }

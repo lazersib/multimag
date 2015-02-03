@@ -163,6 +163,10 @@ try
 		echo "$altnum";
 		exit(0);
 	}
+        else if($mode=='log') {
+            $document=AutoDocument($doc);
+            $document->showLog();
+        }
 	else $tmpl->msg("ERROR $mode","err");
 }
 catch(AccessException $e) {
