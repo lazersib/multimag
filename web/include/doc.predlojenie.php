@@ -209,7 +209,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$pdf->SetFont('','',8);
 
 		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-                    `doc_base`.`mass`
+                    `doc_base`.`mass`, `doc_base`.`nds`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -217,21 +217,29 @@ class doc_Predlojenie extends doc_Nulltype
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
-		$sum=$summass=0;
-		while($nxt = $res->fetch_row()) {
+		$sum=$summass=$sum_nds=0;
+		while($nxt = $res->fetch_assoc()) {
+                        if($nxt['nds']!==null) {
+                            $ndsp = $nxt['nds'];
+                        } else {
+                            $ndsp = $this->firm_vars['param_nds'];
+                        }            
+                        
 			$i++;
-			$sm=$nxt[3]*$nxt[4];
+			$sm=$nxt['cnt']*$nxt['cost'];
 			$sum+=$sm;
-			$summass+=$nxt[5]*$nxt[3];
-			$cost = sprintf("%01.2f р.", $nxt[4]);
+			$summass+=$nxt['mass']*$nxt['cnt'];
+                        $sum_nds = $sm/(100+$ndsp)*$ndsp;
+                        
+			$cost = sprintf("%01.2f р.", $nxt['cost']);
 			$smcost = sprintf("%01.2f р.", $sm);
 
 			$pdf->Cell($t_width[0],5,$i,1,0,'R',0);
-			$str=$nxt[0].' '.$nxt[1];
-			if($nxt[2]) $str.='('.$nxt[2].')';
+			$str=$nxt['printname'].' '.$nxt['name'];
+			if($nxt['proizv']) $str.='('.$nxt['proizv'].')';
 			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->Cell($t_width[1],5,$str,1,0,'L',0);
-			$pdf->Cell($t_width[2],5,$nxt[3],1,0,'C',0);
+			$pdf->Cell($t_width[2],5,$nxt['cnt'],1,0,'C',0);
 			$str = iconv('UTF-8', 'windows-1251', $cost);
 			$pdf->Cell($t_width[3],5,$str,1,0,'R',0);
 			$str = iconv('UTF-8', 'windows-1251', $smcost);
@@ -259,8 +267,7 @@ class doc_Predlojenie extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,6,$str,0,0,'L',0);
 
-		$nds=$sum/(100+$this->firm_vars['param_nds'])*$this->firm_vars['param_nds'];
-		$nds = sprintf("%01.2f", $nds);
+		$nds = sprintf("%01.2f", $sum_nds);
 		$pdf->SetFont('','',12);
 		$str="Итого: $sumcost руб.";
 		$str = iconv('UTF-8', 'windows-1251', $str);

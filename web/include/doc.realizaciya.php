@@ -1132,9 +1132,10 @@ class doc_Realizaciya extends doc_Nulltype {
         global $CONFIG, $db;
         
         $list = array();
-        $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-            `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`,
-            `class_unit`.`number_code` AS `unit_code`, `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`
+        $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
+            `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, 
+            `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`, `class_unit`.`number_code` AS `unit_code`, 
+            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -1144,10 +1145,14 @@ class doc_Realizaciya extends doc_Nulltype {
 	WHERE `doc_list_pos`.`doc`='{$this->doc}'
 	ORDER BY `doc_list_pos`.`id`");
 
-        $ndsp = $this->firm_vars['param_nds'];
-        $nds = $ndsp / 100;
-        
         while ($nxt = $res->fetch_assoc()) {
+            if($nxt['nds']!==null) {
+                $ndsp = $nxt['nds'];
+            } else {
+                $ndsp = $this->firm_vars['param_nds'];
+            }            
+            $nds = $ndsp / 100;
+            
             if (!$nxt['country_code']) {
                 throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
             }

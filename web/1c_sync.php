@@ -64,8 +64,7 @@ try {
     $root->appendChild($result);
     
     $refbooks = $dom->createElement('refbooks');    // Узел справочников
-    $documents = $dom->createElement('documents');  // Узел документов
-    
+        
     $export = new \sync\Xml1cDataExport($db);
     
     $export->dom = $dom;
@@ -102,6 +101,14 @@ try {
     $agents->appendChild($items);    
     $refbooks->appendChild($agents);
     
+    // Выгрузка справочника стран мира (ОКСМ)
+    $workers = $export->convertToXmlElement('countries', 'country', $export->getCountriesData());
+    $refbooks->appendChild($workers);
+    
+    // Выгрузка справочника единиц измерения (ОКЕИ)
+    $units = $export->convertToXmlElement('units', 'unit', $export->getUnitsData());
+    $refbooks->appendChild($units);
+    
     // Выгрузка справочника номенклатуры
     $nomenclature = $dom->createElement('nomenclature');
     // Номенклатурные группы
@@ -112,12 +119,29 @@ try {
     $refbooks->appendChild($nomenclature);
     
     $root->appendChild($refbooks);
+    
+    $from_date = strtotime("2014-06-01");
+    $to_date = strtotime("2016-01-01");
+    $documents = $export->convertToXmlElement('documents', 'document', $export->getDocumentsData($from_date, $to_date));
+    
     $root->appendChild($documents);
     
     header("Content-type: application/xml");
     echo $dom->saveXML();  
     
 } catch (Exception $e) {
+    $dom = new domDocument("1.0", "utf-8");
+    $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
+    $root->setAttribute('version', '1.0');
+    $dom->appendChild($root);
+    
+    $result = $dom->createElement('result');            // Код возврата
+    $result_code = $dom->createElement('status', 'err');
+    $result_desc = $dom->createElement('desc', $e->getMessage());
+    $result->appendChild($result_code);
+    $result->appendChild($result_desc);
+    $root->appendChild($result);
+    
     header("Content-type: application/xml");
-    echo"<?xml version=\"1.0\" encoding=\"utf-8\"?><root><result><code>err</code><desc>" . $e->getMessage() . "</desc></result></register-payment-response>";
+    echo $dom->saveXML(); 
 }

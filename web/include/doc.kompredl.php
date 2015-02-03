@@ -813,8 +813,8 @@ class doc_Kompredl extends doc_Nulltype
 
 		$pdf->SetFont('','',10);
 
-		$res = $db->query("SELECT `doc_group`.`printname` AS `group_pname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-                    `doc_base`.`mass`, `doc_list_pos`.`comm`, `class_unit`.`rus_name1` AS `unit_name`
+		$res = $db->query("SELECT `doc_group`.`printname` AS `group_pname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, 
+                    `doc_list_pos`.`cost`, `doc_base`.`mass`, `doc_list_pos`.`comm`, `class_unit`.`rus_name1` AS `unit_name`, `doc_base`.`nds`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -827,8 +827,14 @@ class doc_Kompredl extends doc_Nulltype
 		$pdf->SetAligns($aligns);
 		$all_sum = 0;
                 $sum_mass = 0;
-                $nds = $this->firm_vars['param_nds'] / 100;
 		while($line = $res->fetch_assoc())	{
+                    if($line['nds']!==null) {
+                        $ndsp = $line['nds'];
+                    } else {
+                        $ndsp = $this->firm_vars['param_nds'];
+                    }            
+                    $nds = $ndsp / 100;
+                    
                     $i++;
                     if ($nds) {
                         $cost = $line['cost'] / (1 + $nds);

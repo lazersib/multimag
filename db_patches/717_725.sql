@@ -1,6 +1,6 @@
 ALTER TABLE `doc_sklady` ADD `firm_id` INT NULL DEFAULT NULL ,
 ADD INDEX ( `firm_id` );
-ALTER TABLE `doc_kassa`  CHANGE `firm_id` `firm_id` INT NULL DEFAULT NULL ,
+ALTER TABLE `doc_kassa`  CHANGE `firm_id` `firm_id` INT NULL DEFAULT NULL;
 ALTER TABLE `doc_sklady` ENGINE = InnoDB;
 ALTER TABLE `doc_vars` ENGINE = InnoDB;
 ALTER TABLE `doc_sklady` ADD FOREIGN KEY ( `firm_id` ) REFERENCES `doc_vars` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION ;

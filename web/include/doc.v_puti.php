@@ -250,8 +250,6 @@ class doc_v_puti extends doc_Nulltype {
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 6, $str, 0, 0, 'L', 0);
 
-		$nds = $sum / (100 + $this->firm_vars['param_nds']) * $this->firm_vars['param_nds'];
-		$nds = sprintf("%01.2f", $nds);
 		$pdf->SetFont('', '', 12);
 		$str = "Итого: $sumcost руб.";
 		$str = iconv('UTF-8', 'windows-1251', $str);

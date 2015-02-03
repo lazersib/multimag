@@ -156,7 +156,7 @@ class doc_Specific extends doc_Nulltype {
 		$pdf->SetFont('', '', 7);
 
 		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-                    `doc_base`.`mass`, `class_unit`.`rus_name1` AS `unit_print`
+                    `doc_base`.`mass`, `class_unit`.`rus_name1` AS `unit_print`, `doc_base`.`nds`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -166,13 +166,18 @@ class doc_Specific extends doc_Nulltype {
 		$i = $allsum = $nds_sum = 0;
 		while ($nxt = $res->fetch_row()) {
 			$i++;
-
+                        if($nxt['nds']!==null) {
+                            $ndsp = $nxt['nds'];
+                        } else {
+                            $ndsp = $this->firm_vars['param_nds'];
+                        }            
+                        
 			if ($this->doc_data['nds']) { // Включать НДС
-				$c_bez_nds = sprintf("%01.2f", $nxt[4] / (100 + $this->firm_vars['param_nds']) * 100);
+				$c_bez_nds = sprintf("%01.2f", $nxt[4] / (100 + $ndsp) * 100);
 				$c_s_nds = $nxt[4];
 			} else {
 				$c_bez_nds = $nxt[4];
-				$c_s_nds = sprintf("%01.2f", $nxt[4] * (100 + $this->firm_vars['param_nds']) / 100);
+				$c_s_nds = sprintf("%01.2f", $nxt[4] * (100 + $ndsp) / 100);
 			}
 			$s_s_nds = $c_s_nds * $nxt[3];
 			$allsum+=$c_s_nds * $nxt[3];

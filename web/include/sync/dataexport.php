@@ -195,4 +195,77 @@ class DataExport {
     public function getNomenclatureGroupsData() {
         return $this->getDataFromMysqlQuery("SELECT `id`, `pid` AS `parent_id`, `name`, `desc` AS `comment` FROM `doc_group` ORDER BY `id`");
     }
+    
+    /// Получить данные справочника стран мира
+    public function getCountriesData() {
+        return $this->getDataFromMysqlQuery("SELECT `id`, `name`, `full_name`, `number_code`, `alfa2`, `alfa3`, `comment` FROM `class_country` ORDER BY `id`");
+    }
+    
+    /// Получить данные справочника единиц измерения
+    public function getUnitsData() {
+        return $this->getDataFromMysqlQuery("SELECT `id`, `name`, `rus_name1` AS `short_name`, `number_code`, `eng_name1` AS `eng_name`, `comment` 
+            FROM `class_unit` ORDER BY `id`");
+    }
+    
+    /// Получить документы
+    public function getDocumentsData($from_date, $to_date) {
+        $ret = array();
+        $res = $this->db->query("SELECT `id`, `type`, `date`, `ok`, `sklad` AS `store_id`, `kassa` AS `till_id`, `bank` AS `bank_id`,
+                `user` AS `author_id`, `altnum`, `subtype`, `sum`, `nds`, `p_doc` AS `parent_doc_id`, `mark_del`, `firm_id`, `contract` AS `contract_id`, `comment` 
+            FROM `doc_list`
+            WHERE `date`>='$from_date' AND `date`<='$to_date'");
+        while($line = $res->fetch_assoc()) {
+            // Дополнительные данные документа - преобразование в корректную форму
+            $dop_res = $this->db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`='{$line['id']}'");
+            while($dl = $dop_res->fetch_assoc()) {
+                switch($dl['param']) {
+                    case 'platelshik':
+                        $line['payer_id'] = $dl['value'];
+                        break;
+                    case 'gruzop':
+                        $line['consignee_id'] = $dl['value'];
+                        break;
+                    case 'kladovshik':
+                        $line['storekeeper_id'] = $dl['value'];
+                        break;
+                    case 'mest':
+                        $line['packages_cnt'] = $dl['value'];
+                        break;
+                    case 'cena':
+                        $line['price_id'] = $dl['value'];
+                        break;
+                    case 'dov_agent':
+                        $line['trusted_preson_id'] = $dl['value'];
+                        break;
+                    case 'dov':
+                        $line['trust_num'] = $dl['value'];
+                        break;
+                    case 'dov_data':
+                        $line['trust_date'] = $dl['value'];
+                        break;
+                    default:
+                        $line[$dl['param']] = $dl['value'];
+                        // 'received', 'return'
+                }
+            }
+            
+            // Таблица номенклатуры
+            $nom_res = $this->db->query("SELECT `id`, `tovar` AS `pos_id`, `cnt`, `cost` AS `price`, `gtd`, `comm`, `page` AS `page_id`
+                FROM  `doc_list_pos` 
+                WHERE `doc`='{$line['id']}'");
+            if($nom_res->num_rows) {
+                $positions = array();
+                while($nom_line = $nom_res->fetch_assoc()) {
+                    if($nom_line['page_id']==0) {
+                        unset($nom_line['page_id']);
+                    }
+                    $positions[$nom_line['id']] = $nom_line;
+                }
+                $line['positions'] = $positions;
+            }
+            
+            $ret[$line['id']] = $line;
+        }
+        return $ret;
+    }
 }

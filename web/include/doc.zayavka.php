@@ -654,7 +654,7 @@ class doc_Zayavka extends doc_Nulltype
 		$pdf->SetFont('','',8);
 
 		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-                    `doc_base`.`mass`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`
+                    `doc_base`.`mass`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`nds`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -662,27 +662,38 @@ class doc_Zayavka extends doc_Nulltype
 		WHERE `doc_list_pos`.`doc`='{$this->doc}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
-		$sum=$summass=0;
-		while($nxt = $res->fetch_row())
-		{
+		$sum=$summass=$sum_nds=0;
+		while($line = $res->fetch_assoc()) {
+                        if($line['nds']!==null) {
+                            $ndsp = $line['nds'];
+                        } else {
+                            $ndsp = $this->firm_vars['param_nds'];
+                        }            
+                        
 			$i++;
-			$sm=$nxt[3]*$nxt[4];
-			$sum+=$sm;
-			$summass+=$nxt[5]*$nxt[3];
-			$cost = sprintf("%01.2f р.", $nxt[4]);
+			$sm = $line['cnt'] * $line['cost'];
+                        $sum += $sm;
+                        $summass += $line['cnt'] * $line['mass'];
+                        if($this->doc_data['nds']) {
+                            $sum_nds += round($sm/(100+$ndsp)*$ndsp, 2);
+                        } else {
+                            $sum_nds += round($sm/100*$ndsp, 2);
+                        }
+                        
+			$cost = sprintf("%01.2f р.", $line['cost']);
 			$smcost = sprintf("%01.2f р.", $sm);
 
-			$name=$nxt[0].' '.$nxt[1];
-			if($nxt[2]) $name.='('.$nxt[2].')';
+			$name=$line['printname'].' '.$line['name'];
+			if($line['proizv']) $name.='('.$line['proizv'].')';
 
 			$row=array($i);
 			if(@$CONFIG['poseditor']['vc'])
 			{
-				$row[]=$nxt[6];
+				$row[]=$line['vc'];
 				$row[]=$name;
 			}
 			else	$row[]=$name;
-			$row=array_merge($row, array("$nxt[3] $nxt[7]", $cost, $smcost));
+                        $row=array_merge($row, array("{$line['cnt']} {$line['units']}", $cost, $smcost));
 
 			if( $pdf->h <= ($pdf->GetY()+40 ) ) $pdf->AddPage();
 			$pdf->RowIconv($row);
@@ -698,8 +709,7 @@ class doc_Zayavka extends doc_Nulltype
 		$delta=$pdf->h-($pdf->GetY()+55);
 		if($delta>17) $delta=17;
 
-		if($CONFIG['site']['doc_shtamp'])
-		{
+		if($CONFIG['site']['doc_shtamp']) {
 			$shtamp_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
 			$pdf->Image($shtamp_img, 4,$pdf->GetY()+$delta, 120);
 		}
@@ -709,33 +719,29 @@ class doc_Zayavka extends doc_Nulltype
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,6,$str,0,0,'L',0);
 
-		if($this->doc_data['nds'])
-		{
-			$nds=$sum/(100+$this->firm_vars['param_nds'])*$this->firm_vars['param_nds'];
-			$nds = sprintf("%01.2f", $nds);
+		if($this->doc_data['nds']) {
+			$nds = sprintf("%01.2f", $sum_nds);
 			$pdf->SetFont('','',12);
 			$str="Итого: $sumcost руб.";
 			$pdf->CellIconv(0,7,$str,0,1,'R',0);
-			$str="В том числе НДС ".$this->firm_vars['param_nds']."%: $nds руб.";
+			$str="В том числе НДС: $nds руб.";
 			$pdf->CellIconv(0,5,$str,0,1,'R',0);
 
 			$pdf->SetFont('','',8);
 			$str="Всего $i наименований, на сумму $sumcost руб. ($cost)";
 			$pdf->CellIconv(0,4,$str,0,1,'L',0);
-			$str="В том числе НДС ".$this->firm_vars['param_nds']."%: $nds руб.";
+			$str="В том числе НДС: $nds руб.";
 			$pdf->CellIconv(0,4,$str,0,1,'L',0);
-
 		}
 		else
 		{
-			$nds=$sum*$this->firm_vars['param_nds']/100;
-			$cst=$sum+$nds;
-			$nds_p = sprintf("%01.2f", $nds);
+			$cst = $sum + $sum_nds;
+			$nds_p = sprintf("%01.2f", $sum_nds);
 			$cost2 = sprintf("%01.2f", $cst);
 			$pdf->SetFont('','',10);
 			$str="Итого: $sumcost руб.";
 			$pdf->CellIconv(0,5,$str,0,1,'R',0);
-			$str="НДС ".$this->firm_vars['param_nds']."%: $nds_p руб.";
+			$str="НДС: $nds_p руб.";
 			$pdf->CellIconv(0,4,$str,0,1,'R',0);
 			$str="Всего: $cost2 руб.";
 			$pdf->CellIconv(0,4,$str,0,1,'R',0);
@@ -743,7 +749,7 @@ class doc_Zayavka extends doc_Nulltype
 			$pdf->SetFont('','',8);
 			$str="Всего $i наименований, на сумму $sumcost руб. ($cost)";
 			$pdf->CellIconv(0,4,$str,0,1,'L',0);
-			$str="Кроме того, НДС ".$this->firm_vars['param_nds']."%: $nds_p, Всего $cost2 руб.";
+			$str="Кроме того, НДС: $nds_p, Всего $cost2 руб.";
 			$pdf->CellIconv(0,4,$str,0,1,'L',0);
 		}
 
