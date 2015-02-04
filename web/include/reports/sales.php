@@ -605,4 +605,3 @@ class Report_Sales extends BaseGSReport {
 		exit(0);
 	}
 }
-?>

@@ -531,15 +531,14 @@ function getInCost($pos_id, $limit_date=0, $serv_mode=0)
 /// @param sklad_id		ID склада, для которого производится расчёт
 /// @param unixtime		Дата, на которую производится расчёт в формате unixtime. Если не задан - расчитывается остаток на дату последнего документа.
 /// @param noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
-function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=0, $noBreakIfMinus=0)
+function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0)
 {
 	global $db;
 	settype($pos_id,'int');
 	settype($sklad_id,'int');
 	settype($unixtime,'int');
-
 	$cnt=0;
-	$sql_add=$unixtime?"AND `doc_list`.`date`<=$unixtime":'';
+	$sql_add=($unixtime!==null)?"AND `doc_list`.`date`<=$unixtime":'';
 	$res=$db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
