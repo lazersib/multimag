@@ -533,51 +533,54 @@ function getInCost($pos_id, $limit_date=0, $serv_mode=0)
 /// @param noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
 function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0)
 {
-	global $db;
-	settype($pos_id,'int');
-	settype($sklad_id,'int');
-	settype($unixtime,'int');
-	$cnt=0;
-	$sql_add=($unixtime!==null)?"AND `doc_list`.`date`<=$unixtime":'';
-	$res=$db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
+    global $db;
+    settype($pos_id, 'int');
+    settype($sklad_id, 'int');
+    settype($unixtime, 'int');
+    $cnt = 0;
+    $sql_add = ($unixtime !== null) ? "AND `doc_list`.`date`<=$unixtime" : '';
+    $res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
 	ORDER BY `doc_list`.`date`");
-	while($nxt=$res->fetch_row())
-	{
-		if($nxt[1]==1)
-		{
-			if($nxt[2]==$sklad_id)	$cnt+=$nxt[0];
-		}
-		else if($nxt[1]==2 || $nxt[1]==20)
-		{
-			if($nxt[2]==$sklad_id)	$cnt-=$nxt[0];
-		}
-		else if($nxt[1]==8)
-		{
-			if($nxt[2]==$sklad_id)	$cnt-=$nxt[0];
-			else
-			{
-				$r=$db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
-				if(!$r->num_rows)	throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
-				list($nasklad)=$r->fetch_row();
-				if(!$nasklad)		throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
-				if($nasklad==$sklad_id)	$cnt+=$nxt[0];
-				$r->free();
-			}
-		}
-		else if($nxt[1]==17)
-		{
-			if($nxt[2]==$sklad_id)
-			{
-				if($nxt[4]==0)	$cnt+=$nxt[0];
-				else		$cnt-=$nxt[0];
-			}
-		}
-		if($cnt<0 && $noBreakIfMinus==0) break;
-	}
-	$res->free();
-	return $cnt;
+    while ($nxt = $res->fetch_row()) {
+        if ($nxt[1] == 1) {
+            if ($nxt[2] == $sklad_id)
+                $cnt+=$nxt[0];
+        }
+        else if ($nxt[1] == 2 || $nxt[1] == 20) {
+            if ($nxt[2] == $sklad_id)
+                $cnt-=$nxt[0];
+        }
+        else if ($nxt[1] == 8) {
+            if ($nxt[2] == $sklad_id)
+                $cnt-=$nxt[0];
+            else {
+                $r = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
+                if (!$r->num_rows)
+                    throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
+                list($nasklad) = $r->fetch_row();
+                if (!$nasklad)
+                    throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+                if ($nasklad == $sklad_id)
+                    $cnt+=$nxt[0];
+                $r->free();
+            }
+        }
+        else if ($nxt[1] == 17) {
+            if ($nxt[2] == $sklad_id) {
+                if ($nxt[4] == 0)
+                    $cnt+=$nxt[0];
+                else
+                    $cnt-=$nxt[0];
+            }
+        }
+        $cnt = round($cnt, 3);
+        if ($cnt < 0 && $noBreakIfMinus == 0)
+            break;
+    }
+    $res->free();
+    return $cnt;
 }
 
 /// Возвращает количество товара в резерве

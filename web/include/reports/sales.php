@@ -457,7 +457,8 @@ class Report_Sales extends BaseGSReport {
 					break;
 				default:$p = $r = 'fff-' . $nxt['type'];
 			}
-			$cur_cnt+=$p - $r;
+			$cur_cnt += $p - $r;
+                        $cur_cnt = round($cur_cnt, 5);
 			$date = date("Y-m-d H:i:s", $nxt['date']);
 			$this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} / {$nxt['doc_id']}", $link, $p, $r, $cur_cnt));
 			$sp+=$p;

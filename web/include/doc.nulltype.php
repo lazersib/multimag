@@ -935,7 +935,7 @@ class doc_Nulltype
                                 } else {
                                     $object = 'doc';
                                 }
-                                if(!isAccess($object,'printna')) {
+                                if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
                                     throw new AccessException("Нет привилегий для печати непроведённых документов");
                                 }
 				$faxnum=request('faxnum');
@@ -998,7 +998,7 @@ class doc_Nulltype
                             } else {
                                 $object = 'doc';
                             }
-                            if(!isAccess($object,'printna')) {
+                            if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
                                 throw new AccessException("Нет привилегий для печати непроведённых документов");
                             }
                             $email = request('email');
@@ -1064,7 +1064,7 @@ class doc_Nulltype
             } else {
                 $object = 'doc';
             }
-            if(!isAccess($object,'printna')) {
+            if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
                 throw new AccessException("Нет привилегий для печати непроведённых документов");
             }
             
