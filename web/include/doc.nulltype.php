@@ -1036,8 +1036,12 @@ class doc_Nulltype
                 'response'  => 'item_list',
                 'content'   => array()
             );
-            foreach ($this->PDFForms as $form) {
-                $ret_data['content'][] = array('name' => 'int:'.$form['name'], 'desc'=>$form['desc']);
+            if(isset($this->PDFForms)) {
+                if(is_array($this->PDFForms)) {
+                    foreach ($this->PDFForms as $form) {
+                        $ret_data['content'][] = array('name' => 'int:'.$form['name'], 'desc'=>$form['desc']);
+                    }
+                }
             }
             $dir = $CONFIG['site']['location'].'/include/doc/printforms/'.$this->doc_name.'/';
             if (is_dir($dir)) {
@@ -1812,7 +1816,8 @@ class doc_Nulltype
 		$res->free();
 		return $sum;
 	}
-        
+       
+    /// Показать историю изменений документа
     public function showLog() {
         global $db, $tmpl;
         if ($this->doc_name) {
@@ -1831,6 +1836,42 @@ class doc_Nulltype
         $logview->setObject('doc');
         $logview->setObjectId($this->doc);
         $logview->showLog();
+    }
+    
+    /// Обычная накладная в PDF формате
+    /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
+    function getDocumentNomenclature() {
+        global $CONFIG, $db;
+        $list = array();
+
+        $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`, 
+            `doc_list_pos`.`cost` AS `price`, `doc_base_cnt`.`mesto`, `class_unit`.`rus_name1` AS `unit_name`, `class_unit`.`number_code` AS `unit_code`, 
+            `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`mass`
+        FROM `doc_list_pos`
+        LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+        LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+        LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
+        LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+        WHERE `doc_list_pos`.`doc`='{$this->doc}'
+        ORDER BY `doc_list_pos`.`id`");
+
+        while ($line = $res->fetch_assoc()) {
+            if($line['group_printname']) {
+                $line['name'] = $line['group_printname'].' '.$line['name'];
+            }
+            if (!@$CONFIG['doc']['no_print_vendor'] && $line['vendor']) {
+                $line['name'] .= ' / ' . $line['vendor'];
+            }
+            $line['code'] = $line['pos_id'];
+            if($line['vc']) {
+                $line['code'] .= ' / '.$line['vc'];
+            }
+            $line['sum_all'] = $line['price'] * $line['cnt'];
+
+            $list[] = $line;
+            
+        }
+        return $list;
     }
 
 }

@@ -167,7 +167,7 @@ function num2str($L, $ed='rub', $sot=2)
 			$kopeek[2]=" десятых";
 			$kopeek[3]=" десятых";
 		}
-		else if($ost==3)
+		else if($sot==3)
 		{
 			$kopeek[1]=" тысячных";
 			$kopeek[2]=" тысячных";

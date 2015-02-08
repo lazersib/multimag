@@ -136,7 +136,7 @@ function RegForm($err_target='', $err_msg='')
 	<b>Желаемый логин</b><br>
 	<small>латинские буквы, цифры, длина от 3 до 24 символов	</small>
 	<td>
-	<input type='text' name='login' value='$login' id='login'><br>
+	<input type='text' name='login' value='$login' id='login' autofocus><br>
 	<span id='login_valid' style='color: #c00'>{$err_msgs['login']}</span>");
 
 	if(@$CONFIG['site']['allow_phone_regist'])
@@ -382,7 +382,7 @@ if(!isset($_REQUEST['mode']))
 		Если у Вас их нет, вы можете <a class='wiki' href='/login.php?mode=reg'>зарегистрироваться</a>
 		<tr><td>
 		Имя:<td>
-		<input type='text' name='login' class='text' id='input_name' value='$login_html'>
+		<input type='text' name='login' class='text' id='input_name' value='$login_html' autofocus>
 		<tr><td>Пароль:<td>
 		<input type='password' name='pass' class='text'>(<a class='wiki' href='?mode=rem'>Сменить</a>)<br>$m
 		<tr><td><td>

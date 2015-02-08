@@ -33,18 +33,32 @@ class doc_Doveren extends doc_Nulltype
 	}
 	
 	function initDefDopdata() {
-		$this->def_dop_data = array('ot'=>'', 'cena'=>0);
+		$this->def_dop_data = array('ot'=>'', 'cena'=>0, 'worker_id'=>0, 'end_date'=>'');
 	}
 
 	function DopHead() {
-		global $tmpl;
+		global $tmpl, $db;
 		$tmpl->addContent("На получение от:<br>
-		<input type='text' name='ot' value='{$this->dop_data['ot']}'><br>");	
+		<input type='text' name='ot' value='{$this->dop_data['ot']}'><br>
+                Сотрудник:<br><select name='worker_id'>
+		<option value='0'>--не выбран--</option>");
+		
+		$res = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
+		while($nxt = $res->fetch_row())
+		{
+			$s=($this->dop_data['worker_id']==$nxt[0])?'selected':'';
+			$tmpl->addContent("<option value='$nxt[0]' $s>".html_out($nxt[1])."</option>");
+		}
+		$tmpl->addContent("</select><br> 
+                Срок действия:<br>
+                <input type='text' name='end_date' value='{$this->dop_data['end_date']}'><br>");	
 	}
 
 	function DopSave() {
 		$new_data = array(
-			'ot' => request('ot')
+			'ot' => request('ot'),
+                        'worker_id' => rcvint('worker_id'),
+                        'end_date'  => rcvdate('end_date')
 		);
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 		

@@ -90,20 +90,37 @@ class Report_Zayavki extends BaseGSReport {
 		$this->tableHeader($headers);
 		$cnt = 0;
 		$col_cnt = count($headers);
+                $sql_add = '';
+                if($gs) {
+                    if(is_array($g)) {
+                        $s = '';
+                        foreach($g as $g_id) {
+                            if($s) {
+                                $s .= ',';
+                            }
+                            $s.=intval($g_id);
+                        }
+                        $sql_add = " AND `doc_base`.`group` IN ($s)";
+                    }
+                }
                 
                 $sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`,"
-                    . "     SUM(`doc_list_pos`.`cnt`) AS `cnt`"
+                    . "     SUM(`doc_list_pos`.`cnt`) AS `cnt`, `doc_dopdata`.`value` AS `status`"
                     . " FROM `doc_list_pos`"
                     . " INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`"
                     . " INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`"
                     . " INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`"
-                    . " WHERE `doc_list`.`date`>=$dt_f AND `doc_list`.`date`<=$dt_t AND `doc_list`.`type`=3";
+                    . " LEFT JOIN `doc_dopdata` ON `doc_list`.`id`=`doc_dopdata`.`doc` AND `doc_dopdata`.`param`='status'"
+                    . " WHERE `doc_list`.`date`>=$dt_f AND `doc_list`.`date`<=$dt_t AND `doc_list`.`type`=3 $sql_add";
                    
                 
                 if(!$ag) {
                     $sql .=  " GROUP BY `doc_base`.`id`";
                     $res = $db->query($sql);
                     while($line = $res->fetch_assoc()) {
+                        if($line['status']=='ok' || $line['status']=='err') {
+                            continue;
+                        }
                         $row = array($line['id'], $line['vc'], $line['name'], $line['cnt']);
                         $this->tableRow($row);
                     }
@@ -117,6 +134,9 @@ class Report_Zayavki extends BaseGSReport {
                             $this->tableSpannedRow(array($col_cnt), array($agent_info['name']));
                             $this->tableAltStyle(false);
                             while($line = $res->fetch_assoc()) {
+                                if($line['status']=='ok' || $line['status']=='err') {
+                                    continue;
+                                }
                                 $row = array($line['id'], $line['vc'], $line['name'], $line['cnt']);
                                 $this->tableRow($row);
                             }
