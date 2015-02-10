@@ -94,6 +94,5 @@ class doc_s_Inform extends doc_s_Nulltype
 			}
 		}
 	}
-};
+}
 
-?>

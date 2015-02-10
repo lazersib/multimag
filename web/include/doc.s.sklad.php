@@ -412,100 +412,7 @@ class doc_s_Sklad {
 		}
 		// Дополнительные свойства
 		else if ($param == 'd') {
-			$pres = $db->query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`ntd`, `doc_base`.`group` AS `group_id`
-			FROM `doc_base`
-			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`='$pos'
-			WHERE `doc_base`.`id`='$pos'");
-			
-			if($pres->num_rows) {
-				$pos_info = $pres->fetch_assoc();
-			}
-			else {
-				$pos_info = array();
-				foreach ($this->dop_vars as $value)
-					$pos_info[$value] = '';				
-			}
-			
-			$tmpl->addContent("
-			<script type=\"text/javascript\">
-			function rmLine(t) {
-				var line=t.parentNode.parentNode
-				line.parentNode.removeChild(line)
-			}
-
-			function addLine() {
-				var fgtab=document.getElementById('fg_table').tBodies[0]
-				var sel=document.getElementById('fg_select')
-				var newrow=fgtab.insertRow(fgtab.rows.length)
-				var lineid=sel.value
-				var ctext = sel.selectedIndex !== -1 ? sel.options[sel.selectedIndex].text : ''
-				var text=document.getElementById('value_add').value
-				newrow.innerHTML=\"<td align='right'>\"+ctext+\"</td><td><input type='text' name='par[\"+lineid+\"]' value='\"+text+\"'></td>\"
-			}
-
-			</script>
-			<form action='' method='post'>
-			<input type='hidden' name='mode' value='esave'>
-			<input type='hidden' name='l' value='sklad'>
-			<input type='hidden' name='pos' value='$pos'>
-			<input type='hidden' name='param' value='d'>
-			<table cellpadding='0' width='100%' id='fg_table' class='list'>
-			<tfoot>
-			<tr><td align='right'><select name='pp' id='fg_select'>");
-			$r = $db->query("SELECT `id`, `param`, `type` FROM `doc_base_params` WHERE `system`='0' ORDER BY `param`");
-			while ($p = $r->fetch_row()) {
-				$tmpl->addContent("<option value='$p[0]'>".html_out($p[1])."</option>");
-			}
-                        
-//                        			<tr><td align='right'>Аналог<br>
-//			<b style='color: #f00'>Поле запланировано к уделению!<br>Не заполняйте его, информация буде утеряна.<br>Используйте вкладку *аналоги* или строку *имя группы аналогов* в основных свойствах!</b>
-//			
-//			<td><input type='text' name='analog' value='".html_out($pos_info['analog'])."' id='pos_analog'>
-                        
-			$tmpl->addContent("</select></td><td><input type='text' id='value_add'><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
-			</td></tr>
-			<tr><td><td><input type='submit' value='Сохранить'>
-			</tfoot>
-			<tbody>
-			<tr><td align='right'>Тип<td><select name='type' id='pos_type' >
-			<option value='null'>--не задан--</option>");
-
-			$res = $db->query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
-			while ($nx = $res->fetch_row()) {
-				$ii = "";
-				if ($nx[0] === $pos_info['type'])
-					$ii = " selected";
-				$tmpl->addContent("<option value='$nx[0]' $ii>".html_out("$nx[0] - $nx[1]")."</option>");
-			}
-
-			$tmpl->addContent("</select>
-			<tr class='lin1'><td align='right'>Внутренний размер (d)<td><input type='text' name='d_int' value='{$pos_info['d_int']}' id='pos_d_int'></td></tr>
-			<tr class='lin0'><td align='right'>Внешний размер (D)<td><input type='text' name='d_ext' value='{$pos_info['d_ext']}' id='pos_d_ext'></td></tr>
-			<tr class='lin1'><td align='right'>Высота (B)<td><input type='text' name='size' value='{$pos_info['size']}' id='pos_size'></td></tr>
-			<tr class='lin0'><td align='right'>Номер таможенной декларации
-				<br><b style='color: #f00'>Поле запланировано к уделению!
-				<br>Не заполняйте его, информация буде утеряна.<br>
-				Номер таможенной декларации задаётся при поступлении!</b>
-				<td><input type='text' name='ntd' value='{$pos_info['ntd']}'></td></tr>");
-			
-			$dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
-			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-			WHERE `doc_base_values`.`id`='$pos'");
-			$i = 0;
-			while ($nx = $dpv_res->fetch_row()) {
-				$tmpl->addContent("<tr class='lin$i'><td align='right'>".$nx[1]."<td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'>");
-				$i = 1 - $i;
-			}
-			$gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter`
-                        FROM `doc_base_params`
-			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
-			WHERE `doc_group_params`.`group_id`='{$pos_info['group_id']}' AND `doc_base_params`.`system`='0' AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos' )
-			ORDER BY `doc_base_params`.`id`");
-			while ($nx = $gdp_res->fetch_row()) {
-				$tmpl->addContent("<tr class='lin$i'><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value=''>");
-				$i = 1 - $i;
-			}
-			$tmpl->addContent("</tbody></table></form>");
+                    $this->dopDataEditForm($pos);
 		}
 		// Складские свойства
 		else if ($param == 's') {
@@ -908,29 +815,70 @@ class doc_s_Sklad {
 		}
 		// Аналоги
 		else if ($param == 'n') {
-			
-			$pos_info = $db->selectRow('doc_base', $pos);
-			
-			$analog_group = $pos_info['analog_group'];
-			$tmpl->addContent("<form action='' method='post'>
-			<input type='hidden' name='mode' value='esave'>
-			<input type='hidden' name='l' value='sklad'>
-			<input type='hidden' name='pos' value='$pos'>
-			<input type='hidden' name='param' value='n'>
-			Имя группы аналогов:<br>
-			<input type='text' name='analog_group' value='$analog_group'>
-			<button type='submit'>Записать</button>
-			</form>
-			<h3>Аналоги в группе</h3>
-			<table class='list'><tr><th>id</th><th>Код</th><th>Название</th><th>Производитель</th></tr>");
-			$analog_group_sql = $db->real_escape_string($analog_group);
-			$res = $db->query("SELECT `id`, `vc`, `name`, `proizv` FROM `doc_base`
-				WHERE `analog_group`='$analog_group_sql' AND `analog_group`!=''");
-			while($line = $res->fetch_assoc()) {
-				$tmpl->addContent("<tr><td><a href='/docs.php?mode=srv&amp;opt=ep&amp;pos={$line['id']}'>{$line['id']}</a></td><td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['proizv']}</td></tr>");
-			}
-			
-			$tmpl->addContent("</table>");
+                    $pos_info = $db->selectRow('doc_base', $pos);
+
+                    $analog_group = $pos_info['analog_group'];
+                    $tmpl->addContent("<form action='' method='post'>
+                    <input type='hidden' name='mode' value='esave'>
+                    <input type='hidden' name='l' value='sklad'>
+                    <input type='hidden' name='pos' value='$pos'>
+                    <input type='hidden' name='param' value='n'>
+                    Имя группы аналогов:<br>
+                    <input type='text' name='analog_group' value='$analog_group'>
+                    <button type='submit'>Записать</button>
+                    </form>
+                    <h3>Аналоги в группе</h3>
+                    <table class='list'>
+                    <tr><th>id</th><th>Код</th><th>Название</th><th>Производитель</th><th>Цена</th><th>Остаток</th>");
+                    if(@$CONFIG['poseditor']['rto']) { 
+                        $tmpl->addContent("<th>Резерв</th><th>Под заказ</th><th>В пути</th>");
+                    }
+                    $tmpl->addContent("</tr>");
+                    
+                    $base_link = '/docs.php?mode=srv';
+                    $analog_group_sql = $db->real_escape_string($analog_group);
+                    $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `cost` AS `price`, (
+                            SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`
+                        ) AS `cnt`
+                        FROM `doc_base`
+                        WHERE `analog_group`='$analog_group_sql' AND `analog_group`!=''");
+                    while($line = $res->fetch_assoc()) {
+                        $link = $base_link.'&amp;pos='.$line['id'];
+                        $rto = '';
+                        if (@$CONFIG['poseditor']['rto']) {
+                            $clink = $link.'&amp;l=inf';
+                            $rezerv = DocRezerv($line['id']);
+                            $pod_zakaz = DocPodZakaz($line['id']);
+                            $v_puti = DocVPuti($line['id']);
+                            if ($rezerv) {
+                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=rezerv'); return false;\" href='#'>$rezerv</a></td>";
+                            } else {
+                                $rto .= "<td></td>";
+                            }
+                            if ($pod_zakaz) {
+                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=p_zak'); return false;\" href='#'>$pod_zakaz</a></td>";
+                            } else {
+                                $rto .= "<td></td>";
+                            }
+                            if ($v_puti) {
+                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=vputi'); return false;\" href='#'>$v_puti</a></td>";
+                            } else {
+                                $rto .= "<td></td>";
+                            }
+                        }
+                        if ($line['cnt'] != 0) {
+                            $line['cnt'] = "<a href='#' onclick=\"ShowPopupWin('$link&amp;opt=ost'); return false;\" title='Отобразить все остатки'>{$line['cnt']}</a>";
+                        } else {
+                            $line['cnt'] = '';
+                        }
+                        $tmpl->addContent("<tr>
+                            <td><a href='{$link}&amp;opt=ep'>{$line['id']}</a></td>
+                            <td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['vendor']}</td> 
+                            <td align='right'>{$line['price']}</td><td align='right'>{$line['cnt']}</td>$rto
+                            </tr>");
+                    }
+
+                    $tmpl->addContent("</table>");
 		}
 		// История изменений
 		else if ($param == 'h') {
@@ -1155,6 +1103,7 @@ class doc_s_Sklad {
 			}
 			else {
 				$url = request('url');
+                                $keywords = null;   // Чтобы подсветка не ругалась
 				preg_match("/[?]*modelid=([\d]{1,9})[?]*+/", $url, $keywords);
 				$ym_id = $keywords[1];
 				settype($ym_id, 'int');
@@ -1398,7 +1347,7 @@ class doc_s_Sklad {
 			$ntd_sql = $db->real_escape_string($ntd);
 			
 			$db->query("REPLACE `doc_base_dop` (`id`, `analog`, `type`, `d_int`, `d_ext`, `size`, `ntd`)
-				VALUES ('$pos', '$analog_sql', $type, '$d_int_sql', '$d_ext_sql', '$size_sql', '$ntd_sql')");
+                            VALUES ('$pos', '$analog_sql', $type, '$d_int_sql', '$d_ext_sql', '$size_sql', '$ntd_sql')");
 
 			$res = $db->query("SELECT `param_id`, `value` FROM `doc_base_values` WHERE `id`='$pos'");
 			$dp = array();
@@ -1406,30 +1355,37 @@ class doc_s_Sklad {
 				$dp[$nxt[0]] = $nxt[1];
 			$par = request('par');
 			if (is_array($par)) {
-				foreach ($par as $key => $value) {
-					$key_sql = $db->real_escape_string($key);
-					if ($value !== '') {
-						$value_sql = $db->real_escape_string($value);
-						if (@$dp[$key] != $value)
-							$log_add.=@", $key:({$old_data[$key]} => $value)";
-						$db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$key_sql', '$value_sql')");
-					}
-					else	$db->query("DELETE FROM `doc_base_values` WHERE `id`='$pos' AND `param_id`='$key_sql'");
-				}
+                            foreach ($par as $key => $value) {
+                                $key_sql = $db->real_escape_string($key);
+                                if ($value !== '') {
+                                    $value_sql = $db->real_escape_string($value);
+                                    if (@$dp[$key] != $value) {
+                                        $log_add.=@", $key:({$old_data[$key]} => $value)";
+                                    }
+                                    $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$key_sql', '$value_sql')");
+                                }
+                                else {
+                                    $db->query("DELETE FROM `doc_base_values` WHERE `id`='$pos' AND `param_id`='$key_sql'");
+                                }
+                            }
 			}
 
 			$par_add = request('par_add');
 			$value_add = request('value_add');
 			if ($par_add && $value_add) {
-				$par_sql = $db->real_escape_string($par_add);
-				$value_add = $db->real_escape_string($value_sql);
-				$db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$par_add', '$value_sql')");
-				if ($dp[$key] != $value)
-					$log_add.=", $par_add:$value_add";
+                            $par_sql = $db->real_escape_string($par_add);
+                            $value_add = $db->real_escape_string($value_sql);
+                            $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$par_add', '$value_sql')");
+                            if ($dp[$key] != $value) {
+                                $log_add.=", $par_add:$value_add";
+                            }
 			}
-			if ($log_add)
-				doc_log("UPDATE", "$log_add", 'pos', $pos);
+			if ($log_add) {
+                            doc_log("UPDATE", "$log_add", 'pos', $pos);
+                        }
 			$tmpl->msg("Данные сохранены!");
+                        
+                        $this->dopDataEditForm($pos);
 		}
 		else if ($param == 's') {
 			if (!isAccess('list_sklad', 'edit'))	throw new AccessException();
@@ -2298,18 +2254,18 @@ class doc_s_Sklad {
 		if($_SESSION['sklad_cost'] > 0)
 			$pc = PriceCalc::getInstance();
 		while ($nxt = $res->fetch_assoc()) {
-			$rezerv = $CONFIG['poseditor']['rto'] ? DocRezerv($nxt['id'], 0) : '';
-			$pod_zakaz = $CONFIG['poseditor']['rto'] ? DocPodZakaz($nxt['id'], 0) : '';
-			$v_puti = $CONFIG['poseditor']['rto'] ? DocVPuti($nxt['id'], 0) : '';
-			
+                        if (@$CONFIG['poseditor']['rto']) {
+                            $rezerv = DocRezerv($nxt['id'], 0);
+                            $pod_zakaz = DocPodZakaz($nxt['id'], 0);
+                            $v_puti = DocVPuti($nxt['id'], 0);
 
-			if ($rezerv)	$rezerv = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$rezerv</a>";
-			else		$rezerv = '';
-			if ($pod_zakaz)	$pod_zakaz = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$pod_zakaz</a>";
-			else		$pod_zakaz = '';
-			if ($v_puti)	$v_puti = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=vputi&pos={$nxt['id']}'>$v_puti</a>";
-			else		$v_puti = '';
-
+                            if ($rezerv)	$rezerv = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$rezerv</a>";
+                            else		$rezerv = '';
+                            if ($pod_zakaz)	$pod_zakaz = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos={$nxt['id']}'>$pod_zakaz</a>";
+                            else		$pod_zakaz = '';
+                            if ($v_puti)	$v_puti = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=vputi&pos={$nxt['id']}'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=vputi&pos={$nxt['id']}'>$v_puti</a>";
+                            else		$v_puti = '';
+                        }
 			if ($nxt['allcnt'] != 0)	$nxt['allcnt'] = "<a onclick=\"ShowPopupWin('/docs.php?mode=srv&opt=ost&pos={$nxt['id']}'); return false;\" title='Отобразить все остатки'>{$nxt['allcnt']}</a>";
 			else				$nxt['allcnt'] = '';
 			
@@ -2360,8 +2316,9 @@ class doc_s_Sklad {
 				$tdb_add = "<td>{$nxt['type']}</td><td>{$nxt['d_int']}</td><td>{$nxt['d_ext']}</td><td>{$nxt['size']}</td>";
 			else
 				$tdb_add = '';
-			if (@$CONFIG['poseditor']['rto'])
+			if (@$CONFIG['poseditor']['rto']) {
 				$rto_add = "<td>$rezerv</td><td>$pod_zakaz</td><td>$v_puti</td>";
+                        }
 			else	$rto_add = '';
 
 			$cb = $go ? "<input type='checkbox' name='pos[{$nxt['id']}]' class='pos_ch' value='1'>" : '';
@@ -2434,6 +2391,131 @@ class doc_s_Sklad {
 		<li><a {$sel['y']} href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;param=y&amp;pos=$pos'>Импорт Я.Маркет</a></li>
 		</ul>");
 	}
+        
+    protected function dopDataEditForm($pos_id) {
+        global $db, $tmpl;
+        $pres = $db->query("SELECT `doc_base_dop`.`type`, `doc_base_dop`.`analog`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, 
+            `doc_base_dop`.`size`, `doc_base_dop`.`ntd`, `doc_base`.`group` AS `group_id`
+        FROM `doc_base`
+        LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`='$pos_id'
+        WHERE `doc_base`.`id`='$pos_id'");
 
+        if($pres->num_rows) {
+                $pos_info = $pres->fetch_assoc();
+        }
+        else {
+            $pos_info = array();
+            foreach ($this->dop_vars as $value) {
+                $pos_info[$value] = '';
+            }
+        }
+        
+        // option для select типа
+        $type_opt = "<option value='null'>--не задан--</option>";
+        $res = $db->query("SELECT `id`, `name` FROM `doc_base_dop_type` ORDER BY `id`");
+        while ($nx = $res->fetch_row()) {
+            $ii = "";
+            if ($nx[0] === $pos_info['type']) {
+                $ii = " selected";
+            }
+            $type_opt .= "<option value='$nx[0]' $ii>" . html_out("$nx[0] - $nx[1]") . "</option>";
+        }
+        
+        // Динамические свойства - записанные
+        $dyn_table = '';
+        $g_res = $db->query("SELECT * FROM `doc_base_gparams` ORDER BY `name`");
+        while ($g_info = $g_res->fetch_assoc()) {
+            $dyn_table .= "<tr><th colspan='2'>".html_out($g_info['name'])."</th></tr>";
+            $dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`param`, `doc_base_values`.`value`
+                FROM `doc_base_values`
+                LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+                WHERE `doc_base_values`.`id`='$pos_id' AND `doc_base_params`.`system`=0");
+            while ($nx = $dpv_res->fetch_row()) {
+                $dyn_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+            }
+        }
+        $dyn_table .= "<tr><td colspan='2'</td></tr>";
+        // Динамические свойства - от групп
+        $gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter`
+            FROM `doc_base_params`
+            LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+            WHERE `doc_group_params`.`group_id`='{$pos_info['group_id']}' AND `doc_base_params`.`system`='0' 
+                AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos_id' )
+            ORDER BY `doc_base_params`.`id`");
+        while ($nx = $gdp_res->fetch_row()) {
+            $dyn_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value=''></td></tr>";
+        }
+        
+        // добавление динамических свойств
+        $dyn_foot = "<tr><td align='right'><select name='pp' id='fg_select'>";  
+        $r = $db->query("SELECT `id`, `param`, `type` FROM `doc_base_params` WHERE `system`='0' AND `pgroup_id` IS NULL ORDER BY `param`");
+        while ($p = $r->fetch_row()) {
+            $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])."</option>";
+        }
+        $g_res = $db->query("SELECT * FROM `doc_base_gparams` ORDER BY `name`");
+        while ($g_info = $g_res->fetch_assoc()) {
+            $dyn_foot .= "<option style='color:#fff; background-color:#000' disabled>".html_out($g_info['name'])."</option>";
+            $r = $db->query("SELECT `id`, `param`, `type` FROM `doc_base_params` WHERE `system`='0' AND `pgroup_id`='{$g_info['id']}' ORDER BY `param`");
+            while ($p = $r->fetch_row()) {
+                $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])."</option>";
+            }
+        }
+        $dyn_foot .= "</select></td><td><input type='text' id='value_add'><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr></td></tr>";
+        
+        // Служебные (системные) свойства
+        $translation = array('ZP'=>'Зарплата за сборку', 'pack_complexity_sk'=>'Коэффициент зарплаты кладовщика');
+        $srv_table = '';
+        $dpv_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_base_values`.`value`
+            FROM `doc_base_params`
+            LEFT JOIN `doc_base_values` ON `doc_base_params`.`id`=`doc_base_values`.`param_id` AND `doc_base_values`.`id`='$pos_id'
+            WHERE `doc_base_params`.`system`!=0");
+        while ($nx = $dpv_res->fetch_row()) {
+            if(isset($translation[$nx[1]])) {
+                $nx[1] = $translation[$nx[1]];
+            }
+            $srv_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+        }
+        
+        $tmpl->addContent("
+        <script type=\"text/javascript\">
+        function rmLine(t) {
+            var line=t.parentNode.parentNode;
+            line.parentNode.removeChild(line);
+        }
+        function addLine() {
+            var fgtab=document.getElementById('fg_table').tBodies[0];
+            var sel=document.getElementById('fg_select');
+            var newrow=fgtab.insertRow(fgtab.rows.length);
+            var lineid=sel.value;
+            var ctext = sel.selectedIndex !== -1 ? sel.options[sel.selectedIndex].text : '';
+            var text=document.getElementById('value_add').value;
+            newrow.innerHTML=\"<td align='right'>\"+ctext+\"</td><td><input type='text' name='par[\"+lineid+\"]' value='\"+text+\"'></td>\";
+        }
+        </script>");
+        
+        $tmpl->addContent("
+        <form action='' method='post'>
+        <input type='hidden' name='mode' value='esave'>
+        <input type='hidden' name='l' value='sklad'>
+        <input type='hidden' name='pos' value='$pos_id'>
+        <input type='hidden' name='param' value='d'>
+        <table width='100%'>
+        <tr>
+        <td valign='top' width='33%'>
+        <table class='list' width='100%'>
+        <tr><td align='right'>Тип</td><td><select name='type' id='pos_type' >$type_opt</select></td></tr>
+        <tr><td align='right'>Внутренний размер (d)</td><td><input type='text' name='d_int' value='{$pos_info['d_int']}' id='pos_d_int'></td></tr>
+        <tr><td align='right'>Внешний размер (D)</td><td><input type='text' name='d_ext' value='{$pos_info['d_ext']}' id='pos_d_ext'></td></tr>
+        <tr><td align='right'>Высота (B)</td><td><input type='text' name='size' value='{$pos_info['size']}' id='pos_size'></td></tr>
+        <tr><td align='right'>Номер таможенной декларации</td><td><input type='text' name='ntd' value='{$pos_info['ntd']}'></td></tr>
+        </table>
+        </td>
+        <td valign='top' width='33%'><table class='list' width='100%' id='fg_table'><tbody><tfoot>$dyn_foot</tfoot>$dyn_table</tbody></table></td>
+        <td valign='top' width='33%'><table class='list' width='100%'>$srv_table</table></td>
+        </table>
+        <table width='100%'>
+        <tr><td align='center'><input type='submit' value='Сохранить'>
+        </table></form>");
+    }
 }
 

@@ -105,39 +105,59 @@ class Report_Zayavki extends BaseGSReport {
                 }
                 
                 $sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_group`.`printname`, ' ', `doc_base`.`name`) AS `name`,"
-                    . "     SUM(`doc_list_pos`.`cnt`) AS `cnt`, `doc_dopdata`.`value` AS `status`"
+                    . " `doc_list_pos`.`cnt`, `doc_dopdata`.`value` AS `status`"
                     . " FROM `doc_list_pos`"
                     . " INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`"
                     . " INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`"
                     . " INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`"
                     . " LEFT JOIN `doc_dopdata` ON `doc_list`.`id`=`doc_dopdata`.`doc` AND `doc_dopdata`.`param`='status'"
-                    . " WHERE `doc_list`.`date`>=$dt_f AND `doc_list`.`date`<=$dt_t AND `doc_list`.`type`=3 $sql_add";
+                    . " WHERE `doc_list`.`date`>=$dt_f AND `doc_list`.`date`<=$dt_t AND `doc_list`.`type`=3 AND `doc_list`.`ok`>0 $sql_add";
                    
                 
                 if(!$ag) {
-                    $sql .=  " GROUP BY `doc_base`.`id`";
                     $res = $db->query($sql);
+                    $l_cnt = array();
+                    $info = array();
                     while($line = $res->fetch_assoc()) {
                         if($line['status']=='ok' || $line['status']=='err') {
                             continue;
                         }
-                        $row = array($line['id'], $line['vc'], $line['name'], $line['cnt']);
+                        $info[$line['id']] = $line;
+                        if(!isset($l_cnt[$line['id']])) {
+                            $l_cnt[$line['id']] = $line['cnt'];
+                        } else {
+                            $l_cnt[$line['id']] += $line['cnt'];
+                        }
+                    }
+                    foreach($l_cnt AS $pos_id=>$cnt) {
+                        $row = array($pos_id, $info[$pos_id]['vc'], $info[$pos_id]['name'], $cnt);
                         $this->tableRow($row);
                     }
+                    
                 } else {
                     $ares = $db->query("SELECT `id`, `name` FROM `doc_agent` ORDER BY `name`");
                     while($agent_info = $ares->fetch_assoc()) {
-                        $sql_this = $sql . " AND `doc_list`.`agent`={$agent_info['id']} GROUP BY `doc_base`.`id`";
+                        $sql_this = $sql . " AND `doc_list`.`agent`={$agent_info['id']}";
                         $res = $db->query($sql_this);
                         if($res->num_rows) {
                             $this->tableAltStyle();
                             $this->tableSpannedRow(array($col_cnt), array($agent_info['name']));
                             $this->tableAltStyle(false);
+                            $l_cnt = array();
+                            $info = array();
                             while($line = $res->fetch_assoc()) {
                                 if($line['status']=='ok' || $line['status']=='err') {
                                     continue;
                                 }
-                                $row = array($line['id'], $line['vc'], $line['name'], $line['cnt']);
+                                $info[$line['id']] = $line;
+                                if(!isset($l_cnt[$line['id']])) {
+                                    $l_cnt[$line['id']] = $line['cnt'];
+                                } else {
+                                    $l_cnt[$line['id']] += $line['cnt'];
+                                }
+                            }
+                            foreach($l_cnt AS $pos_id=>$cnt) {
+                                $row = array($pos_id, $info[$pos_id]['vc'], $info[$pos_id]['name'], $cnt);
                                 $this->tableRow($row);
                             }
                         }

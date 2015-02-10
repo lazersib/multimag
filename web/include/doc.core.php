@@ -588,7 +588,7 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0
 /// @param doc_id ID исключаемого документа
 /// @sa DocPodZakaz DocVPuti
 /// TODO: реализовать кеширование
-function DocRezerv($pos_id,$doc_id=0)
+function DocRezerv($pos_id, $doc_id=0)
 {
 	global $db;
 	settype($pos_id,'int');

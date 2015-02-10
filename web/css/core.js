@@ -122,14 +122,16 @@ function ShowAgentContextMenu(event, agent_id, addition)
 
 function ShowPosContextMenu(event, pos_id, addition)
 {
-	var menu=CreateContextMenu(event)
-	var dt = new Date()
-	var nowdate=dt.getFullYear()+'-'+((dt.getMonth()<9)?('0'+(dt.getMonth()+1)):(dt.getMonth()+1))+'-'+((dt.getDate()<10)?('0'+dt.getDate()):dt.getDate())
-	menu.innerHTML=	"<div onclick=\"window.open('/docj_new.php?pos_id="+pos_id+"')\">Товар в журнале</div>"+
-	"<div onclick=\"window.open('/doc_reports.php?mode=sales&amp;w_docs=1&amp;sel_type=pos&amp;opt=pdf&amp;dt_t="+nowdate+"&amp;pos_id="+pos_id+"')\">Отчёт по движению</div>"+
-	"<div onclick=\"window.open('/docs.php?mode=srv&amp;opt=ep&amp;pos="+pos_id+"')\">Редактирование товара</div>"+
-	"<div onclick=\"ShowPopupWin('/docs.php?l=pran&amp;mode=srv&amp;opt=ceni&amp;pos="+pos_id+"'); return false;\" >Где и по чём</div>"+addition
-	return menu
+    var menu = CreateContextMenu(event);
+    var dt = new Date();
+    var nowdate = dt.getFullYear() + '-' + ((dt.getMonth() < 9) ? ('0' + (dt.getMonth() + 1)) : (dt.getMonth() + 1)) + '-' + ((dt.getDate() < 10) ? ('0' + dt.getDate()) : dt.getDate());
+    menu.innerHTML = "<div onclick=\"window.open('/docj_new.php?pos_id=" + pos_id + "')\">Товар в журнале</div>" +
+        "<div onclick=\"window.open('/doc_reports.php?mode=sales&amp;w_docs=1&amp;sel_type=pos&amp;opt=pdf&amp;dt_t=" + nowdate + "&amp;pos_id=" + pos_id + "')\">Отчёт по движению</div>" +
+        "<div onclick=\"window.open('/docs.php?mode=srv&amp;opt=ep&amp;pos=" + pos_id + "')\">Редактирование товара</div>" +
+        "<div onclick=\"ShowPopupWin('/docs.php?l=pran&amp;mode=srv&amp;opt=ceni&amp;pos=" + pos_id + "'); return false;\" >Где и по чём</div>" +
+        "<div onclick=\"window.open('/docs.php?mode=srv&amp;opt=ep&amp;param=n&amp;pos=" + pos_id + "')\">Аналоги</div>" +
+        addition;
+    return menu;
 }
 
 // Модуль просмотра картинок для витрины

@@ -25,19 +25,21 @@ class PosEditor {
 	var $show_vc;		///< Показывать код производителя
 	var $show_tdb;		///< Показывать тип/размеры/массу
 	var $show_rto;		///< Показывать резерв/в пути/предложения
-	var $list;	// Список наименований
+        var $show_reserve;      ///< Отображать колонку резервов в основной таблице
+	var $list;              //< Список наименований
 
 	/// Конструктор
 	function __construct(){
-		global $CONFIG;
-		$this->editable=0;
-		$this->show_vc=@$CONFIG['poseditor']['vc'];
-		$this->show_tdb=@$CONFIG['poseditor']['tdb'];
-		$this->show_rto=@$CONFIG['poseditor']['rto'];
-	}
+            global $CONFIG;
+            $this->editable = 0;
+            $this->show_vc = @$CONFIG['poseditor']['vc'];
+            $this->show_tdb = @$CONFIG['poseditor']['tdb'];
+            $this->show_rto = @$CONFIG['poseditor']['rto'];
+            $this->show_reserve = @$CONFIG['poseditor']['show_reserve'];
+        }
 
 	/// Разрешить или запретить изменение данных в списке наименований
-	/// @param editable 0: запретить, 1: разрешить
+	/// @param $editable 0: запретить, 1: разрешить
 	function SetEditable($editable)
 	{
 		$this->editable=$editable;
@@ -118,15 +120,17 @@ class PosEditor {
 
 }
 
-/// Редактор списка наименований документа.
+/// @brief Редактор списка наименований документа.
 /// При создании экземпляра класса нужно указать ID существующеего документа
 class DocPosEditor extends PosEditor {
-	var $doc;	// Id документа
-	var $doc_obj;	// Объект ассоциированного документа
-	var $show_sn;	// Показать серийные номера
-	var $show_gtd;	// Показывать номер ГТД в поступлении
-	var $list;	// Список товаров
-
+	var $doc;	//< Id документа
+	var $doc_obj;	//< Объект ассоциированного документа
+	var $show_sn;	//< Показать серийные номера
+	var $show_gtd;	//< Показывать номер ГТД в поступлении
+	var $list;	//< Список товаров
+        var $npv;       //< Не отображать производителя
+/// Конструктор
+/// @param $doc id редактироуемого документа
 public function __construct($doc) {
 	global $CONFIG;
 	parent::__construct();
@@ -137,6 +141,7 @@ public function __construct($doc) {
 	$dop_data = $this->doc_obj->getDopDataA();
 	if( @$CONFIG['poseditor']['sn_enable'] && ($doc_data['type']==1 || $doc_data['type']==2))	$this->show_sn=1;
 	if( @$CONFIG['poseditor']['true_gtd'] && $doc_data['type']==1)					$this->show_gtd=1;
+        $this->npv = @$CONFIG['doc']['no_print_vendor'];
 	$pc = PriceCalc::getInstance();
 	$pc->setAgentId($doc_data['agent']);
 	$pc->setFromSiteFlag(@$dop_data['ishop']);
@@ -145,9 +150,10 @@ public function __construct($doc) {
 /// Загрузить список товаров документа. Повторно не загружает.
 protected function loadList() {
 	global $db;
-	if(is_array($this->list))
-		return;
-	$this->list = array();
+	if (is_array($this->list)) {
+            return;
+        }
+        $this->list = array();
 	$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
 			`doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
 			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`,
@@ -157,9 +163,10 @@ protected function loadList() {
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
 		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'
 		ORDER BY `doc_list_pos`.`id`");
-	while ($nxt = $res->fetch_assoc())
-		$this->list[$nxt['line_id']] = $nxt;
-}
+	while ($nxt = $res->fetch_assoc()) {
+            $this->list[$nxt['line_id']] = $nxt;
+        }
+    }
 
 /// Перезагрузить список товаров
     public function reloadList() {
@@ -244,6 +251,10 @@ function Show($param='') {
 	$col_names[] = 'Сумма';
 	$cols[] = 'store_cnt';
 	$col_names[] = 'Остаток';
+        if($this->show_reserve) {
+            $cols[] = 'reserve';
+            $col_names[] = 'Резерв';
+        }
 	$cols[] = 'place';
 	$col_names[] = 'Место';
 	if($this->show_gtd) {
@@ -322,6 +333,9 @@ function GetAllContent() {
 	
 	$pos_array = array();
 	foreach ($this->list as $nxt) {
+                if($this->show_reserve) {
+                    $nxt['reserve'] = DocRezerv($nxt['pos_id'], 0);
+                }
 		if ($this->cost_id)
 			$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
 		else {
@@ -404,7 +418,9 @@ function GetAllContent() {
 			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
 			if(! @$CONFIG['doc']['no_print_vendor'])
 				$nxt['name'].=' - '.$nxt['vendor'];
-			
+                        if($this->show_reserve) {
+                            $nxt['reserve'] = DocRezerv($nxt['pos_id'], 0);
+                        }
 			$ret = "{response: 3, data:".json_encode($nxt, JSON_UNESCAPED_UNICODE)."}";
 		}
 
@@ -541,10 +557,11 @@ function AddPos($pos) {
 		$line['line_id'] = $line_id;
 		$line['pos_id'] = $line['id'];
 		$line['gtd'] = '';
-		if(! @$CONFIG['doc']['no_print_vendor'])
-				$line['name'].=' - '.$line['vendor'];
-		
-		if(!$this->cost_id) {
+		if (!$this->npv) {
+                        $line['name'].=' - ' . $line['vendor'];
+                }
+
+                if(!$this->cost_id) {
 			$retail_price_id = $pc->getRetailPriceId();
 			$auto_price_id = $pc->getPosAutoPriceID($line['pos_id'], $cnt);
 			if($auto_price_id == $retail_price_id)
@@ -565,6 +582,10 @@ function AddPos($pos) {
 				$ret_data['update_list'] = $new_list;
 			}
 		}
+                
+                if($this->show_reserve) {
+                    $line['reserve'] = DocRezerv($line['pos_id'], 0);
+                }
 		
 		$ret_data['response'] = 'add';
 		$ret_data['line'] = $line;
@@ -929,34 +950,6 @@ function SerialNum($action, $line_id, $data)
                 }
                 
                 return json_encode($result, JSON_UNESCAPED_UNICODE);
-                
-//		$sqla = $sql . "WHERE `doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%' ORDER BY " . $this->getOrder() . " LIMIT 200";
-//		$res = $db->query($sqla);
-//		if ($cnt = $res->num_rows) {
-//			if ($ret != '')
-//				$ret.=', ';
-//			$ret.="{id: 'header', name: 'Поиск по названию, начинающемуся на $s_json - $cnt наименований найдено'}";
-//			$ret = $this->FormatResult($res, $ret);
-//		}
-//		$sqla = $sql . "WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`name` NOT LIKE '$s_sql%'
-//			AND `doc_base`.`vc` NOT LIKE '$s_sql%' ORDER BY " . $this->getOrder() . " LIMIT 100";
-//		$res = $db->query($sqla);
-//		if ($cnt = $res->num_rows) {
-//			if ($ret != '')
-//				$ret.=', ';
-//			$ret.="{id: 'header', name: 'Поиск по названию, содержащему $s_json - $cnt наименований найдено'}";
-//			$ret = $this->FormatResult($res, $ret);
-//		}
-//		$sqla = $sql . "WHERE `doc_base_dop`.`analog` LIKE '%$s_sql%' AND `doc_base`.`name` NOT LIKE '%$s_sql%' AND `doc_base`.`vc` NOT LIKE '%$s_sql%'
-//			ORDER BY " . $this->getOrder() . " LIMIT 100";
-//		$res = $db->query($sqla);
-//		if ($cnt = $res->num_rows) {
-//			if ($ret != '')
-//				$ret.=', ';
-//			$ret.="{id: 'header', name: 'Поиск по аналогу($s_json) - $cnt наименований найдено'}";
-//			$ret = $this->FormatResult($res, $ret);
-//		}
-//		return $ret;
 	}
 
     /// Форматирует данные строки списка наименований перед последующей конвертацией в json

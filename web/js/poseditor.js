@@ -367,6 +367,9 @@ function PosEditorInit(poslist_setup) {
 				case 'store_cnt':
 					fragment.appendChild(createConstCell( Math.round(data.sklad_cnt*100)/100));	
 					break;
+                                case 'reserve':
+					fragment.appendChild(createConstCell( Math.round(data.reserve*100)/100));	
+					break;
 				case 'place':
 					fragment.appendChild(createConstCell(data.place));	
 					break;

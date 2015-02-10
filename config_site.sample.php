@@ -49,9 +49,10 @@ $CONFIG['site']['force_https_login']	= false;	// Принудительно ис
 
 $CONFIG['poseditor']['sn_enable']	= false;// Включить поддержку работы с серийными номерами
 $CONFIG['poseditor']['sn_restrict']	= false;// Включить ограничения на выписку документов без серийных номеров
-$CONFIG['poseditor']['vc']		= 0;	// Показывать код производителя
-$CONFIG['poseditor']['tdb']		= 0;	// Показывать размеры
-$CONFIG['poseditor']['rto']		= 1;	// Показывать резервы/транзиты/заявки
+$CONFIG['poseditor']['vc']		= true;	// Показывать код производителя
+$CONFIG['poseditor']['tdb']		= false;// Показывать размеры
+$CONFIG['poseditor']['rto']		= true;	// Показывать резервы/транзиты/заявки
+$CONFIG['poseditor']['show_reserve']	= false;// Показывать резервы в таблице документа
 $CONFIG['poseditor']['true_gtd']	= false;// Cхема учёта ГТД. false - ГТД берётся из доп. свойств наименования
                                                 // 'easy' - ГТД берутся из поступлений. 
                                                 // true - то же, что и 'easy', но при попытке получить кол-во большее, чтем поступило,
@@ -128,7 +129,8 @@ $CONFIG['gpb']['callback_pass']	= '';
 $CONFIG['1csync']['login']      = '';
 $CONFIG['1csync']['pass']       = '';
 
-$CONFIG['doc_scripts']['zp_s_prodaj.coeff']=	0.05;	// Коэффициент начислений для зарплаты с продаж
+$CONFIG['doc_scripts']['zp_s_prodaj.coeff']     = 0.05;	// Коэффициент начислений для зарплаты с продаж
+$CONFIG['doc_scripts']['zp_s_prodaj.l_coeff']   = 0.5;  // Коэффициент понижения зарплаты от ликвидности. Диапазон от -1 до 1
 $CONFIG['doc_scripts']['zp_s_prodaj_conn.new_coeff']=0.02;
 $CONFIG['doc_scripts']['zp_s_prodaj_conn.new_days']=90;
 $CONFIG['doc_scripts']['zp_s_prodaj_conn.old_coeff']=0.01;

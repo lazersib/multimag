@@ -67,6 +67,18 @@ class DbCheckWorker extends AsyncWorker {
 			}
 		}
                 
+                $this->SetStatusText("Поиск проведённых документов с пометкой на удаление...");
+		// Поиск проведённых документов с пометкой на удаление
+		$res = $db->query("SELECT `id`, `altnum`, `subtype`
+                    FROM `doc_list`
+		WHERE `ok`>0 AND `mark_del`>0
+                ORDER BY `date`");
+		while ($nxt = $res->fetch_assoc()) {
+                    $text = "Проведённый документ ID {$nxt['id']} ({$nxt['altnum']}{$nxt['subtype']}) помечен на удаление!\n";
+                    echo $text;
+                    $this->mail_text .= $text;
+		}
+                
 		$this->SetStatusText("Расчет дат первой покупки...");                
         	// Заполнение дат первой покупки для раздела новинок
                 $db->query("CREATE TEMPORARY TABLE `buytime_tmp` (
@@ -105,46 +117,32 @@ class DbCheckWorker extends AsyncWorker {
 		}
 
 		// ============== Расчет ликвидности ===================================================
-		if (@$CONFIG['auto']['liquidity_interval'])
-			$dtim = time() - 60 * 60 * 24 * $CONFIG['auto']['liquidity_interval'];
-		else	$dtim = time() - 60 * 60 * 24 * 365;
-		$starttime = time();
-		$this->SetStatusText("Расчет ликвидности...");
-		$res = $db->query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`) AS `aa`
-		FROM `doc_list_pos`, `doc_list`
-		WHERE `doc_list_pos`.`doc`= `doc_list`.`id` AND (`doc_list`.`type`='2' OR `doc_list`.`type`='3') AND `doc_list`.`date`>'$dtim'
-		GROUP BY `doc_list_pos`.`tovar`
-		ORDER BY `aa` DESC");
-		if ($res->num_rows) {
-			$nxt = $res->fetch_row();
-			$max = $nxt[1] / 100;
-			$db->query("CREATE TEMPORARY TABLE IF NOT EXISTS `doc_base_likv_update` (
-			`id` int(11) NOT NULL auto_increment,
-			`likvid` double NOT NULL,
-			UNIQUE KEY `id` (`id`)
-			) ENGINE=Memory  DEFAULT CHARSET=utf8;");
+                $this->SetStatusText("Расчет ликвидности...");
+		$a_likv = getLiquidityOnDate(time());
+                $db->query("CREATE TEMPORARY TABLE IF NOT EXISTS `doc_base_likv_update` (
+                `id` int(11) NOT NULL auto_increment,
+                `likvid` double NOT NULL,
+                UNIQUE KEY `id` (`id`)
+                ) ENGINE=Memory  DEFAULT CHARSET=utf8;");
 
-			$res->data_seek(0);
-			while ($nxt = $res->fetch_row()) {
-				$l = $nxt[1] / $max;
-				$db->query("INSERT INTO `doc_base_likv_update` VALUES ( $nxt[0], $l)");
-			}
+                foreach($a_likv as $pos_id => $likv) {
+                    $db->query("INSERT INTO `doc_base_likv_update` VALUES ($pos_id, $likv)");
+                }
 
-			$db->query("UPDATE `doc_base`,`doc_base_likv_update` SET `doc_base`.`likvid`=`doc_base_likv_update`.`likvid`  WHERE `doc_base`.`id`=`doc_base_likv_update`.`id`");
-			echo" сделано!\n";
-		}
-
+                $db->query("UPDATE `doc_base`,`doc_base_likv_update` SET `doc_base`.`likvid`=`doc_base_likv_update`.`likvid` 
+                    WHERE `doc_base`.`id`=`doc_base_likv_update`.`id`");
+		
 		// ================ Проверка, что у всех перемещений установлен не нулевой склад назначения ===================
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
 		FROM `doc_list`
 		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='na_sklad'
 		WHERE `doc_list`.`type`='8'");
 		while ($nxt = $res->fetch_row()) {
-			if (!$nxt[1]) {
-				$text = "У перемещения ID $nxt[0] не задан склад назначения. Остатки на складе не верны!\n";
-				echo $text;
-				$this->mail_text.=$text;
-			}
+                    if (!$nxt[1]) {
+                        $text = "У перемещения ID $nxt[0] не задан склад назначения. Остатки на складе не верны!\n";
+                        echo $text;
+                        $this->mail_text .= $text;
+                    }
 		}
 
 		// ================================ Перепроводка документов с коррекцией сумм ============================

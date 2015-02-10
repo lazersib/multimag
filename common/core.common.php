@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "744");
+define("MULTIMAG_REV", "750");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -114,18 +114,72 @@ function agentCalcDebt($agent_id, $no_cache = 0, $firm_id = 0, $local_db = 0, $d
 	return $dolg;
 }
 
+/// Расчёт ликвидности на заданную дату
+/// @param $time дата в unixtime
+/// @return array(pos_id => likv_value, ... )
+function getLiquidityOnDate($time) {
+    global $CONFIG, $db;
+    settype($time, 'int');
+    if (@$CONFIG['auto']['liquidity_interval']) {
+        $start_time = $time - 60 * 60 * 24 * $CONFIG['auto']['liquidity_interval'];
+    } else {
+        $start_time = $time - 60 * 60 * 24 * 365;
+    }
+    
+    $ret = array();
+    $max_pg = array();
+    $max = 0;
+    
+    $sql_fields = $sql_join = '';
+    if(@$CONFIG['site']['liquidity_per_group']) {
+        $sql_fields = ', `doc_base`.`group`';
+        $sql_join = 'INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`';
+    }
+    
+    $res = $db->query("SELECT `doc_list_pos`.`tovar`, COUNT(`doc_list_pos`.`tovar`) AS `aa` $sql_fields
+        FROM `doc_list_pos`
+        $sql_join
+        INNER JOIN `doc_list` ON `doc_list_pos`.`doc`= `doc_list`.`id`
+        WHERE (`doc_list`.`type`='2' OR `doc_list`.`type`='3') AND `doc_list`.`date`>='$start_time' 
+            AND `doc_list`.`date`<='$time' AND `doc_list`.`mark_del`=0
+        GROUP BY `doc_list_pos`.`tovar`
+        ORDER BY `aa` DESC");
+    if ($res->num_rows) {
+        while ($nxt = $res->fetch_row()) {
+            if(@$CONFIG['site']['liquidity_per_group']) {
+                if( !isset($max_pg[$nxt[2]]) ) {
+                    $max_pg[$nxt[2]] = $nxt[1] / 100;
+                }
+                $ret[$nxt[0]] = round($nxt[1] / $max_pg[$nxt[2]], 2);
+            } else {
+                if(!$max) {
+                    $max = $nxt[1] / 100;
+                }
+                $ret[$nxt[0]] = round($nxt[1] / $max, 2);
+            }
+        }
+    }
+    return $ret;
+}
+
 /// @brief Класс расширяет функциональность mysqli
 /// Т.к. используется почти везде, нет смысла выносить в отдельный файл
 class MysqiExtended extends mysqli {
 	
 	/// Начать транзакцию
 	function startTransaction(){
-		return $this->query("START TRANSACTION");
+            return $this->query("START TRANSACTION");
 	}
+        
+        // FOR DEBUG !
+//        function query($query) {
+//            echo $query." <hr>\n";
+//            return parent::query($query);
+//        }
 	
 	/// Получить все значения строки из таблицы по ключу в виде массива
-	/// @param table	Имя таблицы
-	/// @param key_value	Значение ключа, по которому производится выборка. Будет приведено к целому типу.
+	/// @param $table	Имя таблицы
+	/// @param $key_value	Значение ключа, по которому производится выборка. Будет приведено к целому типу.
 	/// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае sql ошибки вернёт false. В случае, если искомой строки нет в таблице, вернет 0
 	function selectRow($table, $key_value) {
 		settype($key_value,'int');
