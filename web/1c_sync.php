@@ -42,9 +42,9 @@ try {
         exit();
     }
 
-    $partial_time = rcvdatetime('partial_time', 0); // Если задано, то передаёт только изменения, произошедшие после этой даты
-    $start_date = rcvdate('start_date');            // Только для полной синхронизации. Начало интервала.    
-    $end_date = rcvdate('end_date');                // Только для полной синхронизации. Конец интервала.
+    $partial_time = rcvint('partial_time', 0); // Если задано, то передаёт только изменения, произошедшие после этой даты
+    $start_date = rcvdate('start_date', date("Y-m-d"));            // Только для полной синхронизации. Начало интервала.    
+    $end_date = rcvdate('end_date', date("Y-m-d"));                // Только для полной синхронизации. Конец интервала.
     
     $db->startTransaction();
     
@@ -56,7 +56,7 @@ try {
     // Информация о выгрузке
     $result = $dom->createElement('result');            // Код возврата
     $result_code = $dom->createElement('status', 'ok');
-    $result_desc = $dom->createElement('desc', 'Ok');
+    $result_desc = $dom->createElement('message', 'Ok');
     $result_timestamp = $dom->createElement('timestamp', time()-1);
     $result->appendChild($result_code);
     $result->appendChild($result_desc);
@@ -120,8 +120,8 @@ try {
     
     $root->appendChild($refbooks);
     
-    $from_date = strtotime("2014-06-01");
-    $to_date = strtotime("2016-01-01");
+    $from_date = strtotime($start_date);
+    $to_date = strtotime($end_date." 23:59:59");
     $documents = $export->convertToXmlElement('documents', 'document', $export->getDocumentsData($from_date, $to_date));
     
     $root->appendChild($documents);
@@ -137,7 +137,7 @@ try {
     
     $result = $dom->createElement('result');            // Код возврата
     $result_code = $dom->createElement('status', 'err');
-    $result_desc = $dom->createElement('desc', $e->getMessage());
+    $result_desc = $dom->createElement('message', $e->getMessage());
     $result->appendChild($result_code);
     $result->appendChild($result_desc);
     $root->appendChild($result);

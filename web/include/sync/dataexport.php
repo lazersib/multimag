@@ -36,6 +36,55 @@ class DataExport {
         return $ret;
     }
     
+    protected function getNameFromDocType($doc_type) {
+        switch ($doc_type) {
+            case 1:
+                return 'postuplenie';
+            case 2:
+                return 'realizaciya';
+            case 3:
+                return 'zayavka';
+            case 4:
+                return 'pbank';
+            case 5:
+                return 'rbank';
+            case 6:
+                return 'pko';
+            case 7:
+                return 'rko';
+            case 8:
+                return 'peremeshenie';
+            case 9:
+                return 'perkas';
+            case 10:
+                return 'doveren';
+            case 11:
+                return 'redlojenie';
+            case 12:
+                return 'v_puti';
+            case 13:
+                return 'kompredl';
+            case 14:
+                return 'dogovor';
+            case 15:
+                return 'realiz_op';
+            case 16:
+                return 'specific';
+            case 17:
+                return 'sborka';
+            case 18:
+                return 'kordolga';
+            case 19:
+                return 'korbonus';
+            case 20:
+                return 'realiz_bonus';
+            case 21:
+                return 'zsbor';
+            default:
+                return 'unknown';
+        }
+    }
+    
     /// Получить данные справочника собственных организаций
     public function getFirmsData() {
         $ret = array();
@@ -215,6 +264,7 @@ class DataExport {
             FROM `doc_list`
             WHERE `date`>='$from_date' AND `date`<='$to_date'");
         while($line = $res->fetch_assoc()) {
+            $line['type'] = $this->getNameFromDocType($line['type']);
             // Дополнительные данные документа - преобразование в корректную форму
             $dop_res = $this->db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`='{$line['id']}'");
             while($dl = $dop_res->fetch_assoc()) {
