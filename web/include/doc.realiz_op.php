@@ -53,5 +53,4 @@ class doc_Realiz_op extends doc_Realizaciya {
 		$this->sentZEvent('cancel');			
 	}
 
-};
-?>
+}

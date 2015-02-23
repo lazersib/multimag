@@ -226,38 +226,53 @@ class doc_Realizaciya extends doc_Nulltype {
         }
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
-                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`
+                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`, `doc_base`.`vc`
             FROM `doc_list_pos`
             LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
             LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_params['sklad']}'
         WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
         $bonus = 0;
+        $fail_text = '';
         while ($nxt = $res->fetch_row()) {
             if (!$doc_params['dnc']) {
-                if ($nxt[1] > $nxt[2])
-                    throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])': на складе только $nxt[2] шт!");
+                if ($nxt[1] > $nxt[2]) {
+                    $pos_name = composePosNameStr($nxt[0], $nxt[9], $nxt[3], $nxt[4]);
+                    $fail_text .= "Мало товара '$pos_name' -  есть:{$nxt[2]}, нужно:{$nxt[1]}. \n";
+                    continue;
+                }
             }
 
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_params['sklad']}'");
 
             if (!$doc_params['dnc'] && (!$silent)) {
                 $budet = getStoreCntOnDate($nxt[0], $doc_params['sklad'], $doc_params['date']);
-                if ($budet < 0)
-                    throw new Exception("Невозможно ($silent), т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[7]($nxt[0])'!");
+                if ($budet < 0) {
+                    $pos_name = composePosNameStr($nxt[0], $nxt[9], $nxt[3], $nxt[4]);
+                    $t = $budet + $nxt[1];
+                    $fail_text .= "Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
+                    continue;
+                }
             }
 
             if (@$CONFIG['poseditor']['sn_restrict']) {
                 $r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
                 list($sn_cnt) = $r->fetch_row();
-                if ($sn_cnt != $nxt[1])
-                    throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_cnt)");
+                if ($sn_cnt != $nxt[1]) {
+                    $pos_name = composePosNameStr($nxt[0], $nxt[9], $nxt[3], $nxt[4]);
+                    $fail_text .= "Мало серийных номеров товара '$pos_name' - есть:$sn_cnt, нужно:{$nxt[1]}. \n";
+                    continue;
+                }
             }
-
             $bonus+=$nxt[8] * $nxt[1] * (@$CONFIG['bonus']['coeff']);
         }
-
-        if ($silent)
+        
+        if($fail_text) {
+            throw new Exception("Ошибка номенклатуры: \n".$fail_text);
+        }
+        
+        if ($silent) {
             return;
+        }
         if (!$doc_params['no_bonuses'] && $bonus>0)
             $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
 
@@ -1190,7 +1205,7 @@ class doc_Realizaciya extends doc_Nulltype {
                         while ($cnt > 0) {
                             if (count($gtd_array) == 0) {
                                 if($CONFIG['poseditor']['true_gtd']!='easy') {
-                                    throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt[1]} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
+                                    throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt['name']} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
                                 }
                                 else {
                                     $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $cnt);

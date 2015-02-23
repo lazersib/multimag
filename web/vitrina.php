@@ -1560,21 +1560,11 @@ protected function MakeBuy() {
 	$agent=1;
 
 	if(@$_REQUEST['phone']) { // Пробуем выполнить нормализацию номера телефона
-            $phone = $_REQUEST['phone'];
-            $phone = preg_replace("/[^0-9+]/", "", $phone);
-            $phoneplus = $phone[0]=='+';
-            $phone = preg_replace("/[^0-9]/", "", $phone);
-            if($phoneplus && $phone[0]==7 && strlen($phone)==11) {
-                $phone = '+'.$phone;
-            } elseif(!$phoneplus && $phone[0]==8 && strlen($phone)==11) {
-                $phone = '+7'.substr($phone,1);
-            } elseif(!$phoneplus && $phone[0]==9 && strlen($phone)==10) {
-                $phone = '+7'.$phone; 
-            } else {
+            $phone = normalizePhone($_REQUEST['phone']);
+            if($phone === false) {
                 header("Location: /vitrina.php?mode=buyform&step=1&cwarn=1");
 		return;
             }
-            echo $phone;
         } else	$phone='';
 
 	if(@$_SESSION['uid']) {

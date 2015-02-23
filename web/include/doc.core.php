@@ -287,6 +287,24 @@ function doc_log($motion, $desc, $object='', $object_id=0) {
 	VALUES ('$uid', '$ip', NOW(),'$motion','$desc', '$object', '$object_id')");
 }
 
+/// @brief Сформировать строку с названием элемента списка номенклатуры в зависимости от настроек
+/// Если какой-то элемент не задан - он не будет использоваться в формировании результата
+/// @param $id Id элемента
+/// @param $vc
+/// @param $name
+/// @param $vendor
+function composePosNameStr($id = 0, $vc = '', $name = '', $vendor = '') {
+    global $CONFIG;
+    if(@$CONFIG['poseditor']['vc'] && $vc) {
+        $name = $vc . ' ' . $name;
+    }
+    if(!@$CONFIG['doc']['no_print_vendor'] && $vendor) {
+        $name .= ' / '.$vendor;
+    }
+    $name .= '(ID:'.$id.')';
+    return $name;
+}
+
 function doc_menu($dop = "", $nd = 1, $doc = 0) {
 	global $tmpl, $CONFIG, $db;
 	// Индикатор нарушения целостности проводок

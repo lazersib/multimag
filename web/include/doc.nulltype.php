@@ -1237,11 +1237,11 @@ class doc_Nulltype
 		$tmpl->ajax = 1;
 		
 		if($this->sklad_editor_enable) {
-			include_once('doc.poseditor.php');
-			$poseditor = new DocPosEditor($this);
-			$poseditor->cost_id = @$this->dop_data['cena'];
-			$poseditor->sklad_id = $this->doc_data['sklad'];
-			$poseditor->SetEditable($this->doc_data['ok']?0:1);
+                    include_once('doc.poseditor.php');
+                    $poseditor = new DocPosEditor($this);
+                    $poseditor->cost_id = @$this->dop_data['cena'];
+                    $poseditor->sklad_id = $this->doc_data['sklad'];
+                    $poseditor->SetEditable($this->doc_data['ok']?0:1);
 		}
 		
 		$peopt = request('peopt');	// Опции редактора списка товаров
@@ -1261,20 +1261,8 @@ class doc_Nulltype
 				$tmpl->addContent($doc_content);
 			}
 			// Снять пометку на удаление
-			else if($opt=='jundeldoc')
-			{
-				try
-				{
-					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");	
-					$db->update('doc_list', $this->doc, 'mark_del', 0);
-					doc_log("UNDELETE", '', "doc", $this->doc);
-					$json=' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "'.$this->getApplyButtons().'", "statusblock": "Документ не будет удалён" }';
-					$tmpl->setContent($json);
-				}
-				catch(Exception $e)
-				{
-					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
-				}
+			else if($opt=='jundeldoc') {
+                            $tmpl->setContent($this->serviceUnDelDoc());
 			}
 			/// TODO: Это тоже переделать!
 			else if($this->doc_data['ok'])
@@ -1283,83 +1271,64 @@ class doc_Nulltype
 				throw new Exception("Операция не допускается для документа, отмеченного для удаления!");
 			// Получение данных наименования
 			else if ($peopt == 'jgpi') {
-				$pos = rcvint('pos');
-				$tmpl->addContent($poseditor->GetPosInfo($pos));
+                            $pos = rcvint('pos');
+                            $tmpl->addContent($poseditor->GetPosInfo($pos));
 			}
 			// Json вариант добавления позиции
 			else if ($peopt == 'jadd') {
-				if (!isAccess('doc_' . $this->doc_name, 'edit'))
-					throw new AccessException("Недостаточно привилегий");
-				$pe_pos = rcvint('pe_pos');
-				$tmpl->setContent($poseditor->AddPos($pe_pos));
+                            if (!isAccess('doc_' . $this->doc_name, 'edit'))
+                                    throw new AccessException("Недостаточно привилегий");
+                            $pe_pos = rcvint('pe_pos');
+                            $tmpl->setContent($poseditor->AddPos($pe_pos));
 			}
 			// Json вариант удаления строки
 			else if ($peopt == 'jdel') {
-				if (!isAccess('doc_' . $this->doc_name, 'edit'))
-					throw new AccessException("Недостаточно привилегий");
-				$line_id = rcvint('line_id');
-				$tmpl->setContent($poseditor->Removeline($line_id));
+                            if (!isAccess('doc_' . $this->doc_name, 'edit'))
+                                    throw new AccessException("Недостаточно привилегий");
+                            $line_id = rcvint('line_id');
+                            $tmpl->setContent($poseditor->Removeline($line_id));
 			}
 			// Json вариант обновления
 			else if ($peopt == 'jup') {
-				if (!isAccess('doc_' . $this->doc_name, 'edit'))
-					throw new AccessException("Недостаточно привилегий");
-				$line_id = rcvint('line_id');
-				$value = request('value');
-				$type = request('type');
-				// TODO: пересчет цены перенести внутрь poseditor
-				$tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
+                            if (!isAccess('doc_' . $this->doc_name, 'edit'))
+                                    throw new AccessException("Недостаточно привилегий");
+                            $line_id = rcvint('line_id');
+                            $value = request('value');
+                            $type = request('type');
+                            // TODO: пересчет цены перенести внутрь poseditor
+                            $tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
 			}
 			// Получение номенклатуры выбранной группы
 			else if ($peopt == 'jsklad') {
-				$group_id = rcvint('group_id');
-				$str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
-				$tmpl->setContent($str);
+                            $group_id = rcvint('group_id');
+                            $str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
+                            $tmpl->setContent($str);
 			}
 			// Поиск по подстроке по складу
 			else if ($peopt == 'jsklads') {
-				$s = request('s');
-				$str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
-				$tmpl->setContent($str);
+                            $s = request('s');
+                            $str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
+                            $tmpl->setContent($str);
 			}
 			// Серийные номера
 			else if ($peopt == 'jsn') {
-				$action = request('a');
-				$line_id = request('line');
-				$data = request('data');
-				$tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
+                            $action = request('a');
+                            $line_id = request('line');
+                            $data = request('data');
+                            $tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
 			}
 			// Сброс цен
 			else if ($peopt == 'jrc') {
-				$poseditor->resetPrices();
+                            $poseditor->resetPrices();
 			}
 			// Сортировка наименований
 			else if ($peopt == 'jorder') {
-				$by = request('by');
-				$poseditor->reOrder($by);
+                            $by = request('by');
+                            $poseditor->reOrder($by);
 			}
                         // Пометка на удаление
-			else if($opt=='jdeldoc')
-			{
-				try
-				{
-					if(! isAccess('doc_'.$this->doc_name,'delete') )	throw new AccessException("Недостаточно привилегий");
-					$tim=time();
-
-					$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `mark_del`='0'");
-					if($res->num_rows)
-						throw new Exception("Есть подчинённые не удалённые документы. Удаление невозможно.");
-					$db->update('doc_list', $this->doc, 'mark_del', $tim);
-					doc_log("MARKDELETE",  '', "doc", $this->doc);
-					$this->doc_data['mark_del']=$tim;
-					$json=' { "response": "1", "message": "Пометка на удаление установлена!", "buttons": "'.$this->getApplyButtons().'", "statusblock": "Документ помечен на удаление" }';
-					$tmpl->setContent($json);
-						
-				}
-				catch(Exception $e)
-				{
-					$tmpl->setContent("{response: 0, message: '".$e->getMessage()."'}");
-				}
+			else if($opt=='jdeldoc') {
+                            $tmpl->setContent($this->serviceDelDoc());
 			}
                         // Загрузка номенклатурной таблицы
                         else if($opt=='merge') {
@@ -1838,8 +1807,7 @@ class doc_Nulltype
         $logview->showLog();
     }
     
-    /// Обычная накладная в PDF формате
-    /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
+    /// Получить список номенклатуры
     function getDocumentNomenclature() {
         global $CONFIG, $db;
         $list = array();
@@ -1873,5 +1841,45 @@ class doc_Nulltype
         }
         return $list;
     }
+    
+    /// Установить пометку на удаление у документа
+    protected function serviceDelDoc() {
+        global $db;
+        try {
+            if (!isAccess('doc_' . $this->doc_name, 'delete')) {
+                throw new AccessException("Недостаточно привилегий");
+            }
+            $tim = time();
 
+            $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `mark_del`='0'");
+            if ($res->num_rows) {
+                throw new Exception("Есть подчинённые не удалённые документы. Удаление невозможно.");
+            }
+            $db->update('doc_list', $this->doc, 'mark_del', $tim);
+            doc_log("MARKDELETE", '', "doc", $this->doc);
+            $this->doc_data['mark_del'] = $tim;
+            $json = ' { "response": "1", "message": "Пометка на удаление установлена!", "buttons": "' . $this->getApplyButtons() . '", '
+                . '"statusblock": "Документ помечен на удаление" }';
+            return $json;
+        } catch (Exception $e) {
+            return "{response: 0, message: '" . $e->getMessage() . "'}";
+        }
+    }
+    
+    /// Снять пометку на удаление у документа
+    protected function serviceUnDelDoc() {
+        global $db;
+        try {
+            if (!isAccess('doc_' . $this->doc_name, 'delete')) {
+                throw new AccessException("Недостаточно привилегий");
+            }
+            $db->update('doc_list', $this->doc, 'mark_del', 0);
+            doc_log("UNDELETE", '', "doc", $this->doc);
+            $json = ' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "' . $this->getApplyButtons() . '", '
+                . '"statusblock": "Документ не будет удалён" }';
+            return $json;
+        } catch (Exception $e) {
+            return "{response: 0, message: '" . $e->getMessage() . "'}";
+        }
+    }
 }

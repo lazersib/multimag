@@ -172,6 +172,7 @@ class Report_Profitability extends BaseGSReport {
 				$out_cnt -= $nxt['cnt'];
 			}
 			$cnt += $nxt['cnt'];
+                        $cnt = round($cnt, 3);
 			if ($cnt < 0)
 				return array(0xFFFFBADF00D, 0, 0); // Невозможно расчитать прибыль, если остатки уходили в минус
 			

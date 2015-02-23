@@ -813,7 +813,7 @@ function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false)
 
 function MultiCellIconv($w, $h, $txt, $border=0, $align='J', $fill=false)
 {
-	return $this->MultiCell($w, $h, iconv('UTF-8', 'windows-1251', $txt), $border, $align, $fill);
+	return $this->MultiCell($w, $h, @iconv('UTF-8', 'windows-1251', $txt), $border, $align, $fill);
 }
 
 function Write($h, $txt, $link='')

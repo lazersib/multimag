@@ -150,6 +150,47 @@ function SearchHilight($str,$substr) {
 	return $result;
 }
 
+/// Нормализация номера телефона
+function normalizePhone($phone) {
+    $phone = preg_replace("/[^0-9+]/", "", $phone);
+    $phoneplus = $phone[0]=='+';
+    $phone = preg_replace("/[^0-9]/", "", $phone);
+    if($phoneplus && $phone[0]==7 && strlen($phone)==11) {
+        return '+'.$phone;
+    } elseif(!$phoneplus && $phone[0]==8 && strlen($phone)==11) {
+        return '+7'.substr($phone,1);
+    } elseif(!$phoneplus && $phone[0]==9 && strlen($phone)==10) {
+        return '+7'.$phone; 
+    } else {
+        return false;
+    }
+}
+
+/// Отсылает заголовок перенаправления в броузер и завершает скрипт
+function redirect($url) {
+    if (headers_sent()) {
+        return false;
+    }
+
+    //$url = HTTP::absoluteURI($url);
+    header('Location: '. $url, true, 301);
+
+    if ( isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] != 'HEAD') {
+        echo '
+<p>Redirecting to: <a href="'.str_replace('"', '%22', $url).'">'
+             .htmlspecialchars($url).'</a>.</p>
+<script type="text/javascript">
+//<![CDATA[
+if (location.replace == null) {
+location.replace = location.assign;
+}
+location.replace("'.str_replace('"', '\\"', $url).'");
+// ]]>
+</script>';
+    }
+    exit;
+}
+
 /// @brief Генератор псевдоуникального кода.
 ///
 /// Используется для генерации легкозапоминаемых паролей.

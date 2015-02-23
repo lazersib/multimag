@@ -125,88 +125,6 @@ function GroupSelBlock()
 
 }
 	
-/// Базовый класс формирования прайс-листов
-class BasePriceWriter {
-	protected $view_proizv;	///< Отображать ли наименование производителя
-	protected $view_groups;	///< Группы, которые надо отображать. Массив.
-	protected $column_count;	///< Кол-во колонок в прайсе
-	protected $db;		///< mysqli коннектор к нужной базе
-	
-	/// Конструктор
-	/// @param db mysqli-объект для подключения к базе данных
-	public function __construct($db)	{
-		$this->db		= $db;
-		$this->column_count	= 2;
-		$this->view_proizv	= 0;
-		$this->cost_id		= 1;
-		$this->view_groups	= false;
-	}
-	
-	/// Сформировать прайс-лист, и отправить его в STDOUT
-	public function run()	{
-		$this->open();
-		$this->write();
-		$this->close();
-	}
-	
-	/// Включает отображение наименования производителя в наименовании товара
-	/// @param visible true - отображать , false - не отображать
-	public function showProizv($visible=1)	{
-		$this->view_proizv=$visible;
-	}
-	
-	/// Включает режим отображения в прайс-листе только заданных групп товаров
-	/// @param groups Массив с id групп, которые должны быть включены в прайс-лист
-	public function setViewGroups($groups)	{
-		$this->view_groups=$groups;
-	}
-	
-	/// Задаёт количество колонок, отображаемых в прайс-листе
-	/// @param count Количество колонок
-	public function setColCount($count)	{
-		$this->column_count=$count;
-		settype($this->column_count, "int");
-		if($this->column_count<1) $this->column_count=1;
-		if($this->column_count>5) $this->column_count=5;
-	}
-	
-	/// Устанавливает цену, которая должна быть отображена в прайс-листе
-	/// @param cost Id отображаемой цены
-	public function setCost($cost=1)	{
-		$this->cost_id=$cost;
-		settype($this->cost_id, "int");
-	}
-	
-	/// Получить информации о количестве товара. Формат информации - в конфигурационном файле
-	/// @param count	Количество единиц товара на складе
-	/// @param transit	Количество единиц товара в пути
-	protected function getCountInfo($count, $transit) {
-		global $CONFIG;
-		if(!isset($CONFIG['site']['vitrina_pcnt_limit']))	$CONFIG['site']['vitrina_pcnt_limit']	= array(1,10,100);
-		if($CONFIG['site']['vitrina_pcnt']==1) {
-			if($count<=0) {
-				if($transit) return 'в пути';
-				else	return 'уточняйте';
-			}
-			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][0]) return '*';
-			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][1]) return '**';
-			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][2]) return '***';
-			else return '****';
-		}
-		else if($CONFIG['site']['vitrina_pcnt']==2) {
-			if($count<=0) {
-				if($transit) return 'в пути';
-				else	return 'уточняйте';
-			}
-			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][0]) return 'мало';
-			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][1]) return 'есть';
-			else if($count<=$CONFIG['site']['vitrina_pcnt_limit'][2]) return 'много';
-			else return 'оч.много';
-		}
-		else	return round($count).($transit?('('.$transit.')'):'');
-	}
-}
-
 try {
     $mode = request('mode');
     
@@ -344,7 +262,7 @@ else if($mode=="gen")
 		<ul>$list</ul>
 		<br>
 
-		<form action='price.php' method='get'>
+		<form action='price.php' method='post'>
 		<input type=hidden name=mode value=get>
 		<input type=hidden name=f value=$f>
 
@@ -406,11 +324,20 @@ else if($mode=="get")
 	$tdata="";
 	
 	switch( $f ) {
-		case 'pdf':	require_once('include/pricewriter/pdf.php'); $price=new PriceWriterPDF($db);		break;
-		case 'csv':	require_once('include/pricewriter/csv.php'); $price=new PriceWriterCSV($db);		break;
-		case 'xls':	require_once('include/pricewriter/xls.php'); $price=new PriceWriterXLS($db);		break;
-		case 'html':	require_once('include/pricewriter/html.php'); $price=new PriceWriterHTML($db);	break;
-		default:	throw new Exception("Запрошенный формат прайс-лиска пока не поддерживается");
+		case 'pdf': 
+                    $price = new pricewriter\pdf($db);	
+                    break;
+		case 'csv': 
+                    $price = new pricewriter\csv($db);	
+                    break;
+		case 'xls':
+                    $price = new pricewriter\xls($db);
+                    break;
+		case 'html':
+                    $price = new pricewriter\html($db); 
+                    break;
+		default:
+                    throw new Exception("Запрошенный формат прайс-лиска пока не поддерживается");
 	}	
 	$price->showProizv($proizv);
 	$price->setColCount($kol);
@@ -420,8 +347,8 @@ else if($mode=="get")
 		$price->setDivider( request('divider') );
 		$price->setShielder( request('shielder') );
 	}	
-	if(request('gs') && is_array($_POST['g']))	{
-		$price->setViewGroups($_POST['g']);
+	if(request('gs') && is_array($_REQUEST['g']))	{
+		$price->setViewGroups($_REQUEST['g']);
 	}
 	
 	$price->run();

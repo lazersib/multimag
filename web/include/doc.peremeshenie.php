@@ -126,17 +126,20 @@ class doc_Peremeshenie extends doc_Nulltype
         }
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, 
-                `doc_base`.`pos_type`
+                `doc_base`.`pos_type`, `doc_base`.`vc`
             FROM `doc_list_pos`
             LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
             LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
             WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+        $fail_text = '';
         while ($nxt = $res->fetch_row()) {
             if ($nxt[5] > 0) {
                 throw new Exception("Перемещение услуги '$nxt[3]:$nxt[4]' недопустимо!");
             }
             if (!$doc_info['dnc'] && ($nxt[1] > $nxt[2])) {
-                throw new Exception("Недостаточно ($nxt[1]) товара '$nxt[3]:$nxt[4]' на складе($nxt[2])!");
+                $pos_name = composePosNameStr($nxt[0], $nxt[6], $nxt[3], $nxt[4]);
+                $fail_text .= "Мало товара '$pos_name' -  есть:{$nxt[2]}, нужно:{$nxt[1]}. \n";
+                continue;
             }
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_info['sklad']}'");
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$dest_store_id'");
@@ -148,10 +151,18 @@ class doc_Peremeshenie extends doc_Nulltype
             if ((!$doc_info['dnc']) && (!$silent)) {
                 $budet = getStoreCntOnDate($nxt[0], $doc_info['sklad']);
                 if ($budet < 0) {
-                    throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4]' !");
+                    $pos_name = composePosNameStr($nxt[0], $nxt[6], $nxt[3], $nxt[4]);
+                    $t = $budet + $nxt[1];
+                    $fail_text .= "Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
+                    continue;
                 }
             }
         }
+        
+        if($fail_text) {
+            throw new Exception("Ошибка номенклатуры: \n".$fail_text);
+        }
+        
         $res->free();
         if ($silent) {
             return;

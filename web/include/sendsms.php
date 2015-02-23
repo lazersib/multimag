@@ -22,32 +22,32 @@
 /// использует параметры конфигурации ['sendsms']
 class SMSSender {
 
-	var $worker;
+	var $transport;
 
 	function __construct() {
 		global $CONFIG;
 		if (@$CONFIG['sendsms']['service'] == '')
 			throw new Exception("Работа с sms не настроена!");
 		else if ($CONFIG['sendsms']['service'] == 'infosmska')
-			$this->worker = new SendSMSTransportInfosmska();
+			$this->transport = new SendSMSTransportInfosmska();
 
 		else if ($CONFIG['sendsms']['service'] == 'virtualofficetools')
-			$this->worker = new SendSMSTransportVirtualofficetools();
+			$this->transport = new SendSMSTransportVirtualofficetools();
 	}
 
 	/// Установить текст для отправки
 	function setContent($text, $translit = false) {
-		$this->worker->setContent($text, $translit);
+		$this->transport->setContent($text, $translit);
 	}
 
 	/// Установить номер для отправки
 	function setNumber($number) {
-		$this->worker->setNumber($number);
+		$this->transport->setNumber($number);
 	}
 
 	/// Отправить sms сообщение
 	function send() {
-		$this->worker->send();
+		$this->transport->send();
 	}
 
 }
@@ -210,4 +210,3 @@ class SendSMSTransportVirtualofficetools extends SendSMSTransport {
 	}
 }
 
-?>
