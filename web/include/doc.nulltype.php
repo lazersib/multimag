@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -1633,7 +1633,7 @@ class doc_Nulltype
 			FROM `doc_list` AS `a`
 			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
 			WHERE `a`.`id`='".(int)$this->doc."'");
-			if(!$res->num_rows)	throw new Exception("Документ не найден");
+			if(!$res->num_rows)	throw new NotFoundException("Документ не найден");
 			$this->doc_data = $res->fetch_assoc();
 			
 			$res = $db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`='".(int)$this->doc."'");

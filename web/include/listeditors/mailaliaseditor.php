@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -52,7 +52,7 @@ class MailAliasEditor extends \ListEditor {
     
     protected function getInputUser_id($name, $value) {
         $ret = "<select name='$name'>";
-        foreach($this->domain_list as $id => $user_name) {
+        foreach($this->user_list as $id => $user_name) {
             $selected = $id == $value ? ' selected' : '';
             $ret.= "<option value='{$id}'{$selected}>" . html_out($user_name) . "</option>";
         }
@@ -65,7 +65,7 @@ class MailAliasEditor extends \ListEditor {
     }
     
     protected function getFieldUser_id($data) {
-        return html_out($this->user_list[$data['domain_id']]);
+        return html_out($this->user_list[$data['user_id']]);
     }
     
     protected function initDomainList() {

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -60,6 +60,10 @@ class doc_Sborka extends doc_Nulltype {
         while ($line = $res->fetch_array()) {
             $sign = $line['page'] ? '-' : '+';
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt` $sign '{$line['cnt']}' WHERE `id`='{$line['tovar']}' AND `sklad`='{$doc_info['sklad']}'");
+            // Если это первое поступление
+            if ($db->affected_rows == 0) {
+                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['tovar']}', '$doc_info[3]', '{$line['cnt']}')");
+            }
             
             if ($line['page']) {
                 if (!$doc_info['dnc']) {
@@ -79,14 +83,9 @@ class doc_Sborka extends doc_Nulltype {
                     }
                 }
             }
-
-            if($fail_text) {
-                throw new Exception("Ошибка номенклатуры: \n".$fail_text);
-            }
-            // Если это первое поступление
-            if ($db->affected_rows == 0) {
-                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$line[0]', '$doc_info[3]', '{$line['cnt']}')");
-            }
+        }
+        if($fail_text) {
+            throw new Exception("Ошибка номенклатуры: \n".$fail_text);
         }
         if ($silent) {
             return;

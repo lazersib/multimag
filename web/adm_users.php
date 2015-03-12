@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -36,12 +36,12 @@ try {
 	if ($mode == '') {
 		$order = '`users`.`id`';
 		$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users`.`reg_email`, `users`.`reg_email_confirm`, `users`.`reg_email_subscribe`,
-			`users`.`reg_phone`, `users`.`reg_phone_confirm`, `users`.`reg_phone_subscribe`, `users`.`reg_date`, `users_worker_info`.`worker`,
-			( SELECT `date` FROM `users_login_history` WHERE `user_id`=`users`.`id` ORDER BY `date` DESC LIMIT 1) AS `lastlogin_date`,
-			( SELECT `user_id` FROM `users_openid` WHERE `user_id`=`users`.`id` LIMIT 1) AS `openid`
-			FROM `users`
-			LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
-			ORDER BY $order");
+                    `users`.`reg_phone`, `users`.`reg_phone_confirm`, `users`.`reg_phone_subscribe`, `users`.`reg_date`, `users_worker_info`.`worker`,
+                    ( SELECT `date` FROM `users_login_history` WHERE `user_id`=`users`.`id` ORDER BY `date` DESC LIMIT 1) AS `lastlogin_date`,
+                    ( SELECT `user_id` FROM `users_openid` WHERE `user_id`=`users`.`id` LIMIT 1) AS `openid`
+                    FROM `users`
+                    LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+                    ORDER BY $order");
 		$tmpl->addBreadcrumb('Список пользователей', '');
 		$tmpl->setTitle('Список пользователей');
 		$tmpl->addContent("<h1 id='page-title'>Список пользователей</h1>

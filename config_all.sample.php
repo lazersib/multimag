@@ -14,6 +14,8 @@ $CONFIG['site']['default_sklad']= 1;				// Склад по умолчанию
 $CONFIG['location']		= '/usr/share/multimag';
 $CONFIG['site']['location']	= $CONFIG['location'].'/web';
 $CONFIG['cli']['location']	= $CONFIG['location'].'/cli';
+$CONFIG['site']['user_pass_period'] = false;                    // Срок действия (суток) пароля обычного пользователя. Если false - не ограничен. false по умолчанию
+$CONFIG['site']['worker_pass_period'] = 90;                     // Срок действия (суток) пароля сотрудника. Если false - не ограничен. 90 по умолчанию.
 
 // Настройки базы данных
 $CONFIG['mysql']['host']	= 'localhost';

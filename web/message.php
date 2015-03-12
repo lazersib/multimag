@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -139,14 +139,14 @@ else if($mode=='call_request')
 		</form>");
 	}
 }
-else if($mode=='send')
-{
-	$nm	= request('nm');
-	$backadr= request('backadr');
-	$text	= request('text');
-	$text="Нам написал сообщение $nm($backadr)с сайта {$CONFIG['site']['name']}\n-------------------\n$text\n";
-	$text.="-------------------\nIP отправителя: ".getenv("REMOTE_ADDR")."\nSESSION ID:".session_id();
-	if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
+else if($mode=='send') {
+    $nm = request('nm');
+    $backadr = request('backadr');
+    $text = request('text');
+    $text = "Нам написал сообщение $nm($backadr)с сайта {$CONFIG['site']['name']}\n-------------------\n$text\n";
+    $text .= "-------------------\nIP отправителя: " . getenv("REMOTE_ADDR") . "\nSESSION ID:" . session_id();
+    $text .= "\nБроузер:  ".getenv("HTTP_USER_AGENT");
+    if(@$_SESSION['name']) $text.="\nLogin отправителя: ".$_SESSION['name'];
 
 	if($opt=='jabber')
 	{

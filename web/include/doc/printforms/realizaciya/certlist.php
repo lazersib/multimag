@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -100,15 +100,21 @@ class certlist extends \doc\printforms\iPrintForm {
             throw new \Exception('Не найден один из необходимых параметров складской номенклатуры из группы *сертификаты*. Необходимые параметры: *N сертификата*, *Срок действия*, *Орган сертификации*.');
         }
         
-        $res = $db->query("SELECT `id`, `param` FROM  `doc_base_params` WHERE `param`='Срок годности'");
+        $res = $db->query("SELECT `id`, `param` FROM  `doc_base_params` WHERE `param`='Срок реализации'");
         if(!$res->num_rows) {
             throw new \Exception('Не найден параметр *срок годности*. Создайте параметр с таким названием в настройках параметров складской номенклатуры.');
         }
         list($exp_date_id) = $res->fetch_row();
+        
+        $res = $db->query("SELECT `id`, `param` FROM  `doc_base_params` WHERE `param`='Температура хранения'");
+        if(!$res->num_rows) {
+            throw new \Exception('Не найден параметр *Температура хранения*. Создайте параметр с таким названием в настройках параметров складской номенклатуры.');
+        }
+        list($t_store_id) = $res->fetch_row();
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar` AS `pos_id`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, 
             `doc_base`.`proizv` AS `vendor`,  `doc_base`.`vc`, `certnum`.`value` AS `cert_num`, `certdate`.`value` AS `cert_dates`, 
-            `certcreator`.`value` AS `cert_creator`, `exp`.`value` AS `exp_date`
+            `certcreator`.`value` AS `cert_creator`, `exp`.`value` AS `exp_date`, `tst`.`value` AS `t_store`
         FROM `doc_list_pos`
         INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
         LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -116,6 +122,7 @@ class certlist extends \doc\printforms\iPrintForm {
         LEFT JOIN `doc_base_values` AS `certdate` ON `certdate`.`id`=`doc_list_pos`.`tovar` AND `certdate`.`param_id`=$cert_dates_id
         LEFT JOIN `doc_base_values` AS `certcreator` ON `certcreator`.`id`=`doc_list_pos`.`tovar` AND `certcreator`.`param_id`=$cert_creator_id
         LEFT JOIN `doc_base_values` AS `exp` ON `exp`.`id`=`doc_list_pos`.`tovar` AND `exp`.`param_id`=$exp_date_id 
+        LEFT JOIN `doc_base_values` AS `tst` ON `tst`.`id`=`doc_list_pos`.`tovar` AND `tst`.`param_id`=$t_store_id
         WHERE `doc_list_pos`.`doc`='{$doc_id}'
         ORDER BY `doc_list_pos`.`id`");
 
@@ -160,15 +167,14 @@ class certlist extends \doc\printforms\iPrintForm {
         // Таблица номенклатуры - шапка        
 
         $this->pdf->SetLineWidth($this->line_bold_w);
-        $t_width = array(10, 75, 35, 40, 40, 40, 37);
+        $t_width = array(10, 75, 40, 40, 40, 70);
         $t_text = array(
             'N п/п',
             'Наименование товара',
-            'Производитель',
             'N сертификата',
             'Срок действия',
             'Орган сертификации',
-            'Срок годности товара');
+            'Срок реализации, температура хранения');
 
         foreach ($t_width as $i => $w) {
             $this->pdf->CellIconv($w, 5, $t_text[$i], 1, 0, 'C');
@@ -193,11 +199,10 @@ class certlist extends \doc\printforms\iPrintForm {
             $row = array(
                 $i++,
                 $line['name'],
-                $line['vendor'],
                 $line['cert_num'],
                 $line['cert_dates'],
                 $line['cert_creator'],
-                $line['exp_date']);
+                $line['exp_date'].', '.$line['t_store']);
             $this->pdf->RowIconv($row);
         }
         // Контроль расстояния до конца листа

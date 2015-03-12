@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -190,7 +190,8 @@ elseif($openid->mode)
 				$msg=regMsg($login, $pass, $email_conf);
 				mailto(@$oid_attr['contact/email'], "Регистрация на ".$CONFIG['site']['name'], $msg);
 			}
-
+                        /// ТОВО: отправить SMS с кодом подтверждения
+                        
 			$_SESSION['uid']=$user_id;
 			$_SESSION['name']=$login;
 			$tmpl->msg("Регистрация завершена! Теперь Вам доступны новые возможности!","ok");

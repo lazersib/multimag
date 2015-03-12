@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2014, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -36,6 +36,7 @@ class ds_bank_import {
             <input type='hidden' name='MAX_FILE_SIZE' value='10000000'><input name='userfile' type='file'><br>
             <label><input type='checkbox' name='process_in' value='1' checked>Обработать приходы</label><br>
             <label><input type='checkbox' name='process_out' value='1'>Обработать расходы</label><br>
+            <label><input type='checkbox' name='apply' value='1'>Провести документы</label><br>
             Подтип документов:<br>
             <input type='text' name='subtype' maxlength='5'><br>
             <button type='submit'>Выполнить</button>
@@ -50,6 +51,7 @@ class ds_bank_import {
             $process_in = rcvint('process_in');
             $process_out = rcvint('process_out');
             $subtype = request('subtype');
+            $apply = request('apply');
             
             $tmpl->addContent("<h1>" . $this->getname() . "</h1>");
             if ($_FILES['userfile']['size'] <= 0) {
@@ -168,7 +170,7 @@ class ds_bank_import {
                         'agent'     => $agent_id,
                         'firm_id'   => $banks[$curr_rs]['firm_id'],
                         'comment'   => $import_doc['desc'],
-                        'ok'        => time()
+                        'ok'        => $apply ? time() : 0
                     );
                     $doc_id = $db->insertA('doc_list', $doc_ins_data);
                     $doc_nums = $doc_nums .= "<a href='/doc.php?mode=body&amp;doc=$doc_id'>$doc_id</a>";
