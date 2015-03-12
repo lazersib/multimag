@@ -426,6 +426,44 @@ class authenticator {
         return false;
     }
     
+    // Определение кол-ва дней до окончания срока действия пароля
+    public function getDaysExpiredAfter() {
+        global $CONFIG;
+        if($this->user_info['pass_expired']) {
+            return 0;
+        }
+        if(isset($CONFIG['site']['user_pass_period'])) {
+            if($CONFIG['site']['user_pass_period']) {
+                $pc_time = strtotime($this->user_info['pass_date_change']);
+                $exp_time = floor($CONFIG['site']['user_pass_period'] - (time() - $pc_time)/60/60/24);
+                if($exp_time < 0) {
+                    $exp_time = 0;
+                }
+                return $exp_time;
+            }
+        }
+        if($this->user_info['worker']) {
+            if(isset($CONFIG['site']['worker_pass_period'])) {
+                if($CONFIG['site']['worker_pass_period']) {
+                    $pc_time = strtotime($this->user_info['pass_date_change']);
+                    $exp_time = floor($CONFIG['site']['worker_pass_period'] - (time() - $pc_time)/60/60/24);
+                    if($exp_time < 0) {
+                        $exp_time = 0;
+                    }
+                    return $exp_time;
+                }
+            } else {
+                $pc_time = strtotime($this->user_info['pass_date_change']);
+                $exp_time = floor(90 - (time() - $pc_time)/60/60/24);
+                if($exp_time < 0) {
+                    $exp_time = 0;
+                }
+                return $exp_time;
+            }
+        }
+        return 999999;
+    }
+    
     public function getDisabledReason() {
         return $this->user_info['disabled_reason'];
     }
@@ -478,10 +516,10 @@ class authenticator {
             throw new \Exception("Не загружен профиль пользователя");
         }
         if (@$CONFIG['site']['pass_type'] == 'MD5') {
-            $sql_pass_hash = MD5($password);
+            $pass_hash = MD5($password);
             $sql_pass_type = 'MD5';
         } else if (@$CONFIG['site']['pass_type'] == 'SHA1') {
-            $sql_pass_hash = SHA1($password);
+            $pass_hash = SHA1($password);
             $sql_pass_type = 'SHA1';
         } else {
             if (CRYPT_SHA256 == 1) {
@@ -489,12 +527,13 @@ class authenticator {
                 for ($i = 0; $i < 16; $i++) {
                     $salt .= chr(rand(32, 127));
                 }
-                $sql_pass_hash = crypt($password, '$5$' . $salt . '$');
+                $pass_hash = crypt($password, '$5$' . $salt . '$');
             } else {
-                $sql_pass_hash = crypt($password);
+                $pass_hash = crypt($password);
             }
             $sql_pass_type = 'CRYPT';
         }
+        $sql_pass_hash = $db->real_escape_string($pass_hash);
         $db->query("UPDATE `users` SET `pass`='$sql_pass_hash', `pass_type`='$sql_pass_type', `pass_change`='', `pass_date_change`=NOW(), `pass_expired`=0
             WHERE `id`='{$this->user_info['id']}'");
         $this->addHistoryLine('chpwd');

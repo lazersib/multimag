@@ -36,6 +36,10 @@ try {
             $login_page = new \Modules\Site\login();
             $tmpl->addContent( $login_page->getConfirmForm($_SESSION['name']) ."<br><br>" );
         }
+        $exp_days = $auth->getDaysExpiredAfter();
+        if($exp_days<=7) {
+            $tmpl->msg("Ваш пароль устареет через $exp_days дней. Вам необходимо <a href='/user.php?mode=chpwd'>сменить</a> его.");
+        }
         
         $block = '';
         if (isAccess('doc_list', 'view')) {
