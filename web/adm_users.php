@@ -189,7 +189,7 @@ try {
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $id, '/adm_users.php?mode=view&amp;id=' . $id);
 		$tmpl->addBreadcrumb('История входов пользователя с ID ' . $id, '');
 		$tmpl->setTitle('История входов пользователя с ID ' . $id);
-		$tmpl->addContent("<h1 id='page-title'>'История входов пользователя с ID $id</h1>
+		$tmpl->addContent("<h1 id='page-title'>История входов пользователя с ID $id</h1>
 		<table class='list'>
 		<tr><th>Дата/время</th><th>Метод</th><th>IP адрес</th><th>user-agent</th></tr>");
 		$res = $db->query("SELECT `date`, `method`, `ip`, `useragent` FROM `users_login_history` WHERE `user_id`='$id' ORDER BY `date` DESC");

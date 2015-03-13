@@ -1316,7 +1316,8 @@ class doc_Realizaciya extends doc_Nulltype {
                     'sum_all'   => $snalogom,
                     'country_code' => $nxt['country_code'],
                     'country_name' => $nxt['country_name'],
-                    'ncd'       => $nxt['ntd']
+                    'ncd'       => $nxt['ntd'],
+                    'mass'      => $nxt['mass']
                 );
             }
         }

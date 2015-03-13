@@ -434,7 +434,7 @@ class cabinet extends \IModule {
             FROM `doc_list`
             LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`
             LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`
-            WHERE `doc_list`.`user`='{$_SESSION['uid']}' OR `doc_list`.`agent`='{$user_info['agent_id']}'
+            WHERE (`doc_list`.`user`='{$_SESSION['uid']}' OR `doc_list`.`agent`='{$user_info['agent_id']}') AND `doc_list`.`agent`!=0 
             ORDER BY `date` DESC");
         while ($nxt = $res->fetch_assoc()) {
             $date = date("Y-m-d", $nxt['date']);

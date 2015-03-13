@@ -99,12 +99,13 @@ try {
 	}
 
 	$block = '';
-        if (isAccess('generic_articles', 'view')) {
-                $block .= "<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>";
-        }
+        
 	$block .= "<li><a href='/user.php?mode=profile' accesskey='p'>Мой профиль (P)</a></li>";
 	$block .= "<li><a href='/user.php?mode=my_docs' accesskey='d'>Мои документы (D)</a></li>";
 	$block .= "<li><a href='/voting.php'>Голосования</a></li>";
+        if (isAccess('generic_articles', 'view')) {
+                $block .= "<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>";
+        }
         
         if( $block ) {
             $tmpl->addContent("<h2>Клиенту</h2>"
