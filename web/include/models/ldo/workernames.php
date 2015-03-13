@@ -18,18 +18,18 @@
 //
 namespace Models\LDO;
 
-/// Класс списка наименований пользователей
-class usernames extends \Models\ListDataObject {
+/// Класс списка наименований сотрудников
+class workernames extends \Models\ListDataObject {
 	
 	/// @brief Получить данные
 	public function getData() {
 		global $db;
-		$sql = "SELECT `id`, `name` FROM `users` ORDER by `id` ASC";
+		$sql = "SELECT `user_id`, `worker_real_name` FROM `users_worker_info` ORDER by `user_id` ASC";
 		$result = '';
 		$a = array();
 		$res = $db->query($sql);
 		while ($line = $res->fetch_assoc()) {
-			$a[$line['id']] = $line['name'];
+			$a[$line['user_id']] = $line['worker_real_name'];
 		}
 		return $a;
 	}

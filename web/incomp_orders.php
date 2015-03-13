@@ -50,7 +50,7 @@ need_auth();
 if (!isAccess('doc_list', 'view'))
 	throw new AccessException();
 
-$r_status_list = array('no'=>'-не задан-', 'in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
+$r_status_list = array('no'=>'-не задан-', 'new'=>'Новый', 'in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
@@ -70,12 +70,18 @@ $tmpl->addContent("
 </ul>");
 
 if ($mode == 'z') {
-
-	$sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
-		`doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `authors`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
-		`dop_delivery`.`value` AS `delivery`, `dop_delivery_date`.`value` AS `delivery_date`, `dop_status`.`value` AS `status`,
-		`dop_pay`.`value` AS `pay_type`, `doc_ishop`.`value` AS `ishop`, `delivery_types`.`name` AS `delivery_name`,
-		`delivery_regions`.`name` AS `region_name`, `r_list`.`id` AS `r_id`, `resp`.`name` AS `resp_name`
+    $resp = rcvint('resp');
+    if($resp) {
+        $where_add = " AND `doc_agent`.`responsible` = $resp";
+    }
+    else {
+        $where_add = '';
+    }
+    $sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
+            `doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `authors`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
+            `dop_delivery`.`value` AS `delivery`, `dop_delivery_date`.`value` AS `delivery_date`, `dop_status`.`value` AS `status`,
+            `dop_pay`.`value` AS `pay_type`, `doc_ishop`.`value` AS `ishop`, `delivery_types`.`name` AS `delivery_name`,
+            `delivery_regions`.`name` AS `region_name`, `r_list`.`id` AS `r_id`, `resp`.`name` AS `resp_name`
 	FROM `doc_list`
 	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
         LEFT JOIN `users` AS `resp` ON `resp`.`id`=`doc_agent`.`responsible`
@@ -90,128 +96,153 @@ if ($mode == 'z') {
 	LEFT JOIN `delivery_types` ON `delivery_types`.`id` = `dop_delivery`.`value`
 	LEFT JOIN `delivery_regions` ON `delivery_regions`.`id` = `dop_delivery_region`.`value`
 	LEFT JOIN `doc_list` AS `r_list` ON `r_list`.`p_doc`=`doc_list`.`id` AND `r_list`.`type`=2
-	WHERE `doc_list`.`type`=3 AND `doc_list`.`mark_del`=0
+	WHERE `doc_list`.`type`=3 AND `doc_list`.`mark_del`=0 $where_add
 	ORDER by `doc_list`.`date` ASC";
 
-	$res = $db->query($sql);
-	$row = $res->num_rows;
+    $res = $db->query($sql);
+    $row = $res->num_rows;
 
-	$i = 0;
-	$pr = $ras = 0;
-	$tpr = $tras = 0;
+    $i = 0;
+    $pr = $ras = 0;
+    $tpr = $tras = 0;
+    
+    $tmpl->addContent("<form action='/incomp_orders.php' method='get'>"
+        . "<input type='hidden' name='mode' value='z'>"
+        . "<fieldset><legend>Фильтр</legend>"
+        . "Ответственный: <select name='resp'>"
+        . "<option value='0'>--не задан--</option>");
+    $ldo = new \Models\LDO\workernames();
+    $w_list = $ldo->getData();
+    foreach($w_list as $id=>$name) {
+        $sel = $id==$resp?' selected':'';
+        $tmpl->addContent("<option value='$id'{$sel}>".html_out($name)."</option>");
+    }
+    $tmpl->addContent("</select>"
+        . "<button type='submit'>отфильтровать</button>"
+        . "</fieldset>"
+        . "</form>");
 
-
-	$tmpl->addContent("<table width='100%' cellspacing='1' class='list'>
+    $tmpl->addContent("<table width='100%' cellspacing='1' class='list'>
 	<tr>
 	<th width='70'>№</th><th width='50'>ID</th><th width='50'>Р-я</th><th>Статус</th><th>Агент</th><th>Отв.</th><th>Сумма</th><th>Расчёт</th><th>Оплачено</th>
 	<th>Доставка</th><th>Дата</th><th>С сайта</th><th>Автор</th></tr>");
-	
-	$new_lines = $inproc_lines = $other_lines = $ready_lines = '';
-	
-	while ($line = $res->fetch_assoc()) {
-		if ($line['status'] == 'ok' || $line['status'] == 'err')
-			continue;
-		if (!$line['status'])
-			$line['status'] = 'new';
-		$status = @$CONFIG['doc']['status_list'][$line['status']];
-                if($line['resp_name']=='anonymous') {
-                    $line['resp_name'] = '-';
-                }
-                $pay_style = '';
-		switch ($line['pay_type']) {
-                    case 'bank': 
-                        $pay_type = "безнал.";
-                        $pay_style = 'color:#00c;';
-                        break;
-                    case 'cash':
-                        $pay_type = "нал.";
-                        $pay_style = 'color:#d60;';
-                        break;
-                    case 'card':
-                        $pay_type = "карта";
-                        break;
-                    case 'card_o':
-                        $pay_type = "картой на сайте";
-                        $pay_style = 'color:#0c0;';
-                        break;
-                    case 'card_t':
-                        $pay_type = "картой при получении";
-                        $pay_style = 'color:#c00;';
-                        break;
-                    case 'wmr':
-                        $pay_type = "WMR";
-                        break;
-                    case null:
-                        $pay_type = '-';
-                        break;
-                    default:
-                        $pay_type = "не определён ({$line['pay_type']})";
-                }
 
-                $date = date('Y-m-d', $line['date']);
-		if($line['delivery_name']===null) {
-			$line['delivery_name'] = '-';
-		}
-		else if($line['region_name'])
-			$line['delivery_name'].= ' ('.html_out($line['region_name']).')';
+    $new_lines = $inproc_lines = $other_lines = $ready_lines = '';
 
-		$ishop = $line['ishop'] ? "<b style='color:#0c0'>Да</b>" : 'Нет';
-		$link = "/doc.php?mode=body&amp;doc=" . $line['id'];
+    while ($line = $res->fetch_assoc()) {
+        if ($line['status'] == 'ok' || $line['status'] == 'err') {
+            continue;
+        }
+        if (!$line['status']) {
+            $line['status'] = 'new';
+        }
+        $status = @$CONFIG['doc']['status_list'][$line['status']];
+        if ($line['resp_name'] == 'anonymous') {
+            $line['resp_name'] = '-';
+        }
+        $pay_style = '';
+        switch ($line['pay_type']) {
+            case 'bank':
+                $pay_type = "безнал.";
+                $pay_style = 'color:#00c;';
+                break;
+            case 'cash':
+                $pay_type = "нал.";
+                $pay_style = 'color:#d60;';
+                break;
+            case 'card':
+                $pay_type = "карта";
+                break;
+            case 'card_o':
+                $pay_type = "картой на сайте";
+                $pay_style = 'color:#0c0;';
+                break;
+            case 'card_t':
+                $pay_type = "картой при получении";
+                $pay_style = 'color:#c00;';
+                break;
+            case 'wmr':
+                $pay_type = "WMR";
+                break;
+            case null:
+                $pay_type = '-';
+                break;
+            default:
+                $pay_type = "не определён ({$line['pay_type']})";
+        }
 
-		$status_style = '';
-		switch($line['status']) {
-			case 'new':
-				$status_style = " style='color:#f00'";
-				break;
-			case 'inproc':
-				$status_style = " style='color:#880'";
-				break;
-			case 'ready':
-				$status_style = " style='color:#0c0'";
-				break;
-		}
+        $date = date('Y-m-d', $line['date']);
+        if ($line['delivery_name'] === null) {
+            $line['delivery_name'] = '-';
+        } else if ($line['region_name']) {
+            $line['delivery_name'].= ' (' . html_out($line['region_name']) . ')';
+        }
 
-		if ($line['r_id'])
-			$r_info = "<a href='/doc.php?mode=body&amp;doc={$line['r_id']}'>{$line['r_id']}</a>";
-		else
-			$r_info = '--нет--';
+        $ishop = $line['ishop'] ? "<b style='color:#0c0'>Да</b>" : 'Нет';
+        $link = "/doc.php?mode=body&amp;doc=" . $line['id'];
 
-		$pay_sum = getPaySum($line['id']);
-		if(!$pay_sum) {
-			$pay_sum = '-';
-                } else {
-                    $pay_sum = number_format($pay_sum, 2, ".", " ");
-                }
-                
-                $line['sum'] = number_format($line['sum'], 2, ".", " ");
-                
-		$str = "<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
-		<td>$r_info</td><td{$status_style}>$status</td><td>{$line['agent_name']}</td><td>{$line['resp_name']}</td><td align='right'>{$line['sum']}</td>"
-                . "<td style='$pay_style'>$pay_type</td><td>$pay_sum</td><td>{$line['delivery_name']}</td>
-		<td>$date</td><td>$ishop</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
-		</tr>";
-		
-		switch($line['status']) {
-			case 'new':
-				$new_lines .= $str;
-				break;
-			case 'inproc':
-				$inproc_lines .= $str;
-				break;
-			case 'ready':
-				$ready_lines .= $str;
-				break;
-			default:
-				$other_lines .= '';
-		}
-	}
-	$tmpl->addContent($new_lines.$inproc_lines.$other_lines.$ready_lines."</table>");
-	$tmpl->msg("В списке отображаются заявки, не отмеченные на удаления и с любым статусом, кроме &quot;отгружен&quot; и &quot;ошибочный&quot;");
+        $status_style = '';
+        switch ($line['status']) {
+            case 'new':
+                $status_style = " style='color:#f00'";
+                break;
+            case 'inproc':
+                $status_style = " style='color:#880'";
+                break;
+            case 'ready':
+                $status_style = " style='color:#0c0'";
+                break;
+        }
+
+        if ($line['r_id']) {
+            $r_info = "<a href='/doc.php?mode=body&amp;doc={$line['r_id']}'>{$line['r_id']}</a>";
+        } else {
+            $r_info = '--нет--';
+        }
+
+        $pay_sum = getPaySum($line['id']);
+        if (!$pay_sum) {
+            $pay_sum = '-';
+        } else {
+            $pay_sum = number_format($pay_sum, 2, ".", " ");
+        }
+
+        $line['sum'] = number_format($line['sum'], 2, ".", " ");
+
+        $str = "<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
+            <td>$r_info</td><td{$status_style}>$status</td><td>{$line['agent_name']}</td><td>{$line['resp_name']}</td><td align='right'>{$line['sum']}</td>
+            <td style='$pay_style'>$pay_type</td><td>$pay_sum</td><td>{$line['delivery_name']}</td>
+            <td>$date</td><td>$ishop</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
+            </tr>";
+
+        switch ($line['status']) {
+            case 'new':
+                $new_lines .= $str;
+                break;
+            case 'inproc':
+                $inproc_lines .= $str;
+                break;
+            case 'ready':
+                $ready_lines .= $str;
+                break;
+            default:
+                $other_lines .= $str;
+        }
+    }
+    $tmpl->addContent($new_lines . $inproc_lines . $other_lines . $ready_lines . "</table>");
+    $tmpl->msg("В списке отображаются заявки, не отмеченные на удаления и с любым статусом, кроме &quot;отгружен&quot; и &quot;ошибочный&quot;");
 }
 else if ($mode == 'c') {
-	$sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
-		`doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
-		`dop_status`.`value` AS `status`, `doc_list`.`sklad`, `users_worker_info`.`worker_real_name` AS `kladovshik`
+    $author = rcvint('author');
+    if($author) {
+        $where_add = " AND `doc_list`.`user` = $author";
+    }
+    else {
+        $where_add = '';
+    }
+    $sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
+            `doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
+            `dop_status`.`value` AS `status`, `doc_list`.`sklad`, `users_worker_info`.`worker_real_name` AS `kladovshik`
 	FROM `doc_list`
 	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 	LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
@@ -219,49 +250,90 @@ else if ($mode == 'c') {
 	LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
         LEFT JOIN `doc_dopdata` AS `dop_klad` ON `dop_klad`.`doc`=`doc_list`.`id` AND `dop_klad`.`param`='kladovshik'
         LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`dop_klad`.`value`
-	WHERE (`doc_list`.`type`=2 OR `doc_list`.`type`=20) AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0
+	WHERE (`doc_list`.`type`=2 OR `doc_list`.`type`=20) AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 $where_add
 	ORDER by `doc_list`.`date` ASC";
 
-	$res = $db->query($sql);
-
-	$tmpl->addContent("<table width='100%' class='list'><tr>
+    $res = $db->query($sql);
+    $tmpl->addContent("<form action='/incomp_orders.php' method='get'>"
+            . "<input type='hidden' name='mode' value='c'>"
+            . "<fieldset><legend>Фильтр</legend>"
+            . "Автор: <select name='author'>"
+            . "<option value='0'>--не задан--</option>");
+        $ldo = new \Models\LDO\workernames();
+        $w_list = $ldo->getData();
+        foreach($w_list as $id=>$name) {
+            $sel = $id==$author?' selected':'';
+            $tmpl->addContent("<option value='$id'{$sel}>".html_out($name)."</option>");
+        }
+        $tmpl->addContent("</select>"
+            . "<button type='submit'>отфильтровать</button>"
+            . "</fieldset>"
+            . "</form>");
+    $tmpl->addContent("<table width='100%' class='list'><tr>
 <th width='70'>№</th><th width='55'>ID</th><th width='55'>Счёт</th><th width='100'>Статус</th><th>Агент</th><th width='90'>Сумма</th><th width='150'>Дата</th>
 <th>Кладовщик</th><th>Автор</th></tr>");
-
-	while ($line = $res->fetch_assoc()) {
-		if($line['status']=='ok' || $line['status']=='err')
-			continue;
-		if($line['status']=='')
-			$line['status']='no';
-		$in_store = 1;
-		$pos_res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`
+    $new_lines = $inproc_lines = $other_lines = $ready_lines = '';
+    while ($line = $res->fetch_assoc()) {
+        if ($line['status'] == 'ok' || $line['status'] == 'err') {
+            continue;
+        }
+        if ($line['status'] == '') {
+            $line['status'] = 'no';
+        }
+        $in_store = 1;
+        $pos_res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`
 			FROM `doc_list_pos`
 			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$line['sklad']}'
 			WHERE `doc_list_pos`.`doc`='{$line['id']}'");
-		while($pos_info = $pos_res->fetch_assoc()) {
-			if($pos_info['sklad_cnt']<$pos_info['cnt'])
-				$in_store = 0;
-		}
-		
-		$line_style ='';
-		if($in_store) {
-			$line_style = " style='background-color:#bfb'";
-		}
-		$status = $r_status_list[$line['status']];
-		$date = date('Y-m-d', $line['date']);
-		$link = "/doc.php?mode=body&amp;doc=" . $line['id'];
-		if ($line['p_doc'])
-			$z = "<a href='/doc.php?mode=body&amp;doc={$line['p_doc']}'>{$line['p_doc']}</a>";
-		else
-			$z = '--нет--';
-		$tmpl->addContent("<tr{$line_style}><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
-	<td>$z</td><td>$status</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
-	<td>$date</td><td>{$line['kladovshik']}</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
-	</tr>");
-	}
-	$tmpl->addContent("</table>");
-	$tmpl->msg("В списке отображаются непроведённые реализации, не отмеченные на удаления и с любым статусом, кроме &quot;готов к отгрузке&quot; и &quot;ошибочный&quot;");
+        while ($pos_info = $pos_res->fetch_assoc()) {
+            if ($pos_info['sklad_cnt'] < $pos_info['cnt']) {
+                $in_store = 0;
+            }
+        }
+        $status_style = '';
+        switch ($line['status']) {
+            case 'no':
+                $status_style = " style='color:#f00'";
+                break;
+            case 'in_process':
+                $status_style = " style='color:#880'";
+                break;
+            case 'ready':
+                $status_style = " style='color:#0c0'";
+                break;
+        }
+        $line_style = '';
+        if ($in_store) {
+            $line_style = " style='background-color:#bfb'";
+        }
+        $status = $r_status_list[$line['status']];
+        $date = date('Y-m-d', $line['date']);
+        $link = "/doc.php?mode=body&amp;doc=" . $line['id'];
+        if ($line['p_doc'])
+            $z = "<a href='/doc.php?mode=body&amp;doc={$line['p_doc']}'>{$line['p_doc']}</a>";
+        else
+            $z = '--нет--';
+        $str = "<tr{$line_style}><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
+            <td>$z</td><td{$status_style}>$status</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
+            <td>$date</td><td>{$line['kladovshik']}</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
+            </tr>";
+        switch ($line['status']) {
+            case 'no':
+                $new_lines .= $str;
+                break;
+            case 'in_process':
+                $inproc_lines .= $str;
+                break;
+            case 'ready':
+                $ready_lines .= $str;
+                break;
+            default:
+                $other_lines .= $str;
+        }
+    }
+    $tmpl->addContent($new_lines . $inproc_lines . $other_lines . $ready_lines . "</table>");
+    $tmpl->msg("В списке отображаются непроведённые реализации, не отмеченные на удаления и с любым статусом, кроме &quot;готов к отгрузке&quot; и &quot;ошибочный&quot;");
 }
 else if ($mode == 'r') {
 	$sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`, `doc_agent`.`name` AS `agent_name`,

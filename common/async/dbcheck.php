@@ -89,17 +89,21 @@ class DbCheckWorker extends AsyncWorker {
                 
 		$res = $db->query("SELECT `id` FROM `doc_base` WHERE `doc_base`.`pos_type`=0");
 		while ($pos_data = $res->fetch_row()) {
-			$doc_res = $db->query("SELECT `doc_list`.`date`
+			$doc_res = $db->query("SELECT `doc_list`.`date`, `doc_dopdata`.`value`
 			FROM `doc_list_pos`
-			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`!=0
+			INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`='1' OR `doc_list`.`type`='17') AND `doc_list`.`ok`!=0
+                        LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'
 			WHERE `doc_list_pos`.`tovar`=$pos_data[0]
-			ORDER BY `doc_list`.`date`
-			LIMIT 1");
+			ORDER BY `doc_list`.`date`");
 			if ($doc_res->num_rows) {
-				$doc_info = $doc_res->fetch_row();
+                            while($doc_info = $doc_res->fetch_row()) {
+                                if($doc_info[1]) {
+                                    continue;
+                                }
 				$buy_time = date("Y-m-d H:i:s", $doc_info[0]);
 				//echo "$buy_time\n";
-                                $db->query("INSERT INTO `buytime_tmp` VALUES ({$pos_data[0]}, '$buy_time')");
+                            }
+                            $db->query("INSERT INTO `buytime_tmp` VALUES ({$pos_data[0]}, '$buy_time')");
 			}
 		}
                 $db->query("UPDATE `doc_base`, `buytime_tmp` SET `doc_base`.`buy_time`=`buytime_tmp`.`time` WHERE `doc_base`.`id`=`buytime_tmp`.`id`");

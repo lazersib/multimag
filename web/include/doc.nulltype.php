@@ -895,7 +895,7 @@ class doc_Nulltype
 		{
 			$tmpl->addContent("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
 			<center>
-			<a href='/docj.php' style='color: #0b0'>Нет</a> |
+			<a href='/docj_new.php' style='color: #0b0'>Нет</a> |
 			<a href='/doc.php?mode=forcecancel&amp;opt=yes&amp;doc={$this->doc}' style='color: #f00'>Да</a>
 			</center>");
 		}
