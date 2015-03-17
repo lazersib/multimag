@@ -294,11 +294,10 @@ function doc_log($motion, $desc, $object='', $object_id=0) {
 /// @param $name
 /// @param $vendor
 function composePosNameStr($id = 0, $vc = '', $name = '', $vendor = '') {
-    global $CONFIG;
-    if(@$CONFIG['poseditor']['vc'] && $vc) {
+    if($vc) {
         $name = $vc . ' ' . $name;
     }
-    if(!@$CONFIG['doc']['no_print_vendor'] && $vendor) {
+    if($vendor) {
         $name .= ' / '.$vendor;
     }
     $name .= '(ID:'.$id.')';

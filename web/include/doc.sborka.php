@@ -69,23 +69,23 @@ class doc_Sborka extends doc_Nulltype {
                 if (!$doc_info['dnc']) {
                     if ($line['cnt'] > $line['sklad_cnt'])  {
                         $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
-                        $fail_text .= "Мало товара '$pos_name' -  есть:{$line['sklad_cnt']}, нужно:{$line['cnt']}. \n";
+                        $fail_text .= " - Мало товара '$pos_name' -  есть:{$line['sklad_cnt']}, нужно:{$line['cnt']}. \n";
                         continue;
                     }
-                }
-                if (!$doc_info['dnc'] && (!$silent)) {
-                    $budet = getStoreCntOnDate($line['tovar'], $doc_info['sklad']);
-                    if ($budet < 0)  {
-                        $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
-                        $t = $budet + $line['cnt'];
-                        $fail_text .= "Будет мало товара '$pos_name' - есть:$t, нужно:{$line['cnt']}. \n";
-                        continue;
+                    if (!$silent) {
+                        $budet = getStoreCntOnDate($line['tovar'], $doc_info['sklad']);
+                        if ($budet < 0)  {
+                            $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
+                            $t = $budet + $line['cnt'];
+                            $fail_text .= " - Будет мало товара '$pos_name' - есть:$t, нужно:{$line['cnt']}. \n";
+                            continue;
+                        }
                     }
                 }
             }
         }
         if($fail_text) {
-            throw new Exception("Ошибка номенклатуры: \n".$fail_text);
+            throw new Exception("Ошибка в номенклатуре: \n".$fail_text);
         }
         if ($silent) {
             return;

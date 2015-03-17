@@ -486,8 +486,8 @@ class torg12 extends \doc\printforms\iPrintForm {
             $list_sum += $line['sum_all'];
             $sumnaloga += $line['vat_s'];
             $list_sumnaloga += $line['vat_s'];
-            $summass += $line['mass'];
-            $list_summass += $line['mass'];
+            $summass += $line['mass']*$line['cnt'];
+            $list_summass += $line['mass']*$line['cnt'];
             $cnt += $line['cnt'];
             $list_cnt += $line['cnt'];
 

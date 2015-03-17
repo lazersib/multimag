@@ -1756,8 +1756,7 @@ class doc_Nulltype
 	}
 	
 	/// Вычисление, можно ли отменить кассовый документ
-	protected function checkKassMinus()
-	{
+	protected function checkKassMinus() {
 		global $db;
 		$sum = $i = 0;
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`sum`, `doc_list`.`kassa` FROM `doc_list`

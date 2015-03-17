@@ -274,12 +274,12 @@ class upd extends \doc\printforms\iPrintForm {
         $this->pdf->SetY($y + 18);
         $this->pdf->SetFillColor(255, 255, 255);
         $i = 1;
-        $sumbeznaloga = $sumnaloga = $sum = 0;
+        $sumbeznaloga = $sumnaloga = $sum = $summass = 0;
         foreach ($nomenclature as $line ) {
             $sumbeznaloga += $line['sum'];
             $sum += $line['sum_all'];
             $sumnaloga += $line['vat_s'];
-            
+            $summass += $line['mass']*$line['cnt'];
             $row = array(
                 $i++,
                 $line['code'],
@@ -415,7 +415,7 @@ class upd extends \doc\printforms\iPrintForm {
         $this->pdf->Ln(1);
         $this->pdf->SetFont('', '', 7);
         $this->pdf->CellIconv(50, $step, 'Данные о транспортировке и грузе', 0, 0, 'L', 0);
-        $this->pdf->CellIconv(220, $step, '', 'B', 0, 'C', 0);
+        $this->pdf->CellIconv(220, $step, 'Масса: '.sprintf("%0.3f", $summass).' кг.', 'B', 0, 'L', 0);
         $this->pdf->CellIconv(0, $step, '[9]', 0, 1, 'R', 0);
         $this->pdf->SetFont('', '', 5);
         $this->pdf->CellIconv(80, $microstep, '', 0, 0, 'L', 0);

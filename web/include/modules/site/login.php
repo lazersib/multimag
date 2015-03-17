@@ -304,16 +304,16 @@ class login extends \IModule {
         <fieldset><legend>Восстановить доступ при помощи</legend>";
         if($email) {
             $m_email = html_out($this->maskEmail($email));
-            $ret .= "<label><input type='radio' name='method' value='email'>Электронной почты $m_email</label><br>";
+            $ret .= "<label><input type='radio' name='method' value='email'> Сообщения на email $m_email</label><br>";
         }
         if($phone) {
             $m_phone = html_out( $this->maskPhone($phone) );
-            $ret .= "<label><input type='radio' name='method' value='sms'>SMS на мобильный телефон $m_phone</label><br>";
+            $ret .= "<label><input type='radio' name='method' value='sms'> SMS на мобильный телефон $m_phone</label><br>";
         }
         if(is_array($openid_list)) {
             foreach($openid_list as $oid) {
                 $oid = html_out($oid);
-                $ret .= "<label><input type='radio' name='method' value='$oid'>OpenID аккаунта $oid</label><br>";
+                $ret .= "<label><input type='radio' name='method' value='$oid'> OpenID аккаунта $oid</label><br>";
             }
         }
         $ret .= "</fieldset><br><button type='submit'>Далее</button></form>";
@@ -454,7 +454,7 @@ class login extends \IModule {
         $dfg = explode('.', $fg[1]);
         $len = strlen($dfg[0]);
         if($len < 5) {
-            $email = $dfg[0][0];
+            $email .= $dfg[0][0];
             for($i=1;$i<($len-1);$i++) {
                 $email .= '*';
             }
@@ -778,10 +778,10 @@ class login extends \IModule {
     public function tryPassRecoveryStep1() {
         global $tmpl, $CONFIG, $db;
         $login = request('login');            
-        if (@$_REQUEST['img'] == '') {
+        if (@$_REQUEST['captcha'] == '') {
             $tmpl->msg("Код с изображения не введён");
             $tmpl->addContent( $this->getPassRecoveryForm() );
-        } elseif (strtoupper($_SESSION['captcha_keystring']) != strtoupper($_REQUEST['captcha'])) {
+        } elseif (strtoupper(@$_SESSION['captcha_keystring']) != strtoupper($_REQUEST['captcha'])) {
             $tmpl->msg("Код с изображения введён неверно");
             $tmpl->addContent( $this->getPassRecoveryForm() );
         } else {

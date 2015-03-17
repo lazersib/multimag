@@ -112,13 +112,12 @@ class doc_Rko extends doc_Nulltype {
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }
-
-        $budet = $this->checkKassMinus();
-        if ($budet < 0) {
-            throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
-        }
-
         if (!$silent) {
+            $budet = $this->checkKassMinus();
+            if ($budet < 0) {
+               throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
+            }
+        
             $db->update('doc_list', $this->doc, 'ok', time());
             $this->sentZEvent('apply');
         }

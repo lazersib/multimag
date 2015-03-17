@@ -138,7 +138,7 @@ class doc_Peremeshenie extends doc_Nulltype
             }
             if (!$doc_info['dnc'] && ($nxt[1] > $nxt[2])) {
                 $pos_name = composePosNameStr($nxt[0], $nxt[6], $nxt[3], $nxt[4]);
-                $fail_text .= "Мало товара '$pos_name' -  есть:{$nxt[2]}, нужно:{$nxt[1]}. \n";
+                $fail_text .= " - Мало товара '$pos_name' -  есть:{$nxt[2]}, нужно:{$nxt[1]}. \n";
                 continue;
             }
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_info['sklad']}'");
@@ -153,14 +153,14 @@ class doc_Peremeshenie extends doc_Nulltype
                 if ($budet < 0) {
                     $pos_name = composePosNameStr($nxt[0], $nxt[6], $nxt[3], $nxt[4]);
                     $t = $budet + $nxt[1];
-                    $fail_text .= "Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
+                    $fail_text .= " - Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
                     continue;
                 }
             }
         }
         
         if($fail_text) {
-            throw new Exception("Ошибка номенклатуры: \n".$fail_text);
+            throw new Exception("Ошибка в номенклатуре: \n".$fail_text);
         }
         
         $res->free();

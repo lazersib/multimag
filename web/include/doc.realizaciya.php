@@ -226,7 +226,7 @@ class doc_Realizaciya extends doc_Nulltype {
         }
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
-                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`, `doc_base`.`vc`
+                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`
             FROM `doc_list_pos`
             LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
             LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_params['sklad']}'
@@ -236,8 +236,8 @@ class doc_Realizaciya extends doc_Nulltype {
         while ($nxt = $res->fetch_row()) {
             if (!$doc_params['dnc']) {
                 if ($nxt[1] > $nxt[2]) {
-                    $pos_name = composePosNameStr($nxt[0], $nxt[9], $nxt[3], $nxt[4]);
-                    $fail_text .= "Мало товара '$pos_name' -  есть:{$nxt[2]}, нужно:{$nxt[1]}. \n";
+                    $pos_name = composePosNameStr($nxt[0], $nxt[7], $nxt[3], $nxt[4]);
+                    $fail_text .= " - Мало товара '$pos_name' -  есть:{$nxt[2]}, нужно:{$nxt[1]}. \n";
                     continue;
                 }
             }
@@ -247,9 +247,9 @@ class doc_Realizaciya extends doc_Nulltype {
             if (!$doc_params['dnc'] && (!$silent)) {
                 $budet = getStoreCntOnDate($nxt[0], $doc_params['sklad'], $doc_params['date']);
                 if ($budet < 0) {
-                    $pos_name = composePosNameStr($nxt[0], $nxt[9], $nxt[3], $nxt[4]);
+                    $pos_name = composePosNameStr($nxt[0], $nxt[7], $nxt[3], $nxt[4]);
                     $t = $budet + $nxt[1];
-                    $fail_text .= "Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
+                    $fail_text .= " - Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
                     continue;
                 }
             }
@@ -258,8 +258,8 @@ class doc_Realizaciya extends doc_Nulltype {
                 $r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
                 list($sn_cnt) = $r->fetch_row();
                 if ($sn_cnt != $nxt[1]) {
-                    $pos_name = composePosNameStr($nxt[0], $nxt[9], $nxt[3], $nxt[4]);
-                    $fail_text .= "Мало серийных номеров товара '$pos_name' - есть:$sn_cnt, нужно:{$nxt[1]}. \n";
+                    $pos_name = composePosNameStr($nxt[0], $nxt[7], $nxt[3], $nxt[4]);
+                    $fail_text .= " - Мало серийных номеров товара '$pos_name' - есть:$sn_cnt, нужно:{$nxt[1]}. \n";
                     continue;
                 }
             }
@@ -267,7 +267,7 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         
         if($fail_text) {
-            throw new Exception("Ошибка номенклатуры: \n".$fail_text);
+            throw new Exception("Ошибка в номенклатуре: \n".$fail_text);
         }
         
         if ($silent) {

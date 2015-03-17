@@ -525,7 +525,7 @@ class authenticator {
             if (CRYPT_SHA256 == 1) {
                 $salt = '';
                 for ($i = 0; $i < 16; $i++) {
-                    $salt .= chr(rand(32, 127));
+                    $salt .= chr(rand(48, 122));
                 }
                 $pass_hash = crypt($password, '$5$' . $salt . '$');
             } else {

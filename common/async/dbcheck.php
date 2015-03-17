@@ -168,7 +168,7 @@ class DbCheckWorker extends AsyncWorker {
 			if ($err = $document->Apply($nxt[0], 1)) {
 				$dt = date("d.m.Y H:i:s", $nxt[3]);
 				$db->query("UPDATE `doc_list` SET `err_flag`='1' WHERE `id`='$nxt[0]'");
-				$text = "$nxt[0](" . $document->getViewName() . " N $nxt[2] от $dt): $err ВЕРОЯТНО, ЭТО КРИТИЧЕСКАЯ ОШИБКА!\n";
+				$text = "$nxt[0](" . $document->getViewName() . " N $nxt[2] от $dt): $err\n";
 				echo $text;
 				$this->mail_text.=$text;
 				$i++;
