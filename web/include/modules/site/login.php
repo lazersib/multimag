@@ -461,7 +461,7 @@ class login extends \IModule {
             $email .= $dfg[0][$len-1];
         }
         else {
-            $email = $dfg[0][0].$dfg[0][1];
+            $email .= $dfg[0][0].$dfg[0][1];
             for($i=2;$i<($len-2);$i++) {
                 $email .= '*';
             }
