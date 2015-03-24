@@ -363,7 +363,7 @@ CREATE TABLE `db_version` (
 
 LOCK TABLES `db_version` WRITE;
 /*!40000 ALTER TABLE `db_version` DISABLE KEYS */;
-INSERT INTO `db_version` VALUES (717);
+INSERT INTO `db_version` VALUES (750);
 /*!40000 ALTER TABLE `db_version` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -624,6 +624,7 @@ CREATE TABLE `doc_base` (
   `bulkcnt` int(11) NOT NULL COMMENT 'Количество оптом',
   `analog_group` varchar(32) NOT NULL,
   `mass` double NOT NULL,
+  `nds` tinyint(4) DEFAULT NULL COMMENT 'Ставка НДС',
   UNIQUE KEY `id` (`id`),
   KEY `group` (`group`),
   KEY `name` (`name`),
@@ -649,7 +650,7 @@ CREATE TABLE `doc_base` (
 
 LOCK TABLES `doc_base` WRITE;
 /*!40000 ALTER TABLE `doc_base` DISABLE KEYS */;
-INSERT INTO `doc_base` VALUES (2,1,'Товар','',NULL,'',0.00,0,'',0.00,'0000-00-00 00:00:00',0,0,0,1,0,0,'','','','2015-03-23 16:22:36','1970-01-01 00:00:00',0,0,0,'',0),(3,2,'Услуга','',NULL,'',0.00,0,'',0.00,'0000-00-00 00:00:00',0,0,0,1,0,0,'','','','2015-03-23 16:22:52','1970-01-01 00:00:00',0,0,0,'',0);
+INSERT INTO `doc_base` VALUES (2,1,'Товар','',NULL,'',0.00,0,'',0.00,'0000-00-00 00:00:00',0,0,0,1,0,0,'','','','2015-03-23 16:22:36','1970-01-01 00:00:00',0,0,0,'',0,NULL),(3,2,'Услуга','',NULL,'',0.00,0,'',0.00,'0000-00-00 00:00:00',0,0,0,1,0,0,'','','','2015-03-23 16:22:52','1970-01-01 00:00:00',0,0,0,'',0,NULL);
 /*!40000 ALTER TABLE `doc_base` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -925,7 +926,7 @@ CREATE TABLE `doc_base_params` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `param` varchar(64) NOT NULL,
   `type` varchar(8) NOT NULL,
-  `pgroup_id` int(11) NOT NULL,
+  `pgroup_id` int(11) DEFAULT NULL,
   `system` tinyint(4) NOT NULL COMMENT 'Ð¡Ð»ÑƒÐ¶ÐµÐ±Ð½Ñ‹Ð¹ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€. ÐÐ¸Ð³Ð´Ðµ Ð½Ðµ Ð¾Ñ‚Ð¾Ð±Ñ€Ð°Ð¶Ð°ÐµÑ‚ÑÑ.',
   `ym_assign` varchar(128) NOT NULL,
   UNIQUE KEY `id` (`id`),
@@ -1285,7 +1286,7 @@ CREATE TABLE `doc_kassa` (
   `bik` varchar(20) NOT NULL,
   `rs` varchar(30) NOT NULL,
   `ks` varchar(30) NOT NULL,
-  `firm_id` int(11) NOT NULL,
+  `firm_id` int(11) DEFAULT NULL,
   UNIQUE KEY `ids` (`ids`,`num`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1296,7 +1297,7 @@ CREATE TABLE `doc_kassa` (
 
 LOCK TABLES `doc_kassa` WRITE;
 /*!40000 ALTER TABLE `doc_kassa` DISABLE KEYS */;
-INSERT INTO `doc_kassa` VALUES ('bank',1,'OАО НОВОСИБИРСКИЙ ФИЛИАЛ \"БАНКА\"',0.00,'','','',0),('kassa',1,'Основная касса',0.00,'','','',0);
+INSERT INTO `doc_kassa` VALUES ('bank',1,'OАО НОВОСИБИРСКИЙ ФИЛИАЛ \"БАНКА\"',0.00,'','','',NULL),('kassa',1,'Основная касса',0.00,'','','',NULL);
 /*!40000 ALTER TABLE `doc_kassa` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1470,7 +1471,9 @@ CREATE TABLE `doc_sklady` (
   KEY `id` (`id`),
   KEY `name` (`name`),
   KEY `firm_id` (`firm_id`),
-  CONSTRAINT `doc_sklady_ibfk_1` FOREIGN KEY (`firm_id`) REFERENCES `doc_vars` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `doc_sklady_ibfk_3` FOREIGN KEY (`firm_id`) REFERENCES `doc_vars` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `doc_sklady_ibfk_1` FOREIGN KEY (`firm_id`) REFERENCES `doc_vars` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `doc_sklady_ibfk_2` FOREIGN KEY (`firm_id`) REFERENCES `doc_vars` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1538,6 +1541,8 @@ CREATE TABLE `doc_vars` (
   `param_nds` double NOT NULL DEFAULT '0',
   `firm_skin` varchar(16) NOT NULL,
   `firm_store_lock` smallint(6) NOT NULL COMMENT 'Списание только со своих складов',
+  `firm_bank_lock` smallint(6) NOT NULL COMMENT 'Работать только со своими банками',
+  `firm_till_lock` smallint(6) NOT NULL COMMENT 'Работать только со своими кассами',
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1548,7 +1553,7 @@ CREATE TABLE `doc_vars` (
 
 LOCK TABLES `doc_vars` WRITE;
 /*!40000 ALTER TABLE `doc_vars` DISABLE KEYS */;
-INSERT INTO `doc_vars` VALUES (5,'ООО РиК','Иванов И.И.','Иванов И.И.','Иванов И.И.','Иванов И.И.','Кладовщик','Иванов И.И.',1,'','','','','','г. Старый, ул Новая 1ы','','','+833254587','',0,'',0);
+INSERT INTO `doc_vars` VALUES (5,'ООО РиК','Иванов И.И.','Иванов И.И.','Иванов И.И.','Иванов И.И.','Кладовщик','Иванов И.И.',1,'','','','','','г. Старый, ул Новая 1ы','','','+833254587','',0,'',0,0,0);
 /*!40000 ALTER TABLE `doc_vars` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2734,7 +2739,7 @@ CREATE TABLE `users_objects` (
   `actions` varchar(128) NOT NULL,
   UNIQUE KEY `id` (`id`),
   KEY `object` (`object`)
-) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=89 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2743,7 +2748,7 @@ CREATE TABLE `users_objects` (
 
 LOCK TABLES `users_objects` WRITE;
 /*!40000 ALTER TABLE `users_objects` DISABLE KEYS */;
-INSERT INTO `users_objects` VALUES (1,'doc','Документы',''),(2,'doc_list','Журнал документов','view,delete'),(3,'doc_postuplenie','Поступление','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(4,'generic_articles','Доступ к статьям','view,edit,create,delete'),(5,'sys','Системные объекты',''),(6,'generic','Общие объекты',''),(7,'sys_acl','Управление привилегиями','view,edit,delete'),(8,'doc_realizaciya','Реализация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(9,'doc_zayavka','Документ заявки','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(10,'doc_kompredl','Коммерческое предложение','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(11,'doc_dogovor','Договор','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(12,'doc_doveren','Доверенность','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(13,'doc_pbank','Приход средств в банк','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(14,'doc_peremeshenie','Перемещение товара','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(15,'doc_perkas','Перемещение средств в кассе','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(16,'doc_predlojenie','Предложение поставщика','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(17,'doc_rbank','Расход средств из банка','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(18,'doc_realiz_op','Оперативная реализация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(19,'doc_rko','Расходный кассовый ордер','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(20,'doc_sborka','Сборка изделия','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(21,'doc_specific','Спецификация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(22,'doc_v_puti','Товар в пути','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(23,'list','Списки',''),(24,'list_agent','Агенты','create,edit,view'),(25,'list_sklad','Склад','create,edit,view'),(26,'list_price_an','Анализатор прайсов','create,edit,view,delete'),(27,'list_agent_dov','Доверенные лица','create,edit,view'),(28,'report','Отчёты',''),(29,'report_cash','Кассовый отчёт','view'),(30,'generic_news','Новости','view,create,edit,delete'),(31,'doc_service','Служебные функции','view,edit,delete'),(32,'doc_scripts','Сценарии и операции','view,exec'),(33,'log','Системные журналы',''),(34,'log_browser','Статистирка броузеров','view'),(35,'log_error','Журнал ошибок','view'),(36,'log_access','Журнал посещений','view'),(37,'sys_async_task','Ассинхронные задачи','view,exec'),(38,'sys_ip-blacklist','Чёрный список IP адресов','view,create,delete'),(39,'sys_ip-log','Журнал обращений к ip адресам','view'),(40,'generic_price_an','Анализатор прайсов','view'),(41,'generic_galery','Фотогалерея','view,create,edit,delete'),(42,'doc_pko','Приходный кассовый ордер','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(43,'doc_reports','Доступ к отчётам','view,exec'),(44,'generic_tickets','Планировщик задач','view,edit,create,redirect'),(45,'sys_ps-stat','Статистика переходов с поисковиков','view'),(48,'report_dolgi','Отчёт по задолженностям','view'),(49,'report_pos_nosells','Отчёт по номенклатуре без продаж','view'),(50,'report_store','Остатки на складе','view'),(51,'report_payments','Отчёт по проплатам','view'),(52,'report_agent_nosells','Отчёт по агентам без продаж','view'),(53,'report_agent','Отчёт по агенту','view'),(54,'report_ostatkinadatu','Отчёт по остаткам на складе на выбранную дату','view'),(55,'report_cons_finance','Сводный финансовый','view'),(56,'report_images','Отчёт по изображениям складских наименований','view'),(57,'report_sales','Отчёт по движению товара','view'),(58,'report_pricetags','Ценники','view'),(59,'report_komplekt_zp','Отчёт по комплектующим с зарплатой','view'),(60,'report_bankday','Отчёт по банку','view'),(62,'report_costs','Отчёт по ценам','view'),(63,'report_revision_act','Акт сверки','view'),(64,'report_balance','Состояние счетов и касс','view'),(65,'report_kladovshik','Отчёт по кладовщикам в реализациях','view'),(66,'report_kassday','Кассовый отчёт за день','view'),(67,'report_apay','Отчёт по платежам агентов','view'),(68,'doc_factory','Учёт производства','view,edit'),(69,'report_mincnt','Отчёт по минимальному количеству','view'),(70,'report_pos_komplekt','Отчёт по остаткам комплектующих','view'),(71,'report_ved_agentov','Ведомость по агентам','view'),(72,'doc_korbonus','Корректировка бонусного баланса','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(73,'doc_realiz_bonus','Реализация за бонусы','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(74,'log_call_request','Журнал запрошенных звонков','view,edit'),(75,'report_outlay_items','Отчёт по статьям расходов','view'),(76,'doc_agent_ext','Доступ к административным полям агентов','view,edit'),(77,'report_reserve','Отчёт по резервам','view'),(78,'doc_zsbor','Заявка на сборку','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply'),(79,'report_liquidity','Отчет по ликвидности','view'),(80,'report_noimg','Отчёт по товарам без изображений','view'),(81,'report_groupstore','Отчёт с остатками по складам','view'),(82,'report_incost','Отчет по себестоимости','view'),(83,'admin_comments','Администрирование комментариев','view,edit,delete'),(84,'admin_users','Администрирование пользователей','view,edit,delete'),(85,'admin_mailconfig','Настройка почтовых ящиков и алиасов','view,create,edit,delete'),(86,'doc_factory_builders','Справочник сборщиков на производстве','view,create,edit,delete');
+INSERT INTO `users_objects` VALUES (1,'doc','Документы',''),(2,'doc_list','Журнал документов','view,delete'),(3,'doc_postuplenie','Поступление','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(4,'generic_articles','Доступ к статьям','view,edit,create,delete'),(5,'sys','Системные объекты',''),(6,'generic','Общие объекты',''),(7,'sys_acl','Управление привилегиями','view,edit,delete'),(8,'doc_realizaciya','Реализация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(9,'doc_zayavka','Документ заявки','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(10,'doc_kompredl','Коммерческое предложение','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(11,'doc_dogovor','Договор','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(12,'doc_doveren','Доверенность','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(13,'doc_pbank','Приход средств в банк','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(14,'doc_peremeshenie','Перемещение товара','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(15,'doc_perkas','Перемещение средств в кассе','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(16,'doc_predlojenie','Предложение поставщика','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(17,'doc_rbank','Расход средств из банка','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(18,'doc_realiz_op','Оперативная реализация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(19,'doc_rko','Расходный кассовый ордер','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(20,'doc_sborka','Сборка изделия','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(21,'doc_specific','Спецификация','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(22,'doc_v_puti','Товар в пути','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(23,'list','Списки',''),(24,'list_agent','Агенты','create,edit,view'),(25,'list_sklad','Склад','create,edit,view'),(26,'list_price_an','Анализатор прайсов','create,edit,view,delete'),(27,'list_agent_dov','Доверенные лица','create,edit,view'),(28,'report','Отчёты',''),(29,'report_cash','Кассовый отчёт','view'),(30,'generic_news','Новости','view,create,edit,delete'),(31,'doc_service','Служебные функции','view,edit,delete'),(32,'doc_scripts','Сценарии и операции','view,exec'),(33,'log','Системные журналы',''),(34,'log_browser','Статистирка броузеров','view'),(35,'log_error','Журнал ошибок','view'),(36,'log_access','Журнал посещений','view'),(37,'sys_async_task','Ассинхронные задачи','view,exec'),(38,'sys_ip-blacklist','Чёрный список IP адресов','view,create,delete'),(39,'sys_ip-log','Журнал обращений к ip адресам','view'),(40,'generic_price_an','Анализатор прайсов','view'),(41,'generic_galery','Фотогалерея','view,create,edit,delete'),(42,'doc_pko','Приходный кассовый ордер','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(43,'doc_reports','Доступ к отчётам','view,exec'),(44,'generic_tickets','Планировщик задач','view,edit,create,redirect'),(45,'sys_ps-stat','Статистика переходов с поисковиков','view'),(48,'report_dolgi','Отчёт по задолженностям','view'),(49,'report_pos_nosells','Отчёт по номенклатуре без продаж','view'),(50,'report_store','Остатки на складе','view'),(51,'report_payments','Отчёт по проплатам','view'),(52,'report_agent_nosells','Отчёт по агентам без продаж','view'),(53,'report_agent','Отчёт по агенту','view'),(54,'report_ostatkinadatu','Отчёт по остаткам на складе на выбранную дату','view'),(55,'report_cons_finance','Сводный финансовый','view'),(56,'report_images','Отчёт по изображениям складских наименований','view'),(57,'report_sales','Отчёт по движению товара','view'),(58,'report_pricetags','Ценники','view'),(59,'report_komplekt_zp','Отчёт по комплектующим с зарплатой','view'),(60,'report_bankday','Отчёт по банку','view'),(62,'report_costs','Отчёт по ценам','view'),(63,'report_revision_act','Акт сверки','view'),(64,'report_balance','Состояние счетов и касс','view'),(65,'report_kladovshik','Отчёт по кладовщикам в реализациях','view'),(66,'report_kassday','Кассовый отчёт за день','view'),(67,'report_apay','Отчёт по платежам агентов','view'),(68,'doc_factory','Учёт производства','view,edit'),(69,'report_mincnt','Отчёт по минимальному количеству','view'),(70,'report_pos_komplekt','Отчёт по остаткам комплектующих','view'),(71,'report_ved_agentov','Ведомость по агентам','view'),(72,'doc_korbonus','Корректировка бонусного баланса','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(73,'doc_realiz_bonus','Реализация за бонусы','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(74,'log_call_request','Журнал запрошенных звонков','view,edit'),(75,'report_outlay_items','Отчёт по статьям расходов','view'),(76,'doc_agent_ext','Доступ к административным полям агентов','view,edit'),(77,'report_reserve','Отчёт по резервам','view'),(78,'doc_zsbor','Заявка на сборку','view,edit,create,apply,cancel,forcecancel,delete,today_cancel,today_apply,printna'),(79,'report_liquidity','Отчет по ликвидности','view'),(80,'report_noimg','Отчёт по товарам без изображений','view'),(81,'report_groupstore','Отчёт с остатками по складам','view'),(82,'report_incost','Отчет по себестоимости','view'),(83,'admin_comments','Администрирование комментариев','view,edit,delete'),(84,'admin_users','Администрирование пользователей','view,edit,delete'),(85,'admin_mailconfig','Настройка почтовых ящиков и алиасов','view,create,edit,delete'),(86,'doc_factory_builders','Справочник сборщиков на производстве','view,create,edit,delete'),(87,'report_zayavki','Отчет по заявкам','view'),(88,'report_agent_resp','Отчет по агентам ответственного сотрудника','view');
 /*!40000 ALTER TABLE `users_objects` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2984,4 +2989,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-03-23 22:38:37
+-- Dump completed on 2015-03-24 12:00:01
