@@ -218,54 +218,78 @@ class dataimport {
             return false;
         }
     }
-
-    protected function getNameFromDocType($doc_type) {
-        switch ($doc_type) {
-            case 1:
-                return 'postuplenie';
-            case 2:
-                return 'realizaciya';
-            case 3:
-                return 'zayavka';
-            case 4:
-                return 'pbank';
-            case 5:
-                return 'rbank';
-            case 6:
-                return 'pko';
-            case 7:
-                return 'rko';
-            case 8:
-                return 'peremeshenie';
-            case 9:
-                return 'perkas';
-            case 10:
-                return 'doveren';
-            case 11:
-                return 'predlojenie';
-            case 12:
-                return 'v_puti';
-            case 13:
-                return 'kompredl';
-            case 14:
-                return 'dogovor';
-            case 15:
-                return 'realiz_op';
-            case 16:
-                return 'specific';
-            case 17:
-                return 'sborka';
-            case 18:
-                return 'kordolga';
-            case 19:
-                return 'korbonus';
-            case 20:
-                return 'realiz_bonus';
-            case 21:
-                return 'zsbor';
-            default:
-                return 'unknown';
+    
+    protected function loadDocumentObject($id, $data) {
+        $type = $this->getTypeFromDocName($data['type']);
+        if(!$type) {
+            throw new Exception("Неизвестный тип документа!");
         }
+        $sql_guid = $this->db->real_escape_string($data['guid']);
+        $res = $this->db->query("SELECT `a`.`id`, `a`.`type`, `a`.`altnum`, `a`.`subtype`, `a`.`agent`, `a`.`sklad`, `a`.`kassa`, `a`.`bank`, 
+            `a`.`date`, `a`.`ok`, `a`.`mark_del`, `a`.`user`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`firm_id`,
+            `a`.`contract`, `a`.`comment`, `b`.`value` AS `guid_1c`
+            FROM `doc_list` AS `a`
+            INNER JOIN `doc_dopdata` AS `b` ON `a`.`id`=`b`.`doc` AND `b`.`param`='guid_1c'
+            WHERE `b`.`param`='{$sql_guid}'");        
+        $db_data = array(
+            'type'  => $type,
+            'agent' => $data['agent'],
+            'date'  => strtotime($data['date']),
+            'altnum'=> $data['altnum'],
+            'subtype'=> $data['subtype'],
+            'sum'   => $data['sum'],
+            'nds'   => $data['nds'],
+            'firm_id'=> $data['firm_id'],
+            'mark_del'=> $data['mark_del'] ? 1 : 0,
+            'comment'=> $data['comment']
+        );
+        if( isset($data['store_id']) ) {
+            $db_data['sklad'] = $data['store_id'];
+        }
+        if($res->num_rows) {
+            $old_doc_data = $res->fetch_assoc();
+            if( !$old_doc_data['ok'] || ($old_doc_data['ok'] && !$data['ok']) ) {
+                $db_data['ok'] = $data['ok'] ? time() : 0;
+            }
+            $this->db->updateA("doc_list", $old_doc_data['id'], $db_data);
+            $doc_id = $old_doc_data['id'];
+        } else {
+            $db_data['ok'] = $data['ok'] ? time() : 0;
+            $data['author'] = $_SESSION['uid'];
+            $doc_id = $this->db->insertA("doc_list", $db_data);
+            $this->db->query("INSERT INTO `doc_doptdata` (`doc`, `param`, `value`) VALUES ($doc_id, 'guid_1c', '$sql_guid')");
+        }
+                
     }
+
+    protected function getTypeFromDocName($doc_name) {
+        $doc_types = array(
+            1 => 'postuplenie',
+            2 => 'realizaciya',
+            3 => 'zayavka',
+            4 => 'pbank',
+            5 => 'rbank',
+            6 => 'pko',
+            7 => 'rko',
+            8 => 'peremeshenie',
+            9 => 'perkas',
+            10 => 'doveren',
+            11 => 'predlojenie',
+            12 => 'v_puti',
+            13 => 'kompredl',
+            14 => 'dogovor',
+            15 => 'realiz_op',
+            16 => 'specific',
+            17 => 'sborka',
+            18 => 'kordolga',
+            19 => 'korbonus',
+            20 => 'realiz_bonus',
+            21 => 'zsbor'
+        );
+        $type = array_search($doc_name, $doc_types);
+        return $type;
+    }
+    
+
     
 }

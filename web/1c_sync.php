@@ -86,6 +86,7 @@ try {
         echo $data; 
     } else if($mode=='import') {
         $import = new \sync\simplexml1cdataimport($db);
+        /*
         if( isset($_POST['xmlstring']) ) {
             $xmlstring = $_POST['xmlstring'];
             $import->loadFromString($_POST['xmlstring']);
@@ -94,11 +95,13 @@ try {
         } else {
             throw new Exception('Данные не получены.');
         }
+         */
+        $import->loadFromFile('1c.xml');
         $db->startTransaction(); 
         $data = $import->importData();
         header("Content-type: application/xml");
         echo $data;
-        $db->commit();
+        //$db->commit();
         
     } else {
         throw new NotFoundException('Неверный параметр');

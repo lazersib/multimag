@@ -84,9 +84,13 @@ class simplexml1cdataimport extends \sync\dataimport {
                     $this->parseAgentsNode($node);
                     break;
                 case 'nomenclature':
-                    //$this->parseNomenclatureNode($node);
+                    $this->parseNomenclatureNode($node);
                     break;
             }
+        }
+        // Загружаем документы
+        if($docnode) {
+            $this->parseDocumentNode($docnode);
         }
         // Формирование ответа
         $out = new \SimpleXMLElement('<multimag_exchange version="1.0"><result><status>ok</status><message>Ok</message></result></multimag_exchange>');
@@ -406,5 +410,40 @@ class simplexml1cdataimport extends \sync\dataimport {
             }
         }
         $this->newids['nomenclature.items'] = $newids;
+    }
+    
+    protected function parseDocumentNode($node) {
+        foreach($node->children() as $cname => $cnode) {
+            if($cname!='document') {
+                throw new \Exception('Недопустимый элемент в блоке документов!');
+            }
+            $data = array();
+            $att = $cnode->attributes();
+            $id = intval($att['id']);
+            $positions = null;
+            foreach($cnode as $name => $value) {
+                switch($name) {
+                    case 'positions':
+                        $positions = $value;
+                        break;
+                    default:
+                        $data[$name] = $value->__toString();
+                }
+            }
+            if($positions) {
+                $data['positions'] = array();
+                $line = array();
+                foreach($positions as $pname => $pnode) {
+                    if($pname != 'position')  {
+                        throw new \Exception('Недопустимый элемент в табличной части документа!');
+                    }
+                    foreach($pnode as $pi_name => $pi_value) {
+                        $line[$pi_name] = $pi_value->__toString();      
+                    }
+                }  
+                $data['positions'][] = $line;
+            }
+            $this->loadDocumentObject($id, $data);
+        }
     }
 }
