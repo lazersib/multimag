@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "750");
+define("MULTIMAG_REV", "760");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -285,14 +285,11 @@ class MysqiExtended extends mysqli {
     /// @param table	Имя таблицы
     /// @param key_value	Значение ключа, по которому производится выборка. Будет приведено к целому типу.
     /// @param array	Массив со значениями, содержащими имена полей
-    /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае sql ошибки вернёт false. В случае, если искомого значения нет в таблице, вернет пустую строку для такого значения
+    /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае, если искомого значения нет в таблице, вернет пустую строку для такого значения
     function selectFieldKA($table, $key_name, $key_value, $array) {
         settype($key_value, 'int');
         $a = array_fill_keys($array, '');
         $res = $this->query('SELECT `param`, `value` FROM `' . $table . '` WHERE `' . $key_name . '`=' . $key_value);
-        if (!$res) {
-            return false;
-        }
         while ($line = $res->fetch_row()) {
             if (array_key_exists($line[0], $a)) {
                 $a[$line[0]] = $line[1];
@@ -413,4 +410,23 @@ class MysqiExtended extends mysqli {
         return $q;
     }
 
+}
+
+/// @brief Возвращает строку с информацией о различиях между двумя наборами данных в массивах
+/// Массив new должен содержать все индексы массива old
+/// Используется для внесения информации в журнал
+/// @param old	Старый набор данных (массив)
+/// @param new	Новый набор данных (массив)
+function getCompareStr($old, $new) {
+    $ret = '';
+    foreach ($old as $key => $value) {
+        if ($new[$key] !== $value) {
+            if ($ret)
+                $ret.=", $key: ( $value => {$new[$key]})";
+            else {
+                $ret = ", $key: ( $value => {$new[$key]})";
+            }
+        }
+    }
+    return $ret;
 }

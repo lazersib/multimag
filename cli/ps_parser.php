@@ -25,7 +25,7 @@ require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 require_once($CONFIG['location']."/common/async/psparser.php");
 
 try {
-	$worker=new PsParserWorker(0);
+	$worker=new psparser(0);
 	$worker->run();
 }
 catch(Exception $e) {

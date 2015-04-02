@@ -181,7 +181,7 @@ class ds_zp_s_prodaj {
                             while ($nxt_tov = $res_tov->fetch_assoc()) {
                                 $incost = getInCost($nxt_tov['tovar'], $nxt['date']);
                                 if($use_likv && isset($a_likv[$nxt_tov['tovar']])) {
-                                    $nach_sum += ($nxt_tov['cost'] - $incost) * $this->coeff * $nxt_tov['cnt'] * (1 - $a_likv[$nxt_tov['tovar']]*$this->coeff/100 );
+                                    $nach_sum += ($nxt_tov['cost'] - $incost) * $this->coeff * $nxt_tov['cnt'] * (1 - $a_likv[$nxt_tov['tovar']]*$this->l_coeff/100 );
                                 } else {
                                     $nach_sum += ($nxt_tov['cost'] - $incost) * $this->coeff * $nxt_tov['cnt'];
                                 }

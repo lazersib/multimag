@@ -20,116 +20,98 @@
 include_once("core.php");
 include_once("include/doc.core.php");
 
-// Проверка необходимости перехода на https
-if(!@$_SERVER['HTTPS'] && (@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login'])) {
-    header('Location: https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'], true, 301);
-    exit();
+class NotAuthException extends Exception {
+    
 }
 
-
+// Проверка необходимости перехода на https
+if(!@$_SERVER['HTTPS'] && (@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login'])) {
+    redirect('https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI']);
+}
 
 try {
     if (!isset($_SERVER['PHP_AUTH_USER'])) {
-        header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
-        header('HTTP/1.0 401 Unauthorized');
-        echo 'Authentification cancel by user';
-        exit();
-    } elseif (@$_SERVER['PHP_AUTH_USER'] != @$CONFIG['1csync']['login'] || @$_SERVER['PHP_AUTH_PW'] != @$CONFIG['1csync']['pass'] ||
-            !@$CONFIG['1csync']['pass'] || !@$CONFIG['1csync']['login']) {
-        header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
-        header('HTTP/1.0 401 Unauthorized');
-        echo 'Authentification error';
-        exit();
+        throw new \NotAuthException("Authentification cancel by user / Аутентификация отменена пользователем.");
+    }
+    
+    $auth = new \authenticator();
+    $ip = getenv("REMOTE_ADDR");
+    $at = $auth->attackTest($ip);
+    if($at == 'ban_net') {            
+        $db->insertA("users_bad_auth", array('ip' => $ip, 'time' => time() + 60) );
+        throw new \Exception("Из-за попыток перебора паролей к сайту доступ с вашей подсети заблокирован! Вы сможете авторизоваться через несколько часов после прекращения попыток перебора пароля. Если Вы не предпринимали попыток перебора пароля, обратитесь к Вашему поставщику интернет-услуг - возможно, кто-то другой пытается подобрать пароль, используя ваш адрес.");
+    }
+    if($at == 'ban_ip') {
+        $db->insertA("users_bad_auth", array('ip' => $ip, 'time' => time() + 60) );
+        throw new \Exception("Из-за попыток перебора паролей к сайту доступ с вашего адреса заблокирован! Вы сможете авторизоваться через несколько часов после прекращения попыток перебора пароля. Если Вы не предпринимали попыток перебора пароля, обратитесь к Вашему поставщику интернет-услуг - возможно, кто-то другой пытается подобрать пароль, используя ваш адрес.");
+    }
+    
+    if(!$auth->loadDataForLogin($_SERVER['PHP_AUTH_USER'])) {  // Не существует
+        $db->insertA("users_bad_auth", array('ip' => getenv("REMOTE_ADDR"), 'time' => time()) );
+        throw new \NotAuthException("Неверная пара логин / пароль. Попробуйте снова.");
     }
 
-    $partial_time = rcvint('partial_time', 0); // Если задано, то передаёт только изменения, произошедшие после этой даты
-    $start_date = rcvdate('start_date', date("Y-m-d"));            // Только для полной синхронизации. Начало интервала.    
-    $end_date = rcvdate('end_date', date("Y-m-d"));                // Только для полной синхронизации. Конец интервала.
-    
-    $db->startTransaction();
-    
-    $dom = new domDocument("1.0", "utf-8");
-    $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
-    $root->setAttribute('version', '1.0');
-    $dom->appendChild($root);
-    
-    // Информация о выгрузке
-    $result = $dom->createElement('result');            // Код возврата
-    $result_code = $dom->createElement('status', 'ok');
-    $result_desc = $dom->createElement('message', 'Ok');
-    $result_timestamp = $dom->createElement('timestamp', time()-1);
-    $result->appendChild($result_code);
-    $result->appendChild($result_desc);
-    $result->appendChild($result_timestamp);
-    $root->appendChild($result);
-    
-    $refbooks = $dom->createElement('refbooks');    // Узел справочников
+    if(!$auth->testPassword($_SERVER['PHP_AUTH_PW'])) {   // Неверный пароль
+        $db->insertA("users_bad_auth", array('ip' => getenv("REMOTE_ADDR"), 'time' => time()) );
+        throw new \NotAuthException("Неверная пара логин / пароль. Попробуйте снова.");
+    }
+
+    if ($auth->isDisabled()) {
+        throw new \Exception("Пользователь заблокирован (забанен). Причина блокировки: " . $auth->getDisabledReason() );
+    }
         
-    $export = new \sync\Xml1cDataExport($db);
+    $user_info = $auth->getUserInfo();
+    $auth->addHistoryLine('1c');
+    $_SESSION['uid'] = $user_info['id'];
+    $_SESSION['name'] = $user_info['name'];
     
-    $export->dom = $dom;
+    if(!isAccess('doc_1csync', 'exec', true)) {
+        throw new \Exception("Отсутствуют необходимые привилегии" );
+    }
     
-    // Выгрузка справочника собственных организаций
-    $firms = $export->convertToXmlElement('firms', 'firm', $export->getFirmsData());
-    $refbooks->appendChild($firms);
+    $partial_time = rcvint('partial_time', 0);              // Если задано, то передаёт только изменения, произошедшие после этой даты
+    $start_date = rcvdate('start_date', "1970-01-01");      // Только для полной синхронизации. Начало интервала.    
+    $end_date = rcvdate('end_date', date("Y-m-d"));         // Только для полной синхронизации. Конец интервала.
+    $mode = request('mode');
     
-    // Выгрузка справочника складов
-    $stores = $export->convertToXmlElement('stores', 'store', $export->getStoresData());
-    $refbooks->appendChild($stores);
+    if($mode == 'export') {
+        $db->startTransaction();    
+        $export = new \sync\Xml1cDataExport($db);
+        $export->setRefbooksList( request('refbooks', null) );
+        $export->setDocTypesList( request('doctypes', null) );
+        $export->setPartialTimeshtamp($partial_time);
+        $export->setPeriod($start_date, $end_date);
+        $data = $export->getData();    
+        header("Content-type: application/xml");
+        echo $data; 
+    } else if($mode=='import') {
+        $import = new \sync\simplexml1cdataimport($db);
+        if( isset($_POST['xmlstring']) ) {
+            $xmlstring = $_POST['xmlstring'];
+            $import->loadFromString($_POST['xmlstring']);
+        } elseif (is_uploaded_file(@$_FILES['xmlfile']['tmp_name'])) {
+            $import->loadFromFile(@$_FILES['xmlfile']['tmp_name']);
+        } else {
+            throw new Exception('Данные не получены.');
+        }
+        $db->startTransaction(); 
+        $data = $import->importData();
+        header("Content-type: application/xml");
+        echo $data;
+        $db->commit();
+        
+    } else {
+        throw new NotFoundException('Неверный параметр');
+    }
+     
     
-    // Выгрузка справочника касс
-    $tills = $export->convertToXmlElement('tills', 'till', $export->getTillsData());
-    $refbooks->appendChild($tills);
-    
-    // Выгрузка справочника банков
-    $banks = $export->convertToXmlElement('banks', 'bank', $export->getBanksData());
-    $refbooks->appendChild($banks);
-    
-    // Выгрузка справочника цен
-    $prices = $export->convertToXmlElement('prices', 'price', $export->getPricesData());
-    $refbooks->appendChild($prices);
-    
-    // Выгрузка справочника сотрудников
-    $workers = $export->convertToXmlElement('workers', 'worker', $export->getWorkersData());
-    $refbooks->appendChild($workers);
-    
-    // Выгрузка справочника агентов
-    $agents = $dom->createElement('agents');    
-    $groups = $export->convertToXmlElement('groups', 'group', $export->getAgentGroupsData());
-    $agents->appendChild($groups);
-    $items = $export->convertToXmlElement('items', 'item', $export->getAgentsListData());
-    $agents->appendChild($items);    
-    $refbooks->appendChild($agents);
-    
-    // Выгрузка справочника стран мира (ОКСМ)
-    $workers = $export->convertToXmlElement('countries', 'country', $export->getCountriesData());
-    $refbooks->appendChild($workers);
-    
-    // Выгрузка справочника единиц измерения (ОКЕИ)
-    $units = $export->convertToXmlElement('units', 'unit', $export->getUnitsData());
-    $refbooks->appendChild($units);
-    
-    // Выгрузка справочника номенклатуры
-    $nomenclature = $dom->createElement('nomenclature');
-    // Номенклатурные группы
-    $groups = $export->convertToXmlElement('groups', 'group', $export->getNomenclatureGroupsData());
-    $nomenclature->appendChild($groups);
-    $items = $export->convertToXmlElement('items', 'item', $export->getNomenclatureListData());
-    $nomenclature->appendChild($items);    
-    $refbooks->appendChild($nomenclature);
-    
-    $root->appendChild($refbooks);
-    
-    $from_date = strtotime($start_date);
-    $to_date = strtotime($end_date." 23:59:59");
-    $documents = $export->convertToXmlElement('documents', 'document', $export->getDocumentsData($from_date, $to_date));
-    
-    $root->appendChild($documents);
-    
-    header("Content-type: application/xml");
-    echo $dom->saveXML();  
-    
-} catch (Exception $e) {
+} 
+catch (NotAuthException $e) {
+    header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
+    header('HTTP/1.0 401 Unauthorized');
+    echo $e->getMessage();
+}
+catch (Exception $e) {
     $dom = new domDocument("1.0", "utf-8");
     $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
     $root->setAttribute('version', '1.0');
@@ -145,3 +127,5 @@ try {
     header("Content-type: application/xml");
     echo $dom->saveXML(); 
 }
+
+unset($_SESSION['uid']);

@@ -319,8 +319,9 @@ class doc_Pko extends doc_Nulltype {
 		$str = iconv('UTF-8', 'windows-1251', num2str($this->doc_data['sum']));
 		$pdf->Cell(0,4,$str,'B',1,'L',0);
 
-		$sum_r=round($this->doc_data['sum']);
-		$sum_c=round(($this->doc_data['sum']-$sum_r)*100);
+		$sum_r = floor($this->doc_data['sum']);
+		$sum_c = round(($this->doc_data['sum']-$sum_r)*100);
+                
 		$str = iconv('UTF-8', 'windows-1251', "Сумма");
 		$pdf->Cell(90,4,'','B',0,'L',0);
 		$pdf->Cell(20,4,$sum_r,'B',0,'R',0);
@@ -423,8 +424,7 @@ class doc_Pko extends doc_Nulltype {
 		$pdf->SetY($y);
 		$pdf->MultiCell(0,4,$str_osn,0,'L',0);
 		$pdf->SetY($y+8);
-		$sum_r = floor($this->doc_data['sum']);
-		$sum_c = round(($this->doc_data['sum']-$sum_r)*100);
+		
 		$str = iconv('UTF-8', 'windows-1251', "Сумма");
 		$pdf->Cell(10,4,$str,0,0,'L',0);
 		$pdf->Cell(30,4,$sum_r,'B',0,'R',0);

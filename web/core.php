@@ -314,8 +314,8 @@ function need_auth()
 	{
 		$_SESSION['last_page']=$_SERVER['REQUEST_URI'];
 		$_SESSION['cook_test']='data';
-		header('Location: /login.php');
-		$tmpl->msg("Для продолжения необходимо выполнить вход!","info","Требуется аутентификация");
+		redirect('/login.php');
+		//$tmpl->msg("Для продолжения необходимо выполнить вход!","info","Требуется аутентификация");
 		$tmpl->write();
 		exit();
 	}
@@ -351,6 +351,22 @@ function isAccess($object, $action,$no_redirect=false)
 	$access=($res->num_rows>0)?true:false;
 	if((!$uid) && (!$access) && (!$no_redirect))	need_auth();
 	return $access;
+}
+
+// Проверка, не принадлежит ли текущая сессия другому пользователю
+function testForeignSession() {
+    global $db, $tmpl;
+    if(auth()) {
+        $res = $db->query("SELECT `last_session_id` FROM `users` WHERE `id`=".intval($_SESSION['uid']));
+        if($res->num_rows) {
+            list($stored_session_id) = $res->fetch_row();
+            if($stored_session_id != session_id()) {
+                $_SESSION['another_device'] = 1;
+                $_SESSION['uid'] = 0;
+                need_auth();
+            }
+        }
+    }
 }
 
 /// Транслитерация строки
@@ -911,6 +927,7 @@ if(!isset($_REQUEST['ncnt'])) {
 }
 
 $tmpl=new BETemplate;
+testForeignSession();
 
 $dop_status=array('new'=>'Новый', 'err'=>'Ошибочный', 'inproc'=>'В процессе', 'ready'=>'Готов', 'ok'=>'Отгружен');
 if (is_array(@$CONFIG['doc']['status_list'])) {

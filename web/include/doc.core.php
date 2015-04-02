@@ -605,24 +605,24 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0
 /// @param doc_id ID исключаемого документа
 /// @sa DocPodZakaz DocVPuti
 /// TODO: реализовать кеширование
-function DocRezerv($pos_id, $doc_id=0)
-{
-	global $db;
-	settype($pos_id,'int');
-	settype($doc_id,'int');
+function DocRezerv($pos_id, $doc_id = 0) {
+    global $db;
+    settype($pos_id, 'int');
+    settype($doc_id, 'int');
 
-	$res=$db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+    $res = $db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`type`='3' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id`!=$doc_id
 	AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list`
 	INNER JOIN `doc_list_pos` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE `ok` != '0' AND `type`='2' AND `doc_list_pos`.`tovar`=$pos_id )
 	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	if($res->num_rows)	list($reserved)=$res->fetch_row();
-	else			$reserved=0;
-	$res->free();
-	return $reserved;
-
+    if ($res->num_rows)
+        list($reserved) = $res->fetch_row();
+    else
+        $reserved = 0;
+    $res->free();
+    return $reserved;
 }
 
 /// Возвращает количество товара, доступного по данным предложений поставщиков
@@ -630,21 +630,24 @@ function DocRezerv($pos_id, $doc_id=0)
 /// @param doc_id ID исключаемого документа
 /// @sa DocRezerv DocVPuti
 /// TODO: реализовать кеширование
-function DocPodZakaz($pos_id,$doc_id=0)
-{
-	global $db, $CONFIG;
-	settype($pos_id,'int');
-	settype($doc_id,'int');
-	if(@$CONFIG['doc']['op_time'])	$rt=time()-60*60*24*$CONFIG['doc']['op_time'];
-	else				$rt=time()-60*60*24*365;
-	$res=$db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+function DocPodZakaz($pos_id, $doc_id = 0) {
+    global $db, $CONFIG;
+    settype($pos_id, 'int');
+    settype($doc_id, 'int');
+    if (@$CONFIG['doc']['op_time'])
+        $rt = time() - 60 * 60 * 24 * $CONFIG['doc']['op_time'];
+    else
+        $rt = time() - 60 * 60 * 24 * 365;
+    $res = $db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`type`='11' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!=$doc_id AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
 	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	if($res->num_rows)	list($available)=$res->fetch_row();
-	else			$available=0;
-	$res->free();
-	return $available;
+    if ($res->num_rows)
+        list($available) = $res->fetch_row();
+    else
+        $available = 0;
+    $res->free();
+    return $available;
 }
 
 /// Возвращает количество товара, находящегося в пути, по данным документов *товар в пути*
@@ -652,51 +655,52 @@ function DocPodZakaz($pos_id,$doc_id=0)
 /// @param doc_id ID исключаемого документа
 /// @sa DocPodZakaz DocVPuti
 /// TODO: реализовать кеширование
-function DocVPuti($pos_id,$doc_id=0)
-{
-	global $db;
-	settype($pos_id,'int');
-	settype($doc_id,'int');
+function DocVPuti($pos_id, $doc_id = 0) {
+    global $db;
+    settype($pos_id, 'int');
+    settype($doc_id, 'int');
 
-	$res=$db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
+    $res = $db->query("SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0' AND `doc_list`.`id`!=$doc_id
 	AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
 	WHERE `doc_list_pos`.`tovar`=$pos_id
 	GROUP BY `doc_list_pos`.`tovar`");
-	if($res->num_rows)	list($transit)=$res->fetch_row();
-	else			$transit=0;
-	$res->free();
-	return $transit;
+    if ($res->num_rows)
+        list($transit) = $res->fetch_row();
+    else
+        $transit = 0;
+    $res->free();
+    return $transit;
 }
 
 /// Создаёт класс документа по ID документа, используя AutoDocumentType
 /// @sa AutoDocumentType
-function AutoDocument($doc_id)
-{
-	global $db;
-	settype($doc_id,'int');
-	$res=$db->query("SELECT `type` FROM `doc_list` WHERE `id`=$doc_id");
-	if(!$res->num_rows)	throw new Exception("Документ не найден");
-	list($type)=$res->fetch_row();
-	return AutoDocumentType($type, $doc_id);
+function AutoDocument($doc_id) {
+    global $db;
+    settype($doc_id, 'int');
+    $res = $db->query("SELECT `type` FROM `doc_list` WHERE `id`=$doc_id");
+    if (!$res->num_rows)
+        throw new Exception("Документ не найден");
+    list($type) = $res->fetch_row();
+    return AutoDocumentType($type, $doc_id);
 }
 
 /// Для внутреннего использования
 /// @sa selectAgentGroup
 function selectAgentGroupRecursive($group_id, $prefix, $selected, $leaf_only) {
-	global $db;
-	// Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectAgentGroup
-	$res = $db->query("SELECT `id`, `name` FROM `doc_agent_group` WHERE `pid`='$group_id' ORDER BY `id`");
-	$ret = '';
-	while($line = $res->fetch_row()) {
-		$sel = ($selected==$line[0])?' selected':'';
-		$deep = selectAgentGroupRecursive($line[0], $prefix.'|&nbsp;&nbsp;', $selected, $leaf_only);
-		$dis = ($deep!='' && $leaf_only)?' disabled':'';
-		$ret .= "<option value='$line[0]'{$sel}{$dis}>{$prefix}".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
-		$ret .= $deep;
-	}
-	$res->free();
-	return $ret;
+    global $db;
+    // Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectAgentGroup
+    $res = $db->query("SELECT `id`, `name` FROM `doc_agent_group` WHERE `pid`='$group_id' ORDER BY `id`");
+    $ret = '';
+    while ($line = $res->fetch_row()) {
+        $sel = ($selected == $line[0]) ? ' selected' : '';
+        $deep = selectAgentGroupRecursive($line[0], $prefix . '|&nbsp;&nbsp;', $selected, $leaf_only);
+        $dis = ($deep != '' && $leaf_only) ? ' disabled' : '';
+        $ret .= "<option value='$line[0]'{$sel}{$dis}>{$prefix}" . htmlentities($line[1], ENT_QUOTES, "UTF-8") . "</option>";
+        $ret .= $deep;
+    }
+    $res->free();
+    return $ret;
 }
 
 /// Создаёт HTML код элемента select со списком групп агентов
@@ -707,30 +711,31 @@ function selectAgentGroupRecursive($group_id, $prefix, $selected, $leaf_only) {
 /// @param select_class	Содержимое html аттрибута class элемента select
 /// @param leaf_only	Флаг возможности выбора только "листьев" в дереве групп
 /// @sa selectGroupPos
-function selectAgentGroup($select_name, $selected=0, $not_select=0, $select_id='', $select_class='', $leaf_only=false) {
-	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
-	if($not_select)	$ret.="<option value='0'>***не выбрана***</option>";
-	$ret.=selectAgentGroupRecursive(0, '', $selected, $leaf_only);
-	$ret.="</select>";
-	return $ret;
+function selectAgentGroup($select_name, $selected = 0, $not_select = 0, $select_id = '', $select_class = '', $leaf_only = false) {
+    $ret = "<select name='$select_name' id='$select_id' class='$select_class'>";
+    if ($not_select)
+        $ret.="<option value='0'>***не выбрана***</option>";
+    $ret.=selectAgentGroupRecursive(0, '', $selected, $leaf_only);
+    $ret.="</select>";
+    return $ret;
 }
 
 /// Для внутреннего использования
 /// @sa selectGroupPos
 function selectGroupPosRecursive($group_id, $prefix, $selected, $leaf_only) {
-	global $db;
-	// Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectGroupPos
-	$res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
-	$ret = '';
-	while($line = $res->fetch_row()) {
-		$sel = ($selected==$line[0])?' selected':'';
-		$deep = selectGroupPosRecursive($line[0], $prefix.'|&nbsp;&nbsp;', $selected, $leaf_only);
-		$dis = ($deep!='' && $leaf_only)?' disabled':'';
-		$ret .= "<option value='$line[0]'{$sel}{$dis}>{$prefix}".htmlentities($line[1],ENT_QUOTES,"UTF-8")."</option>";
-		$ret .= $deep;
-	}
-	$res->free();
-	return $ret;
+    global $db;
+    // Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectGroupPos
+    $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
+    $ret = '';
+    while ($line = $res->fetch_row()) {
+        $sel = ($selected == $line[0]) ? ' selected' : '';
+        $deep = selectGroupPosRecursive($line[0], $prefix . '|&nbsp;&nbsp;', $selected, $leaf_only);
+        $dis = ($deep != '' && $leaf_only) ? ' disabled' : '';
+        $ret .= "<option value='$line[0]'{$sel}{$dis}>{$prefix}" . htmlentities($line[1], ENT_QUOTES, "UTF-8") . "</option>";
+        $ret .= $deep;
+    }
+    $res->free();
+    return $ret;
 }
 
 /// Создаёт HTML код элемента select со списком групп наименований
@@ -741,32 +746,13 @@ function selectGroupPosRecursive($group_id, $prefix, $selected, $leaf_only) {
 /// @param select_class	Содержимое html аттрибута class элемента select
 /// @param leaf_only	Флаг возможности выбора только "листьев" в дереве групп
 /// @sa selectAgentGroup
-function selectGroupPos($select_name, $selected=0, $not_select=false, $select_id='', $select_class='', $leaf_only=false)
-{
-	$ret="<select name='$select_name' id='$select_id' class='$select_class'>";
-	if($not_select)	$ret.="<option value='0'>***не выбран***</option>";
-	$ret.=selectGroupPosRecursive(0, '', $selected, $leaf_only);
-	$ret.="</select>";
-	return $ret;
+function selectGroupPos($select_name, $selected = 0, $not_select = false, $select_id = '', $select_class = '', $leaf_only = false) {
+    $ret = "<select name='$select_name' id='$select_id' class='$select_class'>";
+    if ($not_select)
+        $ret.="<option value='0'>***не выбран***</option>";
+    $ret.=selectGroupPosRecursive(0, '', $selected, $leaf_only);
+    $ret.="</select>";
+    return $ret;
 }
 
-/// @brief Возвращает строку с информацией о различиях между двумя наборами данных в массивах
-/// Массив new должен содержать все индексы массива old
-/// Используется для внесения информации в журнал
-/// @param old	Старый набор данных (массив)
-/// @param new	Новый набор данных (массив)
-function getCompareStr($old, $new) {
-	$ret = '';
-	foreach ($old as $key => $value) {
-		if ($new[$key] !== $value) {
-			if ($ret)
-				$ret.=", $key: ( $value => {$new[$key]})";
-			else {
-				$ret = ", $key: ( $value => {$new[$key]})";
-			}
-		}
-	}
-	return $ret;
-}
 
-?>

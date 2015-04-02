@@ -46,8 +46,8 @@ class cabinet extends \IModule {
         $this->ExecMode(request('mode'));
     }
 
-    /// Отобразить страницу новостей
-    /// @param mode: '' - список новостей
+    /// Отобразить страницу личного кабинета
+    /// @param mode: раздел личного кабинета
     public function ExecMode($mode = '') {
         global $tmpl, $CONFIG, $db;
         $tmpl->addBreadcrumb('Главная', '/');
@@ -242,6 +242,7 @@ class cabinet extends \IModule {
         return $ret;
     }
     
+    /// Сформировать HTML код формы запроса на доработку
     public function getFeedbackForm($token, $fields) {
         $a = $this->getFormAction();
         $ret = "<div id='page-info'>Внимание! Страница является упрощённым интерфейсом к <a href='http://multimag.tndproject.org/newticket' >http://multimag.tndproject.org/newticket</a></div>
@@ -342,6 +343,7 @@ class cabinet extends \IModule {
         }
     }
     
+    /// Обработчик обновления пользовательского профиля
     public function tryShowProfile() {
         global $tmpl, $db;
         $opt = request('opt');
@@ -377,6 +379,7 @@ class cabinet extends \IModule {
         $tmpl->addContent( $this->getUserProfileForm($user_data, $adata) );
     }
     
+    /// Обработчик смены адреса электронной почты
     public function tryChangeEmail() {
         global $tmpl;
         $tmpl->addBreadcrumb('Мой профиль', '/user.php?mode=profile');        
@@ -397,6 +400,7 @@ class cabinet extends \IModule {
         $tmpl->addContent( $login->getUpdateEmailForm($user_info['name'], $user_info['reg_email']) );
     }
     
+    /// Обработчик смены номера телефона
     public function tryChangePhone() {
         global $tmpl;        
         $tmpl->addBreadcrumb('Мой профиль', '/user.php?mode=profile');        
@@ -448,6 +452,7 @@ class cabinet extends \IModule {
         $tmpl->addContent("</table></div>");
     }
 
+    /// Получить PDF форму документа
     public function getDocPdf() {
         global $db, $CONFIG;
         include_once("include/doc.core.php");
@@ -475,6 +480,7 @@ class cabinet extends \IModule {
         }
     }
     
+    /// Отобразить журнал ошибок
     public function viewErrorLog() {
         global $tmpl, $db, $CONFIG;
         if (!isAccess('log_error', 'view')) {
@@ -571,7 +577,7 @@ class cabinet extends \IModule {
         $tmpl->addContent("</table></div>");
     }
 
-    
+    /// Отобразить форму запроса на доработку
     public function viewFeedbackForm() {
         global $tmpl, $CONFIG;
         if (!$CONFIG['site']['trackticket_login']) {
@@ -650,6 +656,7 @@ class cabinet extends \IModule {
         $tmpl->addContent( $this->getFeedbackForm($token, $selects_html) );
     }
     
+    /// Отправить запрос на доработку программы
     public function sendFeedback() {
         global $tmpl, $CONFIG;
         $fields = array(

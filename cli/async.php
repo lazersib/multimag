@@ -26,27 +26,24 @@ require_once("$base_path/config_cli.php");
 require_once($CONFIG['cli']['location'] . "/core.cli.inc.php");
 
 try {
-	$res = $db->query("SELECT `id`, `task` FROM `async_workers_tasks` WHERE `needrun`=1 LIMIT 1");
-	while ($ainfo = $res->fetch_assoc()) {
-		$db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='Запускается' WHERE `id`='{$ainfo['id']}'");
-		require_once($CONFIG['location'] . "/common/async/" . strtolower($ainfo['task']) . ".php");
-		$classname = $ainfo['task'] . "Worker";
-		$worker = new $classname($ainfo['id']);
-		$worker->run();
-		$worker->end();
-	}
+    $res = $db->query("SELECT `id`, `task` FROM `async_workers_tasks` WHERE `needrun`=1 LIMIT 1");
+    while ($ainfo = $res->fetch_assoc()) {
+        $db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='Запускается' WHERE `id`='{$ainfo['id']}'");
+        require_once($CONFIG['location'] . "/common/async/" . strtolower($ainfo['task']) . ".php");
+        $classname = $ainfo['task'];
+        $worker = new $classname($ainfo['id']);
+        $worker->run();
+        $worker->end();
+    }
+} catch (Exception $e) {
+    if ($worker) {
+        try {
+            $worker->finalize();
+        } catch (Exception $e) {
+            echo $e->getMessage() . "\n";
+            $db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $e->getMessage() . "' WHERE `id`='{$ainfo['id']}'");
+        }
+    }
+    echo $e->getMessage();
+    $db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $db->real_escape_string($e->getMessage()) . "' WHERE `id`='{$ainfo['id']}'");
 }
-catch (Exception $e) {
-	if ($worker) {
-		try {
-			$worker->finalize();
-		} catch (Exception $e) {
-			echo $e->getMessage() . "\n";
-			$db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $e->getMessage() . "' WHERE `id`='{$ainfo['id']}'");
-		}
-	}
-	echo $e->getMessage();
-	$db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='" . $db->real_escape_string($e->getMessage()) . "' WHERE `id`='{$ainfo['id']}'");
-}
-
-?>

@@ -18,15 +18,55 @@
 //
 namespace sync;
 
-class DataExport {
-    protected $db;
-    
+class dataexport {
+    protected $db;                  //< Ссылка на соединение с базой данных
+    protected $start_time;          //< Начало дипапзона полной выгрузки
+    protected $end_time;            //< Конец диапазона полной выгрузки
+    protected $refbooks_list;       //< Список справочников к выгрузке
+    protected $doctypes_list;       //< Список типов документов к выгрузке
+    protected $partial_timeshtamp;  //< Время предыдущей синхронизации для частичной выгрузки
+
     /// Конструктор
     /// @param $db Объект связи с базой данных
     public function __construct($db) {
         $this->db = $db;
+        $this->drl = array('firms', 'stores', 'tills', 'banks', 'prices', 'workers', 'agents', 'countries', 'units', 'nomenclature');
+        $this->refbooks_list = $this->drl;
+        $this->ddl = array(1=>'postuplenie', 2=>'realizaciya', 3=>'zayavka', 4=>'pbank', 5=>'rbank', 6=>'pko', 7=>'rko', 8=>'peremeshenie', 9=>'perkas');
+        $this->doctypes_list = $this->ddl;
     }
     
+    /// Задать период полной выгрузки
+    /// @param $start_date  Начальная дата
+    /// @param $end_date    Конечная дата
+    public function setPeriod($start_date, $end_date) {
+        $this->start_time = strtotime($start_date);
+        $this->end_time = strtotime($end_date." 23:59:59");
+    }
+    
+    /// Задать список справочников для экспорта
+    /// @param $refbooks_list   Ассоциативный массив с наименованиями справочников или null для выгрузки всех справочников
+    public function setRefbooksList($refbooks_list = null) {        
+        $this->refbooks_list = $refbooks_list;
+        if(!is_array($this->refbooks_list)) {
+            $this->refbooks_list = $this->drl;
+        }
+    }
+    
+    public function setDocTypesList($doctypes_list) {        
+        $this->doctypes_list = $doctypes_list;
+        if(!is_array($this->doctypes_list)) {
+            $this->doctypes_list = $this->ddl;
+        }
+    }
+    
+    /// Задаёт время в unixtime предыдущей синхронизации. Время используется для сокращения объёма синхронизируемых данных. 
+    /// Отсутствие повторной выгрузки синхронизированных данных не гарантируется.
+    /// @param $time    Время предыдущей синхронизации или 0
+    public function setPartialTimeshtamp($time) {
+         $this->partial_timeshtamp = intval($time);
+    }
+
     protected function getDataFromMysqlQuery($query) {
         $ret = array();
         $res = $this->db->query($query);
@@ -59,7 +99,7 @@ class DataExport {
             case 10:
                 return 'doveren';
             case 11:
-                return 'redlojenie';
+                return 'predlojenie';
             case 12:
                 return 'v_puti';
             case 13:
@@ -117,15 +157,24 @@ class DataExport {
     }
     
     /// Получить данные справочника списка агентов
-    public function getAgentsListData() {
+    /// @param $partial Вернуть только изменённые с указанной даты в unixtime
+    public function getAgentsListData($partial = false) {
         $ret = array();
-        $res = $this->db->query("SELECT `id`, `group` AS `group_id`, `type`, `name`, `fullname`, `adres` AS `address`, `real_address`, `inn`, `kpp`, `dir_fio`, 
+        
+        $sql = "SELECT `id`, `group` AS `group_id`, `type`, `name`, `fullname`, `adres` AS `address`, `real_address`, `inn`, `kpp`, `dir_fio`, 
                 `pfio` AS `cpreson_fio`, `pdol` AS `cperson_post`, `okved` AS `okved`, `okpo` AS `okpo`, `ogrn` AS `ogrn`, `pasp_num` AS `passport_num`,
                 `pasp_date` AS `passport_date`, `pasp_kem` AS `passport_source_info`, `comment`, `data_sverki` AS `revision_date`,
                 `dishonest` AS `dishonest`, `p_agent` AS `p_agent_id`, `price_id` AS `price_id`, `tel`, `sms_phone`, `fax_phone`, `alt_phone`, `email`,
                 `no_mail`, `rs`, `bank`, `ks`, `bik`
-            FROM `doc_agent` 
-            ORDER BY `id`");
+            FROM `doc_agent` ";
+        if($partial) {
+            $str_date = date("Y-m-d H:i:s", $partial);
+            $sql .= " WHERE `id` IN ( SELECT `object_id` FROM `doc_log` WHERE `object`='agent' AND `time`>'$str_date' GROUP BY `object_id` )";
+        }
+        $sql .= " ORDER BY `id`";
+        
+        $res = $this->db->query($sql);
+        
         while($line = $res->fetch_assoc()) {
             // Тип агента
             switch ($line['type']) {
@@ -257,14 +306,19 @@ class DataExport {
     }
     
     /// Получить документы
-    public function getDocumentsData($from_date, $to_date) {
+    public function getDocumentsData() {
         $ret = array();
-        $res = $this->db->query("SELECT `id`, `type`, `date`, `ok`, `sklad` AS `store_id`, `kassa` AS `till_id`, `bank` AS `bank_id`,
-                `user` AS `author_id`, `altnum`, `subtype`, `sum`, `nds`, `p_doc` AS `parent_doc_id`, `mark_del`, `firm_id`, `contract` AS `contract_id`, `comment` 
+        $res = $this->db->query("SELECT `id`, `type`, `agent`, `date`, `ok`, `sklad` AS `store_id`, `kassa` AS `till_id`, `bank` AS `bank_id`,
+                `user` AS `author_id`, `altnum`, `subtype`, `sum`, `nds`, `p_doc` AS `parent_doc_id`, `mark_del`, `firm_id`, `contract` AS `contract_id`,
+                `comment` 
             FROM `doc_list`
-            WHERE `date`>='$from_date' AND `date`<='$to_date'");
+            WHERE `date`>='{$this->start_time}' AND `date`<='{$this->end_time}'");
         while($line = $res->fetch_assoc()) {
             $line['type'] = $this->getNameFromDocType($line['type']);
+            if(!in_array($line['type'], $this->doctypes_list) ) {
+                continue;
+            }
+            $line['date'] = date("Y-m-d H:i:s", $line['date']);
             // Дополнительные данные документа - преобразование в корректную форму
             $dop_res = $this->db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`='{$line['id']}'");
             while($dl = $dop_res->fetch_assoc()) {
@@ -313,7 +367,6 @@ class DataExport {
                 }
                 $line['positions'] = $positions;
             }
-            
             $ret[$line['id']] = $line;
         }
         return $ret;

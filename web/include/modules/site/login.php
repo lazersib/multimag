@@ -141,7 +141,6 @@ class login extends \IModule {
         if($errors) {
             $err_msgs = array_merge($err_msgs, $errors);
         }
-        var_dump($err_msgs);
         
         $form_action = $this->getFormAction();
         $ret = $this->getRegisterBrief();
@@ -295,6 +294,10 @@ class login extends \IModule {
     }
     
     /// Сформировать HTML код формы выбора вариантов восстановления забытого пароля
+    /// @param $session_key Сессионный ключ 
+    /// @param $email       Адрес электронной почты
+    /// @param $phone       Номер телефона
+    /// @param $openid_list Массив с openid идентификаторами
     public function getPassRecoveryTypesForm($session_key, $email, $phone, $openid_list) {
         $form_action = $this->getFormAction();
         $ret = "<form action='$form_action' method='post'>
@@ -555,7 +558,9 @@ class login extends \IModule {
                 }
                 else {
                     $user_info = $auth->getUserInfo();
+                    $db->update('users', $user_info['id'], 'last_session_id', session_id());
                     $auth->addHistoryLine('password');
+                    unset($_SESSION['another_device']);
                     $_SESSION['uid'] = $user_info['id'];
                     $_SESSION['name'] = $user_info['name'];
 
@@ -576,6 +581,10 @@ class login extends \IModule {
             $tmpl->msg($e->getMessage(),"err","Ошибка при входе");
         }
         if($need_form) {
+            if(@$_SESSION['another_device']) {
+                $tmpl->errorMessage("Выполнен вход с другого устройства! Для продолжения работы необходимо пройти повторную аутентификацию, "
+                    . "либо <a href='/login.php?mode=logout'>прервать сессию</a>!");
+            }
             if (isset($_REQUEST['cont'])) {
                 $tmpl->addContent("<div id='page-info'>Для доступа в этот раздел Вам необходимо пройти аутентификацию.</div>");
             }
@@ -962,6 +971,7 @@ class login extends \IModule {
     public function logout() {
         unset($_SESSION['uid']);
 	unset($_SESSION['name']);
+        unset($_SESSION['another_device']);
 	redirect("/index.php");
     }
 }

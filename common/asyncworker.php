@@ -59,7 +59,6 @@ class AsyncWorker {
 		return;
 	}
 
-};
+}
 
 
-?>

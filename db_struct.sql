@@ -166,10 +166,33 @@ LOCK TABLES `attachments` WRITE;
 /*!40000 ALTER TABLE `attachments` ENABLE KEYS */;
 UNLOCK TABLES;
 
+
+
+DROP TABLE IF EXISTS `comments`;
+CREATE TABLE IF NOT EXISTS `comments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `date` datetime NOT NULL,
+  `object_name` varchar(16) NOT NULL COMMENT 'Имя(тип) объекта комментирования',
+  `object_id` int(11) NOT NULL COMMENT 'ID объекта комментирования',
+  `autor_name` varchar(16) NOT NULL COMMENT 'Имя автора (анонимного)',
+  `autor_email` varchar(32) NOT NULL COMMENT 'Электронная почта анонимного автора',
+  `autor_id` int(11) NOT NULL COMMENT 'UID автора',
+  `text` text NOT NULL COMMENT 'Текст коментария',
+  `rate` tinyint(4) NOT NULL COMMENT 'Оценка объекта (0-5)',
+  `ip` varchar(16) NOT NULL,
+  `user_agent` varchar(128) NOT NULL,
+  `response` varchar(512) NOT NULL COMMENT 'Ответ администрации',
+  `responser` int(11) NOT NULL COMMENT 'Автор ответа',
+  PRIMARY KEY (`id`),
+  KEY `object_name` (`object_name`),
+  KEY `object_id` (`object_id`),
+  KEY `rate` (`rate`),
+  KEY `date` (`date`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Коментарии к товарам, новостям, статьям и пр.';
+
 --
 -- Table structure for table `class_country`
 --
-
 DROP TABLE IF EXISTS `class_country`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -2034,7 +2057,7 @@ CREATE TABLE `ps_settings` (
 
 LOCK TABLES `ps_settings` WRITE;
 /*!40000 ALTER TABLE `ps_settings` DISABLE KEYS */;
-INSERT INTO `ps_settings` VALUES (1,'Y','yandex','/.*?yandex.*?text=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%yandex%text=%',1),(2,'G','google','/.*?google.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%google%q=%',2),(3,'M','mail','/.*?mail.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%mail%q=%',3),(4,'R','rambler','/.*?rambler.*?query=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%rambler%query=%',4),(5,'B','bing','/.*?bing.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%bing%q=%',5),(6,'Q','qip','/.*?qip.*?query=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%qip%query=%',6),(7,'N','ngs','/.*?ngs.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%ngs%q=%',7);
+INSERT INTO `ps_settings` VALUES (1,'Y','yandex', '/.*?yandex.*?text=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%yandex%text=%',1),(2,'G','google','/.*?google.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%google%q=%',2),(3,'M','mail','/.*?mail.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%mail%q=%',3),(4,'R','rambler','/.*?rambler.*?query=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%rambler%query=%',4),(5,'B','bing','/.*?bing.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%bing%q=%',5),(6,'Q','qip','/.*?qip.*?query=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%qip%query=%',6),(7,'N','ngs','/.*?ngs.*?q=[\\.\\s]*([-a-zа-я0-9\"\'_!?()\\/\\\\:;]+[-a-zа-я0-9.\\s,\"\'_!?()\\/\\\\:;]*).*[\\.\\s]*($|&.*)/ui','%ngs%q=%',7);
 /*!40000 ALTER TABLE `ps_settings` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2496,7 +2519,7 @@ CREATE TABLE `users` (
   KEY `reg_phone_subscribe` (`reg_phone_subscribe`),
   KEY `jid` (`jid`),
   KEY `agent_id` (`agent_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1210 DEFAULT CHARSET=utf8 PACK_KEYS=1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 PACK_KEYS=1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2848,7 +2871,7 @@ DROP TABLE IF EXISTS `variables`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `variables` (
-  `corrupted` tinyint(4) NOT NULL COMMENT 'ÐŸÑ€Ð¸Ð·Ð½Ð°Ðº Ð½Ð°Ñ€ÑƒÑˆÐµÐ½Ð¸Ñ Ñ†ÐµÐ»Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸',
+  `corrupted` tinyint(4) NOT NULL COMMENT 'Служебные переменные системы',
   `recalc_active` int(9) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;

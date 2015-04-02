@@ -23,7 +23,7 @@ require_once($CONFIG['site']['location'] . "/include/doc.core.php");
 require_once($CONFIG['site']['location'] . "/include/doc.nulltype.php");
 
 /// Ассинхронный обработчик. Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.
-class DbCheckWorker extends AsyncWorker {
+class dbcheck extends AsyncWorker {
 
 	function getDescription() {
 		return "Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.";
@@ -102,6 +102,7 @@ class DbCheckWorker extends AsyncWorker {
                                 }
 				$buy_time = date("Y-m-d H:i:s", $doc_info[0]);
 				//echo "$buy_time\n";
+                                break;
                             }
                             $db->query("INSERT INTO `buytime_tmp` VALUES ({$pos_data[0]}, '$buy_time')");
 			}

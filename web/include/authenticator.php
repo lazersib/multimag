@@ -42,7 +42,8 @@ class authenticator {
     protected $sql_user_query = "SELECT `id`, `name`, `pass`, `pass_type`, `pass_expired`, `pass_date_change`, 
         `reg_email`, `reg_phone`, `reg_email_confirm`, `reg_phone_confirm`, `reg_email_subscribe`, `reg_phone_subscribe`,
         `reg_date`, `disabled`, `disabled_reason`, `bifact_auth`, `jid`, `real_name`, `real_address`, `agent_id`,
-        `worker`, `worker_email`, `worker_email`, `worker_phone`, `worker_jid`, `worker_real_name`, `worker_real_address`, `worker_post_name`
+        `worker`, `worker_email`, `worker_email`, `worker_phone`, `worker_jid`, `worker_real_name`, `worker_real_address`, `worker_post_name`,
+        `last_session_id`
         FROM `users`
         LEFT JOIN `users_worker_info` ON `user_id`=`users`.`id` ";
     

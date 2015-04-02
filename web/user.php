@@ -159,7 +159,7 @@ else if($mode=='async_task')
 				{
 					$cn=explode('.',$file);
 					include_once("$dir/$file");
-					$class_name=$cn[0]."Worker";
+					$class_name=$cn[0];
 					$class=new $class_name(0);
 					$nm=$class->getDescription();
 					$tmpl->addContent("<li><a href='/user.php?mode=async_task&amp;task=$cn[0]'>Запланировать $cn[0] ($nm)</a></li>");
