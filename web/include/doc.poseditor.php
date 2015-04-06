@@ -927,7 +927,7 @@ function SerialNum($action, $line_id, $data)
                         if ($cnt = $res->num_rows) {
                             $rows_res = $db->query("SELECT FOUND_ROWS()");
                             list($found_cnt) = $rows_res->fetch_row();
-                            $result[] = array('id'=>'header', 'name'=>"Поиск аналогов предыдущего блока - показано $cnt из $found_cnt");
+                            $result[] = array('id'=>'header', 'name'=>"Поиск аналогов для предыдущего блока - показано $cnt из $found_cnt");
                             $groups_analog_list = '';
                             while($line = $res->fetch_assoc()) {
                                 $result[] = $this->formatLine($line);

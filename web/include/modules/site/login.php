@@ -144,7 +144,7 @@ class login extends \IModule {
         
         $form_action = $this->getFormAction();
         $ret = $this->getRegisterBrief();
-        $ret .= "<form action='$form_action' method='post' id='reg-form'>
+        $ret .= "<form action='$form_action' method='post' id='reg-form' autocomplete='off'>
         <input type='hidden' name='mode' value='regs'>
 	<h2>Регистрационные данные</h2>
 	<table cellspacing='15'>
@@ -203,7 +203,7 @@ class login extends \IModule {
             throw new \Exception("Пользователь не найден в базе");
         }
         
-        $ret = "<form action='/login.php' method='post' class='confirm_form'>
+        $ret = "<form action='/login.php' method='post' class='confirm_form' autocomplete='off'>
             <h3>Подтверждение регистрационных данных</h3>
             <input type='hidden' name='mode' value='conf'>
             <input type='hidden' name='login' value='".html_out($login)."'>
@@ -253,11 +253,11 @@ class login extends \IModule {
         <tr><th colspan='2'>Введите данные:</th></tr>
         <tr><td colspan='2'>Если у Вас их нет, вы можете <a class='wiki' href='/login.php?mode=reg'>зарегистрироваться</a></th></tr>
         <tr><td>Логин</td><td><input type='text' name='login' class='text' id='input_name' value='$login_html' autofocus></td></tr>
-        <tr><td>Пароль</td><td><input type='password' name='pass' class='text'></td></tr>";
+        <tr><td>Пароль</td><td><input type='password' name='pass' class='text' autocomplete='off'></td></tr>";
         if($need_captcha) {
             $ret .= "<tr><td>Введите код подтверждения, изображенный на картинке:<br>
             <img src='/kcaptcha/index.php' alt='Включите отображение картинок!'></td>
-            <td><input type='text' name='captcha'></td></tr>";
+            <td><input type='text' name='captcha' autocomplete='off'></td></tr>";
         }
         $ret .= "<tr><td>&nbsp;</td>
         <td><button type='submit'>Вход!</button> ( <a class='wiki' href='/login.php?mode=rem'>Забыли пароль?</a> )</td></tr>
@@ -280,14 +280,14 @@ class login extends \IModule {
     /// Сформировать HTML код формы восстановления забытого пароля
     public function getPassRecoveryForm() {
         $form_action = $this->getFormAction();
-        $ret = "<form method='post' action='$form_action'>
+        $ret = "<form method='post' action='$form_action' autocomplete='off'>
         <p>Для начала процедуры смены пароля введите <b>логин</b> на сайте, номер телефона, или адрес электронной почты, указанный при регистрации:</p>
         <input type='hidden' name='mode' value='rem'>
         <input type='hidden' name='step' value='1'>
-        <input type='text' name='login'><br>
+        <input type='text' name='login' autocomplete='off'><br>
         Подтвердите, что вы не робот, введите текст с картинки:<br>
         <img src='/kcaptcha/index.php'><br>
-        <input type='text' name='captcha'><br>
+        <input type='text' name='captcha' autocomplete='off'><br>
         <button type='submit'>Далее</button>
         </form>";
         return $ret;

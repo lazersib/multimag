@@ -791,7 +791,6 @@ class doc_Realizaciya extends doc_Nulltype {
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Покупатель: ____________________________________";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		
 
 		if($to_str)	return $pdf->Output('skidki.pdf','S');
 		else		$pdf->Output('skidki.pdf','I');
@@ -806,7 +805,7 @@ class doc_Realizaciya extends doc_Nulltype {
         /// Товарный чек в PDF формате без ККТ
         /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
         function PrintTcPDFnkkt($to_str=false) {
-            return $this->makeTcPDF($to_str, true, true, true);            
+            return $this->makeTcPDF($to_str, true, true, false);            
         }
         
         /// Товарный чек в PDF формате без скидки

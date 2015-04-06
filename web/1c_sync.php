@@ -20,18 +20,16 @@
 include_once("core.php");
 include_once("include/doc.core.php");
 
-class NotAuthException extends Exception {
-    
-}
-
 // Проверка необходимости перехода на https
 if(!@$_SERVER['HTTPS'] && (@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login'])) {
     redirect('https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI']);
 }
 
 try {
-    if (!isset($_SERVER['PHP_AUTH_USER'])) {
-        throw new \NotAuthException("Authentification cancel by user / Аутентификация отменена пользователем.");
+    $login = request('login');
+    $password = request('password');
+    if( !$login || !$password) {
+        throw new \Exception("Не передан логин или пароль");
     }
     
     $auth = new \authenticator();
@@ -46,14 +44,14 @@ try {
         throw new \Exception("Из-за попыток перебора паролей к сайту доступ с вашего адреса заблокирован! Вы сможете авторизоваться через несколько часов после прекращения попыток перебора пароля. Если Вы не предпринимали попыток перебора пароля, обратитесь к Вашему поставщику интернет-услуг - возможно, кто-то другой пытается подобрать пароль, используя ваш адрес.");
     }
     
-    if(!$auth->loadDataForLogin($_SERVER['PHP_AUTH_USER'])) {  // Не существует
+    if(!$auth->loadDataForLogin($login)) {  // Не существует
         $db->insertA("users_bad_auth", array('ip' => getenv("REMOTE_ADDR"), 'time' => time()) );
-        throw new \NotAuthException("Неверная пара логин / пароль. Попробуйте снова.");
+        throw new \Exception("Неверная пара логин / пароль. Попробуйте снова.");
     }
 
-    if(!$auth->testPassword($_SERVER['PHP_AUTH_PW'])) {   // Неверный пароль
+    if(!$auth->testPassword($password)) {   // Неверный пароль
         $db->insertA("users_bad_auth", array('ip' => getenv("REMOTE_ADDR"), 'time' => time()) );
-        throw new \NotAuthException("Неверная пара логин / пароль. Попробуйте снова.");
+        throw new \Exception("Неверная пара логин / пароль. Попробуйте снова.");
     }
 
     if ($auth->isDisabled()) {
@@ -66,7 +64,7 @@ try {
     $_SESSION['name'] = $user_info['name'];
     
     if(!isAccess('doc_1csync', 'exec', true)) {
-        throw new \Exception("Отсутствуют необходимые привилегии" );
+        throw new \AccessException("Отсутствуют необходимые привилегии" );
     }
     
     $partial_time = rcvint('partial_time', 0);              // Если задано, то передаёт только изменения, произошедшие после этой даты
@@ -86,34 +84,27 @@ try {
         echo $data; 
     } else if($mode=='import') {
         $import = new \sync\simplexml1cdataimport($db);
-        /*
+        
         if( isset($_POST['xmlstring']) ) {
             $xmlstring = $_POST['xmlstring'];
             $import->loadFromString($_POST['xmlstring']);
         } elseif (is_uploaded_file(@$_FILES['xmlfile']['tmp_name'])) {
             $import->loadFromFile(@$_FILES['xmlfile']['tmp_name']);
         } else {
-            throw new Exception('Данные не получены.');
+            throw new \Exception('Данные не получены.');
         }
-         */
-        $import->loadFromFile('1c.xml');
+         
+        //$import->loadFromFile('1c.xml');
         $db->startTransaction(); 
         $data = $import->importData();
         header("Content-type: application/xml");
         echo $data;
-        //$db->commit();
+        $db->commit();
         
     } else {
         throw new NotFoundException('Неверный параметр');
     }
-     
-    
 } 
-catch (NotAuthException $e) {
-    header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
-    header('HTTP/1.0 401 Unauthorized');
-    echo $e->getMessage();
-}
 catch (Exception $e) {
     $dom = new domDocument("1.0", "utf-8");
     $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
