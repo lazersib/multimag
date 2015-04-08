@@ -25,7 +25,7 @@ require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 require_once($CONFIG['location']."/common/async/psparser.php");
 
 try {
-	$worker=new psparser(0);
+	$worker=new \async\psparser(0);
 	$worker->run();
 }
 catch(Exception $e) {
@@ -39,5 +39,3 @@ catch(Exception $e) {
 	}
 	echo $e->getMessage()."\n";
 }
-
-?>

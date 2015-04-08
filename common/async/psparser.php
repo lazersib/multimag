@@ -17,13 +17,14 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+namespace async;
 
 require_once($CONFIG['location'] . "/common/asyncworker.php");
 require_once($CONFIG['site']['location'] . "/include/doc.core.php");
 require_once($CONFIG['site']['location'] . "/include/doc.nulltype.php");
 
 /// Ассинхронный обработчик. Анализ статистики переходов на сайт и выборка информации о переходах с поисковиков, и текстах запросов
-class psparser extends AsyncWorker {
+class psparser extends \AsyncWorker {
 
     function getDescription() {
         return "Анализ статистики переходов на сайт и выборка информации о переходах с поисковиков";

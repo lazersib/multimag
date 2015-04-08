@@ -30,7 +30,7 @@ try {
     while ($ainfo = $res->fetch_assoc()) {
         $db->query("UPDATE `async_workers_tasks` SET `needrun`=0, `textstatus`='Запускается' WHERE `id`='{$ainfo['id']}'");
         require_once($CONFIG['location'] . "/common/async/" . strtolower($ainfo['task']) . ".php");
-        $classname = $ainfo['task'];
+        $classname = '\\async\\'.$ainfo['task'];
         $worker = new $classname($ainfo['id']);
         $worker->run();
         $worker->end();

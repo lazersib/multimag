@@ -348,6 +348,9 @@ $dir = $CONFIG['site']['location'].'/include/reports/';
 try {
 	if ($mode == '') {
 		doc_menu();
+                $tmpl->addBreadcrumb('ЛК', '/user.php');
+                $tmpl->addBreadcrumb('Общий журнал', '/docj_new.php');        
+                $tmpl->addBreadcrumb('Отчёты', '');        
 		$tmpl->setTitle("Отчёты");
 		$tmpl->addContent("<h1>Отчёты</h1>
 		<p>Внимание! Отчёты создают высокую нагрузку на сервер, поэтому не рекомендуеся генерировать отчёты во время интенсивной работы с базой данных, а так же не рекомендуется частое использование генератора отчётов по этой же причине!</p>");
@@ -404,6 +407,10 @@ try {
 		doc_menu();
 		if (!isAccess('report_' . $mode, 'view'))
 			throw new AccessException("Недостаточно привилегий");
+                                $tmpl->addBreadcrumb('ЛК', '/user.php');
+                $tmpl->addBreadcrumb('Общий журнал', '/docj_new.php');        
+                $tmpl->addBreadcrumb('Отчёты', '/doc_reports.php');        
+                
 		$tmpl->setTitle("Отчёты");
 		$opt = request('opt');
 		$fn = $dir . $mode . '.php';
@@ -412,6 +419,7 @@ try {
 			$class_name = 'Report_' . $mode;
 			$class = new $class_name;
 			$tmpl->setTitle($class->getName());
+                        $tmpl->addBreadcrumb($class->getName(), '/doc_reports.php?mode='.$mode); 
 			$class->Run($opt);
 		}
 		else	$tmpl->msg("Сценарий $fn не найден!", "err");

@@ -17,13 +17,13 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+namespace async;
 
-require_once($CONFIG['location'] . "/common/asyncworker.php");
 require_once($CONFIG['site']['location'] . "/include/doc.core.php");
 require_once($CONFIG['site']['location'] . "/include/doc.nulltype.php");
 
 /// Ассинхронный обработчик. Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.
-class dbcheck extends AsyncWorker {
+class dbcheck extends \AsyncWorker {
 
 	function getDescription() {
 		return "Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.";

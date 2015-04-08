@@ -25,7 +25,7 @@ require_once("$base_path/config_cli.php");
 require_once($CONFIG['cli']['location']."/core.cli.inc.php");
 require_once($CONFIG['location']."/common/async/dbcheck.php");
 try {
-	$worker = new dbcheck(0);
+	$worker = new \async\dbcheck(0);
 	$worker->run();
 } catch (Exception $e) {
 	if ($worker) {
