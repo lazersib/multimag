@@ -237,11 +237,11 @@ class dataexport {
         $ret = array();
         $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`pos_type` AS `type`, `doc_base`.`name`, 
                 `doc_base`.`vc` AS `vendor_code`, `doc_base`.`country` AS `country_id`, `class_country`.`number_code` AS `country_code`,
-                `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_base`.`unit` AS `unit_id`, `class_units`.`number_code` AS `unit_code`,
+                `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_base`.`unit` AS `unit_id`, `class_unit`.`number_code` AS `unit_code`,
                 `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`create_time`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, 
                 `doc_base`.`mass`, `doc_base`.`desc` AS `comment`, `doc_base`.`stock`, `doc_base`.`hidden`
             FROM `doc_base` 
-            LEFT JOIN `class_units` ON `class_units`.`id`=`doc_base`.`unit`
+            LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
             LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
             ORDER BY `id`");
         while($line = $res->fetch_assoc()) {
