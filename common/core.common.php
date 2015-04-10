@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "763");
+define("MULTIMAG_REV", "764");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -306,7 +306,7 @@ class MysqiExtended extends mysqli {
         $cols = $values = '';
         $f = 0;
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL') {
+            if ($value !== 'NULL' && $value !== 'null' ) {
                 $value = '\'' . $this->real_escape_string($value) . '\'';
             }
             if (!$f) {
@@ -372,7 +372,7 @@ class MysqiExtended extends mysqli {
         settype($key_value, 'int');
         $q = $f = '';
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL') {
+            if ($value !== 'NULL' && $value !== 'null') {
                 $value = '\'' . $this->real_escape_string($value) . '\'';
             }
             if ($f) {

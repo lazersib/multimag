@@ -92,9 +92,12 @@ class BankListEditor extends \ListEditor {
 		$ks_sql		= $db->real_escape_string($data['ks']);
 		$firm_id	= intval($data['firm_id']);
 		if($id) {
+                    $res =  $db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='$id'");
+                    if($res->num_rows) {
 			$db->query("UPDATE `doc_kassa` SET `name`='$name_sql', `bik`='$bik_sql', `ks`='$ks_sql', `rs`='$rs_sql', `firm_id`='$firm_id'
 				WHERE `ids`='bank' AND `num`=$id");
 			return $id;
+                    }
 		}
 		$res = $db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' ORDER BY `num` DESC LIMIT 1");
 		if ($res->num_rows) {

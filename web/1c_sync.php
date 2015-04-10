@@ -105,6 +105,24 @@ try {
         throw new NotFoundException('Неверный параметр');
     }
 } 
+catch (mysqli_sql_exception $e) {
+    $dom = new domDocument("1.0", "utf-8");
+    $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
+    $root->setAttribute('version', '1.0');
+    $dom->appendChild($root);
+    
+    $lognum = writeLogException($e);
+    $result = $dom->createElement('result');            // Код возврата
+    $result_code = $dom->createElement('status', 'err');
+    $result_desc = $dom->createElement('message', "Ошибка в базе данных (код:".$e->getCode().", номер:$lognum): ".$e->getMessage());
+    $result->appendChild($result_code);
+    $result->appendChild($result_desc);
+    $root->appendChild($result);
+    
+    header("Content-type: application/xml");
+    echo $dom->saveXML(); 
+    writeLogException($e);
+}
 catch (Exception $e) {
     $dom = new domDocument("1.0", "utf-8");
     $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент

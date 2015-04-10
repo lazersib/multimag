@@ -20,13 +20,39 @@ namespace sync;
 
 class dataimport {
     protected $db;                  //< Ссылка на соединение с базой данных
-
+    protected $units_classifer = null;
+    protected $countries_classifer = null;
+    
     /// Конструктор
     /// @param $db Объект связи с базой данных
     public function __construct($db) {
         $this->db = $db;
     }
     
+    protected function getUnitsClassiferIds() {
+        if($this->units_classifer) {
+            return $this->units_classifer;
+        }
+        $this->units_classifer = array();
+        $res = $this->db->query("SELECT `id`, `number_code` FROM `class_unit`");
+        while($line = $res->fetch_row()) {
+            $this->units_classifer[$line[1]] = $line[0];
+        }
+        return $this->units_classifer;
+    }
+
+    protected function getCountriesClassiferIds() {
+        if($this->countries_classifer) {
+            return $this->countries_classifer;
+        }
+        $this->countries_classifer = array();
+        $res = $this->db->query("SELECT `id`, `number_code` FROM `class_country`");
+        while($line = $res->fetch_row()) {
+            $this->countries_classifer[$line[1]] = $line[0];
+        }
+        return $this->countries_classifer;
+    }
+
     protected function loadFirmObject($id, $data) {
         $this->firm_fields = array(
             'firm_name' => 'name',
@@ -54,7 +80,11 @@ class dataimport {
                 $db_data[$db_field] = $data[$exp_field];
             }
         }
-        if($id==0) {
+        $seek = $this->db->selectRow('doc_vars', $id);
+        if($seek===0 || $id==0) {
+            if($id) {
+                $db_data['id'] = $id;
+            }
             $newid = $this->db->insertA('doc_vars', $db_data);
             return $newid;
         } else {
@@ -74,7 +104,11 @@ class dataimport {
                 $db_data[$db_field] = $data[$exp_field];
             }
         }
-        if($id==0) {
+        $seek = $this->db->selectRow('doc_sklady', $id);
+        if($seek===0 || $id==0) {
+            if($id) {
+                $db_data['id'] = $id;
+            }
             $newid = $this->db->insertA('doc_sklady', $db_data);
             return $newid;
         } else {
@@ -106,11 +140,71 @@ class dataimport {
                 $db_data[$db_field] = $data[$exp_field];
             }
         }
-        if($id==0) {
+        $seek = $this->db->selectRow('doc_cost', $id);
+        if($seek===0 || $id==0) {
+            if($id) {
+                $db_data['id'] = $id;
+            }
             $newid = $this->db->insertA('doc_cost', $db_data);
             return $newid;
         } else {
             $this->db->updateA('doc_cost', $id, $db_data);
+            return false;
+        }
+    }
+
+    protected function loadUnitObjectForCode($data) {
+        $this->units_fields = array(
+            'name' => 'name',
+            'rus_name1' => 'short_name'
+        );
+
+        $db_data = array();
+        foreach($this->units_fields as $db_field => $exp_field) {
+            if( isset($data[$exp_field]) ) {
+                $db_data[$db_field] = $data[$exp_field];
+            }
+        }
+        if(isset($data['number_code'])) {
+            $key = $data['number_code'];
+        } else {
+            throw new \Exception("У элемента справочника единиц измерения не задан код!");
+        }
+        $seek = $this->db->selectRowK('class_unit', 'number_code', $key);
+        if($seek===0) {
+            $newid = $this->db->insertA('class_unit', $db_data);
+            return $newid;
+        } else {
+            $this->db->updateA('class_unit', $seek['id'], $db_data);
+            return false;
+        }
+    }
+    
+    protected function loadCountryObjectForCode($data) {
+        $this->country_fields = array(
+            'name' => 'name',
+            'full_name' => 'short_name',
+            'alfa2' => 'alfa2',
+            'alfa3' => 'alfa3'
+        );
+
+        $db_data = array();
+        foreach($this->country_fields as $db_field => $exp_field) {
+            if( isset($data[$exp_field]) ) {
+                $db_data[$db_field] = $data[$exp_field];
+            }
+        }
+        if(isset($data['number_code'])) {
+            $key = $data['number_code'];
+        } else {
+            throw new \Exception("У элемента справочника стран мира не задан код!");
+        }
+        $seek = $this->db->selectRowK('class_country', 'number_code', $key);
+        if($seek===0) {
+            $newid = $this->db->insertA('class_country', $db_data);
+            return $newid;
+        } else {
+            $this->db->updateA('class_country', $seek['id'], $db_data);
             return false;
         }
     }
@@ -128,7 +222,11 @@ class dataimport {
                 $db_data[$db_field] = $data[$exp_field];
             }
         }
-        if($id==0) {
+        $seek = $this->db->selectRow('doc_agent_group', $id);
+        if($seek===0) {
+            if($id) {
+                $db_data['id'] = $id;
+            }
             $newid = $this->db->insertA('doc_agent_group', $db_data);
             return $newid;
         } else {
@@ -162,7 +260,11 @@ class dataimport {
             default:
                 $line['type'] = 0;
         }
-        if($id==0) {
+        $seek = $this->db->selectRow('doc_agent', $id);
+        if($seek===0) {
+            if($id) {
+                $db_data['id'] = $id;
+            }
             $newid = $this->db->insertA('doc_agent', $db_data);
             return $newid;
         } else {
@@ -184,7 +286,11 @@ class dataimport {
                 $db_data[$db_field] = $data[$exp_field];
             }
         }
-        if($id==0) {
+        $seek = $this->db->selectRow('doc_group', $id);
+        if($seek===0 || $id==0) {
+            if($id) {
+                $db_data['id'] = $id;
+            }
             $newid = $this->db->insertA('doc_group', $db_data);
             return $newid;
         } else {
@@ -193,14 +299,15 @@ class dataimport {
         }
     }
     
-    protected function loadNomenclatureItemsObject($id, $data) {
+    protected function loadNomenclatureItemObject($id, $data) {
         $this->ng_fields = array(
-            'pid' => 'group_id',
-            'type' => 'type',
+            'group' => 'group_id',
+            'pos_type' => 'type',
             'name' => 'name',
             'vc' => 'vendor_code',
-            'country' => 'country_id',
-            'unit' => 'unit_id',
+            'nds' => 'nds',
+            //'country' => 'country_id',
+            //'unit' => 'unit_id',
             'desc' => 'comment'
         );
 
@@ -210,7 +317,37 @@ class dataimport {
                 $db_data[$db_field] = $data[$exp_field];
             }
         }
-        if($id==0) {
+        $ui = $this->getUnitsClassiferIds();
+        if(isset($data['unit_code'])) {
+            if($data['unit_code'] == 'null' || $data['unit_code'] == 'NULL') {
+                $db_data['unit'] = 'null';
+            } elseif (isset($ui[$data['unit_code']])) {
+                $db_data['unit'] = $ui[$data['unit_code']];
+            } else {
+                throw new \Exception("Код *{$data['unit_code']}* в справочнике единиц измерения не найден.");
+            }
+        } else {
+            $db_data['unit'] = 'null';
+        }
+        
+        $ci = $this->getCountriesClassiferIds();
+        if(isset($data['country_code'])) {
+            if($data['country_code'] == 'null' || $data['country_code'] == 'NULL') {
+                $db_data['country'] = 'null';
+            } elseif (isset($ci[$data['country_code']])) {
+                $db_data['country'] = $ci[$data['country_code']];
+            } else {
+                throw new \Exception("Код *{$data['country_code']}* в справочнике стран мира не найден.");
+            }
+        } else {
+            $db_data['country'] = 'null';
+        }
+        
+        $seek = $this->db->selectRow('doc_base', $id);
+        if($seek===0 || $id==0) {
+            if($id) {
+                $db_data['id'] = $id;
+            }
             $newid = $this->db->insertA('doc_base', $db_data);
             return $newid;
         } else {

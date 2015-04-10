@@ -84,9 +84,12 @@ class KassListEditor extends \ListEditor {
 		$name_sql	= $this->db_link->real_escape_string($data['name']);
 		$firm_id	= intval($data['firm_id']);
 		if($id) {
+                    $res =  $this->db_link->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='$id'");
+                    if($res->num_rows) {
 			$this->db_link->query("UPDATE `doc_kassa` SET `name`='$name_sql', `firm_id`='$firm_id'
 				WHERE `ids`='kassa' AND `num`=$id");
 			return $id;
+                    }
 		}
 		$res = $this->db_link->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='kassa' ORDER BY `num` DESC LIMIT 1");
 		if ($res->num_rows) {

@@ -80,6 +80,12 @@ class simplexml1cdataimport extends \sync\dataimport {
                 case 'prices':
                     $this->parsePricesNode($node);
                     break;
+                case 'countries':
+                    $this->parseCountriesNode($node);
+                    break;
+                case 'units':
+                    $this->parseUnitsNode($node);
+                    break;
                 case 'agents':
                     $this->parseAgentsNode($node);
                     break;
@@ -260,6 +266,32 @@ class simplexml1cdataimport extends \sync\dataimport {
             }
         }
         $this->newids['till'] = $newids;
+    }
+    
+    protected function parseUnitsNode($node) {
+        foreach($node->children() as $cname => $cnode) {
+            if($cname!='unit') {
+                throw new \Exception('Недопустимый элемент в блоке единиц измерения!');
+            }
+            $data = array();
+            foreach($cnode as $name => $value) {
+                $data[$name] = $value->__toString();
+            }
+            $this->loadUnitObjectForCode($data);
+        }
+    }
+    
+    protected function parseCountriesNode($node) {
+        foreach($node->children() as $cname => $cnode) {
+            if($cname!='country') {
+                throw new \Exception('Недопустимый элемент в блоке стран мира!');
+            }
+            $data = array();
+            foreach($cnode as $name => $value) {
+                $data[$name] = $value->__toString();
+            }
+            $this->loadCountryObjectForCode($data);
+        }
     }
     
     protected function parsePricesNode($node) {

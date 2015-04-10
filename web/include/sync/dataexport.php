@@ -235,10 +235,14 @@ class dataexport {
     /// Получить данные справочника списка номенклатуры
     public function getNomenclatureListData() {
         $ret = array();
-        $res = $this->db->query("SELECT `id`, `group` AS `group_id`, `pos_type` AS `type`, `name`, `vc` AS `vendor_code`, `country` AS `country_id`, 
-                `proizv` AS `vendor`, `cost` AS `base_price`, `unit` AS `unit_id`, `warranty`, `warranty_type`, `create_time`, `mult`, `bulkcnt`, 
-                `mass`, `desc` AS `comment`, `stock`, `hidden`
+        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`pos_type` AS `type`, `doc_base`.`name`, 
+                `doc_base`.`vc` AS `vendor_code`, `doc_base`.`country` AS `country_id`, `class_country`.`number_code` AS `country_code`,
+                `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_base`.`unit` AS `unit_id`, `class_units`.`number_code` AS `unit_code`,
+                `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`create_time`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, 
+                `doc_base`.`mass`, `doc_base`.`desc` AS `comment`, `doc_base`.`stock`, `doc_base`.`hidden`
             FROM `doc_base` 
+            LEFT JOIN `class_units` ON `class_units`.`id`=`doc_base`.`unit`
+            LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
             ORDER BY `id`");
         while($line = $res->fetch_assoc()) {
             $price_res = $this->db->query("SELECT `cost_id` AS `price_id`, `type`, `value`, `accuracy`, `direction` 
@@ -296,12 +300,12 @@ class dataexport {
     
     /// Получить данные справочника стран мира
     public function getCountriesData() {
-        return $this->getDataFromMysqlQuery("SELECT `id`, `name`, `full_name`, `number_code`, `alfa2`, `alfa3`, `comment` FROM `class_country` ORDER BY `id`");
+        return $this->getDataFromMysqlQuery("SELECT `id`, `name`, `full_name`, `number_code`, `alfa2`, `alfa3` FROM `class_country` ORDER BY `id`");
     }
     
     /// Получить данные справочника единиц измерения
     public function getUnitsData() {
-        return $this->getDataFromMysqlQuery("SELECT `id`, `name`, `rus_name1` AS `short_name`, `number_code`, `eng_name1` AS `eng_name`, `comment` 
+        return $this->getDataFromMysqlQuery("SELECT `id`, `name`, `rus_name1` AS `short_name`, `number_code`
             FROM `class_unit` ORDER BY `id`");
     }
     
