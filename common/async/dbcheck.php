@@ -26,15 +26,17 @@ require_once($CONFIG['site']['location'] . "/include/doc.nulltype.php");
 class dbcheck extends \AsyncWorker {
 
 	function getDescription() {
-		return "Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.";
+            return "Перепроводка документов и перерасчёт контрольных значений в таблицах базы данных.";
 	}
 
 	/// Запускает обработчик
 	function run() {
+
 		global $CONFIG, $db;
 		$this->mail_text = '';
 		$tim = time();
-
+                
+if(0) {
 		$this->SetStatusText("Запуск...");
 		$db->query("UPDATE `variables` SET `corrupted`='1', `recalc_active`='1'");
 		sleep(5);
@@ -182,7 +184,7 @@ class dbcheck extends \AsyncWorker {
 		}
 		else	echo"Ошибки последовательности документов не найдены!\n";
 		$res = $db->query("UPDATE `variables` SET `recalc_active`='0'");
-
+}
 		$this->SetStatusText("Удаление помеченных на удаление...\n");
 		// ============================= Удаление помеченных на удаление =========================================
 		$tim_minus = time() - 60 * 60 * 24 * @$CONFIG['auto']['doc_del_days'];
@@ -190,14 +192,13 @@ class dbcheck extends \AsyncWorker {
 		while ($nxt = $res->fetch_row()) {
 			try {
 				$document = AutoDocumentType($nxt[1], $nxt[0]);
-				$document->DelExec($nxt[0]);
+                                $document->delExec($nxt[0]);                                
 				echo "Док. ID:$nxt[0],type:$nxt[1] удалён\n";
-			} catch (Exception $e) {
+			} catch (\Exception $e) {
 				$text = "Док. ID:$nxt[0],type:$nxt[1], ошибка удаления: " . $e->getMessage() . "\n";
 				echo $text;
 			}
 		}
-
 		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list`.`id`, `doc_agent`.`name`, `doc_list_pos`.`id`, `doc_base`.`name` FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -208,22 +209,23 @@ class dbcheck extends \AsyncWorker {
 			echo $text;
 			$this->mail_text.=$text;
 		}
-
+                $this->mail_text = 1;
 		if ($this->mail_text) {
-			try {
-				$mail_text = "При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n" . $this->mail_text . "\n\n****\nНеобходимо исправить найденные ошибки!";
+                    try {
 
-				mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
-				echo "Почта отправлена!";
-				$db->query("UPDATE `variables` SET `corrupted`='1'");
-			} catch (Exception $e) {
-				echo"Ошибка отправки почты!" . $e->getMessage();
-			}
-		} else {
-			echo"Ошибок не найдено, не о чем оповещать!\n";
-			$db->query("UPDATE `variables` SET `corrupted`='0'");
-		}
-	}
+                        $mail_text = "При автоматической проверке базы данных сайта найдены следующие проблемы:\n****\n\n" . $this->mail_text . "\n\n****\nНеобходимо исправить найденные ошибки!";
+
+                        mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
+                        echo "Почта отправлена!";
+                        $db->query("UPDATE `variables` SET `corrupted`='1'");
+                    } catch (Exception $e) {
+                        echo"Ошибка отправки почты!" . $e->getMessage();
+                    }
+                } else {
+                    echo"Ошибок не найдено, не о чем оповещать!\n";
+                    $db->query("UPDATE `variables` SET `corrupted`='0'");
+                }
+        }
 
 	function finalize() {
 		global $db;

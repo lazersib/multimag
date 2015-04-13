@@ -113,7 +113,7 @@ class upd extends \doc\printforms\iPrintForm {
         
         $this->pdf->SetY($y); 
         $this->pdf->SetFont('', '', 10);
-        $str = "Счёт - фактура N {$doc_data['altnum']}, от ". date("d.m.Y", $doc_data['date'])." (1)";
+        $str = "Счёт - фактура N {$doc_data['altnum']} от ". date("d.m.Y", $doc_data['date'])." (1)";
         $this->pdf->CellIconv(0, 4, $str, 0, 1, 'L');
         $str = "Исправление N ---- от --.--.---- (1a)";
         $this->pdf->CellIconv(0, 4, $str, 0, 1, 'L');

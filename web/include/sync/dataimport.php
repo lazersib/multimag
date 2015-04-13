@@ -172,6 +172,12 @@ class dataimport {
         }
         $seek = $this->db->selectRowK('class_unit', 'number_code', $key);
         if($seek===0) {
+            if(!isset($db_data['class_unit_group_id'])) {
+                $db_data['class_unit_group_id'] = 1;
+            }
+            if(!isset($db_data['class_unit_type_id'])) {
+                $db_data['class_unit_type_id'] = 1;
+            }
             $newid = $this->db->insertA('class_unit', $db_data);
             return $newid;
         } else {
@@ -394,9 +400,68 @@ class dataimport {
             $db_data['ok'] = $data['ok'] ? time() : 0;
             $data['author'] = $_SESSION['uid'];
             $doc_id = $this->db->insertA("doc_list", $db_data);
-            $this->db->query("INSERT INTO `doc_doptdata` (`doc`, `param`, `value`) VALUES ($doc_id, 'guid_1c', '$sql_guid')");
+            $this->db->query("INSERT INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ($doc_id, 'guid_1c', '$sql_guid')");
         }
-                
+        if(isset($data['positions'])) {
+            $id_list = array();
+            $res = $this->db->query("SELECT `id`, `tovar` AS `pos_id`, `cost` AS `price`, `cnt`, `gtd`"
+                . " FROM `doc_list_pos`"
+                . " WHERE `doc`='$doc_id'");
+            $old_pl = array();
+            while($line = $res->fetch_assoc()) {
+                $old_pl[$line['tovar']] = $line;
+            }
+            // обновляем
+            foreach($data['positions'] as $pos_line) {
+                if(isset($old_pl[$pos_line['pos_id']])) {
+                    $pos_id = $old_pl[$pos_line['pos_id']]['id'];
+                    $this->updateDocLine($old_pl[$pos_id], $pos_line);
+                    unset($old_pl[$pos_line['tovar']]);
+                } else {
+                    $pos_line['doc'] = $doc_id;
+                    $new_id = $this->insertDocLine($pos_line);
+                    $id_list[$new_id] = $new_id;
+                }
+            }
+            // удаляем остатки
+            foreach($old_pl AS $pos_line) {
+                $this->db->delete('doc_list_pos', $pos_line['id']);
+            }
+        }
+    }
+    
+    protected function updateDocLine($old_line, $new_line) {
+        $this->docline_fields = array(
+            'tovar' => 'pos_id',
+            'cost' => 'price',
+            'cnt' => 'cnt',
+            'gtd' => 'gtd'
+        );
+        $db_data = array();
+        foreach($this->docline_fields as $db_field => $exp_field) {
+            if( isset($new_line[$exp_field]) ) {
+                $db_data[$db_field] = $new_line[$exp_field];
+            }
+        }        
+        $this->db->updateA('doc_list_pos', $old_line['id'], $db_data);
+    }
+    
+    protected function insertDocLine($new_line) {
+        $this->docline_fields = array(
+            'doc'   => 'doc',
+            'tovar' => 'pos_id',
+            'cost' => 'price',
+            'cnt' => 'cnt',
+            'gtd' => 'gtd'
+        );
+        $db_data = array();
+        foreach($this->docline_fields as $db_field => $exp_field) {
+            if( isset($new_line[$exp_field]) ) {
+                $db_data[$db_field] = $new_line[$exp_field];
+            }
+        }        
+        $newid = $this->db->insertA('doc_list_pos', $db_data);
+        return $newid;
     }
 
     protected function getTypeFromDocName($doc_name) {

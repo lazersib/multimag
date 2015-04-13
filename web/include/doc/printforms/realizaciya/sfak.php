@@ -89,7 +89,7 @@ class sfak extends \doc\printforms\iPrintForm {
         // заголовок
         $this->pdf->SetFont('', '', 16);
         $step = 4;
-        $str = iconv('UTF-8', 'windows-1251', "Счёт - фактура N {$doc_data['altnum']}, от ". date("d.m.Y", $doc_data['date']));
+        $str = iconv('UTF-8', 'windows-1251', "Счёт - фактура N {$doc_data['altnum']} от ". date("d.m.Y", $doc_data['date']));
         $this->pdf->Cell(0, 6, $str, 0, 1, 'L');
         $str = iconv('UTF-8', 'windows-1251', "Исправление N ---- от --.--.----");
         $this->pdf->Cell(0, 6, $str, 0, 1, 'L');

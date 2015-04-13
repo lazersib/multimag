@@ -1102,44 +1102,48 @@ class doc_Nulltype
     }
 
     /// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-	function delExec($doc)
-	{
-		global $db;
-		$res = $db->query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-		if(!$res->num_rows)	throw new Exception("Документ не найден");
-		list($ok) = $res->fetch_row();
-		if($ok)			throw new Exception("Нельзя удалить проведённый документ");
-		$res = $db->query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
-		if($res->num_rows) 	throw new Exception("Нельзя удалить документ с неудалёнными потомками");
-		$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='$doc'");
-		$db->query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-		$db->query("DELETE FROM `doc_list` WHERE `id`='$doc'");
-   	}
+    function delExec($doc) {
+        global $db;
+        $res = $db->query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
+        if (!$res->num_rows) {
+            throw new \Exception("Документ не найден");
+        }
+        list($ok) = $res->fetch_row();
+        if ($ok) {
+            throw new \Exception("Нельзя удалить проведённый документ");
+        }
+        $res = $db->query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
+        if ($res->num_rows) {
+            throw new \Exception("Нельзя удалить документ с неудалёнными потомками");
+        }
+        $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='$doc'");
+        $db->query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
+        $db->query("DELETE FROM `doc_list` WHERE `id`='$doc'");
+    }
 
-   	/// Сделать документ потомком указанного документа
-   	function connect($p_doc)
-   	{
-		global $db;
-   		if(!isAccess('doc_'.$this->doc_name,'edit')) {
-                    throw new AccessException();
-                }
-                if($this->doc == $p_doc) {
-                    throw new Exception('Нельзя связать с самим собой!');
-                }
-   		if($this->doc_data['ok']) {
-                    throw new Exception("Операция не допускается для проведённого документа!");
-                }
-                if($p_doc!=0) {
-                    // Проверяем существование документа
-                    $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`=$p_doc");
-                    if(!$res->num_rows) {
-                        throw new Exception('Документ с ID '.$p_doc.' не найден.');
-                    }
-                }
-		$db->query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
-   	}
-	
-	/// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
+    /// Сделать документ потомком указанного документа
+    function connect($p_doc) {
+        global $db;
+        if (!isAccess('doc_' . $this->doc_name, 'edit')) {
+            throw new \AccessException();
+        }
+        if ($this->doc == $p_doc) {
+            throw new \Exception('Нельзя связать с самим собой!');
+        }
+        if ($this->doc_data['ok']) {
+            throw new \Exception("Операция не допускается для проведённого документа!");
+        }
+        if ($p_doc != 0) {
+            // Проверяем существование документа
+            $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`=$p_doc");
+            if (!$res->num_rows) {
+                throw new \Exception('Документ с ID ' . $p_doc . ' не найден.');
+            }
+        }
+        $db->query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->doc}'");
+    }
+
+    /// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
    	function connectJson($p_doc) {
 		try {
 			$this->Connect($p_doc);
