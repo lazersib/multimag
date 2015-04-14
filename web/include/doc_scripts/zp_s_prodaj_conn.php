@@ -192,7 +192,7 @@ class ds_zp_s_prodaj_conn {
 
 			$tim = time();
 			$uid = intval($_SESSION['uid']);
-			$altnum = GetNextAltNum(1, 'auto', 0, $tim, 1);
+			$altnum = GetNextAltNum(1, 'auto', 0, date("Y-m-d"), 1);
 			$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
 				VALUES	('$tim', '1', '1', '$uid', '$altnum', 'auto', '1', '$worker_id', '0', '$all_sum')");
 			$post_doc = $db->insert_id;

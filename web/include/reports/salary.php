@@ -31,17 +31,17 @@ class Report_Salary extends BaseGSReport {
     function Form() {
         global $tmpl, $db;
         $d_t = date("Y-m-d");
-        $d_f = date("Y-m-d", time() - 60 * 60 * 24 * 31);
+        $d_f = date("Y-m-d", time() - 60 * 60 * 24 * 1);
         $tmpl->addBreadcrumb($this->getName(), ''); 
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
             <form action='' method='post'>
             <input type='hidden' name='mode' value='salary'>
+            <input type='hidden' name='opt' value='get'>
             <fieldset><legend>Дата</legend>
             С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
             По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
             </fieldset>
             </fieldset>
-            Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
             <button type='submit'>Сформировать отчёт</button>
             </form>
             <script type=\"text/javascript\">
@@ -52,52 +52,181 @@ class Report_Salary extends BaseGSReport {
             addEventListener('load',dtinit,false);	
             </script>");
     }
+    
+    function make($engine) {
+        if($engine=='get') {
+            return $this->makeFull($engine);
+        } else {
+            return $this->makeDetail($engine);
+        }
+    }
+    
+    function makeDetail($engine) {
+        global $tmpl, $db;
+        $doc = rcvint('doc');
+        $users_ldo = new \Models\LDO\workernames();
+        $users = $users_ldo->getData();
+        
+        $salary = new \async\salary(0);
+        $salary->loadPosTypes(); 
+        $salary->loadPcsId();
+        $tmpl->addBreadcrumb('Просмотр данных', '');
+        
+        
+        $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
+            . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`"
+            . " FROM `doc_list`"
+            . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
+            . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
+            . " WHERE `doc_list`.`id`=$doc");
+        if($doc_line = $docs_res->fetch_assoc()) {
+            $doc_vars = array();
+            $o_name = $o_fee = $r_name = $r_fee = $m_name = $m_fee = $sk_name = $sk_fee = '';
+            $sum_line = 0;
+            $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
+            while ($line = $res->fetch_row()) {
+                $doc_vars[$line[0]] = $line[1];
+            }
+            $doc_line['vars'] = $doc_vars;            
+            $info = $salary->calcFee($doc_line, $doc_line['resp_id'], 1);
+            $tmpl->addContent("<h1>Расчёты по {$doc_line['type_name']} - $doc</h1>");
+            $tmpl->addContent("<table class='list' width='100%'>"
+            . "<tr><th>id</th><th>Код</th><th>Наименование</th><th>Пр-ль</th><th>Кол-во</th><th>В уп.</th><th>Коэфф.сл.сб.</th>");
+            if($doc_line['type']==2) {
+                $tmpl->addContent("<th>П.цена</th><th>Вх.цена</th><th>Ликв.</th><th>Расч.ст.</th>");
+            }
+            $tmpl->addContent("</tr>");
+            foreach($info['detail'] as $pos_line) {
+                $tmpl->addContent("<tr><td>{$pos_line['id']}</td><td>{$pos_line['vc']}</td><td>{$pos_line['name']}</td><td>{$pos_line['vendor']}</td>"
+                . "<td>{$pos_line['cnt']}</td><td>{$pos_line['mult']}</td><td>{$pos_line['pcs']}</td>");
+                if($doc_line['type']==2) {
+                    $tmpl->addContent("<td>{$pos_line['price']}</td><td>{$pos_line['in_price']}</td><td>{$pos_line['pos_liq']}</td><td>{$pos_line['p_sum']}</td>");
+                }
+                $tmpl->addContent("</tr>");
+            }
+            $tmpl->addContent("</table>");
+            
+            $tmpl->addContent("<ul>");
+            if($doc_line['type']==2) {
+                $r_sum = number_format($info['r_sum'], 2, '.', ' ');
+                $tmpl->addContent("<li>Расчётная стоимость для отдела продаж: $r_sum</li>"
+                    . "<li>Коэффициент ликвидности: <b>{$info['liq_coeff']}</b></li>");
+            }
+            if( isset($info['o_uid']) ) {
+                $o_name = html_out(isset($users[$info['o_uid']]) ? html_out($users[$info['o_uid']]) : ('??? - '.$info['o_uid'])); 
+                $o_fee = number_format($info['o_fee'], 2, '.', ' ');
+                $tmpl->addContent("<li>Оператор: $o_name</li>"
+                    . "<li>Коэффициент: <b>{$info['o_coeff']}</b></li>"
+                    . "<li>Вознаграждение: <b>$o_fee</b></li>");
+            }
+            
+            if( isset($info['r_uid']) ) {
+                $r_name = html_out(isset($users[$info['r_uid']]) ? html_out($users[$info['r_uid']]) : ('??? - '.$info['r_uid']));
+                $r_fee = number_format($info['r_fee'], 2, '.', ' ');
+                $tmpl->addContent("<li>Ответственный: $r_name</li>"
+                    . "<li>Коэффициент: <b>{$info['r_coeff']}</b></li>"
+                    . "<li>Вознаграждение: <b>$r_fee</b></li>");
+            }
+            
+            if( isset($info['m_uid']) ) {
+                $m_name = html_out(isset($users[$info['m_uid']]) ? html_out($users[$info['m_uid']]) : ('??? - '.$info['m_uid']));
+                $m_fee = number_format($info['m_fee'], 2, '.', ' ');
+                $tmpl->addContent("<li>Менеджер: $m_name</li>"
+                    . "<li>Коэффициент: <b>{$info['m_coeff']}</b></li>"
+                    . "<li>Вознаграждение: <b>$m_fee</b></li>");
+            }
+            
+            if( isset($info['sk_uid']) ) {
+                $sk_name = html_out(isset($users[$info['sk_uid']]) ? html_out($users[$info['sk_uid']]) : ('??? - '.$info['sk_uid']));
+                $sk_fee = number_format($info['sk_fee'], 2, '.', ' ');
+                $tmpl->addContent("<li>Кладовщик: $sk_name</li>"
+                    . "<li>Коэффициент за упаковки: <b>{$info['sk_coeff']}</b></li>"
+                    . "<li>Вознаграждение за упаковки: <b>{$info['sk_packfee']}</b></li>"
+                    . "<li>Коэффициент за места: <b>{$info['sk_pl_coeff']}</b></li>"
+                    . "<li>Вознаграждение за места: <b>{$info['sk_places']}</b></li>"
+                    . "<li>Коэффициент за количество: <b>{$info['sk_cnt_coeff']}</b></li>"
+                    . "<li>Вознаграждение за количество: <b>{$info['sk_pcnt']}</b></li>"
+                    . "<li>Вознаграждение клвдовщика: <b>$sk_fee</b></li>");
+            }
+            $tmpl->addContent("</ul>");   
+        }
+    }
 
-    function Make($engine) {
+    function makeFull($engine) {
         global $CONFIG, $db, $tmpl;
         $dt_f = strtotime(rcvdate('dt_f'));
         $dt_t = strtotime(rcvdate('dt_t') . " 23:59:59");
         
-        $users_ldo = new \Models\LDO\usernames();
+        $users_ldo = new \Models\LDO\workernames();
         $users = $users_ldo->getData();
         
         $salary = new \async\salary(0);
-        $salary->loadPosTypes();    
+        $salary->loadPosTypes(); 
+        $salary->loadPcsId();
         $tmpl->addBreadcrumb('Просмотр данных', '');        
         $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th>id</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
+            . "<tr><th>id</th><th>Тип</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
             . "<th>Сумма</th></tr>");
         $sum = 0;
-        $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_agent`.`responsible` AS `resp_id`"
+        $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
+            . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` = 2 AND `date`>='$dt_f' AND `date`<'$dt_t'" 
+            . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             $doc_vars = array();
+            $o_name = $o_fee = $r_name = $r_fee = $m_name = $m_fee = $sk_name = $sk_fee = '';
+            $sum_line = 0;
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
                 $doc_vars[$line[0]] = $line[1];
             }
             $doc_line['vars'] = $doc_vars;            
             $info = $salary->calcFee($doc_line, $doc_line['resp_id']);
-            $salary->incFee('operator', $info['o_uid'], $info['o_fee'], $doc_line['id']);
-            $salary->incFee('resp', $info['r_uid'], $info['r_fee'], $doc_line['id']);
-            $salary->incFee('manager', $info['m_uid'], $info['m_fee'], $doc_line['id']);
-            $salary->incFee('sk', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
-            $info['r_name'] = html_out(isset($users[$info['r_uid']]) ? $users[$info['r_uid']] : ('??? - '.$info['r_uid']));
-            $info['o_name'] = html_out(isset($users[$info['o_uid']]) ? $users[$info['o_uid']] : ('??? - '.$info['o_uid']));   
-            $info['m_name'] = html_out(isset($users[$info['m_uid']]) ? $users[$info['m_uid']] : ('??? - '.$info['m_uid']));
-            $info['sk_name'] = html_out(isset($users[$info['sk_uid']]) ? $users[$info['sk_uid']] : ('??? - '.$info['sk_uid']));
             
-            $sum_line = $info['r_fee'] + $info['o_fee'] + $info['m_fee'] + $info['sk_fee'];            
+            if( isset($info['o_uid']) ) {
+                $salary->incFee('operator', $info['o_uid'], $info['o_fee'], $doc_line['id']);
+                $o_name = html_out(isset($users[$info['o_uid']]) ? html_out($users[$info['o_uid']]) : ('??? - '.$info['o_uid'])); 
+                $o_fee = number_format($info['o_fee'], 2, '.', ' ');
+                $sum_line += $o_fee;
+            }
+            
+            if( isset($info['r_uid']) ) {
+                $salary->incFee('resp', $info['r_uid'], $info['r_fee'], $doc_line['id']);
+                $r_name = html_out(isset($users[$info['r_uid']]) ? html_out($users[$info['r_uid']]) : ('??? - '.$info['r_uid']));
+                $r_fee = number_format($info['r_fee'], 2, '.', ' ');
+                $sum_line += $r_fee;
+            }
+            
+            if( isset($info['m_uid']) ) {
+                $salary->incFee('manager', $info['m_uid'], $info['m_fee'], $doc_line['id']);
+                $m_name = html_out(isset($users[$info['m_uid']]) ? html_out($users[$info['m_uid']]) : ('??? - '.$info['m_uid']));
+                $m_fee = number_format($info['m_fee'], 2, '.', ' ');
+                $sum_line += $m_fee;
+            }
+            
+            if( isset($info['sk_uid']) ) {
+                $salary->incFee('sk', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
+                $sk_name = html_out(isset($users[$info['sk_uid']]) ? html_out($users[$info['sk_uid']]) : ('??? - '.$info['sk_uid']));
+                $sk_fee = number_format($info['sk_fee'], 2, '.', ' ');
+                $sum_line += $sk_fee;
+            }
             $sum += $sum_line;
-            $p_date = date("Y-m-d", $doc_line['date']);
-            $tmpl->addContent("<tr><td><a href='/doc.php?mode=body&doc={$doc_line['id']}'>{$doc_line['id']}</a></td><td>$p_date</td>"
-                . "<td>{$info['r_name']}</td><td>{$info['r_fee']}</td><td>{$info['o_name']}</td><td>{$info['o_fee']}</td>"
-                . "<td>{$info['m_name']}</td><td>{$info['m_fee']}</td><td>{$info['sk_name']}</td><td>{$info['sk_fee']}</td><td>$sum_line</td></tr>");
+            $p_date = date("Y-m-d", $doc_line['date']); 
+            if($sum_line) {
+                $sum_line = number_format($sum_line, 2, '.', ' ');
+            }   else {
+                $sum_line = '';
+            }
+            $tmpl->addContent("<tr><td><a href='/doc_reports.php?mode=salary&amp;opt=doc&amp;doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
+                . "<td>{$doc_line['type_name']}</td><td>$p_date</td>"
+                . "<td>$r_name</td><td align='right'>$r_fee</td><td>$o_name</td><td align='right'>$o_fee</td>"
+                . "<td>$m_name</td><td align='right'>$m_fee</td><td>$sk_name</td><td align='right'>$sk_fee</td><td align='right'>$sum_line</td></tr>");
         }
-        $tmpl->addContent("<tr><td colspan=10>Итого:</td><td>$sum</td></tr>");
+        $sum = number_format($sum, 2, '.', ' ');
+        $tmpl->addContent("<tr><td colspan=11>Итого:</td><td align='right'>$sum</td></tr>");
         $tmpl->addContent("</table>");
         $tmpl->addContent("<table class='list'><tr><th colspan=2>По пользователям</th></tr>");
         $users_fee = $salary->getUsersFee();

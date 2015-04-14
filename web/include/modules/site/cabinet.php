@@ -463,7 +463,7 @@ class cabinet extends \IModule {
             $auth->loadDataForID($_SESSION['uid']);
             $user_info = $auth->getUserInfo();
             
-            $document = AutoDocument($doc);
+            $document = \document::getInstanceFromDb($doc);
             $doc_data = $document->getDocDataA();
             if($doc_data['user']!=$user_info['id'] && $doc_data['agent']!=$user_info['agent_id']) {
                 throw new \NotFoundException("Документ не найден");

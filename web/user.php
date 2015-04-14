@@ -48,6 +48,9 @@ try {
         if (isAccess('doc_factory', 'view')) {
             $block .= "<li><a href='/factory.php'>Учёт производства (экспериментально)</a></li>";
         }
+        if (isAccess('generic_intkb', 'view')) {
+            $block .= "<li><a href='/intkb.php' accesskey='l' title='База знаний'>Внутренняя база знаний</a></li>";
+        }
         if (isAccess('log_call_request', 'view')) {
             $block .= "<li><a href='?mode=log_call_request' accesskey='c'>Журнал запрошенных звонков (C)</a></li>";
         }

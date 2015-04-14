@@ -546,6 +546,7 @@ class doc_s_Agent {
 	/// Отобразить список агентов, отфильторванный по заданной строке
 	function ViewListS($s='') {
 		global $tmpl, $db;
+                $sf = 0;
 		$tmpl->addContent("<b>Показаны записи изо всех групп!</b><br>");
 		$tmpl->addContent("<table class='list' width='100%' cellspacing='1' cellpadding='2'>
 		<tr><th>№</th><th>Название</th><th>Телефон</th><th>e-mail</th><th>Дополнительно</th><th>Отв.менеджер</th></tr>");
@@ -720,7 +721,4 @@ class doc_s_Agent {
 		</ul>");
 	}
 
-};
-
-
-?>
+}

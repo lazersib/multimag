@@ -322,6 +322,8 @@ class dataexport {
             if(!in_array($line['type'], $this->doctypes_list) ) {
                 continue;
             }
+            $line['altnum'] = str_pad($line['altnum'], 6, "0", STR_PAD_LEFT);
+            $line['subtype'] = str_pad($line['subtype'], 4, "-", STR_PAD_RIGHT);
             $line['date'] = date("Y-m-d H:i:s", $line['date']);
             // Дополнительные данные документа - преобразование в корректную форму
             $dop_res = $this->db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`='{$line['id']}'");
@@ -350,6 +352,9 @@ class dataexport {
                         break;
                     case 'dov_data':
                         $line['trust_date'] = $dl['value'];
+                        break;
+                    case 'guid_1c':
+                        $line['guid'] = $dl['value'];
                         break;
                     default:
                         $line[$dl['param']] = $dl['value'];

@@ -36,7 +36,7 @@ class doc_PBank extends doc_Nulltype {
         if (is_array($def_acc)) {
             $acc = $def_acc['account'];
         }
-        $this->def_dop_data = array('unique' => '', 'cardpay' => '', 'cardholder' => '', 'masked_pan' => '', 'trx_id' => '', 'p_rnn' => '', 'credit_type' => 0,
+        $this->def_dop_data = array('cardpay' => '', 'cardholder' => '', 'masked_pan' => '', 'trx_id' => '', 'p_rnn' => '', 'credit_type' => 0,
             'account' => $acc
         );
     }
@@ -57,7 +57,6 @@ class doc_PBank extends doc_Nulltype {
         }
         $tmpl->addContent("</select><br>");
         $tmpl->addContent("Номер бухгалтерского счёта:<br><input type='text' name='account' value='{$this->dop_data['account']}'><br>");
-        $tmpl->addContent("Номер документа клиента банка:<br><input type='text' name='unique' value='{$this->dop_data['unique']}'><br>");
         if ($this->dop_data['cardpay']) {
             $tmpl->addContent("<b>Владелец карты:</b>{$this->dop_data['cardholder']}><br>
                 <b>PAN карты:</b>{$this->dop_data['masked_pan']}><br><b>Транзакция:</b>{$this->dop_data['trx_id']}><br>
@@ -67,7 +66,6 @@ class doc_PBank extends doc_Nulltype {
 
     function dopSave() {
         $new_data = array(
-            'unique' => request('unique'),
             'credit_type' => rcvint('credit_type'),
             'account' => request('account')
         );
@@ -85,9 +83,6 @@ class doc_PBank extends doc_Nulltype {
 
     function dopBody() {
         global $tmpl;
-        if ($this->dop_data['unique']) {
-            $tmpl->addContent("<b>Номер документа клиента банка:</b> {$this->dop_data['unique']}");
-        }
     }
 
     // Провести

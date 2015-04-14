@@ -133,6 +133,7 @@ function exception_handler($exception)
             <head><title>Error 500: Необработанная внутренняя ошибка</title>
             <style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
             <h1>Необработанная внутренняя ошибка</h1>".get_class($exception).": $s<br>Страница:$ff<br>Сообщение об ошибке передано администратору</body></html>";
+        die();
 }
 set_exception_handler('exception_handler');
 

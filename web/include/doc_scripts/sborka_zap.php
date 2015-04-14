@@ -131,8 +131,9 @@ class ds_sborka_zap {
 			$tov_id = rcvint('tov_id');
 			$not_a_p = rcvint('not_a_p');
 			$tim = time();
+                        $altnum = GetNextAltNum(17, 'auto', 0, date("Y-m-d"), $firm);
 			$res = $db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
-				VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
+				VALUES	('$tim', '$firm', '17', '$uid', '$altnum', 'auto', '$sklad', '$agent')");
 			$doc = $db->insert_id;
 			$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)
 				VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id'),
@@ -196,7 +197,7 @@ class ds_sborka_zap {
 			$not_a_p = rcvint('not_a_p');
 			$db->startTransaction();
 			$this->ReCalcPosCost($doc, $tov_id);
-			$document = AutoDocument($doc);
+			$document = \document::getInstanceFromDb($doc);
 			$document->DocApply();
 			$zp = $this->CalcZP($doc);
 			$tim = time();
@@ -207,12 +208,12 @@ class ds_sborka_zap {
 				$db->query("UPDATE `doc_list_pos` SET `cost`='$zp' WHERE `doc`='$post_doc'");
 			}
 			else {
-				$altnum = GetNextAltNum(1, 'auto', 0, 0, 1);
+				$altnum = GetNextAltNum(1, 'auto', 0, date("Y-m-d"), $firm);
 				$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
 			VALUES	('$tim', '$firm', '1', '$uid', '$altnum', 'auto', '$sklad', '$agent', '$doc', '$zp')");
 				$post_doc = $db->insert_id;
 				$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$zp')");
-				$document2 = AutoDocument($post_doc);
+				$document2 = \document::getInstanceFromDb($post_doc);
 				$document2->DocApply();
 			}
 

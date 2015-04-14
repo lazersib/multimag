@@ -33,19 +33,21 @@ class salary extends \AsyncWorker {
     protected $param_pcs_id;        // Параметр - id свойства товара - сложность сборки кладовщиком
     
     protected $conf_enable          = false;//< Разрешена ли работа модуля
-    protected $conf_sk_pack_coeff   = 0.5;  //< Коэффициент вознаграждения кладовщику реализации за упаковки
+    protected $conf_sk_re_pack_coeff= 0.5;  //< Коэффициент вознаграждения кладовщику реализации за упаковки
+    protected $conf_sk_po_pack_coeff= 0.5;  //< Коэффициент вознаграждения кладовщику поступления за упаковки
+    protected $conf_sk_pe_pack_coeff= 0.5;  //< Коэффициент вознаграждения кладовщику перемещения за упаковки
     protected $conf_sk_cnt_coeff    = 1;    //< Коэффициент вознаграждения кладовщику реализации за кол-во товара в накладной
     protected $conf_sk_place_coeff  = 2;    //< Коэффициент вознаграждения кладовщику реализации за кол-во различных мест в накладной
     protected $conf_manager_id      = null; //< id пользователя-менеджера для начисления вознаграждения
     protected $conf_author_coeff    = 0.01; //< Коэффициент вознаграждения автору реализации
     protected $conf_resp_coeff      = 0.02; //< Коэффициент вознаграждения ответственному агента
     protected $conf_manager_coeff   = 0.005;//< Коэффициент вознаграждения менеджеру магазина
-    protected $conf_use_liq         = 1;    //< Учитывать ли ликвидность при расчёте вознаграждения с товарной наценки
+    protected $conf_use_liq         = false;//< Учитывать ли ликвидность при расчёте вознаграждения с товарной наценки
     protected $conf_liq_coeff       = 0.5;  //< Коэффициент влияния ликвидности на вознаграждение с товарной наценки
     protected $conf_work_pos_id     = 1;    //< id услуги "работа"
+    protected $conf_debug           = true; //< Для отладки
     
     protected $users_salary_info = array();
-
 
     protected $pc = 0;
     
@@ -57,8 +59,14 @@ class salary extends \AsyncWorker {
         if (isset($CONFIG['salary']['enable'])) {
             $this->conf_enable = $CONFIG['salary']['enable'];
         }
-        if (isset($CONFIG['salary']['sk_pack_coeff'])) {
-            $this->conf_sk_pack_coeff = $CONFIG['salary']['sk_pack_coeff'];
+        if (isset($CONFIG['salary']['sk_re_pack_coeff'])) {
+            $this->conf_sk_re_pack_coeff = $CONFIG['salary']['sk_re_pack_coeff'];
+        }
+        if (isset($CONFIG['salary']['sk_po_pack_coeff'])) {
+            $this->conf_sk_po_pack_coeff = $CONFIG['salary']['sk_po_pack_coeff'];
+        }
+        if (isset($CONFIG['salary']['sk_pe_pack_coeff'])) {
+            $this->conf_sk_pe_pack_coeff = $CONFIG['salary']['sk_pe_pack_coeff'];
         }
         if (isset($CONFIG['salary']['sk_cnt_coeff'])) {
             $this->conf_sk_cnt_coeff = $CONFIG['salary']['sk_cnt_coeff'];
@@ -95,14 +103,11 @@ class salary extends \AsyncWorker {
 
     function run() {
         global $db;
-        //$db->query("FLUSH TABLE CACHE");
-        // Получить ID для сложности
-        $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `param`='pack_complexity_sk'");
-        if (!$res->num_rows) {
-            $db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `system`) VALUES ('pack_complexity_sk', 'float', NULL, 1)");
-            throw new Exception("Параметр начисления зарплаты не был найден. Параметр создан. Перед начислением заработной платы необходимо заполнить свойства номенклатуры.");
+        if(!$this->conf_enable) {
+            return;
         }
-        list($this->param_pcs_id) = $res->fetch_row();
+        //$db->query("FLUSH TABLE CACHE");
+        $this->loadPcsId();        
         // Расчёт
         $tmp = microtime(true);
         $db->startTransaction();
@@ -113,8 +118,35 @@ class salary extends \AsyncWorker {
             $this->calcAgent($line['id'], $line['responsible']);
             echo " Done\n";
         }
+        // Поступления и перемещения
+        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
+            . " FROM `doc_list`"
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 8)" 
+            . " ORDER BY `date`");
+        while ($doc_line = $docs_res->fetch_assoc()) {
+            $doc_vars = array();
+            $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
+            while ($line = $res->fetch_row()) {
+                $doc_vars[$line[0]] = $line[1];
+            }
+            $doc_line['vars'] = $doc_vars;
+            $doc_line['fullpay'] = 0;
+            $this->calcFee($doc_line, 0);
+        }
+        
         $this->payFee();
         $db->commit();
+    }
+    
+    // Получить ID для сложности
+    function loadPcsId() {
+        global $db;
+        $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `param`='pack_complexity_sk'");
+        if (!$res->num_rows) {
+            $db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `system`) VALUES ('pack_complexity_sk', 'float', NULL, 1)");
+            throw new Exception("Параметр начисления зарплаты не был найден. Параметр создан. Перед начислением заработной платы необходимо заполнить свойства номенклатуры.");
+        }
+        list($this->param_pcs_id) = $res->fetch_row();
     }
     
     // @return Остаточная сумма от запрошенной к вычету
@@ -257,70 +289,136 @@ class salary extends \AsyncWorker {
         
     }
     
-    public function calcFee($doc, $responsible_id) {
+    /// Расчитать сумму вознаграждения для заданного документа
+    public function calcFee($doc, $responsible_id, $detail = false) {
         global $db;
-        $a_likv = $this->getLiquidityOnDate($doc['date']);
-        // Расчёт  стоимости
+        $salary = array();
+        $additional_sum = 0;    // Расчётная добавленная стоимость. В зависимости о настроек, может уменьшаться линейно от ликвидности
+        if (isset($this->docs[$doc['id']]['dec_sum'])) {
+            $additional_sum -= $this->docs[$doc['id']]['dec_sum'];
+        }
+        if($doc['type']==2) {
+            $a_likv = $this->getLiquidityOnDate($doc['date']);
+        }
+        $pos_cnt = $sk_pos_fee = 0;
+        $a_places = array();
+        $b_sum = $additional_sum;
+        $detail_info = array();
         
+        $sql_add = $detail ? ", `doc_base`.`id` AS `pos_id`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base`.`proizv` AS `vendor` " : '';
+            
         $res_tov = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_list_pos`.`cnt`,
-                 `doc_base_values`.`value` AS `pcs`, `doc_base`.`mult`,  `doc_base_cnt`.`mesto`
+                 `doc_base_values`.`value` AS `pcs`, `doc_base`.`mult`,  `doc_base_cnt`.`mesto` $sql_add
              FROM `doc_list_pos`
              INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
              INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$doc['store_id']}'
              LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_list_pos`.`tovar` AND `doc_base_values`.`param_id`='{$this->param_pcs_id}'
              WHERE `doc_list_pos`.`doc`='{$doc['id']}'");
-        
-        $additional_sum = 0;    // Расчётная добавленная стоимость. В зависимости о настроек, может уменьшаться линейно от ликвидности
-        if (isset($this->docs[$doc['id']]['dec_sum'])) {
-            $additional_sum -= $this->docs[$doc['id']]['dec_sum'];
-        }
-        $pos_cnt = $sk_pos_fee = 0;
-        $a_places = array();
-        $b_sum = $additional_sum;
         while ($nxt_tov = $res_tov->fetch_assoc()) {
-            // Продавцам и пр
-            $tmp = microtime(true);
-            //$incost = $this->getInPrice($nxt_tov['tovar'], $doc['date']);
-            $incost = getInCost($nxt_tov['tovar'], $doc['date']);
-            $this->pc += microtime(true)-$tmp;
-            if ($this->conf_use_liq && isset($a_likv[$nxt_tov['tovar']])) {
-                $additional_sum += ($nxt_tov['cost'] - $incost) * $nxt_tov['cnt'] * (1 - $a_likv[$nxt_tov['tovar']] * $this->conf_liq_coeff / 100 );
-            } else {
-                $additional_sum += ($nxt_tov['cost'] - $incost) * $nxt_tov['cnt'];
-            }
-            // Кладовщикам
             if (!$nxt_tov['mult']) {
                 $nxt_tov['mult'] = 1;
             }
+            if (!$nxt_tov['pcs']) {
+                $nxt_tov['pcs'] = 1;
+            }
+            if($detail) {
+                $det_line = array();
+                $det_line['id'] = $nxt_tov['pos_id'];
+                $det_line['name'] = $nxt_tov['name'];
+                $det_line['vendor'] = $nxt_tov['vendor'];
+                $det_line['vc'] = $nxt_tov['vc'];
+                $det_line['cnt'] = $nxt_tov['cnt'];
+                $det_line['pcs'] = $nxt_tov['pcs'];
+                $det_line['mult'] = $nxt_tov['mult'];
+            }
+            // Продавцам и пр
+            if($doc['type']==2) {
+                $incost = $this->getInPrice($nxt_tov['tovar'], $doc['date']);
+                //$incost = getInCost($nxt_tov['tovar'], $doc['date']);
+                //$incost = 0;
+                if($detail) {
+                    $det_line['in_price'] = $incost;
+                    $det_line['price'] = $nxt_tov['cost'];                    
+                    $det_line['pos_liq'] = 0;
+                }
+                if ($this->conf_use_liq && isset($a_likv[$nxt_tov['tovar']])) {
+                    $p_sum = ($nxt_tov['cost'] - $incost) * $nxt_tov['cnt'] * (1 - $a_likv[$nxt_tov['tovar']] * $this->conf_liq_coeff / 100 );
+                    if($detail) {
+                        $det_line['pos_liq'] = $a_likv[$nxt_tov['tovar']];
+                    }
+                } else {
+                    $p_sum = ($nxt_tov['cost'] - $incost) * $nxt_tov['cnt'];
+                }
+                if($detail) {
+                    $det_line['p_sum'] = $p_sum;
+                }
+                $additional_sum += $p_sum;
+            }
+            // Кладовщикам            
             $a_places[intval($nxt_tov['mesto'])] = 1;
             $sk_pos_fee += $nxt_tov['pcs'] * $nxt_tov['cnt'] / $nxt_tov['mult'];
             $pos_cnt++;
+            if($detail) {
+                $salary['detail'][] = $det_line;
+            }
         }
-        $sk_fee = $sk_pos_fee * $this->conf_sk_pack_coeff + count($a_places) * $this->conf_sk_place_coeff + $pos_cnt * $this->conf_sk_cnt_coeff;
-        // Запись начисления
-        $salary = array(
-            'o_uid' => $doc['user'],
-            'o_fee' => 0,
-            'r_uid' => $responsible_id,
-            'r_fee' => 0,
-            'm_uid' => $this->conf_manager_id,
-            'm_fee' => 0,
-            'sk_uid'=> null,
-            'sk_fee'=> 0
-        );
+
+        // Подготовка результата
         
-        if($doc['user']) {
-            $salary['o_fee'] = round($additional_sum * $this->conf_author_coeff, 2);
+        // Для реализации
+        if ($doc['type'] == 2) {
+            if ($doc['user']) {
+                $salary['o_fee'] = round($additional_sum * $this->conf_author_coeff, 2);
+                $salary['o_uid'] = $doc['user'];
+            }
+            if ($responsible_id) {
+                $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
+                $salary['r_uid'] = $responsible_id;
+            }
+            if ($this->conf_manager_id) {
+                $salary['m_fee'] = round($additional_sum * $this->conf_manager_coeff, 2);
+                $salary['m_uid'] = $this->conf_manager_id;
+            }
+            if($detail) {
+                $salary['o_coeff'] = $this->conf_author_coeff;
+                $salary['r_coeff'] = $this->conf_resp_coeff;
+                $salary['m_coeff'] = $this->conf_manager_coeff;
+                $salary['r_sum'] = $additional_sum;
+                if ($this->conf_use_liq) {
+                    $salary['liq_coeff'] = $this->conf_liq_coeff;
+                } else {
+                    $salary['liq_coeff'] = 0;
+                }
+            }
         }
-        if($responsible_id) {
-            $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
-        }
-        if($this->conf_manager_id) {
-            $salary['m_fee'] = round($additional_sum * $this->conf_manager_coeff, 2);
-        }
-        if( isset( $doc['vars']['kladovshik'] ) ) {            
-            $salary['sk_uid'] = intval($doc['vars']['kladovshik']);
-            $salary['sk_fee'] = round($sk_fee, 2);
+        
+        if( isset( $doc['vars']['kladovshik'] ) ) {  
+            if( $doc['vars']['kladovshik']) {
+                switch($doc['type']) {
+                    case 1:
+                        $sk_coeff = $this->conf_sk_po_pack_coeff;                
+                        break;
+                    case 2:
+                        $sk_coeff = $this->conf_sk_re_pack_coeff;                    
+                        break;
+                    case 8:
+                        $sk_coeff = $this->conf_sk_pe_pack_coeff;
+                        break;
+                    default:
+                        $sk_coeff = 0;
+                }
+                $sk_fee = $sk_pos_fee * $sk_coeff + count($a_places) * $this->conf_sk_place_coeff + $pos_cnt * $this->conf_sk_cnt_coeff;
+                $salary['sk_uid'] = intval($doc['vars']['kladovshik']);
+                $salary['sk_fee'] = round($sk_fee, 2);
+                if($detail) {
+                    $salary['sk_coeff'] = $sk_coeff;
+                    $salary['sk_pl_coeff'] = $this->conf_sk_place_coeff;
+                    $salary['sk_cnt_coeff'] = $this->conf_sk_cnt_coeff;
+                    $salary['sk_packfee'] = round($sk_pos_fee, 2);
+                    $salary['sk_places'] = count($a_places);
+                    $salary['sk_pcnt'] = $pos_cnt;                
+                }
+            }
         }
         return $salary;
     }
@@ -338,7 +436,9 @@ class salary extends \AsyncWorker {
             $this->ppi[$pos_id]['cnt'] = 0;
             $this->ppi[$pos_id]['date'] = 0;
         }
-        $this->ppi[$pos_id]['date']=$limit_date;
+        $this->ppi[$pos_id]['date'] = $limit_date;
+        $cur_cnt = $this->ppi[$pos_id]['cnt'];
+        $cur_price = $this->ppi[$pos_id]['price'];
         do {
             $line = current($this->ppi[$pos_id]['docs']);
             if($line['date']>$limit_date) {
@@ -347,18 +447,19 @@ class salary extends \AsyncWorker {
             if( $line['doc_type']==2 || ( $line['doc_type']==17 && $line['page']!=0 )  ) {
                 $line['cnt'] *= -1;                
             }
-            if( ( ( $this->ppi[$pos_id]['cnt'] + $line['cnt'] ) != 0 ) &&
-                $line['cnt'] !=0 && $line['return_flag'] != 1 ) {
-                if($this->ppi[$pos_id]['cnt']>0) {
-                    $this->ppi[$pos_id]['price'] = ( ($this->ppi[$pos_id]['price']*$this->ppi[$pos_id]['cnt']) + ($line['price']*$line['cnt']) ) / 
-                        ($this->ppi[$pos_id]['cnt'] + $line['cnt']);
+            if( ( ( $cur_cnt + $line['cnt'] ) != 0 ) && $line['cnt']>0 && $line['return_flag'] != 1 ) {
+                if($cur_cnt>0) {
+                    $cur_price = ( ($cur_price*$cur_cnt) + ($line['price']*$line['cnt']) ) / 
+                        ($cur_cnt + $line['cnt']);
                 } else {
-                    $this->ppi[$pos_id]['price'] = $line['price'];
+                    $cur_price = $line['price'];
                 }
             }
-            $this->ppi[$pos_id]['cnt'] += $line['cnt'];
+            $cur_cnt += $line['cnt'];
         } while( next($this->ppi[$pos_id]['docs']) !== FALSE);
-        return round($this->ppi[$pos_id]['price'], 2);
+        $this->ppi[$pos_id]['cnt'] = $cur_cnt;
+        $this->ppi[$pos_id]['price'] = $cur_price;
+        return round($cur_price, 2);
     }
 
 

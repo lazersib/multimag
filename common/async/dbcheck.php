@@ -36,10 +36,9 @@ class dbcheck extends \AsyncWorker {
 		$this->mail_text = '';
 		$tim = time();
                 
-if(0) {
 		$this->SetStatusText("Запуск...");
 		$db->query("UPDATE `variables` SET `corrupted`='1', `recalc_active`='1'");
-		sleep(5);
+		sleep(1);
 		$res = $db->query("SELECT `version` FROM `db_version`");
 
 		$db_version = $res->fetch_row();
@@ -75,8 +74,8 @@ if(0) {
                     FROM `doc_list`
 		WHERE `ok`>0 AND `mark_del`>0
                 ORDER BY `date`");
-		while ($nxt = $res->fetch_assoc()) {
-                    $text = "Проведённый документ ID {$nxt['id']} ({$nxt['altnum']}{$nxt['subtype']}) помечен на удаление!\n";
+		while ($line = $res->fetch_assoc()) {
+                    $text = "Проведённый документ ID {$line['id']} ({$line['altnum']}{$line['subtype']}) помечен на удаление!\n";
                     echo $text;
                     $this->mail_text .= $text;
 		}
@@ -118,9 +117,9 @@ if(0) {
 		INNER JOIN `doc_list` ON `doc_list`.`type`='12' AND `doc_list`.`ok`>'0'
 		AND `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`id` NOT IN (SELECT DISTINCT `p_doc` FROM `doc_list` WHERE `ok` != '0' AND `type`='1' )
 		WHERE `doc_list_pos`.`tovar`=`doc_base`.`id` GROUP BY `doc_list_pos`.`tovar`) FROM `doc_base`");
-		while ($nxt = $res->fetch_row()) {
-			if (!$nxt[1])	continue;
-			$db->query("UPDATE `doc_base` SET `transit_cnt`='$nxt[1]' WHERE `id`='$nxt[0]'");
+		while ($line = $res->fetch_row()) {
+			if (!$line[1])	continue;
+			$db->query("UPDATE `doc_base` SET `transit_cnt`='$line[1]' WHERE `id`='$line[0]'");
 		}
 
 		// ============== Расчет ликвидности ===================================================
@@ -144,9 +143,9 @@ if(0) {
 		FROM `doc_list`
 		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='na_sklad'
 		WHERE `doc_list`.`type`='8'");
-		while ($nxt = $res->fetch_row()) {
-                    if (!$nxt[1]) {
-                        $text = "У перемещения ID $nxt[0] не задан склад назначения. Остатки на складе не верны!\n";
+		while ($line = $res->fetch_row()) {
+                    if (!$line[1]) {
+                        $text = "У перемещения ID $line[0] не задан склад назначения. Остатки на складе не верны!\n";
                         echo $text;
                         $this->mail_text .= $text;
                     }
@@ -155,27 +154,31 @@ if(0) {
 		// ================================ Перепроводка документов с коррекцией сумм ============================
 		$this->SetStatusText("Перепроводка документов...");
 		$i = 0;
-
-		$res = $db->query("SELECT `id`, `type`, `altnum`, `date` FROM `doc_list` WHERE `ok`>'0' AND `type`!='3' AND `mark_del`='0' ORDER BY `date`");
+                
+                $query = \document::getStandardSqlQuery() 
+                    . " WHERE `a`.`ok`>'0' AND `a`.`type`!='3' AND `a`.`mark_del`='0'"
+                    . " ORDER BY `a`.`date`, `a`.`type`";
+		$res = $db->query($query);
 		$allcnt = $res->num_rows;
 		$opp = $cnt = 0;
 
-		while ($nxt = $res->fetch_row()) {
-			$pp = floor(($cnt / $allcnt) * 100);
-			if ($pp != $opp) {
-				$this->SetStatus($pp);
-				$opp = $pp;
-			}
-			$cnt++;
-			$document = AutoDocumentType($nxt[1], $nxt[0]);
-			if ($err = $document->Apply($nxt[0], 1)) {
-				$dt = date("d.m.Y H:i:s", $nxt[3]);
-				$db->query("UPDATE `doc_list` SET `err_flag`='1' WHERE `id`='$nxt[0]'");
-				$text = "$nxt[0](" . $document->getViewName() . " N $nxt[2] от $dt): $err\n";
-				echo $text;
-				$this->mail_text.=$text;
-				$i++;
-			}
+		while ($line = $res->fetch_assoc()) {
+                    $pp = floor(($cnt / $allcnt) * 100);
+                    if ($pp != $opp) {
+                            $this->SetStatus($pp);
+                            $opp = $pp;
+                    }
+                    $cnt++;
+                    $document = \document::getInstanceFromArray($line);
+                    $err = $document->apply(true);
+                    if ($err) {
+                        $dt = date("Y-m-d H:i:s", $line['date']);
+                        $db->query("UPDATE `doc_list` SET `err_flag`='1' WHERE `id`='{$line['id']}'");
+                        $text = "{$line['id']} (" . $document->getViewName() . " N {$line['altnum']}{$line['subtype']} от $dt): $err\n";
+                        echo $text;
+                        $this->mail_text .= $text;
+                        $i++;
+                    }
 		}
 		if ($i) {
 			$text = "-----------------------\nИтого: $i документов с ошибками проведения!\n";
@@ -184,32 +187,33 @@ if(0) {
 		}
 		else	echo"Ошибки последовательности документов не найдены!\n";
 		$res = $db->query("UPDATE `variables` SET `recalc_active`='0'");
-}
+
 		$this->SetStatusText("Удаление помеченных на удаление...\n");
 		// ============================= Удаление помеченных на удаление =========================================
 		$tim_minus = time() - 60 * 60 * 24 * @$CONFIG['auto']['doc_del_days'];
-		$res = $db->query("SELECT `id`, `type` FROM `doc_list` WHERE `mark_del`<'$tim_minus' AND `mark_del`>'0'");
-		while ($nxt = $res->fetch_row()) {
-			try {
-				$document = AutoDocumentType($nxt[1], $nxt[0]);
-                                $document->delExec($nxt[0]);                                
-				echo "Док. ID:$nxt[0],type:$nxt[1] удалён\n";
-			} catch (\Exception $e) {
-				$text = "Док. ID:$nxt[0],type:$nxt[1], ошибка удаления: " . $e->getMessage() . "\n";
-				echo $text;
-			}
+		$res = $db->query(\document::getStandardSqlQuery() . " WHERE `a`.`mark_del`<'$tim_minus' AND `a`.`mark_del`>'0'");
+		while ($line = $res->fetch_assoc()) {
+                    try {
+                        $document = \document::getInstanceFromArray($line);
+                        $document->delExec();                                
+                        echo "Док. ID:{$line['id']} удалён\n";
+                    } catch (\Exception $e) {
+                        $text = "Док. ID:{$line['id']}, ошибка удаления: " . $e->getMessage() . "\n";
+                        $this->mail_text.=$text;
+                        echo $text;
+                    }
 		}
 		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list`.`id`, `doc_agent`.`name`, `doc_list_pos`.`id`, `doc_base`.`name` FROM `doc_list_pos`
 		INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`type`='1' AND `doc_list`.`ok`>'0'
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
 		WHERE `doc_list_pos`.`cost`<='0' ");
-		while ($nxt = $res->fetch_row()) {
-			$text = "Поступление ID:$nxt[1], товар $nxt[0]($nxt[4]) - нулевая цена! Агент $nxt[2]\n";
+		while ($line = $res->fetch_row()) {
+			$text = "Поступление ID:$line[1], товар $line[0]($line[4]) - нулевая цена! Агент $line[2]\n";
 			echo $text;
 			$this->mail_text.=$text;
 		}
-                $this->mail_text = 1;
+
 		if ($this->mail_text) {
                     try {
 

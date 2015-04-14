@@ -1233,7 +1233,7 @@ function SkladViewInit(setup, callback) {
 			row.data = data;
 			row.className = 'pointer';
 			row.style.textAlign = 'right';
-			if(setup.editable)
+			//if(setup.editable)
 				row.addEventListener( 'click', clickRow, false);
 			row.addEventListener( 'contextmenu', contextMenu, false);
 			

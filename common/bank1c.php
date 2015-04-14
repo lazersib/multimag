@@ -26,7 +26,7 @@ class Bank1CExchange {
     }
     
     /// Анализировать строку документа
-    protected function parseDocumentLineOld($name, $value, $params) {
+    protected function parseDocumentLine100($name, $value, $params) {
         switch ($name) {
             case 'Номер':
                 $params['docnum'] = $value;
@@ -77,6 +77,9 @@ class Bank1CExchange {
             case 'ДатаПоступило':
                 $params['p_date'] = $value;
                 break;
+            case 'ДатаСписано':
+                $params['s_date'] = $value;
+                break;
             case 'Сумма':
                 $params['sum'] = $value;
                 break;
@@ -92,6 +95,9 @@ class Bank1CExchange {
                 break;
             case 'Плательщик1':
                 $params['src']['name'] = $value;
+                break;
+            case 'ПлательщикБанк1':
+                $params['src']['bank_name'] = $value;
                 break;
             case 'ПлательщикРасчСчет':
                 $params['src']['krs'] = $value;
@@ -114,6 +120,9 @@ class Bank1CExchange {
             case 'Получатель1':
                 $params['dst']['name'] = $value;
                 break;
+            case 'ПолучательБанк1':
+                $params['dst']['bank_name'] = $value;
+                break;
             case 'ПолучательРасчСчет':
                 $params['dst']['rs'] = $value;
                 break;
@@ -126,6 +135,87 @@ class Bank1CExchange {
             // Хвост
             case 'ВидОплаты':
                 $params['vid'] = $value;
+                break;
+            case 'НазначениеПлатежа':
+                $params['desc'] = $value;
+                break;
+        }
+        return $params;
+    }
+    
+    protected function parseDocumentLinev102($name, $value, $params) {
+        switch ($name) {
+            // Шапка
+            case 'Номер':
+                $params['docnum'] = $value;
+                break;
+            case 'Дата':
+                $params['date'] = $value;
+                break;
+            case 'ДатаПоступило':
+                $params['p_date'] = $value;
+                break;
+            case 'ДатаСписано':
+                $params['s_date'] = $value;
+                break;
+            case 'Сумма':
+                $params['sum'] = $value;
+                break;
+            // Плательщик
+            case 'ПлательщикСчет':
+                $params['src']['rs'] = $value;
+                break;
+            case 'ПлательщикИНН':
+                $params['src']['inn'] = $value;
+                break;
+            case 'ПлательщикКПП':
+                $params['src']['kpp'] = $value;
+                break;
+            case 'Плательщик':
+                $params['src']['name'] = $value;
+                break;
+            case 'ПлательщикРасчСчет':
+                $params['src']['krs'] = $value;
+                break;
+            case 'ПлательщикБИК':
+                $params['src']['bik'] = $value;
+                break;
+            case 'ПлательщикБанк1':
+                $params['src']['bank_name'] = $value;
+                break;
+            case 'ПлательщикКорсчет':
+                $params['src']['ks'] = $value;
+            // Получатель
+            case 'ПолучательСчет':
+                $params['dst']['rs'] = $value;
+                break;
+            case 'ПолучательИНН':
+                $params['dst']['inn'] = $value;
+                break;
+            case 'ПолучательКПП':
+                $params['dst']['kpp'] = $value;
+                break;
+            case 'Получатель':
+                $params['dst']['name'] = $value;
+                break;
+            case 'ПолучательРасчСчет':
+                $params['dst']['rs'] = $value;
+                break;
+            case 'ПолучательБИК':
+                $params['dst']['bik'] = $value;
+                break;
+            case 'ПолучательБанк1':
+                $params['dst']['bank_name'] = $value;
+                break;
+            case 'ПолучательКорсчет':
+                $params['dst']['ks'] = $value;
+                break;
+            // Хвост
+            case 'ВидОплаты':
+                $params['vid'] = $value;
+                break;
+            case 'ВидПлатежа':
+                $params['vid_p'] = $value;
                 break;
             case 'НазначениеПлатежа':
                 $params['desc'] = $value;
@@ -154,7 +244,10 @@ class Bank1CExchange {
             }
             else {
                 $pl = explode("=", $line, 2);
-                switch($pl[0]) {
+                switch($pl[0]) {                    
+                    case 'ВерсияФормата':
+                        $version = trim($pl[1]);
+                        break;
                     case 'СекцияРасчСчет':
                             $parsing = true;
                             $params = array();
@@ -169,7 +262,7 @@ class Bank1CExchange {
                         }
                         break;
                     case 'СекцияДокумент':
-                        if ($pl[1] == "Платёжное поручение" || $pl[1] == "Платежное поручение") {
+                        if ($pl[1] == "Платёжное поручение" || $pl[1] == "Платежное поручение" || $pl[1] == "Банковский ордер") {
                             $parsing = true;
                             $params = array();
                             $params['type'] = 'pp';
@@ -183,7 +276,20 @@ class Bank1CExchange {
                         break;
                     default:
                         if($parsing) {
-                            $params = $this->parseDocumentLinev101($pl[0], $pl[1], $params);
+                            switch($version) {
+                                case '1.00':
+                                    $params = $this->parseDocumentLinev100($pl[0], $pl[1], $params);
+                                    break;
+                                case '1.01':
+                                    $params = $this->parseDocumentLinev101($pl[0], $pl[1], $params);
+                                    break;
+                                case '1.02':
+                                    $params = $this->parseDocumentLinev102($pl[0], $pl[1], $params);
+                                    break;
+                                default:
+                                    throw new Exception("неподдерживаемая версия формата: $version");
+                            }
+                            
                         }
                 }
             }

@@ -187,7 +187,7 @@ function ExecMode($mode)
 		include_once("include/doc.nulltype.php");
 		$doc = $_SESSION['order_id'];
 		if ($doc) {
-			$document = AutoDocument($doc);
+			$document = \document::getInstanceFromDb($doc);
 			$document->PrintForm('int:schet');
 		}
 		else	$tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");

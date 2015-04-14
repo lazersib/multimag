@@ -75,6 +75,9 @@ class doc_Pko extends doc_Nulltype {
     // Провести
     function docApply($silent = 0) {
         global $db;
+        if(!$this->isAltNumUnique() && !$silent) {
+            throw new Exception("Номер документа не уникален!");
+        }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
                 `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`
             FROM `doc_list`

@@ -1112,3 +1112,7 @@ div.iblock {
     float: left;
     margin: 3px;
 }
+
+div.article_text {
+    padding: 10px;
+}

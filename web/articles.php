@@ -104,6 +104,10 @@ try
 			$tmpl->addContent("<li><a class='wiki' href='/article/$nxt[0].html'>$h</a></li>");
 		}
 		$tmpl->addContent("</ul>");
+                if (isAccess('generic_articles', 'edit') || isAccess('generic_articles', 'create')) {
+                    $tmpl->addContent("<form><input type='hidden' name='mode' value='edit'><fieldset><legend>Создать/править статью</legend>"
+                    . "Имя статьи:<br><input type='text' name='p'><br><button type='submit'>Далее</button></form></fieldset>");
+                }
 	}
 	else {
 		$page_escaped = $db->real_escape_string($p);

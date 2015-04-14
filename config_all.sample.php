@@ -70,4 +70,17 @@ $CONFIG['pricecalc']['notify']		= true;	// Напоминать о период�
 $CONFIG['site']['liquidity_interval']	= 180;	// Периодически расчитывать ликвидность за X дней
 $CONFIG['site']['liquidity_per_group']	= false;// Считать ликвидность по группам
 
-
+// Начисление вознаграждений сотрудникам
+$CONFIG['salary']['enable'] = false;
+$CONFIG['salary']['sk_re_pack_coeff'] = 0.5;
+$CONFIG['salary']['sk_po_pack_coeff'] = 0.5;
+$CONFIG['salary']['sk_pe_pack_coeff'] = 0.5;
+$CONFIG['salary']['sk_cnt_coeff'] = 1;
+$CONFIG['salary']['sk_place_coeff'] = 2;
+$CONFIG['salary']['manager_id'] = 1;
+$CONFIG['salary']['author_coeff'] = 0.01;
+$CONFIG['salary']['resp_coeff'] = 0.02;
+$CONFIG['salary']['manager_coeff'] = 0.005;
+$CONFIG['salary']['use_liq'] = false;
+$CONFIG['salary']['liq_coeff'] = 0.5;
+$CONFIG['salary']['work_pos_id'] = 1;

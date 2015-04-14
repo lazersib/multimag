@@ -18,8 +18,7 @@
 //
 
 /// Документ *Заявка покупателя*
-class doc_Zayavka extends doc_Nulltype
-{
+class doc_Zayavka extends doc_Nulltype {
 	/// Конструктор
 	/// @param doc id документа
 	function __construct($doc=0)
@@ -182,18 +181,9 @@ class doc_Zayavka extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl, $CONFIG, $db;
-		$klad_id = $this->getDopData('kladovshik');
-		if(!$klad_id)	$klad_id=@$this->firm_vars['firm_kladovshik_id'];
 		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
-		$tmpl->addContent("Кладовщик:<br><select name='kladovshik'>");
-		
-		$res=$db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
-		while($nxt=$res->fetch_row())
-		{
-			$s=($klad_id==$nxt[0])?' selected':'';
-			$tmpl->addContent("<option value='$nxt[0]'$s>$nxt[1]</option>");
-		}
-		$tmpl->addContent("</select><hr>");
+
+		$tmpl->addContent("<hr>");
 
 		if(@$this->dop_data['ishop'])		$tmpl->addContent("<b>Заявка с интернет-витрины</b><br>");
 		if(@$this->dop_data['buyer_rname'])	$tmpl->addContent("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
@@ -258,7 +248,6 @@ class doc_Zayavka extends doc_Nulltype
 	{
 		$new_data = array(
 			'status' => request('status'),
-			'kladovshik' => rcvint('kladovshik'),
 			'delivery' => rcvint('delivery'),
 			'delivery_regions' => rcvint('delivery_regions'),
 		    	'delivery_date' => request('delivery_date'),
@@ -282,8 +271,11 @@ class doc_Zayavka extends doc_Nulltype
 	/// Провести документ
 	/// @param silent Не менять отметку проведения
 	function DocApply($silent=0) {
-		global $db;
+		global $db;                
 		if($silent)	return;
+                if(!$this->isAltNumUnique()) {
+                    throw new Exception("Номер документа не уникален!");
+                }
 		$data = $db->selectRow('doc_list', $this->doc);
 		if(!$data)	throw new Exception('Ошибка выборки данных документа при проведении!');
 		if($data['ok'])	throw new Exception('Документ уже проведён!');
@@ -919,17 +911,6 @@ class doc_Zayavka extends doc_Nulltype
 		}
 		else $autor_name = '';
 		
-		if(isset($this->dop_data['kladovshik'])) {
-			$res_klad = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
-				WHERE `user_id`='".$this->dop_data['kladovshik']."'");
-			if($res_klad->num_rows) {
-				$line = $res_klad->fetch_row();
-				$klad_name = $line[0];
-			}
-			$klad_name = '';
-		}
-		else $klad_name = '';
-
 		$pdf->Ln(5);
 
 		$str="Всего $ii наименований на сумму $cost";
@@ -945,7 +926,7 @@ class doc_Zayavka extends doc_Nulltype
 
 		$str="Автор заявки: _________________________________________ ($autor_name)";
 		$pdf->CellIconv(0,8,$str,0,1,'L',0);
-		$str="Наличие подтвердил: ___________________________________ ( $klad_name )";
+		$str="Наличие подтвердил: ___________________________________ ";
 		$pdf->CellIconv(0,8,$str,0,1,'L',0);
 
 		if($to_str)

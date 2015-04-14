@@ -407,60 +407,6 @@ function GetNextAltNum($type, $subtype, $doc, $date, $firm)
 /// ====== Получение данных, связанных с документом =============================
 
 
-/// Определение типа документа по ID типа и создание соответствующего класса
-/// @param doc_type ID типа документа
-/// @param doc ID документа
-function AutoDocumentType($doc_type, $doc)
-{
-	switch($doc_type)
-	{
-		case 1:
-			return new doc_Postuplenie($doc);
-		case 2:
-			return new doc_Realizaciya($doc);
-		case 3:
-			return new doc_Zayavka($doc);
-		case 4:
-			return new doc_PBank($doc);
-		case 5:
-			return new doc_RBank($doc);
-		case 6:
-			return new doc_Pko($doc);
-		case 7:
-			return new doc_Rko($doc);
-		case 8:
-			return new doc_Peremeshenie($doc);
-		case 9:
-			return new doc_PerKas($doc);
-		case 10:
-			return new doc_Doveren($doc);
-		case 11:
-			return new doc_Predlojenie($doc);
-		case 12:
-			return new doc_v_puti($doc);
-		case 13:
-			return new doc_Kompredl($doc);
-		case 14:
-			return new doc_Dogovor($doc);
-		case 15:
-			return new doc_Realiz_op($doc);
-		case 16:
-			return new doc_Specific($doc);
-		case 17:
-			return new doc_Sborka($doc);
-		case 18:
-			return new doc_Kordolga($doc);
-		case 19:
-			return new doc_Korbonus($doc);
-		case 20:
-			return new doc_Realiz_bonus($doc);
-		case 21:
-			return new doc_ZSbor($doc);
-		default:
-			return new doc_Nulltype();
-	}
-}
-
 /// Расчет и обновление суммы документа
 /// @param doc ID документа
 /// TODO: убрать в doc_Nulltype
@@ -484,9 +430,9 @@ function DocSumUpdate($doc)
 /// @param agent_id	ID агента, для которого расчитывается баланс
 /// @param no_cache	Не брать данные расчёта из кеша
 function docCalcBonus($agent_id, $no_cache=0) {
-	global $tmpl, $db, $doc_agent_dolg_cache_storage;
+	global $tmpl, $db, $doc_agent_bonus_cache_storage;
 	settype($agent_id,'int');
-	if(!$no_cache && isset($doc_agent_bonus_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
+	if(!$no_cache && isset($doc_agent_bonus_cache_storage[$agent_id]))	return $doc_agent_bonus_cache_storage[$agent_id];
 
 	$bonus=0;
 	$res=$db->query("SELECT `doc_list`.`type`, `doc_list`.`sum`, `doc_dopdata`.`value` AS `bonus` FROM `doc_list`
@@ -511,36 +457,43 @@ function docCalcBonus($agent_id, $no_cache=0) {
 /// @param pos_id 	ID складского наименования, для которого производится расчёт
 /// @param limit_date	Ограничить период расчёта указанной датой. Расчёт цены выполняется на указанную дату.
 /// @param serv_mode	Если true - функция возвращает для услуг их базовую цену. Иначе возвращает 0.
-function getInCost($pos_id, $limit_date=0, $serv_mode=0)
-{
-	global $db;
-	settype($pos_id,'int');
-	settype($limit_date,'int');
-	$cnt=$cost=0;
-	$sql_add='';
-	$res=$db->query("SELECT `pos_type`, `cost` FROM `doc_base` WHERE `id`=$pos_id");
-	list($type, $cost)=$res->fetch_row();
-	if($type==1)	return $serv_mode?$cost:0;
+function getInCost($pos_id, $limit_date = 0, $serv_mode = 0) {
+    global $db;
+    settype($pos_id, 'int');
+    settype($limit_date, 'int');
+    $cnt = $cost = 0;
+    $sql_add = '';
+    $res = $db->query("SELECT `pos_type`, `cost` FROM `doc_base` WHERE `id`=$pos_id");
+    $pos_info = $res->fetch_row();
+    if ($pos_info[0] == 1) {
+        return $serv_mode ? $pos_info[1] : 0;
+    }
 
-	if($limit_date)	$sql_add="AND `doc_list`.`date`<='$limit_date'";
-	$res=$db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`
+    if ($limit_date) {
+        $sql_add = "AND `doc_list`.`date`<='$limit_date'";
+    }
+    $res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list`.`type`, `doc_list_pos`.`page`, `doc_dopdata`.`value`
 	FROM `doc_list_pos`
 	INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
 	LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list_pos`.`doc` AND `doc_dopdata`.`param`='return'
 	WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' $sql_add ORDER BY `doc_list`.`date`");
-	while($nxt=$res->fetch_row())
-	{
-		if(($nxt[2]==2) || ($nxt[2]==17) && ($nxt[3]!='0'))	$nxt[0]=$nxt[0]*(-1);
-		if( ($cnt+$nxt[0])==0)	{}
-		else if($nxt[0]>0 && $nxt[4]!=1)
-		{
-			if($cnt>0)	$cost=( ($cnt*$cost)+($nxt[0]*$nxt[1])) / ($cnt+$nxt[0]);
-			else		$cost=$nxt[1];
-		}
-		$cnt+=$nxt[0];
-	}
-	$res->free();
-	return round($cost,2);
+    while ($nxt = $res->fetch_row()) {
+        if (($nxt[2] == 2) || ($nxt[2] == 17) && ($nxt[3] != '0')) {
+            $nxt[0] = $nxt[0] * (-1);
+        }
+        if (($cnt + $nxt[0]) == 0) {
+            
+        } else if ($nxt[0] > 0 && $nxt[4] != 1) {
+            if ($cnt > 0) {
+                $cost = ( ($cnt * $cost) + ($nxt[0] * $nxt[1])) / ($cnt + $nxt[0]);
+            } else {
+                $cost = $nxt[1];
+            }
+        }
+        $cnt+=$nxt[0];
+    }
+    $res->free();
+    return round($cost, 2);
 }
 
 /// Получить количество товара на складе на заданную дату
@@ -671,18 +624,6 @@ function DocVPuti($pos_id, $doc_id = 0) {
         $transit = 0;
     $res->free();
     return $transit;
-}
-
-/// Создаёт класс документа по ID документа, используя AutoDocumentType
-/// @sa AutoDocumentType
-function AutoDocument($doc_id) {
-    global $db;
-    settype($doc_id, 'int');
-    $res = $db->query("SELECT `type` FROM `doc_list` WHERE `id`=$doc_id");
-    if (!$res->num_rows)
-        throw new Exception("Документ не найден");
-    list($type) = $res->fetch_row();
-    return AutoDocumentType($type, $doc_id);
 }
 
 /// Для внутреннего использования

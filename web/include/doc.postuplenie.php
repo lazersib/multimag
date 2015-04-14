@@ -77,7 +77,9 @@ class doc_Postuplenie extends doc_Nulltype {
 
     public function docApply($silent = 0) {
         global $CONFIG, $db;
-
+        if(!$this->isAltNumUnique() && !$silent) {
+            throw new Exception("Номер документа не уникален!");
+        }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_list`.`firm_id`,
                 `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_vars`.`firm_store_lock`
             FROM `doc_list`
@@ -195,6 +197,7 @@ class doc_Postuplenie extends doc_Nulltype {
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
 			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=2'\">Реализация</div>");
+                        $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=5'\">Расходный банковский ордер</div>");
 			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=7'\">Расходный кассовый ордер</div>");
 		}
 		else if ($target_type == 2) {
@@ -205,6 +208,18 @@ class doc_Postuplenie extends doc_Nulltype {
 			$dd = $new_doc->createFromP($this);
 			$db->commit();
 			header("Location: doc.php?mode=body&doc=$dd");
+		}
+                else if ($target_type == 5) {
+			if (!isAccess('doc_rbank', 'create'))
+				throw new AccessException();
+			$this->recalcSum();
+			$db->startTransaction();
+			$new_doc = new doc_RBank();
+			$doc_num = $new_doc->createFrom($this);
+			// Вид расхода - закуп товара на продажу
+			$new_doc->setDopData('rasxodi', 6);
+			$db->commit();
+			header('Location: doc.php?mode=body&doc='.$doc_num);
 		}
 		else if ($target_type == 7) {
 			if (!isAccess('doc_rko', 'create'))

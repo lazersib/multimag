@@ -193,6 +193,9 @@ class doc_Realizaciya extends doc_Nulltype {
     /// Провести документ
     function docApply($silent = 0) {
         global $CONFIG, $db;
+        if(!$this->isAltNumUnique() && !$silent) {
+            throw new Exception("Номер документа не уникален!");
+        }
         $tim = time();
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_list`.`firm_id`,
                 `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_agent`.`no_bonuses`, `doc_vars`.`firm_store_lock`

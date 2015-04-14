@@ -19,11 +19,8 @@
 
 include_once($CONFIG['site']['location']."/include/doc.core.php");
 
-include_once($CONFIG['site']['location']."/include/doc.predlojenie.php");
-include_once($CONFIG['site']['location']."/include/doc.v_puti.php");
-
 /// Базовый класс для всех документов системы. Содержит основные методы для работы с документами.
-class doc_Nulltype
+class doc_Nulltype extends \document
 {
 	protected $doc;				///< ID документа
 	protected $doc_type;			///< ID типа документа
@@ -683,7 +680,7 @@ class doc_Nulltype
 		$tmpl->addContent("<div id='statusblock'></div><br><br></div></div>");
 	}
 
-	public function apply($doc=0, $silent=0)
+	public function apply($silent = false)
 	{
 		global $tmpl, $db;
 		
@@ -1102,23 +1099,18 @@ class doc_Nulltype
     }
 
     /// Выполнить удаление документа. Если есть зависимости - удаление не производится.
-    function delExec($doc) {
+    function delExec() {
         global $db;
-        $res = $db->query("SELECT `ok` FROM `doc_list` WHERE `id`='$doc'");
-        if (!$res->num_rows) {
-            throw new \Exception("Документ не найден");
-        }
-        list($ok) = $res->fetch_row();
-        if ($ok) {
+        if ($this->doc_data['ok']) {
             throw new \Exception("Нельзя удалить проведённый документ");
         }
-        $res = $db->query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='$doc'");
+        $res = $db->query("SELECT `id`, `mark_del` FROM `doc_list` WHERE `p_doc`='{$this->id}'");
         if ($res->num_rows) {
             throw new \Exception("Нельзя удалить документ с неудалёнными потомками");
         }
-        $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='$doc'");
-        $db->query("DELETE FROM `doc_dopdata` WHERE `doc`='$doc'");
-        $db->query("DELETE FROM `doc_list` WHERE `id`='$doc'");
+        $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
+        $db->query("DELETE FROM `doc_dopdata` WHERE `doc`='{$this->id}'");
+        $db->query("DELETE FROM `doc_list` WHERE `id`='{$this->id}'");
     }
 
     /// Сделать документ потомком указанного документа
@@ -1633,23 +1625,7 @@ class doc_Nulltype
 		if(isset($this->doc_data)) return;
 		global $CONFIG, $db;
 		if($this->doc)	{
-			$res = $db->query("SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, `a`.`user`, `a`.`altnum`, `a`.`subtype`, `a`.`sum`, `a`.`nds`, `a`.`p_doc`, `a`.`mark_del`, `a`.`kassa`, `a`.`bank`, `a`.`firm_id`, `b`.`dishonest` AS `agent_dishonest`, `b`.`comment` AS `agent_comment`, `a`.`contract`, `a`.`created`, `b`.`fullname` AS `agent_fullname`
-			FROM `doc_list` AS `a`
-			LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`
-			WHERE `a`.`id`='".(int)$this->doc."'");
-			if(!$res->num_rows)	throw new NotFoundException("Документ не найден");
-			$this->doc_data = $res->fetch_assoc();
-			
-			$res = $db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`='".(int)$this->doc."'");
-			$this->dop_data = array();
-			while($nxt = $res->fetch_row())	{
-				$this->dop_data[$nxt[0]]=$nxt[1];
-			}
-			$this->firm_vars = $db->selectRow('doc_vars', $this->doc_data['firm_id']);
-			
-			if(method_exists($this,'initDefDopData'))	$this->initDefDopData();
-			$this->dop_data = array_merge($this->def_dop_data, $this->dop_data);
-			
+                    $this->loadFromDb($this->doc);
 		}
 		else {
 			if(method_exists($this,'initDefDopData'))	$this->initDefDopData();
@@ -1671,31 +1647,26 @@ class doc_Nulltype
 		}
 	}
 
+        /// Проверка уникальности альтернативного порядкового номера документа
+	public function isAltNumUnique() {
+            global $db;
+             $start_date = strtotime(date("Y-01-01 00:00:00", $this->doc_data['date']));
+            $end_date = strtotime(date("Y-12-31 23:59:59", $this->doc_data['date']));
+            $subtype_sql = $db->real_escape_string($this->doc_data['subtype']);
+            $res = $db->query("SELECT `altnum` FROM `doc_list`"
+                . " WHERE `type`='{$this->doc_type}' AND `altnum`='{$this->doc_data['altnum']}' AND `subtype`='$subtype_sql'"
+                . " AND `id`!='{$this->doc}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='{$this->doc_data['firm_id']}'");
+            return $res->num_rows?false:true;
+	}
+        
 	/// Получение альтернативного порядкового номера документа
-	public function getNextAltNum($doc_type, $subtype, $date, $firm_id)
-	{
+	public function getNextAltNum($doc_type, $subtype, $date, $firm_id) {
 		global $CONFIG, $db;
 		$start_date = strtotime(date("Y-01-01 00:00:00", strtotime($date)));
 		$end_date = strtotime(date("Y-12-31 23:59:59", strtotime($date)));
-		$res = $db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype' AND `id`!='{$this->doc}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id' ORDER BY `altnum` ASC");
-		$newnum = 0;
-		while ($nxt = $res->fetch_row()) {
-			if (($nxt[0] - 1 > $newnum) && @$CONFIG['doc']['use_persist_altnum'])
-				break;
-			$newnum = $nxt[0];
-		}
-		$newnum++;
-		return $newnum;
-	}
-	
-	/// Получение альтернативного порядкового номера документа на оcнове данных текущего документа и текущей даты
-	public function getNextAltNumT($doc_type)
-	{
-		global $CONFIG, $db;
-		$start_date = strtotime(date("Y-01-01 00:00:00"));
-		$end_date = strtotime(date("Y-12-31 23:59:59"));
-		$_subtype = $db->real_escape_string($this->doc_data['subtype']);
-		$res = $db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='".(int)$doc_type."' AND `subtype`='$_subtype' AND `id`!='".(int)$this->doc."' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='".(int)$this->doc_data['firm_id'],"' ORDER BY `altnum` ASC");
+		$res = $db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype'"
+                    . " AND `id`!='{$this->doc}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id'"
+                        . " ORDER BY `altnum` ASC");
 		$newnum = 0;
 		while ($nxt = $res->fetch_row()) {
 			if (($nxt[0] - 1 > $newnum) && @$CONFIG['doc']['use_persist_altnum'])
