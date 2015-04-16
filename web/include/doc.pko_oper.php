@@ -23,8 +23,8 @@ class doc_pko_oper extends doc_Pko {
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 22;
-        $this->doc_name = 'pko_oper';
-        $this->doc_viewname = 'Приходный кассовый ордер (оперативный)';
+        $this->typename = 'pko_oper';
+        $this->viewname = 'Приходный кассовый ордер (оперативный)';
         $this->ksaas_modify = 0;
     }
 
@@ -36,12 +36,12 @@ class doc_pko_oper extends doc_Pko {
             FROM `doc_list`
             INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`kassa` AND `ids`='kassa'
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
-            WHERE `doc_list`.`id`='{$this->doc}'");
+            WHERE `doc_list`.`id`='{$this->id}'");
         $doc_params = $res->fetch_assoc();
         $res->free();
 
         if (!$doc_params) {
-            throw new Exception('Документ ' . $this->doc . ' не найден');
+            throw new Exception('Документ ' . $this->id . ' не найден');
         }
 
         if ($doc_params['ok'] && (!$silent)) {
@@ -57,14 +57,14 @@ class doc_pko_oper extends doc_Pko {
             throw new Exception("Выбранная организация может работать только со своими кассами!");
         }
 
-        $db->update('doc_list', $this->doc, 'ok', time());
+        $db->update('doc_list', $this->id, 'ok', time());
         $this->sentZEvent('apply');
     }
 
     // Отменить проведение
     function DocCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->doc);
+        $data = $db->selectRow('doc_list', $this->id);
         if (!$data) {
             throw new Exception('Ошибка выборки данных документа!');
         }
@@ -72,7 +72,7 @@ class doc_pko_oper extends doc_Pko {
             throw new Exception('Документ не проведён!');
         }
 
-        $db->update('doc_list', $this->doc, 'ok', 0);
+        $db->update('doc_list', $this->id, 'ok', 0);
         $budet = $this->checkKassMinus();
         if ($budet < 0) {
             throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");

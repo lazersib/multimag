@@ -25,8 +25,8 @@ class doc_Predlojenie extends doc_Nulltype
 	{
 		parent::__construct($doc);
 		$this->doc_type				=11;
-		$this->doc_name				='predlojenie';
-		$this->doc_viewname			='Предложение поставщика';
+		$this->typename				='predlojenie';
+		$this->viewname			='Предложение поставщика';
 		$this->sklad_editor_enable		=true;
 		$this->header_fields			='sklad cena separator agent';
 		$this->PDFForms=array(
@@ -40,8 +40,8 @@ class doc_Predlojenie extends doc_Nulltype
 
 		if($target_type=='') {
 			$tmpl->ajax=1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">Поступление</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=12'\">Товар в пути</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Поступление</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=12'\">Товар в пути</div>");
 		}
 		else if($target_type==1) {
 			if(!isAccess('doc_postuplenie','create'))	throw new AccessException();
@@ -60,9 +60,9 @@ class doc_Predlojenie extends doc_Nulltype
 		global $db;
 		$target_type=1;
 		$db->startTransaction();
-		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->doc' AND `type`='$target_type'");
+		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->id' AND `type`='$target_type'");
 		if(! $res->num_rows) {
-			DocSumUpdate($this->doc);
+			DocSumUpdate($this->id);
 			$new_doc = new doc_Postuplenie();
 			$x_doc_num = $new_doc->createFromP($this);
 			$new_doc->setDopData('cena', $this->dop_data['cena']);
@@ -74,10 +74,10 @@ class doc_Predlojenie extends doc_Nulltype
 			$new_id = 0;
 			$res = $db->query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
-			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->doc}'
+			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->id}'
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
-			WHERE `a`.`doc`='{$this->doc}'
+			WHERE `a`.`doc`='{$this->id}'
 			ORDER BY `doc_list_pos`.`id`");
 			while($nxt = $res->fetch_row()) {
 				if($nxt[4]<$nxt[1]) {
@@ -102,9 +102,9 @@ class doc_Predlojenie extends doc_Nulltype
 		global $db;
 		$target_type=1;
 		$db->startTransaction();
-		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->doc' AND `type`='$target_type'");
+		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->id' AND `type`='$target_type'");
 		if(! $res->num_rows) {
-			DocSumUpdate($this->doc);
+			DocSumUpdate($this->id);
 			$new_doc = new doc_v_puti();
 			$x_doc_num = $new_doc->createFromP($this);
 			$new_doc->setDopData('cena', $this->dop_data['cena']);
@@ -116,10 +116,10 @@ class doc_Predlojenie extends doc_Nulltype
 			$new_id = 0;
 			$res = $db->query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
 			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
-			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->doc}'
+			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->id}'
 			  WHERE `b`.`tovar`=`a`.`tovar` )
 			FROM `doc_list_pos` AS `a`
-			WHERE `a`.`doc`='{$this->doc}'
+			WHERE `a`.`doc`='{$this->id}'
 			ORDER BY `doc_list_pos`.`id`");
 			while($nxt = $res->fetch_row()) {
 				if($nxt[4]<$nxt[1]) {
@@ -214,7 +214,7 @@ class doc_Predlojenie extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$sum=$summass=$sum_nds=0;

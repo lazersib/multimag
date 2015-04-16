@@ -104,9 +104,6 @@ try {
         $document = document::getInstanceFromDb($doc);
         $target_type = request('tt');
         $document->MorphTo($target_type);
-    } else if ($mode == 'getinfo') {
-        $document = document::getInstanceFromDb($doc);
-        $document->GetInfo();
     } else if ($mode == "incnum") {
         $tmpl->ajax = 1;
         $type = request('type');

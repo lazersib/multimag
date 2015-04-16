@@ -19,32 +19,37 @@
 
 /// Документ *Заявка покупателя*
 class doc_Zayavka extends doc_Nulltype {
-	/// Конструктор
-	/// @param doc id документа
-	function __construct($doc=0)
-	{
-		global $CONFIG, $db;
-		$this->def_dop_data			=array('status'=>'', 'pie'=>0, 'buyer_phone'=>'', 'buyer_email'=>'',
-		    'delivery'=>0, 'delivery_address'=>'', 'delivery_date'=>'', 'delivery_region'=>'', 'ishop'=>0, 'buyer_rname'=>'', 'buyer_ip'=>'',
-		    'pay_type'=>'', 'cena'=>'' );
-		parent::__construct($doc);
-		$this->doc_type				=3;
-		$this->doc_name				='zayavka';
-		$this->doc_viewname			='Заявка покупателя';
-		$this->sklad_editor_enable		=true;
-		$this->sklad_modify			=0;
-		$this->header_fields			='bank sklad separator agent cena';
+    /// Конструктор
+    /// @param doc id документа
+    function __construct($doc = 0) {
+        global $CONFIG, $db;
+        $this->def_dop_data = array('status' => '', 'pie' => 0, 'buyer_phone' => '', 'buyer_email' => '',
+            'delivery' => 0, 'delivery_address' => '', 'delivery_date' => '', 'delivery_region' => '', 'ishop' => 0, 'buyer_rname' => '', 'buyer_ip' => '',
+            'pay_type' => '', 'cena' => '');
+        parent::__construct($doc);
+        $this->doc_type = 3;
+        $this->typename = 'zayavka';
+        $this->viewname = 'Заявка покупателя';
+        $this->sklad_editor_enable = true;
+        $this->sklad_modify = 0;
+        $this->header_fields = 'bank sklad separator agent cena';
 
-		$this->dop_menu_buttons="<a href='#' onclick='msgMenu(event, {$this->doc})' title='Отправить сообщение покупателю'><img src='/img/i_mailsend.png' alt='msg'></a>";
-		if(@$CONFIG['doc']['pie'] && !@$this->dop_data['pie'])
-			$this->dop_menu_buttons.="<a href='#' onclick='sendPie(event, {$this->doc})' title='Отправить благодарность покупателю'><img src='/img/i_pie.png' alt='pie'></a>";
-		
-		settype($this->doc,'int');
-		$this->PDFForms=array(
-			array('name'=>'schet','desc'=>'Счёт','method'=>'PrintPDF'),
-			array('name'=>'testcht','desc'=>'Накладная на проверку наличия','method'=>'PrintNaklTestCntPDF')
-		);
-	}
+        settype($this->id, 'int');
+        $this->PDFForms = array(
+            array('name' => 'schet', 'desc' => 'Счёт', 'method' => 'PrintPDF'),
+            array('name' => 'testcht', 'desc' => 'Накладная на проверку наличия', 'method' => 'PrintNaklTestCntPDF')
+        );
+    }
+
+    /// Получить строку с HTML кодом дополнительных кнопок документа
+    protected function getAdditionalButtonsHTML() {
+        global $CONFIG;
+        $ret = "<a href='#' onclick='msgMenu(event, '{$this->id}')' title='Отправить сообщение покупателю'><img src='/img/i_mailsend.png' alt='msg'></a>";        
+        if (@$CONFIG['doc']['pie'] && !@$this->dop_data['pie']) {
+            $ret.="<a href='#' onclick='sendPie(event, '{$this->id}')' title='Отправить благодарность покупателю'><img src='/img/i_pie.png' alt='pie'></a>";
+        }
+        return $ret;
+    }
 	
 	/// Функция обработки событий, связанных  с заказом
 	/// @param event_name Полное название события
@@ -54,7 +59,7 @@ class doc_Zayavka extends doc_Nulltype {
 		if(isset($CONFIG['zstatus'][$event_name]))
 		{
 			$s=array('{DOC}','{SUM}','{DATE}');
-			$r=array($this->doc,$this->doc_data['sum'],date('Y-m-d',$this->doc_data['date']));
+			$r=array($this->id,$this->doc_data['sum'],date('Y-m-d',$this->doc_data['date']));
 			
 			// Проверка и повышение статуса. Если повышение не произошло - остальные действия не выполняются
 			if(isset($CONFIG['zstatus'][$event_name]['testup_status']))
@@ -172,7 +177,7 @@ class doc_Zayavka extends doc_Nulltype {
 			if($email)
 			{
 				$user_msg="Уважаемый клиент!\n".$text;
-				mailto($email,"Заказ N {$this->doc} на {$CONFIG['site']['name']}", $user_msg);
+				mailto($email,"Заказ N {$this->id} на {$CONFIG['site']['name']}", $user_msg);
 			}
 		}
 
@@ -257,14 +262,14 @@ class doc_Zayavka extends doc_Nulltype {
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 
 		$log_data='';
-		if($this->doc)
+		if($this->id)
 		{
 			$log_data = getCompareStr($old_data, $new_data);
 			if(@$old_data['status'] != $new_data['status'])
 				$this->sentZEvent('cstatus:'.$new_data['status']);
 		}
 		$this->setDopDataA($new_data);
-		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 		
 	}
 
@@ -276,20 +281,20 @@ class doc_Zayavka extends doc_Nulltype {
                 if(!$this->isAltNumUnique()) {
                     throw new Exception("Номер документа не уникален!");
                 }
-		$data = $db->selectRow('doc_list', $this->doc);
+		$data = $db->selectRow('doc_list', $this->id);
 		if(!$data)	throw new Exception('Ошибка выборки данных документа при проведении!');
 		if($data['ok'])	throw new Exception('Документ уже проведён!');
-		$db->update('doc_list', $this->doc, 'ok', time() );
+		$db->update('doc_list', $this->id, 'ok', time() );
 		$this->sentZEvent('apply');
 	}
 	
 	/// отменить проведение документа
 	function DocCancel() {
 		global $db;
-		$data = $db->selectRow('doc_list', $this->doc);
+		$data = $db->selectRow('doc_list', $this->id);
 		if(!$data)		throw new Exception('Ошибка выборки данных документа!');
 		if(!$data['ok'])	throw new Exception('Документ не проведён!');
-		$db->update('doc_list', $this->doc, 'ok', 0 );
+		$db->update('doc_list', $this->id, 'ok', 0 );
 		$this->sentZEvent('cancel');			
 	}
 
@@ -302,14 +307,14 @@ class doc_Zayavka extends doc_Nulltype {
 		{
 			$tmpl->ajax=1;
 			$tmpl->addContent("
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=t2'\">Реализация (все товары)</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=d2'\">Реализация (неотгруженные)</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=2'\">Реализация (устарело)</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=4'\">Приход средств в банк</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=15'\">Оперативная реализация</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">Копия заявки</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=16'\">Спецификация (не рек. здесь)</div>");
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=t2'\">Реализация (все товары)</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=d2'\">Реализация (неотгруженные)</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=2'\">Реализация (устарело)</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=15'\">Оперативная реализация</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Копия заявки</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=16'\">Спецификация (не рек. здесь)</div>");
 		}
 		else if ($target_type == 't2') {
 			if (!isAccess('doc_realizaciya', 'create'))
@@ -454,19 +459,19 @@ class doc_Zayavka extends doc_Nulltype {
 		}
 		else if($opt=='rewrite') {
 			$db->startTransaction();
-			$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->doc}'");
-			$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}'");
+			$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
+			$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}'");
 			$docs = "`doc`='-1'";
 			while($nxt=$res->fetch_row())
 				$docs.=" OR `doc`='$nxt[0]'";
 			$res=$db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs GROUP BY `tovar`");
 			while($line = $res->fetch_assoc()) {
-				$line['doc']=$this->doc;
+				$line['doc']=$this->id;
 				$db->insertA('doc_list_pos', $line);
 			}
-			doc_log("REWRITE", "", 'doc', $this->doc);
+			doc_log("REWRITE", "", 'doc', $this->id);
 			$db->commit();
-			header("location: /doc.php?mode=body&doc=".$this->doc);
+			header("location: /doc.php?mode=body&doc=".$this->id);
 			//exit();
 		}
 		else if($opt=='pie')
@@ -474,7 +479,7 @@ class doc_Zayavka extends doc_Nulltype {
 			try
 			{
 				$this->sendEmailNotify($CONFIG['doc']['pie']);
-				$db->query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES	( '{$this->doc}' ,'pie','1')");
+				$db->query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES	( '{$this->id}' ,'pie','1')");
 				$tmpl->setContent("{response: 'send'}");
 			}
 			catch(Exception $e)
@@ -651,7 +656,7 @@ class doc_Zayavka extends doc_Nulltype {
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$sum=$summass=$sum_nds=0;
@@ -801,7 +806,7 @@ class doc_Zayavka extends doc_Nulltype {
 		$str="Накладная на проверку наличия N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
-		$str="К заявке N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc})";
+		$str="К заявке N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id})";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Поставщик: {$this->firm_vars['firm_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
@@ -855,7 +860,7 @@ class doc_Zayavka extends doc_Nulltype {
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
@@ -883,7 +888,7 @@ class doc_Zayavka extends doc_Nulltype {
 				$rowc[]=$nxt['comm'];
 			}
 
-			$rezerv=DocRezerv($nxt['tovar'],$this->doc);
+			$rezerv=DocRezerv($nxt['tovar'],$this->id);
 
 			$row=array_merge($row, array($nxt['cost'], "{$nxt['cnt']} {$nxt['units']}", $nxt['base_cnt'], $rezerv, '', $nxt['mesto']));
 			$rowc=array_merge($rowc, array('', '', '', '', '', ''));

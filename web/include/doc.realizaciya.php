@@ -20,44 +20,49 @@
 
 /// Документ *Реализация*
 class doc_Realizaciya extends doc_Nulltype {
-	var $status_list;
+    var $status_list;
 
-	function __construct($doc=0) {
-		parent::__construct($doc);
-		$this->doc_type				= 2;
-		$this->doc_name				= 'realizaciya';
-		$this->doc_viewname			= 'Реализация товара';
-		$this->sklad_editor_enable		= true;
-		$this->sklad_modify			= -1;
-		$this->header_fields			= 'bank sklad cena separator agent';
-		$this->dop_menu_buttons			= "<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc=$doc'); return false;\" title='Доверенное лицо'><img src='img/i_users.png' alt='users'></a>";
-		$this->PDFForms				= array(
-			array('name'=>'nak','desc'=>'Накладная','method'=>'PrintNaklPDF'),
-			array('name'=>'tc','desc'=>'Товарный чек','method'=>'PrintTcPDF'),
-                        array('name'=>'tcnkkt','desc'=>'Товарный чек без ККТ','method'=>'PrintTcPDFnkkt'),
-                        array('name'=>'tcna','desc'=>'Товарный чек без агента','method'=>'PrintTcPDFna'),
-                        array('name'=>'tcnd','desc'=>'Товарный чек без скидки','method'=>'PrintTcPDFnd'),
-			array('name'=>'nak_kompl','desc'=>'Накладная на комплектацию','method'=>'PrintNaklKomplektPDF'),
-			array('name'=>'nacenki','desc'=>'Наценки','method'=>'Nacenki'),
-			array('name'=>'skidki','desc'=>'Скидки','method'=>'PrintSkidkiPDF'),
-			array('name'=>'label','desc'=>'Этикетки на упаковку','method'=>'PrintLabel')
-		);
-		$this->status_list			= array('in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
-	}
-	
-	function initDefDopdata() {
-		$this->def_dop_data = array('platelshik'=>0, 'gruzop'=>0, 'status'=>'', 'kladovshik'=>0,
-			'mest'=>'', 'received'=>0, 'return'=>0, 'cena'=>0, 'dov_agent'=>0, 'dov'=>'', 'dov_data'=>'');
-	}
+    function __construct($doc = 0) {
+        parent::__construct($doc);
+        $this->doc_type = 2;
+        $this->typename = 'realizaciya';
+        $this->viewname = 'Реализация товара';
+        $this->sklad_editor_enable = true;
+        $this->sklad_modify = -1;
+        $this->header_fields = 'bank sklad cena separator agent';
+        $this->PDFForms = array(
+            array('name' => 'nak', 'desc' => 'Накладная', 'method' => 'PrintNaklPDF'),
+            array('name' => 'tc', 'desc' => 'Товарный чек', 'method' => 'PrintTcPDF'),
+            array('name' => 'tcnkkt', 'desc' => 'Товарный чек без ККТ', 'method' => 'PrintTcPDFnkkt'),
+            array('name' => 'tcna', 'desc' => 'Товарный чек без агента', 'method' => 'PrintTcPDFna'),
+            array('name' => 'tcnd', 'desc' => 'Товарный чек без скидки', 'method' => 'PrintTcPDFnd'),
+            array('name' => 'nak_kompl', 'desc' => 'Накладная на комплектацию', 'method' => 'PrintNaklKomplektPDF'),
+            array('name' => 'nacenki', 'desc' => 'Наценки', 'method' => 'Nacenki'),
+            array('name' => 'skidki', 'desc' => 'Скидки', 'method' => 'PrintSkidkiPDF'),
+            array('name' => 'label', 'desc' => 'Этикетки на упаковку', 'method' => 'PrintLabel')
+        );
+        $this->status_list = array('in_process' => 'В процессе', 'ok' => 'Готов к отгрузке', 'err' => 'Ошибочный');
+    }
+    
+    /// Получить строку с HTML кодом дополнительных кнопок документа
+    protected function getAdditionalButtonsHTML() {
+         return "<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc={$this->id}');"
+         . " return false;\" title='Доверенное лицо'><img src='/img/i_users.png' alt='users'></a>";
+    }
+        
+    function initDefDopdata() {
+        $this->def_dop_data = array('platelshik' => 0, 'gruzop' => 0, 'status' => '', 'kladovshik' => 0,
+            'mest' => '', 'received' => 0, 'return' => 0, 'cena' => 0, 'dov_agent' => 0, 'dov' => '', 'dov_data' => '');
+    }
 
-	// Создать документ с товарными остатками на основе другого документа
+    // Создать документ с товарными остатками на основе другого документа
 	public function createFromP($doc_obj) {
 		parent::CreateFromP($doc_obj);
 		$this->setDopData('platelshik', $doc_obj->doc_data['agent']);
 		$this->setDopData('gruzop', $doc_obj->doc_data['agent']);
 		unset($this->doc_data);
 		$this->get_docdata();
-		return $this->doc;
+		return $this->id;
 	}
 
 	function DopHead()
@@ -173,14 +178,14 @@ class doc_Realizaciya extends doc_Nulltype {
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 		
 		$log_data='';
-		if($this->doc)
+		if($this->id)
 		{
 			$log_data = getCompareStr($old_data, $new_data);
 			if(@$old_data['status'] != $new_data['status'])
 				$this->sentZEvent('cstatus:'.$new_data['status']);
 		}
 		$this->setDopDataA($new_data);
-		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
 
     function dopBody() {
@@ -203,7 +208,7 @@ class doc_Realizaciya extends doc_Nulltype {
             INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
             INNER JOIN `doc_agent` ON `doc_list`.`agent` = `doc_agent`.`id`
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
-            WHERE `doc_list`.`id`='{$this->doc}'");
+            WHERE `doc_list`.`id`='{$this->id}'");
         $doc_params = $res->fetch_assoc();
         $res->free();
         if ($doc_params['ok'] && (!$silent)) {
@@ -225,7 +230,7 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         
         if (!$silent) {
-            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
+            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
         }
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
@@ -233,7 +238,7 @@ class doc_Realizaciya extends doc_Nulltype {
             FROM `doc_list_pos`
             LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
             LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_params['sklad']}'
-        WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+        WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
         $bonus = 0;
         $fail_text = '';
         while ($nxt = $res->fetch_row()) {
@@ -277,7 +282,7 @@ class doc_Realizaciya extends doc_Nulltype {
             return;
         }
         if (!$doc_params['no_bonuses'] && $bonus>0)
-            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','$bonus')");
+            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','$bonus')");
 
         $this->sentZEvent('apply');
     }
@@ -287,21 +292,21 @@ class doc_Realizaciya extends doc_Nulltype {
 		global $db;
 
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
-		FROM `doc_list` WHERE `doc_list`.`id`='{$this->doc}'");
+		FROM `doc_list` WHERE `doc_list`.`id`='{$this->id}'");
 		if(!$res->num_rows)			throw new Exception('Документ не найден!');
 		$nx = $res->fetch_row();
 		if(! $nx[4])				throw new Exception('Документ НЕ проведён!');
 
-		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->doc}' AND `ok`>'0'");
+		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}' AND `ok`>'0'");
 		if($res->num_rows)		throw new Exception('Нельзя отменять документ с проведёнными подчинёнными документами.');
 
-		$db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
+		$db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
 		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type` FROM `doc_list_pos`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`	WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`	WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
 
 		while($nxt = $res->fetch_row())
 			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
-		$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->doc}' ,'bonus','0')");
+		$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','0')");
 		$this->sentZEvent('cancel');
 	}
 
@@ -313,10 +318,10 @@ class doc_Realizaciya extends doc_Nulltype {
 		if($target_type=='')
 		{
 			$tmpl->ajax=1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=4'\">Приход средств в банк</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=18'\">Корректировка долга</div>");
-			if(!$this->doc_data['p_doc'])	$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">Заявка (родительская)</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=18'\">Корректировка долга</div>");
+			if(!$this->doc_data['p_doc'])	$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Заявка (родительская)</div>");
 		}
 		else if($target_type=='1')
 		{
@@ -386,7 +391,7 @@ class doc_Realizaciya extends doc_Nulltype {
 			$tmpl->addContent("<form method='post' action=''>
 <input type=hidden name='mode' value='srv'>
 <input type=hidden name='opt' value='dovs'>
-<input type=hidden name='doc' value='{$this->doc}'>
+<input type=hidden name='doc' value='{$this->id}'>
 <table>
 <tr><th>Доверенное лицо (<a href='docs.php?l=dov&mode=edit&ag_id={$this->doc_data['agent']}' title='Добавить'><img border=0 src='img/i_add.png' alt='add'></a>)
 <tr><td><input type=hidden name=dov_agent value='".$this->dop_data['dov_agent']."' id='sid' ><input type=text id='sdata' value='$agn' onkeydown=\"return RequestData('/docs.php?l=dov&mode=srv&opt=popup&ag={$this->doc_data['agent']}')\">
@@ -408,13 +413,13 @@ class doc_Realizaciya extends doc_Nulltype {
 		}
 		else if($opt=="dovs")
 		{
-			if(!isAccess('doc_'.$this->doc_name, 'edit'))	throw new AccessException();
+			if(!isAccess('doc_'.$this->typename, 'edit'))	throw new AccessException();
 			$this->setDopData('dov', request('dov'));
 			$this->setDopData('dov_agent', request('dov_agent'));
 			$this->setDopData('dov_data', request('dov_data'));
-			$ref="Location: doc.php?mode=body&doc={$this->doc}";
+			$ref="Location: doc.php?mode=body&doc={$this->id}";
 			header($ref);
-			doc_log("UPDATE","dov:".request('dov').", dov_agent:".request('dov_agent').", dov_data:".request('dov_data'),'doc', $this->doc);
+			doc_log("UPDATE","dov:".request('dov').", dov_agent:".request('dov_agent').", dov_data:".request('dov_data'),'doc', $this->id);
 		}
 		else $tmpl->msg("Неизвестная опция $opt!");
 		
@@ -442,9 +447,9 @@ class doc_Realizaciya extends doc_Nulltype {
 
 		$pdf->SetFont('','',16);
                 if(!$this->dop_data['return']) {
-                    $str="Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                    $str="Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
                 } else {
-                    $str="Возврат поставщику N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                    $str="Возврат поставщику N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
                 }
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
@@ -499,7 +504,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
@@ -539,7 +544,7 @@ class doc_Realizaciya extends doc_Nulltype {
 			$add='';
 			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
 			$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
-			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			(`p_doc`='{$this->id}' AND (`type`='4' OR `type`='6'))
 			$add
 			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
 			if($rs->num_rows)
@@ -626,7 +631,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		$dt = date("d.m.Y", $this->doc_data['date']);
 
 		$pdf->SetFont('','',16);
-		$str="Информация о скидках к накладной N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+		$str="Информация о скидках к накладной N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
 		$str="Поставщик: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
@@ -677,7 +682,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i = 0;
 		$ii = 1;
@@ -732,7 +737,7 @@ class doc_Realizaciya extends doc_Nulltype {
 			$add='';
 			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
 			$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
-			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			(`p_doc`='{$this->id}' AND (`type`='4' OR `type`='6'))
 			$add
 			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
 			if($rs->num_rows)
@@ -900,7 +905,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
@@ -936,7 +941,7 @@ class doc_Realizaciya extends doc_Nulltype {
 			$add='';
 			if($nxt[12]) $add=" OR (`p_doc`='{$this->doc_data['p_doc']}' AND (`type`='4' OR `type`='6'))";
 			$rs = $db->query("SELECT SUM(`sum`) FROM `doc_list` WHERE
-			(`p_doc`='{$this->doc}' AND (`type`='4' OR `type`='6'))
+			(`p_doc`='{$this->id}' AND (`type`='4' OR `type`='6'))
 			$add
 			AND `ok`>0 AND `p_doc`!='0' GROUP BY `p_doc`");
 			if($rs->num_rows){
@@ -996,7 +1001,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		$str="Накладная на комплектацию N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от $dt";
 		$pdf->CellIconv(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
-		$str="К накладной N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc})";
+		$str="К накладной N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id})";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
 		$str="Поставщик: {$this->firm_vars['firm_name']}";
 		$pdf->CellIconv(0,5,$str,0,1,'L',0);
@@ -1053,7 +1058,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$ii=1;
@@ -1082,7 +1087,7 @@ class doc_Realizaciya extends doc_Nulltype {
 			}
 
 			$mass=sprintf("%0.3f",$nxt['mass']);
-			$rezerv=DocRezerv($nxt['tovar'],$this->doc);
+			$rezerv=DocRezerv($nxt['tovar'],$this->id);
 
 			$row=array_merge($row, array($nxt['cost'], "{$nxt['cnt']} {$nxt['units']}", $nxt['base_cnt'], $rezerv, $mass, $nxt['mesto']));
 			$rowc=array_merge($rowc, array('', '', '', '', '', ''));
@@ -1163,7 +1168,7 @@ class doc_Realizaciya extends doc_Nulltype {
 	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 	LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
-	WHERE `doc_list_pos`.`doc`='{$this->doc}'
+	WHERE `doc_list_pos`.`doc`='{$this->id}'
 	ORDER BY `doc_list_pos`.`id`");
 
         while ($nxt = $res->fetch_assoc()) {
@@ -1373,7 +1378,7 @@ function Nacenki($to_str=0)
 		FROM `doc_list`
 		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
-		WHERE (`doc_list`.`p_doc`='{$this->doc}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='4' AND `doc_list`.`p_doc`>0");
+		WHERE (`doc_list`.`p_doc`='{$this->id}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='4' AND `doc_list`.`p_doc`>0");
 	while($l = $res->fetch_assoc()) {
 		$l['date'] = date("Y-m-d", $l['date']);		
 		$str = "Подчинённый банк-приход: N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}";
@@ -1385,7 +1390,7 @@ function Nacenki($to_str=0)
 		FROM `doc_list`
 		LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 		LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`doc_list`.`user`
-		WHERE (`doc_list`.`p_doc`='{$this->doc}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='5' AND `doc_list`.`p_doc`>0");
+		WHERE (`doc_list`.`p_doc`='{$this->id}' OR `doc_list`.`p_doc`='$z_id') AND `doc_list`.`type`='5' AND `doc_list`.`p_doc`>0");
 	while($l = $res->fetch_assoc()) {
 		$l['date'] = date("Y-m-d", $l['date']);
 		$str = "Подчинённый расходно-кассовый ордер: N{$l['num']}, от {$l['date']} на {$l['sum']}, создал {$l['name']}/{$l['worker_real_name']}";
@@ -1414,7 +1419,7 @@ function Nacenki($to_str=0)
 		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 	$i = 0;
 	$ii = 1;

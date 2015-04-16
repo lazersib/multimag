@@ -25,8 +25,8 @@ class doc_Doveren extends doc_Nulltype
 	{
 		parent::__construct($doc);
 		$this->doc_type				=10;
-		$this->doc_name				='doveren';
-		$this->doc_viewname			='Доверенность';
+		$this->typename				='doveren';
+		$this->viewname			='Доверенность';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
 		$this->header_fields			='separator agent cena';
@@ -63,10 +63,10 @@ class doc_Doveren extends doc_Nulltype
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 		
 		$log_data='';
-		if($this->doc)
+		if($this->id)
 			$log_data = getCompareStr($old_data, $new_data);
 		$this->setDopDataA($new_data);
-		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
 	
 	// Формирование другого документа на основании текущего
@@ -75,7 +75,7 @@ class doc_Doveren extends doc_Nulltype
 		global $tmpl;
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">
 			<li><a href=''>Поступление товара</div>");
 		}
 		else if ($target_type == 1) {

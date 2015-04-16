@@ -27,12 +27,12 @@ class doc_ZSbor extends doc_Nulltype {
 		$this->def_dop_data = array();
 		parent::__construct($doc);
 		$this->doc_type = 21;
-		$this->doc_name = 'zsbor';
-		$this->doc_viewname = 'Заявка на производство';
+		$this->typename = 'zsbor';
+		$this->viewname = 'Заявка на производство';
 		$this->sklad_editor_enable = true;
 		$this->sklad_modify = 0;
 		$this->header_fields = 'sklad cena';
-		settype($this->doc, 'int');
+		settype($this->id, 'int');
 		$this->PDFForms = array(
 		    array('name' => 'z_kompl', 'desc' => 'Заявка на комплектующие', 'method' => 'PrintKompl')
 		);
@@ -44,7 +44,7 @@ class doc_ZSbor extends doc_Nulltype {
 
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=8'\">Перемещение</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=8'\">Перемещение</div>");
 		}
 		else if ($target_type == '8') {
 			if (!isAccess('doc_peremeshenie', 'create'))
@@ -58,7 +58,7 @@ class doc_ZSbor extends doc_Nulltype {
 			INNER JOIN `doc_base_kompl` ON `doc_base_kompl`.`pos_id` = `doc_list_pos`.`tovar`
 			INNER JOIN `doc_base` ON `doc_base_kompl`.`kompl_id` = `doc_base`.`id`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id` = `doc_base_kompl`.`kompl_id` AND `doc_base_cnt`.`sklad` = '{$this->doc_data['sklad']}'
-			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`=0
+			WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`=0
 			GROUP BY  `doc_base_kompl`.`kompl_id`
 			ORDER BY `doc_list_pos`.`id`");
 			while($nxt = $res->fetch_assoc()) {
@@ -94,7 +94,7 @@ class doc_ZSbor extends doc_Nulltype {
 		$dt = date("d.m.Y", $this->doc_data['date']);
 		
 		$pdf->SetFont('', '', 16);
-		$str="Заявка на комплектующие к заявке на сборку\nN {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+		$str="Заявка на комплектующие к заявке на сборку\nN {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
 		$pdf->MultiCellIconv(0, 7, $str, 0, 'C');
 		$pdf->Ln();
 
@@ -124,7 +124,7 @@ class doc_ZSbor extends doc_Nulltype {
 			INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 			INNER JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
 			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id` = `doc_base_kompl`.`kompl_id` AND `doc_base_cnt`.`sklad` = '{$this->doc_data['sklad']}'
-			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`=0
+			WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`=0
 			GROUP BY  `doc_base_kompl`.`kompl_id`
 			ORDER BY `doc_list_pos`.`id`");
 		$i = 0;

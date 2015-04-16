@@ -20,7 +20,10 @@
 
 /// Базовый класс документов
 class document {
-    protected $id;
+    protected $id = null;			///< ID документа
+    protected $typename;			///< Наименование типа документа    (для контроля прав и пр.)
+    protected $viewname;                        ///< Отображаемое название документа при просмотре и печати
+    
     protected $firm_id;
     
     protected $doc_data;			///< Основные данные документа
@@ -54,6 +57,16 @@ class document {
         'agent_comment' => ''
         );
 
+    /// Получить ID документа
+    public function getId() {
+        return $this->id;
+    }
+
+    /// Получить отображаемое имя документа
+    public function getViewName() {
+        return $this->viewname;
+    }
+
     /// Получить стандартную строку запроса загрузки документа
     static function getStandardSqlQuery() {
         return "SELECT `a`.`id`, `a`.`type`, `a`.`agent`, `b`.`name` AS `agent_name`, `a`.`comment`, `a`.`date`, `a`.`ok`, `a`.`sklad`, 
@@ -63,7 +76,7 @@ class document {
             LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`";
     }
     
-    /// 
+    /// Получить имя класса документа по его типу
     static function getClassNameFromType($type) {
         switch($type)	{
             case 1: 

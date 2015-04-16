@@ -31,97 +31,202 @@ class SearchPage
 		$this->search_str=$search_str;
 	}
 
-	/// Поиск товара
-	/// @param $s Подстрока поиска
-	function searchTovar($s) {
-		global $CONFIG, $db;
+    /// Поиск товара
+    /// @param $s Подстрока поиска
+    function searchTovar($s) {
+        global $CONFIG, $db;
+        $no_header = 1;
+        $this->all_cnt = 30;
+        $s_sql = $db->real_escape_string($s);
+        $html_s = html_out($s);
 
-		$ret='';
-                $no_header = 1;
-                $this->all_cnt = 30;
-		$s_sql = $db->real_escape_string($s);
-                   
-                $sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
-		FROM `doc_base`
-		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`proizv` LIKE '$s%' OR `doc_base`.`vc` LIKE '$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
-                ORDER BY `doc_base`.`name`
-		LIMIT 30";
-		$res = $db->query($sql);
-		
-		if($row = $res->num_rows) {
-                        if($no_header) {
-                                $no_header = 0;
-                                $ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
-                                <th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
-                        }
-			$i=0;
-			$ret.=$this->searchOut($res);
-		}
-                
-                $limit = $this->all_cnt+5;
-                
-		$sql="SELECT `doc_base`.`id`, `doc_group`.`printname`, `doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`cost`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`), `doc_base`.`transit_cnt`
-		FROM `doc_base`
-		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`desc` LIKE '%$s_sql%' OR `doc_base`.`proizv` LIKE '%$s%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0' AND (`doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`proizv` NOT LIKE '$s%' AND `doc_base`.`vc` NOT LIKE '$s_sql%')
-                ORDER BY `doc_base`.`name`
-		LIMIT 18";
-		$res = $db->query($sql);
-		
-		if($row = $res->num_rows) {
-                        if($no_header) {
-                                $no_header = 0;
-                                $ret.="<table width='100%' cellspacing='0' border='0' class='list'><tr><th>Наименование<th>Производитель<th>Аналог<th>Наличие
-                                <th>Цена, руб<th>d, мм<th>D, мм<th>B, мм<th>m, кг<th>";
-                        }
-			$i=0;
-			
-			$ret.=$this->searchOut($res);
-			
-		}
-                
-                if(!$no_header) {
-                        $ret.="</table>";
-			if(@$CONFIG['site']['grey_price_days'])
-				$ret.="<span style='color:#888'>Серая цена</span> требует уточнения<br>";
+        $tbody = '';
+        $found_ids = '0';
+
+        $sql = "SELECT SQL_CALC_FOUND_ROWS `doc_base`.`id`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
+                `doc_base`.`cost` AS `price`, `doc_base`.`cost_date`, `doc_base`.`mass`, `doc_base`.`transit_cnt`, `doc_base`.`analog_group`, `doc_base`.`vc`,
+                `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, 
+                (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `cnt`
+            FROM `doc_base`
+            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+            LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`";
+        $sqla = $sql . " WHERE (`doc_base`.`name` = '$s_sql' OR `doc_base`.`vc` = '$s_sql') 
+            AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'
+            ORDER BY `doc_base`.`name`
+            LIMIT 10";
+        $res = $db->query($sqla);
+        if ($res->num_rows) {
+            $rows_res = $db->query("SELECT FOUND_ROWS()");
+            list($found_cnt) = $rows_res->fetch_row();
+            if($res->num_rows<$found_cnt) {
+                $found_info = "показано {$res->num_rows} из $found_cnt найденных";
+            }   else {
+                $found_info = "{$res->num_rows} совпадений найдено";
+            }
+            $tbody .= "<tr><th colspan='20' align='center'>Поиск совпадений с $html_s - $found_info</th></tr>";
+            $groups_analog_list = '';
+            while($line = $res->fetch_assoc()) {
+                $tbody .=  $this->drawTableLine($line, $s);
+                $found_ids.=','.$line['id'];
+                if($line['analog_group']) {
+                    if($groups_analog_list) {
+                        $groups_analog_list.=',';
+                    }
+                    $groups_analog_list.="'".$db->real_escape_string($line['analog_group'])."'";
                 }
-                
-		return $ret;
-	}
-        
-        /// Вывод данных по поиску товаров
-        function searchOut($res) {
-                global $CONFIG;
-                if(@$CONFIG['site']['grey_price_days'])
-			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
-                $basket_img = "/skins/".$CONFIG['site']['skin']."/basket16.png";
-                $pc = PriceCalc::getInstance();
-                $ret = '';
-                while($nxt=$res->fetch_row()) {
-                        if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
-                        else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";
-
-                        $cost = $pc->getPosDefaultPriceValue($nxt[0]);
-                        if($cost<=0)	$cost='уточняйте';
-                        $nal=$this->GetCountInfo($nxt[12], $nxt[13]);
-
-                        $cce = '';
-                        if(@$CONFIG['site']['grey_price_days']) {
-                                if( strtotime($nxt[5]) < $cce_time )
-                                        $cce = ' style=\'color:#888\'';
-                        }
-
-                        $ret.="<tr><td><a href='$link'>".html_out("$nxt[1] $nxt[2]")."</a></td>
-                        <td>".html_out($nxt[3])."</td><td>".html_out($nxt[6])."</td><td>$nal</td><td $cce>$cost</td><td>$nxt[8]</td><td>$nxt[9]</td><td>$nxt[10]</td><td>$nxt[11]</td><td>
-                        <a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>";
-                        $this->all_cnt--;
+            }
+            if($groups_analog_list) {
+                $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list)"
+                    . " AND `doc_base`.`name` != '$s_sql' AND `doc_base`.`vc` = !'$s_sql'"
+                    . " ORDER BY `doc_base`.`name`"
+                    . " LIMIT 10";
+                $res = $db->query($sqla);
+                if ($res->num_rows) {
+                    $rows_res = $db->query("SELECT FOUND_ROWS()");
+                    list($found_cnt) = $rows_res->fetch_row();
+                    if($res->num_rows<$found_cnt) {
+                        $found_info = "показано {$res->num_rows} из $found_cnt найденных";
+                    }   else {
+                        $found_info = "{$res->num_rows} совпадений найдено";
+                    }
+                    $tbody .=  "<tr><th colspan='8' align='center'>Поиск аналогов $html_s - $found_info</th></tr>";
+                    $groups_analog_list = '';
+                    while($line = $res->fetch_assoc()) {
+                        $tbody .= $this->drawTableLine($line, $s);
+                        $found_ids.=','.$line['id'];
+                    }
                 }
-                return $ret;
+            }
+            $sf = 1;
         }
 
+        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') AND `doc_base`.`id` NOT IN ($found_ids) "
+            . " ORDER BY `doc_base`.`name`"
+            . " LIMIT 10";
+        if ($res->num_rows) {
+            $rows_res = $db->query("SELECT FOUND_ROWS()");
+            list($found_cnt) = $rows_res->fetch_row();
+            if($res->num_rows<$found_cnt) {
+                $found_info = "показано {$res->num_rows} из $found_cnt найденных";
+            }   else {
+                $found_info = "{$res->num_rows} совпадений найдено";
+            }
+            $tbody .= "<tr><th colspan='8' align='center'>Поиск по названию, начинающемуся на $html_s - $found_info</th></tr>";
+            $groups_analog_list = '';
+            while($line = $res->fetch_assoc()) {
+                $tbody .=  $this->drawTableLine($line, $s);
+                $found_ids.=','.$line['id'];
+                if($line['analog_group']) {
+                    if($groups_analog_list) {
+                        $groups_analog_list.=',';
+                    }
+                    $groups_analog_list.="'".$db->real_escape_string($line['analog_group'])."'";
+                }
+            }
+            if($groups_analog_list) {
+                $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list)"
+                    . " AND `doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`vc` NOT LIKE '$s_sql%'"
+                    . " ORDER BY `doc_base`.`name`"
+                    . " LIMIT 10";
+                $res = $db->query($sqla);
+                if ($res->num_rows) {
+                    $rows_res = $db->query("SELECT FOUND_ROWS()");
+                    list($found_cnt) = $rows_res->fetch_row();
+                    if($res->num_rows<$found_cnt) {
+                        $found_info = "показано {$res->num_rows} из $found_cnt найденных";
+                    }   else {
+                        $found_info = "{$res->num_rows} совпадений найдено";
+                    }
+                    $tbody .=  "<tr><th colspan='8' align='center'>И их аналоги - $found_info</th></tr>";
+                    $groups_analog_list = '';
+                    while($line = $res->fetch_assoc()) {
+                        $tbody .= $this->drawTableLine($line, $s);
+                        $found_ids.=','.$line['id'];
+                    }
+                }
+            }
+            $sf = 1;
+        }
+
+        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%')"
+            . " AND `doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`vc` NOT LIKE '$s_sql%'"
+            . " AND `doc_base`.`id` NOT IN ($found_ids) "
+            . " ORDER BY `doc_base`.`name`"
+            . " LIMIT 10";
+        $res = $db->query($sqla);
+        if ($cnt = $res->num_rows) {
+            $rows_res = $db->query("SELECT FOUND_ROWS()");
+            list($found_cnt) = $rows_res->fetch_row();
+            if($res->num_rows<$found_cnt) {
+                $found_info = "показано {$res->num_rows} из $found_cnt найденных";
+            }   else {
+                $found_info = "{$res->num_rows} совпадений найдено";
+            }
+            $tbody .=  "<tr><th colspan='8' align='center'>Наименования, содержащие $html_s - $found_info</th></tr>";
+            $groups_analog_list = '';
+            while($line = $res->fetch_assoc()) {
+                $tbody .= $this->drawTableLine($line, $s);
+                $found_ids.=','.$line['id'];
+            }
+        }
+
+        if($tbody) {
+            $tbody = "<table width='100%' cellspacing='0' border='0' class='list'>"
+                . "<tr><th>Наименование</th><th>Наличие</th><th>Цена, руб</th><th>d, мм</th><th>D, мм</th><th>B, мм</th><th>m, кг</th><th>&nbsp;</th></tr>"
+                . $tbody
+                . "</table>";
+            if (@$CONFIG['site']['grey_price_days']) {
+                $tbody.="<span style='color:#888'>Серая цена</span> требует уточнения<br>";
+            }
+        }                
+        return $tbody;
+    }
+        
+    function drawTableLine($line, $s) {
+        global $CONFIG;
+        if (@$CONFIG['site']['grey_price_days']) {
+            $cce_time = $CONFIG['site']['grey_price_days'] * 60 * 60 * 24;
+        }
+        $basket_img = "/skins/" . $CONFIG['site']['skin'] . "/basket16.png";
+        $pc = PriceCalc::getInstance();
+        $ret = '';
+
+        if ($CONFIG['site']['recode_enable']) {
+            $link = "/vitrina/ip/{$line['id']}.html";
+        } else {
+            $link = "/vitrina.php?mode=product&amp;p={$line['id']}";
+        }
+
+        $cost = $pc->getPosDefaultPriceValue($line['id']);
+        if ($cost <= 0) {
+            $cost = 'уточняйте';
+        }
+        $nal = $this->GetCountInfo($line['cnt'], $line['transit_cnt']);
+
+        $cce = '';
+        if (@$CONFIG['site']['grey_price_days']) {
+            if (strtotime($line['cost_date']) < $cce_time) {
+                $cce = ' style=\'color:#888\'';
+            }
+        }
+        $name = $line['name'];
+        if($line['vc']) {
+            $name .= ' - '.$line['vc'];
+        }
+        if($line['group_printname']) {
+            $name = $line['group_printname'].' '.$name;
+        }
+        if($line['vendor']) {
+            $name .= ' / '.$line['vendor'];
+        }
+        $name = SearchHilight(html_out($line['name']), $s);
+        $ret .= "<tr><td><a href='$link'>$name</a></td>
+            <td>$nal</td><td $cce>$cost</td><td>{$line['d_int']}</td><td>{$line['d_ext']}</td><td>{$line['size']}</td><td>{$line['mass']}</td>
+            <td><a href='/vitrina.php?mode=korz_add&amp;p={$line['id']}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$line['id']}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>";
+
+        return $ret;
+    } 
+        
 	/// Поиск по статьям
 	/// @param s Подстрока поиска
 	function SearchText($s)	{

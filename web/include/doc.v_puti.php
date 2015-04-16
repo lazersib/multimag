@@ -24,11 +24,11 @@ class doc_v_puti extends doc_Nulltype {
 	function __construct($doc = 0) {
 		parent::__construct($doc);
 		$this->doc_type = 12;
-		$this->doc_name = 'v_puti';
-		$this->doc_viewname = 'Товары в пути';
+		$this->typename = 'v_puti';
+		$this->viewname = 'Товары в пути';
 		$this->sklad_editor_enable = true;
 		$this->header_fields = 'sklad cena separator agent';
-		settype($this->doc, 'int');
+		settype($this->id, 'int');
 		$this->PDFForms = array(
 		    array('name' => 'prn', 'desc' => 'Заявка', 'method' => 'PrintPDF')
 		);
@@ -41,7 +41,7 @@ class doc_v_puti extends doc_Nulltype {
 	
 	function DopHead() {
 		global $tmpl, $db;
-		if (!$this->doc)
+		if (!$this->id)
 			$this->dop_data['dataprib'] = date("Y-m-d");
 		$tmpl->addContent("Ориентировочная дата прибытия:<br><input type='text' name='dataprib'  class='vDateField' value='{$this->dop_data['dataprib']}'>");
 
@@ -97,9 +97,9 @@ class doc_v_puti extends doc_Nulltype {
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 
 		$log_data = '';
-		if ($this->doc)	$log_data = getCompareStr($old_data, $new_data);
+		if ($this->id)	$log_data = getCompareStr($old_data, $new_data);
 		$this->setDopDataA($new_data);
-		if ($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		if ($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
 	
 	// Формирование другого документа на основании текущего
@@ -107,7 +107,7 @@ class doc_v_puti extends doc_Nulltype {
 		global $tmpl, $db;
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=1'\">Поступление</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Поступление</div>");
 		} else if ($target_type == 1) {
 			if (!isAccess('doc_postuplenie', 'create'))
 				throw new AccessException("");
@@ -199,7 +199,7 @@ class doc_v_puti extends doc_Nulltype {
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i = 0;
 		$sum = $summass = 0;

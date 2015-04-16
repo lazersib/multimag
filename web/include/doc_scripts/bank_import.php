@@ -105,7 +105,6 @@ class ds_bank_import {
                         list($d, $m, $y) = explode('.', $import_doc['s_date'], 3);
                     } else {
                         list($d, $m, $y) = explode('.', $import_doc['date'], 3);
-                        echo"warn p {$import_doc['docnum']}<br>";
                     }
                 } elseif ($process_in) {
                     $agent_info = $import_doc['src'];
@@ -115,7 +114,6 @@ class ds_bank_import {
                         list($d, $m, $y) = explode('.', $import_doc['p_date'], 3);
                     } else {
                         list($d, $m, $y) = explode('.', $import_doc['date'], 3);
-                        echo"warn p {$import_doc['docnum']}<br>";
                     }
                 } else {
                     continue;

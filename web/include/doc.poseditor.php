@@ -134,7 +134,7 @@ class DocPosEditor extends PosEditor {
 public function __construct($doc) {
 	global $CONFIG;
 	parent::__construct();
-	$this->doc = $doc->getDocNum();
+	$this->doc = $doc->getId();
 	$this->show_sn = 0;
 	$this->doc_obj = &$doc;
 	$doc_data = $this->doc_obj->getDocDataA();

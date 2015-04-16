@@ -142,7 +142,7 @@ class certlist extends \doc\printforms\iPrintForm {
     /// Сформировать данные печатной формы
     public function make() {
         global $db;
-        $doc_id = $this->doc->getDocNum();
+        $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();

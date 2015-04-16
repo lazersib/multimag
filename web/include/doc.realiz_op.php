@@ -19,38 +19,44 @@
 
 /// Документ *Оперативная реализация*
 class doc_Realiz_op extends doc_Realizaciya {
-	function __construct($doc=0)
-	{
-		parent::__construct($doc);
-		$this->doc_type				= 15;
-		$this->doc_name				= 'realiz_op';
-		$this->doc_viewname			= 'Реализация товара (опер)';
-	}
 
-	/// Провести документ
-	/// @param silent Не менять отметку проведения
-	function DocApply($silent=0) {
-		global $db;
-		if($silent)	return;
-		$data = $db->selectRow('doc_list', $this->doc);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа при проведении!');
-		if($data['ok'])
-			throw new Exception('Документ уже проведён!');
-		$db->update('doc_list', $this->doc, 'ok', time() );
-		$this->sentZEvent('apply');
-	}
-	
-	/// отменить проведение документа
-	function DocCancel() {
-		global $db;
-		$data = $db->selectRow('doc_list', $this->doc);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа!');
-		if(!$data['ok'])
-			throw new Exception('Документ не проведён!');
-		$db->update('doc_list', $this->doc, 'ok', 0 );
-		$this->sentZEvent('cancel');			
-	}
+    function __construct($doc = 0) {
+        parent::__construct($doc);
+        $this->doc_type = 15;
+        $this->typename = 'realiz_op';
+        $this->viewname = 'Реализация товара (опер)';
+    }
+
+    /// Провести документ
+    /// @param silent Не менять отметку проведения
+    function DocApply($silent = 0) {
+        global $db;
+        if ($silent) {
+            return;
+        }
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new \Exception('Ошибка выборки данных документа при проведении!');
+        }
+        if ($data['ok']) {
+            throw new \Exception('Документ уже проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', time());
+        $this->sentZEvent('apply');
+    }
+
+    /// отменить проведение документа
+    function DocCancel() {
+        global $db;
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new \Exception('Ошибка выборки данных документа!');
+        }
+        if (!$data['ok']) {
+            throw new \Exception('Документ не проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', 0);
+        $this->sentZEvent('cancel');
+    }
 
 }

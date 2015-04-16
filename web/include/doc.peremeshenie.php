@@ -25,8 +25,8 @@ class doc_Peremeshenie extends doc_Nulltype
 	function __construct($doc=0) {
 		parent::__construct($doc);
 		$this->doc_type				=8;
-		$this->doc_name				='peremeshenie';
-		$this->doc_viewname			='Перемещение товара со склада на склад';
+		$this->typename				='peremeshenie';
+		$this->viewname			='Перемещение товара со склада на склад';
 		$this->sklad_editor_enable		=true;
 		$this->sklad_modify			=0;
 		$this->header_fields			='cena separator sklad';
@@ -76,10 +76,10 @@ class doc_Peremeshenie extends doc_Nulltype
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 		
 		$log_data='';
-		if($this->doc)
+		if($this->id)
 			$log_data = getCompareStr($old_data, $new_data);
 		$this->setDopDataA($new_data);
-		if($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
 
     function docApply($silent = 0) {
@@ -98,7 +98,7 @@ class doc_Peremeshenie extends doc_Nulltype
             FROM `doc_list`
             INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
-            WHERE `doc_list`.`id`='{$this->doc}'");
+            WHERE `doc_list`.`id`='{$this->id}'");
         if (!$res->num_rows) {
             throw new Exception('Документ не найден!');
         }
@@ -130,7 +130,7 @@ class doc_Peremeshenie extends doc_Nulltype
             FROM `doc_list_pos`
             LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
             LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
-            WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+            WHERE `doc_list_pos`.`doc`='{$this->id}'");
         $fail_text = '';
         while ($nxt = $res->fetch_row()) {
             if ($nxt[5] > 0) {
@@ -167,7 +167,7 @@ class doc_Peremeshenie extends doc_Nulltype
         if ($silent) {
             return;
         }
-        $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->doc}'");
+        $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
         $this->sentZEvent('apply');
     }
 
@@ -178,16 +178,16 @@ class doc_Peremeshenie extends doc_Nulltype
 		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-		WHERE `doc_list`.`id`='{$this->doc}'");
+		WHERE `doc_list`.`id`='{$this->id}'");
 		if(!$res->num_rows)			throw new Exception('Документ не найден!');
 		$nx = $res->fetch_assoc();
 		if(!$nx['ok'])				throw new Exception('Документ не проведён!');
-		$res = $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->doc}'");
+		$res = $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
 		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->id}'");
 		while($nxt = $res->fetch_row()) {
 			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
 			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
@@ -291,7 +291,7 @@ class doc_Peremeshenie extends doc_Nulltype
 		LEFT JOIN `doc_base_cnt` AS `pt_s` ON `pt_s`.`id`=`doc_list_pos`.`tovar` AND `pt_s`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `doc_base_cnt` AS `pt_d` ON `pt_d`.`id`=`doc_list_pos`.`tovar` AND `pt_d`.`sklad`='{$to_sklad}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$ii = 1;
 		$sum = 0;

@@ -25,8 +25,8 @@ class doc_Kompredl extends doc_Nulltype
 	function __construct($doc = 0) {
 		parent::__construct($doc);
 		$this->doc_type = 13;
-		$this->doc_name = 'kompredl';
-		$this->doc_viewname = 'Коммерческое предложение';
+		$this->typename = 'kompredl';
+		$this->viewname = 'Коммерческое предложение';
 		$this->sklad_editor_enable = true;
 		$this->header_fields = 'bank sklad separator agent cena';
 		$this->PDFForms = array(
@@ -54,11 +54,11 @@ class doc_Kompredl extends doc_Nulltype
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 
 		$log_data = '';
-		if ($this->doc)
+		if ($this->id)
 			$log_data = getCompareStr($old_data, $new_data);
 		$this->setDopDataA($new_data);
 		if ($log_data)
-			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+			doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
 
 	function DopBody() {
@@ -76,7 +76,7 @@ class doc_Kompredl extends doc_Nulltype
 		global $tmpl, $db;
 		if($target_type=='') {
 			$tmpl->ajax=1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=3'\">Заявка покупателя</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=3'\">Заявка покупателя</div>");
 		}
 		else if($target_type==3) {
 			$db->startTransaction();
@@ -217,7 +217,7 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		while($nxt = $res->fetch_row())	{
@@ -422,7 +422,7 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		while($line = $res->fetch_assoc()) {
@@ -617,7 +617,7 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$aligns=array('R','L','C','R','R');
@@ -820,7 +820,7 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i=0;
 		$aligns=array('R','L','C','R','R','R');
@@ -934,7 +934,7 @@ class doc_Kompredl extends doc_Nulltype
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i = 0;
 		while ($nxt = $res->fetch_row()) {

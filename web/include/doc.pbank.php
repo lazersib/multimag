@@ -23,8 +23,8 @@ class doc_PBank extends doc_Nulltype {
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 4;
-        $this->doc_name = 'pbank';
-        $this->doc_viewname = 'Приход средств в банк';
+        $this->typename = 'pbank';
+        $this->viewname = 'Приход средств в банк';
         $this->bank_modify = 1;
         $this->header_fields = 'bank sum separator agent';
     }
@@ -72,12 +72,12 @@ class doc_PBank extends doc_Nulltype {
         $old_data = array_intersect_key($new_data, $this->dop_data);
 
         $log_data = '';
-        if ($this->doc) {
+        if ($this->id) {
             $log_data = getCompareStr($old_data, $new_data);
         }
         $this->setDopDataA($new_data);
         if ($log_data) {
-            doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
         }
     }
 
@@ -94,12 +94,12 @@ class doc_PBank extends doc_Nulltype {
             FROM `doc_list`
             INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`bank` AND `ids`='bank'
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
-            WHERE `doc_list`.`id`='{$this->doc}'");
+            WHERE `doc_list`.`id`='{$this->id}'");
         $doc_params = $res->fetch_assoc();
         $res->free();
         
         if (!$doc_params) {
-            throw new Exception('Документ ' . $this->doc . ' не найден');
+            throw new Exception('Документ ' . $this->id . ' не найден');
         }
         
         if ($doc_params['ok'] && (!$silent)) {
@@ -122,7 +122,7 @@ class doc_PBank extends doc_Nulltype {
         }
 
         if (!$silent) {
-            $db->update('doc_list', $this->doc, 'ok', time());
+            $db->update('doc_list', $this->id, 'ok', time());
             $this->sentZEvent('apply');
         }
     }
@@ -130,7 +130,7 @@ class doc_PBank extends doc_Nulltype {
     // Отменить проведение
     function docCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->doc);
+        $data = $db->selectRow('doc_list', $this->id);
         if (!$data) {
             throw new Exception('Ошибка выборки данных документа!');
         }
@@ -143,7 +143,7 @@ class doc_PBank extends doc_Nulltype {
             throw new Exception("Cумма в банке {$data['bank']} не изменилась!");
         }
 
-        $db->update('doc_list', $this->doc, 'ok', 0);
+        $db->update('doc_list', $this->id, 'ok', 0);
         $this->sentZEvent('cancel');
     }
 

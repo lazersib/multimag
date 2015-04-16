@@ -24,8 +24,8 @@ class doc_Korbonus extends doc_Nulltype
 	function __construct($doc=0) {
 		parent::__construct($doc);
 		$this->doc_type				= 19;
-		$this->doc_name				= 'korbonus';
-		$this->doc_viewname			= 'Корректировка бонусов';
+		$this->typename				= 'korbonus';
+		$this->viewname			= 'Корректировка бонусов';
 		$this->sklad_editor_enable		= false;
 		$this->header_fields			= 'separator agent sum';
 	}

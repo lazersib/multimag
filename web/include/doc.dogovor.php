@@ -26,11 +26,11 @@ class doc_Dogovor extends doc_Nulltype
 	{
 		parent::__construct($doc);
 		$this->doc_type				=14;
-		$this->doc_name				='dogovor';
-		$this->doc_viewname			='Договор';
+		$this->typename				='dogovor';
+		$this->viewname			='Договор';
 		$this->sklad_editor_enable		=false;
 		$this->header_fields			='bank separator agent cena';
-		settype($this->doc,'int');
+		settype($this->id,'int');
 		$this->PDFForms=array(
 			array('name'=>'dog','desc'=>'Договор','method'=>'DogovorPDF')
 		);
@@ -80,7 +80,7 @@ class doc_Dogovor extends doc_Nulltype
 	function DopHead()
 	{
 		global $tmpl;
-		if($this->doc)	$end_date=@$this->dop_data['end_date'];
+		if($this->id)	$end_date=@$this->dop_data['end_date'];
 		else		$end_date=date("Y-12-31");
 		$name = $this->dop_data['name'];
 		$dchecked = $this->dop_data['debt_control']?'checked':'';
@@ -112,12 +112,12 @@ class doc_Dogovor extends doc_Nulltype
         $old_data = array_intersect_key($new_data, $this->dop_data);
 
         $log_data = '';
-        if ($this->doc) {
+        if ($this->id) {
             $log_data = getCompareStr($old_data, $new_data);
         }
         $this->setDopDataA($new_data);
         if ($log_data)
-            doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
     }
 
     function DopBody() {
@@ -167,7 +167,7 @@ $str="==== Покупатель: {$agent_info['fullname']} ====
 		$tmpl->ajax=1;
 		if($target_type=='') {
 			$tmpl->ajax=1;
-			$tmpl->addContent("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->doc}&amp;tt=16'\">Спецификация</div>");
+			$tmpl->addContent("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->id}&amp;tt=16'\">Спецификация</div>");
 		}
 		else if($target_type == 16) {
 			if(!isAccess('doc_specific','create'))	throw new AccessException();

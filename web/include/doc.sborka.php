@@ -23,12 +23,16 @@ class doc_Sborka extends doc_Nulltype {
     public function __construct($doc=0){
         parent::__construct($doc);
         $this->doc_type			= 17;
-        $this->doc_name			= 'sborka';
-        $this->doc_viewname		= 'Сборка изделия';
+        $this->typename			= 'sborka';
+        $this->viewname		= 'Сборка изделия';
         $this->sklad_editor_enable	= true;
         $this->header_fields		= 'agent cena sklad';
-        settype($this->doc,'int');
-        $this->dop_menu_buttons		= "<a href='/doc_sc.php?mode=reopen&sn=sborka_zap&amp;doc=$doc&amp;' title='Передать в сценарий'><img src='img/i_launch.png' alt='users'></a>";
+        settype($this->id,'int');
+    }
+    
+    /// Получить строку с HTML кодом дополнительных кнопок документа
+    protected function getAdditionalButtonsHTML() {
+         return "<a href='/doc_sc.php?mode=reopen&amp;sn=sborka_zap&amp;doc={$this->id}' title='Передать в сценарий'><img src='img/i_launch.png' alt='users'></a>";
     }
 	
     public function initDefDopdata() {
@@ -41,10 +45,10 @@ class doc_Sborka extends doc_Nulltype {
         $pres = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
             FROM `doc_list`
             LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-            WHERE `doc_list`.`id`='{$this->doc}'");
+            WHERE `doc_list`.`id`='{$this->id}'");
         $doc_info = $pres->fetch_assoc();
         if (!$doc_info) {
-            throw new Exception("Документ {$this->doc} не найден!");
+            throw new Exception("Документ {$this->id} не найден!");
         }
         if ($doc_info['ok'] && (!$silent)) {
             throw new Exception('Документ уже был проведён!');
@@ -55,7 +59,7 @@ class doc_Sborka extends doc_Nulltype {
             FROM `doc_list_pos`
             INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
             LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
-            WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+            WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
         $fail_text = '';
         while ($line = $res->fetch_array()) {
             $sign = $line['page'] ? '-' : '+';
@@ -90,7 +94,7 @@ class doc_Sborka extends doc_Nulltype {
         if ($silent) {
             return;
         }
-        $db->update('doc_list', $this->doc, 'ok', time() );
+        $db->update('doc_list', $this->id, 'ok', time() );
         $this->sentZEvent('apply');
     }
 
@@ -99,23 +103,23 @@ class doc_Sborka extends doc_Nulltype {
         $pres = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
             FROM `doc_list`
             LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-            WHERE `doc_list`.`id`='{$this->doc}'");
+            WHERE `doc_list`.`id`='{$this->id}'");
         $nx = $pres->fetch_row();
         if (!$nx) {
-            throw new Exception("Документ {$this->doc} не найден!");
+            throw new Exception("Документ {$this->id} не найден!");
         }
         if (!$nx[4]) {
             throw new Exception("Документ ещё не проведён!");
         }
 
-        $db->update('doc_list', $this->doc, 'ok', 0);
+        $db->update('doc_list', $this->id, 'ok', 0);
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, 
                 `doc_base`.`pos_type`, `doc_list_pos`.`page`
             FROM `doc_list_pos`
             LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
             LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$nx[3]'
-            WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+            WHERE `doc_list_pos`.`doc`='{$this->id}'");
         while ($nxt = $res->fetch_row()) {
             if ($nxt[5] == 0) {
                 $sign = $nxt[6] ? '+' : '-';
@@ -135,7 +139,7 @@ class doc_Sborka extends doc_Nulltype {
         $poseditor->cost_id = $this->dop_data['cena'];
         $poseditor->sklad_id = $this->doc_data['sklad'];
 
-        if (isAccess('doc_' . $this->doc_name, 'view')) {
+        if (isAccess('doc_' . $this->typename, 'view')) {
 
             // Json-вариант списка товаров
             if ($peopt == 'jget') {

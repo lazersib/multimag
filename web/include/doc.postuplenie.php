@@ -24,8 +24,8 @@ class doc_Postuplenie extends doc_Nulltype {
 	function __construct($doc = 0) {
 		parent::__construct($doc);
 		$this->doc_type = 1;
-		$this->doc_name = 'postuplenie';
-		$this->doc_viewname = 'Поступление товара на склад';
+		$this->typename = 'postuplenie';
+		$this->viewname = 'Поступление товара на склад';
 		$this->sklad_editor_enable = true;
 		$this->sklad_modify = 1;
 		$this->header_fields = 'sklad cena separator agent';
@@ -68,11 +68,11 @@ class doc_Postuplenie extends doc_Nulltype {
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 
 		$log_data = '';
-		if ($this->doc)
+		if ($this->id)
 			$log_data = getCompareStr($old_data, $new_data);
 		$this->setDopDataA($new_data);
 		if ($log_data)
-			doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+			doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
 
     public function docApply($silent = 0) {
@@ -85,12 +85,12 @@ class doc_Postuplenie extends doc_Nulltype {
             FROM `doc_list`
             INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
-            WHERE `doc_list`.`id`='{$this->doc}'");
+            WHERE `doc_list`.`id`='{$this->id}'");
         $doc_params = $res->fetch_assoc();
         $res->free();
         
         if (!$doc_params) {
-            throw new Exception('Документ ' . $this->doc . ' не найден');
+            throw new Exception('Документ ' . $this->id . ' не найден');
         }
         if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
@@ -108,7 +108,7 @@ class doc_Postuplenie extends doc_Nulltype {
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`cost`, `doc_base`.`cost`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+		WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
         while ($nxt = $res->fetch_row()) {
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_params['sklad']}'");
             // Если это первое поступление
@@ -132,13 +132,13 @@ class doc_Postuplenie extends doc_Nulltype {
         if ($silent) {
             return;
         }
-        $db->update('doc_list', $this->doc, 'ok', time());
+        $db->update('doc_list', $this->id, 'ok', time());
 
         if (@$CONFIG['doc']['update_in_cost'] == 2) {
             $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`cost`, `doc_base`.`cost`
 			FROM `doc_list_pos`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-			WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_base`.`pos_type`='0'");
+			WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
             while ($nxt = $res->fetch_row()) {
                 $acp = getInCost($nxt[0], $doc_params['date']);
                 if ($nxt[5] != $acp) {
@@ -155,20 +155,20 @@ class doc_Postuplenie extends doc_Nulltype {
 		$rs = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-		WHERE `doc_list`.`id`='{$this->doc}'");
+		WHERE `doc_list`.`id`='{$this->id}'");
 		if(! $rs->num_rows)
-			throw new Exception("Документ {$this->doc} не найден!");
+			throw new Exception("Документ {$this->id} не найден!");
 		$nx = $rs->fetch_assoc();
 		if (!$nx['ok'])
 			throw new Exception("Документ ещё не проведён!");
 
-		$db->update('doc_list', $this->doc, 'ok', 0 );
+		$db->update('doc_list', $this->id, 'ok', 0 );
 
 		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_base`.`vc`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'");
+		WHERE `doc_list_pos`.`doc`='{$this->id}'");
 		while ($nxt = $res->fetch_row()) {
 			if ($nxt[5] == 0) {
 				if (!$nx['dnc']) {
@@ -196,9 +196,9 @@ class doc_Postuplenie extends doc_Nulltype {
 		global $tmpl, $db;
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=2'\">Реализация</div>");
-                        $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=5'\">Расходный банковский ордер</div>");
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=7'\">Расходный кассовый ордер</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=2'\">Реализация</div>");
+                        $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=5'\">Расходный банковский ордер</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=7'\">Расходный кассовый ордер</div>");
 		}
 		else if ($target_type == 2) {
 			if (!isAccess('doc_realizaciya', 'create'))
@@ -257,9 +257,9 @@ class doc_Postuplenie extends doc_Nulltype {
 
 		$pdf->SetFont('', '', 16);
 		if(!$this->dop_data['return']) {
-                    $str = "Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                    $str = "Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
                 } else {
-                    $str = "Возврат от покупателя N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+                    $str = "Возврат от покупателя N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
                 }
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0, 8, $str, 0, 1, 'C', 0);
@@ -318,7 +318,7 @@ class doc_Postuplenie extends doc_Nulltype {
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$ii = 1;
 		$sum = 0;

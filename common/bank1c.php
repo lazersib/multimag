@@ -26,13 +26,10 @@ class Bank1CExchange {
     }
     
     /// Анализировать строку документа
-    protected function parseDocumentLine100($name, $value, $params) {
+    protected function parseDocumentLineold($name, $value, $params) {
         switch ($name) {
             case 'Номер':
                 $params['docnum'] = $value;
-                break;
-            case 'УникальныйНомерДокумента':
-                $params['unique'] = $value;
                 break;
             case 'ДатаПроведения':
                 $params['date'] = $value;
@@ -63,6 +60,10 @@ class Bank1CExchange {
                 break;
         }
         return $params;
+    }
+    
+    protected function parseDocumentLinev100($name, $value, $params) {
+        return $this->parseDocumentLinev101($name, $value, $params);
     }
     
     protected function parseDocumentLinev101($name, $value, $params) {
@@ -287,7 +288,7 @@ class Bank1CExchange {
                                     $params = $this->parseDocumentLinev102($pl[0], $pl[1], $params);
                                     break;
                                 default:
-                                    throw new Exception("неподдерживаемая версия формата: $version");
+                                    throw new \Exception("неподдерживаемая версия формата: $version");
                             }
                             
                         }

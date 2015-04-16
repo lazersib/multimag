@@ -24,11 +24,11 @@ class doc_Specific extends doc_Nulltype {
 	function __construct($doc = 0) {
 		parent::__construct($doc);
 		$this->doc_type = 16;
-		$this->doc_name = 'specific';
-		$this->doc_viewname = 'Спецификация';
+		$this->typename = 'specific';
+		$this->viewname = 'Спецификация';
 		$this->sklad_editor_enable = true;
 		$this->header_fields = 'bank cena separator agent';
-		settype($this->doc, 'int');
+		settype($this->id, 'int');
 		$this->PDFForms = array(
 		    array('name' => 'prn', 'desc' => 'Спецификация', 'method' => 'PrintPDF'),
                     array('name' => 'prnws', 'desc' => 'Спецификация без печати', 'method' => 'PrintPDFwostamp'),
@@ -52,9 +52,9 @@ class doc_Specific extends doc_Nulltype {
 		$old_data = array_intersect_key($new_data, $this->dop_data);
 
 		$log_data = '';
-		if ($this->doc)	$log_data = getCompareStr($old_data, $new_data);
+		if ($this->id)	$log_data = getCompareStr($old_data, $new_data);
 		$this->setDopDataA($new_data);
-		if ($log_data)	doc_log("UPDATE {$this->doc_name}", $log_data, 'doc', $this->doc);
+		if ($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
 
 	// Формирование другого документа на основании текущего
@@ -62,7 +62,7 @@ class doc_Specific extends doc_Nulltype {
 		global $tmpl, $db;
 		if ($target_type == '') {
 			$tmpl->ajax = 1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->doc}&amp;tt=3'\">Заявка покупателя</div>");
+			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=3'\">Заявка покупателя</div>");
 		} else if ($target_type == 3) {
 			$db->startTransaction();
 			$new_doc = new doc_Zayavka();
@@ -161,7 +161,7 @@ class doc_Specific extends doc_Nulltype {
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$i = $allsum = $nds_sum = 0;
 		while ($nxt = $res->fetch_row()) {

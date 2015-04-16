@@ -35,52 +35,69 @@ class doc_s_Agent {
 		$tmpl->addContent("</table>");
 	}
 	
-	/// Служебные методы
-	function Service() {
-		global $tmpl, $db;
+    /// Служебные методы
+    function Service() {
+        global $tmpl, $db;
 
-		$opt = request("opt");
-		$g = rcvint('g');
-		if($opt=='pl') {
-			$s = request('s');
-			$tmpl->ajax=1;
-			if($s)
-				$this->ViewListS($s);
-			else
-				$this->ViewList($g);
-		}
-		else if($opt=='ep') {
-			$this->Edit();
-		}
-		else if($opt=='acost') {
-			$pos = rcvint('pos');
-			$tmpl->ajax = 1;
-			$tmpl->addContent( getInCost($pos) );
-		}
-		else if($opt=='popup') {
-			$s = request('s');
-			$tmpl->ajax = 1;
-			$s_sql = $db->real_escape_string($s);
-			$res = $db->query("SELECT `id`,`name` FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$s_sql%') LIMIT 50");
-			if($res->num_rows) {
-				$tmpl->addContent("Ищем: $s ({$res->num_rows} совпадений)<br>");
-				while($nxt = $res->fetch_row())
-					$tmpl->addContent("<a onclick=\"return SubmitData('$nxt[1]',$nxt[0]);\">".html_out($nxt[1])."</a><br>");
-			}
-			else $tmpl->addContent("<b>Искомая комбинация не найдена!");
-		}
-		else if($opt=='ac') {
-			$q = request('q');
-			$tmpl->ajax = 1;
-			$q_sql = $db->real_escape_string($q);
-			$res = $db->query("SELECT `name`, `id`, `tel` FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$q%') ORDER BY `name`");
-			while($nxt = $res->fetch_row())
-				$tmpl->addContent("$nxt[0]|$nxt[1]|$nxt[2]\n");
-		}
-		else $tmpl->msg("Неверный режим!");
-	}
+        $opt = request("opt");
+        $g = rcvint('g');
+        if ($opt == 'pl') {
+            $s = request('s');
+            $tmpl->ajax = 1;
+            if ($s) {
+                $this->ViewListS($s);
+            } else {
+                $this->ViewList($g);
+            }
+        }
+        else if ($opt == 'ep') {
+            $this->Edit();
+        } else if ($opt == 'acost') {
+            $pos = rcvint('pos');
+            $tmpl->ajax = 1;
+            $tmpl->addContent(getInCost($pos));
+        } else if ($opt == 'popup') {
+            $s = request('s');
+            $tmpl->ajax = 1;
+            $s_sql = $db->real_escape_string($s);
+            $res = $db->query("SELECT `id`,`name` FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$s_sql%') LIMIT 50");
+            if ($res->num_rows) {
+                $tmpl->addContent("Ищем: $s ({$res->num_rows} совпадений)<br>");
+                while ($nxt = $res->fetch_row())
+                    $tmpl->addContent("<a onclick=\"return SubmitData('$nxt[1]',$nxt[0]);\">" . html_out($nxt[1]) . "</a><br>");
+            } else
+                $tmpl->addContent("<b>Искомая комбинация не найдена!");
+        }
+        else if ($opt == 'ac') {
+            $q = request('q');
+            $tmpl->ajax = 1;
+            $q_sql = $db->real_escape_string($q);
+            $res = $db->query("SELECT `name`, `id`, `tel` FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$q_sql%') ORDER BY `name`");
+            while ($nxt = $res->fetch_row()) {
+                $tmpl->addContent("$nxt[0]|$nxt[1]|$nxt[2]\n");
+            }
+        } elseif ($opt == 'jgetcontracts') {
+            $tmpl->ajax = 1;
+            $agent_id = rcvint('agent_id');
+            $firm_id = rcvint('firm_id');
+            $res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value` AS `name` FROM `doc_list`
+                LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
+                WHERE `agent`='$agent_id' AND `type`='14' AND `firm_id`='$firm_id'");
+            $list = array();
+            while ($line = $res->fetch_assoc()) {
+                $list[] = $line;
+            }
+            $result = array(
+                'response'  => 'contract_list',
+                'content'   => $list,
+            );
+            $tmpl->setContent( json_encode($result, JSON_UNESCAPED_UNICODE) );
+        } else {
+            throw new \NotFoundException("Неверный режим!");
+        }
+    }
 
-	// Редактирование справочника
+        // Редактирование справочника
 	function Edit() {
 		global $tmpl, $db, $CONFIG;
 		doc_menu();
@@ -435,7 +452,7 @@ class doc_s_Agent {
 			}
 			$tmpl->msg("Сохранено!");
 		}
-		else $tmpl->msg("Неизвестная закладка");
+		else throw new \NotFoundException("Неизвестная закладка");
 	}
 
 	/// Сформировать один и все вложенные уровни списка групп агентов

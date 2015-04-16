@@ -234,7 +234,7 @@ class ds_sborka_zap {
 			}
 
 			if (($sklad != $nasklad) && $nasklad) {
-				$docnum = $perem_doc->getDocNum();
+				$docnum = $perem_doc->getId();
 				$res = $db->query("SELECT `tovar`, `cnt`, `cost` FROM `doc_list_pos` WHERE `doc`='$doc' AND `page`='0'");
 				while ($nxt = $res->fetch_row()) {
 					$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)

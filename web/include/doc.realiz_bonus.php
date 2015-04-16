@@ -19,23 +19,21 @@
 
 
 /// Документ *Реализация за бонусы*
-class doc_Realiz_bonus extends doc_Realizaciya
-{
+class doc_Realiz_bonus extends doc_Realizaciya {
 
-	function __construct($doc=0) {
-		parent::__construct($doc);
-		$this->doc_type				= 20;
-		$this->doc_name				= 'realiz_bonus';
-		$this->doc_viewname			= 'Реализация товара за бонусы';
-		$this->sklad_editor_enable		= true;
-		$this->sklad_modify			= -1;
-		$this->header_fields			= 'sklad cena separator agent';
-		$this->dop_menu_buttons			= "<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc=$doc'); return false;\" title='Доверенное лицо'><img src='img/i_users.png' alt='users'></a>";
-		settype($this->doc,'int');
-		$this->PDFForms=array(
-			array('name'=>'nak','desc'=>'Накладная','method'=>'PrintNaklPDF')
-		);
-	}
+    function __construct($doc = 0) {
+        parent::__construct($doc);
+        $this->doc_type = 20;
+        $this->typename = 'realiz_bonus';
+        $this->viewname = 'Реализация товара за бонусы';
+        $this->sklad_editor_enable = true;
+        $this->sklad_modify = -1;
+        $this->header_fields = 'sklad cena separator agent';
+        settype($this->id, 'int');
+        $this->PDFForms = array(
+            array('name' => 'nak', 'desc' => 'Накладная', 'method' => 'PrintNaklPDF')
+        );
+    }
 
 	function DocApply($silent=0) {
 		global $db;
@@ -75,7 +73,7 @@ class doc_Realiz_bonus extends doc_Realizaciya
 		$def_cost = $pc->getDefaultPriceId();
 
 		$pdf->SetFont('','',16);
-		$str="Бонусная накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->doc}), от $dt";
+		$str="Бонусная накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
 		$str = iconv('UTF-8', 'windows-1251', $str);
 		$pdf->Cell(0,8,$str,0,1,'C',0);
 		$pdf->SetFont('','',10);
@@ -134,7 +132,7 @@ class doc_Realiz_bonus extends doc_Realizaciya
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->doc}'
+		WHERE `doc_list_pos`.`doc`='{$this->id}'
 		ORDER BY `doc_list_pos`.`id`");
 		$ii=1;
 		$sum=0;
@@ -185,5 +183,4 @@ class doc_Realiz_bonus extends doc_Realizaciya
 		else
 			$pdf->Output('blading.pdf','I');
 	}
-};
-?>
+}

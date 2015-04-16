@@ -407,7 +407,7 @@ function ResetCost(doc)
 }
 
 
-function UpdateContractInfo(doc, agent_id)
+function UpdateContractInfo(doc, firm_id, agent_id)
 {
 	function rcvDataSuccess(msg)
 	{
@@ -453,8 +453,8 @@ function UpdateContractInfo(doc, agent_id)
 
 	$.ajax({
 		type:   'GET',
-		url:    '/doc.php',
-		data:   'mode=getinfo&opt=jgetcontracts&doc='+doc+'&agent='+agent_id,
+		url:    '/docs.php',
+		data:   'l=agent&mode=srv&opt=jgetcontracts&firm_id='+firm_id+'&agent_id='+agent_id,
 		success: function(msg) { rcvDataSuccess(msg) },
 		error:   function() { jAlert('Ошибка соединения!','Сохранение данных',null,'icon_err'); },
 	});
