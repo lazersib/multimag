@@ -855,7 +855,7 @@ function addNomMenu(event, doc, pdoc_id) {
         try {
             var json = JSON.parse(msg);
             if (json.response == 'err') {
-                jAlert(json.text, "Ошибка", {}, 'icon_err');
+                jAlert(json.text.json.message, "Ошибка", {}, 'icon_err');
                 menu.parentNode.removeChild(menu);
             }
             else if (json.response == 'merge_ok') {

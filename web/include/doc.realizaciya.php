@@ -813,7 +813,7 @@ class doc_Realizaciya extends doc_Nulltype {
         /// Товарный чек в PDF формате без ККТ
         /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
         function PrintTcPDFnkkt($to_str=false) {
-            return $this->makeTcPDF($to_str, true, true, false);            
+            return $this->makeTcPDF($to_str, false, true, true);            
         }
         
         /// Товарный чек в PDF формате без скидки
@@ -822,7 +822,7 @@ class doc_Realizaciya extends doc_Nulltype {
             return $this->makeTcPDF($to_str, false);            
         }
         
-        /// Товарный чек в PDF формате без скидки
+        /// Товарный чек в PDF формате без агента
         /// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
         function PrintTcPDFna($to_str=false) {
             return $this->makeTcPDF($to_str, true, false);            

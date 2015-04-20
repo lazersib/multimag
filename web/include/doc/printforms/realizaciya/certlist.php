@@ -154,7 +154,7 @@ class certlist extends \doc\printforms\iPrintForm {
         $this->pdf->SetFont('', '', 14);
         $str = 'Реестр сертификатов';
         $this->pdf->CellIconv(0, 5, $str, 0, 1, 'C');
-        $str = "к накладной N {$doc_data['altnum']}, от ". date("d.m.Y", $doc_data['date']);
+        $str = "к накладной N {$doc_data['altnum']} от ". date("d.m.Y", $doc_data['date']);
         $this->pdf->CellIconv(0, 5, $str, 0, 1, 'C');
         $this->pdf->Ln(5);
         
