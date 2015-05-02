@@ -339,7 +339,7 @@ protected function ProductList($group, $page) {
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 	$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-	`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+	`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 	FROM `doc_base`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -392,7 +392,7 @@ protected function ViewBlock($block)
 	{
 		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -406,7 +406,7 @@ protected function ViewBlock($block)
 	{
 		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 		FROM `doc_base`
 		INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -424,7 +424,7 @@ protected function ViewBlock($block)
 		else					$new_time=date("Y-m-d H:i:s",time()-60*60*24*180);
 		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 		FROM `doc_base`
 		INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -442,7 +442,7 @@ protected function ViewBlock($block)
 		else					$new_time=date("Y-m-d H:i:s",time()-60*60*24*180);
 		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 		FROM `doc_base`
 		INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -459,7 +459,7 @@ protected function ViewBlock($block)
 	{
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`,
+		`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`,
 		`doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`,
 		`doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 		FROM `comments`
@@ -480,14 +480,14 @@ protected function ViewBlock($block)
 	{
 		$sql="SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 		FROM `doc_base`
 		INNER JOIN `doc_group` ON `doc_group`.`id`= `doc_base`.`group` AND `doc_group`.`hidelevel`='0'
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_base`.`hidden`='0' AND `doc_base`.`transit_cnt`>0
+		WHERE `doc_base`.`hidden`='0' AND `doc_base_dop`.`transit`>0
 		ORDER BY `doc_base`.`name`";
 		$head='Товар в пути';
 	}
@@ -581,7 +581,7 @@ protected function ProductCard($product) {
 	$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 	$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
 	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`transit_cnt`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`, `doc_base`.`bulkcnt`, `doc_base`.`mult`,
+	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base_dop`.`transit`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`, `doc_base`.`bulkcnt`, `doc_base`.`mult`,
 		`doc_base`.`mass`, `doc_base`.`analog_group`
 	FROM `doc_base`
 	INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
@@ -689,7 +689,7 @@ protected function ProductCard($product) {
 			
 		$tmpl->addContent("<tr><td class='field'>Единица измерения:<td>".html_out($product_data['units']));
 		
-		$nal = $this->GetCountInfo($product_data['cnt'], $product_data['transit_cnt']);
+		$nal = $this->GetCountInfo($product_data['cnt'], $product_data['transit']);
 
 		if($nal) $tmpl->addContent("<tr><td class='field'>Наличие: <td><b>$nal</b><br>");
 		else $tmpl->addContent("<tr><td class='field'>Наличие:<td>Под заказ<br>");
@@ -767,7 +767,7 @@ protected function ProductCard($product) {
 			$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-			`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+			`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
@@ -790,7 +790,7 @@ protected function ProductCard($product) {
 		$cnt_where=@$CONFIG['site']['vitrina_sklad']?(" AND `doc_base_cnt`.`sklad`=".intval($CONFIG['site']['vitrina_sklad'])." "):'';
 		$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`,
 		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base`.`transit_cnt`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+		`doc_base`_dop.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
 		FROM `doc_base_links`
 		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -911,7 +911,7 @@ public function getProductBaseElement($product_info) {
 		$img="<img src='".$miniimg->GetURI()."' alt='".html_out($product_info['name'])."' width='13px' height='17px'>";
 	}
 	else $img="<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo_131.jpg' alt='no photo'>";
-	$nal = $this->GetCountInfo($product_info['count'], $product_info['transit_cnt']);
+	$nal = $this->GetCountInfo($product_info['count'], $product_info['transit']);
 	$link = $this->GetProductLink($product_info['id'], $product_info['name']);
 	$price = $pc->getPosDefaultPriceValue($product_info['id']);
 	$price = number_format($price, 2, '.', ' ');
@@ -950,7 +950,7 @@ public function getProductMiniElement($product_info) {
 		$img="<img src='".$miniimg->GetURI()."' alt='".html_out($product_info['name'])."'>";
 	}
 	else $img="<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo.jpg' alt='no photo'>";
-	$nal = $this->GetCountInfo($product_info['count'], $product_info['transit_cnt']);
+	$nal = $this->GetCountInfo($product_info['count'], $product_info['transit']);
 	$link = $this->GetProductLink($product_info['id'], $product_info['name']);
 	$price = $pc->getPosDefaultPriceValue($product_info['id']);
 	$price = number_format($price, 2, '.', ' ');
@@ -985,8 +985,9 @@ protected function Basket() {
 			settype($item['pos_id'], 'int');
 			settype($item['cnt'], 'int');
 			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`,
-				`doc_img`.`type` AS `img_type`, `mult`, `bulkcnt`, `class_unit`.`rus_name1` AS `unit_name`
+				`doc_img`.`type` AS `img_type`, `mult`, `bulkcnt`, `class_unit`.`rus_name1` AS `unit_name`, `doc_base_dop`.`reserve`
 			FROM `doc_base`
+                        LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
@@ -1018,14 +1019,16 @@ protected function Basket() {
 				}
 				else	$res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='{$line['id']}'");
 				if($res->num_rows) {
-					$tmp = $res->fetch_row();
-					$sklad_cnt = $tmp[0] - DocRezerv($line['id']);
+                                    $tmp = $res->fetch_row();
+                                    $sklad_cnt = $tmp[0] - $line['reserve'];
 				}
-				else	$sklad_cnt = DocRezerv($line['id'])*(-1);
+				else {
+                                    $sklad_cnt = $line['reserve']*(-1);
+                                }
 
 				if($item['cnt']>$sklad_cnt) {
-					$lock=1;
-					$lock_mark=1;
+                                    $lock = 1;
+                                    $lock_mark = 1;
 				}
 			}
 			
@@ -1351,7 +1354,7 @@ protected function TovList_ImageList($res, $lim) {
 	$pc = $this->priceCalcInit();	
 	
 	while($nxt=$res->fetch_assoc())	{
-		$nal = $this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
+		$nal = $this->GetCountInfo($nxt['count'], $nxt['transit']);
 		$link = $this->GetProductLink($nxt['id'], $nxt['name']);
 		
 		$price = $pc->getPosDefaultPriceValue($nxt['id']);
@@ -1416,7 +1419,7 @@ protected function TovList_ExTable($res, $lim) {
 		$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
 	
 	while($nxt = $res->fetch_assoc()) {
-		$nal = $this->GetCountInfo($nxt['count'], $nxt['transit_cnt']);
+		$nal = $this->GetCountInfo($nxt['count'], $nxt['transit']);
 		$link = $this->GetProductLink($nxt['id'], $nxt['name']);
 		$price = $pc->getPosDefaultPriceValue($nxt['id']);
 		if($price<=0)	$price='уточняйте';
@@ -1620,11 +1623,14 @@ protected function MakeBuy() {
 			$db->insertA('doc_list_pos', array('doc'=>$doc, 'tovar'=>$item['pos_id'], 'cnt'=>$item['cnt'], 'cost'=>$price, 'comm'=>$item['comment']));
 
 			$res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_group`.`printname`, ' ' , `doc_base`.`name`) AS `pos_name`,
-				`doc_base`.`proizv` AS `vendor`, `doc_base`.`vc`, `doc_base`.`cost` AS `base_price`, `class_unit`.`rus_name1` AS `unit_name`, `doc_base`.`cost_date`
-				FROM `doc_base`
-				LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-				LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
-				WHERE `doc_base`.`id`='{$item['pos_id']}'");
+				`doc_base`.`proizv` AS `vendor`, `doc_base`.`vc`, `doc_base`.`cost` AS `base_price`, 
+                                `class_unit`.`rus_name1` AS `unit_name`, `doc_base`.`cost_date`,
+                                `doc_base_dop`.`reserve`
+                            FROM `doc_base`
+                            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+                            LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+                            LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+                            WHERE `doc_base`.`id`='{$item['pos_id']}'");
 
 			$pos_info = $res->fetch_assoc();
 			$item_str = $pos_info['pos_name'].'/'.$pos_info['vendor'];
@@ -1648,13 +1654,15 @@ protected function MakeBuy() {
 					else	$res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='{$item['pos_id']}'");
 					if($res->num_rows) {
 						$tmp = $res->fetch_row();
-						$sklad_cnt = $tmp[0]-DocRezerv($item['pos_id']);
+						$sklad_cnt = $tmp[0] - $pos_info['reserve'];
 					}
-					else	$sklad_cnt = DocRezerv($item['pos_id'])*(-1);
+					else {
+                                            $sklad_cnt = $pos_info['reserve']*(-1);
+                                        }
 					
 					if($item['cnt']>$sklad_cnt) {
-						$lock = 1;
-						$lock_mark = 1;
+                                            $lock = 1;
+                                            $lock_mark = 1;
 					}
 				}
 				if(@$CONFIG['site']['vitrina_pricelock']) {

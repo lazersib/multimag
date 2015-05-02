@@ -129,46 +129,57 @@ class DocPosEditor extends PosEditor {
 	var $show_gtd;	//< Показывать номер ГТД в поступлении
 	var $list;	//< Список товаров
         var $npv;       //< Не отображать производителя
-/// Конструктор
-/// @param $doc id редактироуемого документа
-public function __construct($doc) {
-	global $CONFIG;
-	parent::__construct();
-	$this->doc = $doc->getId();
-	$this->show_sn = 0;
-	$this->doc_obj = &$doc;
-	$doc_data = $this->doc_obj->getDocDataA();
-	$dop_data = $this->doc_obj->getDopDataA();
-	if( @$CONFIG['poseditor']['sn_enable'] && ($doc_data['type']==1 || $doc_data['type']==2))	$this->show_sn=1;
-	if( @$CONFIG['poseditor']['true_gtd'] && $doc_data['type']==1)					$this->show_gtd=1;
-        $this->npv = @$CONFIG['doc']['no_print_vendor'];
-	$pc = PriceCalc::getInstance();
-	$pc->setAgentId($doc_data['agent']);
-	$pc->setFromSiteFlag(@$dop_data['ishop']);
-}
 
-/// Загрузить список товаров документа. Повторно не загружает.
-protected function loadList() {
-	global $db;
-	if (is_array($this->list)) {
+    /// Конструктор
+    /// @param $doc id редактироуемого документа
+    public function __construct($doc) {
+        global $CONFIG;
+        parent::__construct();
+        $this->doc = $doc->getId();
+        $this->show_sn = 0;
+        $this->doc_obj = &$doc;
+        $doc_data = $this->doc_obj->getDocDataA();
+        $dop_data = $this->doc_obj->getDopDataA();
+        if (isset($CONFIG['poseditor']['sn_enable']) && ($doc_data['type'] == 1 || $doc_data['type'] == 2)) {
+            $this->show_sn = $CONFIG['poseditor']['sn_enable']?1:0;
+        }
+        if ( isset($CONFIG['poseditor']['true_gtd']) && $doc_data['type'] == 1) {
+            $this->show_gtd = $CONFIG['poseditor']['true_gtd']?1:0;
+        }
+        if(isset($CONFIG['doc']['no_print_vendor'])) {
+            $this->npv = $CONFIG['doc']['no_print_vendor'];
+        }
+        $pc = PriceCalc::getInstance();
+        $pc->setAgentId($doc_data['agent']);
+        if(isset($dop_data['ishop'])) {
+            $pc->setFromSiteFlag($dop_data['ishop']);
+        }
+    }
+
+    /// Загрузить список товаров документа. Повторно не загружает.
+    protected function loadList() {
+        global $db;
+        if (is_array($this->list)) {
             return;
         }
         $this->list = array();
-	$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
-			`doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`,
-			`doc_base`.`bulkcnt`, `doc_base`.`group`
-		FROM `doc_list_pos`
-		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-		WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'
-		ORDER BY `doc_list_pos`.`id`");
-	while ($nxt = $res->fetch_assoc()) {
+        $res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`,
+                `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
+                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`,                
+                `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`,
+                `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
+            FROM `doc_list_pos`
+            INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
+            WHERE `doc_list_pos`.`doc`='{$this->doc}' AND `doc_list_pos`.`page`='0'
+            ORDER BY `doc_list_pos`.`id`");
+        while ($nxt = $res->fetch_assoc()) {
             $this->list[$nxt['line_id']] = $nxt;
         }
     }
 
-/// Перезагрузить список товаров
+    /// Перезагрузить список товаров
     public function reloadList() {
         unset($this->list);
         $this->loadList();
@@ -273,7 +284,7 @@ function Show($param='') {
             $sc = array(
                 'vc', 'name', 'vendor', 'price', 'liquidity'
             );
-            $sc_names = array ('Код', 'Название', 'Произв.', 'Цена', 'Ликвидность');
+            $sc_names = array ('Код', 'Название', 'Произв.', 'Цена', 'Ликв.');
         } else {
             $sc = array(
                 'name', 'vendor', 'price', 'liquidity'
@@ -298,9 +309,9 @@ function Show($param='') {
 		$sc[] = 'transit';
 		$sc[] = 'reserve';
 		$sc[] = 'offer';
-                $sc_names[] = 'Транзит';
-                $sc_names[] = 'Резерв';
-                $sc_names[] = 'П/зак.';
+                $sc_names[] = 'Тр.';
+                $sc_names[] = 'Рез.';
+                $sc_names[] = 'П/п.';
 	}
 	
 	$sc[] = 'cnt';
@@ -321,80 +332,87 @@ function Show($param='') {
 	return $ret;
 }
 
-/// Получить весь текущий список товаров (документа)
-function GetAllContent() {
-	global $CONFIG, $db;
+    /// Получить весь текущий список товаров (документа)
+    function GetAllContent() {
+        global $db;
 
-	$pc = $this->initPriceCalc();	// И loadList заодно
-	$sum = 0;
-		
-	$retail_price_id = $pc->getRetailPriceId();
-	$this->recalcPrices();
-	
-	$pos_array = array();
-	foreach ($this->list as $nxt) {
-                if($this->show_reserve) {
-                    $nxt['reserve'] = DocRezerv($nxt['pos_id'], 0);
+        $pc = $this->initPriceCalc(); // И loadList заодно
+        $sum = 0;
+
+        $retail_price_id = $pc->getRetailPriceId();
+        $this->recalcPrices();
+
+        $pos_array = array();
+        foreach ($this->list as $nxt) {
+            if ($this->cost_id) {
+                $nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
+            } else {
+                $nxt['scost'] = $pc->getPosUserPriceValue($nxt['pos_id'], $nxt);
+
+                $auto_price_id = $pc->getPosAutoPriceID($nxt['pos_id'], $nxt['cnt'], $nxt);
+                if ($auto_price_id == $retail_price_id) {
+                    $nxt['retail'] = 1;
                 }
-		if ($this->cost_id)
-			$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
-		else {
-			$nxt['scost'] = $pc->getPosUserPriceValue($nxt['pos_id'], $nxt);
-			
-			$auto_price_id = $pc->getPosAutoPriceID($nxt['pos_id'], $nxt['cnt'], $nxt);
-			if($auto_price_id == $retail_price_id)
-				$nxt['retail'] = 1;
-		}
-		
-		$sum += $nxt['cost']*$nxt['cnt'];
-		
-		$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
-		
-		if(! @$CONFIG['doc']['no_print_vendor'])
-			$nxt['name'].=' - '.$nxt['vendor'];
+            }
 
-		if ($this->show_sn) {
-			$doc_data = $this->doc_obj->getDocDataA();
-			if ($doc_data[1] == 1)		$column = 'prix_list_pos';
-			else if ($doc_data[1] == 2)	$column = 'rasx_list_pos';
-			else	throw new Exception("Документ не поддерживает работу с серийными номерами");
-			$rs = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos` FROM `doc_list_sn` WHERE `$column`='{$nxt['line_id']}'");
-			$nxt['sn'] = $rs->num_rows;
-		}
-		$pos_array[] = $nxt;
-	}
-	
-	$ret_data = array (
-	    'response'	=> 'loadlist',
-	    'content'	=> $pos_array,
-	    'base_sum'	=> $this->doc_base_sum,
-	    'sum'	=> $sum,
-	);
-	if($this->cost_id) {
-		$ret_data['price_name'] = '';
-	}
-	else {
-		$ret_data['price_name']	= $pc->getCurrentPriceName();
-		$ret_data['nbp_info'] = $pc->getNextPriceInfo();
-		$ret_data['npp_info'] = $pc->getNextPeriodicPriceInfo();
-		$ret_data['auto_price'] = 1;
-	}
-	// Не забыть обновить сумму документа
-	
-	return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
-}
+            $sum += $nxt['cost'] * $nxt['cnt'];
+
+            $nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
+
+            if (!$this->npv) {
+                $nxt['name'].=' - ' . $nxt['vendor'];
+            }
+
+            if ($this->show_sn) {
+                $doc_data = $this->doc_obj->getDocDataA();
+                if ($doc_data[1] == 1) {
+                    $column = 'prix_list_pos';
+                } else if ($doc_data[1] == 2) {
+                    $column = 'rasx_list_pos';
+                } else {
+                    throw new Exception("Документ не поддерживает работу с серийными номерами");
+                }
+                $rs = $db->query("SELECT `doc_list_sn`.`id`, `doc_list_sn`.`num`, `doc_list_sn`.`rasx_list_pos`"
+                    . " FROM `doc_list_sn`"
+                    . " WHERE `$column`='{$nxt['line_id']}'");
+                $nxt['sn'] = $rs->num_rows;
+            }
+            $pos_array[] = $nxt;
+        }
+
+        $ret_data = array(
+            'response' => 'loadlist',
+            'content' => $pos_array,
+            'base_sum' => $this->doc_base_sum,
+            'sum' => $sum,
+        );
+        if ($this->cost_id) {
+            $ret_data['price_name'] = '';
+        } else {
+            $ret_data['price_name'] = $pc->getCurrentPriceName();
+            $ret_data['nbp_info'] = $pc->getNextPriceInfo();
+            $ret_data['npp_info'] = $pc->getNextPeriodicPriceInfo();
+            $ret_data['auto_price'] = 1;
+        }
+        // Не забыть обновить сумму документа
+
+        return json_encode($ret_data, JSON_UNESCAPED_UNICODE);
+    }
 
 /// Получить информацию о наименовании
 	function GetPosInfo($pos) {
 		global $db, $CONFIG;
 
-		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`,
-			`doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_list_pos`.`gtd`, `doc_base`.`bulkcnt`, `doc_base`.`group`
-			FROM `doc_base`
-			LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-			WHERE `doc_base`.`id`='$pos'");
+		$res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
+                            `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`,
+                        `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                        
+                        `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`,
+			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`                        
+                    FROM `doc_base`
+                    LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+                    LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
+                    LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+                    WHERE `doc_base`.`id`='$pos'");
 
 		$ret = '';
 		if ($res->num_rows) {
@@ -416,10 +434,8 @@ function GetAllContent() {
 			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
 			if (!$nxt['cost'])	$nxt['cost'] = $nxt['scost'];
 			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
-			if(! @$CONFIG['doc']['no_print_vendor'])
-				$nxt['name'].=' - '.$nxt['vendor'];
-                        if($this->show_reserve) {
-                            $nxt['reserve'] = DocRezerv($nxt['pos_id'], 0);
+			if(! $this->npv) {
+                            $nxt['name'].=' - '.$nxt['vendor'];
                         }
 			$ret = "{response: 3, data:".json_encode($nxt, JSON_UNESCAPED_UNICODE)."}";
 		}
@@ -543,19 +559,21 @@ function AddPos($pos) {
 	if(!$found) {
 		$line_id = $db->insertA('doc_list_pos', array('doc'=>$this->doc, 'tovar'=>$pos, 'cnt'=>$cnt, 'cost'=>$cost) );
 		doc_log("UPDATE","add pos: pos:$pos",'doc',$this->doc);
-
-		$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
-			`doc_list_pos`.`cost`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`, `doc_base`.`cost` AS `base_price`,
-			`doc_base`.`bulkcnt`, `doc_base`.`group`
-			FROM `doc_list_pos`
-			INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-			WHERE `doc_list_pos`.`id`='$line_id'");
+    
+		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`,
+                        `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
+                            `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`,
+                        `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                        
+			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`
+                    FROM `doc_list_pos`
+                    INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                    LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
+                    LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+                    WHERE `doc_list_pos`.`id`='$line_id'");
 		$line = $res->fetch_assoc();
 		$pc = PriceCalc::getInstance();
 		$line['scost'] = $this->cost_id?$pc->getPosSelectedPriceValue($line['id'], $this->cost_id, $line):$line['cost'];
 		$line['line_id'] = $line_id;
-		$line['pos_id'] = $line['id'];
 		$line['gtd'] = '';
 		if (!$this->npv) {
                         $line['name'].=' - ' . $line['vendor'];
@@ -582,10 +600,6 @@ function AddPos($pos) {
 				$ret_data['update_list'] = $new_list;
 			}
 		}
-                
-                if($this->show_reserve) {
-                    $line['reserve'] = DocRezerv($line['pos_id'], 0);
-                }
 		
 		$ret_data['response'] = 'add';
 		$ret_data['line'] = $line;
@@ -834,23 +848,25 @@ function SerialNum($action, $line_id, $data)
 		return false;
 	}
 	
-/// Получить список номенклатуры заданной группы
-	function GetSkladList($group) {
-		global $db;
-		settype($group, 'int');
-		$sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`,
-			`doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`, `doc_base_dop`.`analog`,
-			`doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`,
-			`doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`,
-			(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`bulkcnt`
-			FROM `doc_base`
-			LEFT JOIN `doc_base_cnt`  ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-			WHERE `doc_base`.`group`='$group'
-			ORDER BY " . $this->getOrder();
-		$res = $db->query($sql);
-		return $this->FormatResult($res);
-	}
+    /// Получить список номенклатуры заданной группы
+    /// @param $group id группы
+    function GetSkladList($group) {
+        global $db;
+        settype($group, 'int');
+        $sql = "SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`bulkcnt`,
+                `doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`, 
+                `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`,
+                    `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                    
+                `doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`,
+                (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`
+            FROM `doc_base`
+            LEFT JOIN `doc_base_cnt`  ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+            WHERE `doc_base`.`group`='$group'
+            ORDER BY " . $this->getOrder();
+        $res = $db->query($sql);
+        return $this->FormatResult($res);
+    }
 
 /// Получить список номенклатуры, содержащей в названии заданную строку
 	function SearchSkladList($s) {
@@ -865,6 +881,7 @@ function SerialNum($action, $line_id, $data)
                     `doc_base`.`likvid` AS `liquidity`, `doc_base`.`cost` AS `base_price`, `doc_base`.`cost_date` AS `price_date`,
                     `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,	`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`,
                     `doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt`, `doc_base`.`analog_group`,
+                        `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,
                     (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
                     `doc_base`.`bulkcnt`
                     FROM `doc_base`
@@ -965,11 +982,7 @@ function SerialNum($action, $line_id, $data)
         } elseif ($dcc > (time() - 60 * 60 * 24 * 30 * 12)) {
             $line['price_cat'] = "c4";
         }
-        if ($this->show_rto) {
-            $line['reserve'] = DocRezerv($line['id'], $this->doc);
-            $line['offer'] = DocPodZakaz($line['id'], $this->doc);
-            $line['transit'] = DocVPuti($line['id'], $this->doc);
-        }
+
         $pc = PriceCalc::getInstance();
         if ($this->cost_id) {
             $line['price'] = $pc->getPosSelectedPriceValue($line['id'], $this->cost_id, $line);

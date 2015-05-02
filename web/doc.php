@@ -37,7 +37,9 @@ $tmpl->addTop("
 try {
     if ($mode == "") {
         doc_menu();
-        $tmpl->addContent("<h1>Создание нового документа</h1><h3>Выберите тип документа</h3><ul>");
+        $tmpl->addContent("<h1>Создание нового документа</h1>"
+            . "<h3>Выберите тип документа</h3>"
+            . "<ul>");
         $res = $db->query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
         while ($nxt = $res->fetch_row()) {
             $tmpl->addContent("<li><a href='?mode=new&amp;type=$nxt[0]'>" . html_out($nxt[1]) . "</a></li>");

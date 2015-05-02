@@ -68,7 +68,7 @@ abstract class ListEditor {
                 continue;
             }
             if (isset($data[$col_id])) {
-                if($data[$col_id]=='null') {
+                if($data[$col_id]==='null') {
                     $write_data[$col_id] = 'NULL';
                 }
                 else {
@@ -79,12 +79,14 @@ abstract class ListEditor {
             }
         }
         if ($id) {
-            if (!isAccess($this->acl_object_name, 'edit'))
-                throw new AccessException();
+            if (!isAccess($this->acl_object_name, 'edit')) {
+                throw new \AccessException();
+            }
             $this->db_link->updateA($this->table_name, $id, $write_data);
         } else {
-            if (!isAccess($this->acl_object_name, 'create'))
-                throw new AccessException();
+            if (!isAccess($this->acl_object_name, 'create')) {
+                throw new \AccessException();
+            }
             $id = $this->db_link->insertA($this->table_name, $write_data);
         }
         return $id;

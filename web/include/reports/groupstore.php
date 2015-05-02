@@ -124,11 +124,13 @@ class Report_GroupStore extends BaseGSReport {
 			$this->tableSpannedRow( array($col_count), array( "{$group_line['id']}. {$group_line['name']}" ) );
 			$this->tableAltStyle(false);
 			
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name` $col_sql
-			FROM `doc_base`
-			$join_sql
-			WHERE `doc_base`.`group`='{$group_line['id']}'
-			ORDER BY $order");
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`,
+                                `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer` $col_sql
+                            FROM `doc_base`
+                            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+                            $join_sql
+                            WHERE `doc_base`.`group`='{$group_line['id']}'
+                            ORDER BY $order");
 			while ($line = $res->fetch_assoc()) {
 				if($line['count'.$sklad]<=0)
 					continue;
@@ -138,7 +140,7 @@ class Report_GroupStore extends BaseGSReport {
 					$a[] = $line['vc'];
 				
 				$a[] = $line['name'];
-				$a[] =  DocRezerv($line['id']);
+				$a[] = $line['reserve'];
 				
 				foreach($line as $id => $value) {
 					if($id == 'id' || $id == 'name' || $id == 'vc')

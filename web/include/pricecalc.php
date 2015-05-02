@@ -43,6 +43,7 @@ class PriceCalc {
 	protected $prices;			//< Все цены
 	protected $pos_info_cache;		//< Кеш информации о наименованиях
 	protected $ppc;				//< Кеш цен наименований
+        protected $gpi;                         //< Кеш цен групп
 
 	final private function __clone(){}
 	
@@ -52,7 +53,8 @@ class PriceCalc {
 		$this->pos_info_cache = array();
 		$this->ppc = array();
 		$this->bulk_prices = array();
-		
+		$this->gpi = array();
+                
 		$res = $db->query("SELECT `id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold`
 			FROM `doc_cost` ORDER BY `priority`");
 		while($line = $res->fetch_assoc()) {
@@ -364,84 +366,111 @@ class PriceCalc {
 		return $this->pos_info_cache[$pos_id];
 	}
 	
-	/// Получить значение выбранной цены для товарного наименования. Данные кешируются.
-	/// @param pos_id id товарного наименования
-	/// @return Значение цены
-	public function getPosSelectedPriceValue($pos_id, $price_id, $pos_info=false) {
-		global $db;
-		settype($pos_id,'int');
-		settype($price_id,'int');
-		$pos_info = $this->fixPosInfo($pos_id, $pos_info);
-		
-		if(!isset($this->ppc[$pos_id]))
-			$this->ppc[$pos_id] = array();
-		if(isset($this->ppc[$pos_id][$price_id]))
-			return $this->ppc[$pos_id][$price_id];
-		
-		// Проверяем переопределение в наименовании
-		$res = $db->query("SELECT `doc_base_cost`.`id`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`,
+    /// Получить значение выбранной цены для товарного наименования. Данные кешируются.
+    /// @param pos_id id товарного наименования
+    /// @return Значение цены
+    public function getPosSelectedPriceValue($pos_id, $price_id, $pos_info = false) {
+        global $db;
+        settype($pos_id, 'int');
+        settype($price_id, 'int');
+        $pos_info = $this->fixPosInfo($pos_id, $pos_info);
+
+        if (!isset($this->ppc[$pos_id])) {
+            $this->ppc[$pos_id] = array();
+        }
+        if (isset($this->ppc[$pos_id][$price_id])) {
+            return $this->ppc[$pos_id][$price_id];
+        }
+
+        // Проверяем переопределение в наименовании
+        $res = $db->query("SELECT `doc_base_cost`.`id`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`,
 			`doc_base_cost`.`direction`
 		FROM `doc_base_cost`
 		WHERE `doc_base_cost`.`cost_id`=$price_id AND `doc_base_cost`.`pos_id`=$pos_id");
-		
-		if($res->num_rows!=0) {
-			$line = $res->fetch_assoc();			
-			switch($line['type']) {
-				case 'pp':	$price = $pos_info['base_price'] * $line['value'] / 100 + $pos_info['base_price'];
-						break;
-				case 'abs':	$price = $pos_info['base_price'] + $line['value'];
-						break;
-				case 'fix':	$price = $line['value'];
-						break;
-				default:	$price = 0;
-			}
-			if($price > 0)	return $this->ppc[$pos_id][$price_id] = sprintf("%0.2f", roundDirect($price, $line['accuracy'], $line['direction']));
-			else 	return $this->ppc[$pos_id][$price_id] = 0;
-		}
-		$res->free();
-		
-		// Ищем переопределение в группах
-		$base_group = $pos_info['group'];
-		while($base_group) {
-			$res = $db->query("SELECT `doc_group_cost`.`id` AS `gc_id`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group`.`pid`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
-			FROM `doc_group`
-			LEFT JOIN `doc_group_cost` ON `doc_group`.`id`=`doc_group_cost`.`group_id`  AND `doc_group_cost`.`cost_id`=$price_id
-			WHERE `doc_group`.`id`=$base_group");
-			if($res->num_rows == 0)		throw new AutoLoggedException("Группа ID:$base_group не найдена");
-			$gdata = $res->fetch_assoc();
-			$res->free();
-			if($gdata['gc_id']) {
-				switch($gdata['type']) {
-					case 'pp':	$price = $pos_info['base_price'] * $gdata['value'] / 100 + $pos_info['base_price'];
-							break;
-					case 'abs':	$price = $pos_info['base_price'] + $gdata['value'];
-							break;
-					case 'fix':	$price = $gdata['value'];
-							break;
-					default:	$price = 0;
-				}
 
-				if($price > 0)	return $this->ppc[$pos_id][$price_id] = sprintf("%0.2f", roundDirect($price, $gdata['accuracy'], $gdata['direction']));
-				else 		return $this->ppc[$pos_id][$price_id] = 0;
-			}
-			$base_group = $gdata['pid'];
-		}
-		
-		// Если не переопределена нигде - получаем из глобальных данных
-		$cur_price_info = $this->prices[$price_id];
-		switch($cur_price_info['type'])
-		{
-			case 'pp':	$price = $pos_info['base_price'] * $cur_price_info['value'] / 100 + $pos_info['base_price'];
-					break;
-			case 'abs':	$price = $pos_info['base_price'] + $cur_price_info['value'];
-					break;
-			case 'fix':	$price = $cur_price_info['value'];
-					break;
-			default:	$price = 0;
-		}
+        if ($res->num_rows != 0) {
+            $line = $res->fetch_assoc();
+            switch ($line['type']) {
+                case 'pp': $price = $pos_info['base_price'] * $line['value'] / 100 + $pos_info['base_price'];
+                    break;
+                case 'abs': $price = $pos_info['base_price'] + $line['value'];
+                    break;
+                case 'fix': $price = $line['value'];
+                    break;
+                default: $price = 0;
+            }
+            if ($price > 0) {
+                return $this->ppc[$pos_id][$price_id] = sprintf("%0.2f", roundDirect($price, $line['accuracy'], $line['direction']));
+            } else {
+                return $this->ppc[$pos_id][$price_id] = 0;
+            }
+        }
+        $res->free();
 
-		if($price > 0)	return $this->ppc[$pos_id][$price_id] = sprintf("%0.2f", roundDirect($price, $cur_price_info['accuracy'], $cur_price_info['direction']));
-		else 		return $this->ppc[$pos_id][$price_id] = 0;
-	}
+        // Ищем переопределение в группах
+        $base_group = $pos_info['group'];
+        while ($base_group) {
+            $gdata = $this->getGpoupPriceinfo($base_group, $price_id);
+            if ($gdata['gc_id']) {
+                switch ($gdata['type']) {
+                    case 'pp': $price = $pos_info['base_price'] * $gdata['value'] / 100 + $pos_info['base_price'];
+                        break;
+                    case 'abs': $price = $pos_info['base_price'] + $gdata['value'];
+                        break;
+                    case 'fix': $price = $gdata['value'];
+                        break;
+                    default: $price = 0;
+                }
+
+                if ($price > 0) {
+                    return $this->ppc[$pos_id][$price_id] = sprintf("%0.2f", roundDirect($price, $gdata['accuracy'], $gdata['direction']));
+                } else {
+                    return $this->ppc[$pos_id][$price_id] = 0;
+                }
+            }
+            $base_group = $gdata['pid'];
+        }
+
+        // Если не переопределена нигде - получаем из глобальных данных
+        $cur_price_info = $this->prices[$price_id];
+        switch ($cur_price_info['type']) {
+            case 'pp': $price = $pos_info['base_price'] * $cur_price_info['value'] / 100 + $pos_info['base_price'];
+                break;
+            case 'abs': $price = $pos_info['base_price'] + $cur_price_info['value'];
+                break;
+            case 'fix': $price = $cur_price_info['value'];
+                break;
+            default: $price = 0;
+        }
+
+        if ($price > 0) {
+            return $this->ppc[$pos_id][$price_id] = sprintf("%0.2f", roundDirect($price, $cur_price_info['accuracy'], $cur_price_info['direction']));
+        } else {
+            return $this->ppc[$pos_id][$price_id] = 0;
+        }
+    }
+        
+    /// Получить информацию о переопределении цены в группе
+    protected function getGpoupPriceinfo($group_id, $price_id) {
+        global $db;
+        if(!isset($this->gpi[$group_id])) {
+            $this->gpi[$group_id] = array();
+        }
+        if(isset($this->gpi[$group_id][$price_id])) {
+            return $this->gpi[$group_id][$price_id];
+        }
+        $res = $db->query("SELECT `doc_group`.`pid`, 
+                `doc_group_cost`.`id` AS `gc_id`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`
+            FROM `doc_group`
+            LEFT JOIN `doc_group_cost` ON `doc_group`.`id`=`doc_group_cost`.`group_id`  AND `doc_group_cost`.`cost_id`=$price_id
+            WHERE `doc_group`.`id`=$group_id");
+        if ($res->num_rows == 0) {
+            throw new \AutoLoggedException("Группа ID:$group_id не найдена");
+        }
+        $this->gpi[$group_id][$price_id] = $res->fetch_assoc();
+        $res->free();
+        return $this->gpi[$group_id][$price_id];
+    }
+
 }
 

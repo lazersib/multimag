@@ -20,7 +20,7 @@
 
 namespace doc\printforms\realizaciya;
 
-class torg12 extends \doc\printforms\iPrintForm {
+class torg12 extends \doc\printforms\iPrintFormPdf {
 
     public function getName() {
         return "Товарная накладная ТОРГ-12";
@@ -143,7 +143,7 @@ class torg12 extends \doc\printforms\iPrintForm {
 
         $this->pdf->AddPage('L');
         $y = $this->pdf->getY();
-        $this->addInfoFooter();
+        $this->addTechFooter();
 
         $this->pdf->setY($y);
         $this->pdf->SetFont('', '', 6);
@@ -466,7 +466,7 @@ class torg12 extends \doc\printforms\iPrintForm {
 
         // тело таблицы
         $y = $this->pdf->GetY();
-        $nomenclature = $this->doc->getDocumentNomenclatureWVAT();
+        $nomenclature = $this->doc->getDocumentNomenclatureWVATandNums();
 
         $this->pdf->SetWidths($t_all_width);
         $font_sizes = array(0 => 7);
@@ -480,10 +480,10 @@ class torg12 extends \doc\printforms\iPrintForm {
         $summass = $sum = $sumnaloga = $sumbeznaloga = $cnt = 0;
         $list_summass = $list_sum = $list_sumnaloga = $list_sumbeznaloga = $list_cnt = 0;
         foreach ($nomenclature as $line) {
-            $sumbeznaloga += $line['sum'];
-            $list_sumbeznaloga += $line['sum'];
-            $sum += $line['sum_all'];
-            $list_sum += $line['sum_all'];
+            $sumbeznaloga += $line['sum_wo_vat'];
+            $list_sumbeznaloga += $line['sum_wo_vat'];
+            $sum += $line['sum'];
+            $list_sum += $line['sum'];
             $sumnaloga += $line['vat_s'];
             $list_sumnaloga += $line['vat_s'];
             $summass += $line['mass']*$line['cnt'];
@@ -503,10 +503,10 @@ class torg12 extends \doc\printforms\iPrintForm {
                 sprintf("%01.3f", $line['mass']*$line['cnt']),
                 $line['cnt'],
                 sprintf("%01.2f", $line['price']),
-                sprintf("%01.2f", $line['sum']),
+                sprintf("%01.2f", $line['sum_wo_vat']),
                 $line['vat_p'],
                 sprintf("%01.2f", $line['vat_s']),
-                sprintf("%01.2f", $line['sum_all']),
+                sprintf("%01.2f", $line['sum']),
             );
             $this->pdf->RowIconv($row);
 
@@ -514,7 +514,7 @@ class torg12 extends \doc\printforms\iPrintForm {
                 $this->makeColRect($t_all_offset, $y);
                 $this->makeSummary('Всего:', $t_all_width, 3.5, $list_cnt, $list_sumbeznaloga, $list_sum, $list_sumnaloga, $list_summass);
                 $this->pdf->AddPage('L');
-                $this->addInfoFooter();
+                $this->addTechFooter();
                 $y = $this->pdf->GetY();
                 $list_summass = $list_sum = $list_sumnaloga = 0;
             }
@@ -528,7 +528,7 @@ class torg12 extends \doc\printforms\iPrintForm {
         $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
         if ($workspace_h <= $this->pdf->GetY() + 61) {
             $this->pdf->AddPage('L');
-            $this->addInfoFooter();
+            $this->addTechFooter();
         }
         $this->pdf->SetAutoPageBreak(0);
        

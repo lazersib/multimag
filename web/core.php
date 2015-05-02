@@ -140,15 +140,18 @@ set_exception_handler('exception_handler');
 /// Подсветка подстроки в строке, используя span class=b_selection
 /// @param str Исходная строка
 /// @param substr Строка, которую необходимо подсветить
-function SearchHilight($str,$substr) {
-	if(!$substr) return $str;
-	$tmp = explode($substr,' '.$str.' ');
-	$result = '';
-	foreach($tmp as $t) {
-		if(!$result) $result = $t;
-		else $result.="<span class='b_selection'>$substr</span>$t";
-	}
-	return $result;
+function SearchHilight($str, $substr) {
+    if (!$substr)
+        return $str;
+    $tmp = explode($substr, ' ' . $str . ' ');
+    $result = '';
+    foreach ($tmp as $t) {
+        if (!$result)
+            $result = $t;
+        else
+            $result.="<span class='b_selection'>" . html_out($substr) . "</span>$t";
+    }
+    return $result;
 }
 
 /// Нормализация номера телефона

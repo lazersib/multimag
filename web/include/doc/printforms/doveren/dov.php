@@ -18,7 +18,7 @@
 //
 namespace doc\printforms\doveren; 
 
-class dov extends \doc\printforms\iPrintForm {
+class dov extends \doc\printforms\iPrintFormPdf {
  
     public function getName() {
         return "Доверенность";
@@ -90,7 +90,7 @@ class dov extends \doc\printforms\iPrintForm {
         $worker_info = $res->fetch_assoc();
         
         $this->pdf->AddPage('P');
-        $this->addInfoFooter();
+        $this->addTechFooter();
         
         $this->pdf->SetLineWidth($this->line_normal_w);        
         $this->pdf->SetFillColor(255, 255, 255);
@@ -260,7 +260,7 @@ class dov extends \doc\printforms\iPrintForm {
         $sum = 0;
         $i = 1;
         foreach ($nomenclature as $line ) {
-            $sum += $line['sum_all'];
+            $sum += $line['sum'];
             
             $row = array(
                 $i++,

@@ -483,13 +483,16 @@ function PrintMenu(event,doc)
 			else if(json.response=='item_list')
 			{
 				menu.innerHTML=''
-				for(var i=0;i<json.content.length;i++)
-				{
-					var elem=document.createElement('div')
-					elem.innerHTML=json.content[i].desc
-					elem.fname=json.content[i].name
-					elem.onclick=pickItem
-					menu.appendChild(elem)
+				for(var i=0;i<json.content.length;i++) {
+					var elem = document.createElement('div');
+                                        if(json.content[i].mime) {
+                                            var mime = json.content[i].mime.replace('/', '-');
+                                            elem.style.backgroundImage = "url('/img/mime/22/"+mime+".png')";
+                                        }
+					elem.innerHTML=json.content[i].desc;
+					elem.fname=json.content[i].name;
+					elem.onclick=pickItem;
+					menu.appendChild(elem);
 				}
 			}
 			else
@@ -590,6 +593,10 @@ function FaxMenu(event,doc)
 				for(var i=0;i<json.content.length;i++)
 				{
 					var elem=document.createElement('div')
+                                        if(json.content[i].mime) {
+                                            var mime = json.content[i].mime.replace('/', '-');
+                                            elem.style.backgroundImage = "url('/img/mime/22/"+mime+".png')";
+                                        }
 					elem.innerHTML=json.content[i].desc
 					elem.fname=json.content[i].name
 					elem.onclick=pickItem
@@ -687,6 +694,10 @@ function MailMenu(event,doc)
 				for(var i=0;i<json.content.length;i++)
 				{
 					var elem=document.createElement('div')
+                                        if(json.content[i].mime) {
+                                            var mime = json.content[i].mime.replace('/', '-');
+                                            elem.style.backgroundImage = "url('/img/mime/22/"+mime+".png')";
+                                        }
 					elem.innerHTML=json.content[i].desc
 					elem.fname=json.content[i].name
 					elem.onclick=pickItem

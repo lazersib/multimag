@@ -91,19 +91,45 @@ class Report_Salary extends BaseGSReport {
             $info = $salary->calcFee($doc_line, $doc_line['resp_id'], 1);
             $tmpl->addContent("<h1>Расчёты по {$doc_line['type_name']} - $doc</h1>");
             $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th>id</th><th>Код</th><th>Наименование</th><th>Пр-ль</th><th>Кол-во</th><th>В уп.</th><th>Коэфф.сл.сб.</th>");
+            . "<tr><th>id</th><th>Код</th><th>Наименование</th><th>Пр-ль</th><th>Кол-во</th><th>В уп.</th><th>Коэфф.сл.сб.</th><th>Сумма сб.</th>");
             if($doc_line['type']==2) {
                 $tmpl->addContent("<th>П.цена</th><th>Вх.цена</th><th>Ликв.</th><th>Расч.ст.</th>");
             }
             $tmpl->addContent("</tr>");
+            $k_sum = $p_sum = 0;
             foreach($info['detail'] as $pos_line) {
+                if($pos_line['mult']==0) {
+                    $pos_line['mult'] = 1;
+                }
+                if($pos_line['pcs']==0) {
+                    $pos_line['pcs'] = 1;
+                }
+                $ssb = round($pos_line['cnt']/$pos_line['mult']*$pos_line['pcs'], 2);
+                $k_sum += $ssb;
+                
+                
                 $tmpl->addContent("<tr><td>{$pos_line['id']}</td><td>{$pos_line['vc']}</td><td>{$pos_line['name']}</td><td>{$pos_line['vendor']}</td>"
-                . "<td>{$pos_line['cnt']}</td><td>{$pos_line['mult']}</td><td>{$pos_line['pcs']}</td>");
+                . "<td align='right'>{$pos_line['cnt']}</td><td align='right'>{$pos_line['mult']}</td><td align='right'>{$pos_line['pcs']}</td>"
+                . "<td align='right'>$ssb</td>");
                 if($doc_line['type']==2) {
-                    $tmpl->addContent("<td>{$pos_line['price']}</td><td>{$pos_line['in_price']}</td><td>{$pos_line['pos_liq']}</td><td>{$pos_line['p_sum']}</td>");
+                    $p_sum += $pos_line['p_sum'];
+                    $pos_line['price'] = number_format($pos_line['price'], 2, '.', ' ');
+                    $pos_line['in_price'] = number_format($pos_line['in_price'], 2, '.', ' ');
+                    $pos_line['pos_liq'] = number_format($pos_line['pos_liq'], 2, '.', ' ');
+                    $pos_line['p_sum'] = number_format($pos_line['p_sum'], 2, '.', ' ');
+                    $tmpl->addContent("<td align='right'>{$pos_line['price']}</td><td align='right'>{$pos_line['in_price']}</td>"
+                    . "<td align='right'>{$pos_line['pos_liq']}</td><td align='right'>{$pos_line['p_sum']}</td>");
                 }
                 $tmpl->addContent("</tr>");
             }
+            $k_sum = number_format($k_sum, 2, '.', ' ');
+            $tmpl->addContent("<tr><td>&nbsp;</td><td colspan='3'>Итого:</td><td>&nbsp;</td><td></td><td></td>"
+            . "<td align='right'>$k_sum</td>");
+            if($doc_line['type']==2) {
+                $p_sum = number_format($p_sum, 2, '.', ' ');
+                $tmpl->addContent("<td></td><td></td><td></td><td align='right'>$p_sum</td>");
+            }
+            $tmpl->addContent("</tr>");
             $tmpl->addContent("</table>");
             
             $tmpl->addContent("<ul>");
@@ -189,29 +215,30 @@ class Report_Salary extends BaseGSReport {
             if( isset($info['o_uid']) ) {
                 $salary->incFee('operator', $info['o_uid'], $info['o_fee'], $doc_line['id']);
                 $o_name = html_out(isset($users[$info['o_uid']]) ? html_out($users[$info['o_uid']]) : ('??? - '.$info['o_uid'])); 
+                $sum_line += $info['o_fee'];
                 $o_fee = number_format($info['o_fee'], 2, '.', ' ');
-                $sum_line += $o_fee;
             }
             
             if( isset($info['r_uid']) ) {
                 $salary->incFee('resp', $info['r_uid'], $info['r_fee'], $doc_line['id']);
                 $r_name = html_out(isset($users[$info['r_uid']]) ? html_out($users[$info['r_uid']]) : ('??? - '.$info['r_uid']));
+                $sum_line += $info['r_fee'];
                 $r_fee = number_format($info['r_fee'], 2, '.', ' ');
-                $sum_line += $r_fee;
             }
             
             if( isset($info['m_uid']) ) {
                 $salary->incFee('manager', $info['m_uid'], $info['m_fee'], $doc_line['id']);
                 $m_name = html_out(isset($users[$info['m_uid']]) ? html_out($users[$info['m_uid']]) : ('??? - '.$info['m_uid']));
+                $sum_line += $info['m_fee'];                
                 $m_fee = number_format($info['m_fee'], 2, '.', ' ');
-                $sum_line += $m_fee;
+
             }
             
             if( isset($info['sk_uid']) ) {
                 $salary->incFee('sk', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
                 $sk_name = html_out(isset($users[$info['sk_uid']]) ? html_out($users[$info['sk_uid']]) : ('??? - '.$info['sk_uid']));
+                $sum_line += $info['sk_fee'];
                 $sk_fee = number_format($info['sk_fee'], 2, '.', ' ');
-                $sum_line += $sk_fee;
             }
             $sum += $sum_line;
             $p_date = date("Y-m-d", $doc_line['date']); 
@@ -232,7 +259,7 @@ class Report_Salary extends BaseGSReport {
         $users_fee = $salary->getUsersFee();
         foreach($users_fee as $uid=>$info) {
             $fee = $info['operator'] + $info['resp'] + $info['manager'] + $info['sk'];
-            $fee = sprintf('%0.2f', $fee);
+            $fee = number_format($fee, 2, '.', ' ');
             $r_name = html_out(isset($users[$uid]) ? $users[$uid] : ('??? - '.$uid));
             $tmpl->addContent("<tr><td>$r_name</td><td align='right'>$fee</td></tr>");
         }

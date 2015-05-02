@@ -19,28 +19,30 @@
 
 
 /// Документ *корректировка бонусов*
-class doc_Korbonus extends doc_Nulltype
-{
-	function __construct($doc=0) {
-		parent::__construct($doc);
-		$this->doc_type				= 19;
-		$this->typename				= 'korbonus';
-		$this->viewname			= 'Корректировка бонусов';
-		$this->sklad_editor_enable		= false;
-		$this->header_fields			= 'separator agent sum';
-	}
-	
-	function DocApply($silent=0) {
-		global $db;
-		if(!$silent) {
-			$res = $db->query("SELECT `no_bonuses` FROM `doc_agent` WHERE `id`=".intval($this->doc_data['agent']));
-			if(!$res->num_rows)
-				throw new Exception ("Агент не найден");
-			$agent_info = $res->fetch_row();
-			if($agent_info[0])
-				throw new Exception ("Агент не участвует в бонусной программе");
-		}
-		parent::DocApply($silent);
-	}
-};
-?>
+class doc_Korbonus extends doc_Nulltype {
+
+    function __construct($doc = 0) {
+        parent::__construct($doc);
+        $this->doc_type = 19;
+        $this->typename = 'korbonus';
+        $this->viewname = 'Корректировка бонусов';
+        $this->sklad_editor_enable = false;
+        $this->header_fields = 'separator agent sum';
+    }
+
+    function DocApply($silent = 0) {
+        global $db;
+        if (!$silent) {
+            $res = $db->query("SELECT `no_bonuses` FROM `doc_agent` WHERE `id`=" . intval($this->doc_data['agent']));
+            if (!$res->num_rows) {
+                throw new Exception("Агент не найден");
+            }
+            $agent_info = $res->fetch_row();
+            if ($agent_info[0]) {
+                throw new Exception("Агент не участвует в бонусной программе");
+            }
+        }
+        parent::DocApply($silent);
+    }
+
+}

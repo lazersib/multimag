@@ -52,10 +52,10 @@ class dbcheck extends \AsyncWorker {
 		$this->SetStatusText("Сброс остатков...");
 		$db->query("UPDATE `doc_base_cnt` SET `cnt`='0'");
 		$db->query("UPDATE `doc_kassa` SET `ballance`='0'");
-		$db->query("UPDATE `doc_base` SET `buy_time`='1970-01-01 00:00:00', `likvid`=0, `transit_cnt`=0");
+		$db->query("UPDATE `doc_base` SET `buy_time`='1970-01-01 00:00:00', `likvid`=0");//, `transit_cnt`=0
+                $db->query("UPDATE `doc_base_dop` SET `reserve`=0, `transit`=0, `offer`=0");
                 
-        	// Заполнение нулевого количества для всех товаров
-                
+        	// Заполнение нулевого количества для всех товаров                
 		$res = $db->query("SELECT `id` FROM `doc_sklady`");
 		while ($sline = $res->fetch_row()) {
 			$pres = $db->query("SELECT `doc_base`.`id`, `doc_base_cnt`.`id`
@@ -63,9 +63,10 @@ class dbcheck extends \AsyncWorker {
 			LEFT JOIN `doc_base_cnt` ON `doc_base`.`id`=`doc_base_cnt`.`id` AND `doc_base_cnt`.`sklad`='$sline[0]'
 			WHERE `doc_base`.`pos_type`='0'");
 			while ($pline = $pres->fetch_row()) {
-				if (!$pline[1])
-					$db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)	VALUES ('$pline[0]', '$sline[0]', '0')");
-			}
+                            if (!$pline[1]) {
+                                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`)	VALUES ('$pline[0]', '$sline[0]', '0')");
+                            }
+                        }
 		}
                 
                 $this->SetStatusText("Поиск проведённых документов с пометкой на удаление...");
@@ -110,7 +111,7 @@ class dbcheck extends \AsyncWorker {
 		}
                 $db->query("UPDATE `doc_base`, `buytime_tmp` SET `doc_base`.`buy_time`=`buytime_tmp`.`time` WHERE `doc_base`.`id`=`buytime_tmp`.`id`");
                 $db->query("DROP TABLE `buytime_tmp`");                
-                
+                /*
 		$this->SetStatusText("Расчет транзитов...");
 		// Кеширование транзитов
 		$res = $db->query("SELECT `doc_base`.`id`, (SELECT SUM(`doc_list_pos`.`cnt`) FROM `doc_list_pos`
@@ -121,7 +122,7 @@ class dbcheck extends \AsyncWorker {
 			if (!$line[1])	continue;
 			$db->query("UPDATE `doc_base` SET `transit_cnt`='$line[1]' WHERE `id`='$line[0]'");
 		}
-
+                */
 		// ============== Расчет ликвидности ===================================================
                 $this->SetStatusText("Расчет ликвидности...");
 		$a_likv = getLiquidityOnDate(time());
@@ -152,11 +153,11 @@ class dbcheck extends \AsyncWorker {
 		}
 
 		// ================================ Перепроводка документов с коррекцией сумм ============================
-		$this->SetStatusText("Перепроводка документов...");
+		$this->SetStatusText("Перепроводка документов...\n");
 		$i = 0;
                 
                 $query = \document::getStandardSqlQuery() 
-                    . " WHERE `a`.`ok`>'0' AND `a`.`type`!='3' AND `a`.`mark_del`='0'"
+                    . " WHERE `a`.`ok`>'0' AND `a`.`mark_del`='0'"
                     . " ORDER BY `a`.`date`, `a`.`type`";
 		$res = $db->query($query);
 		$allcnt = $res->num_rows;

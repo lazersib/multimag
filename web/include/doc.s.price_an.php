@@ -257,8 +257,10 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		}
         
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`, `parsed_price`.`cost`, `parsed_price`.`nal`,
-		`firm_info`.`name`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`name`, `price`.`cost`, `price`.`art`
+		`firm_info`.`name`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`name`, `price`.`cost`, `price`.`art`,
+                `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
 		FROM `doc_base`
+                LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `parsed_price` ON `doc_base`.`id`=`parsed_price`.`pos`
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`parsed_price`.`firm`
 		LEFT JOIN `currency` ON `firm_info`.`currency`=`currency`.`id`
@@ -312,7 +314,8 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		<tr><th>№</th><th>Наименование</th><th>Наша цена</th><th>Цена</th><th>Наличие</th><th>Фирма</th></tr>");
 		
 		$sql = "SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost`, `parsed_price`.`cost`, `parsed_price`.`nal`,
-		`firm_info`.`name`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`name`, `price`.`cost`, `price`.`art`
+		`firm_info`.`name`, `firm_info`.`coeff`, `currency`.`coeff`, `price`.`name`, `price`.`cost`, `price`.`art`,
+                `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `parsed_price` ON `doc_base`.`id`=`parsed_price`.`pos`
@@ -360,10 +363,10 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		$i = $c = 0;
 		$old_id = $old_cost = 0;
 		$lin = $old_name = '';
-		while ($nxt = $res->fetch_row()) {
-			$rezerv = $CONFIG['poseditor']['rto'] ? DocRezerv($nxt[0]) : '';
-			$pod_zakaz = $CONFIG['poseditor']['rto'] ? DocPodZakaz($nxt[0]) : '';
-			$v_puti = $CONFIG['poseditor']['rto'] ? DocVPuti($nxt[0]) : '';
+		while ($nxt = $res->fetch_array()) {
+			$rezerv = $CONFIG['poseditor']['rto'] ? $nxt['reserve'] : '';
+			$pod_zakaz = $CONFIG['poseditor']['rto'] ? $nxt['offer'] : '';
+			$v_puti = $CONFIG['poseditor']['rto'] ? $nxt['transit'] : '';
 
 			if ($rezerv)
 				$rezerv = "<a onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=rezerv&pos=$nxt[0]'); return false;\"  title='Отобразить документы' href='/docs.php?l=inf&mode=srv&opt=p_zak&pos=$nxt[0]'>$rezerv</a>";

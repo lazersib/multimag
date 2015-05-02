@@ -230,8 +230,9 @@ class xls extends BasePriceWriter {
 
         $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,		
 			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`,
-				`doc_base`.`transit_cnt`, `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
+				`doc_base_dop`.`transit`, `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 		FROM `doc_base`
+                LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
         $i = 0;
@@ -254,7 +255,7 @@ class xls extends BasePriceWriter {
             $name = iconv('UTF-8', 'windows-1251', "$group_name {$nxt['name']}" . (($this->view_proizv && $nxt['proizv']) ? " ({$nxt['proizv']})" : ''));
             $this->worksheet->write($this->line, $c++, $name, $this->format_line[$i]); // наименование
 
-            $nal = $this->GetCountInfo($nxt['cnt'], $nxt['transit_cnt']);
+            $nal = $this->GetCountInfo($nxt['cnt'], $nxt['transit']);
             $str = iconv('UTF-8', 'windows-1251', $nal);
             $this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]);  // наличие - пока не отображается
 

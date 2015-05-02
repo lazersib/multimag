@@ -18,7 +18,7 @@
 //
 namespace doc\printforms\realizaciya; 
 
-class upd extends \doc\printforms\iPrintForm {
+class upd extends \doc\printforms\iPrintFormPdf {
  
     public function getName() {
         return "Универсальный передаточный документ";
@@ -80,7 +80,7 @@ class upd extends \doc\printforms\iPrintForm {
         
         $this->pdf->AddPage('L');
         $y = $this->pdf->getY();
-        $this->addInfoFooter();
+        $this->addTechFooter();
         
         $this->pdf->SetLineWidth($this->line_bold_w);        
         $this->pdf->Line(40, 5, 40, 79);
@@ -262,7 +262,7 @@ class upd extends \doc\printforms\iPrintForm {
         }
         
         // тело таблицы
-        $nomenclature = $this->doc->getDocumentNomenclatureWVAT();
+        $nomenclature = $this->doc->getDocumentNomenclatureWVATandNums();
         
         $this->pdf->SetWidths($t_all_width);
         $font_sizes = array(0=>7);
@@ -276,8 +276,8 @@ class upd extends \doc\printforms\iPrintForm {
         $i = 1;
         $sumbeznaloga = $sumnaloga = $sum = $summass = 0;
         foreach ($nomenclature as $line ) {
-            $sumbeznaloga += $line['sum'];
-            $sum += $line['sum_all'];
+            $sumbeznaloga += $line['sum_wo_vat'];
+            $sum += $line['sum'];
             $sumnaloga += $line['vat_s'];
             $summass += $line['mass']*$line['cnt'];
             $row = array(
@@ -288,17 +288,20 @@ class upd extends \doc\printforms\iPrintForm {
                 $line['unit_name'],
                 $line['cnt'],
                 sprintf("%01.2f", $line['price']),
-                sprintf("%01.2f", $line['sum']),
+                sprintf("%01.2f", $line['sum_wo_vat']),
                 $line['excise'],
                 $line['vat_p'].'%',
                 sprintf("%01.2f", $line['vat_s']),
-                sprintf("%01.2f", $line['sum_all']),
+                sprintf("%01.2f", $line['sum']),
                 $line['country_code'],
                 $line['country_name'],
                 $line['ncd']);
             $lsy = $this->pdf->GetY();
             $this->pdf->RowIconv($row);
             $this->pdf->SetLineWidth($this->line_bold_w);
+            if($this->pdf->GetY()<$lsy) {
+                $lsy = $this->pdf->tMargin;
+            }
             $this->pdf->Line(40, $this->pdf->GetY() , 40, $lsy);
             $this->pdf->SetLineWidth($this->line_normal_w);
         }
@@ -306,7 +309,7 @@ class upd extends \doc\printforms\iPrintForm {
         $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
         if ($workspace_h  <= $this->pdf->GetY() + 81) {
             $this->pdf->AddPage('L');
-            $this->addInfoFooter();
+            $this->addTechFooter();
         }
         $this->pdf->SetAutoPageBreak(0);        
 

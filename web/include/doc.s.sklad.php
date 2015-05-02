@@ -828,29 +828,28 @@ class doc_s_Sklad {
                     $analog_group_sql = $db->real_escape_string($analog_group);
                     $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `cost` AS `price`, (
                             SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`
-                        ) AS `cnt`
+                        ) AS `cnt`,
+                        `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
                         FROM `doc_base`
+                        LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
                         WHERE `analog_group`='$analog_group_sql' AND `analog_group`!=''");
                     while($line = $res->fetch_assoc()) {
                         $link = $base_link.'&amp;pos='.$line['id'];
                         $rto = '';
                         if (@$CONFIG['poseditor']['rto']) {
                             $clink = $link.'&amp;l=inf';
-                            $rezerv = DocRezerv($line['id']);
-                            $pod_zakaz = DocPodZakaz($line['id']);
-                            $v_puti = DocVPuti($line['id']);
-                            if ($rezerv) {
-                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=rezerv'); return false;\" href='#'>$rezerv</a></td>";
+                            if ($line['reserve']) {
+                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=rezerv'); return false;\" href='#'>{$line['reserve']}</a></td>";
                             } else {
                                 $rto .= "<td></td>";
                             }
-                            if ($pod_zakaz) {
-                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=p_zak'); return false;\" href='#'>$pod_zakaz</a></td>";
+                            if ($line['offer']) {
+                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=p_zak'); return false;\" href='#'>{$line['offer']}</a></td>";
                             } else {
                                 $rto .= "<td></td>";
                             }
-                            if ($v_puti) {
-                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=vputi'); return false;\" href='#'>$v_puti</a></td>";
+                            if ($line['transit']) {
+                                $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=vputi'); return false;\" href='#'>{$line['transit']}</a></td>";
                             } else {
                                 $rto .= "<td></td>";
                             }
@@ -1922,11 +1921,13 @@ class doc_s_Sklad {
 			default: $order = '`doc_base`.`name`';
 		}
 
-		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`,
-                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`,
-                    `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-                    (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`,
-                    `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock` $sql_add
+		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`vc`,
+                        `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`cost_date`, `doc_base`.`mass`, `doc_base`.`hidden`, 
+                        `doc_base`.`no_export_yml`, `doc_base`.`stock`,                    
+                    `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,                   
+                        `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,
+                    `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+                    (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt` $sql_add
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
@@ -2027,15 +2028,15 @@ class doc_s_Sklad {
         $s_sql = $db->real_escape_string($s);
         $limit = 100;
         $sql = "SELECT SQL_CALC_FOUND_ROWS `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`,
-                `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`analog_group`,
-                `doc_base`.`cost_date`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
-                `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-            (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`, `doc_base`.`vc`,
-            `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
+                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`analog_group`, `doc_base`.`mass`, `doc_base`.`hidden`, 
+                    `doc_base`.`vc`, `doc_base`.`no_export_yml`, `doc_base`.`stock`, `doc_base`.`cost_date`,
+                `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
+                    `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                    
+                `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+                (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`
             FROM `doc_base`
-            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
             LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-                ";
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad' ";
         $where_add = '';
         if ($_SESSION['sklad_store_only']) {
             $where_add .= " AND `doc_base_cnt`.`cnt`>0 ";
@@ -2284,12 +2285,9 @@ class doc_s_Sklad {
         global $CONFIG;
         $go = request('go');
         if (@$CONFIG['poseditor']['rto']) {
-            $reserve = DocRezerv($line['id'], 0);
-            $pod_zakaz = DocPodZakaz($line['id'], 0);
-            $v_puti = DocVPuti($line['id'], 0);
-            $reserve = $reserve ? $this->makeContextMenuLink($line['id'], 'rezerv', $reserve) : '';
-            $pod_zakaz = $pod_zakaz ? $this->makeContextMenuLink($line['id'], 'p_zak', $pod_zakaz) : '';
-            $v_puti = $v_puti ? $this->makeContextMenuLink($line['id'], 'vputi', $v_puti) : '';
+            $reserve = $line['reserve'] ? $this->makeContextMenuLink($line['id'], 'rezerv', $line['reserve']) : '';
+            $pod_zakaz = $line['transit'] ? $this->makeContextMenuLink($line['id'], 'p_zak', $line['transit']) : '';
+            $v_puti = $line['offer'] ? $this->makeContextMenuLink($line['id'], 'vputi', $line['offer']) : '';
             $rto_add = "<td>$reserve</td><td>$pod_zakaz</td><td>$v_puti</td>";
         } else {
             $rto_add = '';
@@ -2344,7 +2342,7 @@ class doc_s_Sklad {
         $cb = $go ? "<input type='checkbox' name='pos[{$line['id']}]' class='pos_ch' value='1'>" : '';
         if ($_SESSION['sklad_cost'] > 0) {
             $pc = PriceCalc::getInstance();
-            $cadd = '<td>' . $pc->getPosSelectedPriceValue($line['id'], $_SESSION['sklad_cost'], $line) . '</td>';
+            $cadd = '<td><b>' . $pc->getPosSelectedPriceValue($line['id'], $_SESSION['sklad_cost'], $line) . '</b></td>';
         } else {
             $cadd = '';
         }

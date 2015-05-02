@@ -73,5 +73,12 @@ class StoresListEditor extends \ListEditor {
             $this->firm_list[$line['id']] = $line['firm_name'];
         }
     }
-
+    
+    /// Записать в базу строку справочника
+    public function saveItem($id, $data) {
+        if(!isset($data['dnc'])) {
+            $data['dnc'] = 0;
+        }        
+        return parent::saveItem($id, $data);
+    }
 }

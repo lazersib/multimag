@@ -35,10 +35,6 @@ class doc_Zayavka extends doc_Nulltype {
         $this->header_fields = 'bank sklad separator agent cena';
 
         settype($this->id, 'int');
-        $this->PDFForms = array(
-            array('name' => 'schet', 'desc' => 'Счёт', 'method' => 'PrintPDF'),
-            array('name' => 'testcht', 'desc' => 'Накладная на проверку наличия', 'method' => 'PrintNaklTestCntPDF')
-        );
     }
 
     /// Получить строку с HTML кодом дополнительных кнопок документа
@@ -273,32 +269,82 @@ class doc_Zayavka extends doc_Nulltype {
 		
 	}
 
-	/// Провести документ
-	/// @param silent Не менять отметку проведения
-	function DocApply($silent=0) {
-		global $db;                
-		if($silent)	return;
-                if(!$this->isAltNumUnique()) {
-                    throw new Exception("Номер документа не уникален!");
+    /// Провести документ
+    /// @param silent Не менять отметку проведения
+    function docApply($silent = 0) {
+        global $db;
+        // Резервы
+        $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=2 AND `p_doc`={$this->id}");
+        if (!$res->num_rows) {
+            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+                FROM `doc_list_pos`
+                LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                WHERE `doc_list_pos`.`doc`='{$this->id}'");
+            $vals = '';
+            while ($nxt = $res->fetch_row()) {
+                if ($vals) {
+                    $vals .= ',';
                 }
-		$data = $db->selectRow('doc_list', $this->id);
-		if(!$data)	throw new Exception('Ошибка выборки данных документа при проведении!');
-		if($data['ok'])	throw new Exception('Документ уже проведён!');
-		$db->update('doc_list', $this->id, 'ok', time() );
-		$this->sentZEvent('apply');
-	}
-	
-	/// отменить проведение документа
-	function DocCancel() {
-		global $db;
-		$data = $db->selectRow('doc_list', $this->id);
-		if(!$data)		throw new Exception('Ошибка выборки данных документа!');
-		if(!$data['ok'])	throw new Exception('Документ не проведён!');
-		$db->update('doc_list', $this->id, 'ok', 0 );
-		$this->sentZEvent('cancel');			
-	}
+                $vals .= "('$nxt[0]', '$nxt[1]')";
+            }
+            if($vals) {
+                $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
+                    ON DUPLICATE KEY UPDATE `reserve`=`reserve`+VALUES(`reserve`)");
+            } else {
+                throw new Exception("Не удалось провести пустой документ!");
+            }
+        }
+        if ($silent) {
+            return;
+        }
+        if (!$this->isAltNumUnique()) {
+            throw new Exception("Номер документа не уникален!");
+        }
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа при проведении!');
+        }
+        if ($data['ok']) {
+            throw new Exception('Документ уже проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', time());        
+        $this->sentZEvent('apply');
+    }
 
-	/// Формирование другого документа на основании текущего
+    /// Отменить проведение документа
+    function docCancel() {
+        global $db;
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа!');
+        }
+        if (!$data['ok']) {
+            throw new Exception('Документ не проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', 0);
+        // Резервы
+        $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=2 AND `p_doc`={$this->id}");
+        if (!$res->num_rows) {
+            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+            FROM `doc_list_pos`
+            LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+            WHERE `doc_list_pos`.`doc`='{$this->id}'");
+            $vals = '';
+            while ($nxt = $res->fetch_row()) {
+                if ($vals) {
+                    $vals .= ',';
+                }
+                $vals .= "('$nxt[0]', '$nxt[1]')";
+            }
+            if($vals) {
+                $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
+                    ON DUPLICATE KEY UPDATE `reserve`=`reserve`-VALUES(`reserve`)");
+            }
+        }
+        $this->sentZEvent('cancel');
+    }
+
+    /// Формирование другого документа на основании текущего
 	function MorphTo($target_type)
 	{
 		global $tmpl, $db;
@@ -329,7 +375,7 @@ class doc_Zayavka extends doc_Nulltype {
 			$this->sentZEvent('morph_realizaciya');
 			header("Location: doc.php?mode=body&doc=$dd");
 		}
-		else if ($target_type == '1') {
+		else if ($target_type == 1) {
 			if (!isAccess('doc_zayavka', 'create'))
 				throw new AccessException();
 			$new_doc = new doc_Zayavka();
@@ -490,453 +536,12 @@ class doc_Zayavka extends doc_Nulltype {
 		else parent::_Service($opt,$pos);
 	}
 	
-	/// Отгрузить текущую реализацию
+	/// Отгрузить текущую заявку
 	function Otgruzka() {
 		$this->recalcSum();
 		$newdoc = new doc_Realizaciya();
 		$newdoc_id = $newdoc->createFromPdiff($this);
 		$newdoc->setDopData('cena', $this->dop_data['cena']);
 		return $newdoc_id;
-	}
-	
-	/// Сформировать документ в PDF формате
-	/// @param to_str	Вернуть в виде строки (иначе - вывести в броузер)
-	function PrintPDF($to_str=0)
-	{
-		require('fpdf/fpdf_mc.php');
-		global $tmpl, $CONFIG, $db;
-		if(!$to_str) $tmpl->ajax=1;
-		
-		$agent_data = $db->selectRow('doc_agent', $this->doc_data['agent']);
-		$res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
-		$bank_data = $res->fetch_assoc();
-		
-		$pdf = new PDF_MC_Table('P');
-		$pdf->Open();
-		$pdf->SetAutoPageBreak(0,10);
-		$pdf->AddFont('Arial','','arial.php');
-		$pdf->tMargin=5;
-		$pdf->AddPage();
-		$pdf->SetFont('Arial','',10);
-		$pdf->SetFillColor(255);
-
-		if( @$CONFIG['site']['doc_header'] ) {
-			$header_img = str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_header']);
-			$size = getimagesize($header_img);
-			if(!$size)			throw new Exception("Не удалось открыть файл изображения");
-			if($size[2] != IMAGETYPE_JPEG)	throw new Exception("Файл изображения не в jpeg формате");
-			if($size[0] < 800)		throw new Exception("Разрешение изображения слишком мало! Допустимя ширина - не менее 800px");
-			$width = 190;
-			$offset_y= $size[1]/$size[0]*$width+14;
-			$pdf->Image($header_img, 8, 10, $width);
-			$pdf->Sety($offset_y);
-		}
-
-		$str = "Внимание! Оплата данного счёта означает согласие с условиями поставки товара. Уведомление об оплате обязательно, иначе не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с поставщика, самовывозом, при наличии доверенности и паспорта. Система интернет-заказов со специальными ценами для постоянных клиентов доступна на нашем сайте http://{$CONFIG['site']['name']}.";
-		$pdf->MultiCellIconv(0,5,$str,1,'C',0);
-		$pdf->y++;		
-		$pdf->SetFont('','U',10);
-		$str='Счёт действителен в течение трёх банковских дней!';
-		$pdf->CellIconv(0,5,$str,0,1,'C',0);
-
-		$pdf->SetFont('','',11);
-		$str='Образец заполнения платёжного поручения:';
-		$pdf->CellIconv(0,5,$str,0,1,'C',0);
-
-		$old_x=$pdf->GetX();
-		$old_y=$pdf->GetY();
-		$old_margin=$pdf->lMargin;
-		$table_c=110;
-		$table_c2=15;
-
-		$pdf->SetFont('','',12);
-		$pdf->CellIconv($table_c, 10, $bank_data['name'], 1, 1, 'L', 0);
-		$str='ИНН '.$this->firm_vars['firm_inn'].' КПП';
-		$pdf->CellIconv($table_c, 5, $str, 1, 1, 'L', 0);
-		
-		$tx=$pdf->GetX();
-		$ty=$pdf->GetY();
-		$pdf->CellIconv($table_c,10,'',1,1,'L',0);
-		$pdf->lMargin=$old_x+1;
-		$pdf->SetX($tx+1);
-		$pdf->SetY($ty+1);
-		$pdf->SetFont('','',9);
-		$str='Получатель: '.$this->firm_vars['firm_name'];
-		$pdf->MultiCellIconv($table_c,3,$str,0,1,'L',0);
-
-		$pdf->SetFont('','',12);
-		$pdf->lMargin=$old_x+$table_c;
-		$pdf->SetY($old_y);
-		$str='БИК';
-		$pdf->CellIconv($table_c2,5,$str,1,1,'L',0);
-		$str='корр/с';
-		$pdf->CellIconv($table_c2,10,$str,1,1,'L',0);
-		$str='р/с N';
-		$pdf->CellIconv($table_c2,10,$str,1,1,'L',0);
-
-		$pdf->lMargin=$old_x+$table_c+$table_c2;
-		$pdf->SetY($old_y);
-		$pdf->Cell(0,5,$bank_data['bik'],1,1,'L',0);
-		$pdf->Cell(0,5,$bank_data['ks'],1,1,'L',0);
-		$pdf->Cell(0,15,$bank_data['rs'],1,1,'L',0);
-		$pdf->lMargin=$old_margin;
-		$pdf->SetY($old_y+30);
-
-				
-		if( @$CONFIG['doc']['invoice_header'] ) {
-			$pdf->ln(2);
-			$pdf->SetFont('','',14);
-			$pdf->MultiCellIconv(0, 6, $CONFIG['doc']['invoice_header'], 1, 'C', 0);			
-		}
-		
-		
-		$pdf->SetFont('','',16);
-		$str='Счёт № '.$this->doc_data['altnum'].', от '.date("d.m.Y", $this->doc_data['date']);		
-		$pdf->CellIconv(0,6,$str,0,1,'L',0);
-		$pdf->SetFont('','',8);
-		if($this->doc_data['contract']) {
-			$contract = new doc_Dogovor($this->doc_data['contract']);
-			$str='К договору № '.$contract->doc_data['altnum'].', от '.date("d.m.Y", $contract->doc_data['date']);
-			$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);
-		}
-		
-		$str="Поставщик: {$this->firm_vars['firm_name']}, {$this->firm_vars['firm_adres']}, тел: {$this->firm_vars['firm_telefon']}";
-		$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);
-		$str="Покупатель: {$agent_data['fullname']}, адрес: {$agent_data['adres']}, телефон: {$agent_data['tel']}";
-		$pdf->MultiCellIconv(0,4,$str,0,1,'L',0);	
-
-		$pdf->Ln(3);
-		$pdf->SetFont('','',11);
-		$str = str_replace("<br>",", ",$this->doc_data['comment']);
-		$pdf->MultiCellIconv(0,5,$str,0,1,'L',0);
-
-		$pdf->Ln(3);
-		$pdf->SetLineWidth(0.5);
-		$t_width=array(8);
-		if($CONFIG['poseditor']['vc'])
-		{
-			$t_width[]=20;
-			$t_width[]=92;
-		}
-		else	$t_width[]=112;
-		$t_width=array_merge($t_width, array(20,25,25));
-
-		$t_text=array('№');
-		if($CONFIG['poseditor']['vc'])
-		{
-			$t_text[]='Код';
-			$t_text[]='Наименование';
-		}
-		else	$t_text[]='Наименование';
-		$t_text=array_merge($t_text, array('Кол-во', 'Цена', 'Сумма'));
-		foreach($t_width as $id=>$w) {
-			$pdf->CellIconv($w,6,$t_text[$id],1,0,'C',0);
-		}
-		
-		$pdf->Ln();
-		$pdf->SetWidths($t_width);
-		$pdf->SetHeight(3.8);
-
-		$aligns=array('R');
-		if($CONFIG['poseditor']['vc'])
-		{
-			$aligns[]='R';
-			$aligns[]='L';
-		}
-		else	$aligns[]='L';
-		$aligns=array_merge($aligns, array('R','R','R'));
-
-		$pdf->SetAligns($aligns);
-		$pdf->SetLineWidth(0.2);
-		$pdf->SetFont('','',8);
-
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`,
-                    `doc_base`.`mass`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`nds`
-		FROM `doc_list_pos`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->id}'
-		ORDER BY `doc_list_pos`.`id`");
-		$i=0;
-		$sum=$summass=$sum_nds=0;
-		while($line = $res->fetch_assoc()) {
-                        if($line['nds']!==null) {
-                            $ndsp = $line['nds'];
-                        } else {
-                            $ndsp = $this->firm_vars['param_nds'];
-                        }            
-                        
-			$i++;
-			$sm = $line['cnt'] * $line['cost'];
-                        $sum += $sm;
-                        $summass += $line['cnt'] * $line['mass'];
-                        if($this->doc_data['nds']) {
-                            $sum_nds += round($sm/(100+$ndsp)*$ndsp, 2);
-                        } else {
-                            $sum_nds += round($sm/100*$ndsp, 2);
-                        }
-                        
-			$cost = sprintf("%01.2f р.", $line['cost']);
-			$smcost = sprintf("%01.2f р.", $sm);
-
-			$name=$line['printname'].' '.$line['name'];
-			if($line['proizv']) $name.='('.$line['proizv'].')';
-
-			$row=array($i);
-			if(@$CONFIG['poseditor']['vc'])
-			{
-				$row[]=$line['vc'];
-				$row[]=$name;
-			}
-			else	$row[]=$name;
-                        $row=array_merge($row, array("{$line['cnt']} {$line['units']}", $cost, $smcost));
-
-			if( $pdf->h <= ($pdf->GetY()+40 ) ) $pdf->AddPage();
-			$pdf->RowIconv($row);
-		}
-
-		$cost = num2str($sum);
-		$sumcost = sprintf("%01.2f", $sum);
-		$summass = sprintf("%01.3f", $summass);
-
-
-		if($pdf->h<=($pdf->GetY()+60)) $pdf->AddPage();
-
-		$delta=$pdf->h-($pdf->GetY()+55);
-		if($delta>17) $delta=17;
-
-		if($CONFIG['site']['doc_shtamp']) {
-			$shtamp_img=str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
-			$pdf->Image($shtamp_img, 4,$pdf->GetY()+$delta, 120);
-		}
-
-		$pdf->SetFont('','',8);
-		$str="Масса товара: $summass кг.";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0,6,$str,0,0,'L',0);
-
-		if($this->doc_data['nds']) {
-			$nds = sprintf("%01.2f", $sum_nds);
-			$pdf->SetFont('','',12);
-			$str="Итого: $sumcost руб.";
-			$pdf->CellIconv(0,7,$str,0,1,'R',0);
-			$str="В том числе НДС: $nds руб.";
-			$pdf->CellIconv(0,5,$str,0,1,'R',0);
-
-			$pdf->SetFont('','',8);
-			$str="Всего $i наименований, на сумму $sumcost руб. ($cost)";
-			$pdf->CellIconv(0,4,$str,0,1,'L',0);
-			$str="В том числе НДС: $nds руб.";
-			$pdf->CellIconv(0,4,$str,0,1,'L',0);
-		}
-		else
-		{
-			$cst = $sum + $sum_nds;
-			$nds_p = sprintf("%01.2f", $sum_nds);
-			$cost2 = sprintf("%01.2f", $cst);
-			$pdf->SetFont('','',10);
-			$str="Итого: $sumcost руб.";
-			$pdf->CellIconv(0,5,$str,0,1,'R',0);
-			$str="НДС: $nds_p руб.";
-			$pdf->CellIconv(0,4,$str,0,1,'R',0);
-			$str="Всего: $cost2 руб.";
-			$pdf->CellIconv(0,4,$str,0,1,'R',0);
-
-			$pdf->SetFont('','',8);
-			$str="Всего $i наименований, на сумму $sumcost руб. ($cost)";
-			$pdf->CellIconv(0,4,$str,0,1,'L',0);
-			$str="Кроме того, НДС: $nds_p, Всего $cost2 руб.";
-			$pdf->CellIconv(0,4,$str,0,1,'L',0);
-		}
-
-		$res = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email`, `worker_post_name` FROM `users_worker_info` WHERE `user_id`='{$this->doc_data['user']}'");
-		if($res->num_rows) {
-			$worker_info = $res->fetch_assoc();
-			$pdf->SetAutoPageBreak(0,10);
-			$pdf->SetY($pdf->h-18);
-			$pdf->Ln(1);
-			$pdf->SetFont('','',10);
-			
-			if($worker_info['worker_post_name'])
-				$str = $worker_info['worker_post_name'].' '.$worker_info['worker_real_name'];
-			else	$str="Сотрудник ".$worker_info['worker_real_name'];
-			$pdf->CellIconv(0,4,$str,0,1,'R',0);
-			$str="Контактный телефон: ".$worker_info['worker_phone'];
-			$pdf->CellIconv(0,4,$str,0,1,'R',0);
-			$str="Электронная почта: ".$worker_info['worker_email'];
-			$pdf->CellIconv(0,4,$str,0,1,'R',0);
-		}
-		else {
-			$pdf->SetAutoPageBreak(0,10);
-			$pdf->SetY($pdf->h-12);
-			$pdf->Ln(1);
-			$pdf->SetFont('','',10);
-			$str="Login автора: ".$_SESSION['name'];
-			$pdf->CellIconv(0,4,$str,0,1,'R',0);
-		}
-
-		if($to_str)
-			return $pdf->Output('zayavka.pdf','S');
-		else
-			$pdf->Output('zayavka.pdf','I');
-	}
-	
-	/// Накладная на проверку наличия в PDF формате
-	/// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
-	function PrintNaklTestCntPDF($to_str=false)
-	{
-		require('fpdf/fpdf_mc.php');
-		global $tmpl, $CONFIG, $db;
-
-		if(!$to_str) $tmpl->ajax=1;
-
-		$pdf=new PDF_MC_Table('P');
-		$pdf->Open();
-		$pdf->SetAutoPageBreak(0,10);
-		$pdf->AddFont('Arial','','arial.php');
-		$pdf->tMargin=10;
-		$pdf->AddPage();
-		$pdf->SetFont('Arial','',10);
-		$pdf->SetFillColor(255);
-
-		$dt=date("d.m.Y",$this->doc_data['date']);
-
-		$pdf->SetFont('','',16);
-		$str="Накладная на проверку наличия N {$this->doc_data['altnum']}{$this->doc_data['subtype']}, от $dt";
-		$pdf->CellIconv(0,8,$str,0,1,'C',0);
-		$pdf->SetFont('','',10);
-		$str="К заявке N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id})";
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$str="Поставщик: {$this->firm_vars['firm_name']}";
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$str="Покупатель: {$this->doc_data['agent_name']}";
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-		$pdf->Ln();
-
-		$pdf->SetLineWidth(0.5);
-		$t_width=array(8);
-		if($CONFIG['poseditor']['vc'])
-		{
-			$t_width[]=20;
-			$t_width[]=70;
-		}
-		else	$t_width[]=90;
-		$t_width=array_merge($t_width, array(17,17,15,13,17,16));
-
-		$t_text=array('№');
-		if($CONFIG['poseditor']['vc'])
-		{
-			$t_text[]='Код';
-			$t_text[]='Наименование';
-		}
-		else	$t_text[]='Наименование';
-		$t_text=array_merge($t_text, array('Цена', 'Кол-во', 'Остаток', 'Резерв', 'По факту', 'Место'));
-
-		foreach($t_width as $id=>$w)
-		{
-			$pdf->CellIconv($w,6,$t_text[$id],1,0,'C',0);
-		}
-		$pdf->Ln();
-		$pdf->SetWidths($t_width);
-		$pdf->SetHeight(5);
-
-		$aligns=array('R');
-		if($CONFIG['poseditor']['vc'])
-		{
-			$aligns[]='R';
-			$aligns[]='L';
-		}
-		else	$aligns[]='L';
-		$aligns=array_merge($aligns, array('R','R','R','R','R','R'));
-
-		$pdf->SetAligns($aligns);
-		$pdf->SetLineWidth(0.2);
-		$pdf->SetFont('','',10);
-
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` AS `base_cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_base`.`vc`, `class_unit`.`rus_name1` AS `units`, `doc_list_pos`.`comm`
-		FROM `doc_list_pos`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
-		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->id}'
-		ORDER BY `doc_list_pos`.`id`");
-		$i=0;
-		$ii=1;
-		$sum=0;
-		$summass=0;
-		while($nxt = $res->fetch_assoc())
-		{
-			$sm=$nxt['cnt']*$nxt['cost'];
-			$cost = sprintf("%01.2f руб.", $nxt['cost']);
-			$cost2 = sprintf("%01.2f руб.", $sm);
-			if(!@$CONFIG['doc']['no_print_vendor'] && $nxt['proizv'])	$nxt['name'].=' / '.$nxt['proizv'];
-
-			$row=array($ii);
-			$rowc=array('');
-			if($CONFIG['poseditor']['vc'])
-			{
-				$row[]=$nxt['vc'];
-				$row[]="{$nxt['printname']} {$nxt['name']}";
-				$rowc[]='';
-				$rowc[]=$nxt['comm'];
-			}
-			else
-			{
-				$row[]="{$nxt['printname']} {$nxt['name']}";
-				$rowc[]=$nxt['comm'];
-			}
-
-			$rezerv=DocRezerv($nxt['tovar'],$this->id);
-
-			$row=array_merge($row, array($nxt['cost'], "{$nxt['cnt']} {$nxt['units']}", $nxt['base_cnt'], $rezerv, '', $nxt['mesto']));
-			$rowc=array_merge($rowc, array('', '', '', '', '', ''));
-			$pdf->RowIconvCommented($row,$rowc);
-			$i=1-$i;
-			$ii++;
-			$sum+=$sm;
-		}
-		$ii--;
-		$cost = sprintf("%01.2f руб.", $sum);
-
-		$res_uid = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
-			WHERE `user_id`='".$_SESSION['uid']."'");
-		if($res_uid->num_rows) {
-			$line = $res_uid->fetch_row();
-			$vip_name = $line[0];
-		}
-		else $vip_name = '';
-		
-		$res_autor = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
-			WHERE `user_id`='".$this->doc_data['user']."'");
-		if($res_autor->num_rows) {
-			$line = $res_autor->fetch_row();
-			$autor_name = $line[0];
-		}
-		else $autor_name = '';
-		
-		$pdf->Ln(5);
-
-		$str="Всего $ii наименований на сумму $cost";
-		$pdf->CellIconv(0,5,$str,0,1,'L',0);
-
-		if($this->doc_data['comment'])
-		{
-			$pdf->Ln(5);
-			$str="Комментарий : ".$this->doc_data['comment'];
-			$pdf->MultiCellIconv(0,5,$str,0,'L',0);
-			$pdf->Ln(5);
-		}
-
-		$str="Автор заявки: _________________________________________ ($autor_name)";
-		$pdf->CellIconv(0,8,$str,0,1,'L',0);
-		$str="Наличие подтвердил: ___________________________________ ";
-		$pdf->CellIconv(0,8,$str,0,1,'L',0);
-
-		if($to_str)
-			return $pdf->Output('testcnt.pdf','S');
-		else
-			$pdf->Output('testcnt.pdf','I');
 	}
 }

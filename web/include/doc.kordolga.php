@@ -18,15 +18,15 @@
 //
 
 /// Документ *корректоровка долга*
-class doc_Kordolga extends doc_Nulltype
-{
-	function __construct($doc=0) {
-		parent::__construct($doc);
-		$this->doc_type				= 18;
-		$this->typename				= 'kordolga';
-		$this->viewname			= 'Корректировка долга';
-		$this->sklad_editor_enable		= false;
-		$this->header_fields			= 'separator agent sum';
-	}
-};
-?>
+class doc_Kordolga extends doc_Nulltype {
+
+    function __construct($doc = 0) {
+        parent::__construct($doc);
+        $this->doc_type = 18;
+        $this->typename = 'kordolga';
+        $this->viewname = 'Корректировка долга';
+        $this->sklad_editor_enable = false;
+        $this->header_fields = 'separator agent sum';
+    }
+
+}

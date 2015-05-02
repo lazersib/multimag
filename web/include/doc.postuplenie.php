@@ -20,25 +20,22 @@
 /// Документ *Поступление*
 class doc_Postuplenie extends doc_Nulltype {
 
-	// Создание нового документа или редактирование заголовка старого
-	function __construct($doc = 0) {
-		parent::__construct($doc);
-		$this->doc_type = 1;
-		$this->typename = 'postuplenie';
-		$this->viewname = 'Поступление товара на склад';
-		$this->sklad_editor_enable = true;
-		$this->sklad_modify = 1;
-		$this->header_fields = 'sklad cena separator agent';
-		$this->PDFForms = array(
-		    array('name' => 'blading', 'desc' => 'Накладная', 'method' => 'PrintNaklPDF')
-		);
-	}
-	
-	function initDefDopdata() {
-		$this->def_dop_data = array('kladovshik'=>$this->firm_vars['firm_kladovshik_id'], 'input_doc'=>'', 'input_date'=>'', 'return'=>0, 'cena'=>1);
-	}
+    // Конструктор
+    function __construct($doc = 0) {
+        parent::__construct($doc);
+        $this->doc_type = 1;
+        $this->typename = 'postuplenie';
+        $this->viewname = 'Поступление товара на склад';
+        $this->sklad_editor_enable = true;
+        $this->sklad_modify = 1;
+        $this->header_fields = 'sklad cena separator agent';
+    }
 
-	function dopHead() {
+    function initDefDopdata() {
+        $this->def_dop_data = array('kladovshik' => $this->firm_vars['firm_kladovshik_id'], 'input_doc' => '', 'input_date' => '', 'return' => 0, 'cena' => 1);
+    }
+
+        function dopHead() {
 		global $tmpl, $db;
 		$klad_id = $this->dop_data['kladovshik'];
 		if (!$klad_id)
@@ -81,7 +78,7 @@ class doc_Postuplenie extends doc_Nulltype {
             throw new Exception("Номер документа не уникален!");
         }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_list`.`firm_id`,
-                `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_vars`.`firm_store_lock`
+                `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_vars`.`firm_store_lock`, `doc_list`.`p_doc`
             FROM `doc_list`
             INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
@@ -133,12 +130,36 @@ class doc_Postuplenie extends doc_Nulltype {
             return;
         }
         $db->update('doc_list', $this->id, 'ok', time());
+        // Транзиты
+        if($doc_params['p_doc']) {
+            $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=12 AND `id`={$doc_params['p_doc']}");
+            if (!$res->num_rows) {
+                $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+                    FROM `doc_list_pos`
+                    LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                    WHERE `doc_list_pos`.`doc`='{$doc_params['p_doc']}'");
+                $vals = '';
+                while ($nxt = $res->fetch_row()) {
+                    if ($vals) {
+                        $vals .= ',';
+                    }
+                    $vals .= "('$nxt[0]', '$nxt[1]')";
+                }
+                if($vals) {
+                    $db->query("INSERT INTO `doc_base_dop` (`id`, `transit`) VALUES $vals
+                       ON DUPLICATE KEY UPDATE `transit`=`transit`-VALUES(`transit`)");
+                } else {
+                    throw new Exception("Не удалось провести пустой документ!");
+                }
+            }
+        }
 
         if (@$CONFIG['doc']['update_in_cost'] == 2) {
-            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`cost`, `doc_base`.`cost`
-			FROM `doc_list_pos`
-			LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-			WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
+            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, 
+                    `doc_list_pos`.`cost`, `doc_base`.`cost`
+                FROM `doc_list_pos`
+                LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
             while ($nxt = $res->fetch_row()) {
                 $acp = getInCost($nxt[0], $doc_params['date']);
                 if ($nxt[5] != $acp) {
@@ -150,221 +171,112 @@ class doc_Postuplenie extends doc_Nulltype {
         $this->sentZEvent('apply');
     }
 
-        function docCancel() {
-		global $db;
-		$rs = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+    function docCancel() {
+        global $db;
+        $rs = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
 		WHERE `doc_list`.`id`='{$this->id}'");
-		if(! $rs->num_rows)
-			throw new Exception("Документ {$this->id} не найден!");
-		$nx = $rs->fetch_assoc();
-		if (!$nx['ok'])
-			throw new Exception("Документ ещё не проведён!");
+        if (!$rs->num_rows)
+            throw new Exception("Документ {$this->id} не найден!");
+        $nx = $rs->fetch_assoc();
+        if (!$nx['ok'])
+            throw new Exception("Документ ещё не проведён!");
 
-		$db->update('doc_list', $this->id, 'ok', 0 );
+        $db->update('doc_list', $this->id, 'ok', 0);
 
-		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_base`.`vc`
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_base`.`vc`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->id}'");
-		while ($nxt = $res->fetch_row()) {
-			if ($nxt[5] == 0) {
-				if (!$nx['dnc']) {
-					if ($nxt[1] > $nxt[2]) {
-						$budet = $nxt[2] - $nxt[1];
-						$badpos = $nxt[0];
-						throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[6]($nxt[0])' на складе!");
-					}
-				}
-				$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
-				if (!$nx['dnc']) {
-					$budet = getStoreCntOnDate($nxt[0], $nx['sklad']);
-					if ($budet < 0) {
-						$badpos = $nxt[0];
-						throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[6]($nxt[0])' !");
-					}
-				}
-			}
-		}
-		$this->sentZEvent('cancel');
-	}
-
-	// Формирование другого документа на основании текущего
-	function morphTo($target_type) {
-		global $tmpl, $db;
-		if ($target_type == '') {
-			$tmpl->ajax = 1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=2'\">Реализация</div>");
-                        $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=5'\">Расходный банковский ордер</div>");
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=7'\">Расходный кассовый ордер</div>");
-		}
-		else if ($target_type == 2) {
-			if (!isAccess('doc_realizaciya', 'create'))
-				throw new AccessException();
-			$db->startTransaction();
-			$new_doc = new doc_Realizaciya();
-			$dd = $new_doc->createFromP($this);
-			$db->commit();
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-                else if ($target_type == 5) {
-			if (!isAccess('doc_rbank', 'create'))
-				throw new AccessException();
-			$this->recalcSum();
-			$db->startTransaction();
-			$new_doc = new doc_RBank();
-			$doc_num = $new_doc->createFrom($this);
-			// Вид расхода - закуп товара на продажу
-			$new_doc->setDopData('rasxodi', 6);
-			$db->commit();
-			header('Location: doc.php?mode=body&doc='.$doc_num);
-		}
-		else if ($target_type == 7) {
-			if (!isAccess('doc_rko', 'create'))
-				throw new AccessException();
-			$this->recalcSum();
-			$db->startTransaction();
-			$new_doc = new doc_Rko();
-			$doc_num = $new_doc->createFrom($this);
-			// Вид расхода - закуп товара на продажу
-			$new_doc->setDopData('rasxodi', 6);
-			$db->commit();
-			header('Location: doc.php?mode=body&doc='.$doc_num);
-		}
-	}
-
-/// Обычная накладная в PDF формате
-/// @param to_str Вернуть строку, содержащую данные документа (в противном случае - отправить файлом)
-	function printNaklPDF($to_str = false) {
-		global $tmpl, $CONFIG, $db;
-
-		if (!$to_str)
-			$tmpl->ajax = 1;
-		
-		require('fpdf/fpdf_mc.php');
-		$pdf = new PDF_MC_Table('P');
-		$pdf->Open();
-		$pdf->SetAutoPageBreak(0, 10);
-		$pdf->AddFont('Arial', '', 'arial.php');
-		$pdf->tMargin = 10;
-		$pdf->AddPage();
-		$pdf->SetFont('Arial', '', 10);
-		$pdf->SetFillColor(255);
-
-		$dt = date("d.m.Y", $this->doc_data['date']);
-
-		$pdf->SetFont('', '', 16);
-		if(!$this->dop_data['return']) {
-                    $str = "Накладная N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
-                } else {
-                    $str = "Возврат от покупателя N {$this->doc_data['altnum']}{$this->doc_data['subtype']} ({$this->id}), от $dt";
+        while ($nxt = $res->fetch_row()) {
+            if ($nxt[5] == 0) {
+                if (!$nx['dnc']) {
+                    if ($nxt[1] > $nxt[2]) {
+                        $budet = $nxt[2] - $nxt[1];
+                        $badpos = $nxt[0];
+                        throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[6]($nxt[0])' на складе!");
+                    }
                 }
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 8, $str, 0, 1, 'C', 0);
-		$pdf->SetFont('', '', 10);
-		$str = "Поставщик: {$this->doc_data['agent_name']}";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
-		$str = "Покупатель: {$this->firm_vars['firm_name']}, тел: {$this->firm_vars['firm_telefon']}";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
-		$pdf->Ln();
+                $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
+                if (!$nx['dnc']) {
+                    $budet = getStoreCntOnDate($nxt[0], $nx['sklad']);
+                    if ($budet < 0) {
+                        $badpos = $nxt[0];
+                        throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]:$nxt[4] - $nxt[6]($nxt[0])' !");
+                    }
+                }
+            }
+        }
+        // Транзиты
+        if($this->doc_data['p_doc']) {
+            $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=12 AND `id`={$this->doc_data['p_doc']}");
+            if (!$res->num_rows) {
+                $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+                    FROM `doc_list_pos`
+                    LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                    WHERE `doc_list_pos`.`doc`='{$this->doc_data['p_doc']}'");
+                $vals = '';
+                while ($nxt = $res->fetch_row()) {
+                    if ($vals) {
+                        $vals .= ',';
+                    }
+                    $vals .= "('$nxt[0]', '$nxt[1]')";
+                }
+                if($vals) {
+                    $db->query("INSERT INTO `doc_base_dop` (`id`, `transit`) VALUES $vals
+                        ON DUPLICATE KEY UPDATE `transit`=`transit`+VALUES(`transit`)");
+                }
+            }
+        }
+        $this->sentZEvent('cancel');
+    }
 
-		$pdf->SetLineWidth(0.5);
-		$t_width = array(8);
-		if ($CONFIG['poseditor']['vc']) {
-			$t_width[] = 20;
-			$t_width[] = 91;
-		}
-		else
-			$t_width[] = 111;
-		$t_width = array_merge($t_width, array(12, 15, 23, 23));
-
-		$t_text = array('№');
-		if ($CONFIG['poseditor']['vc']) {
-			$t_text[] = 'Код';
-			$t_text[] = 'Наименование';
-		}
-		else
-			$t_text[] = 'Наименование';
-		$t_text = array_merge($t_text, array('Место', 'Кол-во', 'Стоимость', 'Сумма'));
-
-		foreach ($t_width as $id => $w) {
-			$str = iconv('UTF-8', 'windows-1251', $t_text[$id]);
-			$pdf->Cell($w, 6, $str, 1, 0, 'C', 0);
-		}
-		$pdf->Ln();
-		$pdf->SetWidths($t_width);
-		$pdf->SetHeight(3.8);
-
-		$aligns = array('R');
-		if ($CONFIG['poseditor']['vc']) {
-			$aligns[] = 'L';
-			$aligns[] = 'L';
-		}
-		else
-			$aligns[] = 'L';
-		$aligns = array_merge($aligns, array('C', 'R', 'R', 'R'));
-
-		$pdf->SetAligns($aligns);
-		$pdf->SetLineWidth(0.2);
-		$pdf->SetFont('', '', 8);
-
-		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_base_cnt`.`mesto`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`id`, `doc_base`.`vc`
-		FROM `doc_list_pos`
-		LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
-		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
-		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_list_pos`.`doc`='{$this->id}'
-		ORDER BY `doc_list_pos`.`id`");
-		$ii = 1;
-		$sum = 0;
-		while ($nxt = $res->fetch_row()) {
-			$sm = $nxt[3] * $nxt[4];
-			$cost = sprintf("%01.2f руб.", $nxt[4]);
-			$cost2 = sprintf("%01.2f руб.", $sm);
-			if (!@$CONFIG['doc']['no_print_vendor'] && $nxt[2])
-				$nxt[1].=' / ' . $nxt[2];
-
-			$row = array($ii);
-			if ($CONFIG['poseditor']['vc']) {
-				$row[] = $nxt[8];
-				$row[] = "$nxt[0] $nxt[1]";
-			}
-			else
-				$row[] = "$nxt[0] $nxt[1]";
-			$row = array_merge($row, array($nxt[5], "$nxt[3] $nxt[6]", $cost, $cost2));
-
-			$pdf->RowIconv($row);
-			$ii++;
-			$sum+=$sm;
-		}
-		$ii--;
-		$cost = sprintf("%01.2f руб.", $sum);
-
-		$pdf->Ln();
-
-		$str = "Всего $ii наименований на сумму $cost";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
-
-		$str = "Товар получил, претензий к качеству товара и внешнему виду не имею.";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
-		$str = "Покупатель: ____________________________________";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
-		$str = "Поставщик:_____________________________________";
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$pdf->Cell(0, 5, $str, 0, 1, 'L', 0);
-
-		if ($to_str)
-			return $pdf->Output('blading.pdf', 'S');
-		else
-			$pdf->Output('blading.pdf', 'I');
-	}
+    // Формирование другого документа на основании текущего
+    function morphTo($target_type) {
+        global $tmpl, $db;
+        if ($target_type == '') {
+            $tmpl->ajax = 1;
+            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=2'\">Реализация</div>");
+            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=5'\">Расходный банковский ордер</div>");
+            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=7'\">Расходный кассовый ордер</div>");
+        } else if ($target_type == 2) {
+            if (!isAccess('doc_realizaciya', 'create')) {
+                throw new AccessException();
+            }
+            $db->startTransaction();
+            $new_doc = new doc_Realizaciya();
+            $dd = $new_doc->createFromP($this);
+            $db->commit();
+            header("Location: doc.php?mode=body&doc=$dd");
+        }
+        else if ($target_type == 5) {
+            if (!isAccess('doc_rbank', 'create')) {
+                throw new AccessException();
+            }
+            $this->recalcSum();
+            $db->startTransaction();
+            $new_doc = new doc_RBank();
+            $doc_num = $new_doc->createFrom($this);
+            // Вид расхода - закуп товара на продажу
+            $new_doc->setDopData('rasxodi', 6);
+            $db->commit();
+            header('Location: doc.php?mode=body&doc=' . $doc_num);
+        }
+        else if ($target_type == 7) {
+            if (!isAccess('doc_rko', 'create')) {
+                throw new AccessException();
+            }
+            $this->recalcSum();
+            $db->startTransaction();
+            $new_doc = new doc_Rko();
+            $doc_num = $new_doc->createFrom($this);
+            // Вид расхода - закуп товара на продажу
+            $new_doc->setDopData('rasxodi', 6);
+            $db->commit();
+            header('Location: doc.php?mode=body&doc=' . $doc_num);
+        }
+    }
 
 }

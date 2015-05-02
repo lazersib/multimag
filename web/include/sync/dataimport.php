@@ -403,7 +403,6 @@ class dataimport {
             $this->db->query("INSERT INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ($doc_id, 'guid_1c', '$sql_guid')");
         }
         if(isset($data['positions'])) {
-            $id_list = array();
             $res = $this->db->query("SELECT `id`, `tovar` AS `pos_id`, `cost` AS `price`, `cnt`, `gtd`"
                 . " FROM `doc_list_pos`"
                 . " WHERE `doc`='$doc_id'");
@@ -413,14 +412,13 @@ class dataimport {
             }
             // обновляем
             foreach($data['positions'] as $pos_line) {
-                if(isset($old_pl[$pos_line['pos_id']])) {
-                    $pos_id = $old_pl[$pos_line['pos_id']]['id'];
-                    $this->updateDocLine($old_pl[$pos_id], $pos_line);
-                    unset($old_pl[$pos_line['tovar']]);
+                if(isset($old_pl[ $pos_line['pos_id'] ])) {
+                    $line_id = $old_pl[ $pos_line['pos_id'] ]['id'];
+                    $this->updateDocLine($line_id, $pos_line);
+                    unset($old_pl[ $pos_line['pos_id'] ]);
                 } else {
                     $pos_line['doc'] = $doc_id;
-                    $new_id = $this->insertDocLine($pos_line);
-                    $id_list[$new_id] = $new_id;
+                    $this->insertDocLine($pos_line);
                 }
             }
             // удаляем остатки

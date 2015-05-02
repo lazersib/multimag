@@ -18,7 +18,7 @@
 //
 namespace doc\printforms\realizaciya; 
 
-class certlist extends \doc\printforms\iPrintForm {
+class certlist extends \doc\printforms\iPrintFormPdf {
  
     public function getName() {
         return "Реестр сертификатов";
@@ -149,7 +149,7 @@ class certlist extends \doc\printforms\iPrintForm {
         
         $this->pdf->AddPage('L');
         $y = $this->pdf->getY();
-        $this->addInfoFooter();
+        $this->addTechFooter();
         
         $this->pdf->SetFont('', '', 14);
         $str = 'Реестр сертификатов';
@@ -209,7 +209,7 @@ class certlist extends \doc\printforms\iPrintForm {
         $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
         if ($workspace_h  <= $this->pdf->GetY() + 81) {
             $this->pdf->AddPage('L');
-            $this->addInfoFooter();
+            $this->addTechFooter();
         }
         $this->pdf->SetAutoPageBreak(0);        
         $this->pdf->ln(3);

@@ -101,6 +101,79 @@ class doc_v_puti extends doc_Nulltype {
 		$this->setDopDataA($new_data);
 		if ($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 	}
+        
+    /// Провести документ
+    /// @param silent Не менять отметку проведения
+    function docApply($silent = 0) {
+        global $db;
+        // Транзиты
+        $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=1 AND `p_doc`={$this->id}");
+        if (!$res->num_rows) {
+            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+                FROM `doc_list_pos`
+                LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                WHERE `doc_list_pos`.`doc`='{$this->id}'");
+            $vals = '';
+            while ($nxt = $res->fetch_row()) {
+                if ($vals) {
+                    $vals .= ',';
+                }
+                $vals .= "('$nxt[0]', '$nxt[1]')";
+            }
+            if($vals) {
+                $db->query("INSERT INTO `doc_base_dop` (`id`, `transit`) VALUES $vals
+                    ON DUPLICATE KEY UPDATE `transit`=`transit`+VALUES(`transit`)");
+            } else {
+                throw new Exception("Не удалось провести пустой документ!");
+            }
+        }
+        if ($silent) {
+            return;
+        }
+        if (!$this->isAltNumUnique()) {
+            throw new Exception("Номер документа не уникален!");
+        }
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа при проведении!');
+        }
+        if ($data['ok']) {
+            throw new Exception('Документ уже проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', time());        
+    }
+
+    /// Отменить проведение документа
+    function docCancel() {
+        global $db;
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа!');
+        }
+        if (!$data['ok']) {
+            throw new Exception('Документ не проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', 0);
+        // Транзиты
+        $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=1 AND `p_doc`={$this->id}");
+        if (!$res->num_rows) {
+            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+            FROM `doc_list_pos`
+            LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+            WHERE `doc_list_pos`.`doc`='{$this->id}'");
+            $vals = '';
+            while ($nxt = $res->fetch_row()) {
+                if ($vals) {
+                    $vals .= ',';
+                }
+                $vals .= "('$nxt[0]', '$nxt[1]')";
+            }
+            if($vals) {
+                $db->query("INSERT INTO `doc_base_dop` (`id`, `transit`) VALUES $vals
+                   ON DUPLICATE KEY UPDATE `transit`=`transit`-VALUES(`transit`)");
+            }
+        }
+    }
 	
 	// Формирование другого документа на основании текущего
 	function MorphTo($target_type) {

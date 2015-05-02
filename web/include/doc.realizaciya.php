@@ -203,7 +203,7 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         $tim = time();
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_list`.`firm_id`,
-                `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_agent`.`no_bonuses`, `doc_vars`.`firm_store_lock`
+                `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_agent`.`no_bonuses`, `doc_vars`.`firm_store_lock`, `doc_list`.`p_doc`
             FROM `doc_list`
             INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
             INNER JOIN `doc_agent` ON `doc_list`.`agent` = `doc_agent`.`id`
@@ -272,14 +272,35 @@ class doc_Realizaciya extends doc_Nulltype {
                 }
             }
             $bonus+=$nxt[8] * $nxt[1] * (@$CONFIG['bonus']['coeff']);
-        }
-        
+        }        
         if($fail_text) {
             throw new Exception("Ошибка в номенклатуре: \n".$fail_text);
-        }
-        
+        }        
         if ($silent) {
             return;
+        }
+        // Резервы
+        if($doc_params['p_doc']) {
+            $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=3 AND `id`={$doc_params['p_doc']}");
+            if (!$res->num_rows) {
+                $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+                    FROM `doc_list_pos`
+                    LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                    WHERE `doc_list_pos`.`doc`='{$doc_params['p_doc']}'");
+                $vals = '';
+                while ($nxt = $res->fetch_row()) {
+                    if ($vals) {
+                        $vals .= ',';
+                    }
+                    $vals .= "('$nxt[0]', '$nxt[1]')";
+                }
+                if($vals) {
+                    $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
+                        ON DUPLICATE KEY UPDATE `reserve`=`reserve`-VALUES(`reserve`)");
+                } else {
+                    throw new Exception("Не удалось провести пустой документ!");
+                }
+            }
         }
         if (!$doc_params['no_bonuses'] && $bonus>0)
             $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','$bonus')");
@@ -287,30 +308,57 @@ class doc_Realizaciya extends doc_Nulltype {
         $this->sentZEvent('apply');
     }
 
-        function DocCancel()
-	{
-		global $db;
+    function docCancel() {
+        global $db;
 
-		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`
 		FROM `doc_list` WHERE `doc_list`.`id`='{$this->id}'");
-		if(!$res->num_rows)			throw new Exception('Документ не найден!');
-		$nx = $res->fetch_row();
-		if(! $nx[4])				throw new Exception('Документ НЕ проведён!');
+        if (!$res->num_rows) {
+            throw new Exception('Документ не найден!');
+        }
+        $nx = $res->fetch_row();
+        if (!$nx[4]) {
+            throw new Exception('Документ НЕ проведён!');
+        }
 
-		$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}' AND `ok`>'0'");
-		if($res->num_rows)		throw new Exception('Нельзя отменять документ с проведёнными подчинёнными документами.');
+        $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}' AND `ok`>'0'");
+        if ($res->num_rows) {
+            throw new Exception('Нельзя отменять документ с проведёнными подчинёнными документами.');
+        }
 
-		$db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
-		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type` FROM `doc_list_pos`
+        $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type` FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`	WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
 
-		while($nxt = $res->fetch_row())
-			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
-		$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','0')");
-		$this->sentZEvent('cancel');
-	}
+        while ($nxt = $res->fetch_row()) {
+            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
+        }
+        $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','0')");
+        // Резервы
+        if($this->doc_data['p_doc']) {
+            $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=3 AND `id`={$this->doc_data['p_doc']}");
+            if (!$res->num_rows) {
+                $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
+                    FROM `doc_list_pos`
+                    LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                    WHERE `doc_list_pos`.`doc`='{$this->doc_data['p_doc']}'");
+                $vals = '';
+                while ($nxt = $res->fetch_row()) {
+                    if ($vals) {
+                        $vals .= ',';
+                    }
+                    $vals .= "('$nxt[0]', '$nxt[1]')";
+                }
+                if($vals) {
+                    $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
+                        ON DUPLICATE KEY UPDATE `reserve`=`reserve`+VALUES(`reserve`)");
+                }
+            }
+        }
+        $this->sentZEvent('cancel');
+    }
 
-	/// Формирование другого документа на основании текущего
+    /// Формирование другого документа на основании текущего
 	/// @param target_type ID типа создаваемого документа
 	function MorphTo($target_type) {
 		global $tmpl, $db;
@@ -1051,7 +1099,8 @@ class doc_Realizaciya extends doc_Nulltype {
 
 		$res = $db->query("SELECT `doc_group`.`printname`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_list_pos`.`cnt`, `doc_base`.`mass`,
                     `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt` AS `base_cnt`, `doc_list_pos`.`tovar`, `doc_list_pos`.`cost`, `doc_base`.`vc`,
-                    `class_unit`.`rus_name1` AS `units`, `doc_list_pos`.`comm`
+                    `class_unit`.`rus_name1` AS `units`, `doc_list_pos`.`comm`,
+                        `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
@@ -1087,9 +1136,7 @@ class doc_Realizaciya extends doc_Nulltype {
 			}
 
 			$mass=sprintf("%0.3f",$nxt['mass']);
-			$rezerv=DocRezerv($nxt['tovar'],$this->id);
-
-			$row=array_merge($row, array($nxt['cost'], "{$nxt['cnt']} {$nxt['units']}", $nxt['base_cnt'], $rezerv, $mass, $nxt['mesto']));
+			$row=array_merge($row, array($nxt['cost'], "{$nxt['cnt']} {$nxt['units']}", $nxt['base_cnt'], $nxt['reserve'], $mass, $nxt['mesto']));
 			$rowc=array_merge($rowc, array('', '', '', '', '', ''));
 			$pdf->RowIconvCommented($row,$rowc);
 			$i=1-$i;
@@ -1153,183 +1200,6 @@ class doc_Realizaciya extends doc_Nulltype {
 		else
 			$pdf->Output('blading.pdf','I');
 	}
-	
-    public function getDocumentNomenclatureWVAT() {
-        global $CONFIG, $db;
-        
-        $list = array();
-        $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
-            `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, 
-            `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`, `class_unit`.`number_code` AS `unit_code`, 
-            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`
-	FROM `doc_list_pos`
-	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
-	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-	LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
-	WHERE `doc_list_pos`.`doc`='{$this->id}'
-	ORDER BY `doc_list_pos`.`id`");
-
-        while ($nxt = $res->fetch_assoc()) {
-            if($nxt['nds']!==null) {
-                $ndsp = $nxt['nds'];
-            } else {
-                $ndsp = $this->firm_vars['param_nds'];
-            }            
-            $nds = $ndsp / 100;
-            
-            if (!$nxt['country_code']) {
-                throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
-            }
-            
-            $pos_name = $nxt['name'];
-            if($nxt['group_printname']) {
-                $pos_name = $nxt['group_printname'].' '.$pos_name;
-            }
-
-            if (!@$CONFIG['doc']['no_print_vendor'] && $nxt['vendor']) {
-                $pos_name .= ' / ' . $nxt['vendor'];
-            }
-            
-            $pos_code = $nxt['pos_id'];
-            if($nxt['vc']) {
-                $pos_code .= ' / '.$nxt['vc'];
-            }
-
-            if (@$CONFIG['poseditor']['true_gtd']) {
-                $gtd_array = array();
-                $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt`, `doc_list`.`id` FROM `doc_list_pos`
-                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-                    WHERE `doc_list_pos`.`tovar`='{$nxt['pos_id']}' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
-                    AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
-                    ORDER BY `doc_list`.`date`");
-                while ($line = $gres->fetch_assoc()) {
-                    if ($line['type'] == 1) { // Поступление
-                        $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $line['cnt']);
-                    } else {
-                        $cnt = $line['cnt'];
-                        while ($cnt > 0) {
-                            if (count($gtd_array) == 0) {
-                                if($CONFIG['poseditor']['true_gtd']!='easy') {
-                                    throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt['name']} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
-                                }
-                                else {
-                                    $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $cnt);
-                                }
-                            }
-                            if ($gtd_array[0]['cnt'] == $cnt) {
-                                array_shift($gtd_array);
-                                $cnt = 0;
-                            } elseif ($gtd_array[0]['cnt'] > $cnt) {
-                                $gtd_array[0]['cnt'] -= $cnt;
-                                $cnt = 0;
-                            } else {
-                                $cnt -= $gtd_array[0]['cnt'];
-                                array_shift($gtd_array);
-                            }
-                        }
-                    }
-                }
-
-                $unigtd = array();
-                $need_cnt = $nxt['cnt'];
-                while ($need_cnt > 0 && count($gtd_array) > 0) {
-                    $gtd_num = $gtd_array[0]['num'];
-                    $gtd_cnt = $gtd_array[0]['cnt'];
-                    if ($gtd_cnt >= $need_cnt) {
-                        if(isset($unigtd[$gtd_num])) {
-                            $unigtd[$gtd_num] += $need_cnt;
-                        }
-                        else {
-                            $unigtd[$gtd_num] = $need_cnt;
-                        }
-                        $need_cnt = 0;
-                    } else {
-                        if(isset($unigtd[$gtd_num])) {
-                            $unigtd[$gtd_num] += $gtd_cnt;
-                        }
-                        else {
-                            $unigtd[$gtd_num] = $gtd_cnt;
-                        }
-                        $need_cnt -= $gtd_cnt;
-                        array_shift($gtd_array);
-                    }
-                }
-                if ($need_cnt > 0) {
-                    if($CONFIG['poseditor']['true_gtd']!='easy') {
-                        throw new Exception("Не найдены поступления для $need_cnt единиц товара {$pos_name}. Товар был оприходован на другую организацию?");
-                    }
-                    else {
-                        $unigtd['   --   '] = $need_cnt;
-                    }
-                }
-                foreach ($unigtd as $gtd => $cnt) {
-                    if ($this->doc_data['nds']) {
-                        $pos_price = round($nxt['cost'] / (1 + $nds), 2);
-                        $pos_sum = $pos_price * $cnt;
-                        $nalog = ($nxt['cost'] * $cnt) - $pos_sum;
-                        $snalogom = $nxt['cost'] * $cnt;
-                    } else {
-                        $pos_price = $nxt['cost'];
-                        $pos_sum = $pos_price * $cnt;
-                        $nalog = $pos_sum * $nds;
-                        $snalogom = $pos_sum + $nalog;
-                    }
-
-                    $list[] = array(
-                        'code'      => $pos_code,
-                        'name'      => $pos_name,
-                        'unit_code' => $nxt['unit_code'],
-                        'unit_name' => $nxt['unit_name'],
-                        'cnt'       => $cnt,
-                        'price'     => $pos_price,
-                        'sum'       => $pos_sum,
-                        'excise'    => 'без акциза',
-                        'vat_p'     => $ndsp,
-                        'vat_s'     => $nalog,
-                        'sum_all'   => $snalogom,
-                        'country_code' => $nxt['country_code'],
-                        'country_name' => $nxt['country_name'],
-                        'ncd'       => $gtd,
-                        'mass'      => $nxt['mass']
-                    );
-                }
-            }
-            else {
-                if ($this->doc_data['nds']) {
-                    $pos_price = $nxt['cost'] / (1 + $nds);
-                    $pos_sum = $pos_price * $nxt['cnt'];
-                    $nalog = ($nxt['cost'] * $nxt['cnt']) - $pos_sum;
-                    $snalogom = $nxt['cost'] * $nxt['cnt'];
-                } else {
-                    $pos_price = $nxt['cost'];
-                    $pos_sum = $pos_price * $nxt['cnt'];
-                    $nalog = $pos_sum * $nds;
-                    $snalogom = $pos_sum + $nalog;
-                }
-
-                $list[] = array(
-                    'code'      => $pos_code,
-                    'name'      => $pos_name,
-                    'unit_code' => $nxt['unit_code'],
-                    'unit_name' => $nxt['unit_name'],
-                    'cnt'       => $nxt['cnt'],
-                    'price'     => $pos_price,
-                    'sum'       => $pos_sum,
-                    'excise'    => 'без акциза',
-                    'vat_p'     => $ndsp,
-                    'vat_s'     => $nalog,
-                    'sum_all'   => $snalogom,
-                    'country_code' => $nxt['country_code'],
-                    'country_name' => $nxt['country_name'],
-                    'ncd'       => $nxt['ntd'],
-                    'mass'      => $nxt['mass']
-                );
-            }
-        }
-        return $list;
-    }
 
 function Nacenki($to_str=0)
 {

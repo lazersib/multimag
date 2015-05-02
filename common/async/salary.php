@@ -349,6 +349,7 @@ class salary extends \AsyncWorker {
                 } else {
                     $p_sum = ($nxt_tov['cost'] - $incost) * $nxt_tov['cnt'];
                 }
+                $p_sum = round($p_sum, 2);
                 if($detail) {
                     $det_line['p_sum'] = $p_sum;
                 }
@@ -361,6 +362,7 @@ class salary extends \AsyncWorker {
             if($detail) {
                 $salary['detail'][] = $det_line;
             }
+            $res_tov->free();
         }
 
         // Подготовка результата

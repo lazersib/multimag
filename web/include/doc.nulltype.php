@@ -894,196 +894,254 @@ class doc_Nulltype extends \document {
 		}
 
 	}
+        
+    /// Callback функция для сортировки (например, печатных форм)
+    static function sortDescriptionCallback($a, $b) {
+        return strcmp($a["desc"], $b["desc"]);
+    }    
+        
+    /// Получить список доступных печатных форм
+    /// @return Массив со списком печатных форм
+    protected function getPrintFormList() {
+        global $CONFIG;
+        
+        $ret = array();
+        if(isset($this->PDFForms)) {
+            if(is_array($this->PDFForms)) {
+                foreach ($this->PDFForms as $form) {
+                    $ret[] = array('name' => 'int:'.$form['name'], 'desc'=>$form['desc'], 'mime' => '');
+                }
+            }
+        }
+        $dir = $CONFIG['site']['location'].'/include/doc/printforms/'.$this->typename.'/';
+        if (is_dir($dir)) {
+            $dh = opendir($dir);
+            if ($dh) {
+                while (($file = readdir($dh)) !== false) {
+                    if (preg_match('/.php$/', $file)) {
+                        $cn = explode('.', $file);
+                        $class_name = '\\doc\\printforms\\'.$this->typename.'\\'.$cn[0];
+                        $class = new $class_name;
+                        $nm = $class->getName();
+                        $mime = $class->getMimeType();
+                        $ret[] = array('name' => 'ext:'.$cn[0], 'desc' => $nm, 'mime'=>$mime);
+                    }
+                }
+                closedir($dh);
+            }
+        }
+        usort( $ret, array(get_class(), 'sortDescriptionCallback') );
+        return $ret;
+    }
+    
+    /// Получить список доступных печатных форм c CSV экспортом
+    /// @return Массив со списком печатных форм
+    protected function getCSVPrintFormList() {     
+        $ret = $this->getPrintFormList();
+        if($this->sklad_editor_enable) {
+            $ret[] = array('name' => 'csv:export', 'desc'=>'Экспорт в CSV', 'mime'=>'text/csv');
+        }
+        return $ret;
+    }
+    
+    /// Проверить, существует ли печатная форма с заданным названием
+    /// @return true, если существует, false в ином случае
+    protected function isPrintFormExists($form_name) {
+        $forms = $this->getCSVPrintFormList();
+        $found = false;
+        foreach($forms as $form) {
+            if($form['name']==$form_name) {
+                $found = true;
+                break;
+            }
+        }
+        return $found;
+    }
+    
+    /// Получить mime тип формы
+    /// @return тип, если форма существует, false в ином случае
+    protected function getPrintFormMime($form_name) {
+        $forms = $this->getCSVPrintFormList();
+        $found = false;
+        foreach($forms as $form) {
+            if($form['name']==$form_name) {
+                $found = $form['mime'];
+                break;
+            }
+        }
+        return $found;
+    }
+    
+    /// Получить отображаемое наименование формы
+    /// @return Название формы, если существует, null в ином случае
+    protected function getPrintFormViewName($form_name) {
+        $forms = $this->getPrintFormList();
+        foreach($forms as $form) {
+            if($form['name']==$form_name) {
+                return $form['desc'];
+            }
+        }
+        return null;
+    }
+    
+    /// Сформировать печатную форму
+    /// @param $form_name   Имя печатной формы
+    /// @param $to_str      Вернуть ли данные в виде строки
+    /// @return             Если $to_str == true - возвращает сформированный документ, false в ином случае
+    protected function makePrintForm($form_name, $to_str = false) {
+        if ($this->typename) {
+            $object = 'doc_' . $this->typename;
+        } else {
+            $object = 'doc';
+        }
+        if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
+            throw new \AccessException("Нет привилегий для печати непроведённых документов");
+        }
+        if( !$this->isPrintFormExists($form_name) ) {
+            throw new \Exception('Печатная форма '.html_out($form_name).' не зарегистрирована');
+        }
+        $f_param = explode(':', $form_name);
+        if($f_param[0]=='int') {
+            $method = '';
+            foreach ($this->PDFForms as $form) {
+                if ($form['name'] == $f_param[1])
+                    $method = $form['method'];
+            }                       
+            return $this->$method($to_str);
+        }
+        elseif ($f_param[0]=='ext') {
+            $class_name = '\\doc\\printforms\\'.$this->typename.'\\'.$f_param[1];
+            $print_obj = new $class_name;
+            $print_obj->setDocument($this);
+            $print_obj->initForm();
+            $print_obj->make();
+            return $print_obj->outData($to_str);
+        } 
+        elseif ($f_param[0]=='csv') {
+            return $this->CSVExport($to_str);
+        }
+        else {
+            throw new Exception('Неверный тип печатной формы');
+        }
+    }
 	
-	/// Отправка документа по факсу
-	final function sendFax($opt='')
-	{
-		global $tmpl,$db;
-		$tmpl->ajax=1;
-		try
-		{
-			if($opt=='')
-			{
-				$str='';
-				foreach($this->PDFForms as $form)
-				{
-					if($str)	$str.=",";
-					$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
-				}
-				$data = $db->selectRow('doc_agent', $this->doc_data['agent']);
-				if($data==0)	throw new Exception ("Агент не найден");
-				$tmpl->setContent("{response: 'item_list', faxnum: '{$data['fax_phone']}', content: [$str]}");
-			}
-			else
-			{
-                                if ($this->typename) {
-                                    $object = 'doc_' . $this->typename;
-                                } else {
-                                    $object = 'doc';
-                                }
-                                if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
-                                    throw new AccessException("Нет привилегий для печати непроведённых документов");
-                                }
-				$faxnum=request('faxnum');
-				if($faxnum=='')		throw new Exception('Номер факса не указан');
+    /// Отправка документа по факсу
+    /// @param $form_name   Имя печатной формы
+    final function sendFax($form_name = '') {
+        global $tmpl, $db;
+        $tmpl->ajax = 1;
+        try {
+            if ($form_name == '') {
+                $data = $db->selectRow('doc_agent', $this->doc_data['agent']);
+                if ($data == 0) {
+                    throw new Exception("Агент не найден");
+                }
+                $ret_data = array(
+                    'response'  => 'item_list',
+                    'faxnum'     => $data['fax_phone'],
+                    'content'   => $this->getPrintFormList()
+                );           
+                $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );                
+            }
+            else {
+                $faxnum = request('faxnum');
+                if ($faxnum == '') {
+                    throw new \Exception('Номер факса не указан');
+                }
+                if (!preg_match('/^\+\d{8,15}$/', $faxnum)) {
+                    throw new \Exception("Номер факса $faxnum указан в недопустимом формате");
+                }
+                include_once('sendfax.php');
+                $data = $this->makePrintForm($form_name, true);
+                $fs = new FaxSender();
+                $fs->setFileBuf($data);
+                $fs->setFaxNumber($faxnum);
 
-				if(!preg_match('/^\+\d{8,15}$/', $faxnum))
-					throw new Exception("Номер факса $faxnum указан в недопустимом формате");
+                $res = $db->query("SELECT `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
+                if ($res->num_rows) {
+                    list($email) = $res->fetch_row();
+                    $fs->setNotifyMail($email);
+                }
+                $res = $fs->send();
+                $tmpl->setContent("{'response': 'send'}");
+                doc_log("Send FAX", $faxnum, 'doc', $this->id);                
+            }
+        } catch (Exception $e) {
+            $tmpl->setContent("{response: 'err', text: '" . $e->getMessage() . "'}");
+        }
+    }
 
-				$method='';
-				foreach($this->PDFForms as $form)
-				{
-					if($form['name']==$opt)	$method=$form['method'];
-				}
-				if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-				
-				include_once('sendfax.php');
-				$fs=new FaxSender();
-				$fs->setFileBuf($this->$method(1));
-				$fs->setFaxNumber($faxnum);
-				
-				$res = $db->query("SELECT `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
-				if($res->num_rows){
-					list($email)=$res->fetch_row();
-					$fs->setNotifyMail($email);
-				}
-				$res=$fs->send();
-				$tmpl->setContent("{response: 'send'}");
-				doc_log("Send FAX", $faxnum, 'doc', $this->id);
-			}
-		}
-		catch(Exception $e)
-		{
-			$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
-		}
-	}
-	
-	/// Отправка документа по электронной почте
-	final function sendEMail($opt='')
-	{
-		global $tmpl, $db;
-		$tmpl->ajax=1;
-		try
-		{
-			if($opt=='')
-			{
-				$str='';
-				foreach($this->PDFForms as $form)
-				{
-					if($str)	$str.=",";
-					$str.=" { name: '{$form['name']}', desc: '{$form['desc']}' }";
-				}
-				$data = $db->selectRow('doc_agent', $this->doc_data['agent']);
-				if($data == 0)	throw new Exception ("Агент не найден");
-				$tmpl->setContent("{response: 'item_list', email: '{$data['email']}', content: [$str]}");
-			}
-			else
-			{
-                            if ($this->typename) {
-                                $object = 'doc_' . $this->typename;
-                            } else {
-                                $object = 'doc';
-                            }
-                            if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
-                                throw new AccessException("Нет привилегий для печати непроведённых документов");
-                            }
-                            $email = request('email');
-                            $comment = request('comment');
-                            if($email=='') {
-                                    $tmpl->setContent("{response: 'err', text: 'Адрес электронной почты не указан!'}");
-                            }
-                            else {
-                                $tmpl->ajax=1;
-                                $method='';
-                                foreach($this->PDFForms as $form)
-                                {
-                                        if($form['name']==$opt)	$method=$form['method'];
-                                }
-                                if(!method_exists($this,$method))	throw new Exception('Печатная форма не зарегистрирована');
-                                $this->sendDocEMail($email, $comment, $this->viewname, $this->$method(1), $this->typename.".pdf");
-                                $tmpl->setContent("{response: 'send'}");
-                                doc_log("Send email", $email, 'doc', $this->id);
-                            }
-			}
-		}
-		catch(Exception $e)
-		{
-			$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
-		}
-
-	}
+    /// Отправка документа по электронной почте
+    /// @param $form_name   Имя печатной формы
+    final function sendEMail($form_name = '') {
+        global $tmpl, $db;
+        $tmpl->ajax = 1;
+        try {
+            if ($form_name == '') {
+                $data = $db->selectRow('doc_agent', $this->doc_data['agent']);
+                if ($data == 0) {
+                    throw new Exception("Агент не найден");
+                }
+                $ret_data = array(
+                    'response'  => 'item_list',
+                    'email'     => $data['email'],
+                    'content'   => $this->getCSVPrintFormList()
+                );           
+                $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
+            }
+            else {
+                $email = request('email');
+                $comment = request('comment');
+                if ($email == '') {
+                    throw new \Exception('Адрес электронной почты не указан!');
+                } else {
+                    $data = $this->makePrintForm($form_name, true);
+                    $mime = $this->getPrintFormMime($form_name);
+                    switch($mime) {
+                        case 'application/pdf':
+                            $extension = '.pdf';
+                            break;
+                        case 'text/csv':
+                            $extension = '.csv';
+                            break;
+                        case 'application/vnd.ms-excel':
+                            $extension = '.xls';
+                            break;
+                        case 'application/vnd.oasis.opendocument.spreadsheet':
+                            $extension = '.ods';
+                            break;
+                        default:
+                          $extension = '';  
+                    }
+                    
+                    $fname = $this->typename . '_' . str_replace(":", "_", $form_name) . $extension;
+                    $viewname = $this->getPrintFormViewName($form_name) . ' (' . $this->viewname . ')';
+                    $this->sendDocByEMail($email, $comment, $viewname, $data, $fname);
+                    $tmpl->setContent("{'response': 'send'}");
+                    doc_log("Send email", $email, 'doc', $this->id);
+                }
+            }
+        } catch (Exception $e) {
+            $tmpl->setContent("{'response':'err','text':'" . $e->getMessage() . "'}");
+        }
+    }
 
     /// Печать документа
-    function printForm($opt = '') {
+    /// @param $form_name   Имя печатной формы
+    function printForm($form_name = '') {
         global $tmpl, $CONFIG;
         $tmpl->ajax = 1;
-        if ($opt == '') {
+        if ($form_name == '') {
             $ret_data = array(
                 'response'  => 'item_list',
-                'content'   => array()
-            );
-            if(isset($this->PDFForms)) {
-                if(is_array($this->PDFForms)) {
-                    foreach ($this->PDFForms as $form) {
-                        $ret_data['content'][] = array('name' => 'int:'.$form['name'], 'desc'=>$form['desc']);
-                    }
-                }
-            }
-            $dir = $CONFIG['site']['location'].'/include/doc/printforms/'.$this->typename.'/';
-            if (is_dir($dir)) {
-                $dh = opendir($dir);
-                if ($dh) {
-                    while (($file = readdir($dh)) !== false) {
-                        if (preg_match('/.php$/', $file)) {
-                            $cn = explode('.', $file);
-                            $class_name = '\\doc\\printforms\\'.$this->typename.'\\'.$cn[0];
-                            $class = new $class_name;
-                            $nm = $class->getName();
-                            $ret_data['content'][] = array('name' => 'ext:'.$cn[0], 'desc' => 'Внеш: '.$nm);
-                        }
-                    }
-                    closedir($dh);
-                }
-            }
-            
+                'content'   => $this->getCSVPrintFormList()
+            );           
             $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
         }
         else {
-            if ($this->typename) {
-                $object = 'doc_' . $this->typename;
-            } else {
-                $object = 'doc';
-            }
-            if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
-                throw new AccessException("Нет привилегий для печати непроведённых документов");
-            }
-            
-            $f_param = explode(':', $opt);
-            if($f_param[0]=='int') {
-                $method = '';
-                foreach ($this->PDFForms as $form) {
-                    if ($form['name'] == $f_param[1])
-                        $method = $form['method'];
-                }
-                if (!method_exists($this, $method)) {
-                    throw new Exception('Печатная форма '.html_out($opt).' не зарегистрирована');
-                }
-                doc_log("PRINT", $opt, 'doc', $this->id);
-                $this->sentZEvent('print');
-
-                $this->$method();
-            }
-            elseif ($f_param[0]=='ext') {
-                $class_name = '\\doc\\printforms\\'.$this->typename.'\\'.$f_param[1];
-                $print_obj = new $class_name;
-                $print_obj->setDocument($this);
-                $print_obj->initForm();
-                $print_obj->make();
-                $print_obj->outData();
-            }
-            else {
-                throw new Exception('Неверный тип печатной формы');
-            }
+            $this->makePrintForm($form_name);
+            doc_log("PRINT", $form_name, 'doc', $this->id); 
+            $this->sentZEvent('print');
         }
     }
 
@@ -1125,17 +1183,17 @@ class doc_Nulltype extends \document {
     }
 
     /// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
-   	function connectJson($p_doc) {
-		try {
-			$this->Connect($p_doc);
-			return " { \"response\": \"connect_ok\" }";
-		} catch (Exception $e) {
-			return " { \"response\": \"error\", \"message\": \"" . $e->getMessage() . "\" }";
-		}
-	}
+    function connectJson($p_doc) {
+        try {
+            $this->Connect($p_doc);
+            return " { \"response\": \"connect_ok\" }";
+        } catch (Exception $e) {
+            return " { \"response\": \"error\", \"message\": \"" . $e->getMessage() . "\" }";
+        }
+    }
 
-	/// отправка документа по электронной почте
-   	function sendDocEMail($email, $comment, $docname, $data, $filename, $body='')
+    /// отправка документа по электронной почте
+   	function sendDocByEMail($email, $comment, $docname, $data, $filename, $body='')
    	{
 		global $CONFIG, $db;
 		require_once($CONFIG['location'].'/common/email_message.php');
@@ -1152,18 +1210,25 @@ class doc_Nulltype extends \document {
 
 		$email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - $docname ({$CONFIG['site']['name']})");
 
-		if(!@$doc_autor['worker_email'])
-		{
+		if(!@$doc_autor['worker_email']) {
 			$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
 			$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
-			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\n$comment\n\nСообщение сгенерировано автоматически, отвечать на него не нужно!\nДля переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
+			$text_message = "Здравствуйте, {$agent['fullname']}!\n"
+                            . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\n"
+                            . "$comment\n\n"
+                            . "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n"
+                            . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
 		}
 		else
 		{
 			$email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
 			$email_message->SetHeader("Sender", $doc_autor['worker_email']);
-			$text_message = "Здравствуйте, {$agent['fullname']}!\nВо вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\nОтветственный сотрудник: {$doc_autor['worker_real_name']}\nКонтактный телефон: {$doc_autor['worker_phone']}\nЭлектронная почта (e-mail): {$doc_autor['worker_email']}";
-			$text_message.="\nОтправитель: {$_SESSION['name']}";
+			$text_message = "Здравствуйте, {$agent['fullname']}!\n"
+                            . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\n"
+                            . "Ответственный сотрудник: {$doc_autor['worker_real_name']}\n"
+                            . "Контактный телефон: {$doc_autor['worker_phone']}\n"
+                            . "Электронная почта (e-mail): {$doc_autor['worker_email']}\n"
+                            . "Отправитель: {$_SESSION['name']}";
 		}
 		if($body)	$email_message->AddQuotedPrintableTextPart($body);
 		else		$email_message->AddQuotedPrintableTextPart($text_message);
@@ -1599,7 +1664,9 @@ class doc_Nulltype extends \document {
                     $this->loadFromDb($this->id);
 		}
 		else {
-			if(method_exists($this,'initDefDopData'))	$this->initDefDopData();
+			if(method_exists($this,'initDefDopData')) {
+                            $this->initDefDopData();
+                        }
 			$this->dop_data = $this->def_dop_data;
 			
 			$this->doc_data = array('id'=>0, 'type'=>'', 'agent'=>0, 'comment'=>'', 'date'=>time(), 'ok'=>0, 'sklad'=>0, 'user'=>0, 'altnum'=>0, 'subtype'=>'', 'sum'=>0, 'nds'=>1, 'p_doc'=>0, 'mark_del'=>0, 'kassa'=>0, 'bank'=>0, 'firm_id'=>0, 'contract'=>0, 'created'=>0, 'agent_name'=>'', 'agent_fullname'=>'', 'agent_dishonest'=>0, 'agent_comment'=>'');
@@ -1753,20 +1820,49 @@ class doc_Nulltype extends \document {
     }
     
     /// Получить список номенклатуры
-    function getDocumentNomenclature() {
+    function getDocumentNomenclature($options = '') {
         global $CONFIG, $db;
+        $opts = array();
+        $e_options = explode(',', $options);
+        foreach($e_options as $opt) {
+            $opts[$opt] = 1;
+        }
+        $fields_sql = $join_sql = '';
+        if(isset($opts['country'])) {
+            $fields_sql .= ", `class_country`.`name` AS `country_name`, `class_country`.`number_code` AS `country_code`";
+            $join_sql .= " LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`";
+        }
+        if(isset($opts['comment'])) {
+            $fields_sql .= ", `doc_list_pos`.`comm` AS `comment`";
+        }
+        if(isset($opts['base_desc'])) {
+            $fields_sql .= ", `doc_base`.`desc` AS `base_desc`";
+        }
+        if(isset($opts['vat'])) {
+            $fields_sql .= ", `doc_base`.`nds` AS `vat`";
+        }
+        if(isset($opts['dest_place'])) {
+            $to_sklad = (int) $this->dop_data['na_sklad'];
+            $fields_sql .= ", `pt_d`.`mesto` AS `dest_place`";
+            $join_sql .= " LEFT JOIN `doc_base_cnt` AS `pt_d` ON `pt_d`.`id`=`doc_list_pos`.`tovar` AND `pt_d`.`sklad`='{$to_sklad}'";
+        }
+        
         $list = array();
-
-        $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`, 
-            `doc_list_pos`.`cost` AS `price`, `doc_base_cnt`.`mesto`, `class_unit`.`rus_name1` AS `unit_name`, `class_unit`.`number_code` AS `unit_code`, 
-            `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`mass`
-        FROM `doc_list_pos`
-        LEFT JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
-        LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-        LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
-        LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-        WHERE `doc_list_pos`.`doc`='{$this->id}'
-        ORDER BY `doc_list_pos`.`id`");
+        $res = $db->query("SELECT 
+                `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, 
+                `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`mass`,
+                `doc_group`.`printname` AS `group_printname`,
+                `doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt` AS `base_cnt`, 
+                `class_unit`.`rus_name1` AS `unit_name`, `class_unit`.`number_code` AS `unit_code`
+                $fields_sql
+            FROM `doc_list_pos`
+            INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`
+            LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$this->doc_data['sklad']}'
+            LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+            $join_sql
+            WHERE `doc_list_pos`.`doc`='{$this->id}'
+            ORDER BY `doc_list_pos`.`id`");
 
         while ($line = $res->fetch_assoc()) {
             if($line['group_printname']) {
@@ -1779,10 +1875,199 @@ class doc_Nulltype extends \document {
             if($line['vc']) {
                 $line['code'] .= ' / '.$line['vc'];
             }
-            $line['sum_all'] = $line['price'] * $line['cnt'];
-
-            $list[] = $line;
+            $line['sum'] = $line['price'] * $line['cnt'];
             
+            if(isset($opts['vat'])) {
+                if($line['vat']!==null) {
+                    $line['vat_p'] = $line['vat'];
+                } else {
+                    $line['vat_p'] = $this->firm_vars['param_nds'];
+                }            
+                $line['price_wo_vat'] = round($line['price'] / (1 + ($line['vat_p'] / 100)), 2);
+                $line['sum_wo_vat'] = $line['price_wo_vat'] * $line['cnt'];
+                $line['vat_s'] = ($line['price'] * $line['cnt']) - $line['sum_wo_vat'];
+            }
+            
+            $list[] = $line;            
+        }
+        $res->free();
+        return $list;
+    }
+
+    /// Получить список номенклатуры документа с НДС и НТД
+    public function getDocumentNomenclatureWVATandNums() {
+        global $CONFIG, $db;
+        
+        $list = array();
+        $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
+            `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, 
+            `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`, `class_unit`.`number_code` AS `unit_code`, 
+            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`
+	FROM `doc_list_pos`
+	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
+	LEFT JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+	LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
+	WHERE `doc_list_pos`.`doc`='{$this->id}'
+	ORDER BY `doc_list_pos`.`id`");
+
+        while ($nxt = $res->fetch_assoc()) {
+            if($nxt['nds']!==null) {
+                $ndsp = $nxt['nds'];
+            } else {
+                $ndsp = $this->firm_vars['param_nds'];
+            }            
+            $nds = $ndsp / 100;
+            
+            if (!$nxt['country_code']) {
+                throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
+            }
+            
+            $pos_name = $nxt['name'];
+            if($nxt['group_printname']) {
+                $pos_name = $nxt['group_printname'].' '.$pos_name;
+            }
+
+            if (!@$CONFIG['doc']['no_print_vendor'] && $nxt['vendor']) {
+                $pos_name .= ' / ' . $nxt['vendor'];
+            }
+            
+            $pos_code = $nxt['pos_id'];
+            if($nxt['vc']) {
+                $pos_code .= ' / '.$nxt['vc'];
+            }
+
+            if (@$CONFIG['poseditor']['true_gtd']) {
+                $gtd_array = array();
+                $gres = $db->query("SELECT `doc_list`.`type`, `doc_list_pos`.`gtd`, `doc_list_pos`.`cnt`, `doc_list`.`id` FROM `doc_list_pos`
+                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                    WHERE `doc_list_pos`.`tovar`='{$nxt['pos_id']}' AND `doc_list`.`firm_id`='{$this->doc_data['firm_id']}' AND `doc_list`.`type`<='2'
+                    AND `doc_list`.`date`<'{$this->doc_data['date']}' AND `doc_list`.`ok`>'0'
+                    ORDER BY `doc_list`.`date`");
+                while ($line = $gres->fetch_assoc()) {
+                    if ($line['type'] == 1) { // Поступление
+                        $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $line['cnt']);
+                    } else {
+                        $cnt = $line['cnt'];
+                        while ($cnt > 0) {
+                            if (count($gtd_array) == 0) {
+                                if($CONFIG['poseditor']['true_gtd']!='easy') {
+                                    throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt['name']} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
+                                }
+                                else {
+                                    $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $cnt);
+                                }
+                            }
+                            if ($gtd_array[0]['cnt'] == $cnt) {
+                                array_shift($gtd_array);
+                                $cnt = 0;
+                            } elseif ($gtd_array[0]['cnt'] > $cnt) {
+                                $gtd_array[0]['cnt'] -= $cnt;
+                                $cnt = 0;
+                            } else {
+                                $cnt -= $gtd_array[0]['cnt'];
+                                array_shift($gtd_array);
+                            }
+                        }
+                    }
+                }
+
+                $unigtd = array();
+                $need_cnt = $nxt['cnt'];
+                while ($need_cnt > 0 && count($gtd_array) > 0) {
+                    $gtd_num = $gtd_array[0]['num'];
+                    $gtd_cnt = $gtd_array[0]['cnt'];
+                    if ($gtd_cnt >= $need_cnt) {
+                        if(isset($unigtd[$gtd_num])) {
+                            $unigtd[$gtd_num] += $need_cnt;
+                        }
+                        else {
+                            $unigtd[$gtd_num] = $need_cnt;
+                        }
+                        $need_cnt = 0;
+                    } else {
+                        if(isset($unigtd[$gtd_num])) {
+                            $unigtd[$gtd_num] += $gtd_cnt;
+                        }
+                        else {
+                            $unigtd[$gtd_num] = $gtd_cnt;
+                        }
+                        $need_cnt -= $gtd_cnt;
+                        array_shift($gtd_array);
+                    }
+                }
+                if ($need_cnt > 0) {
+                    if($CONFIG['poseditor']['true_gtd']!='easy') {
+                        throw new Exception("Не найдены поступления для $need_cnt единиц товара {$pos_name}. Товар был оприходован на другую организацию?");
+                    }
+                    else {
+                        $unigtd['   --   '] = $need_cnt;
+                    }
+                }
+                foreach ($unigtd as $gtd => $cnt) {
+                    if ($this->doc_data['nds']) {
+                        $pos_price = round($nxt['cost'] / (1 + $nds), 2);
+                        $pos_sum = $pos_price * $cnt;
+                        $nalog = ($nxt['cost'] * $cnt) - $pos_sum;
+                        $snalogom = $nxt['cost'] * $cnt;
+                    } else {
+                        $pos_price = $nxt['cost'];
+                        $pos_sum = $pos_price * $cnt;
+                        $nalog = $pos_sum * $nds;
+                        $snalogom = $pos_sum + $nalog;
+                    }
+
+                    $list[] = array(
+                        'code'      => $pos_code,
+                        'name'      => $pos_name,
+                        'unit_code' => $nxt['unit_code'],
+                        'unit_name' => $nxt['unit_name'],
+                        'cnt'       => $cnt,
+                        'price'     => $pos_price,
+                        'sum_wo_vat'=> $pos_sum,
+                        'excise'    => 'без акциза',
+                        'vat_p'     => $ndsp,
+                        'vat_s'     => $nalog,
+                        'sum'       => $snalogom,
+                        'country_code' => $nxt['country_code'],
+                        'country_name' => $nxt['country_name'],
+                        'ncd'       => $gtd,
+                        'mass'      => $nxt['mass']
+                    );
+                }
+            }
+            else {
+                if ($this->doc_data['nds']) {
+                    $pos_price = $nxt['cost'] / (1 + $nds);
+                    $pos_sum = $pos_price * $nxt['cnt'];
+                    $nalog = ($nxt['cost'] * $nxt['cnt']) - $pos_sum;
+                    $snalogom = $nxt['cost'] * $nxt['cnt'];
+                } else {
+                    $pos_price = $nxt['cost'];
+                    $pos_sum = $pos_price * $nxt['cnt'];
+                    $nalog = $pos_sum * $nds;
+                    $snalogom = $pos_sum + $nalog;
+                }
+
+                $list[] = array(
+                    'code'      => $pos_code,
+                    'name'      => $pos_name,
+                    'unit_code' => $nxt['unit_code'],
+                    'unit_name' => $nxt['unit_name'],
+                    'cnt'       => $nxt['cnt'],
+                    'price'     => $pos_price,
+                    'sum_wo_vat'=> $pos_sum,
+                    'excise'    => 'без акциза',
+                    'vat_p'     => $ndsp,
+                    'vat_s'     => $nalog,
+                    'sum'       => $snalogom,
+                    'country_code' => $nxt['country_code'],
+                    'country_name' => $nxt['country_name'],
+                    'ncd'       => $nxt['ntd'],
+                    'mass'      => $nxt['mass']
+                );
+            }
         }
         return $list;
     }
@@ -1827,4 +2112,34 @@ class doc_Nulltype extends \document {
             return "{response: 0, message: '" . $e->getMessage() . "'}";
         }
     }
+    
+    /// Экспорт табличной части документа в CSV
+    function CSVExport($to_str = 0) {
+        global $tmpl;
+        $header = "PosNum;ID;VC;Name;Vendor;Cnt;Price;Sum;Comment\r\n";
+        if (!$to_str) {
+            $tmpl->ajax = 1;
+            header("Content-type: 'application/octet-stream'");
+            header("Content-Disposition: 'attachment'; filename=predlojenie.csv;");
+            echo $header;
+        } else {
+            $str_out = $header;
+        }
+        $nomenclature = $this->getDocumentNomenclature('base_desc');
+
+        $i = 0;
+        foreach($nomenclature as $line) {
+            $i++;
+            $str_line = "$i;{$line['pos_id']};\"{$line['vc']}\";\"{$line['name']}\";\"{$line['vendor']}\";{$line['cnt']};{$line['price']};{$line['sum']}\r\n";
+            if (!$to_str) {
+                echo $str_line;
+            } else {
+                $str_out.=$str_line;
+            }
+        }
+        if ($to_str) {
+            return $str_out;
+        }
+    }
+
 }
