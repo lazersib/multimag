@@ -20,7 +20,9 @@
 
 /// Документ *корректировка бонусов*
 class doc_Korbonus extends doc_Nulltype {
-
+    
+    /// Конструктор
+    /// @param $doc id документа
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 19;
@@ -30,6 +32,7 @@ class doc_Korbonus extends doc_Nulltype {
         $this->header_fields = 'separator agent sum';
     }
 
+    /// Провести документ
     function DocApply($silent = 0) {
         global $db;
         if (!$silent) {

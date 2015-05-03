@@ -16,15 +16,15 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-namespace doc\printforms\postuplenie; 
+namespace doc\printforms\realizaciya; 
 
-class invoice extends \doc\printforms\iPrintFormInvoicePdf {
- 
+class invoice extends \doc\printforms\iPrintFormIDPdf {
+    protected $form_basesum;
+    
     protected function addPartnerInfoBlock() {
-        $this->addInPartnerInfoBlock();
+        $this->addOutPartnerInfoBlock();
     }
 
-       
     /// Добавить блок с заголовком формы
     protected function addFormHeaderBlock() {
         $doc_id = $this->doc->getId();
@@ -33,18 +33,8 @@ class invoice extends \doc\printforms\iPrintFormInvoicePdf {
         if (!$dop_data['return']) {
             $text = "Накладная N {$doc_data['altnum']}{$doc_data['subtype']} ($doc_id) от " . date("d.m.Y", $doc_data['date']);
         } else {
-            $text = "Возврат от покупателя N {$doc_data['altnum']}{$doc_data['subtype']} ($doc_id) от " . date("d.m.Y", $doc_data['date']);
+            $text = "Возврат поставщику N {$doc_data['altnum']}{$doc_data['subtype']} ($doc_id) от " . date("d.m.Y", $doc_data['date']);
         }
         $this->addHeader($text);  
     }
-    
-    /// Добавить блок с подписями
-    protected function addSignBlock() {        
-
-        $text = "Покупатель: ____________________________________";
-        $this->addSignLine($text);
-        $text = "Поставщик:_____________________________________";
-        $this->addSignLine($text); 
-    }
-  
 }

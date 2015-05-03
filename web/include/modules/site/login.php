@@ -750,7 +750,7 @@ class login extends \IModule {
                 $tmpl->msg("Для смены номера телефона сначала установите и подтвердите номер телефона.");
             } else {
                 $tmpl->setContent("<h1>Смена email адреса</h1>");
-                $tmpl->addContent( $this->getUpdateEmailForm($login, $auth->getRegPhone() ) );
+                $tmpl->addContent( $this->getUpdateEmailForm($login, $auth->getRegEmail() ) );
             }
         }
         else {

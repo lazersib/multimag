@@ -103,11 +103,11 @@ class invoice extends \doc\printforms\iPrintFormPdf {
             $this->pdf->ln(2);
         }
         
-        $text = 'Счёт № '.$doc_data['altnum'].', от '.date("d.m.Y", $doc_data['date']);
+        $text = 'Счёт № '.$doc_data['altnum'].' от '.date("d.m.Y", $doc_data['date']);
         $this->addHeader($text);
         if ($doc_data['contract']) {
             $contract = new doc_Dogovor($doc_data['contract']);
-            $text = 'К договору № ' . $contract->doc_data['altnum'] . ', от ' . date("d.m.Y", $contract->doc_data['date']);
+            $text = 'К договору № ' . $contract->doc_data['altnum'] . ' от ' . date("d.m.Y", $contract->doc_data['date']);
             $this->addInfoLine($text);
         }
         $text = "Поставщик: {$firm_vars['firm_name']}, {$firm_vars['firm_adres']}, тел: {$firm_vars['firm_telefon']}";

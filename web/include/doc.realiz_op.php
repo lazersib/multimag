@@ -20,6 +20,8 @@
 /// Документ *Оперативная реализация*
 class doc_Realiz_op extends doc_Realizaciya {
 
+    /// Конструктор
+    /// @param $doc id документа
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 15;
@@ -28,8 +30,8 @@ class doc_Realiz_op extends doc_Realizaciya {
     }
 
     /// Провести документ
-    /// @param silent Не менять отметку проведения
-    function DocApply($silent = 0) {
+    /// @param $silent Не менять отметку проведения
+    function docApply($silent = 0) {
         global $db;
         if ($silent) {
             return;
@@ -45,8 +47,8 @@ class doc_Realiz_op extends doc_Realizaciya {
         $this->sentZEvent('apply');
     }
 
-    /// отменить проведение документа
-    function DocCancel() {
+    /// Отменить проведение документа
+    function docCancel() {
         global $db;
         $data = $db->selectRow('doc_list', $this->id);
         if (!$data) {

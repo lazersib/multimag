@@ -1841,6 +1841,12 @@ class doc_Nulltype extends \document {
         if(isset($opts['vat'])) {
             $fields_sql .= ", `doc_base`.`nds` AS `vat`";
         }
+        if(isset($opts['base_price'])) {
+            $fields_sql .= ", `doc_base`.`cost` AS `base_price`";
+        }
+        if(isset($opts['bulkcnt'])) {
+            $fields_sql .= ", `doc_base`.`bulkcnt`";
+        }
         if(isset($opts['dest_place'])) {
             $to_sklad = (int) $this->dop_data['na_sklad'];
             $fields_sql .= ", `pt_d`.`mesto` AS `dest_place`";
@@ -1851,7 +1857,7 @@ class doc_Nulltype extends \document {
         $res = $db->query("SELECT 
                 `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, 
                 `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`mass`,
-                `doc_group`.`printname` AS `group_printname`,
+                `doc_group`.`printname` AS `group_printname`, `doc_group`.`id` AS `group_id`,
                 `doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt` AS `base_cnt`, 
                 `class_unit`.`rus_name1` AS `unit_name`, `class_unit`.`number_code` AS `unit_code`
                 $fields_sql

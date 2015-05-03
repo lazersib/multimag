@@ -529,25 +529,26 @@ function Show($param='') {
         }
     }
 
-/// Добавляет указанную складскую позицию в список
-/// Получает дополнительные данные из окружения
-/// Формирует вывод для броузера
-function AddPos($pos) {
+    /// Добавляет указанную складскую позицию в список
+    /// Получает дополнительные данные из окружения
+    /// Формирует вывод для броузера
+    function AddPos($pos) {
 	global $db;
 	settype($pos, 'int');
 	$cnt = rcvrounded('cnt', 5);
 	$cost = rcvrounded('cost', 2);
 	
 	$this->loadList();
-
-	$add = 0;
 	$found = 0;
-	$ret = '';
 
-	if(!$pos)	throw new Exception("ID позиции не задан!");
-	if($cnt<=0)	throw new Exception("Количество должно быть положительным!");
-	
-	foreach($this->list as $line_id=>$f_line) {
+	if (!$pos) {
+            throw new Exception("ID позиции не задан!");
+        }
+        if ($cnt <= 0) {
+            throw new Exception("Количество должно быть положительным!");
+        }
+
+        foreach($this->list as $line_id=>$f_line) {
 		if($f_line['pos_id']==$pos) {
 			$found = 1;
 			break;
@@ -572,25 +573,27 @@ function AddPos($pos) {
                     WHERE `doc_list_pos`.`id`='$line_id'");
 		$line = $res->fetch_assoc();
 		$pc = PriceCalc::getInstance();
-		$line['scost'] = $this->cost_id?$pc->getPosSelectedPriceValue($line['id'], $this->cost_id, $line):$line['cost'];
+		$line['scost'] = $this->cost_id?$pc->getPosSelectedPriceValue($line['pos_id'], $this->cost_id, $line):$line['cost'];
 		$line['line_id'] = $line_id;
 		$line['gtd'] = '';
 		if (!$this->npv) {
                         $line['name'].=' - ' . $line['vendor'];
                 }
-
+                $this->list[$line_id] = $line;
+                
                 if(!$this->cost_id) {
-			$retail_price_id = $pc->getRetailPriceId();
-			$auto_price_id = $pc->getPosAutoPriceID($line['pos_id'], $cnt);
-			if($auto_price_id == $retail_price_id)
-				$line['retail'] = 1;
-			else	$line['retail'] = 0;
-			$need_cost = $pc->getPosSelectedPriceValue($line['pos_id'], $auto_price_id, $line);
+                    $retail_price_id = $pc->getRetailPriceId();
+                    $auto_price_id = $pc->getPosAutoPriceID($line['pos_id'], $cnt);
+                    if ($auto_price_id == $retail_price_id) {
+                        $line['retail'] = 1;
+                    } else {
+                        $line['retail'] = 0;
+                    }
+                    $need_cost = $pc->getPosSelectedPriceValue($line['pos_id'], $auto_price_id, $line);
 			if($line['cost'] != $need_cost ) {
 				$line['cost'] = $need_cost;					
 				$db->update('doc_list_pos', $line_id, 'cost', $need_cost);
-			}
-			$this->list[$line_id] = $line;
+			}			
 			// retail метки!
 			if($this->recalcPrices()) {
 				$new_list = array();
@@ -627,17 +630,17 @@ function AddPos($pos) {
 }
 
 /// Удалить из списка строку с указанным ID
-function RemoveLine($line_id)
+function removeLine($line_id)
 {
-	global $db;
-	$pc = $this->initPriceCalc();
+	global $db;	
+        $this->loadList();
 	if(array_key_exists($line_id, $this->list)) {
 		$db->delete('doc_list_pos', $line_id);
 		doc_log("UPDATE","del line: pos: {$this->list[$line_id]['pos_id']}, line_id:$line_id, cnt:{$this->list[$line_id]['cnt']}, cost:{$this->list[$line_id]['cost']}",'doc',$this->doc);
 		unset($this->list[$line_id]);
 		$this->updateDocSum();
 	}
-	
+	$pc = $this->initPriceCalc();
 	
 	$ret_data = array (
 	    'response'	=> '5',

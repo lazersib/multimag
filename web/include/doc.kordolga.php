@@ -19,7 +19,9 @@
 
 /// Документ *корректоровка долга*
 class doc_Kordolga extends doc_Nulltype {
-
+    
+    /// Конструктор
+    /// @param $doc id документа
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 18;

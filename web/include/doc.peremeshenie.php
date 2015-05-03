@@ -21,7 +21,8 @@
 /// Документ *перемещение товара*
 class doc_Peremeshenie extends doc_Nulltype
 {
-	// Создание нового документа или редактирование заголовка старого
+	/// Конструктор
+        /// @param $doc id документа
 	function __construct($doc=0) {
 		parent::__construct($doc);
 		$this->doc_type				=8;

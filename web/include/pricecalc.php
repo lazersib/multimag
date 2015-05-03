@@ -353,6 +353,9 @@ class PriceCalc {
 			return $this->pos_info_cache[$pos_id];
 		
 		if(is_array($pos_info)) {
+                        if(isset($pos_info['group_id']) && !isset($pos_info['group'])) {
+                            $pos_info['group'] = $pos_info['group_id'];
+                        }                    
 			if( isset($pos_info['base_price']) && isset($pos_info['group']) && isset($pos_info['bulkcnt']) ) {
 				$this->pos_info_cache[$pos_id] = $pos_info;
 				return $pos_info;

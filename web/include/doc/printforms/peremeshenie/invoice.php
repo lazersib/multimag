@@ -44,7 +44,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $this->addTechFooter();
         
         $dt = date("d.m.Y", $doc_data['date']);
-        $text = "Накладная перемещения N {$doc_data['altnum']}{$doc_data['subtype']} ($doc_id), от $dt";
+        $text = "Накладная перемещения N {$doc_data['altnum']}{$doc_data['subtype']} ($doc_id) от $dt";
         $this->addHeader($text);
         $text = "Организация: {$firm_vars['firm_name']}, телефон: {$firm_vars['firm_telefon']}";
         $this->addInfoLine($text);
