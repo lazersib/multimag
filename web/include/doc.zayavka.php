@@ -190,14 +190,14 @@ class doc_Zayavka extends doc_Nulltype {
 		if(@$this->dop_data['buyer_rname'])	$tmpl->addContent("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
 		if(@$this->dop_data['buyer_ip'])	$tmpl->addContent("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
 		if(@$this->dop_data['pay_type']) {
-			$tmpl->addContent("<b>Выбранный способ оплаты: </b>");
+			$tmpl->addContent("<b>Способ оплаты: </b>");
 			switch($this->dop_data['pay_type'])
 			{
 				case 'bank':	$tmpl->addContent("безналичный");	break;
 				case 'cash':	$tmpl->addContent("наличными");	break;
-				case 'card':	$tmpl->addContent("платёжной картой");	break;
-				case 'card_o':	$tmpl->addContent("платёжной картой на сайте");	break;
-				case 'card_t':	$tmpl->addContent("платёжной картой при получении");	break;
+				case 'card':	$tmpl->addContent("картой ?");	break;
+				case 'card_o':	$tmpl->addContent("картой на сайте");	break;
+				case 'card_t':	$tmpl->addContent("картой при получении");	break;
 				case 'wmr':	$tmpl->addContent("Webmoney WMR");	break;
 				default:	$tmpl->addContent("не определён ({$this->dop_data['pay_type']})");
 			}
