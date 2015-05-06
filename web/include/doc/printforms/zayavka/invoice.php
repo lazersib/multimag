@@ -106,7 +106,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $text = 'Счёт № '.$doc_data['altnum'].' от '.date("d.m.Y", $doc_data['date']);
         $this->addHeader($text);
         if ($doc_data['contract']) {
-            $contract = new doc_Dogovor($doc_data['contract']);
+            $contract = new \doc_Dogovor($doc_data['contract']);
             $text = 'К договору № ' . $contract->doc_data['altnum'] . ' от ' . date("d.m.Y", $contract->doc_data['date']);
             $this->addInfoLine($text);
         }
@@ -179,7 +179,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         }
 
         if (@$CONFIG['site']['doc_shtamp']) {
-            $shtamp_img = str_replace('{FN}', $this->doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
+            $shtamp_img = str_replace('{FN}', $doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
             $this->pdf->Image($shtamp_img, 4, $this->pdf->GetY() + $delta, 120);
         }
 

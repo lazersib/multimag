@@ -1852,7 +1852,10 @@ class doc_Nulltype extends \document {
             $fields_sql .= ", `pt_d`.`mesto` AS `dest_place`";
             $join_sql .= " LEFT JOIN `doc_base_cnt` AS `pt_d` ON `pt_d`.`id`=`doc_list_pos`.`tovar` AND `pt_d`.`sklad`='{$to_sklad}'";
         }
-        
+        if(isset($opts['rto'])) {
+            $fields_sql .= ", `doc_base_dop`.`transit`, `doc_base_dop`.`reserve`, `doc_base_dop`.`offer`";
+            $join_sql .= " LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`";
+        }
         $list = array();
         $res = $db->query("SELECT 
                 `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, 

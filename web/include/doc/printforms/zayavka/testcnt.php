@@ -30,7 +30,7 @@ class testcnt extends \doc\printforms\iPrintFormPdf {
         $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
         $firm_vars = $this->doc->getFirmVarsA();
-        $nomenclature = $this->doc->getDocumentNomenclature('comment');
+        $nomenclature = $this->doc->getDocumentNomenclature('rto');
         
         $this->pdf->AddPage('P');
         $this->addTechFooter();
@@ -79,9 +79,7 @@ class testcnt extends \doc\printforms\iPrintFormPdf {
                 $rowc[] = $line['comment'];
             }
 
-            $rezerv = DocRezerv($line['pos_id'], $doc_id);
-
-            $row = array_merge($row, array("{$line['cnt']} {$line['unit_name']}", round($line['base_cnt'],2), $rezerv, '', $line['place']));
+            $row = array_merge($row, array("{$line['cnt']} {$line['unit_name']}", round($line['base_cnt'],2), $line['reserve'], '', $line['place']));
             $rowc = array_merge($rowc, array('', '', '', '', '', ''));
             $this->pdf->RowIconvCommented($row, $rowc);
             $i = 1 - $i;
