@@ -30,7 +30,7 @@ class testcnt extends \doc\printforms\iPrintFormPdf {
         $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
         $firm_vars = $this->doc->getFirmVarsA();
-        $nomenclature = $this->doc->getDocumentNomenclature('rto');
+        $nomenclature = $this->doc->getDocumentNomenclature('comment,rto');
         
         $this->pdf->AddPage('P');
         $this->addTechFooter();

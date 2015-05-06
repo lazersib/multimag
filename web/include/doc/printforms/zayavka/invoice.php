@@ -107,7 +107,8 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $this->addHeader($text);
         if ($doc_data['contract']) {
             $contract = new \doc_Dogovor($doc_data['contract']);
-            $text = 'К договору № ' . $contract->doc_data['altnum'] . ' от ' . date("d.m.Y", $contract->doc_data['date']);
+            $contract_data = $contract->getDocDataA();
+            $text = 'К договору № ' . $contract_data['altnum'] . ' от ' . date("d.m.Y", $contract_data['date']);
             $this->addInfoLine($text);
         }
         $text = "Поставщик: {$firm_vars['firm_name']}, {$firm_vars['firm_adres']}, тел: {$firm_vars['firm_telefon']}";
