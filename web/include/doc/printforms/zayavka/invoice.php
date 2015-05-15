@@ -158,6 +158,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
                 $this->pdf->AddPage();
                 $this->addTechFooter();
             }
+            $this->pdf->SetFont('', '', 8);
             $this->pdf->RowIconv($row);
             $sum += $line['sum'];
             $cnt += $line['cnt'];

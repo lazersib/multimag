@@ -31,7 +31,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $doc_data = $this->doc->getDocDataA();
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
-        $nomenclature = $this->doc->getDocumentNomenclature('dest_place');
+        $nomenclature = $this->doc->getDocumentNomenclature('dest_place,comment');
         
         $sklad_info = $db->selectRowA('doc_sklady', $doc_data['sklad'], array('name'));
         if(! $sklad_info )	throw new Exception("Исходный склад не найден!");
@@ -71,20 +71,24 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $this->addTableHeader($th_widths, $th_texts, $tbody_aligns);        
         
         $i = 0;
-        $sum = $cnt = $summass = $sum_vat = 0;
+        $cnt = $summass = $sum_vat = 0;
         foreach($nomenclature as $line) {
             $i++;
             $row = array($i);
+            $comm = array('');
             if (@$CONFIG['poseditor']['vc']) {
                 $row[] = $line['vc'];
+                $comm[] = '';
             }
             $row[] = $line['name'];
+            $comm[] = $line['comment'];
             $row = array_merge($row, array($line['place'], $line['dest_place'], "{$line['cnt']} {$line['unit_name']}", $line['mass'] * $line['cnt']));
             if ($this->pdf->h <= ($this->pdf->GetY() + 40 )) {
                 $this->pdf->AddPage();
                 $this->addTechFooter();
             }
-            $this->pdf->RowIconv($row);
+            $comm  = array_merge($comm, array('', '',  '', ''));
+            $this->pdf->RowIconvCommented($row, $comm);
             $cnt += $line['cnt'];
             $summass += $line['mass'] * $line['cnt'];
         }        

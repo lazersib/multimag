@@ -1111,7 +1111,7 @@ class doc_Nulltype extends \document {
                             $extension = '.ods';
                             break;
                         default:
-                          $extension = '';  
+                          $extension = '.pdf';  
                     }
                     
                     $fname = $this->typename . '_' . str_replace(":", "_", $form_name) . $extension;

@@ -2286,8 +2286,8 @@ class doc_s_Sklad {
         $go = request('go');
         if (@$CONFIG['poseditor']['rto']) {
             $reserve = $line['reserve'] ? $this->makeContextMenuLink($line['id'], 'rezerv', $line['reserve']) : '';
-            $pod_zakaz = $line['transit'] ? $this->makeContextMenuLink($line['id'], 'p_zak', $line['transit']) : '';
-            $v_puti = $line['offer'] ? $this->makeContextMenuLink($line['id'], 'vputi', $line['offer']) : '';
+            $pod_zakaz = $line['offer'] ? $this->makeContextMenuLink($line['id'], 'p_zak', $line['offer']) : '';
+            $v_puti = $line['transit'] ? $this->makeContextMenuLink($line['id'], 'vputi', $line['transit']) : '';
             $rto_add = "<td>$reserve</td><td>$pod_zakaz</td><td>$v_puti</td>";
         } else {
             $rto_add = '';
