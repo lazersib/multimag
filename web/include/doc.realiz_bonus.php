@@ -38,14 +38,18 @@ class doc_Realiz_bonus extends doc_Realizaciya {
         global $db;
         if (!$silent) {
             $res = $db->query("SELECT `no_bonuses` FROM `doc_agent` WHERE `id`=" . intval($this->doc_data['agent']));
-            if (!$res->num_rows)
+            if (!$res->num_rows) {
                 throw new Exception("Агент не найден");
+            }
             $agent_info = $res->fetch_row();
-            if ($agent_info[0])
+            if ($agent_info[0]) {
                 throw new Exception("Агент не участвует в бонусной программе");
+            }
             $bonus = docCalcBonus($this->doc_data['agent']);
-            if ($this->doc_data['sum'] > $bonus)
+            if ($this->doc_data['sum'] > $bonus) {
                 throw new Exception("У агента недостаточно бонусов");
+            }
+            $this->fixPrice();
         }
         parent::DocApply($silent);
     }

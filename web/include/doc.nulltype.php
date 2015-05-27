@@ -115,8 +115,21 @@ class doc_Nulltype extends \document {
 			}
 	}
 	
+        /// Зафиксировать цену документа, если она установлена в *авто*. Выполняется при проведении некоторых типов документов.
+        protected function fixPrice() {
+            if(!$this->dop_data['cena']) {
+                $pc = PriceCalc::getInstance();
+                $pc->setOrderSum($this->doc_data['sum']);
+                $pc->setAgentId($this->doc_data['agent']);
+                if(isset($this->dop_data['ishop'])) {
+                    $pc->setFromSiteFlag($this->dop_data['ishop']);
+                }
+                $price_id = $pc->getCurrentPriceID();
+                $this->setDopData('cena', $price_id);
+            }
+        }
 
-	/// Создать документ с заданными данными
+        /// Создать документ с заданными данными
 	public function create($doc_data, $from='')
 	{
 		global $db;

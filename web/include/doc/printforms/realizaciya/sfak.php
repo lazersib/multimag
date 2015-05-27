@@ -254,7 +254,12 @@ class sfak extends \doc\printforms\iPrintFormPdf {
             $sumbeznaloga += $line['sum_wo_vat'];
             $sum += $line['sum'];
             $sumnaloga += $line['vat_s'];
-            
+            if($line['vat_p']>0) {
+                $p_vat_p = $line['vat_p'].'%';
+                $vat_s_p = sprintf("%01.2f", $line['vat_s']);
+            }   else {
+                $p_vat_p = $vat_s_p = 'без налога';
+            }
             $row = array(
                 $line['name'],
                 $line['unit_code'],
@@ -263,8 +268,8 @@ class sfak extends \doc\printforms\iPrintFormPdf {
                 sprintf("%01.2f", $line['price']),
                 sprintf("%01.2f", $line['sum_wo_vat']),
                 $line['excise'],
-                $line['vat_p'].'%',
-                sprintf("%01.2f", $line['vat_s']),
+                $p_vat_p,
+                $vat_s_p,
                 sprintf("%01.2f", $line['sum']),
                 $line['country_code'],
                 $line['country_name'],
@@ -283,7 +288,11 @@ class sfak extends \doc\printforms\iPrintFormPdf {
 
         // Итоги
         $sum = sprintf("%01.2f", $sum);
-        $sumnaloga = sprintf("%01.2f", $sumnaloga);
+        if($sumnaloga>0) {
+            $sumnaloga = sprintf("%01.2f", $sumnaloga);
+        }   else {
+            $sumnaloga = '--';
+        }
         $sumbeznaloga = sprintf("%01.2f", $sumbeznaloga);
         $step = 5.5;
         $this->pdf->SetFont('', '', 9);
@@ -292,7 +301,7 @@ class sfak extends \doc\printforms\iPrintFormPdf {
         $this->pdf->Cell($t_all_width[0] + $t_all_width[1] + $t_all_width[2] + $t_all_width[3] + $t_all_width[4], $step, $str, 1, 0, 'L', 0);
         $this->pdf->Cell($t_all_width[5], $step, $sumbeznaloga, 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[6] + $t_all_width[7], $step, 'X', 1, 0, 'C', 0);
-        $this->pdf->Cell($t_all_width[8], $step, $sumnaloga, 1, 0, 'R', 0);
+        $this->pdf->CellIconv($t_all_width[8], $step, $sumnaloga, 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[9], $step, $sum, 1, 0, 'R', 0);
 
         $this->pdf->Ln(10);

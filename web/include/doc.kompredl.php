@@ -90,5 +90,25 @@ class doc_Kompredl extends doc_Nulltype {
             redirect("/doc.php?mode=body&doc=$dd");
         }
     }
+    
+    
+    /// Провести документ
+    /// @param silent Не менять отметку проведения
+    protected function docApply($silent = 0) {
+        global $db;
+        if ($silent) {
+            return;
+        }
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа при проведении!');
+        }
+        if ($data['ok']) {
+            throw new Exception('Документ уже проведён!');
+        }
+        $this->fixPrice();
+        $db->update('doc_list', $this->id, 'ok', time());
+        $this->sentZEvent('apply');        
+    }
 
 }

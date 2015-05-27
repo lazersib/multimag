@@ -133,7 +133,7 @@ class doc_Postuplenie extends doc_Nulltype {
         // Транзиты
         if($doc_params['p_doc']) {
             $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=12 AND `id`={$doc_params['p_doc']}");
-            if (!$res->num_rows) {
+            if ($res->num_rows) {
                 $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
                     FROM `doc_list_pos`
                     LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -212,7 +212,7 @@ class doc_Postuplenie extends doc_Nulltype {
         // Транзиты
         if($this->doc_data['p_doc']) {
             $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=12 AND `id`={$this->doc_data['p_doc']}");
-            if (!$res->num_rows) {
+            if ($res->num_rows) {
                 $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
                     FROM `doc_list_pos`
                     LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`

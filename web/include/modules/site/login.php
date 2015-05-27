@@ -255,9 +255,9 @@ class login extends \IModule {
         <tr><td>Логин</td><td><input type='text' name='login' class='text' id='input_name' value='$login_html' autofocus></td></tr>
         <tr><td>Пароль</td><td><input type='password' name='pass' class='text' autocomplete='off'></td></tr>";
         if($need_captcha) {
-            $ret .= "<tr><td>Введите код подтверждения, изображенный на картинке:<br>
-            <img src='/kcaptcha/index.php' alt='Включите отображение картинок!'></td>
-            <td><input type='text' name='captcha' autocomplete='off'></td></tr>";
+            $ret .= "<tr><td>Введите код подтверждения, изображенный на картинке:</td>            
+            <td><img src='/kcaptcha/index.php' alt='Включите отображение картинок!'><br>
+            <input type='text' name='captcha' class='text' autocomplete='off'></td></tr>";
         }
         $ret .= "<tr><td>&nbsp;</td>
         <td><button type='submit'>Вход!</button> ( <a class='wiki' href='/login.php?mode=rem'>Забыли пароль?</a> )</td></tr>

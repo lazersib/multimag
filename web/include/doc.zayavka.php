@@ -297,6 +297,7 @@ class doc_Zayavka extends doc_Nulltype {
         if ($silent) {
             return;
         }
+        $this->fixPrice();
         if (!$this->isAltNumUnique()) {
             throw new Exception("Номер документа не уникален!");
         }
@@ -322,7 +323,7 @@ class doc_Zayavka extends doc_Nulltype {
             throw new Exception('Документ не проведён!');
         }
         $db->update('doc_list', $this->id, 'ok', 0);
-        // Резервы
+        // Резервы       
         $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=2 AND `p_doc`={$this->id}");
         if (!$res->num_rows) {
             $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`

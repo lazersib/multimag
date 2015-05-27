@@ -269,7 +269,7 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetFSizes($font_sizes);
         $this->pdf->SetHeight(3.5);
 
-        $aligns = array('R', 'C', 'L', 'C', 'L', 'R', 'R', 'R', 'C', 'R', 'R', 'R', 'R', 'L', 'R');
+        $aligns = array('R', 'C', 'L', 'C', 'L', 'R', 'R', 'R', 'C', 'C', 'R', 'R', 'R', 'L', 'R');
         $this->pdf->SetAligns($aligns);
         $this->pdf->SetY($y + 18);
         $this->pdf->SetFillColor(255, 255, 255);
@@ -280,6 +280,12 @@ class upd extends \doc\printforms\iPrintFormPdf {
             $sum += $line['sum'];
             $sumnaloga += $line['vat_s'];
             $summass += $line['mass']*$line['cnt'];
+            if($line['vat_p']>0) {
+                $p_vat_p = $line['vat_p'].'%';
+                $vat_s_p = sprintf("%01.2f", $line['vat_s']);
+            }   else {
+                $p_vat_p = $vat_s_p = 'без налога';
+            }
             $row = array(
                 $i++,
                 $line['code'],
@@ -290,8 +296,8 @@ class upd extends \doc\printforms\iPrintFormPdf {
                 sprintf("%01.2f", $line['price']),
                 sprintf("%01.2f", $line['sum_wo_vat']),
                 $line['excise'],
-                $line['vat_p'].'%',
-                sprintf("%01.2f", $line['vat_s']),
+                $p_vat_p,
+                $vat_s_p,
                 sprintf("%01.2f", $line['sum']),
                 $line['country_code'],
                 $line['country_name'],
@@ -315,7 +321,11 @@ class upd extends \doc\printforms\iPrintFormPdf {
 
         // Итоги
         $sum = sprintf("%01.2f", $sum);
-        $sumnaloga = sprintf("%01.2f", $sumnaloga);
+        if($sumnaloga>0) {
+            $sumnaloga = sprintf("%01.2f", $sumnaloga);
+        }   else {
+            $sumnaloga = 'без налога';
+        }
         $sumbeznaloga = sprintf("%01.2f", $sumbeznaloga);
         $step = 4;
         $lsy = $this->pdf->GetY();
@@ -329,7 +339,7 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $this->pdf->CellIconv($allpay_w, $step, "Всего к оплате:", 1, 0, 'L', 0);
         $this->pdf->Cell($t_all_width[7], $step, $sumbeznaloga, 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[8] + $t_all_width[8], $step, 'X', 1, 0, 'C', 0);
-        $this->pdf->Cell($t_all_width[10], $step, $sumnaloga, 1, 0, 'R', 0);
+        $this->pdf->CellIconv($t_all_width[10], $step, $sumnaloga, 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[11], $step, $sum, 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[12], $step, '', 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[13], $step, '', 1, 0, 'R', 0);
