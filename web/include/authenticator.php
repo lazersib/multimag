@@ -90,17 +90,17 @@ class authenticator {
         }
         switch($this->user_info['pass_type']) {
             case 'CRYPT':
-                if(crypt($password, $this->user_info['pass']) == $this->user_info['pass']) {
+                if(crypt($password, $this->user_info['pass']) === $this->user_info['pass']) {
                     return true;
                 }
                 break;
             case 'SHA1':
-                if (SHA1($password) == $this->user_info['pass']) {
+                if (SHA1($password) === $this->user_info['pass']) {
                     return true;
                 }
                 break;
             default:
-                if (MD5($password) == $this->user_info['pass']) {
+                if (MD5($password) === $this->user_info['pass']) {
                     return true;
                 }
         }

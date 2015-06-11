@@ -361,10 +361,9 @@ class salary extends \AsyncWorker {
             $pos_cnt++;
             if($detail) {
                 $salary['detail'][] = $det_line;
-            }
-            $res_tov->free();
+            } 
         }
-
+        $res_tov->free();
         // Подготовка результата
         
         // Для реализации
