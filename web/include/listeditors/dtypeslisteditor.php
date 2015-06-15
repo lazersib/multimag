@@ -31,11 +31,16 @@ class DTypesListEditor extends \ListEditor {
 		    'id'=>'id',
 		    'account' => 'Счет',
 		    'name'=>'Наименование',
-		    'adm'=>'Административный'
+		    'adm'=>'Административный',
+                    'r_flag'=>'Под отчёт'
 		);
 	}
 	
 	public function getInputAdm($name, $value) {
+		return $this->getCheckboxInput($name, 'Да', $value);
+	}
+        
+        public function getInputR_flag($name, $value) {
 		return $this->getCheckboxInput($name, 'Да', $value);
 	}
 	
