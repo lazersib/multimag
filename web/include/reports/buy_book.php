@@ -158,7 +158,7 @@ class Report_Buy_book extends BaseReport {
             $row = array(
                 $c,
                 $code,
-                'N' . $doc['in_num'].' от '. date('m.d.Y', strtotime($doc['in_date'])),
+                'N' . $doc['in_num'].' от '. date('d.m.Y', strtotime($doc['in_date'])),
                 '-',
                 '-',
                 '-',
@@ -168,7 +168,7 @@ class Report_Buy_book extends BaseReport {
                 $doc['inn'].' / '.$doc['kpp'],
                 '-',
                 '-',
-                'НТД',
+                '-',
                 'Рубль 643',
                 sprintf("%0.2f", $doc['sum']),
                 sprintf("%0.2f", $doc['sum'] / 1.18 * 18),

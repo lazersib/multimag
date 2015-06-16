@@ -284,7 +284,7 @@ class login extends \IModule {
         <p>Для начала процедуры смены пароля введите <b>логин</b> на сайте, номер телефона, или адрес электронной почты, указанный при регистрации:</p>
         <input type='hidden' name='mode' value='rem'>
         <input type='hidden' name='step' value='1'>
-        <input type='text' name='login' autocomplete='off'><br>
+        <input type='text' name='login' autocomplete='off' autofocus='yes'><br>
         Подтвердите, что вы не робот, введите текст с картинки:<br>
         <img src='/kcaptcha/index.php'><br>
         <input type='text' name='captcha' autocomplete='off'><br>
@@ -331,7 +331,7 @@ class login extends \IModule {
         <input type='hidden' name='step' value='3'>
         <input type='hidden' name='key' value='$session_key'>
         Введите полученный код:<br>
-        <input type='text' name='s'><br>
+        <input type='text' name='s' autofocus='yes' autocomplete='off'><br>
         <br><button type='submit'>Далее</button>
         </form>";
     }
@@ -345,7 +345,7 @@ class login extends \IModule {
         <input type='hidden' name='key' value='$session_key'>
         Новый пароль:<br>
         <small>От 8 латинских алфавитно-цифровых символов</small><br>
-        <input type='password' name='newpass' id='pass_field'><br><b id='pass_info'></b><br>
+        <input type='password' name='newpass' id='pass_field' autofocus='yes'><br><b id='pass_info'></b><br>
         Повторите новый пароль:<br>
         <input type='password' name='newpass2'><br>
         <br><button type='submit'>Сменить пароль</button>
@@ -557,13 +557,7 @@ class login extends \IModule {
                     $tmpl->addContent( $this->getNewPassRecoveryForm($_SESSION['session_pass_recovery_key']) );
                 }
                 else {
-                    $user_info = $auth->getUserInfo();
-                    $db->update('users', $user_info['id'], 'last_session_id', session_id());
-                    $auth->addHistoryLine('password');
-                    unset($_SESSION['another_device']);
-                    $_SESSION['uid'] = $user_info['id'];
-                    $_SESSION['name'] = $user_info['name'];
-
+                    $auth->authenticate('password');
                     if(@$_SESSION['last_page']) {
                         $lp = $_SESSION['last_page'];
                         unset($_SESSION['last_page']);
@@ -776,7 +770,7 @@ class login extends \IModule {
             }
             if(!$_SESSION['uid']) {
                 if($auto_auth) {
-                    $auth->autoAuth();
+                    $auth->authenticate('register');
                     $tmpl->msg("Вход выполнен", "ok");
                 }
             }
@@ -931,7 +925,7 @@ class login extends \IModule {
                 $tmpl->addContent( $this->getNewPassRecoveryForm($_SESSION['session_pass_recovery_key']) );
             } else {
                 $auth->setPassword($newpass);                
-                $auth->autoAuth();
+                $auth->authenticate('passrecovery');
                 $tmpl->msg("Пароль успешно изменён! Не забудьте его!", "ok");
                 $db->commit();
             }

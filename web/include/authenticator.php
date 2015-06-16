@@ -481,8 +481,11 @@ class authenticator {
         return $this->user_info;
     }
     
-    public function autoAuth() {
-        $this->addHistoryLine('autoauth');
+    public function authenticate($type) {
+        global $db;
+        $this->addHistoryLine($type);
+        $db->update('users', $this->user_info['id'], 'last_session_id', session_id());
+        unset($_SESSION['another_device']);
         $_SESSION['uid'] = $this->user_info['id'];
         $_SESSION['name'] = $this->user_info['name'];
     }
