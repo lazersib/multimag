@@ -74,10 +74,11 @@ class Report_Salary extends BaseGSReport {
         
         
         $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
-            . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`"
+            . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
             . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
+            . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
             . " WHERE `doc_list`.`id`=$doc");
         if($doc_line = $docs_res->fetch_assoc()) {
             $doc_vars = array();
@@ -195,13 +196,17 @@ class Report_Salary extends BaseGSReport {
             . "<th>Сумма</th></tr>");
         $sum = 0;
         $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
-            . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`"
+            . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
             . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
+            . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
             . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
+            if($doc_line['return']) {
+                continue;
+            }
             $doc_vars = array();
             $o_name = $o_fee = $r_name = $r_fee = $m_name = $m_fee = $sk_name = $sk_fee = '';
             $sum_line = 0;
