@@ -119,11 +119,15 @@ class salary extends \AsyncWorker {
             echo " Done\n";
         }
         // Поступления и перемещения
-        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
+        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
+            . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
             . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 8)" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
+            if($doc_line['return']) {
+                continue;
+            }
             $doc_vars = array();
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
@@ -169,11 +173,15 @@ class salary extends \AsyncWorker {
         $this->docs = array();
         //$rdate = strtotime("2015-02-20");
         // Грузим
-        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
+        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
+            . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
             . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18) AND `agent`=$agent_id" // AND `date`<'$rdate'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
+            if($doc_line['return']) {
+                continue;
+            }
             $doc_vars = array();
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
