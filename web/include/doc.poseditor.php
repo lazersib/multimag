@@ -165,7 +165,7 @@ class DocPosEditor extends PosEditor {
         $this->list = array();
         $res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`,
                 `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
-                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`,                
+                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`, `doc_base`.`mult`, `doc_base`.`bulkcnt`,              
                 `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`,
                 `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
             FROM `doc_list_pos`
@@ -258,6 +258,10 @@ function Show($param='') {
 	$col_names[] = 'Цена';
 	$cols[] = 'cnt';
 	$col_names[] = 'Кол-во';
+        $cols[] = 'mult';
+	$col_names[] = 'В уп.';
+        $cols[] = 'bulkcnt';
+	$col_names[] = 'Опт';
 	$cols[] = 'sum';
 	$col_names[] = 'Сумма';
 	$cols[] = 'store_cnt';
@@ -266,6 +270,7 @@ function Show($param='') {
             $cols[] = 'reserve';
             $col_names[] = 'Резерв';
         }
+
 	$cols[] = 'place';
 	$col_names[] = 'Место';
 	if($this->show_gtd) {

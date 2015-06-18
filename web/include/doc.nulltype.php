@@ -1872,7 +1872,7 @@ class doc_Nulltype extends \document {
         $list = array();
         $res = $db->query("SELECT 
                 `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, 
-                `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`mass`,
+                `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`mass`, `doc_base`.`mult`,
                 `doc_group`.`printname` AS `group_printname`, `doc_group`.`id` AS `group_id`,
                 `doc_base_cnt`.`mesto` AS `place`, `doc_base_cnt`.`cnt` AS `base_cnt`, 
                 `class_unit`.`rus_name1` AS `unit_name`, `class_unit`.`number_code` AS `unit_code`
