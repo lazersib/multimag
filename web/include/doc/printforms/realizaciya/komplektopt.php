@@ -18,7 +18,7 @@
 //
 namespace doc\printforms\realizaciya; 
 
-class komplekt extends \doc\printforms\iPrintFormIDPdf {
+class komplektopt extends \doc\printforms\iPrintFormIDPdf {
     protected $form_basesum;
     
     public function getName() {
@@ -46,7 +46,7 @@ class komplekt extends \doc\printforms\iPrintFormIDPdf {
         $doc_data = $this->doc->getDocDataA();
         $dop_data = $this->doc->getDopDataA();
 
-        $nomenclature = $this->doc->getDocumentNomenclature('bulkcnt,base_price,rto');
+        $nomenclature = $this->doc->getDocumentNomenclature('bulkcnt,base_price,rto,bigpack');
         $pc = \PriceCalc::getInstance();
         $pc->setAgentId($doc_data['agent']);
         if(isset($dop_data['ishop'])) {
@@ -89,7 +89,7 @@ class komplekt extends \doc\printforms\iPrintFormIDPdf {
                     $line['cnt'],
                     round($line['base_cnt']),  
                     $line['mult'],
-                    $line['mult'],
+                    $line['bigpack_cnt'],
                     $line['reserve'],
                     $line['mass'],
                     $line['place'],

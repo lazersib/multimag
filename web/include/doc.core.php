@@ -328,6 +328,7 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
 	var ac=initAutocomplete('quicksearch','/docs.php?l=sklad&mode=srv&opt=acj')
 	</script>
 	-->
+        <a href='/intkb.php' title='База знаний'><img src='/img/i_help.png' alt='База знаний' border='0'></a>
 	<a href='/user.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>
 	<a href='/login.php?mode=logout' title='Выход'><img src='/img/i_logout.png' alt='Выход'></a>
 	</div>
@@ -374,12 +375,10 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
                 $nxt = $res->fetch_row();
                 $info_res = $db->query("SELECT FOUND_ROWS()");
                 list($all_cnt) = $info_res->fetch_row();
-                if ($nxt[1]) {
-                    $nxt[1] = 'всего ' . $nxt[1] . ' штук';
-                } else {
+                if ($nxt[1]==0) {
                     $nxt[1] = 'отсутствует';
                 }
-                $tmpl->addContent("<div class='warn_bar'>Количество у $all_cnt товаров на складе меньше минимально рекомендуемого. Например, &quot;".
+                $tmpl->addContent("<div class='warn_bar'>Количество у $all_cnt товаров меньше минимально рекомендуемого. Например, &quot;".
                     html_out($nxt[0])."&quot; в наличии ".html_out($nxt[1]).", вместо $nxt[2] рекомендуемых!</div>");
             }
             $res->free();

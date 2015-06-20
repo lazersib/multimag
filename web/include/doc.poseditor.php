@@ -129,6 +129,8 @@ class DocPosEditor extends PosEditor {
 	var $show_gtd;	//< Показывать номер ГТД в поступлении
 	var $list;	//< Список товаров
         var $npv;       //< Не отображать производителя
+        var $show_packs; //< Показывать размер упаковки
+        var $show_bulkcnt; //< Показывать кол-во оптом
 
     /// Конструктор
     /// @param $doc id редактироуемого документа
@@ -148,6 +150,12 @@ class DocPosEditor extends PosEditor {
         }
         if(isset($CONFIG['doc']['no_print_vendor'])) {
             $this->npv = $CONFIG['doc']['no_print_vendor'];
+        }
+        if(isset($CONFIG['poseditor']['show_packs'])) {
+            $this->show_packs = $CONFIG['poseditor']['show_packs'];
+        }
+        if(isset($CONFIG['poseditor']['show_bulkcnt'])) {
+            $this->show_bulkcnt = $CONFIG['poseditor']['show_bulkcnt'];
         }
         $pc = PriceCalc::getInstance();
         $pc->setAgentId($doc_data['agent']);
@@ -258,10 +266,14 @@ function Show($param='') {
 	$col_names[] = 'Цена';
 	$cols[] = 'cnt';
 	$col_names[] = 'Кол-во';
-        $cols[] = 'mult';
-	$col_names[] = 'В уп.';
-        $cols[] = 'bulkcnt';
-	$col_names[] = 'Опт';
+        if($this->show_packs) {
+            $cols[] = 'mult';
+            $col_names[] = 'В уп.';
+        }
+        if($this->show_bulkcnt) {
+            $cols[] = 'bulkcnt';
+            $col_names[] = 'Опт';
+        }
 	$cols[] = 'sum';
 	$col_names[] = 'Сумма';
 	$cols[] = 'store_cnt';

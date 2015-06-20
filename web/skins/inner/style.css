@@ -159,12 +159,13 @@ img
 	border: none 0px #ffffff;
 }
 
-table th
-{
-	BACKGROUND-COLOR: #6488DC;
-	color: #fff;
-	text-align: center;
-	font-weight: bold;
+table th {
+    background-color: #6488DC;
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+    padding: 2px 5px 2px 5px;
+    
 }
 
 
@@ -172,14 +173,14 @@ table th
 
 div.warn_bar {
     width:  auto;
-    height: 18px;
+    height: auto;
     border: none;
     border-top: 	#e00 1px solid;
     border-bottom: 	#e00 1px solid;
     background-color: #fff8ee;
     background-image: url(/img/i_alert.png);
     background-repeat: no-repeat;
-    background-position:  5px 3px;
+    background-position:  5px 50%;
     font-size: 	14px;
     margin: 0;
     padding: 3px 5px 3px 25px;
@@ -752,6 +753,10 @@ div.contextlayer
 }
 
 /* Таблицы */
+table.list {
+    min-width: 250px;
+}
+
 table.list tr{
 	background-color:	#f0f8ff;
 }

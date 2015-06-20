@@ -24,7 +24,7 @@ function getSummaryData($sklad, $dt_from, $dt_to, $header='', $sql_add='')
 	global $db;
 	$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
-	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+	LEFT JOIN `doc_base_params` ON `doc_base_params`.`codename`='ZP'
 	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 	WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`>='$dt_from' AND `factory_data`.`date`<='$dt_to' $sql_add
 	GROUP BY `factory_data`.`pos_id`");
@@ -51,7 +51,7 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 	global $db;
 	$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
-	LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+	LEFT JOIN `doc_base_params` ON `doc_base_params`.`codename`='ZP'
 	LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 	WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`>='$dt_from' AND `factory_data`.`date`<='$dt_to' $sql_add
 	GROUP BY `factory_data`.`pos_id`");
@@ -164,7 +164,7 @@ try
 		{
 			$result=$db->query("SELECT `factory_data`.`id`, `factory_data`.`cnt`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
 			LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
-			LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+			LEFT JOIN `doc_base_params` ON `doc_base_params`.`codename`='ZP'
 			LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 			WHERE `factory_data`.`builder_id`=$line[0] AND `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'");
 			$i=$sum=$cnt=0;
@@ -210,7 +210,7 @@ try
 		}
 		$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, `factory_data`.`cnt`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
-		LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+		LEFT JOIN `doc_base_params` ON `doc_base_params`.`codename`='ZP'
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 		WHERE `factory_data`.`builder_id`=$builder AND `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'");
 
@@ -501,7 +501,7 @@ try
 
 		$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
-		LEFT JOIN `doc_base_params` ON `doc_base_params`.`param`='ZP'
+		LEFT JOIN `doc_base_params` ON `doc_base_params`.`codename`='ZP'
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
 		WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'
 		GROUP BY `factory_data`.`pos_id`");

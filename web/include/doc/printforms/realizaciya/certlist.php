@@ -74,44 +74,33 @@ class certlist extends \doc\printforms\iPrintFormPdf {
     function getDocumentNomenclature($doc_id) {
         global $CONFIG, $db;
         $list = array();
-        
-        $res = $db->query("SELECT `id` FROM `doc_base_gparams` WHERE `name`='Сертификаты'");
-        if(!$res->num_rows) {
-            throw new \Exception('Не найдена группа параметров складской номенклатуры *сертификаты*. Создайте группу с таким названием в настройках параметров складской номенклатуры.');
-        }
-        list($pg_id) = $res->fetch_row();
-        $cert_num_id = $cert_dates_id = $cert_creator_id = 0;
-        $res = $db->query("SELECT `id`, `param` FROM  `doc_base_params` WHERE `pgroup_id`=$pg_id");
+
+        $cert_num_id = $cert_dates_id = $cert_creator_id = $exp_date_id = $t_store_id = 0;
+        $res = $db->query("SELECT `id`, `codename` FROM  `doc_base_params`");
         while($line = $res->fetch_assoc()) {
             switch($line['param']) {
-                case 'N сертификата':
+                case 'cert_num':
                     $cert_num_id = $line['id'];
                     break;
-                case 'Срок действия':
+                case 'cert_expire':
                     $cert_dates_id = $line['id'];
                     break;
-                case 'Орган сертификации':
+                case 'cert_publisher':
                     $cert_creator_id = $line['id'];
+                    break;
+                case 'expiration_period':
+                    $exp_date_id = $line['id'];
+                    break;
+                case 'storage_temperature':
+                    $t_store_id = $line['id'];
                     break;
             }
         }
         
-        if(!$cert_num_id || !$cert_dates_id || !$cert_creator_id) {
-            throw new \Exception('Не найден один из необходимых параметров складской номенклатуры из группы *сертификаты*. Необходимые параметры: *N сертификата*, *Срок действия*, *Орган сертификации*.');
+        if(!$cert_num_id || !$cert_dates_id || !$cert_creator_id || !$exp_date_id || !$t_store_id) {
+            throw new \Exception('Не найден один из необходимых параметров складской номенклатуры. Необходимые параметры: *cert_num - N сертификата*, *cert_expire - Срок действия*, *cert_publisher - Орган сертификации*. *expiration_period - срок годности*, *storage_temperature - Температура хранения*.');
         }
         
-        $res = $db->query("SELECT `id`, `param` FROM  `doc_base_params` WHERE `param`='Срок реализации'");
-        if(!$res->num_rows) {
-            throw new \Exception('Не найден параметр *срок годности*. Создайте параметр с таким названием в настройках параметров складской номенклатуры.');
-        }
-        list($exp_date_id) = $res->fetch_row();
-        
-        $res = $db->query("SELECT `id`, `param` FROM  `doc_base_params` WHERE `param`='Температура хранения'");
-        if(!$res->num_rows) {
-            throw new \Exception('Не найден параметр *Температура хранения*. Создайте параметр с таким названием в настройках параметров складской номенклатуры.');
-        }
-        list($t_store_id) = $res->fetch_row();
-
         $res = $db->query("SELECT `doc_list_pos`.`tovar` AS `pos_id`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, 
             `doc_base`.`proizv` AS `vendor`,  `doc_base`.`vc`, `certnum`.`value` AS `cert_num`, `certdate`.`value` AS `cert_dates`, 
             `certcreator`.`value` AS `cert_creator`, `exp`.`value` AS `exp_date`, `tst`.`value` AS `t_store`

@@ -699,9 +699,12 @@ protected function ProductCard($product) {
 		if($product_data['mass'])	$tmpl->addContent("<tr><td class='field'>Масса: <td>{$product_data['mass']} кг.<br>");
 		if($product_data['proizv'])	$tmpl->addContent("<tr><td class='field'>Производитель: <td>".html_out($product_data['proizv']));
 
-		$param_res=$db->query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
-		LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-		WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`pgroup_id`='0' AND `doc_base_params`.`system`='0'");
+		$param_res=$db->query("SELECT `doc_base_params`.`name`, `doc_base_values`.`value` 
+                    FROM `doc_base_values`
+                    LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+                    WHERE `doc_base_values`.`id`='{$product_data['id']}' "
+                        . " AND (`doc_base_params`.`group_id`='0' OR `doc_base_params`.`group_id` IS NULL)"
+                        . " AND `doc_base_params`.`hidden`='0'");
 		while($params=$param_res->fetch_row()) {
 			$tmpl->addContent("<tr><td class='field'>".html_out($params[0])."</td><td>".html_out($params[1])."</td></tr>");
 		}
@@ -710,9 +713,10 @@ protected function ProductCard($product) {
 		while($nxtg=$resg->fetch_row())
 		{
 			$f=0;
-			$param_res=$db->query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
+			$param_res=$db->query("SELECT `doc_base_params`.`name`, `doc_base_values`.`value` FROM `doc_base_values`
 			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-			WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`pgroup_id`='$nxtg[0]' AND `doc_base_params`.`system`='0'");
+			WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`group_id`='$nxtg[0]'"
+                            . " AND `doc_base_params`.`hidden`='0'");
 			while($params=$param_res->fetch_row())
 			{
 				if(!$f)

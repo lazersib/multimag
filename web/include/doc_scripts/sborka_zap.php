@@ -337,7 +337,7 @@ class ds_sborka_zap {
 			// Расчитываем зарплату
 			$r = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 		LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$nxt[1]'
-		WHERE `doc_base_params`.`param`='ZP'");
+		WHERE `doc_base_params`.`codename`='ZP'");
 			if ($r->num_rows) {
 				list($a, $zp) = $r->fetch_row();
 				$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`, `page`)
@@ -358,7 +358,7 @@ class ds_sborka_zap {
 		while ($nxt = $res->fetch_row()) {
 			$rs = $db->query("SELECT `doc_base_values`.`value` FROM `doc_base_params`
 			LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$nxt[1]'
-			WHERE `doc_base_params`.`param`='ZP'");
+			WHERE `doc_base_params`.`codename`='ZP'");
 			if (! $rs->num_rows)	continue;
 			$n = $rs->fetch_row();
 			$zp+=$nxt[2] * $n[0];

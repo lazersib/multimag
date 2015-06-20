@@ -1865,6 +1865,18 @@ class doc_Nulltype extends \document {
             $fields_sql .= ", `pt_d`.`mesto` AS `dest_place`";
             $join_sql .= " LEFT JOIN `doc_base_cnt` AS `pt_d` ON `pt_d`.`id`=`doc_list_pos`.`tovar` AND `pt_d`.`sklad`='{$to_sklad}'";
         }
+        if(isset($opts['bigpack'])) {
+            // ID параметра большой упаковки
+            $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='bigpack_cnt'");
+            if (!$res->num_rows) {
+                $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
+                    . " VALUES ('Кол-во в большой упаковке', 'bigpack_cnt', 'int', 0)");
+                throw new \Exception("Параметр *bigpack_cnt - кол-во в большой упаковке* не найден. Параметр создан.");
+            }
+            list($p_bp_id) = $res->fetch_row();
+            $fields_sql .= ", `bp_t`.`value` AS `bigpack_cnt`";
+            $join_sql .= " LEFT JOIN `doc_base_values` AS `bp_t` ON `bp_t`.`id`=`doc_base`.`id` AND `bp_t`.`param_id`='$p_bp_id'";
+        }
         if(isset($opts['rto'])) {
             $fields_sql .= ", `doc_base_dop`.`transit`, `doc_base_dop`.`reserve`, `doc_base_dop`.`offer`";
             $join_sql .= " LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`";

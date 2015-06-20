@@ -41,9 +41,10 @@ class Report_sk_coeff extends BaseGSReport {
     // Получить ID для сложности
     function getPcsId() {
         global $db;
-        $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `param`='pack_complexity_sk'");
+        $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='pack_complexity_sk'");
         if (!$res->num_rows) {
-            $db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `system`) VALUES ('pack_complexity_sk', 'float', NULL, 1)");
+            $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `group_id`, `hidden`) "
+                . " VALUES ('Сложность кладовщика', 'pack_complexity_sk', 'float', NULL, 1)");
             throw new \Exception("Параметр начисления зарплаты не был найден. Параметр создан. Перед начислением заработной платы необходимо заполнить свойства номенклатуры.");
         }
         list($param_pcs_id) = $res->fetch_row();
