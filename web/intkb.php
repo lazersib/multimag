@@ -100,8 +100,7 @@ function schange()
 try {
     $mode = request('mode');
     if ($p == "") {
-        $tmpl->setContent("<h1>Внутренняя база знаний</h1>"
-            . "<p>Статьи:</p>");
+        $tmpl->setContent("<ul><li><a href='http://multimag.tndproject.org/wiki/userdoc' style='color:#F00'>Общая справка по multimag</a></li></ul>");
         $tmpl->setTitle("Статьи");
         $res = $db->query("SELECT `name`, `text` FROM `intkb` ORDER BY `name`");
 

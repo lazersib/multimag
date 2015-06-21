@@ -43,7 +43,7 @@ abstract class iPrintFormPdf {
     /// Инициализация модуля вывода данных
     public function initForm() {
         require('fpdf/fpdf_mc.php');
-        $this->pdf = new \PDF_MC_Table();
+        $this->pdf = new \PDF_MC_Table('P');
         $this->pdf->Open();
         $this->pdf->SetAutoPageBreak(1, 5);
         $this->pdf->AddFont('Arial', '', 'arial.php');
@@ -69,31 +69,31 @@ abstract class iPrintFormPdf {
     
     /// Добавить стандартный заголовок формы
     protected function addHeader($text) {
-        $this->pdf->SetFont('', '', 18);
+        $this->pdf->SetFontSize(18);
         $this->pdf->MultiCellIconv(0, 8, $text, 0, 'C');
     }
     
     /// Добавить уменьшенный заголовок
     protected function addMiniHeader($text) {
-        $this->pdf->SetFont('', '', 16);
+        $this->pdf->SetFontSize(16);
         $this->pdf->MultiCellIconv(0, 8, $text, 0, 'C');
     }
     
     /// Добавить стандартную информационную строку
     protected function addInfoLine($text, $font_size = 10) {
-        $this->pdf->SetFont('', '', $font_size);
+        $this->pdf->SetFontSize($font_size);
         $this->pdf->MultiCellIconv(0, 5, $text, 0, 'L');
     }
     
     /// Добавить стандартную строку подписи
     protected function addSignLine($text) {
-        $this->pdf->SetFont('', '', 10);
+        $this->pdf->SetFontSize(10);
         $this->pdf->CellIconv(0, 7, $text, 0, 1, 'L');
     }
     
     /// Добавить стандартный заголовок таблицы
     protected function addTableHeader($th_widths, $th_texts, $tbody_aligns = null) {
-        $this->pdf->SetFont('', '', 10);
+        $this->pdf->SetFontSize(10);
         $this->pdf->SetLineWidth($this->line_bold_w);
         foreach ($th_widths as $id => $w) {
             $this->pdf->CellIconv($w, 6, $th_texts[$id], 1, 0, 'C', 0);
@@ -105,7 +105,7 @@ abstract class iPrintFormPdf {
         if($tbody_aligns) {
             $this->pdf->SetAligns($tbody_aligns);
         }
-        $this->pdf->SetFont('', '', 8);
+        $this->pdf->SetFontSize(8);
     }
     
     /// Добавить изображение шапки
@@ -133,7 +133,7 @@ abstract class iPrintFormPdf {
     /// Добавить информацию о сайте
     protected function addSiteBanner() {
         global $CONFIG;
-        $this->pdf->SetFont('', '', 12);
+        $this->pdf->SetFontSize(12);
         $str = "Система интернет-заказов для постоянных клиентов доступна на нашем сайте";
         $this->pdf->CellIconv(0, 5, $str, 0, 1, 'C', 0);
 
@@ -176,7 +176,7 @@ abstract class iPrintFormPdf {
         } 
         $line_width = 4;  
         $this->pdf->SetAutoPageBreak(0, 10);
-        $this->pdf->SetFont('', '', 10);
+        $this->pdf->SetFontSize(10);
         $this->pdf->SetY($this->pdf->h - 5 - count($footer_info)*$line_width);
         $this->pdf->Ln(1);
         

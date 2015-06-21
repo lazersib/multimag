@@ -129,6 +129,8 @@ class DocPosEditor extends PosEditor {
 	var $show_gtd;	//< Показывать номер ГТД в поступлении
 	var $list;	//< Список товаров
         var $npv;       //< Не отображать производителя
+        var $show_packs; //< Показывать размер упаковки
+        var $show_bulkcnt; //< Показывать кол-во оптом
 
     /// Конструктор
     /// @param $doc id редактироуемого документа
@@ -149,6 +151,12 @@ class DocPosEditor extends PosEditor {
         if(isset($CONFIG['doc']['no_print_vendor'])) {
             $this->npv = $CONFIG['doc']['no_print_vendor'];
         }
+        if(isset($CONFIG['poseditor']['show_packs'])) {
+            $this->show_packs = $CONFIG['poseditor']['show_packs'];
+        }
+        if(isset($CONFIG['poseditor']['show_bulkcnt'])) {
+            $this->show_bulkcnt = $CONFIG['poseditor']['show_bulkcnt'];
+        }
         $pc = PriceCalc::getInstance();
         $pc->setAgentId($doc_data['agent']);
         if(isset($dop_data['ishop'])) {
@@ -165,7 +173,7 @@ class DocPosEditor extends PosEditor {
         $this->list = array();
         $res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`,
                 `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
-                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`,                
+                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`, `doc_base`.`mult`, `doc_base`.`bulkcnt`,              
                 `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`,
                 `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
             FROM `doc_list_pos`
@@ -258,6 +266,14 @@ function Show($param='') {
 	$col_names[] = 'Цена';
 	$cols[] = 'cnt';
 	$col_names[] = 'Кол-во';
+        if($this->show_packs) {
+            $cols[] = 'mult';
+            $col_names[] = 'В уп.';
+        }
+        if($this->show_bulkcnt) {
+            $cols[] = 'bulkcnt';
+            $col_names[] = 'Опт';
+        }
 	$cols[] = 'sum';
 	$col_names[] = 'Сумма';
 	$cols[] = 'store_cnt';
@@ -266,6 +282,7 @@ function Show($param='') {
             $cols[] = 'reserve';
             $col_names[] = 'Резерв';
         }
+
 	$cols[] = 'place';
 	$col_names[] = 'Место';
 	if($this->show_gtd) {

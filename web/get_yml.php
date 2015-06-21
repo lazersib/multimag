@@ -123,7 +123,7 @@ try
 		$coo=($nxt['strana'])?"<country_of_origin>{$nxt['strana']}</country_of_origin>":'';
 		
 		$param='';
-		$param_res=$db->query("SELECT `doc_base_params`.`param`, `doc_base_values`.`value` FROM `doc_base_values`
+		$param_res=$db->query("SELECT `doc_base_params`.`name`, `doc_base_values`.`value` FROM `doc_base_values`
 		LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
 		WHERE `doc_base_values`.`id`='{$nxt['id']}'");
 		while($params=$param_res->fetch_row())

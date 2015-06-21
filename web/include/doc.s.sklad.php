@@ -46,7 +46,7 @@ class doc_s_Sklad {
 
 		if(rcvint('cost')) $_SESSION['sklad_cost'] = rcvint('cost');
 		if(!isset($_SESSION['sklad_cost'])) {
-			if(@$CONFIG['stock']['default_cost']>0)	$_SESSION['sklad_cost'] = $CONFIG['stock']['default_cost'];
+			if(@$CONFIG['store']['default_cost']>0)	$_SESSION['sklad_cost'] = $CONFIG['store']['default_cost'];
 			else $_SESSION['sklad_cost'] = -1;
 		}
 		$cost = $_SESSION['sklad_cost'];
@@ -57,9 +57,26 @@ class doc_s_Sklad {
 				LEFT JOIN `doc_base_cnt` ON `doc_base`.`id`=`doc_base_cnt`.`id` AND `doc_base_cnt`.`sklad`=$sklad");
 		if($statistic_res->num_rows){
 			list($_pos_cnt, $_item_cnt, $_all_mass) = $statistic_res->fetch_row();
-			$pos_cnt = number_format($_pos_cnt, 0, '.', ' ');
-			$item_cnt = number_format($_item_cnt, 2, '.', ' ');
-			$all_mass = number_format($_all_mass, 3, '.', ' ');
+                        if($_pos_cnt>20000000) {
+                            $pos_cnt = number_format($_pos_cnt/1000000, 1, '.', ' ').' млн.';
+                        } elseif($_pos_cnt>2000) {
+                            $pos_cnt = number_format($_pos_cnt/1000, 1, '.', ' ').' тыс.';
+                        }
+			else $pos_cnt = number_format($_pos_cnt, 0, '.', ' ');
+                        
+                        if($_item_cnt>20000000) {
+                            $item_cnt = number_format($_item_cnt/1000000, 1, '.', ' ').' млн.';
+                        } elseif($_item_cnt>2000) {
+                            $item_cnt = number_format($_item_cnt/1000, 1, '.', ' ').' тыс.';
+                        }
+			else $item_cnt = number_format($_item_cnt, 2, '.', ' ');
+                        
+                        if($_all_mass>20000000) {
+                            $all_mass = number_format($_all_mass/1000000, 1, '.', ' ').' тыс.тонн';
+                        } elseif($_all_mass>2000) {
+                            $all_mass = number_format($_all_mass/1000, 1, '.', ' ').' тонн';
+                        }
+			else $all_mass = number_format($_all_mass, 2, '.', ' ').' кг.';
 		}
 		else	$pos_cnt=$item_cnt=$all_mass=0;
 		
@@ -79,7 +96,7 @@ class doc_s_Sklad {
 		}
 		</script>
 		<table width='100%'><tr><td width='170'><h1>Склад</h1></td>
-		<td align='center'>На складе <b>$pos_cnt</b> наименований в количестве <b>$item_cnt</b> единиц, массой <b>$all_mass</b> кг</td>
+		<td align='center'>На складе <b>$pos_cnt</b> наименований в количестве <b>$item_cnt</b> единиц, массой <b>$all_mass</b></td>
 		<td align='right'>
 		<form action='' method='post'>
 		<input type='hidden' name='l' value='sklad'>
@@ -595,7 +612,7 @@ class doc_s_Sklad {
 			if ($peopt == '') {
 				$res = $db->query("SELECT `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
-				 WHERE `doc_base_params`.`param`='ZP'");
+				 WHERE `doc_base_params`.`codename`='ZP'");
 				if($res->num_rows)
 					list($zp) = $res->fetch_row();
 				else	$zp='';
@@ -654,90 +671,6 @@ class doc_s_Sklad {
 				}
 				else throw new NotFoundException();
 			}
-			
-			
-//			$plm = request('plm');
-//			include_once("include/doc.sklad.kompl.php");
-//			if ($plm == '') {
-//				$res = $db->query("SELECT `doc_base_values`.`value` FROM `doc_base_params`
-//				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
-//				 WHERE `doc_base_params`.`param`='ZP'");
-//				if($res->num_rows)
-//					list($zp) = $res->fetch_row();
-//				else	$zp='';
-//
-//				kompl_poslist($pos);
-//				$tmpl->addContent("
-//				<script type=\"text/javascript\">
-//				window.document.onkeydown = OnEnterBlur;
-//				</script>
-//				<form action='docs.php' method='post'>
-//				<input type='hidden' name='mode' value='esave'>
-//				<input type='hidden' name='l' value='sklad'>
-//				<input type='hidden' name='pos' value='$pos'>
-//				<input type='hidden' name='param' value='k'>
-//				Зарплата за сборку: <input type='text' name='zp' value='$zp'> руб. <button>Сохранить</button>
-//				</form>
-//				<table width=100% id='sklad_editor'>
-//				<tr><td id='groups' width=200 valign='top' class='lin0>'");
-//				kompl_groups($pos);
-//				$tmpl->addContent("<td id='sklad' valign='top' class='lin1'>");
-//				kompl_sklad($pos, 0);
-//				$tmpl->addContent("</table>");
-//			}
-//			else if ($plm == 'sg') {
-//				$tmpl->ajax = 1;
-//				$tmpl->setContent('');
-//				$group = rcvint('group');
-//				kompl_sklad($pos, $group);
-//			} else if ($plm == 'pos') {
-//				$tmpl->ajax = 1;
-//				$tmpl->setContent('');
-//				$vpos = rcvint('vpos');
-//				if (!isAccess('list_sklad', 'edit'))
-//					throw new AccessException();
-//				$res = $db->query("SELECT `id`, `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
-//				if ($res->num_rows == 0) {
-//					$db->query("INSERT INTO `doc_base_kompl` (`pos_id`,`kompl_id`,`cnt`) VALUES ('$pos','$vpos','1')");
-//					doc_log("UPDATE komplekt", "add kompl: pos_id:$vpos", 'pos', $pos);
-//				}
-//				else {
-//					$nxt = $res->fetch_row();
-//					$db->query("UPDATE `doc_base_kompl` SET `cnt`=`cnt`+'1' WHERE `pos_id`='$pos' AND `kompl_id`='$vpos'");
-//					doc_log("UPDATE komplekt", "change cnt: kompl_id:$nxt[1], cnt:$nxt[2]+1", 'pos', $nxt[1]);
-//				}
-//
-//				kompl_poslist($pos);
-//			}
-//			else if ($plm == 'cc') {
-//				$tmpl->ajax = 1;
-//				$tmpl->setContent('');
-//				$s = rcvrounded('s', 6);
-//				$vpos = rcvint('vpos');
-//				if ($s <= 0)	$s = 1;
-//				$res = $db->query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
-//				if (!$res->num_rows)
-//					throw new Exception("Строка $vpos не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-//				$nxt = $res->fetch_row();
-//				if ($s != $nxt[1]) {
-//					$res = $db->query("UPDATE `doc_base_kompl` SET `cnt`='$s' WHERE `pos_id`='$pos' AND `id`='$vpos'");
-//					kompl_poslist($pos);
-//					doc_log("UPDATE komplekt", "change cnt: kompl_id:$nxt[1], cnt:$nxt[1] => $s", 'pos', $nxt[1]);
-//				}
-//				else	kompl_poslist($pos);
-//			}
-//			else if ($plm == 'd') {
-//				$tmpl->ajax = 1;
-//				$tmpl->setContent('');
-//				$vpos = rcvint('vpos');
-//				$res = $db->query("SELECT `kompl_id`, `cnt` FROM `doc_base_kompl` WHERE `id`='$vpos'");
-//				if (!$res->num_rows)
-//					throw new Exception("Строка не найдена. Вероятно, она была удалена другим пользователем или Вами в другом окне.");
-//				$nxt = $res->fetch_row();
-//				$db->delete('doc_base_kompl', $vpos);
-//				doc_log("UPDATE komplekt", "del kompl: kompl_id:$nxt[0], doc_list_pos:$pos, cnt:$nxt[1], cost:$nxt[2]", 'pos', $pos);
-//				kompl_poslist($pos);
-//			}
 		}
 		// Связанные товары
 		else if ($param == 'l') {
@@ -979,7 +912,7 @@ class doc_s_Sklad {
 			$res_group = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
 			while ($groupp = $res_group->fetch_row()) {
 				$tmpl->addContent("<option value='-1' disabled>".html_out($groupp[1])."</option>");
-				$res = $db->query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$groupp[0]' ORDER BY `param`");
+				$res = $db->query("SELECT `id`, `name` FROM `doc_base_params` WHERE `group_id`='$groupp[0]' ORDER BY `name`");
 				while ($param = $res->fetch_row()) {
 					$tmpl->addContent("<option value='$param[0]'>- ".html_out($param[1])."</option>");
 				}
@@ -990,7 +923,7 @@ class doc_s_Sklad {
 			</td></tr></tfoot>
 			<tbody>");
 
-			$r = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
+			$r = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
 			LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
 			WHERE  `doc_group_params`.`group_id`='$group'
 			ORDER BY `doc_base_params`.`id`");
@@ -1070,7 +1003,7 @@ class doc_s_Sklad {
 			if (!request('a')) {
 				$res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
-				 WHERE `doc_base_params`.`param`='ym_id'");
+				WHERE `doc_base_params`.`codename`='ym_url'");
 				
 				$tmpl->addContent("
 				<form method='post' action='/docs.php'>
@@ -1121,28 +1054,31 @@ class doc_s_Sklad {
 				}
 
 				function getSelectParams($id, $name) {
-					global $db;
-					$ret = "<select name='sel[$id]'><option value='-1' selected>--не выбрано--</option>";
-					$selected = $db->real_escape_string($name);
-					$res = $db->query("SELECT CONCAT(`doc_base_gparams`.`name`,' - ',`doc_base_params`.`param`), `doc_base_params`.`ym_assign`
-					FROM `doc_base_params`
-					INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`pgroup_id`
-					WHERE `doc_base_params`.`ym_assign`='$selected'");
-					if ($res->num_rows) {
-						$nxt = $res->fetch_row();
-						return $nxt[0];
-					}
-					$res_group = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
-					while ($group = $res_group->fetch_row()) {
-						$ret.="<option value='-1' disabled>".html_out($group[1])."</option>";
-						$res = $db->query("SELECT `id`, `param`, `ym_assign` FROM `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
-						while ($param = $res->fetch_row()) {
-							$warn = $param[2] ? '(!)' : '';
-							$ret.="<option value='$param[0]'>- ".html_out($param[1])." $warn</option>";
-						}
-					}
-					$ret.="</select>";
-					return $ret;
+                                    global $db;
+                                    $ret = "<select name='sel[$id]'><option value='-1' selected>--не выбрано--</option>";
+                                    $selected = $db->real_escape_string($name);
+                                    $res = $db->query("SELECT CONCAT(`doc_base_gparams`.`name`,' - ',`doc_base_params`.`name`), `doc_base_params`.`ym_assign`
+                                    FROM `doc_base_params`
+                                    INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`group_id`
+                                    WHERE `doc_base_params`.`ym_assign`='$selected'");
+                                    if ($res->num_rows) {
+                                        $nxt = $res->fetch_row();
+                                        return $nxt[0];
+                                    }
+                                    $res_group = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+                                    while ($group = $res_group->fetch_row()) {
+                                        $ret.="<option value='-1' disabled>".html_out($group[1])."</option>";
+                                        $res = $db->query("SELECT `id`, `param`, `ym_assign`"
+                                            . " FROM `doc_base_params`"
+                                            . " WHERE `group_id`='$group[0]'"
+                                            . " ORDER BY `name`");
+                                        while ($param = $res->fetch_row()) {
+                                            $warn = $param[2] ? '(!)' : '';
+                                            $ret.="<option value='$param[0]'>- ".html_out($param[1])." $warn</option>";
+                                        }
+                                    }
+                                    $ret.="</select>";
+                                    return $ret;
 				}
 
 				if ($f) {
@@ -1596,23 +1532,27 @@ class doc_s_Sklad {
 			$db->commit();
 		}
 		else if ($param == 'k') {
-			if (!isAccess('list_sklad', 'edit'))	throw new AccessException();
-			$zp = request('zp');
-			$res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-			LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
-			WHERE `doc_base_params`.`param`='ZP'");
-			if (! $res->num_rows ) {
-				$db->query("INSERT INTO `doc_base_params` (`param`, `type`, `system`, `pgroup_id`) VALUES ('ZP', 'double', '1','1')");
-				$nxt = array(0 => $db->insert_id, 1 => 0);
-			}
-			else	$nxt = $res->fetch_row();
-			if ($zp != $nxt[1]) {
-				$zp_sql = $db->real_escape_string($zp);
-				$db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$nxt[0]', '$zp_sql')");
-				doc_log("UPDATE pos", "ZP: ($nxt[1] => $zp)", 'pos', $pos);
-				$tmpl->msg("Данные обновлены!", "ok");
-			}
-			else	$tmpl->msg("Ничего не изменилось!");
+                    if (!isAccess('list_sklad', 'edit')) {
+                        throw new AccessException();
+                    }
+                    $zp = request('zp');
+                    $res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+                    LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
+                    WHERE `doc_base_params`.`codename`='ZP'");
+                    if (!$res->num_rows) {
+                        $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
+                           . " VALUES ('Зп сборщика', 'ZP', 'double', 1)");
+                        $nxt = array(0 => $db->insert_id, 1 => 0);
+                    } else {
+                        $nxt = $res->fetch_row();
+                    }
+                    if ($zp != $nxt[1]) {
+                        $zp_sql = $db->real_escape_string($zp);
+                        $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$nxt[0]', '$zp_sql')");
+                        doc_log("UPDATE pos", "ZP: ($nxt[1] => $zp)", 'pos', $pos);
+                        $tmpl->msg("Данные обновлены!", "ok");
+                    }
+                    else	$tmpl->msg("Ничего не изменилось!");
 		}
 		else if ($param == 'g') {
 			if (!isAccess('list_sklad', 'edit'))	throw new AccessException();
@@ -1745,75 +1685,76 @@ class doc_s_Sklad {
 			$db->commit();
 		}
 		else if ($param == 'y') {
-			$url = request('url');
-			$checkboxes = request('ch');
-			$ym_id = rcvint('ym_id');
-			$id_save = request('id_save');
-			$auto = request('auto');
-			$create = request('create');
-			$collection = rcvint('collection');
-			$to_collection = request('to_collection');
+                    $url = request('url');
+                    $checkboxes = request('ch');
+                    $ym_id = rcvint('ym_id');
+                    $id_save = request('id_save');
+                    $auto = request('auto');
+                    $create = request('create');
+                    $collection = rcvint('collection');
+                    $to_collection = request('to_collection');
 
-			if ($id_save) {
-				$res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
-				WHERE `doc_base_params`.`param`='ym_id'");
-				if (!$res->num_rows) {
-					$db->query("INSERT INTO `doc_base_params` (`param`, `type`, `system`, `pgroup_id`) VALUES ('ym_id', 'double', '1','1')");
-					$nxt = array(0 => $db->insert_id, 1 => 0);
-				}
-				else
-					$nxt = $res->fetch_row();
-				if ($ym_id != $nxt[1]) {
-					$db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$nxt[0]', '$ym_id')");
-					doc_log("UPDATE pos", "ZP: ($nxt[1] => $ym_id)", 'pos', $pos);
-				}
-			}
-			if (!is_array($checkboxes))	throw new Exception('Не передан набор данных');
-			$log_add = '';
-			foreach ($checkboxes as $id => $param) {
-				$param_sql = $db->real_escape_string($param);
-				$res = $db->query("SELECT `doc_base_params`.`id` FROM `doc_base_params` WHERE `doc_base_params`.`ym_assign`='$param_sql'");
-				if ($res->num_rows)	list($int_param) = $res->fetch_row();
-				else {
-					$int_param = $_POST['sel'][$id];
-					settype($int_param, 'int');
-					if ($int_param < 1 && $auto) {
-						$res = $db->query("SELECT `doc_base_params`.`id`, CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`param`) AS `pname`
-						FROM `doc_base_params`
-						INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`pgroup_id`
-						WHERE CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`param`)='$param_sql'");
-						if ($res->num_rows)	list($int_param) = $res->fetch_row();
-					}
-					if ($int_param < 1 && $create) {
-						list($gname, $pname) = mb_split(":", $param, 2);
-						$gname_sql = $db->real_escape_string($gname);
-						$pname_sql = $db->real_escape_string($pname);
-						$gres = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` WHERE `name` = '$gname_sql'");
-						if ($gres->num_rows)
-							list($g_id) = $gres->fetch_row();
-						else {
-							$db->query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$gname_sql')");
-							$g_id = $db->insert_id;
-						}
-						$res = $db->query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$g_id' AND `param`='$pname_sql'");
-						if (!$res->num_rows) {
-							$db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `ym_assign`) VALUES ('$pname_sql', 'text', '$g_id', '$param_sql')");
-							$int_param = $db->insert_id;
-							$db->query("INSERT INTO `doc_base_pcollections_set` (`collection_id`, `param_id`) VALUES ('$collection', '$int_param')");
-						}
-					}
-					if ($int_param < 1)	continue;
-					$db->query("UPDATE `doc_base_params` SET `ym_assign`='$param_sql' WHERE `id`='$int_param'");
-				}
-				if ($int_param < 1)		continue;
-				$val = $db->real_escape_string($_POST['val'][$id]);
-				$db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
-				$log_add.=", $int_param:(=> $val)";
-			}
-			$tmpl->msg("Данные сохранены!", "ok");
-			if ($log_add)	doc_log("UPDATE", "$log_add", 'pos', $pos);
-		}
+                    if ($id_save) {
+                        $res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
+                        LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
+                        WHERE `doc_base_params`.`param`='ym_url'");
+                        if (!$res->num_rows) {
+                                $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
+                                    . " VALUES ('URL Я.Маркет', 'ym_url', 'double', 1)");
+                                $nxt = array(0 => $db->insert_id, 1 => 0);
+                        }
+                        else
+                                $nxt = $res->fetch_row();
+                        if ($ym_id != $nxt[1]) {
+                                $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$nxt[0]', '$ym_id')");
+                                doc_log("UPDATE pos", "ym_url: ($nxt[1] => $ym_id)", 'pos', $pos);
+                        }
+                    }
+                    if (!is_array($checkboxes))	throw new Exception('Не передан набор данных');
+                    $log_add = '';
+                    foreach ($checkboxes as $id => $param) {
+                        $param_sql = $db->real_escape_string($param);
+                        $res = $db->query("SELECT `doc_base_params`.`id` FROM `doc_base_params` WHERE `doc_base_params`.`ym_assign`='$param_sql'");
+                        if ($res->num_rows)	list($int_param) = $res->fetch_row();
+                        else {
+                            $int_param = $_POST['sel'][$id];
+                            settype($int_param, 'int');
+                            if ($int_param < 1 && $auto) {
+                                $res = $db->query("SELECT `doc_base_params`.`id`, CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`name`) AS `pname`
+                                FROM `doc_base_params`
+                                INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`group_id`
+                                WHERE CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`name`)='$param_sql'");
+                                if ($res->num_rows)	list($int_param) = $res->fetch_row();
+                            }
+                            if ($int_param < 1 && $create) {
+                                list($gname, $pname) = mb_split(":", $param, 2);
+                                $gname_sql = $db->real_escape_string($gname);
+                                $pname_sql = $db->real_escape_string($pname);
+                                $gres = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` WHERE `name` = '$gname_sql'");
+                                if ($gres->num_rows)
+                                    list($g_id) = $gres->fetch_row();
+                                else {
+                                    $db->query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$gname_sql')");
+                                    $g_id = $db->insert_id;
+                                }
+                                $res = $db->query("SELECT `id`, `param` FROM `doc_base_params` WHERE `group_id`='$g_id' AND `name`='$pname_sql'");
+                                if (!$res->num_rows) {
+                                    $db->query("INSERT INTO `doc_base_params` (`name`, `type`, `group_id`, `ym_assign`) VALUES ('$pname_sql', 'text', '$g_id', '$param_sql')");
+                                    $int_param = $db->insert_id;
+                                    $db->query("INSERT INTO `doc_base_pcollections_set` (`collection_id`, `param_id`) VALUES ('$collection', '$int_param')");
+                                }
+                            }
+                            if ($int_param < 1)	continue;
+                            $db->query("UPDATE `doc_base_params` SET `ym_assign`='$param_sql' WHERE `id`='$int_param'");
+                        }
+                        if ($int_param < 1)		continue;
+                        $val = $db->real_escape_string($_POST['val'][$id]);
+                        $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
+                        $log_add.=", $int_param:(=> $val)";
+                    }
+                    $tmpl->msg("Данные сохранены!", "ok");
+                    if ($log_add)	doc_log("UPDATE", "$log_add", 'pos', $pos);
+                }
 		else	$tmpl->msg("Неизвестная закладка");
 	}
 
@@ -1868,7 +1809,7 @@ class doc_s_Sklad {
 		$go = request('go');
 		$lim = 200;
 		$vc_add = '';
-		$sql_add = '';
+		$fields_sql = $join_sql = '';
 		if ($group && !$go) {
 			$desc_data = $db->selectRow('doc_group', $group);
 			if($desc_data['desc']) $tmpl->addContent('<p>'.html_out($desc_data['desc']).'</p>');
@@ -1920,17 +1861,43 @@ class doc_s_Sklad {
 				break;
 			default: $order = '`doc_base`.`name`';
 		}
+                
+                if(isset($CONFIG['store']['add_columns'])) {
+                    $opts = array();
+                    $e_options = explode(',', $CONFIG['store']['add_columns']);
+                    foreach($e_options as $opt) {
+                        $opts[$opt] = 1;
+                    }
+                    if(isset($opts['bigpack'])) {
+                        $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='bigpack_cnt'");
+                        if (!$res->num_rows) {
+                            $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
+                                . " VALUES ('Кол-во в большой упаковке', 'bigpack_cnt', 'int', 0)");
+                            throw new \Exception("Параметр *bigpack_cnt - кол-во в большой упаковке* не найден. Параметр создан.");
+                        }
+                        list($p_bp_id) = $res->fetch_row();
+                        $fields_sql .= ", `bp_t`.`value` AS `bigpack_cnt`";
+                        $join_sql .= " LEFT JOIN `doc_base_values` AS `bp_t` ON `bp_t`.`id`=`doc_base`.`id` AND `bp_t`.`param_id`='$p_bp_id'";
+                    }
+                    if(isset($opts['bulkcnt'])) {
+                        $fields_sql .= ", `doc_base`.`bulkcnt`";
+                    }
+                    if(isset($opts['mult'])) {
+                        $fields_sql .= ", `doc_base`.`mult`";
+                    }
+                }
 
 		$sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`vc`,
                         `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`cost_date`, `doc_base`.`mass`, `doc_base`.`hidden`, 
-                        `doc_base`.`no_export_yml`, `doc_base`.`stock`,                    
+                        `doc_base`.`no_export_yml`, `doc_base`.`stock`,
                     `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,                   
                         `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,
                     `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-                    (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt` $sql_add
+                    (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt` $fields_sql
 		FROM `doc_base`
 		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+                $join_sql
 		WHERE `doc_base`.`group`='$group' ";
 		if($_SESSION['sklad_store_only'])
 			$sql .= " AND `doc_base_cnt`.`cnt`>0 ";
@@ -1970,22 +1937,47 @@ class doc_s_Sklad {
 		else	$sl = 0;
 
 		if ($row) {
-			if ($CONFIG['poseditor']['vc'])
-				$vc_add.='<th>Код</th>';
-
-			$tdb_add = $CONFIG['poseditor']['tdb'] ? '<th>Тип<th>d<th>D<th>B' : '';
-			$rto_add = $CONFIG['poseditor']['rto'] ? "<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>" : '';
-
-			$cheader_add = ($_SESSION['sklad_cost'] > 0) ? '<th>Выб. цена' : '';
-			$tmpl->addContent("$pagebar<table width='100%' cellspacing='1' cellpadding='2' class='list'><tr>
-			<th>№ $vc_add<th>Наименование<th>Производитель<th>Цена, р.<th>Ликв.<th>АЦП, р. {$cheader_add}{$tdb_add}<th>Масса{$rto_add}<th>Склад<th>Всего<th>Место");
-			$tmpl->addContent("<tr class='lin0'><th colspan='20' align='center'>В группе $row наименований, показаны " . ( ($sl + $lim) < $row ? $lim : ($row - $sl) ) . ", начиная с $sl");
-			$i = 0;
-			$this->DrawSkladTable($res, $s, $lim);
-			$tmpl->addContent("</table>$pagebar");
-			if ($go) {
-				$tmpl->addContent("<b>Легенда:</b> Заполненность дополнительных свойств наименования: <b><span style='color: #f00;'>&lt;40%</span>, <span style='color: #f80;'>&lt;60%</span>, <span style='color: #00C;'>&lt;90%</span>, <span style='color: #0C0;'>&gt;90%</span>,</b>");
-			}
+                    $tmpl->addContent("$pagebar<table width='100%' cellspacing='1' cellpadding='2' class='list'>
+                        <tr><th>№</th>");
+                    if ($CONFIG['poseditor']['vc']) {
+                        $tmpl->addContent('<th>Код</th>');
+                    }
+                    $tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>");
+                    if($_SESSION['sklad_cost'] > 0) {
+                        $tmpl->addContent('<th>Выб. цена</th>');
+                    }
+                    if($CONFIG['poseditor']['tdb']) {
+                        $tmpl->addContent('<th>Тип<th>d</th><th>D</th><th>B</th>');
+                    }
+                    $tmpl->addContent('<th>Масса</th>');
+                    if(isset($CONFIG['store']['add_columns'])) {
+                        $e_options = explode(',', $CONFIG['store']['add_columns']);
+                        foreach($e_options as $opt) {
+                            switch ($opt) {
+                                case 'mult':
+                                    $tmpl->addContent('<th>В упаковке</th>');
+                                    break;
+                                case 'bigpack':
+                                    $tmpl->addContent('<th>В б.уп.</th>');
+                                    break;
+                                case 'bulkcnt':
+                                    $tmpl->addContent('<th>Опт от</th>');
+                                    break;
+                            }
+                        }
+                    }
+                    
+                    if($CONFIG['poseditor']['rto']) {
+                        $tmpl->addContent("<th><img src='/img/i_lock.png' alt='В резерве'></th><th><img src='/img/i_alert.png' alt='Под заказ'></th><th><img src='/img/i_truck.png' alt='В пути'></th>");
+                    }
+                    $tmpl->addContent("<th>Склад</th><th>Всего</th><th>Место</th></tr>");
+                    $tmpl->addContent("<tr class='lin0'><th colspan='20' align='center'>В группе $row наименований, показаны " . ( ($sl + $lim) < $row ? $lim : ($row - $sl) ) . ", начиная с $sl");
+                    $i = 0;
+                    $this->DrawSkladTable($res, $s, $lim, $e_options);
+                    $tmpl->addContent("</table>$pagebar");
+                    if ($go) {
+                            $tmpl->addContent("<b>Легенда:</b> Заполненность дополнительных свойств наименования: <b><span style='color: #f00;'>&lt;40%</span>, <span style='color: #f80;'>&lt;60%</span>, <span style='color: #00C;'>&lt;90%</span>, <span style='color: #0C0;'>&gt;90%</span>,</b>");
+                    }
 		}
 		else if($group)
 			$tmpl->msg("В выбранной группе товаров не найдено!");
@@ -2009,13 +2001,40 @@ class doc_s_Sklad {
         $found_ids = '0';   // Для NOT IN
         $sklad = $_SESSION['sklad_num']; /// TODO: убрать отсюда в конструктор или ещё куда-нибудь
         $tmpl->addContent("<b>Показаны наименования изо всех групп!</b><br>");
-        $vc_add = $CONFIG['poseditor']['vc'] ? '<th>Код</th>' : '';
-        $tdb_add = $CONFIG['poseditor']['tdb'] ? '<th>Тип<th>d<th>D<th>B' : '';
-        $rto_add = $CONFIG['poseditor']['rto'] ? "<th><img src='/img/i_lock.png' alt='В резерве'><th><img src='/img/i_alert.png' alt='Под заказ'><th><img src='/img/i_truck.png' alt='В пути'>" : '';
-        $cheader_add = ($_SESSION['sklad_cost'] > 0) ? '<th>Выб. цена' : '';
-        $tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'>"
-            . "<tr><th>№</th>{$vc_add}<th>Наименование</th><th>Пр-ль</th><th>Цена</th><th>Ликв.</th><th>АЦП</th>{$cheader_add}{$tdb_add}<th>Масса</th>{$rto_add}"
-            . "<th>Склад</th><th>Всего</th><th>Место</th></tr>");
+        $tmpl->addContent("<table width='100%' cellspacing='1' cellpadding='2' class='list'>
+            <tr><th>№</th>");
+        if ($CONFIG['poseditor']['vc']) {
+            $tmpl->addContent('<th>Код</th>');
+        }
+        $tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>");
+        if($_SESSION['sklad_cost'] > 0) {
+            $tmpl->addContent('<th>Выб. цена</th>');
+        }
+        if($CONFIG['poseditor']['tdb']) {
+            $tmpl->addContent('<th>Тип<th>d</th><th>D</th><th>B</th>');
+        }
+        $tmpl->addContent('<th>Масса</th>');
+        if(isset($CONFIG['store']['add_columns'])) {
+            $e_options = explode(',', $CONFIG['store']['add_columns']);
+            foreach($e_options as $opt) {
+                switch ($opt) {
+                    case 'mult':
+                        $tmpl->addContent('<th>В упаковке</th>');
+                        break;
+                    case 'bigpack':
+                        $tmpl->addContent('<th>В б.уп.</th>');
+                        break;
+                    case 'bulkcnt':
+                        $tmpl->addContent('<th>Опт от</th>');
+                        break;
+                }
+            }
+        }
+
+        if($CONFIG['poseditor']['rto']) {
+            $tmpl->addContent("<th><img src='/img/i_lock.png' alt='В резерве'></th><th><img src='/img/i_alert.png' alt='Под заказ'></th><th><img src='/img/i_truck.png' alt='В пути'></th>");
+        }
+        $tmpl->addContent("<th>Склад</th><th>Всего</th><th>Место</th></tr>");
 
         switch (@$CONFIG['doc']['sklad_default_order']) {
             case 'vc': $order = '`doc_base`.`vc`';
@@ -2023,6 +2042,31 @@ class doc_s_Sklad {
             case 'cost': $order = '`doc_base`.`cost`';
                 break;
             default: $order = '`doc_base`.`name`';
+        }
+        $fields_sql = $join_sql = '';
+        if(isset($CONFIG['store']['add_columns'])) {
+            $opts = array();
+            $e_options = explode(',', $CONFIG['store']['add_columns']);
+            foreach($e_options as $opt) {
+                $opts[$opt] = 1;
+            }
+            if(isset($opts['bigpack'])) {
+                $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='bigpack_cnt'");
+                if (!$res->num_rows) {
+                    $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
+                        . " VALUES ('Кол-во в большой упаковке', 'bigpack_cnt', 'int', 0)");
+                    throw new \Exception("Параметр *bigpack_cnt - кол-во в большой упаковке* не найден. Параметр создан.");
+                }
+                list($p_bp_id) = $res->fetch_row();
+                $fields_sql .= ", `bp_t`.`value` AS `bigpack_cnt`";
+                $join_sql .= " LEFT JOIN `doc_base_values` AS `bp_t` ON `bp_t`.`id`=`doc_base`.`id` AND `bp_t`.`param_id`='$p_bp_id'";
+            }
+            if(isset($opts['bulkcnt'])) {
+                $fields_sql .= ", `doc_base`.`bulkcnt`";
+            }
+            if(isset($opts['mult'])) {
+                $fields_sql .= ", `doc_base`.`mult`";
+            }
         }
 
         $s_sql = $db->real_escape_string($s);
@@ -2033,10 +2077,10 @@ class doc_s_Sklad {
                 `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
                     `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                    
                 `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-                (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`
+                (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt` $fields_sql
             FROM `doc_base`
             LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad' ";
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad' " . $join_sql;
         $where_add = '';
         if ($_SESSION['sklad_store_only']) {
             $where_add .= " AND `doc_base_cnt`.`cnt`>0 ";
@@ -2048,7 +2092,7 @@ class doc_s_Sklad {
             $tmpl->addContent("<tr><th colspan='20' align='center'>Поиск совпадений с $html_s - {$ores->num_rows} строк найдено</th></tr>");
             $groups_analog_list = '';
             while($line = $ores->fetch_assoc()) {
-                $tmpl->addContent( $this->drawTableLine($line, $s) );
+                $tmpl->addContent( $this->drawTableLine($line, $s, $e_options) );
                 $found_ids.=','.$line['id'];
                 if($line['analog_group']) {
                     if($groups_analog_list) {
@@ -2061,10 +2105,10 @@ class doc_s_Sklad {
                 $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) ORDER BY $order";
                 $res = $db->query($sqla);
                 if ($res->num_rows) {
-                    $tmpl->addContent("<tr><th colspan='20' align='center'>Поиск аналогов $html_s - {$ores->num_rows} строк найдено</th></tr>");
+                    $tmpl->addContent("<tr><th colspan='20' align='center'>Поиск аналогов $html_s - {$res->num_rows} строк найдено</th></tr>");
                     $groups_analog_list = '';
                     while($line = $res->fetch_assoc()) {
-                        $tmpl->addContent( $this->drawTableLine($line, $s) );
+                        $tmpl->addContent( $this->drawTableLine($line, $s, $e_options) );
                         $found_ids.=','.$line['id'];
                     }
                 }
@@ -2081,7 +2125,7 @@ class doc_s_Sklad {
             $tmpl->addContent("<tr><th colspan='20' align='center'>Поиск по названию, начинающемуся на $html_s - показано $cnt из $found_cnt</th></tr>");
             $groups_analog_list = '';
             while($line = $res->fetch_assoc()) {
-                $tmpl->addContent( $this->drawTableLine($line, $s) );
+                $tmpl->addContent( $this->drawTableLine($line, $s, $e_options) );
                 $found_ids.=','.$line['id'];
                 if($line['analog_group']) {
                     if($groups_analog_list) {
@@ -2102,7 +2146,7 @@ class doc_s_Sklad {
 
                     $groups_analog_list = '';
                     while($line = $res->fetch_assoc()) {
-                        $tmpl->addContent( $this->drawTableLine($line, $s) );
+                        $tmpl->addContent( $this->drawTableLine($line, $s, $e_options) );
                         $found_ids.=','.$line['id'];
                     }
                 }
@@ -2118,7 +2162,7 @@ class doc_s_Sklad {
             list($found_cnt) = $rows_res->fetch_row();
             $tmpl->addContent("<tr><th colspan='20' align='center'>Поиск по вхождению $html_s - показано $cnt из $found_cnt</th></tr>");
             while($line = $res->fetch_assoc()) {
-                $tmpl->addContent( $this->drawTableLine($line, $s) );
+                $tmpl->addContent( $this->drawTableLine($line, $s, $e_options) );
             }
         }
 
@@ -2281,7 +2325,7 @@ class doc_s_Sklad {
                 . " title='$title' href='/docs.php?l=inf&mode=srv&pos=$pos_id&opt=$opt'>$value</a>";
         }
         
-    function drawTableLine($line, $s='') {
+    function drawTableLine($line, $s='', $opts = array()) {
         global $CONFIG;
         $go = request('go');
         if (@$CONFIG['poseditor']['rto']) {
@@ -2346,24 +2390,37 @@ class doc_s_Sklad {
         } else {
             $cadd = '';
         }
+        $opts_add = '';
+        foreach($opts as $opt) {
+            switch ($opt) {
+                case 'mult':
+                case 'bulkcnt':
+                    $opts_add .= '<td align="right">'.$line[$opt].'</td>';
+                    break;
+                case 'bigpack':
+                    $opts_add .= '<td align="right">'.$line['bigpack_cnt'].'</td>';
+                    break;
+
+            }
+        }
 
         return "<tr class='pointer' oncontextmenu=\"ShowPosContextMenu(event, {$line['id']}, ''); return false;\"  align='right'><td>{$cb}"
             . "<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos={$line['id']}'>{$line['id']}</a>"
             . "<a href='#' onclick=\"ShowPosContextMenu(event, {$line['id']}, ''); return false;\" title='Меню'>"
             . "<img src='img/i_menu.png' alt='Меню' border='0'></a></td>"
             . "$vc_add<td align='left'>$name $info</td><td align='left'>{$line['proizv']}</td><td{$price_class}>$price_p</td><td>{$line['likvid']}</td>"
-            . "<td>$in_price</td>{$cadd}$tdb_add<td>{$line['mass']}</td>$rto_add<td>{$line['cnt']}</td><td>{$line['allcnt']}</td><td>{$line['mesto']}</td></tr>";
+            . "<td>$in_price</td>{$cadd}$tdb_add<td>{$line['mass']}</td>{$opts_add}{$rto_add}<td>{$line['cnt']}</td><td>{$line['allcnt']}</td><td>{$line['mesto']}</td></tr>";
     }
         
     /// Отображает таблицу товаров
     /// @param res Результат выполнения sql запроса к таблице товаров
     /// @param s Подстрока поиска
     /// @param lim Максимальное количество строк
-    function DrawSkladTable($res, $s = '', $lim = 1000) {
+    function DrawSkladTable($res, $s = '', $lim = 1000, $opts = array()) {
         global $tmpl;
         $i = 0;
         while ($nxt = $res->fetch_assoc()) {
-            $tmpl->addContent($this->drawTableLine($nxt, $s));
+            $tmpl->addContent($this->drawTableLine($nxt, $s, $opts));
             $i++;
             if ($i > $lim) {
                 break;
@@ -2458,23 +2515,34 @@ class doc_s_Sklad {
         
         // Динамические свойства - записанные
         $dyn_table = '';
+        $dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`name`, `doc_base_values`.`value`
+            FROM `doc_base_values`
+            LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+            WHERE `doc_base_values`.`id`='$pos_id' AND `doc_base_params`.`hidden`=0 "
+            . " AND ( `doc_base_params`.`group_id`=0 OR `doc_base_params`.`group_id` IS NULL)");
+        while ($nx = $dpv_res->fetch_row()) {
+            $dyn_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+        }
         $g_res = $db->query("SELECT * FROM `doc_base_gparams` ORDER BY `name`");
         while ($g_info = $g_res->fetch_assoc()) {
-            $dyn_table .= "<tr><th colspan='2'>".html_out($g_info['name'])."</th></tr>";
-            $dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`param`, `doc_base_values`.`value`
+            $add_table = '';
+            $dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`name`, `doc_base_values`.`value`
                 FROM `doc_base_values`
                 LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-                WHERE `doc_base_values`.`id`='$pos_id' AND `doc_base_params`.`system`=0");
+                WHERE `doc_base_values`.`id`='$pos_id' AND `doc_base_params`.`hidden`=0 AND `doc_base_params`.`group_id`='{$g_info['id']}'");
             while ($nx = $dpv_res->fetch_row()) {
-                $dyn_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+                $add_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+            }
+            if($add_table) {
+                $dyn_table .= "<tr><th colspan='2'>".html_out($g_info['name'])."</th></tr>".$add_table; 
             }
         }
         $dyn_table .= "<tr><td colspan='2'</td></tr>";
         // Динамические свойства - от групп
-        $gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_group_params`.`show_in_filter`
+        $gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_group_params`.`show_in_filter`
             FROM `doc_base_params`
             LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
-            WHERE `doc_group_params`.`group_id`='{$pos_info['group_id']}' AND `doc_base_params`.`system`='0' 
+            WHERE `doc_group_params`.`group_id`='{$pos_info['group_id']}' AND `doc_base_params`.`hidden`='0' 
                 AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos_id' )
             ORDER BY `doc_base_params`.`id`");
         while ($nx = $gdp_res->fetch_row()) {
@@ -2483,32 +2551,29 @@ class doc_s_Sklad {
         
         // добавление динамических свойств
         $dyn_foot = "<tr><td align='right'><select name='pp' id='fg_select'>";  
-        $r = $db->query("SELECT `id`, `param`, `type` FROM `doc_base_params` WHERE `system`='0' AND `pgroup_id` IS NULL ORDER BY `param`");
+        $r = $db->query("SELECT `id`, `name`, `codename`, `type` FROM `doc_base_params` WHERE `group_id` IS NULL ORDER BY `name`");
         while ($p = $r->fetch_row()) {
-            $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])."</option>";
+            $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])." ($p[3])</option>";
         }
         $g_res = $db->query("SELECT * FROM `doc_base_gparams` ORDER BY `name`");
         while ($g_info = $g_res->fetch_assoc()) {
             $dyn_foot .= "<option style='color:#fff; background-color:#000' disabled>".html_out($g_info['name'])."</option>";
-            $r = $db->query("SELECT `id`, `param`, `type` FROM `doc_base_params` WHERE `system`='0' AND `pgroup_id`='{$g_info['id']}' ORDER BY `param`");
+            $r = $db->query("SELECT `id`, `name`, `codename`, `type` FROM `doc_base_params` WHERE `group_id`='{$g_info['id']}' ORDER BY `name`");
             while ($p = $r->fetch_row()) {
-                $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])."</option>";
+                $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])." ($p[3])</option>";
             }
         }
-        $dyn_foot .= "</select></td><td><input type='text' id='value_add'><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr></td></tr>";
+        $dyn_foot .= "</select></td><td><input type='text' id='value_add'>&nbsp;<img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr></td></tr>";
         
         // Служебные (системные) свойства
-        $translation = array('ZP'=>'Зарплата за сборку', 'pack_complexity_sk'=>'Коэффициент зарплаты кладовщика');
         $srv_table = '';
-        $dpv_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`param`, `doc_base_values`.`value`
+        $dpv_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_base_params`.`codename`, `doc_base_values`.`value`
             FROM `doc_base_params`
             LEFT JOIN `doc_base_values` ON `doc_base_params`.`id`=`doc_base_values`.`param_id` AND `doc_base_values`.`id`='$pos_id'
-            WHERE `doc_base_params`.`system`!=0");
-        while ($nx = $dpv_res->fetch_row()) {
-            if(isset($translation[$nx[1]])) {
-                $nx[1] = $translation[$nx[1]];
-            }
-            $srv_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+            WHERE `doc_base_params`.`hidden`!=0");
+        while ($nx = $dpv_res->fetch_assoc()) {
+            $name = html_out($nx['name']).'<br><small>'.html_out($nx['codename']).'</small>';
+            $srv_table .= "<tr><td align='right'>$name</td><td><input type='text' name='par[{$nx['id']}]' value='".html_out($nx['value'])."'></td></tr>";
         }
         
         $tmpl->addContent("

@@ -47,9 +47,9 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
         }
         $th_texts[] = 'Наименование';
         $tbody_aligns[] = 'L';
-        $th_widths = array_merge($th_widths, array(20, 16, 20, 20));
-        $th_texts = array_merge($th_texts, array('Место', 'Кол-во', 'Цена', 'Сумма'));
-        $tbody_aligns = array_merge($tbody_aligns, array('C', 'R', 'R', 'R'));
+        $th_widths = array_merge($th_widths, array(16, 20, 20, 20));
+        $th_texts = array_merge($th_texts, array('В упак.', 'Кол-во', 'Цена', 'Сумма'));
+        $tbody_aligns = array_merge($tbody_aligns, array('R', 'R', 'R', 'R'));
         $this->addTableHeader($th_widths, $th_texts, $tbody_aligns);        
         
         $this->form_linecount = 0;
@@ -64,7 +64,7 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
                 $row[] = $line['vc'];
             }
             $row[] = $line['name'];
-            $row = array_merge($row, array($line['place'], "{$line['cnt']} {$line['unit_name']}", $price, $sum_line));
+            $row = array_merge($row, array("{$line['mult']} {$line['unit_name']}", "{$line['cnt']} {$line['unit_name']}", $price, $sum_line));
             if ($this->pdf->h <= ($this->pdf->GetY() + 18 )) {
                 $this->pdf->AddPage();
                 $this->addTechFooter();
@@ -115,7 +115,7 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
     
     /// Сформировать данные печатной формы
     public function make() {
-        $this->pdf->AddPage('P');
+        $this->pdf->AddPage();
         $this->addTechFooter();
         
         $this->addFormHeaderBlock();      

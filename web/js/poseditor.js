@@ -370,6 +370,12 @@ function PosEditorInit(poslist_setup) {
                                 case 'reserve':
 					fragment.appendChild(createConstCell( Math.round(data.reserve*100)/100));	
 					break;
+                                case 'bulkcnt':
+					fragment.appendChild(createConstCell(data.bulkcnt));	
+					break;
+                                case 'mult':
+					fragment.appendChild(createConstCell(data.mult));	
+					break;
 				case 'place':
 					fragment.appendChild(createConstCell(data.place));	
 					break;

@@ -155,7 +155,7 @@ abstract class ListEditor {
             $ret .= "</tr>";
         }
         $ret .= "</table>";
-        $ret .= "<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'>Новая запись</a>";
+        $ret .= "<span>&nbsp;&nbsp;&nbsp;<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'><img src='/img/i_add.png' src='new'>&nbsp;&nbspНовая запись</a></span>";
         return $ret;
     }
 

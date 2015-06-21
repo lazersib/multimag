@@ -116,9 +116,10 @@ class SZapPosEditor extends DocPosEditor
 			if ($ret)		$ret.=', ';
 
 			// Расчитываем зарплату и выводим как место
-			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
-				WHERE `doc_base_params`.`param`='ZP'");
+			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` 
+                            FROM `doc_base_params`
+                            LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
+                            WHERE `doc_base_params`.`codename`='ZP'");
 			if ($rs->num_rows) {
 				$rs_data = $rs->fetch_row();
 				$zp = sprintf("%0.2f", $rs_data[1]);
@@ -154,8 +155,8 @@ class SZapPosEditor extends DocPosEditor
 
 			// Расчитываем зарплату и выводим как место
 			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
-				WHERE `doc_base_params`.`param`='ZP'");
+                            LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$nxt['pos_id']}'
+                            WHERE `doc_base_params`.`codename`='ZP'");
 			if ($rs->num_rows) {
 				$rs_data = $rs->fetch_row();
 				$zp = sprintf("%0.2f", $rs_data[0]);
@@ -208,7 +209,7 @@ class SZapPosEditor extends DocPosEditor
 
 			$rs = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
 				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='{$line['id']}'
-				WHERE `doc_base_params`.`param`='ZP'");
+				WHERE `doc_base_params`.`codename`='ZP'");
 			if ($rs->num_rows) {
 				$rs_data = $rs->fetch_row();
 				$zp = sprintf("%0.2f", $rs_data[0]);

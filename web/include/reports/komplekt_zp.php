@@ -44,7 +44,7 @@ class Report_Komplekt_Zp {
 		$date = date('Y-m-d');
 		$sel = $group ? "AND `group`='$group'" : '';
 		// Получение id свойства зарплаты
-		$zres = $db->query("SELECT `id` FROM `doc_base_params` WHERE `param`='ZP'");
+		$zres = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='ZP'");
 		if ($zres->num_rows == 0)
 			throw new Exception("Данные о зарплате за сборку в базе не найдены. Необходим дополнительный параметр 'ZP'");
 		list($zp_id) = $zres->fetch_row();

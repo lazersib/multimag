@@ -122,10 +122,11 @@ class ds_salary_storekeeper {
                 $tmpl->msg("Пользователь не привязан к агенту. Вы не сможете начислить заработную плату!", 'err');
             }
 
-            $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `param`='pack_complexity_sk'");
+            $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='pack_complexity_sk'");
             if (!$res->num_rows) {
-                $db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`, `system`) VALUES ('pack_complexity_sk', 'float', NULL, 1)");
-                throw new Exception("Параметр начисления зарплаты не был найден. Параметр создан. Перед начислением заработной платы необходимо заполнить свойства номенклатуры.");
+                $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
+                    . " VALUES ('Сложность кладовщика', 'pack_complexity_sk', 'float', 1)");
+                throw new \Exception("Параметр начисления зарплаты не был найден. Параметр создан. Перед начислением заработной платы необходимо заполнить свойства номенклатуры.");
             }
             list($param_id) = $res->fetch_row();
             

@@ -69,7 +69,7 @@ class Report_Salary extends BaseGSReport {
         
         $salary = new \async\salary(0);
         $salary->loadPosTypes(); 
-        $salary->loadPcsId();
+        $salary->loadPosData();
         $tmpl->addBreadcrumb('Просмотр данных', '');
         
         
@@ -102,12 +102,11 @@ class Report_Salary extends BaseGSReport {
                 if($pos_line['mult']==0) {
                     $pos_line['mult'] = 1;
                 }
-                if($pos_line['pcs']==0) {
+                if($pos_line['pcs']===null) {
                     $pos_line['pcs'] = 1;
                 }
-                $ssb = round($pos_line['cnt']/$pos_line['mult']*$pos_line['pcs'], 2);
-                $k_sum += $ssb;
-                
+                $ssb = number_format($pos_line['sk_fee'], 2, '.', ' ');
+                $k_sum += $pos_line['sk_fee'];                
                 
                 $tmpl->addContent("<tr><td>{$pos_line['id']}</td><td>{$pos_line['vc']}</td><td>{$pos_line['name']}</td><td>{$pos_line['vendor']}</td>"
                 . "<td align='right'>{$pos_line['cnt']}</td><td align='right'>{$pos_line['mult']}</td><td align='right'>{$pos_line['pcs']}</td>"
@@ -189,7 +188,7 @@ class Report_Salary extends BaseGSReport {
         
         $salary = new \async\salary(0);
         $salary->loadPosTypes(); 
-        $salary->loadPcsId();
+        $salary->loadPosData();
         $tmpl->addBreadcrumb('Просмотр данных', '');        
         $tmpl->addContent("<table class='list' width='100%'>"
             . "<tr><th>id</th><th>Тип</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"

@@ -48,6 +48,7 @@ try {
 	<li><a href='?mode=stores'>Склады</a></li>
 	<li><a href='?mode=pos_types'>Типы товаров</a></li>
 	<li><a href='?mode=cost'>Цены</a></li>
+        <li><a href='?mode=gparams'>Группы свойств складской номенклатуры</a></li>
 	<li><a href='?mode=params'>Свойства складской номенклатуры</a></li>
 	<li><a href='?mode=param_collections'>Наборы свойств складской номенклатуры</a></li>	
 	
@@ -352,188 +353,6 @@ try {
 	}
 	header("Location: doc_service.php?mode=cost");
     }
-    else if($mode=='params') {
-	$opt = request('opt');
-	$cur_group = rcvint('group', 1);
-	$types = array('text' => 'Текстовый', 'int' => 'Целый', 'bool' => 'Логический', 'float' => 'С плавающей точкой');
-	$tmpl->addContent("<h1 id='page-title'>Настройки параметров складской номенклатуры</h1>");
-	if ($opt == 'newg') {
-		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
-		if (isset($_POST['name'])) {
-			$name = $db->real_escape_string($_POST['name']);
-			if (strlen($name) > 0) {
-				$res = $db->query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$name')");
-				$cur_group = $db->insert_id;
-				$newg = 1;
-			}
-		}
-		if ($newg)	$tmpl->msg("Группа создана", "ok");
-	}
-	if ($opt == 'save') {
-		if (!isAccess('doc_service', 'edit'))	throw new AccessException();
-		$res = $db->query("SELECT `id`, `param`, `type`, `pgroup_id` FROM `doc_base_params` WHERE `pgroup_id`='$cur_group'");
-		$save = $newg = $newp = 0;
-		while ($nxt = $res->fetch_row()) {
-			$param = $db->real_escape_string($_POST['param'][$nxt[0]]);
-			$type = $db->real_escape_string($_POST['type'][$nxt[0]]);
-			if (!array_key_exists($type, $types)) {
-				echo "id: $nxt[0], $type: $type<br>";
-				$type = 'text';
-			}
-			$desc = '';
-			if ($_POST['param'][$nxt[0]] != $nxt[1])
-				$desc.="param:(" . $db->real_escape_string($nxt[1]) . " => $param), ";
-			if ($type != $nxt[2])
-				$desc.="type: ($nxt[2] => $type)";
-			if ($desc == '')
-				continue;
-			$save = 1;
-			$res = $db->query("UPDATE `doc_base_params` SET `param`='$param', `type`='$type' WHERE `id`='$nxt[0]'");
-			doc_log('UPDATE', $desc, 'base_params', $nxt[0]);
-		}
-		if ($save)
-			$tmpl->msg("Данные обновлены", "ok");
-
-		$param = $db->real_escape_string($_POST['param'][0]);
-		if (strlen($param) > 0) {
-			$type = $db->real_escape_string($_POST['type'][0]);
-			if (!array_key_exists($type, $types))
-				$type = 'text';
-
-			$res = $db->query("INSERT INTO `doc_base_params` (`param`, `type`, `pgroup_id`) VALUES ('$param', '$type', '$cur_group')");
-			doc_log('INSERT', "param: $param, type: $type", 'base_params', $cur_group);
-			$tmpl->msg("Параметр создан", "ok");
-		}
-	}
-
-	$tmpl->addStyle("
-div.tabeditor
-{
-	border:	#00c solid 1px;
-}
-
-div.tabeditor form
-{
-	margin: 0;
-	padding:0;
-}
-
-div.group_menu
-{
-	background-color:	#66f;
-	width:			300px;
-	float:			left;
-}
-
-div.group_item
-{
-	height:			25px;
-	border-bottom:		1px solid #fff;
-	font-size:		18px;
-	color:			#fff;
-	text-align:		right;
-	padding:		2px 10px 2px 10px;
-	cursor:			pointer;
-}
-
-div.group_content
-{
-	margin-left:		310px;
-	display:		none;
-}
-
-div.clear
-{
-	clear:			both;
-}
-");
-
-
-
-	$tmpl->addContent("<div class='tabeditor'><div class='group_menu' onclick='menuclick(event)'>");
-	$rgroups = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
-	$content='';
-	while($group = $rgroups->fetch_row()) {
-		if($group[0] == $cur_group) {
-			$gi="style='background-color: #fff; color: #66f;'";
-			$gc="style='display: block;'";
-		}
-		else $gi=$gc='';
-		$tmpl->addContent("<div class='group_item' id='g{$group[0]}' $gi>$group[1]</div>");
-		$content.="<div class='group_content' id='g{$group[0]}c' $gc>
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='params'>
-		<input type='hidden' name='opt' value='save'>
-		<input type='hidden' name='group' value='{$group[0]}'>
-		<table><tr><th>ID</th><th>Название</th><th>Тип данных</th><th>Ассоциация с Яндекс.Маркет</th></tr>";
-		$rparams = $db->query("SELECT `id`, `param`, `type`, `pgroup_id`, `ym_assign` FROM  `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
-		while($param = $rparams->fetch_row()) {
-			$content.="<tr><td>$param[0]:</td>
-			<td><input type='text' name='param[$param[0]]' value='$param[1]'></td>
-			<td><select name='type[$param[0]]'>";
-			foreach($types as $t=>$n)
-			{
-				$sel=$param[2]==$t?'selected':'';
-				$content.="<option value='$t' $sel>$n</option>";
-			}
-			$content.="</select></td>
-			<td><input type='text' name='ym[$param[0]]' value='$param[4]' style='width:400px'></td></tr>";
-		}
-		$content.="<tr><td><b>+</b></td>
-		<td><input type='text' name='param[0]' value=''></td>
-		<td><select name='type[0]'>";
-		foreach($types as $t=>$n)
-		{
-			$content.="<option value='$t'>$n</option>";
-		}
-		$content.="</select></td><td><input type='text' name='ym[0]' value='' style='width:400px'></td></tr></table>
-		<button type='submit'>Сохранить</button></form></div>";
-	}
-	$tmpl->addContent("
-	<div class='group_item'>
-	<form action='' method='post'>
-	<input type='hidden' name='mode' value='params'>
-	<input type='hidden' name='opt' value='newg'>
-	+ <input type='text' name='name' value=''><button type='submit'>&gt;&gt;</button>
-	</form>
-	</div>
-	</div>
-	$content
-	<div class='clear'></div>
-	</div>
-	<script type='text/javascript'>
-	var old_item=0;
-	var old_cont=0;
-	if($cur_group)
-	{
-		old_item=document.getElementById('g'+$cur_group)
-		old_cont=document.getElementById('g'+$cur_group+'c')
-	}
-	function menuclick(event)
-	{
-		if(event.target.className!='group_item')	return;
-		if(old_item)
-		{
-			old_item.style.backgroundColor='';
-			old_item.style.color='';
-		}
-		event.target.style.backgroundColor='#fff';
-		event.target.style.color='#66f';
-		old_item=event.target
-		var cont=document.getElementById(event.target.id+'c')
-
-		if(cont)
-		{
-			if(old_cont)	old_cont.style.display='none'
-			cont.style.display='block'
-			old_cont=cont
-		}
-	}
-
-	</script>
-	");
-
-    }
     else if($mode=='param_collections')
     {
 	$opt=request('opt');
@@ -588,23 +407,23 @@ div.clear
 	$rgroups=$db->query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
 	while($group=$rgroups->fetch_row()) {
 		$tmpl->addContent("<fieldset><legend>$group[1]</legend><table>");
-		$rparams=$db->query("SELECT `doc_base_pcollections_set`.`param_id`, `doc_base_params`.`param`
+		$rparams=$db->query("SELECT `doc_base_pcollections_set`.`param_id`, `doc_base_params`.`name`
 		FROM `doc_base_pcollections_set`
 		INNER JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_pcollections_set`.`param_id`
 		WHERE `collection_id`='$group[0]'");
-		while($param = $rparams->fetch_row())
-		{
-			$tmpl->addContent("<tr><td><a href='/doc_service.php?mode=param_collections&amp;opt=del&amp;p=$param[0]&amp;c=$group[0]'><img alt='Удалить' src='/img/i_del.png'></a></td><td>$param[1]</td></tr>");
+		while($param = $rparams->fetch_row()) {
+                    $tmpl->addContent("<tr><td><a href='/doc_service.php?mode=param_collections&amp;opt=del&amp;p=$param[0]&amp;c=$group[0]'><img alt='Удалить' src='/img/i_del.png'></a></td><td>$param[1]</td></tr>");
 		}
 		$tmpl->addContent("<tr><td><b>+</b></td><td><select name='add[$group[0]]'>
 		<option value='0' selected>--не выбрано--</option>");
 		$res_group=$db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
 		while($group = $res_group->fetch_row())	{
-			$tmpl->addContent("<option value='-1' disabled>$group[1]</option>");
-			$res=$db->query("SELECT `id`, `param` FROM `doc_base_params` WHERE `pgroup_id`='$group[0]' ORDER BY `param`");
+			$tmpl->addContent("<optgroup label='".html_out($group[1])."'>");
+			$res=$db->query("SELECT `id`, `name` FROM `doc_base_params` WHERE `group_id`='$group[0]' ORDER BY `name`");
 			while($param=$res->fetch_row())	{
-				$tmpl->addContent("<option value='$param[0]'>- $param[1]</option>");
+				$tmpl->addContent("<option value='$param[0]'>$param[1]</option>");
 			}
+                        $tmpl->addContent("</optgroup>");
 		}
 		$tmpl->addContent("</select></td></tr>");
 		$tmpl->addContent("</table></fieldset>");
@@ -809,44 +628,44 @@ div.clear
 		$img->SetNoEnlarge(1);
 		$img->SetY(800);
 
-		$tmpl->addContent("<img src=\"".$img->GetURI()."\">");
-	}
-    } elseif($mode=='banks') {
-	$editor = new \ListEditors\BankListEditor($db);
-	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=banks';
+		$tmpl->addContent("<img src=\"" . $img->GetURI() . "\">");
+        }
+    } elseif ($mode == 'banks') {
+        $editor = new \ListEditors\BankListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=banks';
         $editor->acl_object_name = 'doc_service';
-	$editor->run();
-    } elseif($mode=='kass') {
-	$editor = new \ListEditors\KassListEditor($db);
-	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=kass';
+        $editor->run();
+    } elseif ($mode == 'kass') {
+        $editor = new \ListEditors\KassListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=kass';
         $editor->acl_object_name = 'doc_service';
-	$editor->run();
-    } elseif($mode=='firms') {
-	$editor = new \ListEditors\FirmListEditor($db);
-	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=firms';
+        $editor->run();
+    } elseif ($mode == 'firms') {
+        $editor = new \ListEditors\FirmListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=firms';
         $editor->acl_object_name = 'doc_service';
-	$editor->run();
-    } elseif($mode=='ctypes') {
-	$editor = new \ListEditors\CTypesListEditor($db);
-	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=ctypes';
+        $editor->run();
+    } elseif ($mode == 'ctypes') {
+        $editor = new \ListEditors\CTypesListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=ctypes';
         $editor->acl_object_name = 'doc_service';
-	$editor->run();
-    } elseif($mode=='dtypes') {
-	$editor = new \ListEditors\DTypesListEditor($db);
-	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=dtypes';
+        $editor->run();
+    } elseif ($mode == 'dtypes') {
+        $editor = new \ListEditors\DTypesListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=dtypes';
         $editor->acl_object_name = 'doc_service';
-	$editor->run();
-    } elseif($mode=='accounts') {
-	$editor = new \ListEditors\AccountListEditor($db);
-	$editor->line_var_name = 'id';
-	$editor->link_prefix = '/doc_service.php?mode=accounts';
+        $editor->run();
+    } elseif ($mode == 'accounts') {
+        $editor = new \ListEditors\AccountListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=accounts';
         $editor->acl_object_name = 'doc_service';
-	$editor->run();
+        $editor->run();
     } elseif($mode=='stores') {
 	$editor = new \ListEditors\StoresListEditor($db);
 	$editor->line_var_name = 'id';
@@ -858,6 +677,38 @@ div.clear
         $editor->line_var_name = 'id';
         $editor->link_prefix = '/doc_service.php?mode=pos_types';
         $editor->acl_object_name = 'doc_service';
+        $editor->run();
+    } elseif ($mode == 'params') {
+        $editor = new \ListEditors\PosParamListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=params';
+        $editor->acl_object_name = 'doc_service';
+        $tmpl->addContent("<ul class='tabs'>
+            <li><a href='/doc_service.php?mode=gparams'>Группы свойств</a></li>
+            <li><a class='selected' href='/doc_service.php?mode=params'>Свойства</a></li>
+            </ul>");
+        $editor->run();
+        $tmpl->addContent("<h3>Некоторые используемые <b>кодовые обозначения</b></h3>"
+            . "<ul>"
+            . "<li><b>ZP</b>: Размер вознаграждения сборщику на приозводстве. Необходим в сценарии &quot;Сборка с выдачей заработной платы&quot; и в модуле &quot;Учёт производства&quot; (factory.php)</li>"            
+            . "<li><b>pack_complexity_sk</b>: Сложность работы кладовщика. Необходим в сценариях и модулях начисления вознаграждения кладовщику.</li>"
+            . "<li><b>bigpack_cnt</b>: Количество товара в большой упаковке. Отображается на витрине. Необходим для начисления вознаграждения кладовщикам.</li>"
+            . "<li><b>cert_num</b>: N сертификата. Необходим в печатной форме &quot;Реестр сертификатов&quot;</li>"
+            . "<li><b>cert_expire</b>: Срок действия сертификата. Необходим в печатной форме &quot;Реестр сертификатов&quot;</li>"
+            . "<li><b>cert_publisher</b>: Орган сертификации, выдавший сертификат. Необходим в печатной форме &quot;Реестр сертификатов&quot;</li>"
+            . "<li><b>expiration_period</b>: Срок годности. Необходим в печатной форме &quot;Реестр сертификатов&quot;</li>"
+            . "<li><b>storage_temperature</b>: Температура хранения. Необходим в печатной форме &quot;Реестр сертификатов&quot;</li>"
+            . "<li><b>ym_url</b>: URL страницы янтекс-маркета с описанием товара. Необходим для загрузки свойств товара в редакторе номенклатуры, а так же может использоваться на витрине.</li>"
+            . "</ul>");
+    } elseif ($mode == 'gparams') {
+        $editor = new \ListEditors\PGroupListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=gparams';
+        $editor->acl_object_name = 'doc_service';
+        $tmpl->addContent("<ul class='tabs'>
+            <li><a class='selected' href='/doc_service.php?mode=gparams'>Группы свойств</a></li>
+            <li><a href='/doc_service.php?mode=params'>Свойства</a></li>
+            </ul>");
         $editor->run();
     } else {
         throw new NotFoundException("Несуществующая опция");
