@@ -360,6 +360,7 @@ class salary extends \AsyncWorker {
                 $det_line['cnt'] = $nxt_tov['cnt'];
                 $det_line['pcs'] = $pos_extinfo['pcs'];
                 $det_line['mult'] = $pos_extinfo['mult'];
+                $det_line['bigpack_cnt'] = $pos_extinfo['bigpack_cnt'];
             }
             // Продавцам и пр
             if($doc['type']==2) {
@@ -397,7 +398,7 @@ class salary extends \AsyncWorker {
             if($detail) {
                 $det_line['sk_fee'] = $sk_cur_fee;
             }
-            $sk_pos_fee =+ $sk_cur_fee;
+            $sk_pos_fee += $sk_cur_fee;
             $pos_cnt++;
             if($detail) {
                 $salary['detail'][] = $det_line;

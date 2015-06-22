@@ -41,6 +41,14 @@ class Report_Salary extends BaseGSReport {
             С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
             По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
             </fieldset>
+            Сотрудник:<br>
+            <select name='worker_id'>"
+            . "<option value='0'>--не выбран--</option>");
+            $res = $db->query("SELECT `user_id` AS `id`, `worker_real_name` AS `name` FROM `users_worker_info` WHERE `worker`=1");
+            while($line = $res->fetch_assoc()) {
+                $tmpl->addContent("<option value='{$line['id']}'>{$line['name']}</option>");
+            }
+            $tmpl->addContent("</select><br>
             </fieldset>
             <button type='submit'>Сформировать отчёт</button>
             </form>
@@ -92,7 +100,7 @@ class Report_Salary extends BaseGSReport {
             $info = $salary->calcFee($doc_line, $doc_line['resp_id'], 1);
             $tmpl->addContent("<h1>Расчёты по {$doc_line['type_name']} - $doc</h1>");
             $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th>id</th><th>Код</th><th>Наименование</th><th>Пр-ль</th><th>Кол-во</th><th>В уп.</th><th>Коэфф.сл.сб.</th><th>Сумма сб.</th>");
+            . "<tr><th>id</th><th>Код</th><th>Наименование</th><th>Пр-ль</th><th>Кол-во</th><th>В м.уп.</th><th>В б.уп.</th><th>Коэфф.сл.сб.</th><th>Сумма сб.</th>");
             if($doc_line['type']==2) {
                 $tmpl->addContent("<th>П.цена</th><th>Вх.цена</th><th>Ликв.</th><th>Расч.ст.</th>");
             }
@@ -109,7 +117,7 @@ class Report_Salary extends BaseGSReport {
                 $k_sum += $pos_line['sk_fee'];                
                 
                 $tmpl->addContent("<tr><td>{$pos_line['id']}</td><td>{$pos_line['vc']}</td><td>{$pos_line['name']}</td><td>{$pos_line['vendor']}</td>"
-                . "<td align='right'>{$pos_line['cnt']}</td><td align='right'>{$pos_line['mult']}</td><td align='right'>{$pos_line['pcs']}</td>"
+                . "<td align='right'>{$pos_line['cnt']}</td><td align='right'>{$pos_line['mult']}</td><td align='right'>{$pos_line['bigpack_cnt']}</td><td align='right'>{$pos_line['pcs']}</td>"
                 . "<td align='right'>$ssb</td>");
                 if($doc_line['type']==2) {
                     $p_sum += $pos_line['p_sum'];
@@ -182,6 +190,7 @@ class Report_Salary extends BaseGSReport {
         global $CONFIG, $db, $tmpl;
         $dt_f = strtotime(rcvdate('dt_f'));
         $dt_t = strtotime(rcvdate('dt_t') . " 23:59:59");
+        $worker_id = rcvint('worker_id');
         
         $users_ldo = new \Models\LDO\workernames();
         $users = $users_ldo->getData();
@@ -206,6 +215,10 @@ class Report_Salary extends BaseGSReport {
             if($doc_line['return']) {
                 continue;
             }
+            $w_cont = 0;
+            if($worker_id) {
+                $w_cont = 1;
+            }
             $doc_vars = array();
             $o_name = $o_fee = $r_name = $r_fee = $m_name = $m_fee = $sk_name = $sk_fee = '';
             $sum_line = 0;
@@ -221,6 +234,9 @@ class Report_Salary extends BaseGSReport {
                 $o_name = html_out(isset($users[$info['o_uid']]) ? html_out($users[$info['o_uid']]) : ('??? - '.$info['o_uid'])); 
                 $sum_line += $info['o_fee'];
                 $o_fee = number_format($info['o_fee'], 2, '.', ' ');
+                if($worker_id==$info['o_uid']) {
+                    $w_cont = 0;
+                }
             }
             
             if( isset($info['r_uid']) ) {
@@ -228,6 +244,9 @@ class Report_Salary extends BaseGSReport {
                 $r_name = html_out(isset($users[$info['r_uid']]) ? html_out($users[$info['r_uid']]) : ('??? - '.$info['r_uid']));
                 $sum_line += $info['r_fee'];
                 $r_fee = number_format($info['r_fee'], 2, '.', ' ');
+                if($worker_id==$info['r_uid']) {
+                    $w_cont = 0;
+                }
             }
             
             if( isset($info['m_uid']) ) {
@@ -235,6 +254,9 @@ class Report_Salary extends BaseGSReport {
                 $m_name = html_out(isset($users[$info['m_uid']]) ? html_out($users[$info['m_uid']]) : ('??? - '.$info['m_uid']));
                 $sum_line += $info['m_fee'];                
                 $m_fee = number_format($info['m_fee'], 2, '.', ' ');
+                if($worker_id==$info['m_uid']) {
+                    $w_cont = 0;
+                }
 
             }
             
@@ -243,6 +265,9 @@ class Report_Salary extends BaseGSReport {
                 $sk_name = html_out(isset($users[$info['sk_uid']]) ? html_out($users[$info['sk_uid']]) : ('??? - '.$info['sk_uid']));
                 $sum_line += $info['sk_fee'];
                 $sk_fee = number_format($info['sk_fee'], 2, '.', ' ');
+                if($worker_id==$info['sk_uid']) {
+                    $w_cont = 0;
+                }
             }
             $sum += $sum_line;
             $p_date = date("Y-m-d", $doc_line['date']); 
@@ -250,6 +275,9 @@ class Report_Salary extends BaseGSReport {
                 $sum_line = number_format($sum_line, 2, '.', ' ');
             }   else {
                 $sum_line = '';
+            }
+            if($w_cont) {
+                continue;
             }
             $tmpl->addContent("<tr><td><a href='/doc_reports.php?mode=salary&amp;opt=doc&amp;doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
                 . "<td>{$doc_line['type_name']}</td><td>$p_date</td>"

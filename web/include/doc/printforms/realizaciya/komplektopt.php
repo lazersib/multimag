@@ -18,7 +18,7 @@
 //
 namespace doc\printforms\realizaciya; 
 
-class komplektopt extends \doc\printforms\iPrintFormIDPdf {
+class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
     protected $form_basesum;
     
     public function getName() {
@@ -55,21 +55,27 @@ class komplektopt extends \doc\printforms\iPrintFormIDPdf {
         
         $th_widths = array(6);
         $th_texts = array('№');
+        $font_sizes = array(8);
         $tbody_aligns = array('R');
         if ($CONFIG['poseditor']['vc']) {
             $th_widths[] = 10;
             $th_texts[] = 'Код';
+            $font_sizes[] = 8;
             $tbody_aligns[] = 'R';
-            $th_widths[] = 70;
+            $th_widths[] = 77;
         } else {
-            $th_widths[] = 90;
+            $th_widths[] = 97;
         }
         $th_texts[] = 'Наименование';
         $tbody_aligns[] = 'L';
-        $th_widths = array_merge($th_widths, array(10, 12, 12, 12, 12, 14, 12, 20));
-        $th_texts = array_merge($th_texts, array('Ед.', 'Кол-во', 'Склад', 'В м.уп.', 'В б.уп.', 'Резерв', 'Масса', 'Место'));
-        $tbody_aligns = array_merge($tbody_aligns, array('C', 'R', 'R', 'R', 'R', 'R', 'R', 'R'));
+        $font_sizes[] = 8;
+
+        $th_widths = array_merge($th_widths, array(10, 14, 12, 14, 14, 14, 20));
+        $th_texts = array_merge($th_texts, array('Ед.', 'Кол-во', 'Склад', 'В м.уп.', 'В б.уп.', 'Резерв', 'Место'));
+        $tbody_aligns = array_merge($tbody_aligns, array('C', 'R', 'R', 'R', 'R', 'R', 'R'));
         $this->addTableHeader($th_widths, $th_texts, $tbody_aligns);        
+        $font_sizes = array_merge($font_sizes, array(8, 11, 8, 8, 8, 8, 8));
+        $this->pdf->SetFSizes($font_sizes);
         
         $this->form_linecount = 0;
         $this->form_sum = $this->form_summass = 0;
@@ -91,7 +97,6 @@ class komplektopt extends \doc\printforms\iPrintFormIDPdf {
                     $line['mult'],
                     $line['bigpack_cnt'],
                     $line['reserve'],
-                    $line['mass'],
                     $line['place'],
                 ) );
             if ($this->pdf->h <= ($this->pdf->GetY() + 18 )) {
@@ -106,4 +111,50 @@ class komplektopt extends \doc\printforms\iPrintFormIDPdf {
         }    
         $pc->setOrderSum($this->form_basesum);   
     }
+    
+    /// Добавить блок с информацией о сумме документа
+    protected function addSummaryBlock() {
+        parent::addSummaryBlock();
+        $doc_data = $this->doc->getDocDataA();
+        if($doc_data['comment']) {
+            $this->addSignLine("Комментарий к документу: " . $doc_data['comment']);
+        }
+    }
+    
+    /// Добавить блок с информацией об оплатах
+    protected function addPaymentInfoBlock() {
+    } 
+    
+    /// Добавить блок с подписями
+    protected function addSignBlock() {    
+        global $db;
+        $doc_data = $this->doc->getDocDataA();
+        $dop_data = $this->doc->getDopDataA();
+        $vip_name = $autor_name = $klad_name = '________________';
+        $res_uid = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
+            WHERE `user_id`='" . $_SESSION['uid'] . "'");
+        if ($res_uid->num_rows) {
+            list($vip_name) = $res_uid->fetch_row();
+        }
+
+        $res_autor = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
+            WHERE `user_id`='" . $doc_data['user'] . "'");
+        if ($res_autor->num_rows) {
+            list($klad_name) = $res_autor->fetch_row();
+        }
+
+        $res_klad = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
+            WHERE `user_id`='" . $dop_data['kladovshik'] . "'");
+        if ($res_klad->num_rows) {
+            list($klad_name) = $res_klad->fetch_row();
+        } 
+
+        $text = "Заявку принял: _________________________________________ ( $autor_name )";
+        $this->addSignLine($text);
+        $text = "Документ выписал: _____________________________________ ( $vip_name )";
+        $this->addSignLine($text);
+        $text = "Заказ скомплектовал: ___________________________________ ( $klad_name )";
+        $this->addSignLine($text);
+    }
+    
 }

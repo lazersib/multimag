@@ -78,8 +78,6 @@ class Report_Agent_resp extends BaseReport {
         }
         list($w_name) = $res->fetch_row();
 
-        
-
         $this->header("Отчёт по агентам c $date_f по $date_t для ответственного $w_name (id:$worker_id)");
         $widths = array(8, 59, 11, 11, 11);
         $headers = array('id', 'Агент', 'По кассе', 'По банку', 'Всего');

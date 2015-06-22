@@ -110,8 +110,6 @@ abstract class iPrintFormInvoicePdf extends \doc\printforms\iPrintFormPdf {
     }
     
     /// Добавить блок с информацией о сумме документа
-    /// @param $sum Сумма документа
-    /// @param $cnt Количество наименований в документе
     protected function addSummaryBlock() {
         $dop_data = $this->doc->getDopDataA();
         $sum_p = number_format($this->form_sum, 2, '.', ' ');
