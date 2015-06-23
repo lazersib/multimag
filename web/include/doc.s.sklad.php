@@ -347,18 +347,18 @@ class doc_s_Sklad {
 
 			$res2 = $db->query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
 			while ($nx2 = $res2->fetch_row()) {
-				$tmpl->addContent("<option disabled style='color:#fff; background-color:#000'>".html_out($nx2[1])."</option>\n");
-				$res = $db->query("SELECT `id`, `name`, `rus_name1` FROM `class_unit` WHERE `class_unit_group_id`='$nx2[0]'");
-				while ($nx = $res->fetch_row()) {
-					$i = "";
-					if ($pos != 0) {
-						if ($nx[0] == $pos_info['unit'])
-							$i = " selected";
-					}
-					else if ($nx[0] == @$CONFIG['doc']['default_unit'])
-						$i = " selected";
-					$tmpl->addContent("<option value='$nx[0]' $i>".html_out("$nx[1] ($nx[2])")."</option>");
-				}
+                            $tmpl->addContent("<option disabled style='color:#fff; background-color:#000'>".html_out($nx2[1])."</option>\n");
+                            $res = $db->query("SELECT `id`, `name`, `rus_name1` FROM `class_unit` WHERE `class_unit_group_id`='$nx2[0]'");
+                            while ($nx = $res->fetch_row()) {
+                                $i = "";
+                                if ($pos != 0) {
+                                        if ($nx[0] == $pos_info['unit'])
+                                                $i = " selected";
+                                }
+                                else if ($nx[0] == @$CONFIG['doc']['default_unit'])
+                                        $i = " selected";
+                                $tmpl->addContent("<option value='$nx[0]' $i>".html_out("$nx[1] ($nx[2])")."</option>");
+                            }
 			}
 			$tmpl->addContent("</select></td>
 				<td align='right'>Количество оптом:</td>
@@ -2515,23 +2515,29 @@ class doc_s_Sklad {
         
         // Динамические свойства - записанные
         $dyn_table = '';
-        $dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`name`, `doc_base_values`.`value`
+        $dpv_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_base_values`.`value`
+                , `class_unit`.`rus_name1` AS `unit_name`
             FROM `doc_base_values`
             LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+            LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
             WHERE `doc_base_values`.`id`='$pos_id' AND `doc_base_params`.`hidden`=0 "
             . " AND ( `doc_base_params`.`group_id`=0 OR `doc_base_params`.`group_id` IS NULL)");
-        while ($nx = $dpv_res->fetch_row()) {
-            $dyn_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+        while ($nx = $dpv_res->fetch_assoc()) {
+            $dyn_table .= "<tr><td align='right'>".html_out($nx['name']).", ".html_out($nx['unit_name'])."</td>"
+                . "<td><input type='text' name='par[{$nx['id']}]' value='".html_out($nx['value'])."'></td></tr>";
         }
         $g_res = $db->query("SELECT * FROM `doc_base_gparams` ORDER BY `name`");
         while ($g_info = $g_res->fetch_assoc()) {
             $add_table = '';
-            $dpv_res = $db->query("SELECT `doc_base_values`.`param_id`, `doc_base_params`.`name`, `doc_base_values`.`value`
+            $dpv_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_base_values`.`value`
+                , `class_unit`.`rus_name1` AS `unit_name`
                 FROM `doc_base_values`
                 LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+                LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
                 WHERE `doc_base_values`.`id`='$pos_id' AND `doc_base_params`.`hidden`=0 AND `doc_base_params`.`group_id`='{$g_info['id']}'");
-            while ($nx = $dpv_res->fetch_row()) {
-                $add_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value='".html_out($nx[2])."'></td></tr>";
+            while ($nx = $dpv_res->fetch_assoc()) {
+                $add_table .= "<tr><td align='right'>".html_out($nx['name']).", ".html_out($nx['unit_name'])."</td>"
+                . "<td><input type='text' name='par[{$nx['id']}]' value='".html_out($nx['value'])."'></td></tr>";
             }
             if($add_table) {
                 $dyn_table .= "<tr><th colspan='2'>".html_out($g_info['name'])."</th></tr>".$add_table; 
@@ -2539,28 +2545,38 @@ class doc_s_Sklad {
         }
         $dyn_table .= "<tr><td colspan='2'</td></tr>";
         // Динамические свойства - от групп
-        $gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_group_params`.`show_in_filter`
+        $gdp_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `class_unit`.`rus_name1` AS `unit_name`
             FROM `doc_base_params`
             LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+            LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
             WHERE `doc_group_params`.`group_id`='{$pos_info['group_id']}' AND `doc_base_params`.`hidden`='0' 
                 AND `doc_base_params`.`id` NOT IN ( SELECT `doc_base_values`.`param_id` FROM `doc_base_values` WHERE `doc_base_values`.`id`='$pos_id' )
             ORDER BY `doc_base_params`.`id`");
-        while ($nx = $gdp_res->fetch_row()) {
-            $dyn_table .= "<tr><td align='right'>".html_out($nx[1])."</td><td><input type='text' name='par[$nx[0]]' value=''></td></tr>";
+        while ($nx = $gdp_res->fetch_assoc()) {
+            $dyn_table .= "<tr><td align='right'>".html_out($nx['name']).", ".html_out($nx['unit_name'])."</td>"
+                . "<td><input type='text' name='par[{$nx['id']}]' value=''></td></tr>";
         }
         
         // добавление динамических свойств
         $dyn_foot = "<tr><td align='right'><select name='pp' id='fg_select'>";  
-        $r = $db->query("SELECT `id`, `name`, `codename`, `type` FROM `doc_base_params` WHERE `group_id` IS NULL ORDER BY `name`");
-        while ($p = $r->fetch_row()) {
-            $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])." ($p[3])</option>";
+        $r = $db->query("SELECT `doc_base_params`.`id`,  `doc_base_params`.`name`,  `doc_base_params`.`codename`,  `doc_base_params`.`type`
+                , `class_unit`.`rus_name1` AS `unit_name`
+            FROM `doc_base_params` 
+            LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
+            WHERE `group_id` IS NULL ORDER BY `name`");
+        while ($p = $r->fetch_assoc()) {
+            $dyn_foot .= "<option value='{$p['id']}'>".html_out($p['name']).", ".html_out($p['unit_name'])." :{$p['type']}</option>";
         }
         $g_res = $db->query("SELECT * FROM `doc_base_gparams` ORDER BY `name`");
         while ($g_info = $g_res->fetch_assoc()) {
             $dyn_foot .= "<option style='color:#fff; background-color:#000' disabled>".html_out($g_info['name'])."</option>";
-            $r = $db->query("SELECT `id`, `name`, `codename`, `type` FROM `doc_base_params` WHERE `group_id`='{$g_info['id']}' ORDER BY `name`");
-            while ($p = $r->fetch_row()) {
-                $dyn_foot .= "<option value='$p[0]'>".html_out($p[1])." ($p[3])</option>";
+            $r = $db->query("SELECT `doc_base_params`.`id`,  `doc_base_params`.`name`,  `doc_base_params`.`codename`,  `doc_base_params`.`type`
+                , `class_unit`.`rus_name1` AS `unit_name`
+                FROM `doc_base_params` 
+                LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
+                WHERE `group_id`='{$g_info['id']}' ORDER BY `name`");
+            while ($p = $r->fetch_assoc()) {
+                $dyn_foot .= "<option value='{$p['id']}'>".html_out($p['name']).", ".html_out($p['unit_name'])." :{$p['type']}</option>";
             }
         }
         $dyn_foot .= "</select></td><td><input type='text' id='value_add'>&nbsp;<img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr></td></tr>";
@@ -2568,11 +2584,13 @@ class doc_s_Sklad {
         // Служебные (системные) свойства
         $srv_table = '';
         $dpv_res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_base_params`.`codename`, `doc_base_values`.`value`
+                , `class_unit`.`rus_name1` AS `unit_name`
             FROM `doc_base_params`
+            LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
             LEFT JOIN `doc_base_values` ON `doc_base_params`.`id`=`doc_base_values`.`param_id` AND `doc_base_values`.`id`='$pos_id'
             WHERE `doc_base_params`.`hidden`!=0");
         while ($nx = $dpv_res->fetch_assoc()) {
-            $name = html_out($nx['name']).'<br><small>'.html_out($nx['codename']).'</small>';
+            $name = html_out($nx['name']).', '.html_out($nx['unit_name']).'<br><small>'.html_out($nx['codename']).'</small>';
             $srv_table .= "<tr><td align='right'>$name</td><td><input type='text' name='par[{$nx['id']}]' value='".html_out($nx['value'])."'></td></tr>";
         }
         
@@ -2604,9 +2622,9 @@ class doc_s_Sklad {
         <td valign='top' width='33%'>
         <table class='list' width='100%'>
         <tr><td align='right'>Тип</td><td><select name='type' id='pos_type' >$type_opt</select></td></tr>
-        <tr><td align='right'>Внутренний размер (d)</td><td><input type='text' name='d_int' value='{$pos_info['d_int']}' id='pos_d_int'></td></tr>
-        <tr><td align='right'>Внешний размер (D)</td><td><input type='text' name='d_ext' value='{$pos_info['d_ext']}' id='pos_d_ext'></td></tr>
-        <tr><td align='right'>Высота (B)</td><td><input type='text' name='size' value='{$pos_info['size']}' id='pos_size'></td></tr>
+        <tr><td align='right'>Внутренний диаметр, мм (d)</td><td><input type='text' name='d_int' value='{$pos_info['d_int']}' id='pos_d_int'></td></tr>
+        <tr><td align='right'>Внешний диаметр, мм (D)</td><td><input type='text' name='d_ext' value='{$pos_info['d_ext']}' id='pos_d_ext'></td></tr>
+        <tr><td align='right'>Высота, мм (B)</td><td><input type='text' name='size' value='{$pos_info['size']}' id='pos_size'></td></tr>
         <tr><td align='right'>Номер таможенной декларации</td><td><input type='text' name='ntd' value='{$pos_info['ntd']}'></td></tr>
         </table>
         </td>

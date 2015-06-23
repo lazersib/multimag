@@ -35,6 +35,7 @@ class PosParamListEditor extends \ListEditor {
             'name' => 'Наименование',
             'codename' => 'Кодовое обозначение',
             'type' => 'Тип данных',
+            'unit_id' => 'Единица измерения',
             'ym_assign' => 'Идентификатор яндекс-маркета',
             'hidden' => 'Скрытый'
         );
@@ -55,6 +56,33 @@ class PosParamListEditor extends \ListEditor {
     public function getFieldGroup_id($data) {
         if ($data['group_id'] > 0) {
             return html_out($this->group_list[$data['group_id']]);
+        } else {
+            return '-- не задано --';
+        }
+    }
+    
+    public function getInputUnit_id($name, $value) {
+        global $db;
+        $ret = "<select name='$name'>";
+        $ret .="<option value='null'>-- не задано --</option>";
+        $res2 = $db->query("SELECT `id`, `name` FROM `class_unit_group` ORDER BY `id`");
+        while ($nx2 = $res2->fetch_row()) {
+            $ret .= "<optgroup label='" . html_out($nx2[1]) . "'>";
+            $res = $db->query("SELECT `id`, `name`, `rus_name1` FROM `class_unit` WHERE `class_unit_group_id`='$nx2[0]'");
+            while ($nx = $res->fetch_row()) {
+                $i = ($nx[0] == $value)?" selected":'';
+                $ret .="<option value='$nx[0]' $i>" . html_out("$nx[1] ($nx[2])") . "</option>";
+            }
+            $ret .= "</optgroup>";
+        }
+        $ret .="</select>";
+        return $ret;
+    }
+    
+    public function getFieldUnit_id($data) {
+        $this->initUnitsList();
+        if ($data['unit_id'] > 0) {
+            return html_out($this->units_list[$data['unit_id']]);
         } else {
             return '-- не задано --';
         }
@@ -87,13 +115,24 @@ class PosParamListEditor extends \ListEditor {
     }
     
     protected function initGroupList() {
-        if (isset($this->firm_list)) {
+        if (isset($this->group_list)) {
             return;
         }
         $this->group_list = array();
         $res = $this->db_link->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `id`");
         while ($line = $res->fetch_assoc()) {
             $this->group_list[$line['id']] = $line['name'];
+        }
+    }
+    
+    protected function initUnitsList() {
+        if (isset($this->units_list)) {
+            return;
+        }
+        $this->units_list = array();
+        $res = $this->db_link->query("SELECT `id`, CONCAT(`name`, ', ', `rus_name1`) AS `name` FROM `class_unit` ORDER BY `id`");
+        while ($line = $res->fetch_assoc()) {
+            $this->units_list[$line['id']] = $line['name'];
         }
     }
     

@@ -51,7 +51,7 @@ try {
         <li><a href='?mode=gparams'>Группы свойств складской номенклатуры</a></li>
 	<li><a href='?mode=params'>Свойства складской номенклатуры</a></li>
 	<li><a href='?mode=param_collections'>Наборы свойств складской номенклатуры</a></li>	
-	
+	<li><a href='?mode=units'>Единицы измерения</a></li>
 	</ul>
 	<li>Обработки</li>
 	<ul>
@@ -709,6 +709,12 @@ try {
             <li><a class='selected' href='/doc_service.php?mode=gparams'>Группы свойств</a></li>
             <li><a href='/doc_service.php?mode=params'>Свойства</a></li>
             </ul>");
+        $editor->run();
+    }  elseif ($mode == 'units') {
+        $editor = new \ListEditors\UnitsEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=units';
+        $editor->acl_object_name = 'doc_service';
         $editor->run();
     } else {
         throw new NotFoundException("Несуществующая опция");
