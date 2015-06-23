@@ -816,7 +816,7 @@ function writeLogException($e) {
         $data['ip'] = getenv("REMOTE_ADDR");
         $data['useragent'] = getenv("HTTP_USER_AGENT");
         $data['date'] = date('Y-m-d H:i:s');
-
+        $data['uid'] = $uid;
         return $db->insertA('errorlog', $data);
     }
 }
