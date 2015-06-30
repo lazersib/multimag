@@ -367,6 +367,10 @@ class Report_dc_book extends BaseReport {
     
     function addQuarterList($year, $firm_id, $quarter, $sum_text = '', $prevous = null) {
         global $db;
+        settype($year, 'int');
+        settype($firm_id, 'int');
+        settype($quarter, 'int');
+        
         // Creating a worksheet
         $this->xls_sheet = $this->xls_book->addWorksheet($quarter.' quarter');
         $this->xls_sheet->setInputEncoding('utf-8');
@@ -432,7 +436,7 @@ class Report_dc_book extends BaseReport {
             FROM `doc_list`
             LEFT JOIN `doc_dopdata` AS `d_table` ON `d_table`.`doc`=`doc_list`.`id` AND `d_table`.`param`='rasxodi'
             LEFT JOIN `doc_dopdata` AS `c_table` ON `c_table`.`doc`=`doc_list`.`id` AND `c_table`.`param`='credit_type'
-            WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_st' AND `doc_list`.`date`<='$date_end'
+            WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_st' AND `doc_list`.`date`<='$date_end' AND `doc_list`.`firm_id`=$firm_id
                 AND `doc_list`.`type` IN (4, 5, 6, 7)");
         $c = 1;
         $sum_in = $sum_out = 0;

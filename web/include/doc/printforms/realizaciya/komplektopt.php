@@ -25,6 +25,18 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
         return "Накладная на комплектацию (опт)";
     }
     
+    /// Инициализация модуля вывода данных
+    public function initForm() {
+        require('fpdf/fpdf_mc.php');
+        $this->pdf = new \PDF_MC_Table('L');
+        $this->pdf->Open();
+        $this->pdf->SetAutoPageBreak(1, 5);
+        $this->pdf->AddFont('Arial', '', 'arial.php');
+        $this->pdf->SetFont('Arial', '', 10);
+        $this->pdf->tMargin = 5;
+        $this->pdf->SetFillColor(255);
+    }
+    
     protected function addPartnerInfoBlock() {
         $this->addOutPartnerInfoBlock();
     }
@@ -33,10 +45,9 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
     protected function addFormHeaderBlock() {
         $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
-        $dop_data = $this->doc->getDopDataA();
         $text = "Накладная на комплектацию N  {$doc_data['altnum']}{$doc_data['subtype']} ($doc_id) от " . date("d.m.Y", $doc_data['date']);
         $this->addHeader($text);  
-        $text = "К накладной N {$doc_data['altnum']}{$doc_data['subtype']} ({$doc_id})";
+        $text = "К расходной накладной N {$doc_data['altnum']}{$doc_data['subtype']} ({$doc_id})";
         $this->addInfoLine($text);           
     }
     
@@ -46,7 +57,7 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
         $doc_data = $this->doc->getDocDataA();
         $dop_data = $this->doc->getDopDataA();
 
-        $nomenclature = $this->doc->getDocumentNomenclature('bulkcnt,base_price,rto,bigpack');
+        $nomenclature = $this->doc->getDocumentNomenclature('bulkcnt,base_price,rto,bigpack,comment');
         $pc = \PriceCalc::getInstance();
         $pc->setAgentId($doc_data['agent']);
         if(isset($dop_data['ishop'])) {
@@ -60,15 +71,15 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
         if ($CONFIG['poseditor']['vc']) {
             $th_widths[] = 10;
             $th_texts[] = 'Код';
-            $font_sizes[] = 8;
+            $font_sizes[] = 7;
             $tbody_aligns[] = 'R';
-            $th_widths[] = 77;
+            $th_widths[] = 165;
         } else {
-            $th_widths[] = 97;
+            $th_widths[] = 185;
         }
         $th_texts[] = 'Наименование';
         $tbody_aligns[] = 'L';
-        $font_sizes[] = 8;
+        $font_sizes[] = 11;
 
         $th_widths = array_merge($th_widths, array(10, 14, 12, 14, 14, 14, 20));
         $th_texts = array_merge($th_texts, array('Ед.', 'Кол-во', 'Склад', 'В м.уп.', 'В б.уп.', 'Резерв', 'Место'));
@@ -85,10 +96,13 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
             $price = sprintf("%01.2f р.", $line['price']);
             $sum_line = sprintf("%01.2f р.", $line['sum']);
             $row = array($this->form_linecount);
+            $rowc=array('');
             if (@$CONFIG['poseditor']['vc']) {
                 $row[] = $line['vc'];
+                $rowc[] = '';
             }
             $row[] = $line['name'];
+            $rowc[] = $line['comment'];
             $row = array_merge($row, 
                 array(
                     $line['unit_name'],
@@ -99,12 +113,13 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
                     $line['reserve'],
                     $line['place'],
                 ) );
+            $rowc = array_merge($rowc, array('','','', '','','','') );
             if ($this->pdf->h <= ($this->pdf->GetY() + 18 )) {
                 $this->pdf->AddPage();
                 $this->addTechFooter();
             }
             $this->pdf->SetFont('', '', 8);
-            $this->pdf->RowIconv($row);
+            $this->pdf->RowIconvCommented($row, $rowc);
             $this->form_sum += $line['sum'];
             $this->form_summass += $line['mass'] * $line['cnt'];
             $this->form_basesum += $pc->getPosDefaultPriceValue($line['pos_id'], $line)*$line['cnt'];
@@ -140,7 +155,7 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
         $res_autor = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
             WHERE `user_id`='" . $doc_data['user'] . "'");
         if ($res_autor->num_rows) {
-            list($klad_name) = $res_autor->fetch_row();
+            list($autor_name) = $res_autor->fetch_row();
         }
 
         $res_klad = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
@@ -149,11 +164,11 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
             list($klad_name) = $res_klad->fetch_row();
         } 
 
-        $text = "Заявку принял: _________________________________________ ( $autor_name )";
+        $text = "Документ подготовил: _________________________________________ ( $autor_name )";
         $this->addSignLine($text);
         $text = "Документ выписал: _____________________________________ ( $vip_name )";
         $this->addSignLine($text);
-        $text = "Заказ скомплектовал: ___________________________________ ( $klad_name )";
+        $text = "Комплектацию выполнил: ___________________________________ ( $klad_name )";
         $this->addSignLine($text);
     }
     

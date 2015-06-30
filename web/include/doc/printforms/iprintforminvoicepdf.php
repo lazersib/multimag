@@ -148,7 +148,7 @@ abstract class iPrintFormInvoicePdf extends \doc\printforms\iPrintFormPdf {
  
     /// Сформировать печатную форму
     public function make() {
-        $this->pdf->AddPage('P');
+        $this->pdf->AddPage();
         $this->addTechFooter();
         
         $this->addFormHeaderBlock();      

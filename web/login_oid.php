@@ -61,8 +61,7 @@ $tmpl->setContent("<h1 id='page-title'>Вход по openid</h1>");
 $openid = new LightOpenID($CONFIG['site']['name']);
 if(!$openid->mode)
 {
-	if(isset($_REQUEST['oid']))
-	{
+	if(request('oid')) {
 		$openid->identity = $_REQUEST['oid'];
 		$openid->required = array('contact/email');
 		$openid->optional = array('namePerson', 'namePerson/friendly', 'contact/phone/cell', 'contact/postaladdress/home', 'contact/IM/Jabber','contact/internet/email');
@@ -72,12 +71,12 @@ if(!$openid->mode)
 	<tr><th colspan='4'><center>Войти через</center></th></tr>
 	<tr>
 	<td><a href='/login_oid.php?oid=https://www.google.com/accounts/o8/id'><img src='/img/oid/google.png' alt='Войти через Google'></a></td>
-	<td><a href='/login_oid.php?oid=ya.ru'><img src='/img/oid/yandex.png' alt='Войти через Яндекс'></a></td>
+	<td><a href='/login_oid.php?oid=http://openid.yandex.ru/'><img src='/img/oid/yandex.png' alt='Войти через Яндекс'></a></td>
 	<td><a href='/login_oid.php?oid=vkontakteid.ru'><img src='/img/oid/vkontakte.png' alt='Войти через ВконтактеID'></a></td>
 	<td><a href='/login_oid.php?oid=loginza.ru'><img src='/img/oid/loginza.png' alt='Войти через Loginza'></a></td>
 	</tr>
 	</table>
-	<form method='post' action='login.php'>
+	<form method='post' action='/login_oid.php'>
 	<input type='hidden' name='mode' value='openid'>
 	<b>или введите ваш openid</b><br>
 	<input type='text' name='oid' value=''><br>
@@ -190,7 +189,7 @@ elseif($openid->mode)
 				$msg=regMsg($login, $pass, $email_conf);
 				mailto(@$oid_attr['contact/email'], "Регистрация на ".$CONFIG['site']['name'], $msg);
 			}
-                        /// ТОВО: отправить SMS с кодом подтверждения
+                        /// ТОDО: отправить SMS с кодом подтверждения
                         
 			$_SESSION['uid']=$user_id;
 			$_SESSION['name']=$login;

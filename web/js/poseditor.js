@@ -383,7 +383,7 @@ function PosEditorInit(poslist_setup) {
 					fragment.appendChild(createGtdCell(data.gtd));	
 					break;
 				case 'sn':
-					fragment.appendChild(createSnCell(data.gtd));	
+					fragment.appendChild(createSnCell(data.sn));	
 					break;
 				default:fragment.appendChild(createConstCell('???'+poslist.show_column[i]+'???'));	
 			}
@@ -723,8 +723,7 @@ function PosEditorInit(poslist_setup) {
 		var input_price;
 		var input_cnt;
 		var cell_sum;
-		var cell_store_cnt;
-		var cell_sprice;
+                var cells = new Array();
 
 		// ID
 		tmp = document.createElement('td');
@@ -754,14 +753,9 @@ function PosEditorInit(poslist_setup) {
 					break;
 				case 'sum':
 					cell_sum = tmp;
-					break;
-				case 'store_cnt':
-					cell_store_cnt = tmp;
-					break;
-				case 'sprice':
-					cell_sprice = tmp;
-					break;
-				default:;	
+					break;                              
+				default:
+                                    cells[poslist.show_column[i]] = tmp;
 			}
 			
 			pladd.appendChild(tmp);	
@@ -892,10 +886,11 @@ function PosEditorInit(poslist_setup) {
 				input_cnt.value = '';
 			if(cell_sum)
 				cell_sum.innerHTML = '';
-			if(cell_store_cnt)
-				cell_store_cnt.innerHTML = '';
-			if(cell_sprice)
-				cell_sprice.innerHTML = '';
+                        
+                        for(var cell in cells) {
+                            cells[cell].innerHTML = '';
+                        }
+                            
 			if (input_vc)
 				input_vc.focus();
 			else	input_id.focus();
@@ -949,10 +944,10 @@ function PosEditorInit(poslist_setup) {
 				input_cnt.value = data.cnt;
 			if(cell_sum)
 				cell_sum.innerHTML = data.cost * data.cnt;
-			if(cell_store_cnt)
-				cell_store_cnt.innerHTML = data.sklad_cnt;
-			if(cell_sprice)
-				cell_sprice.innerHTML = data.scost;
+
+                        for(var cell in cells) {
+                            cells[cell].innerHTML = data[cell];
+                        }
 			if (data.line_id > 0)
 				pladd.className = 'error';
 		}

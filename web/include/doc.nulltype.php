@@ -1017,8 +1017,9 @@ class doc_Nulltype extends \document {
         if($f_param[0]=='int') {
             $method = '';
             foreach ($this->PDFForms as $form) {
-                if ($form['name'] == $f_param[1])
+                if ($form['name'] == $f_param[1]) {
                     $method = $form['method'];
+                }
             }                       
             return $this->$method($to_str);
         }

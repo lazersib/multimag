@@ -268,7 +268,7 @@ class login extends \IModule {
             <tr><th colspan='4'><center>Войти через</center></th></tr>
             <tr>
             <td><a href='/login_oid.php?oid=https://www.google.com/accounts/o8/id'><img src='/img/oid/google.png' alt='Войти через Google'></a></td>
-            <td><a href='/login_oid.php?oid=ya.ru'><img src='/img/oid/yandex.png' alt='Войти через Яндекс'></a></td>
+            <td><a href='/login_oid.php?oid=http://openid.yandex.ru/'><img src='/img/oid/yandex.png' alt='Войти через Яндекс'></a></td>
             <td><a href='/login_oid.php?oid=vkontakteid.ru'><img src='/img/oid/vkontakte.png' alt='Войти через Вконтакте'></a></td>
             <td><a href='/login_oid.php?oid=loginza.ru'><img src='/img/oid/loginza.png' alt='Войти через Loginza'></a></td>
             </tr>

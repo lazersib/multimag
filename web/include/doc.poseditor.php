@@ -418,47 +418,55 @@ function Show($param='') {
 
 /// Получить информацию о наименовании
 	function GetPosInfo($pos) {
-		global $db, $CONFIG;
+        global $db, $CONFIG;        
 
-		$res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
-                            `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`,
-                        `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                        
-                        `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`,
-			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`                        
-                    FROM `doc_base`
-                    LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-                    LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
-                    LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
-                    WHERE `doc_base`.`id`='$pos'");
+        $res = $db->query("SELECT `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
+                    `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`, `doc_base`.`mult`, `doc_base`.`bulkcnt`,
+                `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                        
+                `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`,
+                `doc_base_cnt`.`cnt` AS `store_cnt`, `doc_base_cnt`.`mesto` AS `place`                        
+            FROM `doc_base`
+            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+            LEFT JOIN `doc_list_pos` ON `doc_base`.`id`=`doc_list_pos`.`tovar` AND `doc_list_pos`.`doc`='{$this->doc}'
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad_id}'
+            WHERE `doc_base`.`id`='$pos'");
 
-		$ret = '';
-		if ($res->num_rows) {
-			$nxt = $res->fetch_assoc();
-			$pc = $this->initPriceCalc();
-			
-			if ($this->cost_id)
-				$nxt['scost'] = $pc->getPosSelectedPriceValue($nxt['pos_id'], $this->cost_id, $nxt);
-			else {
-				$nxt['scost'] = $pc->getPosUserPriceValue($nxt['pos_id'], $nxt['cnt']);
-				if($this->editable) {
-					$need_cost = $pc->getPosAutoPriceValue($nxt['pos_id'], $nxt['cnt']);
-					if($nxt['cost'] != $need_cost ) {
-						$nxt['cost'] = $need_cost;					
-						$db->update('doc_list_pos', $nxt['line_id'], 'cost', $need_cost);
-					}
-				}
-			}
-			if (!$nxt['cnt'])	$nxt['cnt'] = 1;
-			if (!$nxt['cost'])	$nxt['cost'] = $nxt['scost'];
-			$nxt['cost'] = sprintf("%0.2f", $nxt['cost']);
-			if(! $this->npv) {
-                            $nxt['name'].=' - '.$nxt['vendor'];
-                        }
-			$ret = "{response: 3, data:".json_encode($nxt, JSON_UNESCAPED_UNICODE)."}";
-		}
+        $line = null;
+        if ($res->num_rows) {
+            $line = $res->fetch_assoc();
+            $pc = $this->initPriceCalc();
 
-		return $ret;
-	}
+            if ($this->cost_id) {
+                $line['sprice'] = $pc->getPosSelectedPriceValue($line['pos_id'], $this->cost_id, $line);
+            } else {
+                $line['sprice'] = $pc->getPosUserPriceValue($line['pos_id'], $line['cnt']);
+                if ($this->editable) {
+                    $need_cost = $pc->getPosAutoPriceValue($line['pos_id'], $line['cnt']);
+                    if ($line['cost'] != $need_cost) {
+                        $line['cost'] = $need_cost;
+                        $db->update('doc_list_pos', $line['line_id'], 'cost', $need_cost);
+                    }
+                }
+            }
+            if (!$line['cnt']) {
+                $line['cnt'] = 1;
+            }
+            if (!$line['cost']) {
+                $line['cost'] = $line['scost'];
+            }
+            $line['cost'] = sprintf("%0.2f", $line['cost']);
+            if (!$this->npv) {
+                $line['name'].=' - ' . $line['vendor'];
+            }
+        }
+        $a_ret = array (
+            'response'  => 3,
+            'data'      => $line,
+        );
+
+        return json_encode($a_ret, JSON_UNESCAPED_UNICODE);
+    }
+
 /// Увеличивает количество указанного наименования. Если наименование в списке отсутствует - будет добавлено.
     function simpleIncrementPos($pos_id, $price, $cnt, $comm) {
         global $db, $CONFIG;
@@ -580,7 +588,7 @@ function Show($param='') {
     
 		$res = $db->query("SELECT `doc_list_pos`.`id` AS `line_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`,
                         `doc_base`.`id` AS `pos_id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, 
-                            `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`,
+                            `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`mult`, `doc_base`.`group`,
                         `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`,                        
 			`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base_cnt`.`mesto` AS `place`
                     FROM `doc_list_pos`

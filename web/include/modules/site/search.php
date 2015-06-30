@@ -152,9 +152,11 @@ class search extends \IModule {
             $sf = 1;
         }
 
-        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') $sql_add AND `doc_base`.`id` NOT IN ($found_ids) "
+        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') $sql_add AND `doc_base`.`id` NOT IN ($found_ids)"
+            . " AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'"
             . " ORDER BY `doc_base`.`name`"
             . " LIMIT $cnt_limit";
+        $res = $db->query($sqla);
         if ($res->num_rows) {
             $rows_res = $db->query("SELECT FOUND_ROWS()");
             list($found_cnt) = $rows_res->fetch_row();
@@ -179,6 +181,7 @@ class search extends \IModule {
             if ($groups_analog_list) {
                 $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) $sql_add"
                     . " AND `doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`vc` NOT LIKE '$s_sql%'"
+                    . " AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'"
                     . " ORDER BY `doc_base`.`name`"
                     . " LIMIT $cnt_limit";
                 $res = $db->query($sqla);
