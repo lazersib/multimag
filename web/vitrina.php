@@ -1452,13 +1452,17 @@ protected function TovList_ExTable($res, $lim) {
 protected function BuyAuthForm() {
 	global $tmpl;
 	$tmpl->setTitle("Оформление зкакза");
-	$tmpl->addContent("<p id='text'>Для использования всех возможностей этого сайта необходимо пройти процедуру регистрации. Регистрация не сложная, и займёт всего несколько минут.
+	$tmpl->addContent("<p id='text'>Рекомендуем зарегистрироваться! Регистрация не сложная, и займёт пару минут.
 	Кроме того, все зарегистрированные пользователи получают возможность приобретать товары по специальным ценам.</p>
 	<form action='' method='post'>
 	<input type='hidden' name='mode' value='buy'>
 	<label><input type='radio' name='step' value='1'>Оформить заказ без регистрации</label><br>
 	<label><input type='radio' name='step' value='2'>Зарегистрироваться как новый покупатель</label><br>
-	<label><input type='radio' name='step' value='3'>Войти как уже зарегистрированный покупатель</label><br>
+	<label><input type='radio' name='step' value='3'>Войти как уже зарегистрированный покупатель</label><br>");
+	$oauth_login = new \Modules\Site\oauthLogin();
+        $msg = "Если вы зарегистрированы на одном из этих сервисов - выберите его, и получите специальную цену";
+        $tmpl->addContent( $oauth_login->getLoginForm($msg) );        
+        $tmpl->addContent("
 	<button type='submit'>Далее</button>
 	</form>");
 }

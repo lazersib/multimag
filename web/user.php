@@ -114,6 +114,11 @@ try {
             $tmpl->addContent("<h2>Клиенту</h2>"
                 . "<ul class='items'>$block</ul>");
 	}
+        
+        $oauth_login = new \Modules\Site\oauthLogin();
+        $tmpl->addContent("<h2>Прекрепить профиль</h2>");
+        $tmpl->addContent( $oauth_login->getLoginForm() );
+        $tmpl->msg("Прикрепление профиля позволит Вам входить на этот сайт, не вводя учётных данных.");
 }
 else if($mode=='profile' || $mode=='chpwd' || $mode=='cemail' || $mode=='cphone' || $mode=='my_docs' || $mode=='get_doc' || $mode=='elog' 
     || $mode=='log_call_request' || $mode=='feedback'  || $mode=='feedback_send' ){

@@ -191,35 +191,18 @@ class authenticator {
         // Подготовка к созданию учётной записи
         $email_conf = $email ? substr(MD5(time() + rand(0, 1000000)), 0, 8) : '';
         $phone_conf = $phone ? rand(1000, 99999) : '';
-        $pass = keygen_unique(0, 8, 11);
                 
-        $sql_login = $db->real_escape_string($login);
-        if (@$CONFIG['site']['pass_type'] == 'MD5') {
-            $pass_hash = MD5($pass);
-            $pass_type = 'MD5';
-        } else if (@$CONFIG['site']['pass_type'] == 'SHA1') {
-            $pass_hash = SHA1($pass);
-            $pass_type = 'SHA1';
-        } else {
-            if (CRYPT_SHA256 == 1) {
-                $salt = '';
-                for($i=0;$i<16;$i++) {
-                    $salt .= chr(rand(0, 255));
-                }
-                $salt = substr(base64_encode($salt), 16);
-                $pass_hash = crypt($pass, '$5$' . $salt . '$');
-            } else {
-                $pass_hash = crypt($pass);
-            }
-            $pass_type = 'CRYPT';
-        }
+        $sql_login = $db->real_escape_string($login);     
+        $sql_email = $db->real_escape_string($email);  
+        $sql_phone = $db->real_escape_string($phone);  
+        list($pass_type, $pass, $pass_hash) = $this->generatePasswordData();
 
         $user_data = array(
-            'name' => $login,
+            'name' => $sql_login,
             'pass' => $pass_hash,
             'pass_type' => $pass_type,
             'pass_date_change' => date("Y-m-d H:i:s"),
-            'reg_email' => $email,
+            'reg_email' => $sql_email,
             'reg_email_confirm' => $email_conf,
             'reg_email_subscribe' => $subs_email,
             'reg_phone' => $phone,
@@ -239,6 +222,65 @@ class authenticator {
         }
         $db->commit();
         return false;
+    }
+    
+    public function createUser($login, $email, $is_verifed_email, $phone, $confirm_phone, $real_name='') {
+        global $db;
+        list($pass_type, $pass, $pass_hash) = $this->generatePasswordData();
+        $sql_login = $db->real_escape_string($login);     
+        $sql_email = $db->real_escape_string($email);  
+        $sql_phone = $db->real_escape_string($phone); 
+        $sql_real_name = $db->real_escape_string($real_name); 
+        $user_data = array(
+            'name' => $sql_login,
+            'pass' => $pass_hash,
+            'pass_type' => $pass_type,
+            'pass_date_change' => date("Y-m-d H:i:s"),
+            'reg_email' => $sql_email,
+            'reg_email_confirm' => ($email&&$is_verifed_email)?1:'',
+            'reg_email_subscribe' => $email?1:0,
+            'reg_phone' => $sql_phone,
+            'reg_phone_confirm' => ($phone&&$confirm_phone)?1:'',
+            'reg_date' => date("Y-m-d H:i:s"),
+            'real_name' => $sql_real_name
+        );        
+        $user_id = $db->insertA('users', $user_data);
+
+        
+        if($email) {
+            if($is_verifed_email) {
+                $this->sendRegInfoEmail($login, $pass, $email);
+            }   else {
+                $code = $this->getNewConfirmEmailCode();
+                $this->sendConfirmEmail($code);
+            }
+        }
+        return $user_id;
+    }
+    
+    public function generatePasswordData() {
+        global $CONFIG;
+        $pass = keygen_unique(0, 8, 11);                
+        if (@$CONFIG['site']['pass_type'] == 'MD5') {
+            $pass_hash = MD5($pass);
+            $pass_type = 'MD5';
+        } else if (@$CONFIG['site']['pass_type'] == 'SHA1') {
+            $pass_hash = SHA1($pass);
+            $pass_type = 'SHA1';
+        } else {
+            if (CRYPT_SHA256 == 1) {
+                $salt = '';
+                for($i=0;$i<16;$i++) {
+                    $salt .= chr(rand(0, 255));
+                }
+                $salt = substr(base64_encode($salt), 16);
+                $pass_hash = crypt($pass, '$5$' . $salt . '$');
+            } else {
+                $pass_hash = crypt($pass);
+            }
+            $pass_type = 'CRYPT';
+        }
+        return array($pass_type, $pass, $pass_hash);
     }
 
     public function getNewConfirmPhoneCode() {
@@ -262,7 +304,7 @@ class authenticator {
         require_once('include/sendsms.php');
         $sender = new SMSSender();
         $sender->setNumber($this->user_info['reg_phone']);
-        $sender->setContent("Ваш код: $code\r\n$ext_text\r\n{$CONFIG['site']['name']}");
+        $sender->setContent("Код подтверждения: $code\r\n$ext_text\r\n{$CONFIG['site']['name']}");
         $sender->send();
     }
     
@@ -281,6 +323,28 @@ class authenticator {
             . "\n----------------------------------------"
             . "\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
         mailto($this->user_info['reg_email'], "Смена регистрационного email адреса", $msg);
+    }
+    
+    protected function sendRegInfoEmail($login, $pass, $email) {
+        global $CONFIG;
+        $proto = 'http';
+        if (@$CONFIG['site']['force_https_login'] || @$CONFIG['site']['force_https']) {
+            $proto = 'https';
+        }
+        $msg =  
+        "Вы успешно зарегистрировались на сайте http://{$CONFIG['site']['name']} !\n".
+        "Ваш аккаунт:\n".
+        "Логин: $login\n".
+        "Пароль: $pass\n\n".
+        "------------------------------------------------------------------------------------------\n\n".
+        "You register in a site http://{$CONFIG['site']['name']} !\n".
+        "Your account:\n".
+        "Login: $login\n".
+        "Pass: $pass\n\n".
+        "------------------------------------------------------------------------------------------\n".
+        "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n".
+        "The message is generated automatically, to answer it is not necessary!";
+        mailto($email, "Успешная регистрация на сайте", $msg);
     }
     
     public function sendPassChangeEmail($user_id, $login, $session_key, $email) {

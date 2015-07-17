@@ -50,15 +50,15 @@ class buisoffcnt extends buisoff {
             $this->addMiniHeader($dop_data['shapka']);
         }
 
-        $th_widths = array(7, 110, 20, 35, 20);
-        $th_texts = array('№', 'Наименование', 'Кол-во', 'Срок поставки', 'Цена');
-        $tbody_aligns = array('R', 'L', 'R', 'L', 'R');
+        $th_widths = array(7, 100, 15, 15, 35, 20);
+        $th_texts = array('№', 'Наименование', 'Масса', 'Кол-во', 'Срок поставки', 'Цена');
+        $tbody_aligns = array('R', 'L', 'R', 'R', 'L', 'R');
         $this->addTableHeader($th_widths, $th_texts, $tbody_aligns);
 
         $ii = 1;
         $cnt = 0;
         foreach($nomenclature as $line) {
-            $row = array($ii, $line['name'], $line['cnt'] .' '.$line['unit_name'], $line['comment'], sprintf("%0.2f р.", $line['price']));
+            $row = array($ii, $line['name'], $line['mass'].' кг.', $line['cnt'] .' '.$line['unit_name'], $line['comment'], sprintf("%0.2f р.", $line['price']));
             $this->pdf->RowIconv($row);
             $ii++;
             $cnt += $line['cnt'];

@@ -144,6 +144,12 @@ class login extends \IModule {
         
         $form_action = $this->getFormAction();
         $ret = $this->getRegisterBrief();
+        $oauth_login = new \Modules\Site\oauthLogin(); 
+        $oauth = $oauth_login->getLoginForm('');
+        if($oauth) {
+            $ret .= "<h2>Быстрая регистрация через</h2>".$oauth;
+        }
+        
         $ret .= "<form action='$form_action' method='post' id='reg-form' autocomplete='off'>
         <input type='hidden' name='mode' value='regs'>
 	<h2>Регистрационные данные</h2>
@@ -178,10 +184,7 @@ class login extends \IModule {
 	<td><input type='text' name='img'><br><span id='captcha_valid' style='color: #c00'>{$err_msgs['captcha']}</span></td></tr>
 	<tr><td style='color: #c00;'><td>
 	<button type='submit'>Далее &gt;&gt;</button>
-	</form></table>";
-        if (@$CONFIG['site']['allow_openid']) {
-            $ret .= "<b>Примечание:</b> Если Вы хоте зарегистрироваться, используя свой OpenID, Вам <a href='/login_oid.php'>сюда</a>!<br>";
-        }
+	</form></table>";        
         $ret .= "<script type='text/javascript'>";
 
         if (@$CONFIG['site']['allow_phone_regist']) {
@@ -262,19 +265,8 @@ class login extends \IModule {
         $ret .= "<tr><td>&nbsp;</td>
         <td><button type='submit'>Вход!</button> ( <a class='wiki' href='/login.php?mode=rem'>Забыли пароль?</a> )</td></tr>
         </table></form>";
-        if(@$CONFIG['site']['allow_openid']) {
-            //<td><a href='/login_oid.php?oid=https://www.google.com/accounts/o8/id'><img src='/img/oid/google.png' alt='Войти через Google'></a></td>
-            $ret .= "
-            <table style='width: 800px'>
-            <tr><th colspan='3'><center>Войти через</center></th></tr>
-            <tr>
-            
-            <td><a href='/login_oid.php?oid=http://openid.yandex.ru/'><img src='/img/oid/yandex.png' alt='Войти через Яндекс'></a></td>
-            <td><a href='/login_oid.php?oid=vkontakteid.ru'><img src='/img/oid/vkontakte.png' alt='Войти через Вконтакте'></a></td>
-            <td><a href='/login_oid.php?oid=loginza.ru'><img src='/img/oid/loginza.png' alt='Войти через Loginza'></a></td>
-            </tr>
-            </table>";
-        }
+        $oauth_login = new \Modules\Site\oauthLogin();
+        $ret .= $oauth_login->getLoginForm();
         return $ret;
     }
     
@@ -567,7 +559,7 @@ class login extends \IModule {
                     else if (@$_SESSION['redir_to']) {
                         redirect($_SESSION['redir_to']);
                     } else {
-                        redirect("user.php");
+                        redirect("/user.php");
                     }
                 }
             }
@@ -688,7 +680,6 @@ class login extends \IModule {
         $reg_errors = $auth->register($login, $email, $subs_flag, $phone, $subs_flag, $captcha);
         if($reg_errors) {
             return $this->getRegisterForm($login, $email, $phone, $subs_flag, $reg_errors);
-
         } else {
             return $this->getConfirmForm($login);
         }

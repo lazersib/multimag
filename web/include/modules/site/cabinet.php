@@ -375,8 +375,12 @@ class cabinet extends \IModule {
         } else {
             $adata = false;
         }
-
         $tmpl->addContent( $this->getUserProfileForm($user_data, $adata) );
+        
+        $oauth_login = new \Modules\Site\oauthLogin();
+        $tmpl->addContent("<h2>Прекрепить профиль</h2>");
+        $tmpl->addContent( $oauth_login->getLoginForm() );
+        $tmpl->msg("Прикрепление профиля позволит Вам входить на этот сайт, не вводя учётных данных.");
     }
     
     /// Обработчик смены адреса электронной почты
