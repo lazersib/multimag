@@ -127,7 +127,7 @@ class document {
                 return null;
         }
     }
-    
+    /// @return document
     static function getInstanceFromDb($doc_id) {
         global $db;
         settype($doc_id, 'int');

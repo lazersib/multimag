@@ -54,7 +54,7 @@ class PDF_MC_Table extends FPDF
 		//Draw the cells of the row
 		for($i=0;$i<count($data);$i++)
 		{
-			$w=$this->widths[$i];
+			$w=@$this->widths[$i];
 			$a=isset($this->aligns[$i]) ? $this->aligns[$i] : 'L';
 			if(isset($this->fsizes[$i]))	
 			{

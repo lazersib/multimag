@@ -32,7 +32,14 @@ class doc_Sborka extends doc_Nulltype {
     
     /// Получить строку с HTML кодом дополнительных кнопок документа
     protected function getAdditionalButtonsHTML() {
-         return "<a href='/doc_sc.php?mode=reopen&amp;sn=sborka_zap&amp;doc={$this->id}' title='Передать в сценарий'><img src='img/i_launch.png' alt='users'></a>";
+        if(isset($this->dop_data['script'])) {
+            if(!$this->dop_data['script']) {
+                return '';
+            }
+            $sn = html_out($this->dop_data['script']);
+            return "<a href='/doc_sc.php?mode=reopen&amp;sn=$sn&amp;doc={$this->id}' title='Передать в сценарий'><img src='img/i_launch.png' alt='users'></a>";
+        }
+        return '';
     }
 	
     public function initDefDopdata() {
@@ -63,12 +70,8 @@ class doc_Sborka extends doc_Nulltype {
         $fail_text = '';
         while ($line = $res->fetch_array()) {
             $sign = $line['page'] ? '-' : '+';
-            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt` $sign '{$line['cnt']}' WHERE `id`='{$line['tovar']}' AND `sklad`='{$doc_info['sklad']}'");
-            // Если это первое поступление
-            if ($db->affected_rows == 0) {
-                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['tovar']}', '$doc_info[3]', '{$line['cnt']}')");
-            }
-            
+            $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['tovar']}', '{$doc_info['sklad']}', '{$line['cnt']}')"
+                . " ON DUPLICATE KEY UPDATE `cnt`=`cnt` $sign '{$line['cnt']}'");
             if ($line['page']) {
                 if (!$doc_info['dnc']) {
                     if ($line['cnt'] > $line['sklad_cnt'])  {

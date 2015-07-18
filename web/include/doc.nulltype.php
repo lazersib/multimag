@@ -130,34 +130,39 @@ class doc_Nulltype extends \document {
         }
 
         /// Создать документ с заданными данными
-	public function create($doc_data, $from='')
-	{
-		global $db;
-		if(!isAccess('doc_'.$this->typename,'create'))	throw new AccessException();
-		$date=time();
-		$doc_data['altnum'] = $this->getNextAltNum($this->doc_type ,$doc_data['subtype'], date("Y-m-d",$doc_data['date']), $doc_data['firm_id']);
-                $doc_data['created'] = date("Y-m-d H:i:s");
-		$res = $db->query("SHOW COLUMNS FROM `doc_list`");
-		$col_array=array();
-		while($nxt=$res->fetch_row()){
-			$col_array[$nxt[0]]=$nxt[0];
-		}
-		// Эти поля копировать не нужно
-		unset($col_array['id'],$col_array['date'],$col_array['type'],$col_array['user'],$col_array['ok']);
+	public function create($doc_data, $from='') {
+            global $db;
+            if (!isAccess('doc_' . $this->typename, 'create')) {
+                throw new \AccessException();
+            }
+            $date = time();
+            $doc_data['altnum'] = $this->getNextAltNum($this->doc_type, $doc_data['subtype'], date("Y-m-d", $doc_data['date']), $doc_data['firm_id']);
+            $doc_data['created'] = date("Y-m-d H:i:s");
+            $res = $db->query("SHOW COLUMNS FROM `doc_list`");
+            $col_array = array();
+            while ($nxt = $res->fetch_row()) {
+                $col_array[$nxt[0]] = $nxt[0];
+            }
+            // Эти поля копировать не нужно
+            unset($col_array['id'], $col_array['date'], $col_array['type'], $col_array['user'], $col_array['ok']);
 
-		$data = array_intersect_key($doc_data, $col_array);
-		$data['date'] = $date;
-		$data['type'] = $this->doc_type;
-		$data['user'] = $_SESSION['uid'];
-		
-		$line_id = $db->insertA('doc_list', $data);
-		$this->id = $line_id;
-		doc_log("CREATE", "FROM {$doc_data['id']} {$from}", 'doc', $this->id);
-		unset($this->doc_data);
-		unset($this->dop_data);
-		$this->get_docdata();
-		return $this->id;
-	}
+            $data = array_intersect_key($doc_data, $col_array);
+            $data['date'] = $date;
+            $data['type'] = $this->doc_type;
+            $data['user'] = $_SESSION['uid'];
+
+            $line_id = $db->insertA('doc_list', $data);
+            $this->id = $line_id;
+            if ($from) {
+                doc_log("CREATE", "FROM ({$doc_data['id']} {$from}):" . json_encode($doc_data), 'doc', $this->id);
+            } else {
+                doc_log("CREATE", "NEW:" . json_encode($doc_data), 'doc', $this->id);
+            }
+            unset($this->doc_data);
+            unset($this->dop_data);
+            $this->get_docdata();
+            return $this->id;
+        }
 	
 	/// Создать документ на основе данных другого документа
 	public function createFrom($doc_obj)
@@ -1714,6 +1719,9 @@ class doc_Nulltype extends \document {
 	/// Получение альтернативного порядкового номера документа
 	public function getNextAltNum($doc_type, $subtype, $date, $firm_id) {
 		global $CONFIG, $db;
+                if(!$doc_type) {
+                    $doc_type = $this->doc_type;
+                }
 		$start_date = strtotime(date("Y-01-01 00:00:00", strtotime($date)));
 		$end_date = strtotime(date("Y-12-31 23:59:59", strtotime($date)));
 		$res = $db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype'"
