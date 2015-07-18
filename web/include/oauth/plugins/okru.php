@@ -81,7 +81,6 @@ class okru extends \oauth\oauthplugin {
         if(!$success) {
             throw new \Exception('Ошибка получения данных пользователя!');
         }
-        var_dump($userinfo);
         $this->oauth_profile = array(
             'id' => $userinfo->uid,
             'login' => 'okru'.$userinfo->uid,
@@ -102,9 +101,7 @@ class okru extends \oauth\oauthplugin {
             if($userinfo->pic1024x768) {
                 $this->oauth_profile['picture'] = $userinfo->pic1024x768;
             }
-        }    
-        var_dump($this->oauth_profile);
-        die();
+        }            
         return $this->oauth_profile;
     }
 }
