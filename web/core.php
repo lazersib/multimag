@@ -34,6 +34,23 @@
 Смотри <a href='annotated.html'>структуры данных</a> и <a href='hierarchy.html'>иерархию классов</a>, чтобы получить полное представление о классах системы
 **/
 
+if ((@$CONFIG['site']['maintain_ip'])) {
+    if($CONFIG['site']['maintain_ip']!=getenv('REMOTE_ADDR')) {
+	header("HTTP/1.0 503 Service temporary unavariable");
+        header("Retry-After: 300");
+        die("<!DOCTYPE html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
+<title>Error 500: Необработанная внутренняя ошибка</title>
+<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
+<h1>503 Service temporary unavariable</h1>Сайт отключне на техобслуживание. Повторите попытку через несколько минут!<br>
+The site in maintenance mode. Please try again in a few minutes!</body></html>"
+	);
+    }
+}
+
 /// Автозагрузка классов для ядра
 function core_autoload($class_name){
     global $CONFIG;
@@ -839,12 +856,15 @@ function writeLogException($e) {
 if(!function_exists('mysqli_query'))
 {
 	header("HTTP/1.0 500 Internal Server Error");
+        header("Retry-After: 3000");
 	die("<h1>500 Внутренняя ошибка сервера</h1>Расширение php-mysqli не найдено. Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
 }
 
 if(!function_exists('mb_internal_encoding'))
 {
 	header("HTTP/1.0 500 Internal Server Error");
+        header("Retry-After: 3000");
+        header("Retry-After: 3000");
 	die("<h1>500 Внутренняя ошибка сервера</h1>Расширение php-mbstring не найдено. Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
 }
 
@@ -852,6 +872,7 @@ $time_start = microtime(true);
 if(!function_exists('mb_internal_encoding'))
 {
 	header("HTTP/1.0 500 Internal Server Error");
+        header("Retry-After: 3000");
 	die("<h1>500 Внутренняя ошибка сервера</h1>Расширение mbstring не установлено! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
 }
 
@@ -862,6 +883,7 @@ $base_path = dirname(dirname(__FILE__));
 if(! include_once("$base_path/config_site.php"))
 {
 	header("HTTP/1.0 500 Internal Server Error");
+        header("Retry-After: 3000");
 	die("<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
 }
 
@@ -884,6 +906,7 @@ $db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $
 if($db->connect_error)
 {
 	header("HTTP/1.0 503 Service temporary unavariable");
+            header("Retry-After: 3000");
 	die("<!DOCTYPE html>
 <html>
 <head>
@@ -901,6 +924,7 @@ mysqli_report(MYSQLI_REPORT_STRICT | MYSQLI_REPORT_ERROR);
 if(!$db->set_charset("utf8"))
 {
 	header("HTTP/1.0 503 Service temporary unavariable");
+        header("Retry-After: 3000");
 	die("<!DOCTYPE html>
 <html>
 <head>
