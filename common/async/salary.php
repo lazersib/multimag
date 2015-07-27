@@ -341,8 +341,6 @@ class salary extends \AsyncWorker {
         }
         $pos_cnt = $sk_pos_fee = 0;
         $a_places = array();
-        $b_sum = $additional_sum;
-        $detail_info = array();
             
         $res_tov = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cost`, `doc_list_pos`.`cnt`,
                  `doc_base_cnt`.`mesto`
@@ -364,19 +362,18 @@ class salary extends \AsyncWorker {
             }
             // Продавцам и пр
             if($doc['type']==2) {
-                $incost = $this->getInPrice($nxt_tov['pos_id'], $doc['date']);
                 if($detail) {
-                    $det_line['in_price'] = $incost;
+                    $det_line['in_price'] = 0;
                     $det_line['price'] = $nxt_tov['cost'];                    
                     $det_line['pos_liq'] = 0;
                 }
                 if ($this->conf_use_liq && isset($a_likv[$nxt_tov['pos_id']])) {
-                    $p_sum = ($nxt_tov['cost'] - $incost) * $nxt_tov['cnt'] * (1 - $a_likv[$nxt_tov['pos_id']] * $this->conf_liq_coeff / 100 );
+                    $p_sum = ($nxt_tov['cost']) * $nxt_tov['cnt'] * (1 - $a_likv[$nxt_tov['pos_id']] * $this->conf_liq_coeff / 100 );
                     if($detail) {
                         $det_line['pos_liq'] = $a_likv[$nxt_tov['pos_id']];
                     }
                 } else {
-                    $p_sum = ($nxt_tov['cost'] - $incost) * $nxt_tov['cnt'];
+                    $p_sum = ($nxt_tov['cost']) * $nxt_tov['cnt'];
                 }
                 $p_sum = round($p_sum, 2);
                 if($detail) {
@@ -466,6 +463,7 @@ class salary extends \AsyncWorker {
     }
         
     function getInPrice($pos_id, $limit_date) {
+        return 0;
         if($this->ppi[$pos_id]['type']) {
             return 0;
         }
@@ -542,7 +540,9 @@ class salary extends \AsyncWorker {
             return;
         }        
         if(!isset($this->users_fee[$uid])) {
-            $this->users_fee[$uid] = array('operator'=>0, 'resp'=>0, 'manager'=>0, 'sk'=>0, 'docs'=>array());
+            $this->users_fee[$uid] = array('operator'=>0, 'resp'=>0, 'manager'=>0, 
+                'sk'=>0, 'sk_pos'=>0, 'sk_cnt'=>0, 'sk_pls'=>0, 'sk_in'=>0, 'sk_out'=>0, 'sk_move'=>0, 'dcnt'=>0,
+                'docs'=>array());
         }
         if(!isset($this->users_fee[$uid][$role])) {
             $this->users_fee[$uid][$role] = round($value, 2);

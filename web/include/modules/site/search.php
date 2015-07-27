@@ -386,7 +386,7 @@ class search extends \IModule {
         $name = SearchHilight(html_out($name), $s);
         $ret .= "<tr><td><a href='$link'>$name</a></td><td>$nal</td><td $cce>$cost</td><td>{$line['d_int']}</td><td>{$line['d_ext']}</td><td>{$line['size']}</td>"
             . "<td>{$line['mass']}</td><td><a href='/vitrina.php?mode=korz_add&amp;p={$line['id']}&amp;cnt=1'"
-            . " onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$line['id']}&amp;cnt=1','popwin'); return false;\""
+            . " onclick=\"ShowPopupWin('/vitrina.php?mode=korz_add&amp;p={$line['id']}&amp;cnt=1','popwin'); return false;\""
             . " rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>";
         return $ret;
     }

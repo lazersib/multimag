@@ -194,11 +194,12 @@ class Report_Salary extends BaseGSReport {
         
         $users_ldo = new \Models\LDO\workernames();
         $users = $users_ldo->getData();
+        $months = round(($dt_t - $dt_f)/60/60/24/30);
         
         $salary = new \async\salary(0);
         $salary->loadPosTypes(); 
         $salary->loadPosData();
-        $tmpl->addBreadcrumb('Просмотр данных', '');        
+        $tmpl->addBreadcrumb('Просмотр данных '.$months, '');        
         $tmpl->addContent("<table class='list' width='100%'>"
             . "<tr><th>id</th><th>Тип</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
             . "<th>Сумма</th></tr>");
@@ -227,7 +228,7 @@ class Report_Salary extends BaseGSReport {
                 $doc_vars[$line[0]] = $line[1];
             }
             $doc_line['vars'] = $doc_vars;            
-            $info = $salary->calcFee($doc_line, $doc_line['resp_id']);
+            $info = $salary->calcFee($doc_line, $doc_line['resp_id'], true);
             
             if( isset($info['o_uid']) ) {
                 $salary->incFee('operator', $info['o_uid'], $info['o_fee'], $doc_line['id']);
@@ -265,6 +266,27 @@ class Report_Salary extends BaseGSReport {
                 $sk_name = html_out(isset($users[$info['sk_uid']]) ? html_out($users[$info['sk_uid']]) : ('??? - '.$info['sk_uid']));
                 $sum_line += $info['sk_fee'];
                 $sk_fee = number_format($info['sk_fee'], 2, '.', ' ');
+                // Детализация итога кладовщика
+                $salary->incFee('sk_pos', $info['sk_uid'], $info['sk_packfee']*$info['sk_coeff'], $doc_line['id']);
+                $salary->incFee('sk_pls', $info['sk_uid'], $info['sk_places']*$info['sk_pl_coeff'], $doc_line['id']);
+                $salary->incFee('sk_cnt', $info['sk_uid'], $info['sk_pcnt']*$info['sk_cnt_coeff'], $doc_line['id']);
+                switch($doc_line['type']) {
+                    case 1:
+                        $salary->incFee('sk_in', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
+                        break;
+                    case 2:
+                        $salary->incFee('sk_out', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
+                        break;
+                    case 8:
+                        $salary->incFee('sk_move', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
+                        break;
+                    default:
+                        var_dump($doc_line);
+                        echo"<br><br>";
+                        var_dump($info);
+                        echo"<br><br>";
+                        exit();
+                }
                 if($worker_id==$info['sk_uid']) {
                     $w_cont = 0;
                 }
@@ -287,14 +309,94 @@ class Report_Salary extends BaseGSReport {
         $sum = number_format($sum, 2, '.', ' ');
         $tmpl->addContent("<tr><td colspan=11>Итого:</td><td align='right'>$sum</td></tr>");
         $tmpl->addContent("</table>");
-        $tmpl->addContent("<table class='list'><tr><th colspan=2>По пользователям</th></tr>");
+        $tmpl->addContent("<table class='list'><tr><th colspan=20>По пользователям</th></tr>");
+        $tmpl->addContent("<tr><th rowspan='2'>Сотрудник</th><th rowspan='2'>Док.</th><th rowspan='2'>Оператору</th><th rowspan='2'>Ответственному</th><th rowspan='2'>Менеджеру</th>"
+            . "<th colspan='9'>Кладовщику</th><th rowspan='2'>Итого</th></tr>");
+        $tmpl->addContent("<tr><th>Товар</th><th>Места</th><th>Кол-во</th><th>&nbsp;</th><th>Поступл.</th><th>Реализ.</th><th>Перемещ.</th><th>&nbsp;</th><th>Итог</th></tr>");
+        
         $users_fee = $salary->getUsersFee();
+        ksort($users_fee);
+        $sums = array();
         foreach($users_fee as $uid=>$info) {
+            foreach($info as $id=>$val) {
+                if(isset($sums[$id])) {
+                    $sums[$id] += $val;
+                } else {
+                    $sums[$id] = $val;
+                }
+            }
+            
             $fee = $info['operator'] + $info['resp'] + $info['manager'] + $info['sk'];
             $fee = number_format($fee, 2, '.', ' ');
+            $fee_op = $info['operator']?number_format($info['operator'], 2, '.', ' '):'';
+            $fee_resp = $info['resp']?number_format($info['resp'], 2, '.', ' '):'';
+            $fee_man = $info['manager']?number_format($info['manager'], 2, '.', ' '):'';
+            $fee_sk = $info['sk']?number_format($info['sk'], 2, '.', ' '):'';
+            
+            $fee_pos = $info['sk_pos']?number_format($info['sk_pos'], 2, '.', ' '):'';
+            $fee_pls = $info['sk_pls']?number_format($info['sk_pls'], 2, '.', ' '):'';
+            $fee_cnt = $info['sk_cnt']?number_format($info['sk_cnt'], 2, '.', ' '):'';
+            
+            $sk_in = $info['sk_in']?number_format($info['sk_in'], 2, '.', ' '):'';
+            $sk_out = $info['sk_out']?number_format($info['sk_out'], 2, '.', ' '):'';
+            $sk_move = $info['sk_move']?number_format($info['sk_move'], 2, '.', ' '):'';
+            
             $r_name = html_out(isset($users[$uid]) ? $users[$uid] : ('??? - '.$uid));
-            $tmpl->addContent("<tr><td>$r_name</td><td align='right'>$fee</td></tr>");
+            $docs = count($info['docs']);
+            $tmpl->addContent("<tr><td>$r_name ($uid)</td>"
+                . "<td align='right'>$docs</td>"
+                . "<td align='right'>$fee_op</td>"
+                . "<td align='right'>$fee_resp</td>"
+                . "<td align='right'>$fee_man</td>"                
+                
+                . "<td align='right'>$fee_pos</td>"
+                . "<td align='right'>$fee_pls</td>"
+                . "<td align='right'>$fee_cnt</td>"
+                . "<td align='right'></td>"
+                . "<td align='right'>$sk_in</td>"
+                . "<td align='right'>$sk_out</td>"
+                . "<td align='right'>$sk_move</td>"                
+                . "<td align='right'></td>"
+                . "<td align='right'>$fee_sk</td>"
+                
+                . "<td align='right'>$fee</td>"                
+                . "</tr>");
         }
+        $fee = $sums['operator'] + $sums['resp'] + $sums['manager'] + $sums['sk'];
+        $fee = number_format($fee, 2, '.', ' ');
+        $fee_op = $sums['operator']?number_format($sums['operator'], 2, '.', ' '):'';
+        $fee_resp = $sums['resp']?number_format($sums['resp'], 2, '.', ' '):'';
+        $fee_man = $sums['manager']?number_format($sums['manager'], 2, '.', ' '):'';
+        $fee_sk = $sums['sk']?number_format($sums['sk'], 2, '.', ' '):'';
+
+        $fee_pos = $sums['sk_pos']?number_format($sums['sk_pos'], 2, '.', ' '):'';
+        $fee_pls = $sums['sk_pls']?number_format($sums['sk_pls'], 2, '.', ' '):'';
+        $fee_cnt = $sums['sk_cnt']?number_format($sums['sk_cnt'], 2, '.', ' '):'';
+
+        $sk_in = $sums['sk_in']?number_format($sums['sk_in'], 2, '.', ' '):'';
+        $sk_out = $sums['sk_out']?number_format($sums['sk_out'], 2, '.', ' '):'';
+        $sk_move = $sums['sk_move']?number_format($sums['sk_move'], 2, '.', ' '):'';
+        
+        $tmpl->addContent("<tr><td>ИТОГО</td>"
+            . "<td align='right'></td>"
+            . "<td align='right'>$fee_op</td>"
+            . "<td align='right'>$fee_resp</td>"
+            . "<td align='right'>$fee_man</td>"
+
+            . "<td align='right'>$fee_pos</td>"
+            . "<td align='right'>$fee_pls</td>"
+            . "<td align='right'>$fee_cnt</td>"
+            . "<td align='right'></td>"
+            . "<td align='right'>$sk_in</td>"
+            . "<td align='right'>$sk_out</td>"
+            . "<td align='right'>$sk_move</td>"                
+            . "<td align='right'></td>"
+            . "<td align='right'>$fee_sk</td>"
+
+
+            . "<td align='right'>$fee</td>" 
+            . "</tr>");
+        
         $tmpl->addContent("</table>");
     }
 

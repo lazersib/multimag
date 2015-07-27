@@ -173,7 +173,7 @@ if($mode)
 			}
 			$tmpl->addContent("<tr><td><a href='$link'>".html_out($nxt[1].' '.$nxt[2])."</a>
 			<td>".html_out($nxt[3])."<td>$nxt[6]<td>$nal<td $cce>$cost<td>$nxt[8]<td>$nxt[9]<td>$nxt[10]<td>$nxt[11]<td>
-			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
+			<a href='/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1' onclick=\"ShowPopupWin('/vitrina.php?mode=korz_add&amp;p={$nxt[0]}&amp;cnt=1','popwin'); return false;\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
 		}
 		$tmpl->addContent("</table><span style='color:#888'>Серая цена</span> требует уточнения<br>");
 	}

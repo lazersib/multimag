@@ -19,7 +19,8 @@
 //
 
 include_once("core.php");
-
+SafeLoadTemplate($CONFIG['site']['inner_skin']);
+$tmpl->hideBlock('left');
 try {
 
 	need_auth($tmpl);
@@ -29,56 +30,79 @@ try {
 
 	$tmpl->addBreadcrumb('Главная', '/');
 	$tmpl->addBreadcrumb('Личный кабинет', '/user.php');
-	
+	$tmpl->addBreadcrumb('Администрирование', '/adm.php');
 
 	$mode = request('mode');
 
 	if ($mode == '') {
-		$order = '`users`.`id`';
-		$res = $db->query("SELECT `users`.`id`, `users`.`name`, `users`.`reg_email`, `users`.`reg_email_confirm`, `users`.`reg_email_subscribe`,
-                    `users`.`reg_phone`, `users`.`reg_phone_confirm`, `users`.`reg_phone_subscribe`, `users`.`reg_date`, `users_worker_info`.`worker`,
-                    ( SELECT `date` FROM `users_login_history` WHERE `user_id`=`users`.`id` ORDER BY `date` DESC LIMIT 1) AS `lastlogin_date`,
-                    ( SELECT `user_id` FROM `users_openid` WHERE `user_id`=`users`.`id` LIMIT 1) AS `openid`
-                    FROM `users`
-                    LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
-                    ORDER BY $order");
-		$tmpl->addBreadcrumb('Список пользователей', '');
-		$tmpl->setTitle('Список пользователей');
-		$tmpl->addContent("<h1 id='page-title'>Список пользователей</h1>
-		<table class='list' width='100%'>
-		<tr><th rowspan='2'>ID</th>
-		<th rowspan='2'>Имя</th>
-		<th colspan='3'>email</th>
-		<th colspan='3'>Телефон</th>
-		<th rowspan='2'>OpenID</th>
-		<th rowspan='2'>Последнее посещение</th>
-		<th rowspan='2'>Сотрудник?</th>
-		<th rowspan='2'>Дата регистрации</th>
-		</tr>
-		<tr>
-		<th>адрес</th><th>С</th><th>S</th>
-		<th>номер</th><th>С</th><th>S</th>
-		</tr>
-		");
-		while ($line = $res->fetch_assoc()) {
-			$econfirm = $line['reg_email_confirm'] == '1' ? 'Да' : 'Нет';
-			$esubscribe = $line['reg_email_subscribe'] ? 'Да' : 'Нет';
+            $ll_dates = array();    
+            $res = $db->query("SELECT `user_id`, `date` FROM `users_login_history` ORDER BY `date`");
+            while($line = $res->fetch_assoc()) {
+                $ll_dates[$line['user_id']] = $line['date'];
+            }   
+                       
+            $order = '`users`.`id`';
+            $res = $db->query("SELECT `users`.`id`, `users`.`name`, `users`.`reg_email`, `users`.`reg_email_confirm`, `users`.`reg_email_subscribe`,
+                `users`.`reg_phone`, `users`.`reg_phone_confirm`, `users`.`reg_phone_subscribe`, `users`.`reg_date`, `users_worker_info`.`worker`,
+                ( SELECT `user_id` FROM `users_openid` WHERE `user_id`=`users`.`id` LIMIT 1) AS `openid`
+                FROM `users`
+                LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+                ORDER BY $order");
+            $tmpl->addBreadcrumb('Список пользователей', '');
+            $tmpl->setTitle('Список пользователей');
+            $tmpl->addContent("<h1 id='page-title'>Список пользователей</h1>
+            <table class='list' width='100%'>
+            <tr><th rowspan='2'>ID</th>
+            <th rowspan='2'>Логин</th>
+            <th colspan='3'>email</th>
+            <th colspan='3'>Телефон</th>
+            <th rowspan='2'>OpenID</th>
+            <th rowspan='2'>Последнее посещение</th>
+            <th rowspan='2'>Сотрудник?</th>
+            <th rowspan='2'>Дата регистрации</th>
+            </tr>
+            <tr>
+            <th>адрес</th><th>С</th><th>S</th>
+            <th>номер</th><th>С</th><th>S</th>
+            </tr>");
+            
+            
+            while ($line = $res->fetch_assoc()) {
+                $line['lastlogin_date'] = $econfirm = $esubscribe = $pconfirm = $psubscribe = $p_email = $ll_date = '';
+                if(isset($ll_dates[$line['id']])) {
+                    $ll_date = $ll_dates[$line['id']];
+                    $ll_time = strtotime($ll_date);
+                    if($ll_time>0) {
+                        $ll_date = date("Y-m-d", $ll_time);
+                        if( (time()-$ll_time)<60*60*24*45 ) {
+                            $ll_date = "<b style='color:#080'>$ll_date</b>";
+                        } else if( (time()-$ll_time)>60*60*24*365 ) {
+                            $ll_date = "<b style='color:#c00'>$ll_date</b>";
+                        }
+                    } else {
+                        $ll_date = '';
+                    }
+                }
+                if($line['reg_email']) {
+                    $econfirm = $line['reg_email_confirm'] == '1' ? 'да' : '<b style="color:#c00">нет</b>';
+                    $esubscribe = $line['reg_email_subscribe'] ? 'да' : '<b style="color:#c00">нет</b>';
+                    $p_email = "<a href='mailto:{$line['reg_email']}'>{$line['reg_email']}</a>";
+                }
+                if($line['reg_phone']) {
+                    $pconfirm = $line['reg_phone_confirm'] == '1' ? 'да' : '<b style="color:#c00">нет</b>';
+                    $psubscribe = $line['reg_phone_subscribe'] ? 'да' : '<b style="color:#c00">нет</b>';
+                }
+                $openid = $line['openid'] ? '<b style="color:#080">да</b>' : '';
+                $worker = $line['worker'] ? '<b style="color:#080">да</b>' : '';                
+                
 
-			$p_email = $line['reg_email'] ? "<a href='mailto:{$line['reg_email']}'>{$line['reg_email']}</a>" : '';
-			$pconfirm = $line['reg_phone_confirm'] == '1' ? 'Да' : 'Нет';
-			$psubscribe = $line['reg_phone_subscribe'] ? 'Да' : 'Нет';
-
-			$openid = $line['openid'] ? 'Да' : 'Нет';
-
-			$worker = $line['worker'] ? 'Да' : 'Нет';
-
-			@$tmpl->addContent("<tr><td><a href='?mode=view&amp;id={$line['id']}'>{$line['id']}</a></td><td>{$line['name']}</td>
-		<td>$p_email</td><td>$econfirm</td><td>$esubscribe</td>
-		<td>{$line['reg_phone']}</td><td>$pconfirm</td><td>$psubscribe</td>
-		<td>$openid</td>
-		<td>{$line['lastlogin_date']}</td><td>$worker</td><td>{$line['reg_date']}</td></tr>");
-		}
-		$tmpl->addContent("</table>");
+                @$tmpl->addContent("<tr><td><a href='?mode=view&amp;id={$line['id']}'>{$line['id']}</a></td><td>{$line['name']}</td>
+                    <td>$p_email</td><td>$econfirm</td><td>$esubscribe</td>
+                    <td>{$line['reg_phone']}</td><td>$pconfirm</td><td>$psubscribe</td>
+                    <td>$openid</td>
+                    <td>$ll_date</td><td>$worker</td><td>{$line['reg_date']}</td></tr>");
+            }
+            $tmpl->addContent("</table>");
 	}
 	else if ($mode == 'view') {
 		if (!isAccess('admin_users', 'view'))

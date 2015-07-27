@@ -473,9 +473,9 @@ class cabinet extends \IModule {
                 throw new \NotFoundException("Документ не найден");
             }
             if ($doc_data['type'] == 3) {
-                $document->PrintForm('int:schet');
+                $document->PrintForm('ext:invoice');
             } else if ($doc_data['type'] == 2) {
-                $document->PrintForm('int:nak');
+                $document->PrintForm('ext:invoice');
             } else {
                 throw new \Exception("Способ просмотра не задан!");
             }

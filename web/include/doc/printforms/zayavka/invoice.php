@@ -63,8 +63,11 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $table_c = 110;
         $table_c2 = 15;
 
-        $this->pdf->SetFont('', '', 12);
-        $this->pdf->CellIconv($table_c, 10, $bank_data['name'], 1, 1, 'L', 0);
+        $this->pdf->SetFont('', '', 9);
+        $this->pdf->MultiCellIconv($table_c, 5, $bank_data['name'], 0, 1, 'L', 0);
+        $this->pdf->SetX($old_x);
+        $this->pdf->SetY($old_y);        
+        $this->pdf->CellIconv($table_c, 10, '' , 1, 1, 'L', 0);
         $text = 'ИНН ' . $firm_vars['firm_inn'] . ' КПП';
         $this->pdf->CellIconv($table_c, 5, $text, 1, 1, 'L', 0);
 

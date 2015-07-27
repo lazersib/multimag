@@ -46,8 +46,12 @@ class ds_sborka_zap {
             <input type='hidden' name='agent_id' id='agent_id' value=''>
             <input type='text' id='agent_nm'  style='width: 450px;' value=''><br>
             Услуга начисления зарплаты:<br>
-            <input type='hidden' name='service_id' id='tov_id' value=''>
-            <input type='text' id='tov'  style='width: 400px;' value=''><br>
+            <select name='service_id'>");
+            $res=$db->query("SELECT `id`,`name` FROM `doc_base` WHERE `pos_type`=1 ORDER BY `name`");
+            while($nxt=$res->fetch_row()) {
+                    $tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
+            }
+            $tmpl->addContent("</select>
             Переместить готовый товар на склад:<br>
             <select name='to_store_id'>
             <option value='0' selected>--не требуется--</option>");
@@ -82,8 +86,6 @@ class ds_sborka_zap {
     }
     
     protected function processCreate() {
-        global $db;
-        $uid = intval($_SESSION['uid']);
         $agent_id = rcvint('agent_id');
         $store_id = rcvint('store_id');
         $to_store_id = rcvint('to_store_id');
@@ -109,8 +111,7 @@ class ds_sborka_zap {
         $doc_obj = new doc_Sborka();
         $doc_id = $doc_obj->create($doc_data);
         $doc_obj->setDopDataA($dop_data); 
-        redirect("/doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc_id");
-        
+        redirect("/doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc_id");        
     }
     
     protected function processReopen() {
@@ -167,6 +168,16 @@ class ds_sborka_zap {
         $to_store_id = $document->getDopData('nasklad');
         $not_a_p = $document->getDopData('not_a_p');
         $service_id = $document->getDopData('service_id');
+        if(!$store_id) {
+            throw new Exception('Склад сборки не задан');
+        }
+        if(!$service_id) {
+            throw new Exception('Услуга работы не задана');
+        }
+        if(!$not_a_p && !$to_store_id) {
+            throw new Exception('Склад назначения не задан');
+        }
+        
         
         // Проверка, создано ли уже поступление зарплаты
         $res = $db->query("SELECT `id` FROM `doc_list` WHERE `type`='1' AND `p_doc`='$doc_id'");

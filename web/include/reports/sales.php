@@ -333,36 +333,36 @@ class Report_Sales extends BaseGSReport {
             'sbor' => $sbor_cnt);
     }
 
-    function serialOutPos($pos_id, $vc, $name, $dt_f, $dt_t, $subtype) {
+    function serialOutPos($pos_info, $dt_f, $dt_t, $subtype) {
         global $tmpl, $db;
-        $cur_cnt = getStoreCntOnDate($pos_id, $this->sklad, $dt_f, 1);
+        $cur_cnt = getStoreCntOnDate($pos_info['id'], $this->sklad, $dt_f, 1);
         $s_where = '';
         if ($subtype) {
             $s_where = " AND `doc_list`.`subtype` = '" . $db->real_escape_string($subtype) . "'";
         }
         if ($this->w_docs) {
             $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array("$vc $name ($pos_id)"));
+            $this->tableSpannedRow(array($this->col_cnt), array("{$pos_info['vc']} {$pos_info['name']} ({$pos_info['id']})"));
             $this->tableAltStyle(false);
             $this->tableSpannedRow(array($this->col_cnt - 1, 1), array('На начало периода:', $cur_cnt));
         }
         $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`page`,
-                        `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`,
-                        `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-                    FROM `doc_list_pos`
-                    INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-                    INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-                    LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-                    LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-                    LEFT JOIN `doc_sklady` AS `ds` ON `ds`.`id`=`doc_list`.`sklad`
-                    LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
-                    WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
-                        (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
-                        ((`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`sklad`='{$this->sklad}') OR
-                        (`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
-                        (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
-                        $s_where
-                    ORDER BY `doc_list`.`date`");
+                `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`,
+                `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
+            FROM `doc_list_pos`
+            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+            LEFT JOIN `doc_sklady` AS `ds` ON `ds`.`id`=`doc_list`.`sklad`
+            LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
+            WHERE `doc_list_pos`.`tovar`='{{$pos_info['id']}}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
+                (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
+                ((`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`sklad`='{$this->sklad}') OR
+                (`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
+                (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
+                $s_where
+            ORDER BY `doc_list`.`date`");
         $sp = $sr = 0;
         while ($nxt = $res->fetch_assoc()) {
             $p = $r = '';
@@ -528,9 +528,11 @@ class Report_Sales extends BaseGSReport {
         } else if ($sel_type == 'group') {
             $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
             while ($group_line = $res_group->fetch_assoc()) {
-                if (is_array($g))
-                    if (!in_array($group_line['id'], $g))
+                if (is_array($g)) {
+                    if (!in_array($group_line['id'], $g)) {
                         continue;
+                    }
+                }
 
                 $this->tableAltStyle();
                 $this->tableSpannedRow(array($this->col_cnt), array($group_line['id'] . '. ' . $group_line['name']));
@@ -549,10 +551,10 @@ class Report_Sales extends BaseGSReport {
             }
         } else if ($sel_type == 'agent') {
             $res = $db->query("SELECT $sql_fields
-                FROM `doc_list_pos`
-                $sql_joins
-                INNER JOIN `doc_base` ON  `doc_base`.`id`=`doc_list_pos`.`tovar`
+                FROM `doc_list_pos`                
+                INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
                 INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND `doc_list`.`agent`='$agent_id' AND `doc_list`.`type`='1'
+                $sql_joins
                 GROUP BY `doc_list_pos`.`tovar` ORDER BY $sql_order ");
             while ($pos_info = $res->fetch_assoc()) {
                 $ret = $this->outPos($pos_info, $dt_f, $dt_t, $subtype);

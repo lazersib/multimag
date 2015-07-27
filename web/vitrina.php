@@ -21,196 +21,207 @@ include_once("core.php");
 include_once("include/doc.core.php");
 
 /// Класс витрины интернет-магазина
-class Vitrina
-{
+class Vitrina {
 	var $is_pc_init;
-/// Конструктор
-function __construct() {
-	global $tmpl;
-	$tmpl->setTitle("Интернет - витрина");
-}
+    /// Конструктор
+    function __construct() {
+        global $tmpl;
+        $tmpl->setTitle("Интернет - витрина");
+    }
 
-/// Проверка и исполнение recode-запроса
-function ProbeRecode() {
-	/// Обрабатывает запросы-ссылки  вида http://example.com/vitrina/ig/5.html
-	/// Возвращает false в случае неудачи.
-	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
-	if(!is_array($arr))	return false;
-	if(count($arr)<4)	return false;
-	$block = @explode( '.' , $arr[3]);
-	$query = @explode( '.' , $arr[4]);
-	if(is_array($block))	$block=$block[0];
-	else			$block=$arr[3];
-	if(is_array($query))	$query=$query[0];
-	else			$query=$arr[4];
-	if($arr[2]=='ig')	// Индекс группы
-	{
-		$this->ViewGroup($query, $block);
-		return true;
-	}
-	else if($arr[2]=='ip')	// Индекс позиции
-	{
-		$this->ProductCard($block);
-		return true;
-	}
-	else if($arr[2]=='block')// Заданный блок
-	{
-		$this->ViewBlock($block);
-		return true;
-	}
-	else if($arr[2]=='ng')	// Наименование группы
-	{
+    /// Проверка и исполнение recode-запроса
+    function ProbeRecode() {
+        /// Обрабатывает запросы-ссылки  вида http://example.com/vitrina/ig/5.html
+        /// Возвращает false в случае неудачи.
+        $arr = explode('/', $_SERVER['REQUEST_URI']);
+        if (!is_array($arr)) {
+            return false;
+        }
+        if (count($arr) < 4) {
+            return false;
+        }
+        $block = @explode('.', $arr[3]);
+        $query = @explode('.', $arr[4]);
+        if (is_array($block)) {
+            $block = $block[0];
+        } else {
+            $block = $arr[3];
+        }
+        if (is_array($query)) {
+            $query = $query[0];
+        } else {
+            $query = $arr[4];
+        }
+        if ($arr[2] == 'ig') { // Индекс группы
+            $this->ViewGroup($query, $block);
+            return true;
+        } else if ($arr[2] == 'ip') { // Индекс позиции
+            $this->ProductCard($block);
+            return true;
+        } else if ($arr[2] == 'block') {// Заданный блок
+            $this->ViewBlock($block);
+            return true;
+        } else if ($arr[2] == 'ng') { // Наименование группы
+            
+        } else if ($arr[2] == 'np') { // Наименование позиции
+            
+        }
+        return false;
+    }
 
-	}
-	else if($arr[2]=='np') // Наименование позиции
-	{
+    /// Исполнение заданной функции
+    /// @param $mode Название функции витрины
+    function ExecMode($mode) {
+        global $tmpl;
+        $page = rcvint('p');
+        $g = rcvint('g');
+        switch ($mode) {
+            case '':
+                $this->TopGroup();
+                break;
+            case 'group':
+                $this->ViewGroup($g, $page);
+                break;
+            case 'product':
+                $this->ProductCard($page);
+                break;
+            case'basket':
+                $this->Basket();
+                break;
+            case'block':
+                $this->ViewBlock($_REQUEST['type']);
+                break;
+            case'buy':
+                $this->Buy();
+                break;
+            case'delivery':
+                $this->Delivery();
+                break;
+            case'buyform':
+                $this->BuyMakeForm();
+                break;
+            case'makebuy':
+                $this->MakeBuy();
+                break;
+            case'pay':
+                $this->Payment($page);
+                break;
+            case'comm_add':
+                $this->tryComentAdd($page);
+                $this->ProductCard($page);
+                break;
+            case'basket_submit':
+                $this->tryBasketSubmit();
+                break;
+            case'korz_add':
+                $this->tryBasketAdd($page);
+                break;
+            case'korz_del':
+                $basket = Models\Basket::getInstance();
+                $basket->removeItem($page);
+                $basket->save();
+                $tmpl->msg("Товар убран из корзины!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+                break;
+            case'korz_clear':
+                $basket = Models\Basket::getInstance();
+                $basket->clear();
+                $basket->save();
+                $tmpl->msg("Корзина очищена!", "info", "<a class='urllink' href='/vitrina.php'>Вернутья на витрину</a>");
+                break;
+            default:
+                throw new \NotFoundException("Неверная ссылка!");
+        }
+    }
 
-	}
-	return false;
-}
+    /// Обработчик отправки корзины
+    protected function tryBasketSubmit() {
+        $basket = Models\Basket::getInstance();
+        if ($basket->getCount()) {
+            $basket_items = $basket->getItems();
+            foreach ($basket_items as $item) {
+                $new_cnt = request('cnt' . $item['pos_id']);
+                if ($new_cnt <= 0) {
+                    $basket->removeItem($item['pos_id']);
+                } else {
+                    $basket->setItem($item['pos_id'], round($new_cnt), request('comm' . $item['pos_id']));
+                }
+            }
+            $basket->save();
+        }
+        if (@$_REQUEST['button'] == 'recalc') {
+            if (getenv("HTTP_REFERER")) {
+                redirect(getenv("HTTP_REFERER"));
+            } else {
+                redirect('/vitrina.php?mode=basket');
+            }
+        } else {
+            redirect('/vitrina.php?mode=buy');
+        }
+    }
+    
+    /// Обработчик добавления товара в корзину
+    protected function tryBasketAdd($page) {
+        global $tmpl;
+        $cnt = rcvint('cnt');
+        if ($page) {
+            $basket = Models\Basket::getInstance();
+            $basket->setItem($page, $cnt);
+            $basket->save();
+            $tmpl->ajax = 1;
 
-/// Исполнение заданной функции
-/// @param $mode Название функции витрины
-function ExecMode($mode)
-{
-	global $tmpl, $db;
-	$p = rcvint('p');
-	$g = rcvint('g');
-	if ($mode == '') { // Верхний уровень. Никакая группа не выбрана.
-		$this->TopGroup();
-	} 
-	else if ($mode == 'group') {
-		$this->ViewGroup($g, $p);
-	} 
-	else if ($mode == 'product') {
-		$this->ProductCard($p);
-	} 
-	else if ($mode == 'basket') {
-		$this->Basket();
-	} else if ($mode == 'block') {
-		$this->ViewBlock($_REQUEST['type']);
-	} 
-	else if ($mode == 'korz_add') {
-		$cnt = rcvint('cnt');
-		if ($p) {
-			$basket = Models\Basket::getInstance();
-			$basket->setItem($p, $cnt);
-			$basket->save();
-			$tmpl->ajax = 1;
-			
-			if(isset($_REQUEST['j']) || isset($_REQUEST['json'])) {
-				$basket_cnt = $basket->getCount();
-				$sum = 0;
-				if($basket_cnt) {
-					$pc = $this->priceCalcInit();
-					$basket_items = $basket->getItems();
-					
-					foreach ($basket_items as $item) {
-						$price = $pc->getPosAutoPriceValue($item['pos_id'], $item['cnt']);
-						$sum += $price * $cnt;
-					}
-				}
-				
-				
-				if(isset($_REQUEST['json']))
-					echo json_encode(array('cnt'=>$basket_cnt, 'sum'=>$sum), JSON_UNESCAPED_UNICODE);
-				else if(isset($_REQUEST['j'])) {
-					if($basket_cnt)
-						echo "Товаров: $basket_cnt на $sum руб.";
-					else	echo "Корзина пуста";
-				}
-			}
-			else {
-				if (getenv("HTTP_REFERER"))
-					header('Location: ' . getenv("HTTP_REFERER"));
-				$tmpl->msg("Товар добавлен в корзину!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-			}
-		}
-		else throw new NotFoundException("ID товара не задан!");
-	} 
-	else if ($mode == 'korz_adj') {
-		$tmpl->ajax = 1;
-		$cnt = rcvint('cnt');
-		if ($p) {
-			$basket = Models\Basket::getInstance();
-			$basket->setItem($p, $cnt);
-			$basket->save();
-			$tmpl->addContent("Товар добавлен в корзину!<br><a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-		}
-		else throw new NotFoundException("Номер товара не задан!");
-	}
-	else if ($mode == 'korz_del') {
-		$basket = Models\Basket::getInstance();
-		$basket->removeItem($p);
-		$basket->save();
-		$tmpl->msg("Товар убран из корзины!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
-	}
-	else if ($mode == 'korz_clear') {
-		$basket = Models\Basket::getInstance();
-		$basket->clear();
-		$basket->save();
-		$tmpl->msg("Корзина очищена!", "info", "<a class='urllink' href='/vitrina.php'>Вернутья на витрину</a>");
-	}
-	else if ($mode == 'basket_submit') {
-		$tmpl->ajax = 1;
-		$basket = Models\Basket::getInstance();
-		
-		if ($basket->getCount()) {
-			$basket_items = $basket->getItems();
-			foreach ($basket_items as $item) {
-				$new_cnt = request('cnt' . $item['pos_id']);
-				if ($new_cnt <= 0)
-					$basket->removeItem($item['pos_id']);
-				else	$basket->setItem($item['pos_id'], round($new_cnt), request('comm'.$item['pos_id']));
-			}
-			$basket->save();
-		}
-		
-		if (@$_REQUEST['button'] == 'recalc') {
-			if (getenv("HTTP_REFERER"))
-				header('Location: ' . getenv("HTTP_REFERER"));
-			else	header('Location: /vitrina.php?mode=basket');
-		}
-		else	header('Location: /vitrina.php?mode=buy');
-	}
-	else if ($mode == 'buy')
-		$this->Buy();
-	else if ($mode == 'delivery')
-		$this->Delivery();
-	else if ($mode == 'buyform')
-		$this->BuyMakeForm();
-	else if ($mode == 'makebuy')
-		$this->MakeBuy();
-	else if ($mode == 'pay')
-		$this->Payment();
-	else if ($mode == 'print_schet') {
-		include_once("include/doc.nulltype.php");
-		$doc = $_SESSION['order_id'];
-		if ($doc) {
-			$document = \document::getInstanceFromDb($doc);
-			$document->PrintForm('int:schet');
-		}
-		else	$tmpl->msg("Вы ещё не оформили заказ! Вернитесь и оформите!");
-	}
-	else if ($mode == 'comm_add') {
-		require_once("include/comments.inc.php");
-		if (!@$_SESSION['uid']) {
-			if ((strtoupper($_SESSION['captcha_keystring']) != strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring'] == '')) {
-				unset($_SESSION['captcha_keystring']);
-				throw new Exception("Защитный код введён неверно!");
-			}
-			unset($_SESSION['captcha_keystring']);
-			$cd = new CommentDispatcher('product', $p);
-			$cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate'], @$_REQUEST['autor_name'], @$_REQUEST['autor_email']);
-		}
-		else {
-			$cd = new CommentDispatcher('product', $p);
-			$cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate']);
-		}
-		$tmpl->msg("Коментарий добавлен!", "ok");
-	}
-	else throw new NotFoundException("Неверная ссылка!");
-}
+            /// TODO: стандартизировать ввод
+            if (isset($_REQUEST['j']) || isset($_REQUEST['json'])) {
+                $basket_cnt = $basket->getCount();
+                $sum = 0;
+                if ($basket_cnt) {
+                    $pc = $this->priceCalcInit();
+                    $basket_items = $basket->getItems();
+
+                    foreach ($basket_items as $item) {
+                        $price = $pc->getPosAutoPriceValue($item['pos_id'], $item['cnt']);
+                        $sum += $price * $cnt;
+                    }
+                }
+
+                if (isset($_REQUEST['json'])) {
+                    echo json_encode(array('cnt' => $basket_cnt, 'sum' => $sum), JSON_UNESCAPED_UNICODE);
+                } else if (isset($_REQUEST['j'])) {
+                    if ($basket_cnt) {
+                        echo "Товаров: $basket_cnt на $sum руб.";
+                    } else {
+                        echo "Корзина пуста";
+                    }
+                }
+            } else {
+                if (getenv("HTTP_REFERER")) {
+                    redirect(getenv("HTTP_REFERER"));
+                }
+                $tmpl->msg("Товар добавлен в корзину!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
+            }
+        } else {
+            throw new NotFoundException("ID товара не задан!");
+        }
+    }
+
+    /// Обработчик добавления комментария к товару
+    /// @param $page ID страницы = ID товара, к которому добавляется комментарий
+    protected function tryComentAdd($page) {
+        global $tmpl;
+        require_once("include/comments.inc.php");
+        if (!@$_SESSION['uid']) {
+            if ((strtoupper($_SESSION['captcha_keystring']) != strtoupper(@$_REQUEST['img'])) || ($_SESSION['captcha_keystring'] == '')) {
+                unset($_SESSION['captcha_keystring']);
+                throw new Exception("Защитный код введён неверно!");
+            }
+            unset($_SESSION['captcha_keystring']);
+            $cd = new CommentDispatcher('product', $page);
+            $cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate'], @$_REQUEST['autor_name'], @$_REQUEST['autor_email']);
+        } else {
+            $cd = new CommentDispatcher('product', $page);
+            $cd->WriteComment(@$_REQUEST['text'], @$_REQUEST['rate']);
+        }
+        $tmpl->msg("Коментарий добавлен!", "ok");
+    }
 
 // ======== Приватные функции ========================
 // -------- Основные функции -------------------------
@@ -931,7 +942,7 @@ public function getProductBaseElement($product_info) {
 	<b>Цена:</b> <span{$cce}>$price руб.</span> / {$product_info['units']}<br>
 	<b>Производитель:</b> ".html_out($product_info['proizv'])."<br>
 	<b>Кол-во:</b> $nal<br>
-	<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$product_info['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
+	<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
 	</div>";
 
 }
@@ -970,7 +981,7 @@ public function getProductMiniElement($product_info) {
 	<b>Цена:</b> <span{$cce}>$price руб.</span> / {$product_info['units']}<br>
 	<b>Производитель:</b> ".html_out($product_info['proizv'])."<br>
 	<b>Кол-во:</b> $nal<br>
-	<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$product_info['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
+	<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_add&amp;p={$product_info['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
 	</div>";
 }
 
@@ -1338,7 +1349,7 @@ protected function TovList_SimpleTable($res, $lim) {
 		else if($nxt['mult']>1)	$buy_cnt = $nxt['mult'];
 		else			$buy_cnt = 1;
 		
-		@$tmpl->addContent("<td><a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>");
+		@$tmpl->addContent("<td><a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a></td></tr>");
 		$i++;
 		if($i >= $lim)	break;
 	}
@@ -1395,7 +1406,7 @@ protected function TovList_ImageList($res, $lim) {
 		<b>Цена:</b> <span{$cce}>$price руб.</span> / {$nxt['units']}<br>
 		<b>Производитель:</b> ".html_out($nxt['proizv'])."<br>
 		<b>Кол-во:</b> $nal<br>
-		<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
+		<a rel='nofollow' href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'>В корзину!</a>
                     </div></div>");
 
 		$i++;
@@ -1442,7 +1453,7 @@ protected function TovList_ExTable($res, $lim) {
 			$tmpl->addContent("<td>".html_out($nxt['vc'])."</td>");
 		$tmpl->addContent("<td><a href='$link'>".html_out($nxt['name'])."</a><td>".html_out($nxt['proizv'])."<td>$nal
 		<td $cce>$price<td>{$nxt['d_int']}<td>{$nxt['d_ext']}<td>{$nxt['size']}<td>{$nxt['mass']}<td>
-		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_adj&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
+		<a href='/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt' onclick=\"return ShowPopupWin('/vitrina.php?mode=korz_add&amp;p={$nxt['id']}&amp;cnt=$buy_cnt','popwin');\" rel='nofollow'><img src='$basket_img' alt='В корзину!'></a>");
 	}
 	$tmpl->addContent("</table>");
 }
@@ -1467,80 +1478,82 @@ protected function BuyAuthForm() {
 	</form>");
 }
 
-/// Заключительная форма оформления покупки
-protected function BuyMakeForm()
-{
-	global $tmpl, $CONFIG;
-	if(@$_SESSION['uid']) {
-		$up = getUserProfile($_SESSION['uid']);
-		$str = 'Товар будет зарезервирован для Вас на 3 рабочих дня.';
-		$email_field = '';
-	}
-	else
-	{
-		$up = getUserProfile(-1);	// Пустой профиль
-		$str='<b>Для незарегистрированных пользователей наличие товара на складе не гарантируется.</b>';
-		$email_field="e-mail:<br>
-		<input type='text' name='email' value=''><br>
+    /// Заключительная форма оформления покупки
+    protected function BuyMakeForm() {
+        global $tmpl, $CONFIG;
+        if (@$_SESSION['uid']) {
+            $up = getUserProfile($_SESSION['uid']);
+            $str = 'Товар будет зарезервирован для Вас на 3 рабочих дня.';
+            $email_field = '';
+        } else {
+            $up = getUserProfile(-1); // Пустой профиль
+            $str = '<b>Для незарегистрированных пользователей товар на складе не резервируется.</b>';
+            $email_field = "
 		Необходимо заполнить телефон или e-mail<br><br>";
-	}
+        }
 
-	if(isset($_REQUEST['cwarn']))	$tmpl->msg("Необходимо заполнить e-mail или контактный телефон!","err");
+        if (isset($_REQUEST['cwarn'])) {
+            $tmpl->msg("Необходимо заполнить e-mail или контактный телефон!", "err");
+        }
+        
+        $rname = html_out(isset($up['main']['reg_phone'])?$up['main']['real_name']:'');
+        $phone = html_out(isset($up['main']['reg_phone'])?$up['main']['reg_phone']:'');
+        $email = html_out(isset($up['main']['reg_phone'])?$up['main']['reg_email']:'');
 
-	if(@$up['main']['reg_phone'])	$phone = substr($up['main']['reg_phone'],2);
-	else				$phone = '';
-
-	$tmpl->addContent("
+        $tmpl->addContent("
 	<h4>Для оформления заказа требуется следующая информация</h4>
 	<form action='/vitrina.php' method='post'>
 	<input type='hidden' name='mode' value='makebuy'>
 	<div>
-	Фамилия И.О.<br>
-	<input type='text' name='rname' value='".@$up['main']['real_name']."'><br>
-	Мобильный телефон: <span id='phone_num'></span><br>
-	<small>Российский, 10 цифр, без +7 или 8</small>
-	<br>
-	+7<input type='text' name='phone' value='$phone' maxlength='10' placeholder='Номер' id='phone'><br>
+	Имя, Фамилия<br>
+	<input type='text' name='rname' value='$rname' placeholder='Иван Иванов'><br>
+        e-mail:<br>
+        <input type='text' name='email' value='$email' placeholder='user@host.zone'><br>
+	Мобильный телефон:<br>
+        <input type='text' name='phone' value='$phone' maxlength='12' placeholder='+7XXXXXXXXXX' id='phone'><br>
 	<br>
 
 	$email_field");
-	if(is_array($CONFIG['payments']['types'])) {
-		$tmpl->addContent("<br>Способ оплаты:<br>");
-		foreach($CONFIG['payments']['types'] as $type => $val) {
-			if(!$val)	continue;
-			if($type==@$CONFIG['payments']['default'])	$checked=' checked';
-			else						$checked='';
-			switch($type) {
-				case 'cash':	$s="<label><input type='radio' name='pay_type' value='$type' id='soplat_nal'$checked>Наличный расчет.
+        if (is_array($CONFIG['payments']['types'])) {
+            $tmpl->addContent("<br>Способ оплаты:<br>");
+            foreach ($CONFIG['payments']['types'] as $type => $val) {
+                if (!$val)
+                    continue;
+                if ($type == @$CONFIG['payments']['default'])
+                    $checked = ' checked';
+                else
+                    $checked = '';
+                switch ($type) {
+                    case 'cash': $s = "<label><input type='radio' name='pay_type' value='$type' id='soplat_nal'$checked>Наличный расчет.
 				<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>";
-						break;
-				case 'bank':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Безналичный банкосвкий перевод.
+                        break;
+                    case 'bank': $s = "<label><input type='radio' name='pay_type' value='$type'$checked>Безналичный банкосвкий перевод.
 				<b>Дольше</b> предыдущего - обработка заказа начнётся <b>только после поступления денег</b> на наш счёт (занимает 1-2 дня). После оформления заказа Вы сможете распечатать счёт для оплаты.</label><br>";
-						break;
-				case 'wmr':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Webmoney WMR.
+                        break;
+                    case 'wmr': $s = "<label><input type='radio' name='pay_type' value='$type'$checked>Webmoney WMR.
 						<b>Cамый быстрый</b> способ получить Ваш заказ. <b>Заказ поступит в обработку сразу</b> после оплаты.</b></label><br>";
-						break;
-				case 'card_o':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
+                        break;
+                    case 'card_o': $s = "<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
 						<b>VISA, MasterCard</b> на сайте. Обработка заказа начнётся после подтверждения оплаты банком (обычно сразу после оплаты).</label><br>";
-						break;
-				case 'card_t':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
+                        break;
+                    case 'card_t': $s = "<label><input type='radio' name='pay_type' value='$type'$checked>Платёжной картой
 						<b>VISA, MasterCard</b> при получении товара. С вами свяжутся и обсудят условия.</label><br>";
-						break;
-				case 'credit_brs':	$s="<label><input type='radio' name='pay_type' value='$type'$checked>Онлайн-кредит в банке &quot;Русский стандарт&quot; за 5 минут</label><br>";
-						break;
-				default:	$s='';
-			}
-			$tmpl->addContent($s);
-		}
-	}
+                        break;
+                    case 'credit_brs': $s = "<label><input type='radio' name='pay_type' value='$type'$checked>Онлайн-кредит в банке &quot;Русский стандарт&quot; за 5 минут</label><br>";
+                        break;
+                    default: $s = '';
+                }
+                $tmpl->addContent($s);
+            }
+        }
 
-	$tmpl->addContent("
+        $tmpl->addContent("
 	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='80'>".html_out(@$up['dop']['dop_info'])."</textarea><br>
+	<textarea name='dop' rows='5' cols='80'>" . html_out(@$up['dop']['dop_info']) . "</textarea><br>
 	<button type='submit'>Оформить заказ</button>
 	</div>
 	</form>");
-}
+    }
 
 /// Сделать покупку
 protected function MakeBuy() {
@@ -1795,8 +1808,8 @@ protected function Payment() {
 			exit();
 		}
 		else if($order_info['pay_type']=='bank') {
-			$tmpl->msg("Номер счёта: $order_id/{$order_info['altnum']}. Теперь Вам необходимо <a href='/vitrina.php?mode=print_schet'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
-			$tmpl->addContent("<a href='?mode=print_schet'>Получить счёт</a>");
+			$tmpl->msg("Номер счёта: $order_id/{$order_info['altnum']}. Теперь Вам необходимо <a href='/user.php?mode=get_doc&doc=$order_id'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
+			$tmpl->addContent("<a href='/user.php?mode=get_doc&doc=$order_id'>Получить счёт</a>");
 		}
 		else throw new Exception("Данный тип оплаты ({$order_info['pay_type']}) не поддерживается!");
 	}

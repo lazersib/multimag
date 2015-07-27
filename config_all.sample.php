@@ -86,3 +86,19 @@ $CONFIG['salary']['use_liq'] = false;           //< Учитывать ли ли
 $CONFIG['salary']['liq_coeff'] = 0.5;           //< Коэффициент влияния ликвидности на вознаграждение с товарной наценки
 $CONFIG['salary']['work_pos_id'] = 1;           //< id услуги "работа"
 
+// OAuth аутентификация
+$CONFIG['oauth']['yandex']['id'] = '';
+$CONFIG['oauth']['yandex']['secret'] = '';
+
+$CONFIG['oauth']['google']['id'] = '';
+$CONFIG['oauth']['google']['secret'] = '';
+
+$CONFIG['oauth']['vk']['id'] = '';
+$CONFIG['oauth']['vk']['secret'] = '';
+
+$CONFIG['oauth']['mailru']['id'] = '';
+$CONFIG['oauth']['mailru']['secret'] = '';
+
+$CONFIG['oauth']['okru']['id'] = '';
+$CONFIG['oauth']['okru']['secret'] = '';
+$CONFIG['oauth']['okru']['public'] = '';

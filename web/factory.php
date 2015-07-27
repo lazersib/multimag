@@ -87,9 +87,10 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 
 try
 {
-	if(!isAccess('doc_factory','view'))
-		throw new AccessException();
-	need_auth($tmpl);
+        if (!isAccess('doc_factory', 'view')) {
+            throw new AccessException();
+        }
+        need_auth($tmpl);
 	$tmpl->hideBlock('left');
 	SafeLoadTemplate($CONFIG['site']['inner_skin']);
 	doc_menu();
@@ -430,7 +431,7 @@ try
 		}
 		$tmpl->addContent("</select><br>
 		Услуга начисления зарплаты:<br>
-		<select name='tov_id'>");
+		<select name='service_id'>");
 		$res=$db->query("SELECT `id`,`name` FROM `doc_base` WHERE `pos_type`=1 ORDER BY `name`");
 		while($nxt=$res->fetch_row())
 		{
@@ -447,6 +448,12 @@ try
 		Агент:<br>
 		<input type='hidden' name='agent' id='agent_id' value=''>
 		<input type='text' id='agent_nm'  style='width: 450px;' value=''><br>
+                    Кладовщик, принимающий готовый товар на складе:<br><select name='storekeeper_id'>");
+                $res = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
+                while ($nxt = $res->fetch_row()) {
+                    $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+                }
+                $tmpl->addContent("</select><br>
 		<button type='submit'>Далее</button>
 		</form>
 				<script type=\"text/javascript\">
@@ -482,36 +489,42 @@ try
 			</script>
 		");
 	}
-	else if($mode=='export_submit')
-	{
-		$agent	= rcvint('agent');
-		$sklad	= rcvint('sklad');
-		$nasklad= rcvint('nasklad');
-		$firm	= rcvint('firm');
-		$tov_id = rcvint('tov_id');
-		$date	= rcvdate('date');
-		$dt_to	= rcvdate('dt_to');
-
-		$tim = time();
-                $uid = intval($_SESSION['uid']);
-		$res=$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`)
-				VALUES	('$tim', '$firm', '17', '$uid', '0', 'auto', '$sklad', '$agent')");
-		$doc=$db->insert_id;
-		$res=$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','1'), ('$doc','script_mark','ds_sborka_zap'), ('$doc','nasklad','$nasklad'), ('$doc','tov_id','$tov_id'), ('$doc','not_a_p','0')");
-
-		$res=$db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`, `doc_base_values`.`value` AS `zp` FROM `factory_data`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`factory_data`.`pos_id`
-		LEFT JOIN `doc_base_params` ON `doc_base_params`.`codename`='ZP'
-		LEFT JOIN `doc_base_values` ON `doc_base_values`.`id`=`doc_base`.`id` AND `doc_base_values`.`param_id`=`doc_base_params`.`id`
-		WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'
-		GROUP BY `factory_data`.`pos_id`");
-		$ret='';
-		while($line=$res->fetch_assoc())
-		{
-			$r=$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `page`) VALUES ($doc, {$line['pos_id']}, {$line['cnt']}, 0)");
-		}
-
-		header("Location: /doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc&tov_id=$tov_id&agent=$agent&sklad=$sklad&firm=$firm&nasklad=$nasklad");
+	else if($mode=='export_submit') {
+            $agent	= rcvint('agent');
+            $sklad	= rcvint('sklad');
+            $nasklad= rcvint('nasklad');
+            $firm	= rcvint('firm');
+            $service_id = rcvint('service_id');
+            $date	= rcvdate('date');
+            $dt_to	= rcvdate('dt_to');
+            $storekeeper_id = rcvint('storekeeper_id');
+                
+            $doc_data = array(
+                'firm_id' => $firm,
+                'subtype' => '',
+                'sklad' => $sklad,
+                'agent' => $agent
+            );
+            $dop_data = array(
+                'cena' => 1,
+                'script' => 'sborka_zap',
+                'nasklad' => $nasklad,
+                'service_id' => $service_id,
+                'not_a_p' => 0,
+                'storekeeper_id' => $storekeeper_id,
+            );        
+            $doc_obj = new doc_Sborka();
+            $doc_id = $doc_obj->create($doc_data);
+            $doc_obj->setDopDataA($dop_data); 
+            
+            $res = $db->query("SELECT `factory_data`.`id`, `factory_data`.`pos_id`, SUM(`factory_data`.`cnt`) AS `cnt`
+                FROM `factory_data`
+                WHERE `factory_data`.`sklad_id`=$sklad AND `factory_data`.`date`='$date'
+                GROUP BY `factory_data`.`pos_id`");
+            while ($line = $res->fetch_assoc()) {
+                $db->insertA('doc_list_pos', array('doc'=>$doc_id, 'tovar'=>$line['pos_id'], 'cnt'=>$line['cnt'], 'page'=>0));
+            }
+            redirect("/doc_sc.php?mode=edit&sn=sborka_zap&doc=$doc_id");
 	}
 }
 catch(AccessException $e)

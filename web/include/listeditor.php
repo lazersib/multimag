@@ -19,45 +19,45 @@
 
 /// Базовый класс для редактора справочников
 abstract class ListEditor {
-	var $list = array();		//< Массив объектов справочника
-	var $link_prefix;		//< Префикс для ссылок
-	var $opt_var_name = 'opt';	//< Имя переменной HTTP(S) запросов для опций справочника
-	var $param_var_name = 'le';	//< Имя переменной HTTP(S) запросов для данных элемента справочника
-	var $line_var_name = '';	//< Имя переменной HTTP(S) запросов для id строки справочника
-	var $print_name = 'Абстрактный справочник'; //< Отображаемое имя справочника
-	var $table_name = '';		//< Имя таблицы справочника в БД
-	var $db_link = null;		//< Ссылка на объект соединения с базой данных
-	var $acl_object_name = '';	//< Имя объекта контроля привилегий
-        var $add_headers = null;        // Дополнительные поля в заголовке таблицы
-        protected $can_delete = false;  //< Допустимо ли удаление строк справочника
-	
-	public function __construct($db_link) {
-		$this->db_link = $db_link;
-	}
-	
-	/// Получить массив с именами колонок списка
-	abstract public function getColumnNames();	
-	
-	/// Загрузить список всех элементов справочника
-	public function loadList() {
-		$col_names = $this->getColumnNames();
-		$sql_names = '';
-		foreach($col_names as $name=>$value) {
-			if ($sql_names) {
-				$sql_names .= ', ';
-			}
-			$sql_names .= "`$name`";
-		}
-		$res = $this->db_link->query("SELECT $sql_names FROM {$this->table_name} ORDER BY `id`");
-		$this->list = array();
-		while ($line = $res->fetch_assoc()) {
-			$this->list[$line['id']] = $line;
-		}
-	}
-	/// Получить данные элемента справочника
-	public function getItem($id) {
-		return $this->db_link->selectRow($this->table_name, $id);
-	}
+    var $list = array();		//< Массив объектов справочника
+    var $link_prefix;		//< Префикс для ссылок
+    var $opt_var_name = 'opt';	//< Имя переменной HTTP(S) запросов для опций справочника
+    var $param_var_name = 'le';	//< Имя переменной HTTP(S) запросов для данных элемента справочника
+    var $line_var_name = '';	//< Имя переменной HTTP(S) запросов для id строки справочника
+    var $print_name = 'Абстрактный справочник'; //< Отображаемое имя справочника
+    var $table_name = '';		//< Имя таблицы справочника в БД
+    var $db_link = null;		//< Ссылка на объект соединения с базой данных
+    var $acl_object_name = '';	//< Имя объекта контроля привилегий
+    var $add_headers = null;        // Дополнительные поля в заголовке таблицы
+    protected $can_delete = false;  //< Допустимо ли удаление строк справочника
+
+    public function __construct($db_link) {
+            $this->db_link = $db_link;
+    }
+
+    /// Получить массив с именами колонок списка
+    abstract public function getColumnNames();	
+
+    /// Загрузить список всех элементов справочника
+    public function loadList() {
+            $col_names = $this->getColumnNames();
+            $sql_names = '';
+            foreach($col_names as $name=>$value) {
+                    if ($sql_names) {
+                            $sql_names .= ', ';
+                    }
+                    $sql_names .= "`$name`";
+            }
+            $res = $this->db_link->query("SELECT $sql_names FROM {$this->table_name} ORDER BY `id`");
+            $this->list = array();
+            while ($line = $res->fetch_assoc()) {
+                    $this->list[$line['id']] = $line;
+            }
+    }
+    /// Получить данные элемента справочника
+    public function getItem($id) {
+            return $this->db_link->selectRow($this->table_name, $id);
+    }
 
     /// Записать в базу строку справочника
     public function saveItem($id, $data) {
@@ -130,7 +130,9 @@ abstract class ListEditor {
                 if ($cn == 'id') {
                     continue;
                 }
-
+                if(!isset($col_names[$cn])) {
+                    continue;
+                }
                 $method = 'getField' . ucfirst($cn);
                 if (method_exists($this, $method)) {
                     $ret .= "<td>" . $this->$method($line) . "</td>";
@@ -160,98 +162,98 @@ abstract class ListEditor {
     }
 
     /// @brief Возвращает имя текущего элемента
-	/// Нужно переопределить, если колонка с именем - не name
-	public function getItemName($item) {
-		if (isset($item['name'])) {
-			return $item['name'];
-		} else if (isset($item['id'])) {
-			return $item['id'];
-		} else {
-			return '???';
-		}
-	}
-	
-	/// Возвращает HTML код checkbox элемента формы
-	public function getCheckboxInput($name, $label, $value) {
-		$checked = $value?' checked':'';
-		return "<label><input type='checkbox' name='$name' value='1'{$checked}>".html_out($label)."</label>";
-	}
-	
-	/// Возвращает HTML код формы редактирования элемента
-	public function getEditForm($id) {
-		global $tmpl;
-		$ret = "<form action='{$this->link_prefix}' method='post'>";
-		$ret .= "<input type='hidden' name='{$this->opt_var_name}' value='s'>";
-		
-		$item = $this->getItem($id);
-		if($item){
-			$ret .= "<input type='hidden' name='{$this->line_var_name}' value='$id'>";
-			$tmpl->addBreadcrumb('Правка элемента "'.$this->getItemName($item).'"', '');
-		}
-		else {
-			$item = $this->getColumnNames();
-			foreach ($item as $_id=>$val) {
-				$item[$_id] = '';
-			}
-			$ret .= "<input type='hidden' name='{$this->line_var_name}' value='0'>";
-			$tmpl->addBreadcrumb('Новый элемент', '');
-		}
-		$ret .= "<table class='list' width='600px'><tr>";
-		$col_names = $this->getColumnNames();
-		foreach($col_names as $_id=>$cname) {
-			if ($_id == 'id') {
-				continue;
-			}
-			$method = 'getInput'.ucfirst($_id);
-			$ret .= "<tr><td align='right'>".html_out($cname)."</td><td>";
-			$input_name = $this->param_var_name."[$_id]";
-			if (method_exists($this, $method)) {
-				$ret .= $this->$method($input_name, $item[$_id]);
-			} else {
-				$ret .= "<input type='text' name='$input_name' value='" . html_out($item[$_id]) . "' style='width:95%;'>";
-			}
-			$ret .= "</td></tr>";
-		}
-		$ret .= "<tr><td>&nbsp;</td><td><button type='submit'>Записать</button></td></tr>";
-		$ret .= "</table></form>";
-		return $ret;
-	}
+    /// Нужно переопределить, если колонка с именем - не name
+    public function getItemName($item) {
+        if (isset($item['name'])) {
+            return $item['name'];
+        } else if (isset($item['id'])) {
+            return $item['id'];
+        } else {
+            return '???';
+        }
+    }
 
-	/// Добавить в шаблон HTML код виджета справочника
-	public function run() {
-		global $tmpl;
-		$opt = request($this->opt_var_name);
-		if ($opt != '') {
-			$tmpl->addBreadcrumb($this->print_name, $this->link_prefix);
-		} else {
-			$tmpl->addBreadcrumb($this->print_name, '');
-		}
-		$tmpl->setTitle($this->print_name);
-		switch($opt) {
-			case '':
-				$tmpl->addContent($this->getListItems());
-				break;
-			case 'e':
-				$id = rcvint($this->line_var_name);
-				$tmpl->addContent($this->getEditForm($id));
-				break;
-			case 'n':
-				$tmpl->addContent($this->getEditForm(0));
-				break;
-			case 's':
-				$id = rcvint($this->line_var_name);
-				$id = $this->saveItem($id, request($this->param_var_name));
-				$tmpl->msg("Данные сохранены", "ok");
-				$tmpl->addContent($this->getEditForm($id));
-				break;
-                        case 'd':
-                                $id = rcvint($this->line_var_name);
-                                $this->removeItem($id);
-                                $tmpl->msg("Строка удалена", "ok");
-                                $tmpl->addContent($this->getListItems());
-                                break;
-			default:
-				throw new NotFoundException('Неверная опция '.$opt);
-		}
-	}
+    /// Возвращает HTML код checkbox элемента формы
+    public function getCheckboxInput($name, $label, $value) {
+        $checked = $value ? ' checked' : '';
+        return "<label><input type='checkbox' name='$name' value='1'{$checked}>" . html_out($label) . "</label>";
+    }
+
+    /// Возвращает HTML код формы редактирования элемента
+    public function getEditForm($id) {
+        global $tmpl;
+        $ret = "<form action='{$this->link_prefix}' method='post'>";
+        $ret .= "<input type='hidden' name='{$this->opt_var_name}' value='s'>";
+
+        $item = $this->getItem($id);
+        if ($item) {
+            $ret .= "<input type='hidden' name='{$this->line_var_name}' value='$id'>";
+            $tmpl->addBreadcrumb('Правка элемента "' . $this->getItemName($item) . '"', '');
+        } else {
+            $item = $this->getColumnNames();
+            foreach ($item as $_id => $val) {
+                $item[$_id] = '';
+            }
+            $ret .= "<input type='hidden' name='{$this->line_var_name}' value='0'>";
+            $tmpl->addBreadcrumb('Новый элемент', '');
+        }
+        $ret .= "<table class='list' width='600px'><tr>";
+        $col_names = $this->getColumnNames();
+        foreach ($col_names as $_id => $cname) {
+            if ($_id == 'id') {
+                continue;
+            }
+            $method = 'getInput' . ucfirst($_id);
+            $ret .= "<tr><td align='right'>" . html_out($cname) . "</td><td>";
+            $input_name = $this->param_var_name . "[$_id]";
+            if (method_exists($this, $method)) {
+                $ret .= $this->$method($input_name, $item[$_id]);
+            } else {
+                $ret .= "<input type='text' name='$input_name' value='" . html_out($item[$_id]) . "' style='width:95%;'>";
+            }
+            $ret .= "</td></tr>";
+        }
+        $ret .= "<tr><td>&nbsp;</td><td><button type='submit'>Записать</button></td></tr>";
+        $ret .= "</table></form>";
+        return $ret;
+    }
+
+    /// Добавить в шаблон HTML код виджета справочника
+    public function run() {
+        global $tmpl;
+        $opt = request($this->opt_var_name);
+        if ($opt != '') {
+            $tmpl->addBreadcrumb($this->print_name, $this->link_prefix);
+        } else {
+            $tmpl->addBreadcrumb($this->print_name, '');
+        }
+        $tmpl->setTitle($this->print_name);
+        switch ($opt) {
+            case '':
+                $tmpl->addContent($this->getListItems());
+                break;
+            case 'e':
+                $id = rcvint($this->line_var_name);
+                $tmpl->addContent($this->getEditForm($id));
+                break;
+            case 'n':
+                $tmpl->addContent($this->getEditForm(0));
+                break;
+            case 's':
+                $id = rcvint($this->line_var_name);
+                $id = $this->saveItem($id, request($this->param_var_name));
+                $tmpl->msg("Данные сохранены", "ok");
+                $tmpl->addContent($this->getEditForm($id));
+                break;
+            case 'd':
+                $id = rcvint($this->line_var_name);
+                $this->removeItem($id);
+                $tmpl->msg("Строка удалена", "ok");
+                $tmpl->addContent($this->getListItems());
+                break;
+            default:
+                throw new NotFoundException('Неверная опция ' . $opt);
+        }
+    }
+
 }

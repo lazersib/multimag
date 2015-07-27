@@ -420,11 +420,13 @@ class MysqiExtended extends mysqli {
 function getCompareStr($old, $new) {
     $ret = '';
     foreach ($old as $key => $value) {
-        if ($new[$key] !== $value) {
-            if ($ret)
-                $ret.=", $key: ( $value => {$new[$key]})";
-            else {
-                $ret = ", $key: ( $value => {$new[$key]})";
+        if(isset($new[$key])) {
+            if ($new[$key] !== $value) {
+                if ($ret) {
+                    $ret.=", $key: ( $value => {$new[$key]})";
+                } else {
+                    $ret = ", $key: ( $value => {$new[$key]})";
+                }
             }
         }
     }

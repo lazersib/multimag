@@ -19,14 +19,17 @@
 //
 
 include_once("core.php");
-
+SafeLoadTemplate($CONFIG['site']['inner_skin']);
+$tmpl->hideBlock('left');
 try
 {
 
 need_auth($tmpl);
 $tmpl->setTitle("Администрирование коментариев");
 if(!isAccess('admin_comments','view'))	throw new AccessException("Недостаточно привилегий");
-
+$tmpl->addBreadcrumb('Главная', '/');
+$tmpl->addBreadcrumb('Личный кабинет', '/user.php');
+$tmpl->addBreadcrumb('Администрирование', '/adm.php');
 $mode=request('mode');
 
 if($mode=='')
@@ -35,7 +38,7 @@ if($mode=='')
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	ORDER BY `comments`.`id` DESC");
-
+        $tmpl->addBreadcrumb('Последние коментарии', '');
 	$tmpl->addContent("<h1 id='page-title'>Последние коментарии</h1>
 	<table class='list' width='100%'>
 	<tr><th>ID</th><th>Дата</th><th>Объект</th><th>Автор</th><th>e-mail</th><th>Текст коментария</th><th>Оценка</th><th>Ответ</th><th>IP адрес</th><th>user-agent</th></tr>");
@@ -66,7 +69,8 @@ else if($mode=='response')
 {
 	$id=rcvint('id');
 	$opt=request('opt');
-
+        $tmpl->addBreadcrumb('Список комментариев', '/adm_comments.php');
+        $tmpl->addBreadcrumb('Ответ на коментарий с ID ' . $id, '');
 	if($opt)
 	{
 		$sql_text=$db->real_escape_string(request('text'));

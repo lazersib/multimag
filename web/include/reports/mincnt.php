@@ -67,20 +67,21 @@ class Report_MinCnt extends BaseGSReport {
 		}
 
 		if ($sklad) {
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base_cnt`.`cnt`, 0, `doc_base_cnt`.`mincnt`
-			FROM `doc_base_cnt`
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`,
+                            `doc_base_cnt`.`cnt`, `doc_base`.`transit_cnt`, `doc_base_cnt`.`mincnt`
+                        FROM `doc_base_cnt`
 			LEFT JOIN `doc_base` ON `doc_base_cnt`.`id`=`doc_base`.`id`
 			WHERE `doc_base_cnt`.`sklad`='$sklad' AND `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt`
 			ORDER BY $order DESC");
 		} else {
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`, `doc_base_cnt`.`cnt`, 0, `doc_base_cnt`.`mincnt`
-			FROM `doc_base_cnt`
+			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`,
+                            `doc_base_cnt`.`cnt`, `doc_base`.`transit_cnt`, `doc_base_cnt`.`mincnt`
+                        FROM `doc_base_cnt`
 			LEFT JOIN `doc_base` ON `doc_base_cnt`.`id`=`doc_base`.`id`
 			WHERE `doc_base_cnt`.`cnt`<`doc_base_cnt`.`mincnt`
 			ORDER BY $order DESC");
 		}
 		while ($nxt = $res->fetch_row()) {
-			$nxt[4] = DocVPuti($nxt[0]);
 			$nxt[6] = $nxt[5] - $nxt[3];
 			$this->tableRow($nxt);
 		}
