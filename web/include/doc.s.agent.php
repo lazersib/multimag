@@ -19,10 +19,12 @@
 
 /// Редактор справочника агентов
 class doc_s_Agent {
-	/// Просмотр списка агентов
+	
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
+            $this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
 	}
+        
+        /// Просмотр списка агентов
 	function View() {
 		global $tmpl;
 		doc_menu(0,0);
@@ -106,18 +108,21 @@ class doc_s_Agent {
 		$group = rcvint('g');
 		if(!isAccess('list_agent','view'))	throw new AccessException();
 		$tmpl->setTitle("Правка агента");
+                $tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+                
 		if(($pos==0)&&($param!='g')) $param='';
 
-		if($pos!=0)
-			$this->PosMenu($pos, $param);
+                if ($pos != 0) {
+                    $this->PosMenu($pos, $param);
+                }
 
-		if($param=='') {
-			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+                if($param=='') {
+			
 			
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
 			if($ares->num_rows) {
 				$agent_info = $ares->fetch_assoc();				
-				$tmpl->addBreadcrumb($agent_info['name'], '');
+				$tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '');
 			}
 			else {
 				$tmpl->addBreadcrumb('Новая запись', '');
@@ -317,7 +322,7 @@ class doc_s_Agent {
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
 			if($ares->num_rows) {
 				$agent_info = $ares->fetch_assoc();				
-				$tmpl->addBreadcrumb($agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
+				$tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
 				$tmpl->addBreadcrumb('История правок', '');
 			}
 			else throw new NotFoundException('Агент не найден');
@@ -331,6 +336,22 @@ class doc_s_Agent {
 				$tmpl->addContent('<tr><td>'.$nxt[0].'</td><td>'.html_out($nxt[1]).'</td><td>'.html_out($nxt[2]).'</td><td>'.html_out($nxt[3]).'</td><td>'.html_out($nxt[4]).'</td><td>'.html_out($nxt[5]).'</td></tr>');
 			$tmpl->addContent("</table>");
 		}
+                // Банковские реквизиты
+                elseif($param=='b') {
+                    $ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
+                    if($ares->num_rows) {
+                            $agent_info = $ares->fetch_assoc();				
+                            $tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
+                    }
+                    else throw new NotFoundException('Агент не найден');
+                    $editor = new \ListEditors\agentBankEditor($db);
+                    $editor->line_var_name = 'leid';
+                    $editor->opt_var_name = 'leopt';
+                    $editor->link_prefix = '/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=b&amp;pos='.$pos;
+                    $editor->acl_object_name = 'list_agent';
+                    $editor->agent_id = $pos;
+                    $editor->run();
+                }
 		// Правка описания группы
 		else if($param=='g') {
 			$res = $db->query("SELECT `id`, `name`, `desc`, `pid` FROM `doc_agent_group` WHERE `id`='$group'");
@@ -726,7 +747,7 @@ class doc_s_Agent {
 	/// Меню наименования (закладки)
 	function PosMenu($pos, $param) {
 		global $tmpl;
-		$sel = array('v' => '', 'h' => '');
+		$sel = array('v' => '', 'h' => '', 'b' => '');
 		if ($param == '')
 			$param = 'v';
 		$sel[$param] = "class='selected'";
@@ -734,7 +755,7 @@ class doc_s_Agent {
 		$tmpl->addContent("<ul class='tabs'>
 		<li><a {$sel['v']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Основные</a></li>
 		<li><a {$sel['h']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
-
+                <li><a {$sel['b']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=b&amp;pos=$pos'>Банковские реквизиты</a></li>
 		</ul>");
 	}
 

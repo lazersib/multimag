@@ -1496,31 +1496,34 @@ class doc_Nulltype extends \document {
 		$tmpl->addContent(@"<br>Комментарий:<br><textarea name='comment'>".html_out($this->doc_data['comment'])."</textarea><br><input type=submit value='Записать'></form>");
 	}
 
-	protected function drawAgentField()
-	{
-		global $tmpl, $db;
-		$balance = agentCalcDebt($this->doc_data['agent']);
-		$bonus = docCalcBonus($this->doc_data['agent']);
-		$col='';
-		if($balance>0)	$col="color: #f00; font-weight: bold;";
-		if($balance<0)	$col="color: #f08; font-weight: bold;";
+    /// Сформировать поля выбора агента
+    protected function drawAgentField() {
+        global $tmpl, $db;
+        $balance = agentCalcDebt($this->doc_data['agent']);
+        $bonus = docCalcBonus($this->doc_data['agent']);
+        $col = '';
+        if ($balance > 0)
+            $col = "color: #f00; font-weight: bold;";
+        if ($balance < 0)
+            $col = "color: #f08; font-weight: bold;";
 
-		$res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value`
 		FROM `doc_list`
 		LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
 		WHERE `agent`='{$this->doc_data['agent']}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
-		$contr_content='';
-		while($nxt=$res->fetch_row())
-		{
-			$selected=($this->doc_data['contract']==$nxt[0])?'selected':'';
-			$contr_content.="<option value='$nxt[0]' $selected>N$nxt[0]: $nxt[1]</option>";
-		}
-		if($contr_content)	$contr_content="Договор:<br><select name='contract'>$contr_content</select>";
+        $contr_content = '';
+        while ($nxt = $res->fetch_row()) {
+            $selected = ($this->doc_data['contract'] == $nxt[0]) ? 'selected' : '';
+            $contr_content.="<option value='$nxt[0]' $selected>N$nxt[0]: $nxt[1]</option>";
+        }
+        if ($contr_content)
+            $contr_content = "Договор:<br><select name='contract'>$contr_content</select>";
 
-		if($this->doc_data['agent_dishonest'])
-			$ag = "<span style='color: #f00; font-weight:bold;'>Был выбран недобросовестный агент!</span>";
-		else	$ag='';
-		$tmpl->addContent("
+        if ($this->doc_data['agent_dishonest'])
+            $ag = "<span style='color: #f00; font-weight:bold;'>Был выбран недобросовестный агент!</span>";
+        else
+            $ag = '';
+        $tmpl->addContent("
 		<div>
 		<div style='float: right; $col' id='agent_balance_info' onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'); return false;\">$balance / $bonus</div>
 		Агент:
@@ -1528,7 +1531,7 @@ class doc_Nulltype extends \document {
 		<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a>
 		</div>
 		<input type='hidden' name='agent' id='agent_id' value='{$this->doc_data['agent']}'>
-		<input type='text' id='agent_nm'  style='width: 100%;' value='".  html_out($this->doc_data['agent_name']) ."'>
+		<input type='text' id='agent_nm'  style='width: 100%;' value='" . html_out($this->doc_data['agent_name']) . "'>
 		$ag
 		<div id='agent_contract'>$contr_content</div>
 		<br>
@@ -1570,7 +1573,8 @@ class doc_Nulltype extends \document {
                         UpdateContractInfo('{$this->id}',firm_id,sValue);
                         
 			");
-		if(!$this->id)		$tmpl->addContent("
+        if (!$this->id)
+            $tmpl->addContent("
 			var plat_id=document.getElementById('plat_id');
 			if(plat_id)	plat_id.value=li.extra[0];
 			var plat=document.getElementById('plat');
@@ -1579,12 +1583,12 @@ class doc_Nulltype extends \document {
 			if(gruzop_id)	gruzop_id.value=li.extra[0];
 			var gruzop=document.getElementById('gruzop');
 			if(gruzop)	gruzop.value=li.selectValue;");
-		$tmpl->addContent("
+        $tmpl->addContent("
 		}
 		</script>");
-	}
+    }
 
-	protected function drawSkladField()
+    protected function drawSkladField()
 	{
 		global $tmpl, $db;
 		$tmpl->addContent("Склад:<br>
