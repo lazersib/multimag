@@ -111,7 +111,7 @@ class doc_s_Agent {
 		if($pos!=0)
 			$this->PosMenu($pos, $param);
 
-		if($param=='') {
+		if($param=='' || $param=='v') {
 			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
 			
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
@@ -311,6 +311,22 @@ class doc_s_Agent {
                         </script>");
 
 		}
+                elseif($param == 'c') {
+                    $tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+                    $info = $db->selectRow('doc_agent', $pos); 
+                    if ($info) {
+                        $tmpl->addBreadcrumb($info['id'] . ': ' . $info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos=' . $pos);
+                    } else {
+                        throw new \NotFoundException('Агент не найден');
+                    }
+                    $editor = new \ListEditors\agentContactEditor($db); 
+                    $editor->line_var_name = 'leid'; 
+                    $editor->opt_var_name = 'leopt'; 
+                    $editor->link_prefix = '/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=c&amp;pos='.$pos; 
+                    $editor->acl_object_name = 'list_agent'; 
+                    $editor->agent_id = $pos; 
+                    $editor->run(); 
+                }
 		else if($param=='h') {
 			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
 			
@@ -365,7 +381,7 @@ class doc_s_Agent {
 		$param = request('param');
 		$group = rcvint('g');
 		$tmpl->setTitle("Правка агента");
-		if($param=='') {
+		if($param=='' || $param=='v') {
 			$ag_info = $db->selectRowA('doc_agent', $pos, $this->agent_vars);
 			unset($ag_info['id']);
 			if(!$ag_info['p_agent'])	$ag_info['p_agent']='NULL';
@@ -723,19 +739,20 @@ class doc_s_Agent {
 		}
 	}
 	
-	/// Меню наименования (закладки)
-	function PosMenu($pos, $param) {
-		global $tmpl;
-		$sel = array('v' => '', 'h' => '');
-		if ($param == '')
-			$param = 'v';
-		$sel[$param] = "class='selected'";
-
-		$tmpl->addContent("<ul class='tabs'>
-		<li><a {$sel['v']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Основные</a></li>
-		<li><a {$sel['h']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
-
-		</ul>");
-	}
+    /// Меню элемента (закладки)
+    function PosMenu($pos, $param) {
+        global $tmpl;
+        $items = array('v' => 'Основные', 'c' => 'Контакты', 'b' => 'Банковские реквизиты', 'h' => 'История');
+        if ($param == '') {
+            $param = 'v';
+        }
+        $link = "/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;pos=$pos";
+        $tmpl->addContent("<ul class='tabs'>");
+        foreach($items as $id => $name) {
+            $sel = $param==$id?" class='selected'":'';
+            $tmpl->addContent("<li><a href='{$link}&amp;param={$id}'{$sel}>$name</a></li>");
+        }
+        $tmpl->addContent("</ul>");
+    }
 
 }
