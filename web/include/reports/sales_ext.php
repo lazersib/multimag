@@ -17,7 +17,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /// Отчёт по движению товара
-class Report_Sales extends BaseGSReport {
+class Report_Sales_ext extends BaseGSReport {
 
     var $sklad = 0; // ID склада
     var $w_docs = 0; // Отображать документы
@@ -31,26 +31,26 @@ class Report_Sales extends BaseGSReport {
             .selmenu a{color:#fff;cursor:pointer;}
             .cb{width:14px;height:14px;border:1px solid #ccc;}");
         $tmpl->addContent("<script type='text/javascript'>
-		function SelAll(flag) {
-                    var elems = document.getElementsByName('g[]');var l = elems.length;
-                    for(var i=0; i<l; i++){elems[i].checked=flag;if(flag){elems[i].disabled = false;}}
-		}		
-		function CheckCheck(ids) {
-                    var cb = document.getElementById('cb'+ids);var cont=document.getElementById('cont'+ids);if(!cont)	return;
-                    var elems=cont.getElementsByTagName('input');var l = elems.length;
-                    for(var i=0; i<l; i++){if(!cb.checked){elems[i].checked=false;}elems[i].disabled=!cb.checked;}
-		}		
-		</script>
-		<div class='groups_block' id='sb'><ul class='Container'>
-		<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
-		" . $this->draw_groups_tree(0) . "</ul></div>");
+            function SelAll(flag) {
+                var elems = document.getElementsByName('g[]');var l = elems.length;
+                for(var i=0; i<l; i++){elems[i].checked=flag;if(flag){elems[i].disabled = false;}}
+            }		
+            function CheckCheck(ids) {
+                var cb = document.getElementById('cb'+ids);var cont=document.getElementById('cont'+ids);if(!cont)	return;
+                var elems=cont.getElementsByTagName('input');var l = elems.length;
+                for(var i=0; i<l; i++){if(!cb.checked){elems[i].checked=false;}elems[i].disabled=!cb.checked;}
+            }		
+            </script>
+            <div class='groups_block' id='sb'><ul class='Container'>
+            <div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
+            " . $this->draw_groups_tree(0) . "</ul></div>");
     }
 
     function getName($short = 0) {
         if ($short) {
-            return "По движению товара";
+            return "По движению товара (расширенный)";
         } else {
-            return "Отчёт по движению товара";
+            return "Отчёт по движению товара (расширенный)";
         }
     }
 
@@ -61,7 +61,7 @@ class Report_Sales extends BaseGSReport {
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
             <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
             <form action='' method='post'>
-            <input type='hidden' name='mode' value='sales'>
+            <input type='hidden' name='mode' value='sales_ext'>
             <fieldset><legend>Дата</legend>
             С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
             По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
@@ -76,6 +76,9 @@ class Report_Sales extends BaseGSReport {
             <label><input type='checkbox' name='div_dt' value='1' checked>Разделить по типам документов</label><br>
             Фильтр по подтипу документов:<br>
             <input type='text' name='subtype' value=''><br>
+            Фильтр по кодовому названию поставщика:<br>
+            <small>Не применяется, если отчёт формируется по выбранному наименованию</small><br>
+            <input type='text' name='provider_codename' value=''><br>
             <br>
             <fieldset><legend>Отчёт по</legend>
             <select name='sel_type' id='sel_type'>
@@ -321,7 +324,7 @@ class Report_Sales extends BaseGSReport {
             if ($prix_cnt || $realiz_cnt || $perem_cnt || $sbor_cnt) {
                 $this->tableRow(
                     array(
-                        $pos_info['id'], $pos_info['vc'], $pos_info['name'], $this->getLastBuyDate($pos_info['id']),
+                        $pos_info['id'], $pos_info['vc'], $pos_info['name'], $pos_info['provider_code'], $this->getLastBuyDate($pos_info['id']),
                         $pos_info['base_price'], $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt)
                     );
             }
@@ -439,6 +442,7 @@ class Report_Sales extends BaseGSReport {
         $this->div_dt = rcvint('div_dt');
         $agent_id = rcvint('agent');
         $subtype = request('subtype');
+        $provider_codename = request('provider_codename');
 
         if (!$this->sklad) {
             $this->sklad = 1;
@@ -459,8 +463,8 @@ class Report_Sales extends BaseGSReport {
         }
 
         if (!$this->w_docs) {
-            $widths = array(4, 6, 34, 8, 7, 7, 7, 7, 7, 7, 7);
-            $headers = array('ID', 'Код', 'Наименование', 'Посл.приход', 'Баз.цена', 'Нач.кол-во', 'Приход', 'Реализ.', 'Перем.', 'Сборка', 'Итог');
+            $widths = array(4, 6, 27, 7, 8, 7, 7, 7, 7, 7, 7, 7);
+            $headers = array('ID', 'Код', 'Наименование', 'Артикул поставщика', 'Посл.приход', 'Баз.цена', 'Нач.кол-во', 'Приход', 'Реализ.', 'Перем.', 'Сборка', 'Итог');
             $header .= ", без детализации по документам";
         } else if ($this->div_dt) {
             $widths = array(15, 25, 40, 7, 7, 7);
@@ -489,10 +493,22 @@ class Report_Sales extends BaseGSReport {
             'real' => 0,
             'perem' => 0,
             'sbor' => 0);
-               
+        
+        $prov_code_id = 0;
+        $res = $db->query("SELECT `doc_base_params`.`id` FROM `doc_base_params` WHERE `doc_base_params`.`codename`='provider_code'");
+        if($res->num_rows) {
+            list($prov_code_id) = $res->fetch_row();
+        }
+        $prov_codename_id = 0;
+        $res = $db->query("SELECT `doc_base_params`.`id` FROM `doc_base_params` WHERE `doc_base_params`.`codename`='provider_codename'");
+        if($res->num_rows) {
+            list($prov_codename_id) = $res->fetch_row();
+        }
+        
         $sql_fields = "`doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`"
-                . ", `doc_base`.`cost` AS `base_price` ";
-        $sql_joins = "";
+                . ", `doc_base`.`cost` AS `base_price`, `vals`.`value` AS `provider_code`, `cnvals`.`value` AS `provider_codename`";
+        $sql_joins = " LEFT JOIN `doc_base_values` AS `vals` ON `vals`.`id`=`doc_base`.`id` AND `vals`.`param_id`='$prov_code_id'"
+                    . " LEFT JOIN `doc_base_values` AS `cnvals` ON `cnvals`.`id`=`doc_base`.`id` AND `cnvals`.`param_id`='$prov_codename_id'";
         
         $sql_header = "SELECT $sql_fields FROM `doc_base` $sql_joins";
 
@@ -512,6 +528,9 @@ class Report_Sales extends BaseGSReport {
         } else if ($sel_type == 'all') {
             $res = $db->query( $sql_header . " ORDER BY $sql_order");
             while ($pos_info = $res->fetch_assoc()) {
+                if($provider_codename && $provider_codename!=$pos_info['provider_codename']) {
+                    continue;
+                }
                 $ret = $this->outPos($pos_info, $dt_f, $dt_t, $subtype);
                 if ($this->div_dt || !$this->w_docs) {
                     foreach ($ss as $id => $val) {
@@ -535,6 +554,9 @@ class Report_Sales extends BaseGSReport {
                     . " WHERE `doc_base`.`group`='{$group_line['id']}'"
                     . " ORDER BY $sql_order");
                 while ($pos_info = $res->fetch_assoc()) {
+                    if($provider_codename && $provider_codename!=$pos_info['provider_codename']) {
+                        continue;
+                    }
                     $ret = $this->outPos($pos_info, $dt_f, $dt_t, $subtype);
                     if ($this->div_dt || !$this->w_docs) {
                         foreach ($ss as $id => $val) {
@@ -551,6 +573,9 @@ class Report_Sales extends BaseGSReport {
                 $sql_joins
                 GROUP BY `doc_list_pos`.`tovar` ORDER BY $sql_order ");
             while ($pos_info = $res->fetch_assoc()) {
+                if($provider_codename && $provider_codename!=$pos_info['provider_codename']) {
+                    continue;
+                }
                 $ret = $this->outPos($pos_info, $dt_f, $dt_t, $subtype);
                 if ($this->div_dt || !$this->w_docs) {
                     foreach ($ss as $id => $val) {

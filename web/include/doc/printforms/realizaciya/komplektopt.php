@@ -28,7 +28,7 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
     /// Инициализация модуля вывода данных
     public function initForm() {
         require('fpdf/fpdf_mc.php');
-        $this->pdf = new \PDF_MC_Table('L');
+        $this->pdf = new \PDF_MC_Table('P');
         $this->pdf->Open();
         $this->pdf->SetAutoPageBreak(1, 5);
         $this->pdf->AddFont('Arial', '', 'arial.php');
@@ -73,13 +73,13 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
             $th_texts[] = 'Код';
             $font_sizes[] = 7;
             $tbody_aligns[] = 'R';
-            $th_widths[] = 165;
+            $th_widths[] = 80;
         } else {
-            $th_widths[] = 185;
+            $th_widths[] = 100;
         }
         $th_texts[] = 'Наименование';
         $tbody_aligns[] = 'L';
-        $font_sizes[] = 11;
+        $font_sizes[] = 14;
 
         $th_widths = array_merge($th_widths, array(10, 14, 12, 14, 14, 14, 20));
         $th_texts = array_merge($th_texts, array('Ед.', 'Кол-во', 'Склад', 'В м.уп.', 'В б.уп.', 'Резерв', 'Место'));
@@ -87,6 +87,7 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
         $this->addTableHeader($th_widths, $th_texts, $tbody_aligns);        
         $font_sizes = array_merge($font_sizes, array(8, 11, 8, 8, 8, 8, 8));
         $this->pdf->SetFSizes($font_sizes);
+        $this->pdf->SetHeight(6);
         
         $this->form_linecount = 0;
         $this->form_sum = $this->form_summass = 0;

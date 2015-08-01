@@ -166,6 +166,7 @@ class ds_sborka_zap {
         $zp = $this->CalcZP($doc_id);
         $store_id = $document->getDocData('sklad');
         $to_store_id = $document->getDopData('nasklad');
+        $storekeeper_id = $document->getDopData('storekeeper_id');
         $not_a_p = $document->getDopData('not_a_p');
         $service_id = $document->getDopData('service_id');
         if(!$store_id) {
@@ -203,6 +204,7 @@ class ds_sborka_zap {
         } else if (($store_id != $to_store_id) && $to_store_id) {
             $perem_doc = new doc_Peremeshenie();
             $perem_doc->createFrom($document);
+            $perem_doc->setDopData('kladovshik', $storekeeper_id);
             $perem_doc->setDopData('na_sklad', $to_store_id);
             $perem_doc->setDopData('mest', 1);
         }

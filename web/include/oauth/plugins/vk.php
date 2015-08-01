@@ -37,7 +37,7 @@ class vk extends \oauth\oauthplugin {
         $this->client->oauth_version = "2.0";
         $this->client->dialog_url = "https://oauth.vk.com/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope={SCOPE}&state={STATE}";
         $this->client->access_token_url = "https://oauth.vk.com/access_token";
-        $this->client->scope = 'notify,friends,wall,email,offline';
+        $this->client->scope = 'notify,wall,email,offline';
         $this->client->store_access_token_response = true;
     }
     

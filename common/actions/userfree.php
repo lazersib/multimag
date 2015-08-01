@@ -20,16 +20,21 @@ namespace Actions;
 
 /// Очистка от неподтверждённых пользователей
 class UserFree extends \Action {
-	
-	/// @brief Запустить
-	public function run() {
-		$dtim = time() - 60 * 60 * 24 * $this->config['auto']['user_del_days'];
-		$dtim_p = date('Y-m-d H:i:s', $dtim);
-		$res = $this->db->query("SELECT `id` FROM `users`
-			LEFT JOIN `users_openid` ON `users_openid`.`user_id`=`users`.`id`
-			WHERE `users_openid`.`user_id` IS NULL AND
-				`users`.`reg_date`<'$dtim_p' AND `users`.`reg_email_confirm`!='1' AND `reg_phone_confirm`!='1'");
-		while ($nxt = $res->fetch_row())
-			$this->db->query("DELETE FROM `users` WHERE `id`=$nxt[0]");	
-	}
+
+    /// @brief Запустить
+    public function run() {
+        $dtim = time() - 60 * 60 * 24 * $this->config['auto']['user_del_days'];
+        $dtim_p = date('Y-m-d H:i:s', $dtim);
+        $res = $this->db->query("SELECT `users`.`id` FROM `users`
+            LEFT JOIN `users_openid` ON `users_openid`.`user_id`=`users`.`id`
+            LEFT JOIN `users_oauth` ON `users_oauth`.`user_id`=`users`.`id`
+            WHERE `users_openid`.`user_id` IS NULL AND `users_oauth`.`user_id` IS NULL AND
+                `users`.`reg_date`<'$dtim_p' AND `users`.`reg_email_confirm`!='1' AND `reg_phone_confirm`!='1'");
+        while ($nxt = $res->fetch_row()) {
+            echo "Delete {$nxt[0]}\n";
+            $this->db->query("DELETE FROM `users_data` WHERE `uid`=$nxt[0]");
+            $this->db->query("DELETE FROM `users` WHERE `id`=$nxt[0]");
+        }
+    }
+
 }

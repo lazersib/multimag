@@ -17,8 +17,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// Yandex developer page: https://oauth.yandex.ru/client/new. The callback URL must be $client->redirect_uri
-
 namespace oauth;
 
 abstract class oauthplugin {

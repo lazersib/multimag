@@ -81,7 +81,7 @@ class mailru extends \oauth\oauthplugin {
         }
         $this->oauth_profile = array(
             'id' => $userinfo[0]->uid,
-            'login' => $userinfo[0]->nick,
+            'login' => translitIt($userinfo[0]->nick),
             'email' => $userinfo[0]->email,
             'is_verifed_email' => 1,
             'birthday' => $userinfo[0]->birthday,
