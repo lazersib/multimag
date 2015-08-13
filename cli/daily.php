@@ -17,87 +17,101 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
 // Ежедневный запуск в 0:01 
-$c=explode('/',__FILE__);$base_path='';
-for($i=0;$i<(count($c)-2);$i++)	$base_path.=$c[$i].'/';
+$c = explode('/', __FILE__);
+$base_path = '';
+for ($i = 0; $i < (count($c) - 2); $i++)
+    $base_path.=$c[$i] . '/';
 include_once("$base_path/config_cli.php");
-require_once($CONFIG['cli']['location']."/core.cli.inc.php");
+require_once($CONFIG['cli']['location'] . "/core.cli.inc.php");
 //require_once($CONFIG['location']."/common/datecalcinterval.php");
 
 $verbose = 0;
 
 try {
-	if($_SERVER['argc']>1) {
-		for($i=0;$i<$_SERVER['argc'];$i++) {
-			switch($_SERVER['argv'][$i]) {
-				case '-v':
-				case '--verbose':
-					$verbose = 1;
-					break;
-			}
-		}
-	}
-	
-	if($verbose)	echo "Очистка счётчика посещений...\n";
-	// Очистка счётчика посещений от старых данных
-	$tt = time() - 60 * 60 * 24 * 10;
-	$db->query("DELETE FROM `counter` WHERE `date` < '$tt'");
+    if ($_SERVER['argc'] > 1) {
+        for ($i = 0; $i < $_SERVER['argc']; $i++) {
+            switch ($_SERVER['argv'][$i]) {
+                case '-v':
+                case '--verbose':
+                    $verbose = 1;
+                    break;
+            }
+        }
+    }
 
-	// Очистка от неподтверждённых пользователей
-	if ($CONFIG['auto']['user_del_days'] > 0) {
-		if($verbose)	echo "Очистка от неподтверждённых пользователей...\n";
-		$action = new Actions\UserFree($CONFIG, $db);
-		$action->run();
-	}
+    if ($verbose)
+        echo "Очистка счётчика посещений...\n";
+    // Очистка счётчика посещений от старых данных
+    $tt = time() - 60 * 60 * 24 * 10;
+    $db->query("DELETE FROM `counter` WHERE `date` < '$tt'");
 
-	// Перемещение непроведённых реализаций на начало текущего дня
-	if ($CONFIG['auto']['move_nr_to_end'] || $CONFIG['auto']['move_no_to_end']) {
-		if($verbose)	echo "Перемещение непроведённых реализаций на начало текущего дня...\n";
-		$action = new Actions\DocMove($CONFIG, $db);
-		$action->run();
-	}
-	
-	// Загрузка курсов валют
-	if ($CONFIG['auto']['update_currency']) {
-		if($verbose)	echo "Загрузка курсов валют...\n";
-		$action = new Actions\CurrencyUpdater($CONFIG, $db);
-		$action->run();
-	}
-	
-	// Расчет оборота агентов
-	if ($CONFIG['auto']['agent_calc_avgsum']) {
-		if($verbose)	echo "Расчет оборота агентов...\n";
-		$action = new Actions\AgentCalcAvgsum($CONFIG, $db);
-		$action->run();
-	}
-	
-	// Информирование ответственных сотрудников о задолженностях его агентов при помощи email и jabber
-	if ($CONFIG['auto']['resp_debt_notify']) {
-		if($verbose)	echo "Информирование ответственных сотрудников о задолженностях его агентов при помощи email и jabber...\n";
-		$action = new Actions\RespDebtNotify($CONFIG, $db);
-		$action->run();
-	}
-	
-	// Информирование агентов об их накопительных скидках при помощи email
-	if ($CONFIG['auto']['agent_discount_notify']) {
-		if($verbose)	echo "Информирование агентов об их накопительных скидках при помощи email\n";
-		$action = new Actions\AgentDiscountNotify($CONFIG, $db);
-		$action->run();
-	}
-	
+    // Очистка от неподтверждённых пользователей
+    if ($CONFIG['auto']['user_del_days'] > 0) {
+        if ($verbose)
+            echo "Очистка от неподтверждённых пользователей...\n";
+        $action = new Actions\UserFree($CONFIG, $db);
+        $action->run();
+    }
 
-	
+    // Перемещение непроведённых реализаций на начало текущего дня
+    if ($CONFIG['auto']['move_nr_to_end'] || $CONFIG['auto']['move_no_to_end']) {
+        if ($verbose)
+            echo "Перемещение непроведённых реализаций на начало текущего дня...\n";
+        $action = new Actions\DocMove($CONFIG, $db);
+        $action->run();
+    }
+
+    // Загрузка курсов валют
+    if ($CONFIG['auto']['update_currency']) {
+        if ($verbose)
+            echo "Загрузка курсов валют...\n";
+        $action = new Actions\CurrencyUpdater($CONFIG, $db);
+        $action->run();
+    }
+
+    // Расчет оборота агентов
+    if ($CONFIG['auto']['agent_calc_avgsum']) {
+        if ($verbose)
+            echo "Расчет оборота агентов...\n";
+        $action = new Actions\AgentCalcAvgsum($CONFIG, $db);
+        $action->run();
+    }
+
+    // Информирование ответственных сотрудников о задолженностях его агентов при помощи email и jabber
+    if ($CONFIG['auto']['resp_debt_notify']) {
+        if ($verbose)
+            echo "Информирование ответственных сотрудников о задолженностях его агентов при помощи email и jabber...\n";
+        $action = new Actions\RespDebtNotify($CONFIG, $db);
+        $action->run();
+    }
+
+    // Информирование агентов об их накопительных скидках при помощи email
+    if ($CONFIG['auto']['agent_discount_notify']) {
+        if ($verbose)
+            echo "Информирование агентов об их накопительных скидках при помощи email\n";
+        $action = new Actions\AgentDiscountNotify($CONFIG, $db);
+        $action->run();
+    }
+    
+    // Уведомление о проблемах с ценами
+    if ($CONFIG['auto']['badpricenotify']) {
+        if ($verbose)
+            echo "Уведомление о проблемах с ценами...\n";
+        $action = new Actions\BadPriceNotify($CONFIG, $db);
+        $action->run();
+    }
+    
 } catch (XMPPHP_Exception $e) {
-	if($CONFIG['site']['admin_email'])
-		mailto($CONFIG['site']['admin_email'], "XMPP exception in daily.php", $e->getMessage());
-	echo "XMPP exception: ".$e->getMessage() . "\n";
+    if ($CONFIG['site']['admin_email'])
+        mailto($CONFIG['site']['admin_email'], "XMPP exception in daily.php", $e->getMessage());
+    echo "XMPP exception: " . $e->getMessage() . "\n";
 } catch (mysqli_sql_exception $e) {
-	if($CONFIG['site']['admin_email'])
-		mailto($CONFIG['site']['admin_email'], "Mysql exception in daily.php", $e->getMessage());
-	echo "Mysql exception: ".$e->getMessage() . "\n";
+    if ($CONFIG['site']['admin_email'])
+        mailto($CONFIG['site']['admin_email'], "Mysql exception in daily.php", $e->getMessage());
+    echo "Mysql exception: " . $e->getMessage() . "\n";
 } catch (Exception $e) {
-	if($CONFIG['site']['admin_email'])
-		mailto($CONFIG['site']['admin_email'], "General exception in daily.php", $e->getMessage());
-	echo "General exception: ".$e->getMessage() . "\n";
+    if ($CONFIG['site']['admin_email'])
+        mailto($CONFIG['site']['admin_email'], "General exception in daily.php", $e->getMessage());
+    echo "General exception: " . $e->getMessage() . "\n";
 }
