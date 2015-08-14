@@ -18,6 +18,7 @@
 //
 namespace doc\printforms; 
 
+/// Стандартная накладная с информацией о скидках
 abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
     protected $form_basesum;
     
@@ -41,15 +42,15 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
             $th_widths[] = 20;
             $th_texts[] = 'Код';
             $tbody_aligns[] = 'R';
-            $th_widths[] = 86;
+            $th_widths[] = 66;
         } else {
-            $th_widths[] = 106;
+            $th_widths[] = 86;
         }
         $th_texts[] = 'Наименование';
         $tbody_aligns[] = 'L';
-        $th_widths = array_merge($th_widths, array(16, 20, 20, 20));
-        $th_texts = array_merge($th_texts, array('В упак.', 'Кол-во', 'Цена', 'Сумма'));
-        $tbody_aligns = array_merge($tbody_aligns, array('R', 'R', 'R', 'R'));
+        $th_widths = array_merge($th_widths, array(16, 20, 20, 20, 20));
+        $th_texts = array_merge($th_texts, array('В упак.', 'Кол-во', 'Цена', 'Сумма', 'Место'));
+        $tbody_aligns = array_merge($tbody_aligns, array('R', 'R', 'R', 'R', 'R'));
         $this->addTableHeader($th_widths, $th_texts, $tbody_aligns);        
         
         $this->form_linecount = 0;
@@ -64,7 +65,7 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
                 $row[] = $line['vc'];
             }
             $row[] = $line['name'];
-            $row = array_merge($row, array("{$line['mult']} {$line['unit_name']}", "{$line['cnt']} {$line['unit_name']}", $price, $sum_line));
+            $row = array_merge($row, array("{$line['mult']} {$line['unit_name']}", "{$line['cnt']} {$line['unit_name']}", $price, $sum_line, $line['place']));
             if ($this->pdf->h <= ($this->pdf->GetY() + 18 )) {
                 $this->pdf->AddPage();
                 $this->addTechFooter();

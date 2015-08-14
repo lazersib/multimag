@@ -18,6 +18,7 @@
 //
 namespace doc\printforms; 
 
+/// Стандартная накладная
 abstract class iPrintFormInvoicePdf extends \doc\printforms\iPrintFormPdf {
     protected $form_linecount;
     protected $form_sum;    
@@ -113,7 +114,8 @@ abstract class iPrintFormInvoicePdf extends \doc\printforms\iPrintFormPdf {
     protected function addSummaryBlock() {
         $dop_data = $this->doc->getDopDataA();
         $sum_p = number_format($this->form_sum, 2, '.', ' ');
-        $text = "Итого {$this->form_linecount} наименований на сумму $sum_p руб.";
+        $mass_p = number_format($this->form_summass, 3, '.', ' ');
+        $text = "Итого {$this->form_linecount} наименований массой $mass_p кг. на сумму $sum_p руб.";
         if(isset($dop_data['mest'])) {
             if ($dop_data['mest']) {
                 $text .= ", мест: " . $dop_data['mest'];

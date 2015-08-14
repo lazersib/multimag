@@ -346,6 +346,7 @@ class Report_Sales extends BaseGSReport {
             $this->tableAltStyle(false);
             $this->tableSpannedRow(array($this->col_cnt - 1, 1), array('На начало периода:', $cur_cnt));
         }
+        
         $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`page`,
                 `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`,
                 `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
@@ -356,7 +357,7 @@ class Report_Sales extends BaseGSReport {
             LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
             LEFT JOIN `doc_sklady` AS `ds` ON `ds`.`id`=`doc_list`.`sklad`
             LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
-            WHERE `doc_list_pos`.`tovar`='{{$pos_info['id']}}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
+            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
                 (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
                 ((`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`sklad`='{$this->sklad}') OR
                 (`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
