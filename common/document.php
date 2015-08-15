@@ -62,6 +62,11 @@ class document {
         return $this->id;
     }
 
+    /// Получить кодовое имя типа документа
+    public function getTypeName() {
+        return $this->typename;
+    }
+    
     /// Получить отображаемое имя документа
     public function getViewName() {
         return $this->viewname;
@@ -123,6 +128,8 @@ class document {
                 return "doc_ZSbor";
             case 22:
                 return "doc_Pko_oper";
+            case 23:
+                return "doc_PermitOut";
             default:
                 return null;
         }
@@ -141,6 +148,9 @@ class document {
     
     static function getInstanceFromType($type) {
         $doc_class = self::getClassNameFromType($type);
+        if($doc_class==null) {
+            throw new \LogicException('Запрошенный тип документа ('.html_out($doc_class).') не зарегистрирован!');
+        }
         return new $doc_class;
     }
     
