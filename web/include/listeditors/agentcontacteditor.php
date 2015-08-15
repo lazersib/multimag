@@ -29,6 +29,11 @@ class agentContactEditor extends \ListEditor {
         'skype'=>'Skype логин',
         'mra'=>'MailRu агент'
     );
+    var $context_list = array(
+        'home'  => 'Домашний',
+        'work'  => 'Рабочий',
+        'mobile'=> 'Мобильный'
+    );
 
     public function __construct($db_link) {
         parent::__construct($db_link);
@@ -41,6 +46,7 @@ class agentContactEditor extends \ListEditor {
     public function getColumnNames() {
         return array(
             'id' => 'id',
+            'context' => 'Контекст',
             'type' => 'Тип',
             'value' => 'Значение',
             'for_sms' => 'Для СМС',
@@ -53,7 +59,7 @@ class agentContactEditor extends \ListEditor {
     public function loadList() {
         global $db;
         $a_id = intval($this->agent_id);
-        $res = $db->query("SELECT `id`, `agent_id`, `type`, `value`, `for_sms`, `for_fax`, `no_ads`
+        $res = $db->query("SELECT `id`, `agent_id`, `context`, `type`, `value`, `for_sms`, `for_fax`, `no_ads`
             FROM {$this->table_name}
             WHERE `agent_id`='$a_id'
             ORDER BY `id`");
@@ -76,6 +82,12 @@ class agentContactEditor extends \ListEditor {
                 $write_data[$col_id] = 0;
             }
         }
+        if($write_data['type']=='phone') {
+            $phone = normalizePhone($write_data['value']);
+            if($phone) {
+                $write_data['value'] = $phone;
+            }
+        }
         $write_data['agent_id'] = intval($this->agent_id);
         if ($id) {
             if (!isAccess($this->acl_object_name, 'edit')) {
@@ -93,7 +105,7 @@ class agentContactEditor extends \ListEditor {
                 throw new \AccessException();
             }
             $id = $this->db_link->insertA($this->table_name, $write_data);
-            $log_text = getCompareStr(array('name'=>'','bik'=>'','rs'=>'','ks'=>''), $write_data);
+            $log_text = getCompareStr(array('context'=>'','type'=>'','value'=>'','no_ads'=>'','for_sms'=>'','for_fax'=>''), $write_data);
             doc_log('ADD agent_contact', $log_text, 'agent', intval($this->agent_id));
         }
         return $id;
@@ -102,6 +114,16 @@ class agentContactEditor extends \ListEditor {
     function getInputType($name, $value) {
         $ret = "<select name='$name'>";
          foreach($this->types_list as $id => $item_name) {
+                $sel = $value==$id?' selected':'';
+                $ret .="<option value='$id'{$sel}>".html_out($item_name)." (".$id.")</option>";
+        }
+        $ret .="</select>";
+        return $ret;
+    }
+    
+    function getInputContext($name, $value) {
+        $ret = "<select name='$name'>";
+         foreach($this->context_list as $id => $item_name) {
                 $sel = $value==$id?' selected':'';
                 $ret .="<option value='$id'{$sel}>".html_out($item_name)." (".$id.")</option>";
         }
@@ -129,6 +151,15 @@ class agentContactEditor extends \ListEditor {
             return $data['type'];
         }
     }
+        
+    public function getFieldContext($data) {
+        if(isset($this->context_list[$data['context']])) {
+            return $this->context_list[$data['context']];
+        } 
+        else {
+            return $data['context'];
+        }
+    }
     
     public function getFieldFor_sms($data) {
         return $data['for_sms'] ? "<b style='color:#0c0'>Да</b>" : "Нет";
@@ -140,5 +171,12 @@ class agentContactEditor extends \ListEditor {
     
     public function getFieldNo_Ads($data) {
         return $data['no_ads'] ? "<b style='color:#f00'>Да</b>" : "Нет";
+    }
+    
+    public function getFieldValue($data) {
+        if($data['type']=='email') {
+            return "<a href='mailto:".html_out($data['value'])."'>".html_out($data['value'])."</a>";
+        }
+        return $data['value'];
     }
 }

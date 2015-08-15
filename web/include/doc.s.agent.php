@@ -19,10 +19,12 @@
 
 /// Редактор справочника агентов
 class doc_s_Agent {
-	/// Просмотр списка агентов
+	
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
+		$this->agent_vars = array('group', 'name', 'type', 'fullname', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
 	}
+        
+        /// Просмотр списка агентов
 	function View() {
 		global $tmpl;
 		doc_menu(0,0);
@@ -106,18 +108,21 @@ class doc_s_Agent {
 		$group = rcvint('g');
 		if(!isAccess('list_agent','view'))	throw new AccessException();
 		$tmpl->setTitle("Правка агента");
+                $tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+                
 		if(($pos==0)&&($param!='g')) $param='';
 
-		if($pos!=0)
-			$this->PosMenu($pos, $param);
+                if ($pos != 0) {
+                    $this->PosMenu($pos, $param);
+                }
 
 		if($param=='' || $param=='v') {
-			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');			
 			
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
 			if($ares->num_rows) {
 				$agent_info = $ares->fetch_assoc();				
-				$tmpl->addBreadcrumb($agent_info['name'], '');
+				$tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '');
 			}
 			else {
 				$tmpl->addBreadcrumb('Новая запись', '');
@@ -187,33 +192,23 @@ class doc_s_Agent {
 				<td><input type='hidden' name='p_agent' id='agent_id' value='{$agent_info['p_agent']}'>
 					<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 95%;' value='$html_pagent_name'>
 					<div id='agent_info'></div>
-			<tr><td align=right>Адрес электронной почты (e-mail)
-				<br><label><input type='checkbox' name='no_mail' value='1'{$no_mail_c}>Не отправлять рассылки</label>
-				<td><input type=text name='email' value='".html_out($agent_info['email'])."' class='validate email' style='width: 90%;'>
-				<td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
-				<td colspan=3><input type=text name='sms_phone' value='".html_out($agent_info['sms_phone'])."' class='phone validate'>
-			<tr><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
-				<td><input type=text name='tel' value='".html_out($agent_info['tel'])."' class='phone validate'>
-				<td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
-				<td><input type=text name='fax_phone' value='".html_out($agent_info['fax_phone'])."' class='phone validate'>
-				<td align=right>Дополнительный телефон:
-				<td><input type=text name='alt_phone' value='".html_out($agent_info['alt_phone'])."'>
 			<tr><td align=right>Юридический адрес / Адрес прописки
 				<td colspan='2'><textarea name='adres'>".html_out($agent_info['adres'])."</textarea>
 				<td align=right>Адрес проживания
 				<td colspan='2'><textarea name='real_address'>".html_out($agent_info['real_address'])."</textarea>
 			<tr><td align=right>ИНН:
-				<td colspan='$span'><input type=text name='inn' value='".html_out($agent_info['inn'])."' style='width: 40%;' class='inn validate'>
-			<tr><td align=right>КПП:
-				<td colspan='$span'><input type=text name='kpp' value='".html_out($agent_info['kpp'])."' style='width: 40%;'>	
-			<tr><td align=right>Банк
-				<td colspan='$span'><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
-			<tr><td align=right>Корр. счет
-				<td colspan='$span'><input type=text name='ks' value='".html_out($agent_info['ks'])."' style='width: 40%;' class='ks validate'>
-			<tr><td align=right>БИК
-				<td colspan='$span'><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'>
-			<tr class=lin1><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small>
-				<td colspan='$span'><input type=text name='rs' value='".html_out($agent_info['rs'])."' style='width: 40%;' class='rs validate'>
+				<td><input type=text name='inn' value='".html_out($agent_info['inn'])."' class='inn validate'>
+                                <td align=right>КПП:
+				<td><input type=text name='kpp' value='".html_out($agent_info['kpp'])."'>
+                                <td><td>			
+                        <tr><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small>
+				<td><input type=text name='rs' value='".html_out($agent_info['rs'])."' class='rs validate'>
+                                <td align=right>Корр. счет
+				<td><input type=text name='ks' value='".html_out($agent_info['ks'])."' class='ks validate'>
+                                <td><td>
+                        <tr><td align=right>БИК
+				<td><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'><td align=right>Банк
+				<td colspan='3'><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
 			<tr><td align=right>ОКВЭД
 				<td colspan='$span'><input type=text name='okved' value='".html_out($agent_info['okved'])."'>
 			<tr><td align=right>ОГРН / ОГРНИП
@@ -333,10 +328,12 @@ class doc_s_Agent {
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
 			if($ares->num_rows) {
 				$agent_info = $ares->fetch_assoc();				
-				$tmpl->addBreadcrumb($agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
+				$tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
 				$tmpl->addBreadcrumb('История правок', '');
 			}
 			else throw new NotFoundException('Агент не найден');
+                        
+                        /*
 			$tmpl->addContent("<table width='100%' class='list'>
 			<tr><th>id<th>Действие<th>Описание<th>Дата<th>Пользователь<th>IP");
 			$res = $db->query("SELECT `doc_log`.`id`, `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
@@ -346,7 +343,29 @@ class doc_s_Agent {
 			while($nxt = $res->fetch_row())
 				$tmpl->addContent('<tr><td>'.$nxt[0].'</td><td>'.html_out($nxt[1]).'</td><td>'.html_out($nxt[2]).'</td><td>'.html_out($nxt[3]).'</td><td>'.html_out($nxt[4]).'</td><td>'.html_out($nxt[5]).'</td></tr>');
 			$tmpl->addContent("</table>");
+                         * 
+                         */
+                        $logview = new \LogView();
+                        $logview->setObject('agent');
+                        $logview->setObjectId($pos);
+                        $logview->showLog();
 		}
+                // Банковские реквизиты
+                elseif($param=='b') {
+                    $ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
+                    if($ares->num_rows) {
+                            $agent_info = $ares->fetch_assoc();				
+                            $tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
+                    }
+                    else throw new NotFoundException('Агент не найден');
+                    $editor = new \ListEditors\agentBankEditor($db);
+                    $editor->line_var_name = 'leid';
+                    $editor->opt_var_name = 'leopt';
+                    $editor->link_prefix = '/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=b&amp;pos='.$pos;
+                    $editor->acl_object_name = 'list_agent';
+                    $editor->agent_id = $pos;
+                    $editor->run();
+                }
 		// Правка описания группы
 		else if($param=='g') {
 			$res = $db->query("SELECT `id`, `name`, `desc`, `pid` FROM `doc_agent_group` WHERE `id`='$group'");
@@ -739,6 +758,7 @@ class doc_s_Agent {
 		}
 	}
 	
+
     /// Меню элемента (закладки)
     function PosMenu($pos, $param) {
         global $tmpl;
@@ -754,5 +774,4 @@ class doc_s_Agent {
         }
         $tmpl->addContent("</ul>");
     }
-
 }

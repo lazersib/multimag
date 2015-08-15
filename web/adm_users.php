@@ -174,18 +174,31 @@ try {
 			$tmpl->addContent("<tr><td>Связь отсутствует</td><td><a href='/adm_users.php?mode=agent&amp;id=$id'>Установить</a></td></tr>");
 		}
 		else {
-			$res = $db->query("SELECT `id`, `name`, `fullname`, `tel`, `fax_phone`, `sms_phone`, `adres`, `data_sverki` FROM `doc_agent` WHERE `id`='{$line['agent_id']}'");
+			$res = $db->query("SELECT `id`, `name`, `fullname`, `adres`, `data_sverki` FROM `doc_agent` WHERE `id`='{$line['agent_id']}'");
 			$adata = $res->fetch_assoc();
 			$tmpl->addContent("
 			<tr><td>ID агента</td><td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$adata['id']}'>{$adata['id']}</a> - <a href='/adm_users.php?mode=agent&amp;id=$id'>Убрать связь</a></td></tr>
 			<tr><td>Краткое название</td><td>" . html_out($adata['name']) . "</td></tr>
-			<tr><td>Полное название</td><td>" . html_out($adata['fullname']) . "</td></tr>
-			<tr><td>Телефон</td><td>" . html_out($adata['tel']) . "</td></tr>
-			<tr><td>Факс</td><td>" . html_out($adata['fax_phone']) . "</td></tr>
-			<tr><td>Телефон для SMS</td><td>" . html_out($adata['sms_phone']) . "</td></tr>
+			<tr><td>Полное название</td><td>" . html_out($adata['fullname']) . "</td></tr>			
 			<tr><td>Адрес</td><td>" . html_out($adata['adres']) . "</td></tr>
-			<tr><td>Дата сверки</td><td>" . html_out($adata['data_sverki']) . "</td></tr>
-			");
+			<tr><td>Дата сверки</td><td>" . html_out($adata['data_sverki']) . "</td></tr>");
+                        
+                        $c_editor = new \ListEditors\agentContactEditor($db);
+                        $res = $db->query("SELECT `context`, `type`, `value` FROM `agent_contacts` WHERE `agent_id`='{$line['agent_id']}'");
+                        while($c_info = $res->fetch_assoc()) {
+                            $name = '';
+                            $value = $c_info['value'];
+                            if(isset($c_editor->context_list[$c_info['context']])) {
+                                $name .= $c_editor->context_list[$c_info['context']] .' ';
+                            }
+                            if(isset($c_editor->types_list[$c_info['type']])) {
+                                $name .= $c_editor->types_list[$c_info['type']] .' ';
+                            }
+                            if($c_info['type']=='email') {
+                                $value = "<a href='mailto:".html_out($c_info['value'])."'>".html_out($c_info['value'])."</a>";
+                            }
+                            $tmpl->addContent("<tr><td>$name</td><td>$value</td></tr>");
+                        }			
 		}
 		$tmpl->addContent("
 		<tr><th colspan='2'>Карточка сотрудника (<a href='/adm_users.php?mode=we&amp;id=$id'>править</a>)</th></tr>
