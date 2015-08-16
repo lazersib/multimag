@@ -41,7 +41,7 @@ class permitout extends \doc\printforms\iPrintFormInvoicePdf {
         }
         $pdoc = \document::getInstanceFromDb($doc_data['p_doc']);
         if($pdoc->getTypeName()!='realizaciya') {
-            throw new \Exception('Пропуск должен прикреплён не к реализации!');
+            throw new \Exception('Пропуск прикреплён не к реализации!');
         }
         $this->pdoc_data = $pdoc->getDocDataA();
         $this->pdop_data = $pdoc->getDopDataA();

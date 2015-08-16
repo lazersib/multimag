@@ -359,64 +359,73 @@ class doc_Realizaciya extends doc_Nulltype {
     }
 
     /// Формирование другого документа на основании текущего
-	/// @param target_type ID типа создаваемого документа
-	function MorphTo($target_type) {
-		global $tmpl, $db;
-	
-		if($target_type=='')
-		{
-			$tmpl->ajax=1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=18'\">Корректировка долга</div>");
-			if(!$this->doc_data['p_doc'])	$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Заявка (родительская)</div>");
-		}
-		else if($target_type=='1')
-		{
-			$new_doc=new doc_Zayavka();
-			$dd=$new_doc->CreateParent($this);
-			$new_doc->setDopData('cena',$this->dop_data['cena']);
-			$this->setDocData('p_doc',$dd);
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-		else if($target_type==6)
-		{
-			if(!isAccess('doc_pko','create'))	throw new AccessException("");
-			$sum = $this->recalcSum();
-			$db->startTransaction();			
-			$new_doc = new doc_Pko();
-			$dd = $new_doc->createFrom($this);
-			$new_doc->setDocData('kassa', 1);
-			$db->commit();
-			$ref="Location: doc.php?mode=body&doc=".$dd;
-			header($ref);
-		}
-		else if($target_type==4)
-		{
-			if(!isAccess('doc_pbank','create'))	throw new AccessException("");
-			$sum = $this->recalcSum();
-			$db->startTransaction();			
-			$new_doc = new doc_Pbank();
-			$dd = $new_doc->createFrom($this);
-			$new_doc->setDocData('bank', 1);
-			$db->commit();
-			$ref="Location: doc.php?mode=body&doc=".$dd;
-			header($ref);
-		}
-		else if($target_type==18)
-		{
-			$new_doc=new doc_Kordolga();
-			$dd=$new_doc->createFrom($this);
-			$new_doc->setDocData('sum', $this->doc_data['sum']*(-1));
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-		else
-		{
-			$tmpl->msg("В разработке","info");
-		}
-	}
+    /// @param target_type ID типа создаваемого документа
+    function MorphTo($target_type) {
+        global $tmpl, $db;
 
-	function Service() {
+        if ($target_type == '') {
+            $tmpl->ajax = 1;
+            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>
+			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=18'\">Корректировка долга</div>"
+                . "<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=23'\">Пропуск</div>");
+            if (!$this->doc_data['p_doc']) {
+                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Заявка (родительская)</div>");
+            }
+        }
+        else if ($target_type == '1') {
+            $new_doc = new doc_Zayavka();
+            $dd = $new_doc->CreateParent($this);
+            $new_doc->setDopData('cena', $this->dop_data['cena']);
+            $this->setDocData('p_doc', $dd);
+            header("Location: doc.php?mode=body&doc=$dd");
+        } else if ($target_type == 6) {
+            if (!isAccess('doc_pko', 'create')) {
+                throw new AccessException("");
+            }
+            $sum = $this->recalcSum();
+            $db->startTransaction();
+            $new_doc = new doc_Pko();
+            $dd = $new_doc->createFrom($this);
+            $new_doc->setDocData('kassa', 1);
+            $db->commit();
+            $ref = "Location: doc.php?mode=body&doc=" . $dd;
+            header($ref);
+        }
+        else if ($target_type == 4) {
+            if (!isAccess('doc_pbank', 'create')) {
+                throw new AccessException("");
+            }
+            $sum = $this->recalcSum();
+            $db->startTransaction();
+            $new_doc = new doc_Pbank();
+            $dd = $new_doc->createFrom($this);
+            $new_doc->setDocData('bank', 1);
+            $db->commit();
+            $ref = "Location: doc.php?mode=body&doc=" . $dd;
+            header($ref);
+        }
+        else if ($target_type == 18) {
+            if (!isAccess('doc_kordolga', 'create')) {
+                throw new AccessException("");
+            }
+            $new_doc = new doc_Kordolga();
+            $dd = $new_doc->createFrom($this);
+            $new_doc->setDocData('sum', $this->doc_data['sum'] * (-1));
+            header("Location: doc.php?mode=body&doc=$dd");
+        } else if ($target_type == 23) {
+            if (!isAccess('doc_permitout', 'create')) {
+                throw new AccessException("");
+            }
+            $new_doc = new doc_PermitOut();
+            $dd = $new_doc->createFrom($this);
+            header("Location: doc.php?mode=body&doc=$dd");
+        } else {
+            $tmpl->msg("В разработке", "info");
+        }
+    }
+
+    function Service() {
 		global $tmpl, $db;
 
 		$tmpl->ajax=1;

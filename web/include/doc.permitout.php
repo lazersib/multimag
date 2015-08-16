@@ -105,4 +105,50 @@ class doc_PermitOut extends doc_Nulltype {
         }
     }
 
+     /// Провести документ
+    function docApply($silent = 0) {
+        global $db;
+        if(!$this->isAltNumUnique() && !$silent) {
+            throw new Exception("Номер документа не уникален!");
+        }
+        if($this->doc_data['p_doc']==0) {
+            throw new \Exception('Пропуск должен быть прикреплён к реализации!');
+        }
+        if (!$this->dop_data['transport_number']) {
+            throw new \Exception('Гос.номер транспортного средства не указан');
+        }
+        if (!$this->dop_data['load_permitter']) {
+            throw new \Exception('Поле *Погрузку разрешил* не заполнено');
+        }
+        if (!$this->dop_data['exit_permitter']) {
+            throw new \Exception('Поле *Выезд разрешил* не заполнено');
+        }
+        
+        $pdoc = \document::getInstanceFromDb($this->doc_data['p_doc']);
+        if($pdoc->getTypeName()!='realizaciya') {
+            throw new \Exception('Пропуск прикреплён не к реализации!');
+        }
+        $pdop_data = $pdoc->getDopDataA();
+        if(intval($pdop_data['mest'])<=0) {
+            throw new Exception('Сумма мест в реализации не задана!');
+        }
+        
+        
+        $sum = 0;
+        foreach($this->cnt_fields as $id=>$name) {
+            if (!isset($this->dop_data[$id])) {
+                $this->dop_data[$id] = 0;
+            }
+            $sum += intval($this->dop_data[$id]);
+        }
+        if($sum!=intval($pdop_data['mest'])) {
+            throw new Exception('Сумма мест в пропуске не соответствует количеству мест реализации!');
+        }
+                
+        if (!$silent) {
+            $tim = time();
+            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
+            $this->sentZEvent('apply');
+        }
+    }
 }
