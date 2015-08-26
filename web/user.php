@@ -63,6 +63,9 @@ try {
         if (isAccess('generic_tickets', 'view')) {
             $block .= "<li><a href='/tickets.php' accesskey='t' title='Задания'>Планировщик заданий (T)</a></li>";
         }
+        if (isAccess('service_cdr', 'view')) {
+            $block .= "<li><a href='/service.php?mode=cdr'>Статистика телефонных вызовов</a></li>";
+        }
         if( $block ) {
             $tmpl->addContent("<h2>Сотруднику</h2>"
                 . "<ul class='items'>"
