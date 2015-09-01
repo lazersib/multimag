@@ -146,7 +146,6 @@ class doc_s_Agent {
 			$span = 5;
 			$ext='';
 			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
-			$no_mail_c = $agent_info['no_mail']?' checked':'';
 			$dish_checked = $agent_info['dishonest']?'checked':'';
 			$nbp_checked = $agent_info['no_bulk_prices']?'checked':'';
 			$nrp_checked = $agent_info['no_retail_prices']?'checked':'';
@@ -538,64 +537,76 @@ class doc_s_Agent {
 	}
 	
 	/// Отобразить список агентов из заданной группы
-	function ViewList($group=0) {
-		global $tmpl, $db;
+    function ViewList($group = 0) {
+        global $tmpl, $db;
 
-		if(isset($_REQUEST['resp']))
-			$this->ViewListRespFiltered(request('resp'));
-		else {
-			if($group) {
-				$desc_data = $db->selectRow('doc_agent_group', $group);
-				if($desc_data['desc']) $tmpl->addContent('<p>'.html_out($desc_data['desc']).'</p>');
-			}
+        if (isset($_REQUEST['resp'])) {
+            $this->ViewListRespFiltered(request('resp'));
+        } else {
+            if ($group) {
+                $desc_data = $db->selectRow('doc_agent_group', $group);
+                if ($desc_data['desc']) {
+                    $tmpl->addContent('<p>' . html_out($desc_data['desc']) . '</p>');
+                }
+            }
 
-			$sql = "SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`, `doc_agent`.`fax_phone`, `doc_agent`.`sms_phone`, `doc_agent`.`alt_phone`
-			FROM `doc_agent`
-			LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
-			WHERE `doc_agent`.`group`='$group'
-			ORDER BY `doc_agent`.`name`";
+            $sql = "SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`type`, `doc_agent`.`fullname`,
+                `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`, `phones`.`value` AS `phone`
+                , `emails`.`value` AS `email`
+                FROM `doc_agent`
+                LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
+                LEFT JOIN `agent_contacts` AS `phones` ON `doc_agent`.`id`=`phones`.`agent_id` AND `phones`.`type`='phone'
+                LEFT JOIN `agent_contacts` AS `emails` ON `doc_agent`.`id`=`emails`.`agent_id` AND `emails`.`type`='email'
+                WHERE `doc_agent`.`group`='$group'
+                ORDER BY `doc_agent`.`name`";
 
-			$lim=150;
-			$page = rcvint('p');
-			$res = $db->query($sql);
-			$row = $res->num_rows;
-			if($row>$lim) {
-				$dop="g=$group";
-				if($page<1) $page=1;
-				if($page>1) {
-					$i=$page-1;
-					$tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&lt;&lt;</a> ");
-				}
-				$cp=$row/$lim;
-				for($i=1;$i<($cp+1);$i++) {
-					if($i==$page) $tmpl->addContent(" <b>$i</b> ");
-					else $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">$i</a> ");
-				}
-				if($page<$cp) {
-					$i=$page+1;
-					$tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&gt;&gt;</a> ");
-				}
-				$tmpl->addContent("<br>");
-				$sl=($page-1)*$lim;
+            $lim = 150;
+            $page = rcvint('p');
+            $res = $db->query($sql);
+            $row = $res->num_rows;
+            if ($row > $lim) {
+                $dop = "g=$group";
+                if ($page < 1) {
+                    $page = 1;
+                }
+                if ($page > 1) {
+                    $i = $page - 1;
+                    $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&lt;&lt;</a> ");
+                }
+                $cp = $row / $lim;
+                for ($i = 1; $i < ($cp + 1); $i++) {
+                    if ($i == $page) {
+                        $tmpl->addContent(" <b>$i</b> ");
+                    } else {
+                        $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">$i</a> ");
+                    }
+                }
+                if ($page < $cp) {
+                    $i = $page + 1;
+                    $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&gt;&gt;</a> ");
+                }
+                $tmpl->addContent("<br>");
+                $sl = ($page - 1) * $lim;
 
-				$res->data_seek($sl);
-			}
+                $res->data_seek($sl);
+            }
 
-			if($row) {
-				$tmpl->addContent("<table class='list' width='100%' cellspacing='1' cellpadding='2'>
+            if ($row) {
+                $tmpl->addContent("<table class='list' width='100%' cellspacing='1' cellpadding='2'>
 				<tr><th>№</th><th>Название</th><th>Телефон</th><th>e-mail</th><th>Дополнительно</th><th>Отв.менеджер</th></tr>");
-				$this->DrawTable($res, '', $lim);
-				$tmpl->addContent("</table>");
-			}
-			else $tmpl->msg("В выбранной группе записей не найдено!");
-			$tmpl->addContent("
-			<a href='/docs.php?l=agent&mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
-			<a href='/docs.php?l=agent&mode=edit&param=g&g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
-			<a href='/docs.php?l=agent&mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
-		}
-	}
+                $this->DrawTable($res, '', $lim);
+                $tmpl->addContent("</table>");
+            } else {
+                $tmpl->msg("В выбранной группе записей не найдено!");
+            }
+            $tmpl->addContent("
+                <a href='/docs.php?l=agent&mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
+                <a href='/docs.php?l=agent&mode=edit&param=g&g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
+                <a href='/docs.php?l=agent&mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
+        }
+    }
 
-	/// Отобразить список агентов, отфильторванный по заданной строке
+    /// Отобразить список агентов, отфильторванный по заданной строке
 	function ViewListS($s='') {
 		global $tmpl, $db;
                 $sf = 0;
@@ -730,34 +741,45 @@ class doc_s_Agent {
 		}
 	}
 
-	/// Отобразить строки таблицы агентов
-	/// @param res		Объект mysqli_result, возвращенный запросом списка агентов
-	/// @param s		Строка поиска. Будет подсвечена в данных
-	/// @param limit	Ограничение на количество выводимых строк
-	function DrawTable($res, $s, $limit=1000) {
-		global $tmpl;
-		$c=0;
-		while($nxt = $res->fetch_array()) {
-			$name = SearchHilight( html_out($nxt['name']), $s);
-			if($nxt['type'])$info = $nxt['pfio'];
-			else		$info = $nxt['fullname'];
-			$info = SearchHilight( html_out($info), $s);
-			$red = $nxt['dishonest']?"style='color: #f00;'":'';
-			if($nxt['email'])	$email="<a href='mailto:".html_out($nxt['email'])."'>".html_out($nxt['email'])."</a>";
-			else			$email='';
-			$phone_info='';
-			if($nxt['tel'])						$phone_info.='тел. '.formatPhoneNumber($nxt['tel']).' ';
-			if($nxt['fax_phone']&& $nxt['fax_phone']!=$nxt['tel'])	$phone_info.='факс '.formatPhoneNumber($nxt['fax_phone']).' ';
-			if($nxt['sms_phone']&& $nxt['sms_phone']!=$nxt['tel'])	$phone_info.='sms: '.formatPhoneNumber($nxt['sms_phone']).' ';
-			if($nxt['alt_phone']&& $nxt['alt_phone']!=$nxt['tel'])	$phone_info.='доп: '.formatPhoneNumber($nxt['alt_phone']).' ';
-			$tmpl->addContent("<tr class='pointer' align='right' $red oncontextmenu=\"ShowAgentContextMenu(event,$nxt[0]); return false;\">
+    /// Отобразить строки таблицы агентов
+    /// @param res		Объект mysqli_result, возвращенный запросом списка агентов
+    /// @param s		Строка поиска. Будет подсвечена в данных
+    /// @param limit	Ограничение на количество выводимых строк
+    function DrawTable($res, $s, $limit = 1000) {
+        global $tmpl;
+        $c = 0;
+        while ($nxt = $res->fetch_array()) {
+            $name = SearchHilight(html_out($nxt['name']), $s);
+            if ($nxt['type']) {
+                $info = $nxt['pfio'];
+            } else {
+                $info = $nxt['fullname'];
+            }
+            $info = SearchHilight(html_out($info), $s);
+            $red = $nxt['dishonest'] ? "style='color: #f00;'" : '';
+            if ($nxt['email']) {
+                $email = "<a href='mailto:" . html_out($nxt['email']) . "'>" . html_out($nxt['email']) . "</a>";
+            } else {
+                $email = '';
+            }
+            $phone_info = '';
+            if ($nxt['phone']) {
+                $phone_info.='тел. ' . formatPhoneNumber($nxt['phone']) . ' ';
+            }
+            /*            if ($nxt['fax_phone'] && $nxt['fax_phone'] != $nxt['phone'])
+                $phone_info.='факс ' . formatPhoneNumber($nxt['fax_phone']) . ' ';
+            if ($nxt['sms_phone'] && $nxt['sms_phone'] != $nxt['phone'])
+                $phone_info.='sms: ' . formatPhoneNumber($nxt['sms_phone']) . ' ';
+            if ($nxt['alt_phone'] && $nxt['alt_phone'] != $nxt['phone'])
+                $phone_info.='доп: ' . formatPhoneNumber($nxt['alt_phone']) . ' ';*/
+            $tmpl->addContent("<tr class='pointer' align='right' $red oncontextmenu=\"ShowAgentContextMenu(event,$nxt[0]); return false;\">
 			<td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a>
 			<a href='' onclick=\"ShowAgentContextMenu(event,$nxt[0]); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a></td>
-			<td align='left'>$name<td>$phone_info</td><td>$email</td><td>$info</td><td>".html_out($nxt['responsible_name'])."</td></tr>");
-			if( $c++ >= $limit)				break;
-		}
-	}
-	
+			<td align='left'>$name<td>$phone_info</td><td>$email</td><td>$info</td><td>" . html_out($nxt['responsible_name']) . "</td></tr>");
+            if ($c++ >= $limit)
+                break;
+        }
+    }
 
     /// Меню элемента (закладки)
     function PosMenu($pos, $param) {
