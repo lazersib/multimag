@@ -562,6 +562,7 @@ class doc_Realizaciya extends doc_Nulltype {
 		$base_sum = 0;
 		$pc = PriceCalc::getInstance();
 		$pc->setAgentId($this->doc_data['agent']);
+                $pc->setUserId($this->doc_data['user']);
 		$pc->setFromSiteFlag(@$this->dop_data['ishop']);
 		
 		while($nxt = $res->fetch_assoc()) {

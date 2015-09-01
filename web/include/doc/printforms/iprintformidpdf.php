@@ -31,6 +31,7 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
         $nomenclature = $this->doc->getDocumentNomenclature('base_price,bulkcnt');
         $pc = \PriceCalc::getInstance();
         $pc->setAgentId($doc_data['agent']);
+        $pc->setUserId($doc_data['user']);
         if(isset($dop_data['ishop'])) {
             $pc->setFromSiteFlag($dop_data['ishop']);
         }

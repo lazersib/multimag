@@ -121,6 +121,7 @@ class doc_Nulltype extends \document {
                 $pc = PriceCalc::getInstance();
                 $pc->setOrderSum($this->doc_data['sum']);
                 $pc->setAgentId($this->doc_data['agent']);
+                $pc->setUserId($this->doc_data['user']);
                 if(isset($this->dop_data['ishop'])) {
                     $pc->setFromSiteFlag($this->dop_data['ishop']);
                 }

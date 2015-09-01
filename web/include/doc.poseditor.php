@@ -159,6 +159,7 @@ class DocPosEditor extends PosEditor {
         }
         $pc = PriceCalc::getInstance();
         $pc->setAgentId($doc_data['agent']);
+        $pc->setUserId($doc_data['user']);
         if(isset($dop_data['ishop'])) {
             $pc->setFromSiteFlag($dop_data['ishop']);
         }
@@ -454,7 +455,7 @@ function Show($param='') {
             if (!$line['cost']) {
                 $line['cost'] = $line['scost'];
             }
-            $line['cost'] = sprintf("%0.2f", $line['cost']);
+            $line['cost'] = sprintf("%0.2f", $line['sprice']);
             if (!$this->npv) {
                 $line['name'].=' - ' . $line['vendor'];
             }

@@ -1913,6 +1913,7 @@ protected function priceCalcInit() {
 		$pc->setFromSiteFlag(1);
 		$up = getUserProfile($_SESSION['uid']);
 		$pc->setAgentId($up['main']['agent_id']);
+                $pc->setUserId($_SESSION['uid']);
 	}
 	
 	if($basket->getCount()) {
