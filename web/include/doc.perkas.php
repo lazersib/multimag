@@ -28,7 +28,7 @@ class doc_PerKas extends doc_Nulltype {
         $this->header_fields = 'sum separator kassa';
     }
 
-    function initDefDopdata() {
+    protected function initDefDopData() {
         $this->def_dop_data = array('v_kassu' => 0);
     }
 

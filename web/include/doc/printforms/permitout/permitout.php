@@ -21,7 +21,7 @@ namespace doc\printforms\permitout;
 class permitout extends \doc\printforms\iPrintFormInvoicePdf {
     
     public function getName() {
-        return "Пропуск на выезд с грузом";
+        return "Пропуск на выезд";
     }
     
     protected function addPartnerInfoBlock() {
@@ -55,13 +55,21 @@ class permitout extends \doc\printforms\iPrintFormInvoicePdf {
     /// Добавить блок с телом документа
     protected function addDocumentBody() {
         $dop_data = $this->doc->getDopDataA();
-        $text = "Количество мест к погрузке: ".$this->pdop_data['mest'];
-        $this->addInfoLine($text);
-        $text = "Из них: ";
-        $this->addInfoLine($text);
+        $sum = 0;
         foreach($this->doc->cnt_fields as $id=>$name) {
+            if(intval($dop_data[$id])==0) {
+                continue;
+            }
             $text = "$name: ".$dop_data[$id];
             $this->addInfoLine($text);
+            $sum += intval($dop_data[$id]);
+        }
+        
+        $text = "Всего мест к погрузке по накладной ".$this->pdop_data['mest'] . ", по пропуску: ".$sum;
+        $this->addInfoLine($text, 11);
+        if(intval($this->pdop_data['mest']) != $sum) {
+            $text = "количество мест не совпадает!";
+        $this->addInfoLine($text, 28);
         }
     }
 
@@ -70,11 +78,11 @@ class permitout extends \doc\printforms\iPrintFormInvoicePdf {
         global $db;
         $doc_data = $this->doc->getDocDataA();
         $dop_data = $this->doc->getDopDataA();
-        $vip_name = $load_permitter = $exit_permitter = '________________';
+        $author_name = $load_permitter = $exit_permitter = '________________';
         $res_uid = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
-            WHERE `user_id`='" . $_SESSION['uid'] . "'");
+            WHERE `user_id`='" . $doc_data['user'] . "'");
         if ($res_uid->num_rows) {
-            list($vip_name) = $res_uid->fetch_row();
+            list($author_name) = $res_uid->fetch_row();
         }
 
         $res_klad = $db->query("SELECT `worker_real_name` FROM `users_worker_info`
@@ -89,7 +97,7 @@ class permitout extends \doc\printforms\iPrintFormInvoicePdf {
             list($exit_permitter) = $res_klad->fetch_row();
         }
 
-        $text = "Документ выписал: _____________________________________ ( $vip_name )";
+        $text = "Документ создал: _____________________________________ ( $author_name )";
         $this->addSignLine($text);
         $text = "Погрузку разрешил: ___________________________________ ( $load_permitter )";
         $this->addSignLine($text);

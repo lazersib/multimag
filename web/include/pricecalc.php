@@ -25,28 +25,28 @@
 /// Синглтон
 class PriceCalc {
 
-    protected static $_instance;    //< Экземпляр для синглтона
+    protected static $_instance;    ///< Экземпляр для синглтона
     
     // устанавливаемые значения
-    protected $from_site_flag = 0;  //< флаг *заказ с сайта*
-    protected $user_id = 0;         //< id пользователя, для кторого расчитываем цены
-    protected $agent_id = 0;        //< id агента, для кторого расчитываем цены
-    protected $order_sum = 0;       //< сумма заказа, для которго расчитываем цены
+    protected $from_site_flag = 0;  ///< флаг *заказ с сайта*
+    protected $user_id = 0;         ///< id пользователя, для кторого расчитываем цены
+    protected $agent_id = 0;        ///< id агента, для кторого расчитываем цены
+    protected $order_sum = 0;       ///< сумма заказа, для которго расчитываем цены
     
     // вычисляемые значения
-    protected $agent_avg_sum = false;   //< Средняя сумма оборота агента
-    protected $current_price_id = 0;    //< id цены для текущих параметров заказа. При изменениии параметров - сбрасывается.
-    protected $retail_price_id = 0;     //< id розничной цены.
-    protected $siteuser_price_id = 0;   //< id цены для зарегистрированного пользователя
-    protected $default_price_id = 0;    //< id цены по умолчанию
-    protected $agent_price_id = 0;      //< id фиксированной цены агента
-    protected $no_retail_prices = 0;    //< флаг, запрещающий автоматическое использование розничных цен
-    protected $no_bulk_prices = 0;      //< флаг, запрещающий автоматическое использование разовых скидочных цен
-    protected $bulk_prices;             //< Список автоматических цен, включаемых по разным факторам
-    protected $prices;                  //< Все цены
-    protected $pos_info_cache;          //< Кеш информации о наименованиях
-    protected $ppc;                     //< Кеш цен наименований
-    protected $gpi;                     //< Кеш цен групп
+    protected $agent_avg_sum = false;   ///< Средняя сумма оборота агента
+    protected $current_price_id = 0;    ///< id цены для текущих параметров заказа. При изменениии параметров - сбрасывается.
+    protected $retail_price_id = 0;     ///< id розничной цены.
+    protected $siteuser_price_id = 0;   ///< id цены для зарегистрированного пользователя
+    protected $default_price_id = 0;    ///< id цены по умолчанию
+    protected $agent_price_id = 0;      ///< id фиксированной цены агента
+    protected $no_retail_prices = 0;    ///< флаг, запрещающий автоматическое использование розничных цен
+    protected $no_bulk_prices = 0;      ///< флаг, запрещающий автоматическое использование разовых скидочных цен
+    protected $bulk_prices;             ///< Список автоматических цен, включаемых по разным факторам
+    protected $prices;                  ///< Все цены
+    protected $pos_info_cache;          ///< Кеш информации о наименованиях
+    protected $ppc;                     ///< Кеш цен наименований
+    protected $gpi;                     ///< Кеш цен групп
 
     /// Конструктор копирования запрещён
     final private function __clone() {

@@ -51,41 +51,44 @@ class doc_Nulltype extends \document {
     public function getDocDataA()	{return $this->doc_data;}	
     public function getDopDataA()	{return $this->dop_data;} //< Получить все дополнительные параметры документа в виде ассоциативного массива
     public function getFirmVarsA()	{return $this->firm_vars;}
+    
+    /// Шаблон метода для инициализации дополнительных данных документа
+    protected function initDefDopData() {}
 
-	/// @brief Получить значение основного параметра документа.
-	/// Вернёт пустую строку в случае отсутствия параметра
-	/// @param name Имя параметра
-	public function getDocData($name) {
-		if(isset($this->doc_data[$name]))
-			return $this->doc_data[$name];
-		else	return '';
-	}
-	
-	/// Установить основной параметр документа
-	public function setDocData($name, $value)
-	{
-		global $db;
-		if($this->id)
-		{
-			$_name=$db->real_escape_string($name);
-			$db->update('doc_list', $this->id, $_name, $value);
-			doc_log("UPDATE {$this->typename}","$name: ({$this->doc_data[$name]} => $value)",'doc',$this->id);
-		}
-		$this->doc_data[$name]=$value;
-	}
-	
-	/// @brief Получить значение дополниетльного параметра документа.
-	/// Вернёт пустую строку в случае отсутствия параметра
-	/// @param name Имя параметра
-	public function getDopData($name) {
-		if(isset($this->dop_data[$name]))
-			return $this->dop_data[$name];
-		else	return '';
-	}
-	
-	
-	
-	/// Установить дополнительные данные текущего документа
+    /// @brief Получить значение основного параметра документа.
+    /// Вернёт пустую строку в случае отсутствия параметра
+    /// @param name Имя параметра
+    public function getDocData($name) {
+        if (isset($this->doc_data[$name])) {
+            return $this->doc_data[$name];
+        } else {
+            return '';
+        }
+    }
+
+    /// Установить основной параметр документа
+    public function setDocData($name, $value) {
+        global $db;
+        if ($this->id) {
+            $_name = $db->real_escape_string($name);
+            $db->update('doc_list', $this->id, $_name, $value);
+            doc_log("UPDATE {$this->typename}", "$name: ({$this->doc_data[$name]} => $value)", 'doc', $this->id);
+        }
+        $this->doc_data[$name] = $value;
+    }
+
+    /// @brief Получить значение дополниетльного параметра документа.
+    /// Вернёт пустую строку в случае отсутствия параметра
+    /// @param name Имя параметра
+    public function getDopData($name) {
+        if (isset($this->dop_data[$name])) {
+            return $this->dop_data[$name];
+        } else {
+            return '';
+        }
+    }
+
+    /// Установить дополнительные данные текущего документа
 	public function setDopData($name, $value) {
 		global $db;
 		if($this->id && @$this->dop_data[$name]!=$value) {

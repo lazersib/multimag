@@ -60,7 +60,7 @@ abstract class iPrintFormInvoicePdf extends \doc\printforms\iPrintFormPdf {
         $agent_data = $db->selectRow('doc_agent', $doc_data['agent']);
         $text = "Поставщик: {$firm_vars['firm_name']}, телефон: {$firm_vars['firm_telefon']}";
         $this->addInfoLine($text);        
-        $text = "Покупатель: {$agent_data['fullname']}, телефон: {$agent_data['tel']}";
+        @$text = "Покупатель: {$agent_data['fullname']}, телефон: {$agent_data['tel']}";
         $this->addInfoLine($text);
         $this->pdf->Ln(3);
     }

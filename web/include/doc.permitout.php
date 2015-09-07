@@ -24,22 +24,31 @@ class doc_PermitOut extends doc_Nulltype {
     /// Конструктор
     /// @param $doc id документа
     function __construct($doc = 0) {
+        global $CONFIG;
         parent::__construct($doc);
         $this->doc_type = 23;
         $this->typename = 'permitout';
         $this->viewname = 'Пропуск';
         $this->sklad_editor_enable = false;
         $this->header_fields = 'separator agent separator';
-        $this->cnt_fields = array(
-            'bag_cnt'=>'Количество мешков',
-            'box_cnt'=>'Количество коробок',
-            'press_cnt'=>'Количество прессов',
-            'roll_cnt'=>'Количество рулонов',
-            'pack_cnt'=>'Количество упаковок',
-            );
+        if(isset($CONFIG['doc']['permitout_lines'])) {
+            $this->cnt_fields = $CONFIG['doc']['permitout_lines'];
+        } else {
+            $this->cnt_fields = array('cnt_pack'=>'Количество упаковок');
+        }
+    }
+    
+    /// Инициализация дополнительных данных документа
+    protected function initDefDopData() {
+        global $CONFIG;
         $this->def_dop_data = array('transport_number' => '', 'load_permitter'=>'', 'exit_permitter'=>'');
-        foreach($this->cnt_fields as $id=>$name) {
-            $this->def_dop_data[$id] = '';
+        if(isset($CONFIG['doc']['permitout_lines'])) {
+            foreach ($CONFIG['doc']['permitout_lines'] as $id=>$name) {
+                $this->def_dop_data[$id] = 0;
+            }
+            //$this->def_dop_data = array_merge($this->def_dop_data, $CONFIG['doc']['permitout_lines']);
+        } else {
+            $this->def_dop_data = array_merge($this->def_dop_data, array('cnt_pack'=>0));
         }
     }
 
@@ -112,7 +121,7 @@ class doc_PermitOut extends doc_Nulltype {
             throw new Exception("Номер документа не уникален!");
         }
         if($this->doc_data['p_doc']==0) {
-            throw new \Exception('Пропуск должен быть прикреплён к реализации!');
+            throw new \Exception('Пропуск не прикреплён к реализации!');
         }
         if (!$this->dop_data['transport_number']) {
             throw new \Exception('Гос.номер транспортного средства не указан');
@@ -125,14 +134,13 @@ class doc_PermitOut extends doc_Nulltype {
         }
         
         $pdoc = \document::getInstanceFromDb($this->doc_data['p_doc']);
-        if($pdoc->getTypeName()!='realizaciya') {
+        if($pdoc->getTypeName()!='realizaciya' && $pdoc->getTypeName()!='realiz_bonus') {
             throw new \Exception('Пропуск прикреплён не к реализации!');
         }
         $pdop_data = $pdoc->getDopDataA();
         if(intval($pdop_data['mest'])<=0) {
             throw new Exception('Сумма мест в реализации не задана!');
         }
-        
         
         $sum = 0;
         foreach($this->cnt_fields as $id=>$name) {

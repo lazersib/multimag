@@ -134,7 +134,7 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
         parent::addSummaryBlock();
         $doc_data = $this->doc->getDocDataA();
         if($doc_data['comment']) {
-            $this->addSignLine("Комментарий к документу: " . $doc_data['comment']);
+            $this->addInfoLine("Комментарий к документу: " . $doc_data['comment']);
         }
     }
     
