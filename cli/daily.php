@@ -52,6 +52,15 @@ try {
     // Очистка от неподтверждённых пользователей
     if ($CONFIG['auto']['user_del_days'] > 0) {
         if ($verbose) {
+            echo "Очистка кеша...\n";
+        }
+        $action = new Actions\clearCache($CONFIG, $db);
+        $action->run();
+    }
+    
+    // Очистка от неподтверждённых пользователей
+    if ($CONFIG['auto']['user_del_days'] > 0) {
+        if ($verbose) {
             echo "Очистка от неподтверждённых пользователей...\n";
         }
         $action = new Actions\UserFree($CONFIG, $db);

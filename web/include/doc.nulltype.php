@@ -1975,11 +1975,9 @@ class doc_Nulltype extends \document {
             if($nxt['group_printname']) {
                 $pos_name = $nxt['group_printname'].' '.$pos_name;
             }
-
             if (!@$CONFIG['doc']['no_print_vendor'] && $nxt['vendor']) {
                 $pos_name .= ' / ' . $nxt['vendor'];
-            }
-            
+            }            
             $pos_code = $nxt['pos_id'];
             if($nxt['vc']) {
                 $pos_code .= ' / '.$nxt['vc'];
@@ -2053,30 +2051,19 @@ class doc_Nulltype extends \document {
                     }
                 }
                 foreach ($unigtd as $gtd => $cnt) {
-                    if ($this->doc_data['nds']) {
-                        $pos_price = round($nxt['cost'] / (1 + $nds), 2);
-                        $pos_sum = $pos_price * $cnt;
-                        $nalog = ($nxt['cost'] * $cnt) - $pos_sum;
-                        $snalogom = $nxt['cost'] * $cnt;
-                    } else {
-                        $pos_price = $nxt['cost'];
-                        $pos_sum = $pos_price * $cnt;
-                        $nalog = $pos_sum * $nds;
-                        $snalogom = $pos_sum + $nalog;
-                    }
-
+                    $pos = $this->calcVAT($nxt['cost'], $cnt, $nds);
                     $list[] = array(
                         'code'      => $pos_code,
                         'name'      => $pos_name,
                         'unit_code' => $nxt['unit_code'],
                         'unit_name' => $nxt['unit_name'],
                         'cnt'       => $cnt,
-                        'price'     => $pos_price,
-                        'sum_wo_vat'=> $pos_sum,
+                        'price'     => $pos['price'],
+                        'sum_wo_vat'=> $pos['sum_wo_vat'],
                         'excise'    => 'без акциза',
                         'vat_p'     => $ndsp,
-                        'vat_s'     => $nalog,
-                        'sum'       => $snalogom,
+                        'vat_s'     => $pos['vat_s'],
+                        'sum'       => $pos['sum'],
                         'country_code' => $nxt['country_code'],
                         'country_name' => $nxt['country_name'],
                         'ncd'       => $gtd,
@@ -2085,30 +2072,19 @@ class doc_Nulltype extends \document {
                 }
             }
             else {
-                if ($this->doc_data['nds']) {
-                    $pos_price = $nxt['cost'] / (1 + $nds);
-                    $pos_sum = $pos_price * $nxt['cnt'];
-                    $nalog = ($nxt['cost'] * $nxt['cnt']) - $pos_sum;
-                    $snalogom = $nxt['cost'] * $nxt['cnt'];
-                } else {
-                    $pos_price = $nxt['cost'];
-                    $pos_sum = $pos_price * $nxt['cnt'];
-                    $nalog = $pos_sum * $nds;
-                    $snalogom = $pos_sum + $nalog;
-                }
-
+                $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $nds);
                 $list[] = array(
                     'code'      => $pos_code,
                     'name'      => $pos_name,
                     'unit_code' => $nxt['unit_code'],
                     'unit_name' => $nxt['unit_name'],
                     'cnt'       => $nxt['cnt'],
-                    'price'     => $pos_price,
-                    'sum_wo_vat'=> $pos_sum,
+                    'price'     => $pos['price'],
+                    'sum_wo_vat'=> $pos['sum_wo_vat'],
                     'excise'    => 'без акциза',
                     'vat_p'     => $ndsp,
-                    'vat_s'     => $nalog,
-                    'sum'       => $snalogom,
+                    'vat_s'     => $pos['vat_s'],
+                    'sum'       => $pos['sum'],
                     'country_code' => $nxt['country_code'],
                     'country_name' => $nxt['country_name'],
                     'ncd'       => $nxt['ntd'],
@@ -2119,6 +2095,38 @@ class doc_Nulltype extends \document {
         return $list;
     }
     
+    /// Расчет НДС для строки документа
+    /// @param $doc_price Цена единицы товара в документе
+    /// @param $count Количество товара
+    /// @param $vat Ставка НДС
+    protected function calcVAT($doc_price, $count, $vat) {
+        global $CONFIG;
+        if (isset($CONFIG['poseditor']['vat_scheme'])) {
+            $scheme = $CONFIG['poseditor']['vat_scheme'];
+        } else {
+            $scheme = 'correct';
+        }
+        if ($this->doc_data['nds']) {   // НДС включен
+            if ($scheme == '1c') {
+                $pos['sum_wo_vat'] = $pos['price'] * $count;
+                $pos['vat_s'] = round($pos['sum_wo_vat'] * $vat, 2);
+                $pos['sum'] = $pos['sum_wo_vat'] * $pos['vat_s'];
+                $pos['price'] = round($pos['sum_wo_vat'] / $count, 2);
+            } else {
+                $pos['price'] = $doc_price / (1 + $vat);
+                $pos['sum_wo_vat'] = $pos['price'] * $count;
+                $pos['vat_s'] = ($doc_price * $count) - $pos['sum_wo_vat'];
+                $pos['sum'] = $doc_price * $count;
+            }
+        } else {
+            $pos['price'] = $doc_price;
+            $pos['sum_wo_vat'] = $pos['price'] * $count;
+            $pos['vat_s'] = $pos['sum_wo_vat'] * $vat;
+            $pos['sum'] = $pos['sum_wo_vat'] + $pos['vat_s'];
+        }
+        return $pos;
+    }
+
     /// Установить пометку на удаление у документа
     protected function serviceDelDoc() {
         global $db;

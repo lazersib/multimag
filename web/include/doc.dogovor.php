@@ -30,9 +30,6 @@ class doc_Dogovor extends doc_Nulltype {
         $this->sklad_editor_enable = false;
         $this->header_fields = 'bank separator agent cena';
         settype($this->id, 'int');
-        $this->PDFForms = array(
-            array('name' => 'dog', 'desc' => 'Договор', 'method' => 'DogovorPDF')
-        );
         if (!$doc) {
             $this->doc_data['comment'] = @$CONFIG['doc']['contract_template'];
         }
@@ -127,70 +124,6 @@ class doc_Dogovor extends doc_Nulltype {
             $dd = $new_doc->createFrom($this);
             $this->sentZEvent('morph_specific');
             header("Location: doc.php?mode=body&doc=$dd");
-        }
-    }
-
-    function DogovorPDF($to_str = 0) {
-        global $CONFIG, $db, $tmpl;
-        define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
-        require('fpdf/html2pdf.php');
-
-        if (!$to_str) {
-            $tmpl->ajax = 1;
-        }
-
-        $agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
-        $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
-        $bank_info = $res->fetch_assoc();
-
-        $wikiparser = new WikiParser();
-
-        $wikiparser->AddVariable('DOCNUM', $this->doc_data['altnum']);
-        $wikiparser->AddVariable('DOCDATE', date("d.m.Y", $this->doc_data['date']));
-        $wikiparser->AddVariable('AGENT', $agent_info['fullname']);
-        $wikiparser->AddVariable('AGENTDOL', 'директора');
-        $wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
-        $wikiparser->AddVariable('FIRMNAME', @$this->firm_vars['firm_name']);
-        $wikiparser->AddVariable('FIRMDIRECTOR', @$this->firm_vars['firm_director_r']);
-        $wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
-
-        $text = $wikiparser->parse($this->doc_data['comment']);
-
-        $pdf = new createPDF($text, '', '', '', '');
-        $pdf->run();
-
-        $pdf = $pdf->pdf;
-
-        $pdf->SetFont('', '', 14);
-        $str = "Покупатель";
-        $str = iconv('UTF-8', 'windows-1251', $str);
-        $pdf->Cell(90, 6, $str, 0, 0, 'L', 0);
-        $str = "Поставщик";
-        $str = iconv('UTF-8', 'windows-1251', $str);
-        $pdf->Cell(0, 6, $str, 0, 0, 'L', 0);
-
-        $pdf->Ln(7);
-        $pdf->SetFont('', '', 8);
-        $agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
-
-        $str = @"{$agent_info['fullname']}\nАдрес: {$agent_info['adres']}\nТелефон: {$agent_info['tel']}\nИНН:{$agent_info['inn']}, КПП:{$agent_info['kpp']}, ОКПО:{$agent_info['okpo']}, ОКВЭД:{$agent_info['okved']}\nР/С:{$agent_info['rs']} в банке {$agent_info['bank']}, БИК:{$agent_info['bik']}, К/С:{$agent_info['ks']}\n_______________________ / ______________________ /\n\n      М.П.";
-        $str = iconv('UTF-8', 'windows-1251', $str);
-
-        $y = $pdf->GetY();
-
-        $pdf->MultiCell(85, 4, $str, 0, 'L', 0);
-        $pdf->SetY($y);
-        $pdf->SetX(100);
-
-        $str = "{$this->firm_vars['firm_name']}\nАдрес: {$this->firm_vars['firm_adres']}\nИНН/КПП {$this->firm_vars['firm_inn']}\nР/С:{$bank_info['rs']} в банке {$bank_info['name']}, БИК:{$bank_info['bik']}, К/С:{$bank_info['ks']}\n_________________________ / {$this->firm_vars['firm_director']} /\n\n      М.П.";
-        $str = iconv('UTF-8', 'windows-1251', $str);
-        $pdf->MultiCell(0, 4, $str, 0, 'L', 0);
-
-
-        if ($to_str) {
-            return $pdf->Output('dogovor.pdf', 'S');
-        } else {
-            $pdf->Output('dogovor.pdf', 'I');
         }
     }
 

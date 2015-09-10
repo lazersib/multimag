@@ -1132,7 +1132,126 @@ class doc_s_Sklad {
 		else	$tmpl->msg("Неизвестная закладка");
 	}
 
-	/// Сохранить данные после редактирования
+    /// Запись формы карточки товара
+    protected function saveProduct($pos_id) {
+        global $db, $CONFIG, $tmpl;
+        $pd = request('pd');
+        $sr = request('sr');
+
+        if (($pos_id) && (!$sr)) {
+            if (!isAccess('list_sklad', 'edit')) {
+                throw new AccessException();
+            }
+            $sql_add = $log_add = '';
+            $old_data = $db->selectRowA('doc_base', $pos_id, $this->pos_vars);
+
+            if (@$CONFIG['store']['leaf_only']) {
+                $new_group = intval($pd['group']);
+                $res = $db->query("SELECT `id` FROM `doc_group` WHERE `pid`=$new_group");
+                if ($res->num_rows) {
+                    throw new Exception("Запись наименования возможна только в конечную группу!");
+                }
+            }
+
+            foreach ($old_data as $id => $value) {
+                if ($id == 'id' || $id == 'likvid' || $id == 'cost_date') {
+                    continue;
+                }
+                if (!isset($pd[$id])) {
+                    $pd[$id] = 0;
+                }
+                if ($pd[$id] != $value) {
+                    if ($id == 'country') {
+                        if (!$pd[$id] && !$value) {
+                            continue;
+                        }
+                        $new_val = intval($pd[$id]);
+                        if (!$new_val)
+                            $new_val = 'NULL';
+                    }
+                    else if ($id == 'cost') {
+                        $cost = sprintf("%0.2f", $pd[$id]);
+                        $new_val = "'$cost', `cost_date`=NOW()";
+                    } else if ($id == 'nds') {
+                        if ($pd[$id] === '') {
+                            $new_val = 'NULL';
+                        } else {
+                            $new_val = intval($pd[$id]);
+                        }
+                    } else {
+                        $new_val = "'" . $db->real_escape_string($pd[$id]) . "'";
+                    }
+
+                    $log_add.=", $id:($value => {$pd[$id]})";
+                    $sql_add.=", `$id`=$new_val";
+                }
+            }
+            if(@$CONFIG['store']['require_mass']) {
+                if($pd['mass']==0 && $pd['type']==0) {
+                    throw new \Exception('Обязательное поле *масса* не заполено');
+                }
+            }
+            if ($sql_add) {
+                $db->query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos_id'");
+                $tmpl->msg("Данные обновлены!");
+                doc_log("UPDATE", "$log_add", 'pos', $pos_id);
+            } else {
+                $tmpl->msg("Ничего не было изменено", 'info');
+            }
+        }
+        else {
+            if (!isAccess('list_sklad', 'create')) {
+                throw new AccessException();
+            }
+
+            $log = '';
+            $data = array();
+            foreach ($this->pos_vars as $field) {
+                if ($field == 'nds') {
+                    if ($pd[$field] === '') {
+                        $data[$field] = 'NULL';
+                    } else {
+                        $data[$field] = intval($pd[$field]);
+                    }
+                    $log.="$field:" . $data[$field] . ", ";
+                } elseif ($field != 'cost_date' && isset($pd[$field])) {
+                    $data[$field] = $pd[$field];
+                    $log.="$field:" . $pd[$field] . ", ";
+                }
+            }
+            $data['cost_date'] = date("Y-m-d H:i:s");
+            if(@$CONFIG['store']['require_mass']) {
+                if($data['mass']==0 && $data['type']==0) {
+                    throw new \Exception('Обязательное поле *масса* не заполено');
+                }
+            }
+            $opos = $pos_id;
+
+            $db->startTransaction();
+            $pos_id = $db->insertA('doc_base', $data);
+
+            if ($opos) {
+                $res = $db->query("SELECT `type`, `d_int`, `d_ext`, `size` FROM `doc_base_dop` WHERE `id`='$opos'");
+                $nxt = $res->fetch_assoc();
+                if ($nxt) {
+                    $db->query("REPLACE `doc_base_dop` (`id`, `type`, `d_int`, `d_ext`, `size`)
+                        VALUES ('$pos_id', '{$nxt['type']}', '{$nxt['d_int']}', '{$nxt['d_ext']}', '{$nxt['size']}')");
+                }
+            }
+            doc_log("CREATE", $log, 'pos', $pos_id);
+
+            $res = $db->query("SELECT `id` FROM `doc_sklady`");
+            while ($nxt = $res->fetch_row()) {
+                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos_id', '$nxt[0]', '0')");
+            }
+
+            $this->PosMenu($pos_id, '');
+            $tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos_id'>Перейти</a>");
+            $db->commit();
+        }
+    }
+
+    /// Сохранить данные после редактирования
 	function ESave() {
 		global $tmpl, $CONFIG, $db;
 		doc_menu();
@@ -1140,107 +1259,12 @@ class doc_s_Sklad {
 		$param = request('param');
 		$group = rcvint('g');
 		$tmpl->setTitle("Правка складского наименования");
-		if ($pos != 0)
-			$this->PosMenu($pos, $param);
-
+		if ($pos != 0) {
+                    $this->PosMenu($pos, $param);
+                }
+                
 		if ($param == '') {
-			$pd = request('pd');
-			$sr = request('sr');
-
-			if (($pos) && (!$sr)) {
-				if (!isAccess('list_sklad', 'edit'))	throw new AccessException();
-				$sql_add = $log_add = '';
-				$old_data = $db->selectRowA('doc_base', $pos, $this->pos_vars);
-				
-				if(@$CONFIG['agents']['leaf_only']) {
-					$new_group = intval($pd['group']);
-					$res = $db->query("SELECT `id` FROM `doc_group` WHERE `pid`=$new_group");
-					if($res->num_rows)
-						throw new Exception ("Запись наименования возможна только в конечную группу!");
-				}
-
-				
-				foreach ($old_data as $id => $value) {
-					if ($id == 'id' || $id == 'likvid' || $id=='cost_date')	continue;
-					if (!isset($pd[$id]))			$pd[$id] = 0;
-					if ($pd[$id] != $value) {
-						if ($id == 'country') {
-							if (!$pd[$id] && !$value)	continue;
-							$new_val = intval($pd[$id]);
-							if (!$new_val)		$new_val = 'NULL';
-						}
-						else if ($id == 'cost') {
-							$cost = sprintf("%0.2f", $pd[$id]);
-							$new_val = "'$cost', `cost_date`=NOW()";
-						}
-                                                else if($id == 'nds') {
-                                                    if($pd[$id]==='') {
-                                                        $new_val = 'NULL';
-                                                    }
-                                                    else {
-                                                        $new_val = intval($pd[$id]);
-                                                    }
-                                                }
-						else	$new_val = "'" . $db->real_escape_string($pd[$id]) . "'";
-
-						$log_add.=", $id:($value => {$pd[$id]})";
-						$sql_add.=", `$id`=$new_val";
-					}
-				}
-
-				if ($sql_add) {
-					$db->query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos'");
-					$tmpl->msg("Данные обновлены!");
-					doc_log("UPDATE", "$log_add", 'pos', $pos);
-				}
-				else	$tmpl->msg("Ничего не было изменено", 'info');
-			}
-			else {
-                            if (!isAccess('list_sklad', 'create')) {
-                                throw new AccessException();
-                            }
-
-                            $log = '';
-                            $data = array();
-                            foreach ($this->pos_vars as $field) {
-                                if($field == 'nds') {
-                                    if($pd[$field]==='') {
-                                        $data[$field] = 'NULL';
-                                    }
-                                    else {
-                                        $data[$field] = intval($pd[$field]);
-                                    }
-                                    $log.="$field:" . $data[$field] . ", ";
-                                } elseif($field != 'cost_date' && isset($pd[$field])) {
-                                    $data[$field] = $pd[$field];
-                                    $log.="$field:" . $pd[$field] . ", ";
-                                }
-                            }
-                            $data['cost_date'] = date("Y-m-d H:i:s");
-                            $opos = $pos;
-                            
-                            $db->startTransaction();
-                            $pos = $db->insertA('doc_base', $data);
-                            
-                            if ($opos) {
-                                $res = $db->query("SELECT `type`, `d_int`, `d_ext`, `size` FROM `doc_base_dop` WHERE `id`='$opos'");
-                                $nxt = $res->fetch_assoc();
-                                if($nxt) {
-                                    $db->query("REPLACE `doc_base_dop` (`id`, `type`, `d_int`, `d_ext`, `size`)
-                                        VALUES ('$pos', '{$nxt['type']}', '{$nxt['d_int']}', '{$nxt['d_ext']}', '{$nxt['size']}')");
-                                }
-                            }
-                            doc_log("CREATE", $log, 'pos', $pos);
-
-                            $res = $db->query("SELECT `id` FROM `doc_sklady`");
-                            while ($nxt = $res->fetch_row()) {
-                                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos', '$nxt[0]', '0')");
-                            }
-
-                            $this->PosMenu($pos, '');
-                            $tmpl->msg("Добавлена новая позиция!<br><a href='/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Перейти</a>");
-                            $db->commit();
-			}
+		    $this->saveProduct($pos);
 		}
 		else if ($param == 'd') {
 			$analog = request('analog');

@@ -4,7 +4,7 @@
 /* http://hulan.info/blog/ */
 /***************************/ 
 
-require('fpdf.php');
+require_once('fpdf.php');
 
 /************************************/
 /* global functions                 */
@@ -598,4 +598,3 @@ class PDF extends FPDF
     }
 } // class PDF
 
-?>

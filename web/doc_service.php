@@ -660,6 +660,10 @@ try {
         $editor->link_prefix = '/doc_service.php?mode=dtypes';
         $editor->acl_object_name = 'doc_service';
         $editor->run();
+        $tmpl->addContent("<h3>Некоторые используемые <b>кодовые обозначения</b></h3>"
+            . "<ul>"
+            . "<li><b>ag_fee</b>: Агентское вознаграждение. Используется в сценарии &quot;Сборка с выдачей заработной платы&quot;</li>"            
+             . "</ul>");
     } elseif ($mode == 'accounts') {
         $editor = new \ListEditors\AccountListEditor($db);
         $editor->line_var_name = 'id';
