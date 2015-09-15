@@ -2107,16 +2107,15 @@ class doc_Nulltype extends \document {
             $scheme = 'correct';
         }
         if ($this->doc_data['nds']) {   // НДС включен
+            $pos['sum'] = $doc_price * $count;
             if ($scheme == '1c') {
-                $pos['sum_wo_vat'] = $pos['price'] * $count;
-                $pos['vat_s'] = round($pos['sum_wo_vat'] * $vat, 2);
-                $pos['sum'] = $pos['sum_wo_vat'] * $pos['vat_s'];
+                $pos['sum_wo_vat'] = round($pos['sum'] / (1 + $vat), 2);
+                $pos['vat_s'] = $pos['sum'] - $pos['sum_wo_vat'];
                 $pos['price'] = round($pos['sum_wo_vat'] / $count, 2);
             } else {
                 $pos['price'] = $doc_price / (1 + $vat);
                 $pos['sum_wo_vat'] = $pos['price'] * $count;
                 $pos['vat_s'] = ($doc_price * $count) - $pos['sum_wo_vat'];
-                $pos['sum'] = $doc_price * $count;
             }
         } else {
             $pos['price'] = $doc_price;
