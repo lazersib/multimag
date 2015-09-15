@@ -2126,7 +2126,7 @@ class doc_s_Sklad {
                 }
             }
             if($groups_analog_list) {
-                $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) ORDER BY $order";
+                $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) $where_add ORDER BY $order";
                 $res = $db->query($sqla);
                 if ($res->num_rows) {
                     $tmpl->addContent("<tr><th colspan='20' align='center'>Поиск аналогов $html_s - {$res->num_rows} строк найдено</th></tr>");
@@ -2140,7 +2140,7 @@ class doc_s_Sklad {
             $sf = 1;
         }
         
-        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') AND `doc_base`.`id` NOT IN ($found_ids) "
+        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '$s_sql%' OR `doc_base`.`vc` LIKE '$s_sql%') AND `doc_base`.`id` NOT IN ($found_ids) $where_add"
             . "ORDER BY $order LIMIT $limit";
         $res = $db->query($sqla);
         if ($cnt = $res->num_rows) {
@@ -2159,7 +2159,7 @@ class doc_s_Sklad {
                 }
             }
             if($groups_analog_list) {
-                $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) "
+                $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) $where_add"
                         . "ORDER BY $order LIMIT $limit";
                 $res = $db->query($sqla);
 
@@ -2178,7 +2178,7 @@ class doc_s_Sklad {
             $sf = 1;
         }
         
-        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`id` NOT IN ($found_ids) "
+        $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') AND `doc_base`.`id` NOT IN ($found_ids) $where_add"
             . "ORDER BY $order LIMIT 50";
         $res = $db->query($sqla);
         if ($cnt = $res->num_rows) {
