@@ -41,7 +41,7 @@ class agent {
             return false;
         }        
         $contacts = array();
-        $res = $db->query("SELECT * FROM `{$this->contacts_tn}` WHERE 'agent_id'='$agent_id'");
+        $res = $db->query("SELECT * FROM `{$this->contacts_tn}` WHERE `agent_id`='$agent_id'");
         while($line = $res->fetch_assoc()) {
             $contacts[$line['id']] = $line;
         }
@@ -72,11 +72,16 @@ class agent {
             return $this->parsed_contacts['email'];
         }
     }
-
-
+    
+    public function getFaxNum() {
+        if(isset($this->parsed_contacts['fax'])) {
+            return $this->parsed_contacts['fax'];
+        }
+    }
+    
     protected function parseContacts() {
         $this->parsed_contacts = array();
-        foreach($this->data as $line) {
+        foreach($this->data['contacts'] as $line) {
             switch($line['type']) {
                 case 'phone':
                 case 'email':
@@ -88,6 +93,9 @@ class agent {
                     $this->parsed_contacts[$line['type'].'s'][] = $line['value'];
                     break;
             }
+            if($line['type']=='phone' && $line['for_fax']) {
+                $this->parsed_contacts['fax'] = $line['value'];
+            }                        
         }
     }
 }

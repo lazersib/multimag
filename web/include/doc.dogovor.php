@@ -121,46 +121,46 @@ class doc_Dogovor extends doc_Nulltype
     }
 
     function DopBody() {
-		global $tmpl, $db;
-		if($this->dop_data['received'])
-			$tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
-		if($this->doc_data['comment'])
-		{
-			$agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
-                        $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
-                        $bank_info = $res->fetch_assoc();
-                        
-$str="==== Покупатель: {$agent_info['fullname']} ====
-{$agent_info['adres']}, тел. {$agent_info['tel']}<br>
-ИНН {$agent_info['inn']}, КПП {$agent_info['kpp']}, ОКПО {$agent_info['okpo']}, ОКВЭД {$agent_info['okved']}<br>
-Р/С {$agent_info['rs']}, в банке {$agent_info['bank']}<br>
-К/С {$agent_info['ks']}, БИК {$agent_info['bik']}<br>
+        global $tmpl, $db;
+        if ($this->dop_data['received']) {
+            $tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
+        }
+        if ($this->doc_data['comment']) {
+            $agent = new \models\agent($this->doc_data['agent']);
+            $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
+            $bank_info = $res->fetch_assoc();
+
+            $str = "==== Покупатель: {$agent->fullname} ====
+{$agent->adres}, тел. ".$agent->getPhone()."<br>
+ИНН {$agent->inn}, КПП {$agent->kpp}, ОКПО {$agent->okpo}, ОКВЭД {$agent->okved}<br>
+Р/С {$agent->rs}, в банке {$agent->bank}<br>
+К/С {$agent->ks}, БИК {$agent->bik}<br>
 ==== Поставщик: {$this->firm_vars['firm_name']} ====
 {$this->firm_vars['firm_adres']}<br>
 ИНН/КПП {$this->firm_vars['firm_inn']}<br>
 Р/С {$bank_info['rs']}, в банке {$bank_info['name']}<br>
 К/С {$bank_info['ks']}, БИК {$bank_info['bik']}";
 
-                        $wikiparser = new WikiParser();
-			$rekv = $wikiparser->parse(html_entity_decode($str,ENT_QUOTES,"UTF-8"));
+            $wikiparser = new WikiParser();
+            $rekv = $wikiparser->parse(html_entity_decode($str, ENT_QUOTES, "UTF-8"));
 
-			$wikiparser->AddVariable('REKVIZITY', $rekv);
-			$wikiparser->AddVariable('DOCNUM', $this->doc_data['altnum']);
-			$wikiparser->AddVariable('DOCDATE', date("d.m.Y",$this->doc_data['date']));
-			$wikiparser->AddVariable('AGENT', $agent_info['fullname']);
-			$wikiparser->AddVariable('AGENTDOL', 'директора');
-			$wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
-			$wikiparser->AddVariable('FIRMNAME', $this->firm_vars['firm_name']);
-			$wikiparser->AddVariable('FIRMDIRECTOR', $this->firm_vars['firm_director_r']);
-			$wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
-			$text=$wikiparser->parse($this->doc_data['comment'],ENT_QUOTES,"UTF-8");
-			$tmpl->addContent("<b>Текст договора (форматирование может отличаться от форматирования при печати):</b> <p>$text</p>");
-			$this->doc_data['comment']='';
-		}
-		else 	$tmpl->addContent("<br><b style='color: #f00'>ВНИМАНИЕ! Текст договора не указан!</b><br>");
-	}
+            $wikiparser->AddVariable('REKVIZITY', $rekv);
+            $wikiparser->AddVariable('DOCNUM', $this->doc_data['altnum']);
+            $wikiparser->AddVariable('DOCDATE', date("d.m.Y", $this->doc_data['date']));
+            $wikiparser->AddVariable('AGENT', $agent->fullname);
+            $wikiparser->AddVariable('AGENTDOL', 'директора');
+            $wikiparser->AddVariable('AGENTFIO', $agent->dir_fio_r);
+            $wikiparser->AddVariable('FIRMNAME', $this->firm_vars['firm_name']);
+            $wikiparser->AddVariable('FIRMDIRECTOR', $this->firm_vars['firm_director_r']);
+            $wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
+            $text = $wikiparser->parse($this->doc_data['comment'], ENT_QUOTES, "UTF-8");
+            $tmpl->addContent("<b>Текст договора (форматирование может отличаться от форматирования при печати):</b> <p>$text</p>");
+            $this->doc_data['comment'] = '';
+        } else
+            $tmpl->addContent("<br><b style='color: #f00'>ВНИМАНИЕ! Текст договора не указан!</b><br>");
+    }
 
-	/// Формирование другого документа на основании текущего
+    /// Формирование другого документа на основании текущего
 	function MorphTo($target_type)
 	{
 		global $tmpl;

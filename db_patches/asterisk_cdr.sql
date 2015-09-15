@@ -97,3 +97,19 @@ MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=7;
 
 ALTER TABLE `agent_contacts`
 ADD CONSTRAINT `agent_contacts_ibfk_1` FOREIGN KEY (`agent_id`) REFERENCES `doc_agent` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`) 
+    SELECT `id`, 'work', 'phone',`tel` FROM `doc_agent` WHERE `tel`!='';
+
+INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`, `for_fax`) 
+    SELECT `id`, 'work', 'phone',`fax_phone`,1 FROM `doc_agent` WHERE `fax_phone`!='';
+
+INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`, `for_sms`) 
+    SELECT `id`, 'mobile', 'phone',`sms_phone`,1 FROM `doc_agent` WHERE `sms_phone`!='';
+
+INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`) 
+    SELECT `id`, 'home', 'phone',`alt_phone` FROM `doc_agent` WHERE `alt_phone`!='';
+
+INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`, `no_ads`) 
+	SELECT `id`, 'work', 'email',`email`, `no_mail` FROM `doc_agent` WHERE `email`!='';
+

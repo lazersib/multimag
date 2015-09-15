@@ -1051,13 +1051,10 @@ class doc_Nulltype extends \document {
         $tmpl->ajax = 1;
         try {
             if ($form_name == '') {
-                $data = $db->selectRow('doc_agent', $this->doc_data['agent']);
-                if ($data == 0) {
-                    throw new Exception("Агент не найден");
-                }
+                $agent = new \models\agent($this->doc_data['agent']);
                 $ret_data = array(
                     'response'  => 'item_list',
-                    'faxnum'     => $data['fax_phone'],
+                    'faxnum'     => $agent->getFaxNum(),
                     'content'   => $this->getPrintFormList()
                 );           
                 $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );                
@@ -1097,13 +1094,10 @@ class doc_Nulltype extends \document {
         $tmpl->ajax = 1;
         try {
             if ($form_name == '') {
-                $data = $db->selectRow('doc_agent', $this->doc_data['agent']);
-                if ($data == 0) {
-                    throw new Exception("Агент не найден");
-                }
+                $agent = new \models\agent($this->doc_data['agent']);
                 $ret_data = array(
                     'response'  => 'item_list',
-                    'email'     => $data['email'],
+                    'email'     => $agent->getEmail(),
                     'content'   => $this->getCSVPrintFormList()
                 );           
                 $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
@@ -1148,7 +1142,7 @@ class doc_Nulltype extends \document {
     /// Печать документа
     /// @param $form_name   Имя печатной формы
     function printForm($form_name = '') {
-        global $tmpl, $CONFIG;
+        global $tmpl;
         $tmpl->ajax = 1;
         if ($form_name == '') {
             $ret_data = array(
@@ -1212,61 +1206,68 @@ class doc_Nulltype extends \document {
     }
 
     /// отправка документа по электронной почте
-   	function sendDocByEMail($email, $comment, $docname, $data, $filename, $body='')
-   	{
-		global $CONFIG, $db;
-		require_once($CONFIG['location'].'/common/email_message.php');
-		$res_autor = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info`
-			WHERE `user_id`='".$this->doc_data['agent']."'");
-		$doc_autor = $res_autor->fetch_assoc();
-		$agent = $db->selectRowA('doc_agent', $this->doc_data['agent'], array('name', 'fullname', 'email'));
-		
-		$email_message=new email_message_class();
-		$email_message->default_charset="UTF-8";
-		if($agent['fullname'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['fullname']);
-		else if($agent['name'])	$email_message->SetEncodedEmailHeader("To", $email, $agent['name']);
-		else			$email_message->SetEncodedEmailHeader("To", $email, $email);
+    function sendDocByEMail($email, $comment, $docname, $data, $filename, $body = '') {
+        global $CONFIG, $db;
+        require_once($CONFIG['location'] . '/common/email_message.php');
+        $res_autor = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info`
+            WHERE `user_id`='" . $this->doc_data['user'] . "'");
+        $doc_autor = $res_autor->fetch_assoc();
+        $agent = new \models\agent($this->doc_data['agent']);
 
-		$email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - $docname ({$CONFIG['site']['name']})");
+        $email_message = new email_message_class();
+        $email_message->default_charset = "UTF-8";
+        if ($agent->fullname) {
+            $email_message->SetEncodedEmailHeader("To", $email, $agent->fullname);
+        } else if ($agent->name) {
+            $email_message->SetEncodedEmailHeader("To", $email, $agent->name);
+        } else {
+            $email_message->SetEncodedEmailHeader("To", $email, $email);
+        }
 
-		if(!@$doc_autor['worker_email']) {
-			$email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
-			$email_message->SetHeader("Sender",$CONFIG['site']['admin_email']);
-			$text_message = "Здравствуйте, {$agent['fullname']}!\n"
-                            . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\n"
-                            . "$comment\n\n"
-                            . "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n"
-                            . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
-		}
-		else
-		{
-			$email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
-			$email_message->SetHeader("Sender", $doc_autor['worker_email']);
-			$text_message = "Здравствуйте, {$agent['fullname']}!\n"
-                            . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\n"
-                            . "Ответственный сотрудник: {$doc_autor['worker_real_name']}\n"
-                            . "Контактный телефон: {$doc_autor['worker_phone']}\n"
-                            . "Электронная почта (e-mail): {$doc_autor['worker_email']}\n"
-                            . "Отправитель: {$_SESSION['name']}";
-		}
-		if($body)	$email_message->AddQuotedPrintableTextPart($body);
-		else		$email_message->AddQuotedPrintableTextPart($text_message);
+        $email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - $docname ({$CONFIG['site']['name']})");
 
-		$text_attachment=array(
-			"Data"=>$data,
-			"Name"=>$filename,
-			"Content-Type"=>"automatic/name",
-			"Disposition"=>"attachment"
-		);
-		$email_message->AddFilePart($text_attachment);
+        if (!@$doc_autor['worker_email']) {
+            $email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
+            $email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
+            $text_message = "Здравствуйте, {$agent->fullname}!\n"
+                . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\n"
+                . "$comment\n\n"
+                . "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n"
+                . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
+        } else {
+            $email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
+            $email_message->SetHeader("Sender", $doc_autor['worker_email']);
+            $text_message = "Здравствуйте, {$agent->fullname}!\n"
+                . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\n"
+                . "Ответственный сотрудник: {$doc_autor['worker_real_name']}\n"
+                . "Контактный телефон: {$doc_autor['worker_phone']}\n"
+                . "Электронная почта (e-mail): {$doc_autor['worker_email']}\n"
+                . "Отправитель: {$_SESSION['name']}";
+        }
+        if ($body) {
+            $email_message->AddQuotedPrintableTextPart($body);
+        } else {
+            $email_message->AddQuotedPrintableTextPart($text_message);
+        }
 
-		$error=$email_message->Send();
+        $text_attachment = array(
+            "Data" => $data,
+            "Name" => $filename,
+            "Content-Type" => "automatic/name",
+            "Disposition" => "attachment"
+        );
+        $email_message->AddFilePart($text_attachment);
 
-		if(strcmp($error,""))	throw new Exception($error);
-		else			return 0;
-   	}
-	
-	function service() {
+        $error = $email_message->Send();
+
+        if (strcmp($error, "")) {
+            throw new Exception($error);
+        } else {
+            return 0;
+        }
+    }
+
+    function service() {
 		global $tmpl;
 		$tmpl->ajax = 1;
 		$opt = request('opt');

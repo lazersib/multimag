@@ -416,8 +416,6 @@ class doc_s_Agent {
 			settype($ag_info['dishonest'],'int');
 			settype($new_agent_info['group'],'int');
 			settype($new_agent_info['dishonest'],'int');
-			settype($ag_info['no_mail'],'int');
-			settype($new_agent_info['no_mail'],'int');
 			settype($ag_info['no_retail_prices'],'int');
 			settype($new_agent_info['no_retail_prices'],'int');
 			settype($ag_info['no_bulk_prices'],'int');
@@ -441,8 +439,8 @@ class doc_s_Agent {
 
 			$log_text = getCompareStr($ag_info, $new_agent_info);
 			
-			if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $new_agent_info['email'])) && ($new_agent_info['email']!='') )
-				throw new Exception("Неверный e-mail!");
+			//if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $new_agent_info['email'])) && ($new_agent_info['email']!='') )
+			//	throw new Exception("Неверный e-mail!");
 			if($pos) {
 				if(!isAccess('list_agent','edit'))	throw new AccessException();
 				$log_start='UPDATE';				

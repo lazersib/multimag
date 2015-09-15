@@ -36,13 +36,39 @@ class CDR extends \IModule {
         . ' необходимо указать параметры подключения к базе данных.';  
     }
 
-    protected function getCDR($db) {
+    protected function getCDR($db, $filter=null) {
         $data = array();
-        $res = $db->query("SELECT `asterisk_cdr`.`id`, `calldate`, `clid`, `src`, `dst`, `dcontext`, `lastapp`, `lastdata`"
+        $where_sql = ' WHERE 1 ';
+        if(is_array($filter)) {
+            foreach ($filter as $id => $value) {
+                if(!$value) {
+                    continue;
+                }
+                switch ($id) {
+                    case 'date_from':
+                        $where_sql .= " AND `calldate`>='".$db->real_escape_string($value)."'";
+                        break;
+                    case 'date_to':
+                        $where_sql .= " AND `calldate`<='".$db->real_escape_string($value)."'";
+                        break;
+                    case 'src':
+                        $where_sql .= " AND `src` LIKE '".$db->real_escape_string($value)."'";
+                        break;
+                    case 'dst':
+                        $where_sql .= " AND `dst` LIKE '".$db->real_escape_string($value)."'";
+                        break;
+                    case 'disposition':
+                        $where_sql .= " AND `disposition` = '".$db->real_escape_string($value)."'";
+                        break;
+                }
+            }
+        }
+        $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `asterisk_cdr`.`id`, `calldate`, `clid`, `src`, `dst`, `dcontext`, `lastapp`, `lastdata`"
                 . ", `duration`, `billsec`, `disposition`, `uniqueid`, `ex_queue`.`event` AS `q_event`"
             . " FROM `asterisk_cdr`"
             . " LEFT JOIN `asterisk_queue_log` AS `ex_queue` ON `ex_queue`.`callid`=`asterisk_cdr`.`uniqueid`"
             . " AND (`ex_queue`.`event`='ABANDON' OR `ex_queue`.`event`='COMPLETECALLER' OR `ex_queue`.`event`='COMPLETEAGENT')"
+            . $where_sql
             . " ORDER BY `calldate` DESC"
             . " LIMIT 500");
         while ($line = $res->fetch_assoc()) {
@@ -51,6 +77,11 @@ class CDR extends \IModule {
         return $data;
     }
     
+    protected function getQueueSummary($db, $filter=null) {
+        
+    }
+
+
     protected function getAgentPhonesInverse($db) {
         $data = array();
         $res = $db->query("SELECT `agent_id`, `value` FROM `agent_contacts` WHERE `type`='phone' AND `value`!=''");
@@ -80,12 +111,23 @@ class CDR extends \IModule {
 
     protected function renderCDR() {
         global $tmpl, $db, $CONFIG;
+        $filter = requestA(array('date_from', 'date_to', 'src', 'dst', 'context'));
+                
         $tmpl->addBreadcrumb('Детализация вызовов', '');
+        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='post'>"
+                . "<table>"
+                . "<tr><td>Дата от:</td><td><input type='text' name='date_from' value='{$filter['date_from']}'></td>"
+                . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
+                . "<td>Номер-источник</td><td><input type='text' name='src' value='{$filter['src']}'></td>"
+                . "<td>Номер-цель</td><td><input type='text' name='dst' value='{$filter['dst']}'></td></tr>"
+                . "</table>"
+                . "<button type='submit'>Отфильтровать</button>"
+                . "</form>");
         $tmpl->addContent("<table class='list' width='100%'>"
             . "<tr><th rowspan='2'>Дата</th><th colspan='2'>От</th><th colspan='2'>На</th><th rowspan='2'>Контекст</th>"
             . "<th rowspan='2'>Длительность</th><th rowspan='2'>Статус</th><th rowspan='2'>Статус очереди</th><th rowspan='2'>ID</th><th rowspan='2'>Файл</th></tr>"
             . "<tr><th>Номер</th><th>Принадлежность</th><th>Номер</th><th>Принадлежность</th></tr>");
-        $data = $this->getCDR($db);
+        $data = $this->getCDR($db, $filter);
         $ap = $this->getAgentPhonesInverse($db);
         $wp = $this->getWorkerPhonesInverse($db);
         $up = $this->getUserPhonesInverse($db);
@@ -245,8 +287,8 @@ class CDR extends \IModule {
     }
     
     public function run() {
-        global $CONFIG, $tmpl;
-        if (!isset($CONFIG['service_cdr'])) {
+        global $CONFIG, $tmpl, $db;
+        /* if (!isset($CONFIG['service_cdr'])) {
             throw new \Exception("Модуль не настроен!");
         }
         if (!is_array($CONFIG['service_cdr'])) {
@@ -257,6 +299,8 @@ class CDR extends \IModule {
         if ($db->connect_error) {
             throw new Exception("Не удалось соединиться с базой данных телефонной статистики");
         }
+         * 
+         */
         $tmpl->addBreadcrumb($this->getName(), $this->link_prefix);
         $sect = request('sect');
         switch ($sect) {
@@ -264,11 +308,11 @@ class CDR extends \IModule {
                 $tmpl->addBreadcrumb($this->getName(), '');
                 $tmpl->addContent("<p>".$this->getDescription()."</p>"
                     . "<ul>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=summary'>Сводка</li>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=cdr'>Детализация</li>"
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=queue_summary'>Сводка очередей вызовов</li>"
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=cdr'>Записи детализации вызовов</li>"
                     . "</ul>");
                 break;
-            case 'summary':
+            case 'queue_summary':
                 $this->renderSummary();
                 break;
             case 'cdr':
