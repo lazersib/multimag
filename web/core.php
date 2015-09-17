@@ -174,6 +174,9 @@ function SearchHilight($str, $substr) {
 /// Нормализация номера телефона
 function normalizePhone($phone) {
     $phone = preg_replace("/[^0-9+]/", "", $phone);
+    if(strlen($phone)<3) {
+        return false;
+    }
     $phoneplus = $phone[0]=='+';
     $phone = preg_replace("/[^0-9]/", "", $phone);
     if($phoneplus && $phone[0]==7 && strlen($phone)==11) {

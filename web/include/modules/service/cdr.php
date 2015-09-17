@@ -35,7 +35,29 @@ class CDR extends \IModule {
         return 'Модуль для просмотра статистики телефонной системы. Для работы модуля в конфигурационном файле'
         . ' необходимо указать параметры подключения к базе данных.';  
     }
-
+    
+    /// Нормализация номера телефона
+    protected function getOptimizedPhone($phone) {
+        global $CONFIG;
+        $phone = preg_replace("/[^0-9+]/", "", $phone);
+        if(strlen($phone)<3) {
+            return false;
+        }
+        $phoneplus = $phone[0]=='+';
+        $phone = preg_replace("/[^0-9]/", "", $phone);
+        $len = strlen($phone);
+        if($phone[0]==7 && $len==11) {
+            return '+'.$phone;
+        } elseif(!$phoneplus && $phone[0]==8 && $len==11) {
+            return '+7'.substr($phone,1);
+        } elseif(!$phoneplus && $phone[0]==9 && $len==10) {
+            return '+7'.$phone; 
+        } elseif(!$phoneplus && $CONFIG['cdr']['local_length']==$len) {
+            return $CONFIG['cdr']['local_perfix'].$phone;
+        } else {
+            return $phone;
+        }
+    }
     protected function getCDR($db, $filter=null) {
         $data = array();
         $where_sql = ' WHERE 1 ';
@@ -108,6 +130,39 @@ class CDR extends \IModule {
         }
         return $data;
     }
+    
+    protected function getObjectLinkForPhone($phone) {
+        $phone = $this->getOptimizedPhone($phone);
+        if(!$phone) {
+            return '';
+        }
+        if(isset($this->ap[$phone])) {
+            $obj_id = $this->ap[$phone];
+            if(isset($this->agents[$obj_id])) {
+                $src_cell = $this->agents[$obj_id];
+            } else {
+                $src_cell = '?';
+            }
+            return "<a href='/docs.php?l=agent&mode=srv&opt=ep&pos=".$obj_id."'>".html_out($src_cell)."</a>";
+        } elseif(isset($this->wp[$phone])) {
+            $obj_id = $this->wp[$phone];
+            if(isset($this->users[$obj_id])) {
+                $src_cell = $this->users[$obj_id];
+            } else {
+                $src_cell = '?';
+            }
+            return "<a href='/adm_users.php?mode=view&id=".$obj_id."'>".html_out($src_cell)."</a>";
+        } elseif(isset($this->up[$phone])) {
+            $obj_id = $this->up[$phone];
+            if(isset($this->users[$obj_id])) {
+                $src_cell = $this->users[$obj_id];
+            } else {
+                $src_cell = '?';
+            }
+            return "<a href='/adm_users.php?mode=view&id=".$obj_id."'>".html_out($src_cell)."</a>";
+        }
+        return '';
+    }
 
     protected function renderCDR() {
         global $tmpl, $db, $CONFIG;
@@ -128,13 +183,13 @@ class CDR extends \IModule {
             . "<th rowspan='2'>Длительность</th><th rowspan='2'>Статус</th><th rowspan='2'>Статус очереди</th><th rowspan='2'>ID</th><th rowspan='2'>Файл</th></tr>"
             . "<tr><th>Номер</th><th>Принадлежность</th><th>Номер</th><th>Принадлежность</th></tr>");
         $data = $this->getCDR($db, $filter);
-        $ap = $this->getAgentPhonesInverse($db);
-        $wp = $this->getWorkerPhonesInverse($db);
-        $up = $this->getUserPhonesInverse($db);
+        $this->ap = $this->getAgentPhonesInverse($db);
+        $this->wp = $this->getWorkerPhonesInverse($db);
+        $this->up = $this->getUserPhonesInverse($db);
         $agents_ldo = new \Models\LDO\agentnames();
-        $agents = $agents_ldo->getData();
+        $this->agents = $agents_ldo->getData();
         $users_ldo = new \Models\LDO\usernames();
-        $users = $users_ldo->getData();
+        $this->users = $users_ldo->getData();
         
         $file_base_url = $this->link_prefix . "&amp;sect=audio&callid=";
         if(isset($CONFIG['service_cdr']['file_path'])) {
@@ -150,58 +205,9 @@ class CDR extends \IModule {
                 
         foreach ($data as $line_id=>$line) {
             $src_cell = $dst_cell = $queue_stat = '';
-            $src_id = $dst_id = 0;            
-            if(isset($ap[$line['src']])) {
-                $src_id = $ap[$line['src']];
-                if(isset($agents[$src_id])) {
-                    $src_cell = $agents[$src_id];
-                } else {
-                    $src_cell = '?';
-                }
-                $src_cell = "<a href='/docs.php?l=agent&mode=srv&opt=ep&pos=".$src_id."'>".html_out($src_cell)."</a>";
-            } elseif(isset($wp[$line['src']])) {
-                $src_id = $wp[$line['src']];
-                if(isset($users[$src_id])) {
-                    $src_cell = $users[$src_id];
-                } else {
-                    $src_cell = '?';
-                }
-                $src_cell = "<a href='/adm_users.php?mode=view&id=".$src_id."'>".html_out($src_cell)."</a>";
-            } elseif(isset($up[$line['src']])) {
-                $src_id = $up[$line['src']];
-                if(isset($users[$src_id])) {
-                    $src_cell = $users[$src_id];
-                } else {
-                    $src_cell = '?';
-                }
-                $src_cell = "<a href='/adm_users.php?mode=view&id=".$src_id."'>".html_out($src_cell)."</a>";
-            }
+            $src_cell = $this->getObjectLinkForPhone($line['src']);
+            $dst_cell = $this->getObjectLinkForPhone($line['dst']);
             
-            if(isset($ap[$line['dst']])) {
-                $dst_id = $ap[$line['dst']];
-                if(isset($agents[$dst_id])) {
-                    $dst_cell = $agents[$dst_id];
-                } else {
-                    $dst_cell = '?';
-                }
-                $dst_cell = "<a href='/docs.php?l=agent&mode=srv&opt=ep&pos=".$dst_id."'>".html_out($dst_cell)."</a>";
-            } elseif(isset($wp[$line['dst']])) {
-                $dst_id = $wp[$line['dst']];
-                if(isset($users[$dst_id])) {
-                    $dst_cell = $users[$dst_id];
-                } else {
-                    $dst_cell = '?';
-                }
-                $dst_cell = "<a href='/adm_users.php?mode=view&id=".$dst_id."'>".html_out($dst_cell)."</a>";
-            } elseif(isset($up[$line['dst']])) {
-                $dst_id = $up[$line['dst']];
-                if(isset($users[$dst_id])) {
-                    $dst_cell = $users[$dst_id];
-                } else {
-                    $dst_cell = '?';
-                }
-                $dst_cell = "<a href='/adm_users.php?mode=view&id=".$dst_id."'>".html_out($dst_cell)."</a>";
-            }
             $lenght = sectostrinterval(intval($line['billsec']));
             switch($line['q_event']) {
                 case 'ABANDON':
