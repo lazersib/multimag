@@ -28,7 +28,6 @@ class doc_Doveren extends doc_Nulltype {
         $this->typename = 'doveren';
         $this->viewname = 'Доверенность';
         $this->sklad_editor_enable = true;
-        $this->sklad_modify = 0;
         $this->header_fields = 'separator agent cena';
     }
 

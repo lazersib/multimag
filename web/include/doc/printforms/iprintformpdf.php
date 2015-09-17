@@ -61,7 +61,7 @@ abstract class iPrintFormPdf {
         $old_font_size = $this->pdf->FontSizePt;
         $this->pdf->SetFontSize(2.5);
         $str = 'Подготовлено в multimag v:'.MULTIMAG_VERSION.' ('.get_class($this).'), док.'.$this->doc->getId();
-        $this->pdf->CellIconv(0, 4, $str, 0, 0, 'R');
+        $this->pdf->CellIconv(0, 2, $str, 0, 1, 'R');
         $this->pdf->SetFontSize($old_font_size);
         $this->pdf->SetX($x);
         $this->pdf->SetY($y);

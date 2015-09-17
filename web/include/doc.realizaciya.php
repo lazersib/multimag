@@ -28,7 +28,6 @@ class doc_Realizaciya extends doc_Nulltype {
         $this->typename = 'realizaciya';
         $this->viewname = 'Реализация товара';
         $this->sklad_editor_enable = true;
-        $this->sklad_modify = -1;
         $this->header_fields = 'bank sklad cena separator agent';
         $this->PDFForms = array(
             array('name' => 'tc', 'desc' => 'Товарный чек', 'method' => 'PrintTcPDF'),

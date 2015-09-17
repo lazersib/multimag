@@ -29,7 +29,6 @@ class doc_Realiz_bonus extends doc_Realizaciya {
         $this->typename = 'realiz_bonus';
         $this->viewname = 'Реализация товара за бонусы';
         $this->sklad_editor_enable = true;
-        $this->sklad_modify = -1;
         $this->header_fields = 'sklad cena separator agent';
         settype($this->id, 'int');
     }

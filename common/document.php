@@ -130,6 +130,10 @@ class document {
                 return "doc_Pko_oper";
             case 23:
                 return "doc_PermitOut";
+            case 24:
+                return "doc_payinfo";
+            case 25:
+                return "doc_corract";
             default:
                 return null;
         }

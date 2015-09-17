@@ -510,7 +510,8 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0
     $sql_add = ($unixtime !== null) ? "AND `doc_list`.`date`<=$unixtime" : '';
     $res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17) $sql_add
+	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND "
+            . " (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17 OR `doc_list`.`type`=25) $sql_add
 	ORDER BY `doc_list`.`date`");
     while ($nxt = $res->fetch_row()) {
         if ($nxt[1] == 1) {
@@ -543,6 +544,9 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0
                 else
                     $cnt-=$nxt[0];
             }
+        } elseif($nxt[1]==25) {
+            if ($nxt[2] == $sklad_id)
+                $cnt+=$nxt[0];
         }
         $cnt = round($cnt, 3);
         if ($cnt < 0 && $noBreakIfMinus == 0)

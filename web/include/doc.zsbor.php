@@ -30,7 +30,6 @@ class doc_ZSbor extends doc_Nulltype {
 		$this->typename = 'zsbor';
 		$this->viewname = 'Заявка на производство';
 		$this->sklad_editor_enable = true;
-		$this->sklad_modify = 0;
 		$this->header_fields = 'sklad cena';
 		settype($this->id, 'int');
 		$this->PDFForms = array(

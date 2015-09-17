@@ -27,7 +27,6 @@ class doc_Postuplenie extends doc_Nulltype {
         $this->typename = 'postuplenie';
         $this->viewname = 'Поступление товара на склад';
         $this->sklad_editor_enable = true;
-        $this->sklad_modify = 1;
         $this->header_fields = 'sklad cena separator agent';
     }
 

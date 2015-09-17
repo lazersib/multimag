@@ -26,7 +26,6 @@ class doc_Nulltype extends \document {
     protected $sklad_editor_enable;  ///< Разрешить отображение редактора склада
                     // Значение следующих полей: +1 - увеличивает, -1 - уменьшает, 0 - не влияет
                     // Документы перемещений должны иметь 0 в соответствующих полях !
-    protected $sklad_modify;  ///< Изменяет ли общие остатки на складе
     protected $bank_modify;   ///< Изменяет ли общие средства в банке
     protected $kassa_modify;  ///< Изменяет ли общие средства в кассе
     protected $header_fields;  ///< Поля заголовка документа, доступные через форму редактирования
@@ -34,6 +33,7 @@ class doc_Nulltype extends \document {
     protected $dop_data;   ///< Дополнительные данные документа
     protected $firm_vars;   ///< Информация с данными о фирме
     protected $child_docs = array();        ///< Информация о документах-потомках
+    protected $allow_neg_cnt;   ///< Разрешить отрицательное количество товара
 
     public function __construct($doc = 0) {
         $this->id = (int) $doc;
@@ -41,7 +41,6 @@ class doc_Nulltype extends \document {
         $this->typename = '';
         $this->viewname = 'Неопределенный документ';
         $this->sklad_editor_enable = false;
-        $this->sklad_modify = 0;
         $this->bank_modify = 0;
         $this->kassa_modify = 0;
         $this->header_fields = '';
@@ -1291,6 +1290,7 @@ class doc_Nulltype extends \document {
                     $poseditor->cost_id = @$this->dop_data['cena'];
                     $poseditor->sklad_id = $this->doc_data['sklad'];
                     $poseditor->SetEditable($this->doc_data['ok']?0:1);
+                    $poseditor->setAllowNegativeCounts($this->allow_neg_cnt);
 		}
 		
 		$peopt = request('peopt');	// Опции редактора списка товаров
