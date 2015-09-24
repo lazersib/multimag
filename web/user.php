@@ -41,6 +41,7 @@ try {
             $tmpl->msg("Ваш пароль устареет через $exp_days дней. Вам необходимо <a href='/user.php?mode=chpwd'>сменить</a> его.");
         }
         
+        // Сотруднику
         $block = '';
         if (isAccess('doc_list', 'view')) {
             $block .= "<li><a href='/docj_new.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>";

@@ -27,10 +27,9 @@ class invoice extends \doc\printforms\iPrintFormPdf {
     /// Сформировать данные печатной формы
     public function make() {
         global $db, $CONFIG;
-        $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
         $firm_vars = $this->doc->getFirmVarsA();
-        $agent_data = $db->selectRow('doc_agent', $doc_data['agent']);
+        $agent = new \models\agent($doc_data['agent']);
         $nomenclature = $this->doc->getDocumentNomenclature('vat');
         $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
         $bank_data = $res->fetch_assoc();
@@ -116,7 +115,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         }
         $text = "Поставщик: {$firm_vars['firm_name']}, {$firm_vars['firm_adres']}, тел: {$firm_vars['firm_telefon']}";
         $this->addInfoLine($text);
-        $text = "Покупатель: {$agent_data['fullname']}, адрес: {$agent_data['adres']}, телефон: {$agent_data['tel']}";
+        $text = "Покупатель: {$agent->fullname}, адрес: {$agent->adres}, телефон: ".$agent->getPhone();
         $this->addInfoLine($text);
         $this->pdf->Ln(3);
         

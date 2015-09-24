@@ -1123,3 +1123,31 @@ div.iblock {
 div.article_text {
     padding: 10px;
 }
+
+#audioBox {
+    height:100%;
+    width:100%;
+    background-color:rgba(0, 0, 0, 0.8);
+    opacity:0;
+    visibility:hidden;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    overflow:hidden;
+    position:fixed;
+    transition:all 0.5s ease 0s;
+    z-index: 999998;
+}
+
+#audioBox .objPlayer {
+    width:425px;
+    height:40px;
+    margin:auto;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    position:fixed;
+    z-index: 999999;
+}

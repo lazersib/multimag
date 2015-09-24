@@ -19,10 +19,12 @@
 
 /// Редактор справочника агентов
 class doc_s_Agent {
-	/// Просмотр списка агентов
+	
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'email', 'no_mail', 'fullname', 'tel', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'sms_phone', 'fax_phone', 'alt_phone', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
+		$this->agent_vars = array('group', 'name', 'type', 'fullname', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
 	}
+        
+        /// Просмотр списка агентов
 	function View() {
 		global $tmpl;
 		doc_menu(0,0);
@@ -72,7 +74,7 @@ class doc_s_Agent {
             $q = request('q');
             $tmpl->ajax = 1;
             $q_sql = $db->real_escape_string($q);
-            $res = $db->query("SELECT `name`, `id`, `tel` FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$q_sql%') ORDER BY `name`");
+            $res = $db->query("SELECT `name`, `id`, '' FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$q_sql%') ORDER BY `name`");
             while ($nxt = $res->fetch_row()) {
                 $tmpl->addContent("$nxt[0]|$nxt[1]|$nxt[2]\n");
             }
@@ -106,18 +108,21 @@ class doc_s_Agent {
 		$group = rcvint('g');
 		if(!isAccess('list_agent','view'))	throw new AccessException();
 		$tmpl->setTitle("Правка агента");
+                $tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+                
 		if(($pos==0)&&($param!='g')) $param='';
 
-		if($pos!=0)
-			$this->PosMenu($pos, $param);
+                if ($pos != 0) {
+                    $this->PosMenu($pos, $param);
+                }
 
-		if($param=='') {
-			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+		if($param=='' || $param=='v') {
+			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');			
 			
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
 			if($ares->num_rows) {
 				$agent_info = $ares->fetch_assoc();				
-				$tmpl->addBreadcrumb($agent_info['name'], '');
+				$tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '');
 			}
 			else {
 				$tmpl->addBreadcrumb('Новая запись', '');
@@ -141,7 +146,6 @@ class doc_s_Agent {
 			$span = 5;
 			$ext='';
 			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
-			$no_mail_c = $agent_info['no_mail']?' checked':'';
 			$dish_checked = $agent_info['dishonest']?'checked':'';
 			$nbp_checked = $agent_info['no_bulk_prices']?'checked':'';
 			$nrp_checked = $agent_info['no_retail_prices']?'checked':'';
@@ -187,33 +191,23 @@ class doc_s_Agent {
 				<td><input type='hidden' name='p_agent' id='agent_id' value='{$agent_info['p_agent']}'>
 					<input type='text' id='agent_nm' name='p_agent_nm'  style='width: 95%;' value='$html_pagent_name'>
 					<div id='agent_info'></div>
-			<tr><td align=right>Адрес электронной почты (e-mail)
-				<br><label><input type='checkbox' name='no_mail' value='1'{$no_mail_c}>Не отправлять рассылки</label>
-				<td><input type=text name='email' value='".html_out($agent_info['email'])."' class='validate email' style='width: 90%;'>
-				<td align=right>Телефон для sms:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
-				<td colspan=3><input type=text name='sms_phone' value='".html_out($agent_info['sms_phone'])."' class='phone validate'>
-			<tr><td align=right>Телефон:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
-				<td><input type=text name='tel' value='".html_out($agent_info['tel'])."' class='phone validate'>
-				<td align=right>Телефон / факс:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>
-				<td><input type=text name='fax_phone' value='".html_out($agent_info['fax_phone'])."' class='phone validate'>
-				<td align=right>Дополнительный телефон:
-				<td><input type=text name='alt_phone' value='".html_out($agent_info['alt_phone'])."'>
 			<tr><td align=right>Юридический адрес / Адрес прописки
 				<td colspan='2'><textarea name='adres'>".html_out($agent_info['adres'])."</textarea>
 				<td align=right>Адрес проживания
 				<td colspan='2'><textarea name='real_address'>".html_out($agent_info['real_address'])."</textarea>
 			<tr><td align=right>ИНН:
-				<td colspan='$span'><input type=text name='inn' value='".html_out($agent_info['inn'])."' style='width: 40%;' class='inn validate'>
-			<tr><td align=right>КПП:
-				<td colspan='$span'><input type=text name='kpp' value='".html_out($agent_info['kpp'])."' style='width: 40%;'>	
-			<tr><td align=right>Банк
-				<td colspan='$span'><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
-			<tr><td align=right>Корр. счет
-				<td colspan='$span'><input type=text name='ks' value='".html_out($agent_info['ks'])."' style='width: 40%;' class='ks validate'>
-			<tr><td align=right>БИК
-				<td colspan='$span'><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'>
-			<tr class=lin1><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small>
-				<td colspan='$span'><input type=text name='rs' value='".html_out($agent_info['rs'])."' style='width: 40%;' class='rs validate'>
+				<td><input type=text name='inn' value='".html_out($agent_info['inn'])."' class='inn validate'>
+                                <td align=right>КПП:
+				<td><input type=text name='kpp' value='".html_out($agent_info['kpp'])."'>
+                                <td><td>			
+                        <tr><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small>
+				<td><input type=text name='rs' value='".html_out($agent_info['rs'])."' class='rs validate'>
+                                <td align=right>Корр. счет
+				<td><input type=text name='ks' value='".html_out($agent_info['ks'])."' class='ks validate'>
+                                <td><td>
+                        <tr><td align=right>БИК
+				<td><input type=text name='bik' value='".html_out($agent_info['bik'])."' class='bik validate'><td align=right>Банк
+				<td colspan='3'><input type=text name='bank' value='".html_out($agent_info['bank'])."' style='width: 90%;'>
 			<tr><td align=right>ОКВЭД
 				<td colspan='$span'><input type=text name='okved' value='".html_out($agent_info['okved'])."'>
 			<tr><td align=right>ОГРН / ОГРНИП
@@ -311,16 +305,34 @@ class doc_s_Agent {
                         </script>");
 
 		}
+                elseif($param == 'c') {
+                    $tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
+                    $info = $db->selectRow('doc_agent', $pos); 
+                    if ($info) {
+                        $tmpl->addBreadcrumb($info['id'] . ': ' . $info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos=' . $pos);
+                    } else {
+                        throw new \NotFoundException('Агент не найден');
+                    }
+                    $editor = new \ListEditors\agentContactEditor($db); 
+                    $editor->line_var_name = 'leid'; 
+                    $editor->opt_var_name = 'leopt'; 
+                    $editor->link_prefix = '/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=c&amp;pos='.$pos; 
+                    $editor->acl_object_name = 'list_agent'; 
+                    $editor->agent_id = $pos; 
+                    $editor->run(); 
+                }
 		else if($param=='h') {
 			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
 			
 			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
 			if($ares->num_rows) {
 				$agent_info = $ares->fetch_assoc();				
-				$tmpl->addBreadcrumb($agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
+				$tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
 				$tmpl->addBreadcrumb('История правок', '');
 			}
 			else throw new NotFoundException('Агент не найден');
+                        
+                        /*
 			$tmpl->addContent("<table width='100%' class='list'>
 			<tr><th>id<th>Действие<th>Описание<th>Дата<th>Пользователь<th>IP");
 			$res = $db->query("SELECT `doc_log`.`id`, `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
@@ -330,7 +342,29 @@ class doc_s_Agent {
 			while($nxt = $res->fetch_row())
 				$tmpl->addContent('<tr><td>'.$nxt[0].'</td><td>'.html_out($nxt[1]).'</td><td>'.html_out($nxt[2]).'</td><td>'.html_out($nxt[3]).'</td><td>'.html_out($nxt[4]).'</td><td>'.html_out($nxt[5]).'</td></tr>');
 			$tmpl->addContent("</table>");
+                         * 
+                         */
+                        $logview = new \LogView();
+                        $logview->setObject('agent');
+                        $logview->setObjectId($pos);
+                        $logview->showLog();
 		}
+                // Банковские реквизиты
+                elseif($param=='b') {
+                    $ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
+                    if($ares->num_rows) {
+                            $agent_info = $ares->fetch_assoc();				
+                            $tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '/docs.php?l=agent&mode=srv&opt=ep&pos='.$pos);
+                    }
+                    else throw new NotFoundException('Агент не найден');
+                    $editor = new \ListEditors\agentBankEditor($db);
+                    $editor->line_var_name = 'leid';
+                    $editor->opt_var_name = 'leopt';
+                    $editor->link_prefix = '/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=b&amp;pos='.$pos;
+                    $editor->acl_object_name = 'list_agent';
+                    $editor->agent_id = $pos;
+                    $editor->run();
+                }
 		// Правка описания группы
 		else if($param=='g') {
 			$res = $db->query("SELECT `id`, `name`, `desc`, `pid` FROM `doc_agent_group` WHERE `id`='$group'");
@@ -365,7 +399,7 @@ class doc_s_Agent {
 		$param = request('param');
 		$group = rcvint('g');
 		$tmpl->setTitle("Правка агента");
-		if($param=='') {
+		if($param=='' || $param=='v') {
 			$ag_info = $db->selectRowA('doc_agent', $pos, $this->agent_vars);
 			unset($ag_info['id']);
 			if(!$ag_info['p_agent'])	$ag_info['p_agent']='NULL';
@@ -382,8 +416,6 @@ class doc_s_Agent {
 			settype($ag_info['dishonest'],'int');
 			settype($new_agent_info['group'],'int');
 			settype($new_agent_info['dishonest'],'int');
-			settype($ag_info['no_mail'],'int');
-			settype($new_agent_info['no_mail'],'int');
 			settype($ag_info['no_retail_prices'],'int');
 			settype($new_agent_info['no_retail_prices'],'int');
 			settype($ag_info['no_bulk_prices'],'int');
@@ -407,8 +439,8 @@ class doc_s_Agent {
 
 			$log_text = getCompareStr($ag_info, $new_agent_info);
 			
-			if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $new_agent_info['email'])) && ($new_agent_info['email']!='') )
-				throw new Exception("Неверный e-mail!");
+			//if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $new_agent_info['email'])) && ($new_agent_info['email']!='') )
+			//	throw new Exception("Неверный e-mail!");
 			if($pos) {
 				if(!isAccess('list_agent','edit'))	throw new AccessException();
 				$log_start='UPDATE';				
@@ -503,64 +535,76 @@ class doc_s_Agent {
 	}
 	
 	/// Отобразить список агентов из заданной группы
-	function ViewList($group=0) {
-		global $tmpl, $db;
+    function ViewList($group = 0) {
+        global $tmpl, $db;
 
-		if(isset($_REQUEST['resp']))
-			$this->ViewListRespFiltered(request('resp'));
-		else {
-			if($group) {
-				$desc_data = $db->selectRow('doc_agent_group', $group);
-				if($desc_data['desc']) $tmpl->addContent('<p>'.html_out($desc_data['desc']).'</p>');
-			}
+        if (isset($_REQUEST['resp'])) {
+            $this->ViewListRespFiltered(request('resp'));
+        } else {
+            if ($group) {
+                $desc_data = $db->selectRow('doc_agent_group', $group);
+                if ($desc_data['desc']) {
+                    $tmpl->addContent('<p>' . html_out($desc_data['desc']) . '</p>');
+                }
+            }
 
-			$sql = "SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`, `doc_agent`.`fax_phone`, `doc_agent`.`sms_phone`, `doc_agent`.`alt_phone`
-			FROM `doc_agent`
-			LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
-			WHERE `doc_agent`.`group`='$group'
-			ORDER BY `doc_agent`.`name`";
+            $sql = "SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`type`, `doc_agent`.`fullname`,
+                `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`, `phones`.`value` AS `phone`
+                , `emails`.`value` AS `email`
+                FROM `doc_agent`
+                LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
+                LEFT JOIN `agent_contacts` AS `phones` ON `doc_agent`.`id`=`phones`.`agent_id` AND `phones`.`type`='phone'
+                LEFT JOIN `agent_contacts` AS `emails` ON `doc_agent`.`id`=`emails`.`agent_id` AND `emails`.`type`='email'
+                WHERE `doc_agent`.`group`='$group'
+                ORDER BY `doc_agent`.`name`";
 
-			$lim=150;
-			$page = rcvint('p');
-			$res = $db->query($sql);
-			$row = $res->num_rows;
-			if($row>$lim) {
-				$dop="g=$group";
-				if($page<1) $page=1;
-				if($page>1) {
-					$i=$page-1;
-					$tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&lt;&lt;</a> ");
-				}
-				$cp=$row/$lim;
-				for($i=1;$i<($cp+1);$i++) {
-					if($i==$page) $tmpl->addContent(" <b>$i</b> ");
-					else $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">$i</a> ");
-				}
-				if($page<$cp) {
-					$i=$page+1;
-					$tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&gt;&gt;</a> ");
-				}
-				$tmpl->addContent("<br>");
-				$sl=($page-1)*$lim;
+            $lim = 150;
+            $page = rcvint('p');
+            $res = $db->query($sql);
+            $row = $res->num_rows;
+            if ($row > $lim) {
+                $dop = "g=$group";
+                if ($page < 1) {
+                    $page = 1;
+                }
+                if ($page > 1) {
+                    $i = $page - 1;
+                    $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&lt;&lt;</a> ");
+                }
+                $cp = $row / $lim;
+                for ($i = 1; $i < ($cp + 1); $i++) {
+                    if ($i == $page) {
+                        $tmpl->addContent(" <b>$i</b> ");
+                    } else {
+                        $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">$i</a> ");
+                    }
+                }
+                if ($page < $cp) {
+                    $i = $page + 1;
+                    $tmpl->addContent("<a href='' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&$dop&p=$i','list'); return false;\">&gt;&gt;</a> ");
+                }
+                $tmpl->addContent("<br>");
+                $sl = ($page - 1) * $lim;
 
-				$res->data_seek($sl);
-			}
+                $res->data_seek($sl);
+            }
 
-			if($row) {
-				$tmpl->addContent("<table class='list' width='100%' cellspacing='1' cellpadding='2'>
+            if ($row) {
+                $tmpl->addContent("<table class='list' width='100%' cellspacing='1' cellpadding='2'>
 				<tr><th>№</th><th>Название</th><th>Телефон</th><th>e-mail</th><th>Дополнительно</th><th>Отв.менеджер</th></tr>");
-				$this->DrawTable($res, '', $lim);
-				$tmpl->addContent("</table>");
-			}
-			else $tmpl->msg("В выбранной группе записей не найдено!");
-			$tmpl->addContent("
-			<a href='/docs.php?l=agent&mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
-			<a href='/docs.php?l=agent&mode=edit&param=g&g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
-			<a href='/docs.php?l=agent&mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
-		}
-	}
+                $this->DrawTable($res, '', $lim);
+                $tmpl->addContent("</table>");
+            } else {
+                $tmpl->msg("В выбранной группе записей не найдено!");
+            }
+            $tmpl->addContent("
+                <a href='/docs.php?l=agent&mode=srv&opt=ep&pos=0&g=$group'><img src='/img/i_add.png' alt=''> Добавить</a> |
+                <a href='/docs.php?l=agent&mode=edit&param=g&g=$group'><img src='/img/i_edit.png' alt=''> Правка группы</a> |
+                <a href='/docs.php?l=agent&mode=search'><img src='/img/i_find.png' alt=''> Расширенный поиск</a>");
+        }
+    }
 
-	/// Отобразить список агентов, отфильторванный по заданной строке
+    /// Отобразить список агентов, отфильторванный по заданной строке
 	function ViewListS($s='') {
 		global $tmpl, $db;
                 $sf = 0;
@@ -695,47 +739,59 @@ class doc_s_Agent {
 		}
 	}
 
-	/// Отобразить строки таблицы агентов
-	/// @param res		Объект mysqli_result, возвращенный запросом списка агентов
-	/// @param s		Строка поиска. Будет подсвечена в данных
-	/// @param limit	Ограничение на количество выводимых строк
-	function DrawTable($res, $s, $limit=1000) {
-		global $tmpl;
-		$c=0;
-		while($nxt = $res->fetch_array()) {
-			$name = SearchHilight( html_out($nxt['name']), $s);
-			if($nxt['type'])$info = $nxt['pfio'];
-			else		$info = $nxt['fullname'];
-			$info = SearchHilight( html_out($info), $s);
-			$red = $nxt['dishonest']?"style='color: #f00;'":'';
-			if($nxt['email'])	$email="<a href='mailto:".html_out($nxt['email'])."'>".html_out($nxt['email'])."</a>";
-			else			$email='';
-			$phone_info='';
-			if($nxt['tel'])						$phone_info.='тел. '.formatPhoneNumber($nxt['tel']).' ';
-			if($nxt['fax_phone']&& $nxt['fax_phone']!=$nxt['tel'])	$phone_info.='факс '.formatPhoneNumber($nxt['fax_phone']).' ';
-			if($nxt['sms_phone']&& $nxt['sms_phone']!=$nxt['tel'])	$phone_info.='sms: '.formatPhoneNumber($nxt['sms_phone']).' ';
-			if($nxt['alt_phone']&& $nxt['alt_phone']!=$nxt['tel'])	$phone_info.='доп: '.formatPhoneNumber($nxt['alt_phone']).' ';
-			$tmpl->addContent("<tr class='pointer' align='right' $red oncontextmenu=\"ShowAgentContextMenu(event,$nxt[0]); return false;\">
+    /// Отобразить строки таблицы агентов
+    /// @param res		Объект mysqli_result, возвращенный запросом списка агентов
+    /// @param s		Строка поиска. Будет подсвечена в данных
+    /// @param limit	Ограничение на количество выводимых строк
+    function DrawTable($res, $s, $limit = 1000) {
+        global $tmpl;
+        $c = 0;
+        while ($nxt = $res->fetch_array()) {
+            $name = SearchHilight(html_out($nxt['name']), $s);
+            if ($nxt['type']) {
+                $info = $nxt['pfio'];
+            } else {
+                $info = $nxt['fullname'];
+            }
+            $info = SearchHilight(html_out($info), $s);
+            $red = $nxt['dishonest'] ? "style='color: #f00;'" : '';
+            if ($nxt['email']) {
+                $email = "<a href='mailto:" . html_out($nxt['email']) . "'>" . html_out($nxt['email']) . "</a>";
+            } else {
+                $email = '';
+            }
+            $phone_info = '';
+            if ($nxt['phone']) {
+                $phone_info.='тел. ' . formatPhoneNumber($nxt['phone']) . ' ';
+            }
+            /*            if ($nxt['fax_phone'] && $nxt['fax_phone'] != $nxt['phone'])
+                $phone_info.='факс ' . formatPhoneNumber($nxt['fax_phone']) . ' ';
+            if ($nxt['sms_phone'] && $nxt['sms_phone'] != $nxt['phone'])
+                $phone_info.='sms: ' . formatPhoneNumber($nxt['sms_phone']) . ' ';
+            if ($nxt['alt_phone'] && $nxt['alt_phone'] != $nxt['phone'])
+                $phone_info.='доп: ' . formatPhoneNumber($nxt['alt_phone']) . ' ';*/
+            $tmpl->addContent("<tr class='pointer' align='right' $red oncontextmenu=\"ShowAgentContextMenu(event,$nxt[0]); return false;\">
 			<td><a href='/docs.php?l=agent&mode=srv&opt=ep&pos=$nxt[0]'>$nxt[0]</a>
 			<a href='' onclick=\"ShowAgentContextMenu(event,$nxt[0]); return false;\" title='Меню' accesskey=\"S\"><img src='img/i_menu.png' alt='Меню' border='0'></a></td>
-			<td align='left'>$name<td>$phone_info</td><td>$email</td><td>$info</td><td>".html_out($nxt['responsible_name'])."</td></tr>");
-			if( $c++ >= $limit)				break;
-		}
-	}
-	
-	/// Меню наименования (закладки)
-	function PosMenu($pos, $param) {
-		global $tmpl;
-		$sel = array('v' => '', 'h' => '');
-		if ($param == '')
-			$param = 'v';
-		$sel[$param] = "class='selected'";
+			<td align='left'>$name<td>$phone_info</td><td>$email</td><td>$info</td><td>" . html_out($nxt['responsible_name']) . "</td></tr>");
+            if ($c++ >= $limit)
+                break;
+        }
+    }
 
-		$tmpl->addContent("<ul class='tabs'>
-		<li><a {$sel['v']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;pos=$pos'>Основные</a></li>
-		<li><a {$sel['h']} href='/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=h&amp;pos=$pos'>История</a></li>
-
-		</ul>");
-	}
-
+    /// Меню элемента (закладки)
+    function PosMenu($pos, $param) {
+        global $tmpl;
+        $items = array('v' => 'Основные', 'c' => 'Контакты', 'b' => 'Банковские реквизиты', 'h' => 'История');
+        if ($param == '') {
+            $param = 'v';
+        }
+        $link = "/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;pos=$pos";
+        $tmpl->addContent("<ul class='tabs'>");
+        foreach($items as $id => $name) {
+            $sel = $param==$id?" class='selected'":'';
+            $tmpl->addContent("<li><a href='{$link}&amp;param={$id}'{$sel}>$name</a></li>");
+        }
+        $tmpl->addContent("</ul>");
+    }
 }

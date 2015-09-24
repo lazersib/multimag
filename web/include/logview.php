@@ -106,7 +106,7 @@ class LogView {
             }
             
             list($action, $desc) = $this->parseAction($nxt[0], $nxt[1]);
-            
+            $nxt[2] = str_replace(' ', '&nbsp;', $nxt[2]);
             $tmpl->addContent("<tr><td>$action<td>$desc<td>$nxt[2]<td><div class='iblock' style='background-color: #{$users_ib[$nxt[5]]}'>&nbsp;</div> $nxt[3]<td>$nxt[4]");
         }
         $tmpl->addContent("</table>");

@@ -34,7 +34,7 @@ class contract extends \doc\printforms\iPrintFormPdf {
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         
-        $agent_info = $db->selectRow('doc_agent', $doc_data['agent']);
+        $agent = new \models\agent($doc_data['agent']);
         $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
         $bank_info = $res->fetch_assoc();
 
@@ -42,9 +42,9 @@ class contract extends \doc\printforms\iPrintFormPdf {
 
         $wikiparser->AddVariable('DOCNUM', $doc_data['altnum']);
         $wikiparser->AddVariable('DOCDATE', date("d.m.Y", $doc_data['date']));
-        $wikiparser->AddVariable('AGENT', $agent_info['fullname']);
+        $wikiparser->AddVariable('AGENT', $agent->fullname);
         $wikiparser->AddVariable('AGENTDOL', 'директора');
-        $wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
+        $wikiparser->AddVariable('AGENTFIO', $agent->dir_fio_r);
         $wikiparser->AddVariable('FIRMNAME', $firm_vars['firm_name']);
         $wikiparser->AddVariable('FIRMDIRECTOR', @$firm_vars['firm_director_r']);
         $wikiparser->AddVariable('ENDDATE', $dop_data['end_date']);
@@ -67,7 +67,8 @@ class contract extends \doc\printforms\iPrintFormPdf {
         $this->pdf->Ln(7);
         $this->pdf->SetFont('', '', 8);
 
-        $str = @"{$agent_info['fullname']}\nАдрес: {$agent_info['adres']}\nТелефон: {$agent_info['tel']}\nИНН:{$agent_info['inn']}, КПП:{$agent_info['kpp']}, ОКПО:{$agent_info['okpo']}, ОКВЭД:{$agent_info['okved']}\nР/С:{$agent_info['rs']} в банке {$agent_info['bank']}, БИК:{$agent_info['bik']}, К/С:{$agent_info['ks']}\n_______________________ / ______________________ /\n\n      М.П.";
+        $str = @"{$agent->fullname}\nАдрес: {$agent->adres}\nТелефон: ".$agent->getPhone()."\nИНН:{$agent->inn}, КПП:{$agent->kpp}, ОКПО:{$agent->okpo},"
+        . " ОКВЭД:{$agent->okved}\nР/С:{$agent->rs} в банке {$agent->bank}, БИК:{$agent->bik}, К/С:{$agent->ks}\n_______________________ / ______________________ /\n\n      М.П.";
         $str = iconv('UTF-8', 'windows-1251', $str);
 
         $y = $this->pdf->GetY();

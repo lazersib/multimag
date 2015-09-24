@@ -436,7 +436,7 @@ class DocPosEditor extends PosEditor {
                 $line['cnt'] = 1;
             }
             if (!$line['cost']) {
-                $line['cost'] = $line['scost'];
+                $line['cost'] = $line['sprice'];
             }
             $line['cost'] = sprintf("%0.2f", $line['sprice']);
             if (!$this->npv) {

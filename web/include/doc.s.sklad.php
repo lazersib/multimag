@@ -803,17 +803,11 @@ class doc_s_Sklad {
 		}
 		// История изменений
 		else if ($param == 'h') {
-			$res = $db->query("SELECT `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
-			FROM `doc_log`
-			LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
-			WHERE `doc_log`.`object`='pos' AND `doc_log`.`object_id`='$pos'
-				ORDER BY `doc_log`.`time` DESC");
-			$tmpl->addContent("<h1>История наименования $pos</h1>
-			<table width='100%' class='list'>
-			<tr><th>Выполненное действие</th><th>Описание действия</th><th>Дата</th><th>Пользователь</th><th>IP</th></tr>");
-			while ($nxt = $res->fetch_row())
-				$tmpl->addContent('<tr><td>'.html_out($nxt[0]).'</td><td>'.html_out($nxt[1]).'</td><td>'.html_out($nxt[2]).'</td><td>'.html_out($nxt[3]).'</td><td>'.html_out($nxt[4]).'</td></tr>');
-			$tmpl->addContent("</table>");
+                        $tmpl->addContent("<h1>История наименования $pos</h1>");
+			$logview = new \LogView();
+                        $logview->setObject('pos');
+                        $logview->setObjectId($pos);
+                        $logview->showLog();
 		}
 		// Правка описания группы
 		else if ($param == 'g') {

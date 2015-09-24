@@ -32,6 +32,121 @@ function common_autoload($class_name) {
 
 spl_autoload_register('common_autoload');
 
+// ==================================== Рассылка ===================================================
+
+/// Получить список адресов email для рассылки
+function getSubscribersEmailList() {
+    global $db;
+    $list = array();
+    
+    $res = $db->query("SELECT `name`, `reg_email` AS `email`, `real_name`"
+        . " FROM `users`"
+        . " WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `reg_email`!=''");
+    while($line = $res->fetch_assoc()) {
+        if($line['real_name']) {
+            $line['name'] = $line['real_name'];
+        }
+        unset($line['real_name']);
+        $list[] = $line;
+    }
+    $res = $db->query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `agent_contacts`.`value` AS `email`"
+        . " FROM `agent_contacts`"
+        . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`agent_contacts`.`agent_id`"
+        . " WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `reg_email`!=''");
+    while($line = $res->fetch_assoc()) {
+        if($line['fullname']) {
+            $line['name'] = $line['fullname'];
+            if($line['pfio']) {
+                $line['name'] = $line['pfio'].' ('.$line['name'].')';
+            }
+        } elseif($line['pfio']) {
+            $line['name'] = $line['pfio'];
+        }
+        unset($line['real_name']);
+        $list[] = $line;
+    }
+    return $list;        
+}
+
+
+/// @brief Выполнение рассылки сообщения на электронную почту по базе агентов и зарегистрированных пользователей.
+///
+/// В текст рассылки автоматически добавляется информация о том, как отказаться от рассылки
+/// @param $title Заголовок сообщения
+/// @param $subject Тема email сообщения
+/// @param $msg Тело сообщения
+/// @param $list_id ID рассылки
+function SendSubscribe($title, $subject, $msg, $list_id = '') {
+    global $CONFIG, $db;
+    if (!$list_id) {
+        $list_id = md5($subject . $msg . microtime()) . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
+    }
+    require_once($CONFIG['location'] . '/common/email_message.php');
+    $res = $db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
+    list($firm_name) = $res->fetch_row();
+    $list = getSubscribersEmailList();
+    foreach ($list as $subscriber) {
+        $txt = "
+Здравствуйте, {$subscriber['name']}!
+
+$title
+------------------------------------------
+
+$msg
+
+------------------------------------------
+
+Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']}?from=email ), либо являетесь клиентом $firm_name.
+Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$subscriber['email']}&from=email
+";
+        $email_message = new email_message_class();
+        $email_message->default_charset = "UTF-8";
+        $email_message->SetEncodedEmailHeader("To", $subscriber['email'], $subscriber['name']);
+        $email_message->SetEncodedHeader("Subject", $subject . " - {$CONFIG['site']['name']}");
+        $email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], $CONFIG['site']['display_name']);
+        $email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
+        $email_message->SetHeader("List-id", '<' . $list_id . '>');
+        $email_message->SetHeader("List-Unsubscribe", "http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$subscriber['email']}&from=list_unsubscribe");
+        $email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
+
+        $email_message->AddQuotedPrintableTextPart($txt);
+        $error = $email_message->Send();
+
+        if (strcmp($error, "")) {
+            throw new Exception($error);
+        }
+    }
+}
+
+/// Отправляет оповещение администратору сайта по всем доступным каналам связи
+/// @param $text Тело сообщения
+/// @param $subject Тема сообщения
+function sendAdmMessage($text, $subject = '') {
+    global $CONFIG, $tmpl;
+    if ($subject == '') {
+        $subject = "Admin mail from {$CONFIG['site']}";
+    }
+
+    if ($CONFIG['site']['doc_adm_email']) {
+        mailto($CONFIG['site']['doc_adm_email'], $subject, $text);
+    }
+
+    if ($CONFIG['site']['doc_adm_jid'] && $CONFIG['xmpp']['host']) {
+        try {
+            require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
+            $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
+            $xmppclient->connect();
+            $xmppclient->processUntil('session_start');
+            $xmppclient->presence();
+            $xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
+            $xmppclient->disconnect();
+        } catch (XMPPHP_Exception $e) {
+            writeLogException($e);
+            $tmpl->errorMessage("Невозможно отправить сообщение по XMPP!");
+        }
+    }
+}
+
 /// Отправить сообщение по электронной почте
 /// @param email Адрес получателя
 /// @param subject Тема сообщения

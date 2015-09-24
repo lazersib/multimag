@@ -17,6 +17,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 /// Документ *договор*
 class doc_Dogovor extends doc_Nulltype {
 
@@ -87,17 +88,20 @@ class doc_Dogovor extends doc_Nulltype {
 
     function DopBody() {
         global $tmpl, $db;
-        if ($this->dop_data['received']) {
+        if ($this->dop_data['received'])
             $tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
-        }
         if ($this->doc_data['comment']) {
-            $agent_info = $db->selectRow('doc_agent', $this->doc_data['agent']);
+            $agent = new \models\agent($this->doc_data['agent']);
+            $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
+            $bank_info = $res->fetch_assoc();
+
             $wikiparser = new WikiParser();
+
             $wikiparser->AddVariable('DOCNUM', $this->doc_data['altnum']);
             $wikiparser->AddVariable('DOCDATE', date("d.m.Y", $this->doc_data['date']));
-            $wikiparser->AddVariable('AGENT', $agent_info['fullname']);
+            $wikiparser->AddVariable('AGENT', $agent->fullname);
             $wikiparser->AddVariable('AGENTDOL', 'директора');
-            $wikiparser->AddVariable('AGENTFIO', $agent_info['dir_fio_r']);
+            $wikiparser->AddVariable('AGENTFIO', $agent->dir_fio_r);
             $wikiparser->AddVariable('FIRMNAME', $this->firm_vars['firm_name']);
             $wikiparser->AddVariable('FIRMDIRECTOR', $this->firm_vars['firm_director_r']);
             $wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
@@ -117,9 +121,8 @@ class doc_Dogovor extends doc_Nulltype {
             $tmpl->ajax = 1;
             $tmpl->addContent("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->id}&amp;tt=16'\">Спецификация</div>");
         } else if ($target_type == 16) {
-            if (!isAccess('doc_specific', 'create')) {
+            if (!isAccess('doc_specific', 'create'))
                 throw new AccessException();
-            }
             $new_doc = new doc_Specific();
             $dd = $new_doc->createFrom($this);
             $this->sentZEvent('morph_specific');

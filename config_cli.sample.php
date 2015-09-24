@@ -69,4 +69,5 @@ $CONFIG['auto']['resp_debt_notify']	= false;// Периодически инфо
 $CONFIG['auto']['update_currency']	= true;	// Периодически обновлять информацию о курсах валют
 $CONFIG['auto']['agent_calc_avgsum']	= true;	// Периодически расчитывать информацию о обороте агентов за период
 $CONFIG['auto']['agent_discount_notify']= true;	// Периодически уведомлять агентов об их накопительных скидках
-
+$CONFIG['auto']['badpricenotify']       = true;	// Периодически уведомлять сотрудников о проблемах с ценами
+$CONFIG['auto']['clear_image_cahe']	= 14;	// Периодически стирать изображения из кеша, через Х дней

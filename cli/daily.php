@@ -17,6 +17,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 // Ежедневный запуск в 0:01 
 $c = explode('/', __FILE__);
 $base_path = '';
@@ -49,10 +50,10 @@ try {
     $tt = time() - 60 * 60 * 24 * 10;
     $db->query("DELETE FROM `counter` WHERE `date` < '$tt'");
 
-    // Очистка от неподтверждённых пользователей
-    if ($CONFIG['auto']['user_del_days'] > 0) {
+    // Очистка кеша изображений
+    if ($CONFIG['auto']['clear_image_cahe'] > 0) {
         if ($verbose) {
-            echo "Очистка кеша...\n";
+            echo "Очистка кеша изображений...\n";
         }
         $action = new Actions\clearCache($CONFIG, $db);
         $action->run();

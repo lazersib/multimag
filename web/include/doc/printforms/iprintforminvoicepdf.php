@@ -41,11 +41,10 @@ abstract class iPrintFormInvoicePdf extends \doc\printforms\iPrintFormPdf {
     
     /// Добавить блок с информацией о поставщике и покупателе для приходной накладной
     protected function addInPartnerInfoBlock() {
-        global $db;
         $doc_data = $this->doc->getDocDataA();
         $firm_vars = $this->doc->getFirmVarsA();
-        $agent_data = $db->selectRow('doc_agent', $doc_data['agent']);
-        $text = "Поставщик: {$agent_data['fullname']}, телефон: {$agent_data['tel']}";
+        $agent = new \models\agent($doc_data['agent']);
+        $text = "Поставщик: {$agent->fullname}, телефон: ".$agent->getPhone();
         $this->addInfoLine($text);
         $text = "Покупатель: {$firm_vars['firm_name']}, телефон: {$firm_vars['firm_telefon']}";
         $this->addInfoLine($text);
@@ -54,13 +53,12 @@ abstract class iPrintFormInvoicePdf extends \doc\printforms\iPrintFormPdf {
     
     /// Добавить блок с информацией о поставщике и покупателе для расходной накладной
     protected function addOutPartnerInfoBlock() {
-        global $db;
         $doc_data = $this->doc->getDocDataA();
         $firm_vars = $this->doc->getFirmVarsA();
-        $agent_data = $db->selectRow('doc_agent', $doc_data['agent']);
+        $agent = new \models\agent($doc_data['agent']);
         $text = "Поставщик: {$firm_vars['firm_name']}, телефон: {$firm_vars['firm_telefon']}";
-        $this->addInfoLine($text);        
-        @$text = "Покупатель: {$agent_data['fullname']}, телефон: {$agent_data['tel']}";
+        $this->addInfoLine($text);                
+        $text = "Покупатель: {$agent->fullname}, телефон: ".$agent->getPhone();
         $this->addInfoLine($text);
         $this->pdf->Ln(3);
     }

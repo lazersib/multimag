@@ -36,5 +36,4 @@ class UserFree extends \Action {
             $this->db->query("DELETE FROM `users` WHERE `id`=$nxt[0]");
         }
     }
-
 }
