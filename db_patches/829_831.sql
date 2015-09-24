@@ -1,3 +1,4 @@
+
 CREATE TABLE IF NOT EXISTS `asterisk_queue_log` (
 `id` int(10) unsigned NOT NULL,
   `time` datetime DEFAULT NULL,
@@ -46,8 +47,6 @@ ALTER TABLE `asterisk_cdr`
 ALTER TABLE `asterisk_cdr`
 MODIFY `id` int(9) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
 
-
-
 CREATE TABLE IF NOT EXISTS `agent_banks` (
 `id` int(11) NOT NULL,
   `agent_id` int(11) NOT NULL,
@@ -65,10 +64,6 @@ MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=7;
 
 ALTER TABLE `agent_banks`
 ADD CONSTRAINT `agent_banks_ibfk_1` FOREIGN KEY (`agent_id`) REFERENCES `doc_agent` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
-
-
-
 
 CREATE TABLE IF NOT EXISTS `agent_contacts` (
   `id` int(11) NOT NULL,
@@ -113,3 +108,5 @@ INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`)
 INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`, `no_ads`) 
 	SELECT `id`, 'work', 'email',`email`, `no_mail` FROM `doc_agent` WHERE `email`!='';
 
+TRUNCATE `db_version`;
+INSERT INTO `db_version` (`version`) VALUES (831);
