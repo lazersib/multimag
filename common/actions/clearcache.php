@@ -51,7 +51,6 @@ class clearCache extends \Action {
             closedir($o_dir);            
         }
         closedir($s_dir);
-        exit();
     }
 
 }
