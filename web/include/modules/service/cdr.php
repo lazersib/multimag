@@ -22,6 +22,19 @@ namespace modules\service;
 /// Настройка почтовых ящиков и алиасов
 class CDR extends \IModule {
     
+    protected $queue_events = array(
+        'QUEUESTART'=>'Старт очереди',
+        'ENTERQUEUE'=>'Вход в очередь', 
+        'CONNECT'=>'Соединён',
+        'RINGNOANSWER'=>'Нет ответа',
+        'COMPLETECALLER'=>'Завершён вызывающим',
+        'COMPLETEAGENT'=>'Завершён агентом',
+        'ABANDON'=>'Брошен',
+        'TRANSFER'=>'Перевод',
+        'CONFIGRELOAD'=>'Конфиг перезагружен'
+    );
+
+
     public function __construct() {
         parent::__construct();
         $this->acl_object_name = 'service_cdr';
@@ -58,6 +71,7 @@ class CDR extends \IModule {
             return $phone;
         }
     }
+    
     protected function getCDR($db, $filter=null) {
         $data = array();
         $where_sql = ' WHERE 1 ';
@@ -82,6 +96,9 @@ class CDR extends \IModule {
                     case 'disposition':
                         $where_sql .= " AND `disposition` = '".$db->real_escape_string($value)."'";
                         break;
+                    case 'dcontext':
+                        $where_sql .= " AND `dcontext` = '".$db->real_escape_string($value)."'";
+                        break;
                 }
             }
         }
@@ -89,12 +106,80 @@ class CDR extends \IModule {
                 . ", `duration`, `billsec`, `disposition`, `uniqueid`, `ex_queue`.`event` AS `q_event`"
             . " FROM `asterisk_cdr`"
             . " LEFT JOIN `asterisk_queue_log` AS `ex_queue` ON `ex_queue`.`callid`=`asterisk_cdr`.`uniqueid`"
-            . " AND (`ex_queue`.`event`='ABANDON' OR `ex_queue`.`event`='COMPLETECALLER' OR `ex_queue`.`event`='COMPLETEAGENT')"
+            . " AND (`ex_queue`.`event`='ABANDON' OR `ex_queue`.`event`='COMPLETECALLER' OR `ex_queue`.`event`='COMPLETEAGENT' OR `ex_queue`.`event`='TRANSFER')"
             . $where_sql
             . " ORDER BY `calldate` DESC"
-            . " LIMIT 500");
+            . " LIMIT 150000");
         while ($line = $res->fetch_assoc()) {
             $data[] = $line;
+        }
+        return $data;
+    }
+    
+    protected function getCDRContextList() {
+        global $db;
+        $res = $db->query("SELECT `dcontext`"
+            . " FROM `asterisk_cdr`"
+            . " GROUP BY `dcontext`"
+            . " ORDER BY `dcontext` ASC"
+            . " LIMIT 150000");
+        while ($line = $res->fetch_assoc()) {
+            $data[] = $line['dcontext'];
+        }
+        return $data;
+    }
+    
+    protected function getQueue($filter=null, $page=1) {
+        global $db;
+        $data = array();
+        $where_sql = ' WHERE 1 ';
+        if(is_array($filter)) {
+            foreach ($filter as $id => $value) {
+                if(!$value) {
+                    continue;
+                }
+                switch ($id) {
+                    case 'date_from':
+                        $where_sql .= " AND `time`>='".$db->real_escape_string($value)."'";
+                        break;
+                    case 'date_to':
+                        $where_sql .= " AND `time`<='".$db->real_escape_string($value)."'";
+                        break;
+                    case 'callid':
+                        $where_sql .= " AND `callid` = '".$db->real_escape_string($value)."'";
+                        break;
+                    case 'queuename':
+                        $where_sql .= " AND `queuename` LIKE '".$db->real_escape_string($value)."'";
+                        break;
+                    case 'agent':
+                        $where_sql .= " AND `agent` = '".$db->real_escape_string($value)."'";
+                        break;
+                    case 'event':
+                        $where_sql .= " AND `event` = '".$db->real_escape_string($value)."'";
+                        break;
+                }
+            }
+        }
+        $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `id`, `time`, `callid`, `queuename`, `agent`, `event`, `data1`, `data2`, `data3`, `data4`, `data5`"
+            . " FROM `asterisk_queue_log`"
+            . $where_sql
+            . " ORDER BY `time` ASC"
+            . " LIMIT 150000");
+        while ($line = $res->fetch_assoc()) {
+            $data[] = $line;
+        }
+        return $data;
+    }
+    
+    protected function getQueueEvents() {
+        global $db;
+        $res = $db->query("SELECT `event`"
+            . " FROM `asterisk_queue_log`"
+            . " GROUP BY `event`"
+            . " ORDER BY `event` ASC"
+            . " LIMIT 150000");
+        while ($line = $res->fetch_assoc()) {
+            $data[] = $line['event'];
         }
         return $data;
     }
@@ -166,15 +251,24 @@ class CDR extends \IModule {
 
     protected function renderCDR() {
         global $tmpl, $db, $CONFIG;
-        $filter = requestA(array('date_from', 'date_to', 'src', 'dst', 'context'));
-                
+        $filter = requestA(array('date_from', 'date_to', 'src', 'dst', 'dcontext'));
+        if(!$filter['date_from']) {
+            $filter['date_from'] = date("Y-m-d");
+        }
+        $contexts = $this->getCDRContextList();
+        $context_options = "<option value=''>--не задан--</option>";
+        foreach($contexts as $context) {
+            $sel = $filter['dcontext']==$context?' selected':'';
+            $context_options .= "<option value='$context'{$sel}>$context</option>";
+        }
         $tmpl->addBreadcrumb('Детализация вызовов', '');
         $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='post'>"
                 . "<table>"
                 . "<tr><td>Дата от:</td><td><input type='text' name='date_from' value='{$filter['date_from']}'></td>"
                 . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
                 . "<td>Номер-источник</td><td><input type='text' name='src' value='{$filter['src']}'></td>"
-                . "<td>Номер-цель</td><td><input type='text' name='dst' value='{$filter['dst']}'></td></tr>"
+                . "<td>Номер-цель</td><td><input type='text' name='dst' value='{$filter['dst']}'></td>"
+                . "<td>Контекст</td><td><select name='dcontext'>$context_options</select></td></tr>"
                 . "</table>"
                 . "<button type='submit'>Отфильтровать</button>"
                 . "</form>");
@@ -221,6 +315,9 @@ class CDR extends \IModule {
                     break;
                 default:
                     $queue_stat = $line['q_event'];
+            }
+            if($queue_stat) {
+                $queue_stat = "<a href='" . $this->link_prefix . "&amp;sect=queue&callid=".html_out($line['uniqueid'])."'>{$queue_stat}</a>";
             }
             
             switch($line['disposition']) {
@@ -270,25 +367,159 @@ class CDR extends \IModule {
             . "");
     }
     
-    protected function renderSummary() {
-        global $tmpl, $db;
-        $tmpl->addBreadcrumb('Карта почтовых алиасов', '');
-        $tmpl->addContent("<table class='list'>"
-            . "<tr><th>Алиас</th><th>Ящик</th>");
-        $map = $this->calcAMap($db);
-        foreach ($map as $email=>$users) {
-            $span = count($users);
-            $tmpl->addContent("<tr><td rowspan='$span'>".html_out($email)."</td>");
-            $fl = 1;
-            foreach($users as $user) {
-                if(!$fl) {
-                    $tmpl->addContent("<tr>");
-                    $fl = 0;
-                }
-                $tmpl->addContent("<td>".html_out($user)."</td></tr>");
+    protected function renderQueue() {
+        global $tmpl, $db, $CONFIG;
+        $filter = requestA(array('date_from', 'date_to', 'callid', 'queuename', 'agent', 'event'));
+        if(!$filter['date_from']) {
+            $filter['date_from'] = date("Y-m-d");
+        }
+        $event_options = "<option value=''>--не задано--</option>";
+        $events = $this->getQueueEvents();
+        foreach($events as $event) {
+            $sel = $filter['event']==$event?' selected':'';
+            if(isset($this->queue_events[$event])) {
+                $event_options .= "<option value='$event'{$sel}>{$this->queue_events[$event]}</option>";
+            } else {
+                $event_options .= "<option value='$event'{$sel}>$event</option>";
             }
         }
         
+        $tmpl->addBreadcrumb('Журнал очереди приёма вызовов', '');
+        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=queue' method='post'>"
+                . "<table>"
+                . "<tr><td>Дата от:</td><td><input type='text' name='date_from' value='{$filter['date_from']}'></td>"
+                . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
+                . "<td>ID вызова</td><td><input type='text' name='callid' value='{$filter['callid']}'></td>"
+                . "<td>Имя очереди</td><td><input type='text' name='queuename' value='{$filter['queuename']}'></td>"
+                . "<td>Событие</td><td><select name='event'>$event_options</select></td></tr>"
+                . "</table>"
+                . "<button type='submit'>Отфильтровать</button>"
+                . "</form>");
+        $tmpl->addContent("<table class='list' width='100%'>"
+            . "<tr><th>Дата</th><th>Очередь</th><th>Событие</th><th>Агент</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>ID</th></tr>");
+        $data = $this->getQueue($filter);
+        $this->ap = $this->getAgentPhonesInverse($db);
+        $this->wp = $this->getWorkerPhonesInverse($db);
+        $this->up = $this->getUserPhonesInverse($db);
+        $agents_ldo = new \Models\LDO\agentnames();
+        $this->agents = $agents_ldo->getData();
+        $users_ldo = new \Models\LDO\usernames();
+        $this->users = $users_ldo->getData();
+                        
+        foreach ($data as $line_id=>$line) {
+            $agent_cell = html_out($line['agent']);
+            
+            if(strpos($line['agent'], 'SIP/')===0) {
+                $num = substr($line['agent'], 4);
+                $link = $this->getObjectLinkForPhone($num);
+                if($link) {
+                    $agent_cell .= ' / '.$link;
+                }
+            }
+                
+            if(isset($this->queue_events[$line['event']])) {
+                $event = $this->queue_events[$line['event']];
+            } else {
+                $event = $line['event'];
+            }
+            switch($line['event']) {
+                case 'ABANDON':
+                    $line['data1'] = "Конечная позиция: {$line['data1']}";
+                    $line['data2'] = "Стартовая позиция: {$line['data2']}";
+                    $line['data3'] = "Ждал: ".sectostrinterval(intval($line['data3']));
+                    break;
+                case 'COMPLETEAGENT':
+                case 'COMPLETECALLER':
+                    $line['data1'] = "Ждал: ".sectostrinterval(intval($line['data1']));
+                    $line['data2'] = "Длительность звонка: ".sectostrinterval(intval($line['data2']));
+                    $line['data3'] = "Стартовая позиция: {$line['data3']}";
+                    break;
+                case 'CONNECT':
+                    $line['data1'] = "Ждал: ".sectostrinterval(intval($line['data1']));
+                    $line['data2'] = "Канал: {$line['data2']}";
+                    $line['data3'] = "Звонил: ".sectostrinterval(intval($line['data3']));
+                    break;
+                case 'ENTERQUEUE':
+                    $line['data1'] = "URL: {$line['data1']}";
+                    $link = $this->getObjectLinkForPhone($line['data2']);
+                    if($link) {
+                        $line['data2'] .= ' / '.$link;
+                    }
+                    $line['data2'] = "Номер: ".$line['data2'];
+                    break;
+                case 'RINGNOANSWER':
+                    $line['data1'] = "Звонил: ".sectostrinterval(intval($line['data1']/1000)).' '.($line['data1']%1000).' мс.';
+                    break;
+                case 'TRANSFER':
+                    $line['data1'] = "Цель: {$line['data1']}";
+                    $line['data2'] = "Контекст: {$line['data2']}";
+                    $line['data3'] = "Ждал: ".sectostrinterval(intval($line['data3']));
+                    $line['data4'] = "Звонил: ".sectostrinterval(intval($line['data4']));
+                    $line['data5'] = "Стартовая позиция: {$line['data5']}";
+                    break;
+            }
+            
+            $tmpl->addContent("<tr>"               
+                . "<td>".html_out($line['time'])."</td>"
+                . "<td>".html_out($line['queuename'])."</td>"
+                . "<td>".html_out($event)."</td>"
+                . "<td>".$agent_cell."</td>"                
+                . "<td>".html_out($line['data1'])."</td>"
+                . "<td>".$line['data2']."</td>"
+                . "<td>".html_out($line['data3'])."</td>"
+                . "<td>".html_out($line['data4'])."</td>"
+                . "<td>".html_out($line['data5'])."</td>"
+                . "<td>".html_out($line['callid'])."</td>"
+                . "</tr>");           
+        }
+        
+        $tmpl->addContent("</table>");
+    }
+    
+    protected function renderSummary() {
+        global $db, $tmpl;
+        $filter = requestA(array('date_from', 'date_to', 'callid', 'queuename', 'agent', 'event'));
+        if(!$filter['date_from']) {
+            $filter['date_from'] = date("Y-m-01");
+        }
+        $data = $this->getQueue($filter);
+        $events = $this->getQueueEvents();
+        $queues = array();
+        foreach ($data as $event) {
+            if(!isset($queues[$event['queuename']])) {
+                $queues[$event['queuename']] = array('events'=>0);
+                foreach($events as $e) {
+                    $queues[$event['queuename']][$e] = 0;
+                }
+            }
+            $queues[$event['queuename']][$event['event']]++;
+            $queues[$event['queuename']]['events']++;
+        }
+        $tmpl->addBreadcrumb('Сводка очередей вызовов', '');
+        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=queue' method='post'>"
+                . "<table>"
+                . "<tr><td>Дата от:</td><td><input type='text' name='date_from' id='date_from' value='{$filter['date_from']}'></td>"
+                . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
+                . "<td>Имя очереди</td><td><input type='text' name='queuename' value='{$filter['queuename']}'></td>"
+                . "</table>"
+                . "<button type='submit'>Отфильтровать</button>"
+                . "</form>");
+        $tmpl->addContent("<table class='list' width='100%'>"
+            . "<tr><th>Очередь</th><th>Входов</th><th>Брошенных</th><th>Соединений</th><th>Без&nbsp;ответа</th><th>Заверш.агентом</th>"
+                . "<th>Заверш.вызывающим</th><th>Переводов</th><th>Событий</th></tr>");
+        foreach($queues as $qname => $qdata) {
+            $tmpl->addContent("<tr>"               
+                . "<td>".html_out($qname)."</td>"
+                . "<td>".html_out($qdata['ENTERQUEUE'])."</td>"
+                . "<td>".html_out($qdata['ABANDON'])."</td>"
+                . "<td>".html_out($qdata['CONNECT'])."</td>"
+                . "<td>".html_out($qdata['RINGNOANSWER'])."</td>"
+                . "<td>".html_out($qdata['COMPLETEAGENT'])."</td>"
+                . "<td>".html_out($qdata['COMPLETECALLER'])."</td>"
+                . "<td>".html_out($qdata['TRANSFER'])."</td>"
+                . "<td>".html_out($qdata['events'])."</td>"
+                . "</tr>");   
+        }
         $tmpl->addContent("</table>");
     }
     
@@ -314,9 +545,14 @@ class CDR extends \IModule {
                 $tmpl->addBreadcrumb($this->getName(), '');
                 $tmpl->addContent("<p>".$this->getDescription()."</p>"
                     . "<ul>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=queue_summary'>Сводка очередей вызовов</li>"
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=cdr'>Записи детализации вызовов</li>"
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=queue'>Журнал очередей вызовов</li>"
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=queue_summary'>Сводка очередей вызовов (не реализовано)</li>"
+                    
                     . "</ul>");
+                break;
+            case 'queue':
+                $this->renderQueue();
                 break;
             case 'queue_summary':
                 $this->renderSummary();

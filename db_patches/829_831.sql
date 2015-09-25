@@ -108,5 +108,8 @@ INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`)
 INSERT INTO `agent_contacts` (`agent_id`, `context`, `type`, `value`, `no_ads`) 
 	SELECT `id`, 'work', 'email',`email`, `no_mail` FROM `doc_agent` WHERE `email`!='';
 
+INSERT INTO `users_objects` (`id` ,`object` ,`desc` ,`actions`)VALUES (NULL , 'service', 'Служебные функции', '');
+INSERT INTO `users_objects` (`id` ,`object` ,`desc` ,`actions`)VALUES (NULL , 'service_cdr', 'Статистика телефонных вызовов', 'view,edit,delete,write,cancel');
+
 TRUNCATE `db_version`;
 INSERT INTO `db_version` (`version`) VALUES (831);
