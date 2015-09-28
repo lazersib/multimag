@@ -2,6 +2,51 @@
 // После переработки javascript библиотеки все методы перенести сюда
 // В финальной версии убрать зависимость от jquery
 
+function httpReq(url, method, data, successCallback, errorCallback) {    
+    var req;
+    
+    function processRequest(httpRequest) {
+        try {
+            if (httpRequest.readyState == 4) {
+                if (httpRequest.status == 200) {
+                    successCallback(httpRequest.responseText);
+                }
+                else {
+                    errorCallback(httpRequest.status, httpRequest.responseText);
+                }
+            }
+        }
+        catch (e) {
+            errorCallback(e.name, e.message);
+        }
+    }
+    
+    if (window.XMLHttpRequest) {
+        req = new XMLHttpRequest();
+    }
+    if (!req) {
+        return false;
+    }
+    req.timeout = 15000;
+    req.ontimeout = function() {
+        errorCallback('timeout', 'timeout');
+    }
+    req.onreadystatechange = function () {
+        processRequest(req);
+    };
+    if(method=='GET' || method=='get') {
+        req.open('GET', url + '?' + data, true);
+        req.send(null);
+    } else if(method=='POST' || method=='post') {
+        req.open('POST', url, true);
+        req.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+        req.send(data);
+    } else {
+        return false;
+    }
+    return true;
+}
+
 function supports_html5_storage() {
 	try {
 		return 'localStorage' in window && window['localStorage'] !== null;
@@ -10,24 +55,24 @@ function supports_html5_storage() {
 	}
 }
 
-function newElement(tagName, parent, className, innerHTML)	{
-	var element=document.createElement(tagName)
-	element.className=className
-	parent.appendChild(element)
-	if(innerHTML)	element.innerHTML=innerHTML
-		return element
+function newElement(tagName, parent, className, innerHTML) {
+    var element = document.createElement(tagName);
+    element.className = className;
+    parent.appendChild(element);
+    if (innerHTML)
+        element.innerHTML = innerHTML;
+    return element;
 }
 
-function newElementAfter(tagName, target, className, innerHTML)	{
-	var element=document.createElement(tagName)
-	element.className=className
-	if(target.nextSibling)
-	{
-		target.parentNode.insertBefore(element, target.nextSibling)
-	}
-	else target.parentNode.appendChild(element)
-	if(innerHTML)	element.innerHTML=innerHTML
-		return element
+function newElementAfter(tagName, target, className, innerHTML) {
+    var element = document.createElement(tagName);
+    element.className = className;
+    if (target.nextSibling)
+         target.parentNode.insertBefore(element, target.nextSibling);
+    else target.parentNode.appendChild(element);
+    if (innerHTML)
+        element.innerHTML = innerHTML;
+    return element;
 }
 
 // Получение координат элемента на странице

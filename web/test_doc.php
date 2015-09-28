@@ -16,21 +16,25 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-namespace Models\LDO;
 
-/// Класс списка наименований складов
-class skladnames extends \Models\ListDataObject {
+include_once("core.php");
+include_once("include/doc.nulltype.php");
+need_auth();
+SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
-    /// @brief Получить данные
-    public function getData() {
-        global $db;
-        $sql = "SELECT `id`, `name` FROM `doc_sklady` ORDER by `id` ASC";
-        $a = array();
-        $res = $db->query($sql);
-        while ($line = $res->fetch_assoc()) {
-            $a[$line['id']] = $line['name'];
-        }
-        return $a;
-    }
+$tmpl->hideBlock('left');
+doc_menu('');
 
-}
+$tmpl->addTop("
+<script type='text/javascript' src='/js/doceditor.js'></script>
+");
+
+$tmpl->addContent("<div id='doc_container'></div>
+<script type=\"text/javascript\">
+var doc = doceditor('doc_container', 'doc_menu');
+doc.init(84960);
+</script>
+
+");
+
+$tmpl->write();

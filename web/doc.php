@@ -120,8 +120,6 @@ try {
             $altnum = $document->getNextAltNum($type, $sub, $date, $firm);
             $document->setDocData('altnum', $altnum);
         }
-
-
         echo "$altnum";
         exit(0);
     } else if ($mode == 'log') {
