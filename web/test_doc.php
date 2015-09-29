@@ -27,6 +27,8 @@ doc_menu('');
 
 $tmpl->addTop("
 <script type='text/javascript' src='/js/doceditor.js'></script>
+<script type='text/javascript' src='/css/jquery/jquery.js'></script>
+<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
 ");
 
 $tmpl->addContent("<div id='doc_container'></div>

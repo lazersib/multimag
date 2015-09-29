@@ -605,7 +605,7 @@ class doc_Nulltype extends \document {
 					$res = $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->id}','cena','$cena')");
 				if($agent)	$b=agentCalcDebt($agent);
 				else		$b=0;
-				$tmpl->setContent("{response: 'ok', agent_balance: '$b'}");
+				$tmpl->setContent("{\"response\":\"head_save\",\"agent_balance\":\"$b\"}");
 			}
 		}
 		catch( Exception $e)
@@ -1309,6 +1309,7 @@ class doc_Nulltype extends \document {
             $ret['contract_id'] = $this->doc_data['contract'];
             $ret['store_id'] = $this->doc_data['sklad'];
             $ret['cash_id'] = $this->doc_data['kassa'];
+            $ret['bank_id'] = $this->doc_data['bank'];
             $ret['sum'] = $this->doc_data['sum'];
             $ret['comment'] = $this->doc_data['comment'];
             $ret['created'] = $this->doc_data['created'];
@@ -1317,9 +1318,9 @@ class doc_Nulltype extends \document {
             if(isset($CONFIG['site']['default_firm'])) {
                 $ret['default_firm_id'] = $CONFIG['site']['default_firm'];
             }
-            $ret['dop_buttons'] = $this->getDopButtons();
+            //$ret['dop_buttons'] = $this->getDopButtons();
             $firm_ldo = new \Models\LDO\firmnames();
-            $ret['firm_names'] = $firm_ldo->getData();
+            $ret['firm_list'] = $firm_ldo->getData();
             $ret['header_fields'] = explode(' ', $this->header_fields);
             
             if ($this->doc_data['date']) {
@@ -1330,11 +1331,12 @@ class doc_Nulltype extends \document {
             
             if(in_array('agent', $ret['header_fields'])) {
                 $contract_list = array();
-                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_dopdata`.`value` AS `name`
+                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_dopdata`.`value` AS `name`
                     FROM `doc_list`
                     LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
                     WHERE `agent`='{$this->doc_data['agent']}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
                 while ($line = $res->fetch_assoc()) {
+                    $line['date'] = date("Y-m-d", $line['date']);
                     $contract_list[] = $line;
                 }
                 $ret['agent_info'] = array(
@@ -1392,7 +1394,7 @@ class doc_Nulltype extends \document {
 		    $price_list[$line['id']] = $line;
 		}
                 $ret['price_list'] = $price_list;
-                $ret['price'] = $this->dop_data['cena'];
+                $ret['price_id'] = $this->dop_data['cena'];
             }
 
             //if (method_exists($this, 'DopHead'))
@@ -1503,8 +1505,9 @@ class doc_Nulltype extends \document {
                     $data = request('data');
                     $tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
                     break;
-                case 'jrs':         // Сброс цен
-                    $poseditor->resetPrices();
+                case 'jrc':         // Сброс цен
+                    $ret = array('response'=>'reset_prices', 'updated'=>$poseditor->resetPrices());
+                    $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
                     break;
                 case 'jorder':      // Сортировка наименований
                     $by = request('by');

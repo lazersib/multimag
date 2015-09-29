@@ -841,13 +841,14 @@ table.list div.ic {
 	background-color:	#e0f0ff;
 	width:			310px;
 	padding:		5px;
+        padding-left:           10px;
 	font-size:		12px;
 }
 
 #doc_left_block  input[type=text]
 {
 	padding:	1px;
-	margin:		0px;
+	margin:		1px;
 }
 
 #doc_left_block select
@@ -988,6 +989,69 @@ div.clear
 	border:			1px solid #ccc;
 	margin:			4px;
 	padding:		2px;
+}
+
+/* ajax вид документов */
+#doc_left_block h1 {
+    text-align: center;
+    margin: 5px;
+}
+
+#doc_left_block form {
+    margin: 0;
+    padding: 0;
+}
+
+#doc_left_block select {
+    margin: 3px 0;
+    padding: 0;
+    background-color: #fff;
+}
+
+#doc_left_block div.item {
+    margin: 0;
+    padding: 0;
+    padding-bottom: 4px;
+    padding-top: 2px;
+    border-bottom: 1px #ddd dotted;
+}
+
+#doc_left_block input[name=altnum] {
+    width: 50px;
+    margin: 3px 1px;
+}
+
+#doc_left_block input[name=subtype] {
+    width: 40px;
+    margin: 3px 1px;
+}
+
+#doc_left_block input[name=datetime] {
+    width:	150px;
+    margin: 3px 1px;
+    margin-left: 20px;
+}
+
+#dochead_plus_altnum {
+    border:0;
+    margin-right: 5px;
+}
+
+#dochead_dishonest_info {
+    color: #f00;
+    font-weight:bold;
+    display:none;
+}
+
+#dochead_comment {
+    margin: 3px 0;
+    width: 298px;
+    padding: 5px;
+}
+
+#dochead_agent_name {
+    margin: 3px 0px !important; 
+    width: 306px;
 }
 
 /* для autocomplete с кешированием в localstorage */
