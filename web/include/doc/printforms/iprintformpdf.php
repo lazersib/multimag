@@ -204,4 +204,7 @@ abstract class iPrintFormPdf {
     
     /// Сформировать данные печатной формы
     abstract public function make();
+    
+    /// Возвращает имя документа
+    abstract public function getName();
 }

@@ -18,6 +18,8 @@
 namespace ListEditors;
 
 class FirmListEditor extends \ListEditor {
+    
+    protected $types = array(''=>'--???--', 'ip'=>'ИП', 'ooo'=>'ООО', 'pao'=>'ПАО', 'fl'=>'Физ.лицо','alt'=>'Другое');
 
     public function __construct($db_link) {
         parent::__construct($db_link);
@@ -29,8 +31,11 @@ class FirmListEditor extends \ListEditor {
     public function getColumnNames() {
         return array(
             'id' => 'id',
+            'firm_type' => 'Вид',
             'firm_name' => 'Наименование',
             'firm_inn' => 'ИНН',
+            'firm_regnum' => 'Регистрационный номер',
+            'firm_regdate' => 'Дата регистрации',
             'firm_adres' => 'Юридический адрес',
             'firm_realadres' => 'Фактический адрес',
             'firm_gruzootpr' => 'Данные грузоотправителя',
@@ -38,6 +43,7 @@ class FirmListEditor extends \ListEditor {
             'firm_okpo' => 'ОКПО',
             'param_nds' => 'Ставка НДС',
             'firm_director' => 'ФИО директора',
+            'firm_director_r' => 'ФИО директора в родительном падеже',
             'firm_manager' => 'ФИО менеджера',
             'firm_buhgalter' => 'ФИО Бухгалтера',
             'firm_kladovshik' => 'ФИО Кладовщика',
@@ -56,6 +62,24 @@ class FirmListEditor extends \ListEditor {
         } else {
             return '???';
         }
+    }
+    
+    protected function getFieldFirm_type($data) {
+        if(isset($this->types[$data['firm_type']])) {
+            return html_out($this->types[$data['firm_type']]);
+        }
+        return '';
+    }
+
+
+    protected function getInputFirm_Type($name, $value) {
+        $ret = "<select name='$name'>";
+        foreach($this->types as $id => $item_name) {
+            $selected = $id == $value ? ' selected' : '';
+            $ret.= "<option value='{$id}'{$selected}>" . html_out($item_name) . "</option>";
+        }
+        $ret.= "</select>";
+        return $ret;
     }
 
     public function getInputFirm_store_lock($name, $value) {
