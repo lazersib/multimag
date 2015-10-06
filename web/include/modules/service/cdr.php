@@ -65,8 +65,8 @@ class CDR extends \IModule {
             return '+7'.substr($phone,1);
         } elseif(!$phoneplus && $phone[0]==9 && $len==10) {
             return '+7'.$phone; 
-        } elseif(!$phoneplus && $CONFIG['cdr']['local_length']==$len) {
-            return $CONFIG['cdr']['local_perfix'].$phone;
+        } elseif(!$phoneplus && @$CONFIG['cdr']['local_length']==$len) {
+            return @$CONFIG['cdr']['local_perfix'].$phone;
         } else {
             return $phone;
         }
@@ -102,11 +102,13 @@ class CDR extends \IModule {
                 }
             }
         }
-        $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `asterisk_cdr`.`id`, `calldate`, `clid`, `src`, `dst`, `dcontext`, `lastapp`, `lastdata`"
-                . ", `duration`, `billsec`, `disposition`, `uniqueid`, `ex_queue`.`event` AS `q_event`"
+        $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `asterisk_cdr`.`id`, `calldate`, `clid`, `src`, `dst`, `dcontext`, `lastapp`, `lastdata`, `accountcode`"
+                . ", `duration`, `billsec`, `disposition`, `uniqueid`, `ex_queue`.`event` AS `q_event`, `conn_queue`.`agent` AS `q_agent`"
             . " FROM `asterisk_cdr`"
             . " LEFT JOIN `asterisk_queue_log` AS `ex_queue` ON `ex_queue`.`callid`=`asterisk_cdr`.`uniqueid`"
-            . " AND (`ex_queue`.`event`='ABANDON' OR `ex_queue`.`event`='COMPLETECALLER' OR `ex_queue`.`event`='COMPLETEAGENT' OR `ex_queue`.`event`='TRANSFER')"
+                . " AND (`ex_queue`.`event`='ABANDON' OR `ex_queue`.`event`='COMPLETECALLER' OR `ex_queue`.`event`='COMPLETEAGENT' OR `ex_queue`.`event`='TRANSFER')"
+            . " LEFT JOIN `asterisk_queue_log` AS `conn_queue` ON `conn_queue`.`callid`=`asterisk_cdr`.`uniqueid`"
+                . " AND (`conn_queue`.`event`='CONNECT')"
             . $where_sql
             . " ORDER BY `calldate` DESC"
             . " LIMIT 150000");
@@ -273,8 +275,8 @@ class CDR extends \IModule {
                 . "<button type='submit'>Отфильтровать</button>"
                 . "</form>");
         $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th rowspan='2'>Дата</th><th colspan='2'>От</th><th colspan='2'>На</th><th rowspan='2'>Контекст</th>"
-            . "<th rowspan='2'>Длительность</th><th rowspan='2'>Статус</th><th rowspan='2'>Статус очереди</th><th rowspan='2'>ID</th><th rowspan='2'>Файл</th></tr>"
+            . "<tr><th rowspan='2'>Дата</th><th colspan='2'>Инициатор</th><th rowspan='2'>Аккаунт</th><th colspan='2'>Цель</th><th rowspan='2'>Контекст</th>"
+            . "<th rowspan='2'>Длительность</th><th rowspan='2'>Статус</th><th rowspan='2'>Статус очереди</th><th rowspan='2'>Агент очереди</th><th rowspan='2'>Файл</th></tr>"
             . "<tr><th>Номер</th><th>Принадлежность</th><th>Номер</th><th>Принадлежность</th></tr>");
         $data = $this->getCDR($db, $filter);
         $this->ap = $this->getAgentPhonesInverse($db);
@@ -344,18 +346,34 @@ class CDR extends \IModule {
             } else {
                 $file_cell = '';
             }
+            $q_agent_cell = $line['q_agent'];
+            if(strpos($line['q_agent'], 'SIP/')===0) {
+                $num = substr($line['q_agent'], 4);
+                $link = $this->getObjectLinkForPhone($num);
+                if($link) {
+                    $q_agent_cell .= ' / '.$link;
+                }
+            }
+            if(strpos($line['q_agent'], 'Local/')===0) {
+                $num = substr($line['q_agent'], 6);
+                $link = $this->getObjectLinkForPhone($num);
+                if($link) {
+                    $q_agent_cell .= ' / '.$link;
+                }
+            }
             
             $tmpl->addContent("<tr>"               
                 . "<td>".html_out($line['calldate'])."</td>"
                 . "<td>".html_out($line['src'])."</td>"
                 . "<td>".$src_cell."</td>"
+                . "<td>".html_out($line['accountcode'])."</td>"
                 . "<td>".html_out($line['dst'])."</td>"
-                . "<td>".$dst_cell."</td>"
+                . "<td>".$dst_cell."</td>"                
                 . "<td>".html_out($line['dcontext'])."</td>"
                 . "<td style='text-align:right;'>".html_out($lenght)."</td>"
                 . "<td>".$disposition."</td>"
                 . "<td>".$queue_stat."</td>"
-                . "<td>".html_out($line['uniqueid'])."</td>"
+                . "<td>".$q_agent_cell."</td>"
                 . "<td>".$file_cell."</td>"
                 . "</tr>");
         }
@@ -448,7 +466,9 @@ class CDR extends \IModule {
                     $line['data2'] = "Номер: ".$line['data2'];
                     break;
                 case 'RINGNOANSWER':
-                    $line['data1'] = "Звонил: ".sectostrinterval(intval($line['data1']/1000)).' '.($line['data1']%1000).' мс.';
+                    if($line['data1']>100) {
+                        $line['data1'] = "Звонил: ".sectostrinterval(intval($line['data1']/1000)).' '.($line['data1']%1000).' мс.';
+                    }
                     break;
                 case 'TRANSFER':
                     $line['data1'] = "Цель: {$line['data1']}";
@@ -485,6 +505,9 @@ class CDR extends \IModule {
         $data = $this->getQueue($filter);
         $events = $this->getQueueEvents();
         $queues = array();
+        $abandoned = array();
+        $noanswer = array();
+        $numbers = array();
         foreach ($data as $event) {
             if(!isset($queues[$event['queuename']])) {
                 $queues[$event['queuename']] = array('events'=>0);
@@ -494,6 +517,29 @@ class CDR extends \IModule {
             }
             $queues[$event['queuename']][$event['event']]++;
             $queues[$event['queuename']]['events']++;
+            switch($event['event']) {
+                case 'ENTERQUEUE':
+                    $numbers[$event['callid']] = $event['data2'];
+                    break;
+                case 'ABANDON':
+                    $abandoned[$event['callid']] = array (
+                        'callid' => $event['callid'],
+                        'end' => $event['data1'],
+                        'start' => $event['data2'],
+                        'wait' => $event['data3'],
+                    );                    
+                    break;
+                
+                case 'RINGNOANSWER':
+                    if($event['data1']>100) {
+                        if(isset($noanswer[$event['agent']])) {
+                            $noanswer[$event['agent']]++;
+                        } else {
+                            $noanswer[$event['agent']] = 1;
+                        }
+                    }
+                    break;
+            }
         }
         $tmpl->addBreadcrumb('Сводка очередей вызовов', '');
         $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=queue' method='post'>"
@@ -521,23 +567,45 @@ class CDR extends \IModule {
                 . "</tr>");   
         }
         $tmpl->addContent("</table>");
+        
+        $tmpl->addContent("<h2>Брошенные звонки</h2><table class='list' width='100%'>"
+            . "<tr><th>Id</th><th>Номер</th><th>Принадлежность</th><th>Ждал</th><th>Начал с</th><th>Бросил на</th></tr>");
+        foreach($abandoned as $data) {
+            $object = $number = '';
+            if(isset($numbers[$data['callid']])) {
+                $number = $numbers[$data['callid']];
+                $object = $this->getObjectLinkForPhone($number);
+            }
+            
+            $tmpl->addContent("<tr>"               
+                . "<td>".html_out($data['callid'])."</td>"
+                . "<td>".html_out($number)."</td>"
+                . "<td>".$object."</td>"
+                . "<td>".html_out($data['wait'])."</td>"
+                . "<td>".html_out($data['start'])."</td>"
+                . "<td>".html_out($data['end'])."</td>"
+                . "</tr>");   
+        }
+        $tmpl->addContent("</table>");
+        
+        $tmpl->addContent("<h2>Пропущенные звонки</h2><table class='list' width='100%'>"
+            . "<tr><th>Агент</th><th>Принадлежность</th><th>Количество</th></tr>");
+        foreach($noanswer as $agent=> $count) {
+            $object = '';
+            if(isset($numbers[$data['callid']])) {
+                $object = $this->getObjectLinkForPhone($agent);
+            }            
+            $tmpl->addContent("<tr>"               
+                . "<td>".html_out($agent)."</td>"
+                . "<td>".$object."</td>"
+                . "<td>".$count."</td>"
+                . "</tr>");   
+        }
+        $tmpl->addContent("</table>");
     }
     
     public function run() {
         global $CONFIG, $tmpl, $db;
-        /* if (!isset($CONFIG['service_cdr'])) {
-            throw new \Exception("Модуль не настроен!");
-        }
-        if (!is_array($CONFIG['service_cdr'])) {
-            throw new \Exception("Неверные настройки модуля!");
-        }
-        $conf = $CONFIG['service_cdr'];
-        $db = new \MysqiExtended($conf['db_host'], $conf['db_login'], $conf['db_pass'], $conf['db_name']);
-        if ($db->connect_error) {
-            throw new Exception("Не удалось соединиться с базой данных телефонной статистики");
-        }
-         * 
-         */
         $tmpl->addBreadcrumb($this->getName(), $this->link_prefix);
         $sect = request('sect');
         switch ($sect) {
@@ -547,7 +615,7 @@ class CDR extends \IModule {
                     . "<ul>"
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=cdr'>Записи детализации вызовов</li>"
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=queue'>Журнал очередей вызовов</li>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=queue_summary'>Сводка очередей вызовов (не реализовано)</li>"
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=queue_summary'>Сводка очередей вызовов</li>"
                     
                     . "</ul>");
                 break;
