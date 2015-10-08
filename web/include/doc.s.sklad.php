@@ -251,8 +251,83 @@ class doc_s_Sklad {
 		}
 		else	$tmpl->msg("Неверная опция - ".html_out($opt));
 	}
+        
+    function storeDataEditForm($pos) {
+        global $db, $tmpl;
+        $res = $db->query("SELECT `doc_sklady`.`name` AS `store_name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`,  `doc_base_cnt`.`mesto` AS `place`,
+                `doc_base_cnt`.`sklad` AS `store_id`, `doc_base_cnt`.`revision_date`
+            FROM `doc_base_cnt`
+            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id` = `doc_base_cnt`.`sklad`
+            WHERE `doc_base_cnt`.`id`='$pos'");
+        $tmpl->addContent("
+            <form action='' method='post'>
+            <input type='hidden' name='mode' value='esave'>
+            <input type='hidden' name='l' value='sklad'>
+            <input type='hidden' name='pos' value='$pos'>
+            <input type='hidden' name='param' value='s'>
+            <table cellpadding='0' width='50%' class='list'>
+            <tr><th>Склад</th><th>Кол-во</th><th>Минимум</th><th>Место</th><th>Дата ревизии</th></tr>");
+        $cinit = '';
+        while ($line = $res->fetch_assoc()) {
+            $tmpl->addContent("<tr>
+                <td><a href='?mode=ske&amp;sklad={$line['store_id']}'>" . html_out($line['store_name']) . "</a></td>
+                <td>{$line['cnt']}</td>
+                <td><input type='text' name='min{$line['store_id']}' value='{$line['mincnt']}'></td>
+                <td><input type='text' name='mesto{$line['store_id']}' value='" . html_out($line['place']) . "'></td>
+                <td><input id='rev{$line['store_id']}' type='text' name='rev{$line['store_id']}' value='" . html_out($line['revision_date']) . "'></td>
+                </tr>");
+            $cinit .= "initCalendar('rev{$line['store_id']}');";
+        }
+        $tmpl->addContent("</table>
+            <button type='submit'>Сохранить</button>
+            </form>");
+        $tmpl->addContent("<script type='text/javascript' src='/js/calendar.js'></script>
+            <script type='text/javascript'>
+            $cinit
+            </script>");
+    }
 
-	/// Отобразить форму редактирования
+    function storeDataSave($pos) {
+        global $db, $tmpl;
+        if (!isAccess('list_sklad', 'edit')) {
+            throw new AccessException();
+        }
+        $res = $db->query("SELECT `doc_sklady`.`name` AS `store_name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`,  `doc_base_cnt`.`mesto` AS `place`
+                , `doc_base_cnt`.`sklad` AS `store_id`, `doc_base_cnt`.`revision_date`
+            FROM `doc_base_cnt`
+            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id` = `doc_base_cnt`.`sklad`
+            WHERE `doc_base_cnt`.`id`='$pos'");
+        $log_add = '';
+        while ($line = $res->fetch_assoc()) {
+            $mincnt = rcvint("min".$line['store_id']);
+            $place = request("mesto".$line['store_id']);
+            $rewdate = rcvdate("rev".$line['store_id']);
+            if ($line['mincnt'] != $mincnt) {
+                $log_add.=", mincnt:({$line['mincnt']} => $mincnt)";
+            }
+            if ($line['place'] != $place) {
+                $log_add.=", place:({$line['place']} => $place)";
+            }
+            if ($line['revision_date'] != $rewdate) {
+                $log_add.=", revision_date:({$line['revision_date']} => $rewdate)";
+            }
+            if ($line['mincnt'] != $mincnt || $line['place'] != $place || $line['revision_date'] != $rewdate) {
+                $place_sql = $db->real_escape_string($place);
+                $rewdate_sql = $db->real_escape_string($rewdate);
+                $db->query("UPDATE `doc_base_cnt` SET `mincnt`='$mincnt', `mesto`='$place_sql', `revision_date`='$rewdate_sql'"
+                    . " WHERE `id`='$pos' AND `sklad`='{$line['store_id']}'");
+            }
+        }
+        if ($log_add) {
+            doc_log("UPDATE", "$log_add", 'pos', $pos);
+            $tmpl->msg("Данные обновлены!", 'ok');
+        } else {
+            $tmpl->msg("Ничего не обновилось!", 'info');
+        }
+        $this->storeDataEditForm($pos);
+    }
+
+    /// Отобразить форму редактирования
 	function Edit() {
 		global $tmpl, $CONFIG, $db;
 		doc_menu();
@@ -422,28 +497,7 @@ class doc_s_Sklad {
 		}
 		// Складские свойства
 		else if ($param == 's') {
-			$res = $db->query("SELECT `doc_sklady`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`,  `doc_base_cnt`.`mesto`, `doc_base_cnt`.`sklad`
-			FROM `doc_base_cnt`
-			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id` = `doc_base_cnt`.`sklad`
-			WHERE `doc_base_cnt`.`id`='$pos'");
-			$tmpl->addContent("
-			<form action='' method='post'>
-			<input type='hidden' name='mode' value='esave'>
-			<input type='hidden' name='l' value='sklad'>
-			<input type='hidden' name='pos' value='$pos'>
-			<input type='hidden' name='param' value='s'>
-			<table cellpadding='0' width='50%' class='list'>
-			<tr><th>Склад</th><th>Кол-во</th><th>Минимум</th><th>Место</th></tr>");
-			while ($nxt = $res->fetch_row()) {
-				$tmpl->addContent("<tr>
-				<td><a href='?mode=ske&amp;sklad=$nxt[4]'>".html_out($nxt[0])."</a></td>
-				<td>$nxt[1]</td>
-				<td><input type='text' name='min$nxt[4]' value='$nxt[2]'></td>
-				<td><input type='text' name='mesto$nxt[4]' value='".html_out($nxt[3])."'></td></tr>");
-			}
-			$tmpl->addContent("</table>
-			<button type='submit'>Сохранить</button>
-			</form>");
+                    $this->storeDataEditForm($pos);
 		}
 		// Изображения
 		else if ($param == 'i') {
@@ -1338,25 +1392,7 @@ class doc_s_Sklad {
                         $this->dopDataEditForm($pos);
 		}
 		else if ($param == 's') {
-			if (!isAccess('list_sklad', 'edit'))	throw new AccessException();
-			$res = $db->query("SELECT `doc_sklady`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`,  `doc_base_cnt`.`mesto`, `doc_base_cnt`.`sklad`
-			FROM `doc_base_cnt`
-			LEFT JOIN `doc_sklady` ON `doc_sklady`.`id` = `doc_base_cnt`.`sklad`
-			WHERE `doc_base_cnt`.`id`='$pos'");
-			$log_add = '';
-			while ($nxt = $res->fetch_row()) {
-				$mincnt = rcvint("min$nxt[4]");
-				$mesto = request("mesto$nxt[4]");
-				if ($nxt[2] != $mincnt)
-					$log_add.=", mincnt:({$nxt[2]} => $mincnt)";
-				if ($nxt[3] != $mesto)
-					$log_add.=", mesto:({$nxt[3]} => $mesto)";
-				if ($nxt[2] != $mincnt || $nxt[3] != $mesto) {
-					$mesto_sql = $db->real_escape_string($mesto);
-					$db->query("UPDATE `doc_base_cnt` SET `mincnt`='$mincnt', `mesto`='$mesto_sql' WHERE `id`='$pos' AND `sklad`='$nxt[4]'");
-				}
-			}
-			if ($log_add)	doc_log("UPDATE", "$log_add", 'pos', $pos);
+		    $this->storeDataSave($pos);
 		}
 		else if ($param == 'n') {
 			if (!isAccess('list_sklad', 'edit'))

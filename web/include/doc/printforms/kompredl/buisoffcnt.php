@@ -19,11 +19,26 @@
 namespace doc\printforms\kompredl; 
 
 class buisoffcnt extends buisoff {
- 
+    var $form_sum = 0;
+    var $form_summass = 0;
     public function getName() {
         return "Предложение с количеством";
     }
        
+    /// Добавить блок с информацией о сумме документа
+    protected function addSummaryBlock() {
+        $dop_data = $this->doc->getDopDataA();
+        $sum_p = number_format($this->form_sum, 2, '.', ' ');
+        $mass_p = number_format($this->form_summass, 3, '.', ' ');
+        $text = "Итого {$this->form_linecount} наименований массой $mass_p кг. на сумму $sum_p руб.";
+        if(isset($dop_data['mest'])) {
+            if ($dop_data['mest']) {
+                $text .= ", мест: " . $dop_data['mest'];
+            }
+        }
+        $this->addInfoLine($text, 12); 
+    }
+    
     /// Сформировать данные печатной формы
     public function make() {
         global $db;
@@ -50,24 +65,35 @@ class buisoffcnt extends buisoff {
             $this->addMiniHeader($dop_data['shapka']);
         }
 
-        $th_widths = array(7, 100, 15, 15, 35, 20);
-        $th_texts = array('№', 'Наименование', 'Масса', 'Кол-во', 'Срок поставки', 'Цена');
-        $tbody_aligns = array('R', 'L', 'R', 'R', 'L', 'R');
+        $th_widths = array(7, 80, 15, 15, 35, 20, 20);
+        $th_texts = array('№', 'Наименование', 'Масса', 'Кол-во', 'Срок поставки', 'Цена', 'Сумма');
+        $tbody_aligns = array('R', 'L', 'R', 'R', 'L', 'R', 'R');
         $this->addTableHeader($th_widths, $th_texts, $tbody_aligns);
 
-        $ii = 1;
-        $cnt = 0;
+        $ii = 0;
+        $cnt = $this->form_sum = 0;
         foreach($nomenclature as $line) {
-            $row = array($ii, $line['name'], $line['mass'].' кг.', $line['cnt'] .' '.$line['unit_name'], $line['comment'], sprintf("%0.2f р.", $line['price']));
-            $this->pdf->RowIconv($row);
-            $ii++;
             $cnt += $line['cnt'];
+            $this->form_sum += $line['sum'];
+            $this->form_summass += $line['mass'] * $line['cnt'];
+            $ii++;
+            $row = array(
+                $ii, 
+                $line['name'], 
+                $line['mass'].' кг.', 
+                $line['cnt'] .' '.$line['unit_name'], 
+                $line['comment'], 
+                sprintf("%0.2f р.", $line['price']),
+                sprintf("%0.2f р.", $line['sum'])
+            );
+            $this->pdf->RowIconv($row);
+                        
         }
-
+        $this->form_linecount = $ii;
         if ($this->pdf->h <= ($this->pdf->GetY() + 40)) {
             $this->pdf->AddPage();
         }
-
+        $this->addSummaryBlock();
         $this->addMiniHeader("Цены указаны с учётом НДС, за 1 ед. товара");
         $this->pdf->ln(6);
         
