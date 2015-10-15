@@ -21,6 +21,13 @@ namespace Modules\Admin;
 
 /// Управление привилегиями доступа пользователей
 class Acl extends \IModule {
+    
+    protected $items = array(
+            'gle' => 'Редактор списка групп пользователей',
+            'all' => 'Привилегии анонимных пользователей',
+            'auth' => 'Привилегии аутентифицимрованных пользователейй',
+            'groups' => 'Привилегии групп пользователей',
+        );
 
     public function __construct() {
         parent::__construct();
@@ -44,22 +51,24 @@ class Acl extends \IModule {
         switch ($sect) {
             case '':
                 $tmpl->addBreadcrumb($this->getName(), '');
-                $tmpl->addContent("<p>".$this->getDescription()."</p>"
-                    . "<ul>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=groups'>Группы пользователей</li>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=all'>Привилегии анонимных пользователей</li>"
-                    . "<li><a href='" . $this->link_prefix . "&amp;sect=reg'>Привилегии зарегистрированных (и авторизованных) пользователей</li>"
-                    . "</ul>");
+                $tmpl->addContent("<p>".$this->getDescription()."</p><ul>");
+                foreach($this->items as $id=>$value ) {
+                    $tmpl->addContent("<li><a href='" . $this->link_prefix . "&amp;sect={$id}'>{$value}</li>");
+                }
+                $tmpl->addContent("</ul>");
                 break;
-            case 'groups':
+            case 'gle':
                 $editor = new \ListEditors\AccessGroupEditor($db);
                 $editor->line_var_name = 'id';
                 $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;
                 $editor->acl_object_name = $this->acl_object_name;
                 $editor->run();
                 break;
-            case 'amap':
-                $this->renderAMap($tmpl, $db);
+            case 'groups':
+                $this->renderUsersGroupsList($tmpl, $db);
+                break;
+            case 'group_acl':
+                $this->groupAclEditor($tmpl, $db);
                 break;
             default:
                 throw new \NotFoundException("Секция не найдена");
@@ -68,12 +77,18 @@ class Acl extends \IModule {
 
     // Вывод списка групп пользователей
     protected function renderUsersGroupsList($tmpl, $db) {
-        $tmpl->addBreadcrumb('Группы пользователей', '');
-        $tmpl->addContent("<table class='list'><tr><th>N</th><th>Название</th><th>Описание</th></tr>");
+        $tmpl->addBreadcrumb($this->items['groups'], '');
+        $link_prefix = $this->link_prefix . '&amp;sect=groupacl';
+        $tmpl->addContent("<table class='list'><tr><th>N</th><th>Название</th><th>Описание</th><th>Действие</th></tr>");
 	$res=$db->query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
 	while($nxt = $res->fetch_row()) {
-		$tmpl->addContent("<tr><td>$nxt[0]<a href='?mode=gre&amp;g=$nxt[0]'><img src='/img/i_edit.png' alt='Изменить'></a></td><td><a href='?mode=group_acl&amp;g=$nxt[0]'>$nxt[1]</a></td><td>$nxt[2]</td></tr>");
+		$tmpl->addContent("<tr><td>$nxt[0]</td><td><a href='?mode=group_acl&amp;group_id=$nxt[0]'>$nxt[1]</a></td><td>$nxt[2]</td>"
+                    . "<td><a href='{$link_prefix}&amp;group=$nxt[0]'>Управлять</a></td></tr>");
 	}
 	$tmpl->addContent("</table><a href='?mode=gre'>Новая группа</a>");
+    }
+    
+    protected function groupAclEditor($tmpl, $db) {
+        $group_id = rcvint('group_id');
     }
 }
