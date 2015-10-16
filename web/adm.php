@@ -50,8 +50,9 @@ try {
                 }
                 closedir($dh);
                 asort($modules);
-                foreach ($modules AS $id => $name)
+                foreach ($modules AS $id => $name) {
                     $tmpl->addContent("<li><a href=\"/adm.php?mode=$id\"'>$name</a></li>");
+                }
             }
         }
         $tmpl->addContent("</ul>");
@@ -60,8 +61,7 @@ try {
         $module->link_prefix = '/adm.php?mode=mailconfig';
         $module->run();
     } else {
-        if (!isAccess('admin_' . $mode, 'view'))
-            throw new AccessException("Недостаточно привилегий");
+        acl::accessGuard('admin_' . $mode, acl::VIEW);
         $opt = request('opt');
         $fn = $dir . $mode . '.php';
         if (file_exists($fn)) {

@@ -355,8 +355,14 @@ function auth() {
 /// @param $object Имя объекта, для которого нужно проверить привилегии
 /// @param $action Имя действия, для осуществления которого нужно проверить привилегии
 /// @param $no_redirect Если false - то в случае отсутствия привилегий, и если не пройдена аутентификация, выполняет редирект на страницу аутентификации
-function isAccess($object, $action,$no_redirect=false)
-{
+function isAccess($object, $action,$no_redirect=false) {
+    try {
+        throw new \Exception('');
+    } catch (Exception $e) {
+        echo "Вызов isAccess!<br>trace".$e->getTraceAsString();
+        die();
+    }
+    
 	global $db;
 	$uid=@$_SESSION['uid'];
 	if($uid==1)	return true;
@@ -565,6 +571,44 @@ class BETemplate {
 	function addCustomBlockData($block_name, $data) {
 		@$this->page_blocks[$block_name].=$data;
 	}
+        
+        /// Добавить виджет *вкладки*
+        /// @param $list Массив со списком вкладок
+        /// @param $opened Код открытой вкладки        
+        /// @param $link_prefix Префикс ссылки вкладки
+        /// @param $param_name Параметр ссылки выбора вкладки
+        function addTabsWidget($list, $opened, $link_prefix, $param_name) {
+            $sel = array();
+            $str = '<ul class="tabs">';
+            foreach($list as $id=>$value) {
+                $sel = $opened==$id ? ' class="selected"':'';
+                $str .= "<li><a{$sel} href='{$link_prefix}&amp;{$param_name}={$id}'>".html_out($value['name'])."</a></li>";
+            }
+            $str .= '</ul>';
+            $this->addContent($str);
+        }
+        
+        function addTableWidget($table_header, $table_body, $head_each_lines = 100) {
+            $str = "<table class='list'>";
+            $line_cnt = 0;
+            foreach($table_body as $line) {
+                if( ($line_cnt % $head_each_lines) == 0) {
+                    $str .= "<tr>";
+                    foreach($table_header as $cell) {
+                        $str .= "<th>$cell</th>";    
+                    }
+                    $str .= "</tr>";
+                } 
+                $str .= "<tr>";
+                foreach($line as $cell) {
+                    $str .= "<td>$cell</td>";    
+                }
+                $str .= "</tr>";
+                $line_cnt++;
+            }        
+            $str .= "</table>";
+            $this->addContent($str);
+        }
 
 	/// Добавить блок (div) с информацией к основному блоку страницы (content)
 	/// @param $text Текст сообщения

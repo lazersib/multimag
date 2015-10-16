@@ -19,23 +19,44 @@
 
 namespace acl\admin;
 
-class main {
-    var $name = "Администрирование";
+class main extends \acl\aclContainer {
+    protected $name = "Администрирование";
     
-    var $list = array(
-        'users' => array(
-            "name"=>"Администрирование пользователей",
-            "mask"=> \acl::ACL_WIEW | \acl::ACL_UPDATE | \acl::ACL_DELETE
-        ),
-        'comment' => array(
-            "name"=>"Администрирование комментариев",
-            "mask"=> \acl::ACL_WIEW | \acl::ACL_UPDATE | \acl::ACL_DELETE
-        ),
-        'mail' => array(
-            "name"=>"Администрирование почтовых ящиков и алиасов",
-            "mask"=> \acl::ACL_WIEW | \acl::ACL_UPDATE | \acl::ACL_DELETE
-        )
-    );
-    
+    public function __construct() {
+        $this->list = array(
+            'acl' => array(
+                "name" => "Привилегии",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
+            'users' => array(
+                "name" => "Пользователи",
+                "mask" => \acl::VIEW | \acl::UPDATE | \acl::DELETE
+            ),
+            'comments' => array(
+                "name" => "Комментарии",
+                "mask" => \acl::VIEW | \acl::UPDATE | \acl::DELETE
+            ),
+            'mail' => array(
+                "name" => "Настройка почтовых ящиков и алиасов",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
+            'asynctask' => array(
+                "name" => "Асинхронные задачи",
+                "mask" => \acl::VIEW | \acl::APPLY
+            ),            
+            'log_access' => array(
+                "name" => "Журнал обращений",
+                "mask" => \acl::VIEW
+            ),
+            'log_browser' => array(
+                "name" => "Статистика броузеров",
+                "mask" => \acl::VIEW
+            ),
+            'log_error' => array(
+                "name" => "Журнал ошибок",
+                "mask" => \acl::VIEW
+            ),
+        );
+    }
     
 }

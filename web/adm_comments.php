@@ -21,73 +21,70 @@
 include_once("core.php");
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->hideBlock('left');
-try
-{
+try {
 
-need_auth($tmpl);
-$tmpl->setTitle("Администрирование коментариев");
-if(!isAccess('admin_comments','view'))	throw new AccessException("Недостаточно привилегий");
-$tmpl->addBreadcrumb('Главная', '/');
-$tmpl->addBreadcrumb('Личный кабинет', '/user.php');
-$tmpl->addBreadcrumb('Администрирование', '/adm.php');
-$mode=request('mode');
+    need_auth($tmpl);
+    $tmpl->setTitle("Администрирование коментариев");
+    acl::accessGuard('admin_comments', acl::VIEW);
+    $tmpl->addBreadcrumb('Главная', '/');
+    $tmpl->addBreadcrumb('Личный кабинет', '/user.php');
+    $tmpl->addBreadcrumb('Администрирование', '/adm.php');
+    $mode = request('mode');
 
-if($mode=='')
-{
-	$res=$db->query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
+    if ($mode == '') {
+        $res = $db->query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	ORDER BY `comments`.`id` DESC");
         $tmpl->addBreadcrumb('Последние коментарии', '');
-	$tmpl->addContent("<h1 id='page-title'>Последние коментарии</h1>
+        $tmpl->addContent("<h1 id='page-title'>Последние коментарии</h1>
 	<table class='list' width='100%'>
 	<tr><th>ID</th><th>Дата</th><th>Объект</th><th>Автор</th><th>e-mail</th><th>Текст коментария</th><th>Оценка</th><th>Ответ</th><th>IP адрес</th><th>user-agent</th></tr>");
-	while($line=$res->fetch_assoc())
-	{
-		$object="{$line['object_name']}:{$line['object_id']}";
-		if($line['object_name']=='product')	$object="<a href='/vitrina.php?mode=product&amp;p={$line['object_id']}'>$object</a>";
-		$email=$line['autor_id']?$line['user_email']:$line['autor_email'];
-		$email="<a href='mailto:$email'>$email</a>";
-		$autor=$line['autor_id']?"{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>":$line['autor_name'];
-		$response=$line['response']?html_out($line['response'])."<br><a href='?mode=response&amp;id={$line['id']}'>Правка</a>":"<a href='?mode=response&amp;id={$line['id']}'>Ответить</a>";
-		$html_text=html_out($line['text']);
-		$tmpl->addContent("<tr>
+        while ($line = $res->fetch_assoc()) {
+            $object = "{$line['object_name']}:{$line['object_id']}";
+            if ($line['object_name'] == 'product')
+                $object = "<a href='/vitrina.php?mode=product&amp;p={$line['object_id']}'>$object</a>";
+            $email = $line['autor_id'] ? $line['user_email'] : $line['autor_email'];
+            $email = "<a href='mailto:$email'>$email</a>";
+            $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
+            $response = $line['response'] ? html_out($line['response']) . "<br><a href='?mode=response&amp;id={$line['id']}'>Правка</a>" : "<a href='?mode=response&amp;id={$line['id']}'>Ответить</a>";
+            $html_text = html_out($line['text']);
+            $tmpl->addContent("<tr>
 		<td>{$line['id']} <a href='?mode=rm&amp;id={$line['id']}'><img src='/img/i_del.png' alt='Удалить'></a></td>
 		<td>{$line['date']}</td><td>$object</td><td>$autor</td> <td>$email</td><td>{$line['text']}</td><td>{$line['rate']}</td><td>$response</td><td>{$line['ip']}</td><td>{$line['user_agent']}</td></tr>");
-	}
-	$tmpl->addContent("</table>");
-}
-else if($mode=='rm')
-{
-	if(!isAccess('admin_comments','delete'))	throw new AccessException("Недостаточно привилегий");
-	$id=rcvint('id');
+        }
+        $tmpl->addContent("</table>");
+    }
+    else if ($mode == 'rm') {
+        if (!isAccess('admin_comments', 'delete'))
+            throw new AccessException("Недостаточно привилегий");
+        $id = rcvint('id');
 
-	$db->query("DELETE FROM `comments` WHERE `id`='$id'");
-	$tmpl->msg("Строка удалена.<br><a href='/adm_comments.php'>Назад</a>","ok");
-}
-else if($mode=='response')
-{
-	$id=rcvint('id');
-	$opt=request('opt');
+        $db->query("DELETE FROM `comments` WHERE `id`='$id'");
+        $tmpl->msg("Строка удалена.<br><a href='/adm_comments.php'>Назад</a>", "ok");
+    }
+    else if ($mode == 'response') {
+        $id = rcvint('id');
+        $opt = request('opt');
         $tmpl->addBreadcrumb('Список комментариев', '/adm_comments.php');
         $tmpl->addBreadcrumb('Ответ на коментарий с ID ' . $id, '');
-	if($opt)
-	{
-		$sql_text=$db->real_escape_string(request('text'));
-		$res=$db->query("UPDATE `comments` SET `response`='$sql_text', `responser`='{$_SESSION['uid']}' WHERE `id`='$id'");
-		$tmpl->msg("Коментарий сохранён успешно",'ok');
-	}
-	$res=$db->query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
+        if ($opt) {
+            $sql_text = $db->real_escape_string(request('text'));
+            $res = $db->query("UPDATE `comments` SET `response`='$sql_text', `responser`='{$_SESSION['uid']}' WHERE `id`='$id'");
+            $tmpl->msg("Коментарий сохранён успешно", 'ok');
+        }
+        $res = $db->query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	WHERE `comments`.`id`='$id'");
-	$line=$res->fetch_assoc();
-	if(!$line)		throw new Exception("Коментарий не найден!");
-	$autor=$line['autor_id']?"{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>":$line['autor_name'];
-	$object="{$line['object_name']}:{$line['object_id']}";
-	$html_text=html_out($line['text']);
-	$html_response=html_out($line['response']);
-	$tmpl->addContent("<h1 id='page-title'>Ответ на коментарий N{$line['id']}</h1>
+        $line = $res->fetch_assoc();
+        if (!$line)
+            throw new Exception("Коментарий не найден!");
+        $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
+        $object = "{$line['object_name']}:{$line['object_id']}";
+        $html_text = html_out($line['text']);
+        $html_response = html_out($line['response']);
+        $tmpl->addContent("<h1 id='page-title'>Ответ на коментарий N{$line['id']}</h1>
 	<div>{$line['date']} $autor для $object пишет:<br>$html_text</div>
 	<form action='' method='post'>
 	<input type='hidden' name='id' value='{$line['id']}'>
@@ -97,13 +94,8 @@ else if($mode=='response')
 	<button type='submit'>Сохранить</button>
 	</form><br>
 	<a href='/adm_comments.php'>Вернуться к общему списку коментариев</a>");
-}
-
-
-
-}
-catch(Exception $e)
-{
+    }
+} catch (Exception $e) {
     global $db, $tmpl;
     $db->rollback();
     $tmpl->addContent("<br><br>");
@@ -113,4 +105,3 @@ catch(Exception $e)
 
 $tmpl->write();
 
-?>

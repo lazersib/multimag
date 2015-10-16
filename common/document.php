@@ -138,6 +138,22 @@ class document {
                 return null;
         }
     }
+    
+    /// Получить спискок типов документов
+    static function getListTypes() {
+        $list = array();
+        for($i=1;$i<50;$i++) {
+            $item = self::getClassNameFromType($i);
+            if($item) {
+                $item = explode('_', $item);
+                $list[$i] = $item[1];
+            } else {
+                break;
+            }
+        }
+        return $list;
+    }
+    
     /// @return document
     static function getInstanceFromDb($doc_id) {
         global $db;

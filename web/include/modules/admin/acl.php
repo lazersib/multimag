@@ -22,6 +22,7 @@ namespace Modules\Admin;
 /// Управление привилегиями доступа пользователей
 class Acl extends \IModule {
     
+    protected $acl_dir = 'include/acl/';
     protected $items = array(
             'gle' => 'Редактор списка групп пользователей',
             'all' => 'Привилегии анонимных пользователей',
@@ -70,6 +71,10 @@ class Acl extends \IModule {
             case 'group_acl':
                 $this->groupAclEditor($tmpl, $db);
                 break;
+            case 'group_acl_save':
+                $this->groupAclSave($tmpl, $db);
+                $this->groupAclEditor($tmpl, $db);
+                break;
             default:
                 throw new \NotFoundException("Секция не найдена");
         }
@@ -82,13 +87,157 @@ class Acl extends \IModule {
         $tmpl->addContent("<table class='list'><tr><th>N</th><th>Название</th><th>Описание</th><th>Действие</th></tr>");
 	$res=$db->query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
 	while($nxt = $res->fetch_row()) {
-		$tmpl->addContent("<tr><td>$nxt[0]</td><td><a href='?mode=group_acl&amp;group_id=$nxt[0]'>$nxt[1]</a></td><td>$nxt[2]</td>"
+		$tmpl->addContent("<tr><td>$nxt[0]</td><td><a href='{$link_prefix}&amp;sect=group_acl&amp;group_id=$nxt[0]'>$nxt[1]</a></td><td>$nxt[2]</td>"
                     . "<td><a href='{$link_prefix}&amp;group=$nxt[0]'>Управлять</a></td></tr>");
 	}
 	$tmpl->addContent("</table><a href='?mode=gre'>Новая группа</a>");
     }
     
+    protected function loadAclCategory($category_codename) {
+        $class_name = "\\acl\\" . $category_codename;
+        $cur_acl = new $class_name;
+        
+        /*
+        $dir = $this->acl_dir.$category_codename;
+        if (is_dir($dir)) {
+            $dh = opendir($dir);
+            if ($dh) {
+                $modules = array();
+                while (($file = readdir($dh)) !== false) {
+                    if (preg_match('/.php$/', $file)) {
+                        $cn = explode('.', $file);
+                        $class_name = "\\Modules\\Admin\\" . $cn[0];
+                        $module = new $class_name;
+                        if($module->isAllow()) {
+                            $printname = $module->getName();
+                            $modules[$cn[0]] = $printname;
+                        }
+                    }
+                }
+                closedir($dh);
+                asort($modules);
+            }
+        }
+         * 
+         */
+    }
+    
+    protected function loadAclCategoryList() {
+        $list = array();
+        if (is_dir($this->acl_dir)) {
+            $dh = opendir($this->acl_dir);
+            if ($dh) {
+                $modules = array();
+                while (($file = readdir($dh)) !== false) {
+                    if($file=='.' || $file == '..') {
+                        continue;
+                    }
+                    $fullname = $this->acl_dir.$file;
+                    if(is_dir($fullname)) {
+                        $class_name = "\\acl\\" . $file.'\\main';
+                        $cur_acl = new $class_name;
+                        $list[$file] = array('name' => $cur_acl->getName());
+                    }
+                }
+                closedir($dh);
+            }
+        } 
+        asort($list);
+        return $list;
+    }
+    
+    protected function loadAclForGroup($group_id) {
+        global $db;
+        settype($group_id,'int');
+        $ret = array();
+        $res = $db->query("SELECT `id`, `object`, `value` FROM `users_groups_acl`"
+            . " WHERE `gid`=$group_id");
+        while($line = $res->fetch_assoc()) {
+            $ret[$line['object']] = $line['value'];
+        }
+        return $ret;
+    }
+    
+    protected function groupAclSave($tmpl, $db) {
+        \acl::accessGuard('admin_acl', \acl::UPDATE);
+        $group_id = rcvint('group_id');
+        $acl_cat = request('acl_cat', 'admin');
+        $class_name = "\\acl\\" . $acl_cat . '\\main';
+        $cur_acl = new $class_name;
+        $items = $cur_acl->getList();
+        $sql_data = '';
+        foreach($items as $id=>$value) {
+            if(!isset($_REQUEST[$id])) {
+                $line = array();
+            } else if(!is_array($_REQUEST[$id])) {
+                $line = array();
+            } else {
+                $line = $_REQUEST[$id];
+            }
+            $acl_value = 0;
+            foreach($line as $v) {
+                $acl_value |= intval($v);
+            }
+            $acl_object_sql = $db->real_escape_string($acl_cat.'_'.$id);
+            if($sql_data) {
+                $sql_data.=',';
+            }
+            $sql_data .= "($group_id,'$acl_object_sql',$acl_value)";
+        }
+        $sql_query = "REPLACE INTO `users_groups_acl` (`gid`, `object`, `value`) VALUES ".$sql_data;
+        $db->query($sql_query);
+        if($db->affected_rows>0) {
+            $tmpl->msg("Данные обновлены", "ok");
+        } else {
+            $tmpl->msg("Ничего не изменилось");
+        }
+    }
+    
     protected function groupAclEditor($tmpl, $db) {
         $group_id = rcvint('group_id');
+        $tmpl->addBreadcrumb('Управление привилегиями группы ' . $group_id, '');
+        $acl_cat = request('acl_cat', 'admin');
+        $list = $this->loadAclCategoryList();
+        $tmpl->addTabsWidget($list, $acl_cat, $this->link_prefix . "&amp;sect=group_acl&amp;group_id=$group_id", 'acl_cat');
+        $class_name = "\\acl\\" . $acl_cat . '\\main';
+        $cur_acl = new $class_name;
+        $table_header = array('Объект');
+        $mask = $cur_acl->getMask();
+        $a_names = \Acl::getAccessNames();
+        for ($i = 0, $c = 1; $i < 32; $i++, $c<<=1) {
+            if ($mask & $c) {
+                $table_header[] = $a_names[$c];
+            }
+        }
+        $table_body = array();
+        $items = $cur_acl->getList();
+        $acl = $this->loadAclForGroup($group_id);
+        foreach($items as $id=>$value) {
+            $table_line = array(
+                $value['name']                
+            );
+            for ($i = 0, $c = 1; $i < 32; $i++, $c<<=1) {
+                if ($mask & $c) {
+                    if($value['mask']&$c) {
+                        $checked = '';
+                        if(isset($acl[$acl_cat.'_'.$id])) {
+                            if($acl[$acl_cat.'_'.$id] & $c) {
+                                $checked = ' checked';
+                            }
+                        }
+                        $table_line[] = "<label><input type='checkbox' name='{$id}[]' value='$c'{$checked}>Да</label>";
+                    } else {
+                        $table_line[] = '';
+                    }
+                }
+            }
+            $table_body[] = $table_line;
+        }
+        $tmpl->addContent("<form method='post' action='{$this->link_prefix}&amp;group_id=$group_id&amp;acl_cat=".html_out($acl_cat)."'>"
+            . "<input type='hidden' name='sect' value='group_acl_save'>");
+        
+        $tmpl->addTableWidget($table_header, $table_body, 10);
+        $tmpl->addContent("<button type='submit'>Сохранить</button></form>");
     }
+
 }

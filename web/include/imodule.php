@@ -19,11 +19,14 @@
 
 /// Базовый класс для модулей
 abstract class IModule {
-    protected $acl_object_name;     //< Имя объекта контроля привилегий
-    var $link_prefix;		//< Префикс для ссылок
 
-    public function __construct(){}
-    
+    protected $acl_object_name;     //< Имя объекта контроля привилегий
+    var $link_prefix;  //< Префикс для ссылок
+
+    public function __construct() {
+        
+    }
+
     /// Получить название модуля
     /// @return Строка с именем
     abstract public function getName();
@@ -31,15 +34,17 @@ abstract class IModule {
     /// Получить описание модуля
     /// @return Строка с описанием
     abstract public function getDescription();
-    
+
     /// Запустить модуль на исполнение
     abstract function run();
-    
+
     /// Узнать, есть ли необходимые привилегии
-    /// @param $view    Строка с наименованием привилегии. По умолчанию - view (просмотр)
-    final function isAllow($mode='view') {
-            if(!$this->acl_object_name)
-                return true;
-            return isAccess($this->acl_object_name, $mode);
+    /// @param $flags    Флаги доступа. По умолчанию - view (просмотр)
+    final function isAllow($flags = \acl::VIEW) {
+        if (!$this->acl_object_name) {
+            return true;
+        }
+        return \acl::testAccess($this->acl_object_name, $flags);
     }
+
 }
