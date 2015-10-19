@@ -61,7 +61,7 @@ try {
         $module->link_prefix = '/adm.php?mode=mailconfig';
         $module->run();
     } else {
-        acl::accessGuard('admin_' . $mode, acl::VIEW);
+        acl::accessGuard('admin.' . $mode, acl::VIEW);
         $opt = request('opt');
         $fn = $dir . $mode . '.php';
         if (file_exists($fn)) {

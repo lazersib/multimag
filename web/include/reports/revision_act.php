@@ -21,90 +21,95 @@
 /// Акт сверки
 class Report_Revision_Act extends BaseReport {
 
-	function getName($short = 0) {
-		if ($short)	return "Акт сверки";
-		else		return "Акт сверки взаимных расчетов";
-	}
+    function getName($short = 0) {
+        if ($short) {
+            return "Акт сверки";
+        } else {
+            return "Акт сверки взаимных расчетов";
+        }
+    }
 
-	function Form() {
-		global $tmpl, $CONFIG, $db;
-		$date_end = date("Y-m-d");
-		$tmpl->addContent("<h1>" . $this->getName() . "</h1>
-		<script src='/css/jquery/jquery.js' type='text/javascript'></script>
-		<script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
-		<link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen'>
-		<script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
-		<link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
-		<script src='/css/jquery/ui/jquery.ui.core.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.widget.js'></script>
-		<script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
-		<script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='revision_act'>
-		Агент-партнёр:<br>
-		<input type='hidden' name='agent_id' id='agent_id' value=''>
-		<input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
-		<p class='datetime'>
-		Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10'><br>
-		Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$date_end' maxlength='10'></p><br>
-		Организация:<br><select name='firm_id'>
-		<option value='0'>--- Любая ---</option>");
-		$rs = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
-		while ($nx = $rs->fetch_row()) {
-			if ($CONFIG['site']['default_firm'] == $nx[0])
-				$s = ' selected';
-			else	$s = '';
-			$tmpl->addContent("<option value='$nx[0]' $s>".html_out($nx[1])."</option>");
-		}
-		$tmpl->addContent("</select><br>
-		Подтип документа (оставьте пустым, если учитывать не требуется):<br>
-		<input type='text' name='subtype'><br>
-		<label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
-		<label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>
-		<label><input type='radio' name='opt' value='email'>отправить по email</label><br>
-                <label><input type='checkbox' name='no_stamp' value='1'>Не ставить печать</label><br>
-		email адрес (не указывайте, чтобы взять из контактов):<br>
-		<input type='text' name='email' value=''><br>
-		<button type='submit'>Сформировать отчет</button></form>
+        function Form() {
+            global $tmpl, $CONFIG, $db;
+            $date_end = date("Y-m-d");
+            $tmpl->addContent("<h1>" . $this->getName() . "</h1>
+            <script src='/css/jquery/jquery.js' type='text/javascript'></script>
+            <script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
+            <link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen'>
+            <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+            <link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
+            <script src='/css/jquery/ui/jquery.ui.core.js'></script>
+            <script src='/css/jquery/ui/jquery.ui.widget.js'></script>
+            <script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
+            <script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
+            <form action='' method='post'>
+            <input type='hidden' name='mode' value='revision_act'>
+            Агент-партнёр:<br>
+            <input type='hidden' name='agent_id' id='agent_id' value=''>
+            <input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
+            <p class='datetime'>
+            Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10'><br>
+            Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$date_end' maxlength='10'></p><br>
+            Организация:<br><select name='firm_id'>
+            <option value='0'>--- Любая ---</option>");
+            $rs = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
+            while ($nx = $rs->fetch_row()) {
+                if ($CONFIG['site']['default_firm'] == $nx[0]) {
+                    $s = ' selected';
+                } else {
+                    $s = '';
+                }
+                $tmpl->addContent("<option value='$nx[0]' $s>".html_out($nx[1])."</option>");
+            }
+            $tmpl->addContent("</select><br>
+            Подтип документа (оставьте пустым, если учитывать не требуется):<br>
+            <input type='text' name='subtype'><br>
+            <label><input type='radio' name='opt' value='html'>Выводить в виде HTML</label><br>
+            <label><input type='radio' name='opt' value='pdf' checked>Выводить в виде PDF</label><br>
+            <label><input type='radio' name='opt' value='email'>отправить по email</label><br>
+            <label><input type='checkbox' name='no_stamp' value='1'>Не ставить печать</label><br>
+            email адрес (не указывайте, чтобы взять из контактов):<br>
+            <input type='text' name='email' value=''><br>
+            <button type='submit'>Сформировать отчет</button></form>
 
-		<script type='text/javascript'>
+            <script type='text/javascript'>
 
-		$(document).ready(function(){
-			$(\"#ag\").autocomplete(\"/docs.php\", {
-			delay:300,
-			minChars:1,
-			matchSubset:1,
-			autoFill:false,
-			selectFirst:true,
-			matchContains:1,
-			cacheLength:10,
-			maxItemsToShow:15,
-			formatItem:agliFormat,
-			onItemSelect:agselectItem,
-			extraParams:{'l':'agent','mode':'srv','opt':'ac'}
-			});
-			$.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
+            $(document).ready(function(){
+                    $(\"#ag\").autocomplete(\"/docs.php\", {
+                    delay:300,
+                    minChars:1,
+                    matchSubset:1,
+                    autoFill:false,
+                    selectFirst:true,
+                    matchContains:1,
+                    cacheLength:10,
+                    maxItemsToShow:15,
+                    formatItem:agliFormat,
+                    onItemSelect:agselectItem,
+                    extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+                    });
+                    $.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
 
-			$( '#datepicker_f' ).datepicker({showButtonPanel: true	});
-			$( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-			$( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
-			$( '#datepicker_t' ).datepicker({showButtonPanel: true	});
-			$( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-			$( '#datepicker_t' ).datepicker( 'setDate' , '$date_end' );
-		});
-		function agliFormat (row, i, num) {
-			var result = row[0] + \"<em class='qnt'>тел. \" +
-			row[2] + \"</em> \";
-			return result;
-		}
-		function agselectItem(li) {
-			if( li == null ) var sValue = \"Ничего не выбрано!\";
-			if( !!li.extra ) var sValue = li.extra[0];
-			else var sValue = li.selectValue;
-			document.getElementById('agent_id').value=sValue;
-		}
+                    $( '#datepicker_f' ).datepicker({showButtonPanel: true	});
+                    $( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+                    $( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
+                    $( '#datepicker_t' ).datepicker({showButtonPanel: true	});
+                    $( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+                    $( '#datepicker_t' ).datepicker( 'setDate' , '$date_end' );
+            });
+            function agliFormat (row, i, num) {
+                    var result = row[0] + \"<em class='qnt'>тел. \" +
+                    row[2] + \"</em> \";
+                    return result;
+            }
+            function agselectItem(li) {
+                    if( li == null ) var sValue = \"Ничего не выбрано!\";
+                    if( !!li.extra ) var sValue = li.extra[0];
+                    else var sValue = li.selectValue;
+                    document.getElementById('agent_id').value=sValue;
+            }
 
-		</script>");
+            </script>");
 	}
 
 	function Make($opt = 'html') {
@@ -357,7 +362,7 @@ class Report_Revision_Act extends BaseReport {
 			if ($razn > 0)
 				$tmpl->addContent("переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
 			else if ($razn < 0)
-				$tmpl->addContent("задолженность в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
+				$tmpl->addContent("задолженность в пользу " . $fn . " $razn_p руб.");
 			else
 				$tmpl->addContent("переплат и задолженностей нет!");
 			$tmpl->addContent("<td colspan=4>
@@ -382,7 +387,7 @@ class Report_Revision_Act extends BaseReport {
 			if ($razn > 0)
 				$str = "переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.";
 			else if ($razn < 0)
-				$str = "задолженность в пользу " . $firm_vars['firm_name'] . " $razn_p руб.";
+				$str = "задолженность в пользу " . $fn . " $razn_p руб.";
 			else
 				$str = "переплат и задолженностей нет!";
 

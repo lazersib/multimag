@@ -48,7 +48,7 @@ if($CONFIG['route']['ulog']['enable'])	`/sbin/modprobe ipt_ULOG nlbufsiz=800000`
 `$ipt -F`;		// RESET ALL iptables RULES
 `$ipt -X`;
 `$ipt -t nat -F`;	// RESET nat RULES
-`$ipt -P INPUT DROP`;
+`$ipt -P INPUT ACCEPT`;
 `$ipt -P OUTPUT ACCEPT`;
 `$ipt -P FORWARD DROP`;
 

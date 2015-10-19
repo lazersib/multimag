@@ -37,6 +37,10 @@ abstract class IModule {
 
     /// Запустить модуль на исполнение
     abstract function run();
+    
+    final public function getAclObjectname() {
+        return $this->acl_object_name;
+    }
 
     /// Узнать, есть ли необходимые привилегии
     /// @param $flags    Флаги доступа. По умолчанию - view (просмотр)

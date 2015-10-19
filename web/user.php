@@ -41,84 +41,9 @@ try {
             $tmpl->msg("Ваш пароль устареет через $exp_days дней. Вам необходимо <a href='/user.php?mode=chpwd'>сменить</a> его.");
         }
         
-        // Сотруднику
-        $block = '';
-        if (isAccess('doc_list', 'view')) {
-            $block .= "<li><a href='/docj_new.php' accesskey='l' title='Документы'>Журнал документов (L)</a></li>";
-        }
-        if (isAccess('doc_factory', 'view')) {
-            $block .= "<li><a href='/factory.php'>Учёт производства (экспериментально)</a></li>";
-        }
-        if (isAccess('generic_intkb', 'view')) {
-            $block .= "<li><a href='/intkb.php' accesskey='l' title='База знаний'>Внутренняя база знаний</a></li>";
-        }
-        if (isAccess('log_call_request', 'view')) {
-            $block .= "<li><a href='?mode=log_call_request' accesskey='c'>Журнал запрошенных звонков (C)</a></li>";
-        }
-        if (isAccess('sys_async_task', 'view')) {
-            $block .= "<li><a href='?mode=async_task' title=''>Ассинхронные задачи</a></li>";
-        }
-        if (isAccess('sys_ip-blacklist', 'view')) {
-            $block .= "<li><a href='?mode=denyip'>Запрещенные IP адреса</a></li>";
-	}
-        if (isAccess('generic_tickets', 'view')) {
-            $block .= "<li><a href='/tickets.php' accesskey='t' title='Задания'>Планировщик заданий (T)</a></li>";
-        }
-        if (isAccess('service_cdr', 'view')) {
-            $block .= "<li><a href='/service.php?mode=cdr'>Статистика телефонных вызовов</a></li>";
-        }
-        if( $block ) {
-            $tmpl->addContent("<h2>Сотруднику</h2>"
-                . "<ul class='items'>"
-                . "<li><a href='/user.php?mode=feedback' style='color: #f00' accesskey='r'>Сообщить об ошибке или заказать доработку программы (R)</a></li>"
-                . $block
-                . "</ul>");
-	}
-	$block = '';
-	// Администрирование
-        if (isAccess('admin_comments', 'view')) {
-            $block .= "<li><a href='/adm_comments.php'>Администрирование коментариев</a></li>";
-        }
-        if (isAccess('admin_users', 'view')) {
-            $block .= "<li><a href='/adm_users.php'>Администрирование пользователей</a></li>";
-        }
-        if (isAccess('admin_mailconfig', 'view')) {
-            $block .= "<li><a href='/adm.php?mode=mailconfig'>Настройка почтовых ящиков и алиасов</a></li>";
-        }	
-  	if (isAccess('sys_ps-stat', 'view')) {
-            $block .= "<li><a href='?mode=psstat' title=''>Статистика переходов с поисковиков</a></li>";
-	}	
-	if (isAccess('sys_acl', 'view')) {
-            $block .= "<li><a href='/rights.php'>Привилегии доступа</a></li>";
-	}
-        if (isAccess('log_browser', 'view')) {
-            $block .= "<li><a href='/statistics.php' title='Статистика по броузерам'>Статистика по броузерам</a></li>";
-        }
-        if (isAccess('log_error', 'view')) {
-            $block .= "<li><a href='?mode=elog' accesskey='e' title='Ошибки'>Журнал ошибок (E)</a></li>";
-        }
-        if (isAccess('log_access', 'view')) {
-            $block .= "<li><a href='?mode=clog'>Журнал посещений</a></li>";
-	}
-        if( $block ) {
-            $tmpl->addContent("<h2>Администратору</h2>"
-                . "<ul class='items'>$block</ul>");
-	}
+        $cab = new \Modules\Site\cabinet();
+        $cab->ExecMode($mode);
 
-	$block = '';
-        
-	$block .= "<li><a href='/user.php?mode=profile' accesskey='p'>Мой профиль (P)</a></li>";
-	$block .= "<li><a href='/user.php?mode=my_docs' accesskey='d'>Мои документы (D)</a></li>";
-	$block .= "<li><a href='/voting.php'>Голосования</a></li>";
-        if (isAccess('generic_articles', 'view')) {
-                $block .= "<li><a href='/articles.php' accesskey='w' title='Cтатьи'>Cтатьи (W)</a></li>";
-        }
-        
-        if( $block ) {
-            $tmpl->addContent("<h2>Клиенту</h2>"
-                . "<ul class='items'>$block</ul>");
-	}
-        
         $oauth_login = new \Modules\Site\oauthLogin();
         $tmpl->addContent("<h2>Прекрепить профиль</h2>");
         $tmpl->addContent( $oauth_login->getLoginForm() );

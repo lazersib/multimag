@@ -24,7 +24,7 @@ class MailConfig extends \IModule {
 
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'admin_mailconfig';
+        $this->acl_object_name = 'admin.mailconfig';
     }
 
     public function getName() {

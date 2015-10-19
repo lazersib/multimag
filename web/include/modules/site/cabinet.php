@@ -21,10 +21,13 @@ namespace Modules\Site;
 
 /// Класс личного кабинета
 class cabinet extends \IModule {
+    
+    protected $menu;            ///< Меню личного кабинета
 
     public function __construct() {
         parent::__construct();
         $this->link_prefix = '/user.php';
+        $this->menu = array();
     }
     
     // Получить название модуля
@@ -49,14 +52,14 @@ class cabinet extends \IModule {
     /// Отобразить страницу личного кабинета
     /// @param mode: раздел личного кабинета
     public function ExecMode($mode = '') {
-        global $tmpl, $CONFIG, $db;
+        global $tmpl, $db;
         $tmpl->addBreadcrumb('Главная', '/');
         $tmpl->addBreadcrumb($this->getName(), $this->link_prefix);
         $tmpl->setContent("<h1>Личный кабинет</h1>");
         $tmpl->setTitle("Личный кабинет");
         if ($mode == '') {
             $tmpl->addBreadcrumb($this->getName(), '');
-            $tmpl->addContent("<h2>Заглушка</h2>");
+            $this->viewCabinetPage();
         } else if ($mode == 'profile') {
             $this->tryShowProfile();
         } else if ($mode == 'chpwd') {
@@ -79,6 +82,97 @@ class cabinet extends \IModule {
             $this->sendFeedback();
         } else {
             throw new \NotFoundException("Неверный $mode");
+        }
+    }
+    
+    public function addMenuGroup($name, $viewname) {
+        if(!isset($this->menu[$name])) {
+            $this->menu[$name] = array(
+                'viewname' => $viewname,
+                'content'  => array(),
+            );
+        } else {
+            $this->menu[$name]['viewname'] = $viewname;
+        }
+    }
+    
+    public function addMenuElement($group_name, $name, $acl_obj, $viewname, $link, $icon = null) {
+        $this->menu[$group_name]['content'][$name]  = array(
+            'acl_obj' => $acl_obj,
+            'viewname' => $viewname,
+            'link' => $link,
+            'icon' => $icon
+        );
+    }
+    
+    public function addMenuSubElement($group_name, $element_name, $acl_obj, $viewname, $link, $icon = null) {
+        $obj = array(
+            'acl_obj' => $acl_obj,
+            'viewname' => $viewname,
+            'link' => $link,
+            'icon' => $icon
+        );
+        $this->menu[$group_name]['content'][$element_name]['childs'][] = $obj;
+    }
+    
+    protected function fillMenu() {
+        $this->addMenuGroup('worker', 'Сотруднику');
+        $this->addMenuGroup('admin', 'Администратору');
+        $this->addMenuGroup('user', 'Посетителю');
+        
+        $this->addMenuElement('worker', 'doclist', 'directory.doc', 'Документы', '/docj_new.php');
+        $this->addMenuElement('worker', 'intkb', 'service.intkb', 'База знаний', '/intkb.php');
+        $this->addMenuElement('worker', 'factory', 'service.factory', 'Учёт на производстве', '/factory.php');
+        $this->addMenuElement('worker', 'callrequestlog', 'service.callrequestlog', 'Журнал запрошенных звонков', '/user.php?mode=log_call_request');
+        $this->addMenuElement('worker', 'tickets', 'service.tickets', 'Задания', '/tickets.php');
+        $this->addMenuElement('worker', 'cdr', 'service.cdr', 'Статистика телефонных вызовов', '/service.php?mode=cdr');
+        $this->addMenuElement('worker', 'feedback', 'service.feedback', 'Сообщить об ошибке', '/user.php?mode=feedback');
+        
+               
+        $dir = "include/modules/admin/";        
+        if (is_dir($dir)) {
+            $dh = opendir($dir);
+            if ($dh) {
+                while (($file = readdir($dh)) !== false) {
+                    if (preg_match('/.php$/', $file)) {
+                        $cn = explode('.', $file);
+                        $class_name = "\\Modules\\Admin\\" . $cn[0];
+                        $module = new $class_name;
+                        if($module->isAllow()) {
+                            $printname = $module->getName();
+                            $acl_obj = $module->getAclObjectName();
+                            $this->addMenuElement('admin', $cn[0], $acl_obj, $printname, '/adm.php?mode='.$cn[0]);
+                        }
+                    }
+                }
+            }
+        }
+        $this->addMenuElement('admin', 'async_task', 'admin.asynctask', 'Ассинхронные задачи', '/user.php?mode=async_task');
+        $this->addMenuElement('admin', 'users', 'admin.users', 'Пользователи', '/adm_users.php');
+        $this->addMenuElement('admin', 'errorlog', 'admin.errorlog', 'Журнал ошибок', '/users.php?mode=elog');
+        $this->addMenuElement('admin', 'accesslog', 'admin.accesslog', 'Журнал посещений', '/users.php?mode=clog'); 
+        
+        $this->addMenuElement('user', 'profile', null, 'Мой профиль', '/users.php?mode=profile');
+        $this->addMenuElement('user', 'my_docs', null, 'Мои документы', '/users.php?mode=my_docs');
+        $this->addMenuElement('user', 'votings', 'generic.votings', 'Голосования', '/voting.php');
+        $this->addMenuElement('user', 'articles', 'generic.articles', 'Статьи', '/articles.php');
+    }
+
+
+    public function viewCabinetPage() {
+        global $tmpl;
+        $this->fillMenu();
+        foreach($this->menu as $group_name => $group_item) {
+            $sub = '';
+            
+            foreach($group_item['content'] as $elem_name => $elem) {
+                if(\acl::testAccess($elem['acl_obj'], \acl::VIEW) || $elem['acl_obj']==null) {
+                    $sub .= "<li><a href='{$elem['link']}'>".html_out($elem['viewname'])."</a></li>";
+                }
+            }            
+            if($sub) {
+                $tmpl->addContent("<div class='cabinet-block'><h2>".html_out($group_item['viewname'])."</h2><ul class='list'>$sub</ul></div>");
+            }
         }
     }
 

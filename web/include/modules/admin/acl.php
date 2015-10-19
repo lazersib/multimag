@@ -32,7 +32,7 @@ class Acl extends \IModule {
 
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'admin_acl';
+        $this->acl_object_name = 'admin.acl';
     }
 
     public function getName() {
@@ -178,7 +178,7 @@ class Acl extends \IModule {
             foreach($line as $v) {
                 $acl_value |= intval($v);
             }
-            $acl_object_sql = $db->real_escape_string($acl_cat.'_'.$id);
+            $acl_object_sql = $db->real_escape_string($acl_cat.'.'.$id);
             if($sql_data) {
                 $sql_data.=',';
             }
@@ -220,8 +220,8 @@ class Acl extends \IModule {
                 if ($mask & $c) {
                     if($value['mask']&$c) {
                         $checked = '';
-                        if(isset($acl[$acl_cat.'_'.$id])) {
-                            if($acl[$acl_cat.'_'.$id] & $c) {
+                        if(isset($acl[$acl_cat.'.'.$id])) {
+                            if($acl[$acl_cat.'.'.$id] & $c) {
                                 $checked = ' checked';
                             }
                         }

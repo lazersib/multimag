@@ -44,15 +44,15 @@ class main extends \acl\aclContainer {
                 "name" => "Асинхронные задачи",
                 "mask" => \acl::VIEW | \acl::APPLY
             ),            
-            'log_access' => array(
+            'accesslog' => array(
                 "name" => "Журнал обращений",
                 "mask" => \acl::VIEW
             ),
-            'log_browser' => array(
+            'browserlog' => array(
                 "name" => "Статистика броузеров",
                 "mask" => \acl::VIEW
             ),
-            'log_error' => array(
+            'errorlog' => array(
                 "name" => "Журнал ошибок",
                 "mask" => \acl::VIEW
             ),

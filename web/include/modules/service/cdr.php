@@ -37,7 +37,7 @@ class CDR extends \IModule {
 
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'service_cdr';
+        $this->acl_object_name = 'service.cdr';
     }
 
     public function getName() {

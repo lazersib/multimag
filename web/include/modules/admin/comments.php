@@ -24,7 +24,7 @@ class comments extends \IModule {
 
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'admin_comments';
+        $this->acl_object_name = 'admin.comments';
     }
 
     public function getName() {
@@ -53,13 +53,19 @@ class comments extends \IModule {
             $email = $line['autor_id'] ? $line['user_email'] : $line['autor_email'];
             $email = "<a href='mailto:$email'>$email</a>";
             $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
-            $response = $line['response'] ? html_out($line['response']) . "<br><a href='?mode=response&amp;id={$line['id']}'>Правка</a>" : "<a href='?mode=response&amp;id={$line['id']}'>Ответить</a>";
+            $response = $line['response'] ? html_out($line['response']) . 
+                    "<br><a href='{$this->link_prefix}&amp;sect=response&amp;id={$line['id']}'>Правка</a>" 
+                    : "<a href='{$this->link_prefix}&amp;sect=response&amp;id={$line['id']}'>Ответить</a>";
             $html_text = html_out($line['text']);
             $tmpl->addContent("<tr>
-		<td>{$line['id']} <a href='?mode=rm&amp;id={$line['id']}'><img src='/img/i_del.png' alt='Удалить'></a></td>
+		<td>{$line['id']} <a href='{$this->link_prefix}&amp;sect=remove&amp;id={$line['id']}'><img src='/img/i_del.png' alt='Удалить'></a></td>
 		<td>{$line['date']}</td><td>$object</td><td>$autor</td> <td>$email</td><td>$html_text</td><td>{$line['rate']}</td><td>$response</td><td>{$line['ip']}</td></tr>");
         }
         $tmpl->addContent("</table>");
+    }
+    
+    protected function renderResponseForm() {
+        
     }
     
     public function run() {
@@ -71,14 +77,10 @@ class comments extends \IModule {
                 $tmpl->addBreadcrumb($this->getName(), '');
                 $this->renderList();
                 break;
-            case 'domains':
-                $editor = new \ListEditors\MailDomainsEditor($db);
-                $editor->line_var_name = 'id';
-                $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;
-                $editor->acl_object_name = $this->acl_object_name;
-                $editor->run();
+            case 'response':
+                $this->renderResponseForm();
                 break;
-            case 'alias':
+            case 'remove':
                 $editor = new \ListEditors\MailAliasEditor($db);
                 $editor->line_var_name = 'id';
                 $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;

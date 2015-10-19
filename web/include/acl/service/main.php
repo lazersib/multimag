@@ -32,11 +32,15 @@ class main extends \acl\aclContainer {
                 "name" => "Анализатор прайсов",
                 "mask" => \acl::VIEW
             ),
+            'tickets' => array(
+                "name" => "Задания",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
             'intkb' => array(
                 "name" => "Внутренняя база знаний",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
-            'log_callrequest' => array(
+            'callrequestlog' => array(
                 "name" => "Журнал запрошенных звонков",
                 "mask" => \acl::VIEW | \acl::UPDATE
             ),
@@ -55,6 +59,10 @@ class main extends \acl\aclContainer {
             'scripts' => array(
                 "name" => "Сценарии и операции",
                 "mask" => \acl::VIEW | \acl::APPLY
+            ),
+            'feedback' => array(
+                "name" => "Сообщения об ошибках",
+                "mask" => \acl::VIEW | \acl::CREATE
             ),
         );
     }

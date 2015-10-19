@@ -36,6 +36,10 @@ class main extends \acl\aclContainer {
                 "name" => "Новости",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
+            'votings' => array(
+                "name" => "Голосования (пользовательский интерфейс)",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
         );
     }
     
