@@ -41,7 +41,6 @@ class comments extends \IModule {
 	FROM `comments`
 	INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
 	ORDER BY `comments`.`id` DESC");
-        $tmpl->addBreadcrumb('Последние коментарии', '');
         $tmpl->addContent("<h1 id='page-title'>Последние коментарии</h1>
 	<table class='list' width='100%'>
 	<tr><th>ID</th><th>Дата</th><th>Объект</th><th>Автор</th><th>e-mail</th><th>Текст коментария</th><th>Оценка</th><th>Ответ</th><th>IP адрес</th></tr>");
@@ -65,7 +64,84 @@ class comments extends \IModule {
     }
     
     protected function renderResponseForm() {
+        global $tmpl, $db;
+        $id = rcvint('id');
+        $opt = request('opt');
+        $tmpl->addBreadcrumb('Ответ на коментарий с ID ' . $id, '');
+        if ($opt) {
+            \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
+            $sql_text = $db->real_escape_string(request('text'));
+            $res = $db->query("UPDATE `comments` SET `response`='$sql_text', `responser`='{$_SESSION['uid']}' WHERE `id`='$id'");
+            if($db->affected_rows>0) {
+                $tmpl->msg("Коментарий сохранен успешно", 'ok');
+            } else {
+                $tmpl->msg("Не удалось сохранить комментарий", 'err');
+            }
+        } elseif(!\acl::testAccess($this->acl_object_name, \acl::UPDATE)) {
+            $tmpl->msg("У вас нет привилегий для ответа на комментарии", 'err');
+        }
+        $res = $db->query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
+        FROM `comments`
+        INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
+        WHERE `comments`.`id`='$id'");
+        $line = $res->fetch_assoc();
+        if (!$line) {
+            throw new Exception("Коментарий не найден!");
+        }
+        $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
+        $object = "{$line['object_name']}:{$line['object_id']}";
+        $html_text = html_out($line['text']);
+        $html_response = html_out($line['response']);
+        $tmpl->addContent("<h1 id='page-title'>Ответ на коментарий N{$line['id']}</h1>
+        <div>{$line['date']} $autor для $object пишет:<br>$html_text</div>
+        <form action='{$this->link_prefix}' method='post'>
+        <input type='hidden' name='sect' value='response'>
+        <input type='hidden' name='id' value='{$line['id']}'>
+        <input type='hidden' name='opt' value='save'>
+        Ваш ответ (500 символов максимум):<br>
+        <textarea name='text' class='text'>$html_response</textarea><br>
+        <button type='submit'>Сохранить</button>
+        </form>");
         
+    }
+    
+    protected function renderRemoveForm() {
+        global $tmpl, $db;
+        $id = rcvint('id');
+        $opt = request('opt');
+        $tmpl->addBreadcrumb('Удаление комментария с ID ' . $id, '');
+        if ($opt) {
+            \acl::accessGuard($this->acl_object_name, \acl::DELETE);
+            $db->query("DELETE FROM `comments` WHERE `id`='$id'");
+            if($db->affected_rows>0) {
+                $tmpl->msg("Коментарий удалён успешно", 'ok');
+            } else {
+                $tmpl->msg("Не удалось удалить комментарий", 'err');
+            }
+        } else {
+            if(!\acl::testAccess($this->acl_object_name, \acl::DELETE)) {
+                $tmpl->msg("У вас нет привилегий для удаления комментариев", 'err');
+            }
+            $res = $db->query("SELECT `comments`.`id`, `date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`, `comments`.`response`, `users`.`name` AS `user_name`, `users`.`reg_email` AS `user_email`
+            FROM `comments`
+            INNER JOIN `users` ON `users`.`id`=`comments`.`autor_id`
+            WHERE `comments`.`id`='$id'");
+            $line = $res->fetch_assoc();
+            if (!$line) {
+                throw new Exception("Коментарий не найден!");
+            }
+            $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
+            $object = "{$line['object_name']}:{$line['object_id']}";
+            $html_text = html_out($line['text']);
+            $tmpl->addContent("<h1 id='page-title'>Ответ на коментарий N{$line['id']}</h1>
+            <div>{$line['date']} $autor для $object пишет:<br>$html_text</div>
+            <form action='{$this->link_prefix}' method='post'>
+            <input type='hidden' name='sect' value='remove'>
+            <input type='hidden' name='id' value='{$line['id']}'>
+            <input type='hidden' name='opt' value='exec'>
+            <button type='submit'>Подтверждаю удаление комментария</button>
+            </form>");
+        }
     }
     
     public function run() {
@@ -81,17 +157,7 @@ class comments extends \IModule {
                 $this->renderResponseForm();
                 break;
             case 'remove':
-                $editor = new \ListEditors\MailAliasEditor($db);
-                $editor->line_var_name = 'id';
-                $editor->link_prefix = $this->link_prefix . '&sect=' . $sect;
-                $editor->acl_object_name = $this->acl_object_name;
-                $editor->run();
-                break;
-            case 'umap':
-                $this->renderUMap($tmpl, $db);
-                break;
-            case 'amap':
-                $this->renderAMap($tmpl, $db);
+                $this->renderRemoveForm();
                 break;
             default:
                 throw new \NotFoundException("Секция не найдена");

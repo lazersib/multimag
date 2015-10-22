@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
@@ -19,19 +20,19 @@
 
 require_once("core.php");
 
-$wikiparser=new \WikiParser();
+$wikiparser = new \WikiParser();
 
-if(!isset($_REQUEST['p'])) {
-	$arr = explode( '/' , $_SERVER['REQUEST_URI'] );
-	$arr = explode( '.' , @$arr[2] );
-	$p=urldecode(urldecode(@$arr[0]));
-}	else $p=$_REQUEST['p'];
+if (!isset($_REQUEST['p'])) {
+    $arr = explode('/', $_SERVER['REQUEST_URI']);
+    $arr = explode('.', @$arr[2]);
+    $p = urldecode(urldecode(@$arr[0]));
+} else
+    $p = $_REQUEST['p'];
 
-function articles_form($p,$text='',$type=0)
-{
-	global $tmpl,$CONFIG;
-	$types=array(0=>'Wiki (Простая и безопасная разметка, рекомендуется)', 1=>'HTML (Для профессионалов. Может быть небезопасно.)', 2=>'Wiki+HTML');
-	$tmpl->addContent("
+function articles_form($p, $text = '', $type = 0) {
+    global $tmpl, $CONFIG;
+    $types = array(0 => 'Wiki (Простая и безопасная разметка, рекомендуется)', 1 => 'HTML (Для профессионалов. Может быть небезопасно.)', 2 => 'Wiki+HTML');
+    $tmpl->addContent("
 	<script type='text/javascript' src='/js/tiny_mce/tiny_mce.js'></script>
 	<script type='text/javascript'>
 
@@ -69,16 +70,15 @@ function schange()
 	<legend>Правка статьи</legend>
 	<form action='/articles.php' method='post'>
 	<input type='hidden' name='mode' value='save'>
-	<input type='hidden' name='p' value='".html_out($p)."'>
+	<input type='hidden' name='p' value='" . html_out($p) . "'>
 	Тип разметки:<br>
 	<select name='type' id='select_type' onchange='schange()'>");
-	foreach($types AS $id => $name)
-	{
-		$s=($id==$type)?'selected':'';
-		$tmpl->addContent("<option value='$id'{$s}>$name</option>");
-	}
-	$text=html_out($text);
-	$tmpl->addContent("</select><label><input type='checkbox' id='tme' onclick='schange()'>Визуальный редактор</label><br>
+    foreach ($types AS $id => $name) {
+        $s = ($id == $type) ? 'selected' : '';
+        $tmpl->addContent("<option value='$id'{$s}>$name</option>");
+    }
+    $text = html_out($text);
+    $tmpl->addContent("</select><label><input type='checkbox' id='tme' onclick='schange()'>Визуальный редактор</label><br>
 	<textarea class='e_msg' name='text' rows='10' cols='80'>$text</textarea><br>
 	<button type='submit'>Сохранить</button>
 	</form><br><a href='/wikiphoto.php'>Галерея изображений</a><br>
@@ -88,153 +88,136 @@ function schange()
 	</table>");
 }
 
-try
-{
-        $mode = request('mode');
-	if($p=="")
-	{
-		$tmpl->setContent("<h1 id='page-title'>Статьи</h1>Здесь отображаются все статьи сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях, и служебные статьи. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
-		$tmpl->setTitle("Статьи");
-		$res=$db->query("SELECT `name`, `text` FROM `articles` ORDER BY `name`");
+try {
+    $mode = request('mode');
+    if ($p == "") {
+        $tmpl->setContent("<h1 id='page-title'>Статьи</h1>Здесь отображаются все статьи сайта. Так-же здесь находятся мини-статьи с объяснением терминов, встречающихся на витрине и в других статьях, и служебные статьи. В списке Вы видите системные названия статей - в том виде, в котором они создавались, и видны сайту. Реальные заголовки могут отличаться.");
+        $tmpl->setTitle("Статьи");
+        $res = $db->query("SELECT `name`, `text` FROM `articles` ORDER BY `name`");
 
-		$tmpl->addContent("<ul class='items'>");
-		while($nxt = $res->fetch_row()) {
-			$text = $wikiparser->parse( $nxt[1] );
-			$h = $wikiparser->title.' ( '.$wikiparser->unwiki_link($nxt[0]).' )';
-			$tmpl->addContent("<li><a class='wiki' href='/article/$nxt[0].html'>$h</a></li>");
-		}
-		$tmpl->addContent("</ul>");
-                if (isAccess('generic_articles', 'edit') || isAccess('generic_articles', 'create')) {
-                    $tmpl->addContent("<form><input type='hidden' name='mode' value='edit'><fieldset><legend>Создать/править статью</legend>"
+        $tmpl->addContent("<ul class='items'>");
+        while ($nxt = $res->fetch_row()) {
+            $text = $wikiparser->parse($nxt[1]);
+            $h = $wikiparser->title . ' ( ' . $wikiparser->unwiki_link($nxt[0]) . ' )';
+            $tmpl->addContent("<li><a class='wiki' href='/article/$nxt[0].html'>$h</a></li>");
+        }
+        $tmpl->addContent("</ul>");
+        if (\acl::testAccess('generic.articles', \acl::UPDATE) | \acl::testAccess('generic.articles', \acl::CREATE)) {
+            $tmpl->addContent("<form><input type='hidden' name='mode' value='edit'><fieldset><legend>Создать/править статью</legend>"
                     . "Имя статьи:<br><input type='text' name='p'><br><button type='submit'>Далее</button></form></fieldset>");
-                }
-	}
-	else {
-		$page_escaped = $db->real_escape_string($p);
-		$res = $db->query("SELECT `articles`.`name` AS `article_name`, `a`.`name` AS `author_name`, `articles`.`date`, `articles`.`changed`, `b`.`name` AS `editor_name`, `articles`.`text`, `articles`.`type`
+        }
+    } else {
+        $page_escaped = $db->real_escape_string($p);
+        $res = $db->query("SELECT `articles`.`name` AS `article_name`, `a`.`name` AS `author_name`, `articles`.`date`, `articles`.`changed`, `b`.`name` AS `editor_name`, `articles`.`text`, `articles`.`type`
 		FROM `articles`
 		LEFT JOIN `users` AS `a` ON `a`.`id`=`articles`.`autor`
 		LEFT JOIN `users` AS `b` ON `b`.`id`=`articles`.`changeautor`
 		WHERE `articles`.`name` LIKE '$page_escaped'");
-		if($res->num_rows) {
-			$nxt = $res->fetch_assoc();
-			$h = $meta_description = $meta_keywords='';
-			$text = $nxt['text'];
-			//if($nxt['type']==0)		$text = html_out($text);
-			if($nxt['type']==0 || $nxt['type']==2)
-			{
-				$text = $wikiparser->parse( $text );
-				$h = $wikiparser->title;
-				$meta_description=@$wikiparser->definitions['meta_description'];
-				$meta_keywords=@$wikiparser->definitions['meta_keywords'];
-			}
+        if ($res->num_rows) {
+            $nxt = $res->fetch_assoc();
+            $h = $meta_description = $meta_keywords = '';
+            $text = $nxt['text'];
+            //if($nxt['type']==0)		$text = html_out($text);
+            if ($nxt['type'] == 0 || $nxt['type'] == 2) {
+                $text = $wikiparser->parse($text);
+                $h = $wikiparser->title;
+                $meta_description = @$wikiparser->definitions['meta_description'];
+                $meta_keywords = @$wikiparser->definitions['meta_keywords'];
+            }
 
-			if(!$h)
-			{
-				$h=explode(":",$p,2);
-				if($h[1])
-					$h=$wikiparser->unwiki_link($h[1]);
-				else $h=html_out( $wikiparser->unwiki_link($p) );
-			}
-			if($mode=='')
-			{
-				$tmpl->setTitle(strip_tags($h));
-				if($nxt['editor_name']) $ch=", последнее изменение - {$nxt['editor_name']}, date {$nxt['changed']}";
-				else $ch="";
-				if($nxt['type']==0 || $nxt['type']==2)	$tmpl->addContent("<h1 id='page-title'>$h</h1>");
-				if(@$_SESSION['uid'])
-				{
-					$tmpl->addContent("<div id='page-info'>Создал: {$nxt['author_name']}, date: {$nxt['date']} $ch");
-					if(isAccess('generic_articles','edit'))
-						$tmpl->addContent(", <a href='/articles.php?p=".html_out($nxt['article_name'])."&amp;mode=edit'>Исправить</a>");
-					$tmpl->addContent("</div>");
-				}
-				$tmpl->addContent("<div class='article_text'>$text</div>");
-				$tmpl->setMetaKeywords($meta_keywords);
-				$tmpl->setMetaDescription($meta_description);
-			}
-			else
-			{
-                            if ($mode == 'edit') {
-                                if (!isAccess('generic_articles', 'edit'))
-                                    throw new AccessException();
-                                $tmpl->addContent("<h1>Правим $h</h1>");
-                                articles_form($p, $nxt['text'], $nxt['type']);
-                            }
-                            elseif ($mode == 'save') {
-                                if (!isAccess('generic_articles', 'edit')) {
-                                    throw new AccessException();
-                                }
-                                $type = rcvint('type');
-                                if ($type < 0 || $type > 2) {
-                                    $type = 0;
-                                }
-                                $text = $db->real_escape_string(@$_REQUEST['text']);
-                                $uid = intval($_SESSION['uid']);
-                                $res = $db->query("UPDATE `articles` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text', `type`='$type'
+            if (!$h) {
+                $h = explode(":", $p, 2);
+                if ($h[1])
+                    $h = $wikiparser->unwiki_link($h[1]);
+                else
+                    $h = html_out($wikiparser->unwiki_link($p));
+            }
+            if ($mode == '') {
+                $tmpl->setTitle(strip_tags($h));
+                if ($nxt['editor_name'])
+                    $ch = ", последнее изменение - {$nxt['editor_name']}, date {$nxt['changed']}";
+                else
+                    $ch = "";
+                if ($nxt['type'] == 0 || $nxt['type'] == 2)
+                    $tmpl->addContent("<h1 id='page-title'>$h</h1>");
+                if (@$_SESSION['uid']) {
+                    $tmpl->addContent("<div id='page-info'>Создал: {$nxt['author_name']}, date: {$nxt['date']} $ch");
+                    if (\acl::testAccess('generic.articles', \acl::UPDATE))
+                        $tmpl->addContent(", <a href='/articles.php?p=" . html_out($nxt['article_name']) . "&amp;mode=edit'>Исправить</a>");
+                    $tmpl->addContent("</div>");
+                }
+                $tmpl->addContent("<div class='article_text'>$text</div>");
+                $tmpl->setMetaKeywords($meta_keywords);
+                $tmpl->setMetaDescription($meta_description);
+            }
+            else {
+                if ($mode == 'edit') {
+                    \acl::accessGuard('generic.articles', \acl::UPDATE);
+                    $tmpl->addContent("<h1>Правим $h</h1>");
+                    articles_form($p, $nxt['text'], $nxt['type']);
+                } elseif ($mode == 'save') {
+                    \acl::accessGuard('generic.articles', \acl::UPDATE);
+                    $type = rcvint('type');
+                    if ($type < 0 || $type > 2) {
+                        $type = 0;
+                    }
+                    $text = $db->real_escape_string(@$_REQUEST['text']);
+                    $uid = intval($_SESSION['uid']);
+                    $res = $db->query("UPDATE `articles` SET `changeautor`='$uid', `changed`=NOW() ,`text`='$text', `type`='$type'
                                                     WHERE `name` LIKE '$page_escaped'");
 
-                                header("Location: /articles.php?p=" . $nxt['article_name']);
-                                exit();
-                            }
-                            else {
-                                throw new \NotFoundException('Неверный параметр');
-                            }
-                        }
-		}
-		else {
-			if($mode=='') {
-				$res = $db->query("SELECT `name` FROM `articles` WHERE `name` LIKE '$page_escaped:%' ORDER BY `name`");
-				if ($res->num_rows) {
-					$tmpl->setContent("<h1>Раздел " . html_out($p) . "</h1>");
-					$tmpl->setTitle(strip_tags($p));
-					$tmpl->addContent("<ul>");
-					while ($nxt = $res->fetch_row()) {
-						$h = explode(":", $nxt[0], 2);
-						$h = $wikiparser->unwiki_link($h[1]);
-						$tmpl->addContent("<li><a href='/article/" . html_out($nxt[0]) . ".html'>$h</a></li>");
-					}
-					$tmpl->addContent("</ul>");
-				}
-				else
-				{
-					$tmpl->msg("Извините, статья ".html_out($p)." не найдена на нашем сайте. Возможно, вам дали неверную ссылку, либо статья была удалена или перемещена в другое место. Для того, чтобы найти интересующую Вас информацию, воспользуйтесь ","info");
-					header('HTTP/1.0 404 Not Found');
-					header('Status: 404 Not Found');
-					if(isAccess('generic_articles','create', true))
-						$tmpl->addContent("<a href='/articles.php?p=".html_out(strip_tags($p))."&amp;mode=edit'>Создать</a>");
-				}
-			}
-			else
-			{
-				if($mode=='edit')
-				{
-					if(!isAccess('generic_articles','edit'))	throw new AccessException();
-					$h=$wikiparser->unwiki_link($p);
-					$tmpl->addContent("<h1>Создаём ".html_out($h)."</h1>");
-					articles_form($p);
-				}
-				else if($mode=='save')
-				{
-					if(!isAccess('generic_articles','create'))	throw new AccessException();
-					$type=rcvint('type');
-					$text=$db->real_escape_string($_REQUEST['text']);
-					$res=$db->query("INSERT INTO `articles` (`type`, `name`,`autor`,`date`,`text`)
+                    header("Location: /articles.php?p=" . $nxt['article_name']);
+                    exit();
+                } else {
+                    throw new \NotFoundException('Неверный параметр');
+                }
+            }
+        } else {
+            if ($mode == '') {
+                $res = $db->query("SELECT `name` FROM `articles` WHERE `name` LIKE '$page_escaped:%' ORDER BY `name`");
+                if ($res->num_rows) {
+                    $tmpl->setContent("<h1>Раздел " . html_out($p) . "</h1>");
+                    $tmpl->setTitle(strip_tags($p));
+                    $tmpl->addContent("<ul>");
+                    while ($nxt = $res->fetch_row()) {
+                        $h = explode(":", $nxt[0], 2);
+                        $h = $wikiparser->unwiki_link($h[1]);
+                        $tmpl->addContent("<li><a href='/article/" . html_out($nxt[0]) . ".html'>$h</a></li>");
+                    }
+                    $tmpl->addContent("</ul>");
+                } else {
+                    $tmpl->msg("Извините, статья " . html_out($p) . " не найдена на нашем сайте. Возможно, вам дали неверную ссылку, либо статья была удалена или перемещена в другое место. Для того, чтобы найти интересующую Вас информацию, воспользуйтесь ", "info");
+                    header('HTTP/1.0 404 Not Found');
+                    header('Status: 404 Not Found');
+                    if (\acl::testAccess('generic.articles', \acl::UPDATE, true)) {
+                        $tmpl->addContent("<a href='/articles.php?p=" . html_out(strip_tags($p)) . "&amp;mode=edit'>Создать</a>");
+                    }
+                }
+            } else {
+                if ($mode == 'edit') {
+                    \acl::accessGuard('generic.articles', \acl::UPDATE);
+                    $h = $wikiparser->unwiki_link($p);
+                    $tmpl->addContent("<h1>Создаём " . html_out($h) . "</h1>");
+                    articles_form($p);
+                }
+                else if ($mode == 'save') {
+                    \acl::accessGuard('generic.articles', \acl::CREATE);
+                    $type = rcvint('type');
+                    $text = $db->real_escape_string($_REQUEST['text']);
+                    $res = $db->query("INSERT INTO `articles` (`type`, `name`,`autor`,`date`,`text`)
 					VALUES ('$type', '$p','$uid', NOW(), '$text')");
-					header("Location: /articles.php?p=".$p);
-					exit();
-				}
-			}
-		}
-	}
-}
-catch(mysqli_sql_exception $e) {
-	$db->rollback();
-	$tmpl->ajax=0;
-	$id = writeLogException($e);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
-}
-catch(Exception $e) {
+                    header("Location: /articles.php?p=" . $p);
+                    exit();
+                }
+            }
+        }
+    }
+} catch (mysqli_sql_exception $e) {
+    $db->rollback();
+    $tmpl->ajax = 0;
+    $id = writeLogException($e);
+    $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+} catch (Exception $e) {
     $db->query("ROLLBACK");
     $tmpl->addContent("<br><br>");
     writeLogException($e);
@@ -243,5 +226,3 @@ catch(Exception $e) {
 
 
 $tmpl->write();
-
-?>

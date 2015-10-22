@@ -57,8 +57,7 @@ try {
         $tmpl->addContent("</ul>");
     }
     else {
-        if (!isAccess('service_' . $mode, 'view'))
-            throw new AccessException("Недостаточно привилегий");
+        \acl::accessGuard('service.'.$mode, \acl::VIEW);
         $opt = request('opt');
         $fn = $dir . $mode . '.php';
         if (file_exists($fn)) {

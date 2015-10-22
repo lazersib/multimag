@@ -80,9 +80,7 @@ class doc_Kompredl extends doc_Nulltype {
             $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=3'\">Заявка покупателя</div>");
         } else if ($target_type == 3) {
             $db->startTransaction();
-            if (!isAccess('doc_zayavka', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.zayavka', \acl::CREATE); 
             $new_doc = new doc_Zayavka();
             $dd = $new_doc->createFromP($this);
             $new_doc->setDopData('cena', $this->dop_data['cena']);

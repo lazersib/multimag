@@ -255,24 +255,19 @@ class ds_sborka_zap {
         }
         // Json вариант добавления позиции
         else if ($peopt == 'jadd') {
-            if (!isAccess('doc_sborka', 'edit'))
-                throw new AccessException("Недостаточно привилегий");
+            \acl::accessGuard('doc.sborka', \acl::UPDATE);
             $pe_pos = rcvint('pe_pos');
             $tmpl->setContent($poseditor->AddPos($pe_pos));
         }
         // Json вариант удаления строки
         else if ($peopt == 'jdel') {
-            if (!isAccess('doc_sborka', 'edit')) {
-                throw new AccessException("Недостаточно привилегий");
-            }
+            \acl::accessGuard('doc.sborka', \acl::UPDATE);
             $line_id = rcvint('line_id');
             $tmpl->setContent($poseditor->Removeline($line_id));
         }
         // Json вариант обновления
         else if ($peopt == 'jup') {
-            if (!isAccess('doc_sborka', 'edit')) {
-                throw new AccessException("Недостаточно привилегий");
-            }
+            \acl::accessGuard('doc.sborka', \acl::UPDATE);
             $line_id = rcvint('line_id');
             $value = request('value');
             $type = request('type');

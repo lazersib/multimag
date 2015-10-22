@@ -45,7 +45,7 @@ class main extends \acl\aclContainer {
                 "mask" => \acl::VIEW | \acl::APPLY
             ),            
             'accesslog' => array(
-                "name" => "Журнал обращений",
+                "name" => "Журнал посещений",
                 "mask" => \acl::VIEW
             ),
             'browserlog' => array(

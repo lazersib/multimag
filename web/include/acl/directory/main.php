@@ -28,19 +28,58 @@ class main extends \acl\aclContainer {
                 "name" => "Агенты",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
             ),
-            'agent_dov' => array(
+            'agent.ext' => array(
+                "name" => "Агенты: дата сверки и ответственный",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
+            ),
+            'attorney' => array(
                 "name" => "Доверенные лица",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
             ),
-            'store' => array(
-                "name" => "Склад",
+            'goods' => array(
+                "name" => "Товары и услуги",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
+            ),            
+            'bank' => array(
+                "name" => "Банки",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
-            'doc' => array(
-                "name" => "Документы",
-                "mask" => \acl::VIEW | \acl::UPDATE
+            'cash' => array(
+                "name" => "Кассы",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
-            
+            'firm' => array(
+                "name" => "Собственные организации",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'ctype' => array(
+                "name" => "Виды доходов",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'dtype' => array(
+                "name" => "Виды расходов",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'storelist' => array(
+                "name" => "Справочник складов",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'account' => array(
+                "name" => "Бухгалтерские счета",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'postype' => array(
+                "name" => "Типы складских наименований",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'posparam' => array(
+                "name" => "Параметры складских наименований",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'unit' => array(
+                "name" => "Единицы измерения",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
         );
     }
     

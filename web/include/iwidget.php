@@ -37,11 +37,11 @@ abstract class IWidget {
     abstract public function setParams($param_str);
     
     /// Узнать, есть ли необходимые привилегии
-    /// @param $view    Строка с наименованием привилегии. По умолчанию - view (просмотр)
-    final function isAllow($mode='view') {
+    /// @param $mode    Константа привилегии. По умолчанию - view (просмотр)
+    final function isAllow($mode =  \acl::VIEW) {
             if(!$this->acl_object_name)
                 return true;
-            return isAccess($this->acl_object_name, $mode, true);
+            return \acl::testAccess($this->acl_object_name, $mode, true);
     }
 
     /// Получить HTML код виджета

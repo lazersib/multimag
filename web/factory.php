@@ -87,9 +87,8 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 
 try
 {
-        if (!isAccess('doc_factory', 'view')) {
-            throw new AccessException();
-        }
+    \acl::accessGuard('doc.specific', \acl::VIEW);    
+
         need_auth($tmpl);
 	$tmpl->hideBlock('left');
 	SafeLoadTemplate($CONFIG['site']['inner_skin']);
@@ -198,10 +197,10 @@ try
 			if($res->num_rows==0)	$tmpl->msg("Наименование с таким кодом отсутствует в базе",'err');
 			else
 			{
-				if(!isAccess('doc_factory','edit'))	throw new AccessException('');
-				$line=$res->fetch_row();
-				$r=$db->query("REPLACE INTO `factory_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
-				VALUES ($sklad, $builder, '$date', $line[0], $cnt)");
+                            \acl::accessGuard('doc.specific', \acl::UPDATE); 
+                            $line=$res->fetch_row();
+                            $r=$db->query("REPLACE INTO `factory_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
+                            VALUES ($sklad, $builder, '$date', $line[0], $cnt)");
 			}
 		}
 		if(isset($_REQUEST['del_id']))
@@ -512,7 +511,8 @@ try
                 'service_id' => $service_id,
                 'not_a_p' => 0,
                 'storekeeper_id' => $storekeeper_id,
-            );        
+            );     
+            \acl::accessGuard('doc.sborka', \acl::CREATE); 
             $doc_obj = new doc_Sborka();
             $doc_id = $doc_obj->create($doc_data);
             $doc_obj->setDopDataA($dop_data); 

@@ -25,7 +25,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 	function View() {
 		global $tmpl;
 		doc_menu();
-		if(!isAccess('list_price_an','view'))	throw new AccessException();
+		\acl::accessGuard('service.pricean', \acl::VIEW);
 		$tmpl->addStyle("
 		.tlist{border: 1px solid #bbb; width: 100%; border-collapse: collapse;}
 		.tlist tr:nth-child(2n) {background: #e0f0ff; } 
@@ -192,7 +192,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		doc_menu();
 		$pos = rcvint('pos');
 		$param = request('param');
-		if(!isAccess('list_price_an','edit'))	throw new AccessException();
+		\acl::accessGuard('service.pricean', \acl::UPDATE);
 		if($pos!=0)
 			$this->PosMenu($pos, $param);
 

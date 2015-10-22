@@ -187,9 +187,7 @@ class doc_v_puti extends doc_Nulltype {
             $tmpl->ajax = 1;
             $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Поступление</div>");
         } else if ($target_type == 1) {
-            if (!isAccess('doc_postuplenie', 'create')) {
-                throw new AccessException("");
-            }
+            \acl::accessGuard('doc.postuplenie', \acl::CREATE);
             $db->startTransaction();
             $new_doc = new doc_Postuplenie();
             $dd = $new_doc->createFromP($this);

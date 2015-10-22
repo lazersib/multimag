@@ -103,6 +103,19 @@ function get_max_upload_filesize()
     return min($max_fs, $max_post);
 }
 
+function formatRoundedFileSize($size) {
+    if ($size > 1024 * 1024 * 1024) {
+        $size = round($size / (1024 * 1024 *1024), 2) . ' Гб';
+    } else if ($size > 1024 * 1024) {
+        $size = round($size / (1024 * 1024), 2) . ' Мб';
+    } else if ($size > 1024) {
+        $size = round($size / (1024), 2) . ' Кб';
+    } else {
+        $size.='байт';
+    }
+    return $size;
+}
+
 /// @brief Форматирование номера телефона, записанного в международном формате, в легкочитаемый вид.
 ///
 /// Номера, не начинающиеся с +, возвращаются без форматирования
@@ -349,38 +362,6 @@ function need_auth()
 /// Проверка аутентификации
 function auth() {
 	return (@$_SESSION['uid']==0)?0:1;
-}
-
-/// Есть ли привилегия доступа к указанному объекту для указанной операции
-/// @param $object Имя объекта, для которого нужно проверить привилегии
-/// @param $action Имя действия, для осуществления которого нужно проверить привилегии
-/// @param $no_redirect Если false - то в случае отсутствия привилегий, и если не пройдена аутентификация, выполняет редирект на страницу аутентификации
-function isAccess($object, $action,$no_redirect=false) {
-    try {
-        throw new \Exception('');
-    } catch (Exception $e) {
-        echo "Вызов isAccess!<br>trace".$e->getTraceAsString();
-        die();
-    }
-    
-	global $db;
-	$uid=@$_SESSION['uid'];
-	if($uid==1)	return true;
-	$res=$db->query("(
-	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action'
-	) UNION (
-	SELECT `users_groups_acl`.`id` FROM `users_groups_acl`
-	INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`
-	WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action')
-	UNION (
-	SELECT `users_groups_acl`.`id` FROM `users_groups_acl`
-	INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`
-	WHERE `uid`='0' AND `object`='$object' AND `action`='$action')
-	UNION(
-	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='0' AND `object`='$object' AND `action`='$action')");
-	$access=($res->num_rows>0)?true:false;
-	if((!$uid) && (!$access) && (!$no_redirect))	need_auth();
-	return $access;
 }
 
 // Проверка, не принадлежит ли текущая сессия другому пользователю

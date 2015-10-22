@@ -90,9 +90,7 @@ class agentContactEditor extends \ListEditor {
         }
         $write_data['agent_id'] = intval($this->agent_id);
         if ($id) {
-            if (!isAccess($this->acl_object_name, 'edit')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
             $old_data = $this->getItem($id);
             unset($old_data['id']);
             $this->db_link->updateA($this->table_name, $id, $write_data);
@@ -101,9 +99,7 @@ class agentContactEditor extends \ListEditor {
             $log_text = getCompareStr($old_data, $write_data);
             doc_log('UPDATE agent_contact ID:'.$id, $log_text, 'agent', intval($this->agent_id));
         } else {
-            if (!isAccess($this->acl_object_name, 'create')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::CREATE);
             $id = $this->db_link->insertA($this->table_name, $write_data);
             $log_text = getCompareStr(array('context'=>'','type'=>'','value'=>'','no_ads'=>'','for_sms'=>'','for_fax'=>''), $write_data);
             doc_log('ADD agent_contact', $log_text, 'agent', intval($this->agent_id));

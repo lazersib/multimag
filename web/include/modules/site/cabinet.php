@@ -72,10 +72,6 @@ class cabinet extends \IModule {
             $this->getDocListForThisUser();
         } elseif ($mode == 'get_doc') {
             $this->getDocPdf();
-        } elseif ($mode == 'elog') {
-            $this->viewErrorLog();
-        } elseif ($mode == 'log_call_request') {
-            $this->viewCallRequestLog();
         } elseif ($mode == 'feedback') {
             $this->viewFeedbackForm();
         } elseif ($mode == 'feedback_send') {
@@ -85,6 +81,8 @@ class cabinet extends \IModule {
         }
     }
     
+    
+    /// Добавить группу в меню личного кабинета
     public function addMenuGroup($name, $viewname) {
         if(!isset($this->menu[$name])) {
             $this->menu[$name] = array(
@@ -96,6 +94,7 @@ class cabinet extends \IModule {
         }
     }
     
+    /// Добавить элемент в меню личного кабинета
     public function addMenuElement($group_name, $name, $acl_obj, $viewname, $link, $icon = null) {
         $this->menu[$group_name]['content'][$name]  = array(
             'acl_obj' => $acl_obj,
@@ -105,6 +104,7 @@ class cabinet extends \IModule {
         );
     }
     
+    /// Добавить подэлемент в меню личного кабинета
     public function addMenuSubElement($group_name, $element_name, $acl_obj, $viewname, $link, $icon = null) {
         $obj = array(
             'acl_obj' => $acl_obj,
@@ -115,6 +115,32 @@ class cabinet extends \IModule {
         $this->menu[$group_name]['content'][$element_name]['childs'][] = $obj;
     }
     
+    /// Загрузить список элеметнов меню личного кабинета
+    public function loadMenuElements($menu_group, $module_group, $link_prefix) {
+        global $CONFIG;
+        $dir = $CONFIG['site']['location'] . "/include/modules/$module_group/";
+        if (!is_dir($dir)) {
+            return false;
+        }
+        $dh = opendir($dir);
+        if (!$dh) {
+            return false;
+        }
+        while (($file = readdir($dh)) !== false) {
+            if (preg_match('/.php$/', $file)) {
+                $cn = explode('.', $file);
+                $class_name = "\\Modules\\$module_group\\" . $cn[0];
+                $module = new $class_name;
+                if ($module->isAllow()) {
+                    $printname = $module->getName();
+                    $acl_obj = $module->getAclObjectName();
+                    $this->addMenuElement($menu_group, $cn[0], $acl_obj, $printname, $link_prefix . $cn[0]);
+                }
+            }
+        }
+    }
+
+    /// Заполнить меню личного кабинета
     protected function fillMenu() {
         $this->addMenuGroup('worker', 'Сотруднику');
         $this->addMenuGroup('admin', 'Администратору');
@@ -123,34 +149,12 @@ class cabinet extends \IModule {
         $this->addMenuElement('worker', 'doclist', 'directory.doc', 'Документы', '/docj_new.php');
         $this->addMenuElement('worker', 'intkb', 'service.intkb', 'База знаний', '/intkb.php');
         $this->addMenuElement('worker', 'factory', 'service.factory', 'Учёт на производстве', '/factory.php');
-        $this->addMenuElement('worker', 'callrequestlog', 'service.callrequestlog', 'Журнал запрошенных звонков', '/user.php?mode=log_call_request');
         $this->addMenuElement('worker', 'tickets', 'service.tickets', 'Задания', '/tickets.php');
-        $this->addMenuElement('worker', 'cdr', 'service.cdr', 'Статистика телефонных вызовов', '/service.php?mode=cdr');
-        $this->addMenuElement('worker', 'feedback', 'service.feedback', 'Сообщить об ошибке', '/user.php?mode=feedback');
+        $this->addMenuElement('worker', 'feedback', 'service.feedback', 'Сообщить об ошибке', '/user.php?mode=feedback');        
+        $this->loadMenuElements('worker', 'service', '/service.php?mode=');
         
-               
-        $dir = "include/modules/admin/";        
-        if (is_dir($dir)) {
-            $dh = opendir($dir);
-            if ($dh) {
-                while (($file = readdir($dh)) !== false) {
-                    if (preg_match('/.php$/', $file)) {
-                        $cn = explode('.', $file);
-                        $class_name = "\\Modules\\Admin\\" . $cn[0];
-                        $module = new $class_name;
-                        if($module->isAllow()) {
-                            $printname = $module->getName();
-                            $acl_obj = $module->getAclObjectName();
-                            $this->addMenuElement('admin', $cn[0], $acl_obj, $printname, '/adm.php?mode='.$cn[0]);
-                        }
-                    }
-                }
-            }
-        }
-        $this->addMenuElement('admin', 'async_task', 'admin.asynctask', 'Ассинхронные задачи', '/user.php?mode=async_task');
+        $this->loadMenuElements('admin', 'admin', '/adm.php?mode=');
         $this->addMenuElement('admin', 'users', 'admin.users', 'Пользователи', '/adm_users.php');
-        $this->addMenuElement('admin', 'errorlog', 'admin.errorlog', 'Журнал ошибок', '/users.php?mode=elog');
-        $this->addMenuElement('admin', 'accesslog', 'admin.accesslog', 'Журнал посещений', '/users.php?mode=clog'); 
         
         $this->addMenuElement('user', 'profile', null, 'Мой профиль', '/users.php?mode=profile');
         $this->addMenuElement('user', 'my_docs', null, 'Мои документы', '/users.php?mode=my_docs');
@@ -158,7 +162,7 @@ class cabinet extends \IModule {
         $this->addMenuElement('user', 'articles', 'generic.articles', 'Статьи', '/articles.php');
     }
 
-
+    /// Отобразить меню личного кабинета
     public function viewCabinetPage() {
         global $tmpl;
         $this->fillMenu();
@@ -577,107 +581,11 @@ class cabinet extends \IModule {
             throw new \NotFoundException("Документ не указан");
         }
     }
-    
-    /// Отобразить журнал ошибок
-    public function viewErrorLog() {
-        global $tmpl, $db, $CONFIG;
-        if (!isAccess('log_error', 'view')) {
-            throw new \AccessException();
-        }
-        $id = rcvint('id');
-        if($id) {
-            $tmpl->setContent("<h1>Детализация ошибки $id</h1>");
-            $tmpl->addBreadcrumb('Журнал ошибок', $this->link_prefix.'?mode=elog');
-            $tmpl->addBreadcrumb('Детализация ошибки '.$id, '');
-            $line = $db->selectRow('errorlog', $id);
-            $line['trace'] = str_replace("\n", '</li><li>', html_out($line['trace']));
-            $pref_len = strlen($CONFIG['location']);
-            $fname = substr($line['file'], $pref_len);
-            $link = 'http://multimag.tndproject.org/browser/trunk'.$fname.'?rev='.MULTIMAG_REV.'#L'.$line['line'];
-            $tmpl->addContent("<ui class='items'>"
-                . "<li>id: {$line['id']}</li>"
-                . "<li>Сообщение: ".html_out($line['msg'])."</li>"
-                . "<li>Класс: ".html_out($line['class'])."</li>"
-                . "<li>Кoд: ".html_out($line['code'])."</li>"
-                . "<li>Файл: <a href='$link'>".html_out($line['file'])."</a></li>"
-                . "<li>Строка: ".html_out($line['line'])."</li>"
-                . "<li>Страница: ".html_out($line['page'])."</li>"
-                . "<li>Ссылка: ".html_out($line['referer'])."</li>"
-                . "<li>Дата: ".html_out($line['date'])."</li>"
-                . "<li>IP: ".html_out($line['ip'])."</li>"
-                . "<li>Броузер: ".html_out($line['useragent'])."</li>"
-                . "<li>ID пользователя: ".html_out($line['uid'])."</li>"
-                . "<li>Стек:<ul><li>".$line['trace']."</li></ul></li>"
-                . "</ul>");
-        }
-        else {
-            $tmpl->addBreadcrumb('Журнал ошибок', '');
-            $p = rcvint('p', 1);
-            if ($p <= 0) {
-                $p = 1;
-            }
-            $lines = 250;
-            $from=($p-1)*$lines;
-            $tmpl->setContent("<h1>Журнал ошибок</h1>");
-            $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `id`, `class`, `page`, `referer`, `code`, `msg`, `file`, `line`, `date`, `ip`, `useragent`, `uid` "
-                . "FROM `errorlog` "
-                . "ORDER BY `id` DESC LIMIT $from, $lines");
-            $fr = $db->query('SELECT FOUND_ROWS()');
-            list($total) = $fr->fetch_row();
-            $tmpl->addContent("<table width='100%' class='list'>
-            <tr><th>Дата</th><th>Класс</th><th>Код</th><th>Ошибка</th><th>Файл:строка</th><th>Страница</th><th>ID</th></tr>");
-            $i=0;
-            while($line = $res->fetch_assoc()) {
-                $line['date'] = str_replace(' ', '&nbsp', html_out($line['date']));
-                $tmpl->addContent('<tr>'
-                . '<td>'.$line['date'].'</td>'
-                . '<td>'.html_out($line['class']).'</td>'
-                . '<td>'.$line['code'].'</td>'
-                . '<td>'.html_out($line['msg']).'</td>'
-                . '<td>'.html_out(basename($line['file'])).':'.$line['line'].'</td>'
-                . '<td>'.html_out($line['page']).'</td>'
-                . '<td><a href="/user.php?mode=elog&amp;id='.$line['id'].'">'.$line['id'].'</a></td>'
-                . '</tr>');
-            }
-            $tmpl->addContent('</table>');
-
-            $pages_count = ceil($total/$lines);
-            if ($pages_count > 1) {
-                $tmpl->addContent('<p>Страницы: ');
-                for ($i = 1; $i <= $pages_count; ++$i) {
-                    if ($i == $p) {
-                        $tmpl->addContent("<b>$i</b> ");
-                    } else {
-                        $tmpl->addContent("<a href='?mode=elog&amp;p=$i'>$i</a> ");
-                    }
-                }
-                $tmpl->addContent("</p>");
-            }
-        }
-    }
-
-    // Отобразить журнал запрошенных звонков
-    public function viewCallRequestLog() {
-        global $tmpl, $db;
-        if (!isAccess('log_call_request', 'view')) {
-            throw new AccessException();
-        }
-        $tmpl->addBreadcrumb('Журнал запрошенных звонков', '');
-        $tmpl->setContent("<h1>Журнал запрошенных звонков</h1>
-	<div class='content'>
-	<table width='100%' class='list' cellspacing='0'>
-	<tr><th>Дата запроса</th><th>Кому звонить?</th><th>Куда звонить?</th><th>Когда звонить?</th><th>IP</th></tr>");
-	$res=$db->query("SELECT `id`, `request_date`, `name`, `phone`, `call_date`, `ip` FROM `log_call_requests` ORDER BY `request_date` DESC");
-	while ($line = $res->fetch_assoc()) {
-            $tmpl->addContent("<tr><td>" . html_out($line['request_date']) . "</td><td>" . html_out($line['name']) . "</td><td>" . html_out($line['phone']) . 
-                "</td><td>" . html_out($line['call_date']) . "</td><td>{$line['ip']}</td></tr>");
-        }
-        $tmpl->addContent("</table></div>");
-    }
 
     /// Отобразить форму запроса на доработку
     public function viewFeedbackForm() {
         global $tmpl, $CONFIG;
+        \acl::accessGuard('service.feedback', \acl::VIEW);
         if (!$CONFIG['site']['trackticket_login']) {
             throw new \Exception("Конфигурация модуля обратной связи не заполнена!");
         }
@@ -757,6 +665,7 @@ class cabinet extends \IModule {
     /// Отправить запрос на доработку программы
     public function sendFeedback() {
         global $tmpl, $CONFIG;
+        \acl::accessGuard('service.feedback', \acl::CREATE);
         $fields = array(
             '__FORM_TOKEN' => $_POST['token'],
             'field_type' => $_POST['field_type'],

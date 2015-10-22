@@ -63,7 +63,7 @@ try {
     $_SESSION['uid'] = $user_info['id'];
     $_SESSION['name'] = $user_info['name'];
     
-    if(!isAccess('doc_1csync', 'exec', true)) {
+    if(!\acl::testAccess('service.1csync', \acl::APPLY, true)) {
         throw new \AccessException("Отсутствуют необходимые привилегии" );
     }
     

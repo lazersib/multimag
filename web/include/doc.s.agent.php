@@ -28,7 +28,7 @@ class doc_s_Agent {
 	function View() {
 		global $tmpl;
 		doc_menu(0,0);
-		if(!isAccess('list_agent','view'))	throw new AccessException();
+                \acl::accessGuard('directory.agent', \acl::VIEW);
 		$tmpl->setTitle("Редактор агентов");
 		$tmpl->addContent("<h1>Агенты</h1><table width=100%><tr><td id='groups' width='200' valign='top' class='lin0'>");
 		$this->draw_groups(0);
@@ -106,7 +106,7 @@ class doc_s_Agent {
 		$pos = rcvint('pos');
 		$param = request('param');
 		$group = rcvint('g');
-		if(!isAccess('list_agent','view'))	throw new AccessException();
+		\acl::accessGuard('directory.agent', \acl::VIEW);
 		$tmpl->setTitle("Правка агента");
                 $tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');
                 
@@ -145,7 +145,7 @@ class doc_s_Agent {
 			
 			$span = 5;
 			$ext='';
-			if(!isAccess('doc_agent_ext', 'edit')) $ext='disabled';
+			if(!\acl::testAccess('directory.agent.ext', \acl::UPDATE)) $ext='disabled';
 			$dish_checked = $agent_info['dishonest']?'checked':'';
 			$nbp_checked = $agent_info['no_bulk_prices']?'checked':'';
 			$nrp_checked = $agent_info['no_retail_prices']?'checked':'';
@@ -423,7 +423,7 @@ class doc_s_Agent {
 			settype($ag_info['no_bonuses'],'int');
 			settype($new_agent_info['no_bonuses'],'int');
 			
-			if(!isAccess('doc_agent_ext', 'edit'))	{
+			if(!\acl::testAccess('directory.agent.ext', \acl::UPDATE))	{
 				unset($new_agent_info['responsible']);
 				unset($new_agent_info['data_sverki']);
 				unset($ag_info['responsible']);
@@ -442,7 +442,7 @@ class doc_s_Agent {
 			//if( (!preg_match('/^\w+([-\.\w]+)*\w@\w(([-\.\w])*\w+)*\.\w{2,8}$/', $new_agent_info['email'])) && ($new_agent_info['email']!='') )
 			//	throw new Exception("Неверный e-mail!");
 			if($pos) {
-				if(!isAccess('list_agent','edit'))	throw new AccessException();
+				\acl::accessGuard('directory.agent', \acl::UPDATE);
 				$log_start='UPDATE';				
 				$db->updateA('doc_agent', $pos, $new_agent_info);
 				$this->PosMenu($pos, '');
@@ -451,7 +451,7 @@ class doc_s_Agent {
 			else {
 				$log_start='CREATE';
 				$new_agent_info['responsible'] = $_SESSION['uid'];
-				if(!isAccess('list_agent','create'))	throw new AccessException();
+				\acl::accessGuard('directory.agent', \acl::CREATE);
 				
 				$pos = $db->insertA('doc_agent', $new_agent_info);
 				$this->PosMenu($pos, '');
@@ -467,14 +467,14 @@ class doc_s_Agent {
 				'pid' => rcvint('pid')
 			);
 			if($group){
-				if(!isAccess('list_agent', 'edit'))	throw new AccessException();
+				\acl::accessGuard('directory.agent', \acl::EDIT);
 				$old_data = $db->selectRowAi('doc_agent_group', $group, $new_data);
 				$log_text = getCompareStr($old_data, $new_data);
 				$db->updateA('doc_agent_group', $group,$new_data);
 				doc_log('UPDATE', $log_text, 'agent_group', $group);
 			}
 			else {
-				if(!isAccess('list_agent', 'create'))	throw new AccessException();
+				\acl::accessGuard('directory.agent', \acl::CREATE);
 				$old_data = array();
 				foreach ($new_data as $id => $value)
 					$old_data[$id]='';

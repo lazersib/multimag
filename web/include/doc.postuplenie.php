@@ -241,9 +241,7 @@ class doc_Postuplenie extends doc_Nulltype {
             $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=5'\">Расходный банковский ордер</div>");
             $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=7'\">Расходный кассовый ордер</div>");
         } else if ($target_type == 2) {
-            if (!isAccess('doc_realizaciya', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.realizaciya', \acl::CREATE);
             $db->startTransaction();
             $new_doc = new doc_Realizaciya();
             $dd = $new_doc->createFromP($this);
@@ -251,9 +249,7 @@ class doc_Postuplenie extends doc_Nulltype {
             header("Location: doc.php?mode=body&doc=$dd");
         }
         else if ($target_type == 5) {
-            if (!isAccess('doc_rbank', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.rbank', \acl::CREATE);
             $this->recalcSum();
             $db->startTransaction();
             $new_doc = new doc_RBank();
@@ -264,9 +260,7 @@ class doc_Postuplenie extends doc_Nulltype {
             header('Location: doc.php?mode=body&doc=' . $doc_num);
         }
         else if ($target_type == 7) {
-            if (!isAccess('doc_rko', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.rko', \acl::CREATE);
             $this->recalcSum();
             $db->startTransaction();
             $new_doc = new doc_Rko();

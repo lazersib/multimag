@@ -34,9 +34,7 @@ if (!isset($_REQUEST['p'])) {
 }
 
 need_auth();
-if (!isAccess('generic_intkb', 'view')) {
-    throw new AccessException("");
-}
+\acl::accessGuard('service.intkb', \acl::VIEW);
 
 function articles_form($p, $text = '', $type = 0) {
     global $tmpl, $CONFIG;
@@ -111,7 +109,7 @@ try {
             $tmpl->addContent("<li><a class='wiki' href='/intkb.php?p=".html_out($nxt[0])."'>$h</a></li>");
         }
         $tmpl->addContent("</ul>");
-        if (isAccess('generic_intkb', 'edit') || isAccess('generic_intkb', 'create')) {
+        if (\acl::testAccess('service.intkb', \acl::UPDATE) || \acl::testAccess('service.intkb', \acl::CREATE)) {
             $tmpl->addContent("<form><input type='hidden' name='mode' value='edit'><fieldset><legend>Создать/править статью</legend>"
                 . "Имя статьи:<br><input type='text' name='p'><br><button type='submit'>Далее</button></form></fieldset>");
         }
@@ -150,12 +148,13 @@ try {
                     $ch = ", последнее изменение - {$nxt['editor_name']}, date {$nxt['changed']}";
                 else
                     $ch = "";
-                if ($nxt['type'] == 0 || $nxt['type'] == 2)
-                    //$tmpl->addContent("<h1 id='page-title'>$h</h1>");
+                if ($nxt['type'] == 0 || $nxt['type'] == 2) {
                     $tmpl->addContent("<div id='page-info'>Создал: {$nxt['author_name']}, date: {$nxt['date']} $ch");
-                    if (isAccess('generic_intkb', 'edit'))
-                        $tmpl->addContent(", <a href='intkb.php?p=" . html_out($nxt['article_name']) . "&amp;mode=edit'>Исправить</a>");
-                    $tmpl->addContent("</div>");
+                }
+                if (\acl::testAccess('service.intkb', \acl::UPDATE)) {
+                    $tmpl->addContent(", <a href='intkb.php?p=" . html_out($nxt['article_name']) . "&amp;mode=edit'>Исправить</a>");
+                }
+                $tmpl->addContent("</div>");
 
                 $tmpl->addContent("<div class='article_text'>$text</div>");
                 $tmpl->setMetaKeywords($meta_keywords);
@@ -163,15 +162,12 @@ try {
             }
             else {
                 if ($mode == 'edit') {
-                    if (!isAccess('generic_intkb', 'edit'))
-                        throw new AccessException();
+                    \acl::accessGuard('service.intkb', \acl::UPDATE);
                     $tmpl->addContent("<h1>Правим $h</h1>");
                     articles_form($p, $nxt['text'], $nxt['type']);
                 }
                 elseif ($mode == 'save') {
-                    if (!isAccess('generic_intkb', 'edit')) {
-                        throw new AccessException();
-                    }
+                    \acl::accessGuard('service.intkb', \acl::UPDATE);
                     $type = rcvint('type');
                     if ($type < 0 || $type > 2) {
                         $type = 0;
@@ -204,21 +200,20 @@ try {
                     $tmpl->msg("Извините, статья " . html_out($p) . " не найдена на нашем сайте. Возможно, вам дали неверную ссылку, либо статья была удалена или перемещена в другое место. Для того, чтобы найти интересующую Вас информацию, воспользуйтесь ", "info");
                     header('HTTP/1.0 404 Not Found');
                     header('Status: 404 Not Found');
-                    if (isAccess('generic_intkb', 'create', true))
+                    if (\acl::testAccess('service.intkb', \acl::CREATE, true)) {
                         $tmpl->addContent("<a href='intkb.php?p=" . html_out(strip_tags($p)) . "&amp;mode=edit'>Создать</a>");
+                    }
                 }
             }
             else {
                 if ($mode == 'edit') {
-                    if (!isAccess('generic_intkb', 'edit'))
-                        throw new AccessException();
+                    \acl::accessGuard('service.intkb', \acl::UPDATE);
                     $h = $wikiparser->unwiki_link($p);
                     $tmpl->addContent("<h1>Создаём " . html_out($h) . "</h1>");
                     articles_form($p);
                 }
                 else if ($mode == 'save') {
-                    if (!isAccess('generic_intkb', 'create'))
-                        throw new AccessException();
+                    \acl::accessGuard('service.intkb', \acl::CREATE);
                     $type = rcvint('type');
                     $text = $db->real_escape_string($_REQUEST['text']);
                     $uid = (int)$_SESSION['uid'];

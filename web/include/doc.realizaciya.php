@@ -359,24 +359,32 @@ class doc_Realizaciya extends doc_Nulltype {
 
         if ($target_type == '') {
             $tmpl->ajax = 1;
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=18'\">Корректировка долга</div>"
-                . "<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=23'\">Пропуск</div>");
-            if (!$this->doc_data['p_doc']) {
+            if(\acl::testAccess('doc.pko', \acl::CREATE)) {
+                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>");
+            }
+            if(\acl::testAccess('doc.pbank', \acl::CREATE)) {
+                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>");
+            }
+            if(\acl::testAccess('doc.kordolga', \acl::CREATE)) {
+                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=18'\">Корректировка долга</div>");
+            }
+            if(\acl::testAccess('doc.permitout', \acl::CREATE)) {
+                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=23'\">Пропуск</div>");
+            }
+            if (!$this->doc_data['p_doc'] && \acl::testAccess('doc.zayavka', \acl::CREATE)) {
                 $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Заявка (родительская)</div>");
             }
         }
         else if ($target_type == '1') {
+            \acl::accessGuard('doc.zayavka', \acl::CREATE);
             $new_doc = new doc_Zayavka();
             $dd = $new_doc->CreateParent($this);
             $new_doc->setDopData('cena', $this->dop_data['cena']);
             $this->setDocData('p_doc', $dd);
             header("Location: doc.php?mode=body&doc=$dd");
-        } else if ($target_type == 6) {
-            if (!isAccess('doc_pko', 'create')) {
-                throw new AccessException("");
-            }
+        } 
+        else if ($target_type == 6) {
+            \acl::accessGuard('doc.pko', \acl::CREATE);
             $sum = $this->recalcSum();
             $db->startTransaction();
             $new_doc = new doc_Pko();
@@ -387,9 +395,7 @@ class doc_Realizaciya extends doc_Nulltype {
             header($ref);
         }
         else if ($target_type == 4) {
-            if (!isAccess('doc_pbank', 'create')) {
-                throw new AccessException("");
-            }
+            \acl::accessGuard('doc.pbank', \acl::CREATE);
             $sum = $this->recalcSum();
             $db->startTransaction();
             $new_doc = new doc_Pbank();
@@ -400,17 +406,13 @@ class doc_Realizaciya extends doc_Nulltype {
             header($ref);
         }
         else if ($target_type == 18) {
-            if (!isAccess('doc_kordolga', 'create')) {
-                throw new AccessException("");
-            }
+            \acl::accessGuard('doc.kordolga', \acl::CREATE);
             $new_doc = new doc_Kordolga();
             $dd = $new_doc->createFrom($this);
             $new_doc->setDocData('sum', $this->doc_data['sum'] * (-1));
             header("Location: doc.php?mode=body&doc=$dd");
         } else if ($target_type == 23) {
-            if (!isAccess('doc_permitout', 'create')) {
-                throw new AccessException("");
-            }
+            \acl::accessGuard('doc.permitout', \acl::CREATE);
             $new_doc = new doc_PermitOut();
             $dd = $new_doc->createFrom($this);
             header("Location: doc.php?mode=body&doc=$dd");
@@ -465,9 +467,7 @@ class doc_Realizaciya extends doc_Nulltype {
 <input type=submit value='Сохранить'></form>");
         }
         else if ($opt == "dovs") {
-            if (!isAccess('doc_' . $this->typename, 'edit')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.'.$this->typename, \acl::UPDATE);
             $this->setDopData('dov', request('dov'));
             $this->setDopData('dov_agent', request('dov_agent'));
             $this->setDopData('dov_data', request('dov_data'));

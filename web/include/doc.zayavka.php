@@ -345,145 +345,118 @@ class doc_Zayavka extends doc_Nulltype {
     }
 
     /// Формирование другого документа на основании текущего
-	function MorphTo($target_type)
-	{
-		global $tmpl, $db;
+    function MorphTo($target_type) {
+        global $tmpl, $db;
+        $morphs = array(
+                't2' => ['acj_object' => 'doc.realizaciya', 'viewname' => 'Реализация (все товары)', ],
+                'd2' => ['acj_object' => 'doc.realizaciya', 'viewname' => 'Реализация (неотгруженные)', ],
+                '6' =>  ['acj_object' => 'doc.pko',         'viewname' => 'Приходный кассовый ордер', ],
+                '4' =>  ['acj_object' => 'doc.pbank',       'viewname' => 'Приход средств в банк', ],
+                '15' => ['acj_object' => 'doc.realiz_op',   'viewname' => 'Оперативная реализация', ],
+                '1' =>  ['acj_object' => 'doc.zayavka',     'viewname' => 'Копия заявки', ],
+                '16' => ['acj_object' => 'doc.specific',    'viewname' => 'Спецификация (не используй здесь)', ],
+            );
+        
+        if ($target_type == '') {
+            $tmpl->ajax = 1;
+            
+            $base_link = "window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=";
+            foreach($morphs as $id => $line) {
+                if(\acl::testAccess($line['acl_object'], \acl::CREATE)) {
+                    $tmpl->addContent("<div onclick=\"{$base_link}{$id}'\">{$line['viewname']}</div>");
+                }
+            }
+        } else if ($target_type == 't2') {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $new_doc = new doc_Realizaciya();
+            $dd = $new_doc->createFromP($this);
+            $new_doc->setDopData('cena', $this->dop_data['cena']);
+            $new_doc->setDopData('platelshik', $this->doc_data['agent']);
+            $new_doc->setDopData('gruzop', $this->doc_data['agent']);
+            $new_doc->setDopData('ishop', $this->dop_data['ishop']);
+            $new_doc->setDopData('received', 0);
+            $this->sentZEvent('morph_realizaciya');
+            header("Location: doc.php?mode=body&doc=$dd");
+        } else if ($target_type == 1) {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $new_doc = new doc_Zayavka();
+            $dd = $new_doc->createFromP($this);
+            $new_doc->setDopData('cena', $this->dop_data['cena']);
+            header("Location: doc.php?mode=body&doc=$dd");
+        }
+        else if ($target_type == 'd2') {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $new_doc = new doc_Realizaciya();
+            $dd = $new_doc->CreateFromPDiff($this);
+            $new_doc->setDopData('cena', $this->dop_data['cena']);
+            $new_doc->setDopData('platelshik', $this->doc_data['agent']);
+            $new_doc->setDopData('gruzop', $this->doc_data['agent']);
+            $new_doc->setDopData('received', 0);
+            $new_doc->setDopData('ishop', $this->dop_data['ishop']);
+            $this->sentZEvent('morph_realizaciya');
+            header("Location: doc.php?mode=body&doc=$dd");
+        }
+        // Оперативная реализация
+        else if ($target_type == 15) {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $new_doc = new doc_Realiz_op();
+            $dd = $new_doc->createFromP($this);
+            $new_doc->setDopData('ishop', $this->dop_data['ishop']);
+            $this->sentZEvent('morph_oprealizaciya');
+            header("Location: doc.php?mode=body&doc=$dd");
+        }
+        else if ($target_type == 16) {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $new_doc = new doc_Specific();
+            $dd = $new_doc->createFromP($this);
+            $new_doc->setDopData('ishop', $this->dop_data['ishop']);
+            header("Location: doc.php?mode=body&doc=$dd");
+        }
+        else if ($target_type == 6) {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $this->sentZEvent('morph_pko');
+            $sum = $this->recalcSum();
+            $db->startTransaction();
+            $base = $this->Otgruzka();
+            if (!$base) {
+                $db->rollback();
+                $tmpl->msg("Не удалось создать подчинённый документ!", "err");
+            } else {
+                $new_doc = new doc_Pko();
+                $doc_data = $this->doc_data;
+                $doc_data['p_doc'] = $base;
+                $dd = $new_doc->create($doc_data);
 
-		if($target_type=='')
-		{
-			$tmpl->ajax=1;
-			$tmpl->addContent("
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=t2'\">Реализация (все товары)</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=d2'\">Реализация (неотгруженные)</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=2'\">Реализация (устарело)</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=15'\">Оперативная реализация</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Копия заявки</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=16'\">Спецификация (не рек. здесь)</div>");
-		}
-		else if ($target_type == 't2') {
-			if (!isAccess('doc_realizaciya', 'create'))
-				throw new AccessException();
-			$new_doc = new doc_Realizaciya();
-			$dd = $new_doc->createFromP($this);
-			$new_doc->setDopData('cena', $this->dop_data['cena']);
-			$new_doc->setDopData('platelshik', $this->doc_data['agent']);
-			$new_doc->setDopData('gruzop', $this->doc_data['agent']);
-			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
-			$new_doc->setDopData('received', 0);
-			$this->sentZEvent('morph_realizaciya');
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-		else if ($target_type == 1) {
-			if (!isAccess('doc_zayavka', 'create'))
-				throw new AccessException();
-			$new_doc = new doc_Zayavka();
-			$dd = $new_doc->createFromP($this);
-			$new_doc->setDopData('cena', $this->dop_data['cena']);
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-		else if ($target_type == 'd2') {
-			$new_doc = new doc_Realizaciya();
-			$dd = $new_doc->CreateFromPDiff($this);
-			$new_doc->setDopData('cena', $this->dop_data['cena']);
-			$new_doc->setDopData('platelshik', $this->doc_data['agent']);
-			$new_doc->setDopData('gruzop', $this->doc_data['agent']);
-			$new_doc->setDopData('received', 0);
-			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
-			$this->sentZEvent('morph_realizaciya');
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-		// Реализация
-		else if($target_type==2)
-		{
-			if(!isAccess('doc_realizaciya','create'))
-				throw new AccessException();
-			$db->startTransaction();
-			$base = $this->Otgruzka();
-			if(!$base){
-				$db->rollback();
-				$tmpl->msg("Не удалось создать подчинённый документ!","err");
-			}
-			else{
-				$db->commit();
-				$this->sentZEvent('morph_realizaciya');
-				$ref="Location: doc.php?mode=body&doc=$base";
-				header($ref);
-			}
-		}
-		// Оперативная реализация
-		else if($target_type==15)
-		{
-			if(!isAccess('doc_realiz_op','create'))
-				throw new AccessException();
-			$new_doc=new doc_Realiz_op();
-			$dd=$new_doc->createFromP($this);
-			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
-			$this->sentZEvent('morph_oprealizaciya');
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-		else if($target_type==16)
-		{
-			if(!isAccess('doc_specific','create'))
-				throw new AccessException();
-			$new_doc=new doc_Specific();
-			$dd=$new_doc->createFromP($this);
-			$new_doc->setDopData('ishop', $this->dop_data['ishop']);
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-		else if($target_type==6)
-		{
-			if(!isAccess('doc_pko','create'))
-				throw new AccessException();
-			$this->sentZEvent('morph_pko');
-			$sum = $this->recalcSum();
-			$db->startTransaction();
-			$base=$this->Otgruzka();
-			if(!$base){
-				$db->rollback();
-				$tmpl->msg("Не удалось создать подчинённый документ!","err");
-			}
-			else{
-				$new_doc=new doc_Pko();
-				$doc_data=$this->doc_data;
-				$doc_data['p_doc']=$base;
-				$dd = $new_doc->create($doc_data);
-				
-				$new_doc->setDocData('kassa', 1);
-				$db->commit();
-				$ref="Location: doc.php?mode=body&doc=".$dd;
-				header($ref);
-			}
-		}
-		else if($target_type==4)
-		{
-			if(!isAccess('doc_pbank','create'))	throw new AccessException("");
-			$this->sentZEvent('morph_pbank');
-			$sum = $this->recalcSum();
-			$db->startTransaction();
-			$base=$this->Otgruzka();
-			if(!$base)
-			{
-				$db->rollback();
-				throw new Exception("Не удалось создать подчинённый документ!");
-			}
-			else
-			{
-				$new_doc=new doc_PBank();
-				$doc_data=$this->doc_data;
-				$doc_data['p_doc']=$base;
-				$dd = $new_doc->create($doc_data);
+                $new_doc->setDocData('kassa', 1);
+                $db->commit();
+                $ref = "Location: doc.php?mode=body&doc=" . $dd;
+                header($ref);
+            }
+        } else if ($target_type == 4) {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $this->sentZEvent('morph_pbank');
+            $sum = $this->recalcSum();
+            $db->startTransaction();
+            $base = $this->Otgruzka();
+            if (!$base) {
+                $db->rollback();
+                throw new Exception("Не удалось создать подчинённый документ!");
+            } else {
+                $new_doc = new doc_PBank();
+                $doc_data = $this->doc_data;
+                $doc_data['p_doc'] = $base;
+                $dd = $new_doc->create($doc_data);
 
-				$db->commit();
-				$ref="Location: doc.php?mode=body&doc=".$dd;
-				header($ref);
-			}
-		}
-		else	$tmpl->msg("В разработке","info");
-	}
+                $db->commit();
+                $ref = "Location: doc.php?mode=body&doc=" . $dd;
+                header($ref);
+            }
+        } else {
+            throw new \NotFoundException();
+        }
+    }
 
-	function Service() {
+    function Service() {
 		global $tmpl, $CONFIG, $db;
 		$tmpl->ajax = 1;
 		$opt = request('opt');

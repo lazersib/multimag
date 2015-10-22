@@ -25,8 +25,8 @@ try {
 
 	need_auth($tmpl);
 	$tmpl->setTitle("Администрирование пользователей");
-	if (!isAccess('admin_users', 'view'))
-		throw new AccessException("Недостаточно привилегий");
+        
+        \acl::accessGuard('admin.users', \acl::VIEW);
 
 	$tmpl->addBreadcrumb('Главная', '/');
 	$tmpl->addBreadcrumb('Личный кабинет', '/user.php');
@@ -105,8 +105,7 @@ try {
             $tmpl->addContent("</table>");
 	}
 	else if ($mode == 'view') {
-		if (!isAccess('admin_users', 'view'))
-			throw new AccessException("Недостаточно привилегий");
+                \acl::accessGuard('admin.users', \acl::VIEW);
 		$id = rcvint('id');
 		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $id, '');
@@ -219,8 +218,7 @@ try {
 		$tmpl->addContent("</table>");
 	}
 	else if ($mode == 'view_login_history') {
-		if (!isAccess('admin_users', 'view'))
-			throw new AccessException("Недостаточно привилегий");
+		\acl::accessGuard('admin.users', \acl::VIEW);
 		$id = rcvint('id');
 		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $id, '/adm_users.php?mode=view&amp;id=' . $id);
@@ -237,8 +235,7 @@ try {
 		$tmpl->addContent("</table>");
 	}
 	else if ($mode == 'agent') {
-		if (!isAccess('admin_users', 'edit'))
-			throw new AccessException("Недостаточно привилегий");
+		\acl::accessGuard('admin.users', \acl::UPDATE);
 		$id = rcvint('id');
 		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
 		$tmpl->addBreadcrumb('Информация о пользователе с ID ' . $id, '/adm_users.php?mode=view&amp;id=' . $id);
@@ -304,8 +301,7 @@ try {
 		</form>");
 	}
 	else if ($mode == 'we') {
-		if (!isAccess('admin_users', 'view'))
-			throw new AccessException("Недостаточно привилегий");
+		\acl::accessGuard('admin.users', \acl::VIEW);
 		
 		$user_id = rcvint('id');
 		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
@@ -314,8 +310,7 @@ try {
 		$tmpl->setTitle('Редактирование сотрудника ID ' . $user_id);
 		
 		if(request('save')) {
-			if (!isAccess('admin_users', 'edit'))
-				throw new AccessException("Недостаточно привилегий для редактирования");
+			\acl::accessGuard('admin.users', \acl::UPDATE);
 	
 			$db->query("REPLACE `users_worker_info` (`user_id`, `worker`, `worker_email`, `worker_phone`, `worker_jid`, `worker_real_name`,
 				`worker_real_address`, `worker_post_name`) VALUES 
@@ -355,8 +350,7 @@ try {
 		</form>");
 	}
 	else if($mode=='ue') {
-		if (!isAccess('admin_users', 'view'))
-			throw new AccessException("Недостаточно привилегий");
+		\acl::accessGuard('admin.users', \acl::VIEW);
 		
 		$user_id = rcvint('id');
 		$tmpl->addBreadcrumb('Список пользователей', '/adm_users.php');
@@ -365,8 +359,7 @@ try {
 		$tmpl->setTitle('Редактирование пользователя с ' . $user_id);
 		
 		if(request('save')) {
-			if (!isAccess('admin_users', 'edit'))
-				throw new AccessException("Недостаточно привилегий для редактирования");
+			\acl::accessGuard('admin.users', \acl::UPDATE);
 			$db->updateA('users', $user_id, array(
 				'reg_email'=>request('reg_email'),
 				'reg_email_confirm'=>request('reg_email_confirm'),

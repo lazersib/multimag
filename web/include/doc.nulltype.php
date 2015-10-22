@@ -88,85 +88,169 @@ class doc_Nulltype extends \document {
     }
 
     /// Установить дополнительные данные текущего документа
-	public function setDopData($name, $value) {
-		global $db;
-		if($this->id && @$this->dop_data[$name]!=$value) {
-			$_name = $db->real_escape_string($name);
-			$_value = $db->real_escape_string($value);
-			$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
-			doc_log("UPDATE {$this->typename}", @"$name: ({$this->dop_data[$name]} => $value)",'doc',$this->id);
-		}
-		$this->dop_data[$name]=$value;
-	}
-	
-	/// Установить дополнительные данные текущего документа
-	public function setDopDataA($array) {
-		global $db;
-		if($this->id)
-			foreach ($array as $name=>$value)
-			{
-				if(!isset($this->dop_data[$name]))	$this->dop_data[$name]='';
-				if($this->dop_data[$name] != $value)
-				{
-					$_name = $db->real_escape_string($name);
-					$_value = $db->real_escape_string($value);
-					$db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
-					doc_log("UPDATE {$this->typename}","$name: ({$this->dop_data[$name]} => $value)",'doc',$this->id);
-					$this->dop_data[$name]=$value;
-				}
-			}
-	}
-	
-        /// Зафиксировать цену документа, если она установлена в *авто*. Выполняется при проведении некоторых типов документов.
-        protected function fixPrice() {
-            if(!$this->dop_data['cena']) {
-                $pc = PriceCalc::getInstance();
-                $pc->setOrderSum($this->doc_data['sum']);
-                $pc->setAgentId($this->doc_data['agent']);
-                $pc->setUserId($this->doc_data['user']);
-                if(isset($this->dop_data['ishop'])) {
-                    $pc->setFromSiteFlag($this->dop_data['ishop']);
-                }
-                $price_id = $pc->getCurrentPriceID();
-                $this->setDopData('cena', $price_id);
-            }
+    public function setDopData($name, $value) {
+        global $db;
+        if ($this->id && @$this->dop_data[$name] != $value) {
+            $_name = $db->real_escape_string($name);
+            $_value = $db->real_escape_string($value);
+            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
+            doc_log("UPDATE {$this->typename}", @"$name: ({$this->dop_data[$name]} => $value)", 'doc', $this->id);
         }
+        $this->dop_data[$name] = $value;
+    }
 
-        /// Создать документ с заданными данными
-	public function create($doc_data, $from='') {
+    /// Установить дополнительные данные текущего документа
+    public function setDopDataA($array) {
+        global $db;
+        if ($this->id)
+            foreach ($array as $name => $value) {
+                if (!isset($this->dop_data[$name]))
+                    $this->dop_data[$name] = '';
+                if ($this->dop_data[$name] != $value) {
+                    $_name = $db->real_escape_string($name);
+                    $_value = $db->real_escape_string($value);
+                    $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
+                    doc_log("UPDATE {$this->typename}", "$name: ({$this->dop_data[$name]} => $value)", 'doc', $this->id);
+                    $this->dop_data[$name] = $value;
+                }
+            }
+    }
+
+    /// Зафиксировать цену документа, если она установлена в *авто*. Выполняется при проведении некоторых типов документов.
+    protected function fixPrice() {
+        if(!$this->dop_data['cena']) {
+            $pc = PriceCalc::getInstance();
+            $pc->setOrderSum($this->doc_data['sum']);
+            $pc->setAgentId($this->doc_data['agent']);
+            $pc->setUserId($this->doc_data['user']);
+            if(isset($this->dop_data['ishop'])) {
+                $pc->setFromSiteFlag($this->dop_data['ishop']);
+            }
+            $price_id = $pc->getCurrentPriceID();
+            $this->setDopData('cena', $price_id);
+        }
+    }
+
+    /// Создать документ с заданными данными
+    public function create($doc_data, $from='') {
+        global $db;
+        \acl::accessGuard('doc.'.$this->typename, \acl::CREATE); 
+        $date = time();
+        $doc_data['altnum'] = $this->getNextAltNum($this->doc_type, $doc_data['subtype'], date("Y-m-d", $doc_data['date']), $doc_data['firm_id']);
+        $doc_data['created'] = date("Y-m-d H:i:s");
+        $res = $db->query("SHOW COLUMNS FROM `doc_list`");
+        $col_array = array();
+        while ($nxt = $res->fetch_row()) {
+            $col_array[$nxt[0]] = $nxt[0];
+        }
+        // Эти поля копировать не нужно
+        unset($col_array['id'], $col_array['date'], $col_array['type'], $col_array['user'], $col_array['ok']);
+
+        $data = array_intersect_key($doc_data, $col_array);
+        $data['date'] = $date;
+        $data['type'] = $this->doc_type;
+        $data['user'] = $_SESSION['uid'];
+
+        $line_id = $db->insertA('doc_list', $data);
+        $this->id = $line_id;
+        if ($from) {
+            doc_log("CREATE", "FROM ({$doc_data['id']} {$from}):" . json_encode($doc_data), 'doc', $this->id);
+        } else {
+            doc_log("CREATE", "NEW:" . json_encode($doc_data), 'doc', $this->id);
+        }
+        unset($this->doc_data);
+        unset($this->dop_data);
+        $this->get_docdata();
+        return $this->id;
+    }
+
+    public function getRootDocumentId() {
+        function getRootDocument($doc) {
             global $db;
-            if (!isAccess('doc_' . $this->typename, 'create')) {
-                throw new \AccessException();
+            while ($doc) {
+                $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`='$doc' AND `p_doc`>'0' AND `p_doc` IS NOT NULL");
+                if (!$res->num_rows) {
+                    return $doc;
+                }
+                list($pdoc) = $res->fetch_row();
+                if (!$pdoc) {
+                    return $doc;
+                }
+                $doc = $pdoc;
             }
-            $date = time();
-            $doc_data['altnum'] = $this->getNextAltNum($this->doc_type, $doc_data['subtype'], date("Y-m-d", $doc_data['date']), $doc_data['firm_id']);
-            $doc_data['created'] = date("Y-m-d H:i:s");
-            $res = $db->query("SHOW COLUMNS FROM `doc_list`");
-            $col_array = array();
-            while ($nxt = $res->fetch_row()) {
-                $col_array[$nxt[0]] = $nxt[0];
-            }
-            // Эти поля копировать не нужно
-            unset($col_array['id'], $col_array['date'], $col_array['type'], $col_array['user'], $col_array['ok']);
-
-            $data = array_intersect_key($doc_data, $col_array);
-            $data['date'] = $date;
-            $data['type'] = $this->doc_type;
-            $data['user'] = $_SESSION['uid'];
-
-            $line_id = $db->insertA('doc_list', $data);
-            $this->id = $line_id;
-            if ($from) {
-                doc_log("CREATE", "FROM ({$doc_data['id']} {$from}):" . json_encode($doc_data), 'doc', $this->id);
-            } else {
-                doc_log("CREATE", "NEW:" . json_encode($doc_data), 'doc', $this->id);
-            }
-            unset($this->doc_data);
-            unset($this->dop_data);
-            $this->get_docdata();
+            return $doc;
+        }
+        if($this->doc_data['p_doc']==0) {
             return $this->id;
         }
-	
+        return getRootDocument($this->doc_data['p_doc']);
+    }
+    
+    public function getSubtreeDocuments($doc) {
+        global $db;
+        settype($doc, 'int');
+        $ret = array();
+        $sql = "SELECT `doc_list`.`id`, `doc_list`.`ok`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_types`.`name`
+            , `doc_agent`.`name` AS `agent_name`
+	FROM `doc_list`
+	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
+	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+	WHERE `doc_list`.`p_doc`='$doc'
+	ORDER by `doc_list`.`date` DESC";
+        $res = $db->query($sql);
+        $i = 1;
+        while ($line = $res->fetch_assoc()) {
+            $line['date'] = date("Y.m.d H:i:s", $line['date']);
+            $line['childs'] = $this->getSubtreeDocuments($line['id']);
+            $ret[] = $line;
+        }
+        return $ret;
+    }
+    
+    protected function getDocumentSubtreeElementHTML($item , $last = true) {
+        $ret = '';
+        $ok_status = $item['ok']?'Проведённый':'Непроведённый';
+        $r = ($last)?" IsLast":'';
+        $ret .= "<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>";
+        if ($item['id'] == $this->id) {
+            $ret .= "<b>";
+        }
+        $ret .= "<a href='doc.php?mode=body&doc={$item['id']}'>$ok_status {$item['name']}</a> N {$item['altnum']}{$item['subtype']} от {$item['date']}."
+            . " Агент: {$item['agent_name']}, на сумму {$item['sum']}";
+        if ($item['id'] == $this->id) {
+            $ret .= "</b>";
+        }
+        return $ret;
+    }
+    
+    protected function getDocumentSubtreeHTML($tree) {
+        $ret = '';
+        $cnt = count($tree);
+        foreach ($tree as $i => $item) {            
+            $ret .= $this->getDocumentSubtreeElementHTML($item, $i >= $cnt );
+            $ret .= "<ul class='Container'>";
+            $ret .= $this->getDocumentSubtreeHTML($item['childs']); 
+            $ret .= "</ul></div></li>";
+	}
+        return $ret;
+    }
+
+    public function viewDocumentTree() {
+        global $tmpl;
+	$root_doc_id = $this->getRootDocumentId();
+	$tmpl->addContent("<h1>Структура для {$this->id} с $root_doc_id </h1>");
+        $root_doc = \document::getInstanceFromDb($root_doc_id);
+        $item = $root_doc->getDocDataA(); 
+        $item['name'] = $root_doc->getViewName();
+        $tree = $this->getSubtreeDocuments($root_doc_id);
+        $tmpl->addContent("<ul class='Container'>");
+        $tmpl->addContent( $this->getDocumentSubtreeElementHTML($item));
+        $tmpl->addContent("<ul class='Container'>");
+	$tmpl->addContent( $this->getDocumentSubtreeHTML($tree));
+        $tmpl->addContent("</ul>");
+        $tmpl->addContent("</ul>");
+    }
+    
 	/// Создать документ на основе данных другого документа
 	public function createFrom($doc_obj)
 	{
@@ -326,7 +410,7 @@ class doc_Nulltype extends \document {
 			$tmpl->setTitle($this->viewname . ' N' . $this->id);
 			if($this->typename) $object='doc_'.$this->typename;
 			else $object='doc';
-			if(!isAccess($object,'view'))	throw new AccessException();
+			\acl::accessGuard('doc.'.$this->typename, \acl::VIEW); 
 			doc_menu($this->getDopButtons());
 			$this->drawHeadformStart();
 			$fields=explode(' ',$this->header_fields);
@@ -457,14 +541,14 @@ class doc_Nulltype extends \document {
 			}
 
 			if($this->id) {
-				if(!isAccess($object,'edit'))	throw new AccessException("");
+				\acl::accessGuard('doc.'.$this->typename, \acl::EDIT); 
 				$db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='$doc'");
 				$link="/doc.php?doc=$doc&mode=body";
 				if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 			}
 			else
 			{
-				if(!isAccess($object,'create'))	throw new AccessException("");
+				\acl::accessGuard('doc.'.$this->typename, \acl::CREATE); 
 				$db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
 				$this->id=$doc= $db->insert_id;
 				$link="/doc.php?doc=$doc&mode=body";
@@ -575,14 +659,14 @@ class doc_Nulltype extends \document {
 
 				if($this->id)
 				{
-					if(!isAccess($object,'edit'))	throw new AccessException();
+					\acl::accessGuard('doc.'.$this->typename, \acl::EDIT); 
 					$res = $db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->id}'");
 					$link="/doc.php?doc={$this->id}&mode=body";
 					if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
 				}
 				else
 				{
-					if(!isAccess($object,'create'))	throw new AccessException();
+					\acl::accessGuard('doc.'.$this->typename, \acl::CREATE); 
 					$res = $db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
 					$this->id= $db->insert_id;
 					$link="/doc.php?doc={$this->id}&mode=body";
@@ -613,7 +697,7 @@ class doc_Nulltype extends \document {
 
 		if($this->typename) $object='doc_'.$this->typename;
 		else $object='doc';
-		if(!isAccess($object,'view'))	throw new AccessException("");
+		\acl::accessGuard('doc.'.$this->typename, \acl::VIEW); 
 		$tmpl->setTitle($this->viewname . ' N' . $this->id);
 		$dt=date("Y-m-d H:i:s",$this->doc_data['date']);
 		doc_menu($this->getDopButtons());
@@ -739,183 +823,181 @@ class doc_Nulltype extends \document {
 		return;
 	}
 
-	public function applyJson() {
-		global $db, $tmpl;
+    public function applyJson() {
+        global $db;
 
-		try {
-			if($this->typename) $object='doc_'.$this->typename;
-			else $object='doc';
-                        
-                        $d_start = date_day(time());
-                        $d_end = $d_start + 60*60*24 - 1;
-                        if( !isAccess($object,'apply') ) {
-                            if(!isAccess($object,'today_apply')) {
-                                   throw new AccessException('Не достаточно привилегий для проведения документа');
-                            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date']>$d_end) {
-                                    throw new AccessException('Не достаточно привилегий для проведения документа произвольной датой');
-                            }
-                        }
-                        
-			if($this->doc_data['mark_del'])	throw new Exception("Документ помечен на удаление!");
-			
-			$res = $db->query("SELECT `recalc_active` FROM `variables`");
-			if($res->num_rows)	list($lock)=$res->fetch_row();
-			else	$lock=0;
-			if($lock)	throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
-			
-			if(!method_exists($this,'DocApply'))
-				throw new Exception("Метод проведения данного документа не определён!");
-			
-			$db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");			
-			$db->startTransaction();
-			
-			$this->DocApply(0);
-			$db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
-		}
-		catch(mysqli_sql_exception $e) {
-			$db->rollback();
-                        writeLogException($e);
-			$db->query("UNLOCK TABLES");
-			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
-			return $json;
-		}
-		catch( Exception $e) {
-			$db->rollback();
-                        writeLogException($e);
-			$db->query("UNLOCK TABLES");
-			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
-			return $json;
-		}
-
-		$db->commit();
-		doc_log("APPLY {$this->typename}", '', 'doc', $this->id);
-		$json=' { "response": "1", "message": "Документ успешно проведён!", "buttons": "'.$this->getCancelButtons().'", "sklad_view": "hide", "statusblock": "Дата проведения: '.date("Y-m-d H:i:s").'", "poslist": "refresh" }';
-		$db->query("UNLOCK TABLES");
-		return $json;
-	}
-
-	public function cancelJson()
-	{
-		global $db, $tmpl;
-		
-		$tim = time();
-                $dd = date_day($tim);
-                if ($this->typename) {
-                    $object = 'doc_' . $this->typename;
-                } else {
-                    $object='doc';
+        try {
+            $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess('doc.' . $this->typename, \acl::APPLY)) {
+                if (!\acl::testAccess('doc.' . $this->typename, \acl::TODAY_APPLY)) {
+                    throw new AccessException('Не достаточно привилегий для проведения документа');
+                } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                    throw new AccessException('Не достаточно привилегий для проведения документа произвольной датой');
                 }
+            }
 
-		try {
-			if( !isAccess($object,'cancel') ) {
-				if( (!isAccess($object,'today_cancel')) || ($dd>$this->doc_data['date']) ) {
-					throw new AccessException();
-                                }
-                        }
-			if(!method_exists($this,'DocCancel'))
-				throw new Exception("Метод отмены данного документа не определён!");
-			
-			$res = $db->query("SELECT `recalc_active` FROM `variables`");
-			if($res->num_rows)	list($lock)=$res->fetch_row();
-			else	$lock=0;
-			if($lock)	throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
-			
-			$db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
-			$db->startTransaction();
-			$this->get_docdata();
-			$this->DocCancel();
-			$db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
-		}
-		catch(mysqli_sql_exception $e)
-		{
-			$db->rollback();
-			$id = writeLogException($e);
-			$db->query("UNLOCK TABLES");
-			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage()."\" }";
-			return $json;
-		}
-		catch( AccessException $e)
-		{
-			$db->rollback();
-			$db->query("UNLOCK TABLES");
-			doc_log("CANCEL-DENIED {$this->typename}", $e->getMessage(), 'doc', $this->id);
-			$json=" { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>".$e->getMessage()."<br>Вы можете <a href='/message.php?mode=petition&doc={$this->id}'>попросить руководителя</a> выполнить отмену этого документа.\" }";
-			return $json;
-		}
-		catch( Exception $e)
-		{
-			$db->rollback();
-			$db->query("UNLOCK TABLES");
-			$msg='';
-			if( isAccess($object,'forcecancel') )
-				$msg="<br>Вы можете <a href='/doc.php?mode=forcecancel&amp;doc={$this->id}'>принудительно снять проведение</a>.";
-			$json=" { \"response\": \"0\", \"message\": \"".$e->getMessage().$msg."\" }";
-			return $json;
-		}
+            if ($this->doc_data['mark_del']) {
+                throw new Exception("Документ помечен на удаление!");
+            }
 
-		$db->commit();
-		doc_log("CANCEL {$this->typename}", '', 'doc', $this->id);
-		$json=' { "response": "1", "message": "Документ успешно отменен!", "buttons": "'.$this->getApplyButtons().'", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
-		$db->query("UNLOCK TABLES");
-		return $json;
-	}
-	
-	/// Провести документ
-	/// @param silent Не менять отметку проведения
-	protected function docApply($silent=0)
-	{
-		global $db;
-		if($silent)	return;
-		$data = $db->selectRow('doc_list', $this->id);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа при проведении!');
-		if($data['ok'])
-			throw new Exception('Документ уже проведён!');
-		$db->update('doc_list', $this->id, 'ok', time() );
-		$this->sentZEvent('apply');
-	}
-	
-	/// отменить проведение документа
-	protected function docCancel()
-	{
-		global $db;
-		$data = $db->selectRow('doc_list', $this->id);
-		if(!$data)
-			throw new Exception('Ошибка выборки данных документа!');
-		if(!$data['ok'])
-			throw new Exception('Документ не проведён!');
-		$db->update('doc_list', $this->id, 'ok', 0 );
-		$this->sentZEvent('cancel');			
-	}
+            $res = $db->query("SELECT `recalc_active` FROM `variables`");
+            if ($res->num_rows) {
+                list($lock) = $res->fetch_row();
+            } else {
+                $lock = 0;
+            }
+            if ($lock) {
+                throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
+            }
 
-	/// Отменить проведение, не обращая внимание на структуру подчинённости
-	function forceCancel()
-	{
-		global $tmpl, $db;
+            if (!method_exists($this, 'DocApply')) {
+                throw new Exception("Метод проведения данного документа не определён!");
+            }
 
-		if($this->typename) $object='doc_'.$this->typename;
-		else $object='doc';
-		if(!isAccess($object,'forcecancel'))	throw new AccessException("");
+            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
+            $db->startTransaction();
 
-		$opt = request('opt');
-		if($opt=='')
-		{
-			$tmpl->addContent("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
+            $this->DocApply(0);
+            $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
+        } catch (mysqli_sql_exception $e) {
+            $db->rollback();
+            writeLogException($e);
+            $db->query("UNLOCK TABLES");
+            $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
+            return $json;
+        } catch (Exception $e) {
+            $db->rollback();
+            writeLogException($e);
+            $db->query("UNLOCK TABLES");
+            $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
+            return $json;
+        }
+
+        $db->commit();
+        doc_log("APPLY {$this->typename}", '', 'doc', $this->id);
+        $json = ' { "response": "1", "message": "Документ успешно проведён!", "buttons": "' . $this->getCancelButtons() . '", "sklad_view": "hide", "statusblock": "Дата проведения: ' . date("Y-m-d H:i:s") . '", "poslist": "refresh" }';
+        $db->query("UNLOCK TABLES");
+        return $json;
+    }
+
+    public function cancelJson() {
+        global $db;
+        $tim = time();
+        $dd = date_day($tim);
+        if ($this->typename) {
+            $object = 'doc_' . $this->typename;
+        } else {
+            $object = 'doc';
+        }
+
+        try {
+            if (!\acl::testAccess('doc.' . $this->typename, \acl::CANCEL)) {
+                if ((!\acl::testAccess('doc.' . $this->typename, \acl::TODAY_CANCEL)) || ($dd > $this->doc_data['date'])) {
+                    throw new AccessException();
+                }
+            }
+            if (!method_exists($this, 'DocCancel')) {
+                throw new Exception("Метод отмены данного документа не определён!");
+            }
+
+            $res = $db->query("SELECT `recalc_active` FROM `variables`");
+            if ($res->num_rows) {
+                list($lock) = $res->fetch_row();
+            } else {
+                $lock = 0;
+            }
+            if ($lock) {
+                throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
+            }
+
+            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
+            $db->startTransaction();
+            $this->get_docdata();
+            $this->DocCancel();
+            $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
+        } catch (mysqli_sql_exception $e) {
+            $db->rollback();
+            writeLogException($e);
+            $db->query("UNLOCK TABLES");
+            $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
+            return $json;
+        } catch (AccessException $e) {
+            $db->rollback();
+            $db->query("UNLOCK TABLES");
+            doc_log("CANCEL-DENIED {$this->typename}", $e->getMessage(), 'doc', $this->id);
+            $json = " { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>" . $e->getMessage() . "<br>Вы можете <a href='/message.php?mode=petition&doc={$this->id}'>попросить руководителя</a> выполнить отмену этого документа.\" }";
+            return $json;
+        } catch (Exception $e) {
+            $db->rollback();
+            $db->query("UNLOCK TABLES");
+            $msg = '';
+            if (\acl::testAccess('doc.' . $this->typename, \acl::CANCEL_FORCE)) {
+                $msg = "<br>Вы можете <a href='/doc.php?mode=forcecancel&amp;doc={$this->id}'>принудительно снять проведение</a>.";
+            }
+            $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . $msg . "\" }";
+            return $json;
+        }
+
+        $db->commit();
+        doc_log("CANCEL {$this->typename}", '', 'doc', $this->id);
+        $json = ' { "response": "1", "message": "Документ успешно отменен!", "buttons": "' . $this->getApplyButtons() . '", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
+        $db->query("UNLOCK TABLES");
+        return $json;
+    }
+
+    /// Провести документ
+    /// @param silent Не менять отметку проведения
+    protected function docApply($silent = 0) {
+        global $db;
+        if ($silent) {
+            return;
+        }
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа при проведении!');
+        }
+        if ($data['ok']) {
+            throw new Exception('Документ уже проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', time());
+        $this->sentZEvent('apply');
+    }
+
+    /// отменить проведение документа
+    protected function docCancel() {
+        global $db;
+        $data = $db->selectRow('doc_list', $this->id);
+        if (!$data) {
+            throw new Exception('Ошибка выборки данных документа!');
+        }
+        if (!$data['ok']) {
+            throw new Exception('Документ не проведён!');
+        }
+        $db->update('doc_list', $this->id, 'ok', 0);
+        $this->sentZEvent('cancel');
+    }
+
+    /// Отменить проведение, не обращая внимание на структуру подчинённости
+    function forceCancel() {
+        global $tmpl, $db;
+
+        \acl::accessGuard('doc.' . $this->typename, \acl::CANCEL_FORCE);
+        $opt = request('opt');
+        if ($opt == '') {
+            $tmpl->addContent("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
 			<center>
 			<a href='/docj_new.php' style='color: #0b0'>Нет</a> |
 			<a href='/doc.php?mode=forcecancel&amp;opt=yes&amp;doc={$this->id}' style='color: #f00'>Да</a>
 			</center>");
-		}
-		else
-		{
-			doc_log("FORCE CANCEL {$this->typename}",'', 'doc', $this->id);
-			$db->query("UPDATE `doc_list` SET `ok`='0', `err_flag`='1' WHERE `id`='{$this->id}'");
-			$db->query("UPDATE `variables` SET `corrupted`='1'");
-			$tmpl->msg("Всё, сделано.","err","Снятие отметки проведения");
-		}
+        } else {
+            doc_log("FORCE CANCEL {$this->typename}", '', 'doc', $this->id);
+            $db->query("UPDATE `doc_list` SET `ok`='0', `err_flag`='1' WHERE `id`='{$this->id}'");
+            $db->query("UPDATE `variables` SET `corrupted`='1'");
+            $tmpl->msg("Всё, сделано.", "err", "Снятие отметки проведения");
+        }
+    }
 
-	}
-        
     /// Callback функция для сортировки (например, печатных форм)
     static function sortDescriptionCallback($a, $b) {
         return strcmp($a["desc"], $b["desc"]);
@@ -1015,9 +1097,12 @@ class doc_Nulltype extends \document {
         } else {
             $object = 'doc';
         }
-        if(! (isAccess($object,'printna') || $this->doc_data['ok']) ) {
-            throw new \AccessException("Нет привилегий для печати непроведённых документов");
+        if($this->doc_data['ok']) {
+            \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTFORM);
+        } else {
+            \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTDRAFT);
         }
+        
         if( !$this->isPrintFormExists($form_name) ) {
             throw new \Exception('Печатная форма '.html_out($form_name).' не зарегистрирована');
         }
@@ -1179,9 +1264,7 @@ class doc_Nulltype extends \document {
     /// Сделать документ потомком указанного документа
     function connect($p_doc) {
         global $db;
-        if (!isAccess('doc_' . $this->typename, 'edit')) {
-            throw new \AccessException();
-        }
+        \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
         if ($this->id == $p_doc) {
             throw new \Exception('Нельзя связать с самим собой!');
         }
@@ -1280,179 +1363,175 @@ class doc_Nulltype extends \document {
 	}
 
 	/// Служебные опции
-	function _service($opt, $pos)
-	{
-		global $tmpl, $db;
-		$tmpl->ajax = 1;
-		
-		if($this->sklad_editor_enable) {
-                    include_once('doc.poseditor.php');
-                    $poseditor = new DocPosEditor($this);
-                    $poseditor->cost_id = @$this->dop_data['cena'];
-                    $poseditor->sklad_id = $this->doc_data['sklad'];
-                    $poseditor->SetEditable($this->doc_data['ok']?0:1);
-                    $poseditor->setAllowNegativeCounts($this->allow_neg_cnt);
-		}
-		
-		$peopt = request('peopt');	// Опции редактора списка товаров
-		
-		if( isAccess('doc_'.$this->typename,'view') ) {
-			// Json-вариант списка товаров
-			if($peopt=='jget')
-			{
-				// TODO: пересчет цены перенести внутрь poseditor
-				$this->recalcSum();
-				$doc_content = $poseditor->GetAllContent();
-				$tmpl->addContent($doc_content);
-			}
-			else if($peopt=='jgetgroups')
-			{
-				$doc_content = $poseditor->getGroupList();
-				$tmpl->addContent($doc_content);
-			}
-			// Снять пометку на удаление
-			else if($opt=='jundeldoc') {
-                            $tmpl->setContent($this->serviceUnDelDoc());
-			}
-			/// TODO: Это тоже переделать!
-			else if($this->doc_data['ok'])
-				throw new Exception("Операция не допускается для проведённого документа!");
-			else if($this->doc_data['mark_del'])
-				throw new Exception("Операция не допускается для документа, отмеченного для удаления!");
-			// Получение данных наименования
-			else if ($peopt == 'jgpi') {
-                            $pos = rcvint('pos');
-                            $tmpl->addContent($poseditor->GetPosInfo($pos));
-			}
-			// Json вариант добавления позиции
-			else if ($peopt == 'jadd') {
-                            if (!isAccess('doc_' . $this->typename, 'edit'))
-                                    throw new AccessException("Недостаточно привилегий");
-                            $pe_pos = rcvint('pe_pos');
-                            $tmpl->setContent($poseditor->AddPos($pe_pos));
-			}
-			// Json вариант удаления строки
-			else if ($peopt == 'jdel') {
-                            if (!isAccess('doc_' . $this->typename, 'edit'))
-                                    throw new AccessException("Недостаточно привилегий");
-                            $line_id = rcvint('line_id');
-                            $tmpl->setContent($poseditor->Removeline($line_id));
-			}
-			// Json вариант обновления
-			else if ($peopt == 'jup') {
-                            if (!isAccess('doc_' . $this->typename, 'edit'))
-                                    throw new AccessException("Недостаточно привилегий");
-                            $line_id = rcvint('line_id');
-                            $value = request('value');
-                            $type = request('type');
-                            // TODO: пересчет цены перенести внутрь poseditor
-                            $tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
-			}
-			// Получение номенклатуры выбранной группы
-			else if ($peopt == 'jsklad') {
-                            $group_id = rcvint('group_id');
-                            $str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
-                            $tmpl->setContent($str);
-			}
-			// Поиск по подстроке по складу
-			else if ($peopt == 'jsklads') {
-                            $s = request('s');
-                            $str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
-                            $tmpl->setContent($str);
-			}
-			// Серийные номера
-			else if ($peopt == 'jsn') {
-                            $action = request('a');
-                            $line_id = request('line');
-                            $data = request('data');
-                            $tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
-			}
-			// Сброс цен
-			else if ($peopt == 'jrc') {
-                            $poseditor->resetPrices();
-			}
-			// Сортировка наименований
-			else if ($peopt == 'jorder') {
-                            $by = request('by');
-                            $poseditor->reOrder($by);
-			}
-                        // Пометка на удаление
-			else if($opt=='jdeldoc') {
-                            $tmpl->setContent($this->serviceDelDoc());
-			}
-                        // Загрузка номенклатурной таблицы
-                        else if($opt=='merge') {
-                            $from_doc = rcvint('from_doc');
-                            $clear = rcvint('clear');
-                            $no_sum = rcvint('no_sum');
+    function _service($opt, $pos) {
+        global $tmpl, $db;
+        $tmpl->ajax = 1;
 
-                            try {
-                                if($from_doc==0) {
-                                    throw new Exception("Документ не задан");
-                                }
-                                $db->startTransaction();
-                                
-                                $res = $db->query("SELECT `id` FROM `doc_list` WHERE `id`=$from_doc");
-                                if(!$res->num_rows) {
-                                    throw new Exception("Документ не найден");
-                                }
-                                
-                                if($clear) {
-                                    $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
-                                }
-                                
-                                $res=$db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos`"
-                                    . "WHERE `doc`=$from_doc AND `page`=0 GROUP BY `tovar`");
-                                while($line = $res->fetch_assoc()) {
-                                    if(!$no_sum) {
-                                        $poseditor->simpleIncrementPos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
-                                    } else {
-                                        $poseditor->simpleRewritePos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
-                                    }
-                                }
-                                doc_log("REWRITE", "", 'doc', $this->id);
-                                $db->commit();
-                                $ret = array('response'=>'merge_ok');
-                            } catch (Exception $e) {
-                                $ret = array('response'=>'err', 'text'=>$e->getMessage());
-                                
-                            }
-                            $tmpl->setContent( json_encode($ret, JSON_UNESCAPED_UNICODE) );
+        if ($this->sklad_editor_enable) {
+            include_once('doc.poseditor.php');
+            $poseditor = new DocPosEditor($this);
+            $poseditor->cost_id = @$this->dop_data['cena'];
+            $poseditor->sklad_id = $this->doc_data['sklad'];
+            $poseditor->SetEditable($this->doc_data['ok'] ? 0 : 1);
+            $poseditor->setAllowNegativeCounts($this->allow_neg_cnt);
+        }
+
+        $peopt = request('peopt'); // Опции редактора списка товаров
+
+        if (\acl::testAccess('doc.' . $this->typename, \acl::VIEW)) {
+            // Json-вариант списка товаров
+            if ($peopt == 'jget') {
+                // TODO: пересчет цены перенести внутрь poseditor
+                $this->recalcSum();
+                $doc_content = $poseditor->GetAllContent();
+                $tmpl->addContent($doc_content);
+            } else if ($peopt == 'jgetgroups') {
+                $doc_content = $poseditor->getGroupList();
+                $tmpl->addContent($doc_content);
+            }
+            // Снять пометку на удаление
+            else if ($opt == 'jundeldoc') {
+                $tmpl->setContent($this->serviceUnDelDoc());
+            }
+            /// TODO: Это тоже переделать!
+            else if ($this->doc_data['ok']) {
+                throw new Exception("Операция не допускается для проведённого документа!");
+            } else if ($this->doc_data['mark_del']) {
+                throw new Exception("Операция не допускается для документа, отмеченного для удаления!");
+            }
+            // Получение данных наименования
+            else if ($peopt == 'jgpi') {
+                $pos = rcvint('pos');
+                $tmpl->addContent($poseditor->GetPosInfo($pos));
+            }
+            // Json вариант добавления позиции
+            else if ($peopt == 'jadd') {
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+                $pe_pos = rcvint('pe_pos');
+                $tmpl->setContent($poseditor->AddPos($pe_pos));
+            }
+            // Json вариант удаления строки
+            else if ($peopt == 'jdel') {
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+                $line_id = rcvint('line_id');
+                $tmpl->setContent($poseditor->Removeline($line_id));
+            }
+            // Json вариант обновления
+            else if ($peopt == 'jup') {
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+                $line_id = rcvint('line_id');
+                $value = request('value');
+                $type = request('type');
+                // TODO: пересчет цены перенести внутрь poseditor
+                $tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
+            }
+            // Получение номенклатуры выбранной группы
+            else if ($peopt == 'jsklad') {
+                $group_id = rcvint('group_id');
+                $str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
+                $tmpl->setContent($str);
+            }
+            // Поиск по подстроке по складу
+            else if ($peopt == 'jsklads') {
+                $s = request('s');
+                $str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
+                $tmpl->setContent($str);
+            }
+            // Серийные номера
+            else if ($peopt == 'jsn') {
+                $action = request('a');
+                $line_id = request('line');
+                $data = request('data');
+                $tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
+            }
+            // Сброс цен
+            else if ($peopt == 'jrc') {
+                $poseditor->resetPrices();
+            }
+            // Сортировка наименований
+            else if ($peopt == 'jorder') {
+                $by = request('by');
+                $poseditor->reOrder($by);
+            }
+            // Пометка на удаление
+            else if ($opt == 'jdeldoc') {
+                $tmpl->setContent($this->serviceDelDoc());
+            }
+            // Загрузка номенклатурной таблицы
+            else if ($opt == 'merge') {
+                $from_doc = rcvint('from_doc');
+                $clear = rcvint('clear');
+                $no_sum = rcvint('no_sum');
+
+                try {
+                    if ($from_doc == 0) {
+                        throw new Exception("Документ не задан");
+                    }
+                    $db->startTransaction();
+
+                    $res = $db->query("SELECT `id` FROM `doc_list` WHERE `id`=$from_doc");
+                    if (!$res->num_rows) {
+                        throw new Exception("Документ не найден");
+                    }
+
+                    if ($clear) {
+                        $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
+                    }
+
+                    $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos`"
+                            . "WHERE `doc`=$from_doc AND `page`=0 GROUP BY `tovar`");
+                    while ($line = $res->fetch_assoc()) {
+                        if (!$no_sum) {
+                            $poseditor->simpleIncrementPos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
+                        } else {
+                            $poseditor->simpleRewritePos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
                         }
-                        // Связи документа
-                        else if($opt=='link_info') {
-                            $childs = array();
-                            $parent = null;
-                            if($this->doc_data['p_doc']) {
-                                $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
+                    }
+                    doc_log("REWRITE", "", 'doc', $this->id);
+                    $db->commit();
+                    $ret = array('response' => 'merge_ok');
+                } catch (Exception $e) {
+                    $ret = array('response' => 'err', 'text' => $e->getMessage());
+                }
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+            }
+            // Связи документа
+            else if ($opt == 'link_info') {
+                $childs = array();
+                $parent = null;
+                if ($this->doc_data['p_doc']) {
+                    $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
                                     `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
                                     LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
                                     WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
-                                $parent = $res->fetch_assoc();
-                                $parent['vdate'] = date("d.m.Y", $parent['date']);
-                            }
-                            $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
+                    $parent = $res->fetch_assoc();
+                    $parent['vdate'] = date("d.m.Y", $parent['date']);
+                }
+                $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
                                 `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
                                 LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
                                 WHERE `doc_list`.`p_doc`='{$this->id}'");
-                            
-                            while($line = $res->fetch_assoc()) {
-                                    $line['vdate'] = date("d.m.Y", $line['date']);
-                                    $childs[] = $line;
-                            }
-                            $ret = array('response'=>'link_info', 'parent'=>$parent, 'childs'=>$childs);
-                            $tmpl->setContent( json_encode($ret, JSON_UNESCAPED_UNICODE) );
-                        }
-                         
-			// Для наследования!!!
-			else return 0;
-                        
-			return 1;
-		}
-		else $tmpl->msg("Недостаточно привилегий для выполнения операции!","err");
-	}
 
-	protected function drawLHeadformStart() {
+                while ($line = $res->fetch_assoc()) {
+                    $line['vdate'] = date("d.m.Y", $line['date']);
+                    $childs[] = $line;
+                }
+                $ret = array('response' => 'link_info', 'parent' => $parent, 'childs' => $childs);
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+            }
+
+            // Для наследования!!!
+            else {
+                return 0;
+            }
+
+            return 1;
+        } else {
+            $tmpl->msg("Недостаточно привилегий для выполнения операции!", "err");
+        }
+    }
+
+    protected function drawLHeadformStart() {
 		$this->drawHeadformStart('j');
 	}
 	
@@ -1831,15 +1910,8 @@ class doc_Nulltype extends \document {
        
     /// Показать историю изменений документа
     public function showLog() {
-        global $db, $tmpl;
-        if ($this->typename) {
-            $object = 'doc_' . $this->typename;
-        } else {
-            $object = 'doc';
-        }
-        if (!isAccess($object, 'view')) {
-            throw new AccessException("");
-        }
+        global $tmpl;
+        \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
         $tmpl->setTitle($this->viewname . ' N' . $this->id);
         doc_menu($this->getDopButtons());
         $tmpl->addContent("<h1>{$this->viewname} N{$this->id} - история документа</h1>");
@@ -2135,9 +2207,7 @@ class doc_Nulltype extends \document {
     protected function serviceDelDoc() {
         global $db;
         try {
-            if (!isAccess('doc_' . $this->typename, 'delete')) {
-                throw new AccessException("Недостаточно привилегий");
-            }
+            \acl::accessGuard('doc.' . $this->typename, \acl::DELETE);
             $tim = time();
 
             $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}' AND `mark_del`='0'");
@@ -2159,9 +2229,7 @@ class doc_Nulltype extends \document {
     protected function serviceUnDelDoc() {
         global $db;
         try {
-            if (!isAccess('doc_' . $this->typename, 'delete')) {
-                throw new AccessException("Недостаточно привилегий");
-            }
+            \acl::accessGuard('doc.' . $this->typename, \acl::DELETE);
             $db->update('doc_list', $this->id, 'mark_del', 0);
             doc_log("UNDELETE", '', "doc", $this->id);
             $json = ' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "' . $this->getApplyButtons() . '", '

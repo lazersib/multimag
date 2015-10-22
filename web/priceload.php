@@ -271,9 +271,8 @@ function firmAddForm($id = 0) {
 try {
         $mode = request('mode');
         
-	if (!isAccess('generic_price_an', 'view')) {
-            throw new AccessException("Недостаточно привилегий");
-        }
+	\acl::accessGuard('service.pricean', \acl::VIEW);
+        
         topmenu();
 	$tmpl->setTitle("Анализатор прайсов");
 	if ($mode == '') {

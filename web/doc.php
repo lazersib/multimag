@@ -127,8 +127,12 @@ try {
     } else if ($mode == 'log') {
         $document = document::getInstanceFromDb($doc);
         $document->showLog();
-    } else
+    }  else if ($mode == 'tree') {
+        $document = document::getInstanceFromDb($doc);
+        $document->viewDocumentTree();
+    } else {
         $tmpl->msg("ERROR $mode", "err");
+    }
 } catch (AccessException $e) {
     $tmpl->ajax = 0;
     $tmpl->msg($e->getMessage(), 'err', "Нет доступа");

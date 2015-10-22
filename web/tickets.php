@@ -180,7 +180,7 @@ class TaskTracker {
 	/// Формирует форму создания задачи
 	function ShowNewTicketForm() {
 		global $tmpl, $db;
-		if (!isAccess('generic_tickets', 'create'))	throw new AccessException();
+		\acl::accessGuard('service.tickets', \acl::CREATE);
 		$this->PMenu("Новая задача");
 		$tmpl->addContent("<form action='' method='post'>
 		<input type='hidden' name='mode' value='add'>
@@ -213,7 +213,7 @@ class TaskTracker {
 
 try {
 
-if (!isAccess('generic_tickets', 'view'))	throw new AccessException();
+\acl::accessGuard('service.tickets', \acl::VIEW);
 
 $tt = new TaskTracker();
 $mode = request('mode');
@@ -224,7 +224,7 @@ else if ($mode == 'new') {
 	$tt->ShowNewTicketForm();
 	
 } else if ($mode == 'add') {
-	if (!isAccess('generic_tickets', 'create'))	throw new AccessException();
+	\acl::accessGuard('service.tickets', \acl::CREATE);
 	$tt->PMenu("Сохранение задачи");
 	$uid = @$_SESSION['uid'];
 	$to_uid = rcvint('to_uid');
@@ -293,7 +293,7 @@ else if ($mode == 'view') {
 	$tt->ShowTicket($n);
 }
 else if ($mode == 'set') {
-	if (!isAccess('generic_tickets', 'edit'))	throw new AccessException();
+	\acl::accessGuard('service.tickets', \acl::UPDATE);
 	$opt = request('opt');
 	$n = rcvint('n');
 	$txt = '';

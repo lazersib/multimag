@@ -27,6 +27,7 @@ class search extends \IModule {
     public function __construct() {
         parent::__construct();
         $this->link_prefix = '/search.php';
+        $this->acl_object_name = 'generic.search';
     }
 
     // Получить название модуля

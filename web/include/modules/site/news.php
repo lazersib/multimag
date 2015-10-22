@@ -24,7 +24,7 @@ class News extends \IModule {
 
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'generic_news';
+        $this->acl_object_name = 'generic.news';
     }
 
     // Получить название модуля
@@ -74,8 +74,9 @@ class News extends \IModule {
             return true;
         }
         else if ($mode == 'all' || $mode == 'news' || $mode == 'stocks' || $mode == 'events') {
-            if (isAccess($this->acl_object_name, 'create', 1))
-            $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$mode'>Добавить новость</a><br>");
+            if (\acl::testAccess($this->acl_object_name, \acl::CREATE, 1)) {
+                $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$mode'>Добавить новость</a><br>");
+            }
             if ($this->isAllow()) {
                 $this->ShowList($mode);
             }
@@ -93,7 +94,7 @@ class News extends \IModule {
         $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
         $tmpl->setTitle("Новости сайта - " . $CONFIG['site']['display_name']);
         if ($mode == '') {
-            if (isAccess($this->acl_object_name, 'create', 1)) {
+            if (\acl::testAccess($this->acl_object_name, \acl::CREATE, 1)) {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=" . request('type') . "'>Добавить новость</a><br>");
             }
             if ($this->isAllow()) {
@@ -161,7 +162,7 @@ class News extends \IModule {
                 $name = 'Новости, акции, события';
                 $where = '1';
         }
-        if (!isAccess($this->acl_object_name, 'edit', 1)) {
+        if (!\acl::testAccess($this->acl_object_name, \acl::UPDATE, true)) {
             $where .= " AND `hidden`=0";
         }
         $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`,
@@ -173,7 +174,7 @@ class News extends \IModule {
         if ($res->num_rows) {
             $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
             $tmpl->setTitle("$name сайта - " . $CONFIG['site']['display_name']);
-            if (isAccess('generic_news', 'create', 1)) {
+            if (\acl::testAccess($this->acl_object_name, \acl::CREATE, true)) {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$type'>Добавить новость</a><br>");
             }
             $wikiparser = new \WikiParser();
@@ -217,7 +218,7 @@ class News extends \IModule {
             $edit_enable = false;
             
             if ($news_info['hidden']) {
-                if (!isAccess($this->acl_object_name, 'edit', 1)) {
+                if (!\acl::testAccess($this->acl_object_name, \acl::UPDATE, true)) {
                     throw new \NotFoundException('Новость снята с публикации.');
                 } else {
                     $edit_enable = true;

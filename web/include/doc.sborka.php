@@ -142,7 +142,7 @@ class doc_Sborka extends doc_Nulltype {
         $poseditor->cost_id = $this->dop_data['cena'];
         $poseditor->sklad_id = $this->doc_data['sklad'];
 
-        if (isAccess('doc_' . $this->typename, 'view')) {
+        if (\acl::testAccess('doc.' . $this->typename, \acl::VIEW)) {
 
             // Json-вариант списка товаров
             if ($peopt == 'jget') {
@@ -160,25 +160,19 @@ class doc_Sborka extends doc_Nulltype {
             }
             // Json вариант добавления позиции
             else if ($peopt == 'jadd') {
-                if (!isAccess('doc_sborka', 'edit')) {
-                    throw new AccessException("Недостаточно привилегий");
-                }
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 $pe_pos = rcvint('pos');
                 $tmpl->setContent($poseditor->AddPos($pe_pos));
             }
             // Json вариант удаления строки
             else if ($peopt == 'jdel') {
-                if (!isAccess('doc_sborka', 'edit')) {
-                    throw new AccessException("Недостаточно привилегий");
-                }
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 $line_id = rcvint('line_id');
                 $tmpl->setContent($poseditor->Removeline($line_id));
             }
             // Json вариант обновления
             else if ($peopt == 'jup') {
-                if (!isAccess('doc_sborka', 'edit')) {
-                    throw new AccessException("Недостаточно привилегий");
-                }
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 $line_id = rcvint('line_id');
                 $value = request('value');
                 $type = request('type');

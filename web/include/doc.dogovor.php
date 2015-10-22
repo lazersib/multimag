@@ -121,8 +121,7 @@ class doc_Dogovor extends doc_Nulltype {
             $tmpl->ajax = 1;
             $tmpl->addContent("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->id}&amp;tt=16'\">Спецификация</div>");
         } else if ($target_type == 16) {
-            if (!isAccess('doc_specific', 'create'))
-                throw new AccessException();
+            \acl::accessGuard('doc.specific', \acl::CREATE);            
             $new_doc = new doc_Specific();
             $dd = $new_doc->createFrom($this);
             $this->sentZEvent('morph_specific');

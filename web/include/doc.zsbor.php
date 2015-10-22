@@ -37,43 +37,48 @@ class doc_ZSbor extends doc_Nulltype {
 		);
 	}
 
-	/// Формирование другого документа на основании текущего
-	function MorphTo($target_type) {
-		global $tmpl, $db;
+    /// Формирование другого документа на основании текущего
+    function MorphTo($target_type) {
+        global $tmpl, $db;
+        $morphs = array(
+            '8' => ['acj_object' => 'doc.peremeshenie', 'viewname' => 'Перемещение',],
+        );
+        if ($target_type == '') {
+            $tmpl->ajax = 1;            
+            $base_link = "window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=";
+            foreach($morphs as $id => $line) {
+                if(\acl::testAccess($line['acl_object'], \acl::CREATE)) {
+                    $tmpl->addContent("<div onclick=\"{$base_link}{$id}'\">{$line['viewname']}</div>");
+                }
+            }
+        } else if ($target_type == '8') {
+            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            $new_doc = new doc_Peremeshenie();
+            $dd = $new_doc->createFrom($this);
+            $new_doc->setDopData('na_sklad', $this->doc_data['sklad']);
+            $res = $db->query("SELECT `doc_base_kompl`.`kompl_id`, SUM(`doc_base_kompl`.`cnt`*`doc_list_pos`.`cnt`) AS `cnt`,
+                    `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`cost`
+                FROM `doc_list_pos`
+                INNER JOIN `doc_base_kompl` ON `doc_base_kompl`.`pos_id` = `doc_list_pos`.`tovar`
+                INNER JOIN `doc_base` ON `doc_base_kompl`.`kompl_id` = `doc_base`.`id`
+                LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id` = `doc_base_kompl`.`kompl_id` AND `doc_base_cnt`.`sklad` = '{$this->doc_data['sklad']}'
+                WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`=0
+                GROUP BY  `doc_base_kompl`.`kompl_id`
+                ORDER BY `doc_list_pos`.`id`");
+            while ($nxt = $res->fetch_assoc()) {
+                if ($nxt['cnt'] > $nxt['sklad_cnt']) {
+                    $need_cnt = $nxt['cnt'] - $nxt['sklad_cnt'];
+                } else {
+                    $need_cnt = 0;
+                }
 
-		if ($target_type == '') {
-			$tmpl->ajax = 1;
-			$tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=8'\">Перемещение</div>");
-		}
-		else if ($target_type == '8') {
-			if (!isAccess('doc_peremeshenie', 'create'))
-				throw new AccessException();
-			$new_doc = new doc_Peremeshenie();
-			$dd = $new_doc->createFrom($this);
-			$new_doc->setDopData('na_sklad', $this->doc_data['sklad']);
-			$res = $db->query("SELECT `doc_base_kompl`.`kompl_id`, SUM(`doc_base_kompl`.`cnt`*`doc_list_pos`.`cnt`) AS `cnt`,
-				`doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`cost`
-			FROM `doc_list_pos`
-			INNER JOIN `doc_base_kompl` ON `doc_base_kompl`.`pos_id` = `doc_list_pos`.`tovar`
-			INNER JOIN `doc_base` ON `doc_base_kompl`.`kompl_id` = `doc_base`.`id`
-			LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id` = `doc_base_kompl`.`kompl_id` AND `doc_base_cnt`.`sklad` = '{$this->doc_data['sklad']}'
-			WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`=0
-			GROUP BY  `doc_base_kompl`.`kompl_id`
-			ORDER BY `doc_list_pos`.`id`");
-			while($nxt = $res->fetch_assoc()) {
-				if($nxt['cnt'] > $nxt['sklad_cnt'])
-					$need_cnt = $nxt['cnt'] - $nxt['sklad_cnt'];
-				else	$need_cnt = 0;
-			
-				$db->insertA( 'doc_list_pos',  array('doc'=>$dd, 'tovar'=>$nxt['kompl_id'], 'cnt'=>$need_cnt, 'cost'=>$nxt['cost']));
-			}
-			
-			
-			header("Location: doc.php?mode=body&doc=$dd");
-		}
-	}
+                $db->insertA('doc_list_pos', array('doc' => $dd, 'tovar' => $nxt['kompl_id'], 'cnt' => $need_cnt, 'cost' => $nxt['cost']));
+            }
+            redirect("/doc.php?mode=body&doc=$dd");
+        }
+    }
 
-	/// Заявка на комплектующие
+    /// Заявка на комплектующие
 	/// @param to_str	Вернуть в виде строки (иначе - вывести в броузер)
 	function PrintKompl($to_str = 0) {
 		require('fpdf/fpdf_mc.php');

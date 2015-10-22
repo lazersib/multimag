@@ -238,20 +238,20 @@ try {
                 while (($file = readdir($dh)) !== false) {
                     if (preg_match('/.php$/', $file)) {
                         $cn = explode('.', $file);
-                        if (isAccess('report_' . $cn[0], 'view')) {
+                        if (\acl::testAccess('report.' . $cn[0], \acl::VIEW)) {
                             include_once("$dir/$file");
                             $class_name = 'Report_' . $cn[0];
                             $class = new $class_name;
                             $nm = $class->getName();
-                            //$tmpl->AddText("<li><a href='/doc_reports.php?mode=$cn[0]'>$nm</a></li>");
                             $reports[$cn[0]] = $nm;
                         }
                     }
                 }
                 closedir($dh);
                 asort($reports);
-                foreach ($reports AS $id => $name)
+                foreach ($reports AS $id => $name) {
                     $tmpl->addContent("<li><a href='/doc_reports.php?mode=$id'>$name</a></li>");
+                }
             }
         }
         $tmpl->addContent("</ul>");
@@ -264,7 +264,7 @@ try {
                 while (($file = readdir($dh)) !== false) {
                     if (preg_match('/.php$/', $file)) {
                         $cn = explode('.', $file);
-                        if (isAccess('report_' . $cn[0], 'view')) {
+                        if (\acl::testAccess('report.' . $cn[0], \acl::VIEW)) {
                             include_once("$dir/$file");
                             $class_name = 'Report_' . $cn[0];
                             $class = new $class_name;
@@ -282,8 +282,7 @@ try {
         $tmpl->addContent("<hr><div onclick='window.location=\"/doc_reports.php\"'>Подробнее</div>");
     } else {
         doc_menu();
-        if (!isAccess('report_' . $mode, 'view'))
-            throw new AccessException("Недостаточно привилегий");
+        \acl::accessGuard('report.' . $mode, \acl::VIEW);
         $tmpl->addBreadcrumb('ЛК', '/user.php');
         $tmpl->addBreadcrumb('Общий журнал', '/docj_new.php');
         $tmpl->addBreadcrumb('Отчёты', '/doc_reports.php');

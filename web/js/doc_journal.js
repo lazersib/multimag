@@ -739,7 +739,7 @@ function initDocJournal(container_id, default_filters, params) {
 		if(params.no_new_page)
 			link = "window.location = '/doc.php?mode=body&amp;doc=" + line.id + "';";
 		else	link = "window.open('/doc.php?mode=body&amp;doc=" + line.id + "');";
-		var html = "<td style='text-align: right;' class='" + num_class + "' onclick=\""+link+" return false;\">" + line.altnum + line.subtype + "</td><td onclick=\"window.open('/docj.php?mode=tree&amp;doc=" + line.id + "'); return false;\"><img src='img/i_tree.png' alt='Связи'></td><td>";
+		var html = "<td style='text-align: right;' class='" + num_class + "' onclick=\""+link+" return false;\">" + line.altnum + line.subtype + "</td><td onclick=\"window.open('/doc.php?mode=tree&amp;doc=" + line.id + "'); return false;\"><img src='img/i_tree.png' alt='Связи'></td><td>";
 		if (line.ok > 0)
 			html += "<img src='/img/i_suc.png' alt='Проведен'>";
 		if (line.mark_del > 0)

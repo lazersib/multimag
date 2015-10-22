@@ -47,8 +47,7 @@ function getPaySum($doc_id) {
 }
 
 need_auth();
-if (!isAccess('doc_list', 'view'))
-	throw new AccessException();
+\acl::accessGuard('service.orders', \acl::VIEW);
 
 $r_status_list = array('no'=>'-не задан-', 'new'=>'Новый', 'in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
 
@@ -59,8 +58,9 @@ doc_menu();
 
 $sel = array('z' => '', 'c' => '', 'r' => '');
 $mode = request('mode');
-if ($mode == '')
-	$mode = 'z';
+if ($mode == '') {
+    $mode = 'z';
+}
 $sel[$mode] = "class='selected'";
 $tmpl->addContent("
 <ul class='tabs'>

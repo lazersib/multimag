@@ -28,6 +28,10 @@ class main extends \acl\aclContainer {
                 "name" => "Статьи",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
+            'article.photo' => array(
+                "name" => "Статьи: фотогалерея",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
             'galery' => array(
                 "name" => "Фотогалерея",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
@@ -39,6 +43,10 @@ class main extends \acl\aclContainer {
             'votings' => array(
                 "name" => "Голосования (пользовательский интерфейс)",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
+            'search' => array(
+                "name" => "Поиск по сайту",
+                "mask" => \acl::VIEW
             ),
         );
     }

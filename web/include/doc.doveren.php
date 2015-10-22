@@ -83,9 +83,7 @@ class doc_Doveren extends doc_Nulltype {
 			<li><a href=''>Поступление товара</div>");
         } else if ($target_type == 1) {
             $this->recalcSum();
-            if (!isAccess('doc_postuplenie', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.postuplenie', \acl::CREATE);  
             $new_doc = new doc_Postuplenie();
             $dd = $new_doc->createFrom($this);
             redirect("/doc.php?mode=body&doc=$dd");

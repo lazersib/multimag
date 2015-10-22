@@ -64,6 +64,22 @@ class main extends \acl\aclContainer {
                 "name" => "Сообщения об ошибках",
                 "mask" => \acl::VIEW | \acl::CREATE
             ),
+            'images' => array(
+                "name" => "Управление изображениями",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
+            'factory' => array(
+                "name" => "Управление производством",
+                "mask" => \acl::VIEW | \acl::UPDATE
+            ),
+            'doclist' => array(
+                "name" => "Журнал документов",
+                "mask" => \acl::VIEW
+            ),
+            'orders' => array(
+                "name" => "Документы в работе",
+                "mask" => \acl::VIEW
+            ),
         );
     }
     
