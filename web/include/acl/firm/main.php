@@ -17,26 +17,19 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-namespace acl\doc;
+namespace acl\firm;
 
 class main extends \acl\aclContainer {
-    protected $name = "Документы";
+    protected $name = "Документы организаций";
     
     public function __construct() {
-        global $CONFIG;
-        include_once $CONFIG['site']['location'].'/include/doc.core.php';
-        $list = array();
-        $types = \document::getListTypes();
-        foreach ($types as $id=>$value) {
-            $doc = \document::getInstanceFromType($id);
-            $list[$doc->getTypeName()] = $doc->getViewName();
-        }
-        asort($list);
-        $this->list = array();
+        $firm_ldo = new \Models\LDO\firmnames();
+        $list = $firm_ldo->getData();
+        
         foreach ($list as $id => $item) {
             $this->list[$id] = array(
-                    "name" => $item,
-                    "mask" => \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
+                    "name" => $id.': '.$item,
+                    "mask" =>  \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
                         | \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
                         | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT | \acl::VIEW_IN_LIST
                 );

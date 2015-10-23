@@ -35,6 +35,7 @@ class acl {
     const CANCEL_FORCE  = 0x100; ///< Принудительная отмена / остановка
     const GET_PRINTFORM = 0x200; ///< Формирование печатной формы
     const GET_PRINTDRAFT= 0x400; ///< Формирование черновика печатной формы (непроведённого документа)
+    const VIEW_IN_LIST  = 0x800; ///< Просмотр в списках
     
     /// Конструктор копирования запрещён
     final private function __clone() {    
@@ -69,6 +70,7 @@ class acl {
             self::CANCEL_FORCE    => 'Принудительная отмена / остановка',
             self::GET_PRINTFORM   => 'Формирование печатной формы',
             self::GET_PRINTDRAFT  => 'Формирование черновика печатной формы',
+            self::VIEW_IN_LIST    => 'Отображение в списке',
         );
         return $access_names;
     }
@@ -91,6 +93,7 @@ class acl {
         $res = $db->query("SELECT `id`, `object`, `value` FROM `users_groups_acl` WHERE `gid` IS NULL");
         while($line = $res->fetch_assoc()) {
             $data[$line['object']] = $line['value'];
+            echo "{$line['object']} = {$line['value']}<br>";
         }
         return $data;
     }
@@ -103,7 +106,9 @@ class acl {
         while($line = $res->fetch_assoc()) {
             $data[$line['object']] = $line['value'];
         }
+        
         return $data;
+        
     }
     
     /// Получить список доступа для групп текущего пользователя
@@ -124,7 +129,7 @@ class acl {
         $acl = array_merge($acl1, $acl2);
         foreach ($acl AS $id=>$value) {
             if(isset($acl1[$id])) {
-                $acl = $value | $acl1[$id];
+                $acl[$id] = $value | $acl1[$id];
             }
         }
         return $acl;

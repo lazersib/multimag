@@ -30,7 +30,7 @@ class main extends \acl\aclContainer {
             ),
             'agent.ext' => array(
                 "name" => "Агенты: дата сверки и ответственный",
-                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
+                "mask" => \acl::UPDATE
             ),
             'attorney' => array(
                 "name" => "Доверенные лица",

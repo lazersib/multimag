@@ -145,8 +145,8 @@ class document {
         for($i=1;$i<50;$i++) {
             $item = self::getClassNameFromType($i);
             if($item) {
-                $item = explode('_', $item);
-                $list[$i] = $item[1];
+                $item = explode('_', $item, 2);
+                $list[$i] = strtolower($item[1]);
             } else {
                 break;
             }

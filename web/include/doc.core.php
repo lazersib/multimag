@@ -336,33 +336,45 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
 
 	<img src='/img/i_separator.png' alt=''>
 
-	<a href='/docj_new.php' title='Журнал документов' accesskey=\"D\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
+	<a href='/docj_new.php' title='Журнал документов' accesskey=\"L\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
 	<a href='/incomp_orders.php' title='Документы в работе' accesskey=\"D\"><img src='/img/i_incomp_orders.png' alt='Документы в работе' border='0'></a>
 	<a href='/docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='/img/i_user.png' alt='Журнал агентов' border='0'></a>
 	<a href='/docs.php?l=dov' title='Работа с доверенными лицами'><img src='/img/i_users.png' alt='лица' border='0'></a>
 	<a href='/docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='/img/i_sklad.png' alt='Склад' border='0'></a>
-	<a href='/factory.php' title='Производство' accesskey=\"S\"><img src='/img/i_factory.png' alt='Производство' border='0'></a>
+	<a href='/factory.php' title='Производство' accesskey=\"F\"><img src='/img/i_factory.png' alt='Производство' border='0'></a>
 	<a href='/docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='/img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
 	<img src='img/i_separator.png' alt=''>
 
-	<a href='/doc.php' title='Новый документ' accesskey=\"N\"><img src='/img/i_new.png' alt='Новый' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=1' title='Поступление товара на склад'><img src='/img/i_new_post.png' alt='Поступление товара на склад' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=2' title='Реализация товара' accesskey=\"R\"><img src='/img/i_new_real.png' alt='Реализация товара' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=3' title='Заявка покупателя' accesskey=\"Z\"><img src='/img/i_new_schet.png' alt='Заявка покупателя' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=4' title='Поступление средств в банк'><img src='/img/i_new_pbank.png' alt='Поступление средств в банк' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=5' title='Вывод средств из банка'><img src='/img/i_new_rbank.png' alt='Вывод средств из банка' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=6' title='Приходный кассовый ордер'><img src='/img/i_new_pko.png' alt='Приходный кассовый ордер' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=7' title='Расходный кассовый ордер'><img src='/img/i_new_rko.png' alt='Расходный кассовый ордер' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=12' title='Товар в пути'><img src='/img/i_new_tp.png' alt='Товар в пути' border='0'></a>
-	<img src='/img/i_separator.png' alt=''>
+	<a href='/doc.php' title='Новый документ' accesskey=\"N\"><img src='/img/i_new.png' alt='Новый' border='0'></a>");
+        
+        $need_docs = array(1,2,3,4,5,6,7,12);
+        $doc_types = \document::getListTypes();
+                
+        foreach($need_docs as $id) {
+            if (!\acl::testAccess('doc.'.$doc_types[$id], \acl::CREATE)) {
+                continue;
+            }
+            $doc = \document::getInstanceFromType($id);
+            $viewname = $doc->getViewName();
+            $typename = $doc_types[$id];
+            $tmpl->addTop("<a href='/doc.php?mode=new&amp;type=$id' title='{$viewname}'><img src='/img/doc/$typename.png' alt='{$viewname}' border='0'></a> ");
+        }
 
-	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
-	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
-	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
-	if ($dop)
-		$tmpl->addTop("<img src='/img/i_separator.png' alt=''> $dop");
+	$tmpl->addTop("<img src='/img/i_separator.png' alt=''>
+	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a> ");
+        
+        if (\acl::testAccess('service.docservice', \acl::VIEW)) {
+            $tmpl->addTop("<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a> ");
+        }
+        if (\acl::testAccess('service.scripts', \acl::VIEW)) {
+            $tmpl->addTop("<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a> ");
+        }
+        
+	if ($dop) {
+            $tmpl->addTop("<img src='/img/i_separator.png' alt=''> $dop");
+        }
 
-	$tmpl->addTop("</div></div>");
+    $tmpl->addTop("</div></div>");
 
 	if ($nd && @$CONFIG['doc']['mincount_info']) {
             $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name`

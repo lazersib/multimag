@@ -157,7 +157,7 @@ class doc_s_Agent {
 				while($nn = $r->fetch_assoc()) {
 					if($link_users)
 						$link_users .= ', ';
-					$link_users .= "<a href='/adm_users.php?mode=view&amp;id={$nn['id']}'>".html_out($nn['name'])." ({$nn['id']})</a>";
+					$link_users .= "<a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$nn['id']}'>".html_out($nn['name'])." ({$nn['id']})</a>";
 				}
 			}
 			else	$link_users = 'отсутствуют';

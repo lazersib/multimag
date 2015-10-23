@@ -51,7 +51,7 @@ class comments extends \IModule {
             }
             $email = $line['autor_id'] ? $line['user_email'] : $line['autor_email'];
             $email = "<a href='mailto:$email'>$email</a>";
-            $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
+            $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
             $response = $line['response'] ? html_out($line['response']) . 
                     "<br><a href='{$this->link_prefix}&amp;sect=response&amp;id={$line['id']}'>Правка</a>" 
                     : "<a href='{$this->link_prefix}&amp;sect=response&amp;id={$line['id']}'>Ответить</a>";
@@ -88,7 +88,7 @@ class comments extends \IModule {
         if (!$line) {
             throw new Exception("Коментарий не найден!");
         }
-        $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
+        $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
         $object = "{$line['object_name']}:{$line['object_id']}";
         $html_text = html_out($line['text']);
         $html_response = html_out($line['response']);
@@ -130,7 +130,7 @@ class comments extends \IModule {
             if (!$line) {
                 throw new Exception("Коментарий не найден!");
             }
-            $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm_users.php?mode=view&amp;id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
+            $autor = $line['autor_id'] ? "{$line['autor_id']}:<a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$line['autor_id']}'>{$line['user_name']}</a>" : $line['autor_name'];
             $object = "{$line['object_name']}:{$line['object_id']}";
             $html_text = html_out($line['text']);
             $tmpl->addContent("<h1 id='page-title'>Ответ на коментарий N{$line['id']}</h1>

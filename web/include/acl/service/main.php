@@ -66,7 +66,7 @@ class main extends \acl\aclContainer {
             ),
             'images' => array(
                 "name" => "Управление изображениями",
-                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
             ),
             'factory' => array(
                 "name" => "Управление производством",

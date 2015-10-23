@@ -50,6 +50,7 @@ need_auth();
 \acl::accessGuard('service.orders', \acl::VIEW);
 
 $r_status_list = array('no'=>'-не задан-', 'new'=>'Новый', 'in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
+$doc_types = \document::getListTypes();
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 
@@ -77,7 +78,7 @@ if ($mode == 'z') {
     else {
         $where_add = '';
     }
-    $sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
+    $sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,  `doc_list`.`firm_id`, `doc_list`.`type`,
             `doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `authors`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
             `dop_delivery`.`value` AS `delivery`, `dop_delivery_date`.`value` AS `delivery_date`, `dop_status`.`value` AS `status`,
             `dop_pay`.`value` AS `pay_type`, `doc_ishop`.`value` AS `ishop`, `delivery_types`.`name` AS `delivery_name`,
@@ -131,6 +132,9 @@ if ($mode == 'z') {
 
     while ($line = $res->fetch_assoc()) {
         if ($line['status'] == 'ok' || $line['status'] == 'err') {
+            continue;
+        }
+        if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
             continue;
         }
         if (!$line['status']) {
@@ -212,7 +216,7 @@ if ($mode == 'z') {
         $str = "<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
             <td>$r_info</td><td{$status_style}>$status</td><td>{$line['agent_name']}</td><td>{$line['resp_name']}</td><td align='right'>{$line['sum']}</td>
             <td style='$pay_style'>$pay_type</td><td>$pay_sum</td><td>{$line['delivery_name']}</td>
-            <td>$date</td><td>$ishop</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
+            <td>$date</td><td>$ishop</td><td><a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$line['user']}'>{$line['user_name']}</a></td>
             </tr>";
 
         switch ($line['status']) {
@@ -240,7 +244,7 @@ else if ($mode == 'c') {
     else {
         $where_add = '';
     }
-    $sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`,
+    $sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`, `doc_list`.`firm_id`, `doc_list`.`type`,
             `doc_agent`.`name` AS `agent_name`, `doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`,
             `dop_status`.`value` AS `status`, `doc_list`.`sklad`, `users_worker_info`.`worker_real_name` AS `kladovshik`
 	FROM `doc_list`
@@ -275,6 +279,9 @@ else if ($mode == 'c') {
     $new_lines = $inproc_lines = $other_lines = $ready_lines = '';
     while ($line = $res->fetch_assoc()) {
         if ($line['status'] == 'ok' || $line['status'] == 'err') {
+            continue;
+        }
+        if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
             continue;
         }
         if ($line['status'] == '') {
@@ -316,7 +323,7 @@ else if ($mode == 'c') {
             $z = '--нет--';
         $str = "<tr{$line_style}><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
             <td>$z</td><td{$status_style}>$status</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
-            <td>$date</td><td>{$line['kladovshik']}</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
+            <td>$date</td><td>{$line['kladovshik']}</td><td><a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$line['user']}'>{$line['user_name']}</a></td>
             </tr>";
         switch ($line['status']) {
             case 'no':
@@ -337,7 +344,7 @@ else if ($mode == 'c') {
 }
 else if ($mode == 'r') {
 	$sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`, `doc_agent`.`name` AS `agent_name`,
-		`doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`, `dop_status`.`value` AS `status`
+		`doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`, `dop_status`.`value` AS `status`, `doc_list`.`firm_id`, `doc_list`.`type`
 	FROM `doc_list`
 	LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
 	LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
@@ -356,6 +363,9 @@ else if ($mode == 'r') {
 	$tmpl->addContent("<table width='100%' cellspacing='1' class='list'><tr>
 	<th width='70'>№</th><th width='55'>ID</th><th width='55'>Счет</th><th>Агент</th><th width='90'>Сумма</th><th width='150'>Дата</th><th>Автор</th></tr>");
 	while ($line = $res->fetch_assoc()) {
+            if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
+                continue;
+            }
 		$date = date('Y-m-d H:i:s', $line['date']);
 		$link = "/doc.php?mode=body&amp;doc=" . $line['id'];
 		if ($line['p_doc'])
@@ -364,7 +374,7 @@ else if ($mode == 'r') {
 			$z = '--нет--';
 		$tmpl->addContent("<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
 	<td>$z</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
-	<td>$date</td><td><a href='/adm_users.php?mode=view&amp;id={$line['user']}'>{$line['user_name']}</a></td>
+	<td>$date</td><td><a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$line['user']}'>{$line['user_name']}</a></td>
 	</tr>");
 	}
 	$tmpl->addContent("</table>");

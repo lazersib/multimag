@@ -28,7 +28,7 @@ $tmpl->hideBlock('left');
 try {
     $mode = request('mode');
     $uid = intval($_SESSION['uid']);
-    \acl::accessGuard('doc.docservice', \acl::VIEW);
+    \acl::accessGuard('service.docservice', \acl::VIEW);
 
     doc_menu();
     $tmpl->addBreadcrumb('Документы', '/docj_new.php');
@@ -82,6 +82,7 @@ try {
 	<button>Выполнить запрошенную операцию</button>
 	</fieldset></form>");
     } else if ($mode == 'merge_agent_ok') {
+        \acl::accessGuard('service.docservice', \acl::UPDATE);
         $ag1 = rcvint('ag1');
         $ag2 = rcvint('ag2');
         $gr = rcvint('gr');
@@ -118,6 +119,7 @@ try {
 	<button>Выполнить запрошенную операцию</button>
 	</fieldset></form>");
     } else if ($mode == 'merge_tovar_ok') {
+        \acl::accessGuard('service.docservice', \acl::UPDATE);
         $tov1 = rcvint('tov1');
         $tov2 = rcvint('tov2');
         $gr = rcvint('gr');

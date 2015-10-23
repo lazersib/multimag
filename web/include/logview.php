@@ -57,7 +57,7 @@ class LogView {
         }
         if(isset($this->users[$user_id])) {
             $name = html_out($this->users[$user_id]);            
-            return "<a href='/adm_users.php?mode=view&amp;id={$user_id}'>{$name}</a>";
+            return "<a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$user_id}'>{$name}</a>";
         }
         else return $user_id;        
     }

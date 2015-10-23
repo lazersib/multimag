@@ -154,7 +154,6 @@ class cabinet extends \IModule {
         $this->loadMenuElements('worker', 'service', '/service.php?mode=');
         
         $this->loadMenuElements('admin', 'admin', '/adm.php?mode=');
-        $this->addMenuElement('admin', 'users', 'admin.users', 'Пользователи', '/adm_users.php');
         
         $this->addMenuElement('user', 'profile', null, 'Мой профиль', '/users.php?mode=profile');
         $this->addMenuElement('user', 'my_docs', null, 'Мои документы', '/users.php?mode=my_docs');

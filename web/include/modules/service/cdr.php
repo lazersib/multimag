@@ -238,7 +238,7 @@ class CDR extends \IModule {
             } else {
                 $src_cell = '?';
             }
-            return "<a href='/adm_users.php?mode=view&id=".$obj_id."'>".html_out($src_cell)."</a>";
+            return "<a href='/adm.php?mode=users&amp;sect=view&amp;user_id=".$obj_id."'>".html_out($src_cell)."</a>";
         } elseif(isset($this->up[$phone])) {
             $obj_id = $this->up[$phone];
             if(isset($this->users[$obj_id])) {
@@ -246,7 +246,7 @@ class CDR extends \IModule {
             } else {
                 $src_cell = '?';
             }
-            return "<a href='/adm_users.php?mode=view&id=".$obj_id."'>".html_out($src_cell)."</a>";
+            return "<a href='/adm.php?mode=users&amp;sect=view&amp;user_id=".$obj_id."'>".html_out($src_cell)."</a>";
         }
         return '';
     }

@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
@@ -37,12 +38,20 @@ $tmpl->addTop("
 try {
     if ($mode == "") {
         doc_menu();
+        $doc_types = \document::getListTypes();
+        $doc_names = array();
+        foreach ($doc_types as $id => $type) {
+            if (!\acl::testAccess('doc.'.$type, \acl::CREATE)) {
+                continue;
+            }
+            $doc = \document::getInstanceFromType($id);
+            $doc_names["$id"] = $doc->getViewName();
+        }
+        asort($doc_names);
         $tmpl->addContent("<h1>Создание нового документа</h1>"
-            . "<h3>Выберите тип документа</h3>"
-            . "<ul>");
-        $res = $db->query("SELECT `id`, `name` FROM `doc_types` ORDER BY `name`");
-        while ($nxt = $res->fetch_row()) {
-            $tmpl->addContent("<li><a href='?mode=new&amp;type=$nxt[0]'>" . html_out($nxt[1]) . "</a></li>");
+                . "<ul>");
+        foreach ($doc_names as $id => $viewname) {
+            $tmpl->addContent("<li><a href='?mode=new&amp;type=$id'>" . html_out($viewname) . "</a></li>");
         }
         $tmpl->addContent("</ul>");
     } else if ($mode == 'new') {
@@ -53,16 +62,18 @@ try {
         if (!$doc) {
             $type = request('type');
             $document = document::getInstanceFromType($type);
-        } else
+        } else {
             $document = document::getInstanceFromDb($doc);
+        }
         $document->head_submit($doc);
     }
     else if ($mode == "jheads") {
         if (!$doc) {
             $type = request('type');
             $document = document::getInstanceFromType($type);
-        } else
+        } else {
             $document = document::getInstanceFromDb($doc);
+        }
         $document->json_head_submit($doc);
     }
     else if ($mode == "ehead") {
@@ -127,7 +138,7 @@ try {
     } else if ($mode == 'log') {
         $document = document::getInstanceFromDb($doc);
         $document->showLog();
-    }  else if ($mode == 'tree') {
+    } else if ($mode == 'tree') {
         $document = document::getInstanceFromDb($doc);
         $document->viewDocumentTree();
     } else {
@@ -142,16 +153,18 @@ try {
         $ret_data = array('response' => 'err',
             'message' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение передано администратору.");
         $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
-    } else
+    } else {
         $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+    }
 } catch (Exception $e) {
     $id = writeLogException($e);
     if ($tmpl->ajax) {
         $ret_data = array('response' => 'err',
             'message' => "Общая ошибка! " . $e->getMessage());
         $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
-    } else
+    } else {
         $tmpl->msg($e->getMessage(), 'err', "Общая ошибка");
+    }
 }
 
 $tmpl->write();

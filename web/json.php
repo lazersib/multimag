@@ -95,7 +95,3 @@ catch(Exception $e) {
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 }
 
-
-
-
-?>

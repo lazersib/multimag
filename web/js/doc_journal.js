@@ -749,7 +749,7 @@ function initDocJournal(container_id, default_filters, params) {
 		if(show_count_column)
 			html += "<td style='text-align: right;'>" + line.pos_cnt + " / " + line.pos_page + "<td style='text-align: right;'>" + line.pos_cost + "</td>";
 		
-		html += "<td style='text-align: right;'>" + line.sum + "</td><td>" + line.date + "</td><td onclick=\"window.open('/adm_users.php?mode=view&amp;id=" + line.author_id + "'); return false;\">" + usernames[line.author_id] + "</td><td>" + line.id + "</td>";
+		html += "<td style='text-align: right;'>" + line.sum + "</td><td>" + line.date + "</td><td onclick=\"window.open('/adm.php?mode=users&sect=view&user_id=" + line.author_id + "'); return false;\">" + usernames[line.author_id] + "</td><td>" + line.id + "</td>";
 		tr.innerHTML = html;
 		tr.className = tr_class;
 	}
