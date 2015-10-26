@@ -146,7 +146,7 @@ class cabinet extends \IModule {
         $this->addMenuGroup('admin', 'Администратору');
         $this->addMenuGroup('user', 'Посетителю');
         
-        $this->addMenuElement('worker', 'doclist', 'directory.doc', 'Документы', '/docj_new.php');
+        $this->addMenuElement('worker', 'doclist', 'service.doclist', 'Документы', '/docj_new.php');
         $this->addMenuElement('worker', 'intkb', 'service.intkb', 'База знаний', '/intkb.php');
         $this->addMenuElement('worker', 'factory', 'service.factory', 'Учёт на производстве', '/factory.php');
         $this->addMenuElement('worker', 'tickets', 'service.tickets', 'Задания', '/tickets.php');
@@ -155,8 +155,8 @@ class cabinet extends \IModule {
         
         $this->loadMenuElements('admin', 'admin', '/adm.php?mode=');
         
-        $this->addMenuElement('user', 'profile', null, 'Мой профиль', '/users.php?mode=profile');
-        $this->addMenuElement('user', 'my_docs', null, 'Мои документы', '/users.php?mode=my_docs');
+        $this->addMenuElement('user', 'profile', null, 'Мой профиль', '/user.php?mode=profile');
+        $this->addMenuElement('user', 'my_docs', null, 'Мои документы', '/user.php?mode=my_docs');
         $this->addMenuElement('user', 'votings', 'generic.votings', 'Голосования', '/voting.php');
         $this->addMenuElement('user', 'articles', 'generic.articles', 'Статьи', '/articles.php');
     }
@@ -253,6 +253,25 @@ class cabinet extends \IModule {
         return $ret;
     }
     
+    public function getWorkerChPwdForm() {
+        $a = $this->getFormAction();
+        $pass = keygen_unique(0, 10, 14);
+        $ret = "<form method='post' action='$a'>
+        <input type='hidden' name='mode' value='chpwd'>
+        <input type='hidden' name='step' value='1'>
+        <table>
+        <tr><td>Текущий пароль:</td>
+        <td><input type='password' name='oldpass'></td></tr>
+        <tr><td>Новый пароль:</td>
+        <td>$pass<input type='hidden' name='newpass' value='$pass'><input type='hidden' name='confirmpass' value='$pass'></td></tr>
+        <tr><td>&nbsp;</td>
+        <td><button type='submit'>Сменить пароль</button></td></tr>
+        </table>
+        </form>
+        ";
+        return $ret;
+    }
+    
     /// Формирует HTM код формы профиля пользователя
     public function getUserProfileForm($user_data, $agent_data) {
         $a = $this->getFormAction();
@@ -319,6 +338,7 @@ class cabinet extends \IModule {
             if($agent_data['inn']) {
                 $ret .= "<tr><td>ИНН</td><td>" . html_out($agent_data['inn']) . "</td></tr>";
             }
+            /*
             if($agent_data['tel']) {
                 $ret .= "<tr><td>Телефон</td><td>" . html_out($agent_data['tel']) . "</td></tr>";
             }
@@ -328,6 +348,8 @@ class cabinet extends \IModule {
             if($agent_data['sms_phone']) {
                 $ret .= "<tr><td>Телефон для SMS</td><td>" . html_out($agent_data['sms_phone']) . "</td></tr>";
             }
+             * 
+             */
             if($agent_data['adres']) {
                 $ret .= "<tr><td>Адрес</td><td>" . html_out($agent_data['adres']) . "</td></tr>";
             }
@@ -397,12 +419,18 @@ class cabinet extends \IModule {
     public function tryChangePassword() {
         global $tmpl, $db;
         $step = request('step');
+        $user_id = $_SESSION['uid'];
         $tmpl->setTitle("Смена пароля");  
         $tmpl->setContent("<h1>Смена пароля</h1>");
         $tmpl->addBreadcrumb('Мой профиль', '/user.php?mode=profile');
         $tmpl->addBreadcrumb('Смена пароля', '');
         if(!$step) {
-            $tmpl->addContent( $this->getChPwdForm() );
+            $res = $db->query("SELECT `worker` FROM `users_worker_info` WHERE `user_id`='$user_id' AND `worker`>0");
+            if($res->num_rows) {
+                $tmpl->addContent( $this->getWorkerChPwdForm() );
+            } else {
+                $tmpl->addContent( $this->getChPwdForm() );
+            }
         } else {
             $oldpass = request('oldpass');
             $newpass = request('newpass');
@@ -414,7 +442,12 @@ class cabinet extends \IModule {
             }
             if(!$oldpass || !$newpass || !$confirmpass) {
                 $tmpl->errorMessage("Одно из полей не заполнено!");
-                $tmpl->addContent( $this->getChPwdForm() );
+                $res = $db->query("SELECT `worker` FROM `users_worker_info` WHERE `user_id`='$user_id' AND `worker`>0");
+                if($res->num_rows) {
+                    $tmpl->addContent( $this->getWorkerChPwdForm() );
+                } else {
+                    $tmpl->addContent( $this->getChPwdForm() );
+                }
             }
             elseif($newpass != $confirmpass) {
                 $tmpl->errorMessage("Новый пароль и подтверждение не совпадают");
@@ -467,8 +500,8 @@ class cabinet extends \IModule {
         $user_data = $auth->getUserInfo();
 
         if ($user_data['agent_id']) {
-            $adata = $db->selectRowA('doc_agent', $user_data['agent_id'], array('id', 'name', 'fullname', 'inn', 'tel', 'fax_phone', 
-                'sms_phone', 'adres', 'data_sverki'));
+             //'tel', 'fax_phone', 'sms_phone',
+            $adata = $db->selectRowA('doc_agent', $user_data['agent_id'], array('id', 'name', 'fullname', 'inn', 'adres', 'data_sverki'));
         } else {
             $adata = false;
         }

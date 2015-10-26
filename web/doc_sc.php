@@ -37,7 +37,7 @@ $tmpl->addTop("<script type='text/javascript' src='/css/doc_script.js'></script>
 $dir = $CONFIG['site']['location'] . '/include/doc_scripts/';
 
 try {
-    \acl::accessGuard('doc.scripts', \acl::VIEW);
+    \acl::accessGuard('service.scripts', \acl::VIEW);
 
     doc_menu();
     $tmpl->setTitle("Сценарии и операции");

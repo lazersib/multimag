@@ -118,19 +118,24 @@ class doc_s_Agent {
 
 		if($param=='' || $param=='v') {
 			$tmpl->addBreadcrumb('Агенты', '/docs.php?l=agent');			
-			
-			$ares = $db->query("SELECT * FROM `doc_agent` WHERE `id` = $pos");
-			if($ares->num_rows) {
-				$agent_info = $ares->fetch_assoc();				
-				$tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '');
-			}
-			else {
-				$tmpl->addBreadcrumb('Новая запись', '');
-				
-				$agent_info = array();
-				foreach ($this->agent_vars as $value)
-					$agent_info[$value] = '';				
-			}
+                        $contact_info = '';
+			$agent_obj = new \models\agent();
+                        if($pos>0) {
+                            $agent_obj->load($pos);
+                            $agent_info = $agent_obj->getData();
+                            $tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '');
+                            
+                            $ace = new \ListEditors\agentContactEditor($db);
+                            $ace->agent_id = intval($pos);
+                            $contact_info = $ace->getListItems(false);
+                            
+                        } else {
+                            $tmpl->addBreadcrumb('Новая запись', '');
+                            $agent_info = array();
+                            foreach ($this->agent_vars as $value) {
+                                $agent_info[$value] = '';
+                            }
+                        }
 
 			$html_pagent_name='';
 	
@@ -184,7 +189,8 @@ class doc_s_Agent {
                         <label><input type='radio' name='type' value='0'{$at_check[0]} id='atype_rb0'>Физическое лицо</label><br>
 			<label><input type='radio' name='type' value='1'{$at_check[1]} id='atype_rb1'>Юридическое лицо</label><br>
                         <label><input type='radio' name='type' value='2'{$at_check[2]} id='atype_rb2'>Нерезидент</label>");
-
+                        
+                        
 			$tmpl->addContent("<td align='right'>Группа</td>
         		<td>" . selectAgentGroup('g', $agent_info['group'], false, '', '', @$CONFIG['agents']['leaf_only']) . "</select>
 				<td align='right'>Относится к:</td>
@@ -193,8 +199,8 @@ class doc_s_Agent {
 					<div id='agent_info'></div>
 			<tr><td align=right>Юридический адрес / Адрес прописки
 				<td colspan='2'><textarea name='adres'>".html_out($agent_info['adres'])."</textarea>
-				<td align=right>Адрес проживания
-				<td colspan='2'><textarea name='real_address'>".html_out($agent_info['real_address'])."</textarea>
+				<td colspan='3'>Контакты:<br>
+				$contact_info
 			<tr><td align=right>ИНН:
 				<td><input type=text name='inn' value='".html_out($agent_info['inn'])."' class='inn validate'>
                                 <td align=right>КПП:
@@ -331,19 +337,6 @@ class doc_s_Agent {
 				$tmpl->addBreadcrumb('История правок', '');
 			}
 			else throw new NotFoundException('Агент не найден');
-                        
-                        /*
-			$tmpl->addContent("<table width='100%' class='list'>
-			<tr><th>id<th>Действие<th>Описание<th>Дата<th>Пользователь<th>IP");
-			$res = $db->query("SELECT `doc_log`.`id`, `doc_log`.`motion`, `doc_log`.`desc`, `doc_log`.`time`, `users`.`name`, `doc_log`.`ip`
-			FROM `doc_log`
-			LEFT JOIN `users` ON `users`.`id`=`doc_log`.`user`
-			WHERE `object`='AGENT' AND `object_id`='$pos' ORDER BY `time` DESC");
-			while($nxt = $res->fetch_row())
-				$tmpl->addContent('<tr><td>'.$nxt[0].'</td><td>'.html_out($nxt[1]).'</td><td>'.html_out($nxt[2]).'</td><td>'.html_out($nxt[3]).'</td><td>'.html_out($nxt[4]).'</td><td>'.html_out($nxt[5]).'</td></tr>');
-			$tmpl->addContent("</table>");
-                         * 
-                         */
                         $logview = new \LogView();
                         $logview->setObject('agent');
                         $logview->setObjectId($pos);
@@ -549,12 +542,11 @@ class doc_s_Agent {
             }
 
             $sql = "SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`type`, `doc_agent`.`fullname`,
-                `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`, `phones`.`value` AS `phone`
-                , `emails`.`value` AS `email`
+                `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`
+                    , (SELECT `value` FROM `agent_contacts` WHERE `agent_contacts`.`agent_id`=`doc_agent`.`id` AND `agent_contacts`.`type`='phone' LIMIT 1) AS `phone`
+                    , (SELECT `value` FROM `agent_contacts` WHERE `agent_contacts`.`agent_id`=`doc_agent`.`id` AND `agent_contacts`.`type`='email' LIMIT 1) AS `email`
                 FROM `doc_agent`
                 LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`
-                LEFT JOIN `agent_contacts` AS `phones` ON `doc_agent`.`id`=`phones`.`agent_id` AND `phones`.`type`='phone'
-                LEFT JOIN `agent_contacts` AS `emails` ON `doc_agent`.`id`=`emails`.`agent_id` AND `emails`.`type`='email'
                 WHERE `doc_agent`.`group`='$group'
                 ORDER BY `doc_agent`.`name`";
 
@@ -612,7 +604,11 @@ class doc_s_Agent {
 		$tmpl->addContent("<table class='list' width='100%' cellspacing='1' cellpadding='2'>
 		<tr><th>№</th><th>Название</th><th>Телефон</th><th>e-mail</th><th>Дополнительно</th><th>Отв.менеджер</th></tr>");
 		$s_sql = $db->real_escape_string($s);
-		$sql = "SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`tel`, `doc_agent`.`email`, `doc_agent`.`type`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`, `doc_agent`.`fax_phone`, `doc_agent`.`sms_phone`, `doc_agent`.`alt_phone`
+		$sql = "SELECT `doc_agent`.`id`, `doc_agent`.`group`, `doc_agent`.`name`, `doc_agent`.`type`, `doc_agent`.`fullname`,
+                    `doc_agent`.`pfio`, `users`.`name` AS `responsible_name`, `doc_agent`.`dishonest`
+                    , (SELECT `value` FROM `agent_contacts` WHERE `agent_contacts`.`agent_id`=`doc_agent`.`id` AND `agent_contacts`.`type`='phone' LIMIT 1) AS `phone`
+                    , (SELECT `value` FROM `agent_contacts` WHERE `agent_contacts`.`agent_id`=`doc_agent`.`id` AND `agent_contacts`.`type`='email' LIMIT 1) AS `email`
+
 		FROM `doc_agent`
 		LEFT JOIN `users` ON `doc_agent`.`responsible`=`users`.`id`";
 

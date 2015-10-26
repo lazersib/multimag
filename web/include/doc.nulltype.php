@@ -230,7 +230,7 @@ class doc_Nulltype extends \document {
         $ok_status = $item['ok'] ? 'Проведённый' : 'Непроведённый';
         $r = ($last) ? " IsLast" : '';
         $ret .= "<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>";
-        if (!\acl::testAccess('firm.' . $item['firm_id'], \acl::VIEW_IN_LIST)) {
+        if (!\acl::testAccess('firm.' . $item['firm_id'], \acl::VIEW_IN_LIST) && $item['firm_id']>0) {
             if ($item['id'] == $this->id) {
                 $ret .= "<b>";
             }
@@ -268,7 +268,9 @@ class doc_Nulltype extends \document {
     public function viewDocumentTree() {
         global $tmpl;
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-        \acl::accessGuard('firm.' . $this->doc_data['firm_id'], \acl::VIEW);
+        if($this->doc_data['firm_id']>0) {
+            \acl::accessGuard('firm.' . $this->doc_data['firm_id'], \acl::VIEW);
+        }
         $root_doc_id = $this->getRootDocumentId();
         $tmpl->addContent("<h1>Структура для {$this->id} с $root_doc_id </h1>");
         $root_doc = \document::getInstanceFromDb($root_doc_id);
@@ -428,7 +430,9 @@ class doc_Nulltype extends \document {
             else
                 $object = 'doc';
             \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-            \acl::accessGuard('firm.' . $this->doc_data['firm_id'], \acl::VIEW);
+            if($this->doc_data['firm_id']>0) {
+                \acl::accessGuard('firm.' . $this->doc_data['firm_id'], \acl::VIEW);
+            }
             doc_menu($this->getDopButtons());
             $this->drawHeadformStart();
             $fields = explode(' ', $this->header_fields);
@@ -584,7 +588,9 @@ class doc_Nulltype extends \document {
             }
             else {
                 \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
-                \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::CREATE);
+                if($this->doc_data['firm_id']>0) {
+                    \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::CREATE);
+                }
                 $db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
                 $this->id = $doc = $db->insert_id;
                 $link = "/doc.php?doc=$doc&mode=body";
@@ -703,7 +709,9 @@ class doc_Nulltype extends \document {
 
                 if ($this->id) {
                     \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                    \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                    if($this->doc_data['firm_id']>0) {
+                        \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                    }
                     $res = $db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->id}'");
                     $link = "/doc.php?doc={$this->id}&mode=body";
                     if ($log_data)
@@ -711,7 +719,9 @@ class doc_Nulltype extends \document {
                 }
                 else {
                     \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
-                    \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::CREATE);
+                    if($this->doc_data['firm_id']>0) {
+                        \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::CREATE);
+                    }
                     $res = $db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
                     $this->id = $db->insert_id;
                     $link = "/doc.php?doc={$this->id}&mode=body";
@@ -739,8 +749,9 @@ class doc_Nulltype extends \document {
         global $tmpl, $db;
 
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-        \acl::accessGuard('firm.' . $this->doc_data['firm_id'], \acl::VIEW);
-
+        if($this->doc_data['firm_id']>0) {
+            \acl::accessGuard('firm.' . $this->doc_data['firm_id'], \acl::VIEW);
+        }
         $tmpl->setTitle($this->viewname . ' N' . $this->id);
         $dt = date("Y-m-d H:i:s", $this->doc_data['date']);
         doc_menu($this->getDopButtons());
@@ -1026,7 +1037,9 @@ class doc_Nulltype extends \document {
         global $tmpl, $db;
 
         \acl::accessGuard('doc.' . $this->typename, \acl::CANCEL_FORCE);
-        \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::CANCEL_FORCE);
+        if($this->doc_data['firm_id']>0) {
+            \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::CANCEL_FORCE);
+        }
         $opt = request('opt');
         if ($opt == '') {
             $tmpl->addContent("<h2>Внимание! Опасная операция!</h2>Отмена производится простым снятием отметки проведения, без проверки зависимостией, учета структуры подчинённости и изменения значений счётчиков. Вы приниматете на себя все последствия данного действия. Вы точно хотите это сделать?<br>
@@ -1141,11 +1154,12 @@ class doc_Nulltype extends \document {
         } else {
             $object = 'doc';
         }
-        \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::GET_PRINTFORM);
         if ($this->doc_data['ok']) {
             \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTFORM);
+            \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::GET_PRINTFORM);
         } else {
             \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTDRAFT);
+            \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::GET_PRINTDRAFT);
         }
 
         if (!$this->isPrintFormExists($form_name)) {
@@ -1304,7 +1318,9 @@ class doc_Nulltype extends \document {
     function connect($p_doc) {
         global $db;
         \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-        \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+        if($this->doc_data['firm_id']>0) {
+            \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+        }
         if ($this->id == $p_doc) {
             throw new \Exception('Нельзя связать с самим собой!');
         }
@@ -1447,21 +1463,27 @@ class doc_Nulltype extends \document {
             // Json вариант добавления позиции
             else if ($peopt == 'jadd') {
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                if($this->doc_data['firm_id']>0) {
+                    \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                }
                 $pe_pos = rcvint('pe_pos');
                 $tmpl->setContent($poseditor->AddPos($pe_pos));
             }
             // Json вариант удаления строки
             else if ($peopt == 'jdel') {
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                if($this->doc_data['firm_id']>0) {
+                    \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                }
                 $line_id = rcvint('line_id');
                 $tmpl->setContent($poseditor->Removeline($line_id));
             }
             // Json вариант обновления
             else if ($peopt == 'jup') {
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                if($this->doc_data['firm_id']>0) {
+                    \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::UPDATE);
+                }
                 $line_id = rcvint('line_id');
                 $value = request('value');
                 $type = request('type');
@@ -1963,7 +1985,9 @@ class doc_Nulltype extends \document {
     public function showLog() {
         global $tmpl;
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-        \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::VIEW);
+        if($this->doc_data['firm_id']>0) {
+            \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::VIEW);
+        }
         $tmpl->setTitle($this->viewname . ' N' . $this->id);
         doc_menu($this->getDopButtons());
         $tmpl->addContent("<h1>{$this->viewname} N{$this->id} - история документа</h1>");
@@ -2255,7 +2279,9 @@ class doc_Nulltype extends \document {
         global $db;
         try {
             \acl::accessGuard('doc.' . $this->typename, \acl::DELETE);
-            \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::DELETE);
+            if($this->doc_data['firm_id']>0) {
+                \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::DELETE);
+            }
             $tim = time();
 
             $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}' AND `mark_del`='0'");
@@ -2278,7 +2304,9 @@ class doc_Nulltype extends \document {
         global $db;
         try {
             \acl::accessGuard('doc.' . $this->typename, \acl::DELETE);
-            \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::DELETE);
+            if($this->doc_data['firm_id']>0) {
+                \acl::accessGuard('firm.'.$this->doc_data['firm_id'], \acl::DELETE);
+            }
             $db->update('doc_list', $this->id, 'mark_del', 0);
             doc_log("UNDELETE", '', "doc", $this->id);
             $json = ' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "' . $this->getApplyButtons() . '", '

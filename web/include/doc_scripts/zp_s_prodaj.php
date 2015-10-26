@@ -199,7 +199,7 @@ class ds_zp_s_prodaj {
                                     $nach_sum += ($nxt_tov['cost'] - $incost) * $this->coeff * $nxt_tov['cnt'];
                                 }
                             }
-                            $nach_sum -= $nxt['ag_sum'];
+                            $nach_sum -= ($nxt['ag_sum']/$this->coeff);
                             $nach_sum = sprintf("%0.2f", $nach_sum);
                             // Проверка факта оплаты
                             $add = '';

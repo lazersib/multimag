@@ -348,13 +348,13 @@ class doc_Zayavka extends doc_Nulltype {
     function MorphTo($target_type) {
         global $tmpl, $db;
         $morphs = array(
-                't2' => ['acj_object' => 'doc.realizaciya', 'viewname' => 'Реализация (все товары)', ],
-                'd2' => ['acj_object' => 'doc.realizaciya', 'viewname' => 'Реализация (неотгруженные)', ],
-                '6' =>  ['acj_object' => 'doc.pko',         'viewname' => 'Приходный кассовый ордер', ],
-                '4' =>  ['acj_object' => 'doc.pbank',       'viewname' => 'Приход средств в банк', ],
-                '15' => ['acj_object' => 'doc.realiz_op',   'viewname' => 'Оперативная реализация', ],
-                '1' =>  ['acj_object' => 'doc.zayavka',     'viewname' => 'Копия заявки', ],
-                '16' => ['acj_object' => 'doc.specific',    'viewname' => 'Спецификация (не используй здесь)', ],
+                't2' => ['acl_object' => 'doc.realizaciya', 'viewname' => 'Реализация (все товары)', ],
+                'd2' => ['acl_object' => 'doc.realizaciya', 'viewname' => 'Реализация (неотгруженные)', ],
+                '6' =>  ['acl_object' => 'doc.pko',         'viewname' => 'Приходный кассовый ордер', ],
+                '4' =>  ['acl_object' => 'doc.pbank',       'viewname' => 'Приход средств в банк', ],
+                '15' => ['acl_object' => 'doc.realiz_op',   'viewname' => 'Оперативная реализация', ],
+                '1' =>  ['acl_object' => 'doc.zayavka',     'viewname' => 'Копия заявки', ],
+                '16' => ['acl_object' => 'doc.specific',    'viewname' => 'Спецификация (не используй здесь)', ],
             );
         
         if ($target_type == '') {

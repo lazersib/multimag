@@ -41,7 +41,7 @@ class doc_ZSbor extends doc_Nulltype {
     function MorphTo($target_type) {
         global $tmpl, $db;
         $morphs = array(
-            '8' => ['acj_object' => 'doc.peremeshenie', 'viewname' => 'Перемещение',],
+            '8' => ['acl_object' => 'doc.peremeshenie', 'viewname' => 'Перемещение',],
         );
         if ($target_type == '') {
             $tmpl->ajax = 1;            

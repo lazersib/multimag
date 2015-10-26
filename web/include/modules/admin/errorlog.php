@@ -117,7 +117,7 @@ class errorLog extends \IModule {
                 $this->viewLog();
                 break;
             case 'detail':
-                $id = rcvint($id);
+                $id = rcvint('id');
                 $this->viewDetail($id);
                 break;
             default:

@@ -81,7 +81,7 @@ class acl {
         $data = array();
         $res = $db->query("SELECT `id`, `object`, `value` FROM `users_acl` WHERE `uid` IS NULL");
         while($line = $res->fetch_assoc()) {
-            $data[$line['object']] = $line['value'];
+            $data[$line['object']] = intval($line['value']);
         }
         return $data;
     }
@@ -92,8 +92,7 @@ class acl {
         $data = array();
         $res = $db->query("SELECT `id`, `object`, `value` FROM `users_groups_acl` WHERE `gid` IS NULL");
         while($line = $res->fetch_assoc()) {
-            $data[$line['object']] = $line['value'];
-            echo "{$line['object']} = {$line['value']}<br>";
+            $data[$line['object']] = intval($line['value']);
         }
         return $data;
     }
@@ -104,7 +103,7 @@ class acl {
         $data = array();
         $res = $db->query("SELECT `id`, `object`, `value` FROM `users_acl` WHERE `uid`='{$this->uid}'");
         while($line = $res->fetch_assoc()) {
-            $data[$line['object']] = $line['value'];
+            $data[$line['object']] = intval($line['value']);
         }
         
         return $data;
@@ -119,7 +118,12 @@ class acl {
             . " INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`"
             . " WHERE `uid`='{$this->uid}'");
         while($line = $res->fetch_assoc()) {
-            $data[$line['object']] = $line['value'];
+            if(isset($data[$line['object']])) {
+                $data[$line['object']] |= intval($line['value']);
+            } else {
+                $data[$line['object']] = intval($line['value']);
+            }
+            
         }
         return $data;
     }
@@ -174,10 +178,16 @@ class acl {
         if(!isset($cur->acl[$object])) {
             $cur->acl[$object] = 0;
         }
+        settype($cur->acl[$object], 'int');
         $access = ($flags && (($cur->acl[$object] & $flags) == $flags)) ? true : false;
         if((!$cur->uid) && (!$access) && (!$no_redirect)) {
             self::need_auth();
-        }        
+        }   
+        if(!$access) {
+            //echo "$flags - {$cur->acl[$object]} - $object<br>";
+            //var_dump($cur->acl);
+            //die();
+        }
         return $access;
     }
     

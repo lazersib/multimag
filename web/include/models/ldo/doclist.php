@@ -210,7 +210,14 @@ class doclist extends \Models\ListDataObject {
             if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
                 continue;
             }
-            
+            /*
+            if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST)) {
+                $line['altnum'].='-'.'firm.'.$line['firm_id'];
+            }
+            if(!\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
+                $line['altnum'].='-'.'doc.'.$doc_types[$line['type']];
+            }
+            */
             $line['date'] = date("Y-m-d", $line['date']) . '&nbsp' . date("H:i:s", $line['date']);
             if ($line['nasklad_id'] == 'null')
                 unset($line['nasklad_id']);

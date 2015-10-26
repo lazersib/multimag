@@ -46,8 +46,8 @@ class agentContactEditor extends \ListEditor {
     public function getColumnNames() {
         return array(
             'id' => 'id',
-            'context' => 'Контекст',
-            'type' => 'Тип',
+            'context' => 'Класс',
+            'type' => 'Вид',
             'value' => 'Значение',
             'for_sms' => 'Для СМС',
             'for_fax' => 'Для факсов',

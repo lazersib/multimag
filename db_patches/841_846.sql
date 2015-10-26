@@ -31,4 +31,4 @@ DELETE FROM `users_in_group` WHERE `uid`=0 OR `gid` = 0;
 
 
 TRUNCATE `db_version`;
-INSERT INTO `db_version` (`version`) VALUES (84);
+INSERT INTO `db_version` (`version`) VALUES (846);

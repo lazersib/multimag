@@ -104,6 +104,25 @@ class Acl extends \IModule {
                 $this->userAclSave($user_id);
                 $this->userAclEditor();
                 break;
+            case 'userig':
+                $group_id = rcvint('group_id');
+                $this->viewUsersInGroup($group_id);
+                break;
+            case 'userrm':
+                $user_id = rcvint('user_id');
+                $group_id = rcvint('group_id');
+                $this->rmUser($user_id, $group_id);
+                $this->viewUsersInGroup($group_id);
+                break;
+            case 'userins':
+                $user_id = rcvint('user_id');
+                $group_id = rcvint('group_id');
+                $this->viewUserInsertRole($user_id, $group_id);
+                break;
+            case 'upl':
+                $str = request('q');
+                $this->getUsersList($str);
+                break;
             default:
                 throw new \NotFoundException("Секция не найдена");
         }
@@ -113,11 +132,12 @@ class Acl extends \IModule {
     protected function renderUsersGroupsList($tmpl, $db) {
         $tmpl->addBreadcrumb($this->items['groups'], '');
         $link_prefix = $this->link_prefix . '&amp;sect=group_acl';
-        $tmpl->addContent("<table class='list'><tr><th>N</th><th>Название</th><th>Описание</th><th>Действие</th></tr>");
+        $tmpl->addContent("<table class='list'><tr><th>N</th><th>Название</th><th>Описание</th><th>Правка</th><th>Пользователи</th></tr>");
 	$res=$db->query("SELECT `id`,`name`,`comment` FROM `users_grouplist`");
 	while($nxt = $res->fetch_row()) {
 		$tmpl->addContent("<tr><td>$nxt[0]</td><td>$nxt[1]</td><td>$nxt[2]</td>"
-                    . "<td><a href='{$link_prefix}&amp;group_id=$nxt[0]'>Изменить привилегии</a></td></tr>");
+                    . "<td><a href='{$link_prefix}&amp;group_id=$nxt[0]'>Изменить привилегии</a></td>"
+                    . "<td><a href='{$this->link_prefix}&amp;sect=userig&amp;group_id=$nxt[0]'>Смотрть</a></td></tr>");
 	}
 	$tmpl->addContent("</table>");
     }
@@ -164,7 +184,7 @@ class Acl extends \IModule {
     protected function groupAclSave($group_id) {
         global $db, $tmpl;
         $tmpl->addBreadcrumb('Сохранение привилегий', '');
-        \acl::accessGuard('admin_acl', \acl::UPDATE);
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
         if($group_id===null) {
             $group_id = 'NULL';
         }
@@ -203,7 +223,7 @@ class Acl extends \IModule {
     protected function userAclSave($user_id) {
         global $db, $tmpl;
         $tmpl->addBreadcrumb('Сохранение привилегий', '');
-        \acl::accessGuard('admin_acl', \acl::UPDATE);
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
         if($user_id===null) {
             $user_id = 'NULL';
         }
@@ -348,6 +368,17 @@ class Acl extends \IModule {
         $tmpl->addContent("<button type='submit'>Сохранить</button></form>");
     }
     
+    protected function getUsersList($str) {
+        global $db, $tmpl;
+        $tmpl->ajax = 1;
+        $s = $db->real_escape_string($str);
+        $res=$db->query("SELECT `id`,`name`, `reg_email` FROM `users` WHERE `name` LIKE '%$s%'");
+        while($nxt=$res->fetch_row()) {
+                echo"$nxt[1]|$nxt[0]|$nxt[2]\n";
+        }
+    }
+
+
     protected function userAclEditor($user_id) {
         global $tmpl;             
         $acl_cat = request('acl_cat', 'generic');
@@ -364,5 +395,116 @@ class Acl extends \IModule {
         $table_data = $this->getAclTable($acl, $acl_cat);
         $tmpl->addTableWidget($table_data['header'], $table_data['body'], 20);
         $tmpl->addContent("<button type='submit'>Сохранить</button></form>");
+    }
+    
+    protected function viewUserInsertRole($user_id, $group_id) {
+        global $tmpl;
+        try {
+            $this->addUserToGroup($user_id, $group_id);
+        } catch (\mysqli_sql_exception $e) {
+            $id = writeLogException($e);
+            $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+        } catch (\Exception $e) {
+            $tmpl->errorMessage($e->getMessage());
+        }
+        $this->viewUsersInGroup($group_id);
+    }
+
+
+    protected function getUngroupUserForm($user_id, $group_id) {
+        return "<form action='{$this->link_prefix}' method='post'>"
+        . "<input type='hidden' name='sect' value='userrm'>"
+        . "<input type='hidden' name='user_id' value='$user_id'>"
+        . "<input type='hidden' name='group_id' value='$group_id'>"
+        . "<button type='submit'>Исключить</button>"
+        . "</form>";
+    }
+    
+    protected function rmUser($user_id, $group_id) {
+        global $db, $tmpl;
+        \acl::accessGuard($this->acl_object_name, \acl::DELETE);
+        settype($user_id, 'int');
+        settype($group_id, 'int');
+        $db->query("DELETE FROM `users_in_group` WHERE `uid`=$user_id AND `gid`=$group_id");
+        if($db->affected_rows) {
+            $tmpl->msg("Пользователь снят с роли", 'ok');
+        }
+    }
+    
+    protected function addUserToGroup($user_id, $group_id) {
+        global $db;
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
+        settype($user_id, 'int');
+        settype($group_id, 'int');
+        if($user_id<=0) {
+            throw new \Exception("Пользователь не выбран");
+        }
+        if($group_id<=0) {
+            throw new \Exception("Роль не задана");
+        }
+        $db->query("INSERT INTO `users_in_group` ( `uid`, `gid`) VALUES ('$user_id', '$group_id')");
+        
+    }
+
+    protected function viewUsersInGroup($group_id) {
+        global $tmpl, $db;
+        $tmpl->addBreadcrumb('Пользователи в роли '.$group_id, '');
+        $table_header = array('Id', 'Логин', 'Настоящее имя', 'Имя сотрудника', '');
+        $table_body = array();
+        $exist = false;
+        $res = $db->query("SELECT `users_in_group`.`uid`, `users`.`name`, `users`.`real_name`, `users_worker_info`.`worker_real_name`"
+            . " FROM `users_in_group`"
+            . " LEFT JOIN `users` ON `users`.`id` = `users_in_group`.`uid`"
+            . " LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users_in_group`.`uid`"
+            . " WHERE `users_in_group`.`gid`=$group_id");
+        while($line = $res->fetch_assoc()) {
+            $table_body[] = array(
+                $line['uid'], $line['name'], $line['real_name'], $line['worker_real_name'],
+                $this->getUngroupUserForm($line['uid'], $group_id)
+            );
+            $exist = true;
+        }
+        if($exist) {
+            $tmpl->addTableWidget($table_header, $table_body, 20);
+        } else {
+            $tmpl->msg("Эта роль не назначена ни одному пользователю.");
+        }
+        $tmpl->addContent("<form method='post' action='{$this->link_prefix}'>
+            <script type='text/javascript' src='/css/jquery/jquery.js'></script>
+            <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+            <input type='hidden' name='sect' value='userins'>
+            <input type='hidden' name='group_id' value='$group_id'>
+            <input type='hidden' name='user_id' id='user_id' value='0'>
+            <input type='text' id='user_nm' style='width: 450px;' value=''><br>
+            <script type=\"text/javascript\">
+	        $(document).ready(function(){
+	                $(\"#user_nm\").autocomplete(\"/adm.php\", {
+	                        delay:300,
+	                        minChars:1,
+	                        matchSubset:1,
+	                        autoFill:false,
+	                        selectFirst:true,
+	                        matchContains:1,
+	                        cacheLength:10,
+	                        maxItemsToShow:15,
+	                        formatItem:usliFormat,
+                                onItemSelect:usselectItem,
+	                        extraParams:{'mode':'acl','sect':'upl'}
+	                });
+	        });	
+	        function usliFormat (row, i, num) {
+	                var result = row[0] + \"<em class='qnt'>email: \" +
+	                row[2] + \"</em> \";
+	                return result;
+	        }
+                function usselectItem(li) {
+	                if( li == null ) var sValue = \"Ничего не выбрано!\";
+	                if( !!li.extra ) var sValue = li.extra[0];
+	                else var sValue = li.selectValue;
+	                document.getElementById('user_id').value=sValue;
+	        }
+	        </script>"
+        . "<button type='submit'>Добавить</button>"
+        . "</form>");
     }
 }

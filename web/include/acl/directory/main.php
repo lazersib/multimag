@@ -80,6 +80,10 @@ class main extends \acl\aclContainer {
                 "name" => "Единицы измерения",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
+            'builder' => array(
+                "name" => "Сборщики на производстве",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
         );
     }
     

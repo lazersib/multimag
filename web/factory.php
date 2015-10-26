@@ -87,7 +87,7 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 
 try
 {
-    \acl::accessGuard('doc.specific', \acl::VIEW);    
+    \acl::accessGuard('service.factory', \acl::VIEW);    
 
         need_auth($tmpl);
 	$tmpl->hideBlock('left');
@@ -197,7 +197,7 @@ try
 			if($res->num_rows==0)	$tmpl->msg("Наименование с таким кодом отсутствует в базе",'err');
 			else
 			{
-                            \acl::accessGuard('doc.specific', \acl::UPDATE); 
+                            \acl::accessGuard('service.factory', \acl::UPDATE); 
                             $line=$res->fetch_row();
                             $r=$db->query("REPLACE INTO `factory_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
                             VALUES ($sklad, $builder, '$date', $line[0], $cnt)");

@@ -99,7 +99,7 @@ abstract class ListEditor {
 
     /// @broef Получить HTML код таблицы с элементами справочника
     /// Вызывает (если определено) 'getField'.ucfirst($cn) для каждой ячейки таблицы
-    public function getListItems() {
+    public function getListItems($editable = true) {
         \acl::accessGuard($this->acl_object_name, \acl::VIEW);
         $ret = "<table class='list'><tr>";
         $col_names = $this->getColumnNames();
@@ -111,13 +111,18 @@ abstract class ListEditor {
                 $ret .= "<th>$name</th>";
             }
         }
-        if ($this->can_delete) {
+        if ($this->can_delete && $editable) {
             $ret.="<th>&nbsp;</th>";
         }
         $ret .= "</tr>";
         $this->loadList();
         foreach ($this->list as $id => $line) {
-            $ret.= "<tr><td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=e&amp;{$this->line_var_name}=$id'>$id</a></td>";
+            
+            if($editable) {
+                $ret.= "<tr><td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=e&amp;{$this->line_var_name}=$id'>$id</a></td>";
+            } else {
+                $ret.= "<tr><td>$id</td>";
+            }
             foreach ($line as $cn => $cv) {
                 if ($cn == 'id') {
                     continue;
@@ -142,14 +147,16 @@ abstract class ListEditor {
                     }
                 }
             }
-            if ($this->can_delete) {
+            if ($this->can_delete && $editable) {
                 $ret.="<td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=d&amp;{$this->line_var_name}=$id'>"
                     . "<img src='/img/i_del.png' alt='del'></a></td>";
             }
             $ret .= "</tr>";
         }
         $ret .= "</table>";
-        $ret .= "<span>&nbsp;&nbsp;&nbsp;<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'><img src='/img/i_add.png' src='new'>&nbsp;&nbspНовая запись</a></span>";
+        if($editable) {
+            $ret .= "<span>&nbsp;&nbsp;&nbsp;<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'><img src='/img/i_add.png' src='new'>&nbsp;&nbspНовая запись</a></span>";
+        }
         return $ret;
     }
 
