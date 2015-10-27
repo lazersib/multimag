@@ -106,15 +106,18 @@ class Acl extends \IModule {
                 break;
             case 'userig':
                 $group_id = rcvint('group_id');
+                $tmpl->addBreadcrumb($this->items['groups'], $this->link_prefix . '&amp;sect=groups');
                 $this->viewUsersInGroup($group_id);
                 break;
             case 'userrm':
+                $tmpl->addBreadcrumb($this->items['groups'], $this->link_prefix . '&amp;sect=groups');
                 $user_id = rcvint('user_id');
                 $group_id = rcvint('group_id');
                 $this->rmUser($user_id, $group_id);
                 $this->viewUsersInGroup($group_id);
                 break;
             case 'userins':
+                $tmpl->addBreadcrumb($this->items['groups'], $this->link_prefix . '&amp;sect=groups');
                 $user_id = rcvint('user_id');
                 $group_id = rcvint('group_id');
                 $this->viewUserInsertRole($user_id, $group_id);

@@ -65,9 +65,15 @@ try
     $tmpl->errorMessage('Не достаточно привилегий: ' . $e->getMessage(), "Нет доступа");
 }
 catch(mysqli_sql_exception $e) {
-    $tmpl->ajax = 0;
-    $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+    $tmpl->ajax = 0;    
+    switch($e->getCode()) {
+        case 1062:
+            $tmpl->errorMessage("Неверно заполнены поля: не соблюдена уникальность!<br>".$e->getMessage(), "Ошибка в базе данных");
+            break;
+        default:
+            $id = writeLogException($e);
+            $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+    }    
 }
 catch (Exception $e) {
     $db->rollback();

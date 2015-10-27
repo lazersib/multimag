@@ -126,6 +126,7 @@ class doc_s_Agent {
                             $tmpl->addBreadcrumb($agent_info['id'].': '.$agent_info['name'], '');
                             
                             $ace = new \ListEditors\agentContactEditor($db);
+                            $ace->acl_object_name = 'directory.agent';  /// TODO: Поменять
                             $ace->agent_id = intval($pos);
                             $contact_info = $ace->getListItems(false);
                             

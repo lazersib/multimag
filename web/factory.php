@@ -125,7 +125,7 @@ try
 		$editor->line_var_name = 'id';
 		$editor->store_id = rcvint('store_id');
 		$editor->link_prefix = '/factory.php?mode=builders&amp;store_id='.$editor->store_id;
-                $editor->acl_object_name = 'doc_factory_builders';
+                $editor->acl_object_name = 'directory.builder';
 		$editor->run();
 	}
 	else if($mode=='prepare'){

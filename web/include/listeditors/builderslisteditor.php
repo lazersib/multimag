@@ -23,7 +23,7 @@ class BuildersListEditor extends \ListEditor {
 	public function __construct($db_link) {
 		parent::__construct($db_link);
 		$this->print_name = 'Справочник сборщиков';
-		$this->table_name = 'directory.builder';
+		$this->table_name = 'factory_builders';
 	}
 	
 	/// Получить массив с именами колонок списка
