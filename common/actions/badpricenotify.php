@@ -127,7 +127,7 @@ class BadPriceNotify extends \Action {
         $email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
 
         $email_message->AddQuotedPrintableTextPart($mail_text);
-        $error = '';//$email_message->Send();
+        $error = $email_message->Send();
 
         if (strcmp($error, "")) {
             throw new Exception($error);

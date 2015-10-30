@@ -12,13 +12,7 @@
 <script type='text/javascript' src='/css/core.js'></script>
 <script type="text/javascript" src="/css/jquery/jquery.js"></script>
 <script src="/css/jquery/jquery.prettyPhoto.js" type="text/javascript"></script>
-<script type='text/javascript' src='/css/00000000.js'></script>
-<script type='text/javascript' src='/css/core0000.js'></script>
-<script type='text/javascript' src='/css/calendar.js'></script>
-<script type='text/javascript' src='/css/DateTime.js'></script>
-
 <script type='text/javascript' src='/js/autocomplete.js'></script>
-
 <script type='text/javascript' src='/js/calendar.js'></script>
 <link rel='stylesheet' type='text/css' href='/css/core.calendar.css'>
 

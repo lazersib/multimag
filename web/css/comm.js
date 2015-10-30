@@ -445,8 +445,6 @@ function popupReqModal(httpRequest,popup, disa)
             popup.innerHTML = HeadPopup(disa,'')+str;
 
             //popup.innerHTML = HeadPopup(disa)+httpRequest.responseText;
-
-            if(DateTimeShortcuts) DateTimeShortcuts.init();
         }
         else popup.innerHTML=HeadPopup(disa)+"Ошибка "+httpRequest.status;
     }
@@ -525,7 +523,6 @@ function hasClass(elem, className) {
 // 			popup.style.top=mousY-5;
 //             status.style.display="none";
 //             popup.style.display="block";
-//             if(DateTimeShortcuts) DateTimeShortcuts.init();
 //         }
 //         else status.innerHTML="Ошибка "+httpRequest.status;
 //     }

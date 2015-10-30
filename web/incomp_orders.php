@@ -49,7 +49,7 @@ function getPaySum($doc_id) {
 need_auth();
 \acl::accessGuard('service.orders', \acl::VIEW);
 
-$r_status_list = array('no'=>'-не задан-', 'new'=>'Новый', 'in_process'=>'В процессе', 'ok'=>'Готов к отгрузке', 'err'=>'Ошибочный');
+$r_status_list = array('no'=>'-не задан-', 'new'=>'Новый', 'in_process'=>'В процессе', 'readytomake' => 'Готов к сборке', 'readytoship'=>'Собран и готов к отгрузке', 'err'=>'Ошибочный', 'ok' =>'Отгружен');
 $doc_types = \document::getListTypes();
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
@@ -57,7 +57,7 @@ SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->setTitle("Документы в работе");
 doc_menu();
 
-$sel = array('z' => '', 'c' => '', 'r' => '');
+$sel = array('z' => '', 'c' => '', 'p'=>'', 'r' => '');
 $mode = request('mode');
 if ($mode == '') {
     $mode = 'z';
@@ -66,7 +66,8 @@ $sel[$mode] = "class='selected'";
 $tmpl->addContent("
 <ul class='tabs'>
 <li><a {$sel['z']} href='/incomp_orders.php'>Невыполненные заявки</a></li>
-<li><a {$sel['c']} href='/incomp_orders.php?mode=c'>Реализации на комплектацию</a></li>
+<li><a {$sel['c']} href='/incomp_orders.php?mode=c'>Реализации на сборку</a></li>
+<li><a {$sel['p']} href='/incomp_orders.php?mode=p'>Реализации в процессе сборки</a></li>
 <li><a {$sel['r']} href='/incomp_orders.php?mode=r'>Реализации, готовые к отгрузке</a></li>
 </ul>");
 
@@ -278,7 +279,7 @@ else if ($mode == 'c') {
 <th>Кладовщик</th><th>Автор</th></tr>");
     $new_lines = $inproc_lines = $other_lines = $ready_lines = '';
     while ($line = $res->fetch_assoc()) {
-        if ($line['status'] == 'ok' || $line['status'] == 'err') {
+        if ($line['status'] == 'readytoship' || $line['status'] == 'ok' || $line['status'] == 'err') {
             continue;
         }
         if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
@@ -340,7 +341,46 @@ else if ($mode == 'c') {
         }
     }
     $tmpl->addContent($new_lines . $inproc_lines . $other_lines . $ready_lines . "</table>");
-    $tmpl->msg("В списке отображаются непроведённые реализации, не отмеченные на удаления и с любым статусом, кроме &quot;готов к отгрузке&quot; и &quot;ошибочный&quot;");
+    $tmpl->msg("В списке отображаются непроведённые реализации, не отмеченные на удаления и с любым статусом, кроме &quot;готов к отгрузке&quot;,  &quot;отгружен&quot; и &quot;ошибочный&quot;");
+}
+else if ($mode == 'p') {
+    $sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`, `doc_agent`.`name` AS `agent_name`,
+            `doc_list`.`sum`, `users`.`name` AS `user_name`, `doc_types`.`name`, `doc_list`.`p_doc`, `dop_status`.`value` AS `status`, `doc_list`.`firm_id`, `doc_list`.`type`
+    FROM `doc_list`
+    LEFT JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
+    LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
+    LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+    LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
+    WHERE (`doc_list`.`type`=2 OR `doc_list`.`type`=20) AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND `dop_status`.`value`='in_process'
+    ORDER by `doc_list`.`date` ASC";
+
+    $res = $db->query($sql);
+    $row = $res->num_rows;
+
+    $i = 0;
+    $pr = $ras = 0;
+    $tpr = $tras = 0;
+
+    $tmpl->addContent("<table width='100%' cellspacing='1' class='list'><tr>
+    <th width='70'>№</th><th width='55'>ID</th><th width='55'>Счет</th><th>Агент</th><th width='90'>Сумма</th><th width='150'>Дата</th><th>Автор</th></tr>");
+    while ($line = $res->fetch_assoc()) {
+        if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
+            continue;
+        }
+            $date = date('Y-m-d H:i:s', $line['date']);
+            $link = "/doc.php?mode=body&amp;doc=" . $line['id'];
+            if ($line['p_doc'])
+                    $z = "<a href='/doc.php?mode=body&amp;doc={$line['p_doc']}'>{$line['p_doc']}</a>";
+            else
+                    $z = '--нет--';
+            $tmpl->addContent("<tr><td align='right'><a href='$link'>{$line['altnum']}{$line['subtype']}</a></td><td><a href='$link'>{$line['id']}</a></td>
+    <td>$z</td><td>{$line['agent_name']}</td><td align='right'>{$line['sum']}</td>
+    <td>$date</td><td><a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$line['user']}'>{$line['user_name']}</a></td>
+    </tr>");
+    }
+    $tmpl->addContent("</table>");
+    $tmpl->msg("В списке отображаются реализации со статусом &quot;в процессе сборки&quot;");
+    
 }
 else if ($mode == 'r') {
 	$sql = "SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,  `doc_list`.`user`, `doc_agent`.`name` AS `agent_name`,
@@ -350,7 +390,7 @@ else if ($mode == 'r') {
 	LEFT JOIN `users` ON `users`.`id`=`doc_list`.`user`
 	LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 	LEFT JOIN `doc_dopdata` AS `dop_status` ON `dop_status`.`doc`=`doc_list`.`id` AND `dop_status`.`param`='status'
-	WHERE (`doc_list`.`type`=2 OR `doc_list`.`type`=20) AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND `dop_status`.`value`='ok'
+	WHERE (`doc_list`.`type`=2 OR `doc_list`.`type`=20) AND `doc_list`.`mark_del`=0 AND `doc_list`.`ok`=0 AND `dop_status`.`value`='readytoship'
 	ORDER by `doc_list`.`date` ASC";
 
 	$res = $db->query($sql);

@@ -62,11 +62,11 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 	if($header)
 	{
 		$pdf->SetFillColor(0);
-		$pdf->SetContentColor(255);
+		$pdf->SetTextColor(255);
 		$str = iconv('UTF-8', 'windows-1251', $header);
 		$pdf->MultiCell(0,4,$str,1,'L',1);
 		$pdf->SetFillColor(255);
-		$pdf->SetContentColor(0);
+		$pdf->SetTextColor(0);
 	}
 
 	while($line=$res->fetch_assoc())

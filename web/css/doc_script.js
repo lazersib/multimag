@@ -340,7 +340,7 @@ function DocHeadInit()
     for (var i = 0; i < fields.length; i++)
         doc_left_block.SetEvents(fields[i])
 
-    initCalendar("datetime", true)
+    initCalendar("datetime", true);
 
     if (supports_html5_storage())
     {
@@ -916,6 +916,116 @@ function addNomMenu(event, doc, pdoc_id) {
     return false;
 }
 
+function addShipDataDialog(event, doc) {
+    var menu = CreateContextMenu(event);
+    var cc_name = document.getElementById('cc_name');
+    var cc_num = document.getElementById('cc_num');
+    var cc_price = document.getElementById('cc_price');
+    var cc_date = document.getElementById('cc_date');
+    
+    function showDialog() {
+        var obj = event.target;
+        menu.innerHTML = "<fieldset><legend>Оповещение об отправке</legend>" +
+            "Транспортная компания:<br>" +
+            "<input type='text' id='cc_name' value=''><br>" +
+            "Номер транспортной накладной:<br>" +
+            "<input type='text' id='cc_num' value=''><br>" +
+            "Стоимость доставки:<br>" +
+            "<input type='text' id='cc_price' value=''><br>" +
+            "Дата отправки:<br>" +
+            "<input type='text' id='cc_date' value=''></fieldset><br>" +
+            "<button id='bcancel'>Отменить</button>" + 
+            "<button id='bok'>Сохраниить и сменить статус</button>";
+        menu.className = 'contextlayer';
+        menu.onmouseover = menu.onmouseout = function () {};
+        if (menu.waitHideTimer) {
+            window.clearTimeout(menu.waitHideTimer);
+        }
+        initCalendar("cc_date", false);
+        
+        cc_name = document.getElementById('cc_name');
+        cc_num = document.getElementById('cc_num');
+        cc_price = document.getElementById('cc_price');
+        cc_date = document.getElementById('cc_date');
+        
+        var obcancel = document.getElementById('bcancel');
+        var obok = document.getElementById('bok');
+        
+
+        obcancel.onclick = function () {
+            menu.parentNode.removeChild(menu);
+        };
+        obok.onclick = function () {
+            var url_data = '&cc_name='+encodeURIComponent(cc_name.value) + 
+                    '&cc_num='+encodeURIComponent(cc_num.value) + 
+                    '&cc_price='+encodeURIComponent(cc_price.value) + 
+                    '&cc_date='+encodeURIComponent(cc_date.value);
+            $.ajax({
+                type: 'POST',
+                url: '/doc.php',
+                data: 'mode=srv&opt=ship_enter&doc=' + doc + url_data,
+                success: function (msg) {
+                    rcvDataSuccess(msg);
+                },
+                error: function () {
+                    jAlert('Ошибка соединения!', 'Сохранение транспортной информации', null, 'icon_err');
+                    menu.parentNode.removeChild(menu);
+                }
+            });
+            menu.innerHTML = '<img src="/img/icon_load.gif" alt="Загрузка">Загрузка...';
+        };
+        $.ajax({
+            type: 'POST',
+            url: '/doc.php',
+            data: 'mode=srv&opt=ship_info&doc=' + doc,
+            success: function (msg) {
+                rcvDataSuccess(msg);
+            },
+            error: function () {
+                jAlert('Ошибка соединения!', 'Сохранение транспортной информации', null, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            }
+        });
+    }
+    
+    function selectNum(event) {
+        var odoc_num_field = document.getElementById('doc_num_field');
+        odoc_num_field.value = event.target.doc_id;
+    }
+
+    function rcvDataSuccess(msg) {
+        try {
+            var json = JSON.parse(msg);
+            if (json.response == 'err') {
+                jAlert(json.text.json.message, "Ошибка", {}, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            }
+            else if (json.response == 'ship_enter') {
+                jAlert('Информация сохранена', "Выполнено", {});
+                menu.parentNode.removeChild(menu)
+            }
+            else if(json.response == 'ship_info') {
+                cc_name.value = json.name;
+                cc_num.value = json.num;
+                cc_price.value = json.price;
+                cc_date.value = json.date;
+            }
+            else {
+                jAlert("Обработка полученного сообщения не реализована<br>" + msg, "Отправка сообщения", {}, 'icon_err');
+                menu.parentNode.removeChild(menu)
+            }
+        }
+        catch (e) {
+            jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
+                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Объединение номенклатурных таблиц", {}, 'icon_err');
+            menu.parentNode.removeChild(menu)
+        }
+    }
+
+    showDialog();
+    
+    return false;
+}
 
 function sendPie(event,doc)
 {

@@ -588,7 +588,6 @@ class cabinet extends \IModule {
 
     /// Получить PDF форму документа
     public function getDocPdf() {
-        global $db, $CONFIG;
         include_once("include/doc.core.php");
         include_once("include/doc.nulltype.php");
         $doc = rcvint('doc');
@@ -602,10 +601,8 @@ class cabinet extends \IModule {
             if($doc_data['user']!=$user_info['id'] && $doc_data['agent']!=$user_info['agent_id']) {
                 throw new \NotFoundException("Документ не найден");
             }
-            if ($doc_data['type'] == 3) {
-                $document->PrintForm('ext:invoice');
-            } else if ($doc_data['type'] == 2) {
-                $document->PrintForm('ext:invoice');
+            if ($doc_data['type'] == 3 || $doc_data['type'] == 2) {
+                $document->PrintForm('ext:invoice', true);
             } else {
                 throw new \Exception("Способ просмотра не задан!");
             }

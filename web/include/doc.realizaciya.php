@@ -29,18 +29,21 @@ class doc_Realizaciya extends doc_Nulltype {
         $this->viewname = 'Реализация товара';
         $this->sklad_editor_enable = true;
         $this->header_fields = 'bank sklad cena separator agent';
-        $this->status_list = array('in_process' => 'В процессе', 'ok' => 'Готов к отгрузке', 'err' => 'Ошибочный');
+        $this->status_list = array('readytomake' => 'Готов к сборке', 'in_process' => 'В процессе сбрки', 'readytoship' => 'Собран и готов к отгрузке', 'err' => 'Ошибочный', 'ok'=>'Отгружен');
     }
 
     /// Получить строку с HTML кодом дополнительных кнопок документа
     protected function getAdditionalButtonsHTML() {
         return "<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc={$this->id}');"
-                . " return false;\" title='Доверенное лицо'><img src='/img/i_users.png' alt='users'></a>";
+                . " return false;\" title='Доверенное лицо'><img src='/img/i_users.png' alt='users'></a>".
+                "<a href='' onclick=\"addShipDataDialog(event, '{$this->id}'); "
+                . " return false;\" title='Пометить отправленным'><img src='/img/i_ship.png' alt='users'></a>";
     }
 
     function initDefDopdata() {
         $this->def_dop_data = array('platelshik' => 0, 'gruzop' => 0, 'status' => '', 'kladovshik' => 0,
-            'mest' => '', 'received' => 0, 'return' => 0, 'cena' => 0, 'dov_agent' => 0, 'dov' => '', 'dov_data' => '');
+            'mest' => '', 'received' => 0, 'return' => 0, 'cena' => 0, 'dov_agent' => 0, 'dov' => '', 'dov_data' => '',
+            'cc_name' => '', 'cc_num' => '', 'cc_price' => '', 'cc_date' => '',  );
     }
 
     // Создать документ с товарными остатками на основе другого документа
@@ -88,10 +91,72 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         $tmpl->addContent("</select><br>
 		Количество мест:<br>
-		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>
-
-		<br><hr>
-		Статус:<br>
+		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br><hr>");
+        if($this->doc_data['p_doc']) {
+            $parent_doc = \document::getInstanceFromDb($this->doc_data['p_doc']);
+            if($parent_doc->typename=='zayavka') {
+                if ($parent_doc->dop_data['ishop']) {
+                    $tmpl->addContent("<b>К заявке с интернет-витрины</b><br>");
+                }
+                if ($parent_doc->dop_data['buyer_rname']) {
+                    $tmpl->addContent("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
+                }
+                if ($parent_doc->dop_data['pay_type']) {
+                    $tmpl->addContent("<b>Способ оплаты: </b>");
+                    switch ($parent_doc->dop_data['pay_type']) {
+                        case 'bank': $tmpl->addContent("безналичный");
+                            break;
+                        case 'cash': $tmpl->addContent("наличными");
+                            break;
+                        case 'card': $tmpl->addContent("картой ?");
+                            break;
+                        case 'card_o': $tmpl->addContent("картой на сайте");
+                            break;
+                        case 'card_t': $tmpl->addContent("картой при получении");
+                            break;
+                        case 'wmr': $tmpl->addContent("Webmoney WMR");
+                            break;
+                        default: $tmpl->addContent("не определён ({$this->dop_data['pay_type']})");
+                    }
+                    $tmpl->addContent("<br>");
+                }
+                if($parent_doc->dop_data['buyer_email']) {
+                    $tmpl->addContent("<b>e-mail, прикреплённый к заявке:</b> ".html_out($parent_doc->dop_data['buyer_email'])."<br>");
+                }
+                if($parent_doc->dop_data['buyer_phone']) {
+                    $tmpl->addContent("<b>Телефон, прикреплённый к заявке:</b> ".html_out($parent_doc->dop_data['buyer_phone'])."<br>");
+                }
+                if($parent_doc->dop_data['delivery']) {
+                    $tmpl->addContent("<b>Доставка:</b>");
+                    $res = $db->query("SELECT `id`, `name` FROM `delivery_types` ORDER BY `id`");
+                    while ($nxt = $res->fetch_row()) {
+                        if ($nxt[0] == $parent_doc->dop_data['delivery']) {
+                            $tmpl->addContent(html_out($nxt[1]));
+                        }
+                    }
+                    $tmpl->addContent("<br>");
+                }
+                if($parent_doc->dop_data['delivery_region']) {
+                    $tmpl->addContent("<b>Регион доставки:</b>");
+                    $res = $db->query("SELECT `id`, `name` FROM `delivery_regions` ORDER BY `id`");
+                    while ($nxt = $res->fetch_row()) {
+                        if ($nxt[0] == $parent_doc->dop_data['delivery_region']) {
+                            $tmpl->addContent(html_out($nxt[1]));
+                        }
+                    }
+                    $tmpl->addContent("<br>");
+                }
+                if($parent_doc->dop_data['delivery_date']) {
+                    $tmpl->addContent("<b>Желаемая дата доставки: </b>".html_out($parent_doc->dop_data['delivery_date'])."<br>");
+                }
+                if ($parent_doc->dop_data['delivery_address']) {
+                    $tmpl->addContent("<b>Адрес доставки: </b>{$parent_doc->dop_data['delivery_address']}<br>");
+                }
+                $tmpl->addContent("<hr>");
+            }
+        }
+                
+	$tmpl->addContent("Статус:<br>
 		<select name='status'>");
         if ($this->dop_data['status'] == '') {
             $tmpl->addContent("<option value=''>Не задан</option>");
@@ -428,10 +493,39 @@ class doc_Realizaciya extends doc_Nulltype {
         $opt = request('opt');
         $pos = request('pos');
 
-
-        if (parent::_Service($opt, $pos)) {
+        if ($opt == 'ship_info') {
+            $tmpl->ajax = true;
+            $ret = array(
+                'response' => 'ship_info',
+                'status' => 'ok',
+                'name' => $this->dop_data['cc_name'],
+                'num' => $this->dop_data['cc_num'],
+                'price' => $this->dop_data['cc_price'],
+                'date' => $this->dop_data['cc_date'],
+            );
+            $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+        }
+        elseif($opt=='ship_enter') {
+            $cc_info = array(
+                'cc_name' => request('cc_name'),
+                'cc_num' => request('cc_num'),
+                'cc_date' => rcvdate('cc_date'),
+                'cc_price' => rcvrounded('cc_price', 2),
+                'status' => 'shipped'
+            );
+            $this->setDopDataA($cc_info);
             
-        } else if ($opt == 'dov') {
+            $this->sentZEvent('shipped');
+            $ret = array(
+                'response' => 'ship_enter',
+                'status' => 'ok',
+            );
+            $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+        }
+        elseif (parent::_Service($opt, $pos)) {
+            
+        } 
+        elseif ($opt == 'dov') {
             $info = $db->selectRowA('doc_agent_dov', $this->dop_data['dov_agent'], array('name', 'surname'));
             $agn = '';
             if ($info['name']) {

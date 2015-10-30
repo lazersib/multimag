@@ -112,6 +112,25 @@ try {
         $action = new Actions\AgentDiscountNotify($CONFIG, $db);
         $action->run();
     }
+    
+    // Информирование о резком изменении цен
+    if ($CONFIG['auto']['badpricenotify']) {
+        if ($verbose) {
+            echo "Информирование о резком изменении цен\n";
+        }
+        $action = new \actions\BadPriceNotify($config, $db);
+        $action->run();       
+    }
+    
+    // Информирование об изменении цен
+    if ($CONFIG['auto']['chpricenotify']) {
+        if ($verbose) {
+            echo "Информирование о изменении цен\n";
+        }
+        $action = new \actions\chPriceNotify($config, $db);
+        $action->run();       
+    }
+    
 } catch (XMPPHP_Exception $e) {
     if ($CONFIG['site']['admin_email']) {
         mailto($CONFIG['site']['admin_email'], "XMPP exception in daily.php", $e->getMessage());

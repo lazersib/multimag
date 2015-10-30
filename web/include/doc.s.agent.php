@@ -324,7 +324,7 @@ class doc_s_Agent {
                     $editor->line_var_name = 'leid'; 
                     $editor->opt_var_name = 'leopt'; 
                     $editor->link_prefix = '/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=c&amp;pos='.$pos; 
-                    $editor->acl_object_name = 'list_agent'; 
+                    $editor->acl_object_name = 'directory.agent'; 
                     $editor->agent_id = $pos; 
                     $editor->run(); 
                 }
@@ -355,7 +355,7 @@ class doc_s_Agent {
                     $editor->line_var_name = 'leid';
                     $editor->opt_var_name = 'leopt';
                     $editor->link_prefix = '/docs.php?l=agent&amp;mode=srv&amp;opt=ep&amp;param=b&amp;pos='.$pos;
-                    $editor->acl_object_name = 'list_agent';
+                    $editor->acl_object_name = 'directory.agent';
                     $editor->agent_id = $pos;
                     $editor->run();
                 }

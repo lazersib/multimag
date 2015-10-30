@@ -46,140 +46,151 @@ class doc_Zayavka extends doc_Nulltype {
         return $ret;
     }
 	
-	/// Функция обработки событий, связанных  с заказом
-	/// @param event_name Полное название события
-	public function dispatchZEvent($event_name)
-	{
-		global $CONFIG;
-		if(isset($CONFIG['zstatus'][$event_name]))
-		{
-			$s=array('{DOC}','{SUM}','{DATE}');
-			$r=array($this->id,$this->doc_data['sum'],date('Y-m-d',$this->doc_data['date']));
-			
-			// Проверка и повышение статуса. Если повышение не произошло - остальные действия не выполняются
-			if(isset($CONFIG['zstatus'][$event_name]['testup_status']))
-			{
-				$status=$CONFIG['zstatus'][$event_name]['testup_status'];
-				$status_options=array(0=>'new', 1=>'inproc', 2=>'ready', 3=>'ok' ,4=>'err');
-				// Если устанавливаемый статус не стандартный - прервать тест
-				if(!in_array($status, $status_options))		return;
-				// Если текущий статус не стандартный - прервать тест
-				if( @$this->dop_data['status']==$status )	return;
-				// Если устанавливаемый статус равен текущему - прервать тест
-				if( $this->dop_data['status']==$status )	return;
-				// Если статус меняется на уменьшение - прервать тест
-				if( array_search($this->dop_data['status'], $status_options) >= array_search($status, $status_options) )
-					return;		
-				$this->setDopData('status', $status);
-			}
+    /// Функция обработки событий, связанных  с заказом
+    /// @param event_name Полное название события
+    public function dispatchZEvent($event_name, $initator = null) {
+        global $CONFIG;
+        if (isset($CONFIG['zstatus'][$event_name])) {
+            $s = array('{DOC}', '{SUM}', '{DATE}');
+            $r = array($this->id, $this->doc_data['sum'], date('Y-m-d', $this->doc_data['date']));
+            foreach($this->doc_data as $name => $value) {
+                $s[] = '{'.strtoupper($name).'}';
+                $r[] = $value;
+            }
+            foreach($this->dop_data as $name => $value) {
+                $s[] = '{DOP_'.strtoupper($name).'}';
+                $r[] = $value;
+            }
+            foreach($initator->doc_data as $name => $value) {
+                $s[] = '{I_'.strtoupper($name).'}';
+                $r[] = $value;
+            }
+            foreach($initator->dop_data as $name => $value) {
+                $s[] = '{I_DOP_'.strtoupper($name).'}';
+                $r[] = $value;
+            }
+            
+            // Проверка и повышение статуса. Если повышение не произошло - остальные действия не выполняются
+            if (isset($CONFIG['zstatus'][$event_name]['testup_status'])) {
+                $status = $CONFIG['zstatus'][$event_name]['testup_status'];
+                $status_options = array(0 => 'new', 1 => 'inproc', 2 => 'ready', 3 => 'ok', 4 => 'err');
+                // Если устанавливаемый статус не стандартный - прервать тест
+                if (!in_array($status, $status_options)) {
+                    return;
+                }
+                // Если текущий статус не стандартный - прервать тест
+                if (@$this->dop_data['status'] == $status) {
+                    return;
+                }
+                // Если устанавливаемый статус равен текущему - прервать тест
+                if ($this->dop_data['status'] == $status) {
+                    return;
+                }
+                // Если статус меняется на уменьшение - прервать тест
+                if (array_search($this->dop_data['status'], $status_options) >= array_search($status, $status_options)) {
+                    return;
+                }
+                $this->setDopData('status', $status);
+            }
 
-			foreach($CONFIG['zstatus'][$event_name] as $trigger=>$value)
-			{
-				switch($trigger)
-				{
+            foreach ($CONFIG['zstatus'][$event_name] as $trigger => $value) {
+                switch ($trigger) {
 
-					case 'set_status':	// Установить статус
-						$this->setDopData('status', $value);
-						break;
-					case 'send_sms':	// Послать sms
-						$value=str_replace($s,$r,$value);
-						$this->sendSMSNotify($value);
-						break;
-					case 'send_email':	// Послать email
-						$value=str_replace($s,$r,$value);
-						$this->sendEmailNotify($value);
-						break;
-					case 'notify':		// Известить всеми доступными способами
-						$value=str_replace($s,$r,$value);
-						$this->sendSMSNotify($value);
-						$this->sendEmailNotify($value);
-						break;
+                    case 'set_status': // Установить статус
+                        $this->setDopData('status', $value);
+                        break;
+                    case 'send_sms': // Послать sms
+                        $value = str_replace($s, $r, $value);
+                        $this->sendSMSNotify($value);
+                        break;
+                    case 'send_email': // Послать email
+                        $value = str_replace($s, $r, $value);
+                        $this->sendEmailNotify($value);
+                        break;
+                    case 'notify':  // Известить всеми доступными способами
+                        $value = str_replace($s, $r, $value);
+                        $this->sendSMSNotify($value);
+                        $this->sendEmailNotify($value);
+                        break;
 
-					/// TODO:
-					/// Отправка по XMPP
-					/// Отправка по телефону (голосом)
-					/// Отправка по телефону (факсом)
-				}
-			}
-		}
-	}
-	
-	/// Отправить SMS с заданным текстом заказчику
-	/// @param text текст отправляемого сообщения
-	function sendSMSNotify($text)
-	{
-		global $CONFIG, $db;
-		if(@$CONFIG['doc']['notify_sms'])
-		{
-			require_once('include/sendsms.php');
-			if(isset($this->dop_data['buyer_phone']))
-				$smsphone=$this->dop_data['buyer_phone'];
-			else if($this->doc_data['agent']>1)
-			{
-				$agent_data = $db->selectA('doc_agent', $this->doc_data['user'], array('sms_phone'));
-				if(isset($agent_data['sms_phone']))
-					$smsphone=$agent_data['sms_phone'];
-				if(!$smsphone)
-				{
-					$user_data = $db->selectA('users', $this->doc_data['user'], array('reg_phone'));
-					if(isset($agent_data['reg_phone']))
-						$smsphone=$agent_data['reg_phone'];
-				}
-			}
-			else
-			{
-				$user_data = $db->selectA('users', $this->doc_data['user'], array('reg_phone'));
-					if(isset($agent_data['reg_phone']))
-						$smsphone=$agent_data['reg_phone'];
-			}
-			if(preg_match('/^\+79\d{9}$/', $smsphone))
-			{
-				$sender=new SMSSender();
-				$sender->setNumber($smsphone);
-				$sender->setContent($text);
-				$sender->send();
-			}
-		}
-	}
+                    /// TODO:
+                    /// Отправка по XMPP
+                    /// Отправка по телефону (голосом)
+                    /// Отправка по телефону (факсом)
+                }
+            }
+        }
+    }
 
-	/// Отправить email с заданным текстом заказчику
-	/// @param text текст отправляемого сообщения
-	function sendEmailNotify($text)
-	{
-		global $CONFIG, $db;
-		if(@$CONFIG['doc']['notify_email'])
-		{
-			if(isset($this->dop_data['buyer_email']))	$email=$this->dop_data['buyer_email'];
-			else if($this->doc_data['agent']>1)
-			{
-				$agent_data = $db->selectA('doc_agent', $this->doc_data['user'], array('email'));
-				if(isset($agent_data['email']))
-					$email=$agent_data['email'];
-				if(!$email)
-				{
-					$user_data = $db->selectA('users', $this->doc_data['user'], array('email'));
-					if(isset($agent_data['email']))
-						$email=$agent_data['email'];
-				}
-			}
-			else
-			{
-				$user_data = $db->selectA('users', $this->doc_data['user'], array('email'));
-					if(isset($agent_data['email']))
-						$email=$agent_data['email'];
-			}
+    /// Отправить SMS с заданным текстом заказчику
+    /// @param text текст отправляемого сообщения
+    function sendSMSNotify($text) {
+        global $CONFIG, $db;
+        if (@$CONFIG['doc']['notify_sms']) {
+            require_once('include/sendsms.php');
+            if (isset($this->dop_data['buyer_phone'])) {
+                $smsphone = $this->dop_data['buyer_phone'];
+            } else if ($this->doc_data['agent'] > 1) {
+                $agent_data = $db->selectA('doc_agent', $this->doc_data['user'], array('sms_phone'));
+                if (isset($agent_data['sms_phone'])) {
+                    $smsphone = $agent_data['sms_phone'];
+                }
+                if (!$smsphone) {
+                    $user_data = $db->selectA('users', $this->doc_data['user'], array('reg_phone'));
+                    if (isset($agent_data['reg_phone'])) {
+                        $smsphone = $agent_data['reg_phone'];
+                    }
+                }
+            }
+            else {
+                $user_data = $db->selectA('users', $this->doc_data['user'], array('reg_phone'));
+                if (isset($agent_data['reg_phone'])) {
+                    $smsphone = $agent_data['reg_phone'];
+                }
+            }
+            if (preg_match('/^\+79\d{9}$/', $smsphone)) {
+                $sender = new SMSSender();
+                $sender->setNumber($smsphone);
+                $sender->setContent($text);
+                $sender->send();
+            }
+        }
+    }
 
-			if($email)
-			{
-				$user_msg="Уважаемый клиент!\n".$text;
-				mailto($email,"Заказ N {$this->id} на {$CONFIG['site']['name']}", $user_msg);
-			}
-		}
+    /// Отправить email с заданным текстом заказчику
+    /// @param text текст отправляемого сообщения
+    function sendEmailNotify($text) {
+        global $CONFIG, $db;
+        if (@$CONFIG['doc']['notify_email']) {
+            if (isset($this->dop_data['buyer_email'])) {
+                $email = $this->dop_data['buyer_email'];
+            } else if ($this->doc_data['agent'] > 1) {
+                $agent_data = $db->selectA('doc_agent', $this->doc_data['user'], array('email'));
+                if (isset($agent_data['email'])) {
+                    $email = $agent_data['email'];
+                }
+                if (!$email) {
+                    $user_data = $db->selectA('users', $this->doc_data['user'], array('email'));
+                    if (isset($agent_data['email'])) {
+                        $email = $agent_data['email'];
+                    }
+                }
+            }
+            else {
+                $user_data = $db->selectA('users', $this->doc_data['user'], array('email'));
+                if (isset($agent_data['email'])) {
+                    $email = $agent_data['email'];
+                }
+            }
 
-	}
+            if ($email) {
+                $user_msg = "Уважаемый клиент!\n" . $text;
+                mailto($email, "Заказ N {$this->id} на {$CONFIG['site']['name']}", $user_msg);
+            }
+        }
+    }
 
-	function DopHead()
-	{
+        function DopHead() {
 		global $tmpl, $CONFIG, $db;
 		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
 

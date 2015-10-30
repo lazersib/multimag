@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
@@ -19,12 +20,16 @@
 
 /// Базовый класс для действий
 class Action {
-	var $db;
-	var $config;
-	
-	/// @brief Конструктор
-	public function __construct($config, $db) {
-		$this->db = $db;
-		$this->config = $config;
-	}
+
+    protected $db;
+    protected $config;
+
+    var $period = 'manual';
+
+    /// @brief Конструктор
+    public function __construct($config, $db) {
+        $this->db = $db;
+        $this->config = $config;
+    }
+
 }

@@ -400,7 +400,7 @@ class doc_Nulltype extends \document {
         global $db;
         $event_name = "doc:{$this->typename}:$event_type";
         if ($this->doc_type == 3)
-            $this->dispatchZEvent($event_name);
+            $this->dispatchZEvent($event_name, $this);
         else {
             $pdoc = $this->doc_data['p_doc'];
             while ($pdoc) {
@@ -410,7 +410,7 @@ class doc_Nulltype extends \document {
                 list($doc_id, $pdoc_type, $pdoc_id) = $res->fetch_row();
                 if ($pdoc_type == 3) {
                     $doc = new doc_Zayavka($doc_id);
-                    $doc->dispatchZEvent($event_name);
+                    $doc->dispatchZEvent($event_name, $this);
                     return;
                 }
                 $pdoc = $pdoc_id;
@@ -1283,7 +1283,8 @@ class doc_Nulltype extends \document {
 
     /// Печать документа
     /// @param $form_name   Имя печатной формы
-    function printForm($form_name = '') {
+    /// @param $user_print  Если истина - документ запрошен из пользовательского раздела
+    function printForm($form_name = '', $user_print = false) {
         global $tmpl;
         $tmpl->ajax = 1;
         if ($form_name == '') {
@@ -1293,9 +1294,14 @@ class doc_Nulltype extends \document {
             );
             $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
         } else {
-            $this->makePrintForm($form_name);
-            doc_log("PRINT", $form_name, 'doc', $this->id);
-            $this->sentZEvent('print');
+            $this->makePrintForm($form_name);            
+            if($user_print) {
+                $this->sentZEvent('print');
+                doc_log("PRINT", $form_name, 'doc', $this->id);
+            } else {
+                $this->sentZEvent('userprint');
+                doc_log("USERPRINT", $form_name, 'doc', $this->id);
+            }
         }
     }
 

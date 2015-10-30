@@ -519,5 +519,15 @@ class PriceCalc {
         $res->free();
         return $this->gpi[$group_id][$price_id];
     }
+    
+    /// Получить информацию о цене по её ID
+    /// @param $price_id id цены
+    /// @return Ассоциативный массив с ключами id, name, type, value, context, priority, accuracy, direction, bulk_threshold, acc_threshold
+    protected function getPriceInfo($price_id) {
+        if(isset($this->prices[$price_id])) {
+            return $this->prices[$price_id];
+        }
+        throw new \Exception('Запрошенная цена не найдена');
+    }
 
 }
