@@ -2214,11 +2214,11 @@ class doc_Nulltype extends \document {
                         'unit_name' => $nxt['unit_name'],
                         'cnt' => $cnt,
                         'price' => $pos['price'],
-                        'sum_wo_vat' => $pos['sum_wo_vat'],
+                        'sum_wo_vat' => round($pos['sum_wo_vat'], 2),
                         'excise' => 'без акциза',
                         'vat_p' => $ndsp,
-                        'vat_s' => $pos['vat_s'],
-                        'sum' => $pos['sum'],
+                        'vat_s' => round($pos['vat_s'], 2),
+                        'sum' => round($pos['sum'], 2),
                         'country_code' => $nxt['country_code'],
                         'country_name' => $nxt['country_name'],
                         'ncd' => $gtd,
@@ -2234,11 +2234,11 @@ class doc_Nulltype extends \document {
                     'unit_name' => $nxt['unit_name'],
                     'cnt' => $nxt['cnt'],
                     'price' => $pos['price'],
-                    'sum_wo_vat' => $pos['sum_wo_vat'],
+                    'sum_wo_vat' => round($pos['sum_wo_vat'], 2),
                     'excise' => 'без акциза',
                     'vat_p' => $ndsp,
-                    'vat_s' => $pos['vat_s'],
-                    'sum' => $pos['sum'],
+                    'vat_s' => round($pos['vat_s'], 2),
+                    'sum' => round($pos['sum'], 2),
                     'country_code' => $nxt['country_code'],
                     'country_name' => $nxt['country_name'],
                     'ncd' => $nxt['ntd'],
@@ -2267,14 +2267,14 @@ class doc_Nulltype extends \document {
                 $pos['vat_s'] = $pos['sum'] - $pos['sum_wo_vat'];
                 $pos['price'] = round($pos['sum_wo_vat'] / $count, 2);
             } else {
-                $pos['price'] = $doc_price / (1 + $vat);
-                $pos['sum_wo_vat'] = $pos['price'] * $count;
-                $pos['vat_s'] = ($doc_price * $count) - $pos['sum_wo_vat'];
+                $pos['price'] = round($doc_price / (1 + $vat), 2);
+                $pos['sum_wo_vat'] = round($pos['price'] * $count, 2);
+                $pos['vat_s'] = round($doc_price * $count, 2) - $pos['sum_wo_vat'];
             }
         } else {
             $pos['price'] = $doc_price;
-            $pos['sum_wo_vat'] = $pos['price'] * $count;
-            $pos['vat_s'] = $pos['sum_wo_vat'] * $vat;
+            $pos['sum_wo_vat'] = round($pos['price'] * $count, 2);
+            $pos['vat_s'] = round($pos['sum_wo_vat'] * $vat, 2);
             $pos['sum'] = $pos['sum_wo_vat'] + $pos['vat_s'];
         }
         return $pos;
