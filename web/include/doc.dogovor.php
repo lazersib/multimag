@@ -37,7 +37,7 @@ class doc_Dogovor extends doc_Nulltype {
     }
 
     function initDefDopdata() {
-        $this->def_dop_data = array('name' => '', 'end_date' => '', 'debt_control' => 0, 'debt_size' => 0, 'limit' => 0, 'received' => 0, 'cena' => 0);
+        $this->def_dop_data = array('name' => '', 'end_date' => '', 'debt_control' => 0, 'debt_size' => 0, 'limit' => 0, 'received' => 0, 'cena' => 0, 'deferment'=>0);
     }
 
     function DopHead() {
@@ -51,6 +51,7 @@ class doc_Dogovor extends doc_Nulltype {
         $dchecked = $this->dop_data['debt_control'] ? 'checked' : '';
         $debt_size = $this->dop_data['debt_size'];
         $limit = $this->dop_data['limit'];
+        $deferment = $this->dop_data['deferment'];
         $checked = $this->dop_data['received'] ? 'checked' : '';
         $tmpl->addContent("
             Отображаемое наименование:<br>
@@ -59,6 +60,8 @@ class doc_Dogovor extends doc_Nulltype {
             <input type='text' name='end_date' value='$end_date'><br>
             <label><input type='checkbox' name='debt_control' value='1' $dchecked>Контроль задолженности</label><br>
             <input type='text' name='debt_size' value='$debt_size'><br>
+            Максимальная отсрочка платежа, дней:<br>
+            <input type='text' name='deferment' value='$deferment'><br>
             Лимит оборотов по договору:<br>
             <input type='text' name='limit' value='$limit'><br>
             <label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
@@ -72,6 +75,7 @@ class doc_Dogovor extends doc_Nulltype {
             'debt_size' => rcvint('debt_size'),
             'name' => request('name'),
             'limit' => rcvint('limit'),
+            'deferment' => rcvint('deferment'),
             'received' => rcvint('received') ? '1' : '0'
         );
         $old_data = array_intersect_key($new_data, $this->dop_data);

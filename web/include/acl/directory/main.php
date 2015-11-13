@@ -84,6 +84,14 @@ class main extends \acl\aclContainer {
                 "name" => "Сборщики на производстве",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
+            'region' => array(
+                "name" => "Регионы доставки",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
+            'shiptype' => array(
+                "name" => "Способы доставки",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
         );
     }
     

@@ -94,21 +94,24 @@ class Report_Dolgi extends BaseReport {
         }
         $this->header($header);
 
-        $widths = array(6, 46, 12, 12, 12, 12);
-        $headers = array('N', 'Агент - партнер', 'Дата сверки', 'Сумма', 'Дата посл. касс. док-та', 'Дата посл. банк. док-та');
+        $widths = array(4, 34, 12, 10, 10, 10, 10, 10);
+        $headers = array('N', 'Агент', 'Отв.', 'Дата сверки', 'Сумма', 'Просрочка', 'Дата посл. касс. док-та', 'Дата посл. банк. док-та');
         $this->tableBegin($widths);
         $this->tableHeader($headers);
 
         $sql_add = $agroup ? " AND `group`='$agroup'" : '';
         $sql_add .= $resp_id ? " AND `responsible`='$resp_id'" : '';
-        $res = $db->query("SELECT `id` AS `agent_id`, `name`, `data_sverki`
-			FROM `doc_agent` WHERE 1 $sql_add ORDER BY `name`");
+        $res = $db->query("SELECT `id` AS `agent_id`, `name`, `data_sverki`, `responsible`
+            FROM `doc_agent` 
+            WHERE 1 $sql_add ORDER BY `name`");
         $date_limit = " AND `date`<=$date";
         $i = 0;
         $sum_dolga = 0;
+        $users_ldo = new \Models\LDO\usernames();
+        $usernames = $users_ldo->getData();
         while ($nxt = $res->fetch_array()) {
-            $dolg = agentCalcDebt($nxt[0], 0, $firm_id, $db, $date);
-            if ((($dolg > 0) && ($vdolga == 1)) || (($dolg < 0) && ($vdolga == 2))) {
+            $dolg = $this->agentCalcDebt($nxt[0], $firm_id, $date);
+            if ((($dolg['debt'] > 0) && ($vdolga == 1)) || (($dolg['debt'] < 0) && ($vdolga == 2))) {
                 $d_res = $db->query("SELECT `date` FROM `doc_list`
                         WHERE `agent`={$nxt['agent_id']} AND (`type`=4 OR `type`=5) $date_limit ORDER BY `date` DESC LIMIT 1");
                 if ($d_res->num_rows) {
@@ -125,12 +128,12 @@ class Report_Dolgi extends BaseReport {
                 }
 
                 $i++;
-                $dolg = abs($dolg);
-                $sum_dolga += $dolg;
-                $dolg = number_format($dolg, 2, '.', ' ');
+                $sum_dolga += abs($dolg['debt']);
+                $debt_p = number_format(abs($dolg['debt']), 2, '.', ' ');
+                $delinquency_p = number_format(abs($dolg['delinquency']), 2, '.', ' ');
                 $k_date = $k_date ? date("Y-m-d", $k_date) : '';
                 $b_date = $b_date ? date("Y-m-d", $b_date) : '';
-                $this->tableRow(array($i, $nxt[1], $nxt[2], $dolg . ' руб.', $k_date, $b_date));
+                $this->tableRow(array($i, $nxt[1], @$usernames[$nxt[3]], $nxt[2], $debt_p, $delinquency_p,  $k_date, $b_date));
             }
         }
         $sum_dolga_p = number_format($sum_dolga, 2, '.', ' ');
@@ -143,5 +146,65 @@ class Report_Dolgi extends BaseReport {
         exit(0);
     }
 
+    /// Расчёт долга агента и просрочки платежа
+    /// @param $agent_id	ID агента, для которого расчитывается баланс
+    /// @param $no_cache	Не брать данные расчёта из кеша
+    /// @param $firm_id	ID собственной фирмы, для которой будет расчитан баланс. Если 0 - расчёт ведётся для всех фирм.
+    /// @param $local_db	Дескриптор соединения с базой данных. Если не задан - используется глобальная переменная.
+    /// @param $date	Дата, на которую расчитывается долг
+    function agentCalcDebt($agent_id, $firm_id = 0, $date = 0) {
+        global $db;//, $doc_agent_dolg_cache_storage;
+        //if(!$no_cache && isset($doc_agent_dolg_cache_storage[$agent_id]))	return $doc_agent_dolg_cache_storage[$agent_id];
+        settype($agent_id, 'int');
+        settype($firm_id, 'int');
+        settype($date, 'int');
+        $debt = $defer = $delinquency = 0;
+        
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_dopdata`.`value` AS `defer`"
+            . " FROM `doc_list`"
+            . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='deferment'"
+            . " WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0' AND `type`=14 ORDER BY `date` DESC LIMIT 1");
+        while($line = $res->fetch_assoc()) {
+            $defer = $line['defer'];
+        }
+        
+        $query = "SELECT `type`, `sum`, `date` FROM `doc_list` WHERE `ok`>'0' AND `agent`='$agent_id' AND `mark_del`='0'";
+        if ($firm_id) {
+            $query .= " AND `firm_id`='$firm_id'";
+        }
+        if ($date) {
+            $query .= " AND `date`<=$date";
+        }
+        $qv = new \ValueQueue();
+        $res = $db->query($query);
+        while ($nxt = $res->fetch_assoc()) {
+            switch ($nxt['type']) {
+                case 1:
+                case 4: 
+                case 6:
+                    $debt-=$nxt['sum'];
+                    $qv->remove($nxt['sum']);
+                    break;
+                case 2:
+                case 5:
+                case 7:
+                case 18:
+                    $debt+=$nxt['sum'];
+                    if($debt>0)
+                    $qv->append(min($nxt['sum'],$debt), $nxt['date']);
+                    break;
+            }
+        }
+        $res->free();
+        $cont = $qv->getContainer();
+        $time_limit = time() - $defer*60*60*24;
+        foreach ($cont as $cv) {
+            if($cv['data']<$time_limit) {
+                $delinquency+=$cv['value'];
+            }
+        }
+        
+        return ['debt'=>$debt, 'delinquency' => $delinquency];
+    }
 }
 

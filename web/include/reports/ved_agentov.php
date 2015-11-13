@@ -19,7 +19,9 @@
 //
 /// Отчёт *Ведомость по агентам*
 class Report_Ved_Agentov {
-
+        var $d_sum = 0;
+        var $c_sum = 0;
+        
 	/// Получить имя отчёта
 	public function getName($short = 0) {
 		if ($short)	return "Ведомость по агентам";
@@ -153,7 +155,7 @@ class Report_Ved_Agentov {
                 if($firm_id) {
                     $aw = " AND `doc_list`.`firm_id`=$firm_id";
                 }
-                
+                $this->d_sum = $this->c_sum = 0;
 		if ($this->sel_type == 'pos') {
 			$res = $db->query("SELECT `id`, `name` FROM `doc_agent` WHERE `id`='$agent' ORDER BY `name`");
 			while ($line = $res->fetch_assoc()) {
@@ -183,6 +185,10 @@ class Report_Ved_Agentov {
 				}
 			} else	$tmpl->addContent($this->makeBlock('Итог:'));
 		}
+                $d_sum_p = number_format($this->d_sum, 2, '.', '&nbsp;');
+                $c_sum_p = number_format($this->c_sum, 2, '.', '&nbsp;');
+                $tmpl->addContent("<tr style='background-color: #efc; font-weight: bold;'>"
+                        . "<td>&nbsp;</td><td>Всего</td><td>&nbsp;</td><td align='right'>$d_sum_p</td><td align='right'>$c_sum_p</td><td>&nbsp;</td><td>&nbsp;</td></tr>");
 		$tmpl->addContent("</table>");
 	}
 
@@ -232,8 +238,10 @@ class Report_Ved_Agentov {
 			}
 			if ($cont)
 				continue;
-
-			$dolg_p = sprintf("%0.2f", abs($dolg));
+                        $this->d_sum += $d_inc;
+                        $this->c_sum += $d_dec;
+                        
+			$dolg_p = number_format(abs($dolg), 2, '.', '&nbsp;');
 			$date_p = date("Y-m-d", $line['date']);
 			$end_nd = $end_cd = '';
 
@@ -243,7 +251,12 @@ class Report_Ved_Agentov {
 				$end_nd = $dolg_p;
 			if ($this->sel_type != 'pos' && $agent_where == '')
 				$info = ' ('.html_out($line['agent_name']).')';
-
+                        if($d_inc) {
+                            $d_inc = number_format($d_inc, 2, '.', '&nbsp;');
+                        }
+                        if($d_dec) {
+                            $d_dec = number_format($d_dec, 2, '.', '&nbsp;');
+                        }
 			if ($df && $this->detail_doc)
 				$table_data.="<tr><td>$date_p</td><td><a href='/doc.php?mode=body&amp;doc={$line['doc_id']}'>{$line['doc_typename']} N{$line['altnum']}{$line['subtype']} / {$line['doc_id']}</a>{$info}</td><td></td>
 				<td align='right'>$d_inc</td>
@@ -259,10 +272,12 @@ class Report_Ved_Agentov {
 			$end_nd = $dolg_p;
 		$cdolg = $dolg - $start_dolg;
 		if ($cdolg < 0)
-			$end_ccd = sprintf("%0.2f", abs($cdolg));
+			$end_ccd = number_format(abs($cdolg), 2, '.', '&nbsp;');
 		else if ($cdolg > 0)
-			$end_cnd = sprintf("%0.2f", abs($cdolg));
-
+			$end_cnd = number_format(abs($cdolg), 2, '.', '&nbsp;');
+                if($start_dolg_p) {
+                    $start_dolg_p = number_format($start_dolg_p, 2, '.', '&nbsp;');
+                }
 		$ret = '';
 		if ($this->debt == 0 || ($this->debt * $dolg > 0)) {
 			$ret.="<tr style='background-color: #fec; font-weight: bold;'><td colspan='2'>$head</td><td align='right'>$start_dolg_p</td><td align='right'>$end_cnd</td><td align='right'>$end_ccd</td><td align='right' style='color: #f00;'>$end_nd</td><td align='right'>$end_cd</td></tr>";

@@ -333,6 +333,17 @@ class Acl extends \IModule {
         $table_data = $this->getAclTable($acl, $acl_cat);
         $tmpl->addTableWidget($table_data['header'], $table_data['body'], 20);
         $tmpl->addContent("<button type='submit'>Сохранить</button></form>");
+        $tmpl->addContent("<script type='text/javascript'>
+	function SelAll(flag) {
+		var elems = document.getElementsByTagName('input');
+		var l = elems.length;
+		for(var i=0; i<l; i++) {
+			elems[i].checked=flag;
+			if(flag)	elems[i].disabled = false;
+		}
+	}
+	</script>
+	<div><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>");
     }
     
     protected function authenticAclEditor() {
@@ -398,6 +409,17 @@ class Acl extends \IModule {
         $table_data = $this->getAclTable($acl, $acl_cat);
         $tmpl->addTableWidget($table_data['header'], $table_data['body'], 20);
         $tmpl->addContent("<button type='submit'>Сохранить</button></form>");
+        $tmpl->addContent("<script type='text/javascript'>
+	function SelAll(flag) {
+		var elems = document.getElementsByTagName('input');
+		var l = elems.length;
+		for(var i=0; i<l; i++) {
+			elems[i].checked=flag;
+			if(flag)	elems[i].disabled = false;
+		}
+	}
+	</script>
+	<div><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>");
     }
     
     protected function viewUserInsertRole($user_id, $group_id) {

@@ -21,7 +21,9 @@
 class doc_s_Agent {
 	
 	function __construct()	{
-		$this->agent_vars = array('group', 'name', 'type', 'fullname', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 'p_agent', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses');
+		$this->agent_vars = array('group', 'name', 'type', 'fullname', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn',  'bank',  
+                    'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest', 
+                    'p_agent', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses', 'region');
 	}
         
         /// Просмотр списка агентов
@@ -247,8 +249,16 @@ class doc_s_Agent {
 			}
 			
 			$tmpl->addContent("</select></td>
-				<td></td>
-				<td></td>
+				<td>Регион:</td>
+				<td><select name='region'>
+				<option value='null'>--не назначен--</option>");
+			$rres = $db->query("SELECT `id`, `name` FROM `delivery_regions` ORDER BY `name`");
+			while($nx = $rres->fetch_row()) {
+				$s=($agent_info['region']==$nx[0])?'selected':'';
+				$tmpl->addContent("<option value='$nx[0]' $s>".  html_out($nx[1])."</option>");
+			}
+			
+			$tmpl->addContent("</select></td>
 			<tr><td align='right'>Фиксированная цена</td>
 				<td><select name='price_id'>
 					<option value='0'> -- не задана -- </option>");
@@ -373,7 +383,7 @@ class doc_s_Agent {
 			<tr><td>Наименование группы $nxt[0]:</td><td><input type=text name='name' value='".html_out($nxt[1])."'></td></tr>
 			<tr class=lin0>
 			<td>Находится в группе:
-			<td><input type=text name='pid' value='$nxt[3]'>
+			<td>".selectAgentGroup('pid', $nxt[3], true)."</td>
 			<tr class=lin1>
 			<td>Описание:
 			<td><textarea name='desc'>".html_out($nxt[2])."</textarea>
@@ -461,7 +471,7 @@ class doc_s_Agent {
 				'pid' => rcvint('pid')
 			);
 			if($group){
-				\acl::accessGuard('directory.agent', \acl::EDIT);
+				\acl::accessGuard('directory.agent', \acl::UPDATE);
 				$old_data = $db->selectRowAi('doc_agent_group', $group, $new_data);
 				$log_text = getCompareStr($old_data, $new_data);
 				$db->updateA('doc_agent_group', $group,$new_data);

@@ -52,6 +52,12 @@ class DTypesListEditor extends \ListEditor {
         if($data['codename']=='') {
             $data['codename'] = null;
         }
+        if($data['adm']==null) {
+            $data['adm'] = 0;
+        }
+        if($data['r_flag']==null) {
+            $data['r_flag'] = 0;
+        }
         return parent::saveItem($id, $data);
     }
 

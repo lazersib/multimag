@@ -359,10 +359,12 @@ class Report_Revision_Act extends BaseReport {
 			$tmpl->addContent("<tr><td colspan=2>Сальдо на конец периода<td>$ras<td>$pr<td colspan=4>
 			<tr><td colspan=4>По данным {$firm_vars['firm_name']} на " . date("d.m.Y", $date_end) . "<td colspan=4>
 			<tr><td colspan=4>");
-			if ($razn > 0)
-				$tmpl->addContent("переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
-			else if ($razn < 0)
-				$tmpl->addContent("задолженность в пользу " . $fn . " $razn_p руб.");
+			if ($razn > 0) {
+                            $tmpl->addContent("задолженность в пользу " . $fn . " $razn_p руб.");
+                        }
+			else if ($razn < 0) {				
+                            $tmpl->addContent("переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
+                        }
 			else
 				$tmpl->addContent("переплат и задолженностей нет!");
 			$tmpl->addContent("<td colspan=4>
@@ -384,12 +386,15 @@ class Report_Revision_Act extends BaseReport {
 			$str = iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']} на " . date("d.m.Y", $date_end));
 			$pdf->Write(4, $str);
 			$pdf->Ln();
-			if ($razn > 0)
-				$str = "переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.";
-			else if ($razn < 0)
-				$str = "задолженность в пользу " . $fn . " $razn_p руб.";
-			else
-				$str = "переплат и задолженностей нет!";
+			if ($razn > 0) {
+                            $str = "задолженность в пользу " . $fn . " $razn_p руб.";
+                        }
+			else if ($razn < 0) {				
+                            $str = "переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.";
+                        }
+			else    {
+                            $str = "переплат и задолженностей нет!";
+                        }
 
 			$str = iconv('UTF-8', 'windows-1251', $str);
 			$pdf->Write(4, $str);

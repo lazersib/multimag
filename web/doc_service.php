@@ -53,6 +53,8 @@ try {
 	<li><a href='?mode=params'>Свойства складской номенклатуры</a></li>
 	<li><a href='?mode=param_collections'>Наборы свойств складской номенклатуры</a></li>	
 	<li><a href='?mode=units'>Единицы измерения</a></li>
+        <li><a href='?mode=regions'>Регионы доставки</a></li>
+        <li><a href='?mode=shiptypes'>Способы доставки</a></li>
 	</ul>
 	<li>Обработки</li>
 	<ul>
@@ -555,8 +557,9 @@ try {
             if (request('save')) {
                 $db->startTransaction();
                 $res = $db->query("SELECT * FROM `doc_img` WHERE `id`=$img");
-                if ($res->num_rows == 0)
+                if ($res->num_rows == 0) {
                     throw new NotFoundException("Изображение не найдено");
+                }
                 $line = $res->fetch_assoc();
                 if ($_FILES['userfile']['size'] > 0) {
                     $iminfo = getimagesize($_FILES['userfile']['tmp_name']);
@@ -569,23 +572,28 @@ try {
                             break;
                         default: $imtype = '';
                     }
-                    if (!$imtype)
+                    if (!$imtype) {
                         throw new Exception("Файл - не картинка, или неверный формат файла. Рекомендуется PNG и JPG, допустим но не рекомендуется GIF.");
+                    }
 
 
-                    if (!move_uploaded_file($_FILES['userfile']['tmp_name'], $CONFIG['site']['var_data_fs'] . '/pos/' . $img . '.' . $imtype))
+                    if (!move_uploaded_file($_FILES['userfile']['tmp_name'], $CONFIG['site']['var_data_fs'] . '/pos/' . $img . '.' . $imtype)) {
                         throw new Exception("Файл не загружен, $img.$imtype");
+                    }
                     $line['type'] = $imtype;
 
                     $tmpl->msg("Файл загружен, $img.$imtype", "info");
                     if ($dh = opendir("{$CONFIG['site']['var_data_fs']}/cache/pos/")) {
                         while (($file = readdir($dh)) !== false) {
-                            if ($file == '.' || $file == '..')
+                            if ($file == '.' || $file == '..') {
                                 continue;
+                            }
                             unlink("{$CONFIG['site']['var_data_fs']}/cache/pos/$file");
                         }
                         closedir($dh);
                     }
+                } else {
+                    $tmpl->msg("Файл не получен!", "info", "Внимание");
                 }
                 $name_sql = $db->real_escape_string(request('name'));
                 $db->query("UPDATE `doc_img` SET `name` = '$name_sql', `type` = '{$line['type']}' WHERE `id`=$img");
@@ -593,8 +601,9 @@ try {
                 $tmpl->msg("Данные сохранены", "ок");
             }
             $res = $db->query("SELECT * FROM `doc_img` WHERE `id`=$img");
-            if ($res->num_rows == 0)
+            if ($res->num_rows == 0) {
                 throw new NotFoundException("Изображение не найдено");
+            }
             $line = $res->fetch_assoc();
             $max_fs = get_max_upload_filesize();
             $max_fs_size = formatRoundedFileSize($max_fs);
@@ -698,8 +707,20 @@ try {
     } elseif ($mode == 'units') {
         $editor = new \ListEditors\UnitsEditor($db);
         $editor->line_var_name = 'id';
-        $editor->link_prefix = '/doc_service.php?mode=units';
+        $editor->link_prefix = '/doc_service.php?mode='.$mode;
         $editor->acl_object_name = 'directory.unit';
+        $editor->run();
+    } elseif ($mode == 'regions') {
+        $editor = new \ListEditors\RegionsEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode='.$mode;
+        $editor->acl_object_name = 'directory.region';
+        $editor->run();
+    } elseif ($mode == 'shiptypes') {
+        $editor = new \ListEditors\ShipTypesEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode='.$mode;
+        $editor->acl_object_name = 'directory.shiptype';
         $editor->run();
     } else {
         throw new NotFoundException("Несуществующая опция");

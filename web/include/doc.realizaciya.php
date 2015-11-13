@@ -29,7 +29,14 @@ class doc_Realizaciya extends doc_Nulltype {
         $this->viewname = 'Реализация товара';
         $this->sklad_editor_enable = true;
         $this->header_fields = 'bank sklad cena separator agent';
-        $this->status_list = array('readytomake' => 'Готов к сборке', 'in_process' => 'В процессе сбрки', 'readytoship' => 'Собран и готов к отгрузке', 'err' => 'Ошибочный', 'ok'=>'Отгружен');
+        $this->status_list = array(
+            'readytomake' => 'Готов к сборке', 
+            'in_process' => 'В процессе сбрки', 
+            'readytoship' => 'Собран и готов к отгрузке', 
+            'courier'=>'Передан курьеру', 
+            'err' => 'Ошибочный', 
+            'ok'=>'Отгружен'
+        );
     }
 
     /// Получить строку с HTML кодом дополнительных кнопок документа
