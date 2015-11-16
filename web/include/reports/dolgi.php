@@ -23,7 +23,7 @@ class Report_Dolgi extends BaseReport {
 
     function getName($short = 0) {
         if ($short) {
-            return "Долги";
+            return "По задолженностям агентов";
         } else {
             return "Отчёт по задолженностям по агентам";
         }
