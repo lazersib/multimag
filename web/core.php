@@ -132,22 +132,6 @@ function formatPhoneNumber($phone)
 	return $fphone;
 }
 
-/// Округление в нужную сторону
-/// @param number Исходное число
-/// @param precision Точность округления
-/// @param direction Направление округления
-function roundDirect($number, $precision = 0, $direction = 0)
-{
-	if ($direction==0 )	return round($number, $precision);
-	else
-	{
-		$factor = pow(10, -1 * $precision);
-		return ($direction<0)
-			? floor($number / $factor) * $factor
-			: ceil($number / $factor) * $factor;
-	}
-}
-
 /// @brief Обработчик неперехваченных исключений
 ///
 /// Записывает событие в журнал ошибок и выдаёт сообщение. При правильной архитектуре программы никогда не должен быть вызван.

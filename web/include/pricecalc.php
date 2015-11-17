@@ -160,6 +160,12 @@ class PriceCalc {
         $price_id = $this->getCurrentPriceID();
         return $this->prices[$price_id]['name'];
     }
+    
+    /// Получить наименование цены по-умолчанию
+    public function getDefaultPriceName() {
+        $price_id = $this->getDefaultPriceId();
+        return $this->prices[$price_id]['name'];
+    }
 
     /// Получить ID текущей цены. Учитываются разные критерии.
     /// @return id текущей цены

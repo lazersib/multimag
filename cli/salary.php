@@ -40,9 +40,9 @@ try {
     try {
         $mail_text = "При расчёте вознаграждений сотрудникам найдены проблемы:\n****\n\n" . $e->getMessage() . "\n\n****\nНеобходимо исправить найденные ошибки!";
 
-        mailto($CONFIG['site']['doc_adm_email'], "DB check report", $mail_text);
-        echo "Почта отправлена!";
+        mailto($CONFIG['site']['doc_adm_email'], "Salary calculation fail report", $mail_text);
+        echo "Почта отправлена!\n";
     } catch (Exception $e) {
-        echo"Ошибка отправки почты!" . $e->getMessage();
+        echo"Ошибка отправки почты: " . $e->getMessage() ."\n\n";
     }
 }

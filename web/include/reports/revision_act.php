@@ -363,7 +363,7 @@ class Report_Revision_Act extends BaseReport {
                             $tmpl->addContent("задолженность в пользу " . $fn . " $razn_p руб.");
                         }
 			else if ($razn < 0) {				
-                            $tmpl->addContent("переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
+                            $tmpl->addContent("задолженность в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
                         }
 			else
 				$tmpl->addContent("переплат и задолженностей нет!");
@@ -390,7 +390,7 @@ class Report_Revision_Act extends BaseReport {
                             $str = "задолженность в пользу " . $fn . " $razn_p руб.";
                         }
 			else if ($razn < 0) {				
-                            $str = "переплата в пользу " . $firm_vars['firm_name'] . " $razn_p руб.";
+                            $str = "задолженность в пользу " . $firm_vars['firm_name'] . " $razn_p руб.";
                         }
 			else    {
                             $str = "переплат и задолженностей нет!";

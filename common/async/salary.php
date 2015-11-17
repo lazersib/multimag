@@ -146,6 +146,7 @@ class salary extends \AsyncWorker {
         
         $this->payFee();
         $db->commit();
+        echo "Commit!";
     }
     
     // Получить необходимые данные о номенклатуре
@@ -207,7 +208,7 @@ class salary extends \AsyncWorker {
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18) AND `agent`=$agent_id" // AND `date`<'$rdate'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18, 20) AND `agent`=$agent_id" // AND `date`<'$rdate'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             if($doc_line['return']) {
@@ -247,6 +248,7 @@ class salary extends \AsyncWorker {
                 case 2:
                 case 5:
                 case 7:
+                case 20:
                     $minus_docs[$id] = $id;
                     break;
                 case 18:
@@ -311,13 +313,17 @@ class salary extends \AsyncWorker {
         foreach ($minus_docs as $id) {
             $doc = $this->docs[$id];
             
-            if($doc['type']=='2' && $doc['fullpay']) {
+            if( ($doc['type']=='2' && $doc['fullpay']) || $doc['type']=='20') {
                 if( ! @$doc['vars']['salary']) {
                     $salary = $this->calcFee($doc, $responsible_id);
-                    $this->incFee('operator', $salary['o_uid'], $salary['o_fee'], $doc['id']);
-                    $this->incFee('resp', $salary['r_uid'], $salary['r_fee'], $doc['id']);
-                    $this->incFee('manager', $salary['m_uid'], $salary['m_fee'], $doc['id']);
-                    $this->incFee('sk', $salary['sk_uid'], $salary['sk_fee'], $doc['id']);
+                    if(isset($salary['o_uid']))
+                        $this->incFee('operator', $salary['o_uid'], $salary['o_fee'], $doc['id']);
+                    if(isset($salary['r_uid']))
+                        $this->incFee('resp', $salary['r_uid'], $salary['r_fee'], $doc['id']);
+                    if(isset($salary['m_uid']))
+                        $this->incFee('manager', $salary['m_uid'], $salary['m_fee'], $doc['id']);
+                    if(isset($salary['sk_uid']))
+                        $this->incFee('sk', $salary['sk_uid'], $salary['sk_fee'], $doc['id']);
                     $ser_salary_sql = json_encode($salary, JSON_UNESCAPED_UNICODE);
                     $db->insertA('doc_dopdata', array('doc'=>$doc['id'], 'param'=>'salary', 'value'=>$ser_salary_sql));
                 }
@@ -336,7 +342,7 @@ class salary extends \AsyncWorker {
         if (isset($this->docs[$doc['id']]['dec_sum'])) {
             $additional_sum -= $this->docs[$doc['id']]['dec_sum'];
         }
-        if($doc['type']==2) {
+        if($doc['type']==2 || $doc['type']==20) {
             $a_likv = $this->getLiquidityOnDate($doc['date']);
         }
         $pos_cnt = $sk_pos_fee = 0;
@@ -361,7 +367,7 @@ class salary extends \AsyncWorker {
                 $det_line['bigpack_cnt'] = $pos_extinfo['bigpack_cnt'];
             }
             // Продавцам и пр
-            if($doc['type']==2) {
+            if($doc['type']==2 || $doc['type']==20) {
                 if($detail) {
                     $det_line['in_price'] = 0;
                     $det_line['price'] = $nxt_tov['cost'];                    
@@ -405,7 +411,7 @@ class salary extends \AsyncWorker {
         // Подготовка результата
         
         // Для реализации
-        if ($doc['type'] == 2) {
+        if ($doc['type'] == 2 || $doc['type']==20) {
             if ($doc['user']) {
                 $salary['o_fee'] = round($additional_sum * $this->conf_author_coeff, 2);
                 $salary['o_uid'] = $doc['user'];
@@ -438,6 +444,7 @@ class salary extends \AsyncWorker {
                         $sk_coeff = $this->conf_sk_po_pack_coeff;                
                         break;
                     case 2:
+                    case 20:
                         $sk_coeff = $this->conf_sk_re_pack_coeff;                    
                         break;
                     case 8:
@@ -484,7 +491,7 @@ class salary extends \AsyncWorker {
             if($line['date']>$limit_date) {
                 break;
             }
-            if( $line['doc_type']==2 || ( $line['doc_type']==17 && $line['page']!=0 )  ) {
+            if( $line['doc_type']==2 ||  $line['doc_type']==20 || ( $line['doc_type']==17 && $line['page']!=0 )  ) {
                 $line['cnt'] *= -1;                
             }
             if( ( ( $cur_cnt + $line['cnt'] ) != 0 ) && $line['cnt']>0 && $line['return_flag'] != 1 ) {
@@ -584,9 +591,9 @@ class salary extends \AsyncWorker {
             }
             $user_info = $db->selectRow("users", $uid);
             if(!$user_info) {
-                $comment .= "\nПользователь не найден!\n";
+                $comment .= "\nПользователь не найден! Вознаграждение не начислено.\n";
             } elseif(!$user_info['agent_id']) {
-                $comment .= "\nПользователь не привязан к агенту!\n";
+                $comment .= "\nПользователь не привязан к агенту! Вознаграждение не начислено.\n";
             } else {
                 $tm = time();
                 $comment_sql = $db->real_escape_string($comment);

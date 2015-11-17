@@ -250,6 +250,19 @@ function agentCalcDebt($agent_id, $no_cache = 0, $firm_id = 0, $local_db = 0, $d
     return $dolg;
 }
 
+/// Округление в нужную сторону
+/// @param number Исходное число
+/// @param precision Точность округления
+/// @param direction Направление округления
+function roundDirect($number, $precision = 0, $direction = 0) {
+    if ($direction == 0)
+        return round($number, $precision);
+    else {
+        $factor = pow(10, -1 * $precision);
+        return ($direction < 0) ? floor($number / $factor) * $factor : ceil($number / $factor) * $factor;
+    }
+}
+
 /// Расчёт ликвидности на заданную дату
 /// @param $time дата в unixtime
 /// @return array(pos_id => likv_value, ... )

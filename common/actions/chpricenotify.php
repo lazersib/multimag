@@ -36,9 +36,9 @@ class chPriceNotify extends \Action {
         }
         $this->list_id = md5(microtime()) . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
         $pos_info = array();
-        $start_date = date("Y-m-d H:i:s", time()-60*60*24 );
+        $start_date = date("Y-m-d H:i:s", time()-60*60*2 );
         $res = $this->db->query("SELECT `id`, `cost` AS `base_price`, `cost_date` AS `price_date`, `name`, `vc`, `group`, `bulkcnt`"
-                . " FROM `doc_base` WHERE `price_date`>='$start_date'");
+                . " FROM `doc_base` WHERE `cost_date`>='$start_date'");
         while($line = $res->fetch_assoc()) {
             $pos_info[] = $line;
         }
@@ -94,8 +94,7 @@ class chPriceNotify extends \Action {
     function sendMessage($pos_data, $header, $footer, $email) {
         global $CONFIG;
         $pc = \PriceCalc::getInstance();
-        $default_price_info = $pc->getPriceInfo($pc->getDefaultPriceId());
-        $default_price_name = $default_price_info['name'];
+        $default_price_name = $pc->getDefaultPriceName();
         
         $mail_text = $header;
         $mail_text .= "У некоторых товаров и услуг произошло изменение базовых цен:\n\n";
