@@ -52,7 +52,7 @@ function getSubscribersEmailList() {
     $res = $db->query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `agent_contacts`.`value` AS `email`"
         . " FROM `agent_contacts`"
         . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`agent_contacts`.`agent_id`"
-        . " WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `reg_email`!=''");
+        . " WHERE `no_ads`='0'");
     while($line = $res->fetch_assoc()) {
         if($line['fullname']) {
             $line['name'] = $line['fullname'];

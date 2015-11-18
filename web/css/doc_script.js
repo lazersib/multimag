@@ -922,6 +922,8 @@ function addShipDataDialog(event, doc) {
     var cc_num = document.getElementById('cc_num');
     var cc_price = document.getElementById('cc_price');
     var cc_date = document.getElementById('cc_date');
+    var cc_mass = document.getElementById('cc_mass');
+    var cc_volume = document.getElementById('cc_volume');
     
     function showDialog() {
         var obj = event.target;
@@ -930,6 +932,10 @@ function addShipDataDialog(event, doc) {
             "<input type='text' id='cc_name' value=''><br>" +
             "Номер транспортной накладной:<br>" +
             "<input type='text' id='cc_num' value=''><br>" +
+            "Масса (кг), по транспортной накладной:<br>" +
+            "<input type='text' id='cc_mass' value=''><br>" +
+            "Объём (М<sup>3</sup>), по транспортной накладной:<br>" +
+            "<input type='text' id='cc_volume' value=''><br>" +
             "Стоимость доставки:<br>" +
             "<input type='text' id='cc_price' value=''><br>" +
             "Дата отправки:<br>" +
@@ -947,6 +953,8 @@ function addShipDataDialog(event, doc) {
         cc_num = document.getElementById('cc_num');
         cc_price = document.getElementById('cc_price');
         cc_date = document.getElementById('cc_date');
+        cc_mass = document.getElementById('cc_mass');
+        cc_volume = document.getElementById('cc_volume');
         
         var obcancel = document.getElementById('bcancel');
         var obok = document.getElementById('bok');
@@ -959,6 +967,8 @@ function addShipDataDialog(event, doc) {
             var url_data = '&cc_name='+encodeURIComponent(cc_name.value) + 
                     '&cc_num='+encodeURIComponent(cc_num.value) + 
                     '&cc_price='+encodeURIComponent(cc_price.value) + 
+                    '&cc_mass='+encodeURIComponent(cc_mass.value) + 
+                    '&cc_volume='+encodeURIComponent(cc_volume.value) + 
                     '&cc_date='+encodeURIComponent(cc_date.value);
             $.ajax({
                 type: 'POST',
@@ -1009,6 +1019,8 @@ function addShipDataDialog(event, doc) {
                 cc_num.value = json.num;
                 cc_price.value = json.price;
                 cc_date.value = json.date;
+                cc_mass.value = json.mass;
+                cc_volume.value = json.volume;
             }
             else {
                 jAlert("Обработка полученного сообщения не реализована<br>" + msg, "Отправка сообщения", {}, 'icon_err');

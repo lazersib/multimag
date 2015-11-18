@@ -35,7 +35,7 @@ class doc_Realizaciya extends doc_Nulltype {
             'readytoship' => 'Собран и готов к отгрузке', 
             'courier'=>'Передан курьеру', 
             'err' => 'Ошибочный', 
-            'ok'=>'Отгружен'
+            'shipped'=>'Отгружен'
         );
     }
 
@@ -50,7 +50,7 @@ class doc_Realizaciya extends doc_Nulltype {
     function initDefDopdata() {
         $this->def_dop_data = array('platelshik' => 0, 'gruzop' => 0, 'status' => '', 'kladovshik' => 0,
             'mest' => '', 'received' => 0, 'return' => 0, 'cena' => 0, 'dov_agent' => 0, 'dov' => '', 'dov_data' => '',
-            'cc_name' => '', 'cc_num' => '', 'cc_price' => '', 'cc_date' => '',  );
+            'cc_name' => '', 'cc_num' => '', 'cc_price' => '', 'cc_date' => '',  'cc_volume'=>'', 'cc_mass'=>'', );
     }
 
     // Создать документ с товарными остатками на основе другого документа
@@ -509,6 +509,8 @@ class doc_Realizaciya extends doc_Nulltype {
                 'num' => $this->dop_data['cc_num'],
                 'price' => $this->dop_data['cc_price'],
                 'date' => $this->dop_data['cc_date'],
+                'volume' => $this->dop_data['cc_volume'],
+                'mass' => $this->dop_data['cc_mass'],
             );
             $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
         }
@@ -525,6 +527,15 @@ class doc_Realizaciya extends doc_Nulltype {
             $this->sentZEvent('shipped');
             $ret = array(
                 'response' => 'ship_enter',
+                'status' => 'ok',
+            );
+            $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+        }
+        elseif($opt=='ship_manual') {
+            $this->setDopData('status', 'shipped');
+            $this->sentZEvent('shipped');
+            $ret = array(
+                'response' => 'ship_manual',
                 'status' => 'ok',
             );
             $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
