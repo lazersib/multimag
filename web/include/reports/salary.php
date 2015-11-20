@@ -204,6 +204,7 @@ class Report_Salary extends BaseGSReport {
             . "<tr><th>id</th><th>Тип</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
             . "<th>Сумма</th></tr>");
         $sum = 0;
+        $t_info = array();
         $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
             . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
@@ -301,7 +302,17 @@ class Report_Salary extends BaseGSReport {
             if($w_cont) {
                 continue;
             }
-            $tmpl->addContent("<tr><td><a href='/doc_reports.php?mode=salary&amp;opt=doc&amp;doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
+            $style = "style='color:#f00;font-weight:bold;'";
+            if(isset($doc_line['vars']['salary'])) {
+                $style = '';
+            } elseif( isset($info['o_uid']) ) {
+                if(isset($t_info[$info['o_uid']])) {
+                    $t_info[$info['o_uid']] += $o_fee;
+                } else {
+                    $t_info[$info['o_uid']] = $o_fee;
+                }
+            }
+            $tmpl->addContent("<tr><td><a {$style} href='/doc_reports.php?mode=salary&amp;opt=doc&amp;doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
                 . "<td>{$doc_line['type_name']}</td><td>$p_date</td>"
                 . "<td>$r_name</td><td align='right'>$r_fee</td><td>$o_name</td><td align='right'>$o_fee</td>"
                 . "<td>$m_name</td><td align='right'>$m_fee</td><td>$sk_name</td><td align='right'>$sk_fee</td><td align='right'>$sum_line</td></tr>");
@@ -345,7 +356,7 @@ class Report_Salary extends BaseGSReport {
             $docs = count($info['docs']);
             $tmpl->addContent("<tr><td>$r_name ($uid)</td>"
                 . "<td align='right'>$docs</td>"
-                . "<td align='right'>$fee_op</td>"
+                . "<td align='right'>$fee_op / {$t_info[$uid]}</td>"
                 . "<td align='right'>$fee_resp</td>"
                 . "<td align='right'>$fee_man</td>"                
                 

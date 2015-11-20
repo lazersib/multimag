@@ -119,7 +119,7 @@ class Report_Agent  extends BaseReport {
 					}
 					break;
 			}
-			$sum = round($sum + $prix - $rasx);
+			$sum = round($sum + $prix - $rasx, 2);
 			$sum_p = $prix_p = $rasx_p = '';
 			if ($sum)	$sum_p = sprintf("%0.2f", $sum);
 			if ($prix)	$prix_p = sprintf("%0.2f", $prix);

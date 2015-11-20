@@ -124,6 +124,7 @@ class salary extends \AsyncWorker {
             $this->calcAgent($line['id'], $line['responsible']);
             echo " Done\n";
         }
+        echo "Post & perm...\n";
         // Поступления и перемещения
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
@@ -140,10 +141,14 @@ class salary extends \AsyncWorker {
                 $doc_vars[$line[0]] = $line[1];
             }
             $doc_line['vars'] = $doc_vars;
-            $doc_line['fullpay'] = 0;
-            $this->calcFee($doc_line, 0);
+            if( ! @$doc_vars['salary']) {
+                $doc_line['fullpay'] = 0;
+                $salary = $this->calcFee($doc_line, 0);
+                $ser_salary_sql = json_encode($salary, JSON_UNESCAPED_UNICODE);
+                $db->insertA('doc_dopdata', array('doc'=>$doc_line['id'], 'param'=>'salary', 'value'=>$ser_salary_sql));
+            }
         }
-        
+        echo "Done!\n";
         $this->payFee();
         $db->commit();
         echo "Commit!";
@@ -189,11 +194,11 @@ class salary extends \AsyncWorker {
     function decDocSum($doc_id, $sum) {
         if(isset($this->plus_docs[$doc_id])) {
             if ($this->docs[$doc_id]['sum'] <= $sum) {
-                $sum -= $this->docs[$doc_id]['sum'];
+                $sum = round($sum-$this->docs[$doc_id]['sum'],2);
                 $this->docs[$doc_id]['sum'] = 0;
                 unset($this->plus_docs[$doc_id]);
             } else {
-                $this->docs[$doc_id]['sum'] -= $sum;
+                $this->docs[$doc_id]['sum'] = round($this->docs[$doc_id]['sum']-$sum, 2);
                 $sum = 0;
             }
         }
@@ -215,20 +220,27 @@ class salary extends \AsyncWorker {
                 continue;
             }
             $doc_vars = array();
-            $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
+            /*$res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
                 $doc_vars[$line[0]] = $line[1];
-            }
+            }*/
             $doc_line['vars'] = $doc_vars;
             $doc_line['childs'] = array();
             $doc_line['fullpay'] = 0;
             $this->docs[$doc_line['id']] = $doc_line;
         }
         // Заполняем id потомков
+        $docs = '0';
         foreach ($this->docs as $id => $val) {
             if ($val['p_doc'] > 0 && isset($this->docs[$val['p_doc']])) {
                 $this->docs[$val['p_doc']]['childs'][] = $id;
             }
+            $docs.=','.$id;
+        }
+        // Грузим доп.параметры
+        $res = $db->query('SELECT `param`, `value`,`doc` FROM `doc_dopdata` WHERE `doc` IN (' . $docs.')');
+            while ($line = $res->fetch_row()) {
+                $this->docs[$line[2]]['vars'][$line[0]] = $line[1];
         }
     }
     
@@ -248,7 +260,6 @@ class salary extends \AsyncWorker {
                 case 2:
                 case 5:
                 case 7:
-                case 20:
                     $minus_docs[$id] = $id;
                     break;
                 case 18:
@@ -261,24 +272,26 @@ class salary extends \AsyncWorker {
                     break;
             }
         }
-        // Учёт агентских вознаграждений
+        // Учёт агентских вознаграждений и подготовка сумм для контроля оплат
         foreach ($minus_docs as $id) {
+            $this->docs[$id]['paytest_sum'] = $this->docs[$id]['sum'];
             foreach($this->docs[$id]['childs'] as $c_id) {
                 if($this->docs[$c_id]['type']!=7) {
+                    $this->docs[$c_id]['paytest_sum'] = $this->docs[$c_id]['sum'];
                     continue;
                 }
                 if(isset($this->docs[$id]['dec_sum'])) {
                     $this->docs[$id]['dec_sum'] += $this->docs[$c_id]['sum'];
                 } else {
                     $this->docs[$id]['dec_sum'] = $this->docs[$c_id]['sum'];
-                }
+                }                
             }
         }
         
         // Обрабатываем расходы
         // Проверка оплаты потомками
         foreach ($minus_docs as $id) {
-            $cur_sum = $this->docs[$id]['sum'];
+            $cur_sum = $this->docs[$id]['paytest_sum'];
             foreach($this->docs[$id]['childs'] as $c_id) {
                 if($this->docs[$c_id]['sum']==0) {
                     continue;
@@ -292,13 +305,17 @@ class salary extends \AsyncWorker {
                         break;
                 }
             }
+            $this->docs[$id]['paytest_sum'] = $cur_sum;
             if($cur_sum == 0) { // Оплачен полностью
                 $this->docs[$id]['fullpay'] = true;
             }
         }
         // Оплата по списку
         foreach ($minus_docs as $id) {
-            $cur_sum = $this->docs[$id]['sum'];            
+            $cur_sum = $this->docs[$id]['paytest_sum'];
+            if($this->docs[$id]['fullpay']) {
+                continue;
+            }
             while($cur_sum>0 && count($this->plus_docs)>0) {
                 reset($this->plus_docs);
                 list(,$c_id) = each($this->plus_docs);
@@ -307,12 +324,13 @@ class salary extends \AsyncWorker {
             if($cur_sum == 0) { // Оплачен полностью
                 $this->docs[$id]['fullpay'] = true;
             }
+            $this->docs[$id]['paytest_sum'] = $cur_sum;
         }
+        
         // Начисление зарплаты
         $cnt = 0;       
         foreach ($minus_docs as $id) {
             $doc = $this->docs[$id];
-            
             if( ($doc['type']=='2' && $doc['fullpay']) || $doc['type']=='20') {
                 if( ! @$doc['vars']['salary']) {
                     $salary = $this->calcFee($doc, $responsible_id);
@@ -331,7 +349,6 @@ class salary extends \AsyncWorker {
                 $cnt++;
             }
         }
-        
     }
     
     /// Расчитать сумму вознаграждения для заданного документа

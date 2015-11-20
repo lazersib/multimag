@@ -58,20 +58,22 @@ class Report_SalaryOk extends BaseGSReport {
         $dt_f = strtotime(rcvdate('dt_f'));
         $dt_t = strtotime(rcvdate('dt_t') . " 23:59:59");
         
-        $users_ldo = new \Models\LDO\usernames();
+        $users_ldo = new \Models\LDO\workernames();
         $users = $users_ldo->getData();
         
         $salary = new \async\salary(0);
         $salary->loadPosTypes();    
         $tmpl->addBreadcrumb('Просмотр данных', '');        
         $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th>id</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
+            . "<tr><th>id</th><th>Тип</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
             . "<th>Сумма</th></tr>");
         $sum = 0;
-        $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_agent`.`responsible` AS `resp_id`"
+        $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`"
+                . ", `sklad` AS `store_id`, `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` = 2 AND `date`>='$dt_f' AND `date`<'$dt_t'" 
+            . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8,20) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             $doc_vars = array();
@@ -113,7 +115,8 @@ class Report_SalaryOk extends BaseGSReport {
             $sum_line = $info['r_fee'] + $info['o_fee'] + $info['m_fee'] + $info['sk_fee'];            
             $sum += $sum_line;
             $p_date = date("Y-m-d", $doc_line['date']);
-            $tmpl->addContent("<tr><td><a href='/doc.php?mode=body&doc={$doc_line['id']}'>{$doc_line['id']}</a></td><td>$p_date</td>"
+            $tmpl->addContent("<tr><td><a href='/doc.php?mode=body&doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
+                . "<td>{$doc_line['type_name']}</td><td>$p_date</td>"
                 . "<td>{$info['r_name']}</td><td>{$info['r_fee']}</td><td>{$info['o_name']}</td><td>{$info['o_fee']}</td>"
                 . "<td>{$info['m_name']}</td><td>{$info['m_fee']}</td><td>{$info['sk_name']}</td><td>{$info['sk_fee']}</td><td>$sum_line</td></tr>");
         }
