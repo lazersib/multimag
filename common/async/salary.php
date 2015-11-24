@@ -30,7 +30,8 @@ class salary extends \AsyncWorker {
     protected $last_liq_date = '';
     protected $last_liq_array = array();
     protected $users_fee = array();
-    protected $param_pcs_id;        // Параметр - id свойства товара - сложность сборки кладовщиком
+    protected $param_pcs_id;        // Параметр - id свойства товара - сложность отгрузки и перемещения кладовщиком
+    protected $param_pcs_in_id;      // Параметр - id свойства товара - сложность поступления кладовщиком
     protected $param_bigpack_id;    // Параметр - id свойства товара - количество товара в большой упаковке
     
     protected $conf_enable          = false;//< Разрешена ли работа модуля
@@ -157,6 +158,7 @@ class salary extends \AsyncWorker {
     // Получить необходимые данные о номенклатуре
     function loadPosData() {
         global $db;
+        // ID параметра сложности отгрузки и перемещения
         $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='pack_complexity_sk'");
         if (!$res->num_rows) {
             $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
@@ -164,6 +166,14 @@ class salary extends \AsyncWorker {
             throw new \Exception("Параметр начисления зарплаты не был найден. Параметр создан. Перед начислением заработной платы необходимо заполнить свойства номенклатуры.");
         }
         list($this->param_pcs_id) = $res->fetch_row();
+        // ID параметра сложности поступления
+        $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='pack_complexity_sk_in'");
+        if (!$res->num_rows) {
+            $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
+                . " VALUES ('Cложность поступления кладовщиком', 'pack_complexity_sk_in', 'float', 1)");
+            throw new \Exception("Параметр начисления зарплаты не был найден. Параметр создан. Перед начислением заработной платы необходимо заполнить свойства номенклатуры.");
+        }
+        list($this->param_pcs_in_id) = $res->fetch_row();
         // ID параметра большой упаковки
         $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='bigpack_cnt'");
         if (!$res->num_rows) {
@@ -174,9 +184,10 @@ class salary extends \AsyncWorker {
         list($this->param_bigpack_id) = $res->fetch_row();
         // Загружаем данные номенклатуры
         $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`mult`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base`.`proizv` AS `vendor`"
-                . ", `pcs_t`.`value` AS `pcs`, `bp_t`.`value` AS `bigpack_cnt`"
+                . ", `pcs_t`.`value` AS `pcs`, `pcs_tin`.`value` AS `pcs_in`, `bp_t`.`value` AS `bigpack_cnt`"
             . " FROM `doc_base`"
             . " LEFT JOIN `doc_base_values` AS `pcs_t` ON `pcs_t`.`id`=`doc_base`.`id` AND `pcs_t`.`param_id`='{$this->param_pcs_id}'"
+            . " LEFT JOIN `doc_base_values` AS `pcs_tin` ON `pcs_tin`.`id`=`doc_base`.`id` AND `pcs_tin`.`param_id`='{$this->param_pcs_in_id}'"
             . " LEFT JOIN `doc_base_values` AS `bp_t` ON `bp_t`.`id`=`doc_base`.`id` AND `bp_t`.`param_id`='{$this->param_bigpack_id}'"
             . " ORDER BY `doc_base`.`id`");
         while($line = $res->fetch_assoc()) {
@@ -185,6 +196,9 @@ class salary extends \AsyncWorker {
             }
             if ($line['pcs']===null) {
                 $line['pcs'] = 1;
+            }
+            if ($line['pcs_in']===null) {
+                $line['pcs_in'] = 1;
             }
             $this->pos_info[$line['id']] = $line;
         }
@@ -409,10 +423,19 @@ class salary extends \AsyncWorker {
             if($pos_extinfo['bigpack_cnt']>0) {
                 $bigpacks = floor($nxt_tov['cnt'] / $pos_extinfo['bigpack_cnt']);
                 $normpacks = ($nxt_tov['cnt'] - $bigpacks * $pos_extinfo['bigpack_cnt']) / $pos_extinfo['mult'];
-                $sk_cur_fee = $bigpacks * $pos_extinfo['pcs'] * $this->conf_sk_bigpack_coeff;   // Big
-                $sk_cur_fee += $normpacks * $pos_extinfo['pcs'];                                // Normal
+                if ($doc['type'] == 1) {
+                    $sk_cur_fee = $bigpacks * $pos_extinfo['pcs_in'] * $this->conf_sk_bigpack_coeff;   // Big
+                    $sk_cur_fee += $normpacks * $pos_extinfo['pcs_in'];                                // Normal
+                } else {
+                    $sk_cur_fee = $bigpacks * $pos_extinfo['pcs'] * $this->conf_sk_bigpack_coeff;   // Big
+                    $sk_cur_fee += $normpacks * $pos_extinfo['pcs'];                                // Normal
+                }
             } else {
-                $sk_cur_fee = $nxt_tov['cnt'] / $pos_extinfo['mult'] * $pos_extinfo['pcs'];         // Normal only
+                if ($doc['type'] == 1) {
+                    $sk_cur_fee = $nxt_tov['cnt'] / $pos_extinfo['mult'] * $pos_extinfo['pcs_in'];         // Normal only
+                } else {
+                    $sk_cur_fee = $nxt_tov['cnt'] / $pos_extinfo['mult'] * $pos_extinfo['pcs'];         // Normal only
+                }
             }
             $sk_cur_fee = round($sk_cur_fee, 2);
             if($detail) {
