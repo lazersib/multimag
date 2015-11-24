@@ -918,20 +918,36 @@ class doc_Nulltype extends \document {
             $db->rollback();
             writeLogException($e);
             $db->query("UNLOCK TABLES");
-            $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
+            $data = array(
+                'response' => 0,
+                'message' => $e->getMessage(),
+            );
+            $json = json_encode($data, JSON_UNESCAPED_UNICODE);
             return $json;
         } catch (Exception $e) {
             $db->rollback();
             writeLogException($e);
             $db->query("UNLOCK TABLES");
-            $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
+            $data = array(
+                'response' => 0,
+                'message' => $e->getMessage(),
+            );
+            $json = json_encode($data, JSON_UNESCAPED_UNICODE);
             return $json;
         }
 
         $db->commit();
         doc_log("APPLY {$this->typename}", '', 'doc', $this->id);
-        $json = ' { "response": "1", "message": "Документ успешно проведён!", "buttons": "' . $this->getCancelButtons() . '", "sklad_view": "hide", "statusblock": "Дата проведения: ' . date("Y-m-d H:i:s") . '", "poslist": "refresh" }';
         $db->query("UNLOCK TABLES");
+        $data = array(
+            'response' => 1,
+            'message' => "Документ успешно проведён!",
+            'buttons' => $this->getCancelButtons(),
+            'sklad_view' => 'hide',
+            'statusblock' => 'Дата проведения: ' . date("Y-m-d H:i:s"),
+            'poslist'   => 'refresh',
+        );
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE);
         return $json;
     }
 

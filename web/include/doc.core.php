@@ -512,60 +512,77 @@ function getInCost($pos_id, $limit_date = 0, $serv_mode = 0) {
 /// @param sklad_id		ID склада, для которого производится расчёт
 /// @param unixtime		Дата, на которую производится расчёт в формате unixtime. Если не задан - расчитывается остаток на дату последнего документа.
 /// @param noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
-function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0)
-{
+/// @param $extinfo             Вернуть расширенные данные о документе прерывания с отрицательными остатками
+function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0, $extinfo=false) {
     global $db;
     settype($pos_id, 'int');
     settype($sklad_id, 'int');
     settype($unixtime, 'int');
-    $cnt = 0;
+    $cnt = $doc = 0;
     $sql_add = ($unixtime !== null) ? "AND `doc_list`.`date`<=$unixtime" : '';
     $res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND "
-            . " (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17 OR `doc_list`.`type`=25) $sql_add
+            . " (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17 OR `doc_list`.`type`=20 OR `doc_list`.`type`=25) $sql_add
 	ORDER BY `doc_list`.`date`");
     while ($nxt = $res->fetch_row()) {
-        if ($nxt[1] == 1) {
-            if ($nxt[2] == $sklad_id)
-                $cnt+=$nxt[0];
-        }
-        else if ($nxt[1] == 2 || $nxt[1] == 20) {
-            if ($nxt[2] == $sklad_id)
-                $cnt-=$nxt[0];
-        }
-        else if ($nxt[1] == 8) {
-            if ($nxt[2] == $sklad_id)
-                $cnt-=$nxt[0];
-            else {
-                $r = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
-                if (!$r->num_rows)
-                    throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
-                list($nasklad) = $r->fetch_row();
-                if (!$nasklad)
-                    throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
-                if ($nasklad == $sklad_id)
+        switch($nxt[1]) {
+            case 1:
+                if ($nxt[2] == $sklad_id) {
                     $cnt+=$nxt[0];
-                $r->free();
-            }
-        }
-        else if ($nxt[1] == 17) {
-            if ($nxt[2] == $sklad_id) {
-                if ($nxt[4] == 0)
-                    $cnt+=$nxt[0];
-                else
+                }
+                break;
+            case 2:
+            case 20:
+                if ($nxt[2] == $sklad_id) {
                     $cnt-=$nxt[0];
-            }
-        } elseif($nxt[1]==25) {
-            if ($nxt[2] == $sklad_id)
-                $cnt+=$nxt[0];
+                }
+                break;
+            case 8:
+                if ($nxt[2] == $sklad_id) {
+                    $cnt-=$nxt[0];
+                } else {
+                    $r = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
+                    if (!$r->num_rows) {
+                        throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
+                    }
+                    list($nasklad) = $r->fetch_row();
+                    if (!$nasklad) {
+                        throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+                    }
+                    if ($nasklad == $sklad_id) {
+                        $cnt+=$nxt[0];
+                    }
+                    $r->free();
+                }
+                break;
+            case 17:
+                if ($nxt[2] == $sklad_id) {
+                    if ($nxt[4] == 0) {
+                        $cnt+=$nxt[0];
+                    } else {
+                        $cnt-=$nxt[0];
+                    }
+                }
+                break;
+            case 25:
+                if ($nxt[2] == $sklad_id) {
+                    $cnt+=$nxt[0];
+                }
+                break;
         }
         $cnt = round($cnt, 3);
-        if ($cnt < 0 && $noBreakIfMinus == 0)
+        if ($cnt < 0 && $noBreakIfMinus == 0) {
+            $doc = $nxt[3];
             break;
+        }
     }
     $res->free();
-    return $cnt;
+    if($extinfo) {
+        return array('cnt' => $cnt, 'doc' => $doc);
+    } else {
+        return $cnt;
+    }
 }
 
 /// Для внутреннего использования

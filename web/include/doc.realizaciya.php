@@ -317,11 +317,10 @@ class doc_Realizaciya extends doc_Nulltype {
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_params['sklad']}'");
 
             if (!$doc_params['dnc'] && (!$silent)) {
-                $budet = getStoreCntOnDate($nxt[0], $doc_params['sklad'], $doc_params['date']);
-                if ($budet < 0) {
+                $ret = getStoreCntOnDate($nxt[0], $doc_params['sklad'], $doc_params['date'], false, true);
+                if ($ret['cnt'] < 0) {
                     $pos_name = composePosNameStr($nxt[0], $nxt[7], $nxt[3], $nxt[4]);
-                    $t = $budet + $nxt[1];
-                    $fail_text .= " - Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
+                    $fail_text .= " - Будет ({$ret['cnt']}) мало товара '$pos_name', документ {$ret['doc']} \n";
                     continue;
                 }
             }

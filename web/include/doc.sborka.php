@@ -61,39 +61,55 @@ class doc_Sborka extends doc_Nulltype {
             throw new Exception('Документ уже был проведён!');
         }
         $pres->free();
-
-        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`page`, `doc_base`.`vc`
+        // Списание. Сделано отдельно для списания одновременно количества со всех страниц с правильным учётом остатков на складе
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, SUM(`doc_list_pos`.`cnt`) AS `cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
+                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`page`, `doc_base`.`vc`
             FROM `doc_list_pos`
             INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
-            WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
+            WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0' AND `doc_list_pos`.`page`>0
+            GROUP BY `doc_list_pos`.`tovar`");
         $fail_text = '';
-        while ($line = $res->fetch_array()) {
-            $sign = $line['page'] ? '-' : '+';
+        while ($line = $res->fetch_assoc()) {
+            $sign = '-';
             $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['tovar']}', '{$doc_info['sklad']}', '{$line['cnt']}')"
-                . " ON DUPLICATE KEY UPDATE `cnt`=`cnt` $sign '{$line['cnt']}'");
-            if ($line['page']) {
-                if (!$doc_info['dnc']) {
-                    if ($line['cnt'] > $line['sklad_cnt'])  {
+                    . " ON DUPLICATE KEY UPDATE `cnt`=`cnt` $sign '{$line['cnt']}'");
+            if (!$doc_info['dnc']) {
+                if ($line['cnt'] > $line['sklad_cnt']) {
+                    $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
+                    $fail_text .= " - Мало товара '$pos_name' -  есть:{$line['sklad_cnt']}, нужно:{$line['cnt']}. \n";
+                    continue;
+                }
+                if (!$silent) {
+                    $ret = getStoreCntOnDate($line['tovar'], $doc_info['sklad'], $doc_info['date'], false, true);
+                    if ($ret['cnt'] < 0) {
                         $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
-                        $fail_text .= " - Мало товара '$pos_name' -  есть:{$line['sklad_cnt']}, нужно:{$line['cnt']}. \n";
+                        $fail_text .= " - Будет ({$ret['cnt']}) мало товара '$pos_name', документ {$ret['doc']} \n";
                         continue;
-                    }
-                    if (!$silent) {
-                        $budet = getStoreCntOnDate($line['tovar'], $doc_info['sklad']);
-                        if ($budet < 0)  {
-                            $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
-                            $t = $budet + $line['cnt'];
-                            $fail_text .= " - Будет мало товара '$pos_name' - есть:$t, нужно:{$line['cnt']}. \n";
-                            continue;
-                        }
                     }
                 }
             }
         }
         if($fail_text) {
-            throw new Exception("Ошибка в номенклатуре: \n".$fail_text);
+            throw new \Exception("Ошибка в номенклатуре: \n".$fail_text);
         }
+        // Оприходование
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
+                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`page`, `doc_base`.`vc`
+            FROM `doc_list_pos`
+            INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
+            WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0' AND `doc_list_pos`.`page`=0");
+        $fail_text = '';
+        while ($line = $res->fetch_assoc()) {
+            $sign = '+';
+            $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['tovar']}', '{$doc_info['sklad']}', '{$line['cnt']}')"
+                . " ON DUPLICATE KEY UPDATE `cnt`=`cnt` $sign '{$line['cnt']}'");
+        }
+        if($fail_text) {
+            throw new \Exception("Ошибка в номенклатуре: \n".$fail_text);
+        }
+        
         if ($silent) {
             return;
         }
