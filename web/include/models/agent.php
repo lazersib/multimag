@@ -71,6 +71,12 @@ class agent {
         }
     }
     
+    public function getSMSPhone() {
+        if(isset($this->parsed_contacts['sms_phone'])) {
+            return $this->parsed_contacts['sms_phone'];
+        }
+    }
+    
     public function getEmail() {
         if(isset($this->parsed_contacts['email'])) {
             return $this->parsed_contacts['email'];
@@ -100,6 +106,9 @@ class agent {
             if($line['type']=='phone' && $line['for_fax']) {
                 $this->parsed_contacts['fax'] = $line['value'];
             }                        
+            if($line['type']=='phone' && $line['for_sms']) {
+                $this->parsed_contacts['sms_phone'] = $line['value'];
+            } 
         }
     }
 }

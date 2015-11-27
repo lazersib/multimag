@@ -48,7 +48,7 @@ try {
         if ($verbose) {
             echo "Информирование о резком изменении цен\n";
         }
-        $action = new \actions\BadPriceNotify($config, $db);
+        $action = new \actions\BadPriceNotify($CONFIG, $db);
         $action->run();       
     }
     
@@ -57,7 +57,7 @@ try {
         if ($verbose) {
             echo "Информирование о изменении цен\n";
         }
-        $action = new \actions\chPriceNotify($config, $db);
+        $action = new \actions\chPriceNotify($CONFIG, $db);
         $action->run();       
     }
     

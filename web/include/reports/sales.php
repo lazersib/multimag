@@ -390,6 +390,7 @@ class Report_Sales extends BaseGSReport {
                             $p = $nxt['cnt'];
                         else
                             $r = $nxt['cnt'];
+                        $link = $nxt['agent_name'];
                     }
                     break;
                 default:$p = $r = 'fff-' . $nxt['type'];

@@ -18,7 +18,7 @@
 //
 
 /// Документ *приход средств в банк*
-class doc_PBank extends doc_Nulltype {
+class doc_PBank extends paymentbasedoc {
 
     function __construct($doc = 0) {
         parent::__construct($doc);
@@ -82,7 +82,7 @@ class doc_PBank extends doc_Nulltype {
     }
 
     function dopBody() {
-        global $tmpl;
+        
     }
 
     // Провести
@@ -124,6 +124,7 @@ class doc_PBank extends doc_Nulltype {
         if (!$silent) {
             $db->update('doc_list', $this->id, 'ok', time());
             $this->sentZEvent('apply');
+            $this->paymentNotify();
         }
     }
 

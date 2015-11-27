@@ -88,7 +88,7 @@ else if($mode=='call_request')
 					if(@$CONFIG['call_request']['xmpp'])
 					{
 						require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
-						$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
+						$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
 						$xmppclient->connect();
 						$xmppclient->processUntil('session_start');
 						$xmppclient->presence();
@@ -153,7 +153,7 @@ else if($mode=='send') {
 		try
 		{
 			require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
-			$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
+			$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
 			$xmppclient->connect();
 			$xmppclient->processUntil('session_start');
 			$xmppclient->presence();
@@ -225,7 +225,7 @@ else if($mode=='petitions')
 			try
 			{
 				require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
-				$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
+				$xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
 				$xmppclient->connect();
 				$xmppclient->processUntil('session_start');
 				$xmppclient->presence();

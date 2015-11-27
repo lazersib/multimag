@@ -113,6 +113,7 @@ class salary extends \AsyncWorker {
         if(!$this->conf_enable) {
             return;
         }
+        $rdate = strtotime("2015-10-31");
         //$db->query("FLUSH TABLE CACHE");
         $this->loadPosData();        
         // Расчёт
@@ -130,7 +131,7 @@ class salary extends \AsyncWorker {
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 8)" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 8)"// AND `date`<'$rdate'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             if($doc_line['return']) {
@@ -143,8 +144,11 @@ class salary extends \AsyncWorker {
             }
             $doc_line['vars'] = $doc_vars;
             if( ! @$doc_vars['salary']) {
-                $doc_line['fullpay'] = 0;
+                $doc_line['fullpay'] = 1;
                 $salary = $this->calcFee($doc_line, 0);
+                if(isset($salary['sk_uid'])) {
+                    $this->incFee('sk', $salary['sk_uid'], $salary['sk_fee'], $doc_line['id']);
+                }
                 $ser_salary_sql = json_encode($salary, JSON_UNESCAPED_UNICODE);
                 $db->insertA('doc_dopdata', array('doc'=>$doc_line['id'], 'param'=>'salary', 'value'=>$ser_salary_sql));
             }
@@ -222,12 +226,12 @@ class salary extends \AsyncWorker {
     function loadDocsForAgent($agent_id) {
         global $db;
         $this->docs = array();
-        //$rdate = strtotime("2015-02-20");
+        $rdate = strtotime("2015-10-31");
         // Грузим
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18, 20) AND `agent`=$agent_id" // AND `date`<'$rdate'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18, 20) AND `agent`=$agent_id"//  AND `date`<'$rdate'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             if($doc_line['return']) {

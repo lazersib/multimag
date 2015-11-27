@@ -18,7 +18,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 /// Документ *приходный кассовый ордер*
-class doc_Pko extends doc_Nulltype {
+class doc_Pko extends paymentbasedoc {
 
     function __construct($doc = 0) {
         parent::__construct($doc);
@@ -81,6 +81,9 @@ class doc_Pko extends doc_Nulltype {
         if (!$this->isAltNumUnique() && !$silent) {
             throw new Exception("Номер документа не уникален!");
         }
+        if($this->doc_data['kassa']<=0) {
+            throw new Exception("Касса не выбрана");
+        }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
                 `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`
             FROM `doc_list`
@@ -107,7 +110,7 @@ class doc_Pko extends doc_Nulltype {
             throw new Exception("Выбранная организация может работать только со своими кассами!");
         }
 
-        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$doc_params['sum']}'	WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$doc_params['sum']}' WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }
@@ -117,6 +120,7 @@ class doc_Pko extends doc_Nulltype {
 
         $db->update('doc_list', $this->id, 'ok', time());
         $this->sentZEvent('apply');
+        $this->paymentNotify();
     }
 
     // Отменить проведение

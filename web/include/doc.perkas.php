@@ -84,6 +84,16 @@ class doc_PerKas extends doc_Nulltype {
         $dest_res = $db->query("SELECT `firm_id` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`=".intval($this->dop_data['v_kassu']));
         $dest_till_info = $dest_res->fetch_assoc();
 
+        if($doc_params['kassa']<=0) {
+            throw new Exception('Касса-источник не задана');
+        }        
+        if($this->dop_data['v_kassu']<=0) {
+            throw new Exception('Касса назначения не задана');
+        }        
+        if($doc_params['kassa'] == $this->dop_data['v_kassu']) {
+            throw new Exception('Касса-источник и касса назначения совпадают');
+        }
+        
         // Запрет для другой фирмы
         if($doc_params['kassa_firm_id']!=null && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
             throw new Exception("Исходная касса относится к другой организации!");

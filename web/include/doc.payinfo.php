@@ -18,7 +18,7 @@
 //
 
 /// Документ *информация о платеже*
-class doc_PayInfo extends doc_Nulltype {
+class doc_PayInfo extends paymentbasedoc {
 
     function __construct($doc = 0) {
         parent::__construct($doc);
@@ -39,6 +39,14 @@ class doc_PayInfo extends doc_Nulltype {
             $tmpl->addContent("<b>Владелец карты:</b>{$this->dop_data['cardholder']}><br>
                 <b>PAN карты:</b>{$this->dop_data['masked_pan']}><br><b>Транзакция:</b>{$this->dop_data['trx_id']}><br>
                 <b>RNN транзакции:</b>{$this->dop_data['p_rnn']}><br>");
+        }
+    }
+    
+    // Провести
+    function docApply($silent = 0) {
+        parent::docApply($silent);
+        if (!$silent) {
+            $this->paymentNotify();
         }
     }
 

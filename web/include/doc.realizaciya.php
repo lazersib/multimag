@@ -31,7 +31,7 @@ class doc_Realizaciya extends doc_Nulltype {
         $this->header_fields = 'bank sklad cena separator agent';
         $this->status_list = array(
             'readytomake' => 'Готов к сборке', 
-            'in_process' => 'В процессе сбрки', 
+            'in_process' => 'В процессе сборки', 
             'readytoship' => 'Собран и готов к отгрузке', 
             'courier'=>'Передан курьеру', 
             'err' => 'Ошибочный', 

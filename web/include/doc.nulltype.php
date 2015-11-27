@@ -392,6 +392,28 @@ class doc_Nulltype extends \document {
         return $sum;
     }
 
+    /// Получить объект документа заявки для текущей цепочки документов
+    /// @return Объект doc_Zayavka, или false если не найден. Может быть текущим документом.
+    public function getZDoc() {
+        global $db;
+        if($this->doc_type == 3) {
+            return $this;
+        }
+        $pdoc = $this->doc_data['p_doc'];
+        while ($pdoc) {
+            $res = $db->query("SELECT `id`, `type`, `p_doc` FROM `doc_list` WHERE `id`='$pdoc'");
+            if (!$res->num_rows) {
+                throw new Exception("Документ не найден");
+            }
+            list($doc_id, $pdoc_type, $pdoc_id) = $res->fetch_row();
+            if ($pdoc_type == 3) {
+                return new doc_Zayavka($doc_id);
+            }
+            $pdoc = $pdoc_id;
+        }
+        return false;
+    }
+    
     /// Послать в связанный заказ событие с заданным типом.
     /// Полное название события будет doc:{$docname}:{$event_type}
     /// @param event_type Название события
@@ -399,25 +421,132 @@ class doc_Nulltype extends \document {
     public function sentZEvent($event_type) {
         global $db;
         $event_name = "doc:{$this->typename}:$event_type";
-        if ($this->doc_type == 3)
-            $this->dispatchZEvent($event_name, $this);
-        else {
-            $pdoc = $this->doc_data['p_doc'];
-            while ($pdoc) {
-                $res = $db->query("SELECT `id`, `type`, `p_doc` FROM `doc_list` WHERE `id`='$pdoc'");
-                if (!$res->num_rows)
-                    throw new Exception("Документ не найден");
-                list($doc_id, $pdoc_type, $pdoc_id) = $res->fetch_row();
-                if ($pdoc_type == 3) {
-                    $doc = new doc_Zayavka($doc_id);
-                    $doc->dispatchZEvent($event_name, $this);
-                    return;
-                }
-                $pdoc = $pdoc_id;
-            }
+        $zdoc = $this->getZDoc();
+        if($zdoc) {
+            return $zdoc->dispatchZEvent($event_name, $this);
         }
+        return false;
+    }
+    
+    /// Отправить оповещение по всем доступным каналам связи с клиентом
+    function sendNotify($text) {
+        return 
+            $this->sendEmailNotify($text) ||
+            $this->sendSMSNotify($text) || 
+            $this->sendXMPPNotify($text);
+    }
+                    
+    /// Отправить SMS с заданным текстом заказчику на первый из подходящих номеров
+    /// @param text текст отправляемого сообщения
+    function sendSMSNotify($text) {
+        global $CONFIG, $db;
+        if (!isset($CONFIG['doc']['notify_sms'])) {
+            return false;
+        }
+        if (!$CONFIG['doc']['notify_sms']) {
+            return false;
+        }        
+        if (isset($this->dop_data['buyer_phone'])) {
+            if(preg_match('/^\+79\d{9}$/', $this->dop_data['buyer_phone'])) {
+                $smsphone = $this->dop_data['buyer_phone'];
+            }
+        } 
+        if ($this->doc_data['agent'] > 1 && !$smsphone) {
+            $agent = new \models\agent($this->doc_data['agent']);
+            $smsphone = $agent->getSMSPhone();                
+        }
+        if (preg_match('/^\+79\d{9}$/', $smsphone)) {
+            require_once('include/sendsms.php');
+            $sender = new SMSSender();
+            $sender->setNumber($smsphone);
+            $sender->setContent($text);
+            $sender->send();
+            if(@$CONFIG['doc']['notify_debug']) {
+                doc_log("NOTIFY SMS", "number:$smsphone; text:$text", 'doc', $this->id);
+            } 
+            return true;
+        }
+        return false;
     }
 
+    /// Отправить email с заданным текстом заказчику на все доступные адреса
+    /// @param text текст отправляемого сообщения
+    function sendEmailNotify($text) {
+        global $CONFIG, $db;
+        if (!isset($CONFIG['doc']['notify_email'])) {
+            return false;
+        }
+        if (!$CONFIG['doc']['notify_email']) {
+            return false;
+        }
+        $emails = array();
+        if (isset($this->dop_data['buyer_email'])) {
+            if($this->dop_data['buyer_email']) {
+                $emails[$this->dop_data['buyer_email']] = $this->dop_data['buyer_email'];
+            }
+        }
+        if ($this->doc_data['agent'] > 1) {
+            $agent = new \models\agent($this->doc_data['agent']);
+            $contacts = $agent->contacts;
+            foreach($contacts as $line) {
+                if($line['type']=='email') {
+                    $emails[$line['value']] = $line['value'];
+                }
+            }
+        }
+        if(count($emails)>0) {
+            foreach($emails as $email) {
+                $user_msg = "Уважаемый клиент!\n" . $text;
+                mailto($email, "Заказ N {$this->id} на {$CONFIG['site']['name']}", $user_msg);
+                if(@$CONFIG['doc']['notify_debug']) {
+                    doc_log("NOTIFY Email", "email:$email; text:$user_msg", 'doc', $this->id);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    /// Отправить сообщение по XMPP с заданным текстом заказчику на все доступные адреса
+    /// @param text текст отправляемого сообщения
+    function sendXMPPNotify($text) {
+        global $CONFIG, $db;
+        if (!isset($CONFIG['doc']['notify_xmpp'])) {
+            return false;
+        }
+        if (!$CONFIG['doc']['notify_xmpp']) {
+            return false;
+        }
+        $addresses = array();
+        if ($this->doc_data['agent'] > 1) {
+            $agent = new \models\agent($this->doc_data['agent']);
+            $contacts = $agent->contacts;
+            foreach($contacts as $line) {
+                if($line['type']=='jid' || $line['type']=='xmpp') {
+                    $addresses[$line['value']] = $line['value'];
+                }
+            }
+        }
+        if(count($addresses)>0) {
+            require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
+            $xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
+            $xmppclient->connect();
+            $xmppclient->processUntil('session_start');
+            $xmppclient->presence();
+            foreach($addresses as $addr) {
+                $user_msg = "Уважаемый клиент!\n" . $text;                    
+                $xmppclient->message($addr, $user_msg);                    
+                if(@$CONFIG['doc']['notify_debug']) {
+                    doc_log("NOTIFY xmpp", "jid:$addr; text:$user_msg", 'doc', $this->id);
+                }
+            }
+            $xmppclient->disconnect();
+            return true;
+        }
+        return false;
+    }
+    
+    
     /// отобразить заголовок документа
     public function head() {
         global $tmpl;

@@ -54,10 +54,10 @@ for($i=0;$i<250;$i++)
 imagepng($im);*/
 
 
-global $config;
-$config['captcha_gd_foreground_noise']=0;
-$config['captcha_gd_y_grid']=20;
-$config['captcha_gd_x_grid']=20;
+global $CONFIG;
+$CONFIG['captcha_gd_foreground_noise']=0;
+$CONFIG['captcha_gd_y_grid']=20;
+$CONFIG['captcha_gd_x_grid']=20;
 include('include/captcha_gd.php');
 $captcha = new captcha();
 $captcha->execute($str, rand());
