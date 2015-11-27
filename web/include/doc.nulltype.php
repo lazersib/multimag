@@ -471,7 +471,7 @@ class doc_Nulltype extends \document {
 
     /// Отправить email с заданным текстом заказчику на все доступные адреса
     /// @param text текст отправляемого сообщения
-    function sendEmailNotify($text) {
+    function sendEmailNotify($text, $subject=null) {
         global $CONFIG, $db;
         if (!isset($CONFIG['doc']['notify_email'])) {
             return false;
@@ -497,7 +497,10 @@ class doc_Nulltype extends \document {
         if(count($emails)>0) {
             foreach($emails as $email) {
                 $user_msg = "Уважаемый клиент!\n" . $text;
-                mailto($email, "Заказ N {$this->id} на {$CONFIG['site']['name']}", $user_msg);
+                if(!$subject) {
+                    $subject = "Документ N {$this->id} на {$CONFIG['site']['name']}";
+                }
+                mailto($email, $subject, $user_msg);
                 if(@$CONFIG['doc']['notify_debug']) {
                     doc_log("NOTIFY Email", "email:$email; text:$user_msg", 'doc', $this->id);
                 }
@@ -534,7 +537,7 @@ class doc_Nulltype extends \document {
             $xmppclient->processUntil('session_start');
             $xmppclient->presence();
             foreach($addresses as $addr) {
-                $user_msg = "Уважаемый клиент!\n" . $text;                    
+                $user_msg = $text;                    
                 $xmppclient->message($addr, $user_msg);                    
                 if(@$CONFIG['doc']['notify_debug']) {
                     doc_log("NOTIFY xmpp", "jid:$addr; text:$user_msg", 'doc', $this->id);
@@ -2087,16 +2090,17 @@ class doc_Nulltype extends \document {
     }
 
     protected function getApplyButtons() {
-        if ($this->doc_data['mark_del'])
-            $s = "<a href='#' title='Отменить удаление' onclick='unMarkDelDoc({$this->id}); return false;'><img src='img/i_trash_undo.png' alt='отменить удаление'></a>";
-        else
-            $s = "<a href='#' title='Пометить на удаление' onclick='MarkDelDoc({$this->id}); return false;'><img src='img/i_trash.png' alt='Пометить на удаление'></a>";
-        return "$s<a href='#' title='Провести документ' onclick='ApplyDoc({$this->id}); return false;'><img src='img/i_ok.png' alt='Провести'></a>";
+        if ($this->doc_data['mark_del']) {
+            return "<a href='#' title='Отменить удаление' onclick='unMarkDelDoc({$this->id}); return false;'><img src='img/i_trash_undo.png' alt='отменить удаление'></a>";
+        }
+        else {
+            return "<a href='#' title='Пометить на удаление' onclick='MarkDelDoc({$this->id}); return false;'><img src='img/i_trash.png' alt='Пометить на удаление'></a>".
+            "<a href='#' title='Провести документ' onclick='ApplyDoc({$this->id}); return false;'><img src='img/i_ok.png' alt='Провести'></a>";
+        }
         //<a href='?mode=ehead&amp;doc={$this->doc}' title='Правка заголовка'><img src='img/i_docedit.png' alt='Правка'></a>
     }
 
     protected function getCancelButtons() {
-// 		$a='';
         return "<a title='Отменить проводку' onclick='CancelDoc({$this->id}); return false;'><img src='img/i_revert.png' alt='Отменить' /></a>";
     }
 

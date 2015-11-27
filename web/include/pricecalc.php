@@ -31,8 +31,9 @@ class PriceCalc {
     protected $from_site_flag = 0;  ///< флаг *заказ с сайта*
     protected $user_id = 0;         ///< id пользователя, для кторого расчитываем цены
     protected $agent_id = 0;        ///< id агента, для которого расчитываем цены
-    protected $order_sum = 0;       ///< сумма заказа, для которго расчитываем цены
-    
+    protected $order_sum = 0;       ///< сумма заказа, для которого расчитываем цены
+    protected $firm_id = 0;         ///< id организации, для которой расчитываем цены
+
     // вычисляемые значения
     protected $agent_avg_sum = false;   ///< Средняя сумма оборота агента
     protected $current_price_id = 0;    ///< id цены для текущих параметров заказа. При изменениии параметров - сбрасывается.
@@ -49,8 +50,7 @@ class PriceCalc {
     protected $gpi;                     ///< Кеш цен групп
 
     /// Конструктор копирования запрещён
-    final private function __clone() {
-        
+    final private function __clone() {        
     }
 
     /// Конструктор. Загружает и сортирует список цен из базы данных.
@@ -62,7 +62,7 @@ class PriceCalc {
         $this->gpi = array();
 
         $res = $db->query("SELECT `id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold`
-			FROM `doc_cost` ORDER BY `priority`");
+            FROM `doc_cost` ORDER BY `priority`");
         while ($line = $res->fetch_assoc()) {
             $contexts = str_split($line['context']);
             foreach ($contexts as $context) {
@@ -121,6 +121,12 @@ class PriceCalc {
         $this->no_retail_prices = 0;
         $this->no_bulk_prices = 0;
         $this->current_price_id = 0;
+    }
+    
+    /// Установить ID собственной организации для расчёта цен
+    /// @param $firm_id id организации. Должна существовать.
+    public function setFirmId($firm_id) {
+        $this->firm_id = $firm_id;
     }
 
     /// Получить флаг no_bulk_prices

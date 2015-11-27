@@ -48,9 +48,11 @@ class paymentbasedoc extends doc_Nulltype {
         $zdoc = $this->getZDoc();
         if(!$zdoc) {
             $zdoc=$this;
-        } 
-        $zdoc->sendSMSNotify($smstext);
-        $zdoc->sendEmailNotify($text);
+            $zdoc->sendEmailNotify($text, "Поступила оплата N {$this->id} на {$CONFIG['site']['name']}");
+        } else {
+            $zdoc->sendEmailNotify($text, "Поступила оплата к заказу N {$zdoc->id} на {$CONFIG['site']['name']}");
+        }
+        $zdoc->sendSMSNotify($smstext);        
         $zdoc->sendXMPPNotify($text);
     }
 

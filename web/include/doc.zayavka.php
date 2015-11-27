@@ -167,7 +167,7 @@ class doc_Zayavka extends doc_Nulltype {
 
     /// Отправить email с заданным текстом заказчику на все доступные адреса
     /// @param text текст отправляемого сообщения
-    function sendEmailNotify($text) {
+    function sendEmailNotify($text, $subject=null) {
         global $CONFIG, $db;
         if (!$CONFIG['doc']['notify_email']) {
             return false;
@@ -196,7 +196,10 @@ class doc_Zayavka extends doc_Nulltype {
         if(count($emails)>0) {
             foreach($emails as $email) {
                 $user_msg = "Уважаемый клиент!\n" . $text;
-                mailto($email, "Заказ N {$this->id} на {$CONFIG['site']['name']}", $user_msg);
+                if(!$subject) {
+                    $subject = "Заказ N {$this->id} на {$CONFIG['site']['name']}";
+                }
+                mailto($email, $subject, $user_msg);
                 if(@$CONFIG['doc']['notify_debug']) {
                     doc_log("NOTIFY Email", "email:$email; text:$user_msg", 'doc', $this->id);
                 }
@@ -235,11 +238,10 @@ class doc_Zayavka extends doc_Nulltype {
             $xmppclient->connect();
             $xmppclient->processUntil('session_start');
             $xmppclient->presence();
-            foreach($addresses as $addr) {
-                $user_msg = "Уважаемый клиент!\n" . $text;                    
-                $xmppclient->message($addr, $user_msg);                    
+            foreach($addresses as $addr) {                
+                $xmppclient->message($addr, $text);                    
                 if(@$CONFIG['doc']['notify_debug']) {
-                    doc_log("NOTIFY xmpp", "jid:$addr; text:$user_msg", 'doc', $this->id);
+                    doc_log("NOTIFY xmpp", "jid:$addr; text:$text", 'doc', $this->id);
                 }
             }
             $xmppclient->disconnect();

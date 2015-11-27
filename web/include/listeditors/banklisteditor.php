@@ -33,14 +33,15 @@ class BankListEditor extends \ListEditor {
                 'bik'=>'Бик',
                 'rs'=>'Р.счет',
                 'ks'=>'К.счет',
-                'firm_id'=>'Организация'
+                'comment' => 'Комментраий',
+                'firm_id'=>'Организация',
             );
 	}
 	
 	/// Загрузить список всех элементов справочника
 	public function loadList() {
 		global $db;
-		$res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `firm_id`
+		$res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `comment`, `firm_id`
 			FROM `doc_kassa`
 			WHERE `ids`='bank'
 			ORDER BY `num`");
@@ -53,7 +54,7 @@ class BankListEditor extends \ListEditor {
 	public function getItem($id) {
 		global $db;
 		settype($id, 'int');
-		$res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `firm_id`
+		$res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs`, `ks`, `comment`, `firm_id`
 			FROM `doc_kassa`
 			WHERE `ids`='bank' AND `num`=$id");
 		if ($res->num_rows) {
@@ -74,6 +75,13 @@ class BankListEditor extends \ListEditor {
 		return $ret;
 	}
         
+        public function getInputComment($name, $value) {
+		$ret = "<textarea name='$name'>";
+		$ret .= html_out($value);
+		$ret .="</textarea>";
+		return $ret;
+	}
+        
         public function getFieldFirm_id($data) {
             if($data['firm_id']>0) {
                 return html_out($this->firm_list[$data['firm_id']]);
@@ -90,11 +98,12 @@ class BankListEditor extends \ListEditor {
 		$bik_sql	= $db->real_escape_string($data['bik']);
 		$rs_sql		= $db->real_escape_string($data['rs']);
 		$ks_sql		= $db->real_escape_string($data['ks']);
+                $comment_sql		= $db->real_escape_string($data['comment']);
 		$firm_id	= intval($data['firm_id']);
 		if($id) {
                     $res =  $db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='$id'");
                     if($res->num_rows) {
-			$db->query("UPDATE `doc_kassa` SET `name`='$name_sql', `bik`='$bik_sql', `ks`='$ks_sql', `rs`='$rs_sql', `firm_id`='$firm_id'
+			$db->query("UPDATE `doc_kassa` SET `name`='$name_sql', `bik`='$bik_sql', `ks`='$ks_sql', `rs`='$rs_sql', `comment`='$comment_sql', `firm_id`='$firm_id'
 				WHERE `ids`='bank' AND `num`=$id");
 			return $id;
                     }
@@ -106,8 +115,8 @@ class BankListEditor extends \ListEditor {
 		} else {
 			$id = 1;
 		}
-		$db->query("INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `bik`, `ks`, `rs`, `firm_id`)
-			VALUES ('bank', $id, '$name_sql', '$bik_sql', '$ks_sql', '$rs_sql', '$firm_id')");
+		$db->query("INSERT INTO `doc_kassa` (`ids`, `num`, `name`, `bik`, `ks`, `rs`, `comment`, `firm_id`)
+			VALUES ('bank', $id, '$name_sql', '$bik_sql', '$ks_sql', '$rs_sql', '$comment_sql', '$firm_id')");
 		return $id;
 	}
         

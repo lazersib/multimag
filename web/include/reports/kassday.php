@@ -62,13 +62,13 @@ class Report_KassDay extends BaseReport {
         $dt_f = rcvdate('date_f');
         $dt_t = rcvdate('date_t');
         $kass = rcvint('kass');
-        $kres = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'");
+        $kres = $db->query("SELECT `num`, `name`, `ballance` FROM `doc_kassa` WHERE `ids`='kassa'");
         $kass_list = array();
-        while ($nxt = $kres->fetch_row()) {
-            $kass_list[$nxt[0]] = $nxt[1];
+        while ($nxt = $kres->fetch_assoc()) {
+            $kass_list[$nxt['num']] = $nxt;
         }
 
-        $this->header("Отчёт по кассе {$kass_list[$kass]} с $dt_f по $dt_t");
+        $this->header("Отчёт по кассе {$kass_list[$kass]['name']} с $dt_f по $dt_t");
 
         $daystart = strtotime("$dt_f 00:00:00");
         $dayend = strtotime("$dt_t 23:59:59");
@@ -143,9 +143,9 @@ class Report_KassDay extends BaseReport {
                     $sadd.="\nдля $nxt[7]";
                 } else if ($nxt[1] == 9) {
                     if ($nxt['kassa'] == $kass) {
-                        $sadd.="\nв кассу {$kass_list[$nxt['vk_value']]}";
+                        $sadd.="\nв кассу {$kass_list[$nxt['vk_value']]['name']}";
                     } else {
-                        $sadd.="\nиз кассы {$kass_list[$nxt['kassa']]}";
+                        $sadd.="\nиз кассы {$kass_list[$nxt['kassa']]['name']}";
                     }
                 }
                 $dt = date("Y-m-d H:i:s", $nxt[3]);
@@ -166,12 +166,13 @@ class Report_KassDay extends BaseReport {
 
             $this->tableAltStyle();
             $this->tableSpannedRow(array(3, 1, 1, 1), array("На конец периода", $psum_p, $rsum_p, $sum_p));
-            $this->tableSpannedRow(array(3, 3), array("Разница за период", $dsum_p));
+            $this->tableSpannedRow(array(5, 1), array("Разница за период", $dsum_p));
             $this->tableAltStyle(false);
         } else {
-            $this->tableSpannedRow(array($this->col_cnt), array("Нет данных по балансу за выбранный период"));
+            $this->tableSpannedRow(array($this->col_cnt), array("Нет данных по кассе за выбранный период"));
         }
-
+        $this->tableSpannedRow(array($this->col_cnt-1, 1), array("Баланс на текущий момент (".date("Y-m-d H:i:s")."):", $kass_list[$kass]['ballance']));
+        
         $res = $db->query("SELECT `name` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
         list($nm) = $res->fetch_row();
         $this->tableSpannedRow(array($this->col_cnt), array("\nCоответствие сумм подтверждаю ___________________ ($nm)\nБез подписи не действителен!"));

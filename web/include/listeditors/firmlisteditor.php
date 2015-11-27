@@ -42,6 +42,7 @@ class FirmListEditor extends \ListEditor {
             'firm_telefon' => 'Телефон',
             'firm_okpo' => 'ОКПО',
             'param_nds' => 'Ставка НДС',
+            'param_pricecoeff' => 'Ценовой коэффициент',
             'firm_director' => 'ФИО директора',
             'firm_director_r' => 'ФИО директора в родительном падеже',
             'firm_manager' => 'ФИО менеджера',
@@ -104,5 +105,19 @@ class FirmListEditor extends \ListEditor {
 
     public function getFieldFirm_till_lock($data) {
         return $data['firm_till_lock'] ? "<b style='color:#0c0'>Да</b>" : "<b style='color:#f00'>Нет</b>";
+    }
+    
+    /// Записать в базу строку справочника
+    public function saveItem($id, $data) {
+        if(!isset($data['firm_store_lock'])) {
+            $data['firm_store_lock'] = 0;
+        }    
+        if(!isset($data['firm_bank_lock'])) {
+            $data['firm_bank_lock'] = 0;
+        }
+        if(!isset($data['firm_till_lock'])) {
+            $data['firm_till_lock'] = 0;
+        }
+        return parent::saveItem($id, $data);
     }
 }
