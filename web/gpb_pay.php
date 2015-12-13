@@ -24,14 +24,15 @@ include_once("include/doc.core.php");
 header("Content-type: application/xml");
 
 try {
+    $pref = \pref::getInstance();
     if (!isset($_SERVER['PHP_AUTH_USER'])) {
-        header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
+        header('WWW-Authenticate: Basic realm="' . $pref->site_name . '"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Authentification cancel by user';
         exit();
     } else {
         if (@$_SERVER['PHP_AUTH_USER'] != @$CONFIG['gpb']['callback_login'] || @$_SERVER['PHP_AUTH_PW'] != @$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_login']) {
-            header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
+            header('WWW-Authenticate: Basic realm="' . $pref->site_name . '"');
             header('HTTP/1.0 401 Unauthorized');
             echo 'Authentification error';
             exit();

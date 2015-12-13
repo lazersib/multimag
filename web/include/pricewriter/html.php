@@ -118,7 +118,11 @@ class html extends BasePriceWriter {
     /// Сформировать завершающий блок прайса
     function close() {
         global $CONFIG;
-        echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), for <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a><br>Прайс создан системой MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), специально для <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a></td></tr></table>";
+        $pref = \pref::getInstance();
+        echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>),"
+            . " for <a href='http://{$pref->site_name}'>http://{$pref->site_name}</a><br>"
+            . "Прайс создан системой MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>),"
+            . " специально для <a href='http://{$pref->site_name}'>http://{$pref->site_name}</a></td></tr></table>";
     }
 
     /// Сформировать строки прайса
@@ -136,6 +140,8 @@ class html extends BasePriceWriter {
         }
 
         $pc = \PriceCalc::getInstance();
+        $pref = pref::getInstance();
+        $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
             if ($cur_col >= $this->column_count) {
                 $cur_col = 0;

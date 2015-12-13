@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
@@ -21,35 +22,31 @@ include_once("core.php");
 
 // URI: i={$this->id}&amp;s={$this->storage}&amp;x={$this->dim_x}&amp;y={$this->dim_y}&amp;q={$this->quality}&amp;t={$this->type}&f={$this->fix_aspect}&n={$this->no_enlarge}
 
-$i=@$_GET['i'];
-$s=@$_GET['s'];
-$x=@$_GET['x'];
-$y=@$_GET['y'];
-$q=@$_GET['q'];
-$t=@$_GET['t'];
-$n=@$_GET['n'];
-$f=@$_GET['f'];
+$i = @$_GET['i'];
+$s = @$_GET['s'];
+$x = @$_GET['x'];
+$y = @$_GET['y'];
+$q = @$_GET['q'];
+$t = @$_GET['t'];
+$n = @$_GET['n'];
+$f = @$_GET['f'];
 
-settype($i,"integer");
-settype($x,"integer");
-settype($y,"integer");
-settype($q,"integer");
+settype($i, "integer");
+settype($x, "integer");
+settype($y, "integer");
+settype($q, "integer");
 
 try {
-	$img=new ImageProductor($i,$s,$t);
-	$img->SetX($x);
-	$img->SetY($y);
-	$img->SetQuality($q);
-	$img->SetNoEnlarge($n);
-	$img->SetFixAspect($f);
-	$img->MakeAndStore();
+    $img = new ImageProductor($i, $s, $t);
+    $img->SetX($x);
+    $img->SetY($y);
+    $img->SetQuality($q);
+    $img->SetNoEnlarge($n);
+    $img->SetFixAspect($f);
+    $img->MakeAndStore();
+} catch (NotFoundException $e) {
+    die('Файл изображения не найден' . $e->getMessage());
+} catch (Exception $e) {
+    header('HTTP/1.0 500 Internal error');
+    die('Внутренняя ошибка. Попробуйте позднее.');
 }
-catch(NotFoundException $e) {
-	die('Файл изображения не найден'.$e->getMessage());
-}
-catch(Exception $e) {
-	header('HTTP/1.0 500 Internal error');
-	die('Внутренняя ошибка. Попробуйте позднее.');
-}
-
-?>

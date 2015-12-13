@@ -169,6 +169,7 @@ class doc_Zayavka extends doc_Nulltype {
     /// @param text текст отправляемого сообщения
     function sendEmailNotify($text, $subject=null) {
         global $CONFIG, $db;
+        $pref = \pref::getInstance();
         if (!$CONFIG['doc']['notify_email']) {
             return false;
         }
@@ -197,7 +198,7 @@ class doc_Zayavka extends doc_Nulltype {
             foreach($emails as $email) {
                 $user_msg = "Уважаемый клиент!\n" . $text;
                 if(!$subject) {
-                    $subject = "Заказ N {$this->id} на {$CONFIG['site']['name']}";
+                    $subject = "Заказ N {$this->id} на {$pref->site_name}";
                 }
                 mailto($email, $subject, $user_msg);
                 if(@$CONFIG['doc']['notify_debug']) {

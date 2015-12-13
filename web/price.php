@@ -342,6 +342,9 @@ else if($mode=="get")
 	$price->showProizv($proizv);
 	$price->setColCount($kol);
 	$pc = PriceCalc::getInstance();
+        $pref = \pref::getInstance();
+        $pc->setFirmId($pref->site_default_firm_id);
+        
 	$price->SetCost( $pc->getDefaultPriceId() );	
 	if($f=='csv')	{
 		$price->setDivider( request('divider') );

@@ -27,8 +27,9 @@ try {
 }
 catch(mysqli_sql_exception $e) {
     $id = writeLogException($e);
-    $tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-    mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
+    $pref = \pref::getInstance();
+    $tmpl->errorMessage("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору", "Ошибка при регистрации");
+    mailto($pref->site_email,"ВАЖНО! Ошибка регистрации на {$pref->site_name}. номер в журнале - $id", $e->getMessage());
 }
 catch(Exception $e) {
     $db->rollback();

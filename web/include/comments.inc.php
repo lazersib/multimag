@@ -37,6 +37,7 @@ class CommentDispatcher
 	function WriteComment($text, $rate, $autor_name='', $autor_email='')
 	{
 		global $CONFIG, $db;
+                $pref = \pref::getInstance();
 		$uid=@$_SESSION['uid'];
 		settype($uid, 'int');
 		settype($rate, 'int');
@@ -57,7 +58,7 @@ class CommentDispatcher
 		if($CONFIG['notify']['comments']) {
 			switch($this->object_name) {
 				case 'product':
-					$url='http://'.$CONFIG['site']['name'].'/vitrina.php?mode=product&p='.$this->object_id;
+					$url='http://'.$pref->site_name.'/vitrina.php?mode=product&p='.$this->object_id;
 					break;
 				default:
 					$url='UNKNOWN';

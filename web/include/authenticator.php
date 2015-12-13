@@ -55,25 +55,26 @@ class authenticator {
     
     protected function regEmailMsg($login, $pass, $conf) {
         global $CONFIG;
+        $pref = \pref::getInstance();
         $proto = 'http';
         if (@$CONFIG['site']['force_https_login'] || @$CONFIG['site']['force_https']) {
             $proto = 'https';
         }
         return 
-        "Вы получили это письмо потому, что в заявке на регистрацию на сайте http://{$CONFIG['site']['name']} был указан Ваш адрес электронной почты. ".
+        "Вы получили это письмо потому, что в заявке на регистрацию на сайте http://{$pref->site_name} был указан Ваш адрес электронной почты. ".
         "Для продолжения регистрации, введите пожалуйста, следующий код подтверждения:\n".
         "{$conf}\n".
-        "или перейдите по ссылке $proto://{$CONFIG['site']['name']}/login.php?mode=conf&login={$login}&e={$conf} .\n".
+        "или перейдите по ссылке $proto://{$pref->site_name}/login.php?mode=conf&login={$login}&e={$conf} .\n".
         "Если не переходить по ссылке (например, если заявка подана не Вами), то регистрационные данные будут автоматически удалены через неделю.\n\n".
         "Ваш аккаунт:\n".
         "Логин: $login\n".
         "Пароль: $pass\n\n".
         "После подтверждения регистрации Вы сможете получить доступ к расширенным функциям сайта. Неактивные аккаунты удаляются через 6 месяцев.\n\n".
         "------------------------------------------------------------------------------------------\n\n".
-        "You have received this letter because in the form of registration in a site http://{$CONFIG['site']['name']} your e-mail address has been entered. ".
+        "You have received this letter because in the form of registration in a site http://{$pref->site_name} your e-mail address has been entered. ".
         "For continue of registration, please enter this key:\n".
         "$conf\n".
-        "or pass under the link $proto://{$CONFIG['site']['name']}/login.php?mode=conf&login=$login&e=$conf .\n".
+        "or pass under the link $proto://{$pref->site_name}/login.php?mode=conf&login=$login&e=$conf .\n".
         "If not going under the reference (for example if the form is submitted not by you) registration data will be automatically removed after a week.\n\n".
         "Your account:\n".
         "Login: $login\n".
@@ -214,7 +215,8 @@ class authenticator {
         $this->loadDataForID($user_id);
         if ($email) {
             $msg = $this->regEmailMsg($login, $pass, $email_conf);
-            mailto($email, "Регистрация на " . $CONFIG['site']['name'], $msg);
+            $pref = \pref::getInstance();
+            mailto($email, "Регистрация на {$pref->site_name}", $msg);
         }
 
         if ($phone) {
@@ -301,22 +303,24 @@ class authenticator {
         
     public function sendConfirmSMS($code, $ext_text = 'Никому не сообщайте.') {
         global $CONFIG;
+        $pref = \pref::getInstance();
         require_once('include/sendsms.php');
         $sender = new SMSSender();
         $sender->setNumber($this->user_info['reg_phone']);
-        $sender->setContent("Код подтверждения: $code\r\n$ext_text\r\n{$CONFIG['site']['name']}");
+        $sender->setContent("Код подтверждения: $code\r\n$ext_text\r\n{$pref->site_name}");
         $sender->send();
     }
     
     public function sendConfirmEmail($code) {
-        global $CONFIG;        
+        global $CONFIG;   
+        $pref = \pref::getInstance();
         $proto = 'http';
         if ($CONFIG['site']['force_https_login'] || $CONFIG['site']['force_https']) {
             $proto = 'https';
         }
-        $msg = "Поступил запрос на установку email адреса на сайте {$CONFIG['site']['name']} для аккаунта {$this->user_info['name']}."
+        $msg = "Поступил запрос на установку email адреса на сайте {$pref->site_name} для аккаунта {$this->user_info['name']}."
             . "\nЕсли аккаунт Ваш, и вы действительно хотите установить адрес, перейдите по ссылке:"
-            . "\n$proto://{$CONFIG['site']['name']}/login.php?mode=conf&login={$this->user_info['name']}&e={$code} ,"
+            . "\n$proto://{$pref->site_name}/login.php?mode=conf&login={$this->user_info['name']}&e={$code} ,"
             . "\nлибо введите код подтверждения:"
             . "\n{$code}"
             . "\nЕсли аккаунт Вам не принадлежит, проигнорируйте письмо."
@@ -327,17 +331,18 @@ class authenticator {
     
     protected function sendRegInfoEmail($login, $pass, $email) {
         global $CONFIG;
+        $pref = \pref::getInstance();
         $proto = 'http';
         if (@$CONFIG['site']['force_https_login'] || @$CONFIG['site']['force_https']) {
             $proto = 'https';
         }
         $msg =  
-        "Вы успешно зарегистрировались на сайте http://{$CONFIG['site']['name']} !\n".
+        "Вы успешно зарегистрировались на сайте http://{$pref->site_name} !\n".
         "Ваш аккаунт:\n".
         "Логин: $login\n".
         "Пароль: $pass\n\n".
         "------------------------------------------------------------------------------------------\n\n".
-        "You register in a site http://{$CONFIG['site']['name']} !\n".
+        "You register in a site http://{$pref->site_name} !\n".
         "Your account:\n".
         "Login: $login\n".
         "Pass: $pass\n\n".
@@ -349,6 +354,7 @@ class authenticator {
     
     public function sendPassChangeEmail($user_id, $login, $session_key, $email) {
         global $db, $CONFIG;
+        $pref = \pref::getInstance();
         settype($user_id, 'int');
         $db->query("START TRANSACTION");
         $key = substr(md5($user_id . $email . time() . rand(0, 1000000)), 8);
@@ -357,13 +363,14 @@ class authenticator {
             $proto = 'https';
         }
         $res = $db->query("UPDATE `users` SET `pass_change`='$key' WHERE `id`='$user_id'");
-        $msg = "Поступил запрос на смену забытого пароля доступа к сайту {$CONFIG['site']['name']} для аккаунта $login.\nЕсли Вы действительно хотите сменить пароль, перейдите по ссылке\n$proto://{$CONFIG['site']['name']}/login.php?mode=rem&step=3&key=$session_key&s=$key ,\nлибо введите код подтверждения:\n$key\n----------------------------------------\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
+        $msg = "Поступил запрос на смену забытого пароля доступа к сайту {$pref->site_name} для аккаунта $login.\nЕсли Вы действительно хотите сменить пароль, перейдите по ссылке\n$proto://{$pref->site_name}/login.php?mode=rem&step=3&key=$session_key&s=$key ,\nлибо введите код подтверждения:\n$key\n----------------------------------------\nСообщение сгенерировано автоматически, отвечать на него не нужно!";
         mailto($email, "Смена забытого пароля", $msg);
         $db->query("COMMIT");
     }
     
     public function sendPassChangeSms($user_id, $login, $session_key, $phone) {
         global $db, $CONFIG;
+        $pref = \pref::getInstance();
         settype($user_id, 'int');
         require_once('include/sendsms.php');
         $db->query("START TRANSACTION");
@@ -372,7 +379,7 @@ class authenticator {
 
         $sender = new SMSSender();
         $sender->setNumber($phone);
-        $sender->setContent("$login, Ваш код: $key\n{$CONFIG['site']['name']}");
+        $sender->setContent("$login, Ваш код: $key\n{$pref->site_name}");
         $sender->send();
         $db->query("COMMIT");
     }

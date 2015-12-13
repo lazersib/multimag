@@ -22,24 +22,25 @@ function Header()
         $this->TableHeader();
 }
 
-function Footer() {
-	global $CONFIG;
-	if($this->ProcessingTable) {
-		global $CONFIG;
-		$this->SetFont('Arial','',8);
-		$this->SetTextColor(0);
-		$str = 'Стр. '.$this->PageNo().'.';
-		if(@$CONFIG['site']['grey_price_days'])
-			$str .= '   Цены, выделенные серым, необходимо уточнять!';
-		$str .= ' Наш интернет-магазин: ';
-		$str = iconv('UTF-8', 'windows-1251', $str);
-		$this->SetY($this->GetY()+2);
-		$this->Write(4,$str,'');
-		$this->SetTextColor(0,0,255);
-		$this->SetFont('','U');
-		$this->Write(4,'http://'.$CONFIG['site']['name'],'http://'.$CONFIG['site']['name']);
-	}
-}
+    function Footer() {
+        global $CONFIG;
+        if ($this->ProcessingTable) {
+            global $CONFIG;
+            $this->SetFont('Arial', '', 8);
+            $this->SetTextColor(0);
+            $str = 'Стр. ' . $this->PageNo() . '.';
+            if (@$CONFIG['site']['grey_price_days'])
+                $str .= '   Цены, выделенные серым, необходимо уточнять!';
+            $str .= ' Наш интернет-магазин: ';
+            $str = iconv('UTF-8', 'windows-1251', $str);
+            $this->SetY($this->GetY() + 2);
+            $this->Write(4, $str, '');
+            $this->SetTextColor(0, 0, 255);
+            $this->SetFont('', 'U');
+            $pref = \pref::getInstance();
+            $this->Write(4, 'http://' . $pref->default_site_name, 'http://' . $pref->site_name);
+        }
+    }
 
 function TableHeader()
 {
@@ -74,6 +75,8 @@ function Row($data, $divider=0, $cost_id=1) {
 
 	if (!$divider) {
 		$pc = PriceCalc::getInstance();
+                $pref = pref::getInstance();
+                $pc->setFirmId($pref->getSitePref('default_firm_id'));
 		$cost = $pc->getPosDefaultPriceValue($data['pos_id']);
 
 		if ($cost == 0)	return;

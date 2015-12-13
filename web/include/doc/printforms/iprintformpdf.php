@@ -133,13 +133,14 @@ abstract class iPrintFormPdf {
     /// Добавить информацию о сайте
     protected function addSiteBanner() {
         global $CONFIG;
+        $pref = \pref::getInstance();
         $this->pdf->SetFontSize(12);
         $str = "Система интернет-заказов для постоянных клиентов доступна на нашем сайте";
         $this->pdf->CellIconv(0, 5, $str, 0, 1, 'C', 0);
 
         $this->pdf->SetTextColor(0, 0, 192);
         $this->pdf->SetFont('', 'UI', 18);
-        $this->pdf->Cell(0, 7, 'http://' . $CONFIG['site']['name'], 0, 1, 'C', 0, 'http://' . $CONFIG['site']['name']);
+        $this->pdf->Cell(0, 7, 'http://' . $pref->site_name, 0, 1, 'C', 0, 'http://' . $pref->site_name);
 
         $this->pdf->SetTextColor(0, 0, 0);
         $this->pdf->SetFont('', '', 12);

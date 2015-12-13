@@ -37,7 +37,7 @@ class users extends \IModule {
     
     protected function viewList() {
         global $tmpl, $db;
-        \acl::accessGuard('admin.users', \acl::VIEW);
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
         
         $ll_dates = array();
         $res = $db->query("SELECT `user_id`, `date` FROM `users_login_history` ORDER BY `date`");
@@ -109,7 +109,7 @@ class users extends \IModule {
 
     protected function viewProfile($user_id) {
         global $tmpl, $db;
-        \acl::accessGuard('admin.users', \acl::VIEW);
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
         
 
         $res = $db->query("SELECT * FROM `users`
@@ -220,7 +220,7 @@ class users extends \IModule {
     
     protected function viewLoginHistory($user_id) {
         global $tmpl, $db;
-        \acl::accessGuard('admin.users', \acl::VIEW);
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
         $tmpl->addContent("<h1 id='page-title'>История входов пользователя с ID $user_id</h1>
         <table class='list'>
         <tr><th>Дата/время</th><th>Метод</th><th>IP адрес</th><th>user-agent</th></tr>");
@@ -234,7 +234,7 @@ class users extends \IModule {
     
     protected function saveWorkerCard($user_id) {
         global $db;
-        \acl::accessGuard('admin.users', \acl::UPDATE);
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
 
         $db->query("REPLACE `users_worker_info` (`user_id`, `worker`, `worker_email`, `worker_phone`, `worker_jid`, `worker_real_name`,
             `worker_real_address`, `worker_post_name`) VALUES 
@@ -250,7 +250,7 @@ class users extends \IModule {
 
     protected function viewWorkerCardForm($user_id) {
         global $tmpl, $db;
-        \acl::accessGuard('admin.users', \acl::VIEW);
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
 
         if (request('save')) {
             $this->saveWorkerCard($user_id);
@@ -285,7 +285,7 @@ class users extends \IModule {
     
     protected function saveuserEditForm($user_id) {
         global $db;
-        \acl::accessGuard('admin.users', \acl::UPDATE);
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
             $db->updateA('users', $user_id, array(
                 'reg_email' => request('reg_email'),
                 'reg_email_confirm' => request('reg_email_confirm'),
@@ -305,7 +305,7 @@ class users extends \IModule {
     
     protected function viewUserEditForm($user_id) {
         global $tmpl, $db;
-        \acl::accessGuard('admin.users', \acl::VIEW);
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
 
         if (request('save')) {
             $this->saveuserEditForm($user_id);
@@ -364,7 +364,7 @@ class users extends \IModule {
     
     protected function viewAgentConnectForm($user_id) {
         global $db, $tmpl;
-        \acl::accessGuard('admin.users', \acl::UPDATE);
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
         if (isset($_REQUEST['save'])) {
             if ($_REQUEST['agent_nm']) {
                 $agent_id = $_REQUEST['agent_id'];

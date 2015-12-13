@@ -42,7 +42,8 @@ class FirmListEditor extends \ListEditor {
             'firm_telefon' => 'Телефон',
             'firm_okpo' => 'ОКПО',
             'param_nds' => 'Ставка НДС',
-            'param_pricecoeff' => 'Ценовой коэффициент',
+            'pricecoeff' => 'Ценовой коэффициент',
+            'no_retailprices' => 'Не использовать розничные цены',
             'firm_director' => 'ФИО директора',
             'firm_director_r' => 'ФИО директора в родительном падеже',
             'firm_manager' => 'ФИО менеджера',
@@ -83,6 +84,14 @@ class FirmListEditor extends \ListEditor {
         return $ret;
     }
 
+    public function getInputNo_retailprices($name, $value) {
+        return $this->getCheckboxInput($name, 'Да', $value);
+    }
+    
+    public function getFieldNo_retailprices($data) {
+        return $data['no_retailprices'] ? "<b style='color:#F00'>Да</b>" : "<b style='color:#0C0'>Нет</b>";
+    }
+    
     public function getInputFirm_store_lock($name, $value) {
         return $this->getCheckboxInput($name, 'Да', $value);
     }

@@ -29,6 +29,7 @@ if ($mode == 'xml') {
     $map = new SiteMap('xml');
     $tmpl->setContent($map->getMap());
 } elseif ($mode == 'robots') {
+    $pref = \pref::getInstance();
     $tmpl->ajax=1;
     header("Content-Type: text/plain");
     echo"User-Agent: *
@@ -46,7 +47,7 @@ Disallow: *html?order=
 Disallow: *html?op=
 Disallow: *html?view=
 
-Host: ".$CONFIG['site']['name'];
+Host: ".$pref->site_name;
     exit();
 } elseif ($mode == 'favicon') {
     $skin = $CONFIG['site']['skin'] ? $CONFIG['site']['skin'] : 'default';

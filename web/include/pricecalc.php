@@ -48,6 +48,7 @@ class PriceCalc {
     protected $pos_info_cache;          ///< Кеш информации о наименованиях
     protected $ppc;                     ///< Кеш цен наименований
     protected $gpi;                     ///< Кеш цен групп
+    protected $firms;                   ///< Организации
 
     /// Конструктор копирования запрещён
     final private function __clone() {        
@@ -86,6 +87,10 @@ class PriceCalc {
                 }
             }
             $this->prices[$line['id']] = $line;
+        }
+        $res = $db->query("SELECT `id`, `param_nds`, `no_retailprices`, `pricecoeff` FROM `doc_vars` ORDER BY `id`");
+        while($line = $res->fetch_assoc()) {
+            $this->firms[$line['id']] = $line;
         }
     }
 
@@ -171,6 +176,11 @@ class PriceCalc {
     public function getDefaultPriceName() {
         $price_id = $this->getDefaultPriceId();
         return $this->prices[$price_id]['name'];
+    }
+    
+    /// Получить массив с информацией об организациях
+    public function getFirms() {
+        return $this->firms;
     }
 
     /// Получить ID текущей цены. Учитываются разные критерии.
@@ -431,26 +441,38 @@ class PriceCalc {
         settype($pos_id, 'int');
         settype($price_id, 'int');
         $pos_info = $this->fixPosInfo($pos_id, $pos_info);
-
         if (!isset($this->ppc[$pos_id])) {
             $this->ppc[$pos_id] = array();
         }
         if (isset($this->ppc[$pos_id][$price_id])) {
             return $this->ppc[$pos_id][$price_id];
         }
-
+        $price_coeff = 1;
+        $no_retail = 0;
+        
+        if($this->firm_id) {
+            if(isset($this->firms[$this->firm_id])) {
+                $f = $this->firms[$this->firm_id];
+                if($f['pricecoeff']) {
+                    $price_coeff = $f['pricecoeff'];
+                }
+                $no_retail = $f['no_retailprices'];
+            }
+        }
+        $firm_price = $pos_info['base_price'] * $price_coeff;
+        
         // Проверяем переопределение в наименовании
         $res = $db->query("SELECT `doc_base_cost`.`id`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`,
-			`doc_base_cost`.`direction`
-		FROM `doc_base_cost`
-		WHERE `doc_base_cost`.`cost_id`=$price_id AND `doc_base_cost`.`pos_id`=$pos_id");
+                `doc_base_cost`.`direction`
+            FROM `doc_base_cost`
+            WHERE `doc_base_cost`.`cost_id`=$price_id AND `doc_base_cost`.`pos_id`=$pos_id");
 
         if ($res->num_rows != 0) {
             $line = $res->fetch_assoc();
             switch ($line['type']) {
-                case 'pp': $price = $pos_info['base_price'] * $line['value'] / 100 + $pos_info['base_price'];
+                case 'pp': $price = $firm_price * $line['value'] / 100 + $firm_price;
                     break;
-                case 'abs': $price = $pos_info['base_price'] + $line['value'];
+                case 'abs': $price = $firm_price + $line['value'];
                     break;
                 case 'fix': $price = $line['value'];
                     break;
@@ -470,9 +492,9 @@ class PriceCalc {
             $gdata = $this->getGroupPriceinfo($base_group, $price_id);
             if ($gdata['gc_id']) {
                 switch ($gdata['type']) {
-                    case 'pp': $price = $pos_info['base_price'] * $gdata['value'] / 100 + $pos_info['base_price'];
+                    case 'pp': $price = $firm_price * $gdata['value'] / 100 + $firm_price;
                         break;
-                    case 'abs': $price = $pos_info['base_price'] + $gdata['value'];
+                    case 'abs': $price = $firm_price + $gdata['value'];
                         break;
                     case 'fix': $price = $gdata['value'];
                         break;
@@ -491,9 +513,9 @@ class PriceCalc {
         // Если не переопределена нигде - получаем из глобальных данных
         $cur_price_info = $this->prices[$price_id];
         switch ($cur_price_info['type']) {
-            case 'pp': $price = $pos_info['base_price'] * $cur_price_info['value'] / 100 + $pos_info['base_price'];
+            case 'pp': $price = $firm_price * $cur_price_info['value'] / 100 + $firm_price;
                 break;
-            case 'abs': $price = $pos_info['base_price'] + $cur_price_info['value'];
+            case 'abs': $price = $firm_price + $cur_price_info['value'];
                 break;
             case 'fix': $price = $cur_price_info['value'];
                 break;

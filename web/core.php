@@ -34,7 +34,7 @@
 Смотри <a href='annotated.html'>структуры данных</a> и <a href='hierarchy.html'>иерархию классов</a>, чтобы получить полное представление о классах системы
 **/
 
-if ((@$CONFIG['site']['maintain_ip'])) {
+if (@$CONFIG['site']['maintain_ip']) {
     if($CONFIG['site']['maintain_ip']!=getenv('REMOTE_ADDR')) {
 	header("HTTP/1.0 503 Service temporary unavariable");
         header("Retry-After: 300");
@@ -635,7 +635,8 @@ class BETemplate {
 		global $time_start;
 		if (stripos(getenv("HTTP_USER_AGENT"), "MSIE") !== FALSE) {
 			$this->page_blocks['notsupportbrowser'] = "<div style='background: #ffb; border: 1px #fff outset; padding: 3px; padding-right: 15px; text-align: right; font-size: 14px;'><img src='/img/win/important.png' alt='info' style='float: left'>
-			Вероятно, Вы используете неподдерживаемую версию броузера.<br><b>Для правильной работы сайта, скачайте и установите последнюю версию <a href='http://mozilla.com'>Mozilla</a>, <a href='http://www.opera.com/download/'>Opera</a> или <a href='http://www.google.com/intl/ru/chrome/browser/'>Chrome</a></b><div style='clear: both'></div></div>";
+			Вероятно, Вы используете неподдерживаемую версию броузера.<br>
+                        <b>Для правильной работы сайта, скачайте и установите последнюю версию <a href='http://mozilla.com'>Mozilla</a>, <a href='http://www.opera.com/download/'>Opera</a> или <a href='http://www.google.com/intl/ru/chrome/browser/'>Chrome</a></b><div style='clear: both'></div></div>";
 		}
 		$time = microtime(true) - $time_start;
 		$this->page_blocks['gentime'] = round($time, 4);
@@ -797,11 +798,11 @@ if(!function_exists('mb_internal_encoding'))
 }
 
 $time_start = microtime(true);
-if(!function_exists('mb_internal_encoding'))
-{
-	header("HTTP/1.0 500 Internal Server Error");
-        header("Retry-After: 3000");
-	die("<h1>500 Внутренняя ошибка сервера</h1>Расширение mbstring не установлено! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
+
+if(isset($CONFIG['site']['session_cookie_domain'])) {
+    if($CONFIG['site']['session_cookie_domain']) {
+        session_set_cookie_params(0, '/' , $CONFIG['site']['session_cookie_domain']);
+    }
 }
 
 session_start();
@@ -821,21 +822,12 @@ if ($CONFIG['site']['force_https']) {
     header('Location: https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'], true, 301);
 }
 
-if (!isset($CONFIG['site']['display_name'])) {
-    $CONFIG['site']['display_name'] = $CONFIG['site']['name'];
-}
-
-
-
 $db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
 
-
-
-if($db->connect_error)
-{
-	header("HTTP/1.0 503 Service temporary unavariable");
-            header("Retry-After: 3000");
-	die("<!DOCTYPE html>
+if($db->connect_error) {
+    header("HTTP/1.0 503 Service temporary unavariable");
+    header("Retry-After: 3000");
+    die("<!DOCTYPE html>
 <html>
 <head>
 <meta charset=\"utf-8\">
@@ -872,7 +864,7 @@ if ((@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login']) &
 }
 
 // Счётчик-логгер посещений
-if(!isset($_REQUEST['ncnt'])) {
+if(!isset($_REQUEST['ncnt']) && !isset($not_use_counter)) {
     $ip = $db->real_escape_string(getenv("REMOTE_ADDR"));
     $ag = $db->real_escape_string(getenv("HTTP_USER_AGENT"));
     $rf = $db->real_escape_string(urldecode(getenv("HTTP_REFERER")));

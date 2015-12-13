@@ -113,7 +113,7 @@ class salary extends \AsyncWorker {
         if(!$this->conf_enable) {
             return;
         }
-        $rdate = strtotime("2015-10-31");
+        $rdate = strtotime("2015-11-01");
         //$db->query("FLUSH TABLE CACHE");
         $this->loadPosData();        
         // Расчёт
@@ -131,7 +131,7 @@ class salary extends \AsyncWorker {
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 8)"// AND `date`<'$rdate'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 8) AND `date`<'$rdate'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             if($doc_line['return']) {
@@ -226,12 +226,12 @@ class salary extends \AsyncWorker {
     function loadDocsForAgent($agent_id) {
         global $db;
         $this->docs = array();
-        $rdate = strtotime("2015-10-31");
+        $rdate = strtotime("2015-11-01");
         // Грузим
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18, 20) AND `agent`=$agent_id"//  AND `date`<'$rdate'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18, 20) AND `agent`=$agent_id  AND `date`<'$rdate'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             if($doc_line['return']) {
@@ -640,9 +640,13 @@ class salary extends \AsyncWorker {
                 $comment .= "\nПользователь не привязан к агенту! Вознаграждение не начислено.\n";
             } else {
                 $tm = time();
+                $doc_type = 1;
+                $subtype = 'fee';
+                $i_doc = \document::getInstanceFromType($doc_type);
+                $altnum = $i_doc->getNextAltNum($doc_type, $subtype, date('Y-m-d', $tm), $CONFIG['site']['default_firm']);
                 $comment_sql = $db->real_escape_string($comment);
                 $res = $db->query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`, `sum`,`ok`)
-		VALUES ('1','{$user_info['agent_id']}','$tm','1','0','1','0','auto','$comment_sql','{$CONFIG['site']['default_firm']}','$sum','$tm')");
+		VALUES ('$doc_type','{$user_info['agent_id']}','$tm','1','0','1','$altnum','$subtype','$comment_sql','{$CONFIG['site']['default_firm']}','$sum','$tm')");
 		$doc = $db->insert_id;
                 $db->insertA('doc_list_pos', array('doc'=>$doc, 'tovar'=>$this->conf_work_pos_id, 'cnt'=>1, 'cost'=>$sum));
                 $comment .= "\nНачислено по документу $doc\n";

@@ -140,7 +140,7 @@ class Acl extends \IModule {
 	while($nxt = $res->fetch_row()) {
 		$tmpl->addContent("<tr><td>$nxt[0]</td><td>$nxt[1]</td><td>$nxt[2]</td>"
                     . "<td><a href='{$link_prefix}&amp;group_id=$nxt[0]'>Изменить привилегии</a></td>"
-                    . "<td><a href='{$this->link_prefix}&amp;sect=userig&amp;group_id=$nxt[0]'>Смотерть</a></td></tr>");
+                    . "<td><a href='{$this->link_prefix}&amp;sect=userig&amp;group_id=$nxt[0]'>Смотреть</a></td></tr>");
 	}
 	$tmpl->addContent("</table>");
     }

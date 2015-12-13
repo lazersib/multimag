@@ -676,8 +676,6 @@ class cabinet extends \IModule {
             $selects_html[$select_name] = '';
 
             foreach ($select_options as $option) {
-                if ($option->nodeValue == 'Ядро')
-                    continue;
                 $selected = $option->attributes->getNamedItem('selected');
                 $selected = $selected ? ' selected' : '';
                 $selects[$select_name][] = $option->nodeValue;
@@ -695,16 +693,17 @@ class cabinet extends \IModule {
     public function sendFeedback() {
         global $tmpl, $CONFIG;
         \acl::accessGuard('service.feedback', \acl::CREATE);
+        $pref = \pref::getInstance();
         $fields = array(
             '__FORM_TOKEN' => $_POST['token'],
             'field_type' => $_POST['field_type'],
             'field_summary' => $_POST['field_summary'],
-            'field_description' => $_POST['field_description'] . "\nUser: {$_SESSION['name']} at {$_SERVER['HTTP_HOST']} ({$CONFIG['site']['name']})",
+            'field_description' => $_POST['field_description'] . "\nUser: {$_SESSION['name']} at {$_SERVER['HTTP_HOST']} ({$pref->site_name})",
             'field_component' => $_POST['field_component'],
             'field_priority' => $_POST['field_priority'],
             'field_milestone' => $_POST['field_milestone'],
             'field_reporter' => $CONFIG['site']['trackticket_login'],
-            'field_cc' => $_SESSION['name'] . '@' . $CONFIG['site']['name'],
+            'field_cc' => $_SESSION['name'] . '@' . $pref->site_name,
             'submit' => 'submit'
         );
 
@@ -745,7 +744,7 @@ class cabinet extends \IModule {
             $tmpl->msg("Номер задачи: <b>$ticket</b>.<br>Посмотресть созданную задачу, а так же следить за ходом её выполнения, можно по ссылке: <a href='$ticket_url'>$ticket_url</a>", "ok", "Задача успешно внесена в реестр!");
             $tmpl->addContent("<iframe width='100%' height='70%' src='$ticket_url'></iframe>");
         } else {
-            $tmpl->msg("Не удалось создать задачу! Сообщите о проблеме своему системному администратору!", "err");
+            $tmpl->errorMessage("Не удалось создать задачу! Сообщите о проблеме своему системному администратору!");
         }
     }
         

@@ -23,6 +23,7 @@ class paymentbasedoc extends doc_Nulltype {
     /// Оповещение о поступившем платеже
     protected function paymentNotify() {
         global $CONFIG;
+        $pref = \pref::getInstance();
         if(!$CONFIG['notify']['payment']) {
             return false;
         }
@@ -48,9 +49,9 @@ class paymentbasedoc extends doc_Nulltype {
         $zdoc = $this->getZDoc();
         if(!$zdoc) {
             $zdoc=$this;
-            $zdoc->sendEmailNotify($text, "Поступила оплата N {$this->id} на {$CONFIG['site']['name']}");
+            $zdoc->sendEmailNotify($text, "Поступила оплата N {$this->id} на {$pref->site_name}");
         } else {
-            $zdoc->sendEmailNotify($text, "Поступила оплата к заказу N {$zdoc->id} на {$CONFIG['site']['name']}");
+            $zdoc->sendEmailNotify($text, "Поступила оплата к заказу N {$zdoc->id} на {$pref->site_name}");
         }
         $zdoc->sendSMSNotify($smstext);        
         $zdoc->sendXMPPNotify($text);

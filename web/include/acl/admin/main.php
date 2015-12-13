@@ -56,6 +56,10 @@ class main extends \acl\aclContainer {
                 "name" => "Журнал ошибок",
                 "mask" => \acl::VIEW
             ),
+            'sites' => array(
+                "name" => "Администрирование сайтов",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
         );
     }
     

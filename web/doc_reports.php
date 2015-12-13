@@ -115,7 +115,6 @@ class ReportEnginePDF {
     function __construct() {
         global $CONFIG;
         ob_start();
-        define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
         require('fpdf/fpdf_mc.php');
         $this->pdf = new PDF_MC_Table('P');
         $this->pdf->Open();

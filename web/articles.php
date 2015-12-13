@@ -32,6 +32,7 @@ if (!isset($_REQUEST['p'])) {
 function articles_form($p, $text = '', $type = 0) {
     global $tmpl, $CONFIG;
     $types = array(0 => 'Wiki (Простая и безопасная разметка, рекомендуется)', 1 => 'HTML (Для профессионалов. Может быть небезопасно.)', 2 => 'Wiki+HTML');
+    $pref = \pref::getInstance();
     $tmpl->addContent("
 	<script type='text/javascript' src='/js/tiny_mce/tiny_mce.js'></script>
 	<script type='text/javascript'>
@@ -55,7 +56,7 @@ function schange()
 		theme_advanced_toolbar_align : 'left',
 		theme_advanced_statusbar_location : 'bottom',
 		theme_advanced_resizing : true,
-		document_base_url : 'http://{$CONFIG['site']['name']}/articles/',
+		document_base_url : 'http://{$pref->site_default_name}/articles/',
 		fullscreen_new_window : true,
 		element_format : 'html',
 		plugins : 'autolink,lists,spellchecker,pagebreak,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,inlinepopups,insertdatetime,preview,media,searchreplace,print,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras,template',

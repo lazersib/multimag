@@ -214,7 +214,7 @@ class TaskTracker {
 try {
 
 \acl::accessGuard('service.tickets', \acl::VIEW);
-
+$pref = pref::getInstance();
 $tt = new TaskTracker();
 $mode = request('mode');
 
@@ -249,7 +249,7 @@ else if ($mode == 'new') {
 	$msg = "Для Вас новое задание от $uid: $theme - $text\n";
 	if ($to_date)
 		$msg.="Выполнить до $to_date\n";
-	$msg.="Посмотреть задание можно здесь: http://{$CONFIG['site']['name']}/tickets.php/mode=view&n=$n";
+	$msg.="Посмотреть задание можно здесь: http://{$pref->site_name}/tickets.php/mode=view&n=$n";
 
 	mailto($email, "У Вас Новое задание - $theme", $msg);
 
@@ -356,7 +356,7 @@ else if ($mode == 'set') {
 		list($email, $jid, $theme) = $res->fetch_row();
 
 		$msg = "Изменение состояния Вашего задания: $theme\n{$_SESSION['name']} $txt\n\n";
-		$msg.="Посмотреть задание можно здесь: http://{$CONFIG['site']['name']}/ticket.php/mode=view&n=$n";
+		$msg.="Посмотреть задание можно здесь: http://{$pref->site_name}/ticket.php/mode=view&n=$n";
 
 		try {
 			if($email) mailto($email, "Change ticket - $theme", $msg);

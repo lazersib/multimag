@@ -33,24 +33,32 @@ class Report_Store extends BaseGSReport {
     function Form() {
         global $tmpl, $db;
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='store'>
-		<input type='hidden' name='opt' value='pdf'>
-		<fieldset><legend>Отобразить цены</legend>");
+            <form action='' method='post'>
+            <input type='hidden' name='mode' value='store'>
+            <input type='hidden' name='opt' value='pdf'>
+            Организация:<br>
+            <select name='firm_id'><option value='0'>--не задано--</option>");
+            $res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+            while ($nxt = $res->fetch_row()) {
+                $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            }
+            $tmpl->addContent("</select><br>
+            <fieldset><legend>Отобразить цены</legend>");
         $cres = $db->query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
-        while ($nxt = $cres->fetch_row())
+        while ($nxt = $cres->fetch_row()) {
             $tmpl->addContent("<label><input type='checkbox' name='cost[$nxt[0]]' value='$nxt[0]'>" . html_out($nxt[1]) . "</label><br>");
+        }
         $tmpl->addContent("</fieldset><br>
-		<fieldset><legend>Показывать</legend>
-		<label><input type='checkbox' name='show_price' value='1'>Цены</label><br>
-		<label><input type='checkbox' name='show_add' value='1'>Наценку</label><br>
-		<label><input type='checkbox' name='show_sum' value='1'>Суммы</label><br>
-		<label><input type='checkbox' name='show_mincnt' value='1'>Минимально допустимый остаток</label><br>
-                <label><input type='checkbox' name='show_mass' value='1'>Массу</label>
-		</fieldset><br>
-		Склад:<br>
-		<select name='sklad'>
-		<option value='0'>--не задан--</option>");
+            <fieldset><legend>Показывать</legend>
+            <label><input type='checkbox' name='show_price' value='1'>Цены</label><br>
+            <label><input type='checkbox' name='show_add' value='1'>Наценку</label><br>
+            <label><input type='checkbox' name='show_sum' value='1'>Суммы</label><br>
+            <label><input type='checkbox' name='show_mincnt' value='1'>Минимально допустимый остаток</label><br>
+            <label><input type='checkbox' name='show_mass' value='1'>Массу</label>
+            </fieldset><br>
+            Склад:<br>
+            <select name='sklad'>
+            <option value='0'>--не задан--</option>");
         $res = $db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY id");
         while ($nxt = $res->fetch_row()) {
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
@@ -64,10 +72,11 @@ class Report_Store extends BaseGSReport {
     function makePDF() {
         global $tmpl, $CONFIG, $db;
         ob_start();
-        define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
+        $firm_id = rcvint('firm_id');
         require('fpdf/fpdf_mc.php');
 
         $pc = PriceCalc::getInstance();
+        $pc->setFirmId($firm_id);
 
         $pdf = new PDF_MC_Table('P');
         $pdf->Open();

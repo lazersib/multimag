@@ -45,6 +45,7 @@ class discount extends \doc\printforms\iPrintFormIDPdf {
 
         $nomenclature = $this->doc->getDocumentNomenclature('base_price,bulkcnt');
         $pc = \PriceCalc::getInstance();
+        $pc->setFirmId($doc_data['firm_id']);
         $pc->setAgentId($doc_data['agent']);
         $pc->setUserId($doc_data['user']);
         if(isset($dop_data['ishop'])) {

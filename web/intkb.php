@@ -38,6 +38,7 @@ need_auth();
 
 function articles_form($p, $text = '', $type = 0) {
     global $tmpl, $CONFIG;
+    $pref = \pref::getInstance();
     $types = array(0 => 'Wiki (Простая и безопасная разметка, рекомендуется)', 1 => 'HTML (Для профессионалов. Может быть небезопасно.)', 2 => 'Wiki+HTML');
     $tmpl->addContent("
 	<script type='text/javascript' src='/js/tiny_mce/tiny_mce.js'></script>
@@ -62,7 +63,7 @@ function schange()
 		theme_advanced_toolbar_align : 'left',
 		theme_advanced_statusbar_location : 'bottom',
 		theme_advanced_resizing : true,
-		document_base_url : 'http://{$CONFIG['site']['name']}/intkb.php/',
+		document_base_url : 'http://{$pref->site_name}/intkb.php/',
 		fullscreen_new_window : true,
 		element_format : 'html',
 		plugins : 'autolink,lists,spellchecker,pagebreak,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,inlinepopups,insertdatetime,preview,media,searchreplace,print,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras,template',

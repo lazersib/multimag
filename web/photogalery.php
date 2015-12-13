@@ -20,7 +20,7 @@
 
 require_once("core.php");
 $lim = 16;
-$gpath = "img/galery";
+$gpath = $CONFIG['site']['var_data_fs']."/galery";
 
 try {
     $tmpl->setContent("<h1>Фотогалерея</h1>");
@@ -65,7 +65,10 @@ try {
 		LIMIT $sl,$lim");
         }
         while ($nxt = $res->fetch_row()) {
-            $tmpl->addContent("<div class='photomini'><a href='/photogalery.php?mode=viewall&amp;n=$nxt[0]' title='Увеличить'><img src='/photo.php?n=$nxt[0]&amp;x=150' alt='Увеличить'></a></div>");
+            $img=new ImageProductor($nxt[0], 'f');
+            $img->SetX(150);
+            $img->SetY(100);
+            $tmpl->addContent("<div class='photomini'><a href='/photogalery.php?mode=viewall&amp;n=$nxt[0]' title='Увеличить'><img src='".$img->GetURI()."' alt='Увеличить'></a></div>");
         }
         $tmpl->addContent("<div class='nofloat'>-</div>");
 
@@ -97,13 +100,23 @@ try {
 		LEFT JOIN `users` ON `users`.`id`=`photogalery`.`uid`
 		LIMIT $sl,$lim");
         }
-        if (\acl::accessGuard('generic.galery', \acl::CREATE, true))
+        if (\acl::testAccess('generic.galery', \acl::CREATE, true))
             $tmpl->addContent("<br><a href='?mode=add'>Добавить</a>");
     }
     else if ($mode == 'viewall') {
         $n = rcvint('n');
-        $tmpl->addContent("<a href='/photo.php?n=$n&amp;x=10240&amp;q=95' title='Показать максимальный размер'><img src='/photo.php?n=$n&amp;x=700' alt='Показать максимальный размер'></a><br>
-	<b>Открыть с разрешением<sup>*</sup>:</b> <a href='/photo.php?n=$n&amp;x=800&amp;y=600'>800x600</a>, <a href='/photo.php?n=$n&amp;x=1024&amp;y=768'>1024x768</a>, <a href='/photo.php?n=$n&amp;x=1280&amp;y=1024'>1280x1024</a>, <a href='/photo.php?n=$n&amp;x=1600&amp;y=1200&amp;q=85'>1600x1200</a>, <a href='/photo.php?n=$n&amp;x=100000&amp;q=95'>Максимум</a><br>
+        $img700 = new ImageProductor($n, 'f');
+        $img700->SetX(700);
+        $fullimg = new ImageProductor($n, 'f');
+        $tmpl->addContent("<a href='".$fullimg->GetURI()."' title='Показать максимальный размер'><img src='".$img700->GetURI()."' alt='Показать максимальный размер'></a><br>
+	<b>Открыть с горизонтальным разрешением<sup>*</sup>:</b> ");
+        $aspects = array(400, 800, 1280, 1920);
+        foreach($aspects as $aspect) {
+            $img = new ImageProductor($n, 'f');
+            $img->SetX($aspect);
+            $tmpl->addContent("<a href='".$img->GetURI()."'>$aspect</a> - ");
+        }
+        $tmpl->addContent("<a href='".$fullimg->GetURI()."'>Максимум</a><br>
 	* Примечание: если оригинал изображения имеет разрешение, меньшее, чем запрошено, изображение будет показано в оригинальном размере.");
     } else if ($mode == "add") {
         \acl::accessGuard('generic.galery', \acl::CREATE);
@@ -114,7 +127,7 @@ try {
         $tmpl->addContent("<h3>Добавить фотографию</h3>");
         $tmpl->addContent("При добавлении фотографии не забывайте про <a href='wiki/правила_фотогалереи'>правила</a>!
 	Для особо непонятливых - фотогалерея это не место для хранения обоев и других подобных картинок. Да, это красиво, но не попадает в тематику.<br>
-	<form method=post action='photogalery.php' enctype='multipart/form-data'>
+	<form method=post action='/photogalery.php' enctype='multipart/form-data'>
 	<input type=hidden name=mode value='addo'>
 	Фотография (JPEG, до $max_img_size, 300*400 - 10000*10000)<br>
 	<input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'>
@@ -129,13 +142,14 @@ try {
         $tmpl->addContent("<h3>Сохранение фотографии</h3>");
         $comm = request('comm');
         \acl::accessGuard('generic.galery', \acl::CREATE);
-
+       
         $an = " Фотография не установлена!";
-        if (strlen($comm) < 6)
+        if (strlen($comm) < 6) {
             throw new Exception("Необходим более подробный комментарий");
-
-        if (!is_uploaded_file($_FILES['fotofile']['tmp_name']))
+        }
+        if (!is_uploaded_file($_FILES['fotofile']['tmp_name'])) {
             throw new Exception("Не передан файл!$an");
+        }
 
         if ($_FILES['fotofile']['size'] > $max_img_size)
             throw new Exception("Слишком большой файл!$an");
@@ -168,7 +182,6 @@ try {
     $tmpl->addContent("<br><br>");
     $tmpl->msg("Ошибка базы данных, $id", "err");
 } catch (Exception $e) {
-    $db->rollback();
     writeLogException($e);
     $tmpl->errorMessage($e->getMessage());
 }

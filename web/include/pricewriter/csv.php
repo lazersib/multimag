@@ -98,18 +98,19 @@ class csv extends BasePriceWriter {
     /// Сформировать завершающий блок прайса
     function close() {
         global $CONFIG;
+        $pref = \pref::getInstance();
         echo"\n\n";
         $this->line+=5;
         if (@$CONFIG['site']['price_show_vc']) {
             echo $this->divider;
         }
-        echo $this->shielder . "Generated from MultiMag (http://multimag.tndproject.org), for http://" . $CONFIG['site']['name'] . $this->shielder;
+        echo $this->shielder . "Generated from MultiMag (http://multimag.tndproject.org), for http://" . $pref->site_name . $this->shielder;
         $this->line++;
         echo"\n";
         if (@$CONFIG['site']['price_show_vc']) {
             echo $this->divider;
         }
-        echo $this->shielder . "Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://" . $CONFIG['site']['name'] . $this->shielder;
+        echo $this->shielder . "Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://" . $pref->site_name . $this->shielder;
     }
 
     /// Сформировать строки прайса
@@ -122,6 +123,8 @@ class csv extends BasePriceWriter {
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
         $i = $cur_col = 0;
         $pc = \PriceCalc::getInstance();
+        $pref = pref::getInstance();
+        $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
             if ($cur_col >= $this->column_count) {
                 $cur_col = 0;

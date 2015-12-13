@@ -39,12 +39,13 @@ class xls extends BasePriceWriter {
     function open() {
         require_once('include/Spreadsheet/Excel/Writer.php');
         global $CONFIG;
+        $pref = \pref::getInstance();
         $this->workbook = new \Spreadsheet_Excel_Writer();
         // sending HTTP headers
         $this->workbook->send('price.xls');
 
         // Creating a worksheet
-        $this->worksheet = & $this->workbook->addWorksheet($CONFIG['site']['name']);
+        $this->worksheet = & $this->workbook->addWorksheet($pref->site_name);
 
         $this->format_footer = & $this->workbook->addFormat();
         $this->format_footer->SetAlign('center');
@@ -135,7 +136,7 @@ class xls extends BasePriceWriter {
             }
         }
 
-        $str = 'Прайс загружен с сайта http://' . $CONFIG['site']['name'];
+        $str = 'Прайс загружен с сайта http://' . $pref->site_name;
         $str = iconv('UTF-8', 'windows-1251', $str);
         $this->worksheet->write($this->line, 0, $str, $format_info);
         $this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count - 1);
@@ -211,12 +212,12 @@ class xls extends BasePriceWriter {
 
     /// Сформировать завершающий блок прайса
     function close() {
-        global $CONFIG;
+        $pref = \pref::getInstance();
         $this->line+=5;
-        $this->worksheet->write($this->line, 0, "Generated from MultiMag (http://multimag.tndproject.org) via PHPExcelWriter, for http://" . $CONFIG['site']['name'], $this->format_footer);
+        $this->worksheet->write($this->line, 0, "Generated from MultiMag (http://multimag.tndproject.org) via PHPExcelWriter, for http://" . $pref->site_name, $this->format_footer);
         $this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count - 1);
         $this->line++;
-        $str = iconv('UTF-8', 'windows-1251', "Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://" . $CONFIG['site']['name']);
+        $str = iconv('UTF-8', 'windows-1251', "Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://" . $pref->site_name);
         $this->worksheet->write($this->line, 0, $str, $this->format_footer);
         $this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count - 1);
         $this->workbook->close();
@@ -225,8 +226,8 @@ class xls extends BasePriceWriter {
     /// Сформировать строки прайса
     function writepos($group = 0, $group_name = '') {
         global $CONFIG;
-
-        $cnt_where = @$CONFIG['site']['vitrina_sklad'] ? (" AND `doc_base_cnt`.`sklad`=" . intval($CONFIG['site']['vitrina_sklad']) . " ") : '';
+        $pref = \pref::getInstance();
+        $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
 
         $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,		
 			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`,
@@ -242,6 +243,8 @@ class xls extends BasePriceWriter {
         }
 
         $pc = \PriceCalc::getInstance();
+        $pref = pref::getInstance();
+        $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
             $c = 0;
             $this->worksheet->write($this->line, $c++, $nxt['id'], $this->format_line[$i]); // номер

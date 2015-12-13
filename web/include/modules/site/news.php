@@ -92,7 +92,7 @@ class News extends \IModule {
     public function ExecMode($mode = '') {
         global $tmpl, $CONFIG, $db;
         $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
-        $tmpl->setTitle("Новости сайта - " . $CONFIG['site']['display_name']);
+        $tmpl->setTitle("Новости сайта");
         if ($mode == '') {
             if (\acl::testAccess($this->acl_object_name, \acl::CREATE, 1)) {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=" . request('type') . "'>Добавить новость</a><br>");
@@ -173,7 +173,7 @@ class News extends \IModule {
 	ORDER BY `date` DESC LIMIT 50");
         if ($res->num_rows) {
             $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
-            $tmpl->setTitle("$name сайта - " . $CONFIG['site']['display_name']);
+            $tmpl->setTitle("$name сайта");
             if (\acl::testAccess($this->acl_object_name, \acl::CREATE, true)) {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$type'>Добавить новость</a><br>");
             }
@@ -382,6 +382,7 @@ class News extends \IModule {
     /// Запись новости в хранилище
     protected function Publish($id) {
         global $tmpl, $CONFIG, $db;
+        $pref = \pref::getInstance();
         $send = request('send');
         
         $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`,
@@ -416,7 +417,7 @@ class News extends \IModule {
                 $uwtext .= "\n\nСобытие пройдёт: {$news_info['ex_date']}\n";
             }
 
-            $list_id = 'news' . $id . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
+            $list_id = 'news' . $id . '.' . date("dmY") . '.' . $pref->site_name;
             SendSubscribe($title, $title . " - новости сайта", $uwtext, $list_id);
             $tmpl->msg("Рассылка выполнена успешно.", "ok");           
         }

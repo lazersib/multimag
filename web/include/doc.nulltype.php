@@ -133,6 +133,7 @@ class doc_Nulltype extends \document {
     protected function fixPrice() {
         if (!$this->dop_data['cena']) {
             $pc = PriceCalc::getInstance();
+            $pc->setFirmId($this->doc_data['firm_id']);
             $pc->setOrderSum($this->doc_data['sum']);
             $pc->setAgentId($this->doc_data['agent']);
             $pc->setUserId($this->doc_data['user']);
@@ -473,6 +474,7 @@ class doc_Nulltype extends \document {
     /// @param text текст отправляемого сообщения
     function sendEmailNotify($text, $subject=null) {
         global $CONFIG, $db;
+        $pref = \pref::getInstance();
         if (!isset($CONFIG['doc']['notify_email'])) {
             return false;
         }
@@ -498,7 +500,7 @@ class doc_Nulltype extends \document {
             foreach($emails as $email) {
                 $user_msg = "Уважаемый клиент!\n" . $text;
                 if(!$subject) {
-                    $subject = "Документ N {$this->id} на {$CONFIG['site']['name']}";
+                    $subject = "Документ N {$this->id} на {$pref->site_name}";
                 }
                 mailto($email, $subject, $user_msg);
                 if(@$CONFIG['doc']['notify_debug']) {
@@ -669,12 +671,12 @@ class doc_Nulltype extends \document {
                     $sqlinsert_value.=", '$nds'";
                     if ($cost_recalc) { // Чем это отличается от $this->resetCost() ? 
                         $r = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`,
-							`doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
-							FROM `doc_list_pos`
-							INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-							WHERE `doc`='{$this->id}'");
+                            `doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
+                            FROM `doc_list_pos`
+                            INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                            WHERE `doc`='{$this->id}'");
                         $pc = PriceCalc::getInstance();
-
+                        $pc->setFirmId($this->doc_data['firm_id']);
                         while ($l = $r->fetch_assoc()) {
                             $price = $pc->getPosSelectedPriceValue($l[1], $cena, $l);
                             $db->update('doc_list_pos', $l[0], 'cost', $price);
@@ -1504,6 +1506,7 @@ class doc_Nulltype extends \document {
     /// отправка документа по электронной почте
     function sendDocByEMail($email, $comment, $docname, $data, $filename, $body = '') {
         global $CONFIG, $db;
+        $pref = \pref::getInstance();
         require_once($CONFIG['location'] . '/common/email_message.php');
         $res_autor = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info`
             WHERE `user_id`='" . $this->doc_data['user'] . "'");
@@ -1520,21 +1523,21 @@ class doc_Nulltype extends \document {
             $email_message->SetEncodedEmailHeader("To", $email, $email);
         }
 
-        $email_message->SetEncodedHeader("Subject", "{$CONFIG['site']['display_name']} - $docname ({$CONFIG['site']['name']})");
+        $email_message->SetEncodedHeader("Subject", "{$pref->site_display_name} - $docname ({$pref->site_name})");
 
         if (!@$doc_autor['worker_email']) {
-            $email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['name']}");
-            $email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
+            $email_message->SetEncodedEmailHeader("From", $pref->site_email, "Почтовый робот {$pref->site_name}");
+            $email_message->SetHeader("Sender", $pref->site_email);
             $text_message = "Здравствуйте, {$agent->fullname}!\n"
-                    . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['display_name']} ({$CONFIG['site']['name']})\n\n"
+                    . "Во вложении находится заказанный Вами документ ($docname) от {$pref->site_display_name} ({$pref->site_name})\n\n"
                     . "$comment\n\n"
                     . "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n"
-                    . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$CONFIG['site']['name']}!";
+                    . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$pref->site_name}!";
         } else {
             $email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
             $email_message->SetHeader("Sender", $doc_autor['worker_email']);
             $text_message = "Здравствуйте, {$agent->fullname}!\n"
-                    . "Во вложении находится заказанный Вами документ ($docname) от {$CONFIG['site']['name']}\n\n$comment\n\n"
+                    . "Во вложении находится заказанный Вами документ ($docname) от {$pref->site_name}\n\n$comment\n\n"
                     . "Ответственный сотрудник: {$doc_autor['worker_real_name']}\n"
                     . "Контактный телефон: {$doc_autor['worker_phone']}\n"
                     . "Электронная почта (e-mail): {$doc_autor['worker_email']}\n"
@@ -1757,7 +1760,7 @@ class doc_Nulltype extends \document {
     /// Отобразить заголовок шапки документа
     protected function drawHeadformStart($alt = '') {
         global $tmpl, $CONFIG, $db;
-
+        $pref = \pref::getInstance();
         if ($this->doc_data['date'])
             $dt = date("Y-m-d H:i:s", $this->doc_data['date']);
         else
@@ -1781,7 +1784,7 @@ class doc_Nulltype extends \document {
 		Организация:<br><select name='firm' id='firm_id'>");
         $res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
         if (!$this->doc_data['firm_id'])
-            $this->doc_data['firm_id'] = $CONFIG['site']['default_firm'];
+            $this->doc_data['firm_id'] = $pref->site_default_firm;
         while ($nx = $res->fetch_row()) {
             if ($this->doc_data['firm_id'] == $nx[0])
                 $s = ' selected';
@@ -1917,10 +1920,10 @@ class doc_Nulltype extends \document {
             $sql_add = '';
         if ($this->doc_data['bank'])
             $bank = $this->doc_data['bank'];
-        else if (isset($CONFIG['site']['default_bank']))
-            $bank = $CONFIG['site']['default_bank'];
-        else
-            $bank = 0;
+        else {
+            $pref = \pref::getInstance();
+            $bank = $pref->getSitePref('default_bank_id');
+        }
         $tmpl->addContent("Банк:<br><select name='bank'>");
         $res = $db->query("SELECT `num`, `name`, `rs` FROM `doc_kassa` WHERE `ids`='bank' $sql_add  ORDER BY `num`");
         while ($nxt = $res->fetch_row()) {
@@ -1939,10 +1942,10 @@ class doc_Nulltype extends \document {
                     (`firm_id`='0' OR `firm_id` IS NULL OR `firm_id`={$this->doc_data['firm_id']} OR `num`='{$this->doc_data['kassa']}') ORDER BY `num`");
         if ($this->doc_data['kassa'])
             $kassa = $this->doc_data['kassa'];
-        else if (isset($CONFIG['site']['default_kassa']))
-            $kassa = $CONFIG['site']['default_kassa'];
-        else
-            $kassa = 0;
+        else {
+            $pref = \pref::getInstance();
+            $bank = $pref->getSitePref('default_cash_id');
+        }
 
         if ($kassa == 0)
             $tmpl->addContent("<option value='0'>--не выбрана--</option>");
@@ -1999,22 +2002,23 @@ class doc_Nulltype extends \document {
                 $this->initDefDopData();
             }
             $this->dop_data = $this->def_dop_data;
-
-            $this->doc_data = array('id' => 0, 'type' => '', 'agent' => 0, 'comment' => '', 'date' => time(), 'ok' => 0, 'sklad' => 0, 'user' => 0, 'altnum' => 0, 'subtype' => '', 'sum' => 0, 'nds' => 1, 'p_doc' => 0, 'mark_del' => 0, 'kassa' => 0, 'bank' => 0, 'firm_id' => 0, 'contract' => 0, 'created' => 0, 'agent_name' => '', 'agent_fullname' => '', 'agent_dishonest' => 0, 'agent_comment' => '');
-
-            if (isset($CONFIG['site']['default_agent']))
-                $this->doc_data['agent'] = (int) $CONFIG['site']['default_agent'];
-            else
+            $pref = \pref::getInstance();
+            
+            $this->doc_data = array('id' => 0, 'type' => '', 'agent' => $pref->getSitePref('default_agent_id'), 'comment' => '', 'date' => time(), 'ok' => 0,
+                'sklad' => $pref->getSitePref('default_store_id'), 'user' => 0, 'altnum' => 0, 'subtype' => '', 'sum' => 0, 'nds' => 1, 'p_doc' => 0, 'mark_del' => 0,
+                'kassa' => 0, 'bank' => 0, 'firm_id' => 0, 'contract' => 0, 'created' => 0, 'agent_name' => '', 'agent_fullname' => '', 'agent_dishonest' => 0, 'agent_comment' => '');
+            
+            if(!$this->doc_data['agent']) {
                 $this->doc_data['agent'] = 1;
+            }
             $agent_data = $db->selectRow('doc_agent', $this->doc_data['agent']);
             if (is_array($agent_data)) {
                 $this->doc_data['agent_name'] = $agent_data['name'];
             }
 
-            if (isset($CONFIG['site']['default_sklad']))
-                $this->doc_data['sklad'] = (int) $CONFIG['site']['default_sklad'];
-            else
+            if (!$this->doc_data['sklad']) {
                 $this->doc_data['sklad'] = 1;
+            }
         }
     }
 

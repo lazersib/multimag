@@ -357,6 +357,8 @@ class search extends \IModule {
         }
         $basket_img = "/skins/" . $CONFIG['site']['skin'] . "/basket16.png";
         $pc = \PriceCalc::getInstance();
+        $pref = pref::getInstance();
+        $pc->setFirmId($pref->getSitePref('default_firm_id'));
         $ret = '';
 
         if ($CONFIG['site']['recode_enable']) {

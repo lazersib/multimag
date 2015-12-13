@@ -133,6 +133,8 @@ class DocPosEditor extends PosEditor {
             $this->show_bulkcnt = $CONFIG['poseditor']['show_bulkcnt'];
         }
         $pc = PriceCalc::getInstance();
+        //var_dump($doc_data);
+        $pc->setFirmId($doc_data['firm_id']);
         $pc->setAgentId($doc_data['agent']);
         $pc->setUserId($doc_data['user']);
         if(isset($dop_data['ishop'])) {

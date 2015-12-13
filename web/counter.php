@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
@@ -16,43 +17,40 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+$not_use_counter = 1;
+require_once("core.php");
 
-require_once("../config_site.php");
-
-$db = @ new mysqli($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
-if($db->connect_error)
-{
-	header("HTTP/1.0 503 Service temporary unavariable");
-	exit();
+$cname="{$CONFIG['site']['var_data_fs']}/cache/counter.png";
+$icname="{$CONFIG['site']['var_data_web']}/cache/counter.png";
+if(file_exists($cname)) {
+    $mtime = filemtime($cname);
+    $expiredate = time() - 60*5;
+    if($mtime > $expiredate) {
+        header("Location: $icname");
+        exit();
+    }
 }
 
-if(!$db->set_charset("utf8"))
-{
-	header("HTTP/1.0 503 Service temporary unavariable");
-	exit();
-}
 
-$cc=@$_GET['cc'];
-$im=imagecreatefrompng("img/counterbg.png");
-$bg_c = imagecolorallocate ($im, 150,255, 150);
-$text_c = imagecolorallocate ($im, 0, 80, 0);
-$tim=time();
-$tt=$tim-60*60*24;
-$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
-$all=$res->num_rows;
-$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
-$pip=$res->num_rows;
-$tt=$tim-60*60*24*7;
-$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
-$ww=$res->num_rows;
-$res=$db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
-$aw=$res->num_rows;
-
+$im = imagecreatefrompng("img/counterbg.png");
+$bg_c = imagecolorallocate($im, 150, 255, 150);
+$text_c = imagecolorallocate($im, 0, 80, 0);
+$tim = time();
+$tt = $tim - 60 * 60 * 24;
+$res = $db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
+$all = $res->num_rows;
+$res = $db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
+$pip = $res->num_rows;
+$tt = $tim - 60 * 60 * 24 * 7;
+$res = $db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt' GROUP by `ip`");
+$ww = $res->num_rows;
+$res = $db->query("SELECT `id` FROM `counter` WHERE `date`>'$tt'");
+$aw = $res->num_rows;
+$pref = \pref::getInstance();
 
 header("Content-type: image/png");
-imagestring ($im,1,5,5,"Week: $aw/$ww", $text_c);
-imagestring ($im,1,5,12,"Day:  $all/$pip", $text_c);
-imagestring ($im,1,25,25,$CONFIG['site']['name'], $text_c);
+imagestring($im, 1, 5, 5, "Week: $aw/$ww", $text_c);
+imagestring($im, 1, 5, 12, "Day:  $all/$pip", $text_c);
+imagestring($im, 1, 5, 25, $pref->site_name, $text_c);
 imagepng($im);
-
-?>
+imagepng($im, $cname, 9);

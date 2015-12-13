@@ -88,6 +88,7 @@ class markups extends \doc\printforms\iPrintFormInvoicePdf {
 
         $nomenclature = $this->doc->getDocumentNomenclature('bulkcnt,base_price,rto,comment');
         $pc = \PriceCalc::getInstance();
+        $pc->setFirmId($doc_data['firm_id']);
         $pc->setAgentId($doc_data['agent']);
         $pc->setUserId($doc_data['user']);
         if(isset($dop_data['ishop'])) {

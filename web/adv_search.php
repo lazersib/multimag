@@ -160,6 +160,8 @@ if($mode)
 		if(@$CONFIG['site']['grey_price_days'])
 			$cce_time = $CONFIG['site']['grey_price_days'] * 60*60*24;
 		$pc = PriceCalc::getInstance();
+                $pref = pref::getInstance();
+                $pc->setFirmId($pref->getSitePref('default_firm_id'));
 		while($nxt=$res->fetch_row()) {
 			if($CONFIG['site']['recode_enable'])	$link= "/vitrina/ip/$nxt[0].html";
 			else					$link= "/vitrina.php?mode=product&amp;p=$nxt[0]";

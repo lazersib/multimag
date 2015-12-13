@@ -171,7 +171,7 @@ function mailto($email, $subject, $msg, $from = "") {
     $error = $email_message->Send();
 
     if (strcmp($error, "")) {
-        throw new Exception($error);
+        throw new Exception($error."\nTo: ".$email);
     }
     return 0;
 }
