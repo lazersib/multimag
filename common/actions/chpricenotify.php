@@ -1,21 +1,21 @@
 <?php
 
-//	MultiMag v0.2 - Complex sales system
+//      MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//      Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
 //
-//	This program is free software: you can redistribute it and/or modify
-//	it under the terms of the GNU Affero General Public License as
-//	published by the Free Software Foundation, either version 3 of the
-//	License, or (at your option) any later version.
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU Affero General Public License as
+//      published by the Free Software Foundation, either version 3 of the
+//      License, or (at your option) any later version.
 //
-//	This program is distributed in the hope that it will be useful,
-//	but WITHOUT ANY WARRANTY; without even the implied warranty of
-//	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//	GNU Affero General Public License for more details.
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU Affero General Public License for more details.
 //
-//	You should have received a copy of the GNU Affero General Public License
-//	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//      You should have received a copy of the GNU Affero General Public License
+//      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
 namespace actions;
@@ -57,6 +57,9 @@ class chPriceNotify extends \Action {
                 if(!isset($worker_info['worker_email'])) {
                     continue;
                 }
+                if(!$worker_info['worker_email']) {
+                    continue;
+                }
                 $header = "Здравствуйте, {$worker_info['worker_real_name']}!\n";        
                 $footer = "Вы получили это письмо потому что являетесь сотрудником компании $firm_name, обслуживающей интернет-магазин {$this->config['site']['display_name']} ( http://{$this->config['site']['name']})\n"
                 . "Чтобы перестать получать уведомления, Вам нужно перестать быть сотрудником компании $firm_name.";
@@ -68,6 +71,9 @@ class chPriceNotify extends \Action {
         if(@$this->config['chpricenotify']['notify_clients']) {
             $clients = getSubscribersEmailList();
             foreach($clients as $subscriber_info) {
+                if(!$subscriber_info['email']) {
+                    continue;
+                }
                 $header = "Здравствуйте, {$subscriber_info['name']}!\n"; 
                 $footer = "Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']}?from=email ), либо являетесь клиентом $firm_name.
 Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$subscriber_info['email']}&from=email";
@@ -126,7 +132,7 @@ class chPriceNotify extends \Action {
         $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            throw new Exception($error);
+            throw new \Exception($error);
         }
     }
 
