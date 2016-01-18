@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -38,7 +38,7 @@ class main extends \acl\aclContainer {
                     "name" => $item,
                     "mask" => \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
                         | \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
-                        | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT | \acl::VIEW_IN_LIST
+                        | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT | \acl::VIEW
                 );
         }
     }

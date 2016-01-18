@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -35,7 +35,6 @@ class acl {
     const CANCEL_FORCE  = 0x100; ///< Принудительная отмена / остановка
     const GET_PRINTFORM = 0x200; ///< Формирование печатной формы
     const GET_PRINTDRAFT= 0x400; ///< Формирование черновика печатной формы (непроведённого документа)
-    const VIEW_IN_LIST  = 0x800; ///< Просмотр в списках
     
     /// Конструктор копирования запрещён
     final private function __clone() {    
@@ -70,7 +69,6 @@ class acl {
             self::CANCEL_FORCE    => 'Принудительная отмена / остановка',
             self::GET_PRINTFORM   => 'Формирование печатной формы',
             self::GET_PRINTDRAFT  => 'Формирование черновика печатной формы',
-            self::VIEW_IN_LIST    => 'Отображение в списке',
         );
         return $access_names;
     }
@@ -183,11 +181,11 @@ class acl {
         if((!$cur->uid) && (!$access) && (!$no_redirect)) {
             self::need_auth();
         }   
-        if(!$access) {
+        //if(!$access) {
             //echo "$flags - {$cur->acl[$object]} - $object<br>";
             //var_dump($cur->acl);
             //die();
-        }
+        //}
         return $access;
     }
     

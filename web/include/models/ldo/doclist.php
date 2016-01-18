@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -207,7 +207,7 @@ class doclist extends \Models\ListDataObject {
         $result = array();
         $res = $db->query($sql);
         while ($line = $res->fetch_assoc()) {
-            if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
+            if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
                 continue;
             }
             /*

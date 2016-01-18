@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -33,9 +33,9 @@ class pref {
     final private function __clone() {        
     }
 
-    /// Конструктор. Загружает и сортирует список цен из базы данных.
+    /// Конструктор
     final private function __construct() {
-        global $db, $CONFIG;
+        global $db;
         $this->sites_data = array();
         $this->default_site = null;
         
@@ -49,17 +49,17 @@ class pref {
         if(!$this->default_site) {
             /// Загружаем из конфигурационного файла (для совместимости)
             $this->default_site = array(
-                'name' => $CONFIG['site']['name'],
-                'email' => $CONFIG['site']['admin_email'],
-                'jid' => $CONFIG['site']['doc_adm_jid'],
+                'name' => \cfg::get('site', 'name'),
+                'email' => \cfg::get('site', 'admin_email'),
+                'jid' => \cfg::get('site', 'doc_adm_jid'),
                 'short_name' => 'Главный сайт',
-                'display_name' => $CONFIG['site']['display_name']?$CONFIG['site']['display_name']:$CONFIG['site']['name'],
-                'default_firm_id' => $CONFIG['site']['default_firm'],
-                'default_bank_id' => $CONFIG['site']['default_bank'],
-                'default_cash_id' => $CONFIG['site']['default_kass'],
-                'default_agent_id' => $CONFIG['site']['default_agent'],
-                'default_store_id' => $CONFIG['site']['default_sklad'],
-                'site_store_id' => $CONFIG['site']['vitrina_sklad'],
+                'display_name' => \cfg::get('site', 'display_name', \cfg::get('site', 'name') ),
+                'default_firm_id' => \cfg::get('site', 'default_firm'),
+                'default_bank_id' => \cfg::get('site', 'default_bank'),
+                'default_cash_id' => \cfg::get('site', 'default_kass'),
+                'default_agent_id' => \cfg::get('site', 'default_agent'),
+                'default_store_id' => \cfg::get('site', 'default_sklad'),
+                'site_store_id' => \cfg::get('site', 'vitrina_sklad'),
             );
         }
         $this->detectSite();

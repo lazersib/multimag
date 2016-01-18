@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -247,8 +247,8 @@ class search extends \IModule {
     /// @param $params Поисковые параметры
     function searchGoodsParametric($params) {
         global $CONFIG, $db;        
-
-        settype($cnt_limit, 'int');
+        $cnt_limit = 100;
+        //settype($cnt_limit, 'int');
         
         $this->nfr_flag = false;
         $tbody = '';
@@ -449,7 +449,7 @@ class search extends \IModule {
         $ret = "<div class='searchblock'><form action='{$this->link_prefix}' method='get'>
             <input type='search' name='s' placeholder='Искать..' value='" . html_out($this->search_str) . "' class='sp' require> 
             <input type='submit' value='Найти'><br>
-            <a href='{$this->link_prefix}?mode=parametric&amp;param[name]=" . html_out($this->search_str) . "'>Параметрический поис</a>
+            <a href='{$this->link_prefix}?mode=parametric&amp;param[name]=" . html_out($this->search_str) . "'>Параметрический поиск</a>
             </form>
             </div>";
         return $ret;

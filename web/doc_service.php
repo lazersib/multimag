@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -680,7 +680,18 @@ try {
         $editor->link_prefix = '/doc_service.php?mode=pos_types';
         $editor->acl_object_name = 'directory.postype';
         $editor->run();
-    } elseif ($mode == 'params') {
+    } elseif ($mode == 'gparams') {
+        $editor = new \ListEditors\PGroupListEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=gparams';
+        $editor->acl_object_name = 'directory.pgroup';
+        $tmpl->addContent("<ul class='tabs'>
+            <li><a class='selected' href='/doc_service.php?mode=gparams'>Группы свойств</a></li>
+            <li><a href='/doc_service.php?mode=params'>Свойства</a></li>
+            </ul>");
+        $editor->run();
+    }
+    elseif ($mode == 'params') {
         $editor = new \ListEditors\PosParamListEditor($db);
         $editor->line_var_name = 'id';
         $editor->link_prefix = '/doc_service.php?mode=params';

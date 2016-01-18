@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -543,35 +543,12 @@ class BETemplate {
         /// @param $link_prefix Префикс ссылки вкладки
         /// @param $param_name Параметр ссылки выбора вкладки
         function addTabsWidget($list, $opened, $link_prefix, $param_name) {
-            $sel = array();
-            $str = '<ul class="tabs">';
-            foreach($list as $id=>$value) {
-                $sel = $opened==$id ? ' class="selected"':'';
-                $str .= "<li><a{$sel} href='{$link_prefix}&amp;{$param_name}={$id}'>".html_out($value['name'])."</a></li>";
-            }
-            $str .= '</ul>';
+            $str = \widgets::getEscapedTabsWidget($list, $opened, $link_prefix, $param_name);
             $this->addContent($str);
         }
         
         function addTableWidget($table_header, $table_body, $head_each_lines = 100) {
-            $str = "<table class='list'>";
-            $line_cnt = 0;
-            foreach($table_body as $line) {
-                if( ($line_cnt % $head_each_lines) == 0) {
-                    $str .= "<tr>";
-                    foreach($table_header as $cell) {
-                        $str .= "<th>$cell</th>";    
-                    }
-                    $str .= "</tr>";
-                } 
-                $str .= "<tr>";
-                foreach($line as $cell) {
-                    $str .= "<td>$cell</td>";    
-                }
-                $str .= "</tr>";
-                $line_cnt++;
-            }        
-            $str .= "</table>";
+            $str = \widgets::getTable($table_header, $table_body, $head_each_lines);
             $this->addContent($str);
         }
 

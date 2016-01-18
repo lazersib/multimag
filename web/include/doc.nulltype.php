@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -231,7 +231,7 @@ class doc_Nulltype extends \document {
         $ok_status = $item['ok'] ? 'Проведённый' : 'Непроведённый';
         $r = ($last) ? " IsLast" : '';
         $ret .= "<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>";
-        if (!\acl::testAccess('firm.' . $item['firm_id'], \acl::VIEW_IN_LIST) && $item['firm_id']>0) {
+        if (!\acl::testAccess('firm.' . $item['firm_id'], \acl::VIEW) && $item['firm_id']>0) {
             if ($item['id'] == $this->id) {
                 $ret .= "<b>";
             }

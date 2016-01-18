@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -23,13 +23,35 @@ class main extends \acl\aclContainer {
     protected $name = "Справочники";
     
     public function __construct() {
-        $this->list = array(
+        global $db;
+        $list1 = array(
             'agent' => array(
-                "name" => "Агенты",
+                "name" => "Агенты: доступ к справочнику и редактирование контактов",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
             ),
+            'agent.global' => array(
+            "name" => 'Агенты: Глобальные разрешения',
+            "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE,
+            ),
+            'agent.ingroup.0' => array(
+            "name" => 'Агенты в группе &quot;0&quot;',
+            "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE,
+            ),
+        );
+        $res = $db->query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
+        while($line = $res->fetch_assoc()) {
+            $list1['agent.ingroup.'.$line['id']] = array(
+                "name" => 'Агенты в группе &quot;'.$line['id'].':'.$line['name'].'&quot;',
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE,
+            );
+        }
+        $list2 = array(
+            'agent.groups' => array(
+                "name" => 'Агенты: Справочник групп',
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE,
+            ),
             'agent.ext' => array(
-                "name" => "Агенты: дата сверки и ответственный",
+                "name" => "Агенты: Дата сверки и ответственный",
                 "mask" => \acl::UPDATE
             ),
             'attorney' => array(
@@ -39,7 +61,19 @@ class main extends \acl\aclContainer {
             'goods' => array(
                 "name" => "Товары и услуги",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
-            ),            
+            ),
+            'goods.groups' => array(
+                "name" => "Товары и услуги: Справочник групп",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
+            ),
+            'goods.secfields' => array(
+                "name" => "Товары и услуги: Секретные поля",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
+            ),  
+            'goods.parts' => array(
+                "name" => "Товары и услуги: Комплектующие",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
             'bank' => array(
                 "name" => "Банки",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
@@ -72,6 +106,10 @@ class main extends \acl\aclContainer {
                 "name" => "Типы складских наименований",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
+            'pgroup' => array(
+                "name" => "Группы параметров складских наименований",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
             'posparam' => array(
                 "name" => "Параметры складских наименований",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
@@ -93,6 +131,7 @@ class main extends \acl\aclContainer {
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
         );
+        $this->list = array_merge($list1, $list2);
     }
     
 }
