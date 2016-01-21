@@ -50,8 +50,11 @@ class Report_Revision_Act extends BaseReport {
             <p class='datetime'>
             Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10'><br>
             Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$date_end' maxlength='10'></p><br>
-            Организация:<br><select name='firm_id'>
-            <option value='0'>--- Любая ---</option>");
+            Организация:<br><select name='firm_id'>");
+        if(\acl::testAccess('firm.global', \acl::VIEW)) {
+            $tmpl->addContent("<option value='0'>--- Любая ---</option>");
+        }
+            
         $rs = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `firm_name`");
         while ($nx = $rs->fetch_row()) {
             if ($pref->site_default_firm_id == $nx[0]) {
@@ -59,7 +62,10 @@ class Report_Revision_Act extends BaseReport {
             } else {
                 $s = '';
             }
-            $tmpl->addContent("<option value='$nx[0]' $s>" . html_out($nx[1]) . "</option>");
+            if(\acl::testAccess([ 'firm.global', 'firm.'.$nx[0]], \acl::VIEW)) {
+                $tmpl->addContent("<option value='$nx[0]' $s>" . html_out($nx[1]) . "</option>");
+            }
+            
         }
         $tmpl->addContent("</select><br>
             Подтип документа (оставьте пустым, если учитывать не требуется):<br>
@@ -75,38 +81,38 @@ class Report_Revision_Act extends BaseReport {
             <script type='text/javascript'>
 
             $(document).ready(function(){
-                    $(\"#ag\").autocomplete(\"/docs.php\", {
-                    delay:300,
-                    minChars:1,
-                    matchSubset:1,
-                    autoFill:false,
-                    selectFirst:true,
-                    matchContains:1,
-                    cacheLength:10,
-                    maxItemsToShow:15,
-                    formatItem:agliFormat,
-                    onItemSelect:agselectItem,
-                    extraParams:{'l':'agent','mode':'srv','opt':'ac'}
-                    });
-                    $.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
+                $(\"#ag\").autocomplete(\"/docs.php\", {
+                delay:300,
+                minChars:1,
+                matchSubset:1,
+                autoFill:false,
+                selectFirst:true,
+                matchContains:1,
+                cacheLength:10,
+                maxItemsToShow:15,
+                formatItem:agliFormat,
+                onItemSelect:agselectItem,
+                extraParams:{'l':'agent','mode':'srv','opt':'ac'}
+                });
+                $.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
 
-                    $( '#datepicker_f' ).datepicker({showButtonPanel: true	});
-                    $( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-                    $( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
-                    $( '#datepicker_t' ).datepicker({showButtonPanel: true	});
-                    $( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-                    $( '#datepicker_t' ).datepicker( 'setDate' , '$date_end' );
+                $( '#datepicker_f' ).datepicker({showButtonPanel: true	});
+                $( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+                $( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
+                $( '#datepicker_t' ).datepicker({showButtonPanel: true	});
+                $( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+                $( '#datepicker_t' ).datepicker( 'setDate' , '$date_end' );
             });
             function agliFormat (row, i, num) {
-                    var result = row[0] + \"<em class='qnt'>тел. \" +
-                    row[2] + \"</em> \";
-                    return result;
+                var result = row[0] + \"<em class='qnt'>тел. \" +
+                row[2] + \"</em> \";
+                return result;
             }
             function agselectItem(li) {
-                    if( li == null ) var sValue = \"Ничего не выбрано!\";
-                    if( !!li.extra ) var sValue = li.extra[0];
-                    else var sValue = li.selectValue;
-                    document.getElementById('agent_id').value=sValue;
+                if( li == null ) var sValue = \"Ничего не выбрано!\";
+                if( !!li.extra ) var sValue = li.extra[0];
+                else var sValue = li.selectValue;
+                document.getElementById('agent_id').value=sValue;
             }
 
             </script>");
@@ -119,8 +125,9 @@ class Report_Revision_Act extends BaseReport {
         if ($opt == 'email') {
             $opt = 'pdf';
             $sendmail = 1;
-        } else
+        } else {
             $sendmail = 0;
+        }
         if ($opt == 'html') {
             $tmpl->loadTemplate('print');
         } else if ($opt == 'pdf') {
@@ -128,7 +135,6 @@ class Report_Revision_Act extends BaseReport {
             $tmpl->ajax = 1;
             $tmpl->setContent('');
             ob_start();
-            define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
             require('fpdf/fpdf.php');
             $pdf = new FPDF('P');
             $pdf->Open();
@@ -143,7 +149,8 @@ class Report_Revision_Act extends BaseReport {
         $date_st = strtotime(rcvdate('date_st'));
         $date_end = strtotime(rcvdate('date_end')) + 60 * 60 * 24 - 1;
         $agent_id = rcvint('agent_id');
-
+        \acl::accessGuard([ 'firm.global', 'firm.'.$firm_id], \acl::VIEW);
+        
         $subtype_sql = $db->real_escape_string($subtype);
 
         if ($firm_id) {
@@ -163,7 +170,7 @@ class Report_Revision_Act extends BaseReport {
             $email = $_email;
         }
         if (!$email && $sendmail) {
-            throw new Exception("Не задан email");
+            throw new \Exception("Не задан email");
         }
         $sql_add = '';
         if ($firm_id > 0) {
@@ -173,7 +180,7 @@ class Report_Revision_Act extends BaseReport {
             $sql_add.=" AND `doc_list`.`subtype`='$subtype_sql'";
         }
 
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`date`, `doc_list`.`sum`, `doc_list`.`altnum`, `doc_types`.`name`
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`date`, `doc_list`.`sum`, `doc_list`.`altnum`, `doc_types`.`name`, `doc_list`.`firm_id`
             FROM `doc_list`
             LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
 		WHERE `doc_list`.`agent`='$agent' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' " . $sql_add . " ORDER BY `doc_list`.`date`");
@@ -243,6 +250,9 @@ class Report_Revision_Act extends BaseReport {
         $pr = $ras = $s_pr = $s_ras = 0;
         $f_print = false;
         while ($nxt = $res->fetch_array()) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$nxt['firm_id']], \acl::VIEW)) {
+                continue;
+            }
             $deb = $kr = "";
             if (($nxt[2] >= $date_st) && (!$f_print)) {
                 $f_print = true;

@@ -135,7 +135,7 @@ if ($mode == 'z') {
         if ($line['status'] == 'ok' || $line['status'] == 'err') {
             continue;
         }
-        if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
+        if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
             continue;
         }
         if (!$line['status']) {
@@ -282,7 +282,7 @@ else if ($mode == 'c') {
         if ($line['status'] == 'readytoship' || $line['status'] == 'ok' || $line['status'] == 'err') {
             continue;
         }
-        if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
+        if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
             continue;
         }
         if ($line['status'] == '') {
@@ -364,7 +364,7 @@ else if ($mode == 'p') {
     $tmpl->addContent("<table width='100%' cellspacing='1' class='list'><tr>
     <th width='70'>№</th><th width='55'>ID</th><th width='55'>Счет</th><th>Агент</th><th width='90'>Сумма</th><th width='150'>Дата</th><th>Автор</th></tr>");
     while ($line = $res->fetch_assoc()) {
-        if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
+        if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
             continue;
         }
             $date = date('Y-m-d H:i:s', $line['date']);
@@ -403,7 +403,7 @@ else if ($mode == 'r') {
 	$tmpl->addContent("<table width='100%' cellspacing='1' class='list'><tr>
 	<th width='70'>№</th><th width='55'>ID</th><th width='55'>Счет</th><th>Агент</th><th width='90'>Сумма</th><th width='150'>Дата</th><th>Автор</th></tr>");
 	while ($line = $res->fetch_assoc()) {
-            if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
                 continue;
             }
 		$date = date('Y-m-d H:i:s', $line['date']);

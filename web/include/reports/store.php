@@ -128,29 +128,33 @@ class Report_Store extends BaseGSReport {
             $col_sizes[] = 10;
         }
         if ($show_price) {
-            $headers[] = 'АЦП';
-            $headers[] = 'Базовая цена';
-            $haligns[] = 'C';
-            $haligns[] = 'C';
+            if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
+               $headers[] = 'АЦП';
+               $haligns[] = 'C';
+               $aligns[] = 'R';
+               $col_sizes[] = 18;
+            }            
+            $headers[] = 'Базовая цена';            
+            $haligns[] = 'C';            
             $aligns[] = 'R';
-            $aligns[] = 'R';
-            $col_sizes[] = 18;
             $col_sizes[] = 18;
         }
-        if ($show_add) {
+        if ($show_add && \acl::testAccess('directory.goods.secfields', \acl::VIEW) ) {
             $headers[] = 'Наценка';
             $haligns[] = 'C';
             $aligns[] = 'R';
             $col_sizes[] = 15;
         }
         if ($show_sum) {
-            $headers[] = 'Сумма по АЦП';
+            if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
+               $headers[] = 'Сумма по АЦП';
+               $haligns[] = 'C';
+               $aligns[] = 'R';
+               $col_sizes[] = 18;
+            } 
             $headers[] = 'Сумма по базовой';
             $haligns[] = 'C';
-            $haligns[] = 'C';
             $aligns[] = 'R';
-            $aligns[] = 'R';
-            $col_sizes[] = 18;
             $col_sizes[] = 18;
         }
         if($show_mass) {
@@ -225,7 +229,7 @@ class Report_Store extends BaseGSReport {
             $cnt_join = '';
         }
 
-        $sum = $bsum = $summass = 0;
+        $bsum = $summass = 0;
         $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
         while ($group_line = $res_group->fetch_assoc()) {
             if ($gs && is_array($g)) {
@@ -265,22 +269,25 @@ class Report_Store extends BaseGSReport {
                     $act_cost = sprintf('%0.2f', getInCost($nxt['id']));
                     $cost_p = sprintf("%0.2f", $nxt['base_price']);
                     if ($show_price) {
-                        $line[] = $act_cost;
+                        if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) { 
+                            $line[] = $act_cost;
+                        }
                         $line[] = $cost_p;
                     }
                 }
 
-                if ($show_add) {
+                if ($show_add && \acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
                     $line[] = sprintf("%0.2f р. (%0.2f%%)", $cost_p - $act_cost, ($cost_p / $act_cost) * 100 - 100);
                 }
 
 
                 if ($show_sum) {
-                    $sum_p = sprintf("%0.2f", $act_cost * $nxt['cnt']);
+                    if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
+                        $sum_p = sprintf("%0.2f", $act_cost * $nxt['cnt']);
+                        $line[] = $sum_p;
+                    }
                     $bsum_p = sprintf("%0.2f", $nxt['base_price'] * $nxt['cnt']);
-                    $sum += $act_cost * $nxt['cnt'];
-                    $bsum += $nxt['base_price'] * $nxt['cnt'];
-                    $line[] = $sum_p;
+                    $bsum += $nxt['base_price'] * $nxt['cnt'];                    
                     $line[] = $bsum_p;
                 }
                 if($show_mass) {

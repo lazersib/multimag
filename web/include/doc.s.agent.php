@@ -235,9 +235,15 @@ class doc_s_Agent {
                 <td colspan='$span'><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
 
             <tr><td align=right>Комментарий
-                <td colspan='$span'><textarea name='comment'>" . html_out($form_data['comment']) . "</textarea>
-            <tr><td><td><button type='submit' id='b_submit'>Сохранить</button>
-            </table></form>
+                <td colspan='$span'><textarea name='comment'>" . html_out($form_data['comment']) . "</textarea>"
+            . "<tr><td><td>";
+        if(\acl::testAccess([ 'directory.agent.global', 'directory.agent.ingroup.'.$form_data['group']], \acl::UPDATE | \acl::CREATE)) {
+            $ret .= "<button type='submit' id='b_submit'>Сохранить</button>";
+        } else {
+            $ret .= "<input type='hidden' id='b_submit'><b>У Вас нет привилегий для сохранения этой формы</b>";
+        }
+            
+        $ret .= "</table></form>
 
             <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
             <script type='text/javascript' src='/js/formvalid.js'></script>
@@ -539,6 +545,9 @@ class doc_s_Agent {
             if ($nxt[0] == 0) {
                 continue;
             }
+            if(!\acl::testAccess([ 'directory.agent.global', 'directory.agent.ingroup.'.$nxt[0]], \acl::VIEW)) {
+                continue;
+            }
             $item = "<a href='' title='$nxt[2]' onclick=\"EditThis('/docs.php?l=agent&mode=srv&opt=pl&g=$nxt[0]','list'); return false;\" >" . html_out($nxt[1]) . "</a>";
             if ($i >= ($res->num_rows - 1)) {
                 $r.=" IsLast";
@@ -582,9 +591,7 @@ class doc_s_Agent {
         if (isset($_REQUEST['resp'])) {
             $this->ViewListRespFiltered(request('resp'));
         } else {
-            if(!\acl::testAccess('directory.agent.global', \acl::VIEW)) {
-                \acl::accessGuard('directory.agent.ingroup.'.$group, \acl::VIEW);
-            }
+            \acl::accessGuard([ 'directory.agent.global', 'directory.agent.ingroup.'.$group], \acl::VIEW);
             if ($group) {
                 $desc_data = $db->selectRow('doc_agent_group', $group);
                 if ($desc_data['desc']) {
@@ -706,8 +713,9 @@ class doc_s_Agent {
             $sf = 1;
         }
         $tmpl->addContent("</table>");
-        if ($sf == 0)
+        if ($sf == 0) {
             $tmpl->msg("По данным критериям записей не найдено!");
+        }
     }
 
     /// Расширенный поиск агентов

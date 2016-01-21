@@ -202,8 +202,8 @@ class Report_PriceTags {
                 'fontsize' => 10,
                 'align' => 'L')
         );
-        if (is_array(@$CONFIG['site']['tricetags'])) {
-            $this->templates = array_merge($this->templates, $CONFIG['site']['tricetags']);
+        if (is_array(\cfg::get('site', 'pricetags'))) {
+            $this->templates = array_merge($this->templates, \cfg::get('site', 'pricetags'));
         }
     }
 
@@ -324,7 +324,7 @@ class Report_PriceTags {
     }
 
     function drawPDFPriceTag($pdf, $template, $pos_id) {
-        global $CONFIG, $db;
+        global $db;
         $pref = \pref::getInstance();
         $pc = PriceCalc::getInstance();
 
@@ -452,12 +452,12 @@ class Report_PriceTags {
     }
 
     function Form2() {
-        global $tmpl, $CONFIG, $db;
+        global $tmpl, $db;
         $firm_id = rcvint('firm_id');
         $gs = rcvint('gs');
         $g = @$_POST['g'];
         $tag_id = rcvint('tag_id');
-        switch (@$CONFIG['doc']['sklad_default_order']) {
+        switch (\cfg::get('doc', 'sklad_default_order')) {
             case 'vc': $order = '`doc_base`.`vc`';
                 break;
             case 'cost': $order = '`doc_base`.`cost`';
@@ -516,14 +516,13 @@ class Report_PriceTags {
     }
 
     function MakePDF() {
-        global $tmpl, $CONFIG;
+        global $tmpl;
         $tag_id = rcvint('tag_id');
         $pos_id = request('pos_id');
         $firm_id = rcvint('firm_id');
         $tmpl->ajax = 1;
         $tmpl->setContent('');
         ob_start();
-        define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
         require('fpdf/fpdf.php');
         $pdf = new FPDF('P');
         $pdf->Open();

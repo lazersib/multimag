@@ -35,8 +35,6 @@ class Report_dc_book extends BaseReport {
 
     function Form() {
         global $tmpl, $db;
-        $date_st = date("Y-m-01");
-        $date_end = date("Y-m-d");
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
             <form action='' method='get'>
             <input type='hidden' name='mode' value='dc_book'>
@@ -45,6 +43,9 @@ class Report_dc_book extends BaseReport {
             <select name='firm_id'>");
         $res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
         while ($nxt = $res->fetch_row()) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$nxt[0]], \acl::VIEW)) {
+                continue;
+            }
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
         }
         $tmpl->addContent("</select><br>
@@ -217,6 +218,7 @@ class Report_dc_book extends BaseReport {
         } else {
             throw new Exception("Организация не найдена");
         }
+        
         $bank_list = array();
         $res = $db->query("SELECT `name`, `bik`, `rs` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`=$firm_id");
         while($line = $res->fetch_assoc()) {
@@ -503,6 +505,7 @@ class Report_dc_book extends BaseReport {
     function make($engine) {
         $year = rcvint('year');
         $firm_id = rcvint("firm_id");
+        \acl::accessGuard([ 'firm.global', 'firm.'.$firm_id ], \acl::VIEW);
         $this->createXLS();
         $this->addTitleListXLS($year, $firm_id);
         $prev = $this->addQuarterList($year, $firm_id, 1);

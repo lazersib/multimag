@@ -22,10 +22,11 @@ class Report_EditedPos extends BaseReport {
 
     /// Получить название отчёта
     function getName($short = 0) {
-        if ($short)
+        if ($short) {
             return "По редактированию склада";
-        else
+        } else {
             return "Отчёт по созданным и редактированным наименованиям на складе";
+        }
     }
 
     /// Форма для формирования отчёта

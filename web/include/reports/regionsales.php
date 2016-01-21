@@ -25,9 +25,9 @@ class Report_regionsales extends BaseGSReport {
     /// Получить название отчёта
     function getName($short = 0) {
         if ($short) {
-            return "По региональным продажам";
+            return "По региональным продажам (в разработке)";
         } else {
-            return "Отчёт по региональным продажам";
+            return "Отчёт по региональным продажам (в разработке)";
         }
     }
     

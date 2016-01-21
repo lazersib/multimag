@@ -207,22 +207,17 @@ class doclist extends \Models\ListDataObject {
         $result = array();
         $res = $db->query($sql);
         while ($line = $res->fetch_assoc()) {
-            if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id'] ], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
                 continue;
             }
-            /*
-            if(!\acl::testAccess('firm.'.$line['firm_id'], \acl::VIEW_IN_LIST)) {
-                $line['altnum'].='-'.'firm.'.$line['firm_id'];
-            }
-            if(!\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW_IN_LIST)) {
-                $line['altnum'].='-'.'doc.'.$doc_types[$line['type']];
-            }
-            */
+
             $line['date'] = date("Y-m-d", $line['date']) . '&nbsp' . date("H:i:s", $line['date']);
-            if ($line['nasklad_id'] == 'null')
+            if ($line['nasklad_id'] == 'null') {
                 unset($line['nasklad_id']);
-            if ($line['vkassu_id'] == 'null')
+            }
+            if ($line['vkassu_id'] == 'null') {
                 unset($line['vkassu_id']);
+            }
             //$result .= json_encode($line, JSON_UNESCAPED_UNICODE);
 
             switch ($line['type']) {

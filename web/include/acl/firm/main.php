@@ -25,7 +25,12 @@ class main extends \acl\aclContainer {
     public function __construct() {
         $firm_ldo = new \Models\LDO\firmnames();
         $list = $firm_ldo->getData();
-        
+        $this->list['global'] = array(
+                "name" => 'Глобальный доступ (реализовано не полностью)',
+                "mask" =>  \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
+                    | \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
+                    | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT | \acl::VIEW
+            );
         foreach ($list as $id => $item) {
             $this->list[$id] = array(
                     "name" => $id.': '.$item,

@@ -37,9 +37,11 @@ class Report_KassDay extends BaseReport {
             <input type='hidden' name='mode' value='kassday'>
             Выберите кассу:<br>
             <select name='kass'>");
-        $res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa'  ORDER BY `num`");
-        while ($nxt = $res->fetch_row()) {
-            $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+        $res = $db->query("SELECT `num`, `name`, `firm_id` FROM `doc_kassa` WHERE `ids`='kassa'  ORDER BY `num`");
+        while ($nxt = $res->fetch_assoc()) {
+            if(\acl::testAccess([ 'firm.global', 'firm.'.$nxt['firm_id']], \acl::VIEW)) {
+                $tmpl->addContent("<option value='{$nxt['num']}'>" . html_out($nxt['name']) . "</option>");
+            }            
         }
         $tmpl->addContent("</select><br>
             Начальная дата:<br>
@@ -62,12 +64,16 @@ class Report_KassDay extends BaseReport {
         $dt_f = rcvdate('date_f');
         $dt_t = rcvdate('date_t');
         $kass = rcvint('kass');
-        $kres = $db->query("SELECT `num`, `name`, `ballance` FROM `doc_kassa` WHERE `ids`='kassa'");
+        
+        $kres = $db->query("SELECT `num`, `name`, `ballance`, `firm_id` FROM `doc_kassa` WHERE `ids`='kassa'");
         $kass_list = array();
         while ($nxt = $kres->fetch_assoc()) {
             $kass_list[$nxt['num']] = $nxt;
         }
-
+        if(!isset($kass_list[$kass])) {
+            throw new Exception('Касса не найдена!');
+        }
+        \acl::accessGuard([ 'firm.global', 'firm.'.$kass_list[$kass]['firm_id']], \acl::VIEW);
         $this->header("Отчёт по кассе {$kass_list[$kass]['name']} с $dt_f по $dt_t");
 
         $daystart = strtotime("$dt_f 00:00:00");

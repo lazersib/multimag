@@ -31,19 +31,19 @@ class Report_Sales extends BaseGSReport {
             .selmenu a{color:#fff;cursor:pointer;}
             .cb{width:14px;height:14px;border:1px solid #ccc;}");
         $tmpl->addContent("<script type='text/javascript'>
-		function SelAll(flag) {
-                    var elems = document.getElementsByName('g[]');var l = elems.length;
-                    for(var i=0; i<l; i++){elems[i].checked=flag;if(flag){elems[i].disabled = false;}}
-		}		
-		function CheckCheck(ids) {
-                    var cb = document.getElementById('cb'+ids);var cont=document.getElementById('cont'+ids);if(!cont)	return;
-                    var elems=cont.getElementsByTagName('input');var l = elems.length;
-                    for(var i=0; i<l; i++){if(!cb.checked){elems[i].checked=false;}elems[i].disabled=!cb.checked;}
-		}		
-		</script>
-		<div class='groups_block' id='sb'><ul class='Container'>
-		<div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
-		" . $this->draw_groups_tree(0) . "</ul></div>");
+            function SelAll(flag) {
+                var elems = document.getElementsByName('g[]');var l = elems.length;
+                for(var i=0; i<l; i++){elems[i].checked=flag;if(flag){elems[i].disabled = false;}}
+            }		
+            function CheckCheck(ids) {
+                var cb = document.getElementById('cb'+ids);var cont=document.getElementById('cont'+ids);if(!cont)	return;
+                var elems=cont.getElementsByTagName('input');var l = elems.length;
+                for(var i=0; i<l; i++){if(!cb.checked){elems[i].checked=false;}elems[i].disabled=!cb.checked;}
+            }		
+            </script>
+            <div class='groups_block' id='sb'><ul class='Container'>
+            <div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
+            " . $this->draw_groups_tree(0) . "</ul></div>");
     }
 
     function getName($short = 0) {
@@ -69,8 +69,9 @@ class Report_Sales extends BaseGSReport {
             Склад:<br>
             <select name='sklad'>");
         $res = $db->query("SELECT `id`, `name` FROM `doc_sklady`");
-        while ($nxt = $res->fetch_row())
+        while ($nxt = $res->fetch_row()) {
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+        }
         $tmpl->addContent("</select><br>
             <label><input type='checkbox' name='w_docs' value='1' checked>С документами</label><br>
             <label><input type='checkbox' name='div_dt' value='1' checked>Разделить по типам документов</label><br>

@@ -27,7 +27,7 @@ class main extends \acl\aclContainer {
         $list1 = array(
             'agent' => array(
                 "name" => "Агенты: доступ к справочнику и редактирование контактов",
-                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
             'agent.global' => array(
             "name" => 'Агенты: Глобальные разрешения',

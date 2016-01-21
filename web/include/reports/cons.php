@@ -20,10 +20,11 @@
 
 class Report_Cons extends BaseReport {
     function getName($short = 0) {
-        if ($short)
+        if ($short) {
             return "Сводный отчёт";
-        else
+        } else {
             return "Сводный отчет";
+        }
     }
 
     function Form() {
@@ -136,12 +137,15 @@ class Report_Cons extends BaseReport {
 
         // Обработка ПРОВЕДЁННЫХ документов за указанный период
         $doc_res = $db->query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`, `doc_list`.`altnum`, 
-                `d_table`.`value` AS `out_type`, `c_table`.`value` AS `in_type`
+                `d_table`.`value` AS `out_type`, `c_table`.`value` AS `in_type`, `doc_list`.`firm_id`
             FROM `doc_list`
             LEFT JOIN `doc_dopdata` AS `d_table` ON `d_table`.`doc`=`doc_list`.`id` AND `d_table`.`param`='rasxodi'
             LEFT JOIN `doc_dopdata` AS `c_table` ON `c_table`.`doc`=`doc_list`.`id` AND `c_table`.`param`='credit_type'
             WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_st' AND `doc_list`.`date`<='$date_end'");
         while ($nxt = $doc_res->fetch_assoc()) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$nxt['firm_id']], \acl::VIEW)) {
+                continue;
+            }
             if(!$nxt['in_type']) {
                 $nxt['in_type'] = 0;
             }

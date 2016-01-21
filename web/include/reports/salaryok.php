@@ -69,13 +69,16 @@ class Report_SalaryOk extends BaseGSReport {
             . "<th>Сумма</th></tr>");
         $sum = 0;
         $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`"
-                . ", `sklad` AS `store_id`, `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`"
+                . ", `sklad` AS `store_id`, `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`, `doc_list`.`firm_id`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
             . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
             . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8,20) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$doc_line['firm_id']], \acl::VIEW)) {
+                continue;
+            }
             $doc_vars = array();
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {

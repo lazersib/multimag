@@ -40,6 +40,7 @@ class agentContactEditor extends \ListEditor {
         $this->print_name = 'Редактор контактов агента';
         $this->table_name = 'agent_contacts';
         $this->agent_id = 0;
+        $this->can_delete = true;
     }
 
     /// Получить массив с именами колонок списка

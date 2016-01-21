@@ -20,13 +20,13 @@
 /// Класс работы с конфигурацией системы
 class cfg {
     protected static $_instance;    ///< Экземпляр для синглтона
-    
+    /// TODO: методы изменения конфигурации
     /// Конструктор копирования запрещён
     final private function __clone() {    
     }
 
     /// Получить экземпляр класса
-    /// @return aclTester
+    /// @return cfg
     public static function getInstance() {
         if (self::$_instance === null) {
             self::$_instance = new self();
@@ -38,6 +38,11 @@ class cfg {
     final private function __construct() {
     }
 
+    /// Получить параметр конфигурации
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    /// @param $default Значение по умолчанию. Возвращается, если параметр не определён
+    /// @return Параметр, или $default
     static function get($sect, $param, $default = null) {
         global $CONFIG;
         if(isset($CONFIG[$sect][$param])) {
@@ -47,6 +52,12 @@ class cfg {
         }
     }
     
+    /// Получить вложенный параметр конфигурации
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    /// @param $subparam Имя вложенного параметра конфигурации
+    /// @param $default Значение по умолчанию. Возвращается, если параметр не определён
+    /// @return Параметр, или $default
     static function getsub($sect, $param, $subparam, $default = null) {
         global $CONFIG;
         if(isset($CONFIG[$sect][$param][$subparam])) {
@@ -56,7 +67,11 @@ class cfg {
         }
     }
     
-    static function test($sect, $param) {
+    /// Проверить существование параметра конфигурации
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    /// @return true, если существует; false в ином случае
+    static function exist($sect, $param) {
         global $CONFIG;
         if(isset($CONFIG[$sect][$param])) {
             return TRUE;
@@ -65,7 +80,12 @@ class cfg {
         }
     }
     
-    static function testsub($sect, $param, $subparam) {
+    /// Проверить существование вложенного параметра конфигурации
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    ///// @param $subparam Имя вложенного параметра конфигурации
+    /// @return true, если существует; false в ином случае
+    static function existsub($sect, $param, $subparam) {
         global $CONFIG;
         if(isset($CONFIG[$sect][$param][$subparam])) {
             return TRUE;

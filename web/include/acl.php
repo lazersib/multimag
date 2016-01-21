@@ -17,6 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+/// Базовый класс для описаний возможных привилегий доступа к объектам системы
 class acl {
     protected static $_instance;    ///< Экземпляр для синглтона
     protected $uid = null;          ///< id текущего пользователя
@@ -56,6 +57,7 @@ class acl {
         }
     }
     
+    /// Получить массив с наименованиями привилегий доступа
     public static function getAccessNames() {
         $access_names = array(
             self::VIEW            => 'Просмотр',
@@ -162,7 +164,7 @@ class acl {
     }
 
     /// Есть ли привилегия доступа к указанному объекту для указанной операции
-    /// @param $object Имя объекта, для которого нужно проверить привилегии
+    /// @param $object Имя объекта, для которого нужно проверить привилегии, либо массив имён, объединённых по ИЛИ
     /// @param $flags  Битовая маска флагов, которые нужно проверить
     /// @param $no_redirect Если false - то в случае отсутствия привилегий, и если не пройдена аутентификация, выполняет редирект на страницу аутентификации
     public static function testAccess($object, $flags, $no_redirect=false) {
@@ -173,11 +175,26 @@ class acl {
         if($cur->acl == null) {
             $cur->loadACL();
         }
-        if(!isset($cur->acl[$object])) {
-            $cur->acl[$object] = 0;
+        $access = false;
+        if(is_array($object)) {
+            $o = $object;
+            foreach($o as $object) {
+                if(!isset($cur->acl[$object])) {
+                    $cur->acl[$object] = 0;
+                }
+                settype($cur->acl[$object], 'int');
+                $access = ($flags && (($cur->acl[$object] & $flags) == $flags)) ? true : false;
+                if($access) {
+                    break;
+                }
+            }
+        } else {
+            if(!isset($cur->acl[$object])) {
+                $cur->acl[$object] = 0;
+            }
+            settype($cur->acl[$object], 'int');
+            $access = ($flags && (($cur->acl[$object] & $flags) == $flags)) ? true : false;
         }
-        settype($cur->acl[$object], 'int');
-        $access = ($flags && (($cur->acl[$object] & $flags) == $flags)) ? true : false;
         if((!$cur->uid) && (!$access) && (!$no_redirect)) {
             self::need_auth();
         }   
@@ -198,7 +215,18 @@ class acl {
             } else {
                 $name = 'привилегий';
             }
-            throw new \AccessException("Нет {$name} для доступа к $object");
+            if(is_array($object)) {
+                $object_str = '';
+                foreach($object as $o) {
+                    if($object_str) {
+                        $object_str .= ' | ';
+                    }
+                    $object_str .= $o;
+                }
+            } else {
+                $object_str = $object;
+            }
+            throw new \AccessException("Нет {$name} для доступа к $object_str");
         }
     }
 }

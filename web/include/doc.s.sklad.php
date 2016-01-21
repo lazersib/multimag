@@ -126,7 +126,7 @@ class doc_s_Sklad {
         $c_res->free();
         $tmpl->addContent("</select>
 		<select name='sklad'>");
-        $s_res = $db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY `name`");
+        $s_res = $db->query("SELECT `id`, `name` FROM `doc_sklady` WHERE `hidden`=0 ORDER BY `name`");
         while ($nxt = $s_res->fetch_row()) {
             $s = ($sklad == $nxt[0]) ? ' selected' : '';
             $tmpl->addContent("<option value='$nxt[0]'$s>" . html_out($nxt[1]) . "</option>");

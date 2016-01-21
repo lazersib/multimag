@@ -160,9 +160,10 @@ class doc_s_Inform extends doc_s_Nulltype {
         else if ($opt == 'ost') {
             $tmpl->ajax = 1;
             $pos = rcvint('pos');
-            $res = $db->query("SELECT `doc_sklady`.`name`, `doc_base_cnt`.`cnt` FROM `doc_base_cnt`
-                LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
-                WHERE `doc_base_cnt`.`id`='$pos'");
+            $res = $db->query("SELECT `doc_sklady`.`name`, `doc_base_cnt`.`cnt` 
+                FROM `doc_base_cnt`
+                INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
+                WHERE `doc_base_cnt`.`id`='$pos' AND `doc_sklady`.`hidden`=0");
             $tmpl->addContent("<table width='100%' class='list'><tr><th>Склад<th>Кол-во</tr>");
             while ($nxt = $res->fetch_row())
                 $tmpl->addContent('<tr><td>' . html_out($nxt[0]) . '</td><td>' . html_out($nxt[1]) . '</td></tr>');

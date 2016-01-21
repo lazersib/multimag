@@ -33,46 +33,52 @@ class Report_Dolgi extends BaseReport {
         global $tmpl, $db;
         $curdate = date("Y-m-d");
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
-		<form action=''>
-		<input type='hidden' name='mode' value='dolgi'>
-		<input type='hidden' name='opt' value='ok'>
-		Дата:<br>
-		<input type='text' name='date' id='date' value='$curdate'><br>
-		Организация:<br>
-		<select name='firm_id'>
-		<option value='0'>--все--</option>");
+            <form action=''>
+            <input type='hidden' name='mode' value='dolgi'>
+            <input type='hidden' name='opt' value='ok'>
+            Дата:<br>
+            <input type='text' name='date' id='date' value='$curdate'><br>
+            Организация:<br>
+            <select name='firm_id'>");
+        if(\acl::testAccess('firm.global', \acl::VIEW)) {
+            $tmpl->addContent("<option value='0'>--все--</option>");
+        }        
         $fres = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
         while ($nxt = $fres->fetch_row()) {
-            $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            if(\acl::testAccess([ 'firm.global', 'firm.'.$nxt[0]], \acl::VIEW)) {
+                $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            }            
         }
         $tmpl->addContent("</select><br>
-		Группа агентов:<br>
-		<select name='agroup'>
-		<option value='0'>--все--</option>");
+            Группа агентов:<br>
+            <select name='agroup'>
+            <option value='0'>--все--</option>");
         $res = $db->query("SELECT `id`, `name` FROM `doc_agent_group` ORDER BY `name`");
         while ($nxt = $res->fetch_row()) {
-            $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            if(\acl::testAccess([ 'directory.agent.global', 'directory.agent.ingroup.'.$nxt[0]], \acl::VIEW)) {
+                $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            }
         }
         $tmpl->addContent("</select>
-                <br>
-		Ответственный:<br>
-		<select name='resp_id'>
-		<option value='0'>--все--</option>");
+            <br>
+            Ответственный:<br>
+            <select name='resp_id'>
+            <option value='0'>--все--</option>");
         $res = $db->query("SELECT `user_id` AS `id`, `worker_real_name` AS `name` FROM `users_worker_info`"
             . " WHERE `worker`>0 ORDER BY `worker_real_name`");
         while ($nxt = $res->fetch_row()) {
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
         }
         $tmpl->addContent("</select><br>
-		<fieldset><legend>Вид задолженности</legend>
-		<label><input type='radio' name='vdolga' value='1' checked>Нам должны</label><br>
-		<label><input type='radio' name='vdolga' value='2'>Мы должны</label>
-		</fieldset><br>
-		Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
-		<button type='submit'>Сформировать</button></form>
-		<script>
-		initCalendar('date',false);
-		</script>");
+            <fieldset><legend>Вид задолженности</legend>
+            <label><input type='radio' name='vdolga' value='1' checked>Нам должны</label><br>
+            <label><input type='radio' name='vdolga' value='2'>Мы должны</label>
+            </fieldset><br>
+            Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
+            <button type='submit'>Сформировать</button></form>
+            <script>
+            initCalendar('date',false);
+            </script>");
     }
 
     function Make($engine) {
@@ -82,6 +88,13 @@ class Report_Dolgi extends BaseReport {
         $firm_id = rcvint('firm_id');
         $resp_id = rcvint('resp_id');
         $date = intval(strtotime(request('date'))); // Для безопасной передачи в БД
+        
+        if($firm_id) {
+            \acl::accessGuard([ 'firm.global', 'firm.'.$firm_id ], \acl::VIEW);
+        } else {
+            \acl::accessGuard('firm.global', \acl::VIEW);
+        }
+        
         $this->loadEngine($engine);
 
         $date_p = date("Y-m-d", $date);
@@ -101,7 +114,7 @@ class Report_Dolgi extends BaseReport {
 
         $sql_add = $agroup ? " AND `group`='$agroup'" : '';
         $sql_add .= $resp_id ? " AND `responsible`='$resp_id'" : '';
-        $res = $db->query("SELECT `id` AS `agent_id`, `name`, `data_sverki`, `responsible`
+        $res = $db->query("SELECT `id` AS `agent_id`, `name`, `data_sverki`, `responsible`, `group`
             FROM `doc_agent` 
             WHERE 1 $sql_add ORDER BY `name`");
         $date_limit = " AND `date`<=$date";
@@ -110,6 +123,9 @@ class Report_Dolgi extends BaseReport {
         $users_ldo = new \Models\LDO\usernames();
         $usernames = $users_ldo->getData();
         while ($nxt = $res->fetch_array()) {
+            if(!\acl::testAccess([ 'directory.agent.global', 'directory.agent.ingroup.'.$nxt['group']], \acl::VIEW)) {
+                continue;
+            }
             $dolg = $this->agentCalcDebt($nxt[0], $firm_id, $date);
             if ((($dolg['debt'] > 0) && ($vdolga == 1)) || (($dolg['debt'] < 0) && ($vdolga == 2))) {
                 $d_res = $db->query("SELECT `date` FROM `doc_list`

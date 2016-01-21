@@ -32,16 +32,19 @@ class Report_Balance {
         global $tmpl, $db;
         $tmpl->addBreadcrumb($this->getName(), '');
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
-            <div id='page-info'>Отображается текущее количество средств во всех кассах и банках</div>
+            <div id='page-info'>Отображается текущеие значения счётчиков средств в доступных кассах и банках</div>
             <table width='50%' class='list'>
             <tr><th>Тип</th><th>Название</th><th>Балланс</th></tr>");
         $i = 0;
-        $res = $db->query("SELECT `ids`,`name`,`ballance` FROM `doc_kassa`");
-        while ($nxt = $res->fetch_row()) {
+        $res = $db->query("SELECT `ids` AS `type`, `num` AS `id`, `name`, `ballance` AS `balance`, `firm_id` FROM `doc_kassa`");
+        while ($line = $res->fetch_assoc()) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW)) {
+                continue;
+            }
             $i = 1 - $i;
-            $val_p = number_format($nxt[2], 2, '.', ' ');
-            $style = $nxt[2]<0?" style='color:#f00;font-weight:bold;'":'';
-            $tmpl->addContent("<tr><td>$nxt[0]</td><td>" . html_out($nxt[1]) . "</td><td align='right'{$style}>$val_p</td></tr>");
+            $val_p = number_format($line[2], 2, '.', ' ');
+            $style = $line[2]<0?" style='color:#f00;font-weight:bold;'":'';
+            $tmpl->addContent("<tr><td>$line[0]</td><td>" . html_out($line[1]) . "</td><td align='right'{$style}>$val_p</td></tr>");
         }
         $dt = date("Y-m-d");
         $tmpl->addContent("</table>
@@ -63,8 +66,9 @@ class Report_Balance {
         $tm = strtotime($dt);
         $bank_names = $cash_names = array();
         $bank_sums = $cash_sums = array();
-        $r = $db->query("SELECT `ids`, `num`, `name` FROM `doc_kassa`");
-        while ($n = $r->fetch_assoc()) {
+        $firm_ids = array();
+        $r = $db->query("SELECT `ids`, `num`, `name`, `firm_id` FROM `doc_kassa`");
+        while ($n = $r->fetch_assoc()) {            
             if ($n['ids'] == 'bank') {
                 $bank_names[$n['num']] = $n['name'];
                 $bank_sums[$n['num']] = 0;
@@ -72,6 +76,7 @@ class Report_Balance {
                 $cash_names[$n['num']] = $n['name'];
                 $cash_sums[$n['num']] = 0;
             }
+            $firm_ids[$n['ids']][$n['num']] = $n['firm_id'];
         }
         if ($name) {
             $tm+=60 * 60 * 24 - 1;
@@ -107,6 +112,10 @@ class Report_Balance {
 		<tr><th>N</th><th>Наименование</th><th>Балланс</th></tr>
 		<tr><th colspan='5'>Банки");
         foreach ($bank_names as $id => $name) {
+            $firm_id = $firm_ids['bank'][$id];
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW)) {
+                continue;
+            }
             $val_p = number_format($bank_sums[$id], 2, '.', ' ');
             $style = $bank_sums[$id]<0?" style='color:#f00;font-weight:bold;'":'';
             $tmpl->addContent("<tr><td>$id</td><td>".html_out($name)."</td><td align='right'{$style}>$val_p</td></tr>");
@@ -114,6 +123,10 @@ class Report_Balance {
         $tmpl->addContent("
 		<tr><th colspan='5'>Кассы (все)");
         foreach ($cash_names as $id => $name) {
+            $firm_id = $firm_ids['kassa'][$id];
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW)) {
+                continue;
+            }
             $val_p = number_format($cash_sums[$id], 2, '.', ' ');
             $style = $cash_sums[$id]<0?" style='color:#f00;font-weight:bold;'":'';
             $tmpl->addContent("<tr><td>$id</td><td>".html_out($name)."</td><td align='right'{$style}>$val_p</td></tr>");
