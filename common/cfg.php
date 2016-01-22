@@ -67,6 +67,20 @@ class cfg {
         }
     }
     
+    /// Получить параметр конфигурации
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    /// @param $default Значение по умолчанию. Возвращается, если параметр не определён
+    /// @return Параметр, или $default
+    static function getroot($sect, $default = null) {
+        global $CONFIG;
+        if(isset($CONFIG[$sect])) {
+            return $CONFIG[$sect];
+        } else {
+            return $default;
+        }
+    }
+    
     /// Проверить существование параметра конфигурации
     /// @param $sect Имя секции конфигурации
     /// @param $param Имя параметра конфигурации

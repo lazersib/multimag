@@ -64,17 +64,17 @@ class images extends \IModule {
         $o_link = "{$CONFIG['site']['var_data_web']}/pos/{$line['id']}.{$line['type']}";
         $tmpl->msg("Замена файла очистит кеш изображений!", "err", "Внимание");
         $tmpl->addContent("<form method='post' enctype='multipart/form-data'>
-		<input type='hidden' name='mode' value='cimage'>
-		<input type='hidden' name='save' value='ok'>
-		<input type='hidden' name='img' value='$image_id'>
-		Новое название:<br>
-		<input type='text' name='name' value='" . html_out($line['name']) . "'><br>
-		Новый файл изображения:<br>
-		<input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br>
-		<b>Форматы</b>: Не более $max_fs_size, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
-		<button>Сохранить</button>
-		</form><br>
-		<a href='$o_link'>Скачать оригинал изображения</a><br><br>");
+            <input type='hidden' name='mode' value='cimage'>
+            <input type='hidden' name='save' value='ok'>
+            <input type='hidden' name='img' value='$image_id'>
+            Новое название:<br>
+            <input type='text' name='name' value='" . html_out($line['name']) . "'><br>
+            Новый файл изображения:<br>
+            <input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br>
+            <b>Форматы</b>: Не более $max_fs_size, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
+            <button>Сохранить</button>
+            </form><br>
+            <a href='$o_link'>Скачать оригинал изображения</a><br><br>");
         $image_id = new ImageProductor($line['id'], 'p', $line['type']);
         $image_id->SetNoEnlarge(1);
         $image_id->SetY(800);

@@ -149,7 +149,6 @@ class cabinet extends \IModule {
         $this->addMenuElement('worker', 'doclist', 'service.doclist', 'Документы', '/docj_new.php');
         $this->addMenuElement('worker', 'intkb', 'service.intkb', 'База знаний', '/intkb.php');
         $this->addMenuElement('worker', 'factory', 'service.factory', 'Учёт на производстве', '/factory.php');
-        $this->addMenuElement('worker', 'tickets', 'service.tickets', 'Задания', '/tickets.php');
         $this->addMenuElement('worker', 'feedback', 'service.feedback', 'Запрос на доработку программы', '/user.php?mode=feedback');        
         $this->loadMenuElements('worker', 'service', '/service.php?mode=');
         
