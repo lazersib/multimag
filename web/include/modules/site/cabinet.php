@@ -164,6 +164,14 @@ class cabinet extends \IModule {
     public function viewCabinetPage() {
         global $tmpl;
         $this->fillMenu();
+        if(\acl::testAccess('service.changelog', \acl::VIEW)) {
+            $tmpl->addContent("<div style='float:right; width:50%; border:1px dotted #ccc; padding:5px;'>");
+            $tmpl->addContent("<h2>Что нового?</h2>");
+            $cl = new \modules\service\changelog();
+            $cl->load();
+            $tmpl->addContent($cl->getLastChanges());
+            $tmpl->addContent("</div>");
+        }
         foreach($this->menu as $group_name => $group_item) {
             $sub = '';
             

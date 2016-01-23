@@ -560,7 +560,7 @@ class tickets extends \IModule {
     }
     
     public function run() {
-        global $tmpl, $db;
+        global $tmpl;
         \acl::accessGuard($this->acl_object_name, \acl::VIEW);
         $tmpl->addBreadcrumb($this->getName(), $this->link_prefix);
         $sect = request('sect', 'wmy');

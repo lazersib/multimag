@@ -48,6 +48,7 @@ class main extends \acl\aclContainer {
                 "name" => "Поиск по сайту",
                 "mask" => \acl::VIEW
             ),
+            
         );
     }
     

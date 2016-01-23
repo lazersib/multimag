@@ -80,6 +80,10 @@ class main extends \acl\aclContainer {
                 "name" => "Документы в работе",
                 "mask" => \acl::VIEW
             ),
+            'changelog' => array(
+                "name" => "Список изменений в системе",
+                "mask" => \acl::VIEW
+            ),
         );
     }
     

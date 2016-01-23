@@ -776,6 +776,16 @@ if(!function_exists('mb_internal_encoding'))
 
 $time_start = microtime(true);
 
+
+mb_internal_encoding("UTF-8");
+
+$base_path = dirname(dirname(__FILE__));
+if(! include_once("$base_path/config_site.php")) {
+	header("HTTP/1.0 500 Internal Server Error");
+        header("Retry-After: 3000");
+	die("<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
+}
+
 if(isset($CONFIG['site']['session_cookie_domain'])) {
     if($CONFIG['site']['session_cookie_domain']) {
         session_set_cookie_params(0, '/' , $CONFIG['site']['session_cookie_domain']);
@@ -783,16 +793,6 @@ if(isset($CONFIG['site']['session_cookie_domain'])) {
 }
 
 session_start();
-mb_internal_encoding("UTF-8");
-
-$base_path = dirname(dirname(__FILE__));
-if(! include_once("$base_path/config_site.php"))
-{
-	header("HTTP/1.0 500 Internal Server Error");
-        header("Retry-After: 3000");
-	die("<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
-}
-
 include_once($CONFIG['location']."/common/core.common.php");
 
 if ($CONFIG['site']['force_https']) {
