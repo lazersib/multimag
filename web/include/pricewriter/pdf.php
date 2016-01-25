@@ -148,6 +148,8 @@ class pdf extends BasePriceWriter {
     }
 
     /// Сформировать строки прайса
+    /// param $group id номенклатурной группы
+    /// param $group_name Отображаемое имя номенклатурной группы
     function writepos($group = 0, $group_name = '') {
         
     }

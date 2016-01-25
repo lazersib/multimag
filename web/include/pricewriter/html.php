@@ -90,6 +90,8 @@ class html extends BasePriceWriter {
     }
 
     /// Сформирвать тело прайса
+    /// param $group id номенклатурной группы
+    /// param $level уровень вложенности
     function write($group = 0, $level = 0) {
         if ($level > 3) {
             $level = 3;
@@ -126,6 +128,8 @@ class html extends BasePriceWriter {
     }
 
     /// Сформировать строки прайса
+    /// param $group id номенклатурной группы
+    /// param $group_name Отображаемое имя номенклатурной группы
     function writepos($group = 0, $group_name = '') {
         global $CONFIG;
         $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,

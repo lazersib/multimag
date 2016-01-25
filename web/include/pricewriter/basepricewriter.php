@@ -45,19 +45,19 @@ class BasePriceWriter {
     }
 
     /// Включает отображение наименования производителя в наименовании товара
-    /// @param visible true - отображать , false - не отображать
+    /// @param $visible true - отображать , false - не отображать
     public function showProizv($visible = 1) {
         $this->view_proizv = $visible;
     }
 
     /// Включает режим отображения в прайс-листе только заданных групп товаров
-    /// @param groups Массив с id групп, которые должны быть включены в прайс-лист
+    /// @param $groups Массив с id групп, которые должны быть включены в прайс-лист
     public function setViewGroups($groups) {
         $this->view_groups = $groups;
     }
 
     /// Задаёт количество колонок, отображаемых в прайс-листе
-    /// @param count Количество колонок
+    /// @param $count Количество колонок
     public function setColCount($count) {
         $this->column_count = $count;
         settype($this->column_count, "int");
@@ -70,15 +70,15 @@ class BasePriceWriter {
     }
 
     /// Устанавливает цену, которая должна быть отображена в прайс-листе
-    /// @param cost Id отображаемой цены
+    /// @param $cost Id отображаемой цены
     public function setCost($cost = 1) {
         $this->cost_id = $cost;
         settype($this->cost_id, "int");
     }
 
     /// Получить информации о количестве товара. Формат информации - в конфигурационном файле
-    /// @param count	Количество единиц товара на складе
-    /// @param transit	Количество единиц товара в пути
+    /// @param $count	Количество единиц товара на складе
+    /// @param $transit	Количество единиц товара в пути
     protected function getCountInfo($count, $transit) {
         global $CONFIG;
         if (!isset($CONFIG['site']['vitrina_pcnt_limit'])) {

@@ -1938,23 +1938,26 @@ class doc_Nulltype extends \document {
 
     protected function drawKassaField() {
         global $tmpl, $db, $CONFIG;
+        if ($this->doc_data['kassa']) {
+            $kassa = $this->doc_data['kassa'];
+        } else {
+            $pref = \pref::getInstance();
+            $kassa = $pref->getSitePref('default_cash_id');
+        }
+        settype($kassa, 'int');
         $tmpl->addContent("Касса:<br><select name='kassa'>");
         $res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND 
-                    (`firm_id`='0' OR `firm_id` IS NULL OR `firm_id`={$this->doc_data['firm_id']} OR `num`='{$this->doc_data['kassa']}') ORDER BY `num`");
-        if ($this->doc_data['kassa'])
-            $kassa = $this->doc_data['kassa'];
-        else {
-            $pref = \pref::getInstance();
-            $bank = $pref->getSitePref('default_cash_id');
-        }
+                    (`firm_id`='0' OR `firm_id` IS NULL OR `firm_id`='{$this->doc_data['firm_id']}' OR `num`='$kassa') ORDER BY `num`");        
 
-        if ($kassa == 0)
+        if ($kassa == 0) {
             $tmpl->addContent("<option value='0'>--не выбрана--</option>");
+        }
         while ($nxt = $res->fetch_row()) {
-            if ($nxt[0] == $kassa)
+            if ($nxt[0] == $kassa) {
                 $tmpl->addContent("<option value='$nxt[0]' selected>" . html_out($nxt[1]) . "</option>");
-            else
+            } else {
                 $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            }
         }
         $tmpl->addContent("</select><br>");
     }

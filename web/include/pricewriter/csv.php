@@ -35,7 +35,7 @@ class csv extends BasePriceWriter {
     }
 
     /// Установить символ разделителя колонок
-    /// @param divider Символ разделителя колонок (,;:)
+    /// @param $divider Символ разделителя колонок (,;:)
     function setDivider($divider = ",") {
         $this->divider = $divider;
         if ($this->divider != ";" && $this->divider != ":") {
@@ -44,7 +44,7 @@ class csv extends BasePriceWriter {
     }
 
     /// Установить символ экранирования строк
-    /// @param shielder Символ экранирования строк ('"*)
+    /// @param $shielder Символ экранирования строк ('"*)
     function setShielder($shielder = '"') {
         $this->shielder = $shielder;
         if ($this->shielder != "'" && $this->shielder != "*") {
@@ -71,6 +71,7 @@ class csv extends BasePriceWriter {
     }
 
     /// Сформирвать тело прайса
+    /// param $group id номенклатурной группы
     function write($group = 0) {
         global $CONFIG;
         $res = $this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `id`");
@@ -114,6 +115,7 @@ class csv extends BasePriceWriter {
     }
 
     /// Сформировать строки прайса
+    /// param $group id номенклатурной группы
     function writepos($group = 0) {
         global $CONFIG;
         $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,

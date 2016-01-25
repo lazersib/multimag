@@ -185,6 +185,8 @@ class xls extends BasePriceWriter {
     }
 
     /// Сформирвать тело прайса
+    /// param $group id номенклатурной группы
+    /// param $level уровень вложенности
     function write($group = 0, $level = 0) {
         if ($level > 2) {
             $level = 2;
@@ -224,6 +226,8 @@ class xls extends BasePriceWriter {
     }
 
     /// Сформировать строки прайса
+    /// param $group id номенклатурной группы
+    /// param $group_name Отображаемое имя номенклатурной группы
     function writepos($group = 0, $group_name = '') {
         global $CONFIG;
         $pref = \pref::getInstance();
