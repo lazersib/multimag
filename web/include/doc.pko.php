@@ -25,7 +25,7 @@ class doc_Pko extends paymentbasedoc {
         $this->doc_type = 6;
         $this->typename = 'pko';
         $this->viewname = 'Приходный кассовый ордер';
-        $this->ksaas_modify = 1;
+        $this->kassa_modify = 1;
         $this->header_fields = 'kassa sum separator agent';
     }
 

@@ -34,7 +34,7 @@ class widgets {
         }
         foreach($values as $id=>$value) {
             $s = ($selected_id == $id) ? 'selected' : '';
-            $str .= '<option value="'.html_out($id).'" $s>' . html_out($value) . '</option>';
+            $str .= '<option value="'.html_out($id).'" '.$s.'>' . html_out($value) . '</option>';
         }
         $str .= '</select>';
         return $str;

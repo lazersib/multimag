@@ -146,7 +146,7 @@ class doc_Zayavka extends doc_Nulltype {
             $smsphone = $agent->getSMSPhone();                
         }
         if (!$smsphone && $this->dop_data['ishop']) {
-            $user_data = $db->selectA('users', $this->doc_data['user'], array('reg_phone'));
+            $user_data = $db->selectRowA('users', $this->doc_data['user'], array('reg_phone'));
             if (isset($user_data['reg_phone'])) {
                 $smsphone = $user_data['reg_phone'];
             }
@@ -189,7 +189,7 @@ class doc_Zayavka extends doc_Nulltype {
             }
         }
         if($this->dop_data['ishop']) {
-            $user_data = $db->selectA('users', $this->doc_data['user'], array('reg_email'));
+            $user_data = $db->selectRowA('users', $this->doc_data['user'], array('reg_email'));
             if (isset($user_data['reg_email'])) {
                 $emails[] = $user_data['reg_email'];
             }
@@ -228,7 +228,7 @@ class doc_Zayavka extends doc_Nulltype {
             }
         }
         if($this->dop_data['ishop']) {
-            $user_data = $db->selectA('users', $this->doc_data['user'], array('jid'));
+            $user_data = $db->selectRowA('users', $this->doc_data['user'], array('jid'));
             if (isset($user_data['jid'])) {
                 $addresses[] = $user_data['jid'];
             }

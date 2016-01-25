@@ -24,7 +24,8 @@ class changelog extends \IModule {
     protected $logdata = array();
 
     public function __construct() {
-        parent::__construct();        
+        parent::__construct();  
+        $this->acl_object_name = 'service.changelog';
     }
     
     public function load() {

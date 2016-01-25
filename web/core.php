@@ -34,23 +34,6 @@
 Смотри <a href='annotated.html'>структуры данных</a> и <a href='hierarchy.html'>иерархию классов</a>, чтобы получить полное представление о классах системы
 **/
 
-if (@$CONFIG['site']['maintain_ip']) {
-    if($CONFIG['site']['maintain_ip']!=getenv('REMOTE_ADDR')) {
-	header("HTTP/1.0 503 Service temporary unavariable");
-        header("Retry-After: 300");
-        die("<!DOCTYPE html>
-<html>
-<head>
-<meta charset=\"utf-8\">
-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
-<title>Error 500: Необработанная внутренняя ошибка</title>
-<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
-<h1>503 Service temporary unavariable</h1>Сайт отключне на техобслуживание. Повторите попытку через несколько минут!<br>
-The site in maintenance mode. Please try again in a few minutes!</body></html>"
-	);
-    }
-}
-
 /// Автозагрузка классов для ядра
 function core_autoload($class_name){
     global $CONFIG;
@@ -784,6 +767,23 @@ if(! include_once("$base_path/config_site.php")) {
 	header("HTTP/1.0 500 Internal Server Error");
         header("Retry-After: 3000");
 	die("<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
+}
+
+if (@$CONFIG['site']['maintain_ip']) {
+    if($CONFIG['site']['maintain_ip']!=getenv('REMOTE_ADDR')) {
+	header("HTTP/1.0 503 Service temporary unavariable");
+        header("Retry-After: 300");
+        die("<!DOCTYPE html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
+<title>Error 500: Необработанная внутренняя ошибка</title>
+<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
+<h1>503 Service temporary unavariable</h1>Сайт отключне на техобслуживание. Повторите попытку через несколько минут!<br>
+The site in maintenance mode. Please try again in a few minutes!</body></html>"
+	);
+    }
 }
 
 if(isset($CONFIG['site']['session_cookie_domain'])) {

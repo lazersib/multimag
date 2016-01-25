@@ -35,6 +35,9 @@ class clearCache extends \Action {
             if($dir=='.' || $dir == '..') {
                 continue;
             }
+            if(!is_dir($cache_dir . $dir)) {
+                continue;
+            }
             echo "dir: $dir : filetype: " . filetype($cache_dir . $dir) . "\n";
             $o_dir = opendir($cache_dir.$dir);
             while (($file = readdir($o_dir)) !== false) {        
@@ -48,7 +51,7 @@ class clearCache extends \Action {
                 }
                 
             }
-            closedir($o_dir);            
+            closedir($o_dir); 
         }
         closedir($s_dir);
     }
