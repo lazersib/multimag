@@ -156,22 +156,22 @@ function mailto($email, $subject, $msg, $from = "") {
     global $CONFIG;
     require_once($CONFIG['location'] . '/common/email_message.php');
 
-    $email_message = new email_message_class();
-    $email_message->default_charset = "UTF-8";
-    $email_message->SetEncodedEmailHeader("To", $email, $email);
-    $email_message->SetEncodedHeader("Subject", $subject);
+    $es = new \email_message_class();
+    $es->default_charset = "UTF-8";
+    $es->SetEncodedEmailHeader("To", $email, $email);
+    $es->SetEncodedHeader("Subject", $subject);
     if ($from) {
-        $email_message->SetEncodedEmailHeader("From", $from, $from);
+        $es->SetEncodedEmailHeader("From", $from, $from);
     } else {
-        $email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['display_name']}");
+        $es->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['display_name']}");
     }
-    $email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
-    $email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
-    $email_message->AddQuotedPrintableTextPart($msg);
-    $error = $email_message->Send();
+    $es->SetHeader("Sender", $CONFIG['site']['admin_email']);
+    $es->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
+    $es->AddQuotedPrintableTextPart($msg);
+    $error = $es->Send();
 
     if (strcmp($error, "")) {
-        throw new Exception($error."\nTo: ".$email);
+        throw new \Exception("Ошибка отправки email сообщения на адрес: $email\n$error");
     }
     return 0;
 }

@@ -22,18 +22,14 @@ class paymentbasedoc extends doc_Nulltype {
 
     /// Оповещение о поступившем платеже
     protected function paymentNotify() {
-        global $CONFIG;
         $pref = \pref::getInstance();
-        if(!$CONFIG['notify']['payment']) {
+        if(!\cfg::get('notify', 'payment') ) {
             return false;
         }
         $text = $smstext = 'Поступил платёж на сумму {SUM} р.';
-        if(isset($CONFIG['notify']['payment_text'])) {
-            $text = $CONFIG['notify']['payment_text'];
-        }
-        if(isset($CONFIG['notify']['payment_smstext'])) {
-            $smstext = $CONFIG['notify']['payment_smstext'];
-        }
+        $text = \cfg::get('notify', 'payment_text', $text);
+        $smstext = \cfg::get('notify', 'payment_smstext', $smstext);
+ 
         $s = array('{DOC}', '{SUM}', '{DATE}');
         $r = array($this->id, $this->doc_data['sum'], date('Y-m-d', $this->doc_data['date']));
         foreach($this->doc_data as $name => $value) {

@@ -36,7 +36,7 @@ class main extends \acl\aclContainer {
                 "name" => "Комментарии",
                 "mask" => \acl::VIEW | \acl::UPDATE | \acl::DELETE
             ),
-            'mail' => array(
+            'mailconfig' => array(
                 "name" => "Настройка почтовых ящиков и алиасов",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),

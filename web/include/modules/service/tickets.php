@@ -477,7 +477,7 @@ class tickets extends \IModule {
                 LEFT JOIN `users_worker_info` AS `uwi` ON `uwi`.`user_id`=`users`.`id`
 		WHERE `tickets`.`id`='$id'");
             $ticket_info = $res->fetch_assoc();
-            $txt = $ticket_info['user_name'] . ' ' . $txt;
+            $txt = $_SESSION['name'] . ' ' . $txt;
             $msg = "Изменение состояния Вашего задания #{$id}: {$ticket_info['theme']}\n$txt\n\n";
             $pref = \pref::getInstance();
             $msg.="Посмотреть задание можно здесь: http://{$pref->site_name}{$this->link_prefix}&sect=view&id=$id";

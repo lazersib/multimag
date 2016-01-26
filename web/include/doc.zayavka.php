@@ -132,8 +132,8 @@ class doc_Zayavka extends doc_Nulltype {
     /// Отправить SMS с заданным текстом заказчику на первый из подходящих номеров
     /// @param text текст отправляемого сообщения
     function sendSMSNotify($text) {
-        global $CONFIG, $db;
-        if (!$CONFIG['doc']['notify_sms']) {
+        global $db;
+        if (!\cfg::get('doc', 'notify_sms')) {
             return false;
         }        
         if (isset($this->dop_data['buyer_phone'])) {
@@ -157,7 +157,7 @@ class doc_Zayavka extends doc_Nulltype {
             $sender->setNumber($smsphone);
             $sender->setContent($text);
             $sender->send();
-            if(@$CONFIG['doc']['notify_debug']) {
+            if( \cfg::get('doc', 'notify_debug') ) {
                 doc_log("NOTIFY SMS", "number:$smsphone; text:$text", 'doc', $this->id);
             } 
             return true;
@@ -168,9 +168,9 @@ class doc_Zayavka extends doc_Nulltype {
     /// Отправить email с заданным текстом заказчику на все доступные адреса
     /// @param text текст отправляемого сообщения
     function sendEmailNotify($text, $subject=null) {
-        global $CONFIG, $db;
+        global $db;
         $pref = \pref::getInstance();
-        if (!$CONFIG['doc']['notify_email']) {
+        if (!\cfg::get('doc', 'notify_email') ) {
             return false;
         }
         $emails = array();
@@ -179,11 +179,11 @@ class doc_Zayavka extends doc_Nulltype {
                 $emails[$this->dop_data['buyer_email']] = $this->dop_data['buyer_email'];
             }
         }
-        if ($this->doc_data['agent'] > 1) {
+        if ($this->doc_data['agent'] > 1) { // Частному лицу не рассылаем
             $agent = new \models\agent($this->doc_data['agent']);
             $contacts = $agent->contacts;
             foreach($contacts as $line) {
-                if($line['type']=='email') {
+                if($line['type']=='email' && $line['value']) {
                     $emails[$line['value']] = $line['value'];
                 }
             }
@@ -191,7 +191,9 @@ class doc_Zayavka extends doc_Nulltype {
         if($this->dop_data['ishop']) {
             $user_data = $db->selectRowA('users', $this->doc_data['user'], array('reg_email'));
             if (isset($user_data['reg_email'])) {
-                $emails[] = $user_data['reg_email'];
+                if($user_data['reg_email']) {
+                    $emails[$user_data['reg_email']] = $user_data['reg_email'];
+                }
             }
         }
         if(count($emails)>0) {
@@ -201,7 +203,7 @@ class doc_Zayavka extends doc_Nulltype {
                     $subject = "Заказ N {$this->id} на {$pref->site_name}";
                 }
                 mailto($email, $subject, $user_msg);
-                if(@$CONFIG['doc']['notify_debug']) {
+                if( \cfg::get('doc', 'notify_debug') ) {
                     doc_log("NOTIFY Email", "email:$email; text:$user_msg", 'doc', $this->id);
                 }
             }
@@ -213,8 +215,8 @@ class doc_Zayavka extends doc_Nulltype {
     /// Отправить сообщение по XMPP с заданным текстом заказчику на все доступные адреса
     /// @param text текст отправляемого сообщения
     function sendXMPPNotify($text) {
-        global $CONFIG, $db;
-        if (!$CONFIG['doc']['notify_xmpp']) {
+        global $db;
+        if (!\cfg::get('doc', 'notify_xmpp')) {
             return false;
         }
         $addresses = array();
@@ -234,14 +236,15 @@ class doc_Zayavka extends doc_Nulltype {
             }
         }
         if(count($addresses)>0) {
-            require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
-            $xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
+            require_once(\cfg::getroot('location').'/common/XMPPHP/XMPP.php');
+            $xmppclient = new XMPPHP_XMPP( 
+                \cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp', 'login'), \cfg::get('xmpp', 'pass'), 'MultiMag r'.MULTIMAG_REV);
             $xmppclient->connect();
             $xmppclient->processUntil('session_start');
             $xmppclient->presence();
             foreach($addresses as $addr) {                
                 $xmppclient->message($addr, $text);                    
-                if(@$CONFIG['doc']['notify_debug']) {
+                if(\cfg::get('doc','notify_debug') ) {
                     doc_log("NOTIFY xmpp", "jid:$addr; text:$text", 'doc', $this->id);
                 }
             }

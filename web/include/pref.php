@@ -76,11 +76,13 @@ class pref {
 
     protected function detectSite() {
         $this->current_site = null;
-        $site = $_SERVER['SERVER_NAME'];
-        foreach($this->sites_data as $id => $line) {
-            if($site===$line['name']) {
-                $this->current_site = $line;
-                break;
+        if(isset($_SERVER['SERVER_NAME'])) {
+            $site = $_SERVER['SERVER_NAME'];
+            foreach($this->sites_data as $id => $line) {
+                if($site===$line['name']) {
+                    $this->current_site = $line;
+                    break;
+                }
             }
         }
         if(!$this->current_site) {
