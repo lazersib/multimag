@@ -17,14 +17,14 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-/// Отчёт по статьям расходов
-class Report_Outlay_Items extends BaseReport {
+/// Отчёт по статьям доходов
+class Report_Expense_Items extends BaseReport {
 
     function getName($short = 0) {
         if ($short) {
-            return "По статьям расходов";
+            return "По статьям доходов";
         } else {
-            return "Отчёт по статьям расходов";
+            return "Отчёт по статьям доходов";
         }
     }
 
@@ -34,7 +34,7 @@ class Report_Outlay_Items extends BaseReport {
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
             <script src='/js/calendar.js'></script>
             <form action=''>
-            <input type='hidden' name='mode' value='outlay_items'>
+            <input type='hidden' name='mode' value='expense_items'>
             Выберите фирму:<br>
             <select name='firm'>");
         $tmpl->addContent("<option value='0'>--не выбрана--</option>");
@@ -78,34 +78,28 @@ class Report_Outlay_Items extends BaseReport {
         $this->tableHeader($headers);
 
         $sql_add = $firm ? " AND `doc_list`.`firm_id` = '$firm'" : '';
+        $sql_start = "SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
+                `doc_agent`.`name` AS `agent_fullname`
+            FROM `doc_list`
+            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='credit_type' AND `doc_dopdata`.`value` ";
+        $sql_end = " LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+            WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='4' OR `doc_list`.`type`='6') AND `doc_list`.`date`>='$daystart'
+                AND `doc_list`.`date`<='$dayend' $sql_add
+            ORDER BY `doc_list`.`date`";
         
         $this->tableAltStyle();
         $this->tableSpannedRow(array($this->col_cnt), array("--Статья не указана или отсутствует--"));
         $this->tableAltStyle(false);
-        $sum = 0;
-        $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
-                `doc_agent`.`name` AS `agent_fullname`
-            FROM `doc_list`
-            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='rasxodi' AND `doc_dopdata`.`value` IS NULL
-            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='5' OR `doc_list`.`type`='7') AND `doc_list`.`date`>='$daystart'
-                AND `doc_list`.`date`<='$dayend' $sql_add
-            ORDER BY `doc_list`.`date`");
+        $sum = 0;                
+        
+        $res = $db->query("$sql_start IS NULL $sql_end");
         while ($nxt = $res->fetch_assoc()) {
             $dt = date("Y-m-d H:i:s", $nxt['date']);
             $this->tableRow(array($nxt['doc_id'], $dt, $nxt['agent_fullname'], $nxt['doc_name'], $nxt['sum']));
             $sum+=$nxt['sum'];
         }
-        $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
-                `doc_agent`.`name` AS `agent_fullname`
-            FROM `doc_list`
-            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='rasxodi' AND `doc_dopdata`.`value`=0
-            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='5' OR `doc_list`.`type`='7') AND `doc_list`.`date`>='$daystart'
-                AND `doc_list`.`date`<='$dayend' $sql_add
-            ORDER BY `doc_list`.`date`");
+        $res = $db->query("$sql_start = 0 $sql_end");
         while ($nxt = $res->fetch_assoc()) {
             $dt = date("Y-m-d H:i:s", $nxt['date']);
             $this->tableRow(array($nxt['doc_id'], $dt, $nxt['agent_fullname'], $nxt['doc_name'], $nxt['sum']));
@@ -113,21 +107,13 @@ class Report_Outlay_Items extends BaseReport {
         }
         $this->tableSpannedRow(array(2, 2, 1), array('', 'Итого по статье:', sprintf("%0.2f", $sum)));
 
-        $res_vr = $db->query("SELECT `id`, `name` FROM `doc_dtypes` ORDER BY `id`");
+        $res_vr = $db->query("SELECT `id`, `name` FROM `doc_ctypes` ORDER BY `id`");
         while ($vr = $res_vr->fetch_row()) {
             $this->tableAltStyle();
             $this->tableSpannedRow(array($this->col_cnt), array("$vr[0]. $vr[1]"));
             $this->tableAltStyle(false);
             $sum = 0;
-            $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
-                    `doc_agent`.`name` AS `agent_fullname`
-                FROM `doc_list`
-                INNER JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='rasxodi' AND `doc_dopdata`.`value`='$vr[0]'
-                LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-                LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-                WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='5' OR `doc_list`.`type`='7') AND `doc_list`.`date`>='$daystart'
-                    AND `doc_list`.`date`<='$dayend' $sql_add
-                ORDER BY `doc_list`.`date`");
+            $res = $db->query("$sql_start ='$vr[0]' $sql_end");
             while ($nxt = $res->fetch_assoc()) {
                 $dt = date("Y-m-d H:i:s", $nxt['date']);
                 $this->tableRow(array($nxt['doc_id'], $dt, $nxt['agent_fullname'], $nxt['doc_name'], $nxt['sum']));

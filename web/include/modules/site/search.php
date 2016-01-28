@@ -50,14 +50,14 @@ class search extends \IModule {
     }
 
     /// Задать строку поиска
-    /// @param search_str Искомая строка
+    /// @param $search_str Искомая строка
     public function setSearchString($search_str) {
         parent::__construct();
         $this->search_str = $search_str;
     }
     
     /// Отобразить страницу поиска
-    /// @param mode: вид страницы поиска
+    /// @param $mode вид страницы поиска
     public function ExecMode($mode = '') {
         global $tmpl, $CONFIG, $db;
         $tmpl->addBreadcrumb('Главная', '/');
@@ -398,7 +398,7 @@ class search extends \IModule {
     }
 
     /// Поиск по статьям
-    /// @param s Подстрока поиска
+    /// @param $s Подстрока поиска
     function searchArticles($s) {
         global $db;
         $ret = '';
@@ -616,17 +616,17 @@ class search extends \IModule {
     }
 
     /// Получить отображаемую информацию о количестве товара
-    /// @param count Количество товара в наличиии
-    /// @param tranzit Количество товара в пути
+    /// @param $count Количество товара в наличиии
+    /// @param $transit Количество товара в пути
     /// @return Строка с информацией о наличии
-    protected function GetCountInfo($count, $tranzit) {
+    protected function GetCountInfo($count, $transit) {
         global $CONFIG;
         if (!isset($CONFIG['site']['vitrina_pcnt_limit'])) {
             $CONFIG['site']['vitrina_pcnt_limit'] = [1, 10, 100];
         }
         if ($CONFIG['site']['vitrina_pcnt'] == 1) {
             if ($count <= 0) {
-                if ($tranzit) {
+                if ($transit) {
                     return 'в пути';
                 } else {
                     return 'уточняйте';
@@ -644,7 +644,7 @@ class search extends \IModule {
         }
         else if ($CONFIG['site']['vitrina_pcnt'] == 2) {
             if ($count <= 0) {
-                if ($tranzit) {
+                if ($transit) {
                     return 'в пути';
                 } else {
                     return 'уточняйте';
@@ -659,7 +659,7 @@ class search extends \IModule {
                 return 'оч.много';
             }
         } else {
-            return round($count) . ($tranzit ? ('/' . $tranzit) : '');
+            return round($count) . ($transit ? ('/' . $transit) : '');
         }
     }
 

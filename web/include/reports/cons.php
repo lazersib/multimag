@@ -62,6 +62,9 @@ class Report_Cons extends BaseReport {
             LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'
             WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_st' AND `doc_list`.`date`<='$date_end'");
         while($line = $res->fetch_assoc()) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW)) {
+                continue;
+            }
             $f = $line['firm_id'];
             $s = $line['subtype'];
             $a = $line['agent'];

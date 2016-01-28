@@ -88,7 +88,7 @@ class News extends \IModule {
     }
 
     /// Отобразить страницу новостей
-    /// @param mode: '' - список новостей
+    /// @param $mode список новостей
     public function ExecMode($mode = '') {
         global $tmpl, $CONFIG, $db;
         $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
@@ -144,8 +144,8 @@ class News extends \IModule {
         }
     }
 
-/// Отобразить летну новостей заданного типа
-/// @param type: '' - любые типы, news - только новости, stocks - только акции, events - только события
+    /// Отобразить летну новостей заданного типа
+    /// @param $type - любые типы, news - только новости, stocks - только акции, events - только события
     protected function ShowList($type = '') {
         global $tmpl, $CONFIG, $db;
         switch ($type) {
@@ -205,7 +205,8 @@ class News extends \IModule {
         }
     }
 
-/// Отобразить заданную новость
+    /// Отобразить заданную новость
+    /// @param $id id новости, которую нужно отобразить    
     protected function View($id) {
         global $tmpl, $db;
         $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`,
@@ -259,7 +260,11 @@ class News extends \IModule {
         }
     }
 
-    /// Форма создания новости
+    /// Форма создания и редактирования новости
+    /// @param $id id новости
+    /// @param $id $type Тип новости. news - новости, stocks - акции, events -  события. По умолчанию: news
+    /// @param $ex_date Дата окончания. Не используется у новостей
+    /// @param $text Текст новости
     protected function WriteForm($id=0, $type='news', $ex_date='', $text='') {
         global $tmpl;
         $novelty_c = $stock_c = $event_c = '';
@@ -302,7 +307,7 @@ class News extends \IModule {
 	</form>");
     }
 
-    /// Сохранить новость для публикации
+    /// Сохранить новость для последующей публикации
     protected function Save() {
         global $tmpl, $CONFIG, $db;
         
@@ -379,9 +384,10 @@ class News extends \IModule {
     }
 
 
-    /// Запись новости в хранилище
+    /// Публикация новости
+    /// @param $id id новости
     protected function Publish($id) {
-        global $tmpl, $CONFIG, $db;
+        global $tmpl, $db;
         $pref = \pref::getInstance();
         $send = request('send');
         
@@ -426,6 +432,8 @@ class News extends \IModule {
     }
 
     /// Получить ссылку на новость с заданным ID
+    /// @param $id id новости
+    /// @param $alt_param Дополнительные параметры в ссылке
     protected function GetNewsLink($id, $alt_param = '') {
         global $CONFIG;
         if ($CONFIG['site']['recode_enable']) {
