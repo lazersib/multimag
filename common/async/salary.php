@@ -238,10 +238,10 @@ class salary extends \AsyncWorker {
                 continue;
             }
             $doc_vars = array();
-            /*$res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
+            $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
                 $doc_vars[$line[0]] = $line[1];
-            }*/
+            }
             $doc_line['vars'] = $doc_vars;
             $doc_line['childs'] = array();
             $doc_line['fullpay'] = 0;
@@ -256,10 +256,10 @@ class salary extends \AsyncWorker {
             $docs.=','.$id;
         }
         // Грузим доп.параметры
-        $res = $db->query('SELECT `param`, `value`,`doc` FROM `doc_dopdata` WHERE `doc` IN (' . $docs.')');
-            while ($line = $res->fetch_row()) {
-                $this->docs[$line[2]]['vars'][$line[0]] = $line[1];
-        }
+//        $res = $db->query('SELECT `param`, `value`,`doc` FROM `doc_dopdata` WHERE `doc` IN (' . $docs.')');
+//            while ($line = $res->fetch_row()) {
+//                $this->docs[$line[2]]['vars'][$line[0]] = $line[1];
+//        }
     }
     
     function calcAgent($agent_id, $responsible_id) {
@@ -305,7 +305,6 @@ class salary extends \AsyncWorker {
                 }                
             }
         }
-        
         // Обрабатываем расходы
         // Проверка оплаты потомками
         foreach ($minus_docs as $id) {
@@ -344,11 +343,10 @@ class salary extends \AsyncWorker {
             }
             $this->docs[$id]['paytest_sum'] = $cur_sum;
         }
-        
         // Начисление зарплаты
         $cnt = 0;       
-        foreach ($minus_docs as $id) {
-            $doc = $this->docs[$id];
+        foreach ($this->docs as $id => $doc) {
+            //$doc = $this->docs[$id];
             if( ($doc['type']=='2' && $doc['fullpay']) || $doc['type']=='20') {
                 if( ! @$doc['vars']['salary']) {
                     $salary = $this->calcFee($doc, $responsible_id);
@@ -363,7 +361,7 @@ class salary extends \AsyncWorker {
                     $ser_salary_sql = json_encode($salary, JSON_UNESCAPED_UNICODE);
                     $db->insertA('doc_dopdata', array('doc'=>$doc['id'], 'param'=>'salary', 'value'=>$ser_salary_sql));
                 }
-                //echo "$id (".round($cnt/count($minus_docs), 2).")\n";
+                echo "$id (".round($cnt/count($minus_docs), 2).")\n";
                 $cnt++;
             }
         }
@@ -513,47 +511,6 @@ class salary extends \AsyncWorker {
         return $salary;
     }
         
-    function getInPrice($pos_id, $limit_date) {
-        return 0;
-        if($this->ppi[$pos_id]['type']) {
-            return 0;
-        }
-        if( !isset($this->ppi[$pos_id]['docs']) ) {
-            $this->loadPosDocs($pos_id);
-        }
-        if($this->ppi[$pos_id]['date']>$limit_date) {
-            reset($this->ppi[$pos_id]['docs']);
-            $this->ppi[$pos_id]['price'] = 0;
-            $this->ppi[$pos_id]['cnt'] = 0;
-            $this->ppi[$pos_id]['date'] = 0;
-        }
-        $this->ppi[$pos_id]['date'] = $limit_date;
-        $cur_cnt = $this->ppi[$pos_id]['cnt'];
-        $cur_price = $this->ppi[$pos_id]['price'];
-        do {
-            $line = current($this->ppi[$pos_id]['docs']);
-            if($line['date']>$limit_date) {
-                break;
-            }
-            if( $line['doc_type']==2 ||  $line['doc_type']==20 || ( $line['doc_type']==17 && $line['page']!=0 )  ) {
-                $line['cnt'] *= -1;                
-            }
-            if( ( ( $cur_cnt + $line['cnt'] ) != 0 ) && $line['cnt']>0 && $line['return_flag'] != 1 ) {
-                if($cur_cnt>0) {
-                    $cur_price = ( ($cur_price*$cur_cnt) + ($line['price']*$line['cnt']) ) / 
-                        ($cur_cnt + $line['cnt']);
-                } else {
-                    $cur_price = $line['price'];
-                }
-            }
-            $cur_cnt += $line['cnt'];
-        } while( next($this->ppi[$pos_id]['docs']) !== FALSE);
-        $this->ppi[$pos_id]['cnt'] = $cur_cnt;
-        $this->ppi[$pos_id]['price'] = $cur_price;
-        return round($cur_price, 2);
-    }
-
-
     public function loadPosTypes() {
         global $db;
         $res = $db->query("SELECT `id`, `pos_type` FROM `doc_base`");

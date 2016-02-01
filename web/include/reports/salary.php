@@ -93,7 +93,7 @@ class Report_Salary extends BaseGSReport {
             \acl::accessGuard([ 'firm.global', 'firm.'.$doc_line['firm_id']], \acl::VIEW);
             $doc_vars = array();
             $o_name = $o_fee = $r_name = $r_fee = $m_name = $m_fee = $sk_name = $sk_fee = '';
-            $sum_line = 0;
+
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
                 $doc_vars[$line[0]] = $line[1];
@@ -213,7 +213,7 @@ class Report_Salary extends BaseGSReport {
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
             . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8,20) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {            
             if($doc_line['return']) {
@@ -281,6 +281,7 @@ class Report_Salary extends BaseGSReport {
                         $salary->incFee('sk_in', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
                         break;
                     case 2:
+                    case 20:
                         $salary->incFee('sk_out', $info['sk_uid'], $info['sk_fee'], $doc_line['id']);
                         break;
                     case 8:

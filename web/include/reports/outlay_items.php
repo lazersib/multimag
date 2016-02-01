@@ -78,34 +78,27 @@ class Report_Outlay_Items extends BaseReport {
         $this->tableHeader($headers);
 
         $sql_add = $firm ? " AND `doc_list`.`firm_id` = '$firm'" : '';
+        $sql_start = "SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
+                `doc_agent`.`name` AS `agent_fullname`
+            FROM `doc_list`
+            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='rasxodi'
+            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+            WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='5' OR `doc_list`.`type`='7') AND `doc_list`.`date`>='$daystart'
+                AND `doc_list`.`date`<='$dayend' $sql_add AND `doc_dopdata`.`value` ";
+        $sql_end = " ORDER BY `doc_list`.`date`";
         
         $this->tableAltStyle();
         $this->tableSpannedRow(array($this->col_cnt), array("--Статья не указана или отсутствует--"));
         $this->tableAltStyle(false);
         $sum = 0;
-        $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
-                `doc_agent`.`name` AS `agent_fullname`
-            FROM `doc_list`
-            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='rasxodi' AND `doc_dopdata`.`value` IS NULL
-            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='5' OR `doc_list`.`type`='7') AND `doc_list`.`date`>='$daystart'
-                AND `doc_list`.`date`<='$dayend' $sql_add
-            ORDER BY `doc_list`.`date`");
+        $res = $db->query("$sql_start IS NULL $sql_end");
         while ($nxt = $res->fetch_assoc()) {
             $dt = date("Y-m-d H:i:s", $nxt['date']);
             $this->tableRow(array($nxt['doc_id'], $dt, $nxt['agent_fullname'], $nxt['doc_name'], $nxt['sum']));
             $sum+=$nxt['sum'];
         }
-        $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
-                `doc_agent`.`name` AS `agent_fullname`
-            FROM `doc_list`
-            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='rasxodi' AND `doc_dopdata`.`value`=0
-            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='5' OR `doc_list`.`type`='7') AND `doc_list`.`date`>='$daystart'
-                AND `doc_list`.`date`<='$dayend' $sql_add
-            ORDER BY `doc_list`.`date`");
+        $res = $db->query("$sql_start =0 $sql_end");
         while ($nxt = $res->fetch_assoc()) {
             $dt = date("Y-m-d H:i:s", $nxt['date']);
             $this->tableRow(array($nxt['doc_id'], $dt, $nxt['agent_fullname'], $nxt['doc_name'], $nxt['sum']));
@@ -119,15 +112,7 @@ class Report_Outlay_Items extends BaseReport {
             $this->tableSpannedRow(array($this->col_cnt), array("$vr[0]. $vr[1]"));
             $this->tableAltStyle(false);
             $sum = 0;
-            $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
-                    `doc_agent`.`name` AS `agent_fullname`
-                FROM `doc_list`
-                INNER JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='rasxodi' AND `doc_dopdata`.`value`='$vr[0]'
-                LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-                LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-                WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='5' OR `doc_list`.`type`='7') AND `doc_list`.`date`>='$daystart'
-                    AND `doc_list`.`date`<='$dayend' $sql_add
-                ORDER BY `doc_list`.`date`");
+            $res = $db->query("$sql_start ='$vr[0]' $sql_end");
             while ($nxt = $res->fetch_assoc()) {
                 $dt = date("Y-m-d H:i:s", $nxt['date']);
                 $this->tableRow(array($nxt['doc_id'], $dt, $nxt['agent_fullname'], $nxt['doc_name'], $nxt['sum']));

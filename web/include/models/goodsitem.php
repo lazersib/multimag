@@ -65,9 +65,9 @@ class goodsitem {
     public function getDefaultMainData() {
         global $db;
         $data = array();
-        $res = $db->query("SHOW COLUMNS FROM '".$db->real_escape_string($this->list_tn).'`');
+        $res = $db->query("SHOW COLUMNS FROM `".$db->real_escape_string($this->list_tn).'`');
         while($line = $res->fetch_assoc()) {
-            $data[$line['field']] = $line['field'];
+            $data[$line['Field']] = $line['Default'];
         }
         return $data;
     }

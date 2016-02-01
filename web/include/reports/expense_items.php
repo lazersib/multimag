@@ -81,12 +81,12 @@ class Report_Expense_Items extends BaseReport {
         $sql_start = "SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`, `doc_list`.`sum`, `doc_types`.`name` AS `doc_name`,
                 `doc_agent`.`name` AS `agent_fullname`
             FROM `doc_list`
-            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='credit_type' AND `doc_dopdata`.`value` ";
-        $sql_end = " LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='credit_type' 
+            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
             LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
             WHERE `doc_list`.`ok`>'0' AND ( `doc_list`.`type`='4' OR `doc_list`.`type`='6') AND `doc_list`.`date`>='$daystart'
-                AND `doc_list`.`date`<='$dayend' $sql_add
-            ORDER BY `doc_list`.`date`";
+                AND `doc_list`.`date`<='$dayend' $sql_add AND `doc_dopdata`.`value`";
+        $sql_end = " ORDER BY `doc_list`.`date`";
         
         $this->tableAltStyle();
         $this->tableSpannedRow(array($this->col_cnt), array("--Статья не указана или отсутствует--"));
