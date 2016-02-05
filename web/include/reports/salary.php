@@ -101,6 +101,7 @@ class Report_Salary extends BaseGSReport {
             $doc_line['vars'] = $doc_vars;            
             $info = $salary->calcFee($doc_line, $doc_line['resp_id'], 1);
             $tmpl->addContent("<h1>Расчёты по {$doc_line['type_name']} - $doc</h1>");
+            $tmpl->addContent("<a href='/doc.php?mode=body&doc=$doc'>Смотреть документ</a>");
             $tmpl->addContent("<table class='list' width='100%'>"
             . "<tr><th>id</th><th>Код</th><th>Наименование</th><th>Пр-ль</th><th>Кол-во</th><th>В м.уп.</th><th>В б.уп.</th><th>Коэфф.сл.сб.</th><th>Сумма сб.</th>");
             if($doc_line['type']==2) {
@@ -203,10 +204,11 @@ class Report_Salary extends BaseGSReport {
         $salary->loadPosData();
         $tmpl->addBreadcrumb('Просмотр данных '.$months, '');        
         $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th>id</th><th>Тип</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
+            . "<tr><th>id</th><th>Тип</th><th>Оплата</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
             . "<th>Сумма</th></tr>");
-        $sum = 0;
+        $sum = $nopayed = $count = 0;
         $t_info = array();
+        $t2_info = array();
         $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
             . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`, `doc_dopdata`.`value` AS `return`, `doc_list`.`firm_id`"
             . " FROM `doc_list`"
@@ -308,23 +310,82 @@ class Report_Salary extends BaseGSReport {
             if($w_cont) {
                 continue;
             }
-            $style = "style='color:#f00;font-weight:bold;'";
-            if(isset($doc_line['vars']['salary'])) {
-                $style = '';
-            } elseif( isset($info['o_uid']) ) {
-                if(isset($t_info[$info['o_uid']])) {
-                    $t_info[$info['o_uid']] += $o_fee;
-                } else {
-                    $t_info[$info['o_uid']] = $o_fee;
+            
+            $style_o = $style_r = $style_sk = "";
+            
+            if(!isset($doc_line['vars']['salary'])) {
+                $nopayed++;
+                if (isset($info['o_uid'])) {
+                    $style_o = " style='background-color:#fcc;'";
+                    if (isset($t_info[$info['o_uid']])) {
+                        $t_info[$info['o_uid']] += $info['o_fee'];
+                    } else {
+                        $t_info[$info['o_uid']] = $info['o_fee'];
+                    }
+                }
+                if (isset($info['r_uid'])) {
+                    $style_r = " style='background-color:#fcc;'";
+                    if (isset($t2_info[$info['r_uid']])) {
+                        $t2_info[$info['r_uid']] += $info['r_fee'];
+                    } else {
+                        $t2_info[$info['r_uid']] = $info['r_fee'];
+                    }
+                }
+                if (isset($info['r_uid'])) {
+                    $style_sk = " style='background-color:#fcc;'";
+                }
+            } else {  
+                $s_info = json_decode($doc_line['vars']['salary'], true);
+                if(!isset($s_info['o_uid'])) {
+                    if (isset($info['o_uid'])) {
+                        $style_o = " style='background-color:#fcc;'";
+                        if (isset($t_info[$info['o_uid']])) {
+                            $t_info[$info['o_uid']] += $info['o_fee'];
+                        } else {
+                            $t_info[$info['o_uid']] = $info['o_fee'];
+                        }
+                        
+                    }
+                }
+                else if($s_info['o_fee']!=$info['o_fee']){
+                    $style_o = " style='color:#f00;'";
+                }
+                if(!isset($s_info['r_uid'])) {
+                    if (isset($info['r_uid'])) {
+                        $style_r = " style='background-color:#fcc;'";
+                        if (isset($t2_info[$info['r_uid']])) {
+                            $t2_info[$info['r_uid']] += $info['r_fee'];
+                        } else {
+                            $t2_info[$info['r_uid']] = $info['r_fee'];
+                        }
+                    }
+                }
+                else if($s_info['r_fee']!=$info['r_fee']){
+                    $style_r = " style='color:#f00;'";
+                }
+                if(!isset($s_info['sk_uid'])) {
+                    if (isset($info['r_uid'])) {
+                        $style_sk = " style='background-color:#fcc;'";
+                    }
+                } 
+            }
+            $payment = '';
+            if(isset($doc_vars['payed'])) {
+                $payment = $doc_vars['payed']?"<span style='color:#0c0'>Да</span>":"<span style='color:#c00'>Нет</span>";
+                if(isset($doc_vars['paysum'])) {
+                    $payment .= ' ('.sprintf("%0.2f",$doc_vars['paysum']).' из '.$doc_line['sum'].')';
                 }
             }
-            $tmpl->addContent("<tr><td><a {$style} href='/doc_reports.php?mode=salary&amp;opt=doc&amp;doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
-                . "<td>{$doc_line['type_name']}</td><td>$p_date</td>"
-                . "<td>$r_name</td><td align='right'>$r_fee</td><td>$o_name</td><td align='right'>$o_fee</td>"
-                . "<td>$m_name</td><td align='right'>$m_fee</td><td>$sk_name</td><td align='right'>$sk_fee</td><td align='right'>$sum_line</td></tr>");
+            $count++;
+            $tmpl->addContent("<tr><td><a href='/doc_reports.php?mode=salary&amp;opt=doc&amp;doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
+                . "<td>{$doc_line['type_name']}</td><td>$payment</td><td>$p_date</td>"
+                . "<td{$style_r}>$r_name</td><td align='right'>$r_fee</td><td{$style_o}>$o_name</td><td align='right'>$o_fee</td>"
+                . "<td>$m_name</td><td align='right'>$m_fee</td><td{$style_sk}>$sk_name</td><td align='right'>$sk_fee</td><td align='right'>$sum_line</td></tr>");
         }
         $sum = number_format($sum, 2, '.', ' ');
-        $tmpl->addContent("<tr><td colspan=11>Итого:</td><td align='right'>$sum</td></tr>");
+        $tmpl->addContent("<tr><td>Итого:</td><td>$count штук</td><td colspan=9></td><td align='right'>$sum</td></tr>");
+        $np_pp = number_format($nopayed/$count*100, 2, '.', ' ');
+        $tmpl->addContent("<tr><td>Не оплачено:</td><td>$nopayed штук, $np_pp %</td></tr>");
         $tmpl->addContent("</table>");
         $tmpl->addContent("<table class='list'><tr><th colspan=20>По пользователям</th></tr>");
         $tmpl->addContent("<tr><th rowspan='2'>Сотрудник</th><th rowspan='2'>Док.</th><th rowspan='2'>Оператору</th><th rowspan='2'>Ответственному</th><th rowspan='2'>Менеджеру</th>"
@@ -360,10 +421,16 @@ class Report_Salary extends BaseGSReport {
             
             $r_name = html_out(isset($users[$uid]) ? $users[$uid] : ('??? - '.$uid));
             $docs = count($info['docs']);
+            if(!isset($t_info[$uid])) {
+                $t_info[$uid] = '';
+            }
+            if(!isset($t2_info[$uid])) {
+                $t2_info[$uid] = '';
+            }
             $tmpl->addContent("<tr><td>$r_name ($uid)</td>"
                 . "<td align='right'>$docs</td>"
-                . "<td align='right'>$fee_op / {$t_info[$uid]}</td>"
-                . "<td align='right'>$fee_resp</td>"
+                . "<td align='right'>$fee_op - {$t_info[$uid]}</td>"
+                . "<td align='right'>$fee_resp - {$t2_info[$uid]}</td>"
                 . "<td align='right'>$fee_man</td>"                
                 
                 . "<td align='right'>$fee_pos</td>"

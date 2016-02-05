@@ -44,7 +44,7 @@ try {
     }
    
     // Информирование о резком изменении цен
-    if ($CONFIG['auto']['badpricenotify']) {
+    if (\cfg::get('auto', 'badpricenotify')) {
         if ($verbose) {
             echo "Информирование о резком изменении цен\n";
         }
@@ -53,14 +53,32 @@ try {
     }
     
     // Информирование об изменении цен
-    if ($CONFIG['auto']['chpricenotify']) {
+    if (\cfg::get('auto', 'chpricenotify')) {
         if ($verbose) {
             echo "Информирование о изменении цен\n";
         }
         $action = new \actions\chPriceNotify($CONFIG, $db);
         $action->run();       
     }
-    
+    if (\cfg::get('auto', 'paycheck')) {
+        try {
+            if ($verbose) {
+                echo "расстановка отметок об оплате\n";
+            }
+            $worker = new \async\paycheck(0);
+            $worker->run();
+            $worker->end();        
+        } catch (Exception $e) {
+            if ($worker) {
+                try {
+                    $worker->finalize();
+                } catch (Exception $e) {
+                    echo $e->getMessage() . "\n";
+                }
+            }
+            echo $e->getMessage();
+        }
+    }
 } catch (XMPPHP_Exception $e) {
     if ($CONFIG['site']['admin_email']) {
         mailto($CONFIG['site']['admin_email'], "XMPP exception in daily.php", $e->getMessage());

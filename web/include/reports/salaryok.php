@@ -18,7 +18,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-/// Отчёт по движению товара
+/// Отчёт по начисленным вознаграждениям
 class Report_SalaryOk extends BaseGSReport { 
         function getName($short = 0) {
             if ($short) {
@@ -75,6 +75,7 @@ class Report_SalaryOk extends BaseGSReport {
             . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
             . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8,20) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
             . " ORDER BY `date`");
+        $count = 0;
         while ($doc_line = $docs_res->fetch_assoc()) {
             if(!\acl::testAccess([ 'firm.global', 'firm.'.$doc_line['firm_id']], \acl::VIEW)) {
                 continue;
@@ -118,12 +119,13 @@ class Report_SalaryOk extends BaseGSReport {
             $sum_line = $info['r_fee'] + $info['o_fee'] + $info['m_fee'] + $info['sk_fee'];            
             $sum += $sum_line;
             $p_date = date("Y-m-d", $doc_line['date']);
+            $count++;
             $tmpl->addContent("<tr><td><a href='/doc.php?mode=body&doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
                 . "<td>{$doc_line['type_name']}</td><td>$p_date</td>"
                 . "<td>{$info['r_name']}</td><td>{$info['r_fee']}</td><td>{$info['o_name']}</td><td>{$info['o_fee']}</td>"
                 . "<td>{$info['m_name']}</td><td>{$info['m_fee']}</td><td>{$info['sk_name']}</td><td>{$info['sk_fee']}</td><td>$sum_line</td></tr>");
         }
-        $tmpl->addContent("<tr><td colspan=10>Итого:</td><td>$sum</td></tr>");
+        $tmpl->addContent("<tr><td>Итого:</td><td>$count штук</td><td colspan=9></td><td>$sum</td></tr>");
         $tmpl->addContent("</table>");
         $tmpl->addContent("<table class='list'><tr><th colspan=2>По пользователям</th></tr>");
         $users_fee = $salary->getUsersFee();

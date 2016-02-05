@@ -113,47 +113,19 @@ class salary extends \AsyncWorker {
         if(!$this->conf_enable) {
             return;
         }
-        $rdate = strtotime("2015-11-01");
         //$db->query("FLUSH TABLE CACHE");
         $this->loadPosData();        
         // Расчёт
         $tmp = microtime(true);
         $db->startTransaction();
         $this->loadPosTypes();
+        $this->responsibles=array();
         $res = $db->query("SELECT `id`, `name`, `responsible` FROM `doc_agent` ORDER BY `id`");
         while($line = $res->fetch_assoc()) {
-            echo "Agent ".$line['id']."\n";
-            $this->calcAgent($line['id'], $line['responsible']);
-            echo " Done\n";
+            $this->responsibles[$line['id']] = $line['responsible'];            
         }
-        echo "Post & perm...\n";
-        // Поступления и перемещения
-        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
-            . " FROM `doc_list`"
-            . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 8) AND `date`<'$rdate'" 
-            . " ORDER BY `date`");
-        while ($doc_line = $docs_res->fetch_assoc()) {
-            if($doc_line['return']) {
-                continue;
-            }
-            $doc_vars = array();
-            $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
-            while ($line = $res->fetch_row()) {
-                $doc_vars[$line[0]] = $line[1];
-            }
-            $doc_line['vars'] = $doc_vars;
-            if( ! @$doc_vars['salary']) {
-                $doc_line['fullpay'] = 1;
-                $salary = $this->calcFee($doc_line, 0);
-                if(isset($salary['sk_uid'])) {
-                    $this->incFee('sk', $salary['sk_uid'], $salary['sk_fee'], $doc_line['id']);
-                }
-                $ser_salary_sql = json_encode($salary, JSON_UNESCAPED_UNICODE);
-                $db->insertA('doc_dopdata', array('doc'=>$doc_line['id'], 'param'=>'salary', 'value'=>$ser_salary_sql));
-            }
-        }
-        echo "Done!\n";
+        $this->calc();
+        echo " Done\n";
         $this->payFee();
         $db->commit();
         echo "Commit!";
@@ -207,31 +179,17 @@ class salary extends \AsyncWorker {
             $this->pos_info[$line['id']] = $line;
         }
     }
-    
-    // @return Остаточная сумма от запрошенной к вычету
-    function decDocSum($doc_id, $sum) {
-        if(isset($this->plus_docs[$doc_id])) {
-            if ($this->docs[$doc_id]['sum'] <= $sum) {
-                $sum = round($sum-$this->docs[$doc_id]['sum'],2);
-                $this->docs[$doc_id]['sum'] = 0;
-                unset($this->plus_docs[$doc_id]);
-            } else {
-                $this->docs[$doc_id]['sum'] = round($this->docs[$doc_id]['sum']-$sum, 2);
-                $sum = 0;
-            }
-        }
-        return $sum;
-    }
-    
-    function loadDocsForAgent($agent_id) {
+        
+    function loadDocs() {
         global $db;
         $this->docs = array();
-        $rdate = strtotime("2015-11-01");
+        $rdate = strtotime("2016-12-01");
         // Грузим
-        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
+        $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `agent` AS `agent_id`"
+            . ", `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 14, 18, 20) AND `agent`=$agent_id  AND `date`<'$rdate'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 8, 20) AND `date`<'$rdate'" 
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             if($doc_line['return']) {
@@ -243,140 +201,97 @@ class salary extends \AsyncWorker {
                 $doc_vars[$line[0]] = $line[1];
             }
             $doc_line['vars'] = $doc_vars;
-            $doc_line['childs'] = array();
-            $doc_line['fullpay'] = 0;
             $this->docs[$doc_line['id']] = $doc_line;
         }
-        // Заполняем id потомков
-        $docs = '0';
-        foreach ($this->docs as $id => $val) {
-            if ($val['p_doc'] > 0 && isset($this->docs[$val['p_doc']])) {
-                $this->docs[$val['p_doc']]['childs'][] = $id;
-            }
-            $docs.=','.$id;
-        }
-        // Грузим доп.параметры
-//        $res = $db->query('SELECT `param`, `value`,`doc` FROM `doc_dopdata` WHERE `doc` IN (' . $docs.')');
-//            while ($line = $res->fetch_row()) {
-//                $this->docs[$line[2]]['vars'][$line[0]] = $line[1];
-//        }
     }
     
-    function calcAgent($agent_id, $responsible_id) {
+    function calc() {
         global $db;
-        $this->plus_docs = array();
-        $minus_docs = array();
-        $this->loadDocsForAgent($agent_id);
-        // Делим по признаку приход/расход
-        foreach ($this->docs as $id => $val) {
-            switch ($val['type']) {
-                case 1: // Поступление
-                case 4: // Банк-приход
-                case 6: // Касса-приход
-                    $this->plus_docs[$id] = $id;
-                    break;
-                case 2:
-                case 5:
-                case 7:
-                    $minus_docs[$id] = $id;
-                    break;
-                case 18:
-                    if($val['sum']>0) {
-                        $minus_docs[$id] = $id;
-                    } else {
-                        $this->plus_docs[$id] = $id;
-                    }
-                    $this->docs[$id]['sum'] = abs($this->docs[$id]['sum']);
-                    break;
-            }
-        }
-        // Учёт агентских вознаграждений и подготовка сумм для контроля оплат
-        foreach ($minus_docs as $id) {
-            $this->docs[$id]['paytest_sum'] = $this->docs[$id]['sum'];
-            foreach($this->docs[$id]['childs'] as $c_id) {
-                if($this->docs[$c_id]['type']!=7) {
-                    $this->docs[$c_id]['paytest_sum'] = $this->docs[$c_id]['sum'];
-                    continue;
-                }
-                if(isset($this->docs[$id]['dec_sum'])) {
-                    $this->docs[$id]['dec_sum'] += $this->docs[$c_id]['sum'];
-                } else {
-                    $this->docs[$id]['dec_sum'] = $this->docs[$c_id]['sum'];
-                }                
-            }
-        }
-        // Обрабатываем расходы
-        // Проверка оплаты потомками
-        foreach ($minus_docs as $id) {
-            $cur_sum = $this->docs[$id]['paytest_sum'];
-            foreach($this->docs[$id]['childs'] as $c_id) {
-                if($this->docs[$c_id]['sum']==0) {
-                    continue;
-                }
-                switch ($this->docs[$c_id]['type']) {
-                    case 1: // Поступление
-                    case 4: // Банк-приход
-                    case 6: // Касса-приход
-                    case 18:
-                        $cur_sum = $this->decDocSum($c_id, $cur_sum);
-                        break;
-                }
-            }
-            $this->docs[$id]['paytest_sum'] = $cur_sum;
-            if($cur_sum == 0) { // Оплачен полностью
-                $this->docs[$id]['fullpay'] = true;
-            }
-        }
-        // Оплата по списку
-        foreach ($minus_docs as $id) {
-            $cur_sum = $this->docs[$id]['paytest_sum'];
-            if($this->docs[$id]['fullpay']) {
-                continue;
-            }
-            while($cur_sum>0 && count($this->plus_docs)>0) {
-                reset($this->plus_docs);
-                list(,$c_id) = each($this->plus_docs);
-                $cur_sum = $this->decDocSum($c_id, $cur_sum);
-            }            
-            if($cur_sum == 0) { // Оплачен полностью
-                $this->docs[$id]['fullpay'] = true;
-            }
-            $this->docs[$id]['paytest_sum'] = $cur_sum;
-        }
+        $this->loadDocs();       
         // Начисление зарплаты
         $cnt = 0;       
         foreach ($this->docs as $id => $doc) {
-            //$doc = $this->docs[$id];
-            if( ($doc['type']=='2' && $doc['fullpay']) || $doc['type']=='20') {
-                if( ! @$doc['vars']['salary']) {
-                    $salary = $this->calcFee($doc, $responsible_id);
-                    if(isset($salary['o_uid']))
-                        $this->incFee('operator', $salary['o_uid'], $salary['o_fee'], $doc['id']);
-                    if(isset($salary['r_uid']))
-                        $this->incFee('resp', $salary['r_uid'], $salary['r_fee'], $doc['id']);
-                    if(isset($salary['m_uid']))
-                        $this->incFee('manager', $salary['m_uid'], $salary['m_fee'], $doc['id']);
-                    if(isset($salary['sk_uid']))
-                        $this->incFee('sk', $salary['sk_uid'], $salary['sk_fee'], $doc['id']);
-                    $ser_salary_sql = json_encode($salary, JSON_UNESCAPED_UNICODE);
-                    $db->insertA('doc_dopdata', array('doc'=>$doc['id'], 'param'=>'salary', 'value'=>$ser_salary_sql));
+            $need_calc = false;
+            if(isset($doc['vars']['salary'])) {
+                $old_salary = json_decode($doc['vars']['salary'], true);
+                if(!$old_salary) {
+                    $old_salary = array();
                 }
-                echo "$id (".round($cnt/count($minus_docs), 2).")\n";
-                $cnt++;
             }
+            else {
+                $old_salary = array();
+            }
+            $payed = false;
+            if(isset($doc['vars']['payed'])) {
+                if($doc['vars']['payed']) {
+                    $payed = true;
+                }
+            }
+            $responsible_id = 0;
+            if(isset($this->responsibles[$doc['agent_id']])) {
+                $responsible_id = $this->responsibles[$doc['agent_id']];
+            }
+            if($doc['type'] == 1 || $doc['type'] == 8 || $doc['type'] == 2 || $doc['type'] == 20) {
+                if (!isset($old_salary['sk_uid']) && isset($doc['vars']['kladovshik'])) {
+                    $need_calc = true;
+                }
+            }
+            if($doc['type'] == 2 || $doc['type'] == 20) { // Обычные и бонусные реализации
+                if (!isset($old_salary['r_uid'])) {
+                    $need_calc = true;
+                }
+                elseif (!isset($old_salary['r_uid']) && $responsible_id>0) {
+                    $need_calc = true;
+                }
+                elseif (!isset($old_salary['m_uid']) && $this->conf_manager_id>0) {
+                    $need_calc = true;
+                }                
+            }
+            
+            if ($need_calc) {
+                $new_salary = $this->calcFee($doc, $responsible_id, false, $old_salary);
+                if(count($new_salary)>0) {
+                    if($payed || $doc['type'] != 2) {
+                        if (isset($new_salary['o_uid'])) {
+                            $this->incFee('operator', $new_salary['o_uid'], $new_salary['o_fee'], $doc['id']);
+                        }
+                        if (isset($new_salary['r_uid'])) {
+                            $this->incFee('resp', $new_salary['r_uid'], $new_salary['r_fee'], $doc['id']);
+                        }
+                        if (isset($new_salary['m_uid'])) {
+                            $this->incFee('manager', $new_salary['m_uid'], $new_salary['m_fee'], $doc['id']);
+                        }
+                    } else {
+                        unset($new_salary['o_uid']);
+                        unset($new_salary['o_fee']);
+                        unset($new_salary['r_uid']);
+                        unset($new_salary['r_fee']);
+                        unset($new_salary['m_uid']);
+                        unset($new_salary['m_fee']);                        
+                    }
+                    if (isset($new_salary['sk_uid'])) {
+                        $this->incFee('sk', $new_salary['sk_uid'], $new_salary['sk_fee'], $doc['id']);
+                    }
+                    if(count($new_salary)>0) {
+                        $salary = array_merge($old_salary, $new_salary);
+                        $ser_salary_sql = $db->real_escape_string(json_encode($salary, JSON_UNESCAPED_UNICODE));
+                        $db->query("REPLACE `doc_dopdata` (`doc`, `param`, `value`) VALUES ($id, 'salary', '$ser_salary_sql')");
+                    }
+                }
+            }
+            echo "$id (".round($cnt/count($this->docs), 2).")\n";
+            $cnt++;
+            
         }
     }
     
     /// Расчитать сумму вознаграждения для заданного документа
-    public function calcFee($doc, $responsible_id, $detail = false) {
+    public function calcFee($doc, $responsible_id, $detail = false, $old_salary=array()) {
         global $db;
         $salary = array();
         $additional_sum = 0;    // Расчётная добавленная стоимость. В зависимости о настроек, может уменьшаться линейно от ликвидности
-        if (isset($this->docs[$doc['id']]['dec_sum'])) {
-            $additional_sum -= $this->docs[$doc['id']]['dec_sum'];
-        }
         if($doc['type']==2 || $doc['type']==20) {
-            $a_likv = $this->getLiquidityOnDate($doc['date']);
+            $a_likv = $this->getLiquidityOnMonth($doc['date']);
         }
         $pos_cnt = $sk_pos_fee = 0;
         $a_places = array();
@@ -453,16 +368,16 @@ class salary extends \AsyncWorker {
         // Подготовка результата
         
         // Для реализации
-        if ($doc['type'] == 2 || $doc['type']==20) {
-            if ($doc['user']) {
+        if ( $doc['type'] == 2 || $doc['type']==20) {
+            if ($doc['user'] && !isset($old_salary['o_uid'])) {
                 $salary['o_fee'] = round($additional_sum * $this->conf_author_coeff, 2);
                 $salary['o_uid'] = $doc['user'];
             }
-            if ($responsible_id) {
+            if ($responsible_id && !isset($old_salary['r_uid'])) {
                 $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
                 $salary['r_uid'] = $responsible_id;
             }
-            if ($this->conf_manager_id) {
+            if ($this->conf_manager_id && !isset($old_salary['m_uid'])) {
                 $salary['m_fee'] = round($additional_sum * $this->conf_manager_coeff, 2);
                 $salary['m_uid'] = $this->conf_manager_id;
             }
@@ -480,7 +395,7 @@ class salary extends \AsyncWorker {
         }
         
         if( isset( $doc['vars']['kladovshik'] ) ) {  
-            if( $doc['vars']['kladovshik']) {
+            if( $doc['vars']['kladovshik']  && !isset($old_salary['sk_uid'])) {
                 switch($doc['type']) {
                     case 1:
                         $sk_coeff = $this->conf_sk_po_pack_coeff;                
@@ -614,11 +529,12 @@ class salary extends \AsyncWorker {
         mailto($CONFIG['site']['doc_adm_email'], "Salary script", $mail_text);
     }
 
-    // Расчёт ликвидности на текущую дату с кешированием
-    protected function getLiquidityOnDate($date) {
-        $sdate = date("Ymd", $date);
+    // Расчёт ликвидности на начало текущего месяца с кешированием
+    protected function getLiquidityOnMonth($date) {
+        $sdate = date("Ym", $date);
         if ($this->conf_use_liq && $sdate != $this->last_liq_date) {
-            $this->last_liq_array = getLiquidityOnDate($date - 1);
+            $time = strtotime(date("Y-m-01 00:00:00", $date)) - 1;
+            $this->last_liq_array = getLiquidityOnDate($time);
             $this->last_liq_date = $sdate;
         }
         return $this->last_liq_array;

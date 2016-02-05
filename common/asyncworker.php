@@ -19,46 +19,50 @@
 
 /// Родительский класс для ассинхронных обработчиков
 class AsyncWorker {
-	var $mail_text;	// Информация, которую обработчик должен отправить администратору
-	var $starttime; // Время старта обработчика
-	var $task_id;	// ID задачи для сохранения статуса
-	var $db_link;	// Объект класса MysqiExtended
 
-	function __construct($task_id) {
-		$this->mail_text='';
-		$this->starttime=time();
-		$this->task_id=$task_id;
-	}
+    var $mail_text; // Информация, которую обработчик должен отправить администратору
+    var $starttime; // Время старта обработчика
+    var $task_id; // ID задачи для сохранения статуса
+    var $db_link; // Объект класса MysqiExtended
 
-	/// Устанавливает статус исполнения обработчика в процентах для отображения в интерфейсе
-	/// Расчитывает примерное время исполнения
-	function SetStatus($status) {
-		$remains=(time()-$this->starttime)*(100/$status-1);
-		$remainm=round($remains/60);
-		$remains%=60;
-		if($remainm)	$text="Выполнено $status% (осталось не менее $remainm мин. $remains сек.)";
-		else		$text="Выполнено $status% (осталось не менее $remains сек.)";
-		$this->SetStatusText($text);
-	}
+    function __construct($task_id) {
+        $this->mail_text = '';
+        $this->starttime = time();
+        $this->task_id = $task_id;
+    }
 
-	function SetStatusText($text) {
-		global $db;
-		echo "\r$text             ";
-		flush();
-		/// Добавить код записи в базу данных
-		if($this->task_id)
-			$db->query("UPDATE `async_workers_tasks` SET `textstatus`='$text' WHERE `id`='{$this->task_id}'");
-	}
-	/// Устанавливает статус окончания исполнения
-	function end() {
-		$this->SetStatusText("Выполнено");
-	}
+    /// Устанавливает статус исполнения обработчика в процентах для отображения в интерфейсе
+    /// Расчитывает примерное время исполнения
+    function setStatus($status, $add_text = '') {
+        $remains = $status ? (time() - $this->starttime) * (100 / $status) : 99;
+        $remainm = round($remains / 60);
+        $remains%=60;
+        if ($remainm) {
+            $text = "Выполнено $status% (осталось не менее $remainm мин. $remains сек.). ".$add_text;
+        } else {
+            $text = "Выполнено $status% (осталось не менее $remains сек.). ".$add_text;
+        }
+        $this->SetStatusText($text);
+    }
 
-	/// Осовобождает ресурсы
-	function finalize() {
-		return;
-	}
+    function setStatusText($text) {
+        global $db;
+        echo "\r$text             ";
+        flush();
+        /// Добавить код записи в базу данных
+        if ($this->task_id) {
+            $db->query("UPDATE `async_workers_tasks` SET `textstatus`='$text' WHERE `id`='{$this->task_id}'");
+        }
+    }
+
+    /// Устанавливает статус окончания исполнения
+    function end() {
+        $this->SetStatusText("Выполнено");
+    }
+
+    /// Осовобождает ресурсы
+    function finalize() {
+        return;
+    }
 
 }
-
-
