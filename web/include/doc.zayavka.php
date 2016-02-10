@@ -39,9 +39,9 @@ class doc_Zayavka extends doc_Nulltype {
     /// Получить строку с HTML кодом дополнительных кнопок документа
     protected function getAdditionalButtonsHTML() {
         global $CONFIG;
-        $ret = "<a href='#' onclick='msgMenu(event, '{$this->id}')' title='Отправить сообщение покупателю'><img src='/img/i_mailsend.png' alt='msg'></a>";        
+        $ret = "<a href='#' onclick=\"msgMenu(event, '{$this->id}')\" title='Отправить сообщение покупателю'><img src='/img/i_mailsend.png' alt='msg'></a>";        
         if (@$CONFIG['doc']['pie'] && !@$this->dop_data['pie']) {
-            $ret.="<a href='#' onclick='sendPie(event, '{$this->id}')' title='Отправить благодарность покупателю'><img src='/img/i_pie.png' alt='pie'></a>";
+            $ret.="<a href='#' onclick=\"sendPie(event, '{$this->id}')\" title='Отправить благодарность покупателю'><img src='/img/i_pie.png' alt='pie'></a>";
         }
         return $ret;
     }
@@ -532,64 +532,76 @@ class doc_Zayavka extends doc_Nulltype {
     }
 
     function Service() {
-		global $tmpl, $CONFIG, $db;
-		$tmpl->ajax = 1;
-		$opt = request('opt');
-		$pos = rcvint('pos');
-		if ($opt == 'pmsg') {
-			try
-			{
-				$text = request('text');
-				if(request('sms'))
-					$this->sendSMSNotify($text);
-				if(request('mail'))
-					$this->sendEmailNotify($text);
-				$tmpl->setContent("{response: 'send'}");
-			}
-			catch(Exception $e)
-			{
-				$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
-			}
-		}
-		else if($opt=='rewrite') {
-			$db->startTransaction();
-			$db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
-			$res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}'");
-			$docs = "`doc`='-1'";
-			while($nxt=$res->fetch_row())
-				$docs.=" OR `doc`='$nxt[0]'";
-			$res=$db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs GROUP BY `tovar`");
-			while($line = $res->fetch_assoc()) {
-				$line['doc']=$this->id;
-				$db->insertA('doc_list_pos', $line);
-			}
-			doc_log("REWRITE", "", 'doc', $this->id);
-			$db->commit();
-			header("location: /doc.php?mode=body&doc=".$this->id);
-			//exit();
-		}
-		else if($opt=='pie')
-		{
-			try
-			{
-				$this->sendEmailNotify($CONFIG['doc']['pie']);
-				$db->query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES	( '{$this->id}' ,'pie','1')");
-				$tmpl->setContent("{response: 'send'}");
-			}
-			catch(Exception $e)
-			{
-				$tmpl->setContent("{response: 'err', text: '".$e->getMessage()."'}");
-			}
-		}
-		else parent::_Service($opt,$pos);
-	}
-	
-	/// Отгрузить текущую заявку
-	function Otgruzka() {
-		$this->recalcSum();
-		$newdoc = new doc_Realizaciya();
-		$newdoc_id = $newdoc->createFromPdiff($this);
-		$newdoc->setDopData('cena', $this->dop_data['cena']);
-		return $newdoc_id;
-	}
+        global $tmpl, $CONFIG, $db;
+        $tmpl->ajax = 1;
+        $opt = request('opt');
+        $pos = rcvint('pos');
+        if ($opt == 'pmsg') {
+            try {
+                $text = request('text');
+                $send = false;
+                if (request('sms')) {
+                    $send |= $this->sendSMSNotify($text);
+                }
+                if (request('mail')) {
+                    $send |= $this->sendEmailNotify($text);
+                   }
+                if(!$send) {
+                    throw new Exception('Не удалось отправить сообщение.');
+                }
+                $tmpl->setContent("{\"object\":\"send_message\",\"response\":\"success\"}");
+            } catch (Exception $e) {
+                $ret_data = array(
+                    'object' => 'send_message',
+                    'response' => 'error',
+                    'errorcode' => $e->getCode(),
+                    'errormessage' => $e->getMessage()
+                );
+                $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
+            }
+        } else if ($opt == 'rewrite') {
+            $db->startTransaction();
+            $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
+            $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}'");
+            $docs = "`doc`='-1'";
+            while ($nxt = $res->fetch_row()) {
+                $docs.=" OR `doc`='$nxt[0]'";
+            }
+            $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs GROUP BY `tovar`");
+            while ($line = $res->fetch_assoc()) {
+                $line['doc'] = $this->id;
+                $db->insertA('doc_list_pos', $line);
+            }
+            doc_log("REWRITE", "", 'doc', $this->id);
+            $db->commit();
+            header("location: /doc.php?mode=body&doc=" . $this->id);
+            //exit();
+        } else if ($opt == 'pie') {
+            try {
+                $this->sendEmailNotify($CONFIG['doc']['pie']);
+                $db->query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES	( '{$this->id}' ,'pie','1')");
+                $tmpl->setContent("{\"object\":\"send_pie\",\"response\":\"success\"}");
+            } catch (Exception $e) {
+                $ret_data = array(
+                    'object' => 'send_pie',
+                    'response' => 'error',
+                    'errorcode' => $e->getCode(),
+                    'errormessage' => $e->getMessage()
+                );
+                $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
+            }
+        } else {
+            parent::_Service($opt, $pos);
+        }
+    }
+
+    /// Отгрузить текущую заявку
+    function Otgruzka() {
+        $this->recalcSum();
+        $newdoc = new doc_Realizaciya();
+        $newdoc_id = $newdoc->createFromPdiff($this);
+        $newdoc->setDopData('cena', $this->dop_data['cena']);
+        return $newdoc_id;
+    }
+
 }

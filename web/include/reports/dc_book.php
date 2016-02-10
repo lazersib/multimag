@@ -48,7 +48,13 @@ class Report_dc_book extends BaseReport {
             }
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
         }
-        $tmpl->addContent("</select><br>
+        $tmpl->addContent("</select><br>Показать только по кассе:<br>");
+        $ldo = new \Models\LDO\kassnames();
+        $tmpl->addContent( \widgets::getEscapedSelect('cash_id', $ldo->getData(), null, 'не задана') );
+        $tmpl->addContent("<br>Показать только по банку:<br>");
+        $ldo = new \Models\LDO\banknames();
+        $tmpl->addContent( \widgets::getEscapedSelect('bank_id', $ldo->getData(), null, 'не задан') );
+        $tmpl->addContent("<br>
             Год формирования:<br>
             <input type='text' name='year' value='".date("Y")."'><br>
             <button type='submit'>Создать отчет</button></form>");
@@ -56,7 +62,6 @@ class Report_dc_book extends BaseReport {
     
     function createXLS() {
         require_once('include/Spreadsheet/Excel/Writer.php');
-        global $CONFIG;
         $this->xls_book = new \Spreadsheet_Excel_Writer();
         $this->xls_line = 0;
         $this->xls_cols = 10;
@@ -220,8 +225,12 @@ class Report_dc_book extends BaseReport {
         }
         
         $bank_list = array();
-        $res = $db->query("SELECT `name`, `bik`, `rs` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`=$firm_id");
+        $bank_id = rcvint('bank_id');
+        $res = $db->query("SELECT `num` AS `id`, `name`, `bik`, `rs` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`=$firm_id");
         while($line = $res->fetch_assoc()) {
+            if($bank_id && $bank_id!=$line['id']) {
+                continue;
+            }
             $bank_list[] = $line;
         }
 
@@ -433,8 +442,8 @@ class Report_dc_book extends BaseReport {
         $days = cal_days_in_month(CAL_GREGORIAN, $_quarter*3 + 3, $year);
         $date_st = mktime(0, 0, 0, $_quarter*3 + 1, 1, $year);
         $date_end = mktime(23, 59, 59, $_quarter*3 + 3, $days, $year);
-        $res = $db->query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`, `doc_list`.`altnum`, 
-                `d_table`.`value` AS `out_type`, `c_table`.`value` AS `in_type`
+        $res = $db->query("SELECT `doc_list`.`id`,`doc_list`.`type`,`doc_list`.`date`,`doc_list`.`sum`, `doc_list`.`altnum`, `doc_list`.`kassa`, `doc_list`.`bank`
+                ,`d_table`.`value` AS `out_type`, `c_table`.`value` AS `in_type`
             FROM `doc_list`
             LEFT JOIN `doc_dopdata` AS `d_table` ON `d_table`.`doc`=`doc_list`.`id` AND `d_table`.`param`='rasxodi'
             LEFT JOIN `doc_dopdata` AS `c_table` ON `c_table`.`doc`=`doc_list`.`id` AND `c_table`.`param`='credit_type'
@@ -442,10 +451,23 @@ class Report_dc_book extends BaseReport {
                 AND `doc_list`.`type` IN (4, 5, 6, 7)");
         $c = 1;
         $sum_in = $sum_out = 0;
+        $bank_id = rcvint('bank_id');
+        $cash_id = rcvint('cash_id');
         while($line = $res->fetch_assoc()) {
             $oper = $in = $out = '';
+            if($line['type']==4 || $line['type']==5) {
+                if($bank_id && $bank_id!=$line['bank']) {
+                    continue;
+                }
+            }
+            if($line['type']==6 || $line['type']==7) {
+                if($cash_id && $cash_id!=$line['kassa']) {
+                    continue;
+                }
+            }
+            
             switch ($line['type']) {
-                case 4:
+                case 4: 
                 case 6:
                     if(!$line['in_type']) {
                         $line['in_type'] = 0;
@@ -460,8 +482,7 @@ class Report_dc_book extends BaseReport {
                     }
                     $oper = $out_names[$line['out_type']];
                     $out = $line['sum'];
-                    break;
-                
+                    break;                
             }
             
             $doc_info = $doc_names[$line['type']]. ' N' . $line['altnum'].' от '. date('d.m.Y', $line['date']);

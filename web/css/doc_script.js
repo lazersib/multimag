@@ -86,12 +86,12 @@ function DocProcessRequest(httpRequest, doc)
 				var json=eval('('+httpRequest.responseText+')');
 				if(json.response==0)
 				{
-					jAlert(json.message,"Ошибка", {}, 'icon_err');
+					jAlert(json.message,"Ошибка", null, 'icon_err');
 					provodki.innerHTML=old_provodki;
 				}
 				else if(json.response==1)	// Проведение
 				{
-					if(json.message)	jAlert(json.message,"Сделано!", function() {});
+					if(json.message)	jAlert(json.message,"Сделано!", null);
 					if(json.buttons)	provodki.innerHTML=json.buttons;
 					else			provodki.innerHTML=old_provodki;
 
@@ -128,7 +128,7 @@ function DocProcessRequest(httpRequest, doc)
 			}
 			else
 			{
-				jAlert("Документ не проведён!"+httpRequest.responseText,"Ошибка "+httpRequest.status, {}, 'icon_err');
+				jAlert("Документ не проведён!"+httpRequest.responseText,"Ошибка "+httpRequest.status, null, 'icon_err');
 				provodki.innerHTML=old_provodki;
 			}
 		}
@@ -136,7 +136,7 @@ function DocProcessRequest(httpRequest, doc)
 	catch(e)
 	{
 		jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-		"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+ "<br>json:<br>"+req, "Критическая ошибка", {},  'icon_err');
+		"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+ "<br>json:<br>"+req, "Критическая ошибка", null,  'icon_err');
 	}
 
 	//else jAlert("Документ не проведён!","Ошибка "+httpRequest.readyState, {}, 'icon_err');
@@ -156,7 +156,7 @@ function DocConnectCallback(doc, result) {
         url:    '/doc.php',
         data:   'doc='+doc+'&mode=conn&p_doc='+result,
         success: function(msg) { DocConnectProcess(msg); },
-        error:   function() { jAlert('Ошибка соединения!','Связываение документов',{},'icon_err'); }
+        error:   function() { jAlert('Ошибка соединения!','Связываение документов',null,'icon_err'); }
     });
 }
 
@@ -164,16 +164,16 @@ function DocConnectProcess(msg) {
     try {
         var json = JSON.parse(msg);
         if(json.response==='error') {
-            jAlert(json.message,"Ошибка", {}, 'icon_err');
+            jAlert(json.message,"Ошибка", null, 'icon_err');
         }
         else if(json.response==='connect_ok') {	// Связывание
-            if(json.message)	jAlert(json.message,"Связываение документов", {});
-            else			jAlert("Сделано!","Связываение документов", {});
+            if(json.message)	jAlert(json.message,"Связываение документов", null);
+            else			jAlert("Сделано!","Связываение документов", null);
         }
     }
     catch(e) {
         jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-        "<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message, "Связываение документов", {},  'icon_err');
+        "<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message, "Связываение документов", null,  'icon_err');
     }
 }
 
@@ -733,71 +733,47 @@ function MailMenu(event,doc)
 	return false
 }
 
-function msgMenu(event,doc)
-{
-	var menu=CreateContextMenu(event)
-	var email=''
-	function showDialog()
-	{
-		var obj=event.target
-		menu.innerHTML="<div>Текст сообщения:</div><textarea id='mailtext'></textarea><br><label><input type='checkbox' id='sendmail' checked> Отправить по email</label><br><label><input type='checkbox' id='sendsms' checked> Отправить по sms</label><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button>";
-		menu.className='contextlayer';
-		menu.onmouseover=menu.onmouseout=function() {  }
-		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
-		var otext	= document.getElementById('mailtext');
-		var ocmail	= document.getElementById('sendmail');
-		var ocsms	= document.getElementById('sendsms');
-		var obsend	= document.getElementById('bsend');
-		var obcancel	= document.getElementById('bcancel');
-		
-		obcancel.onclick=function() {menu.parentNode.removeChild(menu)}
-		obsend.onclick=function()
-		{
-			var mail= ocmail.checked?1:0;
-			var sms	= ocsms.checked?1:0;
-			$.ajax({
-				type:   'GET',
-				url:    '/doc.php',
-				data:   'mode=srv&doc='+doc+'&opt=pmsg&mail='+mail+'&sms='+sms+'&text='+encodeURIComponent(otext.value),
-				success: function(msg) { rcvDataSuccess(msg) },
-				error:   function() { jAlert('Ошибка соединения!','Отправка сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
-			});
-			menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...'
-		}
-	}
+function msgMenu(event, doc) {
+    var menu = CreateContextMenu(event);
+    var email = '';
+    function showDialog() {
+        var obj = event.target
+        menu.innerHTML = "<div>Текст сообщения:</div><textarea id='mailtext'></textarea><br><label><input type='checkbox' id='sendmail' checked> Отправить по email</label><br><label><input type='checkbox' id='sendsms' checked> Отправить по sms</label><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button>";
+        menu.className = 'contextlayer';
+        menu.onmouseover = menu.onmouseout = function () {
+        }
+        if (menu.waitHideTimer)
+            window.clearTimeout(menu.waitHideTimer)
+        var otext = document.getElementById('mailtext');
+        var ocmail = document.getElementById('sendmail');
+        var ocsms = document.getElementById('sendsms');
+        var obsend = document.getElementById('bsend');
+        var obcancel = document.getElementById('bcancel');
 
-	function rcvDataSuccess(msg)
-	{
-		try
-		{
-			var json=eval('('+msg+')');
-			if(json.response=='err')
-			{
-				jAlert(json.text,"Ошибка", {}, 'icon_err');
-				menu.parentNode.removeChild(menu);
-			}
-			else if(json.response=='send')
-			{
-				jAlert('Сообщение успешно отправлено!',"Выполнено", {});
-				menu.parentNode.removeChild(menu)
-			}
-			else
-			{
-				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Отправка сообщения", {},  'icon_err');
-				menu.parentNode.removeChild(menu)
-			}
-		}
-		catch(e)
-		{
-			alert(msg)
-			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Отправка сообщения", {},  'icon_err');
-			menu.parentNode.removeChild(menu)
-		}
-	}
+        obcancel.onclick = function () {
+            menu.parentNode.removeChild(menu);
+        };
+        obsend.onclick = function () {
+            var mail = ocmail.checked ? 1 : 0;
+            var sms = ocsms.checked ? 1 : 0;
+            $.ajax({
+                type: 'GET',
+                url: '/doc.php',
+                data: 'mode=srv&doc=' + doc + '&opt=pmsg&mail=' + mail + '&sms=' + sms + '&text=' + encodeURIComponent(otext.value),
+                success: function (msg) {
+                    docScriptsServerDataReceiver(msg, menu);
+                },
+                error: function () {
+                    jAlert('Ошибка соединения!', 'Отправка сообщения', null, 'icon_err');
+                    menu.parentNode.removeChild(menu);
+                }
+            });
+            menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...';
+        };
+    }
 
-	showDialog()
-	return false
+    showDialog();
+    return false;
 }
 
 function addNomMenu(event, doc, pdoc_id) {
@@ -906,7 +882,7 @@ function addNomMenu(event, doc, pdoc_id) {
         }
         catch (e) {
             jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
-                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Объединение номенклатурных таблиц", {}, 'icon_err');
+                "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Объединение номенклатурных таблиц", {}, 'icon_err');
             menu.parentNode.removeChild(menu)
         }
     }
@@ -1039,53 +1015,60 @@ function addShipDataDialog(event, doc) {
     return false;
 }
 
-function sendPie(event,doc)
-{
-	var menu=CreateContextMenu(event)
-	menu.className='contextlayer';
-	menu.onmouseover=menu.onmouseout=function() {  }
-	if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
-	$.ajax({
-		type:   'GET',
-		url:    '/doc.php',
-		data:   'mode=srv&doc='+doc+'&opt=pie',
-		success: function(msg) { rcvDataSuccess(msg) },
-		error:   function() { jAlert('Ошибка соединения!','Отправка сообщения',null,'icon_err'); menu.parentNode.removeChild(menu);},
-	});
-	menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...'
-		
-	function rcvDataSuccess(msg)
-	{
-		try
-		{
-			var json=JSON.parse(msg);
-			if(json.response=='err')
-			{
-				jAlert(json.text,"Ошибка", {}, 'icon_err');
-				menu.parentNode.removeChild(menu);
-			}
-			else if(json.response=='send')
-			{
-				jAlert('Сообщение успешно отправлено!',"Выполнено", {});
-				menu.parentNode.removeChild(menu)
-				event.target.parentNode.removeChild(event.target);
-			}
-			else
-			{
-				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Отправка сообщения", {},  'icon_err');
-				menu.parentNode.removeChild(menu)
-			}
-		}
-		catch(e)
-		{
-			alert(msg)
-			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Отправка сообщения", {},  'icon_err');
-			menu.parentNode.removeChild(menu)
-		}
-	}
+function sendPie(event, doc) {
+    var menu = CreateContextMenu(event);
+    menu.className = 'contextlayer';
+    menu.onmouseover = menu.onmouseout = function () {
+    };
+    if (menu.waitHideTimer)
+        window.clearTimeout(menu.waitHideTimer);
+    $.ajax({
+        type: 'GET',
+        url: '/doc.php',
+        data: 'mode=srv&doc=' + doc + '&opt=pie',
+        success: function (msg) {
+            docScriptsServerDataReceiver(msg, menu);
+        },
+        error: function () {
+            jAlert('Ошибка соединения!', 'Отправка сообщения', null, 'icon_err');
+            menu.parentNode.removeChild(menu);
+        }
+    });
+    menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...';
+    return false;
+}
 
-	return false
+function docScriptsServerDataReceiver(msg, menu) {
+    try {
+        var json = JSON.parse(msg);
+        if (json.response == 'error') {
+            jAlert(json.errormessage, "Ошибка", null, 'icon_err');
+        }
+        else if (json.response == 'success') {
+            switch (json.object) {
+                case 'send_message':
+                    jAlert('Ваше сообщение успешно отправлено!', "Выполнено", {});
+                    break;
+                case 'send_pie':
+                    jAlert('Сообщение-приглашение успешно отправлено!', "Выполнено", {});
+                    break;
+                default:
+                    jAlert("Обработка полученного сообщения не реализована на стороне броузера!<br>"
+                        + "Рекомендуется сообщить о проблеме администратору!<br>"
+                        + msg, "Ошибка обработки "+json.object, {}, 'icon_err');
+            }
+        }
+        else {
+            jAlert("Получен неизвестный ответ!<br>" + msg, "Отправка сообщения", {}, 'icon_err');                
+        }
+        menu.parentNode.removeChild(menu);
+    }
+    catch (e) {
+        alert(msg);
+        jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
+                "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Ошибка", null, 'icon_err');
+        menu.parentNode.removeChild(menu);
+    }
 }
 
 // Сообщения

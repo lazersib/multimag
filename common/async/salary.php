@@ -183,7 +183,7 @@ class salary extends \AsyncWorker {
     function loadDocs() {
         global $db;
         $this->docs = array();
-        $rdate = strtotime("2016-12-01");
+        $rdate = strtotime("2016-02-01");
         // Грузим
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `agent` AS `agent_id`"
             . ", `doc_dopdata`.`value` AS `return`"

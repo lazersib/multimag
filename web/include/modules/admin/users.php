@@ -147,6 +147,16 @@ class users extends \IModule {
         $diasbled = $line['disabled'] ? ('Да, ' . $line['disabled_reason']) : 'Нет';
         $worker = $line['worker'] ? 'Да' : 'Нет';
 
+        $user_data = array();
+        $res = $db->query("SELECT `param`, `value` FROM `users_data` WHERE `uid`='$user_id'");
+        while ($l = $res->fetch_row()) {
+            $user_data[$l[0]] = $l[1];
+        }
+        if(isset($user_data['picture'])) {
+            if($user_data['picture']) {
+                $tmpl->addContent("<img src='".html_out($user_data['picture'])."' alt='Фото' style='float:right'>");
+            }
+        }
         $tmpl->addContent("<h1 id='page-title'>Информация о пользователе с ID $user_id</h1>
 		<table class='list'>
 		<tr><th colspan='2'>Основная информация (<a href='/adm.php?mode=users&amp;sect=view&amp;user_id=$user_id'>править</a>)</th></tr>
@@ -211,8 +221,8 @@ class users extends \IModule {
 
         $tmpl->addContent("<tr><th colspan='2'>Дополнительная информация</th></tr>");
         $res = $db->query("SELECT `param`, `value` FROM `users_data` WHERE `uid`='$user_id'");
-        while ($line = $res->fetch_row()) {
-            $tmpl->addContent("<tr><td>$line[0]</td><td>" . html_out($line[1]) . "</td></tr>");
+        foreach( $user_data as $param=>$value) {
+            $tmpl->addContent("<tr><td>" . html_out($param) . "</td><td>" . html_out($value) . "</td></tr>");
         }
         $tmpl->addContent("</table>");
         $tmpl->addContent("<a href='/adm.php?mode=acl&amp;sect=user_acl&amp;user_id=$user_id'>Править индивидуальные привилегии</a>");

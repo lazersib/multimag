@@ -28,7 +28,8 @@ class paycheck extends \AsyncWorker {
 
     public function run() {
         global $db;
-        $db->startTransaction();        
+        $db->startTransaction();  
+        $db->query("DELETE FROM `doc_dopdata` WHERE `param`='payed' OR `param`='paysum'");
         $res = $db->query("SELECT `id` FROM `doc_agent` ORDER BY `id`");
         $i = 0;        
         while($line = $res->fetch_assoc()) {
@@ -46,12 +47,9 @@ class paycheck extends \AsyncWorker {
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 18) AND `agent`=$agent_id" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 4, 5, 6, 7, 18) AND `agent`=$agent_id"
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
-            if($doc_line['return']) {
-                continue;
-            }
             $doc_vars = array();
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
