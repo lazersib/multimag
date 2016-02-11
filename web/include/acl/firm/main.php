@@ -23,6 +23,7 @@ class main extends \acl\aclContainer {
     protected $name = "Документы организаций";
     
     public function __construct() {
+        $this->description = "Пользователь, не обладающий привилегиями на организацию, не сможет работать с документом, назначенным на эту организацию.";
         $firm_ldo = new \Models\LDO\firmnames();
         $list = $firm_ldo->getData();
         $this->list['global'] = array(

@@ -42,9 +42,9 @@ class Report_Balance {
                 continue;
             }
             $i = 1 - $i;
-            $val_p = number_format($line[2], 2, '.', ' ');
-            $style = $line[2]<0?" style='color:#f00;font-weight:bold;'":'';
-            $tmpl->addContent("<tr><td>$line[0]</td><td>" . html_out($line[1]) . "</td><td align='right'{$style}>$val_p</td></tr>");
+            $val_p = number_format($line['balance'], 2, '.', ' ');
+            $style = $line['balance']<0?" style='color:#f00;font-weight:bold;'":'';
+            $tmpl->addContent("<tr><td>{$line['id']}</td><td>" . html_out($line['name']) . "</td><td align='right'{$style}>$val_p</td></tr>");
         }
         $dt = date("Y-m-d");
         $tmpl->addContent("</table>

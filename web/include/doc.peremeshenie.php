@@ -64,21 +64,74 @@ class doc_Peremeshenie extends doc_Nulltype
 		<input type='text' name='mest' value='{$this->dop_data['mest']}'><br>");
 	}
 
-	function dopSave() {
-		$new_data = array(
-			'na_sklad' => rcvint('nasklad'),
-			'mest' => rcvint('mest'),
-			'kladovshik' => rcvint('kladovshik')
-		);
-		$old_data = array_intersect_key($new_data, $this->dop_data);
-		
-		$log_data='';
-		if($this->id)
-			$log_data = getCompareStr($old_data, $new_data);
-		$this->setDopDataA($new_data);
-		if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-	}
+    function dopSave() {
+        $new_data = array(
+            'na_sklad' => rcvint('nasklad'),
+            'mest' => rcvint('mest'),
+            'kladovshik' => rcvint('kladovshik')
+        );
+        $old_data = array_intersect_key($new_data, $this->dop_data);
 
+        $log_data = '';
+        if ($this->id) {
+            $log_data = getCompareStr($old_data, $new_data);
+        }
+        $this->setDopDataA($new_data);
+        if ($log_data) {
+            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
+        }
+    }
+    
+    /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        $acl_obj = ['store.global', 'store.'.intval($this->dop_data['na_sklad'])];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.intval($this->dop_data['na_sklad']));
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.intval($this->dop_data['na_sklad']).' произвольной датой');
+            }
+        }
+        parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        $acl_obj = ['store.global', 'store.'.intval($this->dop_data['na_sklad'])];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.intval($this->dop_data['na_sklad']));
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.intval($this->dop_data['na_sklad']).' произвольной датой');
+            }
+        }
+        parent::extendedCancelAclCheck();
+    }
+    
     function docApply($silent = 0) {
         global $CONFIG, $db;
         $tim = time();
@@ -89,7 +142,8 @@ class doc_Peremeshenie extends doc_Nulltype
         if ($this->doc_data['sklad'] == $dest_store_id) {
             throw new Exception("Исходный склад совпадает со складом назначения!");
         }
-
+        
+        
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`,
                 `doc_list`.`firm_id`, `doc_sklady`.`dnc`, `doc_sklady`.`firm_id` AS `store_firm_id`, `doc_vars`.`firm_store_lock`
             FROM `doc_list`
@@ -169,30 +223,36 @@ class doc_Peremeshenie extends doc_Nulltype
     }
 
     function docCancel() {
-		global $db;
-		$nasklad = (int)$this->dop_data['na_sklad'];
+        global $db;
+        $nasklad = (int) $this->dop_data['na_sklad'];
 
-		$res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
-		FROM `doc_list`
-		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-		WHERE `doc_list`.`id`='{$this->id}'");
-		if(!$res->num_rows)			throw new Exception('Документ не найден!');
-		$nx = $res->fetch_assoc();
-		if(!$nx['ok'])				throw new Exception('Документ не проведён!');
-		$res = $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
-		$res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`ok`, `doc_sklady`.`dnc`
+            FROM `doc_list`
+            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
+            WHERE `doc_list`.`id`='{$this->id}'");
+        if (!$res->num_rows) {
+            throw new Exception('Документ не найден!');
+        }
+        $nx = $res->fetch_assoc();
+        if (!$nx['ok']) {
+            throw new Exception('Документ не проведён!');
+        }
+        $res = $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 		LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$nx['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->id}'");
-		while($nxt = $res->fetch_row()) {
-			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
-			$db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
-			if(!$nx['dnc'])	{
-				$budet=getStoreCntOnDate($nxt[0], $nx['sklad']);
-				if($budet<0)			throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]' !");
-			}
-		}
-	}
+        while ($nxt = $res->fetch_row()) {
+            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nasklad'");
+            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$nx['sklad']}'");
+            if (!$nx['dnc']) {
+                $budet = getStoreCntOnDate($nxt[0], $nx['sklad']);
+                if ($budet < 0) {
+                    throw new Exception("Невозможно, т.к. будет недостаточно ($budet) товара '$nxt[3]' !");
+                }
+            }
+        }
+    }
 
 }

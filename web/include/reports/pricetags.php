@@ -472,21 +472,17 @@ class Report_PriceTags {
             <input type='hidden' name='opt' value='make'>
             Отметьте наименования, для которых требуется ценник:<br>
             <script type='text/javascript'>
-
-            function SelAll(flag)
-            {
-                    var elems = document.getElementsByName('pos_id[]');
-                    var l = elems.length;
-                    for(var i=0; i<l; i++)
-                    {
-                            elems[i].checked=flag;
-                    }
+            function SelAll(flag) {
+                var elems = document.getElementsByName('pos_id[]');
+                var l = elems.length;
+                for(var i=0; i<l; i++) {
+                    elems[i].checked=flag;
+                }
             }
-
             </script>
             <div class='selmenu'><a onclick='SelAll(true)' href='#'>Выбрать всё<a> | <a onclick='SelAll(false)' href='#'>Снять всё</a></div>
             <table class='list'>");
-
+        
         $pc = PriceCalc::getInstance();
         $pc->SetFirmId($firm_id);
         $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");

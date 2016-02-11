@@ -1012,6 +1012,17 @@ class doc_Nulltype extends \document {
         return;
     }
 
+    /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        return true;
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        return true;
+    }
+    
+    /// Провести документ и вренуть JSON результат
     public function applyJson() {
         global $db;
 
@@ -1025,7 +1036,7 @@ class doc_Nulltype extends \document {
                     throw new AccessException('Не достаточно привилегий для проведения документа произвольной датой');
                 }
             }
-
+            $this->extendedApplyAclCheck();
             if ($this->doc_data['mark_del']) {
                 throw new Exception("Документ помечен на удаление!");
             }
@@ -1102,6 +1113,8 @@ class doc_Nulltype extends \document {
                     throw new AccessException();
                 }
             }
+            $this->extendedCancelAclCheck();
+            
             if (!method_exists($this, 'DocCancel')) {
                 throw new Exception("Метод отмены данного документа не определён!");
             }

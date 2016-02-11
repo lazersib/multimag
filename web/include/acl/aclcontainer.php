@@ -23,14 +23,19 @@ namespace acl;
 class aclContainer {
     protected $list = null;
     protected $name = 'UNKNOWN';
+    protected $description = '';
     
     public function getName() {
         return $this->name;
     }
     
+    public function getDescription() {
+        return $this->description;
+    }
+    
     public function getMask() {
         $mask = 0;
-        foreach($this->list as $id=>$value) {
+        foreach($this->list as $value) {
             $mask |= $value['mask'];
         }
         return $mask;

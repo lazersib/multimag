@@ -158,7 +158,7 @@ class Acl extends \IModule {
                     if(is_dir($fullname)) {
                         $class_name = "\\acl\\" . $file.'\\main';
                         $cur_acl = new $class_name;
-                        $list[$file] = array('name' => $cur_acl->getName());
+                        $list[$file] = array('name' => $cur_acl->getName(), 'description'=>$cur_acl->getDescription());
                     }
                 }
                 closedir($dh);
@@ -325,7 +325,9 @@ class Acl extends \IModule {
         
         $list = $this->loadAclCategoryList();
         $tmpl->addTabsWidget($list, $acl_cat, $this->link_prefix . "&amp;sect=group_acl&amp;group_id=$group_id", 'acl_cat');
-        
+        if(isset($list[$acl_cat]['description'])) {
+            $tmpl->addContent("<p>".$list[$acl_cat]['description']."</p>");
+        }   
         $tmpl->addContent("<form method='post' action='{$this->link_prefix}&amp;group_id=$group_id&amp;acl_cat=".html_out($acl_cat)."'>"
             . "<input type='hidden' name='sect' value='group_acl_save'>");
         

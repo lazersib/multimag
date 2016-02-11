@@ -254,95 +254,148 @@ class doc_Zayavka extends doc_Nulltype {
         return false;
     }
 
-        function DopHead() {
-		global $tmpl, $CONFIG, $db;
-		if(!isset($this->dop_data['delivery_date']))	$this->dop_data['delivery_date']='';
+    function DopHead() {
+        global $tmpl, $CONFIG, $db;
+        if (!isset($this->dop_data['delivery_date'])) {
+            $this->dop_data['delivery_date'] = '';
+        }
 
-		$tmpl->addContent("<hr>");
+        $tmpl->addContent("<hr>");
 
-		if(@$this->dop_data['ishop'])		$tmpl->addContent("<b>Заявка с интернет-витрины</b><br>");
-		if(@$this->dop_data['buyer_rname'])	$tmpl->addContent("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
-		if(@$this->dop_data['buyer_ip'])	$tmpl->addContent("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
-		if(@$this->dop_data['pay_type']) {
-			$tmpl->addContent("<b>Способ оплаты: </b>");
-			switch($this->dop_data['pay_type'])
-			{
-				case 'bank':	$tmpl->addContent("безналичный");	break;
-				case 'cash':	$tmpl->addContent("наличными");	break;
-				case 'card':	$tmpl->addContent("картой ?");	break;
-				case 'card_o':	$tmpl->addContent("картой на сайте");	break;
-				case 'card_t':	$tmpl->addContent("картой при получении");	break;
-				case 'wmr':	$tmpl->addContent("Webmoney WMR");	break;
-				default:	$tmpl->addContent("не определён ({$this->dop_data['pay_type']})");
-			}
-			$tmpl->addContent("<br>");
-		}
-		if(!isset($this->dop_data['buyer_email']))	$this->dop_data['buyer_email']='';
-		if(!isset($this->dop_data['buyer_phone']))	$this->dop_data['buyer_phone']='';
-		$tmpl->addContent("e-mail, прикреплённый к заявке<br><input type='text' name='buyer_email' style='width: 100%' value='{$this->dop_data['buyer_email']}'><br>");
- 		$tmpl->addContent("Телефон для sms, прикреплённый к заявке<input type='text' name='buyer_phone' style='width: 100%' value='{$this->dop_data['buyer_phone']}'><br>");
+        if (@$this->dop_data['ishop']) {
+            $tmpl->addContent("<b>Заявка с интернет-витрины</b><br>");
+        }
+        if (@$this->dop_data['buyer_rname']) {
+            $tmpl->addContent("<b>ФИО: </b>{$this->dop_data['buyer_rname']}<br>");
+        }
+        if (@$this->dop_data['buyer_ip']) {
+            $tmpl->addContent("<b>IP адрес: </b>{$this->dop_data['buyer_ip']}<br>");
+        }
+        if (@$this->dop_data['pay_type']) {
+            $tmpl->addContent("<b>Способ оплаты: </b>");
+            switch ($this->dop_data['pay_type']) {
+                case 'bank': $tmpl->addContent("безналичный");
+                    break;
+                case 'cash': $tmpl->addContent("наличными");
+                    break;
+                case 'card': $tmpl->addContent("картой ?");
+                    break;
+                case 'card_o': $tmpl->addContent("картой на сайте");
+                    break;
+                case 'card_t': $tmpl->addContent("картой при получении");
+                    break;
+                case 'wmr': $tmpl->addContent("Webmoney WMR");
+                    break;
+                default: $tmpl->addContent("не определён ({$this->dop_data['pay_type']})");
+            }
+            $tmpl->addContent("<br>");
+        }
+        if (!isset($this->dop_data['buyer_email'])) {
+            $this->dop_data['buyer_email'] = '';
+        }
+        if (!isset($this->dop_data['buyer_phone'])) {
+            $this->dop_data['buyer_phone'] = '';
+        }
+        $tmpl->addContent("e-mail, прикреплённый к заявке<br><input type='text' name='buyer_email' style='width: 100%' value='{$this->dop_data['buyer_email']}'><br>");
+        $tmpl->addContent("Телефон для sms, прикреплённый к заявке<input type='text' name='buyer_phone' style='width: 100%' value='{$this->dop_data['buyer_phone']}'><br>");
 
-		$tmpl->addContent("Доставка:<br><select name='delivery'><option value='0'>Не требуется</option>");
-		$res = $db->query("SELECT `id`, `name` FROM `delivery_types` ORDER BY `id`");
-		while($nxt = $res->fetch_row()) {
-			if($nxt[0]==$this->dop_data['delivery'])
-				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
-			else
-				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
-		}
-		
-		$tmpl->addContent("</select>
-		Регион доставки:<br><select name='delivery_region'><option value='0'>Не задан</option>");
-		$res = $db->query("SELECT `id`, `name` FROM `delivery_regions` ORDER BY `id`");
-		while($nxt = $res->fetch_row()) {
-			if($nxt[0]==$this->dop_data['delivery_region'])
-				$tmpl->addContent("<option value='$nxt[0]' selected>".html_out($nxt[1])."</option>");
-			else
-				$tmpl->addContent("<option value='$nxt[0]'>".html_out($nxt[1])."</option>");
-		}
-		
-		$tmpl->addContent("</select>
-			Желаемая дата доставки:<br>
-			<input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br>");
-		if(@$this->dop_data['delivery_address'])$tmpl->addContent("<b>Адрес доставки: </b>{$this->dop_data['delivery_address']}<br>");
+        $tmpl->addContent("Доставка:<br><select name='delivery'><option value='0'>Не требуется</option>");
+        $res = $db->query("SELECT `id`, `name` FROM `delivery_types` ORDER BY `id`");
+        while ($nxt = $res->fetch_row()) {
+            if ($nxt[0] == $this->dop_data['delivery']) {
+                $tmpl->addContent("<option value='$nxt[0]' selected>" . html_out($nxt[1]) . "</option>");
+            } else {
+                $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            }
+        }
 
-		$tmpl->addContent("<br><hr>
-		Статус (может меняться автоматически):<br>
-		<select name='status'>");
-		if(@$this->dop_data['status']=='')	$tmpl->addContent("<option value=''>Не задан</option>");
-		foreach($CONFIG['doc']['status_list'] as $id => $name)
-		{
-			$s=(@$this->dop_data['status']==$id)?'selected':'';
-			$tmpl->addContent("<option value='$id' $s>$name</option>");
-		}
+        $tmpl->addContent("</select>
+            Регион доставки:<br><select name='delivery_region'><option value='0'>Не задан</option>");
+        $res = $db->query("SELECT `id`, `name` FROM `delivery_regions` ORDER BY `id`");
+        while ($nxt = $res->fetch_row()) {
+            if ($nxt[0] == $this->dop_data['delivery_region']) {
+                $tmpl->addContent("<option value='$nxt[0]' selected>" . html_out($nxt[1]) . "</option>");
+            } else {
+                $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            }
+        }
 
-		$tmpl->addContent("</select><br><hr>");
-	}
+        $tmpl->addContent("</select>
+            Желаемая дата доставки:<br>
+            <input type='text' name='delivery_date' value='{$this->dop_data['delivery_date']}' style='width: 100%'><br>");
+        if (@$this->dop_data['delivery_address']) {
+            $tmpl->addContent("<b>Адрес доставки: </b>{$this->dop_data['delivery_address']}<br>");
+        }
 
-	function DopSave()
-	{
-		$new_data = array(
-			'status' => request('status'),
-			'delivery' => rcvint('delivery'),
-			'delivery_regions' => rcvint('delivery_regions'),
-		    	'delivery_date' => request('delivery_date'),
-			'buyer_email' => request('buyer_email'),
-			'buyer_phone' => request('buyer_phone')
-		);
-		$old_data = array_intersect_key($new_data, $this->dop_data);
+        $tmpl->addContent("<br><hr>
+            Статус (может меняться автоматически):<br>
+            <select name='status'>");
+        if (@$this->dop_data['status'] == '') {
+            $tmpl->addContent("<option value=''>Не задан</option>");
+        }
+        foreach ($CONFIG['doc']['status_list'] as $id => $name) {
+            $s = (@$this->dop_data['status'] == $id) ? 'selected' : '';
+            $tmpl->addContent("<option value='$id' $s>$name</option>");
+        }
 
-		$log_data='';
-		if($this->id)
-		{
-			$log_data = getCompareStr($old_data, $new_data);
-			if(@$old_data['status'] != $new_data['status'])
-				$this->sentZEvent('cstatus:'.$new_data['status']);
-		}
-		$this->setDopDataA($new_data);
-		if($log_data)	doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-		
-	}
+        $tmpl->addContent("</select><br><hr>");
+    }
 
+    /// Сохранение расширенных свойств документа
+    function DopSave() {
+        $new_data = array(
+            'status' => request('status'),
+            'delivery' => rcvint('delivery'),
+            'delivery_regions' => rcvint('delivery_regions'),
+            'delivery_date' => request('delivery_date'),
+            'buyer_email' => request('buyer_email'),
+            'buyer_phone' => request('buyer_phone')
+        );
+        $old_data = array_intersect_key($new_data, $this->dop_data);
+
+        $log_data = '';
+        if ($this->id) {
+            $log_data = getCompareStr($old_data, $new_data);
+            if (@$old_data['status'] != $new_data['status']) {
+                $this->sentZEvent('cstatus:' . $new_data['status']);
+            }
+        }
+        $this->setDopDataA($new_data);
+        if ($log_data) {
+            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
+        }
+    }
+
+    /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        parent::extendedCancelAclCheck();
+    }
+        
     /// Провести документ
     /// @param silent Не менять отметку проведения
     function docApply($silent = 0) {

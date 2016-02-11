@@ -23,20 +23,21 @@ class main extends \acl\aclContainer {
     protected $name = "Документы складов";
     
     public function __construct() {
+        $this->description = "Пользователь, не обладающий привилегиями на склад, не сможет выполнить операцию с документом, в которм происходит движение ТМЦ на этом складе";
         $firm_ldo = new \Models\LDO\skladnames();
         $list = $firm_ldo->getData();
         $this->list['global'] = array(
-                "name" => 'Глобальный доступ (реализовано не полностью)',
-                "mask" =>  \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
-                    | \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
-                    | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT
+                "name" => 'Глобальный доступ',
+                "mask" => /* \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
+                    |*/ \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
+                    //| \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT
             );
         foreach ($list as $id => $item) {
             $this->list[$id] = array(
                     "name" => $id.': '.$item,
-                    "mask" =>  \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
-                        | \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
-                        | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT
+                    "mask" =>  /*\acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
+                        |*/ \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
+                      //  | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT
                 );
         }
     }
