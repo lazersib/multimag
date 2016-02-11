@@ -30,7 +30,7 @@ class main extends \acl\aclContainer {
             ),
             'pricean' => array(
                 "name" => "Анализатор прайсов",
-                "mask" => \acl::VIEW
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
             'tickets' => array(
                 "name" => "Задания",

@@ -2242,15 +2242,28 @@ class doc_Nulltype extends \document {
 
             if (isset($opts['vat'])) {
                 if ($line['vat'] !== null) {
+                    $ndsp = $line['vat'];
+                } else {
+                    $ndsp = $this->firm_vars['param_nds'];
+                }
+                $vat = $ndsp / 100;
+            /*    if ($line['vat'] !== null) {
                     $line['vat_p'] = $line['vat'];
                 } else {
                     $line['vat_p'] = $this->firm_vars['param_nds'];
                 }
                 $line['price_wo_vat'] = round($line['price'] / (1 + ($line['vat_p'] / 100)), 2);
                 $line['sum_wo_vat'] = $line['price_wo_vat'] * $line['cnt'];
-                $line['vat_s'] = ($line['price'] * $line['cnt']) - $line['sum_wo_vat'];
+                $line['vat_s'] = ($line['price'] * $line['cnt']) - $line['sum_wo_vat'];*/
+                $pos = $this->calcVAT($line['price'], $line['cnt'], $vat);
+                //$line['price'] = $pos['price'];
+                $line['sum_wo_vat'] = round($pos['sum_wo_vat'], 2);
+                $line['vat_p'] = $ndsp;
+                $line['vat_s'] = round($pos['vat_s'], 2);
+                $line['sum'] = round($pos['sum'], 2);
             }
-
+            
+            
             $list[] = $line;
         }
         $res->free();

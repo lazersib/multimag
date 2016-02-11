@@ -609,6 +609,11 @@ class doc_s_Sklad {
         else if ($param == 'k') {
             $this->showPartsForm($pos);
         }
+        elseif ($param == 'a') {
+            //require_once("include/doc.sklad.kompl.php");
+            $pran = new doc_s_Price_an();
+            $tmpl->addContent( $pran->getRegExpEditForm($pos));
+        }
         // Изображения
         else if ($param == 'i') {
             $max_fs = get_max_upload_filesize();
@@ -1150,9 +1155,9 @@ class doc_s_Sklad {
                     while ($group = $res_group->fetch_row()) {
                         $ret.="<option value='-1' disabled>" . html_out($group[1]) . "</option>";
                         $res = $db->query("SELECT `id`, `param`, `ym_assign`"
-                                . " FROM `doc_base_params`"
-                                . " WHERE `group_id`='$group[0]'"
-                                . " ORDER BY `name`");
+                            . " FROM `doc_base_params`"
+                            . " WHERE `group_id`='$group[0]'"
+                            . " ORDER BY `name`");
                         while ($param = $res->fetch_row()) {
                             $warn = $param[2] ? '(!)' : '';
                             $ret.="<option value='$param[0]'>- " . html_out($param[1]) . " $warn</option>";
@@ -1209,8 +1214,9 @@ class doc_s_Sklad {
 					</form>");
                 }
             }
-        } else
-            $tmpl->msg("Неизвестная закладка");
+        } else {
+            throw new \NotFoundException("Неизвестная закладка");
+        }
     }
 
     /// Запись формы карточки товара

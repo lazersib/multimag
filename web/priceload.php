@@ -49,7 +49,7 @@ function topmenu($s = '') {
 function draw_groups_tree($level, $firm) {
 	global $db;
 	$ret = '';
-	settype($leval, 'int');
+	settype($level, 'int');
 	settype($firm, 'int');
 	$res = $db->query("SELECT `doc_group`.`id`, `doc_group`.`name`, `firm_info_group`.`id` FROM `doc_group`
 	LEFT JOIN `firm_info_group`	ON `firm_info_group`.`firm_id`='$firm' AND `firm_info_group`.`group_id`=`doc_group`.`id`
@@ -823,7 +823,7 @@ try {
 	else if ($mode == 'r_multiparsed') {
 		$f = rcvint('f');
 		$tmpl->addContent("<h1>Отчёт по многократно обработанным позициям</h1>");
-		if ($f)	$f = " AND `price`.`firm`='$f'";
+		$f = $f?" AND `price`.`firm`='$f'":'';
 		$res = $db->query("SELECT `price`.`id`, `price`.`name`, `price`.`art`, `firm_info`.`name`, `price`.`seeked`
 		FROM `price`
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
