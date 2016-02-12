@@ -465,15 +465,16 @@ class Report_PriceTags {
             default: $order = '`doc_base`.`name`';
         }
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
-            <form action='' method='post'>
+            <form action='' method='post' onsubmit='return onSubmitForm();'>
             <input type='hidden' name='mode' value='pricetags'>
             <input type='hidden' name='tag_id' value='$tag_id'>
             <input type='hidden' name='firm_id' value='$firm_id'>
             <input type='hidden' name='opt' value='make'>
+            <input type='hidden' name='data' value='{}' id='form_data_container'>
             Отметьте наименования, для которых требуется ценник:<br>
             <script type='text/javascript'>
             function SelAll(flag) {
-                var elems = document.getElementsByName('pos_id[]');
+                var elems = document.getElementsByClassName('pos_id_cb');
                 var l = elems.length;
                 for(var i=0; i<l; i++) {
                     elems[i].checked=flag;
@@ -503,12 +504,29 @@ class Report_PriceTags {
 			ORDER BY $order");
             while ($nxt = $res->fetch_assoc()) {
                 $cost = $pc->getPosSelectedPriceValue($nxt['id'], $pc->getDefaultPriceId(), $nxt);
-                $tmpl->addContent("<tr><td>{$nxt['id']}</td><td>" . html_out($nxt['vc']) . "</td><td><label><input type='checkbox' name='pos_id[]' value='{$nxt['id']}' checked>" . html_out($nxt['name']) . "</label></td>
-                    <td><input type='number' name='cnt[{$nxt['id']}]' value='1'></td>
+                $tmpl->addContent("<tr><td>{$nxt['id']}</td><td>" . html_out($nxt['vc']) . "</td><td><label><input type='checkbox' class='pos_id_cb' value='{$nxt['id']}' checked>" . html_out($nxt['name']) . "</label></td>
+                    <td><input type='number' id='cnt_{$nxt['id']}' value='1'></td>
                     <td>$cost</td></tr>");
             }
         }
         $tmpl->addContent("</table><button type='submit'>Сформировать отчёт</button></form>");
+        $tmpl->addContent("<script type='text/javascript'> 
+            function onSubmitForm() {
+                var obj = new Object();
+                var elems = document.getElementsByClassName('pos_id_cb');
+                var l = elems.length;
+                for(var i=0; i<l; i++) {
+                    if(elems[i].checked) {
+                        var val = elems[i].value;
+                        var ip = document.getElementById('cnt_'+val);
+                        obj[val] = ip.value;
+                    }
+                }
+                var fdc = document.getElementById('form_data_container');
+                fdc.value = JSON.stringify(obj);
+                return true;
+            }
+            </script>");
     }
 
     function MakePDF() {
@@ -516,6 +534,7 @@ class Report_PriceTags {
         $tag_id = rcvint('tag_id');
         $pos_id = request('pos_id');
         $firm_id = rcvint('firm_id');
+        $data = request('data', '{}');
         $tmpl->ajax = 1;
         $tmpl->setContent('');
         ob_start();
@@ -531,17 +550,23 @@ class Report_PriceTags {
         $pc = PriceCalc::getInstance();
         $pc->SetFirmId($firm_id);
         
-        if (!is_array($pos_id)) {
+        $data_json = json_decode($data, true);
+        
+        if (!is_array($data_json)) {
             throw new Exception("Необходимо выбрать хотя бы одно наименование!");
         }
-        foreach ($pos_id as $val) {
-            settype($val, 'int');
-            $cnt = intval(@$_REQUEST['cnt'][$val]);
+        if (!count($data_json)) {
+            throw new Exception("Необходимо выбрать хотя бы одно наименование!");
+        }
+        
+        foreach ($data_json as $id=>$cnt) {
+            settype($id, 'int');
+            settype($cnt, 'int');
             if ($cnt < 1) {
-                $cnt = 1;
+                continue;
             }
             for ($i = 0; $i < $cnt; $i++) {
-                $this->drawPDFPriceTag($pdf, $this->templates[$tag_id], $val);
+                $this->drawPDFPriceTag($pdf, $this->templates[$tag_id], $id);
             }
         }
         $pdf->Output('pricetags.pdf', 'I');

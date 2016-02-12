@@ -1022,6 +1022,13 @@ class doc_Nulltype extends \document {
         return true;
     }
     
+    /// @brief Создание другого документа на основе текущего
+    /// Метод необходимо переопределить у потомков
+    /// @param $target_type Тип создаваемого документа
+    public function morphTo($target_type) {
+        return false;    
+    }
+    
     /// Провести документ и вренуть JSON результат
     public function applyJson() {
         global $db;

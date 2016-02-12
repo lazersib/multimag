@@ -100,7 +100,9 @@ class doc_Pko extends paymentbasedoc {
         if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
         }
-
+        if ($doc_params['sum']<=0) {
+            throw new Exception('Нельзя провести документ с нулевой или отрицательной суммой!');
+        }
         // Запрет для другой фирмы
         if ($doc_params['kassa_firm_id'] != null && $doc_params['kassa_firm_id'] != $doc_params['firm_id']) {
             throw new Exception("Выбранная касса относится другой организации!");
