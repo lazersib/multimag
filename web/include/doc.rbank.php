@@ -94,7 +94,8 @@ class doc_RBank extends doc_Nulltype {
         if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
         }
-        
+
+        $this->checkIfTypeForDocumentExists();
         // Запрет для другой фирмы
         // Проверка временно отключена
         //if($doc_params['bank_firm_id']!=null && $doc_params['bank_firm_id']!=$doc_params['firm_id']) {
