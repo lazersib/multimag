@@ -68,14 +68,13 @@ class cfg {
     }
     
     /// Получить параметр конфигурации
-    /// @param $sect Имя секции конфигурации
     /// @param $param Имя параметра конфигурации
     /// @param $default Значение по умолчанию. Возвращается, если параметр не определён
     /// @return Параметр, или $default
-    static function getroot($sect, $default = null) {
+    static function getroot($param, $default = null) {
         global $CONFIG;
-        if(isset($CONFIG[$sect])) {
-            return $CONFIG[$sect];
+        if(isset($CONFIG[$param])) {
+            return $CONFIG[$param];
         } else {
             return $default;
         }
@@ -97,7 +96,7 @@ class cfg {
     /// Проверить существование вложенного параметра конфигурации
     /// @param $sect Имя секции конфигурации
     /// @param $param Имя параметра конфигурации
-    ///// @param $subparam Имя вложенного параметра конфигурации
+    /// @param $subparam Имя вложенного параметра конфигурации
     /// @return true, если существует; false в ином случае
     static function existsub($sect, $param, $subparam) {
         global $CONFIG;
@@ -105,6 +104,36 @@ class cfg {
             return TRUE;
         } else {
             return FALSE;
+        }
+    }
+    
+    /// Проверить существование параметра конфигурации
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    /// Бросает исключение при отсутствии параметра
+    static function required($sect, $param) {
+        if(!self::exist($sect, $param)) {
+            throw new \ErrorException('Обязательный параметр конфигурации '.$sect.'.'.$param.' не определён!');
+        }
+    }
+    
+    /// Проверить, что указанный параметр конфигурации не пуст
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    /// Бросает исключение при отсутствии параметра
+    static function requiredFilled($sect, $param) {
+        if(!self::get($sect, $param)) {
+            throw new \ErrorException('Обязательный параметр конфигурации '.$sect.'.'.$param.' пуст или не определён!');
+        }
+    }
+        
+    /// Проверить, что указанный параметр конфигурации не пуст
+    /// @param $sect Имя секции конфигурации
+    /// @param $param Имя параметра конфигурации
+    /// Бросает исключение при отсутствии параметра
+    static function requiredRootFilled($param) {
+        if(!self::getroot($param)) {
+            throw new \ErrorException('Обязательный параметр конфигурации '.$param.' пуст или не определён!');
         }
     }
 }

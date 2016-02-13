@@ -250,7 +250,7 @@ function request($varname,$def='')
 }
 
 /// Получает часть массива $_REQUEST, позволяет задать значение по умолчанию для отсутствующих элементов
-/// @param $varname Массив значений ключенй $_REQUEST
+/// @param $varname Массив значений ключей $_REQUEST
 /// @param $dev Возвращаемое значение, если искомый элемент отсутствует
 function requestA($var_array, $def='')
 {
@@ -379,25 +379,25 @@ function SafeLoadTemplate($template)
 }
 
 /// Получить данные профиля пользователя по uid
-function getUserProfile($uid)
-{
-	global $db;
-	settype($uid,'int');
-	$user_profile=array();
-	$user_profile['main']=array();
-	$user_profile['dop']=array();
+function getUserProfile($uid) {
+    global $db;
+    settype($uid, 'int');
+    $user_profile = array();
+    $user_profile['main'] = array();
+    $user_profile['dop'] = array();
 
-	$res=$db->query("SELECT * FROM `users` WHERE `id`='$uid'");
-	if(!$res->num_rows)	return $user_profile;	// Если не найден
-	$user_profile['main']	= $res->fetch_assoc();
-	unset($user_profile['main']['pass']);	// В целях безопасности
-	unset($user_profile['main']['pass_change']);
-	$res=$db->query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='$uid'");
-	while($nn=$res->fetch_row())
-	{
-		$user_profile['dop'][$nn[0]]=$nn[1];
-	}
-	return $user_profile;
+    $res = $db->query("SELECT * FROM `users` WHERE `id`='$uid'");
+    if (!$res->num_rows) { // Если не найден
+        return $user_profile;
+    } 
+    $user_profile['main'] = $res->fetch_assoc();
+    unset($user_profile['main']['pass']); // В целях безопасности
+    unset($user_profile['main']['pass_change']);
+    $res = $db->query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='$uid'");
+    while ($nn = $res->fetch_row()) {
+        $user_profile['dop'][$nn[0]] = $nn[1];
+    }
+    return $user_profile;
 }
 
 /// Класс шаблонизатора вывода страницы. Содержит методы, отвечающие за загрузку темы оформления, заполнения страницы содержимым и отправки в броузер
@@ -793,11 +793,17 @@ if(isset($CONFIG['site']['session_cookie_domain'])) {
 }
 
 session_start();
-include_once($CONFIG['location']."/common/core.common.php");
+require_once($CONFIG['location']."/common/core.common.php");
 
 if ($CONFIG['site']['force_https']) {
     header('Location: https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'], true, 301);
 }
+
+cfg::requiredFilled('site', 'admin_name');
+cfg::requiredFilled('site', 'admin_email');
+cfg::requiredFilled('site', 'doc_adm_email');
+cfg::requiredFilled('site', 'doc_adm_jid');
+cfg::requiredFilled('site', 'name');
 
 $db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
 

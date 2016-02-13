@@ -733,49 +733,6 @@ function MailMenu(event,doc)
 	return false
 }
 
-function msgMenu(event, doc) {
-    var menu = CreateContextMenu(event);
-    var email = '';
-    function showDialog() {
-        var obj = event.target
-        menu.innerHTML = "<div>Текст сообщения:</div><textarea id='mailtext'></textarea><br><label><input type='checkbox' id='sendmail' checked> Отправить по email</label><br><label><input type='checkbox' id='sendsms' checked> Отправить по sms</label><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button>";
-        menu.className = 'contextlayer';
-        menu.onmouseover = menu.onmouseout = function () {
-        }
-        if (menu.waitHideTimer)
-            window.clearTimeout(menu.waitHideTimer)
-        var otext = document.getElementById('mailtext');
-        var ocmail = document.getElementById('sendmail');
-        var ocsms = document.getElementById('sendsms');
-        var obsend = document.getElementById('bsend');
-        var obcancel = document.getElementById('bcancel');
-
-        obcancel.onclick = function () {
-            menu.parentNode.removeChild(menu);
-        };
-        obsend.onclick = function () {
-            var mail = ocmail.checked ? 1 : 0;
-            var sms = ocsms.checked ? 1 : 0;
-            $.ajax({
-                type: 'GET',
-                url: '/doc.php',
-                data: 'mode=srv&doc=' + doc + '&opt=pmsg&mail=' + mail + '&sms=' + sms + '&text=' + encodeURIComponent(otext.value),
-                success: function (msg) {
-                    docScriptsServerDataReceiver(msg, menu);
-                },
-                error: function () {
-                    jAlert('Ошибка соединения!', 'Отправка сообщения', null, 'icon_err');
-                    menu.parentNode.removeChild(menu);
-                }
-            });
-            menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...';
-        };
-    }
-
-    showDialog();
-    return false;
-}
-
 function addNomMenu(event, doc, pdoc_id) {
     var menu = CreateContextMenu(event);
     function showDialog() {
@@ -1015,6 +972,47 @@ function addShipDataDialog(event, doc) {
     return false;
 }
 
+function msgMenu(event, doc) {
+    var menu = CreateContextMenu(event);
+    function showDialog() {
+        var obj = event.target
+        menu.innerHTML = "<div>Текст сообщения:</div><textarea id='mailtext'></textarea><br><label><input type='checkbox' id='sendmail' checked> Отправить по email</label><br><label><input type='checkbox' id='sendsms' checked> Отправить по sms</label><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button>";
+        menu.className = 'contextlayer';
+        menu.onmouseover = menu.onmouseout = function () {
+        }
+        if (menu.waitHideTimer)
+            window.clearTimeout(menu.waitHideTimer)
+        var otext = document.getElementById('mailtext');
+        var ocmail = document.getElementById('sendmail');
+        var ocsms = document.getElementById('sendsms');
+        var obsend = document.getElementById('bsend');
+        var obcancel = document.getElementById('bcancel');
+
+        obcancel.onclick = function () {
+            menu.parentNode.removeChild(menu);
+        };
+        obsend.onclick = function () {
+            var mail = ocmail.checked ? 1 : 0;
+            var sms = ocsms.checked ? 1 : 0;
+            $.ajax({
+                type: 'POST',
+                url: '/doc.php',
+                data: 'mode=srv&doc=' + doc + '&opt=pmsg&mail=' + mail + '&sms=' + sms + '&text=' + encodeURIComponent(otext.value),
+                success: function (msg) {
+                    docScriptsServerDataReceiver(msg, menu);
+                },
+                error: function () {
+                    jAlert('Ошибка соединения!', 'Отправка сообщения', null, 'icon_err');
+                    menu.parentNode.removeChild(menu);
+                }
+            });
+            menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...';
+        };
+    }
+    showDialog();
+    return false;
+}
+
 function sendPie(event, doc) {
     var menu = CreateContextMenu(event);
     menu.className = 'contextlayer';
@@ -1023,7 +1021,7 @@ function sendPie(event, doc) {
     if (menu.waitHideTimer)
         window.clearTimeout(menu.waitHideTimer);
     $.ajax({
-        type: 'GET',
+        type: 'POST',
         url: '/doc.php',
         data: 'mode=srv&doc=' + doc + '&opt=pie',
         success: function (msg) {
@@ -1035,6 +1033,44 @@ function sendPie(event, doc) {
         }
     });
     menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...';
+    return false;
+}
+
+function petitionMenu(event, doc) {
+    $.alerts._hide();
+    var menu = CreateContextMenu(event);
+    function showDialog() {
+        menu.innerHTML = "<fieldset><legend>Запрос на отмену документа</legend><div>Причина запроса:</div><textarea id='mailtext'></textarea><br><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button></fieldset>";
+        menu.className = 'contextlayer';
+        menu.onmouseover = menu.onmouseout = function () {
+        };
+        if (menu.waitHideTimer) {
+            window.clearTimeout(menu.waitHideTimer);
+        }
+        var otext = document.getElementById('mailtext');
+        var obsend = document.getElementById('bsend');
+        var obcancel = document.getElementById('bcancel');
+
+        obcancel.onclick = function () {
+            menu.parentNode.removeChild(menu);
+        };
+        obsend.onclick = function () {
+            $.ajax({
+                type: 'POST',
+                url: '/doc.php',
+                data: 'mode=srv&doc=' + doc + '&opt=petition&text=' + encodeURIComponent(otext.value),
+                success: function (msg) {
+                    docScriptsServerDataReceiver(msg, menu);
+                },
+                error: function () {
+                    jAlert('Ошибка соединения!', 'Отправка сообщения', null, 'icon_err');
+                    menu.parentNode.removeChild(menu);
+                }
+            });
+            menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...';
+        };
+    }
+    showDialog();
     return false;
 }
 
@@ -1051,6 +1087,9 @@ function docScriptsServerDataReceiver(msg, menu) {
                     break;
                 case 'send_pie':
                     jAlert('Сообщение-приглашение успешно отправлено!', "Выполнено", {});
+                    break;
+                case 'send_petition':
+                    jAlert('Ваше сообщение успешно отправлено!<br>'+json.message, "Выполнено", {});
                     break;
                 default:
                     jAlert("Обработка полученного сообщения не реализована на стороне броузера!<br>"

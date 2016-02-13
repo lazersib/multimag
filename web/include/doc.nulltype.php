@@ -1151,7 +1151,7 @@ class doc_Nulltype extends \document {
             $db->rollback();
             $db->query("UNLOCK TABLES");
             doc_log("CANCEL-DENIED {$this->typename}", $e->getMessage(), 'doc', $this->id);
-            $json = " { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>" . $e->getMessage() . "<br>Вы можете <a href='/message.php?mode=petition&doc={$this->id}'>попросить руководителя</a> выполнить отмену этого документа.\" }";
+            $json = " { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>" . $e->getMessage() . "<br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\">попросить руководителя</a> выполнить отмену этого документа.\" }";
             return $json;
         } catch (Exception $e) {
             $db->rollback();
@@ -1586,6 +1586,66 @@ class doc_Nulltype extends \document {
             return 0;
         }
     }
+    
+    /// Обработка отправки запроса на отмену документа
+    protected function sendPetition() {
+        global $db;
+        $ret = array('object' => 'send_petition', 'response' => 'success');
+        try {
+            $text = request('text');
+            $pref = pref::getInstance();
+            if (mb_strlen($text) < 8) {
+                throw new Exception('Сообщение слишком короткое! Опишите причину подробнее!');
+            }
+            $res = $db->query("SELECT `users`.`reg_email`, `users_worker_info`.`worker_email` FROM `users`
+                LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+                WHERE `id`='{$_SESSION['uid']}'");
+            $user_info = $res->fetch_array();
+            if ($user_info['worker_email'] != '') {
+                $from = $user_info['worker_email'];
+            } else if ($user_info['reg_email'] != '') {
+                $from = $user_info['reg_email'];
+            } else {
+                $from = \cfg::get('site', 'doc_adm_email');
+            }
+
+            $proto = @$_SERVER['HTTPS'] ? 'https' : 'http';
+            $ip = getenv("REMOTE_ADDR");
+            $date = date("Y-m-d H:i:s", $this->doc_data['date']);
+            $txt = "Здравствуйте!\nПользователь {$_SESSION['name']} просит Вас отменить проводку документа *{$this->viewname}* с ID: {$this->id},"
+                . " {$this->doc_data['altnum']}{$this->doc_data['subtype']} от {$date} на сумму {$this->doc_data['sum']}."
+                . " Клиент {$this->doc_data['agent_name']}.\n{$proto}://{$_SERVER["HTTP_HOST"]}/doc.php?mode=body&doc={$this->id} \n"
+                . "Цель отмены: $text.\n"
+                . "IP: $ip\n"
+                . "Пожалуйста, дайте ответ на это письмо на $from, как в случае отмены документа, так и об отказе отмены!";
+
+            if (\cfg::get('site', 'doc_adm_email')) {
+                mailto(\cfg::get('site', 'doc_adm_email'), 'Запрос на отмену проведения документа', $txt, $from);
+            }
+
+            if (\cfg::get('site', 'doc_adm_jid') && \cfg::get('xmpp', 'host')) {
+                require_once(\cfg::getroot('location') . '/common/XMPPHP/XMPP.php');
+                $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
+                    , 'MultiMag r' . MULTIMAG_REV);
+                $xmppclient->connect();
+                $xmppclient->processUntil('session_start');
+                $xmppclient->presence();
+                $xmppclient->message(\cfg::get('site', 'doc_adm_jid'), $txt);
+                $xmppclient->disconnect();
+            }
+            $ret['message'] = "Сообщение было отправлено уполномоченному лицу! Ответ о снятии проводки придёт вам на e-mail!";
+        } 
+        catch (XMPPHP_Exception $e) {
+            writeLogException($e);
+            $ret = array('object' => 'send_petition', 'response' => 'error',
+                'errormessage' => "Невозможно отправить сообщение по XMPP: " . $e->getMessage()
+            );
+        }
+        catch (\Exception $e) {
+            $ret = array('object' => 'send_petition', 'response' => 'error', 'errormessage' => $e->getMessage());
+        }
+        return json_encode($ret, JSON_UNESCAPED_UNICODE);
+    }
 
     function service() {
         global $tmpl;
@@ -1626,6 +1686,9 @@ class doc_Nulltype extends \document {
             // Снять пометку на удаление
             else if ($opt == 'jundeldoc') {
                 $tmpl->setContent($this->serviceUnDelDoc());
+            }
+            else if ($opt == 'petition') {
+                $tmpl->setContent($this->sendPetition());
             }
             /// TODO: Это тоже переделать!
             else if ($this->doc_data['ok']) {
