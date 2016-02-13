@@ -30,7 +30,8 @@ class CTypesListEditor extends \ListEditor {
 		return array(
 		    'id'=>'id',
 		    'account' => 'Счет',
-		    'name'=>'Наименование'
+		    'name'=>'Наименование',
+			'codename' => 'Кодовое обозначение',
 		);
 	}
 	

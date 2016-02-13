@@ -280,25 +280,33 @@ class doc_Postuplenie extends doc_Nulltype {
             $db->commit();
             header("Location: doc.php?mode=body&doc=$dd");
         }
-        else if ($target_type == 5) {
-            \acl::accessGuard('doc.rbank', \acl::CREATE);
+        else
+        {
+            if ($target_type == 5) {
+                \acl::accessGuard('doc.rbank', \acl::CREATE);
+                $classNameNewDocument = 'doc_RBank';
+            }
+            else if ($target_type == 7) {
+                \acl::accessGuard('doc.rko', \acl::CREATE);
+                $classNameNewDocument = 'doc_Rko';
+            }
+            else{
+                return;
+            }
             $this->recalcSum();
             $db->startTransaction();
-            $new_doc = new doc_RBank();
+            $new_doc = new $classNameNewDocument();
             $doc_num = $new_doc->createFrom($this);
-            // Вид расхода - закуп товара на продажу
-            $new_doc->setDopData('rasxodi', 6);
-            $db->commit();
-            header('Location: doc.php?mode=body&doc=' . $doc_num);
-        }
-        else if ($target_type == 7) {
-            \acl::accessGuard('doc.rko', \acl::CREATE);
-            $this->recalcSum();
-            $db->startTransaction();
-            $new_doc = new doc_Rko();
-            $doc_num = $new_doc->createFrom($this);
-            // Вид расхода - закуп товара на продажу
-            $new_doc->setDopData('rasxodi', 6);
+            $codeName =
+                isset($this->dop_data['return']) && $this->dop_data['return']
+                    ?'goods_return'
+                    :'goods_buy';
+            $resource = $db->query("SELECT `id` FROM `doc_dtypes` WHERE `codename`='$codeName'");
+            if($resource->num_rows)
+            {
+                $result = $resource->fetch_assoc();
+                $new_doc->setDopData('rasxodi', $result['id']);
+            }
             $db->commit();
             header('Location: doc.php?mode=body&doc=' . $doc_num);
         }

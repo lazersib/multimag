@@ -486,22 +486,24 @@ class doc_Realizaciya extends doc_Nulltype {
         } 
         else if ($target_type == 6) {
             \acl::accessGuard('doc.pko', \acl::CREATE);
-            $sum = $this->recalcSum();
+            $this->recalcSum();
             $db->startTransaction();
             $new_doc = new doc_Pko();
             $dd = $new_doc->createFrom($this);
             $new_doc->setDocData('kassa', 1);
+            $this->setDefaultTypeOfIncome($new_doc);
             $db->commit();
             $ref = "Location: doc.php?mode=body&doc=" . $dd;
             header($ref);
         }
         else if ($target_type == 4) {
             \acl::accessGuard('doc.pbank', \acl::CREATE);
-            $sum = $this->recalcSum();
+            $this->recalcSum();
             $db->startTransaction();
             $new_doc = new doc_Pbank();
             $dd = $new_doc->createFrom($this);
             $new_doc->setDocData('bank', 1);
+            $this->setDefaultTypeOfIncome($new_doc);
             $db->commit();
             $ref = "Location: doc.php?mode=body&doc=" . $dd;
             header($ref);
@@ -617,6 +619,29 @@ class doc_Realizaciya extends doc_Nulltype {
             doc_log("UPDATE", "dov:" . request('dov') . ", dov_agent:" . request('dov_agent') . ", dov_data:" . request('dov_data'), 'doc', $this->id);
         } else
             $tmpl->msg("Неизвестная опция $opt!");
+    }
+
+    /**
+     * Устанавливает по умолчанию вид дохода
+     * @param $new_doc doc_Pko|doc_Pbank
+     */
+    public function setDefaultTypeOfIncome($new_doc)
+    {
+        if(!($new_doc instanceof doc_Pbank || $new_doc instanceof doc_Pko))
+        {
+            throw new InvalidArgumentException('$new_doc  должен быть унаследован от doc_Pbank или doc_Pko');
+        }
+        global $db;
+        $codeName =
+            isset($this->dop_data['return']) && $this->dop_data['return']
+                ?'goods_return'
+                :'goods_buy';
+        $resource = $db->query("SELECT `id` FROM `doc_ctypes` WHERE `codename`='$codeName'");
+        if($resource->num_rows)
+        {
+            $result = $resource->fetch_assoc();
+            $new_doc->setDopData('credit_type', $result['id']);
+        }
     }
 
 }

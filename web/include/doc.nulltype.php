@@ -2559,17 +2559,12 @@ class doc_Nulltype extends \document {
         {
             throw new Exception('Для данного типа документа проверка не разрешена');
         }
-        if(cfg::get('doc', 'restrict_dc_nulltype', true))
+        if(cfg::get('doc', 'restrict_dc_nulltype', true)
+            && isset($this->dop_data[$allowedTypes[$this->doc_type]])
+            && $this->dop_data[$allowedTypes[$this->doc_type]] > 0)
         {
-            global $db;
-            $res = $db->query("SELECT 1 FROM `doc_dopdata` WHERE `doc`= $this->id && param='{$allowedTypes[$this->doc_type]}' LIMIT 1");
-            $resultTypeFind = $res->fetch_assoc();
-            $res->free();
-            if(empty($resultTypeFind))
-            {
-                $type = $this->doc_type%2 === 1 ? 'расходов' : 'доходов';
-                throw new Exception("Не задан вид $type у проводимого документа.");
-            }
+            $type = $this->doc_type%2 === 1 ? 'расходов' : 'доходов';
+            throw new Exception("Не задан вид $type у проводимого документа.");
         }
     }
 }
