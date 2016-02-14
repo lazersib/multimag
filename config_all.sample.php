@@ -16,7 +16,9 @@ $CONFIG['site']['location']	= $CONFIG['location'].'/web';
 $CONFIG['cli']['location']	= $CONFIG['location'].'/cli';
 $CONFIG['site']['user_pass_period'] = false;                    // Срок действия (суток) пароля обычного пользователя. Если false - не ограничен. false по умолчанию
 $CONFIG['site']['worker_pass_period'] = 90;                     // Срок действия (суток) пароля сотрудника. Если false - не ограничен. 90 по умолчанию.
-
+//Проверка заданного типа в приходных/расходных кассовых ордерах
+//и средств из/в банк при проведении документа.
+$CONFIG['doc']['restrict_dc_nulltype'] = true;
 // Настройки базы данных
 $CONFIG['mysql']['host']	= 'localhost';
 $CONFIG['mysql']['port']	= '';

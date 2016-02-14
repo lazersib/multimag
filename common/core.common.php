@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "864");
+define("MULTIMAG_REV", "880");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -559,4 +559,15 @@ function getCompareStr($old, $new) {
         }
     }
     return $ret;
+}
+
+//Фикс для скомпилированных php без --enable-calendar
+if (!function_exists('cal_days_in_month'))
+{
+    function cal_days_in_month($calendar, $month, $year)
+    {
+        return date('t', mktime(0, 0, 0, $month, 1, $year));
+    }
+    if (!defined('CAL_GREGORIAN'))
+        define('CAL_GREGORIAN', 1);
 }

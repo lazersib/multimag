@@ -1016,19 +1016,12 @@ class doc_Nulltype extends \document {
     public function extendedApplyAclCheck() {
         return true;
     }
-    
+
     /// Выполнение дополнительных проверок доступа для отмены документа
     public function extendedCancelAclCheck() {
         return true;
     }
-    
-    /// @brief Создание другого документа на основе текущего
-    /// Метод необходимо переопределить у потомков
-    /// @param $target_type Тип создаваемого документа
-    public function morphTo($target_type) {
-        return false;    
-    }
-    
+   
     /// Провести документ и вренуть JSON результат
     public function applyJson() {
         global $db;
@@ -1121,7 +1114,7 @@ class doc_Nulltype extends \document {
                 }
             }
             $this->extendedCancelAclCheck();
-            
+
             if (!method_exists($this, 'DocCancel')) {
                 throw new Exception("Метод отмены данного документа не определён!");
             }
@@ -2605,4 +2598,37 @@ class doc_Nulltype extends \document {
         }
     }
 
+    /// @brief Создание другого документа на основе текущего
+    /// Метод необходимо переопределить у потомков
+    /// @param $target_type Тип создаваемого документа
+    /// @return Всегда false
+    public function morphTo($target_type) {
+        return false;
+    }
+
+    /**
+     * Проверка для приходных/расходных кассовых ордеров
+     * и средств из/в банк при проведении документа
+     * @throws Exception При отсутствии
+     */
+    protected function checkIfTypeForDocumentExists()
+    {
+        $allowedTypes = [
+            4 => 'credit_type',
+            5 => 'rasxodi',
+            6 => 'credit_type',
+            7 => 'rasxodi',
+        ];
+        if(!isset($allowedTypes[$this->doc_type]))
+        {
+            throw new \Exception('Для данного типа документа проверка не разрешена');
+        }
+        if(cfg::get('doc', 'restrict_dc_nulltype', true)
+            && isset($this->dop_data[$allowedTypes[$this->doc_type]])
+            && $this->dop_data[$allowedTypes[$this->doc_type]] == 0)
+        {
+            $type = $this->doc_type%2 === 1 ? 'расхода' : 'дохода';
+            throw new \Exception("Не задан вид $type у проводимого документа.");
+        }
+    }
 }
