@@ -89,6 +89,9 @@ class Report_Komplekt_Zp {
                     $kompl_data.="<tr><td>$nx[4]<td>$nx[1]<td>$cost<td>$nx[3]<td>$cc";
                 }
             }
+            if(!$cnt) {
+                continue;
+            }
             $sum = round($sum, 2);
 
             $span = ($cnt > 1) ? "rowspan='$cnt'" : '';
