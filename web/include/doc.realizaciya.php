@@ -491,7 +491,15 @@ class doc_Realizaciya extends doc_Nulltype {
             $new_doc = new doc_Pko();
             $dd = $new_doc->createFrom($this);
             $new_doc->setDocData('kassa', 1);
-            $this->setDefaultTypeOfIncome($new_doc);
+            $codeName =
+                isset($this->dop_data['return']) && $this->dop_data['return']
+                    ?'goods_return'
+                    :'goods_sell';
+            $resource = $db->query("SELECT `id` FROM `doc_ctypes` WHERE `codename`='$codeName'");
+            if($resource->num_rows) {
+                $result = $resource->fetch_assoc();
+                $new_doc->setDopData('credit_type', $result['id']);
+            }
             $db->commit();
             $ref = "Location: doc.php?mode=body&doc=" . $dd;
             header($ref);
@@ -503,7 +511,15 @@ class doc_Realizaciya extends doc_Nulltype {
             $new_doc = new doc_Pbank();
             $dd = $new_doc->createFrom($this);
             $new_doc->setDocData('bank', 1);
-            $this->setDefaultTypeOfIncome($new_doc);
+            $codeName =
+                isset($this->dop_data['return']) && $this->dop_data['return']
+                    ?'goods_return'
+                    :'goods_sell';
+            $resource = $db->query("SELECT `id` FROM `doc_ctypes` WHERE `codename`='$codeName'");
+            if($resource->num_rows) {
+                $result = $resource->fetch_assoc();
+                $new_doc->setDopData('credit_type', $result['id']);
+            }
             $db->commit();
             $ref = "Location: doc.php?mode=body&doc=" . $dd;
             header($ref);

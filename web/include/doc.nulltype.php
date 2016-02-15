@@ -1021,14 +1021,7 @@ class doc_Nulltype extends \document {
     public function extendedCancelAclCheck() {
         return true;
     }
-
-    /// @brief Создание другого документа на основе текущего
-    /// Метод необходимо переопределить у потомков
-    /// @param $target_type Тип создаваемого документа
-    public function morphTo($target_type) {
-        return false;    
-    }
-    
+   
     /// Провести документ и вренуть JSON результат
     public function applyJson() {
         global $db;
@@ -2605,6 +2598,14 @@ class doc_Nulltype extends \document {
         }
     }
 
+    /// @brief Создание другого документа на основе текущего
+    /// Метод необходимо переопределить у потомков
+    /// @param $target_type Тип создаваемого документа
+    /// @return Всегда false
+    public function morphTo($target_type) {
+        return false;
+    }
+
     /**
      * Проверка для приходных/расходных кассовых ордеров
      * и средств из/в банк при проведении документа
@@ -2620,14 +2621,14 @@ class doc_Nulltype extends \document {
         ];
         if(!isset($allowedTypes[$this->doc_type]))
         {
-            throw new Exception('Для данного типа документа проверка не разрешена');
+            throw new \Exception('Для данного типа документа проверка не разрешена');
         }
         if(cfg::get('doc', 'restrict_dc_nulltype', true)
             && isset($this->dop_data[$allowedTypes[$this->doc_type]])
-            && $this->dop_data[$allowedTypes[$this->doc_type]] > 0)
+            && $this->dop_data[$allowedTypes[$this->doc_type]] == 0)
         {
-            $type = $this->doc_type%2 === 1 ? 'расходов' : 'доходов';
-            throw new Exception("Не задан вид $type у проводимого документа.");
+            $type = $this->doc_type%2 === 1 ? 'расхода' : 'дохода';
+            throw new \Exception("Не задан вид $type у проводимого документа.");
         }
     }
 }

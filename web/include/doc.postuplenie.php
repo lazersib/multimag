@@ -280,8 +280,7 @@ class doc_Postuplenie extends doc_Nulltype {
             $db->commit();
             header("Location: doc.php?mode=body&doc=$dd");
         }
-        else
-        {
+        else {
             if ($target_type == 5) {
                 \acl::accessGuard('doc.rbank', \acl::CREATE);
                 $classNameNewDocument = 'doc_RBank';
@@ -302,8 +301,7 @@ class doc_Postuplenie extends doc_Nulltype {
                     ?'goods_return'
                     :'goods_buy';
             $resource = $db->query("SELECT `id` FROM `doc_dtypes` WHERE `codename`='$codeName'");
-            if($resource->num_rows)
-            {
+            if($resource->num_rows) {
                 $result = $resource->fetch_assoc();
                 $new_doc->setDopData('rasxodi', $result['id']);
             }
