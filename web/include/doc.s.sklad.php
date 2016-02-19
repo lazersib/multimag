@@ -404,7 +404,7 @@ class doc_s_Sklad {
         $ret .= "<option value='0'>--не выбрана--</option>";
         $res = $db->query("SELECT `id`, `name` FROM `class_country` ORDER BY `name`");
         while ($nx = $res->fetch_row()) {
-            $selected = ($form_data['group'] == $nx[0]) || ($nx[0] == $form_data['country']) ? 'selected' : '';
+            $selected = $nx[0] == $form_data['country'] ? 'selected' : '';
             $ret .= "<option value='$nx[0]' $selected>" . html_out($nx[1]) . "</option>";
         }
         $ret .= "</select></td>
@@ -2029,7 +2029,7 @@ class doc_s_Sklad {
 
         if ($row) {
             $tmpl->addContent("$pagebar<table width='100%' cellspacing='1' cellpadding='2' class='list'>
-                        <tr><th>№</th>");
+                        <tr><th>№{$vc_add}</th>");
             if ($CONFIG['poseditor']['vc']) {
                 $tmpl->addContent('<th>Код</th>');
             }
