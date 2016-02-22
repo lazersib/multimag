@@ -438,7 +438,7 @@ class Report_Cons extends BaseReport {
         $sum_p = number_format($cash_sum+$bank_sum, 2, '.', ' ');
         $row = array('', 'Всего:', $cash_p, $bank_p, $sum_p);
         $this->addGrayRow($pdf, $row);
-        
+        $in_all_sum = $cash_sum + $bank_sum;
         $this->addBlackLine($pdf, 'Расходы');
         $bank_sum = $cash_sum = 0;
         foreach($fin_info['out_data'] as $id=>$line) {
@@ -458,14 +458,21 @@ class Report_Cons extends BaseReport {
         
         $this->addBlackLine($pdf, 'Итоги');
         if ( ($bank_sum+$cash_sum) == 0) {
+            $adm_proc_r_prn = "бесконечность";
+        } else {
+            $adm_proc_r_prn = number_format($fin_info['summary']['adm_out'] / ($bank_sum+$cash_sum) * 100, 2, '.', ' ');
+        }
+        if ( $in_all_sum == 0) {
             $adm_proc_prn = "бесконечность";
         } else {
-            $adm_proc_prn = number_format($fin_info['summary']['adm_out'] / ($bank_sum+$cash_sum) * 100, 2, '.', ' ');
+            $adm_proc_prn = number_format($fin_info['summary']['adm_out'] / $in_all_sum * 100, 2, '.', ' ');
         }
         $sum_p = number_format($fin_info['summary']['adm_out'], 2, '.', ' ');
         $row = array('', 'Административные затраты:', '', '', $sum_p);
         $pdf->RowIconv($row);
         $row = array('', 'В процентах от дохода:', '', '', $adm_proc_prn);
+        $pdf->RowIconv($row);
+        $row = array('', 'В процентах от расходов:', '', '', $adm_proc_r_prn);
         $pdf->RowIconv($row);
         $sum_p = number_format($fin_info['summary']['store_out'], 2, '.', ' ');
         $row = array('', 'Затраты на товар:', '', '', $sum_p);

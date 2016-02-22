@@ -20,31 +20,7 @@
 // Невыполненные заявки
 include_once("core.php");
 include_once("include/doc.core.php");
-
-function getPaySum($doc_id) {
-    global $db;
-    settype($doc_id, 'int');
-
-    $docs = array($doc_id);
-    $sum = 0;
-
-    while (count($docs)) {
-        $cur_doc = array_pop($docs);
-        $res = $db->query("SELECT `id`, `sum`, `type`, `ok` FROM `doc_list` WHERE `p_doc`='$cur_doc'");
-
-        while ($line = $res->fetch_assoc()) {
-            array_push($docs, $line['id']);
-            if ($line['type'] != 4 && $line['type'] != 6) {
-                continue;
-            }
-            if ($line['ok'] == 0) {
-                continue;
-            }
-            $sum += $line['sum'];
-        }
-    }
-    return round($sum, 2);
-}
+use common\helpers\DocumentHelper;
 
 need_auth();
 \acl::accessGuard('service.orders', \acl::VIEW);
@@ -205,7 +181,7 @@ if ($mode == 'z') {
             $r_info = '--нет--';
         }
 
-        $pay_sum = getPaySum($line['id']);
+        $pay_sum = DocumentHelper::getCalculatedPaySum($line['id']);
         if (!$pay_sum) {
             $pay_sum = '-';
         } else {
