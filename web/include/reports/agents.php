@@ -101,7 +101,7 @@ WHERE
 `mark_del`= 0
 ORDER BY `date`");
             while($documentRow = $resource->fetch_assoc()) {
-                $sumFromChildren = isset($documentRow['p_doc']) ? DocumentHelper::getCalculatedPaySum($documentRow['p_doc']) : false;
+                $sumFromChildren = DocumentHelper::getCalculatedPaySum($documentRow['id']);
                 $paysum = DocumentHelper::getSavedPaySum($documentRow['id']);
                 $this->tableRow([
                         $documentRow['id'],
