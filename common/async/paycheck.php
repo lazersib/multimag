@@ -147,7 +147,7 @@ class paycheck extends \AsyncWorker {
             $payed = $cur_sum==0?1:0;
             $paysum = $this->docs[$id]['sum'] - $cur_sum;
             $db->query("REPLACE `doc_dopdata` (`doc`, `param`, `value`) VALUES ($id, 'payed', $payed), ($id, 'paysum', $paysum)");
-        }        
+        }
     }
     
 }

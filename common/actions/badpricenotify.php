@@ -117,7 +117,7 @@ class BadPriceNotify extends \Action {
         }
         
         $mail_text .= "\n\n\n".$footer;
-        
+        echo $mail_text;
         $email_message = new \email_message_class();
         $email_message->default_charset = "UTF-8";
         $email_message->SetEncodedEmailHeader("To", $email, $email);
@@ -129,8 +129,8 @@ class BadPriceNotify extends \Action {
         $email_message->AddQuotedPrintableTextPart($mail_text);
         $error = $email_message->Send();
 
-        if (strcmp($error, "")) {
-            throw new Exception($error);
+        if ($error === "") {
+            throw new \Exception($error);
         }
     }
 

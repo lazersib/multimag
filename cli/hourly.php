@@ -63,7 +63,7 @@ try {
     if (\cfg::get('auto', 'paycheck')) {
         try {
             if ($verbose) {
-                echo "расстановка отметок об оплате\n";
+                echo "Расстановка отметок об оплате\n";
             }
             $worker = new \async\paycheck(0);
             $worker->run();
