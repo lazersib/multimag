@@ -23,7 +23,7 @@
 class doc_s_Sklad {
 
     function __construct() {
-        $this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty',
+        $this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty', 'eol',
             'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt',
             'analog_group', 'mass', 'nds');
         $this->dop_vars = array('type', 'analog', 'd_int', 'd_ext', 'size', 'ntd');
@@ -240,12 +240,20 @@ class doc_s_Sklad {
                 case 'unset': $up_data[] = "`no_export_yml`='0'";
                     break;
             }
-            if ($to_group > 0)
+            switch (request('eol_flag')) {
+                case 'set': $up_data[] = "`eol`='1'";
+                    break;
+                case 'unset': $up_data[] = "`eol`='0'";
+                    break;
+            }
+            if ($to_group > 0) {
                 $up_data[] = "`group`='$to_group'";
+            }
             $up_query = '';
             foreach ($up_data as $line) {
-                if ($up_query)
+                if ($up_query) {
                     $up_query.=", ";
+                }
                 $up_query.=$line;
             }
             $pos = request('pos');
@@ -383,6 +391,7 @@ class doc_s_Sklad {
         $hid_check = $form_data['hidden'] ? 'checked' : '';
         $yml_check = $form_data['no_export_yml'] ? 'checked' : '';
         $stock_check = $form_data['stock'] ? 'checked' : '';
+        $eol_check = $form_data['eol'] ? 'checked' : '';
         $wt0_check = $form_data['warranty_type'] ? '' : 'checked';
         $wt1_check = $form_data['warranty_type'] ? 'checked' : '';        
 
@@ -450,10 +459,12 @@ class doc_s_Sklad {
                         <small>=Сумма(Кол-во заявок + Кол-во реализаций) / МаксСумма(Кол-во заявок + Кол-во реализаций)</small></b></td>
                 <td align='right'>Актуальная цена поступления:</td><td><b>$actual_in_price</b></td>
             </tr>
-            <tr><td align='right'>Гарантийный срок:</td><td><input type='text' name='pd[warranty]' value='{$form_data['warranty']}'> мес.</td>
-            <td align='right'>Гарантия:</td><td><label><input type='radio' name='pd[warranty_type]' value='0' $wt0_check>От продавца</label> <label><input type='radio' name='pd[warranty_type]' value='1' $wt1_check>От производителя</label></td></tr>
+            <tr><td align='right'>Гарантия:</td><td><input type='text' name='pd[warranty]' value='{$form_data['warranty']}'> мес.<br>
+                <label><input type='radio' name='pd[warranty_type]' value='0' $wt0_check>От продавца</label> "
+                    . "<label><input type='radio' name='pd[warranty_type]' value='1' $wt1_check>От производителя</label></td>
+            <td colspan='2'><label><input type='checkbox' name='pd[stock]' value='1' $stock_check>Поместить в спецпредложения</label></td></tr>
             <tr><td align='right'>Видимость:</td><td><label><input type='checkbox' name='pd[hidden]' value='1' $hid_check>Не отображать на витрине</label></td><td><label><input type='checkbox' name='pd[no_export_yml]' value='1' $yml_check>Не экспортировать в YML</label>
-            <td><label><input type='checkbox' name='pd[stock]' value='1' $stock_check>Поместить в спецпредложения</label></td></tr>
+            <td><label><input type='checkbox' name='pd[eol]' value='1' $eol_check>Снят с поставки</label></td></tr>
 
             <tr><td align='right'>Описание</td><td colspan='3'><textarea name='pd[desc]'>" . html_out($form_data['desc']) . "</textarea></td></tr>
             <tr><td align='right'>Тэг title карточки товара на витрине</td>
@@ -466,7 +477,7 @@ class doc_s_Sklad {
         if ($pos_id != 0) {
             $ret.="<tr><td align='right'>Режим записи:</td><td colspan='3'>
                 <label><input type='radio' name='sr' value='0' checked>Сохранить</label>
-                <label><input type='radio' name='sr' value='1'>Добавить</label></td></tr>";
+                <label><input type='radio' name='sr' value='1'>Создать новую карточку</label></td></tr>";
         }
         $ret .= "<tr><td></td><td  colspan='3'><input type='submit' value='Сохранить'></td></tr>
         <script type='text/javascript' src='/css/jquery/jquery.js'></script>
@@ -1278,11 +1289,12 @@ class doc_s_Sklad {
             }
             if ($sql_add) {
                 $db->query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos_id'");
-                $tmpl->msg("Данные обновлены!");
+                $tmpl->msg("Данные обновлены!", "ok");
                 doc_log("UPDATE", "$log_add", 'pos', $pos_id);
             } else {
                 $tmpl->msg("Ничего не было изменено", 'info');
             }
+            $this->showMainForm($pos_id, $pd['group']);
         } else {
             \acl::accessGuard('directory.goods', \acl::CREATE);
             $log = '';
@@ -1922,23 +1934,28 @@ class doc_s_Sklad {
 
                 <div class='sklad-go'>
                 <table width='100%'>
-                <tr><td width='25%'><fieldset><legend>Поместить в спецпредложения</legend>
+                <tr><td width='20%'><fieldset><legend>Поместить в спецпредложения</legend>
                 <label><input type='radio' name='sale_flag' value='' checked>Не менять</label><br>
                 <label><input type='radio' name='sale_flag' value='set'>Установить</label><br>
                 <label><input type='radio' name='sale_flag' value='unset'>Снять</label>
                 </fieldset></td>
-                <td width='25%'><fieldset><legend>Не отображать на витрине</legend>
+                <td width='20%'><fieldset><legend>Не отображать на витрине</legend>
                 <label><input type='radio' name='hidden_flag' value='' checked>Не менять</label><br>
                 <label><input type='radio' name='hidden_flag' value='set'>Установить</label><br>
                 <label><input type='radio' name='hidden_flag' value='unset'>Снять</label>
                 </fieldset></td>
-                <td width='25%'><fieldset><legend>Не экспортировать в YML</legend>
+                <td width='20%'><fieldset><legend>Не экспортировать в YML</legend>
                 <label><input type='radio' name='yml_flag' value='' checked>Не менять</label><br>
                 <label><input type='radio' name='yml_flag' value='set'>Установить</label><br>
                 <label><input type='radio' name='yml_flag' value='unset'>Снять</label>
                 </fieldset></td>
-                <td width='25%'><fieldset><legend>Переместить в группу</legend>
-                " . selectGroupPos('to_group', 0, false, '', '', @$CONFIG['store']['leaf_only']) . "
+                <td width='20%'><fieldset><legend>Снят с поставки</legend>
+                <label><input type='radio' name='eol_flag' value='' checked>Не менять</label><br>
+                <label><input type='radio' name='eol_flag' value='set'>Установить</label><br>
+                <label><input type='radio' name='eol_flag' value='unset'>Снять</label>
+                </fieldset></td>
+                <td width='20%'><fieldset><legend>Переместить в группу</legend>
+                " . selectGroupPos('to_group', $group, false, '', '', @$CONFIG['store']['leaf_only']) . "
                 </fieldset></td>
                 </table>
                 <br><button type='submit'>Выполнить</button>
@@ -1980,7 +1997,7 @@ class doc_s_Sklad {
             }
         }
 
-        $sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`vc`,
+        $sql = "SELECT `doc_base`.`id`,`doc_base`.`group`,`doc_base`.`name`,`doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`vc`, `doc_base`.`eol`,
                         `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`cost_date`, `doc_base`.`mass`, `doc_base`.`hidden`, 
                         `doc_base`.`no_export_yml`, `doc_base`.`stock`,
                     `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,                   
@@ -2169,7 +2186,7 @@ class doc_s_Sklad {
 
         $s_sql = $db->real_escape_string($s);
         $limit = 100;
-        $sql = "SELECT SQL_CALC_FOUND_ROWS `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`,
+        $sql = "SELECT SQL_CALC_FOUND_ROWS `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`, `doc_base`.`eol`,
                     `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`analog_group`, `doc_base`.`mass`, `doc_base`.`hidden`, 
                     `doc_base`.`vc`, `doc_base`.`no_export_yml`, `doc_base`.`stock`, `doc_base`.`cost_date`,
                 `doc_base_dop`.`type`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
@@ -2479,6 +2496,9 @@ class doc_s_Sklad {
         }
         if ($line['stock']) {
             $info.='S';
+        }
+        if ($line['eol']) {
+            $info.='E';
         }
         if ($info) {
             $info = "&nbsp;<span style='color: #f00; font-weight: bold'>$info</span>";
