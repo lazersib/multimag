@@ -264,7 +264,7 @@ class CDR extends \IModule {
             $context_options .= "<option value='$context'{$sel}>$context</option>";
         }
         $tmpl->addBreadcrumb('Детализация вызовов', '');
-        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='post'>"
+        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='get'>"
                 . "<table>"
                 . "<tr><td>Дата от:</td><td><input type='text' name='date_from' value='{$filter['date_from']}'></td>"
                 . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
@@ -503,6 +503,13 @@ class CDR extends \IModule {
             $filter['date_from'] = date("Y-m-01");
         }
         $data = $this->getQueue($filter);
+        $this->ap = $this->getAgentPhonesInverse($db);
+        $this->wp = $this->getWorkerPhonesInverse($db);
+        $this->up = $this->getUserPhonesInverse($db);
+        $agents_ldo = new \Models\LDO\agentnames();
+        $this->agents = $agents_ldo->getData();
+        $users_ldo = new \Models\LDO\usernames();
+        $this->users = $users_ldo->getData();
         $events = $this->getQueueEvents();
         $queues = array();
         $abandoned = array();
@@ -515,23 +522,27 @@ class CDR extends \IModule {
                     $queues[$event['queuename']][$e] = 0;
                 }
             }
-            $queues[$event['queuename']][$event['event']]++;
+            
             $queues[$event['queuename']]['events']++;
             switch($event['event']) {
                 case 'ENTERQUEUE':
                     $numbers[$event['callid']] = $event['data2'];
+                    $queues[$event['queuename']][$event['event']]++;
                     break;
                 case 'ABANDON':
+                    $queues[$event['queuename']][$event['event']]++;
                     $abandoned[$event['callid']] = array (
                         'callid' => $event['callid'],
                         'end' => $event['data1'],
                         'start' => $event['data2'],
                         'wait' => $event['data3'],
+                        'time' => $event['time'],
                     );                    
                     break;
                 
                 case 'RINGNOANSWER':
                     if($event['data1']>100) {
+                        $queues[$event['queuename']][$event['event']]++;
                         if(isset($noanswer[$event['agent']])) {
                             $noanswer[$event['agent']]++;
                         } else {
@@ -539,10 +550,13 @@ class CDR extends \IModule {
                         }
                     }
                     break;
+                default:
+                    $queues[$event['queuename']][$event['event']]++;                    
             }
         }
         $tmpl->addBreadcrumb('Сводка очередей вызовов', '');
-        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=queue' method='post'>"
+        $tmpl->addContent("<form action='{$this->link_prefix}' method='post'>"
+                . "<input type='hidden' name='sect' value='queue_summary'>"
                 . "<table>"
                 . "<tr><td>Дата от:</td><td><input type='text' name='date_from' id='date_from' value='{$filter['date_from']}'></td>"
                 . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
@@ -551,7 +565,7 @@ class CDR extends \IModule {
                 . "<button type='submit'>Отфильтровать</button>"
                 . "</form>");
         $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th>Очередь</th><th>Входов</th><th>Брошенных</th><th>Соединений</th><th>Без&nbsp;ответа</th><th>Заверш.агентом</th>"
+            . "<tr><th>Очередь</th><th>Входов</th><th>Брошенных</th><th>Соединений</th><th>Пропущено</th><th>Заверш.агентом</th>"
                 . "<th>Заверш.вызывающим</th><th>Переводов</th><th>Событий</th></tr>");
         foreach($queues as $qname => $qdata) {
             $tmpl->addContent("<tr>"               
@@ -569,7 +583,7 @@ class CDR extends \IModule {
         $tmpl->addContent("</table>");
         
         $tmpl->addContent("<h2>Брошенные звонки</h2><table class='list' width='100%'>"
-            . "<tr><th>Id</th><th>Номер</th><th>Принадлежность</th><th>Ждал</th><th>Начал с</th><th>Бросил на</th></tr>");
+            . "<tr><th>Id</th><th>Номер</th><th>Принадлежность</th><th>Ждал</th><th>Начал с</th><th>Бросил на</th><th>Время</th></tr>");
         foreach($abandoned as $data) {
             $object = $number = '';
             if(isset($numbers[$data['callid']])) {
@@ -578,12 +592,13 @@ class CDR extends \IModule {
             }
             
             $tmpl->addContent("<tr>"               
-                . "<td>".html_out($data['callid'])."</td>"
+                . "<td><a href='{$this->link_prefix}&amp;sect=queue&amp;callid=".html_out($data['callid'])."'>".html_out($data['callid'])."</a></td>"
                 . "<td>".html_out($number)."</td>"
                 . "<td>".$object."</td>"
                 . "<td>".html_out($data['wait'])."</td>"
                 . "<td>".html_out($data['start'])."</td>"
                 . "<td>".html_out($data['end'])."</td>"
+                . "<td>".html_out($data['time'])."</td>"
                 . "</tr>");   
         }
         $tmpl->addContent("</table>");
@@ -594,9 +609,12 @@ class CDR extends \IModule {
             $object = '';
             if(isset($numbers[$data['callid']])) {
                 $object = $this->getObjectLinkForPhone($agent);
-            }            
+            }    
+            $link = "{$this->link_prefix}&amp;sect=queue&amp;event=RINGNOANSWER&amp;agent=".html_out($agent).
+                "&amp;date_from=".html_out($filter['date_from']).
+                "&amp;date_to=".html_out($filter['date_to']);
             $tmpl->addContent("<tr>"               
-                . "<td>".html_out($agent)."</td>"
+                . "<td><a href='$link'>".html_out($agent)."</a></td>"
                 . "<td>".$object."</td>"
                 . "<td>".$count."</td>"
                 . "</tr>");   
