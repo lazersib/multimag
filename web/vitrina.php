@@ -596,51 +596,85 @@ protected function TopGroup() {
 /// @param $page 	Номер текущей страницы
 /// @param $order	Установелнная сортировка
 /// @param $view		Установелнный вид отображения
-protected function OrderAndViewBar($group, $page, $order, $view)
-{
-	global $tmpl;
-	$tmpl->addContent("<div class='orderviewbar'>");
-	$tmpl->addContent("<div class='orderbar'>Показывать: ");
-	if($view=='i')	$tmpl->addContent("<span class='selected'>Картинками</span> ");
-	else		$tmpl->addContent("<span><a href='".$this->GetGroupLink($group, $page, 'view=i')."'>Картинками</a></span> ");
-	if($view=='t')	$tmpl->addContent("<span class='selected'>Таблицей</span> ");
-	else		$tmpl->addContent("<span><a href='".$this->GetGroupLink($group, $page, 'view=t')."'>Таблицей</a></span> ");
-	if($view=='l')	$tmpl->addContent("<span class='selected'>Списком</span> ");
-	else		$tmpl->addContent("<span><a href='".$this->GetGroupLink($group, $page, 'view=l')."'>Списком</a></span> ");
-	if(@$_SESSION['vit_photo_only'])	$tmpl->addContent("<span class='selected'><a class='down'  href='".$this->GetGroupLink($group, $page, 'op=0')."'>Только с фото</a></span> ");
-	else					$tmpl->addContent("<span><a href='".$this->GetGroupLink($group, $page, 'op=1')."'>Только с фото</a></span> ");
-	$tmpl->addContent("</div>");
-	$tmpl->addContent("<div class='viewbar'>Сортировать по: ");
-	if($order=='n')		$tmpl->addContent("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=nd')."'>Названию</a></span> ");
-	else if($order=='nd')	$tmpl->addContent("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=n')."'>Названию</a></span> ");
-	else			$tmpl->addContent("<span><a href='".$this->GetGroupLink($group, $page, 'order=n')."'>Названию</a></span> ");
+    protected function OrderAndViewBar($group, $page, $order, $view) {
+        global $tmpl;
+        $tmpl->addContent("<div class='orderviewbar'>");
+        $tmpl->addContent("<div class='orderbar'>Показывать: ");
+        if ($view == 'i') {
+            $tmpl->addContent("<span class='selected'>Картинками</span> ");
+        } else {
+            $tmpl->addContent("<span><a href='" . $this->GetGroupLink($group, $page, 'view=i') . "'>Картинками</a></span> ");
+        }
+        if ($view == 't') {
+            $tmpl->addContent("<span class='selected'>Таблицей</span> ");
+        } else {
+            $tmpl->addContent("<span><a href='" . $this->GetGroupLink($group, $page, 'view=t') . "'>Таблицей</a></span> ");
+        }
+        if ($view == 'l') {
+            $tmpl->addContent("<span class='selected'>Списком</span> ");
+        } else {
+            $tmpl->addContent("<span><a href='" . $this->GetGroupLink($group, $page, 'view=l') . "'>Списком</a></span> ");
+        }
+        if (@$_SESSION['vit_photo_only']) {
+            $tmpl->addContent("<span class='selected'><a class='down'  href='" . $this->GetGroupLink($group, $page, 'op=0') . "'>Только с фото</a></span> ");
+        } else {
+            $tmpl->addContent("<span><a href='" . $this->GetGroupLink($group, $page, 'op=1') . "'>Только с фото</a></span> ");
+        }
+        $tmpl->addContent("</div>");
+        $tmpl->addContent("<div class='viewbar'>Сортировать по: ");
+        if ($order == 'n') {
+            $tmpl->addContent("<span class='selected'><a href='" . $this->GetGroupLink($group, $page, 'order=nd') . "'>Названию</a></span> ");
+        } else if ($order == 'nd') {
+            $tmpl->addContent("<span class='selected'><a class='down' href='" . $this->GetGroupLink($group, $page, 'order=n') . "'>Названию</a></span> ");
+        } else {
+            $tmpl->addContent("<span><a href='" . $this->GetGroupLink($group, $page, 'order=n') . "'>Названию</a></span> ");
+        }
 
-	if($order=='vc')	$tmpl->addContent("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=vcd')."'>Коду</a></span> ");
-	else if($order=='vcd')	$tmpl->addContent("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=vc')."'>Коду</a></span> ");
-	else			$tmpl->addContent("<span><a class='down' href='".$this->GetGroupLink($group, $page, 'order=vc')."'>Коду</a></span> ");
+        if ($order == 'vc') {
+            $tmpl->addContent("<span class='selected'><a href='" . $this->GetGroupLink($group, $page, 'order=vcd') . "'>Коду</a></span> ");
+        } else if ($order == 'vcd') {
+            $tmpl->addContent("<span class='selected'><a href='" . $this->GetGroupLink($group, $page, 'order=vc') . "'>Коду</a></span> ");
+        } else {
+            $tmpl->addContent("<span><a class='down' href='" . $this->GetGroupLink($group, $page, 'order=vc') . "'>Коду</a></span> ");
+        }
 
-	if($order=='c')		$tmpl->addContent("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=cd')."'>Цене</a></span> ");
-	else if($order=='cd')	$tmpl->addContent("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=c')."'>Цене</a></span> ");
-	else		$tmpl->addContent("<span><a href='".$this->GetGroupLink($group, $page, 'order=c')."'>Цене</a></span> ");
+        if ($order == 'c') {
+            $tmpl->addContent("<span class='selected'><a href='" . $this->GetGroupLink($group, $page, 'order=cd') . "'>Цене</a></span> ");
+        } else if ($order == 'cd') {
+            $tmpl->addContent("<span class='selected'><a class='down' href='" . $this->GetGroupLink($group, $page, 'order=c') . "'>Цене</a></span> ");
+        } else {
+            $tmpl->addContent("<span><a href='" . $this->GetGroupLink($group, $page, 'order=c') . "'>Цене</a></span> ");
+        }
 
-	if($order=='s')		$tmpl->addContent("<span class='selected'><a href='".$this->GetGroupLink($group, $page, 'order=sd')."'>Наличию</a></span> ");
-	else if($order=='sd')	$tmpl->addContent("<span class='selected'><a class='down' href='".$this->GetGroupLink($group, $page, 'order=s')."'>Наличию</a></span> ");
-	else			$tmpl->addContent("<span><a href='".$this->GetGroupLink($group, $page, 'order=s')."'>Наличию</a></span> ");
-	$tmpl->addContent("</div><div class='clear'></div>");
-	$tmpl->addContent("</div>");
-}
-
-    /// Отобразить карточку товара
-    /// @param $product ID отображаемого товара/услуги
-    protected function ProductCard($product) {
-        global $tmpl, $CONFIG, $db;
-        settype($product, 'int');
+        if ($order == 's') {
+            $tmpl->addContent("<span class='selected'><a href='" . $this->GetGroupLink($group, $page, 'order=sd') . "'>Наличию</a></span> ");
+        } else if ($order == 'sd') {
+            $tmpl->addContent("<span class='selected'><a class='down' href='" . $this->GetGroupLink($group, $page, 'order=s') . "'>Наличию</a></span> ");
+        } else {
+            $tmpl->addContent("<span><a href='" . $this->GetGroupLink($group, $page, 'order=s') . "'>Наличию</a></span> ");
+        }
+        $tmpl->addContent("</div><div class='clear'></div>");
+        $tmpl->addContent("</div>");
+    }
+    
+    /// Получить данные карточки товара
+    /// @param $product_id ID товара
+    /// @return ассоциативный массив с данными товара или false
+    protected function getProductData($product_id) {
+        global $db;
+        settype($product_id, 'int');
         $pref = \pref::getInstance();
         $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
-        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`,
-	`doc_base`.`proizv`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`,
-	( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `doc_base_dop_type`.`name` AS `dop_name`, `class_unit`.`name` AS `units`, `doc_group`.`printname` AS `group_printname`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base_dop`.`transit`, `class_unit`.`rus_name1` AS `units_min`, `doc_base`.`cost_date`, `doc_base`.`bulkcnt`, `doc_base`.`mult`,
-		`doc_base`.`mass`, `doc_base`.`analog_group`, `doc_base`.`eol`
+        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`group`, `doc_base`.`cost`
+            , `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`title_tag`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`
+                , `doc_base`.`buy_time`, `doc_base`.`cost_date`, `doc_base`.`bulkcnt`, `doc_base`.`mult`, `doc_base`.`mass`
+                , `doc_base`.`analog_group`, `doc_base`.`eol`, `doc_base`.`create_time`
+            , `doc_group`.`printname` AS `group_printname`   
+            , `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base_dop`.`transit`
+            , `doc_base_dop_type`.`name` AS `type_name`            
+            , `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`            
+            , `class_unit`.`name` AS `units`, `class_unit`.`rus_name1` AS `units_min`
+            , ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`
 	FROM `doc_base`
 	INNER JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
@@ -648,55 +682,187 @@ protected function OrderAndViewBar($group, $page, $order, $view)
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-	WHERE `doc_base`.`id`=$product
+	WHERE `doc_base`.`id`=$product_id
 	ORDER BY `doc_base`.`name` ASC LIMIT 1");
-        $i = 0;
-        $product_data = $res->fetch_assoc();
-        if ($product_data) {
-            $product_name_html = html_out($product_data['group_printname'] . ' ' . $product_data['name']);
+        return $res->fetch_assoc();
+    }
+    
+    /// Получить список аналогов для товара
+    /// @param $product_id  ID товара/услуги
+    /// @param $analog_group_name Имя группы аналогов
+    /// @return массив с данными аналогов
+    protected function getProductAnalogList($product_id, $analog_group_name) {
+        global $db;
+        if($analog_group_name=='') {
+            return array();
+        }
+        settype($product_id, 'int');
+        $pref = \pref::getInstance();
+        $analog_group_sql = $db->real_escape_string($analog_group_name);
+        $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
+        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`
+                    , `doc_base`.`eol`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`
+                    , `doc_base`.`bulkcnt`, `doc_base`.`mult`
+                , `doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`
+                , `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`
+                , `class_unit`.`rus_name1` AS `units`
+                , ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where 
+                    GROUP BY `doc_base`.`id`) AS `count`
+            FROM `doc_base`
+            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+            LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+            LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+            LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+            INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
+            WHERE `doc_base`.`analog_group`='$analog_group_sql' AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`=0 
+                AND `doc_base`.`id`!='$product_id'
+            ORDER BY `doc_base`.`id`");
+        $ret = array();
+        while($line = $res->fetch_assoc()) {
+            $ret[] = $line;
+        }
+        return $ret;
+    }
+    
+    /// Получить список связанных/сопутствующих товаров для товара
+    /// @param $product_id  ID товара/услуги
+    /// @return массив с данными аналогов
+    protected function getProductLinkedPos($product_id) {
+        global $db;
+        settype($product_id, 'int');
+        $pref = \pref::getInstance();
+        $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
+        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`
+                , `doc_base`.`cost`, `doc_base`.`eol`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_base`.`vc`, `doc_base`.`buy_time`
+                , `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
+            , `doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`
+            , `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`
+            , `class_unit`.`rus_name1` AS `units`
+                , ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where 
+                    GROUP BY `doc_base`.`id`) AS `count`
+            FROM `doc_base_links`
+            INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
+            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+            LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+            LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+            LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
+            WHERE `doc_base_links`.`pos1_id`='$product_id' AND `doc_base`.`hidden`='0'
+            ORDER BY `doc_base`.`id`");
+        $ret = array();
+        while($line = $res->fetch_assoc()) {
+            $ret[] = $line;
+        }
+        return $ret;
+    }
+    
+    /// Получить делево параметров товара/услуги
+    protected function getProductParamsList($product_data) {
+        global $db;
+        $ret = array();
+        if ($product_data['d_int']) {
+            $ret[] = ['type'=>'item', 'name'=>'Внутренний диаметр', 'value'=>$product_data['d_int'], 'unit_name'=>'мм'];
+        }
+        if ($product_data['d_ext']) {
+            $ret[] = ['type'=>'item', 'name'=>'Внешний диаметр', 'value'=>$product_data['d_ext'], 'unit_name'=>'мм'];
+        }
+        if ($product_data['size']) {
+            $ret[] = ['type'=>'item', 'name'=>'Высота', 'value'=>$product_data['size'], 'unit_name'=>'мм'];
+        }
+        if ($product_data['mass']) {
+            $ret[] = ['type'=>'item', 'name'=>'Масса', 'value'=>$product_data['mass'], 'unit_name'=>'мм'];
+        }
+        if ($product_data['proizv']) {
+            $ret[] = ['type'=>'item', 'name'=>'Производитель', 'value'=>$product_data['proizv'], 'unit_name'=>''];
+        }
+        //$ret[] = ['type'=>'item', 'name'=>'', 'value'=>''];
+        $param_res = $db->query("SELECT `doc_base_params`.`name`, `doc_base_values`.`value`, `class_unit`.`rus_name1` AS `unit_name`
+            FROM `doc_base_values`
+            LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+            LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
+            WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`group_id`='0' AND `doc_base_params`.`hidden`='0'
+                AND `doc_base_params`.`secret`='0'");
+        while ($params = $param_res->fetch_row()) {
+            $ret[] = ['type'=>'item', 'name'=>$params[0], 'value'=>$params[1], 'unit_name'=>$params[2]];
+        }
 
-            if ($product_data['title_tag']) {
-                $title = html_out($product_data['title_tag']);
-            } else {
-                $title = "$product_name_html, цены и характеристики, купить";
+        $resg = $db->query("SELECT `id`, `name` FROM `doc_base_gparams`");
+        while ($nxtg = $resg->fetch_row()) {
+            $sub = array();
+            $param_res = $db->query("SELECT `doc_base_params`.`name`, `doc_base_values`.`value`, `class_unit`.`rus_name1` AS `unit_name`
+                FROM `doc_base_values`
+                LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
+                LEFT JOIN `class_unit` ON `doc_base_params`.`unit_id`=`class_unit`.`id`
+                WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`group_id`='$nxtg[0]' AND `doc_base_params`.`hidden`='0'");
+            while ($params = $param_res->fetch_row()) {
+                $sub[] = ['type'=>'item', 'name'=>$params[0], 'value'=>$params[1], 'unit_name'=>$params[2]];
             }
-            $tmpl->setTitle($title);
+            $ret[] = ['type'=>'group', 'name'=>$nxtg[1], 'items'=>$sub];
+        }
+        return $ret;
+    }
+    
+    protected function getProductParamHTML($params) {
+        $ret = '';
+        foreach($params as $pt) {
+            if($pt['type']=='item') {
+                $ret .= "<tr><td class='field'>".html_out($pt['name']).":</td>"
+                        . "<td>".html_out($pt['value'])." ".html_out($pt['unit_name'])."</td></tr>";
+            }
+            else if($pt['type']=='group' && count($pt['items'])>0 ) {
+                $ret .= "<tr><th colspan='2'>" . html_out($pt['name']) . "</th></tr>";
+                $ret .= $this->getProductParamHTML($pt['items']);
+            }
+        }
+        return $ret;
+    }
 
-            $this->fillProductMetaTags($product_data);
-
-            $tmpl->addContent("<h1 id='page-title'>$product_name_html</h1>");
-            $tmpl->addContent("<div class='breadcrumbs'>" . $this->GetVitPath($product_data['group']) . "</div>");
-            $appends = $img_mini = "";
-            if ($product_data['img_id']) {
-                $miniimg = new ImageProductor($product_data['img_id'], 'p', $product_data['img_type']);
-                $miniimg->SetY(220);
-                $miniimg->SetX(200);
-                $fullimg = new ImageProductor($product_data['img_id'], 'p', $product_data['img_type']);
-                $img = "<img src='" . $miniimg->GetURI() . "' alt='" . html_out($product_data['name']) . "' onload='$(this).fadeTo(500,1);' style='opacity: 1' id='midiphoto'>";
-                $res = $db->query("SELECT `doc_img`.`id` AS `img_id`, `doc_base_img`.`default`, `doc_img`.`name`, `doc_img`.`type` AS `img_type` FROM `doc_base_img`
+    /// Отобразить карточку товара
+    /// @param $product_id ID отображаемого товара/услуги
+    protected function ProductCard($product_id) {
+        global $tmpl, $CONFIG, $db;
+        $pref = \pref::getInstance();
+        $product_data = $this->getProductData($product_id);
+        if (!$product_data) {
+            $tmpl->addContent("<h1 id='page-title'>Информация о товаре</h1>");
+            throw new NotFoundException("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
+        }
+        
+        $this->setProductTitle($product_data);
+        $this->setProductMetaTags($product_data);
+        $product_name_html = html_out($product_data['group_printname'] . ' ' . $product_data['name']);
+        $tmpl->addContent("<h1 id='page-title'>$product_name_html</h1>");
+        $tmpl->addContent("<div class='breadcrumbs'>" . $this->GetVitPath($product_data['group']) . "</div>");
+        $appends = $img_mini = "";
+        if ($product_data['img_id']) {
+            $miniimg = new ImageProductor($product_data['img_id'], 'p', $product_data['img_type']);
+            $miniimg->SetY(220);
+            $miniimg->SetX(200);
+            $fullimg = new ImageProductor($product_data['img_id'], 'p', $product_data['img_type']);
+            $img = "<img src='" . $miniimg->GetURI() . "' alt='" . html_out($product_data['name']) . "' onload='$(this).fadeTo(500,1);' style='opacity: 1' id='midiphoto'>";
+            $res = $db->query("SELECT `doc_img`.`id` AS `img_id`, `doc_base_img`.`default`, `doc_img`.`name`, `doc_img`.`type` AS `img_type` FROM `doc_base_img`
                     LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
                     WHERE `doc_base_img`.`pos_id`='{$product_data['id']}'");
 
-                while ($img_data = $res->fetch_assoc()) {
-                    $miniimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
-                    $miniimg->SetX(40);
-                    $miniimg->SetY(40);
-                    $midiimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
-                    $midiimg->SetX(200);
-                    $midiimg->SetY(220);
-                    $fullimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
-                    $fullimg->SetY(800);
-                    //$originimg=new ImageProductor($img_data['img_id'],'p', $img_data['img_type']);
-                    if ($res->num_rows > 1) {
-                        $img_mini.="<a href='" . $midiimg->GetURI() . "' onclick=\"return setPhoto({$img_data['img_id']});\"><img src='" . $miniimg->GetURI() . "' alt='{$img_data['name']}'></a>";
-                    }
-                    $appends.="midiphoto.appendImage({$img_data['img_id']},'" . $midiimg->GetURI(1) . "', '" . $fullimg->GetURI(1) . "');\n";
+            while ($img_data = $res->fetch_assoc()) {
+                $miniimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
+                $miniimg->SetX(40);
+                $miniimg->SetY(40);
+                $midiimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
+                $midiimg->SetX(200);
+                $midiimg->SetY(220);
+                $fullimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
+                $fullimg->SetY(800);
+                if ($res->num_rows > 1) {
+                    $img_mini.="<a href='" . $midiimg->GetURI() . "' onclick=\"return setPhoto({$img_data['img_id']});\"><img src='" . $miniimg->GetURI() . "' alt='{$img_data['name']}'></a>";
                 }
-            } else {
-                $img = "<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo.png' alt='no photo'>";
+                $appends.="midiphoto.appendImage({$img_data['img_id']},'" . $midiimg->GetURI(1) . "', '" . $fullimg->GetURI(1) . "');\n";
             }
+        }
+        else {
+            $img = "<img src='/skins/{$CONFIG['site']['skin']}/images/no_photo.png' alt='no photo'>";
+        }
 
-            $tmpl->addContent("<table class='product-card'>
+        $tmpl->addContent("<table class='product-card'>
 		<tr valign='top'><td rowspan='15' width='150'>
 		<div class='image'><div class='one load'>$img</div><div class='list'>$img_mini</div></div>
 		<script>
@@ -708,215 +874,143 @@ protected function OrderAndViewBar($group, $page, $order, $view)
 		}
 		</script>");
 
-            $tmpl->addContent("<td class='field'>Наименование:</td><td>" . html_out($product_data['name']) . "</td></tr>");
-            if ($product_data['vc']) {
-                $tmpl->addContent("<tr><td class='field'>Код производителя:</td><td>" . html_out($product_data['vc']) . "</td></tr>");
-            }
-            if ($product_data['desc']) {
-                $wikiparser = new WikiParser();
-                $text = $wikiparser->parse($product_data['desc']);
-                $tmpl->addContent("<tr><td valign='top' class='field'>Описание:<td>$text");
-            }
+        $tmpl->addContent("<td class='field'>Наименование:</td><td>" . html_out($product_data['name']) . "</td></tr>");
+        if ($product_data['vc']) {
+            $tmpl->addContent("<tr><td class='field'>Код производителя:</td><td>" . html_out($product_data['vc']) . "</td></tr>");
+        }
+        if ($product_data['desc']) {
+            $wikiparser = new WikiParser();
+            $text = $wikiparser->parse($product_data['desc']);
+            $tmpl->addContent("<tr><td valign='top' class='field'>Описание:<td>$text");
+        }
 
-            if ($product_data['dop_name']) {
-                $tmpl->addContent("<tr><td class='field'>Тип:<td>" . html_out($product_data['dop_name']));
-            }
+        if ($product_data['type_name']) {
+            $tmpl->addContent("<tr><td class='field'>Тип:<td>" . html_out($product_data['type_name']));
+        }
 
-            $cce = '';
-            if (@$CONFIG['site']['grey_price_days']) {
-                $cce_time = $CONFIG['site']['grey_price_days'] * 60 * 60 * 24;
-                if (strtotime($product_data['cost_date']) < $cce_time) {
-                    $cce = ' style=\'color:#888\'';
-                }
+        $cce = '';
+        if (\cfg::get('site', 'grey_price_days')) {
+            $cce_time = \cfg::get('site', 'grey_price_days') * 60 * 60 * 24;
+            if (strtotime($product_data['cost_date']) < $cce_time) {
+                $cce = ' style=\'color:#888\'';
             }
+        }
 
-            $pc = $this->priceCalcInit();
-            $cena = $pc->getPosDefaultPriceValue($product_data['id']);
-            if ($cena <= 0) {
-                $cena = 'уточняйте';
-            }
+        $pc = $this->priceCalcInit();
+        $cena = $pc->getPosDefaultPriceValue($product_data['id']);
+        if ($cena <= 0) {
+            $cena = 'уточняйте';
+        }
 
-            if ($pc->getRetailPriceId() != $pc->getDefaultPriceID()) {
-                $ret_price = $pc->getPosRetailPriceValue($product_data['id']);
-                if ($ret_price <= 0) {
-                    $ret_price = 'уточняйте';
-                }
-                $tmpl->addContent("<tr><td class='field'>Розничная цена:<td{$cce}>$ret_price</td></tr>");
-                $tmpl->addContent("<tr><td class='field'>Оптовая цена:<td{$cce}>$cena</td></tr>");
-            } else {
-                $tmpl->addContent("<tr><td class='field'>Цена:<td{$cce}>$cena</td></tr>");
+        if ($pc->getRetailPriceId() != $pc->getDefaultPriceID()) {
+            $ret_price = $pc->getPosRetailPriceValue($product_data['id']);
+            if ($ret_price <= 0) {
+                $ret_price = 'уточняйте';
             }
+            $tmpl->addContent("<tr><td class='field'>Розничная цена:<td{$cce}>$ret_price</td></tr>");
+            $tmpl->addContent("<tr><td class='field'>Оптовая цена:<td{$cce}>$cena</td></tr>");
+        } else {
+            $tmpl->addContent("<tr><td class='field'>Цена:<td{$cce}>$cena</td></tr>");
+        }
 
-            if ($pc->getCurrentPriceId() != $pc->getDefaultPriceID()) {
-                $user_price = $pc->getPosUserPriceValue($product_data['id']);
-                if ($user_price <= 0) {
-                    $user_price = 'уточняйте';
-                }
-                $tmpl->addContent("<tr><td class='field'>Цена для Вас:<td{$cce}>$user_price</td></tr>");
+        if ($pc->getCurrentPriceId() != $pc->getDefaultPriceID()) {
+            $user_price = $pc->getPosUserPriceValue($product_data['id']);
+            if ($user_price <= 0) {
+                $user_price = 'уточняйте';
             }
+            $tmpl->addContent("<tr><td class='field'>Цена для Вас:<td{$cce}>$user_price</td></tr>");
+        }
 
-            if ($product_data['mult'] > 1) {
-                $tmpl->addContent("<tr><td class='field'>В упаковке:<td>{$product_data['mult']} штук</td></tr>");
-            }
+        if ($product_data['mult'] > 1) {
+            $tmpl->addContent("<tr><td class='field'>В упаковке:<td>{$product_data['mult']} " . html_out($product_data['units_min'])."</td></tr>");
+        }
 
-            $tmpl->addContent("<tr><td class='field'>Единица измерения:<td>" . html_out($product_data['units']));
+        $tmpl->addContent("<tr><td class='field'>Единица измерения:<td>" . html_out($product_data['units']));
 
-            $nal = $this->GetCountInfo($product_data['cnt'], $product_data['transit']);
+        $nal = $this->GetCountInfo($product_data['cnt'], $product_data['transit']);
 
-            if ($nal) {
-                $tmpl->addContent("<tr><td class='field'>Наличие: <td><b>$nal</b><br>");
-            } else {
-                $tmpl->addContent("<tr><td class='field'>Наличие:<td>Под заказ<br>");
-            }
-            if ($product_data['d_int']) {
-                $tmpl->addContent("<tr><td class='field'>Внутренний диаметр: <td>{$product_data['d_int']} мм.<br>");
-            }
-            if ($product_data['d_ext']) {
-                $tmpl->addContent("<tr><td class='field'>Внешний диаметр: <td>{$product_data['d_ext']} мм.<br>");
-            }
-            if ($product_data['size']) {
-                $tmpl->addContent("<tr><td class='field'>Высота: <td>{$product_data['size']} мм.<br>");
-            }
-            if ($product_data['mass']) {
-                $tmpl->addContent("<tr><td class='field'>Масса: <td>{$product_data['mass']} кг.<br>");
-            }
-            if ($product_data['proizv']) {
-                $tmpl->addContent("<tr><td class='field'>Производитель: <td>" . html_out($product_data['proizv']));
-            }
-
-            $param_res = $db->query("SELECT `doc_base_params`.`name`, `doc_base_values`.`value` 
-                    FROM `doc_base_values`
-                    LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-                    WHERE `doc_base_values`.`id`='{$product_data['id']}' "
-                    . " AND (`doc_base_params`.`group_id`='0' OR `doc_base_params`.`group_id` IS NULL)"
-                    . " AND `doc_base_params`.`hidden`='0'");
-            while ($params = $param_res->fetch_row()) {
-                $tmpl->addContent("<tr><td class='field'>" . html_out($params[0]) . "</td><td>" . html_out($params[1]) . "</td></tr>");
-            }
-
-            $resg = $db->query("SELECT `id`, `name` FROM `doc_base_gparams`");
-            while ($nxtg = $resg->fetch_row()) {
-                $f = 0;
-                $param_res = $db->query("SELECT `doc_base_params`.`name`, `doc_base_values`.`value` FROM `doc_base_values`
-			LEFT JOIN `doc_base_params` ON `doc_base_params`.`id`=`doc_base_values`.`param_id`
-			WHERE `doc_base_values`.`id`='{$product_data['id']}' AND `doc_base_params`.`group_id`='$nxtg[0]'"
-                        . " AND `doc_base_params`.`hidden`='0'");
-                while ($params = $param_res->fetch_row()) {
-                    if (!$f) {
-                        $f = 1;
-                        $tmpl->addContent("<tr><th colspan='2'>" . html_out($nxtg[1]) . "</th></tr>");
-                    }
-                    $tmpl->addContent("<tr><td class='field'>" . html_out($params[0]) . "</td><td>" . html_out($params[1]) . "</td></tr>");
-                }
-            }
-
-            $att_res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
+        if ($nal) {
+            $tmpl->addContent("<tr><td class='field'>Наличие: <td><b>$nal</b> " . html_out($product_data['units_min'])."<br>");
+        } else {
+            $tmpl->addContent("<tr><td class='field'>Наличие:<td>Под заказ<br>");
+        }
+        
+        $params = $this->getProductParamsList($product_data);
+        $tmpl->addContent( $this->getProductParamHTML($params) );
+        
+        $att_res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
 		FROM `doc_base_attachments`
 		LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
-		WHERE `doc_base_attachments`.`pos_id`='$product'");
-            if ($att_res->num_rows > 0) {
-                $tmpl->addContent("<tr><th colspan='3'>Прикреплённые файлы</th></tr>");
-                while ($anxt = $att_res->fetch_row()) {
-                    if ($CONFIG['site']['recode_enable']) {
-                        $link = "/attachments/{$anxt[0]}/$anxt[1]";
-                    } else {
-                        $link = "/attachments.php?att_id={$anxt[0]}";
-                    }
-                    $tmpl->addContent("<tr><td><a href='$link'>$anxt[1]</a></td><td>$anxt[2]</td></tr>");
+		WHERE `doc_base_attachments`.`pos_id`='$product_id'");
+        if ($att_res->num_rows > 0) {
+            $tmpl->addContent("<tr><th colspan='3'>Прикреплённые файлы</th></tr>");
+            while ($anxt = $att_res->fetch_row()) {
+                if ($CONFIG['site']['recode_enable']) {
+                    $link = "/attachments/{$anxt[0]}/$anxt[1]";
+                } else {
+                    $link = "/attachments.php?att_id={$anxt[0]}";
                 }
+                $tmpl->addContent("<tr><td><a href='$link'>$anxt[1]</a></td><td>$anxt[2]</td></tr>");
             }
-            if ($product_data['mult'] > 1) {
-                $k_info = "<br>должно быть кратно " . $product_data['mult'];
-            } else {
-                $k_info = '';
-            }
-
-            $buy_cnt = $this->getBuyCnt($product_data);
-
-            $tmpl->addContent("<tr><td colspan='3'>");
-            if($product_data['eol']) {
-                $tmpl->addContent("<b>Товар снят с поставки!</b>");
-            }
-            if(!$product_data['eol'] || $product_data['cnt']>0) {
-                $tmpl->addContent("<form action='/vitrina.php'>
-                    <input type='hidden' name='mode' value='korz_add'>
-                    <input type='hidden' name='p' value='$product'>
-                    <div>
-                    Добавить
-                    <input type='text' name='cnt' value='$buy_cnt' class='mini'> штук <button type='submit'>В корзину!</button>{$k_info}
-                    </div>
-                    </form>");
-            }
-            $tmpl->addContent("</td></tr></table>");
-
-            $str = $this->getProductAutoDescription($product_data);
-
-            $tmpl->addContent("<div class='description'>$str</div>");
-
-            // Аналоги
-            if ($product_data['analog_group']) {
-                $analog_group_sql = $db->real_escape_string($product_data['analog_group']);
-                $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
-                $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`, `doc_base`.`eol`,
-                    ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-                    `doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
-                    FROM `doc_base`
-                    LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-                    LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-                    LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-                    LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-                    INNER JOIN `doc_group` ON `doc_group`.`id`=`doc_base`.`group`
-                    WHERE `doc_base`.`analog_group`='$analog_group_sql' AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`=0 AND `doc_base`.`id`!='$product'
-                    ORDER BY `doc_base`.`id`");
-                if ($res->num_rows) {
-                    $tmpl->addContent("<div><h2>Аналоги</h2>");
-                    while ($link_info = $res->fetch_assoc()) {
-                        $tmpl->addContent($this->getProductMiniElement($link_info));
-                    }
-                    $tmpl->addContent("</div>");
-                }
-                $tmpl->addContent("<div class='clear'></div>");
-            }
-
-            // Сопутствующие товары
-            $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
-            $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`, `doc_base`.`eol`,
-		( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`,
-		`doc_base_dop`.`transit`, `doc_base_dop`.`d_int`, `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base`.`proizv`, `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`, `class_unit`.`rus_name1` AS `units`, `doc_base`.`vc`, `doc_base`.`buy_time`, `doc_base`.`create_time`, `doc_base`.`bulkcnt`, `doc_base`.`mult`
-		FROM `doc_base_links`
-		INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_base_links`.`pos2_id`
-		LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-		LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-		LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-		LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-		WHERE `doc_base_links`.`pos1_id`='$product' AND `doc_base`.`hidden`='0'
-		ORDER BY `doc_base`.`id`");
-            if ($res->num_rows) {
-                $tmpl->addContent("<div><h2>Сопутствующие товары</h2>");
-                while ($link_info = $res->fetch_assoc()) {
-                    $tmpl->addContent($this->getProductMiniElement($link_info));
-                }
-                $tmpl->addContent("</div>");
-                $tmpl->addContent("<hr class='clear'>");
-            }
-
-            $tmpl->addContent("<script type='text/javascript' charset='utf-8'>
-		$(document).ready(function(){
-		$(\"a[rel^='prettyPhoto']\").prettyPhoto({theme:'dark_rounded'});
-		});
-		</script>");
-            $i++;
+        }
+        if ($product_data['mult'] > 1) {
+            $k_info = "<br>должно быть кратно " . $product_data['mult'];
+        } else {
+            $k_info = '';
         }
 
-        if ($i == 0) {
-            $tmpl->addContent("<h1 id='page-title'>Информация о товаре</h1>");
-            throw new NotFoundException("К сожалению, товар не найден. Возможно, Вы пришли по неверной ссылке.");
+        $buy_cnt = $this->getBuyCnt($product_data);
+
+        $tmpl->addContent("<tr><td colspan='3'>");
+        if ($product_data['eol']) {
+            $tmpl->addContent("<b>Товар снят с поставки!</b>");
         }
+        if (!$product_data['eol'] || $product_data['cnt'] > 0) {
+            $tmpl->addContent("<form action='/vitrina.php'>
+                <input type='hidden' name='mode' value='korz_add'>
+                <input type='hidden' name='p' value='$product_id'>
+                <div>
+                Добавить
+                <input type='text' name='cnt' value='$buy_cnt' class='mini'> штук <button type='submit'>В корзину!</button>{$k_info}
+                </div>
+                </form>");
+        }
+        $tmpl->addContent("</td></tr></table>");
+
+        // Автогенерируемое описание
+        $str = $this->getProductAutoDescription($product_data);
+        $tmpl->addContent("<div class='description'>$str</div>");
+
+        // Аналоги
+        $a_list = $this->getProductAnalogList($product_id, $product_data['analog_group']);
+        if (count($a_list)>0) {
+            $tmpl->addContent("<div><h2>Аналоги</h2>");
+            foreach($a_list as $a_info) {
+                $tmpl->addContent($this->getProductMiniElement($a_info));
+            }
+            $tmpl->addContent("</div>");
+        }
+        $tmpl->addContent("<div class='clear'></div>");
+        
+        // Сопутствующие товары
+        $linked = $this->getProductLinkedPos($product_id);
+        if (count($linked)>0) {
+            $tmpl->addContent("<div><h2>Сопутствующие товары</h2>");
+            foreach($linked as $link_info) {
+                $tmpl->addContent($this->getProductMiniElement($link_info));
+            }
+            $tmpl->addContent("</div>");
+            $tmpl->addContent("<hr class='clear'>");
+        }
+
+        $tmpl->addContent("<script type='text/javascript' charset='utf-8'>
+            $(document).ready(function(){ $(\"a[rel^='prettyPhoto']\").prettyPhoto({theme:'dark_rounded'});});
+            </script>");
     }
 
-    /// Заполнить title, keyword, description тэги для карточки товара
+    /// Заполнить keyword, description тэги для карточки товара
     /// @param $product_data Массив с информацией о товаре
-    public function fillProductMetaTags($product_data) {
+    public function setProductMetaTags($product_data) {
         global $tmpl;
         $pref = \pref::getInstance();
         $base = abs(crc32($product_data['name'] . $product_data['group'] . $product_data['proizv'] . $product_data['vc'] . $product_data['desc']));
@@ -956,6 +1050,22 @@ protected function OrderAndViewBar($group, $page, $order, $view)
             }
             $tmpl->setMetaDescription(html_out($str));
         }
+    }
+    
+    /// Заполнить title тэг для карточки товара
+    /// @param $product_data Массив с информацией о товаре
+    public function setProductTitle($product_data) {
+        global $tmpl;
+        if ($product_data['title_tag']) {
+            $title = html_out($product_data['title_tag']);
+        } else {
+            $title = '';
+            if($product_data['group_printname']) {
+               $title .=  html_out($product_data['group_printname']) . ' ';
+            }
+            $title .= html_out($product_data['name']) . ', цены и характеристики, купить';
+        }
+        $tmpl->setTitle($title);
     }
 
 /// Получить автоматически генерируемое дополнение к описанию товара
@@ -1032,14 +1142,12 @@ public function getProductAutoDescription($product_data) {
 
     /// Получить HTML код товарного предложения уменьшенного размера
     public function getProductMiniElement($product_info) {
+        $cce = '';
         if (\cfg::exist('site', 'grey_price_days')) {
             $cce_time = \cfg::get('site', 'grey_price_days') * 60 * 60 * 24;
             if (strtotime($product_info['cost_date']) < $cce_time) {
                 $cce = ' style=\'color:#888\'';
             }
-        }
-        else {
-            $cce = '';
         }
         $pc = $this->priceCalcInit();
         if ($product_info['img_id']) {
@@ -1075,172 +1183,204 @@ public function getProductAutoDescription($product_data) {
 	$ret .= "</div>";
         return $ret;
     }
-
-/// Просмотр корзины
-    protected function Basket() {
-        global $tmpl, $CONFIG, $db;
+    
+    /// Получить массив с данными корзины
+    protected function getBasket() {
+        global $db;
+        $basket = \Models\Basket::getInstance();
+        if (!$basket->getCount()) { 
+            return false;
+        }
+        $sum = $lock_pay = $lock_mult = 0;
         $pref = \pref::getInstance();
-        $s = '';
-        $sum = $exist = $lock = $lock_mark = $mult_lock = 0;
-        $i = 1;
-
-        $basket = Models\Basket::getInstance();
-        if ($basket->getCount()) {
-            $pc = $this->priceCalcInit();
-            $basket_items = $basket->getItems();
-            foreach ($basket_items as $item) {
-                settype($item['pos_id'], 'int');
-                settype($item['cnt'], 'int');
-                $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`cost`, `doc_img`.`id` AS `img_id`,
-				`doc_img`.`type` AS `img_type`, `mult`, `bulkcnt`, `class_unit`.`rus_name1` AS `unit_name`, `doc_base_dop`.`reserve`
-			FROM `doc_base`
-                        LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
-			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-			LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
-			WHERE `doc_base`.`id`=" . intval($item['pos_id']));
-                $line = $res->fetch_assoc();
-
-                $price = $pc->getPosAutoPriceValue($line['id'], $item['cnt']);
-
-                // При нулевой цене предупреждать *товар под заказ*
-                if ($price <= 0) {
-                    $lock = 1;
-                    $lock_mark = 1;
-                } else {
-                    $lock_mark = 0;
-                }
-
-                // Не давать оформить заказ при нарушении кратности
-                if ($line['mult'] > 1) {
-                    if ($item['cnt'] % $line['mult']) {
-                        $mult_lock = 1;
-                        $lock_mark = 1;
-                    }
-                }
-
-                // Если параметр включен - при превышении кол-ва на складе(за вычетом резервов) тоже сообщать *товар под заказ*
-                if (@$CONFIG['site']['vitrina_cntlock']) {
-                    if ($pref->getSitePref('site_store_id')) {
-                        $sklad_id = round($pref->getSitePref('site_store_id'));
-                        $res = $db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='{$line['id']}' AND `sklad`='$sklad_id'");
-                    } else {
-                        $res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='{$line['id']}'");
-                    }
-                    if ($res->num_rows) {
-                        $tmp = $res->fetch_row();
-                        $sklad_cnt = $tmp[0] - $line['reserve'];
-                    } else {
-                        $sklad_cnt = $line['reserve'] * (-1);
-                    }
-
-                    if ($item['cnt'] > $sklad_cnt) {
-                        $lock = 1;
-                        $lock_mark = 1;
-                    }
-                }
-
-                $cce = '';
-                // При *серой* цене информировать - *товар под заказ*
-                if (@$CONFIG['site']['grey_price_days']) {
-                    $cce_time = $CONFIG['site']['grey_price_days'] * 60 * 60 * 24;
-                    if (strtotime($line['cost_date']) < $cce_time) {
-                        if (@$CONFIG['site']['vitrina_pricelock']) {
-                            $lock = 1;
-                            $lock_mark = 1;
-                        }
-                        $cce = ' style=\'color:#888\'';
-                    }
-                }
-
-                $sm = $price * $item['cnt'];
-                $sum += $sm;
-                $sm = sprintf("%0.2f", $sm);
-                $lock_mark = $lock_mark ? 'color: #f00' : '';
-                if ($price <= 0) {
-                    $price = 'уточняйте';
-                }
-
-                $link = $this->GetProductLink($item['pos_id'], '');
-
-                if ($line['img_id']) {
-                    $miniimg = new ImageProductor($line['img_id'], 'p', $line['img_type']);
-                    $miniimg->SetX(24);
-                    $miniimg->SetY(32);
-                    $img = "<img src='" . $miniimg->GetURI() . "' alt='" . html_out($line['name']) . "'>";
-                } else {
-                    $img = "";
-                }
-
-                $s.="<tr id='korz_ajax_item_{$item['pos_id']}' style='$lock_mark'>
-			<td class='right'>$i <span id='korz_item_clear_url_{$item['pos_id']}'><a href='/vitrina.php?mode=korz_del&p={$item['pos_id']}' onClick='korz_item_clear({$item['pos_id']}); return false;'><img src='/img/i_del.png' alt='Убрать'></a></span></td>
-			<td>$img</td>
-			<td><a href='/vitrina.php?mode=product&amp;p={$line['id']}'>" . html_out($line['name']) . "</a></td>
-			<td class='right' $cce>$price</td>
-			<td class='right'><span class='sum'>$sm</span></td>
-			<td><input type='number' name='cnt{$item['pos_id']}' value='{$item['cnt']}' class='mini'></td>
-			<td><input type='text' name='comm{$item['pos_id']}' style='width: 90%' value='" . html_out($item['comment']) . "' maxlength='100'></td>
-			</tr>";
-                $exist = 1;
-                $i++;
+        $pc = $this->priceCalcInit();
+        $basket_items = $basket->getItems();
+        foreach ($basket_items as $item_id => $item) {
+            settype($item['pos_id'], 'int');
+            settype($item['cnt'], 'int');
+            $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`cost` AS `base_price`
+                        , `doc_base`.`cost_date` AS `price_date`, `mult`, `bulkcnt`
+                    , `doc_base_dop`.`reserve`
+                    , `doc_img`.`id` AS `img_id`, `doc_img`.`type` AS `img_type`
+                    , `class_unit`.`rus_name1` AS `unit_name`
+                FROM `doc_base`
+                LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+                LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+                LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+                LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
+                WHERE `doc_base`.`id`=" . intval($item['pos_id']));
+            $line = $res->fetch_assoc();
+            if(!$line) {
+                $basket->removeItem($item['pos_id']);
+                continue;
             }
-        }
+            $item = array_merge($item, $line);
+            $item['price'] = $pc->getPosAutoPriceValue($item['id'], $item['cnt']);
 
-        if (!$exist) {
+            // При нулевой цене предупреждать *товар под заказ*
+            if ($item['price'] <= 0) {
+                $lock_pay = 1;
+                $locked_line = 1;
+            } else {
+                $locked_line = 0;
+            }
+
+            // Не давать оформить заказ при нарушении кратности
+            if ($item['mult'] > 1) {
+                if ($item['cnt'] % $item['mult']) {
+                    $lock_mult = 1;
+                    $locked_line = 1;
+                }
+            }
+
+            // Если параметр включен - при превышении кол-ва на складе(за вычетом резервов) тоже сообщать *товар под заказ*
+            if (\cfg::get('site', 'vitrina_cntlock')) {
+                if ($pref->getSitePref('site_store_id')) {
+                    $store_id = round($pref->getSitePref('site_store_id'));
+                    $res = $db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='{$item['id']}' AND `sklad`='$store_id'");
+                } else {
+                    $res = $db->query("SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `id`='{$item['id']}'");
+                }
+                if ($res->num_rows) {
+                    $tmp = $res->fetch_row();
+                    $item['store_cnt'] = $tmp[0] - $item['reserve'];
+                } else {
+                    $item['store_cnt'] = $item['reserve'] * (-1);
+                }
+
+                if ($item['cnt'] > $item['store_cnt']) {
+                    $lock_pay = 1;
+                    $locked_line = 1;
+                }
+            }
+
+            // При *серой* цене информировать - *товар под заказ*
+            $item['gray_price'] = false;
+            if (\cfg::get('site', 'grey_price_days')) {
+                $cce_time = \cfg::get('site', 'grey_price_days') * 60 * 60 * 24;
+                if (strtotime($item['price_date']) < $cce_time) {
+                    if (\cfg::get('site', 'vitrina_pricelock')) {
+                        $lock_pay = 1;
+                        $locked_line = 1;
+                    }
+                    $item['gray_price'] = true;
+                }
+            }
+
+            $item['sum'] = $item['price'] * $item['cnt'];
+            $sum += $item['sum'];
+            $item['sum'] = sprintf("%0.2f", $item['sum']);
+            $locked_line = $locked_line ? 'color: #f00' : '';
+            if ($item['price'] <= 0) {
+                $item['price'] = 'уточняйте';
+            }            
+            
+            $item['product_link'] = $this->GetProductLink($item['pos_id'], '');
+            $item['locked_line'] = $locked_line;
+            $basket_items[$item_id] = $item;
+        }
+        return array(
+            'lock_pay' => $lock_pay,
+            'lock_mult' => $lock_mult,
+            'sum'   => $sum,
+            'items' => $basket_items,
+        );        
+    }
+
+    /// Просмотр корзины
+    protected function Basket() {
+        global $tmpl;
+        $s = '';
+        $sum_p = $exist = $lock = $lock_mark = $mult_lock = 0;
+        $tmpl->addBreadCrumb('Главная', '/');
+        $tmpl->addBreadCrumb('Корзина', '');
+        $basket = $this->getBasket();
+        if(!$basket) {
+            $tmpl->addContent("<h1 id='page-title'>Ваша корзина</h1>");
             $tmpl->msg("Ваша корзина пуста! Выберите, пожалуйста интересующие Вас товары!", "info");
-        } else {
-            $tmpl->addContent("
-		<h1 id='page-title'>Ваша корзина</h1>
-		В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
-		<script>
-		function korz_clear() {
-		$.ajax({
-		url: '/vitrina.php?mode=korz_clear',
-		beforeSend: function() { $('#korz_clear_url').html('<img src=\"/img/icon_load.gif\" alt=\"обработка..\">'); },
-		success: function() { $('#korz_ajax').html('Корзина очищена'); }
-		})
-		}
-
-		function korz_item_clear(id) {
-		$.ajax({
-			url: '/vitrina.php?mode=korz_del&p='+id,
-			async: false,
-			beforeSend: function() { $('#korz_item_clear_url_'+id).html('<img src=\"/img/icon_load.gif\" alt=\"обработка..\">'); },
-			success: function() { $('#korz_ajax_item_'+id).remove(); },
-			complete: function() {
-			sum = 0;
-			$('span.sum').each(function() {
-			var num = parseFloat($(this).text());
-			if (num) sum += num;
-			});
-			$('span.sums').html(sum.toFixed(2));
-			}
-		})
-		}
-		</script>");
-            if ($lock)
-                $tmpl->msg("Обратите внимание, Ваша корзина содержит наименования, доступные только под заказ (выделены красным). Вы не сможете оплатить заказ до его подтверждения оператором.", "info", "Предупреждение");
-            if ($mult_lock) {
-                $tmpl->msg("Количество заказанного Вами товара меньше, чем количество товара в упаковке. Строки с ошибкой выделены красным. Вы не сможете оормить заказ, пока не исправите ошибку.", "err", "Предупреждение");
-                $buy_disable = ' disabled';
-            } else
-                $buy_disable = '';
-            $tmpl->addContent("
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='basket_submit'>
-		<table width='100%' class='list'>
-		<tr class='title'><th>N</th><th>&nbsp;</th><th>Наименование<th>Цена, руб<th>Сумма, руб<th>Количество, шт<th>Коментарии</tr>
-		$s
-		<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='4'><span class='sums'>$sum</span> рублей</td></tr>
-		</table>
-		<br>
-		<center><button name='button' value='recalc' type='submit'>Пересчитать</button>
-		<button name='button' value='buy' type='submit'{$buy_disable}>Оформить заказ</button></center><br>
-		<center><span id='korz_clear_url'><a href='/vitrina.php?mode=korz_clear' onClick='korz_clear(); return false;'><b>Очистить корзину!</b></a></span></center><br>
-		</form>
-		</center><br><br>
-		");
+            return;
         }
+        
+        $tmpl->addContent("
+            <h1 id='page-title'>Ваша корзина</h1>
+            В поле *коментарий* вы можете высказать пожелания по конкретному товару (не более 100 символов).<br>
+            <script>
+            function korz_clear() {
+            $.ajax({
+            url: '/vitrina.php?mode=korz_clear',
+            beforeSend: function() { $('#korz_clear_url').html('<img src=\"/img/icon_load.gif\" alt=\"обработка..\">'); },
+            success: function() { $('#korz_ajax').html('Корзина очищена'); }
+            })
+            }
+
+            function korz_item_clear(id) {
+            $.ajax({
+                    url: '/vitrina.php?mode=korz_del&p='+id,
+                    async: false,
+                    beforeSend: function() { $('#korz_item_clear_url_'+id).html('<img src=\"/img/icon_load.gif\" alt=\"обработка..\">'); },
+                    success: function() { $('#korz_ajax_item_'+id).remove(); },
+                    complete: function() {
+                    sum = 0;
+                    $('span.sum').each(function() {
+                    var num = parseFloat($(this).text());
+                    if (num) sum += num;
+                    });
+                    $('span.sums').html(sum.toFixed(2));
+                    }
+            })}
+            </script>");
+    
+        if ($basket['lock_pay']) {
+            $tmpl->msg("Обратите внимание, Ваша корзина содержит наименования, доступные только под заказ (выделены красным). "
+                . "Вы не сможете оплатить заказ до его подтверждения оператором.", "info", "Предупреждение");
+        }
+        if ($basket['lock_mult']) {
+            $tmpl->msg("Количество заказанного Вами товара меньше, чем количество товара в упаковке. Строки с ошибкой выделены красным. Вы не сможете оормить заказ, пока не исправите ошибку.", "err", "Предупреждение");
+            $buy_disable = ' disabled';
+        } else {
+            $buy_disable = '';
+        }
+        $tmpl->addContent("<form action='' method='post'>
+            <input type='hidden' name='mode' value='basket_submit'>
+            <table width='100%' class='list'>
+            <tr class='title'><th>N</th><th>&nbsp;</th><th>Наименование</th><th>Цена</th><th>Сумма</th><th>Количество</th><th>Коментарии</th></tr>");
+        $i = 1;
+        foreach ($basket['items'] as $item) {                
+            $lock_mark = $item['locked_line'] ? "style='color: #f00'" : '';
+            $gray_price = $item['gray_price'] ? "style='color: #888'" : '';
+            $img = $item['img_uri'] ? "<img_src='{$item['img_uri']}' alt='" . html_out($item['name']) . "'>" : '';
+            $price_p = number_format($item['price'], 2, '.', '&nbsp;');
+            $sum_p = number_format($item['sum'], 2, '.', '&nbsp;');
+            if ($item['img_id']) {
+                $miniimg = new \ImageProductor($item['img_id'], 'p', $item['img_type']);
+                $miniimg->SetX(24);
+                $miniimg->SetY(32);
+                $item['img_uri'] = $miniimg->GetURI();
+            } else {
+                $item['img_uri'] = null;
+            }
+            $tmpl->addContent("<tr id='korz_ajax_item_{$item['pos_id']}'{$lock_mark}>
+                <td class='right'>$i <span id='korz_item_clear_url_{$item['pos_id']}'>
+                    <a href='/vitrina.php?mode=korz_del&p={$item['pos_id']}' onClick='korz_item_clear({$item['pos_id']}); return false;'>
+                    <img src='/img/i_del.png' alt='Убрать'></a></span></td>
+                <td>$img</td>
+                <td><a href='/vitrina.php?mode=product&amp;p={$item['pos_id']}'>" . html_out($item['name']) . "</a></td>
+                <td class='right'{$gray_price}>$price_p</td>
+                <td class='right'><span class='sum'>$sum_p</span></td>
+                <td><input type='number' name='cnt{$item['pos_id']}' value='{$item['cnt']}' class='mini'></td>
+                <td><input type='text' name='comm{$item['pos_id']}' style='width: 90%' value='" . html_out($item['comment']) . "' maxlength='100'></td>
+                </tr>");
+            $i++;
+        }
+        
+	$tmpl->addContent("<tr class='total'><td>&nbsp;</td><td colspan='2'>Итого:</td><td colspan='4'><span class='sums'>$sum_p</span> рублей</td></tr>
+            </table>
+            <br>
+            <center><button name='button' value='recalc' type='submit'>Пересчитать</button>
+            <button name='button' value='buy' type='submit'{$buy_disable}>Оформить заказ</button></center><br>
+            <center><span id='korz_clear_url'><a href='/vitrina.php?mode=korz_clear' onClick='korz_clear(); return false;'><b>Очистить корзину!</b></a></span></center><br>
+            </form>
+            </center><br><br>");
     }
 
 /// Оформление доставки
@@ -2014,13 +2154,16 @@ protected function GetGroupLink($group, $page=1, $alt_param='')
 	if($CONFIG['site']['recode_enable'])	return "/vitrina/ig/$page/$group.html".($alt_param?"?$alt_param":'');
 	else					return "/vitrina.php?mode=group&amp;g=$group".($page?"&amp;p=$page":'').($alt_param?"&amp;$alt_param":'');
 }
-/// Получить ссылку на товар с заданным ID
-protected function GetProductLink($product, $name, $alt_param='')
-{
-	global $CONFIG;
-	if($CONFIG['site']['recode_enable'])	return "/vitrina/ip/$product.html".($alt_param?"?$alt_param":'');
-	else					return "/vitrina.php?mode=product&amp;p=$product".($alt_param?"&amp;$alt_param":'');
-}
+
+    /// Получить ссылку на товар с заданным ID
+    protected function GetProductLink($product, $name, $alt_param = '') {
+        if (\cfg::get('site', 'recode_enable')) {
+            return "/vitrina/ip/$product.html" . ($alt_param ? "?$alt_param" : '');
+        } else {
+            return "/vitrina.php?mode=product&amp;p=$product" . ($alt_param ? "&amp;$alt_param" : '');
+        }
+    }
+
 /// Получить информации о количестве товара. Формат информации - в конфигурационном файле
 protected function GetCountInfo($count, $tranzit)
 {
