@@ -20,7 +20,7 @@
 require_once("core.php");
 
 try {
-    $search = new \Modules\Site\search();
+    $search = new \Search();
     $search->setSearchString(request('s'));
     $search->ExecMode(request('mode'));
 } catch (mysqli_sql_exception $e) {

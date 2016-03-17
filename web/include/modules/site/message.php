@@ -290,6 +290,12 @@ class message extends \IModule {
             $tmpl->addBreadcrumb('Отправка', '');
             $this->sendCallRequest();
         }
+        else if ($mode == 'ajax_call_request') {
+            $tmpl->ajax = 1;
+            $tmpl->addBreadcrumb('Заказ обратного звонка', $this->link_prefix.'?mode=call_request');
+            $tmpl->addBreadcrumb('Отправка', '');
+            $this->sendCallRequest();
+        }
         else {
             throw new \NotFoundException("Неизвестная опция");
         }

@@ -33,7 +33,6 @@ if ($mode == 'xml') {
     $tmpl->ajax=1;
     header("Content-Type: text/plain");
     echo"User-Agent: *
-Disallow: /adv_search
 Disallow: /img
 Disallow: /kcaptcha
 Disallow: /login

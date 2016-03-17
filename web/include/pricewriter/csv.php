@@ -125,7 +125,7 @@ class csv extends BasePriceWriter {
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
         $i = $cur_col = 0;
         $pc = \PriceCalc::getInstance();
-        $pref = pref::getInstance();
+        $pref = \pref::getInstance();
         $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
             if ($cur_col >= $this->column_count) {

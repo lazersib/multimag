@@ -678,7 +678,7 @@ class doc_s_Agent {
             $sf = 1;
         }
 
-        $sqla = $sql . "WHERE (`doc_agent`.`name` LIKE '%$s%' OR `doc_agent`.`fullname` LIKE '%$s_sql%') AND (`doc_agent`.`name` NOT LIKE '$s_sql%' AND `doc_agent`.`fullname` NOT LIKE '$s_sql%') ORDER BY `doc_agent`.`name` LIMIT 30";
+        $sqla = $sql . "WHERE (`doc_agent`.`name` LIKE '%$s_sql%' OR `doc_agent`.`fullname` LIKE '%$s_sql%') AND (`doc_agent`.`name` NOT LIKE '$s_sql%' AND `doc_agent`.`fullname` NOT LIKE '$s_sql%') ORDER BY `doc_agent`.`name` LIMIT 30";
         $res = $db->query($sqla);
         if ($res->num_rows) {
             $tmpl->addContent("<tr><th colspan='16' align='center'>Фильтр по названию, содержащему " . html_out($s) . ": {$res->num_rows}  строк найдено</th></tr>");

@@ -78,6 +78,9 @@ class News extends \IModule {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$mode'>Добавить новость</a><br>");
             }
             if ($this->isAllow()) {
+                $tmpl->addBreadcrumb('Главная', '/');
+                $tmpl->setContent("<h1>Новости сайта</h1>");
+                $tmpl->setTitle("Новости сайта");
                 $this->ShowList($mode);
             }
             return true;
@@ -91,7 +94,8 @@ class News extends \IModule {
     /// @param $mode список новостей
     public function ExecMode($mode = '') {
         global $tmpl, $CONFIG, $db;
-        $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
+        $tmpl->addBreadcrumb('Главная', '/');
+        $tmpl->setContent("<h1>Новости сайта</h1>");
         $tmpl->setTitle("Новости сайта");
         if ($mode == '') {
             if (\acl::testAccess($this->acl_object_name, \acl::CREATE, 1)) {
@@ -172,7 +176,11 @@ class News extends \IModule {
 	WHERE $where
 	ORDER BY `date` DESC LIMIT 50");
         if ($res->num_rows) {
-            $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
+            if($where!=1) {
+                $tmpl->addBreadcrumb('Новости, акции, события', $this->link_prefix);
+            }
+            $tmpl->addBreadcrumb($name, '');
+            $tmpl->setContent("<h1>$name</h1>");
             $tmpl->setTitle("$name сайта");
             if (\acl::testAccess($this->acl_object_name, \acl::CREATE, true)) {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$type'>Добавить новость</a><br>");
@@ -240,9 +248,10 @@ class News extends \IModule {
             } else {
                 $do = '';
             }
-
-            $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a><a href='{$this->link_prefix}'>Новости</a>{$wikiparser->title}</div>"
-                . "<h1>{$wikiparser->title}$hidden</h1>" . $do
+            $tmpl->addBreadcrumb('Главная', '/');
+            $tmpl->addBreadcrumb('Новости', $this->link_prefix);
+            $tmpl->addBreadcrumb($wikiparser->title, '');
+            $tmpl->setContent("<h1>{$wikiparser->title}$hidden</h1>" . $do
                 . "<p>$text</p><p align='right'><i>{$news_info['date']}, {$news_info['autor_name']}</i></p>");
             // <a href='/forum.php'>Комментарии: 0</a>
             if($edit_enable) {
@@ -282,6 +291,11 @@ class News extends \IModule {
                 $event_c = ' checked';
                 break;
         }
+        $tmpl->addBreadcrumb('Новости', $this->link_prefix);
+        if($id>0) {
+            $tmpl->addBreadcrumb('Новость N'.$id, $this->GetNewsLink($id));
+        }
+        $tmpl->addBreadcrumb('Редактирование новости', '');
         $tmpl->addContent("
 	<form action='{$this->link_prefix}' method='post' enctype='multipart/form-data'>
 	<h2>Добавление новости</h2>

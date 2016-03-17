@@ -16,20 +16,8 @@
 //
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
 
-require_once("core.php");
+/// Обёртка-загрузчик для модуля новостей
+class Search extends \Modules\Site\Search {
 
-try {
-    $search = new \message();
-    $search->run();
-} catch (mysqli_sql_exception $e) {
-    $tmpl->ajax = 0;
-    $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
-} catch (Exception $e) {
-    writeLogException($e);
-    $tmpl->errorMessage($e->getMessage());
 }
-
-$tmpl->write();

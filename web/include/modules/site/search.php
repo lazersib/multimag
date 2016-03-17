@@ -269,7 +269,7 @@ class search extends \IModule {
                     $add_where_sql .= " AND `doc_base`.`proizv` LIKE '%$sql_val%'";
                     break;
                 case 'type':
-                    $add_where_sql .= " AND `doc_base`.`type` = '$sql_val'";
+                    $add_where_sql .= " AND `doc_base_dop`.`type` = '$sql_val'";
                     break;
                 case 'd_int_min':
                     $add_where_sql .= " AND `doc_base_dop`.`d_int` >= '$sql_val'";

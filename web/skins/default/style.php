@@ -54,7 +54,7 @@ function skin_prepare()
 	<ul>
 	<li><a class='selflink' href='/index.php'>Домашняя страница</a></li>
 	<li $rr><a class='selflink' href='/vitrina.php?mode=basket' $ll rel='nofollow'>Корзина</a></li>
-	<li><a class='selflink' href='/adv_search.php'>Поиск по параметрам</a></li>
+	<li><a class='selflink' href='/search.php?mode=parametric'>Поиск по параметрам</a></li>
 	<li><a class='selflink' href='/message.php?to={$CONFIG['site']['doc_adm_email']}&amp;opt=email'>Задать вопрос</a></li>
 	<li><a class='selflink' href='/photogalery.php'>Фотогалерея</a></li>
 	<li><a class='wikilink' href='/article/ContactInfo.html'>Контактная информация</a></li>

@@ -247,7 +247,7 @@ class xls extends BasePriceWriter {
         }
 
         $pc = \PriceCalc::getInstance();
-        $pref = pref::getInstance();
+        $pref = \pref::getInstance();
         $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
             $c = 0;

@@ -206,7 +206,7 @@ else if($mode=="gen")
 			if($l)	$link[$id]='('.$l.')';
 		}
 
-		$tmpl->addContent("<h2 id='page-title'>Загрузка прайс - листа</h2><div id='page-info'>Используется HTML формат</div>
+		$tmpl->addContent("<h1 id='page-title'>Загрузка прайс - листа</h1><div id='page-info'>Используется HTML формат</div>
 		Прайс в виде обычной веб-страницы. Для просмотра можно использовать обычные веб броузеры, например:
 		<ul>
 		<li>Opera {$link['opera']}</li>
@@ -256,7 +256,7 @@ else if($mode=="gen")
 
 
 
-		$tmpl->addContent("<h2 id='page-title'>Загрузка прайс - листа</h2><div id='page-info'>Используется PDF формат</div>");
+		$tmpl->addContent("<h1 id='page-title'>Загрузка прайс - листа</h1><div id='page-info'>Используется PDF формат</div>");
 		$tmpl->addContent("
 		Идеальный формат для вывода на печать. Для просмотра можно использовать любые PDF просмотрщики, например:
 		<ul>$list</ul>
@@ -285,7 +285,7 @@ else if($mode=="gen")
 	}
 	else if($f=='xls')
 	{
-		$tmpl->addContent("<h2 id='page-title'>Загрузка прайс - листа</h2><div id='page-info'>Используется xls формат</div>
+		$tmpl->addContent("<h1 id='page-title'>Загрузка прайс - листа</h1><div id='page-info'>Используется xls формат</div>
 		В файле содержится электронная таблица Microsoft Excel. Формат удобен только для пользователей этой программы, желающих вносить изменения в прайс. Для просмотра и печати рекомендуется <a class='wiki' href='?mode=gen&f=pdf'>формат PDF</a>.<br>
 		Загруженный файл можно будет открыть при помощи:
 		<ul>
