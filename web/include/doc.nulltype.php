@@ -77,14 +77,22 @@ class doc_Nulltype extends \document {
             return '';
         }
     }
+    
+    protected function writeLogArray($motion, $array) {
+        doc_log($motion, json_encode($array, JSON_UNESCAPED_UNICODE), 'doc', $this->id);
+    }
 
     /// Установить основной параметр документа
     public function setDocData($name, $value) {
         global $db;
-        if ($this->id) {
+        if(!isset($this->doc_data[$name])) {
+            $this->doc_data[$name] = null;
+        }
+        if ($this->id && $this->doc_data[$name] !== $value) {
             $_name = $db->real_escape_string($name);
             $db->update('doc_list', $this->id, $_name, $value);
-            doc_log("UPDATE {$this->typename}", "$name: ({$this->doc_data[$name]} => $value)", 'doc', $this->id);
+            $log_data = [$name => ['old'=>$this->doc_data[$name], 'new'=>$value] ];
+            $this->writeLogArray("UPDATE", $log_data);
         }
         $this->doc_data[$name] = $value;
     }
@@ -103,11 +111,15 @@ class doc_Nulltype extends \document {
     /// Установить дополнительные данные текущего документа
     public function setDopData($name, $value) {
         global $db;
-        if ($this->id && @$this->dop_data[$name] != $value) {
+        if(!isset($this->dop_data[$name])) {
+            $this->dop_data[$name] = null;
+        }
+        if ($this->id && $this->dop_data[$name] !== $value) {
             $_name = $db->real_escape_string($name);
             $_value = $db->real_escape_string($value);
-            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
-            doc_log("UPDATE {$this->typename}", @"$name: ({$this->dop_data[$name]} => $value)", 'doc', $this->id);
+            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`) VALUES ( '{$this->id}' ,'$_name','$_value')");
+            $log_data = [$name => ['old'=>$this->dop_data[$name], 'new'=>$value] ];
+            $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
         }
         $this->dop_data[$name] = $value;
     }
@@ -115,18 +127,21 @@ class doc_Nulltype extends \document {
     /// Установить дополнительные данные текущего документа
     public function setDopDataA($array) {
         global $db;
-        if ($this->id)
-            foreach ($array as $name => $value) {
-                if (!isset($this->dop_data[$name]))
-                    $this->dop_data[$name] = '';
-                if ($this->dop_data[$name] != $value) {
-                    $_name = $db->real_escape_string($name);
-                    $_value = $db->real_escape_string($value);
-                    $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
-                    doc_log("UPDATE {$this->typename}", "$name: ({$this->dop_data[$name]} => $value)", 'doc', $this->id);
-                    $this->dop_data[$name] = $value;
+        if ($this->id) {
+            $to_write_data = array_diff_assoc($array, $this->dop_data);
+            $log_data = array();
+            foreach ($to_write_data as $name => $value) {
+                if(!isset($this->dop_data[$name])) {
+                    $this->dop_data[$name] = null;
                 }
+                $log_data[$name] = ['old'=>$this->dop_data[$name], 'new'=>$value];
+                $this->dop_data[$name] = $value;                
             }
+            if(count($to_write_data)>0) {
+                $db->replaceKA('doc_dopdata', 'doc', $this->id, $to_write_data);
+                $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
+            }
+        }
     }
 
     /// Зафиксировать цену документа, если она установлена в *авто*. Выполняется при проведении некоторых типов документов.
@@ -146,7 +161,7 @@ class doc_Nulltype extends \document {
     }
 
     /// Создать документ с заданными данными
-    public function create($doc_data, $from = '') {
+    public function create($doc_data) {
         global $db;
         \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
         \acl::accessGuard([ 'firm.global', 'firm.' . $doc_data['firm_id'] ], \acl::CREATE);
@@ -166,13 +181,9 @@ class doc_Nulltype extends \document {
         $data['type'] = $this->doc_type;
         $data['user'] = $_SESSION['uid'];
 
-        $line_id = $db->insertA('doc_list', $data);
-        $this->id = $line_id;
-        if ($from) {
-            doc_log("CREATE", "FROM ({$doc_data['id']} {$from}):" . json_encode($doc_data), 'doc', $this->id);
-        } else {
-            doc_log("CREATE", "NEW:" . json_encode($doc_data), 'doc', $this->id);
-        }
+        $this->id = $db->insertA('doc_list', $data);
+        $this->writeLogArray("CREATE", $data);
+        
         unset($this->doc_data);
         unset($this->dop_data);
         $this->get_docdata();
@@ -463,7 +474,7 @@ class doc_Nulltype extends \document {
             $sender->setContent($text);
             $sender->send();
             if(@$CONFIG['doc']['notify_debug']) {
-                doc_log("NOTIFY SMS", "number:$smsphone; text:$text", 'doc', $this->id);
+                $this->writeLogArray("NOTIFY SMS", ['number'=>$smsphone,'text'=>$text]);
             } 
             return true;
         }
@@ -504,7 +515,7 @@ class doc_Nulltype extends \document {
                 }
                 mailto($email, $subject, $user_msg);
                 if(@$CONFIG['doc']['notify_debug']) {
-                    doc_log("NOTIFY Email", "email:$email; text:$user_msg", 'doc', $this->id);
+                    $this->writeLogArray("NOTIFY Email", ['email'=>$email,'text'=>$user_msg]);
                 }
             }
             return true;
@@ -542,7 +553,7 @@ class doc_Nulltype extends \document {
                 $user_msg = $text;                    
                 $xmppclient->message($addr, $user_msg);                    
                 if(@$CONFIG['doc']['notify_debug']) {
-                    doc_log("NOTIFY xmpp", "jid:$addr; text:$user_msg", 'doc', $this->id);
+                    $this->writeLogArray("NOTIFY xmpp", ['jid'=>$addr, 'text'=>$user_msg]);
                 }
             }
             $xmppclient->disconnect();
@@ -594,288 +605,144 @@ class doc_Nulltype extends \document {
             $this->DrawHeadformEnd();
         }
     }
+    
+    protected function setDocDataA($data) {
+        global $db;
+        $log_data = array();
+        $res = $db->query("SHOW COLUMNS FROM `doc_list`");
+        $col_array = array();
+        while ($nxt = $res->fetch_row()) {
+            $col_array[$nxt[0]] = $nxt[0];
+        }
+        unset($col_array['id']);
+        $i_data = array_intersect_key($this->doc_data, $col_array);
+        
+        if($this->id) {
+            $to_write_data = array_diff_assoc($data, $i_data);        
+            foreach($to_write_data as $name=>$value) {
+                if(!isset($this->doc_data[$name])) {
+                    $log_data[$name] = ['new'=>$value];
+                }
+                else if($this->doc_data[$name]!==$value){
+                    $log_data[$name] = ['old'=>$this->doc_data[$name], 'new'=>$value];
+                }
+            }
+            if(count($to_write_data)>0) {
+                $db->updateA('doc_list', $this->id, $to_write_data);   
+                $this->writeLogArray('UPDATE', $log_data);
+            }
+        }
+        else {
+            $to_write_data = array_intersect_key($data, $i_data); 
+            $this->id = $db->insertA('doc_list', $to_write_data);
+            $this->writeLogArray("CREATE", $to_write_data);
+        }
+        foreach($to_write_data as $name=>$value) {
+             $this->doc_data[$name] = $value;
+        }
+        return $this->id;
+    }
+    
+    protected function try_head_save() {
+        $write_doc_data = array(
+            'date' => @strtotime(request('datetime')),
+            'firm_id' => rcvint('firm'),
+            'comment' => request('comment'),
+            'altnum' => rcvint('altnum'),
+            'subtype' => request('subtype'),
+        );
+        $write_dop_data = array();
+        if (!$write_doc_data['altnum']) {
+            $write_doc_data['altnum'] = $this->getNextAltNum($this->doc_type, $write_doc_data['subtype']
+                , date("Y-m-d", $write_doc_data['date']), $write_doc_data['firm_id']);
+        }
+        if(!$this->id) {
+            $write_doc_data['user'] = intval($_SESSION['uid']);
+            $write_doc_data['type'] = $this->doc_type; 
+        }
+        elseif (@$this->doc_data['ok']) {
+            throw new \Exception("Операция не допускается для проведённого документа!");
+        } 
+        else if (@$this->doc_data['mark_del']) {
+            throw new \Exception("Операция не допускается для документа, отмеченного для удаления!");
+        } 
+        $fields = explode(' ', $this->header_fields);
+        foreach ($fields as $f) {
+            switch($f) {
+                case 'cena':
+                case 'price':
+                    $write_dop_data['cena'] = rcvint('cena');
+                    $write_doc_data['nds'] = rcvint('nds');
+                    break;
+                case 'agent':
+                    $write_doc_data['agent'] = rcvint('agent');
+                    if(!$write_doc_data['agent']) {
+                        $pref = \pref::getInstance();
+                        $write_doc_data['agent'] = $pref->getSitePref('default_agent_id');
+                    }
+                    $write_dop_data['contract'] = rcvint('contract');
+                    break;
+                case 'separator':
+                    break;
+                case 'sum':
+                    $write_doc_data['sum'] = rcvrounded('sum');
+                    break;
+                default:
+                    $write_doc_data[$f] = rcvint($f);
+                    break;
+                    
+            }
+        }
+        if ($this->id) {
+            \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);            
+        }
+        else {
+            \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
+            if ($this->doc_data['firm_id'] > 0) {
+                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::CREATE);
+            }            
+        }
+        $this->setDocDataA($write_doc_data);
+        if(count($write_dop_data)) {
+            $this->setDopDataA($write_dop_data);
+        }
+        if (method_exists($this, 'DopSave')) {
+            $this->DopSave();
+        }
+    }
 
     /// Применить изменения редактирования заголовка
     public function head_submit() {
-        global $tmpl, $db;
-        $doc = $this->id;
-
-        if ($this->typename)
-            $object = 'doc_' . $this->typename;
-        else
-            $object = 'doc';
-
-        $firm_id = rcvint('firm');
-        if ($firm_id <= 0) {
-            $firm_id = 1;
-        }
-
-        $agent = rcvint('agent');
-        $date = @strtotime(request('datetime'));
-        $sklad = rcvint('sklad');
-        $subtype = request('subtype');
-        $altnum = rcvint('altnum');
-        $nds = rcvint('nds');
-        $sum = rcvrounded('sum');
-        $bank = rcvint('bank');
-        $kassa = rcvint('kassa');
-        $contract = rcvint('contract');
-        $comment = request('comment');
-        $cena = rcvint('cena');
-        $cost_recalc = rcvint('cost_recalc');
-
-        if ($date <= 0)
-            $date = time();
-        if (!$altnum) {
-            $altnum = $this->getNextAltNum($this->doc_type, $subtype, date("Y-m-d", $date), $firm_id);
-        }
-
-        $_comment = $db->real_escape_string($comment);
-        $_subtype = $db->real_escape_string($subtype);
-        $uid = intval($_SESSION['uid']);
-
-        $sqlupdate = "`date`='$date', `firm_id`='$firm_id', `comment`='$_comment', `altnum`='$altnum', `subtype`='$_subtype'";
-        $sqlinsert_keys = "`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
-        $sqlinsert_value = "'$date', '0', '$firm_id', '" . $this->doc_type . "', '$_comment', '$uid', '$altnum', '$_subtype'";
-        $log_data = '';
-
-        if ($this->id) {
-            if ($this->doc_data['date'] != $date)
-                $log_data.="date: {$this->doc_data['date']}=>$date, ";
-            if ($this->doc_data['firm_id'] != $firm_id)
-                $log_data.="firm_id: {$this->doc_data['firm_id']}=>$firm_id, ";
-            if ($this->doc_data['comment'] != $comment)
-                $log_data.="comment: {$this->doc_data['comment']}=>$comment, ";
-            if ($this->doc_data['altnum'] != $altnum)
-                $log_data.="altnum: {$this->doc_data['altnum']}=>$altnum, ";
-            if ($this->doc_data['subtype'] != $subtype)
-                $log_data.="subtype: {$this->doc_data['subtype']}=>$subtype, ";
-        }
-
-        doc_menu($this->getDopButtons());
-
-        if (@$this->doc_data['ok'])
-            $tmpl->msg("Операция не допускается для проведённого документа!", "err");
-        else if (@$this->doc_data['mark_del'])
-            $tmpl->msg("Операция не допускается для документа, отмеченного для удаления!", "err");
-        else {
-            $fields = explode(' ', $this->header_fields);
-            $cena_update = false;
-            foreach ($fields as $f) {
-                if ($f == 'separator')
-                    continue;
-                if ($f == 'cena') {
-                    $cena_update = true;
-                    $sqlupdate.=", `nds`='$nds'";
-                    $sqlinsert_keys.=", `nds`";
-                    $sqlinsert_value.=", '$nds'";
-                    if ($cost_recalc) { // Чем это отличается от $this->resetCost() ? 
-                        $r = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar`,
-                            `doc_base`.`cost` AS `base_price`, `doc_base`.`group`, `doc_base`.`bulkcnt`
-                            FROM `doc_list_pos`
-                            INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-                            WHERE `doc`='{$this->id}'");
-                        $pc = PriceCalc::getInstance();
-                        $pc->setFirmId($this->doc_data['firm_id']);
-                        while ($l = $r->fetch_assoc()) {
-                            $price = $pc->getPosSelectedPriceValue($l[1], $cena, $l);
-                            $db->update('doc_list_pos', $l[0], 'cost', $price);
-                        }
-                        $this->recalcSum();
-                    }
-                    if ($this->id) {
-                        if ($this->doc_data['nds'] != $nds)
-                            $log_data.="nds: {$this->doc_data['nds']}=>$nds, ";
-                        if ($this->dop_data['cena'] != $cena)
-                            $log_data.="cena: {$this->doc_data['cena']}=>$cena, ";
-                    }
-                }
-                else if ($f == 'agent') {
-                    $sqlupdate.=", `$f`='${$f}', `contract`='$contract'";
-                    $sqlinsert_keys.=", `$f`, `contract`";
-                    $sqlinsert_value.=", '${$f}', '$contract'";
-                    if ($this->id) {
-                        if ($this->doc_data[$f] != $$f)
-                            $log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
-                        if ($this->dop_data['contract'] != $contract)
-                            $log_data.="contract: {$this->doc_data['contract']}=>$cena, ";
-                    }
-                }
-                else {
-                    $sqlupdate.=", `$f`='${$f}'";
-                    $sqlinsert_keys.=", `$f`";
-                    $sqlinsert_value.=", '${$f}'";
-                    if ($this->id) {
-                        if ($this->doc_data[$f] != $$f) {
-                            $log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
-                        }
-                    }
-                }
-            }
-
-            if ($this->id) {
-                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id'] ], \acl::UPDATE);
-                $db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='$doc'");
-                $link = "/doc.php?doc=$doc&mode=body";
-                if ($log_data)
-                    doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-            }
-            else {
-                \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
-                if($this->doc_data['firm_id']>0) {
-                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id'] ], \acl::CREATE);
-                }
-                $db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
-                $this->id = $doc = $db->insert_id;
-                $link = "/doc.php?doc=$doc&mode=body";
-                doc_log("CREATE {$this->typename}", "$sqlupdate", 'doc', $doc);
-            }
-
-            if (method_exists($this, 'DopSave'))
-                $this->DopSave();
-            if ($cena_update)
-                $res = $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('$doc','cena','$cena')");
-            if ($link)
-                header("Location: $link");
-        }
-        return $this->id = $doc;
+        $this->try_head_save();
+        redirect("/doc.php?mode=body&doc={$this->id}");
+        return $this->id;
     }
 
     /// Сохранение заголовка документа и возврат результата в json формате
     public function json_head_submit() {
-        global $tmpl, $db;
-        if ($this->typename)
-            $object = 'doc_' . $this->typename;
-        else
-            $object = 'doc';
-        $date = @strtotime(request('datetime'));
-
-        $firm_id = rcvint('firm', 1);
-        if ($firm_id <= 0)
-            $firm_id = 1;
-        $tim = time();
-        $uid = intval($_SESSION['uid']);
-
-        $agent = rcvint('agent');
-        $sklad = rcvint('sklad');
-        $altnum = rcvint('altnum');
-        $nds = rcvint('nds');
-        $sum = rcvrounded('sum');
-        $bank = rcvint('bank');
-        $kassa = rcvint('kassa');
-        $cena = rcvint('cena');
-        $contract = rcvint('contract');
-        if ($date <= 0)
-            $date = time();
-
-        $subtype = request('subtype');
-        $comment = request('comment');
-
-        if (!$altnum)
-            $altnum = $comment = $this->getNextAltNum($this->doc_type, $subtype, date("Y-m-d", $date), $firm_id);
-
-        $_comment = $db->real_escape_string($comment);
-        $_subtype = $db->real_escape_string($subtype);
-
-
-        $sqlupdate = "`date`='$date', `firm_id`='$firm_id', `comment`='$_comment', `altnum`='$altnum', `subtype`='$_subtype'";
-        $sqlinsert_keys = "`date`, `ok`, `firm_id`, `type`, `comment`, `user`, `altnum`, `subtype`";
-        $sqlinsert_value = "'$date', '0', '$firm_id', '" . $this->doc_type . "', '$_comment', '$uid', '$altnum', '$_subtype'";
-        $log_data = '';
-        if ($this->id) {
-            if ($this->doc_data['date'] != $date)
-                $log_data.="date: {$this->doc_data['date']}=>$date, ";
-            if ($this->doc_data['firm_id'] != $firm_id)
-                $log_data.="firm_id: {$this->doc_data['firm_id']}=>$firm_id, ";
-            if ($this->doc_data['comment'] != $comment)
-                $log_data.="comment: {$this->doc_data['comment']}=>$comment, ";
-            if ($this->doc_data['altnum'] != $altnum)
-                $log_data.="altnum: {$this->doc_data['altnum']}=>$altnum, ";
-            if ($this->doc_data['subtype'] != $subtype)
-                $log_data.="subtype: {$this->doc_data['subtype']}=>$subtype, ";
-        }
-
+        global $tmpl;
         $tmpl->ajax = 1;
         try {
-            if ($this->doc_data['ok'])
-                throw new Exception('Операция не допускается для проведённого документа');
-            else if ($this->doc_data['mark_del'])
-                throw new Exception('Операция не допускается для документа, отмеченного для удаления!');
-            else {
-                $fields = explode(' ', $this->header_fields);
-                $cena_update = false;
-                foreach ($fields as $f) {
-                    if ($f == 'separator')
-                        continue;
-                    if ($f == 'cena') {
-                        $cena_update = true;
-                        $sqlupdate.=", `nds`='$nds'";
-                        $sqlinsert_keys.=", `nds`";
-                        $sqlinsert_value.=", '$nds'";
-                        if ($this->id) {
-                            if ($this->doc_data['nds'] != $nds)
-                                $log_data.="nds: {$this->doc_data['nds']}=>$nds, ";
-                            if ($this->dop_data['cena'] != $cena)
-                                $log_data.="cena: {$this->dop_data['cena']}=>$cena, ";
-                        }
-                    }
-                    else if ($f == 'agent') {
-                        $sqlupdate.=", `$f`='${$f}', `contract`='$contract'";
-                        $sqlinsert_keys.=", `$f`, `contract`";
-                        $sqlinsert_value.=", '${$f}', '$contract'";
-                        if ($this->id) {
-                            if ($this->doc_data[$f] != $$f)
-                                $log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
-                            if ($this->doc_data['contract'] != $contract)
-                                $log_data.="contract: {$this->doc_data['contract']}=>$contract, ";
-                        }
-                    }
-                    else {
-                        $sqlupdate.=", `$f`='${$f}'";
-                        $sqlinsert_keys.=", `$f`";
-                        $sqlinsert_value.=", '${$f}'";
-                        if ($this->id) {
-                            if ($this->doc_data[$f] != $$f)
-                                $log_data.="$f: {$this->doc_data[$f]}=>${$f}, ";
-                        }
-                    }
-                }
-
-                if ($this->id) {
-                    \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                    if($this->doc_data['firm_id']>0) {
-                        \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
-                    }
-                    $res = $db->query("UPDATE `doc_list` SET $sqlupdate WHERE `id`='{$this->id}'");
-                    $link = "/doc.php?doc={$this->id}&mode=body";
-                    if ($log_data)
-                        doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-                }
-                else {
-                    \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
-                    if($this->doc_data['firm_id']>0) {
-                        \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::CREATE);
-                    }
-                    $res = $db->query("INSERT INTO `doc_list` ($sqlinsert_keys) VALUES	($sqlinsert_value)");
-                    $this->id = $db->insert_id;
-                    $link = "/doc.php?doc={$this->id}&mode=body";
-                    doc_log("CREATE {$this->typename}", "$sqlupdate", 'doc', $this->id);
-                }
-
-                if (method_exists($this, 'DopSave')) {
-                    $this->DopSave();
-                }
-                if ($cena_update)
-                    $res = $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ('{$this->id}','cena','$cena')");
-                if ($agent)
-                    $b = agentCalcDebt($agent);
-                else
-                    $b = 0;
-                $tmpl->setContent("{response: 'ok', agent_balance: '$b'}");
+            $this->try_head_save();
+            if ($this->doc_data['agent']) {
+                $b = agentCalcDebt($this->doc_data['agent']);
+            } else {
+                $b = 0;
             }
-        } catch (Exception $e) {
-            $tmpl->setContent("{response: 'err', text: '" . $e->getMessage() . "'}");
+            $json_content = json_encode(['response'=>'ok', 'agent_balance'=>$b], JSON_UNESCAPED_UNICODE);
+            $tmpl->setContent($json_content);
+            
+        } 
+        catch (mysqli_sql_exception $e) {
+            $id = writeLogException($e);
+            $ret_data = array('response' => 'err',
+                    'text' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение передано администратору.");
+            $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
+        } 
+        catch (Exception $e) {
+            $json_content = json_encode(['response'=>'err', 'text'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
+            $tmpl->setContent($json_content);
         }
     }
 
@@ -989,7 +856,7 @@ class doc_Nulltype extends \document {
             $db->rollback();
             if (!$silent) {
                 $tmpl->addContent("<h3>" . $e->getMessage() . "</h3>");
-                doc_log("ERROR APPLY {$this->typename}", $e->getMessage(), 'doc', $this->id);
+                doc_log("ERROR APPLY", $e->getMessage(), 'doc', $this->id);
             }
             $db->query("UNLOCK TABLES");
             return $e->getMessage();
@@ -997,7 +864,7 @@ class doc_Nulltype extends \document {
             $db->rollback();
             if (!$silent) {
                 $tmpl->addContent("<h3>" . $e->getMessage() . "</h3>");
-                doc_log("ERROR APPLY {$this->typename}", $e->getMessage(), 'doc', $this->id);
+                doc_log("ERROR APPLY", $e->getMessage(), 'doc', $this->id);
             }
             $db->query("UNLOCK TABLES");
             return $e->getMessage();
@@ -1005,7 +872,7 @@ class doc_Nulltype extends \document {
 
         $db->commit();
         if (!$silent) {
-            doc_log("APPLY {$this->typename}", '', 'doc', $this->id);
+            doc_log("APPLY", '', 'doc', $this->id);
             $tmpl->addContent("<h3>Докумен успешно проведён!</h3>");
         }
         $db->query("UNLOCK TABLES");
@@ -1083,7 +950,7 @@ class doc_Nulltype extends \document {
         }
 
         $db->commit();
-        doc_log("APPLY {$this->typename}", '', 'doc', $this->id);
+        doc_log("APPLY", '', 'doc', $this->id);
         $db->query("UNLOCK TABLES");
         $data = array(
             'response' => 1,
@@ -1143,7 +1010,7 @@ class doc_Nulltype extends \document {
         } catch (AccessException $e) {
             $db->rollback();
             $db->query("UNLOCK TABLES");
-            doc_log("CANCEL-DENIED {$this->typename}", $e->getMessage(), 'doc', $this->id);
+            doc_log("CANCEL-DENIED", $e->getMessage(), 'doc', $this->id);
             $json = " { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>" . $e->getMessage() . "<br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\">попросить руководителя</a> выполнить отмену этого документа.\" }";
             return $json;
         } catch (Exception $e) {
@@ -1158,7 +1025,7 @@ class doc_Nulltype extends \document {
         }
 
         $db->commit();
-        doc_log("CANCEL {$this->typename}", '', 'doc', $this->id);
+        doc_log("CANCEL", '', 'doc', $this->id);
         $json = ' { "response": "1", "message": "Документ успешно отменен!", "buttons": "' . $this->getApplyButtons() . '", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
         $db->query("UNLOCK TABLES");
         return $json;
@@ -1212,7 +1079,7 @@ class doc_Nulltype extends \document {
 			<a href='/doc.php?mode=forcecancel&amp;opt=yes&amp;doc={$this->id}' style='color: #f00'>Да</a>
 			</center>");
         } else {
-            doc_log("FORCE CANCEL {$this->typename}", '', 'doc', $this->id);
+            doc_log("FORCE CANCEL", '', 'doc', $this->id);
             $db->query("UPDATE `doc_list` SET `ok`='0', `err_flag`='1' WHERE `id`='{$this->id}'");
             $db->query("UPDATE `variables` SET `corrupted`='1'");
             $tmpl->msg("Всё, сделано.", "err", "Снятие отметки проведения");

@@ -113,6 +113,15 @@ try {
         $action->run();
     }
     
+    // Информирование о красных событиях в документах
+    if ($CONFIG['auto']['red_event_doc_notify']) {
+        if ($verbose) {
+            echo "Информирование о красных событиях в документах\n";
+        }
+        $action = new actions\redEventDocNotify($CONFIG, $db);
+        $action->run();
+    }
+    
 } catch (XMPPHP_Exception $e) {
     if ($CONFIG['site']['admin_email']) {
         mailto($CONFIG['site']['admin_email'], "XMPP exception in daily.php", $e->getMessage());

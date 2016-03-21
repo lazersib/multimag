@@ -18,6 +18,6 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /// Обёртка-загрузчик для модуля отправки сообщений
-class Message extends \Modules\Site\News {
+class Message extends \Modules\Site\Message {
 
 }

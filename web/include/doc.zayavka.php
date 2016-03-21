@@ -135,7 +135,8 @@ class doc_Zayavka extends doc_Nulltype {
         global $db;
         if (!\cfg::get('doc', 'notify_sms')) {
             return false;
-        }        
+        } 
+        $smsphone = '';
         if (isset($this->dop_data['buyer_phone'])) {
             if(preg_match('/^\+79\d{9}$/', $this->dop_data['buyer_phone'])) {
                 $smsphone = $this->dop_data['buyer_phone'];
@@ -346,7 +347,7 @@ class doc_Zayavka extends doc_Nulltype {
         $new_data = array(
             'status' => request('status'),
             'delivery' => rcvint('delivery'),
-            'delivery_regions' => rcvint('delivery_regions'),
+            'delivery_region' => rcvint('delivery_region'),
             'delivery_date' => request('delivery_date'),
             'buyer_email' => request('buyer_email'),
             'buyer_phone' => request('buyer_phone')

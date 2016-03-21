@@ -36,7 +36,7 @@ class chPriceNotify extends \Action {
         }
         $this->list_id = md5(microtime()) . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
         $pos_info = array();
-        $start_date = date("Y-m-d H:i:s", time()-60*60*2 );
+        $start_date = date("Y-m-d H:i:s", time()-60*60 );
         $res = $this->db->query("SELECT `id`, `cost` AS `base_price`, `cost_date` AS `price_date`, `name`, `vc`, `group`, `bulkcnt`"
                 . " FROM `doc_base` WHERE `cost_date`>='$start_date'");
         while($line = $res->fetch_assoc()) {

@@ -207,7 +207,7 @@ class doclist extends \Models\ListDataObject {
         $result = array();
         $res = $db->query($sql);
         while ($line = $res->fetch_assoc()) {
-            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id'] ], \acl::VIEW) || !\acl::testAccess('doc.'.$doc_types[$line['type']], \acl::VIEW)) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id'] ], \acl::VIEW) || !\acl::testAccess('doc.'.@$doc_types[$line['type']], \acl::VIEW)) {
                 continue;
             }
 
