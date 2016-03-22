@@ -26,16 +26,17 @@ class baseGSReport extends BaseReport {
         settype($level, 'int');
         $res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `name`");
         $i = 0;
-        $r = '';
+        $r = $cbroot = '';
         if ($level == 0) {
             $r = 'IsRoot';
+            $cbroot = " data-isroot='1'";
         }
         $cnt = $res->num_rows;
         while ($nxt = $res->fetch_row()) {
             if ($nxt[0] == 0) {
                 continue;
             }
-            $item = "<label><input type='checkbox' name='g[]' value='$nxt[0]' id='cb$nxt[0]' class='cb' checked onclick='CheckCheck($nxt[0])'>$nxt[1]</label>";
+            $item = "<label><input type='checkbox' name='g[]'{$cbroot} value='$nxt[0]' id='cb$nxt[0]' class='cb' checked onclick='CheckCheck($nxt[0])'>$nxt[1]</label>";
             if ($i >= ($cnt - 1)) {
                 $r.=" IsLast";
             }
@@ -102,7 +103,15 @@ class baseGSReport extends BaseReport {
                     for(var i=0; i<l; i++)
                     {
                             elems[i].checked=flag;
-                            if(flag)	elems[i].disabled = false;
+                            if(flag) {
+                                elems[i].disabled = false;
+                            }
+                            else {
+                                var isroot = elems[i].getAttribute('data-isroot');
+                                if(!isroot) {
+                                    elems[i].disabled = true;
+                                }
+                            }
                     }
             }
 

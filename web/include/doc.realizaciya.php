@@ -43,7 +43,7 @@ class doc_Realizaciya extends doc_Nulltype {
     protected function getAdditionalButtonsHTML() {
         return "<a href='' onclick=\"ShowPopupWin('/doc.php?mode=srv&amp;opt=dov&amp;doc={$this->id}');"
                 . " return false;\" title='Доверенное лицо'><img src='/img/i_users.png' alt='users'></a>".
-                "<a href='' onclick=\"addShipDataDialog(event, '{$this->id}'); "
+                "<a href='' onclick=\"deliveryMenu(event, '{$this->id}'); "
                 . " return false;\" title='Пометить отправленным'><img src='/img/i_ship.png' alt='users'></a>";
     }
 
@@ -540,70 +540,21 @@ class doc_Realizaciya extends doc_Nulltype {
         }
     }
 
-    function Service() {
-        global $tmpl, $db;
-
-        $tmpl->ajax = 1;
-        $opt = request('opt');
-        $pos = request('pos');
-
-        if ($opt == 'ship_info') {
-            $tmpl->ajax = true;
-            $ret = array(
-                'response' => 'ship_info',
-                'status' => 'ok',
-                'name' => $this->dop_data['cc_name'],
-                'num' => $this->dop_data['cc_num'],
-                'price' => $this->dop_data['cc_price'],
-                'date' => $this->dop_data['cc_date'],
-                'volume' => $this->dop_data['cc_volume'],
-                'mass' => $this->dop_data['cc_mass'],
-            );
-            $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+    protected function getDovForm() {
+        global $db;
+        $info = $db->selectRowA('doc_agent_dov', $this->dop_data['dov_agent'], array('name', 'surname'));
+        $agn = '';
+        if ($info['name']) {
+            $agn = $info['name'];
         }
-        elseif($opt=='ship_enter') {
-            $cc_info = array(
-                'cc_name' => request('cc_name'),
-                'cc_num' => request('cc_num'),
-                'cc_date' => rcvdate('cc_date'),
-                'cc_price' => rcvrounded('cc_price', 2),
-                'status' => 'shipped'
-            );
-            $this->setDopDataA($cc_info);
-            
-            $this->sentZEvent('shipped');
-            $ret = array(
-                'response' => 'ship_enter',
-                'status' => 'ok',
-            );
-            $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
-        }
-        elseif($opt=='ship_manual') {
-            $this->setDopData('status', 'shipped');
-            $this->sentZEvent('shipped');
-            $ret = array(
-                'response' => 'ship_manual',
-                'status' => 'ok',
-            );
-            $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
-        }
-        elseif (parent::_Service($opt, $pos)) {
-            
-        } 
-        elseif ($opt == 'dov') {
-            $info = $db->selectRowA('doc_agent_dov', $this->dop_data['dov_agent'], array('name', 'surname'));
-            $agn = '';
-            if ($info['name']) {
-                $agn = $info['name'];
+        if ($info['surname']) {
+            if ($agn) {
+                $agn.=' ';
             }
-            if ($info['surname']) {
-                if ($agn) {
-                    $agn.=' ';
-                }
-                $agn.=$info['surname'];
-            }
+            $agn.=$info['surname'];
+        }
 
-            $tmpl->addContent("<form method='post' action=''>
+        return "<form method='post' action=''>
 <input type=hidden name='mode' value='srv'>
 <input type=hidden name='opt' value='dovs'>
 <input type=hidden name='doc' value='{$this->id}'>
@@ -623,18 +574,81 @@ class doc_Realizaciya extends doc_Nulltype {
 </p>
 
 </table>
-<input type=submit value='Сохранить'></form>");
-        }
-        else if ($opt == "dovs") {
-            \acl::accessGuard('doc.'.$this->typename, \acl::UPDATE);
-            $this->setDopData('dov', request('dov'));
-            $this->setDopData('dov_agent', request('dov_agent'));
-            $this->setDopData('dov_data', request('dov_data'));
-            $ref = "Location: doc.php?mode=body&doc={$this->id}";
-            header($ref);
-            doc_log("UPDATE", "dov:" . request('dov') . ", dov_agent:" . request('dov_agent') . ", dov_data:" . request('dov_data'), 'doc', $this->id);
-        } else
-            $tmpl->msg("Неизвестная опция $opt!");
+<input type=submit value='Сохранить'></form>";
     }
+    
+    public function Service() {
+        global $tmpl;
 
+        $tmpl->ajax = 1;
+        $opt = request('opt');
+        $pos = request('pos');
+        
+        switch($opt) {
+            case 'selfship':
+                \acl::accessGuard('doc.'.$this->typename, \acl::UPDATE);
+                $this->setDopData('status', 'shipped');            
+                $this->sentZEvent('selfship');
+                $ret = array(
+                    'response' => 'selfship ',
+                    'status' => 'ok',
+                );
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return true;
+            case 'ship_info':
+                \acl::accessGuard('doc.'.$this->typename, \acl::VIEW);
+                $tmpl->ajax = true;
+                $ret = array(
+                    'response' => 'ship_info',
+                    'status' => 'ok',
+                    'name' => $this->dop_data['cc_name'],
+                    'num' => $this->dop_data['cc_num'],
+                    'price' => $this->dop_data['cc_price'],
+                    'date' => $this->dop_data['cc_date'],
+                    'volume' => $this->dop_data['cc_volume'],
+                    'mass' => $this->dop_data['cc_mass'],
+                );
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return true;
+            case 'ship_enter':
+                \acl::accessGuard('doc.'.$this->typename, \acl::UPDATE);
+                $cc_info = array(
+                    'cc_name' => request('cc_name'),
+                    'cc_num' => request('cc_num'),
+                    'cc_date' => rcvdate('cc_date'),
+                    'cc_price' => rcvrounded('cc_price', 2),
+                    'status' => 'shipped'
+                );
+                $this->setDopDataA($cc_info);
+                $this->sentZEvent('shipped');
+                $ret = array(
+                    'response' => 'ship_enter',
+                    'status' => 'ok',
+                );
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return true;
+        }
+        
+        if (parent::_Service($opt, $pos)) {
+            return true;
+        } 
+        
+        switch($opt) {
+            case 'dov':
+                $tmpl->setContent( $this->getDovForm() );
+                return true;
+            case 'dovs':
+                \acl::accessGuard('doc.'.$this->typename, \acl::UPDATE);
+                $data = array(
+                    'dov' => request('dov'),
+                    'dov_agent' => request('dov_agent'),
+                    'dov_data' => request('dov_data'),
+                );
+                $this->setDopDataA($data);
+                redirect("/doc.php?mode=body&doc={$this->id}");
+                return true;
+            default:
+                throw new \NotFoundException("Неизвестная опция $opt!");
+        }
+    }
 }

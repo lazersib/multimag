@@ -849,6 +849,41 @@ function addNomMenu(event, doc, pdoc_id) {
     return false;
 }
 
+function deliveryMenu(event, doc) {
+    var menu=CreateContextMenu(event);
+    menu.innerHTML = '';
+    var elem = document.createElement('div');
+    elem.innerHTML = 'Отправка';
+    elem.onclick = pickItemShipment;
+    menu.appendChild(elem);
+    elem = document.createElement('div');
+    elem.innerHTML = 'Отгрузка самовывозом';
+    elem.onclick = pickItemSelf;
+    menu.appendChild(elem);
+    
+    function pickItemShipment(event) {
+        menu.parentNode.removeChild(menu);
+        addShipDataDialog(event, doc);
+    }
+
+    function pickItemSelf(event) {
+        $.ajax({
+            type: 'POST',
+            url: '/doc.php',
+            data: 'mode=srv&doc=' + doc + '&opt=selfship',
+            success: function (msg) {
+                docScriptsServerDataReceiver(msg, menu);
+            },
+            error: function () {
+                jAlert('Ошибка соединения!', 'Сохранение', null, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            }
+        });
+        menu.innerHTML = '<img src="/img/icon_load.gif" alt="Сохранение">Сохранение...';
+    }
+    return false;
+}
+
 function addShipDataDialog(event, doc) {
     var menu = CreateContextMenu(event);
     var cc_name = document.getElementById('cc_name');
@@ -930,12 +965,7 @@ function addShipDataDialog(event, doc) {
             }
         });
     }
-    
-    function selectNum(event) {
-        var odoc_num_field = document.getElementById('doc_num_field');
-        odoc_num_field.value = event.target.doc_id;
-    }
-
+  
     function rcvDataSuccess(msg) {
         try {
             var json = JSON.parse(msg);
@@ -1091,6 +1121,9 @@ function docScriptsServerDataReceiver(msg, menu) {
                 case 'send_petition':
                     jAlert('Ваше сообщение успешно отправлено!<br>'+json.message, "Выполнено", {});
                     break;
+                case 'selfship':
+                    jAlert(json.message, "Выполнено", {});
+                    break;
                 default:
                     jAlert("Обработка полученного сообщения не реализована на стороне броузера!<br>"
                         + "Рекомендуется сообщить о проблеме администратору!<br>"
@@ -1103,7 +1136,6 @@ function docScriptsServerDataReceiver(msg, menu) {
         menu.parentNode.removeChild(menu);
     }
     catch (e) {
-        alert(msg);
         jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
                 "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Ошибка", null, 'icon_err');
         menu.parentNode.removeChild(menu);

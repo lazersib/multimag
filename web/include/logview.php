@@ -75,6 +75,14 @@ class LogView {
         else return $pos_id;        
     }
     
+    protected function getContractLink($doc_id) {
+        settype($doc_id, 'int');  
+        if($doc_id>0) {
+            return "<a href='/doc.php?mode=body&amp;doc={$doc_id}'>{$doc_id}</a>";
+        }
+        return $doc_id;
+    }
+    
     protected function getStoreLink($store_id) {
         settype($store_id, 'int');
         if(!is_array($this->stores)) {
@@ -155,6 +163,18 @@ class LogView {
             'cena'=>'Цена',
             'contract'=>'Договор',
             'delivery_region'=>'Регион доставки',
+            'dov'=>'Доверенность',
+            'dov_data'=>'Дата доверенности',
+            'dov_agent'=>'Доверенное лицо',
+            'mest'=>'Кол-во мест',
+            'cc_name'=>'Трансп.компания',
+            'cc_num'=>'Номер трансп.накладной',
+            'cc_date'=>'Дата отправки',
+            'cc_price'=>'Стоимость доставки',
+            'status'=>'Статус', 
+            'platelshik'=>'Плательщик',
+            'gruzop'=>'Грузополучатель',
+            'kladovshik'=>'Кладовщик',
         );   
         if(isset($names[$name])) {
             return $names[$name];
@@ -212,7 +232,14 @@ class LogView {
                             switch($name) {
                                 case 'cena':
                                 case 'contract':
-                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.html_out($value);
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getContractLink($value);
+                                    break;
+                                case 'platelshik':
+                                case 'gruzop':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getAgentLink($value);
+                                    break;
+                                case 'kladovshik':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getUserLink($value);
                                     break;
                                 default:
                                     $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value);
@@ -276,6 +303,7 @@ class LogView {
                 }
                 if(isset($json_data['dop_data'])) {
                     if(count($json_data['dop_data'])) {
+                        $desc .= '<hr>';
                         foreach($json_data['dop_data'] as $name=>$value) {
                             if($desc) {
                                 $desc .= ', ';
@@ -283,7 +311,17 @@ class LogView {
                             switch($name) {
                                 case 'cena':
                                 case 'contract':
-                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                        .$this->getContractLink($value['old']).'=&gt;'.$this->getContractLink($value['new']);
+                                    break;
+                                case 'platelshik':
+                                case 'gruzop':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                        .$this->getAgentLink($value['old']).'=&gt;'.$this->getAgentLink($value['new']);
+                                    break;
+                                case 'kladovshik':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                        .$this->getUserLink($value['old']).'=&gt;'.$this->getUserLink($value['new']);
                                     break;
                                 default:
                                     $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);

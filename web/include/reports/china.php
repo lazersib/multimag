@@ -24,29 +24,6 @@ class Report_China extends BaseGSReport {
     var $w_docs = 0; // Отображать документы
     var $div_dt = 0; // Разделить приходы и расходы
 
-    function GroupSelBlock() {
-        global $tmpl;
-        $tmpl->addStyle("		
-            div#sb {display:none;border:1px solid #888;max-height:250px;overflow:auto;}
-            .selmenu {background-color:	#888;width:auto;font-weight:bold;padding-left:20px;}
-            .selmenu a{color:#fff;cursor:pointer;}
-            .cb{width:14px;height:14px;border:1px solid #ccc;}");
-        $tmpl->addContent("<script type='text/javascript'>
-            function SelAll(flag) {
-                var elems = document.getElementsByName('g[]');var l = elems.length;
-                for(var i=0; i<l; i++){elems[i].checked=flag;if(flag){elems[i].disabled = false;}}
-            }		
-            function CheckCheck(ids) {
-                var cb = document.getElementById('cb'+ids);var cont=document.getElementById('cont'+ids);if(!cont)	return;
-                var elems=cont.getElementsByTagName('input');var l = elems.length;
-                for(var i=0; i<l; i++){if(!cb.checked){elems[i].checked=false;}elems[i].disabled=!cb.checked;}
-            }		
-            </script>
-            <div class='groups_block' id='sb'><ul class='Container'>
-            <div class='selmenu'><a onclick='SelAll(true)'>Выбрать всё<a> | <a onclick='SelAll(false)'>Снять всё</a></div>
-            " . $this->draw_groups_tree(0) . "</ul></div>");
-    }
-
     function getName($short = 0) {
         if ($short) {
             return "Китайский";
@@ -74,6 +51,12 @@ class Report_China extends BaseGSReport {
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
         }
         $tmpl->addContent("</select></fieldset><br>
+            <fieldset><legend>Ограничения по величине продаж</legend>
+            не менее:<br>
+            <input type='text' name='pc_min' value='0'><br>
+            не более:<br>
+            <input type='text' name='pc_max' value='100'><br>
+            </fieldset>
             <fieldset><legend>Сортировать по:</legend>
             <select name='order'>
             <option value='vc_up'>Коду товара: по возрастанию</option>
@@ -82,9 +65,9 @@ class Report_China extends BaseGSReport {
             <option value='s_down'>По величине продаж: по убыванию</option>
             <option value='pc_up'>По кодовому названию поставщика: по возрастанию</option>
             <option value='pc_down'>По кодовому названию поставщика: по убыванию</option>
-            </select>");
+            </select></fieldset>");
         $this->GroupSelBlock();
-        $tmpl->addContent("
+        $tmpl->addContent("            
             <div id='pos_sel' style='display: none;'>
             <input type='hidden' name='pos_id' id='pos_id' value=''>
             <input type='text' id='posit' style='width: 400px;' value=''>
@@ -94,7 +77,7 @@ class Report_China extends BaseGSReport {
             <input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
             </div>
 
-            </fieldset>
+            
             Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
             <button type='submit'>Сформировать отчёт</button>
             </form>
@@ -156,6 +139,8 @@ class Report_China extends BaseGSReport {
     private function processGroup($group_id) {
         global $db;
         settype($group_id, 'int');
+        $pc_min = rcvint('pc_min');
+        $pc_max = rcvint('pc_max');
         $db->query("TRUNCATE TABLE `temp_table`");
         $sql_fields = "`doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`"
                 . ", `doc_base`.`cost` AS `base_price`, `vals`.`value` AS `provider_code`, `cnvals`.`value` AS `provider_codename`";
@@ -187,6 +172,9 @@ class Report_China extends BaseGSReport {
             else {
                 $pp = '0.00';
             }
+            if($pp<$pc_min || $pp>$pc_max) {
+                continue;
+            }
             $this->tableRow(
                 array(
                     $pos_info['id'], $pos_info['vc'], $pos_info['name'], $pos_info['provider_codename'], $pos_info['provider_code'],
@@ -200,8 +188,15 @@ class Report_China extends BaseGSReport {
     function walkGroup($pgroup_id=0) {
         global $db;
         settype($pgroup_id, 'int');
+        $gs = rcvint('gs');
+        $g = request('g', array());
         $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`=$pgroup_id ORDER BY `id`");
-        while ($group_line = $res_group->fetch_assoc()) {   
+        while ($group_line = $res_group->fetch_assoc()) {  
+            if($gs) {
+                if(!in_array($group_line['id'], $g)) {
+                    continue;
+                }
+            }
             $this->tableAltStyle();
             $this->tableSpannedRow(array($this->col_cnt), array($group_line['id'] . '. ' . $group_line['name']));
             $this->tableAltStyle(false);

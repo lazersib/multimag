@@ -21,7 +21,7 @@
 class Report_Cons extends BaseReport {
     function getName($short = 0) {
         if ($short) {
-            return "Сводный отчёт";
+            return "Сводный";
         } else {
             return "Сводный отчет";
         }
@@ -35,24 +35,32 @@ class Report_Cons extends BaseReport {
             <form action='' method='post'>
             <input type='hidden' name='mode' value='cons'>
             <input type='hidden' name='opt' value='make'>
-            <p class='datetime'>
-            Дата от:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_st' size='10' value='$date_st' maxlength='10' /><br>
-            до:<input type='text' id='id_pub_date_date' class='vDateField required' name='date_end' size='10' value='$date_end' maxlength='10' />
-            </p><button type='submit'>Создать отчет</button></form>");
+            <fieldset><legend>Дата</legend>
+            от:<input type='text' id='dt_f' name='date_st' size='10' value='$date_st' maxlength='10' /><br>
+            до:<input type='text' id='dt_t' name='date_end' size='10' value='$date_end' maxlength='10' />
+            </fieldset>
+            <fieldset><legend>Организация</legend>");
+            $firm_ldo = new \Models\LDO\firmnames();
+            $firm_names = $firm_ldo->getData();
+            foreach($firm_names as $firm_id => $firm_name) {
+                if(\acl::testAccess([ 'firm.global', 'firm.'.$firm_id], \acl::VIEW)) {
+                    $tmpl->addContent("<label><input type='checkbox' name='firms[]' value='$firm_id' checked>{$firm_id}: ".html_out($firm_name)."</label><br>");
+                }
+            }
+        $tmpl->addContent("</fieldset>            
+            <button type='submit'>Создать отчет</button></form>
+            
+            <script type=\"text/javascript\">
+            function dtinit(){initCalendar('dt_f',false);initCalendar('dt_t',false);}
+            addEventListener('load',dtinit,false);
+            </script>");
     }
 
-    function generateNomsData($date_start, $date_end) {
+    function generateNomsData($date_start, $date_end, $firms) {
         global $db;
-        $date_st = strtotime( rcvdate('date_st'));
-        $date_end = strtotime( rcvdate('date_end'))+60*60*24-1;
         if (!$date_end) {
             $date_end = time();
-        }
-        $in_st = array();
-        $out_st = array();
-        $in_ag = array();
-        $out_ag = array();
-        
+        }     
         $agents_info = array('in'=>array(), 'out'=>array());
         $doc_info = array();
         
@@ -60,9 +68,12 @@ class Report_Cons extends BaseReport {
                 `doc_list`.`firm_id`, `doc_list`.`agent`, `doc_dopdata`.`value` AS `return`
             FROM `doc_list`
             LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'
-            WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_st' AND `doc_list`.`date`<='$date_end'");
+            WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_start' AND `doc_list`.`date`<='$date_end'");
         while($line = $res->fetch_assoc()) {
             if(!\acl::testAccess([ 'firm.global', 'firm.'.$line['firm_id']], \acl::VIEW)) {
+                continue;
+            }
+            if(!in_array($line['firm_id'], $firms)) {
                 continue;
             }
             $f = $line['firm_id'];
@@ -108,10 +119,8 @@ class Report_Cons extends BaseReport {
         );
     }
     
-    function generateFinanceData() {
+    function generateFinanceData($date_st, $date_end, $firms) {
         global $db;
-        $date_st = strtotime(rcvdate('date_st'));
-        $date_end = strtotime(rcvdate('date_end')) + 60 * 60 * 24 - 1;
         if (!$date_end) {
             $date_end = time();
         }
@@ -147,6 +156,9 @@ class Report_Cons extends BaseReport {
             WHERE `doc_list`.`ok`!='0' AND `doc_list`.`date`>='$date_st' AND `doc_list`.`date`<='$date_end'");
         while ($nxt = $doc_res->fetch_assoc()) {
             if(!\acl::testAccess([ 'firm.global', 'firm.'.$nxt['firm_id']], \acl::VIEW)) {
+                continue;
+            }
+            if(!in_array($nxt['firm_id'], $firms)) {
                 continue;
             }
             if(!$nxt['in_type']) {
@@ -259,11 +271,17 @@ class Report_Cons extends BaseReport {
         require('fpdf/fpdf_mc.php');
         $date_st = strtotime(rcvdate('date_st'));
         $date_end = strtotime(rcvdate('date_end')) + 60 * 60 * 24 - 1;
+        $firms = request('firms', array());
+        if(!is_array($firms)) {
+            throw new \Exception('Параметр со списком фирм принят неверно');
+        }
         if (!$date_end) {
             $date_end = time();
         }
-
-        $data = $this->generateNomsData($date_st, $date_end);
+        $firm_ldo = new \Models\LDO\firmnames();
+        $firm_names = $firm_ldo->getData();
+                
+        $data = $this->generateNomsData($date_st, $date_end, $firms);
 
         $pdf = new PDF_MC_Table('P');
         $pdf->Open();
@@ -282,7 +300,16 @@ class Report_Cons extends BaseReport {
         $text = "c $date_st_print по $date_end_print";
         $pdf->SetFontSize(14);
         $pdf->CellIconv(0, 7, $text, 0, 1, 'C');
-
+        
+        $firm_str = 'Организации: ';
+        foreach ($firm_names as $firm_id => $firm_name) {
+            if(in_array($firm_id, $firms)) {
+                $firm_str .= $firm_name . ', ';
+            }
+        }
+        $pdf->SetFontSize(10);
+        $pdf->MultiCellIconv(0, 4, $firm_str, 0, 'L');
+        
         $pdf->SetFontSize(12);
         $pdf->CellIconv(0, 7, 'Товарная сводка', 0, 1, 'L');
 
@@ -302,9 +329,7 @@ class Report_Cons extends BaseReport {
         $pdf->SetFontSize(8);
         $pdf->SetLineWidth(0.2);
         $pdf->SetAligns($tbody_aligns);
-
-        $firm_ldo = new \Models\LDO\firmnames();
-        $firm_names = $firm_ldo->getData();
+        
         $c = 1;
         $all_sums = array('in' => 0, 'out' => 0, 'in_ret' => 0, 'out_ret' => 0, 'out_bonus' => 0);
         foreach ($data['docs'] as $firm_id => $ds_info) {
@@ -348,7 +373,7 @@ class Report_Cons extends BaseReport {
         $pdf->SetFillColor(255);
         $pdf->ln();
 
-        $agent_limit = 10;
+        $agent_limit = floor(($pdf->h-$pdf->GetY()-$pdf->bMargin-40)/8);
         // ====================================================================================
         $pdf->SetFontSize(12);
         $pdf->CellIconv(0, 7, $agent_limit.' крупнейших покупателей (в т.ч. бонусы)', 0, 1, 'L');
@@ -371,7 +396,7 @@ class Report_Cons extends BaseReport {
         $c = 1;
         foreach ($agents as $id => $val) {
             $val_p = number_format($val, 2, '.', ' ');
-            $row = array($c, $agent_names[$id], $val_p, round($val / $sum * 100, 2));
+            $row = array($c, $agent_names[$id], $val_p, sprintf("%0.2f", $val / $sum * 100));
             $pdf->RowIconv($row);
             $c++;
             if ($c > $agent_limit) {
@@ -402,7 +427,7 @@ class Report_Cons extends BaseReport {
         $c = 1;
         foreach ($agents as $id => $val) {
             $val_p = number_format($val, 2, '.', ' ');
-            $row = array($c, $agent_names[$id], $val_p, round($val / $sum * 100, 2));
+            $row = array($c, $agent_names[$id], $val_p, sprintf("%0.2f", $val / $sum * 100));
             $pdf->RowIconv($row);
             $c++;
             if ($c > $agent_limit) {
@@ -414,7 +439,7 @@ class Report_Cons extends BaseReport {
         $pdf->SetFontSize(12);
         $pdf->CellIconv(0, 7, 'Финансовая сводка', 0, 1, 'L');
         
-        $fin_info = $this->generateFinanceData($date_st, $date_end);
+        $fin_info = $this->generateFinanceData($date_st, $date_end, $firms);
         
         $th_widths = array(10, 93, 30, 35, 30);
         $th_texts = array('N', 'Вид', 'Нал. средства', 'Безнал. средства', 'Сумма');
@@ -425,6 +450,9 @@ class Report_Cons extends BaseReport {
         $this->addBlackLine($pdf, 'Доходы');
         $bank_sum = $cash_sum = 0;
         foreach($fin_info['in_data'] as $id=>$line) {
+            if($line['cash']==0 && $line['bank']==0) {
+                continue;
+            }
             $cash_p = number_format($line['cash'], 2, '.', ' ');
             $bank_p = number_format($line['bank'], 2, '.', ' ');
             $sum_p = number_format($line['cash']+$line['bank'], 2, '.', ' ');
@@ -442,6 +470,9 @@ class Report_Cons extends BaseReport {
         $this->addBlackLine($pdf, 'Расходы');
         $bank_sum = $cash_sum = 0;
         foreach($fin_info['out_data'] as $id=>$line) {
+            if($line['cash']==0 && $line['bank']==0) {
+                continue;
+            }
             $cash_p = number_format($line['cash'], 2, '.', ' ');
             $bank_p = number_format($line['bank'], 2, '.', ' ');
             $sum_p = number_format($line['cash']+$line['bank'], 2, '.', ' ');
@@ -470,7 +501,7 @@ class Report_Cons extends BaseReport {
         $sum_p = number_format($fin_info['summary']['adm_out'], 2, '.', ' ');
         $row = array('', 'Административные затраты:', '', '', $sum_p);
         $pdf->RowIconv($row);
-        $row = array('', 'В процентах от дохода:', '', '', $adm_proc_prn);
+        $row = array('', 'В процентах от доходов:', '', '', $adm_proc_prn);
         $pdf->RowIconv($row);
         $row = array('', 'В процентах от расходов:', '', '', $adm_proc_r_prn);
         $pdf->RowIconv($row);
