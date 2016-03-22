@@ -149,10 +149,10 @@ class doc_s_Sklad {
     function Service() {
         global $tmpl, $CONFIG, $db;
         $opt = request("opt");
-        $g = rcvint('g');
         if ($opt == 'pl') {
             $s = request('s');
             $tmpl->ajax = 1;
+            $g = rcvint('g');
             $s ? $this->ViewSkladS($s) : $this->ViewSklad($g);
         }
         else if ($opt == 'ep') {

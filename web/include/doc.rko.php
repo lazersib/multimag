@@ -95,7 +95,7 @@ class doc_Rko extends doc_Nulltype {
             throw new Exception('Нельзя провести документ с нулевой или отрицательной суммой!');
         }
         $this->checkIfTypeForDocumentExists();
-
+        
         // Запрет для другой фирмы
         if ($doc_params['kassa_firm_id'] != null && $doc_params['kassa_firm_id'] != $doc_params['firm_id']) {
             throw new Exception("Выбранная касса относится другой организации!");

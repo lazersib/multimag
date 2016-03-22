@@ -37,18 +37,26 @@
 /// Автозагрузка классов для ядра
 function core_autoload($class_name){
     global $CONFIG;
-    $class_name = strtolower($class_name);
-    $class_name = str_replace('\\', '/', $class_name);
+    $lower_class_name = strtolower($class_name);
+    $lower_class_name = str_replace('\\', '/', $lower_class_name);
     if($CONFIG['site']['skin']) {
-        $fname = $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/include/'.$class_name.'.php';
-        if(file_exists($fname)) {
+        $fname = $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/include/'.$lower_class_name.'.php';
+        if(is_readable($fname)) {
             include_once $fname;
             return;
         }
     }
-    $fname = $CONFIG['site']['location'].'/include/'.$class_name.'.php';
-    if(file_exists($fname)) {
+    $fname = $CONFIG['site']['location'].'/include/'.$lower_class_name.'.php';
+    if(is_readable($fname)) {
         include_once $fname;
+        return;
+    }
+    $filename = dirname(__DIR__)
+        .DIRECTORY_SEPARATOR
+        .str_replace('\\', DIRECTORY_SEPARATOR, $class_name)
+        .'.php';
+    if(is_readable($filename)) {
+        include_once $filename;
         return;
     }
 }
