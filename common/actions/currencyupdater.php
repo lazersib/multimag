@@ -1,4 +1,5 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
 //	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
@@ -16,46 +17,66 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-namespace Actions;
+
+namespace actions;
 
 /// Загрузка и обновление курсов валют
-class CurrencyUpdater extends \Action {
-	
-	/// @brief Запустить
-	public function run() {
-		// REPLACE не используется, чтобы не менялись ID
-		$res = $this->db->query("SELECT `id`, `name`, `coeff` FROM `currency` WHERE `name`='RUB'");
-		if(!$res->num_rows) {
-			$this->db->query("INSERT INTO `currency` (`name`, `coeff`) VALUES ('RUB', 1)");
-		}
-		else	$this->db->query("UPDATE `currency` SET `coeff`=1 WHERE `name`='RUB'");
-		
-		$data = file_get_contents("http://www.cbr.ru/scripts/XML_daily.asp");
-		$doc = new \DOMDocument('1.0');
-		$doc->loadXML($data);
-		$doc->normalizeDocument();
-		$valutes = $doc->getElementsByTagName('Valute');
-		foreach($valutes as $valute) {
-			$name = $value = 0;
-			foreach ($valute->childNodes as $val) {
-				switch ($val->nodeName) {
-					case 'CharCode':
-						$name = $val->nodeValue;
-						break;
-					case 'Value':
-						$value = $val->nodeValue;
-						break;
-				}
-			}
-			$name_sql = $this->db->real_escape_string($name);
-			$value = round(str_replace(',', '.', $value), 4);
-			
-			// REPLACE не используется, чтобы не менялись ID
-			$res = $this->db->query("SELECT `id`, `name`, `coeff` FROM `currency` WHERE `name`='$name_sql'");
-			if(!$res->num_rows) {
-				$this->db->query("INSERT INTO `currency` (`name`, `coeff`) VALUES ('$name_sql', '$value')");
-			}
-			else	$this->db->query("UPDATE `currency` SET `coeff`='$value' WHERE `name`='$name_sql'");
-		}
-	}
+class currencyUpdater extends \Action {
+
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
+    }
+
+    /// Получить название действия
+    public function getName() {
+        return "Загрузка и обновление курсов валют";
+    }
+
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'update_currency');
+    }
+
+    /// @brief Запустить
+    public function run() {
+        // REPLACE не используется, чтобы не менялись ID
+        $res = $this->db->query("SELECT `id`, `name`, `coeff` FROM `currency` WHERE `name`='RUB'");
+        if (!$res->num_rows) {
+            $this->db->query("INSERT INTO `currency` (`name`, `coeff`) VALUES ('RUB', 1)");
+        } else {
+            $this->db->query("UPDATE `currency` SET `coeff`=1 WHERE `name`='RUB'");
+        }
+
+        $data = file_get_contents("http://www.cbr.ru/scripts/XML_daily.asp");
+        $doc = new \DOMDocument('1.0');
+        $doc->loadXML($data);
+        $doc->normalizeDocument();
+        $valutes = $doc->getElementsByTagName('Valute');
+        foreach ($valutes as $valute) {
+            $name = $value = 0;
+            foreach ($valute->childNodes as $val) {
+                switch ($val->nodeName) {
+                    case 'CharCode':
+                        $name = $val->nodeValue;
+                        break;
+                    case 'Value':
+                        $value = $val->nodeValue;
+                        break;
+                }
+            }
+            $name_sql = $this->db->real_escape_string($name);
+            $value = round(str_replace(',', '.', $value), 4);
+
+            // REPLACE не используется, чтобы не менялись ID
+            $res = $this->db->query("SELECT `id`, `name`, `coeff` FROM `currency` WHERE `name`='$name_sql'");
+            if (!$res->num_rows) {
+                $this->db->query("INSERT INTO `currency` (`name`, `coeff`) VALUES ('$name_sql', '$value')");
+            } else {
+                $this->db->query("UPDATE `currency` SET `coeff`='$value' WHERE `name`='$name_sql'");
+            }
+        }
+    }
+
 }

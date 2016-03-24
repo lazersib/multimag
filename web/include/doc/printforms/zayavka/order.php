@@ -18,7 +18,7 @@
 //
 namespace doc\printforms\zayavka; 
 
-class invoice extends \doc\printforms\iPrintFormPdf {
+class order extends \doc\printforms\iPrintFormPdf {
  
     public function getName() {
         return "Заказ";

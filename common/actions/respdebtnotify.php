@@ -18,13 +18,29 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-namespace Actions;
+namespace actions;
 
 require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
 
 /// Информирование ответственных сотрудников о задолженностях его агентов при помощи email и jabber
-class RespDebtNotify extends \Action {
+class respDebtNotify extends \Action {
 
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
+    }
+
+    /// Получить название действия
+    public function getName() {
+        return "Информирование ответственных сотрудников о задолженностях его агентов";
+    }    
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'resp_debt_notify');
+    }
+    
     /// @brief Запустить
     public function run() {
         $mail_text = array();
@@ -50,9 +66,9 @@ class RespDebtNotify extends \Action {
         }
         $res_agents->free();
 
-        if ($this->config['xmpp']['host']) {
-            $xmppclient = new \XMPPHP_XMPP($this->config['xmpp']['host'], $this->config['xmpp']['port'], $this->config['xmpp']['login'], 
-                $this->config['xmpp']['pass'], 'MultiMag_' . get_class($this));
+        if (\cfg::get('xmpp', 'host')) {
+            $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
+                , 'MultiMag r' . MULTIMAG_REV .','. get_class($this));
         }
         $xmpp_connected = 0;
 
@@ -93,7 +109,7 @@ class RespDebtNotify extends \Action {
             } else if ($nxt['jid']) {
                 $jid = $nxt['jid'];
             }
-            if ($jid && $this->config['xmpp']['host']) {
+            if ($jid && \cfg::get('xmpp', 'host')) {
                 if (!$xmpp_connected) {
                     $xmppclient->connect();
                     $xmppclient->processUntil('session_start');

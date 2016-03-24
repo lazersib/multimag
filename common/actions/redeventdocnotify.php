@@ -26,7 +26,21 @@ require_once($CONFIG['location'] . '/web/include/doc.core.php');
 /// Информирование о красных событиях в документах при помощи email
 class redEventDocNotify extends \Action {
     
-    var $period = 'daily';
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
+    }
+
+    /// Получить название действия
+    public function getName() {
+        return "Информирование о красных событиях в документах";
+    }    
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'red_event_doc_notify');
+    }
         
     /// @brief Запустить
     public function run() {
@@ -55,9 +69,10 @@ class redEventDocNotify extends \Action {
                 if($start_date_ut > strtotime($line['time'])) {
                     continue;
                 }
-                if($line['motion']!='UPDATE') {
+                if($line['motion']!='UPDATE' && $line['motion']!='APPLY') {
                     continue;
                 }
+                $d_flag = true;
                 $desc_obj = json_decode($line['desc'],true);
                 if(!$desc_obj) {
                     continue;
@@ -68,13 +83,13 @@ class redEventDocNotify extends \Action {
                 }                
             }
             $str = '';
-            if(date('Y-m-d', $line_dl['ok'])!=date('Y-m-d', strtotime($line_dl['date']))) {
-                $str.= " - проведён не текущей датой\n";
+            if(date('Y-m-d', $line_dl['ok'])!=date('Y-m-d', $line_dl['date'])) {
+                $str.= " - от ".date('Y-m-d', $line_dl['date'])." проведён не текущей датой (".date('Y-m-d', $line_dl['ok']).")\n";
             }
             if($as_flag) {
                 $str.= " - изменён агент или сумма\n";
             }
-            if($str) {
+            if($str && $d_flag) {
                 $message .= "Красное событие в документе:{$line_dl['id']}\n".$str."\n";
             }
         }
@@ -89,19 +104,15 @@ class redEventDocNotify extends \Action {
         }
     }
     
-    function sendMessage($text, $email) {
-        global $CONFIG;
-        $pc = \PriceCalc::getInstance();
-        $default_price_name = $pc->getDefaultPriceName();
-        
+    function sendMessage($text, $email) {        
         $mail_text = "В некоторых документах найдены красные события:\n\n" . $text;
         
         $email_message = new \email_message_class();
         $email_message->default_charset = "UTF-8";
         $email_message->SetEncodedEmailHeader("To", $email, $email);
-        $email_message->SetEncodedHeader("Subject", 'Уведомление о красных событиях в документах - ' . $this->config['site']['name']);
-        $email_message->SetEncodedEmailHeader("From", $this->config['site']['admin_email'], $this->config['site']['display_name']);
-        $email_message->SetHeader("Sender", $this->config['site']['admin_email']);
+        $email_message->SetEncodedHeader("Subject", 'Уведомление о красных событиях в документах - ' . \cfg::get('site', 'name'));
+        $email_message->SetEncodedEmailHeader("From", \cfg::get('site', 'admin_email'), \cfg::get('site', 'display_name'));
+        $email_message->SetHeader("Sender", \cfg::get('site', 'admin_email'));
         $email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
 
         $email_message->AddQuotedPrintableTextPart($mail_text);

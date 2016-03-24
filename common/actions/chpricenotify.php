@@ -26,15 +26,31 @@ require_once($CONFIG['location'] . '/web/include/doc.core.php');
 /// Информирование об изменённых ценах наименований при помощи email
 class chPriceNotify extends \Action {
     
-    var $period = 'hourly';
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::HOURLY;
+    }
+
+    /// Получить название действия
+    public function getName() {
+        return "Информирование об изменённых ценах наименований";
+    }    
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'chpricenotify') && (
+            \cfg::get('chpricenotify', 'notify_workers') ||
+            \cfg::get('chpricenotify', 'notify_clients') ||
+            \cfg::get('chpricenotify', 'notify_address')
+        );
+    }
         
     /// @brief Запустить
     public function run() {
         global $CONFIG;
-        if(!@$this->config['chpricenotify']['notify_workers'] && !@$this->config['chpricenotify']['notify_clients'] && !@$this->config['chpricenotify']['notify_address']) {
-            return;
-        }
-        $this->list_id = md5(microtime()) . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
+
+        $this->list_id = md5(microtime()) . '.' . date("dmY") . '.' . \cfg::get('site', 'name');
         $pos_info = array();
         $start_date = date("Y-m-d H:i:s", time()-60*60 );
         $res = $this->db->query("SELECT `id`, `cost` AS `base_price`, `cost_date` AS `price_date`, `name`, `vc`, `group`, `bulkcnt`"
@@ -45,13 +61,18 @@ class chPriceNotify extends \Action {
         if(count($pos_info)==0) {
             return;
         }
-                
+        
+        $default_firm_id = \cfg::get('site', 'default_firm');
+        $site_name = \cfg::get('site', 'site_name');
+        $site_display_name = \cfg::get('site', 'display_name');
+        $admin_email = \cfg::get('site', 'admin_email');
+        
         // Получить название фирмы, от которой выполняется рассылка
-        $res = $this->db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$this->config['site']['default_firm']}'");
+        $res = $this->db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$default_firm_id}'");
         list($firm_name) = $res->fetch_row();
         
         // Оповещаем сотрудников
-        if(@$this->config['chpricenotify']['notify_workers']) {
+        if(\cfg::get('chpricenotify', 'notify_workers')) {
             $res = $this->db->query("SELECT `user_id`, `worker`, `worker_email`, `worker_real_name` FROM `users_worker_info` WHERE `worker`>0");
             while ($worker_info = $res->fetch_assoc()) {
                 if(!isset($worker_info['worker_email'])) {
@@ -61,44 +82,47 @@ class chPriceNotify extends \Action {
                     continue;
                 }
                 $header = "Здравствуйте, {$worker_info['worker_real_name']}!\n";        
-                $footer = "Вы получили это письмо потому что являетесь сотрудником компании $firm_name, обслуживающей интернет-магазин {$this->config['site']['display_name']} ( http://{$this->config['site']['name']})\n"
+                $footer = "Вы получили это письмо потому что являетесь сотрудником компании $firm_name, обслуживающей интернет-магазин "
+                    . "{$site_display_name} ( http://{$site_name})\n"
                 . "Чтобы перестать получать уведомления, Вам нужно перестать быть сотрудником компании $firm_name.";
                 $this->sendMessage($pos_info, $header, $footer, $worker_info['worker_email']);
             }
         }
         
         // Оповещаем клиентов
-        if(@$this->config['chpricenotify']['notify_clients']) {
+        if(\cfg::get('chpricenotify', 'notify_clients')) {
             $clients = getSubscribersEmailList();
             foreach($clients as $subscriber_info) {
                 if(!$subscriber_info['email']) {
                     continue;
                 }
                 $header = "Здравствуйте, {$subscriber_info['name']}!\n"; 
-                $footer = "Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']}?from=email ), либо являетесь клиентом $firm_name.
-Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$subscriber_info['email']}&from=email";
+                $footer = "Вы получили это письмо потому что подписаны на рассылку сайта {$site_display_name} ( http://{$site_name}?from=email ), либо являетесь клиентом $firm_name.
+Отказаться от рассылки можно, перейдя по ссылке http://{$site_name}/login.php?mode=unsubscribe&email={$subscriber_info['email']}&from=email";
                 $this->sendMessage($pos_info, $header, $footer, $subscriber_info['email']);
             }
         }
         
         // Оповещаем указанные адреса
-        if(@$this->config['chpricenotify']['notify_address']) {            
-            if(is_array($this->config['chpricenotify']['notify_address'])) {
-                $s_list = $this->config['chpricenotify']['notify_address'];
+        if(\cfg::get('chpricenotify', 'notify_address')) {            
+            if(is_array(\cfg::get('chpricenotify', 'notify_address'))) {
+                $s_list = \cfg::get('chpricenotify', 'notify_address');
             } else {
-                $s_list = array($this->config['chpricenotify']['notify_address']);
+                $s_list = array(\cfg::get('chpricenotify', 'notify_address'));
             }
             foreach($s_list as $subscriber_email) {
                 $header = "Здравствуйте!\n";        
-                $footer = "Вы получили это письмо потому что Ваш адрес указан в настройках сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']}?from=email )
-Для отказа от рассылки свяжитесь с администратором сайта по адресу {$CONFIG['site']['admin_email']}, или ответив на это письмо.";
+                $footer = "Вы получили это письмо потому что Ваш адрес указан в настройках сайта {$site_display_name} ( http://{$site_name}?from=email )
+Для отказа от рассылки свяжитесь с администратором сайта по адресу {$admin_email}, или ответив на это письмо.";
                 $this->sendMessage($pos_info, $header, $footer, $subscriber_email);
             }
         }
     }
     
     function sendMessage($pos_data, $header, $footer, $email) {
-        global $CONFIG;
+        $site_name = \cfg::get('site', 'site_name');
+        $site_display_name = \cfg::get('site', 'display_name');
+        $admin_email = \cfg::get('site', 'admin_email');
         $pc = \PriceCalc::getInstance();
         $default_price_name = $pc->getDefaultPriceName();
         
@@ -121,11 +145,11 @@ class chPriceNotify extends \Action {
         $email_message = new \email_message_class();
         $email_message->default_charset = "UTF-8";
         $email_message->SetEncodedEmailHeader("To", $email, $email);
-        $email_message->SetEncodedHeader("Subject", 'Уведомление об изменениях цен - ' . $this->config['site']['name']);
-        $email_message->SetEncodedEmailHeader("From", $this->config['site']['admin_email'], $this->config['site']['display_name']);
-        $email_message->SetHeader("Sender", $this->config['site']['admin_email']);
+        $email_message->SetEncodedHeader("Subject", 'Уведомление об изменениях цен - ' . $site_name);
+        $email_message->SetEncodedEmailHeader("From", $admin_email, $site_display_name);
+        $email_message->SetHeader("Sender", $admin_email);
         $email_message->SetHeader("List-id", '<' . $this->list_id . '>');
-        $email_message->SetHeader("List-Unsubscribe", "http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$email}&from=list_unsubscribe");
+        $email_message->SetHeader("List-Unsubscribe", "http://{$site_name}/login.php?mode=unsubscribe&email={$email}&from=list_unsubscribe");
         $email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
 
         $email_message->AddQuotedPrintableTextPart($mail_text);

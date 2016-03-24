@@ -20,21 +20,43 @@ namespace Actions;
 
 /// Перемещение документов на начало текущего дня
 class DocMove extends \Action {
-	
-	/// @brief Запустить
-	public function run() {
-		$start_day = strtotime(date("Y-m-d 00:00:01"));
-		
-		// Перемещение непроведённых реализаций на начало текущего дня
-		if ($this->config['auto']['move_nr_to_end'] == true)
-			$this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=2 AND `ok`=0 AND `mark_del`=0");
 
-		// Перемещение непроведённых заявок на начало текущего дня
-		if ($this->config['auto']['move_no_to_end'] == true)
-			$this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=3 AND `ok`=0 AND `mark_del`=0");	
-                
-                // Перемещение непроведённых перемещений товаров на начало текущего дня
-		if ($this->config['auto']['move_ntp_to_end'] == true)
-			$this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=8 AND `ok`=0 AND `mark_del`=0");
-	}
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
+    }
+
+    /// Получить название действия
+    public function getName() {
+        return "Перемещение документов на начало текущего дня";
+    }
+
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return  \cfg::get('auto', 'move_nr_to_end') ||
+                \cfg::get('auto', 'move_no_to_end') ||
+                \cfg::get('auto', 'move_ntp_to_end');
+    }
+
+    /// @brief Запустить
+    public function run() {
+        $start_day = strtotime(date("Y-m-d 00:00:01"));
+
+        // Перемещение непроведённых реализаций на начало текущего дня
+        if (\cfg::get('auto', 'move_nr_to_end')) {
+            $this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=2 AND `ok`=0 AND `mark_del`=0");
+        }
+
+        // Перемещение непроведённых заявок на начало текущего дня
+        if (\cfg::get('auto', 'move_no_to_end')) {
+            $this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=3 AND `ok`=0 AND `mark_del`=0");
+        }
+
+        // Перемещение непроведённых перемещений товаров на начало текущего дня
+        if (\cfg::get('auto', 'move_ntp_to_end')) {
+            $this->db->query("UPDATE `doc_list` SET `date`='$start_day' WHERE `type`=8 AND `ok`=0 AND `mark_del`=0");
+        }
+    }
+
 }

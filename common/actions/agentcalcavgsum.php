@@ -19,56 +19,72 @@
 namespace Actions;
 
 // Расчет оборота агентов за период (для периодической накопительной скидки)
-class AgentCalcAvgsum extends \Action {
-	
-	/// @brief Запустить
-	public function run() {
-		if(!isset($this->config['pricecalc']['acc_type']))
-			throw new \Exception ('Тип периода для расчёта оборота агентов (pricecalc - acc_type) не задан в конфигурационном файле');
-		
-		if(isset($this->config['pricecalc']['acc_time']))
-			$cnt = intval($this->config['pricecalc']['acc_time']);
-		else	$cnt = 0;
-		
-		$di = new \DateCalcInterval();
-		
-		switch($this->config['pricecalc']['acc_type']) {
-			case 'days':
-				$di->calcXDaysBack($cnt);
-				break;
-			case 'months':
-				$di->calcXMonthsBack($cnt);
-				break;
-			case 'years':
-				$di->calcXYearsBack($cnt);
-				break;
-			case 'prevmonth':
-				$di->calcPrevMonth();
-				break;
-			case 'prevquarter':
-				$di->calcPrevQuarter();
-				break;
-			case 'prevhalfyear':
-				$di->calcPrevHalfyear();
-				break;
-			case '':break;
-			case 'prevyear':
-			default:
-				$di->calcPrevYear();
-		}
+class agentCalcAvgsum extends \Action {
 
-		$acc = array();
-		$res = $this->db->query("SELECT `agent`, `sum` FROM `doc_list` WHERE `date`>='{$di->start}' AND `date`<='{$di->end}'
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
+    }
+
+    /// Получить название действия
+    public function getName() {
+        return "Расчет оборота агентов за период";
+    }    
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'agent_calc_avgsum') &&
+                \cfg::get('pricecalc', 'acc_type');
+    }
+
+    /// @brief Запустить
+    public function run() {
+        $cnt = intval(\cfg::get('pricecalc', 'acc_time'));
+        $di = new \DateCalcInterval();
+
+        switch (\cfg::get('pricecalc', 'acc_type')) {
+            case 'days':
+                $di->calcXDaysBack($cnt);
+                break;
+            case 'months':
+                $di->calcXMonthsBack($cnt);
+                break;
+            case 'years':
+                $di->calcXYearsBack($cnt);
+                break;
+            case 'prevmonth':
+                $di->calcPrevMonth();
+                break;
+            case 'prevquarter':
+                $di->calcPrevQuarter();
+                break;
+            case 'prevhalfyear':
+                $di->calcPrevHalfyear();
+                break;
+            case '':break;
+            case 'prevyear':
+            default:
+                $di->calcPrevYear();
+        }
+
+        $acc = array();
+        $res = $this->db->query("SELECT `agent`, `sum` FROM `doc_list` WHERE `date`>='{$di->start}' AND `date`<='{$di->end}'
 			AND (`type`='1' OR `type`='4' OR `type`='6') AND `ok`>0 AND `agent`>0 AND `sum`>0");
-		while($line = $res->fetch_assoc()) {
-			if(isset($acc[$line['agent']]))
-				$acc[$line['agent']] += $line['sum'];
-			else $acc[$line['agent']] = $line['sum'];
-		}
-		
-		$this->db->query("UPDATE `doc_agent` SET `avg_sum`=0");	// Сброс, т.к. нулевые агенты не перезаписываются
-		foreach($acc as $agent => $sum) {
-			if($sum)$this->db->update('doc_agent', $agent, 'avg_sum', $sum);
-		}		
-	}
+        while ($line = $res->fetch_assoc()) {
+            if (isset($acc[$line['agent']])) {
+                $acc[$line['agent']] += $line['sum'];
+            } else {
+                $acc[$line['agent']] = $line['sum'];
+            }
+        }
+
+        $this->db->query("UPDATE `doc_agent` SET `avg_sum`=0"); // Сброс, т.к. нулевые агенты не перезаписываются
+        foreach ($acc as $agent => $sum) {
+            if ($sum) {
+                $this->db->update('doc_agent', $agent, 'avg_sum', $sum);
+            }
+        }
+    }
+
 }

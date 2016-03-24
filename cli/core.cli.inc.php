@@ -20,21 +20,122 @@
 include_once($CONFIG['location']."/common/core.common.php");
 
 /// Пустой шаблон для подавления предупреждений
-class ntpl {};
+class ntpl {}
 $tmpl = new ntpl();
 
 
 $db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
 
-if($db->connect_error)
-	die("Ошибка соединения с базой данных");
+if ($db->connect_error) {
+    die("Ошибка соединения с базой данных");
+}
 
 // Включаем автоматическую генерацию исключений для mysql
 mysqli_report(MYSQLI_REPORT_STRICT | MYSQLI_REPORT_ERROR);
 
-if(!$db->set_charset("utf8"))
-    die("Невозможно задать кодировку соединения с базой данных: ".$db->error);
+if (!$db->set_charset("utf8")) {
+    die("Невозможно задать кодировку соединения с базой данных: " . $db->error);
+}
 
+function run_periodically_actions($interval) {
+    global $db, $executed, $verbose;
+    $verbose = 0;
 
+    try {
+        if ($_SERVER['argc'] > 1) {
+            for ($i = 0; $i < $_SERVER['argc']; $i++) {
+                switch ($_SERVER['argv'][$i]) {
+                    case '-v':
+                    case '--verbose':
+                        $verbose = 1;
+                        break;
+                }
+            }
+        }
 
-?>
+        $executed = array();
+
+        function excecute_action($action_name, $interval) {
+            global $executed, $CONFIG, $db, $verbose;
+            if(in_array($action_name, $executed)) { 
+                return true;
+            }
+            $class_name = 'Actions\\' . $action_name;
+            try {
+                $action = new $class_name($CONFIG, $db);
+                if($action->getInterval()!=$interval) {
+                    return false;
+                }
+                $nm = $action->getName();
+                if(!$action->isEnabled()) {
+                    return false;
+                }    
+                foreach ($action->getDepends() as $dep_name) {
+                    $dep_name = strtolower($dep_name);
+                    if(!excecute_action($dep_name, $interval)) {
+                        return false;
+                    }
+                }
+                if($verbose) {
+                    echo $nm . '...';
+                }
+                $action->setVerbose();
+                $action->run();
+                $executed[] = $action_name;
+                if($verbose) {
+                    echo " Выполнено.\n";
+                }
+            }
+            catch (XMPPHP_Exception $e) {
+                if (\cfg::get('site', 'admin_email')) {
+                    mailto(\cfg::get('site', 'admin_email'), "XMPP exception in daily.php", $e->getMessage());
+                }
+                echo "XMPP exception: " . $e->getMessage() . "\n";
+            } 
+            catch (mysqli_sql_exception $e) {
+                if (\cfg::get('site', 'admin_email')) {
+                    mailto(\cfg::get('site', 'admin_email'), "Mysql exception in daily.php", $e->getMessage());
+                }
+                echo "Mysql exception: " . $e->getMessage() . "\n";
+            }
+            catch (Exception $e) {
+                if (\cfg::get('site', 'admin_email')) {
+                    mailto(\cfg::get('site', 'admin_email'), "General exception in daily.php", $e->getMessage());
+                }
+                echo "General exception: " . $e->getMessage() . "\n";
+            }    
+            return true;
+        }
+
+        $dir = \cfg::getroot('location').'/common/actions/';
+        if (is_dir($dir)) {
+            $dh = opendir($dir);
+            if ($dh) {
+                while (($file = readdir($dh)) !== false) {
+                    if (preg_match('/.php$/', $file)) {
+                        $cn = explode('.', $file);             
+                        excecute_action($cn[0], $interval);
+                    }
+                }
+                closedir($dh);
+            }
+        }
+
+    } catch (XMPPHP_Exception $e) {
+        if (\cfg::get('site', 'admin_email')) {
+            mailto(\cfg::get('site', 'admin_email'), "Global XMPP exception in daily.php", $e->getMessage());
+        }
+        echo "Global XMPP exception: " . $e->getMessage() . "\n";
+    } catch (mysqli_sql_exception $e) {
+        if (\cfg::get('site', 'admin_email')) {
+            mailto(\cfg::get('site', 'admin_email'), "Global Mysql exception in daily.php", $e->getMessage());
+        }
+        echo "Global Mysql exception: " . $e->getMessage() . "\n";
+    } catch (Exception $e) {
+        if (\cfg::get('site', 'admin_email')) {
+            mailto(\cfg::get('site', 'admin_email'), "Global general exception in daily.php", $e->getMessage());
+        }
+        echo "Global general exception: " . $e->getMessage() . "\n";
+    }
+
+}

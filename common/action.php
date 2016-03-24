@@ -19,17 +19,35 @@
 //
 
 /// Базовый класс для действий
-class Action {
+class action {
+    const MANUAL = 0;
+    const HOURLY = 1;
+    const DAILY = 2;
+    const WEEKLY = 3;
+    const MOUNTHLY = 4;
 
     protected $db;
     protected $config;
+    protected $verbose = false;
+    protected $depends = array();   // Зависимости
 
-    var $period = 'manual';
+    protected $interval = self::MANUAL;
 
     /// @brief Конструктор
     public function __construct($config, $db) {
         $this->db = $db;
         $this->config = $config;
     }
-
+    
+    public function setVerbose($flag = true) {
+        $this->verbose = $flag;
+    }
+    
+    public function getDepends() {
+        return $this->depends;
+    }
+    
+    public function getInterval() {
+        return $this->interval;
+    }
 }
