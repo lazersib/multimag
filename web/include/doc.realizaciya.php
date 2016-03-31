@@ -324,6 +324,7 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         
         if (!$silent) {
+            $this->sentZEvent('pre-apply'); // В т.ч. для обсчёта резервов
             $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
         }
 
@@ -374,6 +375,7 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         $this->fixPrice();
         // Резервы
+        /*
         if($doc_params['p_doc']) {
             $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=3 AND `id`={$doc_params['p_doc']}");
             if ($res->num_rows) {
@@ -396,6 +398,8 @@ class doc_Realizaciya extends doc_Nulltype {
                 }
             }
         }
+         * 
+         */
         if (!$doc_params['no_bonuses'] && $bonus > 0) {
             $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','$bonus')");
         }
@@ -414,13 +418,12 @@ class doc_Realizaciya extends doc_Nulltype {
         $nx = $res->fetch_row();
         if (!$nx[4]) {
             throw new Exception('Документ НЕ проведён!');
-        }
-
+        }        
         $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}' AND `ok`>'0'");
         if ($res->num_rows) {
             throw new Exception('Нельзя отменять документ с проведёнными подчинёнными документами.');
         }
-
+        $this->sentZEvent('pre-cancel'); // В т.ч. для обсчёта резервов
         $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type` FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`	WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
@@ -430,6 +433,7 @@ class doc_Realizaciya extends doc_Nulltype {
         }
         $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','0')");
         // Резервы
+        /*
         if($this->doc_data['p_doc']) {
             $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=3 AND `id`={$this->doc_data['p_doc']}");
             if ($res->num_rows) {
@@ -450,6 +454,8 @@ class doc_Realizaciya extends doc_Nulltype {
                 }
             }
         }
+         * 
+         */
         $this->sentZEvent('cancel');
     }
 

@@ -43,6 +43,15 @@ class doc_Zayavka extends doc_Nulltype {
         if (@$CONFIG['doc']['pie'] && !@$this->dop_data['pie']) {
             $ret.="<a href='#' onclick=\"sendPie(event, '{$this->id}')\" title='Отправить благодарность покупателю'><img src='/img/i_pie.png' alt='pie'></a>";
         }
+        $r_lock = '';
+        if($this->getDopData('reserved')) {
+            $r_action = "Снять";
+        }
+        else {
+            $r_action = "Разрешить";
+            $r_lock = 'un';
+        }
+        $ret.="<a href='#' onclick=\"toggleReserve(event, '{$this->id}')\" title='{$r_action} резервы'><img src='/img/22x22/object-{$r_lock}locked.png' alt='{$r_action} резервы'></a>";
         return $ret;
     }
 	
@@ -52,6 +61,18 @@ class doc_Zayavka extends doc_Nulltype {
         global $CONFIG;
         if(@$CONFIG['zstatus']['debug']) {
             doc_log("EVENT", "$event_name, cur_status:{$this->dop_data['status']}", 'doc', $this->id);
+        }
+        if($initator instanceof doc_Realizaciya) {
+            switch ($event_name) {
+                case 'pre-apply':
+                case 'pre-cancel':
+                    $this->unsetReserves();                    
+                    break;
+                case 'cancel':
+                case 'apply':
+                    $this->setReserves();
+                    break;
+            }
         }
         if (isset($CONFIG['zstatus'][$event_name])) {
             $s = array('{DOC}', '{SUM}', '{DATE}');
@@ -402,6 +423,7 @@ class doc_Zayavka extends doc_Nulltype {
     function docApply($silent = 0) {
         global $db;
         // Резервы
+        /*
         $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=2 AND `p_doc`={$this->id}");
         if (!$res->num_rows) {
             $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
@@ -422,6 +444,10 @@ class doc_Zayavka extends doc_Nulltype {
                 throw new Exception("Не удалось провести пустой документ!");
             }
         }
+         * 
+         */
+        $this->setDopData('reserved', 1);
+        $this->setReserves();
         if ($silent) {
             return;
         }
@@ -439,7 +465,7 @@ class doc_Zayavka extends doc_Nulltype {
         $db->update('doc_list', $this->id, 'ok', time());        
         $this->sentZEvent('apply');
     }
-
+           
     /// Отменить проведение документа
     function docCancel() {
         global $db;
@@ -449,9 +475,11 @@ class doc_Zayavka extends doc_Nulltype {
         }
         if (!$data['ok']) {
             throw new Exception('Документ не проведён!');
-        }
+        }        
         $db->update('doc_list', $this->id, 'ok', 0);
-        // Резервы       
+        $this->unsetReserves();
+        // Резервы 
+        /*
         $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=2 AND `p_doc`={$this->id}");
         if (!$res->num_rows) {
             $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
@@ -470,8 +498,63 @@ class doc_Zayavka extends doc_Nulltype {
                     ON DUPLICATE KEY UPDATE `reserve`=`reserve`-VALUES(`reserve`)");
             }
         }
+        */
         $this->sentZEvent('cancel');
     }
+    
+        /// Загружает счётчики резервов для текущей заявки
+    protected function getReserves() {
+        global $db;
+        $ret = array();
+        if(!$this->getDopData('reserved')) {
+            return $ret;
+        }
+        $res = $db->query("SELECT `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`
+            FROM `doc_list_pos`
+            LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+            WHERE `doc_list_pos`.`doc`='{$this->id}'");
+        while($line = $res->fetch_assoc()) {
+            $c_res = $db->query("SELECT SUM(`doc_list_pos`.`cnt`)"
+                . " FROM `doc_list_pos`"
+                . " INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`"
+                . " WHERE `doc_list_pos`.`tovar` = '{$line['pos_id']}' "
+                    . " AND `doc_list`.`type`=2 AND `doc_list`.`ok`>0 AND `doc_list`.`mark_del`=0 AND `doc_list`.`p_doc`='{$this->id}'"
+                );
+            if($c_res->num_rows) {
+                list($nr_cnt) = $c_res->fetch_row();
+                if(!$nr_cnt) {
+                    $nr_cnt = 0;
+                }
+            }
+            else {
+                $nr_cnt = 0;
+            }
+            
+            $reserve = $line['cnt'] - $nr_cnt;
+            if($reserve>0) {
+                $ret[$line['pos_id']] = $reserve;
+            }
+        }
+        return $ret;  
+    }
+
+    protected function unsetReserves() {
+        global $db;
+        $reserves = $this->getReserves();
+        foreach($reserves as $pos_id => $reserve) {
+            $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES ($pos_id, '$reserve')
+                ON DUPLICATE KEY UPDATE `reserve`=`reserve`-VALUES(`reserve`)");
+        }        
+    }
+    
+    protected function setReserves() {
+        global $db;
+        $reserves = $this->getReserves();
+        foreach($reserves as $pos_id => $reserve) {
+            $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES ($pos_id, '$reserve')
+                ON DUPLICATE KEY UPDATE `reserve`=`reserve`+VALUES(`reserve`)");
+        }        
+    }  
 
     /// Формирование другого документа на основании текущего
     function MorphTo($target_type) {
@@ -584,68 +667,126 @@ class doc_Zayavka extends doc_Nulltype {
             throw new \NotFoundException();
         }
     }
-
+    
+    protected function sendNotificationMessage() {
+        global $tmpl;
+        try {
+            \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+            $text = request('text');
+            $send = false;
+            if (request('sms')) {
+                $send |= $this->sendSMSNotify($text);
+            }
+            if (request('mail')) {
+                $send |= $this->sendEmailNotify($text);
+               }
+            if(!$send) {
+                throw new Exception('Не удалось отправить сообщение.');
+            }
+            $tmpl->setContent("{\"object\":\"send_message\",\"response\":\"success\"}");
+        } catch (Exception $e) {
+            $ret_data = array(
+                'object' => 'send_message',
+                'response' => 'error',
+                'errorcode' => $e->getCode(),
+                'errormessage' => $e->getMessage()
+            );
+            $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
+        }
+    }
+    
+    protected function sendPie() {
+        global $tmpl;
+        try {
+            \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+            $this->sendEmailNotify(\cfg::get('doc', 'pie'));
+            $this->setDopData('pie', 1);
+            $tmpl->setContent("{\"object\":\"send_pie\",\"response\":\"success\"}");
+        } catch (Exception $e) {
+            $ret_data = array(
+                'object' => 'send_pie',
+                'response' => 'error',
+                'errorcode' => $e->getCode(),
+                'errormessage' => $e->getMessage()
+            );
+            $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
+        }
+    }
+    
+    protected function rewriteposList() {
+        global $db;
+        \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+        $db->startTransaction();
+        $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
+        $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}'");
+        $docs = "`doc`='-1'";
+        while ($nxt = $res->fetch_row()) {
+            $docs.=" OR `doc`='$nxt[0]'";
+        }
+        $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs GROUP BY `tovar`");
+        while ($line = $res->fetch_assoc()) {
+            $line['doc'] = $this->id;
+            $db->insertA('doc_list_pos', $line);
+        }
+        doc_log("REWRITE", "", 'doc', $this->id);
+        $db->commit();
+        header("location: /doc.php?mode=body&doc=" . $this->id);
+    }
+    
+    protected function toggleReserve() {
+        global $tmpl, $db;
+        try {
+            \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+            $db->startTransaction();
+            $new_res = $this->getDopData('reserved', 0)?0:1;
+            if($this->doc_data['ok']) {
+                $this->unsetReserves();
+            }
+            $this->setDopData('reserved', $new_res);
+            if($this->doc_data['ok']) {
+                $this->setReserves();
+            }
+            $db->commit();
+            $state = $new_res?'разрешены':'сняты';
+            $tmpl->setContent("{\"object\":\"togglereserve\",\"response\":\"success\",\"reserved\":\"$new_res\"}");
+            $ret_data = array(
+                'object' => 'togglereserve',
+                'response' => 'success',
+                'reserved' => $new_res,
+                'message' => 'Резервы '.$state
+            );
+            $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
+        } catch (Exception $e) {
+            $ret_data = array(
+                'object' => 'togglereserve',
+                'response' => 'error',
+                'errorcode' => $e->getCode(),
+                'errormessage' => $e->getMessage()
+            );
+            $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
+        }        
+    }
     function Service() {
         global $tmpl, $CONFIG, $db;
         $tmpl->ajax = 1;
         $opt = request('opt');
         $pos = rcvint('pos');
-        if ($opt == 'pmsg') {
-            try {
-                $text = request('text');
-                $send = false;
-                if (request('sms')) {
-                    $send |= $this->sendSMSNotify($text);
-                }
-                if (request('mail')) {
-                    $send |= $this->sendEmailNotify($text);
-                   }
-                if(!$send) {
-                    throw new Exception('Не удалось отправить сообщение.');
-                }
-                $tmpl->setContent("{\"object\":\"send_message\",\"response\":\"success\"}");
-            } catch (Exception $e) {
-                $ret_data = array(
-                    'object' => 'send_message',
-                    'response' => 'error',
-                    'errorcode' => $e->getCode(),
-                    'errormessage' => $e->getMessage()
-                );
-                $tmpl->setContent( json_encode($ret_data, JSON_UNESCAPED_UNICODE) );
-            }
-        } else if ($opt == 'rewrite') {
-            $db->startTransaction();
-            $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
-            $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}'");
-            $docs = "`doc`='-1'";
-            while ($nxt = $res->fetch_row()) {
-                $docs.=" OR `doc`='$nxt[0]'";
-            }
-            $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos` WHERE $docs GROUP BY `tovar`");
-            while ($line = $res->fetch_assoc()) {
-                $line['doc'] = $this->id;
-                $db->insertA('doc_list_pos', $line);
-            }
-            doc_log("REWRITE", "", 'doc', $this->id);
-            $db->commit();
-            header("location: /doc.php?mode=body&doc=" . $this->id);
-            //exit();
-        } else if ($opt == 'pie') {
-            try {
-                $this->sendEmailNotify($CONFIG['doc']['pie']);
-                $db->query("INSERT INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES	( '{$this->id}' ,'pie','1')");
-                $tmpl->setContent("{\"object\":\"send_pie\",\"response\":\"success\"}");
-            } catch (Exception $e) {
-                $ret_data = array(
-                    'object' => 'send_pie',
-                    'response' => 'error',
-                    'errorcode' => $e->getCode(),
-                    'errormessage' => $e->getMessage()
-                );
-                $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
-            }
-        } else {
-            parent::_Service($opt, $pos);
+        
+        switch($opt) {
+            case 'pmsg':
+                $this->sendNotificationMessage();
+                break;
+            case 'rewrite':
+                $this->rewriteposList();
+                break;
+            case 'pie':
+                $this->sendPie();
+                break;
+            case 'togglereserve':
+                $this->toggleReserve();
+                break;
+            default:
+                parent::_Service($opt, $pos);
         }
     }
 

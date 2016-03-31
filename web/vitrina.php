@@ -2206,7 +2206,6 @@ protected function GetCountInfo($count, $tranzit)
         $pref = \pref::getInstance();
         $pc->setFirmId($pref->site_default_firm_id);
         $basket = Models\Basket::getInstance();
-
         if (@$_SESSION['uid']) {
             $pc->setFromSiteFlag(1);
             $up = getUserProfile($_SESSION['uid']);

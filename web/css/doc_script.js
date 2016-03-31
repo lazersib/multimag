@@ -5,141 +5,150 @@
 
 var old_provodki='';
 
-function ApplyDoc(doc)
-{
-	var httpRequest;
-	if (window.XMLHttpRequest)  {  httpRequest = new XMLHttpRequest(); }
-	if (!httpRequest) { return false; }
+function ApplyDoc(doc) {
+    var httpRequest;
+    if (window.XMLHttpRequest) {
+        httpRequest = new XMLHttpRequest();
+    }
+    if (!httpRequest) {
+        return false;
+    }
 
-	var provodki=document.getElementById("provodki");
-	old_provodki=provodki.innerHTML;
-	provodki.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
+    var provodki = document.getElementById("provodki");
+    old_provodki = provodki.innerHTML;
+    provodki.innerHTML = "<img src='/img/icon_load.gif'> Загрузка...";
 
-	var url='/doc.php?mode=applyj&doc='+doc;
-	httpRequest.onreadystatechange = function() { DocProcessRequest(httpRequest, doc); };
-	httpRequest.open('GET', url, true);
-	httpRequest.send(null);
+    var url = '/doc.php?mode=applyj&doc=' + doc;
+    httpRequest.onreadystatechange = function () {
+        DocProcessRequest(httpRequest, doc);
+    };
+    httpRequest.open('GET', url, true);
+    httpRequest.send(null);
 }
 
-function MarkDelDoc(doc)
-{
-	var httpRequest;
-	if (window.XMLHttpRequest)  {  httpRequest = new XMLHttpRequest(); }
-	if (!httpRequest) { return false; }
+function MarkDelDoc(doc) {
+    var httpRequest;
+    if (window.XMLHttpRequest) {
+        httpRequest = new XMLHttpRequest();
+    }
+    if (!httpRequest) {
+        return false;
+    }
 
-	var provodki=document.getElementById("provodki");
-	old_provodki=provodki.innerHTML;
-	provodki.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
+    var provodki = document.getElementById("provodki");
+    old_provodki = provodki.innerHTML;
+    provodki.innerHTML = "<img src='/img/icon_load.gif'> Загрузка...";
 
-	var url='/doc.php?mode=srv&opt=jdeldoc&doc='+doc;
-	httpRequest.onreadystatechange = function() { DocProcessRequest(httpRequest, doc); };
-	httpRequest.open('GET', url, true);
-	httpRequest.send(null);
+    var url = '/doc.php?mode=srv&opt=jdeldoc&doc=' + doc;
+    httpRequest.onreadystatechange = function () {
+        DocProcessRequest(httpRequest, doc);
+    };
+    httpRequest.open('GET', url, true);
+    httpRequest.send(null);
 }
 
-function unMarkDelDoc(doc)
-{
-	var httpRequest;
-	if (window.XMLHttpRequest)  {  httpRequest = new XMLHttpRequest(); }
-	if (!httpRequest) { return false; }
+function unMarkDelDoc(doc) {
+    var httpRequest;
+    if (window.XMLHttpRequest) {
+        httpRequest = new XMLHttpRequest();
+    }
+    if (!httpRequest) {
+        return false;
+    }
 
-	var provodki=document.getElementById("provodki");
-	old_provodki=provodki.innerHTML;
-	provodki.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
+    var provodki = document.getElementById("provodki");
+    old_provodki = provodki.innerHTML;
+    provodki.innerHTML = "<img src='/img/icon_load.gif'> Загрузка...";
 
-	var url='/doc.php?mode=srv&opt=jundeldoc&doc='+doc;
-	httpRequest.onreadystatechange = function() { DocProcessRequest(httpRequest, doc); };
-	httpRequest.open('GET', url, true);
-	httpRequest.send(null);
+    var url = '/doc.php?mode=srv&opt=jundeldoc&doc=' + doc;
+    httpRequest.onreadystatechange = function () {
+        DocProcessRequest(httpRequest, doc);
+    };
+    httpRequest.open('GET', url, true);
+    httpRequest.send(null);
 }
 
-function CancelDoc(doc)
-{
-	var httpRequest;
-	if (window.XMLHttpRequest)  {  httpRequest = new XMLHttpRequest(); }
-	if (!httpRequest) { return false; }
+function CancelDoc(doc) {
+    var httpRequest;
+    if (window.XMLHttpRequest) {
+        httpRequest = new XMLHttpRequest();
+    }
+    if (!httpRequest) {
+        return false;
+    }
 
-	var provodki=document.getElementById("provodki");
-	old_provodki=provodki.innerHTML;
-	provodki.innerHTML="<img src='/img/icon_load.gif'> Загрузка...";
+    var provodki = document.getElementById("provodki");
+    old_provodki = provodki.innerHTML;
+    provodki.innerHTML = "<img src='/img/icon_load.gif'> Загрузка...";
 
-	var url='/doc.php?mode=cancelj&doc='+doc;
-	httpRequest.onreadystatechange = function() { DocProcessRequest(httpRequest, doc); };
-	httpRequest.open('GET', url, true);
-	httpRequest.send(null);
+    var url = '/doc.php?mode=cancelj&doc=' + doc;
+    httpRequest.onreadystatechange = function () {
+        DocProcessRequest(httpRequest, doc);
+    };
+    httpRequest.open('GET', url, true);
+    httpRequest.send(null);
 
 }
 
 
 
-function DocProcessRequest(httpRequest, doc)
-{
-	var req;
-	try
-	{
-		var provodki=document.getElementById("provodki");
-		if (httpRequest.readyState == 4)
-		{
-			if (httpRequest.status == 200)
-			{
-				req=httpRequest.responseText;
-				var json=eval('('+httpRequest.responseText+')');
-				if(json.response==0)
-				{
-					jAlert(json.message,"Ошибка", null, 'icon_err');
-					provodki.innerHTML=old_provodki;
-				}
-				else if(json.response==1)	// Проведение
-				{
-					if(json.message)	jAlert(json.message,"Сделано!", null);
-					if(json.buttons)	provodki.innerHTML=json.buttons;
-					else			provodki.innerHTML=old_provodki;
+function DocProcessRequest(httpRequest, doc) {
+    var req;
+    try {
+        var provodki = document.getElementById("provodki");
+        if (httpRequest.readyState == 4) {
+            if (httpRequest.status == 200) {
+                req = httpRequest.responseText;
+                var json = eval('(' + httpRequest.responseText + ')');
+                if (json.response == 0) {
+                    jAlert(json.message, "Ошибка", null, 'icon_err');
+                    provodki.innerHTML = old_provodki;
+                }
+                else if (json.response == 1) {	// Проведение                
+                    if (json.message)
+                        jAlert(json.message, "Сделано!", null);
+                    if (json.buttons)
+                        provodki.innerHTML = json.buttons;
+                    else
+                        provodki.innerHTML = old_provodki;
 
-					if(json.sklad_view)
-					{
-
-						var sklad_view=document.getElementById("storeview_container");
-						var poslist=document.getElementById('poslist');
-						var pladd=document.getElementById('pladd');
-						if(sklad_view)
-						{
-							if(json.sklad_view==='show')
-							{
-								sklad_view.style.display='block';
-								poslist.editable=1;
-								poslist.refresh();
-								pladd.style.display='table-row';
-							}
-							else
-							{
-								sklad_view.style.display='none';
-								pladd.style.display='none';
-								poslist.editable=0;
-								poslist.refresh();
-							}
-						}
-					}
-					var statusblock=document.getElementById("statusblock");
-					if( json.statusblock && statusblock) statusblock.innerHTML=json.statusblock;
-
-
-				}
-				else provodki.innerHTML=old_provodki;
-			}
-			else
-			{
-				jAlert("Документ не проведён!"+httpRequest.responseText,"Ошибка "+httpRequest.status, null, 'icon_err');
-				provodki.innerHTML=old_provodki;
-			}
-		}
-	}
-	catch(e)
-	{
-		jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-		"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+ "<br>json:<br>"+req, "Критическая ошибка", null,  'icon_err');
-	}
-
-	//else jAlert("Документ не проведён!","Ошибка "+httpRequest.readyState, {}, 'icon_err');
+                    if (json.sklad_view) {
+                        var sklad_view = document.getElementById("storeview_container");
+                        var poslist = document.getElementById('poslist');
+                        var pladd = document.getElementById('pladd');
+                        if (sklad_view) {
+                            if (json.sklad_view === 'show') {
+                                sklad_view.style.display = 'block';
+                                poslist.editable = 1;
+                                poslist.refresh();
+                                pladd.style.display = 'table-row';
+                            }
+                            else {
+                                sklad_view.style.display = 'none';
+                                pladd.style.display = 'none';
+                                poslist.editable = 0;
+                                poslist.refresh();
+                            }
+                        }
+                    }
+                    var statusblock = document.getElementById("statusblock");
+                    if (json.statusblock && statusblock)
+                        statusblock.innerHTML = json.statusblock;
+                }
+                else
+                    provodki.innerHTML = old_provodki;
+            }
+            else {
+                jAlert("Документ не проведён!" + httpRequest.responseText, "Ошибка " + httpRequest.status, null, 'icon_err');
+                provodki.innerHTML = old_provodki;
+            }
+        }
+    }
+    catch (e) {
+        jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
+                "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>json:<br>" + req, "Критическая ошибка", null, 'icon_err');
+    }
+    //else jAlert("Документ не проведён!","Ошибка "+httpRequest.readyState, {}, 'icon_err');
 }
 
 
@@ -178,27 +187,22 @@ function DocConnectProcess(msg) {
 }
 
 
-function hlThisRow(event)
-{
-	var obj=event.target
-	while(obj!='undefined' && obj!='null')
-	{
-		if(obj.tagName=='TR')
-		{
-			if(!obj.marked)
-			{
-				obj.style.backgroundColor='#8f8'
-				obj.marked=1
-			}
-			else
-			{
-				obj.style.backgroundColor=''
-				obj.marked=0
-			}
-			return
-		}
-		obj=obj.parentNode
-	}
+function hlThisRow(event) {
+    var obj = event.target;
+    while (obj != 'undefined' && obj != 'null') {
+        if (obj.tagName == 'TR') {
+            if (!obj.marked) {
+                obj.style.backgroundColor = '#8f8';
+                obj.marked = 1;
+            }
+            else {
+                obj.style.backgroundColor = '';
+                obj.marked = 0;
+            }
+            return;
+        }
+        obj = obj.parentNode;
+    }
 }
 
 function DocHeadInit()
@@ -1104,7 +1108,23 @@ function petitionMenu(event, doc) {
     return false;
 }
 
-function docScriptsServerDataReceiver(msg, menu) {
+function toggleReserve(event, doc) {
+    event.target.src = '/img/icon_load.gif';
+    $.ajax({
+        type: 'POST',
+        url: '/doc.php',
+        data: 'mode=srv&doc=' + doc + '&opt=togglereserve',
+        success: function (msg) {
+            docScriptsServerDataReceiver(msg, null, event);
+        },
+        error: function () {
+            jAlert('Ошибка соединения!', 'Переключение резервов', null, 'icon_err');
+        }
+    });
+    return false;
+}
+
+function docScriptsServerDataReceiver(msg, menu, event) {
     try {
         var json = JSON.parse(msg);
         if (json.response == 'error') {
@@ -1124,6 +1144,22 @@ function docScriptsServerDataReceiver(msg, menu) {
                 case 'selfship':
                     jAlert(json.message, "Выполнено", {});
                     break;
+                case 'togglereserve':
+                    jAlert(json.message, "Выполнено", {});
+                    var un = '';
+                    var alt = 'Разрешить резервы';
+                    if(json.reserved == 0) {
+                        un = 'un';
+                        alt = 'Снять резервы';
+                    }
+                    event.target.src = '/img/22x22/object-'+un+'locked.png';
+                    event.target.alt = alt;
+                    event.target.parentNode.title = alt;
+                    var poslist=document.getElementById('poslist');
+                    if(poslist) {
+                        poslist.refresh();
+                    }
+                    break;
                 default:
                     jAlert("Обработка полученного сообщения не реализована на стороне броузера!<br>"
                         + "Рекомендуется сообщить о проблеме администратору!<br>"
@@ -1133,12 +1169,16 @@ function docScriptsServerDataReceiver(msg, menu) {
         else {
             jAlert("Получен неизвестный ответ!<br>" + msg, "Отправка сообщения", {}, 'icon_err');                
         }
-        menu.parentNode.removeChild(menu);
+        if(menu) {
+            menu.parentNode.removeChild(menu);
+        }
     }
     catch (e) {
         jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
                 "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Ошибка", null, 'icon_err');
-        menu.parentNode.removeChild(menu);
+        if(menu) {
+            menu.parentNode.removeChild(menu);
+        }
     }
 }
 

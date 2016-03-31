@@ -44,7 +44,7 @@ class doc_s_Inform extends doc_s_Nulltype {
                 continue;
             }
             $orders[$line['p_doc']]['cnt'] -= $line['cnt'];
-            if($orders[$line['p_doc']]['cnt']==0) {
+            if($orders[$line['p_doc']]['cnt']<=0) {
                 unset($orders[$line['p_doc']]);
             }
         }
@@ -73,7 +73,7 @@ class doc_s_Inform extends doc_s_Nulltype {
                 continue;
             }
             $orders[$line['p_doc']]['cnt'] -= $line['cnt'];
-            if($orders[$line['p_doc']]['cnt']==0) {
+            if($orders[$line['p_doc']]['cnt']<=0) {
                 unset($orders[$line['p_doc']]);
             }
         }

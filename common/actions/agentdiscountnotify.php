@@ -153,7 +153,7 @@ class agentDiscountNotify extends \Action {
 
         // Получить название фирмы, от которой выполняется рассылка
         $default_firm_id = \cfg::get('site', 'default_firm');
-        $site_name = \cfg::get('site', 'site_name');
+        $site_name = \cfg::get('site', 'name');
         $site_display_name = \cfg::get('site', 'display_name');
         $admin_email = \cfg::get('site', 'admin_email');
         

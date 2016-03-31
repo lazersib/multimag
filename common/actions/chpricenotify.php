@@ -63,7 +63,7 @@ class chPriceNotify extends \Action {
         }
         
         $default_firm_id = \cfg::get('site', 'default_firm');
-        $site_name = \cfg::get('site', 'site_name');
+        $site_name = \cfg::get('site', 'name');
         $site_display_name = \cfg::get('site', 'display_name');
         $admin_email = \cfg::get('site', 'admin_email');
         
@@ -120,7 +120,7 @@ class chPriceNotify extends \Action {
     }
     
     function sendMessage($pos_data, $header, $footer, $email) {
-        $site_name = \cfg::get('site', 'site_name');
+        $site_name = \cfg::get('site', 'name');
         $site_display_name = \cfg::get('site', 'display_name');
         $admin_email = \cfg::get('site', 'admin_email');
         $pc = \PriceCalc::getInstance();

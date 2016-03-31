@@ -88,7 +88,7 @@ class BadPriceNotify extends \Action {
         }
         
         $default_firm_id = \cfg::get('site', 'default_firm');
-        $site_name = \cfg::get('site', 'site_name');
+        $site_name = \cfg::get('site', 'name');
         $site_display_name = \cfg::get('site', 'display_name');
         $doc_adm_email = \cfg::get('site', 'doc_adm_email');
         
@@ -125,7 +125,7 @@ class BadPriceNotify extends \Action {
     }
     
     function sendMessage($pos_data, $header, $footer, $email) {
-        $site_name = \cfg::get('site', 'site_name');
+        $site_name = \cfg::get('site', 'name');
         $site_display_name = \cfg::get('site', 'display_name');
         $admin_email = \cfg::get('site', 'admin_email');
         
@@ -159,8 +159,8 @@ class BadPriceNotify extends \Action {
         $email_message->AddQuotedPrintableTextPart($mail_text);
         $error = $email_message->Send();
 
-        if ($error === "") {
-            throw new \Exception('Не удалось отправить сообщение на адрес '.$email);
+        if (strcmp($error, "")) {
+            throw new \Exception('Не удалось отправить сообщение на адрес '.$email.': '.$error);
         }
     }
 

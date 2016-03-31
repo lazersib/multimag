@@ -98,13 +98,14 @@ class doc_Nulltype extends \document {
     }
 
     /// @brief Получить значение дополниетльного параметра документа.
-    /// Вернёт пустую строку в случае отсутствия параметра
-    /// @param name Имя параметра
-    public function getDopData($name) {
+    /// Вернёт $default в случае отсутствия параметра
+    /// @param $name Имя параметра
+    /// @param $default Значение по умолчанию
+    public function getDopData($name, $default = '') {
         if (isset($this->dop_data[$name])) {
             return $this->dop_data[$name];
         } else {
-            return '';
+            return $default;
         }
     }
 
@@ -977,7 +978,7 @@ class doc_Nulltype extends \document {
         try {
             if (!\acl::testAccess('doc.' . $this->typename, \acl::CANCEL)) {
                 if ((!\acl::testAccess('doc.' . $this->typename, \acl::TODAY_CANCEL)) || ($dd > $this->doc_data['date'])) {
-                    throw new AccessException();
+                    throw new \AccessException();
                 }
             }
             $this->extendedCancelAclCheck();
@@ -2478,22 +2479,19 @@ class doc_Nulltype extends \document {
      * и средств из/в банк при проведении документа
      * @throws Exception При отсутствии
      */
-    protected function checkIfTypeForDocumentExists()
-    {
+    protected function checkIfTypeForDocumentExists() {
         $allowedTypes = [
             4 => 'credit_type',
             5 => 'rasxodi',
             6 => 'credit_type',
             7 => 'rasxodi',
         ];
-        if(!isset($allowedTypes[$this->doc_type]))
-        {
+        if(!isset($allowedTypes[$this->doc_type])) {
             throw new \Exception('Для данного типа документа проверка не разрешена');
         }
         if(cfg::get('doc', 'restrict_dc_nulltype', true)
             && isset($this->dop_data[$allowedTypes[$this->doc_type]])
-            && $this->dop_data[$allowedTypes[$this->doc_type]] == 0)
-        {
+            && $this->dop_data[$allowedTypes[$this->doc_type]] == 0) {
             $type = $this->doc_type%2 === 1 ? 'расхода' : 'дохода';
             throw new \Exception("Не задан вид $type у проводимого документа.");
         }

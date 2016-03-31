@@ -99,6 +99,9 @@ class CDR extends \IModule {
                     case 'dcontext':
                         $where_sql .= " AND `dcontext` = '".$db->real_escape_string($value)."'";
                         break;
+                    case 'accountcode':
+                        $where_sql .= " AND `accountcode` = '".$db->real_escape_string($value)."'";
+                        break;
                 }
             }
         }
@@ -120,13 +123,28 @@ class CDR extends \IModule {
     
     protected function getCDRContextList() {
         global $db;
+        $data = array();
         $res = $db->query("SELECT `dcontext`"
             . " FROM `asterisk_cdr`"
             . " GROUP BY `dcontext`"
             . " ORDER BY `dcontext` ASC"
-            . " LIMIT 150000");
+            . " LIMIT 1500");
         while ($line = $res->fetch_assoc()) {
             $data[] = $line['dcontext'];
+        }
+        return $data;
+    }
+    
+    protected function getCDRAccountsList() {
+        global $db;
+        $data = array();
+        $res = $db->query("SELECT `accountcode`"
+            . " FROM `asterisk_cdr`"
+            . " GROUP BY `accountcode`"
+            . " ORDER BY `accountcode` ASC"
+            . " LIMIT 1500");
+        while ($line = $res->fetch_assoc()) {
+            $data[] = $line['accountcode'];
         }
         return $data;
     }
@@ -175,6 +193,7 @@ class CDR extends \IModule {
     
     protected function getQueueEvents() {
         global $db;
+        $data = array();
         $res = $db->query("SELECT `event`"
             . " FROM `asterisk_queue_log`"
             . " GROUP BY `event`"
@@ -253,7 +272,7 @@ class CDR extends \IModule {
 
     protected function renderCDR() {
         global $tmpl, $db, $CONFIG;
-        $filter = requestA(array('date_from', 'date_to', 'src', 'dst', 'dcontext'));
+        $filter = requestA(array('date_from', 'date_to', 'src', 'dst', 'dcontext', 'accountcode'));
         if(!$filter['date_from']) {
             $filter['date_from'] = date("Y-m-d");
         }
@@ -263,14 +282,23 @@ class CDR extends \IModule {
             $sel = $filter['dcontext']==$context?' selected':'';
             $context_options .= "<option value='$context'{$sel}>$context</option>";
         }
+        
+        $accounts = $this->getCDRAccountsList();
+        $account_options = "<option value=''>--не задан--</option>";
+        foreach($accounts as $account) {
+            $sel = $filter['accountcode']==$account?' selected':'';
+            $account_options .= "<option value='$account'{$sel}>$account</option>";
+        }
+        
         $tmpl->addBreadcrumb('Детализация вызовов', '');
-        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='get'>"
+        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='post'>"
                 . "<table>"
                 . "<tr><td>Дата от:</td><td><input type='text' name='date_from' value='{$filter['date_from']}'></td>"
                 . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
                 . "<td>Номер-источник</td><td><input type='text' name='src' value='{$filter['src']}'></td>"
                 . "<td>Номер-цель</td><td><input type='text' name='dst' value='{$filter['dst']}'></td>"
-                . "<td>Контекст</td><td><select name='dcontext'>$context_options</select></td></tr>"
+                . "<td>Контекст</td><td><select name='dcontext'>$context_options</select></td>"
+                . "<td>Аккаунт</td><td><select name='accountcode'>$account_options</select></td></tr>"
                 . "</table>"
                 . "<button type='submit'>Отфильтровать</button>"
                 . "</form>");

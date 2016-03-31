@@ -113,14 +113,14 @@ class PriceCalc {
     /// Установить ID пользователя для расчёта цен
     /// @param $user_id id пользователя.
     public function setUserId($user_id) {
-        $this->user_id = $user_id;
+        $this->user_id = intval($user_id);
         $this->current_price_id = 0;
     }
 
     /// Установить ID агента для расчёта цен
     /// @param $agent_id id агента. Должен существовать.
     public function setAgentId($agent_id) {
-        $this->agent_id = $agent_id;
+        $this->agent_id = intval($agent_id);
         $this->agent_avg_sum = false;
         $this->agent_price_id = 0;
         $this->no_retail_prices = 0;
@@ -131,7 +131,7 @@ class PriceCalc {
     /// Установить ID собственной организации для расчёта цен
     /// @param $firm_id id организации. Должна существовать.
     public function setFirmId($firm_id) {
-        $this->firm_id = $firm_id;
+        $this->firm_id = intval($firm_id);
     }
 
     /// Получить флаг no_bulk_prices
@@ -200,9 +200,10 @@ class PriceCalc {
             $this->no_bulk_prices = $agent_info['no_bulk_prices'];
         }
 
-        if ($this->agent_price_id && $this->no_bulk_prices) {
+        if ($this->agent_price_id) {
             $find_id = $this->agent_price_id;
-        } else {
+        } 
+        elseif (!$this->no_bulk_prices) {
             foreach ($this->bulk_prices as $price) {
                 if ($this->agent_price_id && $this->agent_price_id == $price['id']) {
                     $find_id = $price['id'];
@@ -221,9 +222,6 @@ class PriceCalc {
                     break;
                 }
             }
-        }
-        if ((!$find_id) && $this->agent_price_id) {
-            $find_id = $this->agent_price_id;
         }
 
         if (!$find_id) {
