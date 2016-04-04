@@ -17,14 +17,17 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
-
 include_once($CONFIG['location'] . "/common/bank1c.php");
 
 /// Сценарий автоматизации:  Импорт банковской выписки
 class ds_bank_import {
+    
+    protected $agent_rs;    //< Расчётные счета и связанные агенты
+    protected $agent_inns;  //< ИНН и связанные агенты
 
     function getForm() {
+        $max_fs = get_max_upload_filesize();
+        $max_fs_size = formatRoundedFileSize($max_fs);
         return "<h1>" . $this->getname() . "</h1>
             <form action='' method='post' enctype='multipart/form-data'>
             <input type='hidden' name='mode' value='load'>
@@ -32,8 +35,8 @@ class ds_bank_import {
             <input type='hidden' name='sn' value='bank_import'>
 
             Файл банковской выписки:<br>
-            <small>В формате 1с v 1.01</small><br>
-            <input type='hidden' name='MAX_FILE_SIZE' value='10000000'><input name='userfile' type='file'><br>
+            <small>В формате 1с v 1.01, $max_fs_size максимум.</small><br>
+            <input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br>
             <label><input type='checkbox' name='process_in' value='1' checked>Обработать приходы</label><br>
             <label><input type='checkbox' name='process_out' value='1'>Обработать расходы</label><br>
             <label><input type='checkbox' name='apply' value='1'>Провести документы</label><br>
@@ -45,19 +48,31 @@ class ds_bank_import {
             <p>Проверка принадлежности агента происходит по расчётному счёту.</p>";
     }
     
-    // Список сечетов агентов
-    function loadAgentsRsList() {
+    /// Список счетов агентов
+    function loadAgentsData() {
         global $db;
-        $agents_rs = array();
-        $res = $db->query("SELECT `id`, `rs` FROM `doc_agent`");
+        $this->agent_rs = array();
+        $this->agent_inns = array();
+        /// Сначала из основного списка
+        $res = $db->query("SELECT `id`, `inn`, `rs` FROM `doc_agent`");
         while($line = $res->fetch_assoc()) {
             if($line['rs']) {
-                $agents_rs[$line['rs']] = $line['id'];
+                $this->agent_rs[$line['rs']] = $line['id'];
+            }
+            if($line['inn']) {
+                $this->agent_inns[$line['inn']] = $line['id'];
             }
         }
-        return $agents_rs;
+        /// Тпеперь из реквизитов
+        $res = $db->query("SELECT `agent_id`, `rs` FROM `agent_banks`");
+        while($line = $res->fetch_assoc()) {
+            if($line['rs']) {
+                $this->agent_rs[$line['rs']] = $line['id'];
+            }
+        }
     }
     
+    /// Исполнение сценария
     function run($mode) {
         global $tmpl, $db;
         if ($mode == 'view') {
@@ -87,11 +102,10 @@ class ds_bank_import {
                 }
             }
                         
-            $agents_rs = $this->loadAgentsRsList();
+            $this->loadAgentsData();
             
             $tmpl->addContent("<table width='100%' class='list'>
-                <tr>
-                <th>ID</th><th>Тип</th><th>Номер П/П</th><th>Дата</th><th>Сумма</th><th>Счёт</th><th>Назначение</th><th>К заявке</th><th>Есть?</th>");
+            <tr><th>ID</th><th>Тип</th><th>Номер П/П</th><th>Дата</th><th>Сумма</th><th>Счёт</th><th>Назначение</th><th>К заявке</th><th>Есть?</th></tr>");
             $db->startTransaction();
             foreach ($parsed_data as $import_doc) {
                 if(isset($banks[$import_doc['src']['rs']])) { // Исходящий
@@ -133,7 +147,8 @@ class ds_bank_import {
                 
                 // Поиск документа в системе
                 $agent_rs_sql = $db->real_escape_string($agent_info['rs']);
-                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`, `doc_list`.`agent`
+                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`
+                        , `doc_list`.`agent`
                     FROM `doc_list`
                     INNER JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
                     WHERE `doc_list`.`type`=$doc_type AND `doc_agent`.`rs`='$agent_rs_sql' AND `doc_list`.`altnum`='{$import_doc['docnum']}'"
@@ -148,8 +163,13 @@ class ds_bank_import {
                 if(!$doc_nums) {
                     // Определяем id агента
                     $agent_id = 1;
-                    if(isset($agents_rs[$agent_info['rs']])) {
-                        $agent_id = $agents_rs[$agent_info['rs']];
+                    if(isset($this->agent_rs[$agent_info['rs']])) {
+                        $agent_id = $this->agent_rs[$agent_info['rs']];
+                    }
+                    if($agent_id==1) {
+                        if(isset($this->agent_inns[$agent_info['inn']])) {
+                            $agent_id = $this->agent_inns[$agent_info['inn']];
+                        } 
                     }
                     
                     // Определяем номер заявки покупателя    
@@ -172,7 +192,7 @@ class ds_bank_import {
                     }
                     
                     if($agent_id == 1 && !$no_create_agents) { //Автодобавление агента
-                        $repl = array('ООО', 'ОАО', 'ЗАО', 'ИП', '\'', '"');
+                        $repl = array('ООО', 'ОАО', 'ЗАО', 'ПАО', 'ИП', '\'', '"');
                         $agent_ins_data = array(
                             'name'      => trim(str_replace($repl, '', $agent_info['name'])).' (auto)',
                             'fullname'  => trim($agent_info['name']),
@@ -186,7 +206,8 @@ class ds_bank_import {
                             'comment'   => 'Автоматически созданный агент'
                         );
                         $agent_id = $db->insertA('doc_agent', $agent_ins_data);
-                        $agents_rs[$agent_info['rs']] = $agent_id;
+                        $this->agent_rs[$agent_info['rs']] = $agent_id;
+                        $this->agent_inns[$agent_info['inn']] = $agent_id;
                     }
                     
                     if($agent_id == 1) { // Добавим название агента в комментарий

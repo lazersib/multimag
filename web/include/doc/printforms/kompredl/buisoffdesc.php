@@ -32,13 +32,10 @@ class buisoffdesc extends buisoff {
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         $nomenclature = $this->doc->getDocumentNomenclature('base_desc');
-        $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
-        $bank_info = $res->fetch_assoc();
         
         $this->pdf->AddPage('P');
         $this->addTechFooter();        
         $this->addHeadBanner($doc_data['firm_id']);
-        $this->addbankInfo($firm_vars, $bank_info);
         
         $text = "Коммерческое предложение №{$doc_data['altnum']}{$doc_data['subtype']} от " . date("d.m.Y", $doc_data['date']);
         $this->addHeader($text);

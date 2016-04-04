@@ -67,18 +67,53 @@ class contract extends \doc\printforms\iPrintFormPdf {
         $this->pdf->Ln(7);
         $this->pdf->SetFont('', '', 8);
 
-        $str = @"{$agent->fullname}\nАдрес: {$agent->adres}\nТелефон: ".$agent->getPhone()."\nИНН:{$agent->inn}, КПП:{$agent->kpp}, ОКПО:{$agent->okpo},"
-        . " ОКВЭД:{$agent->okved}\nР/С:{$agent->rs} в банке {$agent->bank}, БИК:{$agent->bik}, К/С:{$agent->ks}\n_______________________ / ______________________ /\n\n      М.П.";
-        $str = iconv('UTF-8', 'windows-1251', $str);
-
+        // Реквизиты поккупателя
+        $str = $agent->fullname;
+        if($agent->adres) {
+            $str .= "\nАдрес: {$agent->adres}";
+        }
+        if($agent->getPhone()) {
+            $str .= "\nТелефон: ".$agent->getPhone();
+        }
+        if($agent->inn || $agent->kpp) {
+            $str .= "\n";
+            if($agent->inn) {
+                $str .= "ИНН: ".$agent->inn;
+            }
+            if($agent->kpp) {
+                $str .= "КПП: ".$agent->kpp;
+            }
+        }
+        if($agent->okpo) {
+            $str .= "\nОКПО: ".$agent->okpo;
+        }
+        if($agent->okved) {
+            $str .= "\nОКВЭД: ".$agent->okved;
+        }
+        if($agent->rs ||$agent->bank ||$agent->bik ||$agent->ks) {
+            $str .= "\n";
+            if($agent->rs) {
+                $str .="Р/С:{$agent->rs}";
+            }
+            if($agent->bank) {
+                $str .=" в банке {$agent->bank}";
+            }
+            if($agent->bik) {
+                $str .=", БИК:{$agent->bik}";
+            }
+            if($agent->ks) {
+                $str .=", К/С:{$agent->ks}";
+            }
+        }        
+        $str .= "\n_______________________ / ______________________ /\n\n      М.П.";
+        
         $y = $this->pdf->GetY();
 
-        $this->pdf->MultiCell(85, 4, $str, 0, 'L', 0);
+        $this->pdf->MultiCellIconv(85, 4, $str, 0, 'L', 0);
         $this->pdf->SetY($y);
         $this->pdf->SetX(100);
 
         $str = "{$firm_vars['firm_name']}\nАдрес: {$firm_vars['firm_adres']}\nИНН/КПП {$firm_vars['firm_inn']}\nР/С:{$bank_info['rs']} в банке {$bank_info['name']}, БИК:{$bank_info['bik']}, К/С:{$bank_info['ks']}\n_________________________ / {$firm_vars['firm_director']} /\n\n      М.П.";
-        $str = iconv('UTF-8', 'windows-1251', $str);
-        $this->pdf->MultiCell(0, 4, $str, 0, 'L', 0);
+        $this->pdf->MultiCellIconv(0, 4, $str, 0, 'L', 0);
     }
 }

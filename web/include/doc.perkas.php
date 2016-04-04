@@ -124,14 +124,12 @@ class doc_PerKas extends doc_Nulltype {
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы назначения!');
         }
-
+        if ($silent) {
+            return;
+        }
         $budet = $this->checkKassMinus();
         if ($budet < 0) {
             throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
-        }
-
-        if ($silent) {
-            return;
         }
 
         $db->update('doc_list', $this->id, 'ok', time());

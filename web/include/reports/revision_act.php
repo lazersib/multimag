@@ -34,22 +34,15 @@ class Report_Revision_Act extends BaseReport {
         $date_end = date("Y-m-d");
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
             <script src='/css/jquery/jquery.js' type='text/javascript'></script>
-            <script src='/css/jquery/jquery.alerts.js' type='text/javascript'></script>
-            <link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen'>
             <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
-            <link rel='stylesheet' href='/css/jquery/ui/themes/base/jquery.ui.all.css'>
-            <script src='/css/jquery/ui/jquery.ui.core.js'></script>
-            <script src='/css/jquery/ui/jquery.ui.widget.js'></script>
-            <script src='/css/jquery/ui/jquery.ui.datepicker.js'></script>
-            <script src='/css/jquery/ui/i18n/jquery.ui.datepicker-ru.js'></script>
             <form action='' method='post'>
             <input type='hidden' name='mode' value='revision_act'>
             Агент-партнёр:<br>
             <input type='hidden' name='agent_id' id='agent_id' value=''>
             <input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
             <p class='datetime'>
-            Дата от:<br><input type='text' id='datepicker_f' name='date_st' value='1970-01-01' maxlength='10'><br>
-            Дата до:<br><input type='text' id='datepicker_t' name='date_end' value='$date_end' maxlength='10'></p><br>
+            Дата от:<br><input type='text' id='dt_f' name='date_st' value='1970-01-01' maxlength='10'><br>
+            Дата до:<br><input type='text' id='dt_t' name='date_end' value='$date_end' maxlength='10'></p><br>
             Организация:<br><select name='firm_id'>");
         if(\acl::testAccess('firm.global', \acl::VIEW)) {
             $tmpl->addContent("<option value='0'>--- Любая ---</option>");
@@ -79,7 +72,8 @@ class Report_Revision_Act extends BaseReport {
             <button type='submit'>Сформировать отчет</button></form>
 
             <script type='text/javascript'>
-
+            initCalendar('dt_f',false);
+            initCalendar('dt_t',false);
             $(document).ready(function(){
                 $(\"#ag\").autocomplete(\"/docs.php\", {
                 delay:300,
@@ -94,14 +88,6 @@ class Report_Revision_Act extends BaseReport {
                 onItemSelect:agselectItem,
                 extraParams:{'l':'agent','mode':'srv','opt':'ac'}
                 });
-                $.datepicker.setDefaults( $.datepicker.regional[ 'ru' ] );
-
-                $( '#datepicker_f' ).datepicker({showButtonPanel: true	});
-                $( '#datepicker_f' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-                $( '#datepicker_f' ).datepicker( 'setDate' , '1970-01-01' );
-                $( '#datepicker_t' ).datepicker({showButtonPanel: true	});
-                $( '#datepicker_t' ).datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
-                $( '#datepicker_t' ).datepicker( 'setDate' , '$date_end' );
             });
             function agliFormat (row, i, num) {
                 var result = row[0] + \"<em class='qnt'>тел. \" +
@@ -368,9 +354,10 @@ class Report_Revision_Act extends BaseReport {
         $pr += $s_pr;
         $ras += $s_ras;
 
-        $razn = $pr - $ras;
+        $razn = round($pr - $ras, 2);
         $razn_p = abs($razn);
-        $razn_p = sprintf("%01.2f", $razn_p);
+        $razn_text = num2str($razn_p, 'rub', 2);
+        $razn_p = number_format($razn_p, 2, '.', ' ');
 
         if ($pr > $ras) {
             $pr-=$ras;
@@ -396,8 +383,13 @@ class Report_Revision_Act extends BaseReport {
                 $tmpl->addContent("задолженность в пользу " . $fn . " $razn_p руб.");
             } else if ($razn < 0) {
                 $tmpl->addContent("задолженность в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
-            } else
+            } else {
                 $tmpl->addContent("переплат и задолженностей нет!");
+            }
+            if($razn) {
+                $str = "В результате сверки выявлено расхождение информации о состоянии расчётов в размере {$razn_p} руб. ( {$razn_text} )";
+                $tmpl->addContent("<tr><td colspan=4>".html_out($str)."</td></tr>");
+            }
             $tmpl->addContent("<td colspan=4>
                 <tr><td colspan=4>От " . $firm_vars['firm_name'] . "<br>
                 директор<br>____________________________ (" . $firm_vars['firm_director'] . ")<br><br>м.п.<br>
@@ -427,6 +419,12 @@ class Report_Revision_Act extends BaseReport {
 
             $str = iconv('UTF-8', 'windows-1251', $str);
             $pdf->Write(4, $str);
+            if($razn) {
+                $str = "В результате сверки выявлено расхождение информации о состоянии расчётов в размере {$razn_p} руб. ( {$razn_text} )";
+                $str = iconv('UTF-8', 'windows-1251', $str);
+                $pdf->Write(4, $str);
+            }
+            
             $pdf->Ln(7);
             $x = $pdf->getX() + $t_width[0] + $t_width[1] + $t_width[2] + $t_width[3];
             $y = $pdf->getY();
