@@ -18,6 +18,16 @@ input
 /* 	border-radius:		4px; */
 }
 
+label.autoalert input[type=checkbox]:checked~span {
+    color: #f00;
+    font-weight: bold;
+}
+
+label.autohl input[type=radio]:checked~span {
+    color: #080;
+    font-weight: bold;
+}
+
 textarea
 {
 	border:	1px solid #ccc;
@@ -788,6 +798,16 @@ table.list div.ic {
 	text-align: right;
 	margin: 0;
 	padding: 0;
+}
+
+table.editcard > tbody > tr > th, table.editcard > tr > th {
+    background-color: #fefefe;
+    color: #004;
+    text-align: center;
+    font-weight: normal;
+    padding: 15px 5px 2px 5px;
+    border-top: #aaa 1px solid;
+    border-bottom: #ccc 1px dotted;
 }
 
 .searchblock

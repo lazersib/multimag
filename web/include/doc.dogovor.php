@@ -90,31 +90,94 @@ class doc_Dogovor extends doc_Nulltype {
         }
     }
 
+    /// Получить список шаблонных полей договора
+    public function getVariables() {
+        $agent = new \models\agent($this->doc_data['agent']);
+        return array(
+            'DOC_NUM' => [
+                'name' => 'Номер договора',
+                'value' => $this->doc_data['altnum']
+            ],
+            'DOC_DATE' => [
+                'name' => 'Дата договора',
+                'value' => date("Y-m-d", $this->doc_data['date'])
+            ],
+            'DOC_NAME' => [
+                'name' => 'Наименование договора',
+                'value' => $this->getDopData('name')
+            ],
+            'AGENT_FULLNAME' => [
+                'name' => 'Полное имя агента',
+                'value' => $agent->fullname
+            ],
+            'AGENT_LEADER_NAME' => [
+                'name' => 'ФИО руководителя',
+                'value' => $agent->leader_name
+            ],
+            'AGENT_LEADER_NAME_R' => [
+                'name' => 'ФИО руководителя в родительном падеже',
+                'value' => $agent->leader_name_r
+            ],
+            'AGENT_LEADER_POST' => [
+                'name' => 'Должность руководителя',
+                'value' => $agent->leader_post
+            ],
+            'AGENT_LEADER_POST_R' => [
+                'name' => 'Должность руководителя в родительном падеже',
+                'value' => $agent->leader_post_r
+            ],
+            'AGENT_LEADER_REASON' => [
+                'name' => 'Основание деятельности руководителя',
+                'value' => $agent->leader_reason
+            ],
+            'AGENT_LEADER_REASON_R' => [
+                'name' => 'Основание деятельности руководителя в родительном падеже',
+                'value' => $agent->leader_reason
+            ],
+            'END_DATE' => [
+                'name' => 'Дата окончания действия договора',
+                'value' => $this->getDopData('end_date')
+            ],
+            'DEBT_SIZE' => [
+                'name' => 'Максимально допустимый размер задолженности',
+                'value' => $this->getDopData('debt_size')
+            ],
+            'PAY_DEFERMENT' => [
+                'name' => 'Отсрочка платежа (дней)',
+                'value' => $this->getDopData('deferment')
+            ],
+            'CONTRACT_LIMIT' => [
+                'name' => 'Лимит оборотов по договору',
+                'value' => $this->getDopData('limit')
+            ],
+            'FIRM_NAME' => [
+                'name' => 'Наименование собственной организации',
+                'value' => $this->firm_vars['firm_name']
+            ],
+            'FIRM_DIRECTOR' => [
+                'name' => 'ФИО руководителя собственной организации',
+                'value' => $this->firm_vars['firm_director_r']
+            ],
+            'FIRM_DIRECTOR_R' => [
+                'name' => 'ФИО руководителя собственной организации в родительном падеже',
+                'value' => $this->firm_vars['firm_director_r']
+            ],
+        );
+    }
+    
     function DopBody() {
-        global $tmpl, $db;
-        if ($this->dop_data['received'])
+        global $tmpl;
+        if ($this->dop_data['received']) {
             $tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
-        if ($this->doc_data['comment']) {
-            $agent = new \models\agent($this->doc_data['agent']);
-            $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
-            $bank_info = $res->fetch_assoc();
-
-            $wikiparser = new WikiParser();
-
-            $wikiparser->AddVariable('DOCNUM', $this->doc_data['altnum']);
-            $wikiparser->AddVariable('DOCDATE', date("d.m.Y", $this->doc_data['date']));
-            $wikiparser->AddVariable('AGENT', $agent->fullname);
-            $wikiparser->AddVariable('AGENTDOL', 'директора');
-            $wikiparser->AddVariable('AGENTFIO', $agent->dir_fio_r);
-            $wikiparser->AddVariable('FIRMNAME', $this->firm_vars['firm_name']);
-            $wikiparser->AddVariable('FIRMDIRECTOR', $this->firm_vars['firm_director_r']);
-            $wikiparser->AddVariable('ENDDATE', @$this->dop_data['end_date']);
-            $text = $wikiparser->parse($this->doc_data['comment'], ENT_QUOTES, "UTF-8");
-            $tmpl->addContent("<b>Текст договора (форматирование может отличаться от форматирования при печати):</b> <p>$text</p>");
-            $this->doc_data['comment'] = '';
-        } else {
-            $tmpl->addContent("<br><b style='color: #f00'>ВНИМАНИЕ! Текст договора не указан!</b><br>");
         }
+        $vars = $this->getVariables();
+        $tmpl->addContent("<h2>Выражения подстановки, которые возможно использовать в текста договора:</h2>"
+            . "<table class='list'><tr><th>Выражение</th><th>Описание</th><th>Текущее значение</th></tr>");
+        foreach($vars as $var => $obj) {
+            $tmpl->addContent("<tr><td>{".$var."}</td><td>".html_out($obj['name'])."</td><td>".html_out($obj['value'])."</td></tr>");
+        }
+        $tmpl->addContent("</table>");
+        $tmpl->addContent("<p>Для просмотра текста договора используйте печатную форму.</p>");
     }
 
     /// Формирование другого документа на основании текущего

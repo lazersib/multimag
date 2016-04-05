@@ -147,13 +147,9 @@ class Report_Revision_Act extends BaseReport {
             $date_end = time();
         }
 
-        $ares = $db->query("SELECT `id`, `fullname`, `dir_fio`, `email`, `name` FROM `doc_agent` WHERE `id`='$agent_id'");
-        if ($ares->num_rows == 0) {
-            throw new Exception("Агент не найден!");
-        }
-        list($agent, $fn, $dir_fio, $_email, $agent_name) = $ares->fetch_row();
+        $agent = new \models\agent($agent_id);
         if (!$email) {
-            $email = $_email;
+            $email = $agent->getEmail();
         }
         if (!$email && $sendmail) {
             throw new \Exception("Не задан email");
@@ -169,19 +165,19 @@ class Report_Revision_Act extends BaseReport {
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`date`, `doc_list`.`sum`, `doc_list`.`altnum`, `doc_types`.`name`, `doc_list`.`firm_id`
             FROM `doc_list`
             LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`agent`='$agent' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' " . $sql_add . " ORDER BY `doc_list`.`date`");
+		WHERE `doc_list`.`agent`='$agent_id' AND `doc_list`.`ok`!='0' AND `doc_list`.`date`<='$date_end' " . $sql_add . " ORDER BY `doc_list`.`date`");
         if ($opt == 'html') {
             $tmpl->setContent("<h1>" . $this->getName() . "</h1>
                 <center>от " . html_out($firm_vars['firm_name']) . "<br>за период c " . date("d.m.Y", $date_st) . " по " . date("d.m.Y", $date_end) . "
-                $fn</center>
+                {$agent->fullname}</center>
                 Мы, нижеподписавшиеся, директор " . html_out($firm_vars['firm_name'] . ' ' . $firm_vars['firm_director']) . "
-                c одной стороны, и директор " . html_out($fn . ' ' . $dir_fio) . " с другой стороны,
+                c одной стороны, и " . html_out($agent->leader_post . ' ' . $agent->fullname . ' ' . $agent->leader_name) . " с другой стороны,
                 составили настоящий акт сверки в том, что состояние взаимных расчетов по
                 данным учёта следующее:<br><br>
                 <table width=100%>
                 <tr>
                 <td colspan=4 width='50%'>по данным " . html_out($firm_vars['firm_name']) . "
-                <td colspan=4 width='50%'>по данным " . html_out($fn) . "
+                <td colspan=4 width='50%'>по данным " . html_out($agent->fullname) . "
                 <tr>
                 <th>Дата<th>Операция<th>Дебет<th>Кредит
                 <th>Дата<th>Операция<th>Дебет<th>Кредит");
@@ -196,7 +192,7 @@ class Report_Revision_Act extends BaseReport {
             $str = iconv('UTF-8', 'windows-1251', $str);
             $pdf->MultiCell(0, 4, $str, 0, 'C', 0);
             $pdf->Ln(2);
-            $str = "Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и директор $fn $dir_fio, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";
+            $str = "Мы, нижеподписавшиеся, директор {$firm_vars['firm_name']} {$firm_vars['firm_director']} c одной стороны, и {$agent->leader_post} {$agent->fullname} {$agent->leader_name}, с другой стороны, составили настоящий акт сверки о том, что состояние взаимных расчетов по данным учёта следующее:";
             $str = iconv('UTF-8', 'windows-1251', $str);
             $pdf->Write(5, $str, '');
 
@@ -209,7 +205,7 @@ class Report_Revision_Act extends BaseReport {
 
             $h_width = $t_width[0] + $t_width[1] + $t_width[2] + $t_width[3];
             $str1 = iconv('UTF-8', 'windows-1251', "По данным {$firm_vars['firm_name']}");
-            $str2 = iconv('UTF-8', 'windows-1251', "По данным $fn");
+            $str2 = iconv('UTF-8', 'windows-1251', "По данным {$agent->fullname}");
 
             $pdf->MultiCell($h_width, 5, $str1, 0, 'L', 0);
             $max_h = $pdf->GetY() - $y;
@@ -380,9 +376,9 @@ class Report_Revision_Act extends BaseReport {
                 <tr><td colspan=4>По данным {$firm_vars['firm_name']} на " . date("d.m.Y", $date_end) . "<td colspan=4>
                 <tr><td colspan=4>");
             if ($razn > 0) {
-                $tmpl->addContent("задолженность в пользу " . $fn . " $razn_p руб.");
+                $tmpl->addContent("задолженность в пользу " . html_out($agent->fullname) . " $razn_p руб.");
             } else if ($razn < 0) {
-                $tmpl->addContent("задолженность в пользу " . $firm_vars['firm_name'] . " $razn_p руб.");
+                $tmpl->addContent("задолженность в пользу " . html_out($firm_vars['firm_name']) . " $razn_p руб.");
             } else {
                 $tmpl->addContent("переплат и задолженностей нет!");
             }
@@ -393,8 +389,8 @@ class Report_Revision_Act extends BaseReport {
             $tmpl->addContent("<td colspan=4>
                 <tr><td colspan=4>От " . $firm_vars['firm_name'] . "<br>
                 директор<br>____________________________ (" . $firm_vars['firm_director'] . ")<br><br>м.п.<br>
-                <td colspan=4>От $fn<br>
-                директор<br> ____________________________ ($dir_fio)<br><br>м.п.<br>
+                <td colspan=4>От " . html_out($agent->fullname) . "<br>
+                " . html_out($agent->leader_post) . "<br> ____________________________ (" . html_out($agent->leader_name) . ")<br><br>м.п.<br>
                 </table>");
         }
         else if ($opt == 'pdf') {
@@ -410,7 +406,7 @@ class Report_Revision_Act extends BaseReport {
             $pdf->Write(4, $str);
             $pdf->Ln();
             if ($razn > 0) {
-                $str = "задолженность в пользу " . $fn . " $razn_p руб.";
+                $str = "задолженность в пользу " . $agent->fullname . " $razn_p руб.";
             } else if ($razn < 0) {
                 $str = "задолженность в пользу " . $firm_vars['firm_name'] . " $razn_p руб.";
             } else {
@@ -430,7 +426,7 @@ class Report_Revision_Act extends BaseReport {
             $y = $pdf->getY();
             $str = iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
             $pdf->MultiCell($t_width[0] + $t_width[1] + $t_width[2] + $t_width[3], 5, $str, 0, 'L', 0);
-            $str = iconv('UTF-8', 'windows-1251', "От $fn\n\n           ____________________________ ($dir_fio)\n\n           м.п.");
+            $str = iconv('UTF-8', 'windows-1251', "От {$agent->fullname}\n\n{$agent->leader_post}  ____________________________ ({$agent->leader_name})\n\n           м.п.");
             $pdf->lMargin = $x;
             $pdf->setX($x);
 
@@ -456,8 +452,8 @@ class Report_Revision_Act extends BaseReport {
 
                 $email_message = new email_message_class();
                 $email_message->default_charset = "UTF-8";
-                if ($fn) {
-                    $email_message->SetEncodedEmailHeader("To", $email, $fn);
+                if ($agent->fullname) {
+                    $email_message->SetEncodedEmailHeader("To", $email, $agent->fullname);
                 } else {
                     $email_message->SetEncodedEmailHeader("To", $email, $email);
                 }
@@ -474,13 +470,13 @@ class Report_Revision_Act extends BaseReport {
                 if (!$doc_autor['worker_email']) {
                     $email_message->SetEncodedEmailHeader("From", $pref->site_email, "Почтовый робот {$pref->site_name}");
                     $email_message->SetHeader("Sender", $pref->site_email);
-                    $text_message = "Здравствуйте, {$fn}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$pref->site_display_name} ({$pref->site_name})\n\n"
+                    $text_message = "Здравствуйте, {$agent->fullname}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$pref->site_display_name} ({$pref->site_name})\n\n"
                         . "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n"
                         . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$pref->site_name}!";
                 } else {
                     $email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
                     $email_message->SetHeader("Sender", $doc_autor['worker_email']);
-                    $text_message = "Здравствуйте, {$fn}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$pref->site_name}\n\n"
+                    $text_message = "Здравствуйте, {$agent->fullname}!\nВо вложении находится заказанный Вами документ (акт сверки) от {$pref->site_name}\n\n"
                         . "Ответственный сотрудник: {$doc_autor['worker_real_name']}\nКонтактный телефон: {$doc_autor['worker_phone']}\n"
                         . "Электронная почта (e-mail): {$doc_autor['worker_email']}";
                     $text_message.="\nОтправитель: {$_SESSION['name']}";
@@ -501,7 +497,7 @@ class Report_Revision_Act extends BaseReport {
                     throw new Exception($error);
                 }
                 $tmpl->ajax = 0;
-                $tmpl->msg("Документ отправлен.", "ok");
+                $tmpl->msg("Документ отправлен по адреск email: ".html_out($email), "ok");
             }
         }
     }

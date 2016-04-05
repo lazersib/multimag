@@ -99,7 +99,7 @@ class simplexml1cdataimport extends \sync\dataimport {
             $this->parseDocumentNode($docnode);
         }
         // Формирование ответа
-        $out = new \SimpleXMLElement('<multimag_exchange version="1.0"><result><status>ok</status><message>Ok</message></result></multimag_exchange>');
+        $out = new \SimpleXMLElement('<multimag_exchange version="1.0.1"><result><status>ok</status><message>Ok</message></result></multimag_exchange>');
         if(count($this->newids)>0) {
             $refbooks = $out->addChild('refbooks');
             if(isset($this->newids['firms'])) {

@@ -29,9 +29,7 @@ class contract extends \doc\printforms\iPrintFormPdf {
     public function make() {
         global $db;        
         require('fpdf/html2pdf.php');
-        $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
-        $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         
         $agent = new \models\agent($doc_data['agent']);
@@ -39,15 +37,10 @@ class contract extends \doc\printforms\iPrintFormPdf {
         $bank_info = $res->fetch_assoc();
 
         $wikiparser = new \WikiParser();
-
-        $wikiparser->AddVariable('DOCNUM', $doc_data['altnum']);
-        $wikiparser->AddVariable('DOCDATE', date("d.m.Y", $doc_data['date']));
-        $wikiparser->AddVariable('AGENT', $agent->fullname);
-        $wikiparser->AddVariable('AGENTDOL', 'директора');
-        $wikiparser->AddVariable('AGENTFIO', $agent->dir_fio_r);
-        $wikiparser->AddVariable('FIRMNAME', $firm_vars['firm_name']);
-        $wikiparser->AddVariable('FIRMDIRECTOR', @$firm_vars['firm_director_r']);
-        $wikiparser->AddVariable('ENDDATE', $dop_data['end_date']);
+        $vars = $this->doc->getVariables();
+        foreach($vars as $var => $obj) {
+            $wikiparser->AddVariable($var, $obj['value']);
+        }
 
         $text = $wikiparser->parse($doc_data['comment']);
 

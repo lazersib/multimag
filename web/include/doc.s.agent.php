@@ -23,7 +23,9 @@ class doc_s_Agent {
 
     function __construct() {
         $this->agent_vars = array('group', 'name', 'type', 'fullname', 'adres', 'real_address', 'inn', 'kpp', 'rs', 'ks', 'okved', 'okpo', 'ogrn', 'bank',
-            'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki', 'dir_fio', 'dir_fio_r', 'dishonest',
+            'bik', 'pfio', 'pdol', 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki'
+            , 'leader_name', 'leader_post', 'leader_reason', 'leader_name_r', 'leader_post_r', 'leader_reason_r'
+            , 'dishonest',
             'p_agent', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses', 'region');
     }
 
@@ -138,15 +140,18 @@ class doc_s_Agent {
             $contact_info = '';
         }
         $span = 5;
-        
+        $span_all = 6;
+        $dish_checked = $form_data['dishonest'] ? 'checked' : '';
         $ret .= "<form action='' method='post' id='agent_edit_form'>
-            <table cellpadding='0' width='100%' class='list'>
+            <table cellpadding='0' width='100%' class='list editcard'>
             <input type='hidden' name='mode' value='esave'>
             <input type='hidden' name='l' value='agent'>
             <input type='hidden' name='pos' value='$item_id'>
             <tr><td align='right' width='20%'>Краткое наименование<br>
             <small>По этому полю выполняется поиск. Не пишите здесь аббревиатуры вроде OOO, ИП, МУП, итд. а так же кавычки и подобные символы!</small>
-                <td colspan='3'><input type='text' name='name' value='" . html_out($form_data['name']) . "' style='width: 90%;' maxlength='64'></td>
+                <td colspan='3'><input type='text' name='name' value='" . html_out($form_data['name']) . "' style='width: 90%;' maxlength='64'><br>
+                    <label class='autoalert'>
+                        <input type='checkbox' name='dishonest' value='1' $dish_checked><span>Недобросовестный агент</span></label></td>
                 <td align='right'>Связанные пользователи</td>
                 <td>$linked_users</td>
                 </tr>
@@ -157,9 +162,9 @@ class doc_s_Agent {
         $at_check = array(0 => '', 1 => '', 2 => '');
         $at_check[$form_data['type']] = ' checked';
 
-        $ret .= "<label><input type='radio' name='type' value='0'{$at_check[0]} id='atype_rb0'>Физическое лицо</label><br>
-            <label><input type='radio' name='type' value='1'{$at_check[1]} id='atype_rb1'>Юридическое лицо</label><br>
-            <label><input type='radio' name='type' value='2'{$at_check[2]} id='atype_rb2'>Нерезидент</label>";
+        $ret .= "<label class='autohl'><input type='radio' name='type' value='0'{$at_check[0]} id='atype_rb0'><span>Физическое лицо</span></label><br>
+            <label class='autohl'><input type='radio' name='type' value='1'{$at_check[1]} id='atype_rb1'><span>Юридическое лицо</span></label><br>
+            <label class='autohl'><input type='radio' name='type' value='2'{$at_check[2]} id='atype_rb2'><span>Нерезидент</span></label>";
 
         $ret .= "<td align='right'>Группа</td>
             <td>" . selectAgentGroup('g', $form_data['group'], false, '', '', \cfg::get('agents', 'leaf_only') ) . "</select>
@@ -175,35 +180,50 @@ class doc_s_Agent {
                 <td><input type=text name='inn' value='" . html_out($form_data['inn']) . "' class='inn validate'>
                 <td align=right>КПП:
                 <td><input type=text name='kpp' value='" . html_out($form_data['kpp']) . "'>
-                <td><td>			
+                <td><td>
+            <tr><td align=right>ОКВЭД
+                <td><input type=text name='okved' value='" . html_out($form_data['okved']) . "'>
+                <td align=right>ОГРН / ОГРНИП
+                <td><input type=text name='ogrn' value='" . html_out($form_data['ogrn']) . "'>
+                <td align=right>ОКПО
+                <td><input type=text name='okpo' value='" . html_out($form_data['okpo']) . "' class='okpo validate'>
+            <tr><th colspan='$span_all'>Банковские реквизиты (ЗАПЛАНИРОВАНО К УДАЛЕНИЮ)</th></tr>
             <tr><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small>
                 <td><input type=text name='rs' value='" . html_out($form_data['rs']) . "' class='rs validate'>
-                <td align=right>Корр. счет
-                <td><input type=text name='ks' value='" . html_out($form_data['ks']) . "' class='ks validate'>
+                <td align=right>БИК
+                <td><input type=text name='bik' value='" . html_out($form_data['bik']) . "' class='bik validate'>
                 <td><td>
-            <tr><td align=right>БИК
-                <td><input type=text name='bik' value='" . html_out($form_data['bik']) . "' class='bik validate'><td align=right>Банк
+            <tr><td align=right>Корр. счет
+                <td><input type=text name='ks' value='" . html_out($form_data['ks']) . "' class='ks validate'>                
+                <td align=right>Банк
                 <td colspan='3'><input type=text name='bank' value='" . html_out($form_data['bank']) . "' style='width: 90%;'>
-            <tr><td align=right>ОКВЭД
-                <td colspan='$span'><input type=text name='okved' value='" . html_out($form_data['okved']) . "'>
-            <tr><td align=right>ОГРН / ОГРНИП
-                <td colspan='$span'><input type=text name='ogrn' value='" . html_out($form_data['ogrn']) . "'>
-            <tr><td align=right>ОКПО
-                <td colspan='$span'><input type=text name='okpo' value='" . html_out($form_data['okpo']) . "' class='okpo validate'>
-            <tr><td align=right>ФИО директора
-                <td colspan='$span'><input type=text name='dir_fio' value='" . html_out($form_data['dir_fio']) . "'>
-            <tr><td align=right>ФИО директора в родительном падеже
-                <td colspan='$span'><input type=text name='dir_fio_r' value='" . html_out($form_data['dir_fio_r']) . "'>
-            <tr><td align=right>Контактное лицо
-                <td colspan='$span'><input type=text name='pfio' value='" . html_out($form_data['pfio']) . "'>
-            <tr><td align=right>Должность контактног лица
-                <td colspan='$span'><input type=text name='pdol' value='" . html_out($form_data['pdol']) . "'>
-            <tr><td align=right>Паспорт: Номер
-                <td colspan='$span'><input type=text name='pasp_num' value='" . html_out($form_data['pasp_num']) . "'>
-            <tr><td align=right>Паспорт: Дата выдачи
-                <td colspan='$span'><input type=text name='pasp_date' value='" . html_out($form_data['pasp_date']) . "' id='pasp_date'>
-            <tr><td align=right>Паспорт: Кем выдан
-                <td colspan='$span'><input type=text name='pasp_kem' value='" . html_out($form_data['pasp_kem']) . "'>
+            <tr><th colspan='$span_all'>Сведения о руководителе (для договоров)</th></tr>
+            <tr><td align=right>ФИО
+                <td><input type=text name='leader_name' value='" . html_out($form_data['leader_name']) . "'>
+                <td align=right>Должность
+                <td><input type=text name='leader_post' value='" . html_out($form_data['leader_post']) . "'>
+                <td align=right>На основании чего действует<br><small>Устав, доверенность, и.т.п.</small>
+                <td><input type=text name='leader_reason' value='" . html_out($form_data['leader_reason']) . "'>
+            <tr><td align=right>В родительном падеже
+                <td><input type=text name='leader_name_r' value='" . html_out($form_data['leader_name_r']) . "'>
+                <td align=right>В родительном падеже
+                <td><input type=text name='leader_post_r' value='" . html_out($form_data['leader_post_r']) . "'>
+                <td align=right>В родительном падеже
+                <td><input type=text name='leader_reason_r' value='" . html_out($form_data['leader_reason_r']) . "'>
+            <tr><th colspan='$span_all'>Контактное лицо</th></tr>
+            <tr><td align=right>ФИО
+                <td><input type=text name='pfio' value='" . html_out($form_data['pfio']) . "'>
+                <td align=right>Должность
+                <td><input type=text name='pdol' value='" . html_out($form_data['pdol']) . "'>
+                    <td><td>
+            <tr><th colspan='$span_all'>Паспортные данные физического лица</th></tr>
+            <tr><td align=right>Номер</td>
+                <td><input type=text name='pasp_num' value='" . html_out($form_data['pasp_num']) . "'></td>
+                <td align=right>Дата выдачи</td>
+                <td><input type=text name='pasp_date' value='" . html_out($form_data['pasp_date']) . "' id='pasp_date'></td>
+                <td align=right>Кем выдан</td>
+                <td><input type=text name='pasp_kem' value='" . html_out($form_data['pasp_kem']) . "'></td>
+            <tr><th colspan='$span_all'>Другое</th></tr>
             <tr><td align=right>Дата последней сверки:
                 <td><input type=text name='data_sverki' value='" . html_out($form_data['data_sverki']) . "' id='data_sverki' $ext>
                 <td align=right>Ответственный:
@@ -221,7 +241,7 @@ class doc_s_Agent {
             <td>";
         $ldo = new \Models\LDO\pricenames();
         $ret .= \widgets::getEscapedSelect('price_id', $ldo->getData(), $form_data['price_id'], 'не задана');
-        $dish_checked = $form_data['dishonest'] ? 'checked' : '';
+        
         $nbp_checked = $form_data['no_bulk_prices'] ? 'checked' : '';
         $nrp_checked = $form_data['no_retail_prices'] ? 'checked' : '';
         $nbon_checked = $form_data['no_bonuses'] ? 'checked' : '';
@@ -232,7 +252,7 @@ class doc_s_Agent {
                 <td><label><input type='checkbox' name='no_bonuses' value='1' $nbon_checked>Отключить бонусы</label></td>
                 <td></td>
             <tr><td align='right'>Особые отметки
-                <td colspan='$span'><label><input type='checkbox' name='dishonest' value='1' $dish_checked>Недобросовестный агент</label>
+                <td colspan='$span'>
 
             <tr><td align=right>Комментарий
                 <td colspan='$span'><textarea name='comment'>" . html_out($form_data['comment']) . "</textarea>"

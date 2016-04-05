@@ -161,7 +161,8 @@ class dataexport {
     public function getAgentsListData($partial = false) {
         $ret = array();
         
-        $sql = "SELECT `id`, `group` AS `group_id`, `type`, `name`, `fullname`, `adres` AS `address`, `real_address`, `inn`, `kpp`, `dir_fio`, 
+        $sql = "SELECT `id`, `group` AS `group_id`, `type`, `name`, `fullname`, `adres` AS `address`, `real_address`, `inn`, `kpp`, `leader_name`, 
+            `leader_post`, `leader_reason`,
                 `pfio` AS `cpreson_fio`, `pdol` AS `cperson_post`, `okved` AS `okved`, `okpo` AS `okpo`, `ogrn` AS `ogrn`, `pasp_num` AS `passport_num`,
                 `pasp_date` AS `passport_date`, `pasp_kem` AS `passport_source_info`, `comment`, `data_sverki` AS `revision_date`,
                 `dishonest` AS `dishonest`, `p_agent` AS `p_agent_id`, `price_id` AS `price_id`, `tel`, `sms_phone`, `fax_phone`, `alt_phone`, `email`,

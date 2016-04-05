@@ -50,7 +50,7 @@ class label extends \doc\printforms\iPrintFormPdf {
                 $gruzop.=$gruzop_info->name;
             }
             if ($gruzop_info->inn) {
-                $gruzop.=', ИНН ' . $gruzop_info->inn;;
+                $gruzop.=', ИНН ' . $gruzop_info->inn;
             }
             if ($gruzop_info->adres) {
                 $gruzop.=', адрес ' . $gruzop_info->adres;
@@ -91,27 +91,36 @@ class label extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetMargins(15, 15, 15);
         $this->pdf->SetFont('', '', 12);
         $this->pdf->SetLineWidth(0.2);
-
+        $cell_height = 0;
         for ($c = 1; $c <= $pack_cnt; $c++) {
+            if($c>1) {
+                $rest = $this->pdf->h - $this->pdf->bMargin - $this->pdf->y - 5;
+                if($rest<$cell_height) {
+                    $this->pdf->addPage();
+                }
+            }
             $start = $this->pdf->y - 5;
             $this->pdf->ln(0);
             $str = "Отправитель: {$firm_vars['firm_gruzootpr']}, ИНН: {$firm_vars['firm_inn']}, тел.: {$firm_vars['firm_telefon']}";
-            $this->pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+            $this->pdf->MultiCellIconv(0, 4.5, $str, 0, 'L');
 
             $this->pdf->ln(2);
             $str = "Грузополучатель: " . $gruzop;
-            $this->pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+            $this->pdf->MultiCellIconv(0, 4.5, $str, 0, 'L');
 
             $this->pdf->ln(2);
             $str = "Комплектовщик: " . $maker;
-            $this->pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+            $this->pdf->MultiCellIconv(0, 4.5, $str, 0, 'L');
 
             $this->pdf->ln(2);
             $str = "Место: $c. Всего мест: $pack_cnt. Упаковано: " . date("d.m.Y H:i") . ". Накладная {$doc_data['altnum']}{$doc_data['subtype']}, от " . date("d.m.Y", $doc_data['date']);
-            $this->pdf->MultiCellIconv(0, 5, $str, 0, 'L');
+            $this->pdf->MultiCellIconv(0, 4.5, $str, 0, 'L');
 
             $this->pdf->ln(5);
             $end = $this->pdf->y;
+            if($c==1) {
+                $cell_height = $end - $start;
+            }
             $this->pdf->Rect(10, $start, 190, $end - $start);
             $this->pdf->Rect(9, $start - 1, 192, $end - $start + 2);
             $this->pdf->ln(10);
