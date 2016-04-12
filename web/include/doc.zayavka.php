@@ -446,7 +446,9 @@ class doc_Zayavka extends doc_Nulltype {
         }
          * 
          */
-        $this->setDopData('reserved', 1);
+        if (!$silent) {
+            $this->setDopData('reserved', 1);
+        }        
         $this->setReserves();
         if ($silent) {
             return;
@@ -455,11 +457,7 @@ class doc_Zayavka extends doc_Nulltype {
         if (!$this->isAltNumUnique()) {
             throw new Exception("Номер документа не уникален!");
         }
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа при проведении!');
-        }
-        if ($data['ok']) {
+        if ($this->doc_data['ok']) {
             throw new Exception('Документ уже проведён!');
         }
         $db->update('doc_list', $this->id, 'ok', time());        

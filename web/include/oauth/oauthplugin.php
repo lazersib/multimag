@@ -274,7 +274,9 @@ abstract class oauthplugin {
                 $user_profile[$vv] = $this->oauth_profile[$vv];
             }
         }
-        $db->replaceKA('users_data', 'uid', $user_id, $user_profile);
+        if(count($user_profile)) {
+            $db->replaceKA('users_data', 'uid', $user_id, $user_profile);
+        }
     }
 
 

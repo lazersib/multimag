@@ -50,9 +50,11 @@ class agentContactEditor extends \ListEditor {
             'context' => 'Класс',
             'type' => 'Вид',
             'value' => 'Значение',
+            'person_name' => 'Контактное лицо',
+            'person_post' => 'Должность',
             'for_sms' => 'Для СМС',
             'for_fax' => 'Для факсов',
-            'no_ads' => 'Запрет рассылок',
+            'no_ads' => 'Запрет рассылок',            
         );
     }
 
@@ -60,7 +62,7 @@ class agentContactEditor extends \ListEditor {
     public function loadList() {
         global $db;
         $a_id = intval($this->agent_id);
-        $res = $db->query("SELECT `id`, `agent_id`, `context`, `type`, `value`, `for_sms`, `for_fax`, `no_ads`
+        $res = $db->query("SELECT `id`, `agent_id`, `context`, `type`, `value`, `person_name`, `person_post`, `for_sms`, `for_fax`, `no_ads`
             FROM {$this->table_name}
             WHERE `agent_id`='$a_id'
             ORDER BY `id`");

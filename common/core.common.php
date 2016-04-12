@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "903");
+define("MULTIMAG_REV", "904");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -499,6 +499,9 @@ class MysqiExtended extends mysqli {
     function replaceKA($table, $key_name, $key_value, $array) {
         settype($key_value, 'int');
         $q = $f = '';
+        if(!is_array($array) || count($array)==0) {
+            throw new \InvalidArgumentException('Invalid data array');
+        }
         foreach ($array as $key => $value) {
             if ($value !== 'NULL' && $value !== 'null') {
                 $value = '\'' . $this->real_escape_string($value) . '\'';

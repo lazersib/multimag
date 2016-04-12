@@ -409,7 +409,7 @@ class login extends \IModule {
             <tr><td></td><td>На номер будет выслано SMS с кодом подтверждения.</td>
             <tr><td></td><td>Оставьте поле пустым, если не хотите указвать номер.</td>
             <tr><td></td><td><button type='submit' name='submit' value='submit'>Продолжить</button></td>
-            </table>";
+            </table></form>";
         return $ret;
     }
     
@@ -424,7 +424,7 @@ class login extends \IModule {
             <tr><td></td><td>На email будет выслано сообщение с кодом подтверждения.</td>
             <tr><td></td><td>Оставьте поле пустым, если не хотите указвать адрес.</td>
             <tr><td></td><td><button type='submit' name='submit' value='submit'>Продолжить</button></td>
-            </table>";
+            </table></form>";
         return $ret;
     }
     
