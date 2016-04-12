@@ -1124,7 +1124,7 @@ function toggleReserve(event, doc) {
     return false;
 }
 
-function docScriptsServerDataReceiver(msg, menu, event) {
+function docScriptsServerDataReceiver(msg, menu, obj) {
     try {
         var json = JSON.parse(msg);
         if (json.response == 'error') {
@@ -1152,13 +1152,16 @@ function docScriptsServerDataReceiver(msg, menu, event) {
                         un = 'un';
                         alt = 'Снять резервы';
                     }
-                    event.target.src = '/img/22x22/object-'+un+'locked.png';
-                    event.target.alt = alt;
-                    event.target.parentNode.title = alt;
+                    obj.target.src = '/img/22x22/object-'+un+'locked.png';
+                    obj.target.alt = alt;
+                    obj.target.parentNode.title = alt;
                     var poslist=document.getElementById('poslist');
                     if(poslist) {
                         poslist.refresh();
                     }
+                    break;
+                case 'getheader':
+                    obj.dispatchGetHeader(json.content);
                     break;
                 default:
                     jAlert("Обработка полученного сообщения не реализована на стороне броузера!<br>"
@@ -1180,6 +1183,33 @@ function docScriptsServerDataReceiver(msg, menu, event) {
             menu.parentNode.removeChild(menu);
         }
     }
+}
+
+function newDynamicDocHeader(container_id, doc_id) {
+    var dh = new Object;
+    var container = document.getElementById(container_id);
+    httpReq('/doc.php', 'GET', 'mode=srv&doc=' + doc_id + '&peopt=getheader', function (msg) {
+            docScriptsServerDataReceiver(msg, null, dh);
+        }, function () {
+            jAlert('Ошибка соединения!', 'Загрузка шапки', null, 'icon_err');
+        }
+    );
+    
+    dh.dispatchGetHeader = function(data) {
+        container.innerHTML = 
+            "<div class='doc_name'>" + "<div class='idnum'>ID:" + data.id +"</div>" + data.viewname +"</div>"
+            + "<div class='doc_numdate'>"
+            + "<div class='doc_number'><label for='doc_number'>Номер:</label><br><input type='text' id='doc_number' value='"+data.altnum+"'></div>"
+            + "<div class='doc_subtype'>Постфикс:<br><input type='text' value='"+data.subtype+"'></div>"
+            + "<span class='doc_date'>Дата:<br><input type='text' value='"+data.date+"'></span>"
+            + "</div>"
+            + "<div class='item'><label for='agent_name'>Агент:</label><br><input type='text' id='agent_name' value='"+data.agent_info.name+"'></div>"
+           
+            
+             + "<div class='err'>TEST Block</div>";
+    };
+    
+    return dh;
 }
 
 // Сообщения

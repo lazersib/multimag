@@ -759,7 +759,7 @@ class doc_Nulltype extends \document {
         $dt = date("Y-m-d H:i:s", $this->doc_data['date']);
         doc_menu($this->getDopButtons());
         $tmpl->addContent("<div id='doc_container'>
-		<div id='doc_left_block'>");
+		<div id='doc_left_block' class='doc_head'>");
         $tmpl->addContent("<h1>{$this->viewname} N{$this->id}</h1>");
 
         $this->drawLHeadformStart();
@@ -815,11 +815,13 @@ class doc_Nulltype extends \document {
         if ($pod)
             $tmpl->addContent("<br><b>Зависящие документы:</b><br>$pod");
         $tmpl->addContent("<br><b>Дата создания:</b>: {$this->doc_data['created']}<br>");
-        if ($this->doc_data['ok'])
+        if ($this->doc_data['ok']) {
             $tmpl->addContent("<b>Дата проведения:</b> " . date("Y-m-d H:i:s", $this->doc_data['ok']) . "<br>");
+        }
         $tmpl->addContent("</div>
 		<script type=\"text/javascript\">
 		addEventListener('load',DocHeadInit,false);
+                //newDynamicDocHeader('doc_left_block', '{$this->id}');
 		</script>
 		<div id='doc_main_block'>");
         $tmpl->addContent("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'><br>");
@@ -1519,7 +1521,7 @@ class doc_Nulltype extends \document {
 
     /// Служебные опции
     function _service($opt, $pos) {
-        global $tmpl, $db;
+        global $tmpl;
         $tmpl->ajax = 1;
 
         if ($this->sklad_editor_enable) {
@@ -1533,55 +1535,83 @@ class doc_Nulltype extends \document {
 
         $peopt = request('peopt'); // Опции редактора списка товаров
 
-        if (\acl::testAccess('doc.' . $this->typename, \acl::VIEW)) {
-            // Json-вариант списка товаров
-            if ($peopt == 'jget') {
+        \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
+        if($this->doc_data['firm_id']>0) {
+            \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::VIEW);
+        }
+           
+        /// Операции, для которых нужен доступ только на чтение
+        switch ($peopt) {
+            case 'jget':    // Json-вариант списка товаров
                 // TODO: пересчет цены перенести внутрь poseditor
                 $this->recalcSum();
                 $doc_content = $poseditor->GetAllContent();
                 $tmpl->addContent($doc_content);
-            } else if ($peopt == 'jgetgroups') {
+                return 1;
+            case 'jgetgroups':
                 $doc_content = $poseditor->getGroupList();
                 $tmpl->addContent($doc_content);
-            }
-            // Снять пометку на удаление
-            else if ($opt == 'jundeldoc') {
+                return 1;
+            case 'jundeldoc':   // Снять пометку на удаление
                 $tmpl->setContent($this->serviceUnDelDoc());
-            }
-            else if ($opt == 'petition') {
+                return 1;
+            case 'petition':
                 $tmpl->setContent($this->sendPetition());
-            }
-            /// TODO: Это тоже переделать!
-            else if ($this->doc_data['ok']) {
-                throw new Exception("Операция не допускается для проведённого документа!");
-            } else if ($this->doc_data['mark_del']) {
-                throw new Exception("Операция не допускается для документа, отмеченного для удаления!");
-            }
-            // Получение данных наименования
-            else if ($peopt == 'jgpi') {
+                return 1;
+            case 'jgpi':        // Получение данных наименования
                 $pos = rcvint('pos');
                 $tmpl->addContent($poseditor->GetPosInfo($pos));
-            }
-            // Json вариант добавления позиции
-            else if ($peopt == 'jadd') {
+                return 1;
+            case 'getheader':
+                $ret = array(
+                    'response' => 'success',
+                    'object' => 'getheader',
+                    'content' => $this->getDocumentHeader(),
+                );
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return 1;
+            case 'jsklad':      // Получение номенклатуры выбранной группы
+                $group_id = rcvint('group_id');
+                $str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
+                $tmpl->setContent($str);
+                return 1;
+            case 'jsklads':     // Поиск по подстроке по складу
+                $s = request('s');
+                $str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
+                $tmpl->setContent($str);
+                return 1;
+            case 'link_info':
+                $ret = $this->getLinkInfo();
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return 1;
+        }
+
+        /// TODO: Это тоже переделать!
+        if ($this->doc_data['ok']) {
+            throw new \Exception("Операция не допускается для проведённого документа!");
+        } else if ($this->doc_data['mark_del']) {
+            throw new \Exception("Операция не допускается для документа, отмеченного для удаления!");
+        }
+
+        /// Операции, изменяющие документ
+        switch ($peopt) {
+            case 'jadd':        // Json вариант добавления позиции
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 if($this->doc_data['firm_id']>0) {
                     \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $pe_pos = rcvint('pe_pos');
                 $tmpl->setContent($poseditor->AddPos($pe_pos));
-            }
-            // Json вариант удаления строки
-            else if ($peopt == 'jdel') {
+                break;
+            case 'jdel':        // Json вариант удаления строки
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 if($this->doc_data['firm_id']>0) {
                     \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $line_id = rcvint('line_id');
                 $tmpl->setContent($poseditor->Removeline($line_id));
-            }
-            // Json вариант обновления
-            else if ($peopt == 'jup') {
+                break;
+            case 'jup':     // Json вариант обновления
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 if($this->doc_data['firm_id']>0) {
                     \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
@@ -1591,113 +1621,225 @@ class doc_Nulltype extends \document {
                 $type = request('type');
                 // TODO: пересчет цены перенести внутрь poseditor
                 $tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
-            }
-            // Получение номенклатуры выбранной группы
-            else if ($peopt == 'jsklad') {
-                $group_id = rcvint('group_id');
-                $str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
-                $tmpl->setContent($str);
-            }
-            // Поиск по подстроке по складу
-            else if ($peopt == 'jsklads') {
-                $s = request('s');
-                $str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
-                $tmpl->setContent($str);
-            }
-            // Серийные номера
-            else if ($peopt == 'jsn') {
+                break;               
+            case 'jsn':         // Серийные номера
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+                if($this->doc_data['firm_id']>0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                }
                 $action = request('a');
                 $line_id = request('line');
                 $data = request('data');
                 $tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
-            }
-            // Сброс цен
-            else if ($peopt == 'jrc') {
+                break;
+            case 'jrs':         // Сброс цен
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+                if($this->doc_data['firm_id']>0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                }
                 $poseditor->resetPrices();
-            }
-            // Сортировка наименований
-            else if ($peopt == 'jorder') {
+                break;
+            case 'jorder':      // Сортировка наименований
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+                if($this->doc_data['firm_id']>0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                }
                 $by = request('by');
                 $poseditor->reOrder($by);
-            }
-            // Пометка на удаление
-            else if ($opt == 'jdeldoc') {
+                break;
+            case 'jdeldoc':     // Пометка на удаление
                 $tmpl->setContent($this->serviceDelDoc());
-            }
-            // Загрузка номенклатурной таблицы
-            else if ($opt == 'merge') {
-                $from_doc = rcvint('from_doc');
-                $clear = rcvint('clear');
-                $no_sum = rcvint('no_sum');
-
-                try {
-                    if ($from_doc == 0) {
-                        throw new Exception("Документ не задан");
-                    }
-                    $db->startTransaction();
-
-                    $res = $db->query("SELECT `id` FROM `doc_list` WHERE `id`=$from_doc");
-                    if (!$res->num_rows) {
-                        throw new Exception("Документ не найден");
-                    }
-
-                    if ($clear) {
-                        $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
-                    }
-
-                    $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos`"
-                            . "WHERE `doc`=$from_doc AND `page`=0 GROUP BY `tovar`");
-                    while ($line = $res->fetch_assoc()) {
-                        if (!$no_sum) {
-                            $poseditor->simpleIncrementPos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
-                        } else {
-                            $poseditor->simpleRewritePos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
-                        }
-                    }
-                    doc_log("REWRITE", "", 'doc', $this->id);
-                    $db->commit();
-                    $ret = array('response' => 'merge_ok');
-                } catch (Exception $e) {
-                    $ret = array('response' => 'err', 'text' => $e->getMessage());
-                }
+                break;
+            case 'merge':       // Загрузка номенклатурной таблицы
+                $ret = $this->mergeDocList($poseditor);
                 $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
-            }
-            // Связи документа
-            else if ($opt == 'link_info') {
-                $childs = array();
-                $parent = null;
-                if ($this->doc_data['p_doc']) {
-                    $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
-                                    `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
-                                    LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-                                    WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
-                    $parent = $res->fetch_assoc();
-                    $parent['vdate'] = date("d.m.Y", $parent['date']);
-                }
-                $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
-                                `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
-                                LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-                                WHERE `doc_list`.`p_doc`='{$this->id}'");
-
-                while ($line = $res->fetch_assoc()) {
-                    $line['vdate'] = date("d.m.Y", $line['date']);
-                    $childs[] = $line;
-                }
-                $ret = array('response' => 'link_info', 'parent' => $parent, 'childs' => $childs);
-                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
-            }
-
-            // Для наследования!!!
-            else {
+                break;            
+            default:
                 return 0;
-            }
-
-            return 1;
-        } else {
-            $tmpl->msg("Недостаточно привилегий для выполнения операции!", "err");
         }
+        return 1;
+
     }
 
+    /// Получить многомерный массив с данными заголовка документа
+    public function getDocumentHeader() {
+        global $db, $CONFIG;
+        $ret = array();
+        
+        if ($this->doc_type == 0) {
+            throw new Exception("Невозможно получить заголовок документа неизвестного типа");
+        }
+        else {           
+            // Динамические: баланс, бонусы, список договоров агента            
+            $ret['id'] = $this->id;
+            $ret['viewname'] = $this->viewname;
+            $ret['type'] = $this->doc_type;
+            $ret['altnum'] = $this->doc_data['altnum'];
+            $ret['subtype'] = $this->doc_data['subtype'];
+            $ret['mark_del'] = $this->doc_data['mark_del'];
+            $ret['firm_id'] = $this->doc_data['firm_id'];
+            $ret['agent_id'] = $this->doc_data['agent'];
+            $ret['contract_id'] = $this->doc_data['contract'];
+            $ret['store_id'] = $this->doc_data['sklad'];
+            $ret['cash_id'] = $this->doc_data['kassa'];
+            $ret['sum'] = $this->doc_data['sum'];
+            $ret['comment'] = $this->doc_data['comment'];
+            $ret['created'] = $this->doc_data['created'];
+            $ret['ok'] = $this->doc_data['ok'];
+            
+            if(isset($CONFIG['site']['default_firm'])) {
+                $ret['default_firm_id'] = $CONFIG['site']['default_firm'];
+            }
+            $ret['dop_buttons'] = $this->getDopButtons();
+            $firm_ldo = new \Models\LDO\firmnames();
+            $ret['firm_names'] = $firm_ldo->getData();
+            $ret['header_fields'] = explode(' ', $this->header_fields);
+            
+            if ($this->doc_data['date']) {
+                $ret['date'] = date("Y-m-d H:i:s", $this->doc_data['date']);
+            } else {
+                $ret['date'] = date("Y-m-d H:i:s");
+            }
+            
+            if(in_array('agent', $ret['header_fields'])) {
+                $contract_list = array();
+                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_dopdata`.`value` AS `name`
+                    FROM `doc_list`
+                    LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
+                    WHERE `agent`='{$this->doc_data['agent']}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
+                while ($line = $res->fetch_assoc()) {
+                    $contract_list[] = $line;
+                }
+                $ret['agent_info'] = array(
+                    'name' => $this->doc_data['agent_name'],
+                    'balance' => agentCalcDebt($this->doc_data['agent']),
+                    'bonus' => docCalcBonus($this->doc_data['agent']),
+                    'contract_list' => $contract_list,
+                    'dishonest' => $this->doc_data['agent_dishonest'],
+
+                );
+            }
+            if(in_array('sklad', $ret['header_fields'])) {
+                if(isset($CONFIG['site']['default_sklad'])) {
+                    $ret['default_store_id'] = $CONFIG['site']['default_sklad'];
+                }
+                $store_list = array();
+                $res = $db->query("SELECT `id`, `name`, `firm_id` FROM `doc_sklady` ORDER by `id` ASC");
+                while ($line = $res->fetch_assoc()) {
+                    $store_list[$line['id']] = $line;
+                }
+                $ret['store_list'] = $store_list;
+            }            
+            if(in_array('kassa', $ret['header_fields'])) {
+                if(isset($CONFIG['site']['default_kassa'])) {
+                    $ret['default_cash_id'] = $CONFIG['site']['default_kassa'];
+                }
+                $cash_list = array();
+                $res = $db->query("SELECT `num` AS `id`, `name`, `firm_id`
+                    FROM `doc_kassa`
+                    WHERE `ids`='kassa' 
+                    ORDER BY `num`");
+		while($line = $res->fetch_assoc()) {
+		    $cash_list[$line['id']] = $line;
+		}
+                $ret['cash_list'] = $cash_list;
+            }
+            if(in_array('bank', $ret['header_fields'])) {
+                if(isset($CONFIG['site']['default_bank'])) {
+                    $ret['default_bank_id'] = $CONFIG['site']['default_bank'];
+                }
+                $bank_list = array();
+                $res = $db->query("SELECT `num` AS `id`, `name`, `firm_id`
+                    FROM `doc_kassa`
+                    WHERE `ids`='bank'
+                    ORDER BY `num`");
+		while($line = $res->fetch_assoc()) {
+		    $bank_list[$line['id']] = $line;
+		}
+                $ret['bank_list'] = $bank_list;
+            }
+            if(in_array('cena', $ret['header_fields'])) {
+                $price_list = array();
+                $res = $db->query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
+		while($line = $res->fetch_assoc()) {
+		    $price_list[$line['id']] = $line;
+		}
+                $ret['price_list'] = $price_list;
+                $ret['price'] = $this->dop_data['cena'];
+            }
+
+            //if (method_exists($this, 'DopHead'))
+            //    $this->DopHead();
+        }
+        return $ret;
+    }
+    
+    /// Слияние табличной части двух документов
+    protected function mergeDocList($poseditor) {
+        global $db;
+        $from_doc = rcvint('from_doc');
+        $clear = rcvint('clear');
+        $no_sum = rcvint('no_sum');
+
+        try {
+            if ($from_doc == 0) {
+                throw new Exception("Документ не задан");
+            }
+            $db->startTransaction();
+
+            $res = $db->query("SELECT `id` FROM `doc_list` WHERE `id`=$from_doc");
+            if (!$res->num_rows) {
+                throw new Exception("Документ не найден");
+            }
+
+            if ($clear) {
+                $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
+            }
+
+            $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos`"
+                    . "WHERE `doc`=$from_doc AND `page`=0 GROUP BY `tovar`");
+            while ($line = $res->fetch_assoc()) {
+                if (!$no_sum) {
+                    $poseditor->simpleIncrementPos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
+                } else {
+                    $poseditor->simpleRewritePos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
+                }
+            }
+            doc_log("REWRITE", "", 'doc', $this->id);
+            $db->commit();
+            $ret = array('response' => 'merge_ok');
+        } catch (Exception $e) {
+            $ret = array('response' => 'err', 'text' => $e->getMessage());
+        }
+        return $ret;
+    }
+    
+        /// Получить информацию о связях документа
+    protected function getLinkInfo() {
+        global $db;
+        $childs = array();
+        $parent = null;
+        if ($this->doc_data['p_doc']) {
+            $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
+                `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
+                LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
+            $parent = $res->fetch_assoc();
+            $parent['vdate'] = date("d.m.Y", $parent['date']);
+        }
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
+            `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
+            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+            WHERE `doc_list`.`p_doc`='{$this->id}'");
+
+        while ($line = $res->fetch_assoc()) {
+            $line['vdate'] = date("d.m.Y", $line['date']);
+            $childs[] = $line;
+        }
+        $ret = array('response' => 'link_info', 'parent' => $parent, 'childs' => $childs);
+        return $ret;
+    }
+    
     protected function drawLHeadformStart() {
         $this->drawHeadformStart('j');
     }
