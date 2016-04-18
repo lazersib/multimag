@@ -157,6 +157,7 @@ class Report_China extends BaseGSReport {
             $ret['name'] = $pos_info['name'];
             $ret['provider_code'] = $pos_info['provider_code'];
             $ret['provider_codename'] = $pos_info['provider_codename'];
+            $ret['price'] = $pos_info['base_price'];
             $db->insertA('temp_table', $ret);
             if($ret['out_sum'] > $max) {
                 $max = $ret['out_sum'];
@@ -177,7 +178,7 @@ class Report_China extends BaseGSReport {
             }
             $this->tableRow(
                 array(
-                    $pos_info['id'], $pos_info['vc'], $pos_info['name'], $pos_info['provider_codename'], $pos_info['provider_code'],
+                    $pos_info['id'], $pos_info['vc'], $pos_info['name'], $pos_info['price'], $pos_info['provider_codename'], $pos_info['provider_code'],
                     $pos_info['last_in_cnt'], $pos_info['last_in_date'], $pos_info['start_cnt'], $pos_info['out_cnt'], $pos_info['outmove_cnt'],
                     $pos_info['end_cnt'], $pos_info['out_sum'], $pp)
                 );
@@ -230,8 +231,8 @@ class Report_China extends BaseGSReport {
         }
         $header .= ", по " . date('Y-m-d', $this->dt_t) . ", склад: $sklad_name($sklad_id)";
         
-        $widths = array(4, 5, 20, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7);
-        $headers = array('ID', 'Код', 'Наименование', 'Поставщик', 'Кит. код', 'Посл.приход', 'Дата посл.прихода', 'Нач.кол-во', 'Реализ.', 'Перем.', 'Остаток', 'Сумма продаж', '% прибыли');
+        $widths = array(4, 5, 17, 5, 7, 7, 7, 8, 7, 7, 7, 7, 7, 5);
+        $headers = array('ID', 'Код', 'Наименование', 'Цена', 'Поставщик', 'Кит. код', 'Посл.приход', 'Дата посл.прихода', 'Нач.кол-во', 'Реализ.', 'Перем.', 'Остаток', 'Сумма продаж', '% прибыли');
         $this->header($header);
 
         $this->col_cnt = count($widths);
@@ -270,6 +271,7 @@ class Report_China extends BaseGSReport {
             `id` int(11) NOT NULL,
             `vc` varchar(16) NOT NULL,
             `name` varchar(128) NOT NULL,
+            `price` decimal(10,2) NOT NULL,
             `provider_code` varchar(128) NOT NULL,
             `provider_codename` varchar(128) NOT NULL,
             `last_in_cnt` int(11) NOT NULL,

@@ -19,22 +19,45 @@
 
 namespace ListEditors;
 
-class CTypesListEditor extends \ListEditor {
+class CdrContextEditor extends \ListEditor {
 
     public function __construct($db_link) {
         parent::__construct($db_link);
-        $this->print_name = 'Справочник видов доходов';
-        $this->table_name = 'doc_ctypes';
+        $this->print_name = 'Справочник контекстов детализации вызовов';
+        $this->table_name = 'asterisk_context';
+        $this->directions = array(
+            'in' => 'Входящий',
+            'out' => 'Исходящий',
+            'int' => 'Внутренний',
+            'unk' => 'Неопределённый',
+        );
     }
 
     /// Получить массив с именами колонок списка
     public function getColumnNames() {
         return array(
             'id' => 'id',
-            'account' => 'Счет',
             'name' => 'Наименование',
-            'codename' => 'Кодовое обозначение',
+            'direction' => 'Направление',
+            'group_name' => 'Имя группы',
         );
+    }
+
+    protected function getFieldDirection($data) {
+        if (isset($this->directions[$data['direction']])) {
+            return html_out($this->directions[$data['direction']]);
+        }
+        return '';
+    }
+
+    protected function getInputDirection($name, $value) {
+        $ret = "<select name='$name'>";
+        foreach ($this->directions as $id => $item_name) {
+            $selected = $id == $value ? ' selected' : '';
+            $ret.= "<option value='{$id}'{$selected}>" . html_out($item_name) . "</option>";
+        }
+        $ret.= "</select>";
+        return $ret;
     }
 
 }

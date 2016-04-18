@@ -119,20 +119,24 @@ class doc_Dogovor extends doc_Nulltype {
                 'value' => $agent->leader_name_r
             ],
             'AGENT_LEADER_POST' => [
-                'name' => 'Должность руководителя',
+                'name' => 'Должность руководителя агента',
                 'value' => $agent->leader_post
             ],
             'AGENT_LEADER_POST_R' => [
-                'name' => 'Должность руководителя в родительном падеже',
+                'name' => 'Должность руководителя агента в родительном падеже',
                 'value' => $agent->leader_post_r
             ],
             'AGENT_LEADER_REASON' => [
-                'name' => 'Основание деятельности руководителя',
+                'name' => 'Основание деятельности руководителя агента',
                 'value' => $agent->leader_reason
             ],
             'AGENT_LEADER_REASON_R' => [
-                'name' => 'Основание деятельности руководителя в родительном падеже',
+                'name' => 'Основание деятельности руководителя агента в родительном падеже',
                 'value' => $agent->leader_reason
+            ],
+            'AGENT_EMAIL' => [
+                'name' => 'email агента',
+                'value' => $agent->getEmail(),
             ],
             'END_DATE' => [
                 'name' => 'Дата окончания действия договора',
@@ -154,6 +158,10 @@ class doc_Dogovor extends doc_Nulltype {
                 'name' => 'Наименование собственной организации',
                 'value' => $this->firm_vars['firm_name']
             ],
+            'FIRM_EMAIL' => [
+                'name' => 'email собственной организации',
+                'value' => \cfg::get('site', 'admin_email')
+            ],
             'FIRM_DIRECTOR' => [
                 'name' => 'ФИО руководителя собственной организации',
                 'value' => $this->firm_vars['firm_director_r']
@@ -174,7 +182,7 @@ class doc_Dogovor extends doc_Nulltype {
         $tmpl->addContent("<h2>Выражения подстановки, которые возможно использовать в текста договора:</h2>"
             . "<table class='list'><tr><th>Выражение</th><th>Описание</th><th>Текущее значение</th></tr>");
         foreach($vars as $var => $obj) {
-            $tmpl->addContent("<tr><td>{".$var."}</td><td>".html_out($obj['name'])."</td><td>".html_out($obj['value'])."</td></tr>");
+            $tmpl->addContent("<tr><td>{{".$var."}}</td><td>".html_out($obj['name'])."</td><td>".html_out($obj['value'])."</td></tr>");
         }
         $tmpl->addContent("</table>");
         $tmpl->addContent("<p>Для просмотра текста договора используйте печатную форму.</p>");

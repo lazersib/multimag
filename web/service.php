@@ -70,7 +70,17 @@ try {
             throw new \NotFoundException("Объект не найден");
         }        
     }
-} catch (Exception $e) {
+}
+catch(mysqli_sql_exception $e) {
+    $id = writeLogException($e);
+    $pref = \pref::getInstance();
+    $tmpl->errorMessage($e->getMessage());
+    switch ($e->getCode()) {
+        case 1146: // Table not found
+           mailto($pref->site_email,"ВАЖНО! Ошибка на {$pref->site_name}. номер в журнале - $id", $e->getMessage()); 
+    }    
+}
+catch (Exception $e) {
     global $db, $tmpl;
     $db->rollback();
     $tmpl->addContent("<br><br>");

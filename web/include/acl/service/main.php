@@ -50,7 +50,7 @@ class main extends \acl\aclContainer {
             ),
             'cdr' => array(
                 "name" => "Статистика телефонной связи",
-                "mask" => \acl::VIEW | \acl::UPDATE | \acl::DELETE
+                "mask" => \acl::VIEW |\acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
             'docservice' => array(
                 "name" => "Служебные функции документов",

@@ -19,7 +19,7 @@
 
 namespace modules\service;
 
-/// Настройка почтовых ящиков и алиасов
+/// Статистика телефонных вызовов
 class CDR extends \IModule {
     
     protected $queue_events = array(
@@ -131,6 +131,16 @@ class CDR extends \IModule {
             . " LIMIT 1500");
         while ($line = $res->fetch_assoc()) {
             $data[] = $line['dcontext'];
+        }
+        return $data;
+    }
+    
+    protected function getDefinedContextList() {
+        global $db;
+        $data = array();
+        $res = $db->query("SELECT * FROM `asterisk_context`");
+        while ($line = $res->fetch_assoc()) {
+            $data[$line['name']] = $line;
         }
         return $data;
     }
@@ -272,10 +282,11 @@ class CDR extends \IModule {
 
     protected function renderCDR() {
         global $tmpl, $db, $CONFIG;
-        $filter = requestA(array('date_from', 'date_to', 'src', 'dst', 'dcontext', 'accountcode'));
+        $filter = requestA(array('date_from', 'date_to', 'src', 'dst', 'dcontext', 'accountcode', 'direction', 'cgroup'));
         if(!$filter['date_from']) {
             $filter['date_from'] = date("Y-m-d");
         }
+        $cdb = $this->getDefinedContextList();
         $contexts = $this->getCDRContextList();
         $context_options = "<option value=''>--не задан--</option>";
         foreach($contexts as $context) {
@@ -289,21 +300,77 @@ class CDR extends \IModule {
             $sel = $filter['accountcode']==$account?' selected':'';
             $account_options .= "<option value='$account'{$sel}>$account</option>";
         }
+        $dir = array(
+            'in' => [
+                'name' => 'Входящий',
+                'sname' => 'Вход.',
+                'color' => '080',
+            ],
+            'out' => [
+                'name' => 'Исходящий',
+                'sname' => 'Исх.',
+                'color' => '008',
+            ],
+            'int' => [
+                'name' => 'Внутренний',
+                'sname' => 'Внут.',
+                'color' => '888',
+            ],
+            'unk' => [
+                'name' => 'Неизвестный',
+                'sname' => 'Неизв.',
+                'color' => 'F00',
+            ],
+        );
+        $dir_options = "<option value=''>--не задан--</option>";
+        foreach($dir as $id => $d) {
+            $sel = $filter['direction']==$id?' selected':'';
+            $dir_options .= "<option value='$id'{$sel}>{$d['name']}</option>";
+        }
+        $cgroups = array();
+        foreach($cdb as $d) {
+            $cgroups[$d['group_name']] = $d['group_name'];
+        }
+        
+        $cgroups_options = "<option value=''>--не задан--</option>";
+        foreach($cgroups as $d) {
+            $sel = $filter['cgroup']==$d?' selected':'';
+            $gn = html_out($d);
+            $cgroups_options .= "<option value='$gn'{$sel}>$gn</option>";
+        }
+        
         
         $tmpl->addBreadcrumb('Детализация вызовов', '');
         $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='post'>"
                 . "<table>"
-                . "<tr><td>Дата от:</td><td><input type='text' name='date_from' value='{$filter['date_from']}'></td>"
-                . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
-                . "<td>Номер-источник</td><td><input type='text' name='src' value='{$filter['src']}'></td>"
-                . "<td>Номер-цель</td><td><input type='text' name='dst' value='{$filter['dst']}'></td>"
-                . "<td>Контекст</td><td><select name='dcontext'>$context_options</select></td>"
-                . "<td>Аккаунт</td><td><select name='accountcode'>$account_options</select></td></tr>"
+                . "<tr>"
+                . "<th>Дата от:</th>"
+                . "<th>Дата до:</th>"
+                . "<th>Номер-источник</h>"
+                . "<th>Номер-цель</th>"
+                . "<th>Контекст</th>"
+                . "<th>Аккаунт</th>"
+                . "<th>Направление</th>"
+                . "<th>Группа</th>"
+                . "</tr>"
+                . "<tr><td><input type='text' name='date_from' value='{$filter['date_from']}' id='date_from'></td>"
+                . "<td><input type='text' name='date_to' value='{$filter['date_to']}' id='date_to'></td>"
+                . "<td><input type='text' name='src' value='{$filter['src']}'></td>"
+                . "<td><input type='text' name='dst' value='{$filter['dst']}'></td>"
+                . "<td><select name='dcontext'>$context_options</select></td>"
+                . "<td><select name='accountcode'>$account_options</select></td>"
+                . "<td><select name='direction'>$dir_options</select></td>"
+                . "<td><select name='cgroup'>$cgroups_options</select></td></tr>"
                 . "</table>"
                 . "<button type='submit'>Отфильтровать</button>"
-                . "</form>");
+                . "</form>"
+                . "<script type=\"text/javascript\">"
+                . "initCalendar('date_from',false);"
+                . "initCalendar('date_to',false);"
+                . "</script>");
         $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th rowspan='2'>Дата</th><th colspan='2'>Инициатор</th><th rowspan='2'>Аккаунт</th><th colspan='2'>Цель</th><th rowspan='2'>Контекст</th>"
+            . "<tr><th rowspan='2'>Дата</th><th rowspan='2'>Напр.</th><th rowspan='2'>Группа</th>"
+            . "<th colspan='2'>Инициатор</th><th rowspan='2'>Аккаунт</th><th colspan='2'>Цель</th><th rowspan='2'>Контекст</th>"
             . "<th rowspan='2'>Длительность</th><th rowspan='2'>Статус</th><th rowspan='2'>Статус очереди</th><th rowspan='2'>Агент очереди</th><th rowspan='2'>Файл</th></tr>"
             . "<tr><th>Номер</th><th>Принадлежность</th><th>Номер</th><th>Принадлежность</th></tr>");
         $data = $this->getCDR($db, $filter);
@@ -313,7 +380,7 @@ class CDR extends \IModule {
         $agents_ldo = new \Models\LDO\agentnames();
         $this->agents = $agents_ldo->getData();
         $users_ldo = new \Models\LDO\usernames();
-        $this->users = $users_ldo->getData();
+        $this->users = $users_ldo->getData();        
         
         $file_base_url = $this->link_prefix . "&amp;sect=audio&callid=";
         if(isset($CONFIG['service_cdr']['file_path'])) {
@@ -331,6 +398,27 @@ class CDR extends \IModule {
             $src_cell = $dst_cell = $queue_stat = '';
             $src_cell = $this->getObjectLinkForPhone($line['src']);
             $dst_cell = $this->getObjectLinkForPhone($line['dst']);
+            
+            $direction = $cgroup = '-';
+            if(isset($cdb[$line['dcontext']])) {
+                $dc = $cdb[$line['dcontext']];                
+            } else {
+                $dc = ['name'=>'', 'direction'=>'unk', 'group_name'=>''];
+            }
+            if($filter['direction']) {
+                if($filter['direction']!=$dc['direction']) {
+                    continue;
+                }
+            }
+            switch($dc['direction']) {
+                case 'in':
+                case 'out':
+                case 'int':
+                case 'unk':
+                    $direction = "<span style='color:#".$dir[$dc['direction']]['color']."'>".$dir[$dc['direction']]['sname']."</span>";
+                    break;
+            }
+            $cgroup = html_out($dc['group_name']);
             
             $lenght = sectostrinterval(intval($line['billsec']));
             switch($line['q_event']) {
@@ -392,6 +480,8 @@ class CDR extends \IModule {
             
             $tmpl->addContent("<tr>"               
                 . "<td>".html_out($line['calldate'])."</td>"
+                . "<td>".$direction."</td>"
+                . "<td>".$cgroup."</td>"
                 . "<td>".html_out($line['src'])."</td>"
                 . "<td>".$src_cell."</td>"
                 . "<td>".html_out($line['accountcode'])."</td>"
@@ -662,7 +752,7 @@ class CDR extends \IModule {
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=cdr'>Записи детализации вызовов</li>"
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=queue'>Журнал очередей вызовов</li>"
                     . "<li><a href='" . $this->link_prefix . "&amp;sect=queue_summary'>Сводка очередей вызовов</li>"
-                    
+                    . "<li><a href='" . $this->link_prefix . "&amp;sect=context'>Редактор контекстов</li>"
                     . "</ul>");
                 break;
             case 'queue':
@@ -673,6 +763,13 @@ class CDR extends \IModule {
                 break;
             case 'cdr':
                 $this->renderCDR();
+                break;
+            case 'context':
+                $editor = new \ListEditors\CdrContextEditor($db);
+                $editor->line_var_name = 'id';
+                $editor->link_prefix = $this->link_prefix.'&sect=context';
+                $editor->acl_object_name = $this->acl_object_name;
+                $editor->run();
                 break;
             case 'audio':
                 $callid = request('callid');
