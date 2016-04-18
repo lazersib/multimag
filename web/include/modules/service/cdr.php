@@ -410,6 +410,11 @@ class CDR extends \IModule {
                     continue;
                 }
             }
+            if($filter['cgroup']) {
+                if($filter['cgroup']!=$dc['group_name']) {
+                    continue;
+                }
+            }
             switch($dc['direction']) {
                 case 'in':
                 case 'out':
