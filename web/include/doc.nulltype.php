@@ -1374,7 +1374,7 @@ class doc_Nulltype extends \document {
                 throw new \Exception('Документ с ID ' . $p_doc . ' не найден.');
             }
         }
-        $db->query("UPDATE `doc_list` SET `p_doc`='$p_doc' WHERE `id`='{$this->id}'");
+        $this->setDocData('p_doc', $p_doc);
     }
 
     /// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
@@ -1515,8 +1515,7 @@ class doc_Nulltype extends \document {
         $tmpl->ajax = 1;
         $opt = request('opt');
         $pos = rcvint('pos');
-
-        $this->_Service($opt, $pos);
+        $this->_service($opt, $pos);
     }
 
     /// Служебные опции
@@ -1539,7 +1538,25 @@ class doc_Nulltype extends \document {
         if($this->doc_data['firm_id']>0) {
             \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::VIEW);
         }
-           
+        
+        switch($opt) {
+           case 'link_info':
+                $ret = $this->getLinkInfo();
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return 1; 
+            case 'petition':
+                $tmpl->setContent($this->sendPetition());
+                return 1;
+            case 'getheader':
+                $ret = array(
+                    'response' => 'success',
+                    'object' => 'getheader',
+                    'content' => $this->getDocumentHeader(),
+                );
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return 1;
+        }
+        
         /// Операции, для которых нужен доступ только на чтение
         switch ($peopt) {
             case 'jget':    // Json-вариант списка товаров
@@ -1551,24 +1568,10 @@ class doc_Nulltype extends \document {
             case 'jgetgroups':
                 $doc_content = $poseditor->getGroupList();
                 $tmpl->addContent($doc_content);
-                return 1;
-            case 'jundeldoc':   // Снять пометку на удаление
-                $tmpl->setContent($this->serviceUnDelDoc());
-                return 1;
-            case 'petition':
-                $tmpl->setContent($this->sendPetition());
-                return 1;
+                return 1;             
             case 'jgpi':        // Получение данных наименования
                 $pos = rcvint('pos');
                 $tmpl->addContent($poseditor->GetPosInfo($pos));
-                return 1;
-            case 'getheader':
-                $ret = array(
-                    'response' => 'success',
-                    'object' => 'getheader',
-                    'content' => $this->getDocumentHeader(),
-                );
-                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
                 return 1;
             case 'jsklad':      // Получение номенклатуры выбранной группы
                 $group_id = rcvint('group_id');
@@ -1579,21 +1582,30 @@ class doc_Nulltype extends \document {
                 $s = request('s');
                 $str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
                 $tmpl->setContent($str);
-                return 1;
-            case 'link_info':
-                $ret = $this->getLinkInfo();
-                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
-                return 1;
+                return 1;            
         }
 
         /// TODO: Это тоже переделать!
         if ($this->doc_data['ok']) {
             throw new \Exception("Операция не допускается для проведённого документа!");
-        } else if ($this->doc_data['mark_del']) {
+        }
+        switch($opt) {
+            case 'jdeldoc':     // Пометка на удаление
+                $tmpl->setContent($this->serviceDelDoc());
+                return 1;
+            case 'jundeldoc':   // Снять пометку на удаление
+                $tmpl->setContent($this->serviceUnDelDoc());
+                return 1;
+            case 'merge':       // Загрузка номенклатурной таблицы
+                $ret = $this->mergeDocList($poseditor);
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return 1;
+        }
+        if ($this->doc_data['mark_del']) {
             throw new \Exception("Операция не допускается для документа, отмеченного для удаления!");
         }
-
-        /// Операции, изменяющие документ
+        
+        /// Операции, изменяющие документ        
         switch ($peopt) {
             case 'jadd':        // Json вариант добавления позиции
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
@@ -1632,7 +1644,7 @@ class doc_Nulltype extends \document {
                 $data = request('data');
                 $tmpl->setContent($poseditor->SerialNum($action, $line_id, $data));
                 break;
-            case 'jrs':         // Сброс цен
+            case 'jrc':         // Сброс цен
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 if($this->doc_data['firm_id']>0) {
                     \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
@@ -1647,13 +1659,6 @@ class doc_Nulltype extends \document {
                 $by = request('by');
                 $poseditor->reOrder($by);
                 break;
-            case 'jdeldoc':     // Пометка на удаление
-                $tmpl->setContent($this->serviceDelDoc());
-                break;
-            case 'merge':       // Загрузка номенклатурной таблицы
-                $ret = $this->mergeDocList($poseditor);
-                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
-                break;            
             default:
                 return 0;
         }
