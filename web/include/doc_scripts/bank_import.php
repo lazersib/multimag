@@ -41,6 +41,7 @@ class ds_bank_import {
             <label><input type='checkbox' name='process_out' value='1'>Обработать расходы</label><br>
             <label><input type='checkbox' name='apply' value='1'>Провести документы</label><br>
             <label><input type='checkbox' name='no_create_agents' value='1'>Не создавать агентов (может привести к дублированию ордеров)</label><br>
+            <label><input type='checkbox' name='no_create_br' value='1'>Не добавлять существующим агентам новые банковские реквизиты</label><br>
             Подтип документов:<br>
             <input type='text' name='subtype' maxlength='5'><br>
             <button type='submit'>Выполнить</button>
@@ -72,6 +73,20 @@ class ds_bank_import {
         }
     }
     
+    // Добавление записи в банковские реквизиты агента
+    protected function agent_create_br($agent_id, $agent_info) {
+        global $db;
+        $agent_bank_data = array(
+            'agent_id'  => $agent_id,
+            'rs'        => $agent_info['rs'],
+            'ks'        => $agent_info['ks'],
+            'bik'       => $agent_info['bik'], 
+            'name'      => $agent_info['bank_name'],
+        );
+        return $db->insertA('agent_banks', $agent_bank_data);
+    }
+
+
     /// Исполнение сценария
     function run($mode) {
         global $tmpl, $db;
@@ -83,6 +98,7 @@ class ds_bank_import {
             $subtype = request('subtype');
             $apply = request('apply');
             $no_create_agents = request('no_create_agents');
+            $no_create_br = request('no_create_br');
             
             $tmpl->addContent("<h1>" . $this->getname() . "</h1>");
             if ($_FILES['userfile']['size'] <= 0) {
@@ -145,13 +161,29 @@ class ds_bank_import {
                 $end_day_time = mktime(23, 59, 59, $m, $d, $y);
                 $doc_time = mktime(12, 0, 0, $m, $d, $y);
                 
-                // Поиск документа в системе
+                // Поиск агентов с таким расчётным счётом
                 $agent_rs_sql = $db->real_escape_string($agent_info['rs']);
+                $res = $db->query("SELECT `agent_id` FROM `agent_banks` WHERE `rs`='$agent_rs_sql'");
+                $agents_line = '';
+                while($line = $res->fetch_assoc()) {
+                    if($agents_line) {
+                        $agents_line .=',';
+                    }
+                    $agents_line .= $line['agent_id'];
+                }
+                
+                if($agents_line) {
+                    $agents_line = " OR `doc_list`.`agent` IN ($agents_line)";
+                }
+                
+                // Поиск банковского документа в системе
+                $agent_inn_sql = $db->real_escape_string($agent_info['inn']);
                 $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`sum`
                         , `doc_list`.`agent`
                     FROM `doc_list`
                     INNER JOIN `doc_agent` ON `doc_list`.`agent`=`doc_agent`.`id`
-                    WHERE `doc_list`.`type`=$doc_type AND `doc_agent`.`rs`='$agent_rs_sql' AND `doc_list`.`altnum`='{$import_doc['docnum']}'"
+                    WHERE `doc_list`.`type`=$doc_type AND (`doc_agent`.`inn`='$agent_inn_sql' $agents_line)"
+                    . " AND `doc_list`.`altnum`='{$import_doc['docnum']}'"
                     . " AND `doc_list`.`date`>=$start_day_time AND `doc_list`.`date`<=$end_day_time");
                 $doc_nums = '';
                 $exist = 0;
@@ -173,7 +205,7 @@ class ds_bank_import {
                     }
                     
                     // Определяем номер заявки покупателя    
-                    if($agent_id>1) {
+                    if($agent_id>1) {                        
                         $res = $db->query("SELECT `id`, `agent` FROM `doc_list` WHERE `type`='3' AND `sum`='$sum' AND `agent`=$agent_id ORDER BY `id` DESC LIMIT 1");
                         while($doc_info = $res->fetch_assoc()) {
                             $order_id = $doc_info['id'];
@@ -191,6 +223,17 @@ class ds_bank_import {
                         }
                     }
                     
+                    // Ищем, есть ли у этого агента такие банковские реквизиты
+                    if($agent_id>1) {  
+                        $agent_ks_sql = $db->real_escape_string($agent_info['ks']);
+                        $agent_bik_sql = $db->real_escape_string($agent_info['bik']);
+                        $res = $db->query("SELECT * FROM `agent_banks` WHERE `agent_id`='$agent_id' AND `bik`='$agent_bik_sql'"
+                            . " AND `ks`='$agent_ks_sql' AND `rs`='$agent_rs_sql'");
+                        if($res->num_rows ==0 && !$no_create_br) {
+                            $agent_bank_id = $this->agent_create_br($agent_id, $agent_info);
+                        }
+                    }
+                    
                     if($agent_id == 1 && !$no_create_agents) { //Автодобавление агента
                         $repl = array('ООО', 'ОАО', 'ЗАО', 'ПАО', 'ИП', '\'', '"');
                         $agent_ins_data = array(
@@ -198,14 +241,11 @@ class ds_bank_import {
                             'fullname'  => trim($agent_info['name']),
                             'inn'       => $agent_info['inn'],
                             'kpp'       => $agent_info['kpp'],
-                            'rs'        => $agent_info['rs'],
-                            'ks'        => $agent_info['ks'],
-                            'bik'       => $agent_info['bik'],
-                            'bank'       => $agent_info['bank_name'],
                             'responsible' => $_SESSION['uid'],
                             'comment'   => 'Автоматически созданный агент'
                         );
                         $agent_id = $db->insertA('doc_agent', $agent_ins_data);
+                        $agent_bank_id = $this->agent_create_br($agent_id, $agent_info);
                         $this->agent_rs[$agent_info['rs']] = $agent_id;
                         $this->agent_inns[$agent_info['inn']] = $agent_id;
                     }
