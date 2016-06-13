@@ -341,7 +341,8 @@ class CDR extends \IModule {
         
         
         $tmpl->addBreadcrumb('Детализация вызовов', '');
-        $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=cdr' method='post'>"
+        $tmpl->addContent("<script type='text/javascript' src='/js/api.js'></script><script type='text/javascript' src='/css/doc_script.js'></script>"
+            . "<form action='{$this->link_prefix}&amp;sect=cdr' method='post'>"
                 . "<table>"
                 . "<tr>"
                 . "<th>Дата от:</th>"
@@ -393,12 +394,17 @@ class CDR extends \IModule {
         } else {
             $file_ext = 'wav';
         }
-                
+        $count = $duration = 0;
         foreach ($data as $line_id=>$line) {
             $src_cell = $dst_cell = $queue_stat = '';
             $src_cell = $this->getObjectLinkForPhone($line['src']);
             $dst_cell = $this->getObjectLinkForPhone($line['dst']);
-            
+            if($src_cell=='') {
+                $src_cell = "<a href='#' onclick='return createAgentFromPhoneMenu(event,\"{$line['src']}\");'><img src='/img/i_add.png' alt='Добавить'</a></a>";
+            }
+            if($dst_cell=='') {
+                $dst_cell = "<a href='#' onclick='return createAgentFromPhoneMenu(event,\"{$line['dst']}\");'><img src='/img/i_add.png' alt='Добавить'</a></a>";
+            }
             $direction = $cgroup = '-';
             if(isset($cdb[$line['dcontext']])) {
                 $dc = $cdb[$line['dcontext']];                
@@ -424,7 +430,8 @@ class CDR extends \IModule {
                     break;
             }
             $cgroup = html_out($dc['group_name']);
-            
+            $duration +=intval($line['billsec']);
+            $count++;
             $lenght = sectostrinterval(intval($line['billsec']));
             switch($line['q_event']) {
                 case 'ABANDON':
@@ -500,8 +507,9 @@ class CDR extends \IModule {
                 . "<td>".$file_cell."</td>"
                 . "</tr>");
         }
-        
+        $lenght = sectostrinterval($duration);
         $tmpl->addContent("</table>"
+            . "Итого: <b>$count</b> звонков общей продолжительностью <b>$lenght</b>"
             . "<script type='text/javascript' src='/js/audio.js'></script>"
             . "<div onclick='hideAudio();' id='audioBox'></div>"
             . ""
@@ -528,13 +536,17 @@ class CDR extends \IModule {
         $tmpl->addBreadcrumb('Журнал очереди приёма вызовов', '');
         $tmpl->addContent("<form action='{$this->link_prefix}&amp;sect=queue' method='post'>"
                 . "<table>"
-                . "<tr><td>Дата от:</td><td><input type='text' name='date_from' value='{$filter['date_from']}'></td>"
-                . "<td>Дата до:</td><td><input type='text' name='date_to' value='{$filter['date_to']}'></td>"
+                . "<tr><td>Дата от:</td><td><input type='text' name='date_from' id='date_from' value='{$filter['date_from']}'></td>"
+                . "<td>Дата до:</td><td><input type='text' name='date_to' id='date_to' value='{$filter['date_to']}'></td>"
                 . "<td>ID вызова</td><td><input type='text' name='callid' value='{$filter['callid']}'></td>"
                 . "<td>Имя очереди</td><td><input type='text' name='queuename' value='{$filter['queuename']}'></td>"
                 . "<td>Событие</td><td><select name='event'>$event_options</select></td></tr>"
                 . "</table>"
                 . "<button type='submit'>Отфильтровать</button>"
+                . "<script type=\"text/javascript\">"
+                . "initCalendar('date_from',false);"
+                . "initCalendar('date_to',false);"
+                . "</script>"
                 . "</form>");
         $tmpl->addContent("<table class='list' width='100%'>"
             . "<tr><th>Дата</th><th>Очередь</th><th>Событие</th><th>Агент</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>ID</th></tr>");
@@ -546,7 +558,7 @@ class CDR extends \IModule {
         $this->agents = $agents_ldo->getData();
         $users_ldo = new \Models\LDO\usernames();
         $this->users = $users_ldo->getData();
-                        
+        
         foreach ($data as $line_id=>$line) {
             $agent_cell = html_out($line['agent']);
             
@@ -686,6 +698,10 @@ class CDR extends \IModule {
                 . "<td>Имя очереди</td><td><input type='text' name='queuename' value='{$filter['queuename']}'></td>"
                 . "</table>"
                 . "<button type='submit'>Отфильтровать</button>"
+                . "<script type=\"text/javascript\">"
+                . "initCalendar('date_from',false);"
+                . "initCalendar('date_to',false);"
+                . "</script>"
                 . "</form>");
         $tmpl->addContent("<table class='list' width='100%'>"
             . "<tr><th>Очередь</th><th>Входов</th><th>Брошенных</th><th>Соединений</th><th>Пропущено</th><th>Заверш.агентом</th>"
@@ -715,7 +731,7 @@ class CDR extends \IModule {
             }
             
             $tmpl->addContent("<tr>"               
-                . "<td><a href='{$this->link_prefix}&amp;sect=queue&amp;callid=".html_out($data['callid'])."'>".html_out($data['callid'])."</a></td>"
+                . "<td><a href='{$this->link_prefix}&amp;sect=queue&amp;callid=".html_out($data['callid'])."&amp;date_from=1970-01-01>".html_out($data['callid'])."</a></td>"
                 . "<td>".html_out($number)."</td>"
                 . "<td>".$object."</td>"
                 . "<td>".html_out($data['wait'])."</td>"

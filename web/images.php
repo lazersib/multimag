@@ -38,6 +38,7 @@ settype($q, "integer");
 
 try {
     $img = new ImageProductor($i, $s, $t);
+    session_write_close();  // Чтобы не было зависаний
     $img->SetX($x);
     $img->SetY($y);
     $img->SetQuality($q);

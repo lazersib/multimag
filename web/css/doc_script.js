@@ -1247,4 +1247,65 @@ function newDynamicDocHeader(container_id, doc_id) {
 //
 // window.setTimeout("MsgGet()", 2500);
 
+function createAgentFromPhoneMenu(event, phone) {
+    var menu = CreateContextMenu(event);
+    function showDialog() {
+        menu.innerHTML = "<fieldset><legend>Создание агента для номера</legend>"
+                +"<div>Краткое наименование</div><input type='text' id='agentname'>"
+                +"<div>Полное наименование</div><input type='text' id='agentfullname'>"
+                +"<div>Группа</div><input type='text' id='agentgroup_id' value='1'>"
+                +"<div>Тип</div><select id='agenttype'><option value='fl'>Физическое лицо</option><option value='fl'>Юридическое лицо</option></select>"
+                +"<div>Номер телефона (+7XXXXXXXXXX)</div><input type='text' id='contactphone' value='"+phone+"'>"
+                +"<div>Имя контакта</div><input type='text' id='contactname'>"
+                +"<div>Должность контакта</div><input type='text' id='contactpost'>"
+                +"<br><br><button id='bcancel'>Отменить</button><button id='bsend'>Отправить</button></fieldset>";
+        menu.className = 'contextlayer';
+        menu.onmouseover = menu.onmouseout = function () {
+        };
+        if (menu.waitHideTimer) {
+            window.clearTimeout(menu.waitHideTimer);
+        }
+        var agentname = document.getElementById('agentname');
+        var agentfullname = document.getElementById('agentfullname');
+        var agentgroup_id = document.getElementById('agentgroup_id');
+        var agenttype = document.getElementById('agenttype');
+        var contactphone = document.getElementById('contactphone');
+        var contactname = document.getElementById('contactname');
+        var contactpost = document.getElementById('contactpost');
+        
+        var obsend = document.getElementById('bsend');
+        var obcancel = document.getElementById('bcancel');
 
+        obcancel.onclick = function () {
+            menu.parentNode.removeChild(menu);
+        };
+        obsend.onclick = function () {
+            var agent = {
+                name: agentname.value,
+                fullname: agentfullname.value,
+                type:  agenttype.value,
+                group_id:  agentgroup_id.value,
+                contacts: {
+                    '0': {
+                        type: 'phone',
+                        value: contactphone.value,
+                        person_name: contactname.value,
+                        person_post: contactpost.value,
+                    }
+                }
+            };
+            mm_api.agent.create(agent, 
+                function () {
+                        location.reload();
+                    },
+                function (msg, data) {
+                        alert('Ошибка:'+msg);
+                        //menu.parentNode.removeChild(menu);
+                    }
+            );
+            //menu.innerHTML += '<img src="/img/icon_load.gif" alt="отправка">Отправка сообщения...';
+        };
+    }
+    showDialog();
+    return false;
+}

@@ -363,11 +363,16 @@ class Report_Salary extends BaseGSReport {
                 else if($s_info['r_fee']!=$info['r_fee']){
                     $style_r = " style='color:#f00;'";
                 }
+                
                 if(!isset($s_info['sk_uid'])) {
-                    if (isset($info['r_uid'])) {
+                    if (isset($info['sk_uid'])) {
                         $style_sk = " style='background-color:#fcc;'";
                     }
                 } 
+                else if($s_info['sk_fee']!=$info['sk_fee']){
+                    $style_sk = " style='color:#f00;'";
+                    $sk_fee .= " ({$s_info['sk_fee']})";
+                }
             }
             $payment = '';
             if(isset($doc_vars['payed'])) {
@@ -387,10 +392,17 @@ class Report_Salary extends BaseGSReport {
         $np_pp = number_format($nopayed/$count*100, 2, '.', ' ');
         $tmpl->addContent("<tr><td>Не оплачено:</td><td>$nopayed штук, $np_pp %</td></tr>");
         $tmpl->addContent("</table>");
+        
+        $tmpl->addContent("<table>");
+        $tmpl->addContent("<tr><th colspan=2>Легенда</th></tr>");
+        $tmpl->addContent("<tr><td style='background-color:#fcc;'>Не начислено</td><td style='color:#f00;'>Расхождение суммы</td></tr>");
+        $tmpl->addContent("</table>");
+        
         $tmpl->addContent("<table class='list'><tr><th colspan=20>По пользователям</th></tr>");
-        $tmpl->addContent("<tr><th rowspan='2'>Сотрудник</th><th rowspan='2'>Док.</th><th rowspan='2'>Оператору</th><th rowspan='2'>Ответственному</th><th rowspan='2'>Менеджеру</th>"
+        $tmpl->addContent("<tr><th rowspan='2'>Сотрудник</th><th rowspan='2'>Док.</th><th colspan='2'>Оператору</th><th colspan='2'>Ответственному</th><th rowspan='2'>Менеджеру</th>"
             . "<th colspan='9'>Кладовщику</th><th rowspan='2'>Итого</th></tr>");
-        $tmpl->addContent("<tr><th>Товар</th><th>Места</th><th>Кол-во</th><th>&nbsp;</th><th>Поступл.</th><th>Реализ.</th><th>Перемещ.</th><th>&nbsp;</th><th>Итог</th></tr>");
+        $tmpl->addContent("<tr><th>Сумма</th><th>Ждёт</th><th>Сумма</th><th>Ждёт</th>"
+            . "<th>Товар</th><th>Места</th><th>Кол-во</th><th>&nbsp;</th><th>Поступл.</th><th>Реализ.</th><th>Перемещ.</th><th>&nbsp;</th><th>Итог</th></tr>");
         
         $users_fee = $salary->getUsersFee();
         ksort($users_fee);
@@ -429,8 +441,8 @@ class Report_Salary extends BaseGSReport {
             }
             $tmpl->addContent("<tr><td>$r_name ($uid)</td>"
                 . "<td align='right'>$docs</td>"
-                . "<td align='right'>$fee_op - {$t_info[$uid]}</td>"
-                . "<td align='right'>$fee_resp - {$t2_info[$uid]}</td>"
+                . "<td align='right'>$fee_op</td><td align='right'>{$t_info[$uid]}</td>"
+                . "<td align='right'>$fee_resp</td><td align='right'>{$t2_info[$uid]}</td>"
                 . "<td align='right'>$fee_man</td>"                
                 
                 . "<td align='right'>$fee_pos</td>"
@@ -463,8 +475,8 @@ class Report_Salary extends BaseGSReport {
         
         $tmpl->addContent("<tr><td>ИТОГО</td>"
             . "<td align='right'></td>"
-            . "<td align='right'>$fee_op</td>"
-            . "<td align='right'>$fee_resp</td>"
+            . "<td align='right'>$fee_op</td><td></td>"
+            . "<td align='right'>$fee_resp</td><td></td>"
             . "<td align='right'>$fee_man</td>"
 
             . "<td align='right'>$fee_pos</td>"

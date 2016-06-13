@@ -852,10 +852,11 @@ protected function TopGroup() {
                 $midiimg->SetY(220);
                 $fullimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
                 $fullimg->SetY(800);
+                $origimg = new ImageProductor($img_data['img_id'], 'p', $img_data['img_type']);
                 if ($res->num_rows > 1) {
                     $img_mini.="<a href='" . $midiimg->GetURI() . "' onclick=\"return setPhoto({$img_data['img_id']});\"><img src='" . $miniimg->GetURI() . "' alt='{$img_data['name']}'></a>";
                 }
-                $appends.="midiphoto.appendImage({$img_data['img_id']},'" . $midiimg->GetURI(1) . "', '" . $fullimg->GetURI(1) . "');\n";
+                $appends.="midiphoto.appendImage({$img_data['img_id']},'" . $midiimg->GetURI(1) . "', '" . $fullimg->GetURI(1) . "', '" . $origimg->GetURI(1) . "');\n";
             }
         }
         else {

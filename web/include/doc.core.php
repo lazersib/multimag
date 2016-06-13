@@ -16,7 +16,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
+global $CONFIG;
 include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
 /// Автозагрузка классов документов

@@ -128,7 +128,7 @@ try {
 
             if (!$h) {
                 $h = explode(":", $p, 2);
-                if ($h[1])
+                if (isset($h[1]) && $h[1])
                     $h = $wikiparser->unwiki_link($h[1]);
                 else
                     $h = html_out($wikiparser->unwiki_link($p));

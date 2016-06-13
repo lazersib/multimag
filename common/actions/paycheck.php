@@ -17,13 +17,24 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-namespace async;
+namespace Actions;
 
 /// Проверка поступления оплаты за документы и простановка соответствующих отметок
-class paycheck extends \AsyncWorker {
+class paycheck extends \Action {
 
-    public function getDescription() {
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
+    }
+    
+    public function getName() {
         return "Проверка поступления оплаты за документы и простановка соответствующих отметок";
+    }
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'paycheck');
     }
 
     public function run() {
@@ -33,7 +44,6 @@ class paycheck extends \AsyncWorker {
         $res = $db->query("SELECT `id` FROM `doc_agent` ORDER BY `id`");
         $i = 0;        
         while($line = $res->fetch_assoc()) {
-            $this->setStatus($i/$res->num_rows*100, 'Agent:'.$line['id']);
             $this->calcAgent($line['id']);
             $i++;
         }

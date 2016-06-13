@@ -41,7 +41,9 @@ include_once("core.php");
 
 try {
 	$tmpl->ajax = 1;
-	need_auth();
+	if(!auth()) {
+            throw new AccessException ('Не аутентифицирован');
+        }
 	\acl::accessGuard('service.doclist', \acl::VIEW);
 	ob_start();
 	$starttime = microtime(true);

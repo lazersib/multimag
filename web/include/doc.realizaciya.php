@@ -50,6 +50,7 @@ class doc_Realizaciya extends doc_Nulltype {
     function initDefDopdata() {
         $this->def_dop_data = array('platelshik' => 0, 'gruzop' => 0, 'status' => '', 'kladovshik' => 0,
             'mest' => '', 'received' => 0, 'return' => 0, 'cena' => 0, 'dov_agent' => 0, 'dov' => '', 'dov_data' => '',
+            'buyer_rname' => '',
             'cc_name' => '', 'cc_num' => '', 'cc_price' => '', 'cc_date' => '',  'cc_volume'=>'', 'cc_mass'=>'', );
     }
 

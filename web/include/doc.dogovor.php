@@ -132,7 +132,7 @@ class doc_Dogovor extends doc_Nulltype {
             ],
             'AGENT_LEADER_REASON_R' => [
                 'name' => 'Основание деятельности руководителя агента в родительном падеже',
-                'value' => $agent->leader_reason
+                'value' => $agent->leader_reason_r
             ],
             'AGENT_EMAIL' => [
                 'name' => 'email агента',

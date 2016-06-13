@@ -157,6 +157,7 @@ class Report_Sales extends BaseGSReport {
         global $db;
         $start_cnt = getStoreCntOnDate($pos_info['id'], $this->sklad, $dt_f, 1);
         $s_where = '';
+        $prix_cnt = $prix_sum = $r_cnt = $r_sum = 0;
         if ($subtype) {
             $s_where = " AND `doc_list`.`subtype` = '" . $db->real_escape_string($subtype) . "'";
         }
@@ -180,7 +181,7 @@ class Report_Sales extends BaseGSReport {
             (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0
             $s_where
             ORDER BY `doc_list`.`date`");
-        $prix_cnt = $prix_sum = 0;
+        
         while ($nxt = $res->fetch_assoc()) {
             $from = 'Сборка';
             if ($nxt['type'] == 1) {
@@ -198,9 +199,8 @@ class Report_Sales extends BaseGSReport {
         }
         if ($this->w_docs) {
             $this->tableRow(array('', 'Всего приход:', '', $prix_cnt, '', $prix_sum));
-        }
-        $r_cnt = $r_sum = 0;
-
+        }       
+                
         if ($this->w_docs) {
             $this->tableAltStyle();
             $this->tableSpannedRow(array($this->col_cnt), array('Реализации'));
@@ -220,7 +220,7 @@ class Report_Sales extends BaseGSReport {
         $realiz_cnt = $sum = 0;
         while ($nxt = $res->fetch_assoc()) {
             if ($this->w_docs) {
-                $from = 'Сборка';
+                $from = '';
                 if ($nxt['type'] == 2) {
                     $from = $nxt['agent_name'];
                 } else if ($nxt['type'] == 8) {
@@ -239,6 +239,7 @@ class Report_Sales extends BaseGSReport {
         }
         $r_cnt+=$realiz_cnt;
         $r_sum+=$sum;
+        
         if ($this->w_docs) {
             $this->tableAltStyle();
             $this->tableSpannedRow(array($this->col_cnt), array('Перемещения'));
@@ -275,6 +276,46 @@ class Report_Sales extends BaseGSReport {
         }
         $r_cnt+=$perem_cnt;
         $r_sum+=$sum;
+        
+        if ($this->w_docs) {
+            $this->tableAltStyle();
+            $this->tableSpannedRow(array($this->col_cnt), array('Корректировки'));
+            $this->tableAltStyle(false);
+        }
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
+            FROM `doc_list_pos`
+            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
+            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
+            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
+            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
+            `doc_list`.`type`='25' AND `doc_list`.`ok`>0
+            $s_where
+            ORDER BY `doc_list`.`date`");
+        $corr_cnt = $sum = 0;
+        while ($nxt = $res->fetch_assoc()) {
+            if ($this->w_docs) {
+                $from = '';
+                if ($nxt['type'] == 2) {
+                    $from = $nxt['agent_name'];
+                } else if ($nxt['type'] == 8) {
+                    $from = $nxt['sklad_name'];
+                }
+                $date = date("Y-m-d H:i:s", $nxt['date']);
+                $sumline = $nxt['cnt'] * $nxt['cost'];
+
+                $this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
+                $sum+=$sumline;
+            }
+            $corr_cnt+=$nxt['cnt'];
+        }
+        if ($this->w_docs) {
+            $this->tableRow(array('', 'По корректировкам:', '', $corr_cnt, '', $sum));
+        }
+        $r_cnt+=$corr_cnt;
+        $r_sum+=$sum;
+        
         if ($this->w_docs) {
             $this->tableAltStyle();
             $this->tableSpannedRow(array($this->col_cnt), array('Сборки'));
@@ -319,11 +360,11 @@ class Report_Sales extends BaseGSReport {
             $this->tableRow(array('', 'На конец периода:', '', $end_cnt, '', ''));
         } else {
             $end_cnt = $start_cnt + $prix_cnt - $r_cnt;
-            if ($prix_cnt || $realiz_cnt || $perem_cnt || $sbor_cnt) {
+            if ($prix_cnt || $realiz_cnt || $perem_cnt || $sbor_cnt || $corr_cnt) {
                 $this->tableRow(
                     array(
                         $pos_info['id'], $pos_info['vc'], $pos_info['name'], $this->getLastBuyDate($pos_info['id']),
-                        $pos_info['base_price'], $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $end_cnt)
+                        $pos_info['base_price'], $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $corr_cnt, $end_cnt)
                     );
             }
         }
@@ -331,7 +372,8 @@ class Report_Sales extends BaseGSReport {
             'prix' => $prix_cnt,
             'real' => $realiz_cnt,
             'perem' => $perem_cnt,
-            'sbor' => $sbor_cnt);
+            'sbor' => $sbor_cnt,
+            'korr' => $corr_cnt);
     }
 
     function serialOutPos($pos_info, $dt_f, $dt_t, $subtype) {
@@ -360,9 +402,10 @@ class Report_Sales extends BaseGSReport {
             LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
             WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
                 (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
-                ((`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`sklad`='{$this->sklad}') OR
+                ((`doc_list`.`type`='2' OR `doc_list`.`type`='20' OR `doc_list`.`type`='25') AND `doc_list`.`sklad`='{$this->sklad}') OR
                 (`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
-                (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) AND `doc_list`.`ok`>0
+                (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) 
+                AND `doc_list`.`ok`>0
                 $s_where
             ORDER BY `doc_list`.`date`");
         $sp = $sr = 0;
@@ -393,6 +436,9 @@ class Report_Sales extends BaseGSReport {
                             $r = $nxt['cnt'];
                         $link = $nxt['agent_name'];
                     }
+                    break;
+                case 25:
+                    $r = $nxt['cnt'];
                     break;
                 default:$p = $r = 'fff-' . $nxt['type'];
             }
@@ -462,8 +508,9 @@ class Report_Sales extends BaseGSReport {
         }
 
         if (!$this->w_docs) {
-            $widths = array(4, 6, 34, 8, 7, 7, 7, 7, 7, 7, 7);
-            $headers = array('ID', 'Код', 'Наименование', 'Посл.приход', 'Баз.цена', 'Нач.кол-во', 'Приход', 'Реализ.', 'Перем.', 'Сборка', 'Итог');
+            $widths = array(4, 6, 27, 8, 7, 7, 7, 7, 7, 7, 7, 7);
+            $headers = array('ID', 'Код', 'Наименование', 'ДПП', 'Б.цена', 'Нач. к-во', 'Прих.', 'Реал.', 'Пер.'
+                , 'Сбор.', 'Корр.', 'Итог');
             $header .= ", без детализации по документам";
         } else if ($this->div_dt) {
             $widths = array(15, 25, 40, 7, 7, 7);
@@ -491,7 +538,9 @@ class Report_Sales extends BaseGSReport {
             'prix' => 0,
             'real' => 0,
             'perem' => 0,
-            'sbor' => 0);
+            'sbor' => 0,
+            'korr' => 0
+        );
                
         $sql_fields = "`doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`"
                 . ", `doc_base`.`cost` AS `base_price` ";
@@ -565,8 +614,8 @@ class Report_Sales extends BaseGSReport {
 
         if ($this->div_dt || !$this->w_docs) {
             $this->tableAltStyle();
-            $end = $ss['prix'] - $ss['real'] - $ss['perem'] - $ss['sbor'];
-            $this->tableRow(array('', '', 'Итого:', '', '', '', '', $ss['prix'], $ss['real'], $ss['perem'], $ss['sbor'], $end));
+            $end = $ss['prix'] - $ss['real'] - $ss['perem'] - $ss['sbor'] - $ss['korr'];
+            $this->tableRow(array('', '', 'Итого:', '', '', '', $ss['prix'], $ss['real'], $ss['perem'], $ss['sbor'], $ss['korr'], $end));
             $this->tableAltStyle(false);
         }
         $this->tableEnd();

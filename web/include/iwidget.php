@@ -20,6 +20,7 @@
 /// Базовый класс для виджетов
 abstract class IWidget {
     protected $acl_object_name;         //< Имя объекта контроля привилегий
+    protected $variables;               //< Wiki - переменные
 
     public function __construct(){}
     
@@ -38,10 +39,15 @@ abstract class IWidget {
     
     /// Узнать, есть ли необходимые привилегии
     /// @param $mode    Константа привилегии. По умолчанию - view (просмотр)
-    final function isAllow($mode =  \acl::VIEW) {
+    final public function isAllow($mode =  \acl::VIEW) {
             if(!$this->acl_object_name)
                 return true;
             return \acl::testAccess($this->acl_object_name, $mode, true);
+    }
+    
+    /// Установить wiki - переменные
+    public function setVariables($var) {
+        $this->variables = $var;
     }
 
     /// Получить HTML код виджета

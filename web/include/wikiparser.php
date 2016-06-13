@@ -399,6 +399,7 @@ class WikiParser {
                             return '<i>{{Widget ' . $matches[1] . ': bad params!}}</i>';
                         }
                     }
+                    $widget->setVariables($this->variables);
                     return $widget->getHTML();
                 } else {
                     return '<i>{{Widget ' . $matches[1] . ' not found!}}</i>';

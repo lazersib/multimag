@@ -100,14 +100,16 @@ class respDebtNotify extends \Action {
 
             if ($nxt['worker_email']) {
                 mailto($nxt['worker_email'], "Ваши долги", $text);
-            } else if ($nxt['email'] && $nxt['reg_email_subscribe'] && $nxt['reg_email_confirm'] == '1') {
-                mailto($nxt['email'], "Ваши долги", $text);
+            } else if ($nxt['reg_email'] && $nxt['reg_email_subscribe'] && $nxt['reg_email_confirm'] == '1') {
+                mailto($nxt['reg_email'], "Ваши долги", $text);
             }
 
             if ($nxt['worker_jid']) {
                 $jid = $nxt['worker_jid'];
             } else if ($nxt['jid']) {
                 $jid = $nxt['jid'];
+            } else {
+                $jid = '';
             }
             if ($jid && \cfg::get('xmpp', 'host')) {
                 if (!$xmpp_connected) {
