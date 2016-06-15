@@ -1183,11 +1183,6 @@ class doc_Nulltype extends \document {
     /// @param $to_str      Вернуть ли данные в виде строки
     /// @return             Если $to_str == true - возвращает сформированный документ, false в ином случае
     protected function makePrintForm($form_name, $to_str = false) {
-        if ($this->typename) {
-            $object = 'doc_' . $this->typename;
-        } else {
-            $object = 'doc';
-        }
         if ($this->doc_data['ok']) {
             \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTFORM);
             \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id'] ], \acl::GET_PRINTFORM);
@@ -1195,9 +1190,16 @@ class doc_Nulltype extends \document {
             \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTDRAFT);
             \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id'] ], \acl::GET_PRINTDRAFT);
         }
-
+        return $this->makePrintFormNoACLTest($form_name, $to_str);
+    }
+    
+    /// Сформировать печатную форму, не проверяя привилегии
+    /// @param $form_name   Имя печатной формы
+    /// @param $to_str      Вернуть ли данные в виде строки
+    /// @return             Если $to_str == true - возвращает сформированный документ, false в ином случае
+    protected function makePrintFormNoACLTest($form_name, $to_str = false) {
         if (!$this->isPrintFormExists($form_name)) {
-            throw new \Exception('Печатная форма ' . html_out($form_name) . ' не зарегистрирована');
+            throw new \NotFoundException('Печатная форма ' . html_out($form_name) . ' не зарегистрирована');
         }
         $f_param = explode(':', $form_name);
         if ($f_param[0] == 'int') {
@@ -1218,7 +1220,7 @@ class doc_Nulltype extends \document {
         } elseif ($f_param[0] == 'csv') {
             return $this->CSVExport($to_str);
         } else {
-            throw new Exception('Неверный тип печатной формы');
+            throw new \NotFoundException('Неверный тип печатной формы');
         }
     }
 
@@ -1318,7 +1320,7 @@ class doc_Nulltype extends \document {
     /// Печать документа
     /// @param $form_name   Имя печатной формы
     /// @param $user_print  Если истина - документ запрошен из пользовательского раздела
-    function printForm($form_name = '', $user_print = false) {
+    function printForm($form_name = '') {
         global $tmpl;
         $tmpl->ajax = 1;
         if ($form_name == '') {
@@ -1329,13 +1331,23 @@ class doc_Nulltype extends \document {
             $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
         } else {
             $this->makePrintForm($form_name);            
-            if($user_print) {
-                $this->sentZEvent('print');
-                doc_log("PRINT", $form_name, 'doc', $this->id);
-            } else {
-                $this->sentZEvent('userprint');
-                doc_log("USERPRINT", $form_name, 'doc', $this->id);
-            }
+            $this->sentZEvent('print');
+            doc_log("PRINT", $form_name, 'doc', $this->id);
+        }
+    }
+    
+    /// Печать документа посетителем сайта / не сотрудником
+    /// @param $form_name   Имя печатной формы
+    /// @param $user_print  Если истина - документ запрошен из пользовательского раздела
+    function printFormFromCabinet($form_name) {
+        global $tmpl;
+        $tmpl->ajax = 1;
+        if ($form_name == '') {
+            throw new \NotFoundException('Печатная форма не выбрана');
+        } else {
+            $this->makePrintFormNoACLTest($form_name);            
+            $this->sentZEvent('userprint');
+            doc_log("USERPRINT", $form_name, 'doc', $this->id);
         }
     }
 

@@ -2066,8 +2066,8 @@ protected function BuyAuthForm() {
     /// Обработка процесса оплаты заказа
     protected function Payment() {
         global $tmpl, $CONFIG, $db;
-        $order_id = $_SESSION['order_id'];
-        settype($order_id, 'int');
+        $order_id = isset($_SESSION['order_id'])?intval($_SESSION['order_id']):0;
+        $uid = isset($_SESSION['uid'])?intval($_SESSION['uid']):0;
         $pref = \pref::getInstance();
         $res = $db->query("SELECT `doc_list`.`id` FROM `doc_list`
 	WHERE `doc_list`.`p_doc`='$order_id' AND (`doc_list`.`type`='4' OR `doc_list`.`type`='6') AND `doc_list`.`mark_del`='0'");
@@ -2099,8 +2099,13 @@ protected function BuyAuthForm() {
                 header("Location: $url");
                 exit();
             } else if ($order_info['pay_type'] == 'bank') {
-                $tmpl->msg("Номер счёта: $order_id/{$order_info['altnum']}. Теперь Вам необходимо <a href='/user.php?mode=get_doc&doc=$order_id'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
-                $tmpl->addContent("<a href='/user.php?mode=get_doc&doc=$order_id'>Получить счёт</a>");
+                if(!$uid) {
+                    $tmpl->errorMessage("В настоящий момент, получить печатную форму счёта онлайн могут только зарегистрированные пользователи. Номер счёта: $order_id/{$order_info['altnum']}. Для получения печатной формы счёта обратитесь к оператору.");
+                }
+                else {
+                    $tmpl->msg("Номер счёта: $order_id/{$order_info['altnum']}. Теперь Вам необходимо <a href='/user.php?mode=get_doc&doc=$order_id'>получить счёт</a>, и оплатить его. После оплаты счёта Ваш заказ поступит в обработку.");
+                    $tmpl->addContent("<a href='/user.php?mode=get_doc&doc=$order_id'>Получить счёт</a>");
+                }
             } else {
                 throw new Exception("Данный тип оплаты ({$order_info['pay_type']}) не поддерживается!");
             }

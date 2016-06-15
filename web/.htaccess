@@ -11,6 +11,7 @@ RewriteBase   /
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^article(.*)$ articles.php [L,QSA]
+RewriteRule ^intkb(.*)$ intkb.php [L,QSA]
 RewriteRule ^vitrina(.*)$ vitrina.php [L,QSA]
 RewriteRule ^news(.*)$ news.php [L,QSA]
 RewriteRule ^attachments(.*)$ attachments.php [L,QSA]

@@ -83,6 +83,7 @@ class acl {
         while($line = $res->fetch_assoc()) {
             $data[$line['object']] = intval($line['value']);
         }
+        
         return $data;
     }
     
@@ -93,7 +94,8 @@ class acl {
         $res = $db->query("SELECT `id`, `object`, `value` FROM `users_groups_acl` WHERE `gid` IS NULL");
         while($line = $res->fetch_assoc()) {
             $data[$line['object']] = intval($line['value']);
-        }
+        }      
+
         return $data;
     }
     
@@ -125,6 +127,7 @@ class acl {
             }
             
         }
+        
         return $data;
     }
     

@@ -565,9 +565,13 @@ class cabinet extends \IModule {
     /// Получить список документов авторства текущего пользователя, либо выписанных на прикреплённого к нему агента
     public function getDocListForThisUser() {
         global $tmpl, $db;
+        $uid = intval($_SESSION['uid']);
+        if($uid<1) {
+            throw new \AutoLoggedException('Ошибка сессии при доступе к документам');
+        }
         $tmpl->addBreadcrumb('Мои документы', '');
         $auth = new \authenticator();
-        $auth->loadDataForID($_SESSION['uid']);
+        $auth->loadDataForID($uid);
         $user_info = $auth->getUserInfo();
         $tmpl->setContent("<h1>Мои документы</h1>
         <p>В таблице находятся документы, которые создали Вы, либо выписанные на прикреплённого к Вам агента</p>
@@ -579,7 +583,7 @@ class cabinet extends \IModule {
             FROM `doc_list`
             LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`
             LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`
-            WHERE (`doc_list`.`user`='{$_SESSION['uid']}' OR `doc_list`.`agent`='{$user_info['agent_id']}') AND `doc_list`.`agent`!=0 
+            WHERE (`doc_list`.`user`='{$uid}' OR `doc_list`.`agent`='{$user_info['agent_id']}') AND `doc_list`.`agent`!=0
             ORDER BY `date` DESC");
         while ($nxt = $res->fetch_assoc()) {
             $date = date("Y-m-d", $nxt['date']);
@@ -598,20 +602,36 @@ class cabinet extends \IModule {
         include_once("include/doc.core.php");
         include_once("include/doc.nulltype.php");
         $doc = rcvint('doc');
+        $uid = intval($_SESSION['uid']);
+        if($uid<1) {
+            throw new \AutoLoggedException('Ошибка сессии при доступе к документам');
+        }
         if ($doc) {
             $auth = new \authenticator();
-            $auth->loadDataForID($_SESSION['uid']);
+            $auth->loadDataForID($uid);
             $user_info = $auth->getUserInfo();
             
             $document = \document::getInstanceFromDb($doc);
             $doc_data = $document->getDocDataA();
             if($doc_data['user']!=$user_info['id'] && $doc_data['agent']!=$user_info['agent_id']) {
-                throw new \NotFoundException("Документ не найден");
+                throw new \NotFoundException("Ваш документ с запрошенным номером не найден");
             }
-            if ($doc_data['type'] == 3 || $doc_data['type'] == 2) {
-                $document->PrintForm('ext:invoice', true);
-            } else {
-                throw new \Exception("Способ просмотра не задан!");
+            switch($document->getTypeName()) {
+                case 'zayavka':
+                case 'postuplenie':
+                case 'realizaciya':
+                case 'realiz_bonus':
+                    $document->printFormFromCabinet('ext:invoice');
+                    break;
+                case 'pko':
+                case 'rko':
+                    $document->printFormFromCabinet('ext:order');
+                    break;
+                case 'dogovor':
+                    $document->printFormFromCabinet('ext:contract');
+                    break;
+                default :
+                   throw new \Exception("Способ просмотра не задан!"); 
             }
         } else {
             throw new \NotFoundException("Документ не указан");

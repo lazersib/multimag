@@ -169,13 +169,13 @@ class Acl extends \IModule {
     }
     
     protected function loadAclForGroup($group_id) {
-        global $db;
-        settype($group_id,'int');
+        global $db;        
         $ret = array();
         if($group_id!==null) {
+            settype($group_id,'int');
             $sql = "SELECT `id`, `object`, `value` FROM `users_groups_acl` WHERE `gid`=$group_id";
         } else {
-            $sql = "SELECT `id`, `object`, `value` FROM `users_groups_acl` WHERE `gid` IS NULL";
+            $sql = "SELECT `id`, `object`, `value` FROM `users_groups_acl` WHERE `gid` IS NULL";            
         }
         $res = $db->query($sql);
         while($line = $res->fetch_assoc()) {
