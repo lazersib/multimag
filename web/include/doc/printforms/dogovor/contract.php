@@ -31,6 +31,7 @@ class contract extends \doc\printforms\iPrintFormPdf {
         require('fpdf/html2pdf.php');
         $doc_data = $this->doc->getDocDataA();
         $firm_vars = $this->doc->getFirmVarsA();
+        $contract_text = $this->doc->getTextData('contract_text');
         
         $agent = new \models\agent($doc_data['agent']);
         $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
@@ -42,7 +43,7 @@ class contract extends \doc\printforms\iPrintFormPdf {
             $wikiparser->AddVariable($var, $obj['value']);
         }
 
-        $text = $wikiparser->parse($doc_data['comment']);
+        $text = $wikiparser->parse($contract_text);
 
         $this->pdf = new \createPDF($text, '', '', '', '');
         $this->pdf->run();

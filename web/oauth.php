@@ -26,13 +26,13 @@ try {
 catch(mysqli_sql_exception $e) {
     $id = writeLogException($e);
     $pref = \pref::getInstance();
-    $tmpl->errorMessage("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору", "Ошибка при регистрации");
+    $tmpl->errorMessage("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение об ошибке занесено в журнал", "Ошибка при регистрации");
     mailto($pref->site_email,"ВАЖНО! Ошибка регистрации на {$pref->site_name}. номер в журнале - $id", $e->getMessage());
 }
 catch(Exception $e) {
     $db->rollback();
     $id = writeLogException($e);
-    $tmpl->errorMessage($e->getMessage() . ". Порядковый номер - $id<br>Сообщение передано администратору", "Ошибка при аутентификации");
+    $tmpl->errorMessage($e->getMessage() . ". Порядковый номер - $id<br>Сообщение об ошибке занесено в журнал", "Ошибка при аутентификации");
 }
 
 $tmpl->write();

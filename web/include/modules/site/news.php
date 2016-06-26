@@ -450,7 +450,7 @@ class News extends \IModule {
     /// @param $alt_param Дополнительные параметры в ссылке
     protected function GetNewsLink($id, $alt_param = '') {
         global $CONFIG;
-        if ($CONFIG['site']['recode_enable']) {
+        if ($CONFIG['site']['rewrite_enable']) {
             return "/news/read/$id.html" . ($alt_param ? "?$alt_param" : '');
         } else {
             return "{$this->link_prefix}&amp;mode=read&amp;id=$id" . ($alt_param ? "&amp;$alt_param" : '');

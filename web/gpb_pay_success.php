@@ -36,7 +36,7 @@ catch(mysqli_sql_exception $e) {
 	$db->rollback();
 	$tmpl->ajax=0;
 	$id = writeLogException($e);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {

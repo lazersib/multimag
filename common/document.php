@@ -24,10 +24,9 @@ class document {
     protected $typename;			///< Наименование типа документа    (для контроля прав и пр.)
     protected $viewname;                        ///< Отображаемое название документа при просмотре и печати
     
-    protected $firm_id;
-    
     protected $doc_data;			///< Основные данные документа
     protected $dop_data;			///< Дополнительные данные документа
+    protected $text_data=array();               ///< Дополнительные текстовые данные документа
     protected $firm_vars;			///< информация с данными о фирме
     protected $def_dop_data=array();            ///< Список дополнительных параметров текущего документа со значениями по умолчанию
     
@@ -210,5 +209,144 @@ class document {
             $this->initDefDopData();
         }
         $this->dop_data = array_merge($this->def_dop_data, $this->dop_data);
+    }
+    
+    protected function loadTextDataFromDb() {
+        global $db;
+        $res = $db->query("SELECT `param`, `value` FROM `doc_textdata` WHERE `doc_id`={$this->id}");
+        $this->text_data = array();
+        while($nxt = $res->fetch_row())	{
+                $this->text_data[$nxt[0]]=$nxt[1];
+        }
+    }
+    
+    /** Сохранить запись журнала о совершённом действии
+     * 
+     * @param type $action  Действие
+     * @param type $array   Массив с изменениями в формате ['param'=>['old'=>$old_data,'new'=>$new_data],....]
+     */
+    protected function writeLogArray($action, $array) {
+        doc_log($action, json_encode($array, JSON_UNESCAPED_UNICODE), 'doc', $this->id);
+    }
+  
+    /// @brief Получить значение основного параметра документа.
+    /// Вернёт пустую строку в случае отсутствия параметра
+    /// @param name Имя параметра
+    public function getDocData($name) {
+        if (isset($this->doc_data[$name])) {
+            return $this->doc_data[$name];
+        } else {
+            return '';
+        }
+    }
+    
+    /// Установить основной параметр документа
+    public function setDocData($name, $value) {
+        global $db;
+        if(!isset($this->doc_data[$name])) {
+            $this->doc_data[$name] = null;
+        }
+        if ($this->id && $this->doc_data[$name] !== $value) {
+            $_name = $db->real_escape_string($name);
+            $db->update('doc_list', $this->id, $_name, $value);
+            $log_data = [$name => ['old'=>$this->doc_data[$name], 'new'=>$value] ];
+            $this->writeLogArray("UPDATE", $log_data);
+        }
+        $this->doc_data[$name] = $value;
+    }
+    
+    /// @brief Получить значение дополнительного параметра документа.
+    /// Вернёт пустую строку в случае отсутствия параметра
+    /// @param name Имя параметра
+    public function getDopData($name) {
+        if (isset($this->dop_data[$name])) {
+            return $this->dop_data[$name];
+        } else {
+            return '';
+        }
+    }
+    
+    /** Установить дополнительный параметр текущего документа
+     * Записывает изменения в базу. Изменения так же автоматически вносятся в лог.
+     * @param string $name  Имя параметра
+     * @param string $value Значение параметра
+     */
+    public function setDopData($name, $value) {
+        global $db;
+        if(!isset($this->dop_data[$name])) {
+            $this->dop_data[$name] = null;
+        }
+        if ($this->id && $this->dop_data[$name] !== $value) {
+            $_name = $db->real_escape_string($name);
+            $_value = $db->real_escape_string($value);
+            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`) VALUES ( '{$this->id}' ,'$_name','$_value')");
+            $log_data = [$name => ['old'=>$this->dop_data[$name], 'new'=>$value] ];
+            $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
+        }
+        $this->dop_data[$name] = $value;
+    }
+    
+    public function getTextData($name) {
+        if(isset($this->text_data[$name])) {
+            return $this->text_data[$name];
+        }
+        else {
+            return '';
+        }
+    }
+    
+    /** Установить текстовый параметр текущего документа
+     * Записывает изменения в базу. Изменения так же автоматически вносятся в лог.
+     * @param string $name  Имя параметра
+     * @param string $value Значение параметра
+     */
+    public function setTextData($name, $value) {
+        global $db;
+        if(!isset($this->text_data[$name])) {
+            $this->text_data[$name] = null;
+        }
+        if ($this->id && $this->text_data[$name] !== $value) {
+            $_name = $db->real_escape_string($name);
+            $_value = $db->real_escape_string($value);
+            $db->query("REPLACE INTO `doc_textdata` (`doc_id`,`param`,`value`) VALUES ( '{$this->id}' ,'$_name','$_value')");
+            $log_data = [$name => ['old'=>$this->text_data[$name], 'new'=>$value] ];
+            $this->writeLogArray("UPDATE", ['text_data'=>$log_data]);
+        }
+        $this->dop_data[$name] = $value;
+    }
+    
+    /// Получить все основные параметры документа в виде ассоциативного массива
+    public function getDocDataA() {
+        return $this->doc_data;
+    }
+    
+    /// Получить все дополнительные параметры документа в виде ассоциативного массива
+    public function getDopDataA() {
+        return $this->dop_data;
+    }
+    
+    /// Установить дополнительные данные текущего документа
+    public function setDopDataA($array) {
+        global $db;
+        if ($this->id) {
+            $to_write_data = array_diff_assoc($array, $this->dop_data);
+            $log_data = array();
+            foreach ($to_write_data as $name => $value) {
+                if(!isset($this->dop_data[$name])) {
+                    $this->dop_data[$name] = null;
+                }
+                $log_data[$name] = ['old'=>$this->dop_data[$name], 'new'=>$value];
+                $this->dop_data[$name] = $value;                
+            }
+            if(count($to_write_data)>0) {
+                $db->replaceKA('doc_dopdata', 'doc', $this->id, $to_write_data);
+                $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
+            }
+        }
+    }
+    
+    /// Получить все текстовые параметры документа в виде ассоциативного массива
+    public function getTextDataA() {
+        return $this->text_data;
     }
 }

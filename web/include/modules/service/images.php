@@ -40,7 +40,7 @@ class images extends \IModule {
         $tmpl->addStyle(".fl {float: left; padding: 5px; margin: 10px; border: 1px solid #00f; width: 120px; height: 150px; text-align: center; background: #888;}");
             $res = $db->query("SELECT * FROM `doc_img` ORDER BY `id`");
             while ($line = $res->fetch_assoc()) {
-                $img = new ImageProductor($line['id'], 'p', $line['type']);
+                $img = new \ImageProductor($line['id'], 'p', $line['type']);
                 $img->SetY(120);
                 $img->SetX(100);
 
@@ -58,8 +58,8 @@ class images extends \IModule {
             throw new NotFoundException("Изображение не найдено");
         }
         $line = $res->fetch_assoc();
-        $max_fs = get_max_upload_filesize();
-        $max_fs_size = formatRoundedFileSize($max_fs);
+        $max_fs = webcore::getMaxUploadFileSize();
+        $max_fs_size = webcore::toStrDataSizeInaccurate($max_fs);
 
         $o_link = "{$CONFIG['site']['var_data_web']}/pos/{$line['id']}.{$line['type']}";
         $tmpl->msg("Замена файла очистит кеш изображений!", "err", "Внимание");

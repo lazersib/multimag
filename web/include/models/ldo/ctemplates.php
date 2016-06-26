@@ -16,20 +16,21 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+namespace Models\LDO;
 
-require_once("core.php");
-
-try {
-    $search = new \Search();
-    $search->setSearchString(request('s'));
-    $search->ExecMode(request('mode'));
-} catch (mysqli_sql_exception $e) {
-    $tmpl->ajax = 0;
-    $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
-} catch (Exception $e) {
-    writeLogException($e);
-    $tmpl->errorMessage($e->getMessage());
+/// Класс списка наименований шаблонов договоров
+class ctemplates extends \Models\ListDataObject {
+	
+	/// @brief Получить данные
+	public function getData() {
+		global $db;
+		$sql = "SELECT `id`, `name` FROM `contract_templates`";
+		$result = '';
+		$a = array();
+		$res = $db->query($sql);
+		while ($line = $res->fetch_assoc()) {
+			$a[$line['id']] = $line['name'];
+		}
+		return $a;
+	}
 }
-
-$tmpl->write();

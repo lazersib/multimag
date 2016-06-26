@@ -23,6 +23,7 @@ namespace modules;
 abstract class IWikiPage extends \IModule {
     protected $page_name = '';  /// Имя записи текущей страницы
     protected $table_name = ''; /// имя таблицы базы данных со статьями
+    protected $files_fn = ''; /// имя таблицы базы данных с списком прикреплённых файлов
     
     public function __construct() {
         parent::__construct();
@@ -40,14 +41,17 @@ abstract class IWikiPage extends \IModule {
 
 
     public function run() {
-        $this->ExecMode(request('mode'));
+        $this->ExecMode(request('sect'));
     } 
     
-    public function execMode($mode='') {
-        switch($mode) {
+    public function execMode($sect='') {
+        global $tmpl;
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
+        $tmpl->addBreadcrumb($this->getName(), $this->link_prefix);
+        switch($sect) {
             case '':
                 if($this->page_name == '' ) {
-                    $this->viewList();
+                    $this->viewIndexPage();
                 }
                 else {
                    $this->viewPage(); 
@@ -65,11 +69,108 @@ abstract class IWikiPage extends \IModule {
             case 'list':
                 $this->viewList();
                 break;
+            case 'fileinfo':
+                $file_id = rcvint('file_id');
+                $this->viewFileInfo($file_id);
+                break;
+            case 'attachfile':
+                $this->attachFile();
+                break;
+            case 'savefile':
+                $file_id = rcvint('file_id');
+                $this->saveFile($file_id);
+                break;
+            case 'getfile':
+                $file_id = rcvint('file_id');
+                $this->getFile($file_id);
+                break;
+            case 'removefile':
+                $file_id = rcvint('file_id');
+                $this->removeFile($file_id);
+                break;
             default:
                 throw new \NotFoundException('Страница с таким параметром не найдена');
         }
     }
     
+    protected function attachFile() {
+        global $tmpl;
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
+        $wikiparser = new \WikiParser();
+        $wikiparser->reference_wiki = $this->link_prefix;  
+        $ptitle = html_out($this->page_name);
+        $title = "Прикрепление файла к: ".$ptitle;
+        $tmpl->addContent("<h1>$title</h1>");
+        $tmpl->addBreadcrumb($ptitle, $wikiparser->constructWikiLink($this->page_name));
+        $tmpl->addBreadcrumb("Прикрепление файла", '');
+        $tmpl->setTitle(strip_tags($title));
+        $tmpl->addContent( $this->getAttachFileForm($this->page_name));
+    }
+    
+    protected function saveFile($file_id) {
+        global $tmpl;
+        \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
+        $wikiparser = new \WikiParser();
+        $wikiparser->reference_wiki = $this->link_prefix;  
+        $ptitle = html_out($this->page_name);
+        $title = "Прикрепление файла к: ".$ptitle;
+        $tmpl->addContent("<h1>$title</h1>");
+        $tmpl->addBreadcrumb($ptitle, $wikiparser->constructWikiLink($this->page_name));
+        $tmpl->addBreadcrumb("Прикрепление файла", '');
+        $tmpl->setTitle(strip_tags($title));
+        if(!$file_id) {
+            $att = new \attachments($this->files_fn);
+            if($att->upload($_FILES['userfile'], $this->table_name.':'.$this->page_name)) {
+                $tmpl->msg('Файл загружен');
+                $this->viewPage();
+            }
+        }
+    }
+    
+    protected function removeFile($file_id) {
+        global $tmpl;
+        \acl::accessGuard($this->acl_object_name, \acl::DELETE);
+        $yes = rcvint('yes');
+        if(!$yes) {
+            $title = "Удаление файла";
+            $tmpl->addContent("<h1>$title</h1>");
+            $wikiparser = new \WikiParser();
+            $wikiparser->reference_wiki = $this->link_prefix;  
+            $tmpl->addBreadcrumb($this->page_name, $wikiparser->constructWikiLink($this->page_name));
+            $tmpl->addBreadcrumb($title, '');
+            $tmpl->addContent( $this->getRemoveFileForm($this->page_name, $file_id));
+        }
+        else {
+            $att = new \attachments($this->files_fn);
+            if($att->remove($file_id)) {
+                $tmpl->msg('Файл удалён');
+                $this->viewPage();
+            }
+            else {
+                $tmpl->errormessage('Не удалось удалить файл');
+                $this->viewPage();
+            }
+        }
+    }
+    
+    protected function getFile($file_id) {
+        $att = new \attachments($this->files_fn);
+        $att->download($file_id);
+    }
+
+    /// отображение интексной страницы
+    protected function viewIndexPage() {
+        $page_names = ['index', 'site:index', 'kb:index'];
+        foreach ($page_names as $page_name) {
+            $p_info = $this->getPageData($page_name);
+            if($p_info) {
+                $this->page_name = $page_name;
+                $this->viewPage();
+                return;
+            }
+        }
+        $this->viewList();
+    }
     
     /// Редактирование текущей страницы
     protected function editPage() {
@@ -114,6 +215,81 @@ abstract class IWikiPage extends \IModule {
         }
         $this->viewPage();
     }
+    
+    protected function getAttachedFilesBlock($page_name) {        
+        $att = new \attachments($this->files_fn);
+        $files = $att->getFilesList($this->table_name.':'.$page_name);
+        if(!count($files)) {
+            return '';
+        }
+        $wikiparser = new \WikiParser();
+        $wikiparser->reference_wiki = $this->link_prefix;
+        $ret = "<div class='attachments'><h2>Прикреплённые файлы</h2><ul>";
+        foreach($files as $id => $data) {
+                $link = $wikiparser->constructWikiLink($page_name, 'sect=fileinfo&amp;file_id='.$id);
+                $get_link = $wikiparser->constructWikiLink($page_name, 'sect=getfile&amp;file_id='.$id);
+                $ret .="<li><a class='wiki' href='$link'>".html_out($data['original_filename'])."</a>";
+                if($att->testExists($id)) {
+                    $ret .=" <a href='$get_link'><img src='/img/16x16/download.png' alt='Download'></a>"; 
+                }   
+                else {
+                    $ret .=" <img src='/img/16x16/error.png' alt='Not found'>"; 
+                }
+                $ret .= " (<span class='size' title='{$data['size']} bytes'>".\webcore::toStrDataSizeInaccurate($data['size'])."</title>) - ";
+                $ret .=" добавил ".html_out($data['user_name']).", {$data['date']}."; 
+                if($data['description']) {
+                    $ret .= " &quot;".html_out($data['description'])."&quot;";
+                }               
+                $ret .="</li>";
+        }
+        $ret .="</ul></div>";
+        return $ret;
+    }
+    
+    protected function viewFileInfo($file_id) {
+        global $db, $tmpl;
+        settype($file_id, 'int');
+        $att = new \attachments($this->files_fn);
+        $data = $att->getFileInfo($file_id);
+        if(!$data) {
+            throw new \NotFoundException("Файл не найден!");
+        }
+        $wikiparser = new \WikiParser();
+        $wikiparser->reference_wiki = $this->link_prefix;
+        $title = "Информация о файле: ".$data['original_filename'];
+        $tmpl->addBreadcrumb($this->page_name, $wikiparser->constructWikiLink($this->page_name));
+        $tmpl->addContent("<h1 id='page-info'>$title</h1>");
+        $tmpl->setTitle($title);
+        $tmpl->addBreadcrumb($title, '');
+        $tmpl->addContent("<ul>");
+        $tmpl->addContent("<li><b>Размер:</b> ".\webcore::toStrDataSizeInaccurate($data['size'])." ({$data['size']} байт)</li>");
+        $tmpl->addContent("<li><b>Загрузил:</b> ".  html_out($data['user_name'])."</li>");
+        $tmpl->addContent("<li><b>Дата загрузки:</b> ".  html_out($data['date'])."</li>");
+        $size = $att->getSize($file_id);
+        if($size) {
+            settype($size, 'int');
+            $tmpl->addContent("<li><b>Фактический размер:</b> ".\webcore::toStrDataSizeInaccurate($size)." ({$data['size']} байт)</li>");
+        }
+        else {
+            $tmpl->addContent("<li><b>Файл пуст или не доступен для чтения</b></li>");
+        }
+        if($data['description']) {
+            $tmpl->addContent("<li><b>Описание:</b> ".html_out($data['description'])."</li>");
+        }
+        if($att->testExists($file_id)) {            
+            $get_link = $wikiparser->constructWikiLink($this->page_name, 'sect=getfile&amp;file_id='.$file_id);
+            $tmpl->addContent("<li><a href='$get_link'><img src='/img/16x16/download.png' alt='Download'>&nbsp;Загрузить</a></li>"); 
+        } 
+        else {
+            $tmpl->addContent("<li><b>Внимание! Файл отсутствует в хранилище!</b></li>");
+        }
+        if (\acl::testAccess($this->acl_object_name, \acl::DELETE, true)) {
+            $remove_link = $wikiparser->constructWikiLink($this->page_name, 'sect=removefile&amp;file_id='.$file_id);
+            $tmpl->addContent("<li><a href='$remove_link'><img src='/img/i_del.png' alt='Remove'>&nbsp;Удалить</a></li>");
+        }   
+        $tmpl->addContent("</ul>");
+    }
+
 
     /// Просмотр текущей страницы
     protected function viewPage() {
@@ -163,50 +339,69 @@ abstract class IWikiPage extends \IModule {
      */
     protected function showPage($p_info, $title, $text) {
         global $tmpl;
+        $tmpl->addBreadCrumb($title, '');
+        $tmpl->setTitle($title);
+        $edit_link = \webcore::concatLink($this->link_prefix, "p=" . html_out($p_info['article_name']) . "&amp;sect=edit");
+        $attach_link = \webcore::concatLink($this->link_prefix, "p=" . html_out($p_info['article_name']) . "&amp;sect=attachfile");
         $ch = $p_info['editor_name']?", последнее изменение - {$p_info['editor_name']}, date {$p_info['changed']}":'';
         if ($p_info['type'] == 0 || $p_info['type'] == 2) {
             $tmpl->addContent("<h1 id='page-title'>$title</h1>");
             if (@$_SESSION['uid']) {
                 $tmpl->addContent("<div id='page-info'>Создал: {$p_info['author_name']}, date: {$p_info['date']} $ch");
-                if (\acl::testAccess($this->acl_object_name, \acl::UPDATE)) {
-                    $tmpl->addContent(", <a href='{$this->link_prefix}" . html_out($p_info['article_name']) . ".html?mode=edit'>Исправить</a>");
+                if (\acl::testAccess($this->acl_object_name, \acl::UPDATE, true)) {
+                    $tmpl->addContent(", <a href='$edit_link'>Редактировать</a>");
                 }
                 $tmpl->addContent("</div>");
             }
         }
-        else if (\acl::testAccess($this->acl_object_name, \acl::UPDATE)) {
+        else if (\acl::testAccess($this->acl_object_name, \acl::UPDATE, true)) {
             $tmpl->addContent("<div id='page-info'>Создал: {$p_info['author_name']}, date: {$p_info['date']} $ch");
-            $tmpl->addContent(", <a href='{$this->link_prefix}" . html_out($p_info['article_name']) . "?mode=edit'>Исправить</a>");
+            $tmpl->addContent(", <a href='$edit_link'>Исправить</a>");
             $tmpl->addContent("</div>");
         }
-        $tmpl->addContent("<div class='article_text'>$text</div>");        
+        $tmpl->addContent("<div class='article_text'>$text</div>"); 
+        $tmpl->addContent($this->getAttachedFilesBlock($p_info['article_name'])); 
+        if (\acl::testAccess($this->acl_object_name, \acl::UPDATE, true)) {
+            $tmpl->addContent("<div class='article_text'>");
+            $tmpl->addContent("<a href='$edit_link'>Редактировать статью</a> | <a href='$attach_link'>Прикрепить файл</a>");
+            $tmpl->addContent("</div>");
+        }
+        
     }
     
     /// Отобразить список статей
     protected function viewList() {
         global $tmpl, $db;
+        $tmpl->addBreadcrumb($this->getName(), '');
         $res = $db->query("SELECT `name`, `text` FROM `{$this->table_name}` ORDER BY `name`");
         if ($res->num_rows) {
             $wikiparser = new \WikiParser();
             $wikiparser->reference_wiki = $this->link_prefix;
             $tmpl->addContent("<ul class='items'>");
             while ($nxt = $res->fetch_row()) {
-                $wikiparser->title = '';
                 $text = $wikiparser->parse($nxt[1]);
-                $h = $wikiparser->title . ' ( ' . $wikiparser->unwiki_link($nxt[0]) . ' )';
-                $tmpl->addContent("<li><a class='wiki' href='{$this->link_prefix}".html_out($nxt[0]).".html'>$h</a></li>");
+                $title = $wikiparser->getTitle();
+                if($title) {
+                    $title .= ' / ' . $wikiparser->unwiki_link($nxt[0]);
+                }
+                else {
+                    $title = $wikiparser->unwiki_link($nxt[0]);
+                }
+                $link = $wikiparser->constructWikiLink($nxt[0]);
+                $tmpl->addContent("<li><a class='wiki' href='$link'>$title</a></li>");
             }
             $tmpl->addContent("</ul>");
         } else {
             $tmpl->msg("Здесь пока нет ни одной статьи", "notify");
         }
-        if (\acl::testAccess($this->acl_object_name, \acl::UPDATE) | \acl::testAccess($this->acl_object_name, \acl::CREATE)) {
+        if (\acl::testAccess($this->acl_object_name, \acl::UPDATE, true) | \acl::testAccess($this->acl_object_name, \acl::CREATE, true)) {
             $tmpl->addContent("<form action='{$this->link_prefix}' method='get'>"
-                . "<input type='hidden' name='mode' value='edit'><fieldset><legend>Создать/править статью</legend>"
+                . "<input type='hidden' name='sect' value='edit'><fieldset><legend>Создать/править статью</legend>"
                 . "Имя статьи:<br><input type='text' name='p'><br><button type='submit'>Далее</button></form></fieldset>");
         }
     }
-
+   
+   
     /** Получить форму редактирования статьи
      * 
      * @param string $page_name     Имя страницы статьи
@@ -230,7 +425,7 @@ abstract class IWikiPage extends \IModule {
         
         $ret .= "
             <form action='{$this->link_prefix}' method='post'>
-            <input type='hidden' name='mode' value='save'>
+            <input type='hidden' name='sect' value='save'>
             <input type='hidden' name='p' value='" . html_out($page_name) . "'>";
             if($html_enable) {
                 $ret .= "Тип разметки:<br>
@@ -250,12 +445,52 @@ abstract class IWikiPage extends \IModule {
             
         $article_text = html_out($article_text);
         $ret .= "
-            <textarea class='wikieditor' name='text' rows='12' cols='80'>$article_text</textarea><br>
+            <textarea class='wikieditor big' name='text' rows='12' cols='80'>$article_text</textarea><br>
             <button type='submit'>Сохранить</button>
             </form>
             <script type='text/javascript'>tinymce_toggle('select_type', 'tme');</script>
             <br><a href='/wikiphoto.php'>Галерея изображений</a><br>";
+        //$ret .= $this->getAttachFileForm($page_name);
         $ret .= $this->getExamples();
+        return $ret;
+    }
+    
+    protected function getRemoveFileForm($page_name, $file_id) {
+        global $tmpl;
+        settype($file_id, 'int');
+        $ret = '';
+        $ret .= "
+            <form action='{$this->link_prefix}' method='post'>
+            <input type='hidden' name='sect' value='removefile'>
+            <input type='hidden' name='yes' value='1'>
+            <input type='hidden' name='file_id' value='$file_id'>
+            <input type='hidden' name='p' value='" . html_out($page_name) . "'>
+            <button type='submit'>Подтверждаю удаление файла ID:$file_id</button>
+            </form>";
+        return $ret;
+    }
+    
+    protected function getAttachFileForm($page_name, $file_id=0, $description='') {
+        global $tmpl;
+        $max_fs = \webcore::getMaxUploadFileSize();
+        $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
+        $ret = '';
+        $req = $file_id?' required':'';
+        $ret .= "
+            <form action='{$this->link_prefix}' method='post' enctype='multipart/form-data'>
+            <input type='hidden' name='sect' value='savefile'>
+            <input type='hidden' name='p' value='" . html_out($page_name) . "'>
+            <table cellpadding='0' class='list'>
+            <tr><td><b style='color:#f00;'>*</b>Выберите файл:</td>
+                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'>
+                    <input name='userfile' type='file'{$req} placeholder='Выберите файл'>
+                    <br><small>Не более $max_fs_size</small></td></tr>
+            <tr><td><b style='color:#f00;'>*</b>Описание файла (до 128 символов)</td>
+                <td><input type='text' name='description' placeholder='Вложение' maxlength='128' required value='".html_out($description)."'>
+            <tr><td colspan='2' align='center'>
+            <input type='submit' value='Сохранить'>
+            </table>
+            </form>";
         return $ret;
     }
     
@@ -327,7 +562,7 @@ Done."  => "Список терминов",
             "{{WIDGET:CBOX:E82:20}}, {{WIDGET:PRODUCTINFO:1}}, {{WIDGET:PRICEINFO:bv}} " => 'Различные виджеты (неполный список)'
             //
         );        
-        $ret = "<h3>Примеры wiki разметки</h3><table width='100%'><tr><th>Что писать</th><th>Что получится</th></tr>";
+        $ret = "<h3>Примеры wiki разметки</h3><table width='100%' class='list'><tr><th>Что писать</th><th>Что получится</th></tr>";
         foreach($examples as $wiki => $desc) {
             $wikiparser = new \WikiParser();
             $wikiparser->reference_wiki = $this->link_prefix;

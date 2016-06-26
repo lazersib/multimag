@@ -34,7 +34,7 @@ class SiteMap {
     /// @param page		Номер страницы
     function getGroupLink($group, $page = 1) {
         global $CONFIG;
-        if ($CONFIG['site']['recode_enable'])
+        if ($CONFIG['site']['rewrite_enable'])
             return "vitrina/ig/$page/$group.html";
         else
             return "vitrina.php?mode=group&amp;g=$group" . ($page ? "&amp;p=$page" : '');

@@ -946,7 +946,7 @@ protected function TopGroup() {
         if ($att_res->num_rows > 0) {
             $tmpl->addContent("<tr><th colspan='3'>Прикреплённые файлы</th></tr>");
             while ($anxt = $att_res->fetch_row()) {
-                if ($CONFIG['site']['recode_enable']) {
+                if ($CONFIG['site']['rewrite_enable']) {
                     $link = "/attachments/{$anxt[0]}/$anxt[1]";
                 } else {
                     $link = "/attachments.php?att_id={$anxt[0]}";
@@ -2157,13 +2157,13 @@ protected function GetVitPath($group_id)
 protected function GetGroupLink($group, $page=1, $alt_param='')
 {
 	global $CONFIG;
-	if($CONFIG['site']['recode_enable'])	return "/vitrina/ig/$page/$group.html".($alt_param?"?$alt_param":'');
+	if($CONFIG['site']['rewrite_enable'])	return "/vitrina/ig/$page/$group.html".($alt_param?"?$alt_param":'');
 	else					return "/vitrina.php?mode=group&amp;g=$group".($page?"&amp;p=$page":'').($alt_param?"&amp;$alt_param":'');
 }
 
     /// Получить ссылку на товар с заданным ID
     protected function GetProductLink($product, $name, $alt_param = '') {
-        if (\cfg::get('site', 'recode_enable')) {
+        if (\cfg::get('site', 'rewrite_enable')) {
             return "/vitrina/ip/$product.html" . ($alt_param ? "?$alt_param" : '');
         } else {
             return "/vitrina.php?mode=product&amp;p=$product" . ($alt_param ? "&amp;$alt_param" : '');
@@ -2273,7 +2273,7 @@ try
 } catch(mysqli_sql_exception $e) {
     $tmpl->ajax=0;
     $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
 } catch(Exception $e) {
     writeLogException($e);
     $tmpl->errorMessage($e->getMessage());

@@ -17,22 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-/**
-@mainpage Cистема комплексного учёта торговли multimag. Документация разработчика.
-<h2>Быстрый старт для разработчика multimag</h2>
-<ul>
-<li>BETemplate - шаблонизатор</li>
-<li>doc.core.php содержит вспомогательные функции работы с документами</li>
-<li>Vitrina формирует все страницы витрины и может быть перегружен шаблоном</li>
-<li>doc_Nulltype является базовым классом для всех документов системы</li>
-<li>BaseReport используется для генерации отчётов</li>
-<li>От AsyncWorker наследуются обработчики, выполняющиеся независимо от веб сервера</li>
-<li>От ListEditor наследуются редакторы простых справочников</li>
-<li>PosEditor содержит методы для работы с редактором списка товаров</li>
-<li>IModule - базовый класс для модулей. Ссылки на модули автоматически добавляются на нужные страницы. Это можно использовать для разработки плагинов.</li>
-</ul>
-Смотри <a href='annotated.html'>структуры данных</a> и <a href='hierarchy.html'>иерархию классов</a>, чтобы получить полное представление о классах системы
-**/
+/// TODO: После рефакторинга, файл должен быть удалён. Код переностится, главным образом, в include/webcore.php
 
 /// Автозагрузка классов для ядра
 function core_autoload($class_name){
@@ -62,50 +47,6 @@ function core_autoload($class_name){
 }
 
 spl_autoload_register('core_autoload');
-
-/// Вычисляет максимально допустимый размер вложений в байтах
-function get_max_upload_filesize()
-{
-    $max_post = trim(ini_get('post_max_size'));
-    $last = strtolower($max_post[strlen($max_post)-1]);
-    switch($last) {
-        // The 'G' modifier is available since PHP 5.1.0
-        case 'g':
-            $max_post *= 1024;
-        case 'm':
-            $max_post *= 1024;
-        case 'k':
-            $max_post *= 1024;
-    }
-
-    $max_fs = trim(ini_get('upload_max_filesize'));
-    $last = strtolower($max_fs[strlen($max_fs)-1]);
-    switch($last) {
-        // The 'G' modifier is available since PHP 5.1.0
-        case 'g':
-            $max_fs *= 1024;
-        case 'm':
-            $max_fs *= 1024;
-        case 'k':
-            $max_fs *= 1024;
-    }
-
-
-    return min($max_fs, $max_post);
-}
-
-function formatRoundedFileSize($size) {
-    if ($size > 1024 * 1024 * 1024) {
-        $size = round($size / (1024 * 1024 *1024), 2) . ' Гб';
-    } else if ($size > 1024 * 1024) {
-        $size = round($size / (1024 * 1024), 2) . ' Мб';
-    } else if ($size > 1024) {
-        $size = round($size / (1024), 2) . ' Кб';
-    } else {
-        $size.='байт';
-    }
-    return $size;
-}
 
 /// @brief Форматирование номера телефона, записанного в международном формате, в легкочитаемый вид.
 ///

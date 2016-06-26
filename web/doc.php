@@ -151,10 +151,10 @@ try {
     $id = writeLogException($e);
     if ($tmpl->ajax) {
         $ret_data = array('response' => 'err',
-            'message' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение передано администратору.");
+            'message' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение об ошибке занесено в журнал.");
         $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
     } else {
-        $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+        $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
     }
 } catch (Exception $e) {
     $id = writeLogException($e);

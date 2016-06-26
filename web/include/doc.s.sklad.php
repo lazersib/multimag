@@ -368,7 +368,21 @@ class doc_s_Sklad {
             $pos_type_html = "<label><input type='radio' name='pd[type]' value='0' checked>Товар</label><br>
                 <label><input type='radio' name='pd[type]' value='1'>Услуга</label>";
         }
-
+        if(!isset($form_data['no_export_yml'])) {
+            $form_data['no_export_yml'] = 0;
+        }
+        if(!isset($form_data['stock'])) {
+            $form_data['stock'] = 0;
+        }
+        if(!isset($form_data['eol'])) {
+            $form_data['eol'] = 0;
+        }
+        if(!isset($form_data['cost_date'])) {
+            $form_data['cost_date'] = '';
+        }
+        if(!isset($form_data['likvid'])) {
+            $form_data['likvid'] = '';
+        }
 //            foreach ($this->pos_vars as $value) {
 //                $pos_info[$value] = '';
 //            }
@@ -410,7 +424,7 @@ class doc_s_Sklad {
             </tr>
             <tr><td align='right'>Страна происхождения<br><small>Для счёта-фактуры</small></td><td><select name='pd[country]'>";
         
-        $ret .= "<option value='0'>--не выбрана--</option>";
+        $ret .= "<option value='null'>--не выбрана--</option>";
         $res = $db->query("SELECT `id`, `name` FROM `class_country` ORDER BY `name`");
         while ($nx = $res->fetch_row()) {
             $selected = $nx[0] == $form_data['country'] ? 'selected' : '';
@@ -475,9 +489,15 @@ class doc_s_Sklad {
             <td colspan='3'><input type='text' name='pd[meta_description]' value='" . html_out($form_data['meta_description']) . "' style='width: 95%' maxlength='256'></td></tr>
                     ";
         if ($pos_id != 0) {
+            $s_c = ' checked';
+            $c_c = '';
+            if(isset($form_data['copy']) && $form_data['copy']) {
+                $c_c = ' checked';
+                $s_c = '';
+            }
             $ret.="<tr><td align='right'>Режим записи:</td><td colspan='3'>
-                <label><input type='radio' name='sr' value='0' checked>Сохранить</label>
-                <label><input type='radio' name='sr' value='1'>Создать новую карточку</label></td></tr>";
+                <label><input type='radio' name='sr' value='0' $s_c>Сохранить</label>
+                <label><input type='radio' name='sr' value='1'$c_c>Создать новую карточку</label></td></tr>";
         }
         $ret .= "<tr><td></td><td  colspan='3'><input type='submit' value='Сохранить'></td></tr>
         <script type='text/javascript' src='/css/jquery/jquery.js'></script>
@@ -627,8 +647,8 @@ class doc_s_Sklad {
         }
         // Изображения
         else if ($param == 'i') {
-            $max_fs = get_max_upload_filesize();
-            $max_fs_size = formatRoundedFileSize($max_fs);
+            $max_fs = \webcore::getMaxUploadFileSize();
+            $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
 
             $res = $db->query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
                 FROM `doc_base_img`
@@ -700,7 +720,7 @@ class doc_s_Sklad {
                 LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
                 WHERE `doc_base_attachments`.`pos_id`='$pos'");
             while ($nxt = $res->fetch_row()) {
-                if ($CONFIG['site']['recode_enable']) {
+                if ($CONFIG['site']['rewrite_enable']) {
                     $link = "/attachments/{$nxt[0]}/$nxt[1]";
                 } else {
                     $link = "/attachments.php?att_id={$nxt[0]}";
@@ -920,8 +940,8 @@ class doc_s_Sklad {
         // Правка описания группы
         else if ($param == 'g') {
             \acl::accessGuard('directory.goods.groups', \acl::VIEW);
-            $max_fs = get_max_upload_filesize();
-            $max_fs_size = formatRoundedFileSize($max_fs);
+            $max_fs = \webcore::getMaxUploadFileSize();
+            $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
 
             $res = $db->query("SELECT * FROM `doc_group` WHERE `id`='$group'");
             if ($res->num_rows)
@@ -1230,120 +1250,90 @@ class doc_s_Sklad {
         }
     }
 
-    /// Запись формы карточки товара
+    /// Запись формы карточки товара, вывод статуса и формы дальнейшего редактирования
     protected function saveProduct($pos_id) {
-        global $db, $CONFIG, $tmpl;
-        $pd = request('pd');
-        $sr = request('sr');
-
-        if (($pos_id) && (!$sr)) {
-            \acl::accessGuard('directory.goods', \acl::UPDATE);
-            $sql_add = $log_add = '';
-            $old_data = $db->selectRowA('doc_base', $pos_id, $this->pos_vars);
-
-            if (@$CONFIG['store']['leaf_only']) {
-                $new_group = intval($pd['group']);
-                $res = $db->query("SELECT `id` FROM `doc_group` WHERE `pid`=$new_group");
-                if ($res->num_rows) {
-                    throw new Exception("Запись наименования возможна только в конечную группу!");
+        global $db, $tmpl;
+        $pos_data = request('pd');
+        $copy_flag = request('sr');
+        try {
+            if (($pos_id) && (!$copy_flag)) {
+                \acl::accessGuard('directory.goods', \acl::UPDATE);                
+                $db->startTransaction();
+                $item = new \models\goodsitem($pos_id);
+                $status = $item->update($pos_data);
+                $db->commit();
+                if($status) {
+                    $tmpl->msg("Данные обновлены успешно", "ok");
                 }
-            }
-
-            foreach ($old_data as $id => $value) {
-                if ($id == 'id' || $id == 'likvid' || $id == 'cost_date') {
-                    continue;
+                else {
+                    $tmpl->msg("Ничего не было изменено", "info");
                 }
-                if (!isset($pd[$id])) {
-                    $pd[$id] = 0;
-                }
-                if ($pd[$id] != $value) {
-                    if ($id == 'country') {
-                        if (!$pd[$id] && !$value) {
-                            continue;
-                        }
-                        $new_val = intval($pd[$id]);
-                        if (!$new_val)
-                            $new_val = 'NULL';
-                    }
-                    else if ($id == 'cost') {
-                        $cost = sprintf("%0.2f", $pd[$id]);
-                        $new_val = "'$cost', `cost_date`=NOW()";
-                    } else if ($id == 'nds') {
-                        if ($pd[$id] === '') {
-                            $new_val = 'NULL';
-                        } else {
-                            $new_val = intval($pd[$id]);
-                        }
-                    } else {
-                        $new_val = "'" . $db->real_escape_string($pd[$id]) . "'";
-                    }
-
-                    $log_add.=", $id:($value => {$pd[$id]})";
-                    $sql_add.=", `$id`=$new_val";
-                }
-            }
-            if (@$CONFIG['store']['require_mass']) {
-                if ($pd['mass'] == 0 && $pd['type'] == 0) {
-                    throw new \Exception('Обязательное поле *масса* не заполено');
-                }
-            }
-            if ($sql_add) {
-                $db->query("UPDATE `doc_base` SET `id`=`id` $sql_add WHERE `id`='$pos_id'");
-                $tmpl->msg("Данные обновлены!", "ok");
-                doc_log("UPDATE", "$log_add", 'pos', $pos_id);
+                $this->showMainForm($pos_id, $pos_data['group']);
             } else {
-                $tmpl->msg("Ничего не было изменено", 'info');
+                \acl::accessGuard('directory.goods', \acl::CREATE);
+
+                $db->startTransaction();
+                $item = new \models\goodsitem();
+                if ($pos_id > 0) {
+                    $pos_id = $item->createFrom($pos_data, $pos_id);
+                } else {
+                    $pos_id = $item->create($pos_data);
+                }
+                $db->commit();
+                $this->PosMenu($pos_id, '');
+                $tmpl->msg("Новый элемент успешно создан!");
+                $this->showMainForm($pos_id, $pos_data['group']);
             }
-            $this->showMainForm($pos_id, $pd['group']);
-        } else {
-            \acl::accessGuard('directory.goods', \acl::CREATE);
-            $log = '';
-            $data = array();
-            foreach ($this->pos_vars as $field) {
-                if ($field == 'nds') {
-                    if ($pd[$field] === '') {
-                        $data[$field] = 'NULL';
+        } catch (mysqli_sql_exception $e) {
+            $tmpl->ajax = 0;
+            switch ($e->getCode()) {
+                case 1062:
+                    $lt = $this->getLikeTable($pos_data['name'], $pos_data['proizv'], $pos_data['vc']);
+                    $text = "Неверно заполнены поля: не соблюдена уникальность!<br>" . $e->getMessage();
+                    if ($lt) {
+                        $text .= "<br>Следующие позиции являются кандидатами на нарушение уникальности:<br>" . $lt;
                     } else {
-                        $data[$field] = intval($pd[$field]);
+                        $text .= "<br>Однако похожие позиции не найдены";
                     }
-                    $log.="$field:" . $data[$field] . ", ";
-                } elseif ($field != 'cost_date' && isset($pd[$field])) {
-                    $data[$field] = $pd[$field];
-                    $log.="$field:" . $pd[$field] . ", ";
-                }
+                    $tmpl->errorMessage($text, "Ошибка в базе данных");
+                    $pos_data['pos_type'] = $pos_data['type'];
+                    if (!isset($pos_data['hidden'])) {
+                        $pos_data['hidden'] = 0;
+                    }
+                    $pos_data['copy'] = $copy_flag;
+                    $tmpl->addContent($this->getMainForm($pos_data, null));
+                    break;
+                default:
+                    $id = writeLogException($e);
+                    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
             }
-            $data['cost_date'] = date("Y-m-d H:i:s");
-            if (@$CONFIG['store']['require_mass']) {
-                if ($data['mass'] == 0 && $data['type'] == 0) {
-                    throw new \Exception('Обязательное поле *масса* не заполено');
-                }
-            }
-            $opos = $pos_id;
-
-            $db->startTransaction();
-            $pos_id = $db->insertA('doc_base', $data);
-
-            if ($opos) {
-                $res = $db->query("SELECT `type`, `d_int`, `d_ext`, `size` FROM `doc_base_dop` WHERE `id`='$opos'");
-                $nxt = $res->fetch_assoc();
-                if ($nxt) {
-                    $db->query("REPLACE `doc_base_dop` (`id`, `type`, `d_int`, `d_ext`, `size`)
-                        VALUES ('$pos_id', '{$nxt['type']}', '{$nxt['d_int']}', '{$nxt['d_ext']}', '{$nxt['size']}')");
-                }
-            }
-            doc_log("CREATE", $log, 'pos', $pos_id);
-
-            $res = $db->query("SELECT `id` FROM `doc_sklady`");
-            while ($nxt = $res->fetch_row()) {
-                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$pos_id', '$nxt[0]', '0')");
-            }
-            $db->commit();
-            
-            $this->PosMenu($pos_id, '');
-            $tmpl->msg("Новый элемент успешно создан!");
-            $this->showMainForm($pos_id, $pd['group']);
-            
         }
+    }
+
+    /// Получение списка позиций, похожих на позицию с указанными параметрами
+    protected function getLikeList($pos_name, $pos_vendor, $pos_vc) {
+        global $db;
+        $pos_name = $db->real_escape_string($pos_name);
+        $pos_vendor = $db->real_escape_string($pos_vendor);
+        $pos_vc = $db->real_escape_string($pos_vc);
+        $ret = array();
+        $res = $db->query("SELECT `id`, `vc`, `name`, `proizv` AS `vendor`"
+            . " FROM `doc_base`"
+            . " WHERE `name` LIKE '$pos_name' OR `vc` LIKE '$pos_vc'");
+        while($line = $res->fetch_assoc()) {
+            $ret[$line['id']] = $line;
+        }
+        return $ret;
+    }
+    
+    
+    protected function getLikeTable($pos_name, $pos_vendor, $pos_vc) {
+        $data = $this->getLikeList($pos_name, $pos_vendor, $pos_vc);
+        $ret = '';
+        foreach($data as $line) {
+            $ret .= "{$line['id']} - ".html_out($line['vc'])." - ".html_out($line['name'])." / ".html_out($line['vendor'])."<br>";
+        }        
+        return $ret;        
     }
 
     /// Сохранить данные после редактирования
@@ -1454,7 +1444,7 @@ class doc_s_Sklad {
         }
         else if ($param == 'i') {
             $id = 0;
-            $max_img_size = get_max_upload_filesize();
+            $max_img_size = \webcore::getMaxUploadFileSize();
             $min_pix = 15;
             $max_pix = 20000;
             global $CONFIG;
@@ -1653,7 +1643,7 @@ class doc_s_Sklad {
                 $tmpl->msg("Ничего не изменилось!");
         }
         else if ($param == 'g') {            
-            $max_size = get_max_upload_filesize();
+            $max_size = \webcore::getMaxUploadFileSize();
             $name = request('name');
             $desc = request('desc');
             $pid = rcvint('pid');
@@ -2129,6 +2119,7 @@ class doc_s_Sklad {
             $tmpl->addContent('<th>Тип<th>d</th><th>D</th><th>B</th>');
         }
         $tmpl->addContent('<th>Масса</th>');
+        $e_options = array();
         if (isset($CONFIG['store']['add_columns'])) {
             $e_options = explode(',', $CONFIG['store']['add_columns']);
             foreach ($e_options as $opt) {
@@ -2530,15 +2521,17 @@ class doc_s_Sklad {
             $cadd = '';
         }
         $opts_add = '';
-        foreach ($opts as $opt) {
-            switch ($opt) {
-                case 'mult':
-                case 'bulkcnt':
-                    $opts_add .= '<td align="right">' . $line[$opt] . '</td>';
-                    break;
-                case 'bigpack':
-                    $opts_add .= '<td align="right">' . $line['bigpack_cnt'] . '</td>';
-                    break;
+        if(is_array($opts)) {
+            foreach ($opts as $opt) {
+                switch ($opt) {
+                    case 'mult':
+                    case 'bulkcnt':
+                        $opts_add .= '<td align="right">' . $line[$opt] . '</td>';
+                        break;
+                    case 'bigpack':
+                        $opts_add .= '<td align="right">' . $line['bigpack_cnt'] . '</td>';
+                        break;
+                }
             }
         }
 

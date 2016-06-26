@@ -119,8 +119,8 @@ public function viewImage($n) {
 public function addImageForm() {
 	global $tmpl;
 	\acl::accessGuard('generic.article.photo', \acl::UPDATE);
-	$max_fs=get_max_upload_filesize();
-	$max_fs_size=formatRoundedFileSize($max_fs);
+	$max_fs=\webcore::getMaxUploadFileSize();
+	$max_fs_size=\webcore::toStrDataSizeInaccurate($max_fs);
 	$tmpl->addContent("<h3>Добавить изображение</h3>");
 	$tmpl->addContent("Изображения в этом разделе используются для последующего отображения в статьях. После добавления Вы получите код для вставки в статью.<br>
 	<form method=post action='wikiphoto.php' enctype='multipart/form-data'>
@@ -219,7 +219,7 @@ try {
 } catch (mysqli_sql_exception $e) {
     $tmpl->ajax = 0;
     $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
 } catch (Exception $e) {
     writeLogException($e);
     $tmpl->errorMessage($e->getMessage());

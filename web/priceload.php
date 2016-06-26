@@ -332,7 +332,7 @@ try {
 		$tmpl->addContent("</table>");
 	}
 	else if ($mode == 'load') {
-		$m_upl_size = get_max_upload_filesize();
+		$m_upl_size = \webcore::getMaxUploadFileSize();
 		$tmpl->addContent("
 	<form method=post enctype='multipart/form-data'>
 	<input type=hidden name=mode value='parse'>
@@ -918,7 +918,7 @@ try {
 catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
 	$id = writeLogException($e);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
 }
 catch (Exception $e) {
     writeLogException($e);

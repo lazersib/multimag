@@ -26,10 +26,17 @@ class wikipage extends \modules\IWikiPage {
         parent::__construct();
         $this->acl_object_name = 'generic.articles';
         $this->table_name = 'articles';
+        $this->files_fn = 'attachments';
+        if (\cfg::get('site', 'rewrite_enable')) {
+            $this->link_prefix = '/article/';
+        }
+        else {
+            $this->link_prefix = '/articles.php';
+        }
     }
 
     public function getName() {
-        return 'Страница статьи';
+        return 'Статьи';
     }
     
     public function getDescription() {

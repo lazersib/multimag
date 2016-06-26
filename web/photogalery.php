@@ -121,8 +121,8 @@ try {
     } else if ($mode == "add") {
         \acl::accessGuard('generic.galery', \acl::CREATE);
 
-        $max_fs = get_max_upload_filesize();
-        $max_img_size = formatRoundedFileSize(min(16 * 1024 * 1204, $max_fs));
+        $max_fs = \webcore::getMaxUploadFileSize();
+        $max_img_size = \webcore::toStrDataSizeInaccurate(min(16 * 1024 * 1204, $max_fs));
 
         $tmpl->addContent("<h3>Добавить фотографию</h3>");
         $tmpl->addContent("При добавлении фотографии не забывайте про <a href='wiki/правила_фотогалереи'>правила</a>!
@@ -137,7 +137,7 @@ try {
 	<input type=submit value='Сохранить'>
 	</form>");
     } else if ($mode == "addo") {
-        $max_fs = get_max_upload_filesize();
+        $max_fs = \webcore::getMaxUploadFileSize();
         $max_img_size = min(16 * 1024 * 1204, $max_fs);
         $tmpl->addContent("<h3>Сохранение фотографии</h3>");
         $comm = request('comm');

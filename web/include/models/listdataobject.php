@@ -67,10 +67,4 @@ abstract class ListDataObject {
 	/// Возвращает данные, отфильтрованные в соответствии с фильтрами 
 	abstract public function getData();
         
-        /// @brief Получить данные. Статический метод.
-        /// Возвращает нефильтрованные данные
-        static public function getUnfilteredData() {
-            $ldo = new self();
-            return $ldo->getData();
-        }
 }

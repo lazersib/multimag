@@ -24,12 +24,19 @@ class wikipage extends \modules\IWikiPage {
     
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'service.intkb';
+        $this->acl_object_name = 'service.wikipage';
         $this->table_name = 'intkb';
+        $this->files_fn = 'intfiles';
+        if (\cfg::get('site', 'rewrite_enable')) {
+            $this->link_prefix = '/intkb/';
+        }
+        else {
+            $this->link_prefix = '/intkb.php';
+        }
     }
 
     public function getName() {
-        return 'Страница статьи базы знаний';
+        return 'База знаний';
     }
     
     public function getDescription() {

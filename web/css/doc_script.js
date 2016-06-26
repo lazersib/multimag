@@ -291,7 +291,7 @@ function DocHeadInit()
         {
             doc_left_block.style.backgroundColor = '#f00'
             jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
-                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Вставка строки в документ", null, 'icon_err');
+                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Сохранение заголовка", null, 'icon_err');
         }
     }
 
@@ -451,7 +451,7 @@ function UpdateContractInfo(doc, firm_id, agent_id)
 		{
 			doc_left_block.style.backgroundColor='#f00'
 			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Вставка строки в документ", null,  'icon_err');
+			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Сохранение", null,  'icon_err');
 		}
 	}
 
@@ -1308,4 +1308,111 @@ function createAgentFromPhoneMenu(event, phone) {
     }
     showDialog();
     return false;
+}
+
+
+function contractTextSaverInit(doc_id, textarea_id, button_id) {
+    var textarea = document.getElementById(textarea_id);
+    var button = document.getElementById(button_id);
+    var dialog_caption = "Сохранение текста договора";
+    var lock_blur = 0;
+    var oldbg = textarea.style.backgroundColor;
+    textarea.changing = 0;
+
+    textarea.Save = function () {
+        textarea.style.backgroundColor = '#ffc';
+        
+        $.ajax({
+            type: 'POST',
+            url: '/doc.php',
+            data: 'mode=srv&doc='+doc_id+'&opt=jcts&text='+encodeURIComponent(textarea.value),
+            success: function (msg) {
+                textarea.rcvDataSuccess(msg);
+            },
+            error: function () {
+                jAlert('Ошибка соединения!', dialog_caption, null, 'icon_err');
+            }
+        });
+    };
+
+    textarea.StartEdit = function () {
+        textarea.changing = 1;
+        button.style.display = '';
+        if (textarea.timeout)
+            window.clearTimeout(textarea.timeout);
+    };
+
+    textarea.FinistEdit = function () {
+        textarea.changing = 0;
+        button.style.display = 'none';
+    };
+
+    textarea.rcvDataSuccess = function (msg) {
+        try {
+            if (textarea.timeout)
+                window.clearTimeout(textarea.timeout);
+            var alfa = 255;
+            textarea.timeout = window.setTimeout(function () {
+                textarea.style.backgroundColor = ''
+            }, 2000)
+            var json = eval('(' + msg + ')');
+            if (json.status == 'err') {
+                textarea.style.backgroundColor = '#f00';
+                jAlert('<b>Ошибка сохранения</b><br>' + json.text, dialog_caption, null, 'icon_err');
+            }
+            else if (json.response == 'jcts') {
+                if(json.status=='ok') {
+                    textarea.style.backgroundColor = '#bfa';
+                }
+                else {
+                    textarea.style.backgroundColor = '#f00';
+                    jAlert('<b>Ошибка сохранения</b><br>' + json.text, dialog_caption, null, 'icon_err');
+                }
+            }
+            else {
+                textarea.style.backgroundColor = '#f00';
+                jAlert("Обработка полученного сообщения не реализована<br>" + msg, dialog_caption, null, 'icon_err');
+            }
+            textarea.FinistEdit();
+        }
+        catch (e) {
+            textarea.style.backgroundColor = '#f00';
+            jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
+                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, dialog_caption, null, 'icon_err');
+        }
+    }
+
+    function obj_onclick(event) {
+        textarea.StartEdit();
+        textarea.timeout = window.setTimeout(textarea.Save, 30000) // на всякий случай
+    }
+
+    function obj_onmousedown(event) {
+        textarea.StartEdit();
+        textarea.timeout = window.setTimeout(textarea.Save, 30000) // на всякий случай
+        // Хак для предотвращения отправки формы по onblur, если фокус готовится быть переданным на select и др элемент
+        lock_blur = 1;
+        window.setTimeout(function () {
+            lock_blur = 0;
+        }, 60);
+    }
+
+    obj_onblur = function (event) {
+        if (lock_blur)
+            return;
+        if (textarea.timeout)
+            window.clearTimeout(textarea.timeout);
+        textarea.timeout = window.setTimeout(textarea.Save, 500);
+    }
+    obj_onkeyup = function (event) {
+        if (textarea.timeout)
+            window.clearTimeout(textarea.timeout);
+        //doc_left_block.timeout=window.setTimeout(doc_left_block.Save, 3000)
+    }
+
+    textarea.addEventListener('mousedown', obj_onmousedown, false);
+    textarea.addEventListener('click', obj_onclick, false);
+    textarea.addEventListener('blur', obj_onblur, false);
+    textarea.addEventListener('keyup', obj_onkeyup, false);
+
 }

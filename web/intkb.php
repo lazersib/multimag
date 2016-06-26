@@ -22,7 +22,6 @@ require_once("core.php");
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->setTitle("Внутреннияя база знаний");
 $tmpl->addBreadcrumb('ЛК', '/user.php');
-$tmpl->addBreadcrumb('Внутреннияя база знаний', '/intkb.php');
 
 $wikiparser = new \WikiParser();
 if (!isset($_REQUEST['p'])) {
@@ -38,7 +37,6 @@ need_auth();
 
 try {
     $wikipage = new \modules\service\wikipage();
-    $wikipage->link_prefix = '/intkb/';
     $wikipage->setPageName($p);
     $wikipage->run();
     
@@ -46,7 +44,7 @@ try {
     $db->rollback();
     $tmpl->ajax = 0;
     $id = writeLogException($e);
-    $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+    $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
 } catch (NotFoundException $e) {
     $db->query("ROLLBACK");
     $tmpl->setContent("");

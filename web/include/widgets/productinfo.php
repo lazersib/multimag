@@ -48,7 +48,7 @@ class ProductInfo extends \IWidget {
             
 	$product_data = $res->fetch_assoc();
 	
-        if($CONFIG['site']['recode_enable']) {
+        if($CONFIG['site']['rewrite_enable']) {
             $link = "/vitrina/ip/{$this->pos_id}.html";
         }
 	else {

@@ -24,8 +24,12 @@ class main extends \acl\aclContainer {
     
     public function __construct() {
         $this->list = array(
-            'intkb' => array(
+            'wikipage' => array(
                 "name" => "Внутренняя база знаний",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
+            ),
+            'files' => array(
+                "name" => "Внутренние прикреплённые файлы",
                 "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
             'pricean' => array(

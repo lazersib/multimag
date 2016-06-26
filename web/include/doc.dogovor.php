@@ -30,14 +30,14 @@ class doc_Dogovor extends doc_Nulltype {
         $this->viewname = 'Договор';
         $this->sklad_editor_enable = false;
         $this->header_fields = 'bank separator agent cena';
-        settype($this->id, 'int');
-        if (!$doc) {
-            $this->doc_data['comment'] = @$CONFIG['doc']['contract_template'];
-        }
     }
 
     function initDefDopdata() {
-        $this->def_dop_data = array('name' => '', 'end_date' => '', 'debt_control' => 0, 'debt_size' => 0, 'limit' => 0, 'received' => 0, 'cena' => 0, 'deferment'=>0);
+        $this->def_dop_data = array('name' => '', 'end_date' => '', 'debt_control' => 0, 'debt_size' => 0, 'limit' => 0, 'received' => 0
+            , 'cena' => 0, 'deferment'=>0, 'template'=>0);
+        if($this->id) {
+            $this->loadTextDataFromDb();
+        }
     }
 
     function DopHead() {
@@ -53,6 +53,16 @@ class doc_Dogovor extends doc_Nulltype {
         $limit = $this->dop_data['limit'];
         $deferment = $this->dop_data['deferment'];
         $checked = $this->dop_data['received'] ? 'checked' : '';
+        if(!$this->id) {
+            $ldo = new \Models\LDO\ctemplates();
+            $ctemplates = $ldo->getData();
+            $tmpl->addContent("Шаблон текста договора:<br><select name='template'>");
+            foreach ($ctemplates as $id=>$value) {
+                $tmpl->addContent("<option value='$id'>".html_out($value).'</option>');
+            }
+            $tmpl->addContent("</select><br>");
+        }
+        
         $tmpl->addContent("
             Отображаемое наименование:<br>
             <input type='text' name='name' value='$name'><br>
@@ -68,6 +78,7 @@ class doc_Dogovor extends doc_Nulltype {
     }
 
     function DopSave() {
+        global $db;
         $new_data = array(
             'received' => request('received'),
             'end_date' => rcvdate('end_date'),
@@ -78,16 +89,15 @@ class doc_Dogovor extends doc_Nulltype {
             'deferment' => rcvint('deferment'),
             'received' => rcvint('received') ? '1' : '0'
         );
-        $old_data = array_intersect_key($new_data, $this->dop_data);
-
-        $log_data = '';
-        if ($this->id) {
-            $log_data = getCompareStr($old_data, $new_data);
+        $template = rcvint('template');
+        if($template) {
+            $res = $db->query("SELECT `text` FROM `contract_templates` WHERE `id`=$template");
+            if($res->num_rows>0) {
+                list($t_text) = $res->fetch_row();
+                $this->setTextData('contract_text', $t_text);
+            }
         }
         $this->setDopDataA($new_data);
-        if ($log_data) {
-            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-        }
     }
 
     /// Получить список шаблонных полей договора
@@ -135,7 +145,7 @@ class doc_Dogovor extends doc_Nulltype {
                 'value' => $agent->leader_reason_r
             ],
             'AGENT_EMAIL' => [
-                'name' => 'email агента',
+                'name' => 'Основной email агента',
                 'value' => $agent->getEmail(),
             ],
             'END_DATE' => [
@@ -162,13 +172,29 @@ class doc_Dogovor extends doc_Nulltype {
                 'name' => 'email собственной организации',
                 'value' => \cfg::get('site', 'admin_email')
             ],
-            'FIRM_DIRECTOR' => [
-                'name' => 'ФИО руководителя собственной организации',
-                'value' => $this->firm_vars['firm_director_r']
+            'FIRM_LEADER_POST' => [
+                'name' => 'Должность руководителя собственной организации',
+                'value' => $this->firm_vars['firm_leader_post']
             ],
-            'FIRM_DIRECTOR_R' => [
+            'FIRM_LEADER_POST_R' => [
+                'name' => 'Должность руководителя собственной организации в родительном падеже',
+                'value' => $this->firm_vars['firm_leader_post_r']
+            ],
+            'FIRM_LEADER_NAME' => [
+                'name' => 'ФИО руководителя собственной организации',
+                'value' => $this->firm_vars['firm_director']
+            ],
+            'FIRM_LEADER_NAME_R' => [
                 'name' => 'ФИО руководителя собственной организации в родительном падеже',
                 'value' => $this->firm_vars['firm_director_r']
+            ],
+            'FIRM_LEADER_REASON' => [
+                'name' => 'Основание деятельности руководителя собственной организации',
+                'value' => $this->firm_vars['firm_leader_reason']
+            ],
+            'FIRM_LEADER_REASON_R' => [
+                'name' => 'Основание деятельности руководителя собственной организации в родительном падеже',
+                'value' => $this->firm_vars['firm_leader_reason_r']
             ],
         );
     }
@@ -178,6 +204,14 @@ class doc_Dogovor extends doc_Nulltype {
         if ($this->dop_data['received']) {
             $tmpl->addContent("<br><b>Документы подписаны и получены</b><br>");
         }
+        $contract_text = html_out($this->getTextData('contract_text'));
+        $tmpl->addContent("<b>Текст договора:</b><br>"
+            . "<textarea class='wikieditor big' cols='80' rows='20' id='contract_text_editor'>$contract_text</textarea><br>"
+            . "<button id='contract_text_submit' style='display:none'>Сохранить текст</button><br>"
+            . "<script type='text/javascript'>"
+            . "contractTextSaverInit('{$this->id}','contract_text_editor', 'contract_text_submit');"
+            . "</script>");
+        
         $vars = $this->getVariables();
         $tmpl->addContent("<h2>Выражения подстановки, которые возможно использовать в текста договора:</h2>"
             . "<table class='list'><tr><th>Выражение</th><th>Описание</th><th>Текущее значение</th></tr>");
@@ -201,6 +235,33 @@ class doc_Dogovor extends doc_Nulltype {
             $dd = $new_doc->createFrom($this);
             $this->sentZEvent('morph_specific');
             header("Location: doc.php?mode=body&doc=$dd");
+        }
+    }
+
+    public function Service() {
+        global $tmpl;
+
+        $tmpl->ajax = 1;
+        $opt = request('opt');
+        $pos = request('pos');
+        
+        if (parent::_Service($opt, $pos)) {
+            return true;
+        } 
+        
+        switch($opt) {
+            case 'jcts':
+                \acl::accessGuard('doc.'.$this->typename, \acl::UPDATE);
+                $text = request('text');
+                $this->setTextData('contract_text', $text);
+                $ret = array(
+                    'response' => $opt,
+                    'status' => 'ok',
+                );
+                $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
+                return true;
+            default:
+                throw new \NotFoundException("Неизвестная опция $opt!");
         }
     }
 

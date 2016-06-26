@@ -26,8 +26,8 @@ class ds_bank_import {
     protected $agent_inns;  //< ИНН и связанные агенты
 
     function getForm() {
-        $max_fs = get_max_upload_filesize();
-        $max_fs_size = formatRoundedFileSize($max_fs);
+        $max_fs = \webcore::getMaxUploadFileSize();
+        $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
         return "<h1>" . $this->getname() . "</h1>
             <form action='' method='post' enctype='multipart/form-data'>
             <input type='hidden' name='mode' value='load'>

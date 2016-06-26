@@ -430,7 +430,7 @@ class Acl extends \IModule {
             $this->addUserToGroup($user_id, $group_id);
         } catch (\mysqli_sql_exception $e) {
             $id = writeLogException($e);
-            $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+            $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
         } catch (\Exception $e) {
             $tmpl->errorMessage($e->getMessage());
         }

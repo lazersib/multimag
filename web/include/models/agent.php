@@ -72,7 +72,7 @@ class agent {
             foreach($data['contacts'] as $contact) {
                 $contact_info = array_fill_keys($this->contact_fields, '');
                 $contact_info = array_intersect_key($contact, $contact_info);
-                var_dump($contact_info);
+                //var_dump($contact_info);
                 if($contact_info['type']=='phone') {
                     $phone = normalizePhone($contact_info['value']);
                     if($phone) {

@@ -264,6 +264,12 @@ class LogView {
                     if($desc) {
                         $desc .= ', ';
                     }
+                    if(!array_key_exists('old', $value)) {
+                        $value['old'] = '?';
+                    }
+                    if(!array_key_exists('new', $value)) {
+                        $value['new'] = '?';
+                    }
                     switch($name) {
                         case 'date':
                             $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
@@ -296,6 +302,7 @@ class LogView {
                             $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
                             break;                        
                         case 'dop_data':
+                        case 'extdata':  
                             break;
                         default:
                             $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);

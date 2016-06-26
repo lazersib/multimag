@@ -373,9 +373,15 @@ class salary extends \AsyncWorker {
                 $salary['o_fee'] = round($additional_sum * $this->conf_author_coeff, 2);
                 $salary['o_uid'] = $doc['user'];
             }
-            if ($responsible_id && !isset($old_salary['r_uid'])) {
-                $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
-                $salary['r_uid'] = $responsible_id;
+            if(!isset($old_salary['r_uid'])) {
+                if ($responsible_id) {
+                    $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
+                    $salary['r_uid'] = $responsible_id;
+                }
+                else if($doc['user']) { /// Если ответственный не задан - начисляем автору документа
+                    $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
+                    $salary['r_uid'] = $doc['user'];            
+                }
             }
             if ($this->conf_manager_id && !isset($old_salary['m_uid'])) {
                 $salary['m_fee'] = round($additional_sum * $this->conf_manager_coeff, 2);

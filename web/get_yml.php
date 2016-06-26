@@ -93,7 +93,7 @@ try
 			if($nxt['nal']>1 || strstr($nxt['nal'],'*') || strstr($nxt['nal'],'+'))
 				if($nxt['delivery_info']=='+')	$avariable='true';
 
-		if($CONFIG['site']['recode_enable'])	$url= "http://{$pref->site_name}/vitrina/ip/{$nxt['id']}.html";
+		if($CONFIG['site']['rewrite_enable'])	$url= "http://{$pref->site_name}/vitrina/ip/{$nxt['id']}.html";
 		else					$url= "http://{$pref->site_name}/vitrina.php?mode=product&amp;p={$nxt['id']}";
 
 		$cost = $pc->getPosDefaultPriceValue($nxt['id']);
@@ -162,7 +162,7 @@ catch(mysqli_sql_exception $e) {
 	$db->rollback();
 	$tmpl->ajax=0;
 	$id = writeLogException($e);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {

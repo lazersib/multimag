@@ -141,7 +141,7 @@ try {
 
             while ($line = $res->fetch_assoc()) {
                 /// TODO: надо бы из класса витрины брать данные
-                if ($CONFIG['site']['recode_enable']) {
+                if ($CONFIG['site']['rewrite_enable']) {
                     $link = "/vitrina/ip/{$line['id']}.html";
                 } else {
                     $link = "/vitrina.php?mode=product&amp;p={$line['id']}";
@@ -189,7 +189,7 @@ try {
                 continue;
             }
             /// TODO: тут тоже надо бы из класса витрины брать данные
-            if ($CONFIG['site']['recode_enable']) {
+            if ($CONFIG['site']['rewrite_enable']) {
                 $link = "/vitrina/ip/{$line['id']}.html";
             } else {
                 $link = "/vitrina.php?mode=product&amp;p={$line['id']}";

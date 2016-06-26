@@ -55,6 +55,7 @@ try {
 	<li><a href='?mode=units'>Единицы измерения</a></li>
         <li><a href='?mode=regions'>Регионы доставки</a></li>
         <li><a href='?mode=shiptypes'>Способы доставки</a></li>
+        <li><a href='?mode=ctemplates'>Шаблоны договоров</a></li>
 	</ul>
 	<li>Обработки</li>
 	<ul>
@@ -605,8 +606,8 @@ try {
                 throw new NotFoundException("Изображение не найдено");
             }
             $line = $res->fetch_assoc();
-            $max_fs = get_max_upload_filesize();
-            $max_fs_size = formatRoundedFileSize($max_fs);
+            $max_fs = \webcore::getMaxUploadFileSize();
+            $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
             
             $o_link = "{$CONFIG['site']['var_data_web']}/pos/{$line['id']}.{$line['type']}";
             $tmpl->msg("Замена файла очистит кеш изображений!", "err", "Внимание");
@@ -740,13 +741,19 @@ try {
         $editor->link_prefix = '/doc_service.php?mode='.$mode;
         $editor->acl_object_name = 'directory.shiptype';
         $editor->run();
+    }  elseif ($mode == 'ctemplates') {
+        $editor = new \ListEditors\contractEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode='.$mode;
+        $editor->acl_object_name = 'directory.contract_templates';
+        $editor->run();
     } else {
         throw new NotFoundException("Несуществующая опция");
     }
 } catch (mysqli_sql_exception $e) {
     $tmpl->ajax = 0;
     $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
 } catch (AccessException $e) {
     $tmpl->errorMessage($e->getMessage(), "У Вас недостаточно привилегий!");
 } catch (Exception $e) {

@@ -361,7 +361,7 @@ class search extends \IModule {
         $pc->setFirmId($pref->getSitePref('default_firm_id'));
         $ret = '';
 
-        if ($CONFIG['site']['recode_enable']) {
+        if ($CONFIG['site']['rewrite_enable']) {
             $link = "/vitrina/ip/{$line['id']}.html";
         } else {
             $link = "/vitrina.php?mode=product&amp;p={$line['id']}";

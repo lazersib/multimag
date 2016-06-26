@@ -30,9 +30,6 @@ class doc_Nulltype extends \document {
     protected $bank_modify;   ///< Изменяет ли общие средства в банке
     protected $kassa_modify;  ///< Изменяет ли общие средства в кассе
     protected $header_fields;  ///< Поля заголовка документа, доступные через форму редактирования
-    protected $doc_data;   ///< Основные данные документа
-    protected $dop_data;   ///< Дополнительные данные документа
-    protected $firm_vars;   ///< Информация с данными о фирме
     protected $child_docs = array();        ///< Информация о документах-потомках
     protected $allow_neg_cnt;   ///< Разрешить отрицательное количество товара
 
@@ -47,17 +44,7 @@ class doc_Nulltype extends \document {
         $this->header_fields = '';
         $this->get_docdata();
     }
-
-    public function getDocDataA() {
-        return $this->doc_data;
-    }
-
-    public function getDopDataA() {
-        return $this->dop_data;
-    }
-
-//< Получить все дополнительные параметры документа в виде ассоциативного массива
-
+    
     public function getFirmVarsA() {
         return $this->firm_vars;
     }
@@ -65,84 +52,6 @@ class doc_Nulltype extends \document {
     /// Шаблон метода для инициализации дополнительных данных документа
     protected function initDefDopData() {
         
-    }
-
-    /// @brief Получить значение основного параметра документа.
-    /// Вернёт пустую строку в случае отсутствия параметра
-    /// @param name Имя параметра
-    public function getDocData($name) {
-        if (isset($this->doc_data[$name])) {
-            return $this->doc_data[$name];
-        } else {
-            return '';
-        }
-    }
-    
-    protected function writeLogArray($motion, $array) {
-        doc_log($motion, json_encode($array, JSON_UNESCAPED_UNICODE), 'doc', $this->id);
-    }
-
-    /// Установить основной параметр документа
-    public function setDocData($name, $value) {
-        global $db;
-        if(!isset($this->doc_data[$name])) {
-            $this->doc_data[$name] = null;
-        }
-        if ($this->id && $this->doc_data[$name] !== $value) {
-            $_name = $db->real_escape_string($name);
-            $db->update('doc_list', $this->id, $_name, $value);
-            $log_data = [$name => ['old'=>$this->doc_data[$name], 'new'=>$value] ];
-            $this->writeLogArray("UPDATE", $log_data);
-        }
-        $this->doc_data[$name] = $value;
-    }
-
-    /// @brief Получить значение дополниетльного параметра документа.
-    /// Вернёт $default в случае отсутствия параметра
-    /// @param $name Имя параметра
-    /// @param $default Значение по умолчанию
-    public function getDopData($name, $default = '') {
-        if (isset($this->dop_data[$name])) {
-            return $this->dop_data[$name];
-        } else {
-            return $default;
-        }
-    }
-
-    /// Установить дополнительные данные текущего документа
-    public function setDopData($name, $value) {
-        global $db;
-        if(!isset($this->dop_data[$name])) {
-            $this->dop_data[$name] = null;
-        }
-        if ($this->id && $this->dop_data[$name] !== $value) {
-            $_name = $db->real_escape_string($name);
-            $_value = $db->real_escape_string($value);
-            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`) VALUES ( '{$this->id}' ,'$_name','$_value')");
-            $log_data = [$name => ['old'=>$this->dop_data[$name], 'new'=>$value] ];
-            $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
-        }
-        $this->dop_data[$name] = $value;
-    }
-
-    /// Установить дополнительные данные текущего документа
-    public function setDopDataA($array) {
-        global $db;
-        if ($this->id) {
-            $to_write_data = array_diff_assoc($array, $this->dop_data);
-            $log_data = array();
-            foreach ($to_write_data as $name => $value) {
-                if(!isset($this->dop_data[$name])) {
-                    $this->dop_data[$name] = null;
-                }
-                $log_data[$name] = ['old'=>$this->dop_data[$name], 'new'=>$value];
-                $this->dop_data[$name] = $value;                
-            }
-            if(count($to_write_data)>0) {
-                $db->replaceKA('doc_dopdata', 'doc', $this->id, $to_write_data);
-                $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
-            }
-        }
     }
 
     /// Зафиксировать цену документа, если она установлена в *авто*. Выполняется при проведении некоторых типов документов.
@@ -191,28 +100,42 @@ class doc_Nulltype extends \document {
         return $this->id;
     }
 
-    public function getRootDocumentId() {
-
-        function getRootDocument($doc) {
-            global $db;
-            while ($doc) {
-                $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`='$doc' AND `p_doc`>'0' AND `p_doc` IS NOT NULL");
-                if (!$res->num_rows) {
-                    return $doc;
-                }
-                list($pdoc) = $res->fetch_row();
-                if (!$pdoc) {
-                    return $doc;
-                }
-                $doc = $pdoc;
-            }
-            return $doc;
-        }
-
+    /** Получить ID корневого документа в дереве иерархии
+     * 
+     * @param bool $no_exception    Не бросать исключение при ошибке иерархии
+     * @return int                  ID корневого документа
+     * @throws Exception            Бросает исключение при обнаружении петли с участием текущего документа
+     */
+    public function getRootDocumentId($no_exception=false) {        
+        global $db;
         if ($this->doc_data['p_doc'] == 0) {
             return $this->id;
         }
-        return getRootDocument($this->doc_data['p_doc']);
+
+        $docmem = array();
+        $doc = $this->doc_data['p_doc'];
+
+        while ($doc) {
+            if(in_array($doc, $docmem)) {
+                if($no_exception) {
+                    return -1;
+                }
+                else {
+                    throw new Exception('Обнаружена петля в иерархии документов!');
+                }
+            }
+            $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`='$doc' AND `p_doc`>'0' AND `p_doc` IS NOT NULL");
+            if (!$res->num_rows) {
+                return $doc;
+            }
+            list($pdoc) = $res->fetch_row();
+            if (!$pdoc) {
+                return $doc;
+            }
+            $docmem[] = $doc;
+            $doc = $pdoc;
+        }
+        return $doc;
     }
 
     public function getSubtreeDocuments($doc) {
@@ -738,7 +661,7 @@ class doc_Nulltype extends \document {
         catch (mysqli_sql_exception $e) {
             $id = writeLogException($e);
             $ret_data = array('response' => 'err',
-                    'text' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение передано администратору.");
+                    'text' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение об ошибке занесено в журнал.");
             $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
         } 
         catch (Exception $e) {

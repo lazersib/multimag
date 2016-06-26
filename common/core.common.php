@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "911");
+define("MULTIMAG_REV", "912");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -327,7 +327,7 @@ class MysqiExtended extends mysqli {
 //        }
         
     /// Получить все значения строки из таблицы по ключу в виде массива
-    /// @param $table	Имя таблицы
+    /// @param $table           Имя таблицы
     /// @param $key_value	Значение ключа, по которому производится выборка. Будет приведено к целому типу.
     /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае sql ошибки вернёт false. В случае, если искомой строки нет в таблице, вернет 0
     function selectRow($table, $key_value) {
@@ -343,8 +343,8 @@ class MysqiExtended extends mysqli {
     }
 
     /// Получить все значения строки из таблицы по ключу в виде массива
-    /// @param table	Имя таблицы
-    /// @param key_name	Имя ключа, по которому производится выборка.
+    /// @param table            Имя таблицы
+    /// @param key_name         Имя ключа, по которому производится выборка.
     /// @param key_value	Значение ключа, по которому производится выборка.
     /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае sql ошибки вернёт false. В случае, если искомой строки нет в таблице, вернет 0
     function selectRowK($table, $key_name, $key_value) {
@@ -360,9 +360,9 @@ class MysqiExtended extends mysqli {
     }
 
     /// Получить заданные значения строки из таблицы по ключу в виде массива
-    /// @param table	Имя таблицы
+    /// @param table            Имя таблицы
     /// @param key_value	Значение ключа, по которому производится выборка. Будет приведено к целому типу.
-    /// @param array	Массив со значениями, содержащими имена полей
+    /// @param array            Массив со значениями, содержащими имена полей
     /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае, если искомой строки нет в таблице, вернет массив со значениями, равными ''
     function selectRowA($table, $key_value, $array) {
         settype($key_value, 'int');
@@ -433,10 +433,9 @@ class MysqiExtended extends mysqli {
     function insertA($table, $array) {
         $cols = $values = '';
         $f = 0;
+        $table = $this->real_escape_string($table);
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL' && $value !== 'null' ) {
-                $value = '\'' . $this->real_escape_string($value) . '\'';
-            }
+            $value = $this->escapeVal($value);
             if (!$f) {
                 $cols = '`' . $key . '`';
                 $values = $value;
@@ -460,9 +459,7 @@ class MysqiExtended extends mysqli {
     /// @return Возвращаемое значение аналогично mysqli::query
     function update($table, $key_value, $field, $value) {
         settype($key_value, 'int');
-        if ($value !== 'NULL') {
-            $value = '\'' . $this->real_escape_string($value) . '\'';
-        }
+        $value = $this->escapeVal($value);
         return $this->query("UPDATE `$table` SET `$field`=$value WHERE `id`=$key_value");
     }
 
@@ -489,6 +486,31 @@ class MysqiExtended extends mysqli {
         $q = $this->updatePrepare($array);
         return $this->query("UPDATE `$table` SET $q WHERE `$key_name`=$key_value");
     }
+    
+    /// Заменить строку в заданной таблице
+    /// @param table	Имя таблицы
+    /// @param array	Ассоциативный массив обновляемых данных
+    /// @return количество заменённых строк или false в случае ошибки
+    function replaceA($table, $array) {
+        $cols = $values = '';
+        $f = 0;
+        $table = $this->real_escape_string($table);
+        foreach ($array as $key => $value) {
+            $value = $this->escapeVal($value);
+            if (!$f) {
+                $cols = '`' . $key . '`';
+                $values = $value;
+                $f = 1;
+            } else {
+                $cols .= ', `' . $key . '`';
+                $values .= ', ' . $value;
+            }
+        }
+        if (!$this->query("REPLACE `$table` ($cols) VALUES ($values)")) {
+            return false;
+        }
+        return $this->affected_rows;
+    }
 
     /// Заменить данные в заданной таблице данными из массива по ключу с заданным именем
     /// @param table	Имя таблицы
@@ -503,9 +525,7 @@ class MysqiExtended extends mysqli {
             throw new \InvalidArgumentException('Invalid data array');
         }
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL' && $value !== 'null') {
-                $value = '\'' . $this->real_escape_string($value) . '\'';
-            }
+            $value = $this->escapeVal($value);
             if ($f) {
                 $q.=',(\'' . $key_value . '\',\'' . $key . '\',' . $value . ')';
             } else {
@@ -528,9 +548,7 @@ class MysqiExtended extends mysqli {
     private function updatePrepare($array) {
         $q = $f = '';
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL' && $value !== 'null') {
-                $value = '\'' . $this->real_escape_string($value) . '\'';
-            }
+            $value = $this->escapeVal($value);
             if ($f) {
                 $q.=',`' . $key . '`=' . $value;
             } else {
@@ -539,6 +557,15 @@ class MysqiExtended extends mysqli {
             }
         }
         return $q;
+    }
+    
+    private function escapeVal($value) {
+        if ($value == 'NULL' || $value == 'null' || $value == null ) {
+            return 'NULL';
+        }
+        else {
+            return '\'' . $this->real_escape_string($value) . '\'';
+        }
     }
 
 }

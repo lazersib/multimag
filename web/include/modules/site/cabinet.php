@@ -589,8 +589,16 @@ class cabinet extends \IModule {
             $date = date("Y-m-d", $nxt['date']);
             $ok = $nxt['ok'] ? 'Да ('.date("Y-m-d", $nxt['ok']).')' : 'Нет';
             $lnum = $nxt['id'];
-            if ($nxt['type'] == 2 || $nxt['type'] == 3) {
-                $lnum = "<a href='{$this->link_prefix}?mode=get_doc&amp;doc={$nxt['id']}'>{$nxt['id']}</a>";
+            switch($nxt['type']) {
+                case 1:
+                case 2:
+                case 3:
+                case 20:
+                case 6:
+                case 7:
+                case 14:
+                   $lnum = "<a href='{$this->link_prefix}?mode=get_doc&amp;doc={$nxt['id']}'>{$nxt['id']}</a>";
+                   break;
             }
             $tmpl->addContent("<tr><td align='right'>$lnum</td><td align='right'>{$nxt['altnum']}</td><td align='center'>$date</td><td>" . html_out($nxt['name']) . "</td><td align='right'>{$nxt['sum']}</td><td align='center'>" . html_out($nxt['agent_fullname']) . "</td><td>$ok</td></tr>");
         }

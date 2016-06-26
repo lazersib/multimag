@@ -20,6 +20,8 @@
 
 require_once("core.php");
 
+$tmpl->addBreadcrumb('Главная', '/');
+
 if (!isset($_REQUEST['p'])) {
     $arr = explode('/', $_SERVER['REQUEST_URI']);
     $arr = explode('.', @$arr[2]);
@@ -30,14 +32,13 @@ if (!isset($_REQUEST['p'])) {
 
 try {
     $wikipage = new \modules\site\wikipage();
-    $wikipage->link_prefix = '/article/';
     $wikipage->setPageName($p);
     $wikipage->run();
 } catch (mysqli_sql_exception $e) {
     $db->rollback();
     $tmpl->ajax = 0;
     $id = writeLogException($e);
-    $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+    $tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
 } catch (NotFoundException $e) {
     $db->query("ROLLBACK");
     $tmpl->setContent("");
