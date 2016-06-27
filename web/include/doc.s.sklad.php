@@ -715,7 +715,7 @@ class doc_s_Sklad {
                 </table>
                 <table class='list' width='100%'>
                 <tr><th colspan='4'>Прикреплённые файлы</th></tr>");
-            $res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
+            $res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`description`
                 FROM `doc_base_attachments`
                 LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
                 WHERE `doc_base_attachments`.`pos_id`='$pos'");
@@ -1510,7 +1510,7 @@ class doc_s_Sklad {
             $comm_sql = $db->real_escape_string($comment);
             \acl::accessGuard('directory.goods', \acl::UPDATE);
             $db->startTransaction();
-            $res = $db->query("SELECT `id` FROM `attachments` WHERE `comment`='$comm_sql'");
+            $res = $db->query("SELECT `id` FROM `attachments` WHERE `description`='$comm_sql'");
             if ($res->num_rows) {
                 list($attachment_id) = $db->fetch_row();
                 $tmpl->msg("Этот файл найден, N $attachment_id", "info");
@@ -1532,7 +1532,7 @@ class doc_s_Sklad {
                 $filename = str_replace("/", "", $filename);
                 $filename = str_replace(" ", "_", $filename);
                 $filename_sql = $db->real_escape_string($filename);
-                $db->query("INSERT INTO `attachments` (`original_filename`, `comment`)	VALUES ('$filename_sql', '$comm_sql')");
+                $db->query("INSERT INTO `attachments` (`original_filename`, `description`)	VALUES ('$filename_sql', '$comm_sql')");
                 $attachment_id = $db->insert_id;
                 if (!$attachment_id)
                     throw new Exception("Не удалось получить ID строки");

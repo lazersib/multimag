@@ -939,7 +939,7 @@ protected function TopGroup() {
         $params = $this->getProductParamsList($product_data);
         $tmpl->addContent( $this->getProductParamHTML($params) );
         
-        $att_res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`comment`
+        $att_res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`description`
 		FROM `doc_base_attachments`
 		LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
 		WHERE `doc_base_attachments`.`pos_id`='$product_id'");

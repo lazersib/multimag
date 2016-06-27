@@ -560,7 +560,7 @@ class MysqiExtended extends mysqli {
     }
     
     private function escapeVal($value) {
-        if ($value == 'NULL' || $value == 'null' || $value == null ) {
+        if ($value === 'NULL' || $value === 'null' || $value === null ) {
             return 'NULL';
         }
         else {
