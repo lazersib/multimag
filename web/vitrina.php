@@ -247,7 +247,7 @@ protected function TopGroup() {
         $pref = \pref::getInstance();
         $res = $db->query("SELECT `name`, `pid`, `desc`, `title_tag`, `meta_keywords`, `meta_description` FROM `doc_group` WHERE `id`='$group' AND `hidelevel`='0'");
         if (!$res->num_rows) {
-            throw new NotFoundException('Группа не найдена! Воспользуйтесь каталогом.');
+            throw new \NotFoundException('Группа не найдена! Воспользуйтесь каталогом.');
         }
 
         $group_data = $res->fetch_assoc();

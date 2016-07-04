@@ -151,4 +151,36 @@ class doc_Pko extends paymentbasedoc {
         $this->sentZEvent('cancel');
     }
 
+    protected function extendedAclCheck($acl, $today_acl, $action) {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, $acl)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, $today_acl)) {
+                throw new \AccessException('Не достаточно привилегий для '.$action.' документа с выбранной кассой '.$this->doc_data['kassa']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для '.$action.' документа с выбранной кассой '.$this->doc_data['kassa'].' произвольной датой');
+            }
+        }
+    }
+    
+    public function extendedViewAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::VIEW)) {
+            throw new \AccessException('Не достаточно привилегий для просмотра документа с выбранной кассой '.$this->doc_data['kassa']);
+        }
+        return parent::extendedViewAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $this->extendedAclCheck(\acl::APPLY, \acl::TODAY_APPLY, 'проведения');
+        return parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $this->extendedAclCheck(\acl::CANCEL, \acl::TODAY_CANCEL, 'отмены проведения');
+        return parent::extendedCancelAclCheck();
+    }
 }

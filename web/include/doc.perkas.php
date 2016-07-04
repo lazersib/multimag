@@ -160,4 +160,65 @@ class doc_PerKas extends doc_Nulltype {
         $this->sentZEvent('cancel');
     }
 
+        /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранной кассой '.$this->doc_data['kassa']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['kassa'].' произвольной датой');
+            }
+        }
+        $acl_obj = ['cash.global', 'cash.'.intval($this->dop_data['v_kassu'])];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']));
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']).' произвольной датой');
+            }
+        }
+        parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.$this->doc_data['kassa']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.$this->doc_data['kassa'].' произвольной датой');
+            }
+        }
+        $acl_obj = ['cash.global', 'cash.'.intval($this->dop_data['v_kassu'])];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']));
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']).' произвольной датой');
+            }
+        }
+        parent::extendedCancelAclCheck();
+    }
+    
+    public function extendedViewAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::VIEW)) {
+            throw new \AccessException('Не достаточно привилегий для просмотра документа с выбранной кассой '.$this->doc_data['kassa']);
+        }
+        $acl_obj = ['cash.global', 'cash.'.intval($this->dop_data['v_kassu'])];      
+        if (!\acl::testAccess($acl_obj, \acl::VIEW)) {
+            throw new \AccessException('Не достаточно привилегий для просмотра документа с выбранной кассой '.intval($this->dop_data['v_kassu']));
+        }
+        return parent::extendedViewAclCheck();
+    }
 }

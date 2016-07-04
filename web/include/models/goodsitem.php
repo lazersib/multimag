@@ -197,7 +197,7 @@ class goodsitem {
             if ($field == 'id' || $field == 'likvid' || $field == 'cost_date' || !isset($data[$field])) {
                 continue;
             }
-            if($data[$field]=='null') {
+            if($data[$field]==='null') {
                 $data[$field] = NULL;
             }
             if ($data[$field] != $old_val) {

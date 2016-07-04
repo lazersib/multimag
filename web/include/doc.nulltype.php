@@ -673,11 +673,11 @@ class doc_Nulltype extends \document {
     /// Редактирование тела докумнета
     public function body() {
         global $tmpl, $db;
-
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
         if($this->doc_data['firm_id']>0) {
             \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::VIEW);
         }
+        $this->extendedViewAclCheck();
         $tmpl->setTitle($this->viewname . ' N' . $this->id);
         $dt = date("Y-m-d H:i:s", $this->doc_data['date']);
         doc_menu($this->getDopButtons());
@@ -803,6 +803,11 @@ class doc_Nulltype extends \document {
         }
         $db->query("UNLOCK TABLES");
         return;
+    }
+
+    /// Выполнение дополнительных проверок доступа для просмотра документа
+    public function extendedViewAclCheck() {
+        return true;
     }
 
     /// Выполнение дополнительных проверок доступа для проведения документа

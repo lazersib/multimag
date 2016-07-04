@@ -61,7 +61,7 @@ class KassListEditor extends \ListEditor {
 
         public function getInputFirm_id($name, $value) {
 		$ret = "<select name='$name'>";
-		$ret .="<option value='0'>-- не задано --</option>";
+		$ret .="<option value='null'>-- не задано --</option>";
 		foreach($this->firm_list as $id => $firm_name) {
 			$sel = $value==$id?' selected':'';
 			$ret .="<option value='$id'{$sel}>$id: ".html_out($firm_name)."</option>";

@@ -422,7 +422,7 @@ class PriceCalc {
         }
         $res = $db->query("SELECT `cost` AS `base_price`, `group`, `bulkcnt` FROM `doc_base` WHERE `doc_base`.`id`=$pos_id");
         if ($res->num_rows == 0) {
-            throw new Exception("Товар ID:$pos_id не найден!");
+            throw new \NotFoundException("Товар ID:$pos_id не найден!");
         }
         $this->pos_info_cache[$pos_id] = $res->fetch_assoc();
 

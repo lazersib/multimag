@@ -1256,6 +1256,8 @@ class doc_s_Sklad {
         $pos_data = request('pd');
         $copy_flag = request('sr');
         try {
+            $pos_corr = array('hidden'=>0, 'no_export_yml'=>0, 'eol'=>0, 'stock'=>0);
+            $pos_data = array_merge($pos_corr, $pos_data);
             if (($pos_id) && (!$copy_flag)) {
                 \acl::accessGuard('directory.goods', \acl::UPDATE);                
                 $db->startTransaction();
