@@ -745,8 +745,8 @@ class doc_Nulltype extends \document {
 		<script type=\"text/javascript\">
 		addEventListener('load',DocHeadInit,false);
                 //newDynamicDocHeader('doc_left_block', '{$this->id}');
-		</script>
-		<div id='doc_main_block'>");
+		</script>");
+	$tmpl->addContent("<div id='doc_main_block'>");
         $tmpl->addContent("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'><br>");
 
         if (method_exists($this, 'DopBody'))
@@ -2017,7 +2017,7 @@ class doc_Nulltype extends \document {
         }
 
         if ($this->doc_data['nds'])
-            $tmpl->addContent("<label><input type='radio' name='nds' value='0'>Выделять НДС</label>&nbsp;&nbsp;
+            $tmpl->addContent("<label><input type='radio' name='nds' value='0' disabled>Выделять НДС</label>&nbsp;&nbsp;
 			<label><input type='radio' name='nds' value='1' checked>Включать НДС</label><br>");
         else
             $tmpl->addContent("<label><input type='radio' name='nds' value='0' checked>Выделять НДС</label>&nbsp;&nbsp;

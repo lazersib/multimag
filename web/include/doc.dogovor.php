@@ -35,9 +35,6 @@ class doc_Dogovor extends doc_Nulltype {
     function initDefDopdata() {
         $this->def_dop_data = array('name' => '', 'end_date' => '', 'debt_control' => 0, 'debt_size' => 0, 'limit' => 0, 'received' => 0
             , 'cena' => 0, 'deferment'=>0, 'template'=>0);
-        if($this->id) {
-            $this->loadTextDataFromDb();
-        }
     }
 
     function DopHead() {

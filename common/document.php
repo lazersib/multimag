@@ -183,6 +183,7 @@ class document {
         $this->id = $this->doc = (int) $doc_data['id'];
         $this->doc_data = $doc_data;
         $this->loadDopDataFromDb();
+        $this->loadTextDataFromDb();
     }
 
     public function loadFromDb($doc_id) {
@@ -193,7 +194,8 @@ class document {
             throw new \NotFoundException("Документ не найден");
         }
         $this->doc_data = $res->fetch_assoc();
-        $this->loadDopDataFromDb();        
+        $this->loadDopDataFromDb(); 
+        $this->loadTextDataFromDb();
     }
     
     protected function loadDopDataFromDb() {

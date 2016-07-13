@@ -107,7 +107,10 @@ class contract extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetY($y);
         $this->pdf->SetX(100);
 
-        $str = "{$firm_vars['firm_name']}\nАдрес: {$firm_vars['firm_adres']}\nИНН/КПП {$firm_vars['firm_inn']}\nР/С:{$bank_info['rs']} в банке {$bank_info['name']}, БИК:{$bank_info['bik']}, К/С:{$bank_info['ks']}\n_________________________ / {$firm_vars['firm_director']} /\n\n      М.П.";
+        $str = "{$firm_vars['firm_name']}\nАдрес: {$firm_vars['firm_adres']}\nИНН/КПП {$firm_vars['firm_inn']}";
+        $str .="\nОГРН:{$firm_vars['firm_ogrn']}, ОКПО:{$firm_vars['firm_okpo']}";
+        $str .="\nР/С:{$bank_info['rs']} в банке {$bank_info['name']}, БИК:{$bank_info['bik']}, К/С:{$bank_info['ks']}";
+        $str .="\n_________________________ / {$firm_vars['firm_director']} /\n\n      М.П.";
         $this->pdf->MultiCellIconv(0, 4, $str, 0, 'L', 0);
     }
 }

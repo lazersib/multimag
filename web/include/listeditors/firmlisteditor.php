@@ -41,6 +41,7 @@ class FirmListEditor extends \ListEditor {
             'firm_gruzootpr' => 'Данные грузоотправителя',
             'firm_telefon' => 'Телефон',
             'firm_okpo' => 'ОКПО',
+            'firm_ogrn' => 'ОГРН / ОГРНИП',
             'param_nds' => 'Ставка НДС',
             'pricecoeff' => 'Ценовой коэффициент',
             'no_retailprices' => 'Не использовать розничные цены',

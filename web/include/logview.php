@@ -175,6 +175,9 @@ class LogView {
             'platelshik'=>'Плательщик',
             'gruzop'=>'Грузополучатель',
             'kladovshik'=>'Кладовщик',
+            
+            'contract_text'=>'Текст договора',
+            'text_header'=>'Текстовый заголовок',
         );   
         if(isset($names[$name])) {
             return $names[$name];
@@ -218,6 +221,7 @@ class LogView {
                             $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.html_out($value);
                             break;
                         case 'dop_data':
+                        case 'text_data':
                             break;
                         default:
                             $desc .= '<b>'.html_out($name).':</b> '.html_out($value);
@@ -230,7 +234,6 @@ class LogView {
                                 $desc .= ', ';
                             }
                             switch($name) {
-                                case 'cena':
                                 case 'contract':
                                     $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getContractLink($value);
                                     break;
@@ -244,6 +247,16 @@ class LogView {
                                 default:
                                     $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value);
                             }                    
+                        }
+                    }
+                }
+                if(isset($json_data['text_data'])) {
+                    if(count($json_data['text_data'])) {
+                        foreach($json_data['text_data'] as $name=>$value) {
+                            if($desc) {
+                                $desc .= ', ';
+                            }
+                            $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value);                  
                         }
                     }
                 }
@@ -302,6 +315,7 @@ class LogView {
                             $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
                             break;                        
                         case 'dop_data':
+                        case 'text_data':
                         case 'extdata':  
                             break;
                         default:
@@ -316,7 +330,6 @@ class LogView {
                                 $desc .= ', ';
                             }
                             switch($name) {
-                                case 'cena':
                                 case 'contract':
                                     $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
                                         .$this->getContractLink($value['old']).'=&gt;'.$this->getContractLink($value['new']);
@@ -333,6 +346,17 @@ class LogView {
                                 default:
                                     $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
                             }                    
+                        }
+                    }
+                }
+                if(isset($json_data['text_data'])) {
+                    if(count($json_data['text_data'])) {
+                        $desc .= '<hr>';
+                        foreach($json_data['text_data'] as $name=>$value) {
+                            if($desc) {
+                                $desc .= ', ';
+                            }
+                            $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
                         }
                     }
                 }

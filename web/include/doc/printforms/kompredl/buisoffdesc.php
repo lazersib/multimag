@@ -26,11 +26,9 @@ class buisoffdesc extends buisoff {
        
     /// Сформировать данные печатной формы
     public function make() {
-        global $db;
-        $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
-        $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
+        $text_header = $this->doc->getTextData('text_header');
         $nomenclature = $this->doc->getDocumentNomenclature('base_desc');
         
         $this->pdf->AddPage('P');
@@ -43,8 +41,8 @@ class buisoffdesc extends buisoff {
         $this->addInfoLine($text);
         $this->pdf->Ln(4);
 
-        if($dop_data['shapka']) {
-            $this->addMiniHeader($dop_data['shapka']);
+        if($text_header) {
+            $this->addMiniHeader($text_header);
         }
 
         $th_widths = array(7, 85, 80, 20);
@@ -65,8 +63,10 @@ class buisoffdesc extends buisoff {
             $this->pdf->AddPage();
         }
 
-        $this->addMiniHeader("Цены указаны с учётом НДС, за 1 ед. товара");
-        $this->pdf->ln(6);
+        if($firm_vars['param_nds']) {
+            $this->addMiniHeader("Цены указаны с учётом НДС, за 1 ед. товара");
+            $this->pdf->ln(6);
+        }  
         
         if ($doc_data['comment']) {
             $this->pdf->SetFont('', '', 10);
