@@ -40,8 +40,17 @@ class Report_SalaryOk extends BaseGSReport {
             С:<input type=text id='dt_f' name='dt_f' value='$d_f'><br>
             По:<input type=text id='dt_t' name='dt_t' value='$d_t'>
             </fieldset>
-            </fieldset>
-            Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
+            Использовать дату:<br>
+            <select name='datetype'>
+                <optgroup>БЫСТРО</optgroup>
+                <option value='doc'>Документа</option>
+                <optgroup>МЕДЛЕННО</optgroup>
+                <option value='pay_orm'>Начисления вознаграждения операторам/ответственным/менеджерам</option>
+                <option value='pay_sk'>Начисления вознаграждения кладовщикам</option>
+                <option value='pay_ormsk'>Начисления вознаграждения операторам/ответственным/менеджерам ИЛИ кладовщикам</option>
+                </select><br>
+            <label><input type='checkbox' name='clearoor' value='1'>Не отображать начисления вне периода</label><br>
+            <input type='hidden' name='opt' value='html'>
             <button type='submit'>Сформировать отчёт</button>
             </form>
             <script type=\"text/javascript\">
@@ -54,42 +63,96 @@ class Report_SalaryOk extends BaseGSReport {
     }
 
     function Make($engine) {
-        global $CONFIG, $db, $tmpl;
+        global $db, $tmpl;
         $dt_f = strtotime(rcvdate('dt_f'));
         $dt_t = strtotime(rcvdate('dt_t') . " 23:59:59");
+        $datetype = request('datetype');
+        $clearoor = rcvint('clearoor');
         
         $users_ldo = new \Models\LDO\workernames();
         $users = $users_ldo->getData();
         
         $salary = new \async\salary(0);
-        $salary->loadPosTypes();    
         $tmpl->addBreadcrumb('Просмотр данных', '');        
         $tmpl->addContent("<table class='list' width='100%'>"
-            . "<tr><th>id</th><th>Тип</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
-            . "<th>Сумма</th></tr>");
+            . "<tr><th>id</th><th>Тип</th><th>Дата док-та</th>"
+                . "<th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th>Дата нач.</th>"
+                . "<th colspan='2'>Кладовщик</th><th>Дата нач.</th><th>Сумма</th></tr>");
         $sum = 0;
+        $filter = '';
+        if($datetype=='doc') {
+            $filter = " AND `date`>='$dt_f' AND `date`<'$dt_t'";
+        }
         $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`"
                 . ", `sklad` AS `store_id`, `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`, `doc_list`.`firm_id`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id` = `doc_list`.`agent`"
             . " LEFT JOIN `doc_types` ON `doc_types`.`id` = `doc_list`.`type`"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8,20) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8,20)" . $filter
             . " ORDER BY `date`");
         $count = 0;
         while ($doc_line = $docs_res->fetch_assoc()) {
             if(!\acl::testAccess([ 'firm.global', 'firm.'.$doc_line['firm_id']], \acl::VIEW)) {
                 continue;
             }
-            $doc_vars = array();
+            $doc_line['vars'] = array();
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
-                $doc_vars[$line[0]] = $line[1];
+                $doc_line['vars'][$line[0]] = $line[1];
             }
-            $doc_line['vars'] = $doc_vars;    
-            if(!isset($doc_line['vars']['salary'])) {
+            $doc_line['textvars'] = array();
+            $res = $db->query('SELECT `param`, `value` FROM `doc_textdata` WHERE `doc_id`=' . $doc_line['id']);
+            while ($line = $res->fetch_row()) {
+                $doc_line['textvars'][$line[0]] = $line[1];
+            }
+  
+            if(!isset($doc_line['textvars']['salary'])) {
                 continue;
             }
-            $info = json_decode($doc_line['vars']['salary'], true);
+            $info = json_decode($doc_line['textvars']['salary'], true);            
+            
+            $orm_date_ok = $sk_date_ok = false;
+            $orm_date = $sk_date = '';
+            if(isset($info['orm_date_pay']) ) {
+                $orm_time = strtotime($info['orm_date_pay']);
+                $orm_date = date("Y-m-d", $orm_time);
+                if($orm_time>=$dt_f && $orm_time<=$dt_t) {
+                    $orm_date_ok = true;
+                }
+            } 
+            if(isset($info['sk_date_pay']) ) {
+                $sk_time = strtotime($info['sk_date_pay']);
+                $sk_date = date("Y-m-d", $sk_time);
+                if($sk_time>=$dt_f && $sk_time<=$dt_t) {
+                    $sk_date_ok = true;
+                }
+            }
+            
+            if($datetype=='pay_orm' && !$orm_date_ok) {
+                continue;
+            }
+            if($datetype=='pay_sk' && !$sk_date_ok) {
+                continue;              
+            }
+            if($datetype=='pay_ormsk' && !$orm_date_ok && !$sk_date_ok) {                
+                continue;                
+            }
+            
+            if($clearoor) {
+                if(!$orm_date_ok) {
+                    unset($info['o_uid']);
+                    unset($info['r_uid']);
+                    unset($info['m_uid']);
+                    $info['o_fee'] = 0;
+                    $info['r_fee'] = 0;
+                    $info['m_fee'] = 0;
+                }
+                if(!$sk_date_ok) {
+                    unset($info['sk_uid']);
+                    $info['sk_fee'] = 0;
+                }
+            }
+            
             if(isset($info['o_uid'])) {
                 $salary->incFee('operator', $info['o_uid'], $info['o_fee'], $doc_line['id']);
                 $info['o_name'] = html_out(isset($users[$info['o_uid']]) ? $users[$info['o_uid']] : ('??? - '.$info['o_uid']));  
@@ -123,7 +186,7 @@ class Report_SalaryOk extends BaseGSReport {
             $tmpl->addContent("<tr><td><a href='/doc.php?mode=body&doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
                 . "<td>{$doc_line['type_name']}</td><td>$p_date</td>"
                 . "<td>{$info['r_name']}</td><td>{$info['r_fee']}</td><td>{$info['o_name']}</td><td>{$info['o_fee']}</td>"
-                . "<td>{$info['m_name']}</td><td>{$info['m_fee']}</td><td>{$info['sk_name']}</td><td>{$info['sk_fee']}</td><td>$sum_line</td></tr>");
+                . "<td>{$info['m_name']}</td><td>{$info['m_fee']}</td><td>$orm_date</td><td>{$info['sk_name']}</td><td>{$info['sk_fee']}</td><td>$sk_date</td><td>$sum_line</td></tr>");
         }
         $tmpl->addContent("<tr><td>Итого:</td><td>$count штук</td><td colspan=9></td><td>$sum</td></tr>");
         $tmpl->addContent("</table>");

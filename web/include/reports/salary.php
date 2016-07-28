@@ -76,7 +76,6 @@ class Report_Salary extends BaseGSReport {
         $users = $users_ldo->getData();
         
         $salary = new \async\salary(0);
-        $salary->loadPosTypes(); 
         $salary->loadPosData();
         $tmpl->addBreadcrumb('Просмотр данных', '');
         
@@ -99,7 +98,7 @@ class Report_Salary extends BaseGSReport {
                 $doc_vars[$line[0]] = $line[1];
             }
             $doc_line['vars'] = $doc_vars;            
-            $info = $salary->calcFee($doc_line, $doc_line['resp_id'], 1);
+            $info = $salary->calcFee($doc_line, $doc_line['resp_id'], true);
             $tmpl->addContent("<h1>Расчёты по {$doc_line['type_name']} - $doc</h1>");
             $tmpl->addContent("<a href='/doc.php?mode=body&doc=$doc'>Смотреть документ</a>");
             $tmpl->addContent("<table class='list' width='100%'>"
@@ -190,7 +189,7 @@ class Report_Salary extends BaseGSReport {
     }
 
     function makeFull($engine) {
-        global $CONFIG, $db, $tmpl;
+        global $db, $tmpl;
         $dt_f = strtotime(rcvdate('dt_f'));
         $dt_t = strtotime(rcvdate('dt_t') . " 23:59:59");
         $worker_id = rcvint('worker_id');
@@ -200,8 +199,9 @@ class Report_Salary extends BaseGSReport {
         $months = round(($dt_t - $dt_f)/60/60/24/30);
         
         $salary = new \async\salary(0);
-        $salary->loadPosTypes(); 
         $salary->loadPosData();
+        $stores_limit = $salary->getStoresLimitArray();
+        
         $tmpl->addBreadcrumb('Просмотр данных '.$months, '');        
         $tmpl->addContent("<table class='list' width='100%'>"
             . "<tr><th>id</th><th>Тип</th><th>Оплата</th><th>Дата</th><th colspan='2'>Ответственный</th><th colspan='2'>Оператор</th><th colspan='2'>Менеджер</th><th colspan='2'>Кладовщик</th>"
@@ -209,6 +209,7 @@ class Report_Salary extends BaseGSReport {
         $sum = $nopayed = $count = 0;
         $t_info = array();
         $t2_info = array();
+        /*
         $docs_res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`"
             . " , `doc_agent`.`responsible` AS `resp_id`, `doc_types`.`name` AS `type_name`, `doc_dopdata`.`value` AS `return`, `doc_list`.`firm_id`"
             . " FROM `doc_list`"
@@ -217,26 +218,35 @@ class Report_Salary extends BaseGSReport {
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
             . " WHERE `ok`>0 AND `mark_del`=0 AND `doc_list`.`type` IN (1,2,8,20) AND `date`>='$dt_f' AND `date`<'$dt_t'" 
             . " ORDER BY `date`");
-        while ($doc_line = $docs_res->fetch_assoc()) {            
+        while ($doc_line = $docs_res->fetch_assoc()) { 
+        */
+        $resp = $salary->loadResponsibles();
+        $docs = $salary->loadDocs($dt_t, $dt_f);
+        $ldo = new \Models\LDO\docnames();
+        $doctypes = $ldo->getData();
+        foreach($docs as $doc_line) {
             if($doc_line['return']) {
                 continue;
             }
             if(!\acl::testAccess([ 'firm.global', 'firm.'.$doc_line['firm_id']], \acl::VIEW)) {
                 continue;
             }
+            if($stores_limit) {
+                if(!in_array($doc_line['store_id'], $stores_limit)) {
+                    continue;
+                }
+            }
             $w_cont = 0;
             if($worker_id) {
                 $w_cont = 1;
             }
-            $doc_vars = array();
             $o_name = $o_fee = $r_name = $r_fee = $m_name = $m_fee = $sk_name = $sk_fee = '';
-            $sum_line = 0;
-            $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
-            while ($line = $res->fetch_row()) {
-                $doc_vars[$line[0]] = $line[1];
+            $sum_line = 0;        
+            $resp_id = 0;
+            if($doc_line['agent_id']>0) {
+                $resp_id = $resp[$doc_line['agent_id']];
             }
-            $doc_line['vars'] = $doc_vars;            
-            $info = $salary->calcFee($doc_line, $doc_line['resp_id'], true);
+            $info = $salary->calcFee($doc_line, $resp_id, true);
             
             if( isset($info['o_uid']) ) {
                 $salary->incFee('operator', $info['o_uid'], $info['o_fee'], $doc_line['id']);
@@ -313,7 +323,7 @@ class Report_Salary extends BaseGSReport {
             
             $style_o = $style_r = $style_sk = "";
             
-            if(!isset($doc_line['vars']['salary'])) {
+            if(!isset($doc_line['textvars']['salary'])) {
                 $nopayed++;
                 if (isset($info['o_uid'])) {
                     $style_o = " style='background-color:#fcc;'";
@@ -331,11 +341,11 @@ class Report_Salary extends BaseGSReport {
                         $t2_info[$info['r_uid']] = $info['r_fee'];
                     }
                 }
-                if (isset($info['r_uid'])) {
+                if (isset($info['sk_uid'])) {
                     $style_sk = " style='background-color:#fcc;'";
                 }
             } else {  
-                $s_info = json_decode($doc_line['vars']['salary'], true);
+                $s_info = json_decode($doc_line['textvars']['salary'], true);
                 if(!isset($s_info['o_uid'])) {
                     if (isset($info['o_uid'])) {
                         $style_o = " style='background-color:#fcc;'";
@@ -375,21 +385,25 @@ class Report_Salary extends BaseGSReport {
                 }
             }
             $payment = '';
-            if(isset($doc_vars['payed'])) {
-                $payment = $doc_vars['payed']?"<span style='color:#0c0'>Да</span>":"<span style='color:#c00'>Нет</span>";
-                if(isset($doc_vars['paysum'])) {
-                    $payment .= ' ('.sprintf("%0.2f",$doc_vars['paysum']).' из '.$doc_line['sum'].')';
+            if(isset($doc_line['vars']['payed'])) {
+                $payment = $doc_line['vars']['payed']?"<span style='color:#0c0'>Да</span>":"<span style='color:#c00'>Нет</span>";
+                if(isset($doc_line['vars']['paysum'])) {
+                    $payment .= ' ('.sprintf("%0.2f",$doc_line['vars']['paysum']).' из '.$doc_line['sum'].')';
                 }
             }
             $count++;
             $tmpl->addContent("<tr><td><a href='/doc_reports.php?mode=salary&amp;opt=doc&amp;doc={$doc_line['id']}'>{$doc_line['id']}</a></td>"
-                . "<td>{$doc_line['type_name']}</td><td>$payment</td><td>$p_date</td>"
+                . "<td>{$doctypes[$doc_line['type']]}</td><td>$payment</td><td>$p_date</td>"
                 . "<td{$style_r}>$r_name</td><td align='right'>$r_fee</td><td{$style_o}>$o_name</td><td align='right'>$o_fee</td>"
                 . "<td>$m_name</td><td align='right'>$m_fee</td><td{$style_sk}>$sk_name</td><td align='right'>$sk_fee</td><td align='right'>$sum_line</td></tr>");
         }
         $sum = number_format($sum, 2, '.', ' ');
         $tmpl->addContent("<tr><td>Итого:</td><td>$count штук</td><td colspan=9></td><td align='right'>$sum</td></tr>");
-        $np_pp = number_format($nopayed/$count*100, 2, '.', ' ');
+        if($count>0) {
+            $np_pp = number_format($nopayed/$count*100, 2, '.', ' ');
+        } else {
+            $np_pp = '?';
+        }
         $tmpl->addContent("<tr><td>Не оплачено:</td><td>$nopayed штук, $np_pp %</td></tr>");
         $tmpl->addContent("</table>");
         
@@ -406,7 +420,7 @@ class Report_Salary extends BaseGSReport {
         
         $users_fee = $salary->getUsersFee();
         ksort($users_fee);
-        $sums = array();
+        $sums = array('operator'=>0,'resp'=>0,'manager'=>0,'sk'=>0);
         foreach($users_fee as $uid=>$info) {
             foreach($info as $id=>$val) {
                 if(isset($sums[$id])) {
@@ -465,13 +479,13 @@ class Report_Salary extends BaseGSReport {
         $fee_man = $sums['manager']?number_format($sums['manager'], 2, '.', ' '):'';
         $fee_sk = $sums['sk']?number_format($sums['sk'], 2, '.', ' '):'';
 
-        $fee_pos = $sums['sk_pos']?number_format($sums['sk_pos'], 2, '.', ' '):'';
-        $fee_pls = $sums['sk_pls']?number_format($sums['sk_pls'], 2, '.', ' '):'';
-        $fee_cnt = $sums['sk_cnt']?number_format($sums['sk_cnt'], 2, '.', ' '):'';
+        $fee_pos = isset($sums['sk_pos'])?number_format($sums['sk_pos'], 2, '.', ' '):'';
+        $fee_pls = isset($sums['sk_pls'])?number_format($sums['sk_pls'], 2, '.', ' '):'';
+        $fee_cnt = isset($sums['sk_cnt'])?number_format($sums['sk_cnt'], 2, '.', ' '):'';
 
-        $sk_in = $sums['sk_in']?number_format($sums['sk_in'], 2, '.', ' '):'';
-        $sk_out = $sums['sk_out']?number_format($sums['sk_out'], 2, '.', ' '):'';
-        $sk_move = $sums['sk_move']?number_format($sums['sk_move'], 2, '.', ' '):'';
+        $sk_in = isset($sums['sk_in'])?number_format($sums['sk_in'], 2, '.', ' '):'';
+        $sk_out = isset($sums['sk_out'])?number_format($sums['sk_out'], 2, '.', ' '):'';
+        $sk_move = isset($sums['sk_move'])?number_format($sums['sk_move'], 2, '.', ' '):'';
         
         $tmpl->addContent("<tr><td>ИТОГО</td>"
             . "<td align='right'></td>"

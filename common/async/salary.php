@@ -48,64 +48,55 @@ class salary extends \AsyncWorker {
     protected $conf_use_liq         = false;//< Учитывать ли ликвидность при расчёте вознаграждения с товарной наценки
     protected $conf_liq_coeff       = 0.5;  //< Коэффициент влияния ликвидности на вознаграждение с товарной наценки
     protected $conf_work_pos_id     = 1;    //< id услуги "работа"
-    protected $conf_debug           = true; //< Для отладки
+    protected $conf_sk_cp_min_sum   = 0;    //< Минимальная сумма для включения начислений за кол-во товара и мест в накладной кладовщику
+    protected $conf_stores_limit = array(); //< Ограничить расчёт указанными складами
     
     protected $users_salary_info = array();
     protected $pos_info = array();
 
-    protected $pc = 0;
-    
-    protected $ppi = array(); // Pos prices info
+    protected $pc = 0;    
     
     public function __construct($task_id) {
         global $CONFIG;
         parent::__construct($task_id);
-        if (isset($CONFIG['salary']['enable'])) {
-            $this->conf_enable = $CONFIG['salary']['enable'];
-        }
-        if (isset($CONFIG['salary']['sk_re_pack_coeff'])) {
-            $this->conf_sk_re_pack_coeff = $CONFIG['salary']['sk_re_pack_coeff'];
-        }
-        if (isset($CONFIG['salary']['sk_po_pack_coeff'])) {
-            $this->conf_sk_po_pack_coeff = $CONFIG['salary']['sk_po_pack_coeff'];
-        }
-        if (isset($CONFIG['salary']['sk_pe_pack_coeff'])) {
-            $this->conf_sk_pe_pack_coeff = $CONFIG['salary']['sk_pe_pack_coeff'];
-        }
-        if (isset($CONFIG['salary']['sk_cnt_coeff'])) {
-            $this->conf_sk_cnt_coeff = $CONFIG['salary']['sk_cnt_coeff'];
-        }
-        if (isset($CONFIG['salary']['sk_place_coeff'])) {
-            $this->conf_sk_place_coeff = $CONFIG['salary']['sk_place_coeff'];
-        }
-        if (isset($CONFIG['salary']['sk_bigpack_coeff'])) {
-            $this->conf_sk_bigpack_coeff = $CONFIG['salary']['sk_bigpack_coeff'];
-        }        
-        if (isset($CONFIG['salary']['manager_id'])) {
-            $this->conf_manager_id = $CONFIG['salary']['manager_id'];
-        }
-        if (isset($CONFIG['salary']['author_coeff'])) {
-            $this->conf_author_coeff = $CONFIG['salary']['author_coeff'];
-        }
-        if (isset($CONFIG['salary']['resp_coeff'])) {
-            $this->conf_resp_coeff = $CONFIG['salary']['resp_coeff'];
-        }
-        if (isset($CONFIG['salary']['manager_coeff'])) {
-            $this->conf_manager_coeff = $CONFIG['salary']['manager_coeff'];
-        }
-        if (isset($CONFIG['salary']['use_liq'])) {
-            $this->conf_use_liq = $CONFIG['salary']['use_liq'];
-        }
-        if (isset($CONFIG['salary']['liq_coeff'])) {
-            $this->conf_liq_coeff = $CONFIG['salary']['liq_coeff'];
-        }
-        if (isset($CONFIG['salary']['work_pos_id'])) {
-            $this->conf_work_pos_id = $CONFIG['salary']['work_pos_id'];
-        }
+        $this->conf_enable = \cfg::get('salary', 'enable');
+        $this->conf_sk_re_pack_coeff = \cfg::get('salary', 'sk_re_pack_coeff');
+        $this->conf_sk_po_pack_coeff = \cfg::get('salary', 'sk_po_pack_coeff');
+        $this->conf_sk_pe_pack_coeff = \cfg::get('salary', 'sk_pe_pack_coeff');
+        $this->conf_sk_cnt_coeff = \cfg::get('salary', 'sk_cnt_coeff');
+        $this->conf_sk_place_coeff = \cfg::get('salary', 'sk_place_coeff');
+        $this->conf_sk_bigpack_coeff = \cfg::get('salary', 'sk_bigpack_coeff');
+        $this->conf_manager_id = \cfg::get('salary', 'manager_id');
+        $this->conf_author_coeff = \cfg::get('salary', 'author_coeff');
+        $this->conf_resp_coeff = \cfg::get('salary', 'resp_coeff');
+        $this->conf_manager_coeff = \cfg::get('salary', 'manager_coeff');
+        $this->conf_use_liq = \cfg::get('salary', 'use_liq');
+        $this->conf_liq_coeff = \cfg::get('salary', 'liq_coeff');
+        $this->conf_work_pos_id = \cfg::get('salary', 'work_pos_id');        
+        $this->conf_stores_limit = \cfg::get('salary', 'stores_limit'); 
+        $this->conf_sk_cp_min_sum = \cfg::get('salary', 'sk_cp_min_sum'); 
+        $this->conf_stores_limit = $this->getStoresLimitArray();
     }
         
     function getDescription() {
         return "Расчёт вознаграждений";
+    }
+    
+    public function getStoresLimitArray() {
+        $stores_limit = \cfg::get('salary', 'stores_limit');
+        if(strpos($stores_limit, ',')===false) {
+            settype($stores_limit, 'int');
+            if($stores_limit) {
+                return $stores_limit;
+            }
+            return false;
+        }        
+        $stores_limit = explode(',', $stores_limit);
+        $func = function($value) {
+            return intval($value);
+        };
+        $stores_limit = array_map($func, $stores_limit);
+        return $stores_limit;
     }
 
     function run() {
@@ -114,21 +105,28 @@ class salary extends \AsyncWorker {
             return;
         }
         //$db->query("FLUSH TABLE CACHE");
-        $this->loadPosData();        
+               
         // Расчёт
-        $tmp = microtime(true);
         $db->startTransaction();
-        $this->loadPosTypes();
-        $this->responsibles=array();
-        $res = $db->query("SELECT `id`, `name`, `responsible` FROM `doc_agent` ORDER BY `id`");
-        while($line = $res->fetch_assoc()) {
-            $this->responsibles[$line['id']] = $line['responsible'];            
-        }
+        $this->loadPosData(); 
+        $this->loadResponsibles();
+        $this->loadDocs();  
         $this->calc();
         echo " Done\n";
         $this->payFee();
         $db->commit();
         echo "Commit!";
+    }
+    
+    /// Загрузить список ответственных лиц
+    public function loadResponsibles() {
+        global $db;
+        $this->responsibles=array();
+        $res = $db->query("SELECT `id`, `name`, `responsible` FROM `doc_agent` ORDER BY `id`");
+        while($line = $res->fetch_assoc()) {
+            $this->responsibles[$line['id']] = $line['responsible'];            
+        }
+        return $this->responsibles;
     }
     
     // Получить необходимые данные о номенклатуре
@@ -159,7 +157,7 @@ class salary extends \AsyncWorker {
         }
         list($this->param_bigpack_id) = $res->fetch_row();
         // Загружаем данные номенклатуры
-        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`mult`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base`.`proizv` AS `vendor`"
+        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`mult`, `doc_base`.`name`, `doc_base`.`vc`, `doc_base`.`proizv` AS `vendor`, `doc_base`.`pos_type`"
                 . ", `pcs_t`.`value` AS `pcs`, `pcs_tin`.`value` AS `pcs_in`, `bp_t`.`value` AS `bigpack_cnt`"
             . " FROM `doc_base`"
             . " LEFT JOIN `doc_base_values` AS `pcs_t` ON `pcs_t`.`id`=`doc_base`.`id` AND `pcs_t`.`param_id`='{$this->param_pcs_id}'"
@@ -176,44 +174,69 @@ class salary extends \AsyncWorker {
             if ($line['pcs_in']===null) {
                 $line['pcs_in'] = 1;
             }
+            $store_res = $db->query("SELECT `doc_sklady`.`id`, `mesto` FROM `doc_sklady`"
+                . " LEFT JOIN `doc_base_cnt` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad` AND `doc_base_cnt`.`id`='".intval($line['id'])."'");
+            $line['places'] = array();
+            while($sl = $store_res->fetch_row()) {
+                $line['places'][$sl[0]] = $sl[1];
+            }
             $this->pos_info[$line['id']] = $line;
         }
     }
         
-    function loadDocs() {
+    /// Загрузить документы
+    function loadDocs($date_end = null, $date_start = null) {
         global $db;
         $this->docs = array();
+        $where = '';
+        if($date_end) {
+            $where .= " AND `date`<='".intval($date_end)."'";
+        }
+        if($date_start) {
+            $where .= " AND `date`>='".intval($date_start)."'";
+        }
         //$rdate = strtotime("2016-02-01");
         // Грузим
         $docs_res = $db->query("SELECT `id`, `type`, `date`, `user`, `sum`, `p_doc`, `contract`, `sklad` AS `store_id`, `agent` AS `agent_id`"
+            . ", `doc_list`.`firm_id`"
             . ", `doc_dopdata`.`value` AS `return`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return'"
-            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 8, 20)"// AND `date`<'$rdate'" 
+            . " WHERE `ok`>0 AND `mark_del`=0 AND `type` IN (1, 2, 8, 20)" . $where
             . " ORDER BY `date`");
         while ($doc_line = $docs_res->fetch_assoc()) {
             if($doc_line['return']) {
                 continue;
             }
-            $doc_vars = array();
+            if($this->conf_stores_limit) {
+                if(!in_array($doc_line['store_id'], $this->conf_stores_limit)) {
+                    continue;
+                }
+            }
+            $doc_line['vars'] = array();
+            $doc_line['textvars'] = array();
             $res = $db->query('SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`=' . $doc_line['id']);
             while ($line = $res->fetch_row()) {
-                $doc_vars[$line[0]] = $line[1];
+                $doc_line['vars'][$line[0]] = $line[1];
             }
-            $doc_line['vars'] = $doc_vars;
+            $res = $db->query('SELECT `param`, `value` FROM `doc_textdata` WHERE `doc_id`=' . $doc_line['id']);
+            while ($line = $res->fetch_row()) {
+                $doc_line['textvars'][$line[0]] = $line[1];
+            }
             $this->docs[$doc_line['id']] = $doc_line;
         }
+        return $this->docs;
     }
     
+    // Начисление зарплаты
     function calc() {
-        global $db;
-        $this->loadDocs();       
-        // Начисление зарплаты
+        global $db;             
+        
         $cnt = 0;       
-        foreach ($this->docs as $id => $doc) {
+        foreach ($this->docs as $id => $doc_data) {
             $need_calc = false;
-            if(isset($doc['vars']['salary'])) {
-                $old_salary = json_decode($doc['vars']['salary'], true);
+            if(isset($doc_data['textvars']['salary'])) {
+                $old_salary = json_decode($doc_data['textvars']['salary'], true);
                 if(!$old_salary) {
                     $old_salary = array();
                 }
@@ -222,21 +245,21 @@ class salary extends \AsyncWorker {
                 $old_salary = array();
             }
             $payed = false;
-            if(isset($doc['vars']['payed'])) {
-                if($doc['vars']['payed']) {
+            if(isset($doc_data['vars']['payed'])) {
+                if($doc_data['vars']['payed']) {
                     $payed = true;
                 }
             }
             $responsible_id = 0;
-            if(isset($this->responsibles[$doc['agent_id']])) {
-                $responsible_id = $this->responsibles[$doc['agent_id']];
+            if(isset($this->responsibles[$doc_data['agent_id']])) {
+                $responsible_id = $this->responsibles[$doc_data['agent_id']];
             }
-            if($doc['type'] == 1 || $doc['type'] == 8 || $doc['type'] == 2 || $doc['type'] == 20) {
-                if (!isset($old_salary['sk_uid']) && isset($doc['vars']['kladovshik'])) {
+            if($doc_data['type'] == 1 || $doc_data['type'] == 8 || $doc_data['type'] == 2 || $doc_data['type'] == 20) {
+                if (!isset($old_salary['sk_uid']) && isset($doc_data['vars']['kladovshik'])) {
                     $need_calc = true;
                 }
             }
-            if($doc['type'] == 2 || $doc['type'] == 20) { // Обычные и бонусные реализации
+            if($doc_data['type'] == 2 || $doc_data['type'] == 20) { // Обычные и бонусные реализации
                 if (!isset($old_salary['r_uid'])) {
                     $need_calc = true;
                 }
@@ -249,18 +272,20 @@ class salary extends \AsyncWorker {
             }
             
             if ($need_calc) {
-                $new_salary = $this->calcFee($doc, $responsible_id, false, $old_salary);
+                $new_salary = $this->calcFee($doc_data, $responsible_id, false, $old_salary);
                 if(count($new_salary)>0) {
-                    if($payed || $doc['type'] != 2) {
+                    if($payed || $doc_data['type'] != 2) {
                         if (isset($new_salary['o_uid'])) {
-                            $this->incFee('operator', $new_salary['o_uid'], $new_salary['o_fee'], $doc['id']);
+                            $this->incFee('operator', $new_salary['o_uid'], $new_salary['o_fee'], $doc_data['id']);
                         }
                         if (isset($new_salary['r_uid'])) {
-                            $this->incFee('resp', $new_salary['r_uid'], $new_salary['r_fee'], $doc['id']);
+                            $this->incFee('resp', $new_salary['r_uid'], $new_salary['r_fee'], $doc_data['id']);
                         }
                         if (isset($new_salary['m_uid'])) {
-                            $this->incFee('manager', $new_salary['m_uid'], $new_salary['m_fee'], $doc['id']);
+                            $this->incFee('manager', $new_salary['m_uid'], $new_salary['m_fee'], $doc_data['id']);
                         }
+                        $new_salary['orm_date_pay'] = date('Y-m-d H:i:s');
+                        $new_salary['orm_date_doc'] = date('Y-m-d H:i:s', $doc_data['date']);
                     } else {
                         unset($new_salary['o_uid']);
                         unset($new_salary['o_fee']);
@@ -270,12 +295,14 @@ class salary extends \AsyncWorker {
                         unset($new_salary['m_fee']);                        
                     }
                     if (isset($new_salary['sk_uid'])) {
-                        $this->incFee('sk', $new_salary['sk_uid'], $new_salary['sk_fee'], $doc['id']);
+                        $this->incFee('sk', $new_salary['sk_uid'], $new_salary['sk_fee'], $doc_data['id']);
+                        $new_salary['sk_date_pay'] = date('Y-m-d H:i:s');
+                        $new_salary['sk_date_doc'] = date('Y-m-d H:i:s', $doc_data['date']);
                     }
                     if(count($new_salary)>0) {
                         $salary = array_merge($old_salary, $new_salary);
                         $ser_salary_sql = $db->real_escape_string(json_encode($salary, JSON_UNESCAPED_UNICODE));
-                        $db->query("REPLACE `doc_dopdata` (`doc`, `param`, `value`) VALUES ($id, 'salary', '$ser_salary_sql')");
+                        $db->query("REPLACE `doc_textdata` (`doc_id`, `param`, `value`) VALUES ($id, 'salary', '$ser_salary_sql')");
                     }
                 }
             }
@@ -296,23 +323,22 @@ class salary extends \AsyncWorker {
         $pos_cnt = $sk_pos_fee = 0;
         $a_places = array();
             
-        $res_tov = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cost`, `doc_list_pos`.`cnt`,
-                 `doc_base_cnt`.`mesto`
+        $res_tov = $db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cost`, `doc_list_pos`.`cnt`
              FROM `doc_list_pos`
-             INNER JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$doc['store_id']}'
              WHERE `doc_list_pos`.`doc`='{$doc['id']}'");
         while ($nxt_tov = $res_tov->fetch_assoc()) {
             $pos_extinfo = $this->pos_info[$nxt_tov['pos_id']];
             if($detail) {
-                $det_line = array();
-                $det_line['id'] = $nxt_tov['pos_id'];
-                $det_line['name'] = $pos_extinfo['name'];
-                $det_line['vendor'] = $pos_extinfo['vendor'];
-                $det_line['vc'] = $pos_extinfo['vc'];
-                $det_line['cnt'] = $nxt_tov['cnt'];
-                $det_line['pcs'] = $pos_extinfo['pcs'];
-                $det_line['mult'] = $pos_extinfo['mult'];
-                $det_line['bigpack_cnt'] = $pos_extinfo['bigpack_cnt'];
+                $det_line = array(
+                    'id' => $nxt_tov['pos_id'],
+                    'name' => $pos_extinfo['name'],
+                    'vendor' => $pos_extinfo['vendor'],
+                    'vc' => $pos_extinfo['vc'],
+                    'cnt' => $nxt_tov['cnt'],
+                    'pcs' => $pos_extinfo['pcs'],
+                    'mult' => $pos_extinfo['mult'],
+                    'bigpack_cnt' => $pos_extinfo['bigpack_cnt'],
+                );
             }
             // Продавцам и пр
             if($doc['type']==2 || $doc['type']==20) {
@@ -336,7 +362,7 @@ class salary extends \AsyncWorker {
                 $additional_sum += $p_sum;
             }
             // Кладовщикам            
-            $a_places[intval($nxt_tov['mesto'])] = 1;
+            $a_places[intval($pos_extinfo['places'][$doc['store_id']])] = 1;
             if($pos_extinfo['bigpack_cnt']>0) {
                 $bigpacks = floor($nxt_tov['cnt'] / $pos_extinfo['bigpack_cnt']);
                 $normpacks = ($nxt_tov['cnt'] - $bigpacks * $pos_extinfo['bigpack_cnt']) / $pos_extinfo['mult'];
@@ -374,12 +400,11 @@ class salary extends \AsyncWorker {
                 $salary['o_uid'] = $doc['user'];
             }
             if(!isset($old_salary['r_uid'])) {
-                if ($responsible_id) {
-                    $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
+                $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
+                if ($responsible_id) {                    
                     $salary['r_uid'] = $responsible_id;
                 }
                 else if($doc['user']) { /// Если ответственный не задан - начисляем автору документа
-                    $salary['r_fee'] = round($additional_sum * $this->conf_resp_coeff, 2);
                     $salary['r_uid'] = $doc['user'];            
                 }
             }
@@ -416,13 +441,22 @@ class salary extends \AsyncWorker {
                     default:
                         $sk_coeff = 0;
                 }
-                $sk_fee = $sk_pos_fee * $sk_coeff + count($a_places) * $this->conf_sk_place_coeff + $pos_cnt * $this->conf_sk_cnt_coeff;
+                $sk_fee = $sk_pos_fee * $sk_coeff;
+                if($doc['sum']>$this->conf_sk_cp_min_sum) {
+                    $sk_fee += count($a_places) * $this->conf_sk_place_coeff + $pos_cnt * $this->conf_sk_cnt_coeff;
+                    if($detail) {
+                        $salary['sk_pl_coeff'] = $this->conf_sk_place_coeff;
+                        $salary['sk_cnt_coeff'] = $this->conf_sk_cnt_coeff;
+                    }
+                }
+                elseif($detail) {
+                    $salary['sk_pl_coeff'] = 0;
+                    $salary['sk_cnt_coeff'] = 0;
+                }
                 $salary['sk_uid'] = intval($doc['vars']['kladovshik']);
                 $salary['sk_fee'] = round($sk_fee, 2);
                 if($detail) {
-                    $salary['sk_coeff'] = $sk_coeff;
-                    $salary['sk_pl_coeff'] = $this->conf_sk_place_coeff;
-                    $salary['sk_cnt_coeff'] = $this->conf_sk_cnt_coeff;
+                    $salary['sk_coeff'] = $sk_coeff;                    
                     $salary['sk_packfee'] = round($sk_pos_fee, 2);
                     $salary['sk_places'] = count($a_places);
                     $salary['sk_pcnt'] = $pos_cnt;                
@@ -430,35 +464,8 @@ class salary extends \AsyncWorker {
             }
         }
         return $salary;
-    }
-        
-    public function loadPosTypes() {
-        global $db;
-        $res = $db->query("SELECT `id`, `pos_type` FROM `doc_base`");
-        while($nxt = $res->fetch_row()) {
-            $this->ppi[$nxt[0]]['type'] = $nxt[1];
-            $this->ppi[$nxt[0]]['price'] = 0;
-            $this->ppi[$nxt[0]]['cnt'] = 0;
-            $this->ppi[$nxt[0]]['date'] = 0;
-        }
-    }
-    
-    protected function loadPosDocs($pos_id) {
-        global $db;
-        $docs = array();
-        $res = $db->query("SELECT `doc_list`.`type` AS `doc_type`, `doc_list`.`date`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, `doc_list_pos`.`page`,
-                `doc_dopdata`.`value` AS `return_flag`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc` AND (`doc_list`.`type`<='2' OR `doc_list`.`type`='17')
-            LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list_pos`.`doc` AND `doc_dopdata`.`param`='return'
-            WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`ok`>'0' ORDER BY `doc_list`.`date`");
-        while ($line = $res->fetch_assoc()) {
-            $docs[] = $line;
-        }
-        $res->free();
-        $this->ppi[$pos_id]['docs'] = $docs;
-    }
-
+    }       
+ 
     /// Увеличить счётчик оплаты для заданного сотрудника в заданной роли
     /// @param $role    Роль сотрудника
     /// @param $uid     id сотрудника
