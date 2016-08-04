@@ -176,9 +176,12 @@ class Report_Sales extends BaseGSReport {
             LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
             LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
             WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
-            (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
-            (`doc_list`.`type`='8' AND `ns`.`value`='{$this->sklad}') OR
-            (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0') ) AND `doc_list`.`ok`>0
+                (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}')
+                OR (`doc_list`.`type`='8' AND `ns`.`value`='{$this->sklad}')
+                OR (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0')
+                OR (`doc_list`.`type`='25' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`cnt`>'0')
+            ) 
+            AND `doc_list`.`ok`>0
             $s_where
             ORDER BY `doc_list`.`date`");
         
@@ -282,15 +285,15 @@ class Report_Sales extends BaseGSReport {
             $this->tableSpannedRow(array($this->col_cnt), array('Корректировки'));
             $this->tableAltStyle(false);
         }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, ABS(`doc_list_pos`.`cnt`) AS `cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
             FROM `doc_list_pos`
             INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
             INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
             LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
             LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
             LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
-            `doc_list`.`type`='25' AND `doc_list`.`ok`>0
+            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' "
+                . " AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='25' AND `doc_list_pos`.`cnt`<'0' AND `doc_list`.`ok`>0
             $s_where
             ORDER BY `doc_list`.`date`");
         $corr_cnt = $sum = 0;
@@ -369,6 +372,7 @@ class Report_Sales extends BaseGSReport {
             }
         }
         return array(
+            'start' => $start_cnt,
             'prix' => $prix_cnt,
             'real' => $realiz_cnt,
             'perem' => $perem_cnt,
@@ -438,7 +442,12 @@ class Report_Sales extends BaseGSReport {
                     }
                     break;
                 case 25:
-                    $r = $nxt['cnt'];
+                    if($nxt['cnt']>0) {
+                        $p = $nxt['cnt'];
+                    }
+                    else {
+                        $r = abs($nxt['cnt']);
+                    }
                     break;
                 default:$p = $r = 'fff-' . $nxt['type'];
             }
@@ -513,7 +522,7 @@ class Report_Sales extends BaseGSReport {
                 , 'Сбор.', 'Корр.', 'Итог');
             $header .= ", без детализации по документам";
         } else if ($this->div_dt) {
-            $widths = array(15, 25, 40, 7, 7, 7);
+            $widths = array(15, 22, 40, 7, 7, 10);
             $headers = array('Дата', 'Документ', 'Источник', 'Кол-во', 'Цена', 'Сумма');
             $header .= ", c детализацей и делением по документам";
         } else {
@@ -535,6 +544,7 @@ class Report_Sales extends BaseGSReport {
         }
 
         $ss = array(
+            'start' => 0,
             'prix' => 0,
             'real' => 0,
             'perem' => 0,
@@ -614,8 +624,13 @@ class Report_Sales extends BaseGSReport {
 
         if ($this->div_dt || !$this->w_docs) {
             $this->tableAltStyle();
-            $end = $ss['prix'] - $ss['real'] - $ss['perem'] - $ss['sbor'] - $ss['korr'];
-            $this->tableRow(array('', '', 'Итого:', '', '', '', $ss['prix'], $ss['real'], $ss['perem'], $ss['sbor'], $ss['korr'], $end));
+            $end = $ss['start'] + $ss['prix'] - $ss['real'] - $ss['perem'] - $ss['sbor'] - $ss['korr'];
+            if($this->w_docs) {
+                $this->tableRow(array('', 'Итого:', '', $end, '', ''));                
+            } 
+            else {
+                $this->tableRow(array('', '', 'Итого:', '', '', '', $ss['prix'], $ss['real'], $ss['perem'], $ss['sbor'], $ss['korr'], $end));
+            }
             $this->tableAltStyle(false);
         }
         $this->tableEnd();
