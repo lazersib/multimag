@@ -73,18 +73,21 @@ try {
     $mode = request('mode');
     
     if($mode == 'export') {
-        $db->startTransaction();    
+        $db->startTransaction();
+        set_time_limit(600);
         $export = new \sync\Xml1cDataExport($db);
         $export->setRefbooksList( request('refbooks', null) );
         $export->setDocTypesList( request('doctypes', null) );
         $export->setPartialTimeshtamp($partial_time);
         $export->setPeriod($start_date, $end_date);
+        $export->setStartCounters( request('startcounters'));
         $data = $export->getData();    
         header("Content-type: application/xml");
+        header("Content-Disposition: attachment; filename=1c.xml");
         echo $data; 
     } else if($mode=='import') {
         $import = new \sync\simplexml1cdataimport($db);
-        
+        set_time_limit(600);
         if( isset($_POST['xmlstring']) ) {
             $xmlstring = $_POST['xmlstring'];
             $import->loadFromString($_POST['xmlstring']);
