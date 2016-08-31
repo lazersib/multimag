@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -55,9 +55,10 @@ public function outList($page)	{
 	}
 	$tmpl->addContent("<div class='clear'>&nbsp;</div></div>");
 	$this->pageBar($rows, $this->lim, $page);
-	if(isAccess('generic_articles','edit',true))
-		$tmpl->addContent("<br><a href='?mode=add'>Добавить</a>");
-}
+	if (\acl::testAccess('generic.article.photo', \acl::CREATE, true)) {
+            $tmpl->addContent("<br><a href='?mode=add'>Добавить</a>");
+        }
+    }
 
 /// Показать страницу для заданного изображения
 public function viewImage($n) {
@@ -98,7 +99,7 @@ public function viewImage($n) {
 		$tmpl->addContent("<a href='".$img->GetURI()."'>{$sx}x{$sy}</a>, ");
 	}
 	$tmpl->addContent("<a href='$full_uri'>{$size[0]}x{$size[1]}</a>");
-	if(isAccess('generic_articles','edit',true))
+	if(\acl::testAccess('generic.article.photo', \acl::VIEW, true))
 		$tmpl->addContent("<br>Код вставки изображения: [[Image:$n|options|alt]]<br>
 		<ul class='items'>
 		<li>options - набор опций с разделителем |</li>
@@ -117,12 +118,9 @@ public function viewImage($n) {
 /// Отобразить форму загрузки изображения
 public function addImageForm() {
 	global $tmpl;
-	if(!isAccess('generic_articles','edit'))	throw new AccessException();
-	$max_fs=get_max_upload_filesize();
-	$max_fs_size=$max_fs;
-	if($max_fs_size>1024*1024)	$max_fs_size=($max_fs_size/(1024*1024)).' Мб';
-	else if($max_fs_size>1024)	$max_fs_size=($max_fs_size/(1024)).' Кб';
-	else				$max_fs_size.='байт';
+	\acl::accessGuard('generic.article.photo', \acl::UPDATE);
+	$max_fs=\webcore::getMaxUploadFileSize();
+	$max_fs_size=\webcore::toStrDataSizeInaccurate($max_fs);
 	$tmpl->addContent("<h3>Добавить изображение</h3>");
 	$tmpl->addContent("Изображения в этом разделе используются для последующего отображения в статьях. После добавления Вы получите код для вставки в статью.<br>
 	<form method=post action='wikiphoto.php' enctype='multipart/form-data'>
@@ -139,8 +137,7 @@ public function addImageForm() {
 /// Обработчик отправки формы добавления изображения
 public function submitImageForm() {
 	global $tmpl, $db;
-	if(!isAccess('generic_articles','edit'))
-				throw new AccessException("Недостаточно привилегий");
+	\acl::accessGuard('generic.article.photo', \acl::CREATE);
 	$comm=request('comm');
 	
 	$tmpl->addContent("<h3>Добавление изображения</h3>");
@@ -222,7 +219,7 @@ try {
 } catch (mysqli_sql_exception $e) {
     $tmpl->ajax = 0;
     $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
 } catch (Exception $e) {
     writeLogException($e);
     $tmpl->errorMessage($e->getMessage());

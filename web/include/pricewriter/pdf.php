@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -32,6 +32,7 @@ class pdf extends BasePriceWriter {
     /// Сформировать шапку прайса
     function open() {
         global $CONFIG;
+        $pref = \pref::getInstance();
         require_once('fpdf/fpdf_mysql.php');
         $this->pdf = new \PDF_MySQL_Table();
         $this->pdf->Open();
@@ -40,7 +41,7 @@ class pdf extends BasePriceWriter {
         $this->pdf->tMargin = 5;
         $this->pdf->AddPage();
         if (@$CONFIG['site']['doc_header']) {
-            $header_img = str_replace('{FN}', $CONFIG['site']['default_firm'], $CONFIG['site']['doc_header']);
+            $header_img = str_replace('{FN}', $pref->site_default_firm_id, $CONFIG['site']['doc_header']);
             $this->pdf->Image($header_img, 8, 10, 190);
             $this->pdf->Sety(54);
         }
@@ -60,9 +61,9 @@ class pdf extends BasePriceWriter {
 
         $this->pdf->SetTextColor(0, 0, 255);
         $this->pdf->SetFont('', 'U', 14);
-        $str = 'Прайс загружен с сайта http://' . $CONFIG['site']['name'];
+        $str = 'Прайс загружен с сайта http://' . $pref->site_name;
         $str = iconv('UTF-8', 'windows-1251', $str);
-        $this->pdf->Cell(0, 6, $str, 0, 1, 'C', 0, 'http://' . $CONFIG['site']['name']);
+        $this->pdf->Cell(0, 6, $str, 0, 1, 'C', 0, 'http://' . $pref->site_name);
         $this->pdf->SetFont('', '', 10);
         $this->pdf->SetTextColor(0);
         $str = 'При заказе через сайт может быть предоставлена скидка!';
@@ -147,6 +148,8 @@ class pdf extends BasePriceWriter {
     }
 
     /// Сформировать строки прайса
+    /// param $group id номенклатурной группы
+    /// param $group_name Отображаемое имя номенклатурной группы
     function writepos($group = 0, $group_name = '') {
         
     }

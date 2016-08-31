@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,11 +24,13 @@ try
 {
 	$tmpl->ajax=1;
 	$yml_now = date("Y-m-d H:i");
-	$res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
+        $pref = \pref::getInstance();
+	$res = $db->query("SELECT * FROM `doc_vars` WHERE `id`='{$pref->site_default_firm_id}'");
 	if(!$res->num_rows)	throw new Exception("Организация не найдена");
 	$firm_vars = $res->fetch_assoc();
 
 	$pc = PriceCalc::getInstance();
+        $pc->setFirmId($pref->site_default_firm_id);
 	
 	$finds=array('"', '&', '>', '<', '\'');
 	$replaces=array('&quot;', '&amp;', '&gt;', '&lt;', '&apos;');
@@ -43,13 +45,13 @@ try
 	<!DOCTYPE yml_catalog SYSTEM \"shops.dtd\">
 	<yml_catalog date=\"$yml_now\">
 	<shop>
-	<name>{$CONFIG['site']['display_name']}</name>
+	<name>{$pref->site_display_name}</name>
 	<company>{$firm_vars['firm_name']}</company>
-	<url>http://{$CONFIG['site']['name']}/</url>
+	<url>http://{$pref->site_name}/</url>
 	<platform>MultiMag</platform>
 	<version>".MULTIMAG_VERSION."</version>
-	<agency>{$CONFIG['site']['admin_name']}</agency>
-	<email>{$CONFIG['site']['admin_email']}</email>
+	<agency>{$pref->site_display_name}</agency>
+	<email>{$pref->site_email}</email>
 
 	<currencies>
 	<currency id=\"RUR\" rate=\"1\"/>
@@ -91,8 +93,8 @@ try
 			if($nxt['nal']>1 || strstr($nxt['nal'],'*') || strstr($nxt['nal'],'+'))
 				if($nxt['delivery_info']=='+')	$avariable='true';
 
-		if($CONFIG['site']['recode_enable'])	$url= "http://{$CONFIG['site']['name']}/vitrina/ip/{$nxt['id']}.html";
-		else					$url= "http://{$CONFIG['site']['name']}/vitrina.php?mode=product&amp;p={$nxt['id']}";
+		if($CONFIG['site']['rewrite_enable'])	$url= "http://{$pref->site_name}/vitrina/ip/{$nxt['id']}.html";
+		else					$url= "http://{$pref->site_name}/vitrina.php?mode=product&amp;p={$nxt['id']}";
 
 		$cost = $pc->getPosDefaultPriceValue($nxt['id']);
 	
@@ -101,7 +103,7 @@ try
 			$miniimg=new ImageProductor($nxt['img_id'],'p', $nxt['img_type']);
 			$miniimg->SetX(200);
 			
-			$picture="<picture>http://{$CONFIG['site']['name']}".$miniimg->GetURI()."</picture>";
+			$picture="<picture>http://{$pref->site_name}".$miniimg->GetURI()."</picture>";
 		}
 		else	$picture='';
 		
@@ -160,7 +162,7 @@ catch(mysqli_sql_exception $e) {
 	$db->rollback();
 	$tmpl->ajax=0;
 	$id = writeLogException($e);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
 }
 catch(Exception $e)
 {
@@ -169,5 +171,3 @@ catch(Exception $e)
     writeLogException($e);
     $tmpl->errorMessage($e->getMessage());
 }
-
-?>

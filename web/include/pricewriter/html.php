@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -90,6 +90,8 @@ class html extends BasePriceWriter {
     }
 
     /// Сформирвать тело прайса
+    /// param $group id номенклатурной группы
+    /// param $level уровень вложенности
     function write($group = 0, $level = 0) {
         if ($level > 3) {
             $level = 3;
@@ -118,10 +120,16 @@ class html extends BasePriceWriter {
     /// Сформировать завершающий блок прайса
     function close() {
         global $CONFIG;
-        echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), for <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a><br>Прайс создан системой MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>), специально для <a href='http://{$CONFIG['site']['name']}'>http://{$CONFIG['site']['name']}</a></td></tr></table>";
+        $pref = \pref::getInstance();
+        echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>),"
+            . " for <a href='http://{$pref->site_name}'>http://{$pref->site_name}</a><br>"
+            . "Прайс создан системой MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>),"
+            . " специально для <a href='http://{$pref->site_name}'>http://{$pref->site_name}</a></td></tr></table>";
     }
 
     /// Сформировать строки прайса
+    /// param $group id номенклатурной группы
+    /// param $group_name Отображаемое имя номенклатурной группы
     function writepos($group = 0, $group_name = '') {
         global $CONFIG;
         $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,
@@ -136,6 +144,8 @@ class html extends BasePriceWriter {
         }
 
         $pc = \PriceCalc::getInstance();
+        $pref = \pref::getInstance();
+        $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
             if ($cur_col >= $this->column_count) {
                 $cur_col = 0;

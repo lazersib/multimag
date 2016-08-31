@@ -3,7 +3,7 @@
  * Version 1.0
  * Copyright 2005, Steve Blinch
  * http://code.blitzaffe.com
- * Modifed by Blacklight, 2006-2013, http://multimag.tndproject.org
+ * Modifed by Blacklight, 2006-2016, http://multimag.tndproject.org
  *
  * This class parses and returns the HTML representation of a document containing
  * basic MediaWiki-style wiki markup.
@@ -37,21 +37,51 @@
 
 /// Парсер викитекста с конвертацией в html формат
 class WikiParser {
+    var $reference_wiki;    //< Base link for wiki pages
+    var $ppn = 'p';         //< Page param name
+    var $title;             //< Ttile page
 
-	function __construct() {
-		$this->reference_wiki = '/article/';
-		$this->reference_site = (isset($_SERVER['HTTPS'])?'https':'http')."://{$_SERVER['HTTP_HOST']}/";
-		$this->image_uri = "/share/var/wikiphoto/";
-		$this->ignore_images = false;
-		$this->variables=array();
-		$this->preformat=false;
-		$this->emphasis=array();
-		$this->imageinfo = false;
-		$this->vitrinaWidjet=null;
-                $this->title = '';
-	}
-	
-	function loadImageInfo() {
+    public function __construct() {
+        if (\cfg::get('site', 'rewrite_enable')) {
+            $this->reference_wiki = '/article/';
+        }
+        else {
+            $this->reference_wiki = '/articles.php';
+        }
+        $this->ignore_images = false;
+        $this->variables = array();
+        $this->preformat = false;
+        $this->emphasis = array();
+        $this->imageinfo = false;
+        $this->title = '';
+    }
+    
+    public function getTitle() {
+        return $this->title;
+    }
+    
+    public function constructWikiLink($target_page, $params='') {
+        if (\cfg::get('site', 'rewrite_enable')) {
+            if(strpos($this->reference_wiki, '?')!==false) {
+                return $this->constructClassicWikiLink($target_page, $params);
+            }
+            else {
+                return $this->constructRewritedWikiLink($target_page, $params);
+            }
+        } else {
+            return $this->constructClassicWikiLink($target_page, $params);
+        }
+    }
+    
+    protected function constructRewritedWikiLink($target_page, $params) {
+        return \webcore::concatLink($this->reference_wiki.$target_page.'.html', $params);
+    }
+    
+    protected function constructClassicWikiLink($target_page, $params) {
+        return \webcore::concatLink($this->reference_wiki, $this->ppn.'='.$target_page.($params?('&amp;'.$params):''));
+    }
+
+        function loadImageInfo() {
 		global $db;
 		if($this->imageinfo)
 			return;
@@ -250,44 +280,42 @@ class WikiParser {
 		return $imagetag;
 	}
 
-	function handle_internallink($matches) {
-		//var_dump($matches);
-		$nolink = false;
+    /// Обработчик внутренних ссылок
+    protected function handle_internallink($matches) {
+        //var_dump($matches);
+        $nolink = false;
 
-		$href = $matches[4];
-		$title = isset($matches[6]) ? $matches[6] : $href.@$matches[7];
-		$namespace = $matches[3];
+        $href = $matches[4];
+        $title = isset($matches[6]) ? $matches[6] : $href . @$matches[7];
+        $namespace = $matches[3];
 
-		if ($namespace=='Image') {
-			$options = explode('|',$title);
-			$title = array_pop($options);
+        if ($namespace == 'Image') {
+            $options = explode('|', $title);
+            $title = array_pop($options);
+            return $this->handle_image($href, $title, $options);
+        }
 
-			return $this->handle_image($href,$title,$options);
-		}
+        $title = preg_replace('/\(.*?\)/', '', $title);
+        $title = preg_replace('/^.*?\:/', '', $title);
 
-		$title = preg_replace('/\(.*?\)/','',$title);
-		$title = preg_replace('/^.*?\:/','',$title);
+        if ($this->reference_wiki) {
+            if ($namespace == 'site') {
+                $href = '/' . $href;
+            } else {
+                $href = $this->constructWikiLink(($namespace ? $namespace . ':' : '') . $this->wiki_link($href));
+            }
+        }
+        else {
+            $nolink = true;
+        }
 
-		if ($this->reference_wiki) {
-			if($namespace=='site')
-				$href = $this->reference_site.$href;
-			else
-				$href = $this->reference_wiki.($namespace?$namespace.':':'').$this->wiki_link($href).'.html';
-		}
-		else {
-			$nolink = true;
-		}
+        if ($nolink) {
+            return $title;
+        }
+        return '<a class="wiki" href="'.$href.'">'.$title.'</a>';
+    }
 
-		if ($nolink) return $title;
-
-		return sprintf(
-			'<a class=\'wiki\' href="%s">%s</a>',
-			$href,
-			$title
-		);
-	}
-
-	function handle_definitions($matches) {
+    function handle_definitions($matches) {
 		//var_dump($matches);
 		$nolink = false;
 
@@ -309,7 +337,7 @@ class WikiParser {
 
 	function handle_externallink($matches) {
 		$href = $matches[2];
-		$title = $matches[3];
+		$title = isset($matches[3])?$matches[3]:'';
 		if (!$title) {
 			$this->linknumber++;
 			$title = "[{$this->linknumber}]";
@@ -378,7 +406,7 @@ class WikiParser {
                 case 'CURRENTYEAR': return date('Y');
                 case 'CURRENTTIME': return date('H:i');
                 case 'NUMBEROFARTICLES': return 0;
-                case 'PAGENAME': return $this->page_title;
+                case 'PAGENAME': return $this->title;
                 case 'NAMESPACE': return 'None';
                 case 'SITENAME': return $_SERVER['HTTP_HOST'];
             }
@@ -399,6 +427,7 @@ class WikiParser {
                             return '<i>{{Widget ' . $matches[1] . ': bad params!}}</i>';
                         }
                     }
+                    $widget->setVariables($this->variables);
                     return $widget->getHTML();
                 } else {
                     return '<i>{{Widget ' . $matches[1] . ' not found!}}</i>';
@@ -547,6 +576,7 @@ Done.
 	}
 
 	function parse($text,$title="") {
+                
 		$this->redirect = false;
 
 		$this->nowikis = array();
@@ -557,7 +587,7 @@ Done.
 		$this->linknumber = 0;
 		$this->suppress_linebreaks = false;
 
-		$this->page_title = $title;
+		$this->title = $title;
 
 		$output = "";
 

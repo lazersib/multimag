@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -69,7 +69,11 @@ class permitout extends \doc\printforms\iPrintFormInvoicePdf {
         $this->addInfoLine($text, 11);
         if(intval($this->pdop_data['mest']) != $sum) {
             $text = "количество мест не совпадает!";
-        $this->addInfoLine($text, 28);
+            $this->addInfoLine($text, 28);
+        }
+        if(isset($dop_data['place'])) {
+            $text = "Место хранения: ".$dop_data['place'];
+            $this->addInfoLine($text);
         }
     }
 
@@ -102,6 +106,8 @@ class permitout extends \doc\printforms\iPrintFormInvoicePdf {
         $text = "Погрузку разрешил: ___________________________________ ( $load_permitter )";
         $this->addSignLine($text);
         $text = "Выезд разрешил: ___________________________________ ( $exit_permitter )";
+        $this->addSignLine($text);
+        $text = "Печатная форма сформирована в: ".date("Y-m-d H:i:s");
         $this->addSignLine($text);
     }
 

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 //
 
 /// Документ *приход средств в банк*
-class doc_PBank extends doc_Nulltype {
+class doc_PBank extends paymentbasedoc {
 
     function __construct($doc = 0) {
         parent::__construct($doc);
@@ -82,7 +82,7 @@ class doc_PBank extends doc_Nulltype {
     }
 
     function dopBody() {
-        global $tmpl;
+        
     }
 
     // Провести
@@ -105,7 +105,13 @@ class doc_PBank extends doc_Nulltype {
         if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
         }
-        
+
+        if ($doc_params['sum']<=0) {
+            throw new Exception('Нельзя провести документ с нулевой или отрицательной суммой!');
+        }
+
+        $this->checkIfTypeForDocumentExists();
+
         // Запрет для другой фирмы
         // Проверка временно отключена
         //if($doc_params['bank_firm_id']!=null && $doc_params['bank_firm_id']!=$doc_params['firm_id']) {
@@ -124,6 +130,7 @@ class doc_PBank extends doc_Nulltype {
         if (!$silent) {
             $db->update('doc_list', $this->id, 'ok', time());
             $this->sentZEvent('apply');
+            $this->paymentNotify();
         }
     }
 

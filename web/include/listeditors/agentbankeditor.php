@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -73,9 +73,7 @@ class agentBankEditor extends \ListEditor {
         }
         $write_data['agent_id'] = intval($this->agent_id);
         if ($id) {
-            if (!isAccess($this->acl_object_name, 'edit')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
             $old_data = $this->getItem($id);
             unset($old_data['id']);
             $this->db_link->updateA($this->table_name, $id, $write_data);
@@ -84,9 +82,7 @@ class agentBankEditor extends \ListEditor {
             $log_text = getCompareStr($old_data, $write_data);
             doc_log('UPDATE agent_bank ID:'.$id, $log_text, 'agent', intval($this->agent_id));
         } else {
-            if (!isAccess($this->acl_object_name, 'create')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::CREATE);
             $id = $this->db_link->insertA($this->table_name, $write_data);
             $log_text = getCompareStr(array('name'=>'','bik'=>'','rs'=>'','ks'=>''), $write_data);
             doc_log('ADD agent_bank', $log_text, 'agent', intval($this->agent_id));

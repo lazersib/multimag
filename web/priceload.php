@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -49,7 +49,7 @@ function topmenu($s = '') {
 function draw_groups_tree($level, $firm) {
 	global $db;
 	$ret = '';
-	settype($leval, 'int');
+	settype($level, 'int');
 	settype($firm, 'int');
 	$res = $db->query("SELECT `doc_group`.`id`, `doc_group`.`name`, `firm_info_group`.`id` FROM `doc_group`
 	LEFT JOIN `firm_info_group`	ON `firm_info_group`.`firm_id`='$firm' AND `firm_info_group`.`group_id`=`doc_group`.`id`
@@ -271,9 +271,8 @@ function firmAddForm($id = 0) {
 try {
         $mode = request('mode');
         
-	if (!isAccess('generic_price_an', 'view')) {
-            throw new AccessException("Недостаточно привилегий");
-        }
+	\acl::accessGuard('service.pricean', \acl::VIEW);
+        
         topmenu();
 	$tmpl->setTitle("Анализатор прайсов");
 	if ($mode == '') {
@@ -333,7 +332,7 @@ try {
 		$tmpl->addContent("</table>");
 	}
 	else if ($mode == 'load') {
-		$m_upl_size = get_max_upload_filesize();
+		$m_upl_size = \webcore::getMaxUploadFileSize();
 		$tmpl->addContent("
 	<form method=post enctype='multipart/form-data'>
 	<input type=hidden name=mode value='parse'>
@@ -824,7 +823,7 @@ try {
 	else if ($mode == 'r_multiparsed') {
 		$f = rcvint('f');
 		$tmpl->addContent("<h1>Отчёт по многократно обработанным позициям</h1>");
-		if ($f)	$f = " AND `price`.`firm`='$f'";
+		$f = $f?" AND `price`.`firm`='$f'":'';
 		$res = $db->query("SELECT `price`.`id`, `price`.`name`, `price`.`art`, `firm_info`.`name`, `price`.`seeked`
 		FROM `price`
 		LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
@@ -919,7 +918,7 @@ try {
 catch(mysqli_sql_exception $e) {
 	$tmpl->ajax=0;
 	$id = writeLogException($e);
-	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение передано администратору", 'err', "Ошибка в базе данных");
+	$tmpl->msg("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", 'err', "Ошибка в базе данных");
 }
 catch (Exception $e) {
     writeLogException($e);

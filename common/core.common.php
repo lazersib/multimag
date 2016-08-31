@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "831");
+define("MULTIMAG_REV", "916");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -52,7 +52,7 @@ function getSubscribersEmailList() {
     $res = $db->query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `agent_contacts`.`value` AS `email`"
         . " FROM `agent_contacts`"
         . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`agent_contacts`.`agent_id`"
-        . " WHERE `reg_email_subscribe`='1' AND `reg_email_confirm`='1' AND `reg_email`!=''");
+        . " WHERE `no_ads`='0'");
     while($line = $res->fetch_assoc()) {
         if($line['fullname']) {
             $line['name'] = $line['fullname'];
@@ -134,7 +134,7 @@ function sendAdmMessage($text, $subject = '') {
     if ($CONFIG['site']['doc_adm_jid'] && $CONFIG['xmpp']['host']) {
         try {
             require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
-            $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'xmpphp', '');
+            $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
             $xmppclient->connect();
             $xmppclient->processUntil('session_start');
             $xmppclient->presence();
@@ -156,22 +156,22 @@ function mailto($email, $subject, $msg, $from = "") {
     global $CONFIG;
     require_once($CONFIG['location'] . '/common/email_message.php');
 
-    $email_message = new email_message_class();
-    $email_message->default_charset = "UTF-8";
-    $email_message->SetEncodedEmailHeader("To", $email, $email);
-    $email_message->SetEncodedHeader("Subject", $subject);
+    $es = new \email_message_class();
+    $es->default_charset = "UTF-8";
+    $es->SetEncodedEmailHeader("To", $email, $email);
+    $es->SetEncodedHeader("Subject", $subject);
     if ($from) {
-        $email_message->SetEncodedEmailHeader("From", $from, $from);
+        $es->SetEncodedEmailHeader("From", $from, $from);
     } else {
-        $email_message->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['display_name']}");
+        $es->SetEncodedEmailHeader("From", $CONFIG['site']['admin_email'], "Почтовый робот {$CONFIG['site']['display_name']}");
     }
-    $email_message->SetHeader("Sender", $CONFIG['site']['admin_email']);
-    $email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
-    $email_message->AddQuotedPrintableTextPart($msg);
-    $error = $email_message->Send();
+    $es->SetHeader("Sender", $CONFIG['site']['admin_email']);
+    $es->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
+    $es->AddQuotedPrintableTextPart($msg);
+    $error = $es->Send();
 
     if (strcmp($error, "")) {
-        throw new Exception($error);
+        throw new \Exception("Ошибка отправки email сообщения на адрес: $email\n$error");
     }
     return 0;
 }
@@ -250,6 +250,19 @@ function agentCalcDebt($agent_id, $no_cache = 0, $firm_id = 0, $local_db = 0, $d
     return $dolg;
 }
 
+/// Округление в нужную сторону
+/// @param number Исходное число
+/// @param precision Точность округления
+/// @param direction Направление округления
+function roundDirect($number, $precision = 0, $direction = 0) {
+    if ($direction == 0)
+        return round($number, $precision);
+    else {
+        $factor = pow(10, -1 * $precision);
+        return ($direction < 0) ? floor($number / $factor) * $factor : ceil($number / $factor) * $factor;
+    }
+}
+
 /// Расчёт ликвидности на заданную дату
 /// @param $time дата в unixtime
 /// @return array(pos_id => likv_value, ... )
@@ -314,7 +327,7 @@ class MysqiExtended extends mysqli {
 //        }
         
     /// Получить все значения строки из таблицы по ключу в виде массива
-    /// @param $table	Имя таблицы
+    /// @param $table           Имя таблицы
     /// @param $key_value	Значение ключа, по которому производится выборка. Будет приведено к целому типу.
     /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае sql ошибки вернёт false. В случае, если искомой строки нет в таблице, вернет 0
     function selectRow($table, $key_value) {
@@ -330,8 +343,8 @@ class MysqiExtended extends mysqli {
     }
 
     /// Получить все значения строки из таблицы по ключу в виде массива
-    /// @param table	Имя таблицы
-    /// @param key_name	Имя ключа, по которому производится выборка.
+    /// @param table            Имя таблицы
+    /// @param key_name         Имя ключа, по которому производится выборка.
     /// @param key_value	Значение ключа, по которому производится выборка.
     /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае sql ошибки вернёт false. В случае, если искомой строки нет в таблице, вернет 0
     function selectRowK($table, $key_name, $key_value) {
@@ -347,9 +360,9 @@ class MysqiExtended extends mysqli {
     }
 
     /// Получить заданные значения строки из таблицы по ключу в виде массива
-    /// @param table	Имя таблицы
+    /// @param table            Имя таблицы
     /// @param key_value	Значение ключа, по которому производится выборка. Будет приведено к целому типу.
-    /// @param array	Массив со значениями, содержащими имена полей
+    /// @param array            Массив со значениями, содержащими имена полей
     /// @return 		В случае успеха возвращает ассоциативный массив с данными. В случае, если искомой строки нет в таблице, вернет массив со значениями, равными ''
     function selectRowA($table, $key_value, $array) {
         settype($key_value, 'int');
@@ -420,10 +433,9 @@ class MysqiExtended extends mysqli {
     function insertA($table, $array) {
         $cols = $values = '';
         $f = 0;
+        $table = $this->real_escape_string($table);
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL' && $value !== 'null' ) {
-                $value = '\'' . $this->real_escape_string($value) . '\'';
-            }
+            $value = $this->escapeVal($value);
             if (!$f) {
                 $cols = '`' . $key . '`';
                 $values = $value;
@@ -447,9 +459,7 @@ class MysqiExtended extends mysqli {
     /// @return Возвращаемое значение аналогично mysqli::query
     function update($table, $key_value, $field, $value) {
         settype($key_value, 'int');
-        if ($value !== 'NULL') {
-            $value = '\'' . $this->real_escape_string($value) . '\'';
-        }
+        $value = $this->escapeVal($value);
         return $this->query("UPDATE `$table` SET `$field`=$value WHERE `id`=$key_value");
     }
 
@@ -476,6 +486,31 @@ class MysqiExtended extends mysqli {
         $q = $this->updatePrepare($array);
         return $this->query("UPDATE `$table` SET $q WHERE `$key_name`=$key_value");
     }
+    
+    /// Заменить строку в заданной таблице
+    /// @param table	Имя таблицы
+    /// @param array	Ассоциативный массив обновляемых данных
+    /// @return количество заменённых строк или false в случае ошибки
+    function replaceA($table, $array) {
+        $cols = $values = '';
+        $f = 0;
+        $table = $this->real_escape_string($table);
+        foreach ($array as $key => $value) {
+            $value = $this->escapeVal($value);
+            if (!$f) {
+                $cols = '`' . $key . '`';
+                $values = $value;
+                $f = 1;
+            } else {
+                $cols .= ', `' . $key . '`';
+                $values .= ', ' . $value;
+            }
+        }
+        if (!$this->query("REPLACE `$table` ($cols) VALUES ($values)")) {
+            return false;
+        }
+        return $this->affected_rows;
+    }
 
     /// Заменить данные в заданной таблице данными из массива по ключу с заданным именем
     /// @param table	Имя таблицы
@@ -486,10 +521,11 @@ class MysqiExtended extends mysqli {
     function replaceKA($table, $key_name, $key_value, $array) {
         settype($key_value, 'int');
         $q = $f = '';
+        if(!is_array($array) || count($array)==0) {
+            throw new \InvalidArgumentException('Invalid data array');
+        }
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL' && $value !== 'null') {
-                $value = '\'' . $this->real_escape_string($value) . '\'';
-            }
+            $value = $this->escapeVal($value);
             if ($f) {
                 $q.=',(\'' . $key_value . '\',\'' . $key . '\',' . $value . ')';
             } else {
@@ -512,9 +548,7 @@ class MysqiExtended extends mysqli {
     private function updatePrepare($array) {
         $q = $f = '';
         foreach ($array as $key => $value) {
-            if ($value !== 'NULL' && $value !== 'null') {
-                $value = '\'' . $this->real_escape_string($value) . '\'';
-            }
+            $value = $this->escapeVal($value);
             if ($f) {
                 $q.=',`' . $key . '`=' . $value;
             } else {
@@ -523,6 +557,15 @@ class MysqiExtended extends mysqli {
             }
         }
         return $q;
+    }
+    
+    private function escapeVal($value) {
+        if ($value === 'NULL' || $value === 'null' || $value === null ) {
+            return 'NULL';
+        }
+        else {
+            return '\'' . $this->real_escape_string($value) . '\'';
+        }
     }
 
 }
@@ -546,4 +589,15 @@ function getCompareStr($old, $new) {
         }
     }
     return $ret;
+}
+
+//Фикс для скомпилированных php без --enable-calendar
+if (!function_exists('cal_days_in_month'))
+{
+    function cal_days_in_month($calendar, $month, $year)
+    {
+        return date('t', mktime(0, 0, 0, $month, 1, $year));
+    }
+    if (!defined('CAL_GREGORIAN'))
+        define('CAL_GREGORIAN', 1);
 }

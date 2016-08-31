@@ -383,3 +383,94 @@ function tripleView(object_id, no_expand)
 
 	return midiview
 }
+/*
+function runSingle(func) {
+    var count = 0;
+    var ping = 0;
+    function storageListener(event) {
+        if(event.key=='alive') {
+            count++;
+        } else if(event.key=='ping') {
+            localStorage.setItem('alive', Math.random()+window.location);
+        }
+    }
+    function pingAndRun() {
+        count = 0;
+        localStorage.setItem('ping', Math.random());
+    }
+    function timerCallback() {
+        if(count==0) {
+            func();
+        } 
+        else {
+            window.setTimeout(pingAndRun, 10000);
+        }
+    }
+    window.addEventListener('storage', storageListener);
+    window.setTimeout(timerCallback, 200);
+    pingAndRun();
+}
+
+function longPoolMessages() {
+    function sendNotification(title, options, link) {
+        if (!("Notification" in window)) {
+            alert('Ваш браузер не поддерживает HTML Notifications, его необходимо обновить.');
+        }
+        else if (Notification.permission === "granted") {
+            var notification = new Notification(title, options);
+            function clickFunc() {
+                if(link) {
+                    window.open(link);
+                }
+                notification.close();
+            }
+            notification.onclick = clickFunc;
+        }
+        else if (Notification.permission !== 'denied') {
+            Notification.requestPermission(function (permission) {
+                if (permission === "granted") {
+                    var notification = new Notification(title, options);
+                } else {
+                    alert('Вы запретили показывать уведомления'); // Юзер отклонил наш запрос на показ уведомлений
+                }
+            });
+        } else {
+
+        }
+    }    
+    function successCallback(message) {
+        try {
+            var json = JSON.parse(message);
+            if(json.object=='getmessage') {
+                sendNotification(json.content.title, {
+                    body: json.content.message,
+                    icon: json.content.icon,
+                    dir: 'auto',
+                    lang: 'RU',
+                    }, json.content.link);
+            }
+            //alert("Success "+message);
+            newRequest();
+        }
+        catch (e) {
+            newRequest();
+        }
+        
+        
+        //
+    }
+    function errorCallback(name, message) {
+        //alert("Error "+message);
+        newRequest();
+    }
+    function newRequest() {
+        function requestExec() {
+            httpReq('/api.php', 'POST', 'object=getmessage', successCallback, errorCallback);
+        }
+        window.setTimeout(requestExec, 1000);
+    }
+    newRequest();
+}
+
+runSingle(longPoolMessages);
+*/

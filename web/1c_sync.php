@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -63,7 +63,7 @@ try {
     $_SESSION['uid'] = $user_info['id'];
     $_SESSION['name'] = $user_info['name'];
     
-    if(!isAccess('doc_1csync', 'exec', true)) {
+    if(!\acl::testAccess('service.1csync', \acl::APPLY, true)) {
         throw new \AccessException("Отсутствуют необходимые привилегии" );
     }
     
@@ -73,18 +73,21 @@ try {
     $mode = request('mode');
     
     if($mode == 'export') {
-        $db->startTransaction();    
+        $db->startTransaction();
+        set_time_limit(600);
         $export = new \sync\Xml1cDataExport($db);
         $export->setRefbooksList( request('refbooks', null) );
         $export->setDocTypesList( request('doctypes', null) );
         $export->setPartialTimeshtamp($partial_time);
         $export->setPeriod($start_date, $end_date);
+        $export->setStartCounters( request('startcounters'));
         $data = $export->getData();    
         header("Content-type: application/xml");
+        header("Content-Disposition: attachment; filename=1c.xml");
         echo $data; 
     } else if($mode=='import') {
         $import = new \sync\simplexml1cdataimport($db);
-        
+        set_time_limit(600);
         if( isset($_POST['xmlstring']) ) {
             $xmlstring = $_POST['xmlstring'];
             $import->loadFromString($_POST['xmlstring']);

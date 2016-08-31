@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,14 +24,15 @@ include_once("include/doc.core.php");
 header("Content-type: application/xml");
 
 try {
+    $pref = \pref::getInstance();
     if (!isset($_SERVER['PHP_AUTH_USER'])) {
-        header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
+        header('WWW-Authenticate: Basic realm="' . $pref->site_name . '"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Authentification cancel by user';
         exit();
     } else {
         if (@$_SERVER['PHP_AUTH_USER'] != @$CONFIG['gpb']['callback_login'] || @$_SERVER['PHP_AUTH_PW'] != @$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_pass'] || !@$CONFIG['gpb']['callback_login']) {
-            header('WWW-Authenticate: Basic realm="' . @$CONFIG['site']['name'] . '"');
+            header('WWW-Authenticate: Basic realm="' . $pref->site_name . '"');
             header('HTTP/1.0 401 Unauthorized');
             echo 'Authentification error';
             exit();
@@ -77,7 +78,11 @@ try {
     $doc_bank_id = $db->insert_id;
 
     $sum = round($order_info['sum'] * 100);
-    echo"<payment-avail-response><result><code>1</code><desc>OK, $text</desc></result><merchant-trx>$doc_bank_id</merchant-trx><purchase><shortDesc>Pay for order {$order_info['id']}</shortDesc><longDesc>{$CONFIG['site']['display_name']} ({$CONFIG['site']['name']}). Оплата за заказ {$order_info['id']}</longDesc><account-amount><id>{$CONFIG['gpb']['accounts_id']}</id><amount>$sum</amount><currency>643</currency><exponent>2</exponent></account-amount></purchase></payment-avail-response>";
+    echo"<payment-avail-response><result><code>1</code><desc>OK, $text</desc></result>"
+            . "<merchant-trx>$doc_bank_id</merchant-trx><purchase><shortDesc>Pay for order {$order_info['id']}</shortDesc>"
+            . "<longDesc>{$pref->site_display_name} ({$pref->site_name}). Оплата за заказ {$order_info['id']}</longDesc>"
+            . "<account-amount><id>{$CONFIG['gpb']['accounts_id']}</id><amount>$sum</amount><currency>643</currency><exponent>2</exponent></account-amount></purchase>"
+        . "</payment-avail-response>";
 } catch (Exception $e) {
-    echo"<?xml version=\"1.0\" encoding=\"utf-8\"?><payment-avail-response><result><code>2</code><desc>" . $e->getMessage() . "</desc></result></payment-avail-response>";
+    echo"<?xml version=\"1.0\" encoding=\"utf-8\"?><payment-avail-response><result><code>2</code><desc>" . html_out($e->getMessage()) . "</desc></result></payment-avail-response>";
 }

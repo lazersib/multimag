@@ -1,7 +1,8 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -18,13 +19,35 @@
 //
 
 /// Базовый класс для действий
-class Action {
-	var $db;
-	var $config;
-	
-	/// @brief Конструктор
-	public function __construct($config, $db) {
-		$this->db = $db;
-		$this->config = $config;
-	}
+class action {
+    const MANUAL = 0;
+    const HOURLY = 1;
+    const DAILY = 2;
+    const WEEKLY = 3;
+    const MOUNTHLY = 4;
+
+    protected $db;
+    protected $config;
+    protected $verbose = false;
+    protected $depends = array();   // Зависимости
+
+    protected $interval = self::MANUAL;
+
+    /// @brief Конструктор
+    public function __construct($config, $db) {
+        $this->db = $db;
+        $this->config = $config;
+    }
+    
+    public function setVerbose($flag = true) {
+        $this->verbose = $flag;
+    }
+    
+    public function getDepends() {
+        return $this->depends;
+    }
+    
+    public function getInterval() {
+        return $this->interval;
+    }
 }

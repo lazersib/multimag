@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -79,14 +79,10 @@ abstract class ListEditor {
             }
         }
         if ($id) {
-            if (!isAccess($this->acl_object_name, 'edit')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
             $this->db_link->updateA($this->table_name, $id, $write_data);
         } else {
-            if (!isAccess($this->acl_object_name, 'create')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::CREATE);
             $id = $this->db_link->insertA($this->table_name, $write_data);
         }
         return $id;
@@ -97,18 +93,14 @@ abstract class ListEditor {
         if (!$this->can_delete) {
             throw new Exception("Удаление строк данного справочника недопустимо!");
         }
-        if (!isAccess($this->acl_object_name, 'delete')) {
-            throw new AccessException();
-        }
+        \acl::accessGuard($this->acl_object_name, \acl::DELETE);
         return $this->db_link->delete($this->table_name, $id);
     }
 
     /// @broef Получить HTML код таблицы с элементами справочника
     /// Вызывает (если определено) 'getField'.ucfirst($cn) для каждой ячейки таблицы
-    public function getListItems() {
-        if (!isAccess($this->acl_object_name, 'view')) {
-            throw new AccessException($this->acl_object_name);
-        }
+    public function getListItems($editable = true) {
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
         $ret = "<table class='list'><tr>";
         $col_names = $this->getColumnNames();
         foreach ($col_names as $id => $name) {
@@ -119,13 +111,18 @@ abstract class ListEditor {
                 $ret .= "<th>$name</th>";
             }
         }
-        if ($this->can_delete) {
+        if ($this->can_delete && $editable) {
             $ret.="<th>&nbsp;</th>";
         }
         $ret .= "</tr>";
         $this->loadList();
         foreach ($this->list as $id => $line) {
-            $ret.= "<tr><td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=e&amp;{$this->line_var_name}=$id'>$id</a></td>";
+            
+            if($editable) {
+                $ret.= "<tr><td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=e&amp;{$this->line_var_name}=$id'>$id</a></td>";
+            } else {
+                $ret.= "<tr><td>$id</td>";
+            }
             foreach ($line as $cn => $cv) {
                 if ($cn == 'id') {
                     continue;
@@ -150,14 +147,16 @@ abstract class ListEditor {
                     }
                 }
             }
-            if ($this->can_delete) {
+            if ($this->can_delete && $editable) {
                 $ret.="<td><a href='{$this->link_prefix}&amp;{$this->opt_var_name}=d&amp;{$this->line_var_name}=$id'>"
                     . "<img src='/img/i_del.png' alt='del'></a></td>";
             }
             $ret .= "</tr>";
         }
         $ret .= "</table>";
-        $ret .= "<span>&nbsp;&nbsp;&nbsp;<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'><img src='/img/i_add.png' src='new'>&nbsp;&nbspНовая запись</a></span>";
+        if($editable) {
+            $ret .= "<span>&nbsp;&nbsp;&nbsp;<a href='{$this->link_prefix}&amp;{$this->opt_var_name}=n'><img src='/img/i_add.png' src='new'>&nbsp;&nbspНовая запись</a></span>";
+        }
         return $ret;
     }
 

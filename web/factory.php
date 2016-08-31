@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -62,11 +62,11 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 	if($header)
 	{
 		$pdf->SetFillColor(0);
-		$pdf->SetContentColor(255);
+		$pdf->SetTextColor(255);
 		$str = iconv('UTF-8', 'windows-1251', $header);
 		$pdf->MultiCell(0,4,$str,1,'L',1);
 		$pdf->SetFillColor(255);
-		$pdf->SetContentColor(0);
+		$pdf->SetTextColor(0);
 	}
 
 	while($line=$res->fetch_assoc())
@@ -87,9 +87,8 @@ function PDFSummaryData($pdf, $sklad, $dt_from, $dt_to, $header='', $sql_add='')
 
 try
 {
-        if (!isAccess('doc_factory', 'view')) {
-            throw new AccessException();
-        }
+    \acl::accessGuard('service.factory', \acl::VIEW);    
+
         need_auth($tmpl);
 	$tmpl->hideBlock('left');
 	SafeLoadTemplate($CONFIG['site']['inner_skin']);
@@ -126,7 +125,7 @@ try
 		$editor->line_var_name = 'id';
 		$editor->store_id = rcvint('store_id');
 		$editor->link_prefix = '/factory.php?mode=builders&amp;store_id='.$editor->store_id;
-                $editor->acl_object_name = 'doc_factory_builders';
+                $editor->acl_object_name = 'directory.builder';
 		$editor->run();
 	}
 	else if($mode=='prepare'){
@@ -198,10 +197,10 @@ try
 			if($res->num_rows==0)	$tmpl->msg("Наименование с таким кодом отсутствует в базе",'err');
 			else
 			{
-				if(!isAccess('doc_factory','edit'))	throw new AccessException('');
-				$line=$res->fetch_row();
-				$r=$db->query("REPLACE INTO `factory_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
-				VALUES ($sklad, $builder, '$date', $line[0], $cnt)");
+                            \acl::accessGuard('service.factory', \acl::UPDATE); 
+                            $line=$res->fetch_row();
+                            $r=$db->query("REPLACE INTO `factory_data` (`sklad_id`, `builder_id`, `date`, `pos_id`, `cnt`)
+                            VALUES ($sklad, $builder, '$date', $line[0], $cnt)");
 			}
 		}
 		if(isset($_REQUEST['del_id']))
@@ -512,7 +511,8 @@ try
                 'service_id' => $service_id,
                 'not_a_p' => 0,
                 'storekeeper_id' => $storekeeper_id,
-            );        
+            );     
+            \acl::accessGuard('doc.sborka', \acl::CREATE); 
             $doc_obj = new doc_Sborka();
             $doc_id = $doc_obj->create($doc_data);
             $doc_obj->setDopDataA($dop_data); 

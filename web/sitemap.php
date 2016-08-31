@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -29,10 +29,10 @@ if ($mode == 'xml') {
     $map = new SiteMap('xml');
     $tmpl->setContent($map->getMap());
 } elseif ($mode == 'robots') {
+    $pref = \pref::getInstance();
     $tmpl->ajax=1;
     header("Content-Type: text/plain");
     echo"User-Agent: *
-Disallow: /adv_search
 Disallow: /img
 Disallow: /kcaptcha
 Disallow: /login
@@ -46,7 +46,7 @@ Disallow: *html?order=
 Disallow: *html?op=
 Disallow: *html?view=
 
-Host: ".$CONFIG['site']['name'];
+Host: ".$pref->site_name;
     exit();
 } elseif ($mode == 'favicon') {
     $skin = $CONFIG['site']['skin'] ? $CONFIG['site']['skin'] : 'default';

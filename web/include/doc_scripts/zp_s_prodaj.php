@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -199,7 +199,7 @@ class ds_zp_s_prodaj {
                                     $nach_sum += ($nxt_tov['cost'] - $incost) * $this->coeff * $nxt_tov['cnt'];
                                 }
                             }
-                            $nach_sum -= $nxt['ag_sum'];
+                            $nach_sum -= ($nxt['ag_sum']*$this->coeff);
                             $nach_sum = sprintf("%0.2f", $nach_sum);
                             // Проверка факта оплаты
                             $add = '';

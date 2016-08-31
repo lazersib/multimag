@@ -1,7 +1,8 @@
 <?php
+
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -16,21 +17,23 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 namespace Models\LDO;
 
 /// Класс списка наименований сотрудников
 class workernames extends \Models\ListDataObject {
-	
-	/// @brief Получить данные
-	public function getData() {
-		global $db;
-		$sql = "SELECT `user_id`, `worker_real_name` FROM `users_worker_info` ORDER by `user_id` ASC";
-		$result = '';
-		$a = array();
-		$res = $db->query($sql);
-		while ($line = $res->fetch_assoc()) {
-			$a[$line['user_id']] = $line['worker_real_name'];
-		}
-		return $a;
-	}
+
+    /// @brief Получить данные
+    public function getData() {
+        global $db;
+        $sql = "SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER by `user_id` ASC";
+        $result = '';
+        $a = array();
+        $res = $db->query($sql);
+        while ($line = $res->fetch_assoc()) {
+            $a[$line['user_id']] = $line['worker_real_name'];
+        }
+        return $a;
+    }
+
 }

@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -19,11 +19,14 @@
 
 /// Базовый класс для модулей
 abstract class IModule {
-    protected $acl_object_name;     //< Имя объекта контроля привилегий
-    var $link_prefix;		//< Префикс для ссылок
 
-    public function __construct(){}
-    
+    protected $acl_object_name;     //< Имя объекта контроля привилегий
+    var $link_prefix;  //< Префикс для ссылок
+
+    public function __construct() {
+        
+    }
+
     /// Получить название модуля
     /// @return Строка с именем
     abstract public function getName();
@@ -31,15 +34,21 @@ abstract class IModule {
     /// Получить описание модуля
     /// @return Строка с описанием
     abstract public function getDescription();
-    
+
     /// Запустить модуль на исполнение
     abstract function run();
     
-    /// Узнать, есть ли необходимые привилегии
-    /// @param $view    Строка с наименованием привилегии. По умолчанию - view (просмотр)
-    final function isAllow($mode='view') {
-            if(!$this->acl_object_name)
-                return true;
-            return isAccess($this->acl_object_name, $mode);
+    final public function getAclObjectname() {
+        return $this->acl_object_name;
     }
+
+    /// Узнать, есть ли необходимые привилегии
+    /// @param $flags    Флаги доступа. По умолчанию - view (просмотр)
+    final function isAllow($flags = \acl::VIEW) {
+        if (!$this->acl_object_name) {
+            return true;
+        }
+        return \acl::testAccess($this->acl_object_name, $flags);
+    }
+
 }

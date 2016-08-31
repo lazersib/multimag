@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -21,19 +21,20 @@
 class Report_sk_coeff extends BaseGSReport {
 
     function getName($short = 0) {
-        if ($short)
+        if ($short) {
             return "По коэффициентам кладовщиков";
-        else
+        } else {
             return "Отчет по коэффициентам сложности работы кладовщиков";
+        }
     }
 
     function Form() {
-        global $tmpl, $db;
+        global $tmpl;
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='sk_coeff'>
-		<input type='hidden' name='opt' value='pdf'>
-		Группа товаров:<br>");
+            <form action='' method='post'>
+            <input type='hidden' name='mode' value='sk_coeff'>
+            <input type='hidden' name='opt' value='pdf'>
+            Группа товаров:<br>");
         $this->GroupSelBlock();
         $tmpl->addContent("<button type='submit'>Создать отчет</button></form>");
     }
@@ -52,12 +53,9 @@ class Report_sk_coeff extends BaseGSReport {
     }
 
     function MakePDF() {
-        global $tmpl, $CONFIG, $db;
+        global $CONFIG, $db;
         ob_start();
-        define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
         require('fpdf/fpdf_mc.php');
-
-        $pc = PriceCalc::getInstance();
 
         $pdf = new PDF_MC_Table('P');
         $pdf->Open();
@@ -124,12 +122,13 @@ class Report_sk_coeff extends BaseGSReport {
         $all_size = array_sum($col_sizes);
         $psc_id = $this->getPcsId();
 
-        $sum = $bsum = $summass = 0;
         $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
         while ($group_line = $res_group->fetch_assoc()) {
-            if ($gs && is_array($g))
-                if (!in_array($group_line['id'], $g))
+            if ($gs && is_array($g)) {
+                if (!in_array($group_line['id'], $g)) {
                     continue;
+                }
+            }
             $pdf->SetFillColor(192);
             $str = iconv('UTF-8', 'windows-1251', "{$group_line['id']}. {$group_line['name']}");
             $pdf->Cell($all_size, 5, $str, 1, 1, 'L', 1);
@@ -157,10 +156,11 @@ class Report_sk_coeff extends BaseGSReport {
     }
 
     function Run($opt) {
-        if ($opt == '')
+        if ($opt == '') {
             $this->Form();
-        else
+        } else {
             $this->MakePDF();
+        }
     }
 
 }

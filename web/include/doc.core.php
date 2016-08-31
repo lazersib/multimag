@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-
+global $CONFIG;
 include_once($CONFIG['site']['location']."/include/doc.nulltype.php");
 
 /// Автозагрузка классов документов
@@ -336,33 +336,45 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
 
 	<img src='/img/i_separator.png' alt=''>
 
-	<a href='/docj_new.php' title='Журнал документов' accesskey=\"D\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
+	<a href='/docj_new.php' title='Журнал документов' accesskey=\"L\"><img src='/img/i_journal.png' alt='Журнал документов' border='0'></a>
 	<a href='/incomp_orders.php' title='Документы в работе' accesskey=\"D\"><img src='/img/i_incomp_orders.png' alt='Документы в работе' border='0'></a>
 	<a href='/docs.php?l=agent' title='Журнал агентов' accesskey=\"A\"><img src='/img/i_user.png' alt='Журнал агентов' border='0'></a>
 	<a href='/docs.php?l=dov' title='Работа с доверенными лицами'><img src='/img/i_users.png' alt='лица' border='0'></a>
 	<a href='/docs.php?l=sklad' title='Склад' accesskey=\"S\"><img src='/img/i_sklad.png' alt='Склад' border='0'></a>
-	<a href='/factory.php' title='Производство' accesskey=\"S\"><img src='/img/i_factory.png' alt='Производство' border='0'></a>
+	<a href='/factory.php' title='Производство' accesskey=\"F\"><img src='/img/i_factory.png' alt='Производство' border='0'></a>
 	<a href='/docs.php?l=pran' onclick=\"return ShowContextMenu(event, '/priceload.php?mode=menu')\" title='Анализ прайсов' accesskey=\"S\"><img src='/img/i_analiz.png' alt='Анализ прайсов' border='0'></a>
 	<img src='img/i_separator.png' alt=''>
 
-	<a href='/doc.php' title='Новый документ' accesskey=\"N\"><img src='/img/i_new.png' alt='Новый' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=1' title='Поступление товара на склад'><img src='/img/i_new_post.png' alt='Поступление товара на склад' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=2' title='Реализация товара' accesskey=\"R\"><img src='/img/i_new_real.png' alt='Реализация товара' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=3' title='Заявка покупателя' accesskey=\"Z\"><img src='/img/i_new_schet.png' alt='Заявка покупателя' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=4' title='Поступление средств в банк'><img src='/img/i_new_pbank.png' alt='Поступление средств в банк' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=5' title='Вывод средств из банка'><img src='/img/i_new_rbank.png' alt='Вывод средств из банка' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=6' title='Приходный кассовый ордер'><img src='/img/i_new_pko.png' alt='Приходный кассовый ордер' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=7' title='Расходный кассовый ордер'><img src='/img/i_new_rko.png' alt='Расходный кассовый ордер' border='0'></a>
-	<a href='/doc.php?mode=new&amp;type=12' title='Товар в пути'><img src='/img/i_new_tp.png' alt='Товар в пути' border='0'></a>
-	<img src='/img/i_separator.png' alt=''>
+	<a href='/doc.php' title='Новый документ' accesskey=\"N\"><img src='/img/i_new.png' alt='Новый' border='0'></a>");
+        
+        $need_docs = array(1,2,3,4,5,6,7,12);
+        $doc_types = \document::getListTypes();
+                
+        foreach($need_docs as $id) {
+            if (!\acl::testAccess('doc.'.$doc_types[$id], \acl::CREATE)) {
+                continue;
+            }
+            $doc = \document::getInstanceFromType($id);
+            $viewname = $doc->getViewName();
+            $typename = $doc_types[$id];
+            $tmpl->addTop("<a href='/doc.php?mode=new&amp;type=$id' title='{$viewname}'><img src='/img/doc/$typename.png' alt='{$viewname}' border='0'></a> ");
+        }
 
-	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a>
-	<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a>
-	<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a>");
-	if ($dop)
-		$tmpl->addTop("<img src='/img/i_separator.png' alt=''> $dop");
+	$tmpl->addTop("<img src='/img/i_separator.png' alt=''>
+	<a href='' onclick=\"return ShowContextMenu(event, '/doc_reports.php?mode=pmenu')\"  title='Отчеты'><img src='img/i_report.png' alt='Отчеты' border='0'></a> ");
+        
+        if (\acl::testAccess('service.docservice', \acl::VIEW)) {
+            $tmpl->addTop("<a href='/doc_service.php' title='Служебные функции'><img src='/img/i_config.png' alt='Служебные функции' border='0'></a> ");
+        }
+        if (\acl::testAccess('service.scripts', \acl::VIEW)) {
+            $tmpl->addTop("<a href='/doc_sc.php' title='Сценарии и операции'><img src='/img/i_launch.png' alt='Сценарии и операции' border='0'></a> ");
+        }
+        
+	if ($dop) {
+            $tmpl->addTop("<img src='/img/i_separator.png' alt=''> $dop");
+        }
 
-	$tmpl->addTop("</div></div>");
+    $tmpl->addTop("</div></div>");
 
 	if ($nd && @$CONFIG['doc']['mincount_info']) {
             $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name`
@@ -500,60 +512,77 @@ function getInCost($pos_id, $limit_date = 0, $serv_mode = 0) {
 /// @param sklad_id		ID склада, для которого производится расчёт
 /// @param unixtime		Дата, на которую производится расчёт в формате unixtime. Если не задан - расчитывается остаток на дату последнего документа.
 /// @param noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
-function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0)
-{
+/// @param $extinfo             Вернуть расширенные данные о документе прерывания с отрицательными остатками
+function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0, $extinfo=false) {
     global $db;
     settype($pos_id, 'int');
     settype($sklad_id, 'int');
     settype($unixtime, 'int');
-    $cnt = 0;
+    $cnt = $doc = 0;
     $sql_add = ($unixtime !== null) ? "AND `doc_list`.`date`<=$unixtime" : '';
     $res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list`.`id`, `doc_list_pos`.`page` FROM `doc_list_pos`
 	LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
 	WHERE  `doc_list`.`ok`>'0' AND `doc_list_pos`.`tovar`=$pos_id AND "
-            . " (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17 OR `doc_list`.`type`=25) $sql_add
+            . " (`doc_list`.`type`=1 OR `doc_list`.`type`=2 OR `doc_list`.`type`=8 OR `doc_list`.`type`=17 OR `doc_list`.`type`=20 OR `doc_list`.`type`=25) $sql_add
 	ORDER BY `doc_list`.`date`");
     while ($nxt = $res->fetch_row()) {
-        if ($nxt[1] == 1) {
-            if ($nxt[2] == $sklad_id)
-                $cnt+=$nxt[0];
-        }
-        else if ($nxt[1] == 2 || $nxt[1] == 20) {
-            if ($nxt[2] == $sklad_id)
-                $cnt-=$nxt[0];
-        }
-        else if ($nxt[1] == 8) {
-            if ($nxt[2] == $sklad_id)
-                $cnt-=$nxt[0];
-            else {
-                $r = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
-                if (!$r->num_rows)
-                    throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
-                list($nasklad) = $r->fetch_row();
-                if (!$nasklad)
-                    throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
-                if ($nasklad == $sklad_id)
+        switch($nxt[1]) {
+            case 1:
+                if ($nxt[2] == $sklad_id) {
                     $cnt+=$nxt[0];
-                $r->free();
-            }
-        }
-        else if ($nxt[1] == 17) {
-            if ($nxt[2] == $sklad_id) {
-                if ($nxt[4] == 0)
-                    $cnt+=$nxt[0];
-                else
+                }
+                break;
+            case 2:
+            case 20:
+                if ($nxt[2] == $sklad_id) {
                     $cnt-=$nxt[0];
-            }
-        } elseif($nxt[1]==25) {
-            if ($nxt[2] == $sklad_id)
-                $cnt+=$nxt[0];
+                }
+                break;
+            case 8:
+                if ($nxt[2] == $sklad_id) {
+                    $cnt-=$nxt[0];
+                } else {
+                    $r = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
+                    if (!$r->num_rows) {
+                        throw new Exception("Cклад назначения в перемещении $nxt[3] не задан");
+                    }
+                    list($nasklad) = $r->fetch_row();
+                    if (!$nasklad) {
+                        throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+                    }
+                    if ($nasklad == $sklad_id) {
+                        $cnt+=$nxt[0];
+                    }
+                    $r->free();
+                }
+                break;
+            case 17:
+                if ($nxt[2] == $sklad_id) {
+                    if ($nxt[4] == 0) {
+                        $cnt+=$nxt[0];
+                    } else {
+                        $cnt-=$nxt[0];
+                    }
+                }
+                break;
+            case 25:
+                if ($nxt[2] == $sklad_id) {
+                    $cnt+=$nxt[0];
+                }
+                break;
         }
         $cnt = round($cnt, 3);
-        if ($cnt < 0 && $noBreakIfMinus == 0)
+        if ($cnt < 0 && $noBreakIfMinus == 0) {
+            $doc = $nxt[3];
             break;
+        }
     }
     $res->free();
-    return $cnt;
+    if($extinfo) {
+        return array('cnt' => $cnt, 'doc' => $doc);
+    } else {
+        return $cnt;
+    }
 }
 
 /// Для внутреннего использования

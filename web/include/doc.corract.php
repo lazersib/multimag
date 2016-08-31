@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -95,11 +95,11 @@ class doc_CorrAct extends doc_Nulltype {
                 $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '{$doc_params['sklad']}', '$nxt[1]')");
             }
             if (!$doc_params['dnc'] && (!$silent)) {
-                $budet = getStoreCntOnDate($nxt[0], $doc_params['sklad'], $doc_params['date']);
-                if ($budet < 0) {
+                $ret = getStoreCntOnDate($nxt[0], $doc_params['sklad'], $doc_params['date'], false, true);                
+                if ($ret['cnt'] < 0) {
                     $pos_name = composePosNameStr($nxt[0], $nxt[7], $nxt[3], $nxt[4]);
-                    $t = $budet + $nxt[1];
-                    $fail_text .= " - Будет мало товара '$pos_name' - есть:$t, нужно:{$nxt[1]}. \n";
+                    $t = $ret['cnt'] + $nxt[1];
+                    $fail_text .= " - Будет ({$ret['cnt']}) мало товара '$pos_name', документ {$ret['doc']} \n";
                     continue;
                 }
             }

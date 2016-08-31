@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -44,7 +44,7 @@ class doc_s_Inform extends doc_s_Nulltype {
                 continue;
             }
             $orders[$line['p_doc']]['cnt'] -= $line['cnt'];
-            if($orders[$line['p_doc']]['cnt']==0) {
+            if($orders[$line['p_doc']]['cnt']<=0) {
                 unset($orders[$line['p_doc']]);
             }
         }
@@ -73,7 +73,7 @@ class doc_s_Inform extends doc_s_Nulltype {
                 continue;
             }
             $orders[$line['p_doc']]['cnt'] -= $line['cnt'];
-            if($orders[$line['p_doc']]['cnt']==0) {
+            if($orders[$line['p_doc']]['cnt']<=0) {
                 unset($orders[$line['p_doc']]);
             }
         }
@@ -160,9 +160,10 @@ class doc_s_Inform extends doc_s_Nulltype {
         else if ($opt == 'ost') {
             $tmpl->ajax = 1;
             $pos = rcvint('pos');
-            $res = $db->query("SELECT `doc_sklady`.`name`, `doc_base_cnt`.`cnt` FROM `doc_base_cnt`
-                LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
-                WHERE `doc_base_cnt`.`id`='$pos'");
+            $res = $db->query("SELECT `doc_sklady`.`name`, `doc_base_cnt`.`cnt` 
+                FROM `doc_base_cnt`
+                INNER JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_base_cnt`.`sklad`
+                WHERE `doc_base_cnt`.`id`='$pos' AND `doc_sklady`.`hidden`=0");
             $tmpl->addContent("<table width='100%' class='list'><tr><th>Склад<th>Кол-во</tr>");
             while ($nxt = $res->fetch_row())
                 $tmpl->addContent('<tr><td>' . html_out($nxt[0]) . '</td><td>' . html_out($nxt[1]) . '</td></tr>');

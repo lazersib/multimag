@@ -2,7 +2,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -48,7 +48,7 @@ if($CONFIG['route']['ulog']['enable'])	`/sbin/modprobe ipt_ULOG nlbufsiz=800000`
 `$ipt -F`;		// RESET ALL iptables RULES
 `$ipt -X`;
 `$ipt -t nat -F`;	// RESET nat RULES
-`$ipt -P INPUT DROP`;
+`$ipt -P INPUT ACCEPT`;
 `$ipt -P OUTPUT ACCEPT`;
 `$ipt -P FORWARD DROP`;
 
@@ -76,12 +76,6 @@ if(@$CONFIG['route']['ulog']['ext_enable'])
 foreach($CONFIG['route']['allow_ext_tcp_ports'] as $port)
 	`$ipt -A tcp_packets -p TCP -s 0/0 --dport $port -j allowed`;
 
-// local TCP rules
-//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 135:139 -j allowed`;	// SAMBA-local
-//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 445 -j allowed`;		// SAMBA-local
-//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 631 -j allowed`;		// CUPS
-//`$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} --dport 8123 -j allowed`;		// lock-site-local
-
 `$ipt -A tcp_packets -p TCP -s {$CONFIG['route']['lan_range']} -j allowed`;		// Пока изнутри всё разрешено
 
 // UDP ports
@@ -90,8 +84,6 @@ foreach($CONFIG['route']['allow_ext_udp_ports'] as $port)
 	`$ipt -A udp_packets -p UDP -s 0/0 --destination-port $port -j ACCEPT`;
 
 // local UDP rules
-`$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} --dport 135:139 -j ACCEPT`;
-`$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} --dport 445 -j ACCEPT`;
 `$ipt -A udp_packets -p UDP -s {$CONFIG['route']['lan_range']} -j ACCEPT`;
 
 // ICMP rules

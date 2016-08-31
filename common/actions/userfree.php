@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,30 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-namespace Actions;
+namespace actions;
 
 /// Очистка от неподтверждённых пользователей
 class UserFree extends \Action {
+    
+     /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
+    }
+
+    /// Получить название действия
+    public function getName() {
+        return "Очистка от неподтверждённых пользователей";
+    }    
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'user_del_days')>0?true:false;
+    }   
 
     /// @brief Запустить
     public function run() {
-        $dtim = time() - 60 * 60 * 24 * $this->config['auto']['user_del_days'];
+        $dtim = time() - 60 * 60 * 24 * \cfg::get('auto', 'user_del_days');
         $dtim_p = date('Y-m-d H:i:s', $dtim);
         $res = $this->db->query("SELECT `users`.`id` FROM `users`
             LEFT JOIN `users_openid` ON `users_openid`.`user_id`=`users`.`id`

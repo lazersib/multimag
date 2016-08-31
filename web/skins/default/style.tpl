@@ -11,14 +11,6 @@
 	<script src='/css/comm.js'></script>
 	<script src='/css/core.js'></script>
 	<script src="/css/jquery/jquery.js"></script>
-	<!--<script src="/css/jquery/jquery.prettyPhoto.js"></script>
-	<link rel="stylesheet" href="/css/jquery/prettyPhoto.css">-->
-	<link rel='stylesheet' href='/css/calendar.css'>
-	<script src='/css/00000000.js'></script>
-	<script src='/css/core0000.js'></script>
-	<script src='/css/calendar.js'></script>
-	<script src='/css/DateTime.js'></script>
-
 	<link rel='stylesheet' href='/skins/default/basic.css'>
 	<link rel='stylesheet' href='/skins/default/layout.css'>
 	<link rel='stylesheet' href='/skins/default/user.css'>

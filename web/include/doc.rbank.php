@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -94,6 +94,10 @@ class doc_RBank extends doc_Nulltype {
         if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
         }
+        if ($doc_params['sum']<=0) {
+            throw new Exception('Нельзя провести документ с нулевой или отрицательной суммой!');
+        }
+        $this->checkIfTypeForDocumentExists();
         
         // Запрет для другой фирмы
         // Проверка временно отключена

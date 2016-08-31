@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -274,7 +274,9 @@ abstract class oauthplugin {
                 $user_profile[$vv] = $this->oauth_profile[$vv];
             }
         }
-        $db->replaceKA('users_data', 'uid', $user_id, $user_profile);
+        if(count($user_profile)) {
+            $db->replaceKA('users_data', 'uid', $user_id, $user_profile);
+        }
     }
 
 

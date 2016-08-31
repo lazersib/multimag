@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -23,16 +23,32 @@ namespace actions;
 require_once($CONFIG['location'] . '/common/email_message.php');
 require_once($CONFIG['location'] . '/web/include/doc.core.php');
 
-/// Информирование о неверных ценах наименований при помощи email
+/// Информирование о потенциально неверных ценах наименований при помощи email
 class BadPriceNotify extends \Action {
+    
+    /// Конструктор
+    public function __construct($config, $db) {
+        parent::__construct($config, $db);
+        $this->interval = self::HOURLY;
+    }
 
+    /// Получить название действия
+    public function getName() {
+        return "Информирование о потенциально неверных ценах наименований";
+    }    
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    public function isEnabled() {
+        return \cfg::get('auto', 'badpricenotify') && 
+        (
+            \cfg::get('badpricenotify', 'threshold_low') ||
+            \cfg::get('badpricenotify', 'threshold_high')
+            );
+    }
     /// @brief Запустить
     public function run() {
-        if(!@$this->config['badpricenotify']['threshold_low'] && !@$this->config['badpricenotify']['threshold_high']) {
-            return;
-        }
-        $t_l = @$this->config['badpricenotify']['threshold_low'];
-        $t_h = @$this->config['badpricenotify']['threshold_high'];
+        $t_l = \cfg::get('badpricenotify', 'threshold_low');
+        $t_h = \cfg::get('badpricenotify', 'threshold_high');
         
         $notify = 0;
         $docadm_notify = array();
@@ -70,17 +86,23 @@ class BadPriceNotify extends \Action {
                 }
             }
         }
-                
+        
+        $default_firm_id = \cfg::get('site', 'default_firm');
+        $site_name = \cfg::get('site', 'name');
+        $site_display_name = \cfg::get('site', 'display_name');
+        $doc_adm_email = \cfg::get('site', 'doc_adm_email');
+        
         // Получить название фирмы, от которой выполняется рассылка
-        $res = $this->db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$this->config['site']['default_firm']}'");
+        $res = $this->db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$default_firm_id}'");
         list($firm_name) = $res->fetch_row();
         
         if(count($docadm_notify)>0) {
             $header = "Здравствуйте, Администратор документов!\n";        
-            $header .= "Как сотрудника интернет-магазина http://{$this->config['site']['name']} и компании $firm_name, информирую о следующем:\n\n";
+            $header .= "Как сотрудника интернет-магазина http://{$site_name} и компании $firm_name, информирую о следующем:\n\n";
 
-            $footer = "Вы получили это письмо потому что Ваш email установлен как адрес администратора документов в настройках сайта {$this->config['site']['display_name']} ( http://{$this->config['site']['name']})\nИзмените адрес в настройках, если не хотите получать подобные уведомления.";
-            $this->sendMessage($docadm_notify, $header, $footer, $this->config['site']['doc_adm_email']);
+            $footer = "Вы получили это письмо потому что Ваш email установлен как адрес администратора документов в настройках сайта {$site_display_name} "
+            . "( http://{$site_name})\nИзмените адрес в настройках, если не хотите получать подобные уведомления.";
+            $this->sendMessage($docadm_notify, $header, $footer, $doc_adm_email);
         
                 
             // Оповещаем только подписанных агентов с нефиксированной ценой, у которых были специальные цены в предыдущем периоде
@@ -90,9 +112,12 @@ class BadPriceNotify extends \Action {
                     continue;
                 }
                 $header = "Здравствуйте, {$worker_info['worker_real_name']}!\n";        
-                $header .= "Как последнего, кто изменял перечисленные ниже наименования в интернет-магазине http://{$this->config['site']['name']}, информирую о следующем:\n\n";
+                $header .= "Как последнего, кто изменял перечисленные ниже наименования в интернет-магазине http://{$site_name}, "
+                    . "информирую о следующем:\n\n";
 
-                $footer = "Вы получили это письмо потому что являетесь сотрудником компании $firm_name, обслуживающей интернет-магазин {$this->config['site']['display_name']} ( http://{$this->config['site']['name']})\nЧтобы перестать получать уведомления, Вам нужно исправить цены, либо перестать быть сотрудником компании $firm_name.";
+                $footer = "Вы получили это письмо потому что являетесь сотрудником компании $firm_name, обслуживающей интернет-магазин "
+                    . "{$site_display_name} ( http://{$site_name})\nЧтобы перестать получать уведомления, "
+                    . "Вам нужно исправить цены, либо перестать быть сотрудником компании $firm_name.";
                 $this->sendMessage($users_notify[$worker_info['user_id']], $header, $footer, $worker_info['worker_email']);
             }
         }
@@ -100,6 +125,9 @@ class BadPriceNotify extends \Action {
     }
     
     function sendMessage($pos_data, $header, $footer, $email) {
+        $site_name = \cfg::get('site', 'name');
+        $site_display_name = \cfg::get('site', 'display_name');
+        $admin_email = \cfg::get('site', 'admin_email');
         
         $mail_text = $header;
         $mail_text .= "У следующих складских наименований, базовая цена выходит за допустимые пределы:\n\n";
@@ -117,20 +145,22 @@ class BadPriceNotify extends \Action {
         }
         
         $mail_text .= "\n\n\n".$footer;
-        
+        if($this->verbose) {
+            echo $mail_text;
+        }
         $email_message = new \email_message_class();
         $email_message->default_charset = "UTF-8";
         $email_message->SetEncodedEmailHeader("To", $email, $email);
-        $email_message->SetEncodedHeader("Subject", 'Уведомление о проблемах с ценами - ' . $this->config['site']['name']);
-        $email_message->SetEncodedEmailHeader("From", $this->config['site']['admin_email'], $this->config['site']['display_name']);
-        $email_message->SetHeader("Sender", $this->config['site']['admin_email']);
+        $email_message->SetEncodedHeader("Subject", 'Уведомление о проблемах с ценами - ' . $site_name);
+        $email_message->SetEncodedEmailHeader("From", $admin_email, $site_display_name);
+        $email_message->SetHeader("Sender", $admin_email);
         $email_message->SetHeader("X-Multimag-version", MULTIMAG_VERSION);
 
         $email_message->AddQuotedPrintableTextPart($mail_text);
-        $error = '';//$email_message->Send();
+        $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            throw new Exception($error);
+            throw new \Exception('Не удалось отправить сообщение на адрес '.$email.': '.$error);
         }
     }
 

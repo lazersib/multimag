@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -76,43 +76,49 @@ class Basket {
 	}
 	
 	/// Сохранить содержимое корзины в доступные хранилища
-	public function save() {
-		global $db;
-		
-		// Хранилище в переменных сессии для не аутентифицированных
-		if(!isset($_SESSION['basket']))
-			$_SESSION['basket'] = array();
-		$_SESSION['basket']['list'] = $this->list;
-		
-		// Хранилище в cookie, на год. Комментарии не храним.
-		$cookie_str = '';
-		$first = 1;
-		foreach ($this->list as $item) {
-			//if(!$item['pos_id'])
-			//	continue;
-			if(!$first)
-				$cookie_str .= ',';
-			else	$first = 0;
-			$cookie_str .= $item['pos_id'].':'.$item['cnt'];
-		}
-		setcookie('basket', $cookie_str, time()+60*60*24*365);
-		
-		// Хранилище в базе на сервере для зарегистрированных пользователей
-		if(isset($_SESSION['uid']))	
-			if($_SESSION['uid']>0) {
-				$db->startTransaction();
-				$db->query("DELETE FROM `users_basket` WHERE `user_id`=".intval($_SESSION['uid']));
-				foreach($this->list as $item) {
-					if(!$item['pos_id'])
-						continue;
-					$item['user_id'] = $_SESSION['uid'];
-					$db->insertA('users_basket', $item);
-				}
-				$db->commit();
-			}
-	}
-	
-	/// Получить список товаров в корзине
+    public function save() {
+        global $db;
+
+        // Хранилище в переменных сессии для не аутентифицированных
+        if (!isset($_SESSION['basket']))
+            $_SESSION['basket'] = array();
+        $_SESSION['basket']['list'] = $this->list;
+
+        // Хранилище в cookie, на год. Комментарии не храним.
+        $cookie_str = '';
+        $first = 1;
+        foreach ($this->list as $item) {
+            //if(!$item['pos_id'])
+            //	continue;
+            if (!$first)
+                $cookie_str .= ',';
+            else
+                $first = 0;
+            $cookie_str .= $item['pos_id'] . ':' . $item['cnt'];
+        }
+        setcookie('basket', $cookie_str, time() + 60 * 60 * 24 * 365);
+
+        // Хранилище в базе на сервере для зарегистрированных пользователей
+        if (isset($_SESSION['uid'])) {
+            if ($_SESSION['uid'] > 0) {
+                $db->startTransaction();
+                $db->query("DELETE FROM `users_basket` WHERE `user_id`=" . intval($_SESSION['uid']));
+                foreach ($this->list as $item) {
+                    if (!$item['pos_id']) {
+                        continue;
+                    }
+                    $item['user_id'] = $_SESSION['uid'];
+                    if($item['comment']===null) {
+                        $item['comment'] = '';
+                    }
+                    $db->insertA('users_basket', $item);
+                }
+                $db->commit();
+            }
+        }
+    }
+
+        /// Получить список товаров в корзине
 	/// @return Массив, индексы которого - pos_id, а элемены - ассоциативные массивы с ключами pos_id, cnt, comment
 	public function getItems() {
 		return $this->list;

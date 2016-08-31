@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -65,9 +65,15 @@ try
     $tmpl->errorMessage('Не достаточно привилегий: ' . $e->getMessage(), "Нет доступа");
 }
 catch(mysqli_sql_exception $e) {
-    $tmpl->ajax = 0;
-    $id = writeLogException($e);
-    $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение передано администратору", "Ошибка в базе данных");
+    $tmpl->ajax = 0;    
+    switch($e->getCode()) {
+        case 1062:
+            $tmpl->errorMessage("Неверно заполнены поля: не соблюдена уникальность!<br>".$e->getMessage(), "Ошибка в базе данных");
+            break;
+        default:
+            $id = writeLogException($e);
+            $tmpl->errorMessage("Порядковый номер ошибки: $id<br>Сообщение об ошибке занесено в журнал", "Ошибка в базе данных");
+    }    
 }
 catch (Exception $e) {
     $db->rollback();

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -54,10 +54,10 @@ for($i=0;$i<250;$i++)
 imagepng($im);*/
 
 
-global $config;
-$config['captcha_gd_foreground_noise']=0;
-$config['captcha_gd_y_grid']=20;
-$config['captcha_gd_x_grid']=20;
+global $CONFIG;
+$CONFIG['captcha_gd_foreground_noise']=0;
+$CONFIG['captcha_gd_y_grid']=20;
+$CONFIG['captcha_gd_x_grid']=20;
 include('include/captcha_gd.php');
 $captcha = new captcha();
 $captcha->execute($str, rand());

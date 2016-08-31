@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -51,6 +51,12 @@ class DTypesListEditor extends \ListEditor {
     public function saveItem($id, $data) {
         if($data['codename']=='') {
             $data['codename'] = null;
+        }
+        if($data['adm']==null) {
+            $data['adm'] = 0;
+        }
+        if($data['r_flag']==null) {
+            $data['r_flag'] = 0;
         }
         return parent::saveItem($id, $data);
     }

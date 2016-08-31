@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -27,6 +27,7 @@ class search extends \IModule {
     public function __construct() {
         parent::__construct();
         $this->link_prefix = '/search.php';
+        $this->acl_object_name = 'generic.search';
     }
 
     // Получить название модуля
@@ -49,14 +50,14 @@ class search extends \IModule {
     }
 
     /// Задать строку поиска
-    /// @param search_str Искомая строка
+    /// @param $search_str Искомая строка
     public function setSearchString($search_str) {
         parent::__construct();
         $this->search_str = $search_str;
     }
     
     /// Отобразить страницу поиска
-    /// @param mode: вид страницы поиска
+    /// @param $mode вид страницы поиска
     public function ExecMode($mode = '') {
         global $tmpl, $CONFIG, $db;
         $tmpl->addBreadcrumb('Главная', '/');
@@ -129,6 +130,7 @@ class search extends \IModule {
             if ($groups_analog_list) {
                 $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) $sql_add"
                     . " AND `doc_base`.`name` != '$s_sql' AND `doc_base`.`vc` = !'$s_sql'"
+                    . " AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'"
                     . " ORDER BY `doc_base`.`name`"
                     . " LIMIT $cnt_limit";
                 $res = $db->query($sqla);
@@ -206,6 +208,7 @@ class search extends \IModule {
         }
 
         $sqla = $sql . "WHERE (`doc_base`.`name` LIKE '%$s_sql%' OR `doc_base`.`vc` LIKE '%$s_sql%') $sql_add"
+            . " AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'"
             . " AND `doc_base`.`name` NOT LIKE '$s_sql%' AND `doc_base`.`vc` NOT LIKE '$s_sql%'"
             . " AND `doc_base`.`id` NOT IN ($found_ids) "
             . " ORDER BY `doc_base`.`name`"
@@ -244,8 +247,8 @@ class search extends \IModule {
     /// @param $params Поисковые параметры
     function searchGoodsParametric($params) {
         global $CONFIG, $db;        
-
-        settype($cnt_limit, 'int');
+        $cnt_limit = 100;
+        //settype($cnt_limit, 'int');
         
         $this->nfr_flag = false;
         $tbody = '';
@@ -266,7 +269,7 @@ class search extends \IModule {
                     $add_where_sql .= " AND `doc_base`.`proizv` LIKE '%$sql_val%'";
                     break;
                 case 'type':
-                    $add_where_sql .= " AND `doc_base`.`type` = '$sql_val'";
+                    $add_where_sql .= " AND `doc_base_dop`.`type` = '$sql_val'";
                     break;
                 case 'd_int_min':
                     $add_where_sql .= " AND `doc_base_dop`.`d_int` >= '$sql_val'";
@@ -309,6 +312,7 @@ class search extends \IModule {
             $tbody = $this->searchGoods($search_str, 1000, $add_where_sql);
         } else {
             $sqla = $sql . "WHERE 1 ".$add_where_sql
+                . " AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'"
                 . " ORDER BY `doc_base`.`name`"
                 . " LIMIT $cnt_limit";
             $res = $db->query($sqla);
@@ -353,9 +357,11 @@ class search extends \IModule {
         }
         $basket_img = "/skins/" . $CONFIG['site']['skin'] . "/basket16.png";
         $pc = \PriceCalc::getInstance();
+        $pref = \pref::getInstance();
+        $pc->setFirmId($pref->getSitePref('default_firm_id'));
         $ret = '';
 
-        if ($CONFIG['site']['recode_enable']) {
+        if ($CONFIG['site']['rewrite_enable']) {
             $link = "/vitrina/ip/{$line['id']}.html";
         } else {
             $link = "/vitrina.php?mode=product&amp;p={$line['id']}";
@@ -392,7 +398,7 @@ class search extends \IModule {
     }
 
     /// Поиск по статьям
-    /// @param s Подстрока поиска
+    /// @param $s Подстрока поиска
     function searchArticles($s) {
         global $db;
         $ret = '';
@@ -443,7 +449,7 @@ class search extends \IModule {
         $ret = "<div class='searchblock'><form action='{$this->link_prefix}' method='get'>
             <input type='search' name='s' placeholder='Искать..' value='" . html_out($this->search_str) . "' class='sp' require> 
             <input type='submit' value='Найти'><br>
-            <a href='{$this->link_prefix}?mode=parametric&amp;param[name]=" . html_out($this->search_str) . "'>Параметрический поис</a>
+            <a href='{$this->link_prefix}?mode=parametric&amp;param[name]=" . html_out($this->search_str) . "'>Параметрический поиск</a>
             </form>
             </div>";
         return $ret;
@@ -610,17 +616,17 @@ class search extends \IModule {
     }
 
     /// Получить отображаемую информацию о количестве товара
-    /// @param count Количество товара в наличиии
-    /// @param tranzit Количество товара в пути
+    /// @param $count Количество товара в наличиии
+    /// @param $transit Количество товара в пути
     /// @return Строка с информацией о наличии
-    protected function GetCountInfo($count, $tranzit) {
+    protected function GetCountInfo($count, $transit) {
         global $CONFIG;
         if (!isset($CONFIG['site']['vitrina_pcnt_limit'])) {
             $CONFIG['site']['vitrina_pcnt_limit'] = [1, 10, 100];
         }
         if ($CONFIG['site']['vitrina_pcnt'] == 1) {
             if ($count <= 0) {
-                if ($tranzit) {
+                if ($transit) {
                     return 'в пути';
                 } else {
                     return 'уточняйте';
@@ -638,7 +644,7 @@ class search extends \IModule {
         }
         else if ($CONFIG['site']['vitrina_pcnt'] == 2) {
             if ($count <= 0) {
-                if ($tranzit) {
+                if ($transit) {
                     return 'в пути';
                 } else {
                     return 'уточняйте';
@@ -653,7 +659,7 @@ class search extends \IModule {
                 return 'оч.много';
             }
         } else {
-            return round($count) . ($tranzit ? ('/' . $tranzit) : '');
+            return round($count) . ($transit ? ('/' . $transit) : '');
         }
     }
 

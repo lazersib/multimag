@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -23,68 +23,17 @@ class buisoff extends \doc\printforms\iPrintFormPdf {
     public function getName() {
         return "Предложение со сроком поставки";
     }
-    
-    /// Добавить блок с банковскими реквизитами
-    protected function addbankInfo($firm_info, $bank_info) {
-        $text = 'Банковские реквизиты:';
-        $this->pdf->SetFont('', '', 11);
-        $this->pdf->CellIconv(0, 5, $text, 0, 1, 'C', 0);
-
-        $old_x = $this->pdf->GetX();
-        $old_y = $this->pdf->GetY();
-        $old_margin = $this->pdf->lMargin;
-        $table_c = 110;
-        $table_c2 = 15;
-        
-        $this->pdf->SetFont('', '', 12);
-        $this->pdf->CellIconv($table_c, 10, $bank_info['name'], 1, 1, 'L', 0);
-        $text = 'ИНН ' . $firm_info['firm_inn'] . ' КПП';
-        $this->pdf->CellIconv($table_c, 5, $text, 1, 1, 'L', 0);
-
-        $tx = $this->pdf->GetX();
-        $ty = $this->pdf->GetY();
-        $this->pdf->CellIconv($table_c, 10, '', 1, 1, 'L', 0);
-        $this->pdf->lMargin = $old_x + 1;
-        $this->pdf->SetX($tx + 1);
-        $this->pdf->SetY($ty + 1);
-        $this->pdf->SetFont('', '', 9);
-        $text = 'Получатель: ' . $firm_info['firm_name'];
-        $this->pdf->MultiCellIconv($table_c, 3, $text, 0, 1, 'L', 0);
-
-        $this->pdf->SetFont('', '', 12);
-        $this->pdf->lMargin = $old_x + $table_c;
-        $this->pdf->SetY($old_y);
-        $text = 'БИК';
-        $this->pdf->CellIconv($table_c2, 5, $text, 1, 1, 'L', 0);
-        $text = 'корр/с';
-        $this->pdf->CellIconv($table_c2, 10, $text, 1, 1, 'L', 0);
-        $text = 'р/с N';
-        $this->pdf->CellIconv($table_c2, 10, $text, 1, 1, 'L', 0);
-
-        $this->pdf->lMargin = $old_x + $table_c + $table_c2;
-        $this->pdf->SetY($old_y);
-        $this->pdf->Cell(0, 5, $bank_info['bik'], 1, 1, 'L', 0);
-        $this->pdf->Cell(0, 5, $bank_info['ks'], 1, 1, 'L', 0);
-        $this->pdf->Cell(0, 15, $bank_info['rs'], 1, 1, 'L', 0);
-        $this->pdf->lMargin = $old_margin;
-        $this->pdf->SetY($old_y + 30);
-    }
-       
+           
     /// Сформировать данные печатной формы
     public function make() {
-        global $db;
-        $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
-        $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
+        $text_header = $this->doc->getTextData('text_header');
         $nomenclature = $this->doc->getDocumentNomenclature('comment');
-        $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
-        $bank_info = $res->fetch_assoc();
         
         $this->pdf->AddPage('P');
         $this->addTechFooter();        
         $this->addHeadBanner($doc_data['firm_id']);
-        $this->addbankInfo($firm_vars, $bank_info);
         
         $text = "Коммерческое предложение №{$doc_data['altnum']}{$doc_data['subtype']} от " . date("d.m.Y", $doc_data['date']);
         $this->addHeader($text);
@@ -92,8 +41,8 @@ class buisoff extends \doc\printforms\iPrintFormPdf {
         $this->addInfoLine($text);
         $this->pdf->Ln(4);
 
-        if($dop_data['shapka']) {
-            $this->addMiniHeader($dop_data['shapka']);
+        if($text_header) {
+            $this->addMiniHeader($text_header);
         }
 
         $th_widths = array(7, 125, 35, 25);
@@ -114,8 +63,10 @@ class buisoff extends \doc\printforms\iPrintFormPdf {
             $this->pdf->AddPage();
         }
 
-        $this->addMiniHeader("Цены указаны с учётом НДС, за 1 ед. товара");
-        $this->pdf->ln(6);
+        if($firm_vars['param_nds']) {
+            $this->addMiniHeader("Цены указаны с учётом НДС, за 1 ед. товара");
+            $this->pdf->ln(6);
+        }        
         
         if ($doc_data['comment']) {
             $this->pdf->SetFont('', '', 10);

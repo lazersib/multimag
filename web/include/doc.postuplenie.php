@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -20,7 +20,7 @@
 /// Документ *Поступление*
 class doc_Postuplenie extends doc_Nulltype {
 
-    // Конструктор
+    /// Конструктор
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 1;
@@ -34,43 +34,75 @@ class doc_Postuplenie extends doc_Nulltype {
         $this->def_dop_data = array('kladovshik' => $this->firm_vars['firm_kladovshik_id'], 'input_doc' => '', 'input_date' => '', 'return' => 0, 'cena' => 1);
     }
 
-        function dopHead() {
-		global $tmpl, $db;
-		$klad_id = $this->dop_data['kladovshik'];
-		if (!$klad_id)
-			$klad_id = $this->firm_vars['firm_kladovshik_id'];
-                $tmpl->addContent("<hr>");
-		$tmpl->addContent("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
-                $tmpl->addContent("Дата. вх. документа:<br><input type='text' name='input_date' value='{$this->dop_data['input_date']}'><br>");
-		$checked = $this->dop_data['return'] ? 'checked' : '';
-		$tmpl->addContent("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><hr>
+    function dopHead() {
+        global $tmpl, $db;
+        $klad_id = $this->dop_data['kladovshik'];
+        if (!$klad_id)
+            $klad_id = $this->firm_vars['firm_kladovshik_id'];
+        $tmpl->addContent("<hr>");
+        $tmpl->addContent("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
+        $tmpl->addContent("Дата. вх. документа:<br><input type='text' name='input_date' value='{$this->dop_data['input_date']}'><br>");
+        $checked = $this->dop_data['return'] ? 'checked' : '';
+        $tmpl->addContent("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><hr>
 		Кладовщик:<br><select name='kladovshik'>
 		<option value='0'>--не выбран--</option>");
-		$res = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
-		while ($nxt = $res->fetch_row()) {
-			$s = ($klad_id == $nxt[0]) ? 'selected' : '';
-			$tmpl->addContent("<option value='$nxt[0]' $s>".html_out($nxt[1])."</option>");
-		}
-		$tmpl->addContent("</select><br>");
-	}
+        $res = $db->query("SELECT `user_id`, `worker_real_name` FROM `users_worker_info` WHERE `worker`='1' ORDER BY `worker_real_name`");
+        while ($nxt = $res->fetch_row()) {
+            $s = ($klad_id == $nxt[0]) ? 'selected' : '';
+            $tmpl->addContent("<option value='$nxt[0]' $s>" . html_out($nxt[1]) . "</option>");
+        }
+        $tmpl->addContent("</select><br>");
+    }
 
-	function dopSave() {
-		$new_data = array(
-		    'input_doc' => request('input_doc'),
-                    'input_date'=> rcvdate('input_date'),
-		    'return' => rcvint('return'),
-		    'kladovshik' => rcvint('kladovshik')
-		);
-		$old_data = array_intersect_key($new_data, $this->dop_data);
+    function dopSave() {
+        $new_data = array(
+            'input_doc' => request('input_doc'),
+            'input_date' => rcvdate('input_date'),
+            'return' => rcvint('return'),
+            'kladovshik' => rcvint('kladovshik')
+        );
+        $old_data = array_intersect_key($new_data, $this->dop_data);
 
-		$log_data = '';
-		if ($this->id)
-			$log_data = getCompareStr($old_data, $new_data);
-		$this->setDopDataA($new_data);
-		if ($log_data)
-			doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-	}
+        $log_data = '';
+        if ($this->id) {
+            $log_data = getCompareStr($old_data, $new_data);
+        }
+        $this->setDopDataA($new_data);
+        if ($log_data) {
+            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
+        }
+    }
 
+    /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        parent::extendedCancelAclCheck();
+    }
+        
     public function docApply($silent = 0) {
         global $CONFIG, $db;
         if(!$this->isAltNumUnique() && !$silent) {
@@ -241,38 +273,38 @@ class doc_Postuplenie extends doc_Nulltype {
             $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=5'\">Расходный банковский ордер</div>");
             $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=7'\">Расходный кассовый ордер</div>");
         } else if ($target_type == 2) {
-            if (!isAccess('doc_realizaciya', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.realizaciya', \acl::CREATE);
             $db->startTransaction();
             $new_doc = new doc_Realizaciya();
             $dd = $new_doc->createFromP($this);
             $db->commit();
             header("Location: doc.php?mode=body&doc=$dd");
         }
-        else if ($target_type == 5) {
-            if (!isAccess('doc_rbank', 'create')) {
-                throw new AccessException();
+        else {
+            if ($target_type == 5) {
+                \acl::accessGuard('doc.rbank', \acl::CREATE);
+                $classNameNewDocument = 'doc_RBank';
+            }
+            else if ($target_type == 7) {
+                \acl::accessGuard('doc.rko', \acl::CREATE);
+                $classNameNewDocument = 'doc_Rko';
+            }
+            else{
+                return;
             }
             $this->recalcSum();
             $db->startTransaction();
-            $new_doc = new doc_RBank();
+            $new_doc = new $classNameNewDocument();
             $doc_num = $new_doc->createFrom($this);
-            // Вид расхода - закуп товара на продажу
-            $new_doc->setDopData('rasxodi', 6);
-            $db->commit();
-            header('Location: doc.php?mode=body&doc=' . $doc_num);
-        }
-        else if ($target_type == 7) {
-            if (!isAccess('doc_rko', 'create')) {
-                throw new AccessException();
+            $codeName =
+                isset($this->dop_data['return']) && $this->dop_data['return']
+                    ?'goods_return'
+                    :'goods_buy';
+            $resource = $db->query("SELECT `id` FROM `doc_dtypes` WHERE `codename`='$codeName'");
+            if($resource->num_rows) {
+                $result = $resource->fetch_assoc();
+                $new_doc->setDopData('rasxodi', $result['id']);
             }
-            $this->recalcSum();
-            $db->startTransaction();
-            $new_doc = new doc_Rko();
-            $doc_num = $new_doc->createFrom($this);
-            // Вид расхода - закуп товара на продажу
-            $new_doc->setDopData('rasxodi', 6);
             $db->commit();
             header('Location: doc.php?mode=body&doc=' . $doc_num);
         }

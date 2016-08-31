@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -32,7 +32,9 @@ class StoresListEditor extends \ListEditor {
             'id' => 'id',
             'name' => 'Наименование',
             'dnc' => 'Не контролировать остатки',
-            'firm_id' => 'Организация'
+            'hidden' => 'Скрытый',
+            'firm_id' => 'Организация',
+            
         );
     }
 
@@ -44,6 +46,14 @@ class StoresListEditor extends \ListEditor {
         return $data['dnc'] ? "<b style='color:#f00'>Да</b>" : "<b style='color:#0c0'>Нет</b>";
     }
 
+    public function getInputHidden($name, $value) {
+        return $this->getCheckboxInput($name, 'Да', $value);
+    }
+
+    public function getFieldHidden($data) {
+        return $data['hidden'] ? "<b style='color:#f00'>Да</b>" : "<b style='color:#0c0'>Нет</b>";
+    }
+    
     public function getInputFirm_id($name, $value) {
         $ret = "<select name='$name'>";
         $ret .="<option value='null'>-- не задано --</option>";

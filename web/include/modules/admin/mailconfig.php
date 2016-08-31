@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@ class MailConfig extends \IModule {
 
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'admin_mailconfig';
+        $this->acl_object_name = 'admin.mailconfig';
     }
 
     public function getName() {

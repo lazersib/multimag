@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -37,6 +37,7 @@ class CommentDispatcher
 	function WriteComment($text, $rate, $autor_name='', $autor_email='')
 	{
 		global $CONFIG, $db;
+                $pref = \pref::getInstance();
 		$uid=@$_SESSION['uid'];
 		settype($uid, 'int');
 		settype($rate, 'int');
@@ -54,16 +55,13 @@ class CommentDispatcher
 		$object_name_sql=$db->real_escape_string($this->object_name);
 		$db->query("INSERT INTO `comments` (`date`, `object_name`, `object_id`, `autor_name`, `autor_email`, `autor_id`, `text`, `rate`, `ip`, `user_agent`)
 		VALUES (NOW(), '$object_name_sql', '{$this->object_id}', '$autor_name', '$autor_email', '$uid', '$text', '$rate', '$ip', '$ua')");
-		if($CONFIG['noify']['comments'])
-		{
-			switch($this->object_name)
-			{
+		if($CONFIG['notify']['comments']) {
+			switch($this->object_name) {
 				case 'product':
-					$url='http://'.$CONFIG['site']['name'].'/vitrina.php?mode=product&p='.$this->object_id;
+					$url='http://'.$pref->site_name.'/vitrina.php?mode=product&p='.$this->object_id;
 					break;
 				default:
 					$url='UNKNOWN';
-
 			}
 			$text="Объект: {$this->object_name}|{$this->object_id}\nСсылка: $url\nАвтор: $autor_name <$autor_email>\nUID: $uid\nРейтинг:$rate\nТекст: $text";
 			sendAdmMessage($text,'Новый коментарий');

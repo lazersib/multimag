@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -49,7 +49,7 @@ class Report_Agent_resp extends BaseReport {
         Сотрудник:<br>
         <select name='worker_id'>");
         $res = $db->query("SELECT `user_id` AS `id`, `worker_real_name` AS `name` FROM `users_worker_info` WHERE `worker`=1");
-        while($line = $res->fetch_assoc()) {
+        while ($line = $res->fetch_assoc()) {
             $tmpl->addContent("<option value='{$line['id']}'>{$line['name']}</option>");
         }
         $tmpl->addContent("</select><br>
@@ -65,15 +65,15 @@ class Report_Agent_resp extends BaseReport {
         global $db;
         $date_f = rcvdate('date_f');
         $date_t = rcvdate('date_t');
-        
+
         $udate_f = strtotime($date_f);
-        $udate_t = strtotime($date_t.' 23:59:59');
-        
+        $udate_t = strtotime($date_t . ' 23:59:59');
+
         $worker_id = rcvint('worker_id');
         $this->loadEngine($engine);
-        
+
         $res = $db->query("SELECT `worker_real_name` FROM `users_worker_info` WHERE `user_id`=$worker_id");
-        if(!$res->num_rows) {
+        if (!$res->num_rows) {
             throw new Exception("Сотрудник не найден");
         }
         list($w_name) = $res->fetch_row();
@@ -85,52 +85,51 @@ class Report_Agent_resp extends BaseReport {
         $this->tableHeader($headers);
 
         $res = $db->query("SELECT `id`, `name` FROM `doc_agent` WHERE `responsible`='$worker_id'");
-        
+
         $k_sum = $b_sum = $all_sum = 0;
         while ($line = $res->fetch_assoc()) {
             $k_val = $b_val = 0;
             $k_res = $db->query("SELECT SUM(`sum`) FROM `doc_list` 
                 WHERE `type`=6 AND `ok`>0 AND `mark_del`=0 AND `agent`={$line['id']} AND `date`>=$udate_f AND `date`<=$udate_t ");
-            if($k_res->num_rows) {
+            if ($k_res->num_rows) {
                 list($k_val) = $k_res->fetch_row();
             }
             $b_res = $db->query("SELECT SUM(`sum`) FROM `doc_list` 
                 WHERE `type`=4 AND `ok`>0 AND `mark_del`=0 AND `agent`={$line['id']} AND `date`>=$udate_f AND `date`<=$udate_t ");
-            if($b_res->num_rows) {
+            if ($b_res->num_rows) {
                 list($b_val) = $b_res->fetch_row();
             }
             if (($k_val + $b_val) == 0) {
                 continue;
-            } 
-            
+            }
+
             $k_sum += $k_val;
             $b_sum += $b_val;
-            
+
             $k_val_p = $b_val_p = '';
-            if($k_val) {
-                $k_val_p = number_format($k_val, 2, '.', ' ').' р.';
+            if ($k_val) {
+                $k_val_p = number_format($k_val, 2, '.', ' ') . ' р.';
             }
-            if($b_val) {
-                $b_val_p = number_format($b_val, 2, '.', ' ').' р.';
+            if ($b_val) {
+                $b_val_p = number_format($b_val, 2, '.', ' ') . ' р.';
             }
-            $sum_p = number_format($k_val+$b_val, 2, '.', ' ').' р.';
-            
+            $sum_p = number_format($k_val + $b_val, 2, '.', ' ') . ' р.';
+
             $this->tableRow(array($line['id'], $line['name'], $k_val_p, $b_val_p, $sum_p));
         }
         $this->tableAltStyle(true);
         $k_sum_p = $b_sum_p = '';
-        if($k_sum) {
-            $k_sum_p = number_format($k_sum, 2, '.', ' ').' р.';
+        if ($k_sum) {
+            $k_sum_p = number_format($k_sum, 2, '.', ' ') . ' р.';
         }
-        if($b_sum) {
-            $b_sum_p = number_format($b_sum, 2, '.', ' ').' р.';
+        if ($b_sum) {
+            $b_sum_p = number_format($b_sum, 2, '.', ' ') . ' р.';
         }
-        $sum_p = number_format($k_sum+$b_sum, 2, '.', ' ').' р.';
-        $this->tableSpannedRow(array(2,1,1,1), array('Всего', $k_sum_p, $b_sum_p, $sum_p));
+        $sum_p = number_format($k_sum + $b_sum, 2, '.', ' ') . ' р.';
+        $this->tableSpannedRow(array(2, 1, 1, 1), array('Всего', $k_sum_p, $b_sum_p, $sum_p));
         $this->tableEnd();
         $this->output();
         exit(0);
     }
 
 }
-

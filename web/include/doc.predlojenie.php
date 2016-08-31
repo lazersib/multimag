@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -103,16 +103,12 @@ class doc_Predlojenie extends doc_Nulltype {
             $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Поступление</div>
 			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=12'\">Товар в пути</div>");
         } else if ($target_type == 1) {
-            if (!isAccess('doc_postuplenie', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.postuplenie', \acl::CREATE);
             $base = $this->Postup();
             redirect('/doc.php?mode=body&doc=' . $base);
         }
         else if ($target_type == 12) {
-            if (!isAccess('doc_v_puti', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.v_puti', \acl::CREATE);
             $base = $this->Vputi();
             redirect('/doc.php?mode=body&doc=' . $base);
         }

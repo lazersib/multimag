@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -50,8 +50,9 @@ try {
                 }
                 closedir($dh);
                 asort($modules);
-                foreach ($modules AS $id => $name)
+                foreach ($modules AS $id => $name) {
                     $tmpl->addContent("<li><a href=\"/adm.php?mode=$id\"'>$name</a></li>");
+                }
             }
         }
         $tmpl->addContent("</ul>");
@@ -60,8 +61,7 @@ try {
         $module->link_prefix = '/adm.php?mode=mailconfig';
         $module->run();
     } else {
-        if (!isAccess('admin_' . $mode, 'view'))
-            throw new AccessException("Недостаточно привилегий");
+        acl::accessGuard('admin.' . $mode, acl::VIEW);
         $opt = request('opt');
         $fn = $dir . $mode . '.php';
         if (file_exists($fn)) {

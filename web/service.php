@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -57,8 +57,7 @@ try {
         $tmpl->addContent("</ul>");
     }
     else {
-        if (!isAccess('service_' . $mode, 'view'))
-            throw new AccessException("Недостаточно привилегий");
+        \acl::accessGuard('service.'.$mode, \acl::VIEW);
         $opt = request('opt');
         $fn = $dir . $mode . '.php';
         if (file_exists($fn)) {
@@ -71,7 +70,17 @@ try {
             throw new \NotFoundException("Объект не найден");
         }        
     }
-} catch (Exception $e) {
+}
+catch(mysqli_sql_exception $e) {
+    $id = writeLogException($e);
+    $pref = \pref::getInstance();
+    $tmpl->errorMessage($e->getMessage());
+    switch ($e->getCode()) {
+        case 1146: // Table not found
+           mailto($pref->site_email,"ВАЖНО! Ошибка на {$pref->site_name}. номер в журнале - $id", $e->getMessage()); 
+    }    
+}
+catch (Exception $e) {
     global $db, $tmpl;
     $db->rollback();
     $tmpl->addContent("<br><br>");

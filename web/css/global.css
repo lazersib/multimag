@@ -383,3 +383,66 @@ div.autocomplete li.cursor
 	background-color:	#008;
 	color:			#fff;
 }
+
+
+/* Редактор документов */
+div.doc_name {
+    color: #004;
+    font-size: 20px;
+    font-weight: normal;
+    margin-bottom: 8px;
+}
+
+div.doc_name .idnum {
+    color: #888;
+    font-size: 10px;
+    float: right;
+}
+
+div.doc_numdate {
+    height: 40px;
+    text-align: right;
+    width: 304px;
+    padding:0;
+    margin:0;
+}
+
+div.doc_numdate > .doc_number {
+    width: 60px;
+    float: left;
+    text-align: left;
+}
+
+div.doc_numdate > .doc_number > input {
+    width: 50px;
+}
+
+div.doc_numdate > .doc_subtype {
+    width: 60px;
+    float: left;
+    text-align: left;
+}
+
+div.doc_numdate > .doc_subtype > input {
+    width: 50px;
+}
+
+div.doc_numdate > .doc_date {
+    width: 160px;
+    text-align: right;
+}
+
+div.doc_numdate > .doc_date > input {
+    width: 150px;
+}
+
+div.doc_head > .item {
+    color: #000;
+    font-size: 12px;
+}
+
+div.doc_head > .item > input[type=text]{
+    color: #000;
+    font-size: 13px;
+    width: 300px;
+}

@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -49,24 +49,24 @@ class BDocAgentDov {
 	// Добавить или заменить элемент
 	function Write($update = 1) {
 		global $db;
-		$id = rcvint('id');
-		$ag_id = rcvint('ag_id');
 		$form_fields = array('name' => '', 'surname' => '', 'name2' => '', 'range' => '', 'pasp_num' => '', 'pasp_ser' => '', 'pasp_kem' => '', 'pasp_data' => '');
 		if (is_array($_REQUEST['data']))
 			$form_fields = array_intersect_key($_REQUEST['data'], $form_fields);
 
 		if (!$update) {
+			$ag_id = rcvint('ag_id');
 			$form_fields['ag_id'] = $ag_id;
 			$ins_id = $db->insertA('doc_agent_dov', $form_fields);
 			doc_log("CREATE", var_export($form_fields, true), 'agent_dov', $ins_id);
 			return $ins_id;
 		}
 		else {
+			$id = rcvint('id');
 			$old = $db->selectRowAi('doc_agent_dov', $id, $form_fields);
 			$log = getCompareStr($old, $form_fields);
 			if ($log) {
 				doc_log("UPDATE", $log, 'agent_dov', $_id);
-				$res = $db->updateA('doc_agent_dov', $_id, $form_fields);
+				$db->updateA('doc_agent_dov', $_id, $form_fields);
 			}
 			return 1;
 		}
@@ -75,5 +75,4 @@ class BDocAgentDov {
 
 }
 
-;
 ?>

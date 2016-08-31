@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -409,7 +409,7 @@ class login extends \IModule {
             <tr><td></td><td>На номер будет выслано SMS с кодом подтверждения.</td>
             <tr><td></td><td>Оставьте поле пустым, если не хотите указвать номер.</td>
             <tr><td></td><td><button type='submit' name='submit' value='submit'>Продолжить</button></td>
-            </table>";
+            </table></form>";
         return $ret;
     }
     
@@ -424,7 +424,7 @@ class login extends \IModule {
             <tr><td></td><td>На email будет выслано сообщение с кодом подтверждения.</td>
             <tr><td></td><td>Оставьте поле пустым, если не хотите указвать адрес.</td>
             <tr><td></td><td><button type='submit' name='submit' value='submit'>Продолжить</button></td>
-            </table>";
+            </table></form>";
         return $ret;
     }
     

@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -41,9 +41,10 @@ include_once("core.php");
 
 try {
 	$tmpl->ajax = 1;
-	need_auth();
-	if (!isAccess('doc_list', 'view'))
-		throw new AccessException();
+	if(!auth()) {
+            throw new AccessException ('Не аутентифицирован');
+        }
+	\acl::accessGuard('service.doclist', \acl::VIEW);
 	ob_start();
 	$starttime = microtime(true);
 	$c = request('c');
@@ -96,7 +97,3 @@ catch(Exception $e) {
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 }
 
-
-
-
-?>

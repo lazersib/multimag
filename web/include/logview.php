@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -57,7 +57,7 @@ class LogView {
         }
         if(isset($this->users[$user_id])) {
             $name = html_out($this->users[$user_id]);            
-            return "<a href='/adm_users.php?mode=view&amp;id={$user_id}'>{$name}</a>";
+            return "<a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$user_id}'>{$name}</a>";
         }
         else return $user_id;        
     }
@@ -73,6 +73,14 @@ class LogView {
             return "<a href='/docs.php?mode=srv&amp;opt=ep&amp;pos={$pos_id}'>{$name}</a>";
         }
         else return $pos_id;        
+    }
+    
+    protected function getContractLink($doc_id) {
+        settype($doc_id, 'int');  
+        if($doc_id>0) {
+            return "<a href='/doc.php?mode=body&amp;doc={$doc_id}'>{$doc_id}</a>";
+        }
+        return $doc_id;
     }
     
     protected function getStoreLink($store_id) {
@@ -136,18 +144,230 @@ class LogView {
         return array("<div class='iblock' style='background-color: #{$col}'>&nbsp;</div>".$action, $desc);
     }
     
+    protected function getDocFieldName($name) {
+        $names = array(
+            'date' => 'Дата',
+            'firm_id' => 'Организация',
+            'comment' => 'Комментарий',
+            'altnum'=>'Альт.номер',
+            'subtype'=>'Подтип',
+            'user'=>'Автор',
+            'type'=>'Тип документа',
+            'bank'=>'Банк',
+            'sklad'=>'Склад',
+            'agent'=>'Агент',
+            'nds'=>'НДС',
+            'p_doc'=>'Документ-основание',
+            'sum'=>'Сумма',
+            
+            'cena'=>'Цена',
+            'contract'=>'Договор',
+            'delivery_region'=>'Регион доставки',
+            'dov'=>'Доверенность',
+            'dov_data'=>'Дата доверенности',
+            'dov_agent'=>'Доверенное лицо',
+            'mest'=>'Кол-во мест',
+            'cc_name'=>'Трансп.компания',
+            'cc_num'=>'Номер трансп.накладной',
+            'cc_date'=>'Дата отправки',
+            'cc_price'=>'Стоимость доставки',
+            'status'=>'Статус', 
+            'platelshik'=>'Плательщик',
+            'gruzop'=>'Грузополучатель',
+            'kladovshik'=>'Кладовщик',
+            
+            'contract_text'=>'Текст договора',
+            'text_header'=>'Текстовый заголовок',
+        );   
+        if(isset($names[$name])) {
+            return $names[$name];
+        }
+        return $name;
+    }
+    
     protected function parseDescDocCreate($desc) {
-        if(stripos($desc, 'from')===0) {
-            $doc = intval(substr($desc, 5));
-            if($doc) {
-                $desc = "На основании <a href='/doc.php?mode=body&amp;doc=$doc'>$doc</a>";
+        if(stripos($desc, '{')===0) {
+            $json_data = json_decode($desc, true);
+            if(is_array($json_data)) {
+                $desc = '';
+                foreach($json_data as $name=>$value) {
+                    if($desc) {
+                        $desc .= ', ';
+                    }
+                    switch($name) {
+                        case 'date':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.date("Y-m-d H:i:s", $value);
+                            break;
+                        case 'user':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getUserLink($value);
+                            break;
+                        case 'sklad':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getStoreLink($value);
+                            break;
+                        case 'agent':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getAgentLink($value);
+                            break;
+                        case 'p_doc':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                ." <a href='/doc.php?mode=body&amp;doc=".intval($value)."'>".intval($value)."</a>";
+                            break;
+                        case 'firm_id':
+                        case 'comment':
+                        case 'altnum':
+                        case 'subtype':
+                        case 'type':
+                        case 'bank':
+                        case 'nds':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.html_out($value);
+                            break;
+                        case 'dop_data':
+                        case 'text_data':
+                            break;
+                        default:
+                            $desc .= '<b>'.html_out($name).':</b> '.html_out($value);
+                    }                    
+                }
+                if(isset($json_data['dop_data'])) {
+                    if(count($json_data['dop_data'])) {
+                        foreach($json_data['dop_data'] as $name=>$value) {
+                            if($desc) {
+                                $desc .= ', ';
+                            }
+                            switch($name) {
+                                case 'contract':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getContractLink($value);
+                                    break;
+                                case 'platelshik':
+                                case 'gruzop':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getAgentLink($value);
+                                    break;
+                                case 'kladovshik':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.$this->getUserLink($value);
+                                    break;
+                                default:
+                                    $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value);
+                            }                    
+                        }
+                    }
+                }
+                if(isset($json_data['text_data'])) {
+                    if(count($json_data['text_data'])) {
+                        foreach($json_data['text_data'] as $name=>$value) {
+                            if($desc) {
+                                $desc .= ', ';
+                            }
+                            $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value);                  
+                        }
+                    }
+                }
+            }
+            else {
+                $desc = str_replace ('","' , '", "' , $desc);
             }
         }
         return $desc;
     }
     
     protected function parseDescDocUpdate($desc) {
-        if(stripos($desc, ', ')!==false) {
+        if(stripos($desc, '{')===0) {
+            $json_data = json_decode($desc, true);
+            if(is_array($json_data)) {
+                $desc = '';
+                foreach($json_data as $name=>$value) {
+                    if($desc) {
+                        $desc .= ', ';
+                    }
+                    if(!array_key_exists('old', $value)) {
+                        $value['old'] = '?';
+                    }
+                    if(!array_key_exists('new', $value)) {
+                        $value['new'] = '?';
+                    }
+                    switch($name) {
+                        case 'date':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                .date("Y-m-d H:i:s", $value['old']).'=&gt;'.date("Y-m-d H:i:s", $value['new']);
+                            break;
+                        case 'user':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                .$this->getUserLink($value['old']).'=&gt;'.$this->getUserLink($value['new']);
+                            break;
+                        case 'sklad':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                .$this->getStoreLink($value['old']).'=&gt;'.$this->getStoreLink($value['new']);
+                            break;
+                        case 'agent':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                .$this->getAgentLink($value['old']).'=&gt;'.$this->getAgentLink($value['new']);
+                            break;
+                        case 'p_doc':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                ." <a href='/doc.php?mode=body&amp;doc=".intval($value['old'])."'>".intval($value['old'])."</a>=&gt;"
+                                ." <a href='/doc.php?mode=body&amp;doc=".intval($value['new'])."'>".intval($value['new'])."</a>";
+                            break;
+                        case 'firm_id':
+                        case 'comment':
+                        case 'altnum':
+                        case 'subtype':
+                        case 'type':
+                        case 'bank':
+                        case 'nds':
+                            $desc .= '<b>'.$this->getDocFieldName($name).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
+                            break;                        
+                        case 'dop_data':
+                        case 'text_data':
+                        case 'extdata':  
+                            break;
+                        default:
+                            $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
+                    }                    
+                }
+                if(isset($json_data['dop_data'])) {
+                    if(count($json_data['dop_data'])) {
+                        $desc .= '<hr>';
+                        foreach($json_data['dop_data'] as $name=>$value) {
+                            if($desc) {
+                                $desc .= ', ';
+                            }
+                            switch($name) {
+                                case 'contract':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                        .$this->getContractLink($value['old']).'=&gt;'.$this->getContractLink($value['new']);
+                                    break;
+                                case 'platelshik':
+                                case 'gruzop':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                        .$this->getAgentLink($value['old']).'=&gt;'.$this->getAgentLink($value['new']);
+                                    break;
+                                case 'kladovshik':
+                                    $desc .= '<b>'.$this->getDocFieldName($name).':</b> '
+                                        .$this->getUserLink($value['old']).'=&gt;'.$this->getUserLink($value['new']);
+                                    break;
+                                default:
+                                    $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
+                            }                    
+                        }
+                    }
+                }
+                if(isset($json_data['text_data'])) {
+                    if(count($json_data['text_data'])) {
+                        $desc .= '<hr>';
+                        foreach($json_data['text_data'] as $name=>$value) {
+                            if($desc) {
+                                $desc .= ', ';
+                            }
+                            $desc .= '<b>'.html_out($this->getDocFieldName($name)).':</b> '.html_out($value['old']).'=&gt;'.html_out($value['new']);
+                        }
+                    }
+                }
+            }
+            
+            /*$doc = intval(substr($desc, 5));
+            if($doc) {
+                $desc = "На основании <a href='/doc.php?mode=body&amp;doc=$doc'>$doc</a>";
+            }*/
+        }
+        elseif(stripos($desc, ', ')!==false) {
             $items = explode(', ', $desc);
             $desc = '';
             foreach($items as $item) {

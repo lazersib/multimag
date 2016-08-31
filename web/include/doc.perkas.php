@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -84,6 +84,16 @@ class doc_PerKas extends doc_Nulltype {
         $dest_res = $db->query("SELECT `firm_id` FROM `doc_kassa` WHERE `ids`='kassa' AND `num`=".intval($this->dop_data['v_kassu']));
         $dest_till_info = $dest_res->fetch_assoc();
 
+        if($doc_params['kassa']<=0) {
+            throw new Exception('Касса-источник не задана');
+        }        
+        if($this->dop_data['v_kassu']<=0) {
+            throw new Exception('Касса назначения не задана');
+        }        
+        if($doc_params['kassa'] == $this->dop_data['v_kassu']) {
+            throw new Exception('Касса-источник и касса назначения совпадают');
+        }
+        
         // Запрет для другой фирмы
         if($doc_params['kassa_firm_id']!=null && $doc_params['kassa_firm_id']!=$doc_params['firm_id']) {
             throw new Exception("Исходная касса относится к другой организации!");
@@ -114,14 +124,12 @@ class doc_PerKas extends doc_Nulltype {
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы назначения!');
         }
-
+        if ($silent) {
+            return;
+        }
         $budet = $this->checkKassMinus();
         if ($budet < 0) {
             throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
-        }
-
-        if ($silent) {
-            return;
         }
 
         $db->update('doc_list', $this->id, 'ok', time());
@@ -152,4 +160,65 @@ class doc_PerKas extends doc_Nulltype {
         $this->sentZEvent('cancel');
     }
 
+        /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранной кассой '.$this->doc_data['kassa']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['kassa'].' произвольной датой');
+            }
+        }
+        $acl_obj = ['cash.global', 'cash.'.intval($this->dop_data['v_kassu'])];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']));
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']).' произвольной датой');
+            }
+        }
+        parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.$this->doc_data['kassa']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.$this->doc_data['kassa'].' произвольной датой');
+            }
+        }
+        $acl_obj = ['cash.global', 'cash.'.intval($this->dop_data['v_kassu'])];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']));
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранной кассой '.intval($this->dop_data['v_kassu']).' произвольной датой');
+            }
+        }
+        parent::extendedCancelAclCheck();
+    }
+    
+    public function extendedViewAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::VIEW)) {
+            throw new \AccessException('Не достаточно привилегий для просмотра документа с выбранной кассой '.$this->doc_data['kassa']);
+        }
+        $acl_obj = ['cash.global', 'cash.'.intval($this->dop_data['v_kassu'])];      
+        if (!\acl::testAccess($acl_obj, \acl::VIEW)) {
+            throw new \AccessException('Не достаточно привилегий для просмотра документа с выбранной кассой '.intval($this->dop_data['v_kassu']));
+        }
+        return parent::extendedViewAclCheck();
+    }
 }

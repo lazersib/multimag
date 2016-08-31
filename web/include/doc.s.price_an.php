@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -25,7 +25,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 	function View() {
 		global $tmpl;
 		doc_menu();
-		if(!isAccess('list_price_an','view'))	throw new AccessException();
+		\acl::accessGuard('service.pricean', \acl::VIEW);
 		$tmpl->addStyle("
 		.tlist{border: 1px solid #bbb; width: 100%; border-collapse: collapse;}
 		.tlist tr:nth-child(2n) {background: #e0f0ff; } 
@@ -74,147 +74,179 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		}
 		else $tmpl->msg("Неверный режим!");
 	}
-		
-	/// Редактирование параметров анализа
-	function Edit() {
-		global $tmpl, $db;		
-		$pos = rcvint('pos');
-		$param = request('param');
-		
-		if($param!='ss')	doc_menu();
+        
+    // Форма редактирвоания регулярных выражений анализа
+    public function getRegExpEditForm($pos_id) {
+        global $db;
+        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `seekdata`.`sql`, `seekdata`.`regex`,
+            `seekdata`.`regex_neg`
+            FROM `doc_base`
+            LEFT JOIN `seekdata` ON `seekdata`.`id`=`doc_base`.`id`
+            WHERE `doc_base`.`id`='$pos_id'");
+        if (!$res->num_rows) {
+            throw new \Exception('Объект не найден');
+        }
+        $nxt = $res->fetch_assoc();
 
-		if( $pos!=0 )	$this->PosMenu($pos, $param);
-		
-		if($param == 'a') {
-			$res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`proizv`, `seekdata`.`sql`, `seekdata`.`regex`,
-				`seekdata`.`regex_neg`
-				FROM `doc_base`
-				LEFT JOIN `seekdata` ON `seekdata`.`id`=`doc_base`.`id`
-				WHERE `doc_base`.`id`='$pos'");
-			if(!$res->num_rows)	throw new Exception('Объект не найден');
-			$nxt = $res->fetch_assoc();
+        return "<form action='' method='post'><table cellpadding='0' width='100%' class='list'>
+            <input type='hidden' name='mode' value='esave'>
+            <input type='hidden' name='param' value='a'>
+            <input type='hidden' name='l' value='pran'>
+            <input type='hidden' name='pos' value='$pos_id'>
+            <tr><td align='right' width='20%'>Наименование</td><td>" . html_out($nxt['name']) . "</td></tr>
+            <tr><td align='right'>Производитель</td><td>" . html_out($nxt['proizv']) . "</td></tr>
+            <tr><td align='right'><b style='color: #f00;'>*</b> Строка поиска совпадений:<td><input type='text' name='sql' value='" . html_out($nxt['sql']) . "' style='width: 95%' id='str' onkeydown=\"PriceRegTest('/docs.php?l=pran&amp;mode=edit&amp;param=ss');\">
+            <tr><td align='right'>Регулярное выражение поиска:<td><input type='text' name='regex' value='" . html_out($nxt['regex']) . "' style='width: 95%'
+             id='regex' onkeydown=\"PriceRegTest('/docs.php?l=pran&amp;mode=edit&amp;param=ss');\" >
+            <tr><td align='right'>Регулярное выражение отрицания:<td><input type='text' name='regex_neg' value='" . html_out($nxt['regex_neg']) . "' style='width: 95%'
+             id='regex_neg' onkeydown=\"PriceRegTest('/docs.php?l=pran&amp;mode=edit&amp;param=ss');\">
+            <tr><td><td><button type='submit'>Сохранить</button></td></tr>
+            </table></form>
+            <div id='regex_result'></div>";
+    }
 
-			$tmpl->addContent("<form action='' method='post'><table cellpadding='0' width='100%'>
-			<input type='hidden' name='mode' value='esave'>
-                        <input type='hidden' name='param' value='a'>
-			<input type='hidden' name='l' value='pran'>
-			<input type='hidden' name='pos' value='$pos'>
-        		<tr><td align='right' width='20%'>Наименование</td><td>".html_out($nxt['name'])."</td></tr>
-        		<tr><td align='right'>Производитель</td><td>".html_out($nxt['proizv'])."</td></tr>
-			<tr><td align='right'><b style='color: #f00;'>*</b> Строка поиска совпадений:<td><input type='text' name='sql' value='".html_out($nxt['sql'])."' style='width: 95%' id='str' onkeydown=\"PriceRegTest('/docs.php?l=pran&amp;mode=edit&amp;param=ss');\">
-			<tr><td align='right'>Регулярное выражение поиска:<td><input type='text' name='regex' value='".html_out($nxt['regex'])."' style='width: 95%'
-			 id='regex' onkeydown=\"PriceRegTest('/docs.php?l=pran&amp;mode=edit&amp;param=ss');\" >
-			<tr><td align='right'>Регулярное выражение отрицания:<td><input type='text' name='regex_neg' value='".html_out($nxt['regex_neg'])."' style='width: 95%'
-			 id='regex_neg' onkeydown=\"PriceRegTest('/docs.php?l=pran&amp;mode=edit&amp;param=ss');\">
-			<tr><td><td><button type='submit'>Сохранить</button></td></tr>
-			</table></form>
-			<div id='regex_result'></div>");
-		}
-		else if($param == 'ss') {
-			$tmpl->ajax = 1;
-			
-			$str = request('str');
-			$regex = request('regex');
-			$regex_neg= request('regex_neg');
+    /// Редактирование параметров анализа
+    function Edit() {
+        global $tmpl, $db;
+        $pos = rcvint('pos');
+        $param = request('param');
 
-			$res = $db->query("SELECT `id`, `search_str`, `replace_str` FROM `prices_replaces`");
-			while($nxt = $res->fetch_row()) {
-				$regex = str_replace("{{{$nxt[1]}}}", $nxt[2], $regex);
-				$regex_neg = str_replace("{{{$nxt[1]}}}", $nxt[2], $regex_neg);
-			}
-	
-			if($str=='')	$tmpl->msg("Строка поиска совпадений пуста!","err","Ошибка введённых данных!");
-			else if(@preg_match("/$regex/",'abc') === FALSE)
-					$tmpl->msg("Регулярное выражение поиска составлено неверно!","err","Ошибка в регулярном выражении!");
-			else if(@preg_match("/$regex_neg/",'abc') === FALSE)
-					$tmpl->msg("Регулярное выражение отрицания составлено неверно!","err","Ошибка в регулярном выражении!");
-			else {
-				$str_array = preg_split("/( OR | AND )/",$str,-1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-				$i=1;
-				$sql_add='';
-				$conn='';
-				foreach($str_array as $str_l) {
-					$str_l_sql = $db->real_escape_string($str_l);
-					$conn_sql = $db->real_escape_string($conn);
-					if($i)	$sql_add.=" $conn_sql (`price`.`name` LIKE '%$str_l_sql%' OR `price`.`art` LIKE '%$str_l_sql%')";
-					else	$conn = $str_l;
-					$i = 1-$i;
-				}
+        if ($param != 'ss') {
+            doc_menu();
+        }
 
-				$res = $db->query("SELECT `price`.`id`, `price`.`name`, `firm_info`.`name`, `price`.`cost`, `price`.`art` FROM `price`
+        if ($pos != 0) {
+            $this->PosMenu($pos, $param);
+        }
+
+        if ($param == 'a') {
+            $tmpl->addContent($this->getRegExpEditForm($pos));
+        } else if ($param == 'ss') {
+            $tmpl->ajax = 1;
+
+            $str = request('str');
+            $regex = request('regex');
+            $regex_neg = request('regex_neg');
+
+            $res = $db->query("SELECT `id`, `search_str`, `replace_str` FROM `prices_replaces`");
+            while ($nxt = $res->fetch_row()) {
+                $regex = str_replace("{{{$nxt[1]}}}", $nxt[2], $regex);
+                $regex_neg = str_replace("{{{$nxt[1]}}}", $nxt[2], $regex_neg);
+            }
+
+            if ($str == '') {
+                $tmpl->msg("Строка поиска совпадений пуста!", "err", "Ошибка введённых данных!");
+            } else if (@preg_match("/$regex/", 'abc') === FALSE) {
+                $tmpl->msg("Регулярное выражение поиска составлено неверно!", "err", "Ошибка в регулярном выражении!");
+            } else if (@preg_match("/$regex_neg/", 'abc') === FALSE) {
+                $tmpl->msg("Регулярное выражение отрицания составлено неверно!", "err", "Ошибка в регулярном выражении!");
+            } else {
+                $str_array = preg_split("/( OR | AND )/", $str, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+                $i = 1;
+                $sql_add = '';
+                $conn = '';
+                foreach ($str_array as $str_l) {
+                    $str_l_sql = $db->real_escape_string($str_l);
+                    $conn_sql = $db->real_escape_string($conn);
+                    if ($i) {
+                        $sql_add.=" $conn_sql (`price`.`name` LIKE '%$str_l_sql%' OR `price`.`art` LIKE '%$str_l_sql%')";
+                    } else {
+                        $conn = $str_l;
+                    }
+                    $i = 1 - $i;
+                }
+
+                $res = $db->query("SELECT `price`.`id`, `price`.`name`, `firm_info`.`name`, `price`.`cost`, `price`.`art` FROM `price`
 				LEFT JOIN `firm_info` ON `firm_info`.`id`=`price`.`firm`
 				WHERE $sql_add");
-				$cnt = $res->num_rows;
-				
-				$tmpl->addContent("<b>Результаты отбора - $cnt совпадений со строкой *".html_out($str)."*:</b>
-				<br>Выражение поиска:</b> ".html_out($regex)."<br><b>Выражение отрицания:</b> ".html_out($regex_neg)."<br>");
-				$tmpl->addContent("<table class='list' width='100%'><tr><th>Price_id</th><th>Что</th><th>Где</th><th>Цена</th><th>Артикул</th></tr>");
-				while($nxt = $res->fetch_row())	{
-					$name_style = $art_style = $style = '';
-					if($regex) {
-						$ns = 0;
-						if( preg_match("/$regex/", $nxt[1]) ) {
-							$name_style = 'background-color: #afa; ';
-							$ns = 1;
-						}
-						if( preg_match("/$regex/", $nxt[4]) ) {
-							$art_style = 'background-color: #afa; ';
-							$ns = 1;
-						}
-						if(!$ns)	continue;
-					}
-						
-					if($regex_neg) {
-						$ns = 0;
-						if( preg_match("/$regex_neg/", $nxt[1]) ) 
-						{
-							$name_style .= 'text-decoration: line-through;';
-							$ns = 1;
-						}
-						if( preg_match("/$regex_neg/", $nxt[4]) ) {
-							$art_style .= 'text-decoration: line-through;';
-							$ns = 1;
-						}
-						if($ns)	$style = 'background-color: #faa; ';
-					}
-					$tmpl->addContent("<tr style='$style'><td>$nxt[0]</td><td style='$name_style'>$nxt[1]</td><td>".html_out($nxt[2])
-						."</td><td>".html_out($nxt[3])."</td><td  style='$art_style'>".html_out($nxt[4])."</td></tr>");
-				}
-				$tmpl->addContent("</table>");
-			}
-		}
-		else $tmpl->msg("Неизвестная закладка");
-	}
-	
-	/// Сохранение параметров анализа
-	function ESave() {
-		global $tmpl, $db;		
-		doc_menu();
-		$pos = rcvint('pos');
-		$param = request('param');
-		if(!isAccess('list_price_an','edit'))	throw new AccessException();
-		if($pos!=0)
-			$this->PosMenu($pos, $param);
+                $cnt = $res->num_rows;
 
-		if($param=='a') {
-			$sql = request('sql');
-			$regex = request('regex');
-			$regex_neg = request('regex_neg');
-			if ($sql == '') throw new Exception("Строка поиска совпадений пуста!");
-			if (preg_match("/$regex/", 'abc') === FALSE)
-					throw new Exception("Регулярное выражение поиска составлено неверно!");
-			if (preg_match("/$regex_neg/", 'abc') === FALSE)
-					throw new Exception("Регулярное выражение отрицания составлено неверно!");
-			$sql_sql = $db->real_escape_string($sql);
-			$regex_sql = $db->real_escape_string($regex);
-			$regex_neg_sql = $db->real_escape_string($regex_neg);
-			$db->query("REPLACE `seekdata` (`id`, `sql`, `regex`, `regex_neg`) VALUES ('$pos', '$sql_sql', '$regex_sql', '$regex_neg_sql')");
-				$tmpl->msg("Данные сохранены!");
-		}
-		else $tmpl->msg("Неизвестная закладка");
-	}	
-	
-	function draw_level($select, $level) {
+                $tmpl->addContent("<b>Результаты отбора - $cnt совпадений со строкой *" . html_out($str) . "*:</b>
+				<br>Выражение поиска:</b> " . html_out($regex) . "<br><b>Выражение отрицания:</b> " . html_out($regex_neg) . "<br>");
+                $tmpl->addContent("<table class='list' width='100%'><tr><th>Price_id</th><th>Что</th><th>Где</th><th>Цена</th><th>Артикул</th></tr>");
+                while ($nxt = $res->fetch_row()) {
+                    $name_style = $art_style = $style = '';
+                    if ($regex) {
+                        $ns = 0;
+                        if (preg_match("/$regex/", $nxt[1])) {
+                            $name_style = 'background-color: #afa; ';
+                            $ns = 1;
+                        }
+                        if (preg_match("/$regex/", $nxt[4])) {
+                            $art_style = 'background-color: #afa; ';
+                            $ns = 1;
+                        }
+                        if (!$ns) {
+                            continue;
+                        }
+                    }
+
+                    if ($regex_neg) {
+                        $ns = 0;
+                        if (preg_match("/$regex_neg/", $nxt[1])) {
+                            $name_style .= 'text-decoration: line-through;';
+                            $ns = 1;
+                        }
+                        if (preg_match("/$regex_neg/", $nxt[4])) {
+                            $art_style .= 'text-decoration: line-through;';
+                            $ns = 1;
+                        }
+                        if ($ns) {
+                            $style = 'background-color: #faa; ';
+                        }
+                    }
+                    $tmpl->addContent("<tr style='$style'><td>$nxt[0]</td><td style='$name_style'>$nxt[1]</td><td>" . html_out($nxt[2])
+                        . "</td><td>" . html_out($nxt[3]) . "</td><td  style='$art_style'>" . html_out($nxt[4]) . "</td></tr>");
+                }
+                $tmpl->addContent("</table>");
+            }
+        } else {
+            throw new \NotFoundException("Неизвестная закладка");
+        }
+    }
+
+    /// Сохранение параметров анализа
+    function ESave() {
+        global $tmpl, $db;
+        doc_menu();
+        $pos = rcvint('pos');
+        $param = request('param');
+        \acl::accessGuard('service.pricean', \acl::UPDATE);
+        if ($pos != 0)
+            $this->PosMenu($pos, $param);
+
+        if ($param == 'a') {
+            try {
+                $sql = request('sql');
+                $regex = request('regex');
+                $regex_neg = request('regex_neg');
+                if ($sql == '') {
+                    throw new ErrorException("Строка поиска совпадений пуста!");
+                }
+                if (preg_match("/$regex/", 'abc') === FALSE) {
+                    throw new ErrorException("Регулярное выражение поиска составлено неверно!");
+                }
+                if (preg_match("/$regex_neg/", 'abc') === FALSE) {
+                    throw new ErrorException("Регулярное выражение отрицания составлено неверно!");
+                }
+                $sql_sql = $db->real_escape_string($sql);
+                $regex_sql = $db->real_escape_string($regex);
+                $regex_neg_sql = $db->real_escape_string($regex_neg);
+                $db->query("REPLACE `seekdata` (`id`, `sql`, `regex`, `regex_neg`) VALUES ('$pos', '$sql_sql', '$regex_sql', '$regex_neg_sql')");
+                $tmpl->msg("Данные сохранены!");
+            }
+            catch(ErrorException $e) {
+                $db->rollback();
+                writeLogException($e);
+                $tmpl->errorMessage($e->getMessage());
+            }
+            $tmpl->addContent($this->getRegExpEditForm($pos));
+        } else {
+            throw new \NotFoundException("Неизвестная закладка");
+        }
+    }
+
+    function draw_level($select, $level) {
 		global $db;
 		$ret = '';
 		settype($level, 'int');

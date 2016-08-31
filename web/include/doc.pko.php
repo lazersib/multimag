@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -18,14 +18,14 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 /// Документ *приходный кассовый ордер*
-class doc_Pko extends doc_Nulltype {
+class doc_Pko extends paymentbasedoc {
 
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 6;
         $this->typename = 'pko';
         $this->viewname = 'Приходный кассовый ордер';
-        $this->ksaas_modify = 1;
+        $this->kassa_modify = 1;
         $this->header_fields = 'kassa sum separator agent';
     }
 
@@ -81,6 +81,9 @@ class doc_Pko extends doc_Nulltype {
         if (!$this->isAltNumUnique() && !$silent) {
             throw new Exception("Номер документа не уникален!");
         }
+        if($this->doc_data['kassa']<=0) {
+            throw new Exception("Касса не выбрана");
+        }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
                 `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`
             FROM `doc_list`
@@ -97,6 +100,10 @@ class doc_Pko extends doc_Nulltype {
         if ($doc_params['ok'] && (!$silent)) {
             throw new Exception('Документ уже проведён!');
         }
+        if ($doc_params['sum']<=0) {
+            throw new Exception('Нельзя провести документ с нулевой или отрицательной суммой!');
+        }
+        $this->checkIfTypeForDocumentExists();
 
         // Запрет для другой фирмы
         if ($doc_params['kassa_firm_id'] != null && $doc_params['kassa_firm_id'] != $doc_params['firm_id']) {
@@ -107,7 +114,7 @@ class doc_Pko extends doc_Nulltype {
             throw new Exception("Выбранная организация может работать только со своими кассами!");
         }
 
-        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$doc_params['sum']}'	WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
+        $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$doc_params['sum']}' WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }
@@ -117,6 +124,7 @@ class doc_Pko extends doc_Nulltype {
 
         $db->update('doc_list', $this->id, 'ok', time());
         $this->sentZEvent('apply');
+        $this->paymentNotify();
     }
 
     // Отменить проведение
@@ -143,4 +151,36 @@ class doc_Pko extends doc_Nulltype {
         $this->sentZEvent('cancel');
     }
 
+    protected function extendedAclCheck($acl, $today_acl, $action) {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, $acl)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, $today_acl)) {
+                throw new \AccessException('Не достаточно привилегий для '.$action.' документа с выбранной кассой '.$this->doc_data['kassa']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для '.$action.' документа с выбранной кассой '.$this->doc_data['kassa'].' произвольной датой');
+            }
+        }
+    }
+    
+    public function extendedViewAclCheck() {
+        $acl_obj = ['cash.global', 'cash.'.$this->doc_data['kassa']];      
+        if (!\acl::testAccess($acl_obj, \acl::VIEW)) {
+            throw new \AccessException('Не достаточно привилегий для просмотра документа с выбранной кассой '.$this->doc_data['kassa']);
+        }
+        return parent::extendedViewAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $this->extendedAclCheck(\acl::APPLY, \acl::TODAY_APPLY, 'проведения');
+        return parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $this->extendedAclCheck(\acl::CANCEL, \acl::TODAY_CANCEL, 'отмены проведения');
+        return parent::extendedCancelAclCheck();
+    }
 }

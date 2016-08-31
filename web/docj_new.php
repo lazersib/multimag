@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -20,9 +20,8 @@
 // Новый журнал документов. Оптимизированная версия для открытия большого журнала
 include_once("core.php");
 include_once("include/doc.core.php");
-need_auth();
-if (!isAccess('doc_list', 'view'))
-	throw new AccessException("");
+
+\acl::accessGuard('service.doclist', \acl::VIEW);
 
 SafeLoadTemplate($CONFIG['site']['inner_skin']);
 $tmpl->hideBlock('left');

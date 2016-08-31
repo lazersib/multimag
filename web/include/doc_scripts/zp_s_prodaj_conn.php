@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -154,7 +154,7 @@ class ds_zp_s_prodaj_conn {
 
 					$tmpl->addContent("<tr>
 					<td><a href='/doc.php?mode=body&amp;doc={$doc_info['id']}'>{$doc_info['id']}</a></td>
-					<td><a href='/adm_users.php?mode=view&amp;id={$doc_info['user_name']}'>{$doc_info['user_name']}</a></td>
+					<td><a href='/adm.php?mode=users&amp;sect=view&amp;user_id={$doc_info['user_name']}'>{$doc_info['user_name']}</a></td>
 					<td>$date</td><td>{$doc_info['sum']}</td>");
 
 					if (!$doc_info['zp_s_finansov'])

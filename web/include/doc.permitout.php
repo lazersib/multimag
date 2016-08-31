@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -41,7 +41,7 @@ class doc_PermitOut extends doc_Nulltype {
     /// Инициализация дополнительных данных документа
     protected function initDefDopData() {
         global $CONFIG;
-        $this->def_dop_data = array('transport_number' => '', 'load_permitter'=>'', 'exit_permitter'=>'');
+        $this->def_dop_data = array('transport_number' => '', 'load_permitter'=>'', 'exit_permitter'=>'', 'place'=>'');
         if(isset($CONFIG['doc']['permitout_lines'])) {
             foreach ($CONFIG['doc']['permitout_lines'] as $id=>$name) {
                 $this->def_dop_data[$id] = 0;
@@ -63,7 +63,10 @@ class doc_PermitOut extends doc_Nulltype {
         }
         if (!isset($this->dop_data['exit_permitter'])) {
             $this->dop_data['exit_permitter'] = '';
-        }        
+        }     
+        $tmpl->addContent("Место хранения:<br>"
+            . "<input type='text' name='place' style='width: 100%' value='{$this->dop_data['place']}'><br>"
+            . "<hr>");
         $tmpl->addContent("Гос.номер транспортного средства<br>"
             . "<input type='text' name='transport_number' style='width: 100%' value='{$this->dop_data['transport_number']}'><br>"
             . "<hr>");

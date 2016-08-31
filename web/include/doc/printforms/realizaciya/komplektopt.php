@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -59,6 +59,7 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
 
         $nomenclature = $this->doc->getDocumentNomenclature('bulkcnt,base_price,rto,bigpack,comment');
         $pc = \PriceCalc::getInstance();
+        $pc->setFirmId($doc_data['firm_id']);
         $pc->setAgentId($doc_data['agent']);
         $pc->setUserId($doc_data['user']);
         if(isset($dop_data['ishop'])) {

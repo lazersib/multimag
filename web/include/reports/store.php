@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -33,24 +33,32 @@ class Report_Store extends BaseGSReport {
     function Form() {
         global $tmpl, $db;
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
-		<form action='' method='post'>
-		<input type='hidden' name='mode' value='store'>
-		<input type='hidden' name='opt' value='pdf'>
-		<fieldset><legend>Отобразить цены</legend>");
+            <form action='' method='post'>
+            <input type='hidden' name='mode' value='store'>
+            <input type='hidden' name='opt' value='pdf'>
+            Организация:<br>
+            <select name='firm_id'><option value='0'>--не задано--</option>");
+            $res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
+            while ($nxt = $res->fetch_row()) {
+                $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
+            }
+            $tmpl->addContent("</select><br>
+            <fieldset><legend>Отобразить цены</legend>");
         $cres = $db->query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
-        while ($nxt = $cres->fetch_row())
+        while ($nxt = $cres->fetch_row()) {
             $tmpl->addContent("<label><input type='checkbox' name='cost[$nxt[0]]' value='$nxt[0]'>" . html_out($nxt[1]) . "</label><br>");
+        }
         $tmpl->addContent("</fieldset><br>
-		<fieldset><legend>Показывать</legend>
-		<label><input type='checkbox' name='show_price' value='1'>Цены</label><br>
-		<label><input type='checkbox' name='show_add' value='1'>Наценку</label><br>
-		<label><input type='checkbox' name='show_sum' value='1'>Суммы</label><br>
-		<label><input type='checkbox' name='show_mincnt' value='1'>Минимально допустимый остаток</label><br>
-                <label><input type='checkbox' name='show_mass' value='1'>Массу</label>
-		</fieldset><br>
-		Склад:<br>
-		<select name='sklad'>
-		<option value='0'>--не задан--</option>");
+            <fieldset><legend>Показывать</legend>
+            <label><input type='checkbox' name='show_price' value='1'>Цены</label><br>
+            <label><input type='checkbox' name='show_add' value='1'>Наценку</label><br>
+            <label><input type='checkbox' name='show_sum' value='1'>Суммы</label><br>
+            <label><input type='checkbox' name='show_mincnt' value='1'>Минимально допустимый остаток</label><br>
+            <label><input type='checkbox' name='show_mass' value='1'>Массу</label>
+            </fieldset><br>
+            Склад:<br>
+            <select name='sklad'>
+            <option value='0'>--не задан--</option>");
         $res = $db->query("SELECT `id`, `name` FROM `doc_sklady` ORDER BY id");
         while ($nxt = $res->fetch_row()) {
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
@@ -64,10 +72,11 @@ class Report_Store extends BaseGSReport {
     function makePDF() {
         global $tmpl, $CONFIG, $db;
         ob_start();
-        define('FPDF_FONT_PATH', $CONFIG['site']['location'] . '/fpdf/font/');
+        $firm_id = rcvint('firm_id');
         require('fpdf/fpdf_mc.php');
 
         $pc = PriceCalc::getInstance();
+        $pc->setFirmId($firm_id);
 
         $pdf = new PDF_MC_Table('P');
         $pdf->Open();
@@ -119,29 +128,33 @@ class Report_Store extends BaseGSReport {
             $col_sizes[] = 10;
         }
         if ($show_price) {
-            $headers[] = 'АЦП';
-            $headers[] = 'Базовая цена';
-            $haligns[] = 'C';
-            $haligns[] = 'C';
+            if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
+               $headers[] = 'АЦП';
+               $haligns[] = 'C';
+               $aligns[] = 'R';
+               $col_sizes[] = 18;
+            }            
+            $headers[] = 'Базовая цена';            
+            $haligns[] = 'C';            
             $aligns[] = 'R';
-            $aligns[] = 'R';
-            $col_sizes[] = 18;
             $col_sizes[] = 18;
         }
-        if ($show_add) {
+        if ($show_add && \acl::testAccess('directory.goods.secfields', \acl::VIEW) ) {
             $headers[] = 'Наценка';
             $haligns[] = 'C';
             $aligns[] = 'R';
             $col_sizes[] = 15;
         }
         if ($show_sum) {
-            $headers[] = 'Сумма по АЦП';
+            if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
+               $headers[] = 'Сумма по АЦП';
+               $haligns[] = 'C';
+               $aligns[] = 'R';
+               $col_sizes[] = 18;
+            } 
             $headers[] = 'Сумма по базовой';
             $haligns[] = 'C';
-            $haligns[] = 'C';
             $aligns[] = 'R';
-            $aligns[] = 'R';
-            $col_sizes[] = 18;
             $col_sizes[] = 18;
         }
         if($show_mass) {
@@ -216,7 +229,7 @@ class Report_Store extends BaseGSReport {
             $cnt_join = '';
         }
 
-        $sum = $bsum = $summass = 0;
+        $bsum = $summass = 0;
         $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
         while ($group_line = $res_group->fetch_assoc()) {
             if ($gs && is_array($g)) {
@@ -256,22 +269,25 @@ class Report_Store extends BaseGSReport {
                     $act_cost = sprintf('%0.2f', getInCost($nxt['id']));
                     $cost_p = sprintf("%0.2f", $nxt['base_price']);
                     if ($show_price) {
-                        $line[] = $act_cost;
+                        if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) { 
+                            $line[] = $act_cost;
+                        }
                         $line[] = $cost_p;
                     }
                 }
 
-                if ($show_add) {
+                if ($show_add && \acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
                     $line[] = sprintf("%0.2f р. (%0.2f%%)", $cost_p - $act_cost, ($cost_p / $act_cost) * 100 - 100);
                 }
 
 
                 if ($show_sum) {
-                    $sum_p = sprintf("%0.2f", $act_cost * $nxt['cnt']);
+                    if(\acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
+                        $sum_p = sprintf("%0.2f", $act_cost * $nxt['cnt']);
+                        $line[] = $sum_p;
+                    }
                     $bsum_p = sprintf("%0.2f", $nxt['base_price'] * $nxt['cnt']);
-                    $sum += $act_cost * $nxt['cnt'];
-                    $bsum += $nxt['base_price'] * $nxt['cnt'];
-                    $line[] = $sum_p;
+                    $bsum += $nxt['base_price'] * $nxt['cnt'];                    
                     $line[] = $bsum_p;
                 }
                 if($show_mass) {

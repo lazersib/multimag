@@ -18,6 +18,16 @@ input
 /* 	border-radius:		4px; */
 }
 
+label.autoalert input[type=checkbox]:checked~span {
+    color: #f00;
+    font-weight: bold;
+}
+
+label.autohl input[type=radio]:checked~span {
+    color: #080;
+    font-weight: bold;
+}
+
 textarea
 {
 	border:	1px solid #ccc;
@@ -135,9 +145,13 @@ dt, dd
 }
 
 pre, code {
-	font-family: monospace;
-	font-size: 1.1em;
-	line-height:1.5em;
+    font-family: monospace;
+    font-size: 1.1em;
+    line-height:1.5em;
+    color: black;
+    padding: 1em;
+    border: 1px dashed #2f6fab;    
+    background-color: #f9f9f9;
 }
 
 acronym, cite
@@ -526,6 +540,7 @@ div#wiki-page {
 		font-weight:normal;
 		color:		rgb(39,78,144);
 		background-color: transparent;
+                padding-left: 5px;
 	}
 	div#page-info {
 		margin:		0;
@@ -610,7 +625,7 @@ div#wiki-foot {
 	}
 
 
-div#wiki-page P:first-letter { font-size: 140%; font-weight: bold;}
+div.article_text P:first-letter { font-size: 140%; font-weight: bold;}
 
 .lin0{
     background-color: #f0f8ff;    
@@ -788,6 +803,16 @@ table.list div.ic {
 	text-align: right;
 	margin: 0;
 	padding: 0;
+}
+
+table.editcard > tbody > tr > th, table.editcard > tr > th {
+    background-color: #fefefe;
+    color: #004;
+    text-align: center;
+    font-weight: normal;
+    padding: 15px 5px 2px 5px;
+    border-top: #aaa 1px solid;
+    border-bottom: #ccc 1px dotted;
 }
 
 .searchblock
@@ -1184,10 +1209,6 @@ div.iblock {
     margin: 3px;
 }
 
-div.article_text {
-    padding: 10px;
-}
-
 #audioBox {
     height:100%;
     width:100%;
@@ -1214,4 +1235,57 @@ div.article_text {
     bottom:0;
     position:fixed;
     z-index: 999999;
+}
+
+/* Articles */
+
+div.article_text {
+    padding: 10px;
+}
+
+div.article_text a {
+    border-bottom: 1px dashed #274E90;
+}
+
+div.article_text a:hover {
+    border-bottom: 1px solid #274E90;
+    text-decoration: none;
+}
+
+
+textarea.wikieditor {
+    min-width: 700px;
+    min-height: 150px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+textarea.wikieditor.big {
+    min-width: 95%;
+    min-height: 400px;
+}
+
+div.attachments {
+    margin: 15px;
+    padding: 5px 10px;
+    background-color: #ffc;
+    width: auto;
+    border: 1px dashed #274E90;
+}
+
+div.attachments h2 {
+    padding: 0;
+    margin: 0;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    border-bottom: 1px dashed #274E90;
+}
+
+div.attachments ul {
+    list-style-image: url('/img/16x16/attachment.png');
+}
+
+div.attachments span.size {
+    cursor:help;
 }

@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -20,10 +20,11 @@
 
 class Report_Buy_book extends BaseReport {
     function getName($short = 0) {
-        if ($short)
+        if ($short) {
             return "Книга покупок";
-        else
+        } else {
             return "Книга покупок";
+        }
     }
 
     function Form() {
@@ -38,6 +39,9 @@ class Report_Buy_book extends BaseReport {
             <select name='firm_id'>");
         $res = $db->query("SELECT `id`, `firm_name` FROM `doc_vars` ORDER BY `id`");
         while ($nxt = $res->fetch_row()) {
+            if(!\acl::testAccess([ 'firm.global', 'firm.'.$nxt[0]], \acl::VIEW)) {
+                continue;
+            }
             $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . "</option>");
         }
         $tmpl->addContent("</select><br>
@@ -66,7 +70,7 @@ class Report_Buy_book extends BaseReport {
         } else {
             throw new Exception("Организация не найдена");
         }
-
+        \acl::accessGuard([ 'firm.global', 'firm.'.$firm_info['id']], \acl::VIEW);
         $pdf = new PDF_MC_Table('L');
         $pdf->Open();
         $pdf->AddFont('Arial', '', 'arial.php');

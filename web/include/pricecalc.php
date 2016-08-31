@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -30,9 +30,10 @@ class PriceCalc {
     // устанавливаемые значения
     protected $from_site_flag = 0;  ///< флаг *заказ с сайта*
     protected $user_id = 0;         ///< id пользователя, для кторого расчитываем цены
-    protected $agent_id = 0;        ///< id агента, для кторого расчитываем цены
-    protected $order_sum = 0;       ///< сумма заказа, для которго расчитываем цены
-    
+    protected $agent_id = 0;        ///< id агента, для которого расчитываем цены
+    protected $order_sum = 0;       ///< сумма заказа, для которого расчитываем цены
+    protected $firm_id = 0;         ///< id организации, для которой расчитываем цены
+
     // вычисляемые значения
     protected $agent_avg_sum = false;   ///< Средняя сумма оборота агента
     protected $current_price_id = 0;    ///< id цены для текущих параметров заказа. При изменениии параметров - сбрасывается.
@@ -47,10 +48,10 @@ class PriceCalc {
     protected $pos_info_cache;          ///< Кеш информации о наименованиях
     protected $ppc;                     ///< Кеш цен наименований
     protected $gpi;                     ///< Кеш цен групп
+    protected $firms;                   ///< Организации
 
     /// Конструктор копирования запрещён
-    final private function __clone() {
-        
+    final private function __clone() {        
     }
 
     /// Конструктор. Загружает и сортирует список цен из базы данных.
@@ -62,7 +63,7 @@ class PriceCalc {
         $this->gpi = array();
 
         $res = $db->query("SELECT `id`, `name`, `type`, `value`, `context`, `priority`, `accuracy`, `direction`, `bulk_threshold`, `acc_threshold`
-			FROM `doc_cost` ORDER BY `priority`");
+            FROM `doc_cost` ORDER BY `priority`");
         while ($line = $res->fetch_assoc()) {
             $contexts = str_split($line['context']);
             foreach ($contexts as $context) {
@@ -87,6 +88,10 @@ class PriceCalc {
             }
             $this->prices[$line['id']] = $line;
         }
+        $res = $db->query("SELECT `id`, `param_nds`, `no_retailprices`, `pricecoeff` FROM `doc_vars` ORDER BY `id`");
+        while($line = $res->fetch_assoc()) {
+            $this->firms[$line['id']] = $line;
+        }
     }
 
     /// Получить экземпляр класса
@@ -108,19 +113,25 @@ class PriceCalc {
     /// Установить ID пользователя для расчёта цен
     /// @param $user_id id пользователя.
     public function setUserId($user_id) {
-        $this->user_id = $user_id;
+        $this->user_id = intval($user_id);
         $this->current_price_id = 0;
     }
 
     /// Установить ID агента для расчёта цен
     /// @param $agent_id id агента. Должен существовать.
     public function setAgentId($agent_id) {
-        $this->agent_id = $agent_id;
+        $this->agent_id = intval($agent_id);
         $this->agent_avg_sum = false;
         $this->agent_price_id = 0;
         $this->no_retail_prices = 0;
         $this->no_bulk_prices = 0;
         $this->current_price_id = 0;
+    }
+    
+    /// Установить ID собственной организации для расчёта цен
+    /// @param $firm_id id организации. Должна существовать.
+    public function setFirmId($firm_id) {
+        $this->firm_id = intval($firm_id);
     }
 
     /// Получить флаг no_bulk_prices
@@ -160,6 +171,17 @@ class PriceCalc {
         $price_id = $this->getCurrentPriceID();
         return $this->prices[$price_id]['name'];
     }
+    
+    /// Получить наименование цены по-умолчанию
+    public function getDefaultPriceName() {
+        $price_id = $this->getDefaultPriceId();
+        return $this->prices[$price_id]['name'];
+    }
+    
+    /// Получить массив с информацией об организациях
+    public function getFirms() {
+        return $this->firms;
+    }
 
     /// Получить ID текущей цены. Учитываются разные критерии.
     /// @return id текущей цены
@@ -178,9 +200,10 @@ class PriceCalc {
             $this->no_bulk_prices = $agent_info['no_bulk_prices'];
         }
 
-        if ($this->agent_price_id && $this->no_bulk_prices) {
+        if ($this->agent_price_id) {
             $find_id = $this->agent_price_id;
-        } else {
+        } 
+        elseif (!$this->no_bulk_prices) {
             foreach ($this->bulk_prices as $price) {
                 if ($this->agent_price_id && $this->agent_price_id == $price['id']) {
                     $find_id = $price['id'];
@@ -199,9 +222,6 @@ class PriceCalc {
                     break;
                 }
             }
-        }
-        if ((!$find_id) && $this->agent_price_id) {
-            $find_id = $this->agent_price_id;
         }
 
         if (!$find_id) {
@@ -402,7 +422,7 @@ class PriceCalc {
         }
         $res = $db->query("SELECT `cost` AS `base_price`, `group`, `bulkcnt` FROM `doc_base` WHERE `doc_base`.`id`=$pos_id");
         if ($res->num_rows == 0) {
-            throw new Exception("Товар ID:$pos_id не найден!");
+            throw new \NotFoundException("Товар ID:$pos_id не найден!");
         }
         $this->pos_info_cache[$pos_id] = $res->fetch_assoc();
 
@@ -419,26 +439,38 @@ class PriceCalc {
         settype($pos_id, 'int');
         settype($price_id, 'int');
         $pos_info = $this->fixPosInfo($pos_id, $pos_info);
-
         if (!isset($this->ppc[$pos_id])) {
             $this->ppc[$pos_id] = array();
         }
         if (isset($this->ppc[$pos_id][$price_id])) {
             return $this->ppc[$pos_id][$price_id];
         }
-
+        $price_coeff = 1;
+        $no_retail = 0;
+        
+        if($this->firm_id) {
+            if(isset($this->firms[$this->firm_id])) {
+                $f = $this->firms[$this->firm_id];
+                if($f['pricecoeff']) {
+                    $price_coeff = $f['pricecoeff'];
+                }
+                $no_retail = $f['no_retailprices'];
+            }
+        }
+        $firm_price = $pos_info['base_price'] * $price_coeff;
+        
         // Проверяем переопределение в наименовании
         $res = $db->query("SELECT `doc_base_cost`.`id`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`,
-			`doc_base_cost`.`direction`
-		FROM `doc_base_cost`
-		WHERE `doc_base_cost`.`cost_id`=$price_id AND `doc_base_cost`.`pos_id`=$pos_id");
+                `doc_base_cost`.`direction`
+            FROM `doc_base_cost`
+            WHERE `doc_base_cost`.`cost_id`=$price_id AND `doc_base_cost`.`pos_id`=$pos_id");
 
         if ($res->num_rows != 0) {
             $line = $res->fetch_assoc();
             switch ($line['type']) {
-                case 'pp': $price = $pos_info['base_price'] * $line['value'] / 100 + $pos_info['base_price'];
+                case 'pp': $price = $firm_price * $line['value'] / 100 + $firm_price;
                     break;
-                case 'abs': $price = $pos_info['base_price'] + $line['value'];
+                case 'abs': $price = $firm_price + $line['value'];
                     break;
                 case 'fix': $price = $line['value'];
                     break;
@@ -458,9 +490,9 @@ class PriceCalc {
             $gdata = $this->getGroupPriceinfo($base_group, $price_id);
             if ($gdata['gc_id']) {
                 switch ($gdata['type']) {
-                    case 'pp': $price = $pos_info['base_price'] * $gdata['value'] / 100 + $pos_info['base_price'];
+                    case 'pp': $price = $firm_price * $gdata['value'] / 100 + $firm_price;
                         break;
-                    case 'abs': $price = $pos_info['base_price'] + $gdata['value'];
+                    case 'abs': $price = $firm_price + $gdata['value'];
                         break;
                     case 'fix': $price = $gdata['value'];
                         break;
@@ -479,9 +511,9 @@ class PriceCalc {
         // Если не переопределена нигде - получаем из глобальных данных
         $cur_price_info = $this->prices[$price_id];
         switch ($cur_price_info['type']) {
-            case 'pp': $price = $pos_info['base_price'] * $cur_price_info['value'] / 100 + $pos_info['base_price'];
+            case 'pp': $price = $firm_price * $cur_price_info['value'] / 100 + $firm_price;
                 break;
-            case 'abs': $price = $pos_info['base_price'] + $cur_price_info['value'];
+            case 'abs': $price = $firm_price + $cur_price_info['value'];
                 break;
             case 'fix': $price = $cur_price_info['value'];
                 break;
@@ -518,6 +550,16 @@ class PriceCalc {
         $this->gpi[$group_id][$price_id] = $res->fetch_assoc();
         $res->free();
         return $this->gpi[$group_id][$price_id];
+    }
+    
+    /// Получить информацию о цене по её ID
+    /// @param $price_id id цены
+    /// @return Ассоциативный массив с ключами id, name, type, value, context, priority, accuracy, direction, bulk_threshold, acc_threshold
+    protected function getPriceInfo($price_id) {
+        if(isset($this->prices[$price_id])) {
+            return $this->prices[$price_id];
+        }
+        throw new \Exception('Запрошенная цена не найдена');
     }
 
 }

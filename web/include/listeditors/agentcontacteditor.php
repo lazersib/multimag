@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -40,18 +40,21 @@ class agentContactEditor extends \ListEditor {
         $this->print_name = 'Редактор контактов агента';
         $this->table_name = 'agent_contacts';
         $this->agent_id = 0;
+        $this->can_delete = true;
     }
 
     /// Получить массив с именами колонок списка
     public function getColumnNames() {
         return array(
             'id' => 'id',
-            'context' => 'Контекст',
-            'type' => 'Тип',
+            'context' => 'Класс',
+            'type' => 'Вид',
             'value' => 'Значение',
+            'person_name' => 'Контактное лицо',
+            'person_post' => 'Должность',
             'for_sms' => 'Для СМС',
             'for_fax' => 'Для факсов',
-            'no_ads' => 'Запрет рассылок',
+            'no_ads' => 'Запрет рассылок',            
         );
     }
 
@@ -59,7 +62,7 @@ class agentContactEditor extends \ListEditor {
     public function loadList() {
         global $db;
         $a_id = intval($this->agent_id);
-        $res = $db->query("SELECT `id`, `agent_id`, `context`, `type`, `value`, `for_sms`, `for_fax`, `no_ads`
+        $res = $db->query("SELECT `id`, `agent_id`, `context`, `type`, `value`, `person_name`, `person_post`, `for_sms`, `for_fax`, `no_ads`
             FROM {$this->table_name}
             WHERE `agent_id`='$a_id'
             ORDER BY `id`");
@@ -90,9 +93,7 @@ class agentContactEditor extends \ListEditor {
         }
         $write_data['agent_id'] = intval($this->agent_id);
         if ($id) {
-            if (!isAccess($this->acl_object_name, 'edit')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
             $old_data = $this->getItem($id);
             unset($old_data['id']);
             $this->db_link->updateA($this->table_name, $id, $write_data);
@@ -101,9 +102,7 @@ class agentContactEditor extends \ListEditor {
             $log_text = getCompareStr($old_data, $write_data);
             doc_log('UPDATE agent_contact ID:'.$id, $log_text, 'agent', intval($this->agent_id));
         } else {
-            if (!isAccess($this->acl_object_name, 'create')) {
-                throw new \AccessException();
-            }
+            \acl::accessGuard($this->acl_object_name, \acl::CREATE);
             $id = $this->db_link->insertA($this->table_name, $write_data);
             $log_text = getCompareStr(array('context'=>'','type'=>'','value'=>'','no_ads'=>'','for_sms'=>'','for_fax'=>''), $write_data);
             doc_log('ADD agent_contact', $log_text, 'agent', intval($this->agent_id));

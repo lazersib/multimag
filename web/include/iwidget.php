@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -20,6 +20,7 @@
 /// Базовый класс для виджетов
 abstract class IWidget {
     protected $acl_object_name;         //< Имя объекта контроля привилегий
+    protected $variables;               //< Wiki - переменные
 
     public function __construct(){}
     
@@ -37,11 +38,16 @@ abstract class IWidget {
     abstract public function setParams($param_str);
     
     /// Узнать, есть ли необходимые привилегии
-    /// @param $view    Строка с наименованием привилегии. По умолчанию - view (просмотр)
-    final function isAllow($mode='view') {
+    /// @param $mode    Константа привилегии. По умолчанию - view (просмотр)
+    final public function isAllow($mode =  \acl::VIEW) {
             if(!$this->acl_object_name)
                 return true;
-            return isAccess($this->acl_object_name, $mode, true);
+            return \acl::testAccess($this->acl_object_name, $mode, true);
+    }
+    
+    /// Установить wiki - переменные
+    public function setVariables($var) {
+        $this->variables = $var;
     }
 
     /// Получить HTML код виджета

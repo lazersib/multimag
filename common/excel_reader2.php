@@ -383,7 +383,12 @@ class Spreadsheet_Excel_Reader {
 		return '';
 	}
 	function rowcount($sheet = 0) {
+            if(isset($this->sheets [$sheet])) {
 		return $this->sheets [$sheet] ['numRows'];
+            }
+            else {
+                return 0;
+            }
 	}
 	function colcount($sheet = 0) {
 		return $this->sheets [$sheet] ['numCols'];

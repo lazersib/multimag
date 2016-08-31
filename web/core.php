@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -17,91 +17,36 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-/**
-@mainpage Cистема комплексного учёта торговли multimag. Документация разработчика.
-<h2>Быстрый старт для разработчика multimag</h2>
-<ul>
-<li>BETemplate - шаблонизатор</li>
-<li>doc.core.php содержит вспомогательные функции работы с документами</li>
-<li>Vitrina формирует все страницы витрины и может быть перегружен шаблоном</li>
-<li>doc_Nulltype является базовым классом для всех документов системы</li>
-<li>BaseReport используется для генерации отчётов</li>
-<li>От AsyncWorker наследуются обработчики, выполняющиеся независимо от веб сервера</li>
-<li>От ListEditor наследуются редакторы простых справочников</li>
-<li>PosEditor содержит методы для работы с редактором списка товаров</li>
-<li>IModule - базовый класс для модулей. Ссылки на модули автоматически добавляются на нужные страницы. Это можно использовать для разработки плагинов.</li>
-</ul>
-Смотри <a href='annotated.html'>структуры данных</a> и <a href='hierarchy.html'>иерархию классов</a>, чтобы получить полное представление о классах системы
-**/
-
-if ((@$CONFIG['site']['maintain_ip'])) {
-    if($CONFIG['site']['maintain_ip']!=getenv('REMOTE_ADDR')) {
-	header("HTTP/1.0 503 Service temporary unavariable");
-        header("Retry-After: 300");
-        die("<!DOCTYPE html>
-<html>
-<head>
-<meta charset=\"utf-8\">
-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
-<title>Error 500: Необработанная внутренняя ошибка</title>
-<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
-<h1>503 Service temporary unavariable</h1>Сайт отключне на техобслуживание. Повторите попытку через несколько минут!<br>
-The site in maintenance mode. Please try again in a few minutes!</body></html>"
-	);
-    }
-}
+/// TODO: После рефакторинга, файл должен быть удалён. Код переностится, главным образом, в include/webcore.php
 
 /// Автозагрузка классов для ядра
 function core_autoload($class_name){
     global $CONFIG;
-    $class_name = strtolower($class_name);
-    $class_name = str_replace('\\', '/', $class_name);
+    $lower_class_name = strtolower($class_name);
+    $lower_class_name = str_replace('\\', '/', $lower_class_name);
     if($CONFIG['site']['skin']) {
-        $fname = $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/include/'.$class_name.'.php';
-        if(file_exists($fname)) {
+        $fname = $CONFIG['site']['location'].'/skins/'.$CONFIG['site']['skin'].'/include/'.$lower_class_name.'.php';
+        if(is_readable($fname)) {
             include_once $fname;
             return;
         }
     }
-    $fname = $CONFIG['site']['location'].'/include/'.$class_name.'.php';
-    if(file_exists($fname)) {
+    $fname = $CONFIG['site']['location'].'/include/'.$lower_class_name.'.php';
+    if(is_readable($fname)) {
         include_once $fname;
+        return;
+    }
+    $filename = dirname(__DIR__)
+        .DIRECTORY_SEPARATOR
+        .str_replace('\\', DIRECTORY_SEPARATOR, $class_name)
+        .'.php';
+    if(is_readable($filename)) {
+        include_once $filename;
         return;
     }
 }
 
 spl_autoload_register('core_autoload');
-
-/// Вычисляет максимально допустимый размер вложений в байтах
-function get_max_upload_filesize()
-{
-    $max_post = trim(ini_get('post_max_size'));
-    $last = strtolower($max_post[strlen($max_post)-1]);
-    switch($last) {
-        // The 'G' modifier is available since PHP 5.1.0
-        case 'g':
-            $max_post *= 1024;
-        case 'm':
-            $max_post *= 1024;
-        case 'k':
-            $max_post *= 1024;
-    }
-
-    $max_fs = trim(ini_get('upload_max_filesize'));
-    $last = strtolower($max_fs[strlen($max_fs)-1]);
-    switch($last) {
-        // The 'G' modifier is available since PHP 5.1.0
-        case 'g':
-            $max_fs *= 1024;
-        case 'm':
-            $max_fs *= 1024;
-        case 'k':
-            $max_fs *= 1024;
-    }
-
-
-    return min($max_fs, $max_post);
-}
 
 /// @brief Форматирование номера телефона, записанного в международном формате, в легкочитаемый вид.
 ///
@@ -117,22 +62,6 @@ function formatPhoneNumber($phone)
 		$fphone.=$divs[$i].$phone[$i];
 	}
 	return $fphone;
-}
-
-/// Округление в нужную сторону
-/// @param number Исходное число
-/// @param precision Точность округления
-/// @param direction Направление округления
-function roundDirect($number, $precision = 0, $direction = 0)
-{
-	if ($direction==0 )	return round($number, $precision);
-	else
-	{
-		$factor = pow(10, -1 * $precision);
-		return ($direction<0)
-			? floor($number / $factor) * $factor
-			: ceil($number / $factor) * $factor;
-	}
 }
 
 /// @brief Обработчик неперехваченных исключений
@@ -270,7 +199,7 @@ function request($varname,$def='')
 }
 
 /// Получает часть массива $_REQUEST, позволяет задать значение по умолчанию для отсутствующих элементов
-/// @param $varname Массив значений ключенй $_REQUEST
+/// @param $varname Массив значений ключей $_REQUEST
 /// @param $dev Возвращаемое значение, если искомый элемент отсутствует
 function requestA($var_array, $def='')
 {
@@ -351,32 +280,6 @@ function auth() {
 	return (@$_SESSION['uid']==0)?0:1;
 }
 
-/// Есть ли привилегия доступа к указанному объекту для указанной операции
-/// @param $object Имя объекта, для которого нужно проверить привилегии
-/// @param $action Имя действия, для осуществления которого нужно проверить привилегии
-/// @param $no_redirect Если false - то в случае отсутствия привилегий, и если не пройдена аутентификация, выполняет редирект на страницу аутентификации
-function isAccess($object, $action,$no_redirect=false)
-{
-	global $db;
-	$uid=@$_SESSION['uid'];
-	if($uid==1)	return true;
-	$res=$db->query("(
-	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action'
-	) UNION (
-	SELECT `users_groups_acl`.`id` FROM `users_groups_acl`
-	INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`
-	WHERE `uid`='$uid' AND `object`='$object' AND `action`='$action')
-	UNION (
-	SELECT `users_groups_acl`.`id` FROM `users_groups_acl`
-	INNER JOIN `users_in_group` ON `users_in_group`.`gid`=`users_groups_acl`.`gid`
-	WHERE `uid`='0' AND `object`='$object' AND `action`='$action')
-	UNION(
-	SELECT `users_acl`.`id` FROM `users_acl` WHERE `uid`='0' AND `object`='$object' AND `action`='$action')");
-	$access=($res->num_rows>0)?true:false;
-	if((!$uid) && (!$access) && (!$no_redirect))	need_auth();
-	return $access;
-}
-
 // Проверка, не принадлежит ли текущая сессия другому пользователю
 function testForeignSession() {
     global $db, $tmpl;
@@ -425,25 +328,25 @@ function SafeLoadTemplate($template)
 }
 
 /// Получить данные профиля пользователя по uid
-function getUserProfile($uid)
-{
-	global $db;
-	settype($uid,'int');
-	$user_profile=array();
-	$user_profile['main']=array();
-	$user_profile['dop']=array();
+function getUserProfile($uid) {
+    global $db;
+    settype($uid, 'int');
+    $user_profile = array();
+    $user_profile['main'] = array();
+    $user_profile['dop'] = array();
 
-	$res=$db->query("SELECT * FROM `users` WHERE `id`='$uid'");
-	if(!$res->num_rows)	return $user_profile;	// Если не найден
-	$user_profile['main']	= $res->fetch_assoc();
-	unset($user_profile['main']['pass']);	// В целях безопасности
-	unset($user_profile['main']['pass_change']);
-	$res=$db->query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='$uid'");
-	while($nn=$res->fetch_row())
-	{
-		$user_profile['dop'][$nn[0]]=$nn[1];
-	}
-	return $user_profile;
+    $res = $db->query("SELECT * FROM `users` WHERE `id`='$uid'");
+    if (!$res->num_rows) { // Если не найден
+        return $user_profile;
+    } 
+    $user_profile['main'] = $res->fetch_assoc();
+    unset($user_profile['main']['pass']); // В целях безопасности
+    unset($user_profile['main']['pass_change']);
+    $res = $db->query("SELECT `param`,`value` FROM `users_data` WHERE `uid`='$uid'");
+    while ($nn = $res->fetch_row()) {
+        $user_profile['dop'][$nn[0]] = $nn[1];
+    }
+    return $user_profile;
 }
 
 /// Класс шаблонизатора вывода страницы. Содержит методы, отвечающие за загрузку темы оформления, заполнения страницы содержимым и отправки в броузер
@@ -565,6 +468,21 @@ class BETemplate {
 	function addCustomBlockData($block_name, $data) {
 		@$this->page_blocks[$block_name].=$data;
 	}
+        
+        /// Добавить виджет *вкладки*
+        /// @param $list Массив со списком вкладок
+        /// @param $opened Код открытой вкладки        
+        /// @param $link_prefix Префикс ссылки вкладки
+        /// @param $param_name Параметр ссылки выбора вкладки
+        function addTabsWidget($list, $opened, $link_prefix, $param_name) {
+            $str = \widgets::getEscapedTabsWidget($list, $opened, $link_prefix, $param_name);
+            $this->addContent($str);
+        }
+        
+        function addTableWidget($table_header, $table_body, $head_each_lines = 100) {
+            $str = \widgets::getTable($table_header, $table_body, $head_each_lines);
+            $this->addContent($str);
+        }
 
 	/// Добавить блок (div) с информацией к основному блоку страницы (content)
 	/// @param $text Текст сообщения
@@ -626,7 +544,8 @@ class BETemplate {
 		global $time_start;
 		if (stripos(getenv("HTTP_USER_AGENT"), "MSIE") !== FALSE) {
 			$this->page_blocks['notsupportbrowser'] = "<div style='background: #ffb; border: 1px #fff outset; padding: 3px; padding-right: 15px; text-align: right; font-size: 14px;'><img src='/img/win/important.png' alt='info' style='float: left'>
-			Вероятно, Вы используете неподдерживаемую версию броузера.<br><b>Для правильной работы сайта, скачайте и установите последнюю версию <a href='http://mozilla.com'>Mozilla</a>, <a href='http://www.opera.com/download/'>Opera</a> или <a href='http://www.google.com/intl/ru/chrome/browser/'>Chrome</a></b><div style='clear: both'></div></div>";
+			Вероятно, Вы используете неподдерживаемую версию броузера.<br>
+                        <b>Для правильной работы сайта, скачайте и установите последнюю версию <a href='http://mozilla.com'>Mozilla</a>, <a href='http://www.opera.com/download/'>Opera</a> или <a href='http://www.google.com/intl/ru/chrome/browser/'>Chrome</a></b><div style='clear: both'></div></div>";
 		}
 		$time = microtime(true) - $time_start;
 		$this->page_blocks['gentime'] = round($time, 4);
@@ -788,45 +707,59 @@ if(!function_exists('mb_internal_encoding'))
 }
 
 $time_start = microtime(true);
-if(!function_exists('mb_internal_encoding'))
-{
-	header("HTTP/1.0 500 Internal Server Error");
-        header("Retry-After: 3000");
-	die("<h1>500 Внутренняя ошибка сервера</h1>Расширение mbstring не установлено! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
-}
 
-session_start();
+
 mb_internal_encoding("UTF-8");
 
 $base_path = dirname(dirname(__FILE__));
-if(! include_once("$base_path/config_site.php"))
-{
+if(! include_once("$base_path/config_site.php")) {
 	header("HTTP/1.0 500 Internal Server Error");
         header("Retry-After: 3000");
 	die("<h1>500 Внутренняя ошибка сервера</h1>Конфигурационный файл не найден! Программа установлена некорректно. Обратитесь к администратору c описанием проблемы.");
 }
 
-include_once($CONFIG['location']."/common/core.common.php");
+if (@$CONFIG['site']['maintain_ip']) {
+    if($CONFIG['site']['maintain_ip']!=getenv('REMOTE_ADDR')) {
+	header("HTTP/1.0 503 Service temporary unavariable");
+        header("Retry-After: 300");
+        die("<!DOCTYPE html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
+<title>Error 500: Необработанная внутренняя ошибка</title>
+<style type='text/css'>body{color: #000; background-color: #eee; text-align: center;}</style></head><body>
+<h1>503 Service temporary unavariable</h1>Сайт отключне на техобслуживание. Повторите попытку через несколько минут!<br>
+The site in maintenance mode. Please try again in a few minutes!</body></html>"
+	);
+    }
+}
+
+if(isset($CONFIG['site']['session_cookie_domain'])) {
+    if($CONFIG['site']['session_cookie_domain']) {
+        session_set_cookie_params(0, '/' , $CONFIG['site']['session_cookie_domain']);
+    }
+}
+
+session_start();
+require_once($CONFIG['location']."/common/core.common.php");
 
 if ($CONFIG['site']['force_https']) {
     header('Location: https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'], true, 301);
 }
 
-if (!isset($CONFIG['site']['display_name'])) {
-    $CONFIG['site']['display_name'] = $CONFIG['site']['name'];
-}
-
-
+cfg::requiredFilled('site', 'admin_name');
+cfg::requiredFilled('site', 'admin_email');
+cfg::requiredFilled('site', 'doc_adm_email');
+cfg::requiredFilled('site', 'doc_adm_jid');
+cfg::requiredFilled('site', 'name');
 
 $db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
 
-
-
-if($db->connect_error)
-{
-	header("HTTP/1.0 503 Service temporary unavariable");
-            header("Retry-After: 3000");
-	die("<!DOCTYPE html>
+if($db->connect_error) {
+    header("HTTP/1.0 503 Service temporary unavariable");
+    header("Retry-After: 3000");
+    die("<!DOCTYPE html>
 <html>
 <head>
 <meta charset=\"utf-8\">
@@ -863,7 +796,7 @@ if ((@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login']) &
 }
 
 // Счётчик-логгер посещений
-if(!isset($_REQUEST['ncnt'])) {
+if(!isset($_REQUEST['ncnt']) && !isset($not_use_counter)) {
     $ip = $db->real_escape_string(getenv("REMOTE_ADDR"));
     $ag = $db->real_escape_string(getenv("HTTP_USER_AGENT"));
     $rf = $db->real_escape_string(urldecode(getenv("HTTP_REFERER")));

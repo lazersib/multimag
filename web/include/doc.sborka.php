@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -45,7 +45,37 @@ class doc_Sborka extends doc_Nulltype {
     public function initDefDopdata() {
         $this->def_dop_data = array('sklad'=>0, 'cena'=>1);
     }
-	
+
+    /// Выполнение дополнительных проверок доступа для проведения документа
+    public function extendedApplyAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        parent::extendedApplyAclCheck();
+    }
+    
+    /// Выполнение дополнительных проверок доступа для отмены документа
+    public function extendedCancelAclCheck() {
+        $acl_obj = ['store.global', 'store.'.$this->doc_data['sklad']];      
+        if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+           $d_start = date_day(time());
+            $d_end = $d_start + 60 * 60 * 24 - 1;
+            if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad']);
+            } elseif ($this->doc_data['date'] < $d_start || $this->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены проведения документа с выбранным складом '.$this->doc_data['sklad'].' произвольной датой');
+            }
+        }
+        parent::extendedCancelAclCheck();
+    }
+    
     public function DocApply($silent = 0) {
         global $db;
 
@@ -61,39 +91,55 @@ class doc_Sborka extends doc_Nulltype {
             throw new Exception('Документ уже был проведён!');
         }
         $pres->free();
-
-        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`page`, `doc_base`.`vc`
+        // Списание. Сделано отдельно для списания одновременно количества со всех страниц с правильным учётом остатков на складе
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, SUM(`doc_list_pos`.`cnt`) AS `cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
+                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`page`, `doc_base`.`vc`
             FROM `doc_list_pos`
             INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
-            WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
+            WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0' AND `doc_list_pos`.`page`>0
+            GROUP BY `doc_list_pos`.`tovar`");
         $fail_text = '';
-        while ($line = $res->fetch_array()) {
-            $sign = $line['page'] ? '-' : '+';
+        while ($line = $res->fetch_assoc()) {
+            $sign = '-';
             $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['tovar']}', '{$doc_info['sklad']}', '{$line['cnt']}')"
-                . " ON DUPLICATE KEY UPDATE `cnt`=`cnt` $sign '{$line['cnt']}'");
-            if ($line['page']) {
-                if (!$doc_info['dnc']) {
-                    if ($line['cnt'] > $line['sklad_cnt'])  {
+                    . " ON DUPLICATE KEY UPDATE `cnt`=`cnt` $sign '{$line['cnt']}'");
+            if (!$doc_info['dnc']) {
+                if ($line['cnt'] > $line['sklad_cnt']) {
+                    $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
+                    $fail_text .= " - Мало товара '$pos_name' -  есть:{$line['sklad_cnt']}, нужно:{$line['cnt']}. \n";
+                    continue;
+                }
+                if (!$silent) {
+                    $ret = getStoreCntOnDate($line['tovar'], $doc_info['sklad'], $doc_info['date'], false, true);
+                    if ($ret['cnt'] < 0) {
                         $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
-                        $fail_text .= " - Мало товара '$pos_name' -  есть:{$line['sklad_cnt']}, нужно:{$line['cnt']}. \n";
+                        $fail_text .= " - Будет ({$ret['cnt']}) мало товара '$pos_name', документ {$ret['doc']} \n";
                         continue;
-                    }
-                    if (!$silent) {
-                        $budet = getStoreCntOnDate($line['tovar'], $doc_info['sklad']);
-                        if ($budet < 0)  {
-                            $pos_name = composePosNameStr($line['tovar'], $line['vc'], $line['name'], $line['proizv']);
-                            $t = $budet + $line['cnt'];
-                            $fail_text .= " - Будет мало товара '$pos_name' - есть:$t, нужно:{$line['cnt']}. \n";
-                            continue;
-                        }
                     }
                 }
             }
         }
         if($fail_text) {
-            throw new Exception("Ошибка в номенклатуре: \n".$fail_text);
+            throw new \Exception("Ошибка в номенклатуре: \n".$fail_text);
         }
+        // Оприходование
+        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt` AS `sklad_cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
+                `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`page`, `doc_base`.`vc`
+            FROM `doc_list_pos`
+            INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+            LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_list_pos`.`tovar` AND `doc_base_cnt`.`sklad`='{$doc_info['sklad']}'
+            WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0' AND `doc_list_pos`.`page`=0");
+        $fail_text = '';
+        while ($line = $res->fetch_assoc()) {
+            $sign = '+';
+            $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['tovar']}', '{$doc_info['sklad']}', '{$line['cnt']}')"
+                . " ON DUPLICATE KEY UPDATE `cnt`=`cnt` $sign '{$line['cnt']}'");
+        }
+        if($fail_text) {
+            throw new \Exception("Ошибка в номенклатуре: \n".$fail_text);
+        }
+        
         if ($silent) {
             return;
         }
@@ -142,7 +188,7 @@ class doc_Sborka extends doc_Nulltype {
         $poseditor->cost_id = $this->dop_data['cena'];
         $poseditor->sklad_id = $this->doc_data['sklad'];
 
-        if (isAccess('doc_' . $this->typename, 'view')) {
+        if (\acl::testAccess('doc.' . $this->typename, \acl::VIEW)) {
 
             // Json-вариант списка товаров
             if ($peopt == 'jget') {
@@ -160,25 +206,19 @@ class doc_Sborka extends doc_Nulltype {
             }
             // Json вариант добавления позиции
             else if ($peopt == 'jadd') {
-                if (!isAccess('doc_sborka', 'edit')) {
-                    throw new AccessException("Недостаточно привилегий");
-                }
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 $pe_pos = rcvint('pos');
                 $tmpl->setContent($poseditor->AddPos($pe_pos));
             }
             // Json вариант удаления строки
             else if ($peopt == 'jdel') {
-                if (!isAccess('doc_sborka', 'edit')) {
-                    throw new AccessException("Недостаточно привилегий");
-                }
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 $line_id = rcvint('line_id');
                 $tmpl->setContent($poseditor->Removeline($line_id));
             }
             // Json вариант обновления
             else if ($peopt == 'jup') {
-                if (!isAccess('doc_sborka', 'edit')) {
-                    throw new AccessException("Недостаточно привилегий");
-                }
+                \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
                 $line_id = rcvint('line_id');
                 $value = request('value');
                 $type = request('type');

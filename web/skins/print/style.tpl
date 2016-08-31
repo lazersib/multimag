@@ -95,7 +95,6 @@ div#w640
 }
 
 
-; группы
 .m0
 {
    background-color: #000;

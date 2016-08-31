@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@ class News extends \IModule {
 
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'generic_news';
+        $this->acl_object_name = 'generic.news';
     }
 
     // Получить название модуля
@@ -74,9 +74,13 @@ class News extends \IModule {
             return true;
         }
         else if ($mode == 'all' || $mode == 'news' || $mode == 'stocks' || $mode == 'events') {
-            if (isAccess($this->acl_object_name, 'create', 1))
-            $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$mode'>Добавить новость</a><br>");
+            if (\acl::testAccess($this->acl_object_name, \acl::CREATE, 1)) {
+                $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$mode'>Добавить новость</a><br>");
+            }
             if ($this->isAllow()) {
+                $tmpl->addBreadcrumb('Главная', '/');
+                $tmpl->setContent("<h1>Новости сайта</h1>");
+                $tmpl->setTitle("Новости сайта");
                 $this->ShowList($mode);
             }
             return true;
@@ -87,13 +91,14 @@ class News extends \IModule {
     }
 
     /// Отобразить страницу новостей
-    /// @param mode: '' - список новостей
+    /// @param $mode список новостей
     public function ExecMode($mode = '') {
         global $tmpl, $CONFIG, $db;
-        $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>Новости</div><h1>Новости сайта</h1>");
-        $tmpl->setTitle("Новости сайта - " . $CONFIG['site']['display_name']);
+        $tmpl->addBreadcrumb('Главная', '/');
+        $tmpl->setContent("<h1>Новости сайта</h1>");
+        $tmpl->setTitle("Новости сайта");
         if ($mode == '') {
-            if (isAccess($this->acl_object_name, 'create', 1)) {
+            if (\acl::testAccess($this->acl_object_name, \acl::CREATE, 1)) {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=" . request('type') . "'>Добавить новость</a><br>");
             }
             if ($this->isAllow()) {
@@ -143,8 +148,8 @@ class News extends \IModule {
         }
     }
 
-/// Отобразить летну новостей заданного типа
-/// @param type: '' - любые типы, news - только новости, stocks - только акции, events - только события
+    /// Отобразить летну новостей заданного типа
+    /// @param $type - любые типы, news - только новости, stocks - только акции, events - только события
     protected function ShowList($type = '') {
         global $tmpl, $CONFIG, $db;
         switch ($type) {
@@ -161,7 +166,7 @@ class News extends \IModule {
                 $name = 'Новости, акции, события';
                 $where = '1';
         }
-        if (!isAccess($this->acl_object_name, 'edit', 1)) {
+        if (!\acl::testAccess($this->acl_object_name, \acl::UPDATE, true)) {
             $where .= " AND `hidden`=0";
         }
         $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`,
@@ -171,9 +176,13 @@ class News extends \IModule {
 	WHERE $where
 	ORDER BY `date` DESC LIMIT 50");
         if ($res->num_rows) {
-            $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a>$name</div><h1>$name</h1>");
-            $tmpl->setTitle("$name сайта - " . $CONFIG['site']['display_name']);
-            if (isAccess('generic_news', 'create', 1)) {
+            if($where!=1) {
+                $tmpl->addBreadcrumb('Новости, акции, события', $this->link_prefix);
+            }
+            $tmpl->addBreadcrumb($name, '');
+            $tmpl->setContent("<h1>$name</h1>");
+            $tmpl->setTitle("$name сайта");
+            if (\acl::testAccess($this->acl_object_name, \acl::CREATE, true)) {
                 $tmpl->addContent("<a href='{$this->link_prefix}&amp;mode=add&amp;opt=$type'>Добавить новость</a><br>");
             }
             $wikiparser = new \WikiParser();
@@ -204,7 +213,8 @@ class News extends \IModule {
         }
     }
 
-/// Отобразить заданную новость
+    /// Отобразить заданную новость
+    /// @param $id id новости, которую нужно отобразить    
     protected function View($id) {
         global $tmpl, $db;
         $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`,
@@ -217,7 +227,7 @@ class News extends \IModule {
             $edit_enable = false;
             
             if ($news_info['hidden']) {
-                if (!isAccess($this->acl_object_name, 'edit', 1)) {
+                if (!\acl::testAccess($this->acl_object_name, \acl::UPDATE, true)) {
                     throw new \NotFoundException('Новость снята с публикации.');
                 } else {
                     $edit_enable = true;
@@ -238,9 +248,10 @@ class News extends \IModule {
             } else {
                 $do = '';
             }
-
-            $tmpl->setContent("<div id='breadcrumbs'><a href='/'>Главная</a><a href='{$this->link_prefix}'>Новости</a>{$wikiparser->title}</div>"
-                . "<h1>{$wikiparser->title}$hidden</h1>" . $do
+            $tmpl->addBreadcrumb('Главная', '/');
+            $tmpl->addBreadcrumb('Новости', $this->link_prefix);
+            $tmpl->addBreadcrumb($wikiparser->title, '');
+            $tmpl->setContent("<h1>{$wikiparser->title}$hidden</h1>" . $do
                 . "<p>$text</p><p align='right'><i>{$news_info['date']}, {$news_info['autor_name']}</i></p>");
             // <a href='/forum.php'>Комментарии: 0</a>
             if($edit_enable) {
@@ -258,7 +269,11 @@ class News extends \IModule {
         }
     }
 
-    /// Форма создания новости
+    /// Форма создания и редактирования новости
+    /// @param $id id новости
+    /// @param $id $type Тип новости. news - новости, stocks - акции, events -  события. По умолчанию: news
+    /// @param $ex_date Дата окончания. Не используется у новостей
+    /// @param $text Текст новости
     protected function WriteForm($id=0, $type='news', $ex_date='', $text='') {
         global $tmpl;
         $novelty_c = $stock_c = $event_c = '';
@@ -276,6 +291,11 @@ class News extends \IModule {
                 $event_c = ' checked';
                 break;
         }
+        $tmpl->addBreadcrumb('Новости', $this->link_prefix);
+        if($id>0) {
+            $tmpl->addBreadcrumb('Новость N'.$id, $this->GetNewsLink($id));
+        }
+        $tmpl->addBreadcrumb('Редактирование новости', '');
         $tmpl->addContent("
 	<form action='{$this->link_prefix}' method='post' enctype='multipart/form-data'>
 	<h2>Добавление новости</h2>
@@ -301,7 +321,7 @@ class News extends \IModule {
 	</form>");
     }
 
-    /// Сохранить новость для публикации
+    /// Сохранить новость для последующей публикации
     protected function Save() {
         global $tmpl, $CONFIG, $db;
         
@@ -378,9 +398,11 @@ class News extends \IModule {
     }
 
 
-    /// Запись новости в хранилище
+    /// Публикация новости
+    /// @param $id id новости
     protected function Publish($id) {
-        global $tmpl, $CONFIG, $db;
+        global $tmpl, $db;
+        $pref = \pref::getInstance();
         $send = request('send');
         
         $res = $db->query("SELECT `news`.`id`, `news`.`text`, `news`.`date`, `users`.`name` AS `autor_name`, `news`.`ex_date`, `news`.`img_ext`,
@@ -415,7 +437,7 @@ class News extends \IModule {
                 $uwtext .= "\n\nСобытие пройдёт: {$news_info['ex_date']}\n";
             }
 
-            $list_id = 'news' . $id . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
+            $list_id = 'news' . $id . '.' . date("dmY") . '.' . $pref->site_name;
             SendSubscribe($title, $title . " - новости сайта", $uwtext, $list_id);
             $tmpl->msg("Рассылка выполнена успешно.", "ok");           
         }
@@ -424,9 +446,11 @@ class News extends \IModule {
     }
 
     /// Получить ссылку на новость с заданным ID
+    /// @param $id id новости
+    /// @param $alt_param Дополнительные параметры в ссылке
     protected function GetNewsLink($id, $alt_param = '') {
         global $CONFIG;
-        if ($CONFIG['site']['recode_enable']) {
+        if ($CONFIG['site']['rewrite_enable']) {
             return "/news/read/$id.html" . ($alt_param ? "?$alt_param" : '');
         } else {
             return "{$this->link_prefix}&amp;mode=read&amp;id=$id" . ($alt_param ? "&amp;$alt_param" : '');

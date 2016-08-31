@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -83,9 +83,7 @@ class doc_Doveren extends doc_Nulltype {
 			<li><a href=''>Поступление товара</div>");
         } else if ($target_type == 1) {
             $this->recalcSum();
-            if (!isAccess('doc_postuplenie', 'create')) {
-                throw new AccessException();
-            }
+            \acl::accessGuard('doc.postuplenie', \acl::CREATE);  
             $new_doc = new doc_Postuplenie();
             $dd = $new_doc->createFrom($this);
             redirect("/doc.php?mode=body&doc=$dd");

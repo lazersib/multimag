@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -99,7 +99,7 @@ class simplexml1cdataimport extends \sync\dataimport {
             $this->parseDocumentNode($docnode);
         }
         // Формирование ответа
-        $out = new \SimpleXMLElement('<multimag_exchange version="1.0"><result><status>ok</status><message>Ok</message></result></multimag_exchange>');
+        $out = new \SimpleXMLElement('<multimag_exchange version="1.0.1"><result><status>ok</status><message>Ok</message></result></multimag_exchange>');
         if(count($this->newids)>0) {
             $refbooks = $out->addChild('refbooks');
             if(isset($this->newids['firms'])) {

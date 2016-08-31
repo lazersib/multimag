@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -37,7 +37,8 @@ class PosParamListEditor extends \ListEditor {
             'type' => 'Тип данных',
             'unit_id' => 'Единица измерения',
             'ym_assign' => 'Идентификатор яндекс-маркета',
-            'hidden' => 'Скрытый'
+            'hidden' => 'Скрытый',
+            'secret' => 'Секретный'
         );
     }
 
@@ -112,6 +113,14 @@ class PosParamListEditor extends \ListEditor {
 
     public function getFieldHidden($data) {
         return $data['hidden'] ? "<b style='color:#f00'>Да</b>" : "<b style='color:#0c0'>Нет</b>";
+    }
+    
+    public function getInputSecret($name, $value) {
+        return $this->getCheckboxInput($name, 'Да', $value);
+    }
+
+    public function getFieldSecret($data) {
+        return $data['secret'] ? "<b style='color:#f00'>Да</b>" : "<b style='color:#0c0'>Нет</b>";
     }
     
     protected function initGroupList() {

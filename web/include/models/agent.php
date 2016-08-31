@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -24,6 +24,12 @@ class agent {
     var $contacts_tn = 'agent_contacts';
     protected $data = array();
     protected $parsed_contacts = array();
+    
+    protected $fields = array('group', 'name', 'type', 'fullname', 'adres', 'real_address', 'inn', 'kpp', 'okved', 'okpo', 'ogrn'
+        , 'pasp_num', 'pasp_date', 'pasp_kem', 'comment', 'responsible', 'data_sverki'
+        , 'leader_name', 'leader_post', 'leader_reason', 'leader_name_r', 'leader_post_r', 'leader_reason_r'
+        , 'dishonest', 'p_agent', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses', 'region');
+    protected $contact_fields = array('context', 'type', 'value', 'person_name', 'person_post', 'for_sms', 'for_fax', 'no_ads', );
     
     /// Конструктор
     public function __construct($agent_id = null) {
@@ -49,6 +55,42 @@ class agent {
         $this->parseContacts();
     }
     
+    /// Создать агента на основе заданного набора данных
+    public function create($data) {
+        global $db;
+        $new_agent_info = array_fill_keys($this->fields, '');
+        $new_agent_info = array_intersect_key($data, $new_agent_info);
+        $new_group = $data['group'] = isset($data['group'])?intval($data['group']):0;
+        if (\cfg::get('agents', 'leaf_only')) {
+            $res = $db->query("SELECT `id` FROM `doc_agent_group` WHERE `pid`='$new_group'");
+            if ($res->num_rows) {
+                throw new \Exception("Запись агента возможна только в конечную группу!");
+            }
+        }
+        $agent_id = $db->insertA('doc_agent', $new_agent_info);
+        if(isset($data['contacts']) && is_array($data['contacts'])) {
+            foreach($data['contacts'] as $contact) {
+                $contact_info = array_fill_keys($this->contact_fields, '');
+                $contact_info = array_intersect_key($contact, $contact_info);
+                //var_dump($contact_info);
+                if($contact_info['type']=='phone') {
+                    $phone = normalizePhone($contact_info['value']);
+                    if($phone) {
+                        $contact_info['value'] = $phone;
+                    }
+                }
+                $contact_info['agent_id'] = $agent_id;
+                $db->insertA('agent_contacts', $contact_info);
+            }
+        }
+        $this->load($agent_id);
+        return $agent_id;
+    }
+    
+    public function getData() {
+        return $this->data;
+    }
+
     public function __get($name) {
         if(isset($this->data[$name])) {
             return $this->data[$name];
@@ -64,6 +106,12 @@ class agent {
     public function getPhone() {
         if(isset($this->parsed_contacts['phone'])) {
             return $this->parsed_contacts['phone'];
+        }
+    }
+    
+    public function getSMSPhone() {
+        if(isset($this->parsed_contacts['sms_phone'])) {
+            return $this->parsed_contacts['sms_phone'];
         }
     }
     
@@ -96,6 +144,9 @@ class agent {
             if($line['type']=='phone' && $line['for_fax']) {
                 $this->parsed_contacts['fax'] = $line['value'];
             }                        
+            if($line['type']=='phone' && $line['for_sms']) {
+                $this->parsed_contacts['sms_phone'] = $line['value'];
+            } 
         }
     }
 }

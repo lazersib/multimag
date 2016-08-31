@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -113,11 +113,86 @@ class Xml1cDataExport extends \sync\dataexport {
             $nomenclature->appendChild($items);    
             $refbooks->appendChild($nomenclature);
         }
+        // Выгрузка справочника связей номенклатуры
+        if (in_array('pos_links', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('pos_links', 'link', $this->getPosLinksData());
+            $refbooks->appendChild($stores);
+        }
+        // Выгрузка справочника видов динамических свойств номенклатуры
+        if (in_array('pos_params', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('pos_params', 'param', $this->getPosParams());
+            $refbooks->appendChild($stores);
+        }
+        // Выгрузка справочника групп динамических свойств номенклатуры
+        if (in_array('pos_param_groups', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('pos_param_groups', 'group', $this->getPosGroupParams());
+            $refbooks->appendChild($stores);
+        }
+        // Выгрузка данных коллекций динамических свойств номенклатуры
+        if (in_array('pos_pcollections', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('pos_pcollections', 'collection', $this->getPosParamCollections());
+            $refbooks->appendChild($stores);
+        }
+        // Выгрузка видов расходов
+        if (in_array('credit_types', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('credit_types', 'type', $this->getCreditTypes());
+            $refbooks->appendChild($stores);
+        }
+        // Выгрузка видов доходов
+        if (in_array('debit_types', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('debit_types', 'type', $this->getDebitTypes());
+            $refbooks->appendChild($stores);
+        }
+        // Выгрузка видов доставки
+        if (in_array('delivery_types', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('delivery_types', 'type', $this->getDeliveryTypes());
+            $refbooks->appendChild($stores);
+        }
+        // Выгрузка регионов доставки
+        if (in_array('delivery_regions', $this->refbooks_list)) {
+            $stores = $this->convertToXmlElement('delivery_regions', 'region', $this->getDeliveryRegions());
+            $refbooks->appendChild($stores);
+        }
+        
         $this->rootNode->appendChild($refbooks);
             
         // Документы
         $documents = $this->convertToXmlElement('documents', 'document', $this->getDocumentsData() );
         $this->rootNode->appendChild($documents);
+        
+        if($this->en_startcounters) {
+            $cdata = $this->getStartCountersData();
+            $counters = $this->dom->createElement('counters'); 
+            
+            $nomenclature = $this->dom->createElement('nomenclature'); 
+            foreach ($cdata['nomenclature'] as $id => $data) {
+                $pos = $this->dom->createElement('pos');
+                $pos->setAttribute('id', $id);
+                foreach ($data as $store_id => $value) {
+                    $storecnt = $this->dom->createElement('store', $value);
+                    $storecnt->setAttribute('id', $store_id);
+                    $pos->appendChild($storecnt);
+                }
+                $nomenclature->appendChild($pos);
+            }            
+            $counters->appendChild($nomenclature);
+            
+            $debts = $this->dom->createElement('debts'); 
+            foreach ($cdata['debts'] as $id => $data) {
+                $agent = $this->dom->createElement('agent');
+                $agent->setAttribute('id', $id);
+                foreach ($data as $firm_id => $value) {
+                    $firmdebt = $this->dom->createElement('firm', $value);
+                    $firmdebt->setAttribute('id', $firm_id);
+                    $agent->appendChild($firmdebt);
+                }
+                $debts->appendChild($agent);
+            }            
+            $counters->appendChild($debts);
+            
+            $this->rootNode->appendChild($counters);
+        }
+        
         return $this->dom->saveXML();
     }
 

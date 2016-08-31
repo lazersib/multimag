@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2015, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -27,13 +27,14 @@ try {
 }
 catch(mysqli_sql_exception $e) {
     $id = writeLogException($e);
-    $tmpl->msg("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение передано администратору",'err',"Ошибка при регистрации");
-    mailto($CONFIG['site']['admin_email'],"ВАЖНО! Ошибка регистрации на ".$CONFIG['site']['name'].". номер в журнале - $id", $e->getMessage());
+    $pref = \pref::getInstance();
+    $tmpl->errorMessage("Ошибка при регистрации. Порядковый номер - $id<br>Сообщение об ошибке занесено в журнал", "Ошибка при регистрации");
+    mailto($pref->site_email,"ВАЖНО! Ошибка регистрации на {$pref->site_name}. номер в журнале - $id", $e->getMessage());
 }
 catch(Exception $e) {
     $db->rollback();
     $id = writeLogException($e);
-    $tmpl->errorMessage("Ошибка при регистрации: " . $e->getMessage() . ". Порядковый номер - $id<br>Сообщение передано администратору", "Ошибка при регистрации");
+    $tmpl->errorMessage("Ошибка при регистрации: " . $e->getMessage() . ". Порядковый номер - $id<br>Сообщение об ошибке занесено в журнал", "Ошибка при регистрации");
 }
 
 $tmpl->write();
