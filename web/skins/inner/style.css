@@ -49,6 +49,21 @@ select
 	border-radius:		4px;*/
 }
 
+select.error {
+    background-color: #f00 !important;
+    color: #fff !important;
+}
+
+select.error option {
+    background-color: #fff;
+    color: #000;
+}
+
+option.error {
+    background-color: #f00 !important;
+    color: #fff !important;
+}
+
 form
 {
 	margin:1ex;
@@ -1078,6 +1093,27 @@ div.clear
     margin: 3px 0px !important; 
     width: 306px;
 }
+
+/* для autocomplete левого блока  */
+
+#doc_left_block .cac_results {
+	padding: 0px;
+	border: 1px solid #ccc;
+	background-color: #fff;
+	z-index:	  99999;
+	width: 308px;
+	height: 200px;
+	position: relative;
+	overflow-x: hidden;
+	overflow-y: auto;
+	left:	0px;
+	top:    -4px;
+}
+
+#doc_left_block .cac_clear {
+    left:	292px;
+}
+
 
 /* для autocomplete с кешированием в localstorage */
 

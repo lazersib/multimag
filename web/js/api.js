@@ -2,6 +2,7 @@
 var mm_api = function () {
     var mm_api = new Object();
     mm_api.agent = new Object();
+    mm_api.document = new Object();
     
     function dataReceiver(msg, data, ok_callback, err_callback) {
         try {
@@ -33,14 +34,22 @@ var mm_api = function () {
         var json_data = encodeURIComponent(JSON.stringify(data));
         httpReq('/api.php', 'POST', 'object='+encodeURIComponent(object)+'&action='+encodeURIComponent(action)+'&data=' + json_data, function (msg) {
                 dataReceiver(msg, data, ok_callback, err_callback);
-            }, function () {
-                err_callback('request error', data);
+            }, function (status, data) {
+                err_callback('request error:'+status, data);
             }
         );
     }    
     
     mm_api.agent.create = function(data, ok_callback, err_callback) {
         mm_api.callApi('agent', 'create', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.get = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'get', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.update = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'update', data, ok_callback, err_callback);
     };
     
     return mm_api;

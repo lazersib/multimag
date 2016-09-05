@@ -2,35 +2,33 @@ function doceditor(doc_container_id, menu_container_id) {
     var doc = new Object;
     var container = document.getElementById(doc_container_id);
     var left_block;
-    var base_url = '/doc.php';
-    var base_data = 'mode=service';
+    var cache = getCacheObject();
+    doc.agentnames = cache.get('agentnames');
     
-    function onLoadError(code, message) {
-        alert("Ошибка:\nКод:"+code+"\nСообщение:"+message);
+    function onLoadError(name, data) {
+        alert("Ошибка:\n"+name+"\nСообщение:"+data.errorMessage);
     }
-    
+        
     function onLoadSuccess(response) {
-        try {
-            var json = JSON.parse(response);
-            if(json.response=='err') {
-                onLoadError('requestError', json.message);
-                return;
-            } else if(json.response == 'docheader') {
-                doc.fillHeader(json.data);
-            } else if(json.response == 'reset_prices') {
-                var up = json.updated?' UPDATED':' NOT updated';
-                alert('Reset prices: '+up);
+        if(response.object == 'document') {
+            if(response.action=='get') {
+                doc.fillHeader(response.content.header);
             }
-            else alert("Обработчик не задан:\n"+response);
-        } catch(e) {
-            onLoadError(e.name, e.message+response);
+            else {
+                //alert('document:action: '+response.action);
+            }
+        } else if(response.object == 'reset_prices') {
+            var up = response.updated?' UPDATED':' NOT updated';
+            alert('Reset prices: '+up);
         }
+        else alert("Обработчик не задан:\n"+response);
     }  
     
     function insertOptionsArray(select_elem, data, selected_id, not_select_item) {
         var value;
         if(not_select_item) {
             var opt = newElement('option', select_elem, '', '--не задано--');
+            opt.value='null';
         }
         for(value in data) { 
             var opt = newElement('option', select_elem, '', data[value]);
@@ -45,6 +43,7 @@ function doceditor(doc_container_id, menu_container_id) {
         var i;
         if(not_select_item) {
             var opt = newElement('option', select_elem, '', '--не задано--');
+            opt.value='null';
         }
         for(i in data) { 
             var opt = newElement('option', select_elem, '', data[i].name);
@@ -58,6 +57,7 @@ function doceditor(doc_container_id, menu_container_id) {
         var i;
         if(not_select_item) {
             var opt = newElement('option', select_elem, '', '--не задано--');
+            opt.value='null';
         }
         for(i in data) { 
             var str = data[i].name + " N:" + data[i].altnum + data[i].subtype + ", от " + data[i].date;
@@ -90,6 +90,7 @@ function doceditor(doc_container_id, menu_container_id) {
         }
         if( (!doc.header.store_id) || (!selected)) {            
             var opt = newElement('option', select_elem, '', '--не задано--');
+            opt.value='null';
             opt.selected=true;
         }
     }
@@ -115,24 +116,91 @@ function doceditor(doc_container_id, menu_container_id) {
         }
         if( (!doc.header.bank_id) || (!selected)) {            
             var opt = newElement('option', select_elem, '', '--не задано--');
+            opt.value='null';
             opt.selected=true;
+            opt.className="error";
+            select_elem.className="error";
         }
     }
     
-    function updateHeaderField() {
-        doc_left_block.style.backgroundColor = '#ff8';
+    function initAgentField() {
+        function agSelectItem() {
+            var agent_id = document.getElementById('dochead_agent_name').value_id
+            document.getElementById('dochead_agent_id').value = agent_id;
+            document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+agent_id;
+            onChangeHeaderField();
+        }
+        autoCompleteField('dochead_agent_name', doc.agentnames, agSelectItem);    
+        doc.i_agent_id = document.getElementById('dochead_agent_id'); 
+        doc.i_agent_id.value = doc.header.agent_id;
+        doc.i_agent_name = document.getElementById('dochead_agent_name'); 
+        doc.i_agent_name.value = doc.header.agent_info.name;
+        doc.l_agent_balance_info = document.getElementById('agent_balance_info'); 
+        doc.l_agent_balance_info.innerHTML = doc.header.agent_info.balance + "р. / "+doc.header.agent_info.bonus +"б.";
+        doc.l_dochead_dishonest_info = document.getElementById('dochead_dishonest_info'); 
+        if(doc.header.agent_info.dishonest!="0") {
+            doc.l_dochead_dishonest_info.style.display = "block";
+        } else {
+            doc.l_dochead_dishonest_info.style.display = "none";
+        }
+        document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+doc.header.agent_id;
         
-        var data = $('#doc_head_form').serialize();
-        httpReq('/doc.php', 'POST', data, onLoadSuccess, onLoadError);
+        doc.i_contract_id = document.getElementById('dochead_contract_id'); 
+        insertContractList(doc.i_contract_id, doc.header.agent_info.contract_list, doc.header.contract_id, true);
     }
     
-    function updateFirmId() {
+    function onChangeHeaderField() {
+        doc_left_block.style.backgroundColor = '#ff8';
+        var fstruct = formToArray();
+        delete fstruct['agent_name'];
+        mm_api.document.update(fstruct,onLoadSuccess, onLoadError);
+        
+        //var data = $('#doc_head_form').serialize();        
+        //httpReq('/api.php', 'POST', data, onLoadSuccess, onLoadError);
+    }
+    
+    function onUpdateFirmId() {
         doc.header.firm_id = doc.i_firm_id.value;
         initBankSelect();
         initStoreSelect();
-        updateHeaderField();
+        onChangeHeaderField();
     }
     
+    function onChangeBankField() {
+        var select_elem = doc.i_bank_id;
+        if(select_elem.value>0) {
+            select_elem.className="";
+            doc.header.bank_id = select_elem.value;
+            initBankSelect();
+        }
+        onChangeHeaderField();
+    }
+    
+    function formToArray() {
+        var obj = new Object();
+        var elems = left_block.getElementsByTagName('input');
+        for (var i = 0; i < elems.length; i++) {
+            var input = elems[i];
+            obj[input.name] = input.value;
+        }
+        elems = left_block.getElementsByTagName('select');
+        for (var i = 0; i < elems.length; i++) {
+            var input = elems[i];
+            obj[input.name] = input.value;
+        }
+        elems = left_block.getElementsByTagName('textarea');
+        for (var i = 0; i < elems.length; i++) {
+            var input = elems[i];
+            obj[input.name] = input.value;
+        }
+        elems = left_block.getElementsByTagName('checkbox');
+        for (var i = 0; i < elems.length; i++) {
+            var input = elems[i];            
+            obj[input.name] = input.checked;
+        }
+        
+        return obj;
+    }
     
        
     doc.init = function(doc_id) {
@@ -141,16 +209,14 @@ function doceditor(doc_container_id, menu_container_id) {
         container.doc = doc;
         left_block = newElement('div', container, '', '');
         left_block.id = 'doc_left_block';
-        var data = base_data + "&mode=srv&peopt=getheader&doc="+doc_id;
-        httpReq(base_url, 'GET', data, onLoadSuccess, onLoadError);
+        mm_api.document.get({id:doc_id},onLoadSuccess, onLoadError);
     };
     
     doc.fillHeader = function(data) {
         var tmp;
         doc.header = data;
         var doc_name = newElement('h1', left_block, '', data.viewname);
-        var template = "<input type='hidden' name='mode' value='jheads'>"
-            + "<input type='hidden' name='doc' id='dochead_doc_id' value=''>"
+        var template = "<input type='hidden' name='id' id='dochead_doc_id' value=''>"
             + "<input type='hidden' name='type' id='dochead_doc_type_id' value=''>"
             + "<div class='item'>"
             + "<img id='dochead_plus_altnum' src='/img/i_add.png' alt='Новый номер'></a>"
@@ -172,7 +238,7 @@ function doceditor(doc_container_id, menu_container_id) {
             bank: "<div>Банк:</div>"
                 + "<select name='bank_id' id='dochead_bank_id'></select>",
             agent: "<div style='float: right; $col' id='agent_balance_info'></div>"
-		+ "Агент: <a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data['agent']}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>"
+		+ "Агент: <a href='#' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>"
 		+ "<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a><br>"
 		+ "<input type='hidden' name='agent_id' id='dochead_agent_id' value=''>"
 		+ "<input type='text' name='agent_name' id='dochead_agent_name' value=''>"
@@ -196,8 +262,8 @@ function doceditor(doc_container_id, menu_container_id) {
         doc.i_datetime = document.getElementById('dochead_datetime');  
         doc.i_datetime.value = data.date;        
         doc.i_firm_id = document.getElementById('dochead_firm_id');  
-        insertOptionsArray(doc.i_firm_id, data.firm_list, data.firm_id);
-        doc.i_firm_id.onchange = updateFirmId;
+        insertOptionsArray(doc.i_firm_id, data.firm_names, data.firm_id);
+        doc.i_firm_id.onchange = onUpdateFirmId;        
         
         var value;
         for(var i=0;i<data.header_fields.length;i++) { 
@@ -207,69 +273,33 @@ function doceditor(doc_container_id, menu_container_id) {
                     var tmp = newElement('div', doc_head_form, 'item', templates.price);
                     doc.i_price_id = document.getElementById('dochead_price_id'); 
                     insertOptionsList(doc.i_price_id, data.price_list, data.price_id, true);
-                    doc.i_price_id.onchange = updateHeaderField;
+                    doc.i_price_id.onchange = onChangeHeaderField;
                     break;
                 case 'store':
                 case 'sklad':
                     var tmp = newElement('div', doc_head_form, 'item', templates.store);
                     doc.i_store_id = document.getElementById('dochead_store_id'); 
                     initStoreSelect();
-                    doc.i_store_id.onchange = updateHeaderField;
+                    doc.i_store_id.onchange = onChangeHeaderField;
                     break;
                 case 'cash':
                 case 'kassa':
                     var tmp = newElement('div', doc_head_form, 'item', templates.cash);
                     doc.i_cash_id = document.getElementById('dochead_cash_id'); 
                     insertOptionsList(doc.i_cash_id, data.cash_list, data.cash_id, true);
-                    doc.i_cash_id.onchange = updateHeaderField;
+                    doc.i_cash_id.onchange = onChangeHeaderField;
                     break;
                 case 'bank':
                     var tmp = newElement('div', doc_head_form, 'item', templates.bank);
                     doc.i_bank_id = document.getElementById('dochead_bank_id'); 
                     initBankSelect();
-                    doc.i_bank_id.onchange = updateHeaderField;
+                    doc.i_bank_id.onchange = onChangeBankField;
                     break;
                 case 'agent':
                     newElement('div', doc_head_form, 'item', templates.agent);
-                    newElement('div', doc_head_form, 'item', templates.agent_contract);
-                    $(document).ready(function(){
-                        function agliFormat (row, i, num) {
-                            var result = row[0];
-                            return result;
-                        }
-
-                        function agselectItem(li) {
-                            var sValue;
-                            if( li == null ) sValue = "Ничего не выбрано!";
-                            if( !!li.extra ) sValue = li.extra[0];
-                            else sValue = li.selectValue;
-                            document.getElementById('dochead_agent_id').value = sValue;
-                            document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+sValue;
-                            var firm_id_elem = document.getElementById('firm_id');
-                            var firm_id = 0;
-                            if(firm_id_elem) {
-                                firm_id = firm_id_elem.value;
-                            }
-                            updateHeaderField();
-                        }
-			$("#dochead_agent_name").autocomplete("/docs.php", {
-				delay:300,
-				minChars:1,
-				matchSubset:1,
-				autoFill:false,
-				selectFirst:true,
-				matchContains:1,
-				cacheLength:10,
-				maxItemsToShow:15,
-				formatItem:agliFormat,
-				onItemSelect:agselectItem,
-				extraParams:{'l':'agent','mode':'srv','opt':'ac'}
-			});
-                        
-                    });
-                    doc.i_contract_id = document.getElementById('dochead_contract_id'); 
-                    insertContractList(doc.i_contract_id, data.agent_info.contract_list, data.contract_id, true);
-                    doc.i_contract_id.onchange = updateHeaderField;
+                    newElement('div', doc_head_form, 'item', templates.agent_contract);                    
+                    initAgentField();
+                    doc.i_contract_id.onchange = onChangeHeaderField;
                     break;
                 case 'separator':
                     var tmp = newElement('div', doc_head_form, 'item', '<hr>');
@@ -278,11 +308,9 @@ function doceditor(doc_container_id, menu_container_id) {
         }
         newElement('div', doc_head_form, 'item', templates.comment);
         doc.i_comment = document.getElementById('dochead_comment');
-
+        doc.i_comment.value = doc.header.comment;
+        doc.i_comment.onchange  = onChangeHeaderField;
     };
-    
-    
-    
     
     return doc;
 };

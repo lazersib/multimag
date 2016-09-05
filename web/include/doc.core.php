@@ -324,9 +324,7 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
 	<div id='doc_menu_container'>
 	<div id='doc_menu_r'>
 	<!--<input type='text' id='quicksearch'>
-	<script>
-	var ac=initAutocomplete('quicksearch','/docs.php?l=sklad&mode=srv&opt=acj')
-	</script>
+
 	-->
         <a href='/intkb.php' title='База знаний'><img src='/img/i_help.png' alt='База знаний' border='0'></a>
 	<a href='/user.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>

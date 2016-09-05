@@ -34,6 +34,7 @@ try {
     $starttime = microtime(true);    
     $result = array(
         'object' => $object,
+        'action' => $action,
         'response' => 'success',
     );
     if($object=='getmessage') {
@@ -52,6 +53,12 @@ try {
         $data = request('data');
         $decoded_data = json_decode($data, true);
         $disp = new \api\agent();
+        $result['content'] = $disp->dispatch($action, $decoded_data);        
+    }
+    else if($object=='document') {
+        $data = request('data');
+        $decoded_data = json_decode($data, true);
+        $disp = new \api\document();
         $result['content'] = $disp->dispatch($action, $decoded_data);        
     }
     else {

@@ -26,6 +26,9 @@ $tmpl->hideBlock('left');
 doc_menu('');
 
 $tmpl->addTop("
+<script type='text/javascript' src='/js/api.js'></script>
+<script type='text/javascript' src='/js/common.js'></script>
+
 <script type='text/javascript' src='/js/doceditor.js'></script>
 <script type='text/javascript' src='/css/jquery/jquery.js'></script>
 <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
@@ -34,7 +37,7 @@ $tmpl->addTop("
 $tmpl->addContent("<div id='doc_container'></div>
 <script type=\"text/javascript\">
 var doc = doceditor('doc_container', 'doc_menu');
-doc.init(84960);
+doc.init(114236);
 </script>
 
 ");
