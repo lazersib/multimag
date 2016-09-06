@@ -149,15 +149,15 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
         }
         //alert(event.keyCode);
         buildList();
-    }
+    };
 
     ac_input.onfocus = function (event) {
         showList();
-    }
+    };
 
     ac_input.onblur = function (event) {
         hide_timer = window.setTimeout(hideList, 300);
-    }
+    };
 
     // События списка
     ac_list.onmouseover = function (event) {
@@ -169,7 +169,7 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
             old_hl = event.target;
             old_hl.className = 'cac_over';
         }
-    }
+    };
 
     ac_list.onclick = function (event) {
         if (hide_timer)
@@ -183,14 +183,14 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
         ac_input.value = event.target.innerHTML;
         hideList();
         update_callback();
-    }
+    };
 
     // Скролл блока
     ac_result.onscroll = function (event) {
         if (hide_timer)
             window.clearTimeout(hide_timer);
         ac_input.focus();
-    }
+    };
 
     // События кнопки clear
     ac_clear.onclick = function () {
@@ -200,20 +200,20 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
         ac_input.value_id = 0;
         ac_input.focus();
         update_callback();
-    }
+    };
 }
  
 
 function getCacheObject() {
     var mmCacheObject = new Object;
     mmCacheObject.storage = new Array;
-    var ls_flag = 0;
 
     function getExpires() {
         var expires = new Object;
         var expires_str = localStorage.getItem('__EXPIRES__');
-        if (expires_str)
+        if (expires_str) {
             expires = JSON.parse(expires_str);
+        }
         return expires;
     }
 
@@ -224,28 +224,30 @@ function getCacheObject() {
     }
 
     mmCacheObject.set = function (name, object, ttl) {
-        if (!ttl)
+        if (!ttl) {
             ttl = 60000;	// miliseconds
-        else
-            ttl *= 1000;
-        try {
-            localStorage.setItem(name, JSON.stringify(object));
-            setTTL(name, ttl);
-            mmCacheObject.storage[name] = object;
         }
+        else {
+            ttl *= 1000;
+        }
+        //try {
+        localStorage.setItem(name, JSON.stringify(object));
+        setTTL(name, ttl);
+        mmCacheObject.storage[name] = object;
+        /*}
         catch (e) {
             if (e == QUOTA_EXCEEDED_ERR)
                 alert('Место в локальном хранилище исчерпано');
-        }
-    }
+        }*/
+    };
 
     mmCacheObject.get = function (name) {
         try {
             var expires = getExpires();
 
-            if (!expires[name])
+            if (!expires[name]) {
                 return undefined;
-
+            }
             if (expires[name] < (new Date().getTime())) {
                 localStorage.removeItem(name);
                 expires[name] = null;
@@ -268,6 +270,5 @@ function getCacheObject() {
         localStorage.removeItem(name);
         mmCacheObject.storage[name] = null;
     };
-
     return mmCacheObject;
 }

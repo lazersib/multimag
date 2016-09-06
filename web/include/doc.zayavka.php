@@ -32,8 +32,58 @@ class doc_Zayavka extends doc_Nulltype {
         $this->viewname = 'Заявка покупателя';
         $this->sklad_editor_enable = true;
         $this->header_fields = 'bank sklad separator agent cena';
-
-        settype($this->id, 'int');
+        settype($this->id, 'int');        
+    }
+    
+    public function getExtControls() {
+        return $this->ext_controls = array(
+            'ishop' => [
+                'type' => 'label_flag',
+                'label' => 'Интернет-заявка',
+            ],
+            'buyer_rname' => [
+                'type' => 'text',
+                'maxlength' => 32,                
+                'label' => 'ФИО покупателя',
+            ],
+            'buyer_phone' => [
+                'type' => 'text',
+                'maxlength' => 16, 
+                'label' => 'Телефон для sms, прикреплённый к заявке',
+            ],
+            'buyer_email' => [
+                'type' => 'text',
+                'maxlength' => 32,                
+                'label' => 'e-mail, прикреплённый к заявке',
+            ],
+            'delivery' => [
+                'type' => 'checkbox',              
+                'label' => 'Требуется доставка',
+            ],
+            'delivery_address' => [
+                'type' => 'text',
+                'maxlength' => 64,                
+                'label' => 'Адрес доставки',
+            ],
+            'delivery_region' => [
+                'type' => 'select',               
+                'label' => 'Регион доставки',
+                'data_source' => 'regions',
+            ],            
+            'buyer_ip' => [
+                'type' => 'label',           
+                'label' => 'IP адрес покупателя',
+            ],
+            'pay_type' => [
+                'type' => 'select',               
+                'label' => 'Способ оплаты',
+                'data_source' => 'paytypes',
+            ],
+            'status' => [
+                'type' => 'status',               
+                'label' => 'Статус',
+            ],
+        );
     }
 
     /// Получить строку с HTML кодом дополнительных кнопок документа

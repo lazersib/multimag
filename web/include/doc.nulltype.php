@@ -48,16 +48,6 @@ class doc_Nulltype extends \document {
         $this->get_docdata();
     }
 
-    public function getDocDataA() {
-        return $this->doc_data;
-    }
-
-    public function getDopDataA() {
-        return $this->dop_data;
-    }
-
-//< Получить все дополнительные параметры документа в виде ассоциативного массива
-
     public function getFirmVarsA() {
         return $this->firm_vars;
     }
@@ -66,67 +56,9 @@ class doc_Nulltype extends \document {
     protected function initDefDopData() {
         
     }
-
-    /// @brief Получить значение основного параметра документа.
-    /// Вернёт пустую строку в случае отсутствия параметра
-    /// @param name Имя параметра
-    public function getDocData($name) {
-        if (isset($this->doc_data[$name])) {
-            return $this->doc_data[$name];
-        } else {
-            return '';
-        }
-    }
-
-    /// Установить основной параметр документа
-    public function setDocData($name, $value) {
-        global $db;
-        if ($this->id) {
-            $_name = $db->real_escape_string($name);
-            $db->update('doc_list', $this->id, $_name, $value);
-            doc_log("UPDATE {$this->typename}", "$name: ({$this->doc_data[$name]} => $value)", 'doc', $this->id);
-        }
-        $this->doc_data[$name] = $value;
-    }
-
-    /// @brief Получить значение дополниетльного параметра документа.
-    /// Вернёт пустую строку в случае отсутствия параметра
-    /// @param name Имя параметра
-    public function getDopData($name) {
-        if (isset($this->dop_data[$name])) {
-            return $this->dop_data[$name];
-        } else {
-            return '';
-        }
-    }
-
-    /// Установить дополнительные данные текущего документа
-    public function setDopData($name, $value) {
-        global $db;
-        if ($this->id && @$this->dop_data[$name] != $value) {
-            $_name = $db->real_escape_string($name);
-            $_value = $db->real_escape_string($value);
-            $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
-            doc_log("UPDATE {$this->typename}", @"$name: ({$this->dop_data[$name]} => $value)", 'doc', $this->id);
-        }
-        $this->dop_data[$name] = $value;
-    }
-
-    /// Установить дополнительные данные текущего документа
-    public function setDopDataA($array) {
-        global $db;
-        if ($this->id)
-            foreach ($array as $name => $value) {
-                if (!isset($this->dop_data[$name]))
-                    $this->dop_data[$name] = '';
-                if ($this->dop_data[$name] != $value) {
-                    $_name = $db->real_escape_string($name);
-                    $_value = $db->real_escape_string($value);
-                    $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'$_name','$_value')");
-                    doc_log("UPDATE {$this->typename}", "$name: ({$this->dop_data[$name]} => $value)", 'doc', $this->id);
-                    $this->dop_data[$name] = $value;
-                }
-            }
+    
+    public function getExtControls() {
+        return null;
     }
 
     /// Зафиксировать цену документа, если она установлена в *авто*. Выполняется при проведении некоторых типов документов.
@@ -603,41 +535,6 @@ class doc_Nulltype extends \document {
 
             $this->DrawHeadformEnd();
         }
-    }
-
-    protected function setDocDataA($data) {
-        global $db;
-        $log_data = array();
-        $res = $db->query("SHOW COLUMNS FROM `doc_list`");
-        $col_array = array();
-        while ($nxt = $res->fetch_row()) {
-            $col_array[$nxt[0]] = $nxt[0];
-        }
-        unset($col_array['id']);
-        $i_data = array_intersect_key($this->doc_data, $col_array);
-
-        if ($this->id) {
-            $to_write_data = array_diff_assoc($data, $i_data);
-            foreach ($to_write_data as $name => $value) {
-                if (!isset($this->doc_data[$name])) {
-                    $log_data[$name] = ['new' => $value];
-                } else if ($this->doc_data[$name] !== $value) {
-                    $log_data[$name] = ['old' => $this->doc_data[$name], 'new' => $value];
-                }
-            }
-            if (count($to_write_data) > 0) {
-                $db->updateA('doc_list', $this->id, $to_write_data);
-                $this->writeLogArray('UPDATE', $log_data);
-            }
-        } else {
-            $to_write_data = array_intersect_key($data, $i_data);
-            $this->id = $db->insertA('doc_list', $to_write_data);
-            $this->writeLogArray("CREATE", $to_write_data);
-        }
-        foreach ($to_write_data as $name => $value) {
-            $this->doc_data[$name] = $value;
-        }
-        return $this->id;
     }
 
     protected function try_head_save() {
@@ -1795,9 +1692,8 @@ class doc_Nulltype extends \document {
                 }
                 $ret['price_list'] = $price_list;                
             }
-
-            //if (method_exists($this, 'DopHead'))
-            //    $this->DopHead();
+            $ret['ext_fields'] = $this->getExtControls();
+            $ret = array_merge($this->dop_data, $this->text_data, $ret);
         }
         return $ret;
     }
@@ -1832,6 +1728,19 @@ class doc_Nulltype extends \document {
                     break;
                 case 'sum': 
                     $doc_data['sum'] = $data['sum']; 
+                    break;
+            }
+        }
+        $extcontrols = $this->getExtControls();
+        foreach ($extcontrols as $ex_name => $ex_data) {
+            switch($ex_data['type']) {
+                case 'text':
+                case 'select':
+                case 'status':
+                    $dop_data[$ex_name] = $data[$ex_name];
+                    break;
+                case 'checkbox':
+                    $dop_data[$ex_name] = $data[$ex_name]?1:0;
                     break;
             }
         }

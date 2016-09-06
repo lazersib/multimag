@@ -242,6 +242,11 @@ class document {
         }
     }
     
+    /// Получить все основные параметры документа в виде ассоциативного массива
+    public function getDocDataA() {
+        return $this->doc_data;
+    }
+    
     /// Установить основной параметр документа
     public function setDocData($name, $value) {
         global $db;
@@ -257,6 +262,41 @@ class document {
         $this->doc_data[$name] = $value;
     }
     
+    protected function setDocDataA($data) {
+        global $db;
+        $log_data = array();
+        $res = $db->query("SHOW COLUMNS FROM `doc_list`");
+        $col_array = array();
+        while ($nxt = $res->fetch_row()) {
+            $col_array[$nxt[0]] = $nxt[0];
+        }
+        unset($col_array['id']);
+        $i_data = array_intersect_key($this->doc_data, $col_array);
+
+        if ($this->id) {
+            $to_write_data = array_diff_assoc($data, $i_data);
+            foreach ($to_write_data as $name => $value) {
+                if (!isset($this->doc_data[$name])) {
+                    $log_data[$name] = ['new' => $value];
+                } else if ($this->doc_data[$name] !== $value) {
+                    $log_data[$name] = ['old' => $this->doc_data[$name], 'new' => $value];
+                }
+            }
+            if (count($to_write_data) > 0) {
+                $db->updateA('doc_list', $this->id, $to_write_data);
+                $this->writeLogArray('UPDATE', $log_data);
+            }
+        } else {
+            $to_write_data = array_intersect_key($data, $i_data);
+            $this->id = $db->insertA('doc_list', $to_write_data);
+            $this->writeLogArray("CREATE", $to_write_data);
+        }
+        foreach ($to_write_data as $name => $value) {
+            $this->doc_data[$name] = $value;
+        }
+        return $this->id;
+    }
+    
     /// @brief Получить значение дополнительного параметра документа.
     /// Вернёт пустую строку в случае отсутствия параметра
     /// @param name Имя параметра
@@ -266,6 +306,11 @@ class document {
         } else {
             return '';
         }
+    }
+    
+    /// Получить все дополнительные параметры документа в виде ассоциативного массива
+    public function getDopDataA() {
+        return $this->dop_data;
     }
     
     /** Установить дополнительный параметр текущего документа
@@ -283,9 +328,29 @@ class document {
             $_value = $db->real_escape_string($value);
             $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`) VALUES ( '{$this->id}' ,'$_name','$_value')");
             $log_data = [$name => ['old'=>$this->dop_data[$name], 'new'=>$value] ];
-            $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
+            $this->writeLogArray("UPDATE", $log_data);
         }
         $this->dop_data[$name] = $value;
+    }
+    
+    /// Установить дополнительные данные текущего документа
+    public function setDopDataA($array) {
+        global $db;
+        if ($this->id) {
+            $to_write_data = array_diff_assoc($array, $this->dop_data);
+            $log_data = array();
+            foreach ($to_write_data as $name => $value) {
+                if(!isset($this->dop_data[$name])) {
+                    $this->dop_data[$name] = null;
+                }
+                $log_data[$name] = ['old'=>$this->dop_data[$name], 'new'=>$value];
+                $this->dop_data[$name] = $value;                
+            }
+            if(count($to_write_data)>0) {
+                $db->replaceKA('doc_dopdata', 'doc', $this->id, $to_write_data);
+                $this->writeLogArray("UPDATE", $log_data);
+            }
+        }
     }
     
     public function getTextData($name) {
@@ -312,40 +377,11 @@ class document {
             $_value = $db->real_escape_string($value);
             $db->query("REPLACE INTO `doc_textdata` (`doc_id`,`param`,`value`) VALUES ( '{$this->id}' ,'$_name','$_value')");
             $log_data = [$name => ['old'=>$this->text_data[$name], 'new'=>$value] ];
-            $this->writeLogArray("UPDATE", ['text_data'=>$log_data]);
+            $this->writeLogArray("UPDATE", $log_data);
         }
-        $this->dop_data[$name] = $value;
+        $this->text_data[$name] = $value;
     }
     
-    /// Получить все основные параметры документа в виде ассоциативного массива
-    public function getDocDataA() {
-        return $this->doc_data;
-    }
-    
-    /// Получить все дополнительные параметры документа в виде ассоциативного массива
-    public function getDopDataA() {
-        return $this->dop_data;
-    }
-    
-    /// Установить дополнительные данные текущего документа
-    public function setDopDataA($array) {
-        global $db;
-        if ($this->id) {
-            $to_write_data = array_diff_assoc($array, $this->dop_data);
-            $log_data = array();
-            foreach ($to_write_data as $name => $value) {
-                if(!isset($this->dop_data[$name])) {
-                    $this->dop_data[$name] = null;
-                }
-                $log_data[$name] = ['old'=>$this->dop_data[$name], 'new'=>$value];
-                $this->dop_data[$name] = $value;                
-            }
-            if(count($to_write_data)>0) {
-                $db->replaceKA('doc_dopdata', 'doc', $this->id, $to_write_data);
-                $this->writeLogArray("UPDATE", ['dop_data'=>$log_data]);
-            }
-        }
-    }
     
     /// Получить все текстовые параметры документа в виде ассоциативного массива
     public function getTextDataA() {

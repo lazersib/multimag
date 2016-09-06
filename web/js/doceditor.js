@@ -4,6 +4,9 @@ function doceditor(doc_container_id, menu_container_id) {
     var left_block;
     var cache = getCacheObject();
     doc.agentnames = cache.get('agentnames');
+    doc.element_classname = 'item';
+    doc.label_classname = 'label';
+    doc.input_id_prefix = 'dochead_';
     
     function onLoadError(name, data) {
         alert("Ошибка:\n"+name+"\nСообщение:"+data.errorMessage);
@@ -212,10 +215,48 @@ function doceditor(doc_container_id, menu_container_id) {
         mm_api.document.get({id:doc_id},onLoadSuccess, onLoadError);
     };
     
+    function newTextElement(name, value, options) {
+        var rootElement = document.createElement('div');
+        rootElement.className = doc.element_classname;
+        var labelElement = document.createElement('div');
+        labelElement.className = doc.label_classname;
+        var label = document.createTextNode(options.label+':'); 
+        labelElement.appendChild(label);
+        rootElement.appendChild(labelElement); 
+        var inputElement = document.createElement('input');
+        inputElement.name = name;
+        inputElement.type = 'text';
+        inputElement.id = doc.input_id_prefix+name;
+        if(options.maxlength>0) {
+            inputElement.maxLength = options.maxlength;
+        }
+        inputElement.value = value;
+        rootElement.appendChild(inputElement);        
+        doc.head_form.appendChild(rootElement);
+        rootElement.input = inputElement;
+        inputElement.label = labelElement;
+        return rootElement;
+    }
+       
+    function initExtFields(data) {
+        var ext_fields = data.ext_fields;
+        var i;
+        for(i in ext_fields) { 
+            var field = ext_fields[i];
+            switch(field.type) {
+                case 'text':
+                    var element = newTextElement(i, data[i], field);
+                    doc.head_form.appendChild(element);
+                    element.input.onchange = onChangeHeaderField;
+                    doc['i_'.i] = element.input;
+                    break;
+            }
+        }
+    }
+    
     doc.fillHeader = function(data) {
         var tmp;
         doc.header = data;
-        var doc_name = newElement('h1', left_block, '', data.viewname);
         var template = "<input type='hidden' name='id' id='dochead_doc_id' value=''>"
             + "<input type='hidden' name='type' id='dochead_doc_type_id' value=''>"
             + "<div class='item'>"
@@ -245,10 +286,10 @@ function doceditor(doc_container_id, menu_container_id) {
 		+ "<div id='dochead_dishonest_info'>Был выбран недобросовестный агент!</div>",
             agent_contract: "<div>Договор с агентом:</div>"
 		+ "<select name='contract_id' id='dochead_contract_id'></select>",
-            comment: "<div>Комментарий:</div><textarea id='dochead_comment' name='comment'></textarea>"
+            comment: "<div>Комментарий:</div><textarea id='dochead_comment' name='comment'></textarea>",
         };
-        var doc_head_form = newElement('form', left_block, '', template);
-        doc_head_form.id = 'doc_head_form';
+        doc.head_form = newElement('form', left_block, '', template);
+        doc.head_form.id = 'doc_head_form';
         
         tmp = document.getElementById('dochead_doc_id');
         tmp.value = data.id;        
@@ -270,43 +311,44 @@ function doceditor(doc_container_id, menu_container_id) {
             switch(data.header_fields[i]) {
                 case 'price':
                 case 'cena':
-                    var tmp = newElement('div', doc_head_form, 'item', templates.price);
+                    var tmp = newElement('div', doc.head_form, 'item', templates.price);
                     doc.i_price_id = document.getElementById('dochead_price_id'); 
                     insertOptionsList(doc.i_price_id, data.price_list, data.price_id, true);
                     doc.i_price_id.onchange = onChangeHeaderField;
                     break;
                 case 'store':
                 case 'sklad':
-                    var tmp = newElement('div', doc_head_form, 'item', templates.store);
+                    var tmp = newElement('div', doc.head_form, 'item', templates.store);
                     doc.i_store_id = document.getElementById('dochead_store_id'); 
                     initStoreSelect();
                     doc.i_store_id.onchange = onChangeHeaderField;
                     break;
                 case 'cash':
                 case 'kassa':
-                    var tmp = newElement('div', doc_head_form, 'item', templates.cash);
+                    var tmp = newElement('div', doc.head_form, 'item', templates.cash);
                     doc.i_cash_id = document.getElementById('dochead_cash_id'); 
                     insertOptionsList(doc.i_cash_id, data.cash_list, data.cash_id, true);
                     doc.i_cash_id.onchange = onChangeHeaderField;
                     break;
                 case 'bank':
-                    var tmp = newElement('div', doc_head_form, 'item', templates.bank);
+                    var tmp = newElement('div', doc.head_form, 'item', templates.bank);
                     doc.i_bank_id = document.getElementById('dochead_bank_id'); 
                     initBankSelect();
                     doc.i_bank_id.onchange = onChangeBankField;
                     break;
                 case 'agent':
-                    newElement('div', doc_head_form, 'item', templates.agent);
-                    newElement('div', doc_head_form, 'item', templates.agent_contract);                    
+                    newElement('div', doc.head_form, 'item', templates.agent);
+                    newElement('div', doc.head_form, 'item', templates.agent_contract);                    
                     initAgentField();
                     doc.i_contract_id.onchange = onChangeHeaderField;
                     break;
                 case 'separator':
-                    var tmp = newElement('div', doc_head_form, 'item', '<hr>');
+                    var tmp = newElement('div', doc.head_form, 'item', '<hr>');
                     break;
             }
         }
-        newElement('div', doc_head_form, 'item', templates.comment);
+        initExtFields(data, templates);
+        newElement('div', doc.head_form, 'item', templates.comment);
         doc.i_comment = document.getElementById('dochead_comment');
         doc.i_comment.value = doc.header.comment;
         doc.i_comment.onchange  = onChangeHeaderField;
