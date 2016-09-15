@@ -3,10 +3,12 @@ function doceditor(doc_container_id, menu_container_id) {
     var container = document.getElementById(doc_container_id);
     var left_block;
     var cache = getCacheObject();
+    var listproxy = getListProxy();
     doc.agentnames = cache.get('agentnames');
     doc.element_classname = 'item';
     doc.label_classname = 'label';
     doc.input_id_prefix = 'dochead_';
+    listproxy.prefetch(['agent.listnames', 'firm.listnames', 'mybank.shortlist', 'store.shortlist', 'price.listnames']);
     
     function onLoadError(name, data) {
         alert("Ошибка:\n"+name+"\nСообщение:"+data.errorMessage);
@@ -27,8 +29,9 @@ function doceditor(doc_container_id, menu_container_id) {
         else alert("Обработчик не задан:\n"+response);
     }  
     
-    function insertOptionsArray(select_elem, data, selected_id, not_select_item) {
+    function updateOptionsArray(select_elem, data, selected_id, not_select_item) {
         var value;
+        select_elem.innerHTML = '';
         if(not_select_item) {
             var opt = newElement('option', select_elem, '', '--не задано--');
             opt.value='null';
@@ -42,8 +45,9 @@ function doceditor(doc_container_id, menu_container_id) {
         }
     }
     
-    function insertOptionsList(select_elem, data, selected_id, not_select_item) {
+    function updateOptionsList(select_elem, data, selected_id, not_select_item) {
         var i;
+        select_elem.innerHTML = '';
         if(not_select_item) {
             var opt = newElement('option', select_elem, '', '--не задано--');
             opt.value='null';
@@ -72,15 +76,15 @@ function doceditor(doc_container_id, menu_container_id) {
         }
     }
     
-    function initStoreSelect() {
+    function initStoreSelect(store_list) {
         var i;
         var firm_id = doc.i_firm_id.value;
         var select_elem = doc.i_store_id;
         var selected = false;
         select_elem.innerHTML = '';
         
-        for(i in doc.header.store_list) {
-            var line = doc.header.store_list[i];
+        for(i in store_list) {
+            var line = store_list[i];
             if(line.firm_id>0 && line.firm_id!=firm_id) {
                 continue;
             }
@@ -98,32 +102,37 @@ function doceditor(doc_container_id, menu_container_id) {
         }
     }
     
-    function initBankSelect() {
-        var i;
-        var firm_id = doc.i_firm_id.value;
-        var select_elem = doc.i_bank_id;
-        var selected = false;
-        select_elem.innerHTML = '';
-        
-        for(i in doc.header.bank_list) {
-            var line = doc.header.bank_list[i];
-            if(line.firm_id>0 && line.firm_id!=firm_id) {
-                continue;
+    function initBankSelect() {        
+        function refill(bank_list) {
+            var i;
+            var firm_id = doc.i_firm_id.value;
+            var select_elem = doc.i_bank_id;
+            var selected = false;
+            select_elem.innerHTML = '';        
+            for(i in bank_list) {
+                var line = bank_list[i];
+                if(line.firm_id>0 && line.firm_id!=firm_id) {
+                    continue;
+                }
+                var opt = newElement('option', select_elem, '', line.name);
+                opt.value = line.id;
+                if(line.id==doc.header.bank_id) {
+                    opt.selected = true;
+                    selected = true;
+                }
             }
-            var opt = newElement('option', select_elem, '', line.name);
-            opt.value = line.id;
-            if(line.id==doc.header.bank_id) {
-                opt.selected = true;
-                selected = true;
+            if( (!doc.header.bank_id) || (!selected)) {            
+                var opt = newElement('option', select_elem, '', '--не задано--');
+                opt.value='null';
+                opt.selected=true;
+                opt.className="error";
+                select_elem.className="error";
             }
         }
-        if( (!doc.header.bank_id) || (!selected)) {            
-            var opt = newElement('option', select_elem, '', '--не задано--');
-            opt.value='null';
-            opt.selected=true;
-            opt.className="error";
-            select_elem.className="error";
-        }
+        function onNewData(key, data) {
+            refill(data);
+        }      
+        listproxy.bind('mybank.shortlist', onNewData); 
     }
     
     function initAgentField() {
@@ -133,7 +142,12 @@ function doceditor(doc_container_id, menu_container_id) {
             document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+agent_id;
             onChangeHeaderField();
         }
-        autoCompleteField('dochead_agent_name', doc.agentnames, agSelectItem);    
+        var ac_agent = autoCompleteField('dochead_agent_name', [], agSelectItem);
+        function onNewData(key, data) {
+            ac_agent.updateData(data);
+        }      
+        listproxy.bind('agent.listnames', onNewData);       
+        
         doc.i_agent_id = document.getElementById('dochead_agent_id'); 
         doc.i_agent_id.value = doc.header.agent_id;
         doc.i_agent_name = document.getElementById('dochead_agent_name'); 
@@ -254,6 +268,26 @@ function doceditor(doc_container_id, menu_container_id) {
         }
     }
     
+    function onNewData(key, data) {
+        switch(key) {
+            case 'firm.listnames':
+                updateOptionsArray(doc.i_firm_id, data, doc.header.firm_id);
+                break;
+            case 'store.shortlist':
+                initStoreSelect(data);
+                break;
+            case 'cash.shortlist':
+                var obj = document.getElementById('dochead_cash_id'); 
+                updateOptionsList(obj, data, doc.header.cash_id, true);
+                break;
+            case 'price.listnames':
+                updateOptionsArray(doc.i_price_id, data, doc.header.price_id, true);
+                break;   
+        }
+
+    } 
+    
+    
     doc.fillHeader = function(data) {
         var tmp;
         doc.header = data;
@@ -303,8 +337,9 @@ function doceditor(doc_container_id, menu_container_id) {
         doc.i_datetime = document.getElementById('dochead_datetime');  
         doc.i_datetime.value = data.date;        
         doc.i_firm_id = document.getElementById('dochead_firm_id');  
-        insertOptionsArray(doc.i_firm_id, data.firm_names, data.firm_id);
-        doc.i_firm_id.onchange = onUpdateFirmId;        
+        
+        doc.i_firm_id.onchange = onUpdateFirmId;                
+        listproxy.bind('firm.listnames', onNewData); 
         
         var value;
         for(var i=0;i<data.header_fields.length;i++) { 
@@ -312,23 +347,23 @@ function doceditor(doc_container_id, menu_container_id) {
                 case 'price':
                 case 'cena':
                     var tmp = newElement('div', doc.head_form, 'item', templates.price);
-                    doc.i_price_id = document.getElementById('dochead_price_id'); 
-                    insertOptionsList(doc.i_price_id, data.price_list, data.price_id, true);
+                    doc.i_price_id = document.getElementById('dochead_price_id');                     
                     doc.i_price_id.onchange = onChangeHeaderField;
+                    listproxy.bind('price.listnames', onNewData);
                     break;
                 case 'store':
                 case 'sklad':
                     var tmp = newElement('div', doc.head_form, 'item', templates.store);
                     doc.i_store_id = document.getElementById('dochead_store_id'); 
-                    initStoreSelect();
+                    listproxy.bind('store.shortlist', onNewData); 
                     doc.i_store_id.onchange = onChangeHeaderField;
                     break;
                 case 'cash':
                 case 'kassa':
                     var tmp = newElement('div', doc.head_form, 'item', templates.cash);
-                    doc.i_cash_id = document.getElementById('dochead_cash_id'); 
-                    insertOptionsList(doc.i_cash_id, data.cash_list, data.cash_id, true);
+                    doc.i_cash_id = document.getElementById('dochead_cash_id');                    
                     doc.i_cash_id.onchange = onChangeHeaderField;
+                    listproxy.bind('cash.shortlist', onNewData);
                     break;
                 case 'bank':
                     var tmp = newElement('div', doc.head_form, 'item', templates.bank);

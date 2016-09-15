@@ -438,8 +438,16 @@ class News extends \IModule {
             }
 
             $list_id = 'news' . $id . '.' . date("dmY") . '.' . $pref->site_name;
-            SendSubscribe($title, $title . " - новости сайта", $uwtext, $list_id);
-            $tmpl->msg("Рассылка выполнена успешно.", "ok");           
+            $send_res = sendSubscribe($title, $title . " - новости сайта", $uwtext, $list_id);
+            if(!$send_res) {
+                $tmpl->msg("Рассылка выполнена успешно.", "ok");           
+            } else {
+                $txt = "При рассылке произошли ошибки:<br>";
+                foreach($send_res as $v) {
+                    $txt.=$v."<br>";
+                }
+                $tmpl->errorMessage($txt);           
+            }
         }
         $db->commit();
         $tmpl->msg("Новость опубликована!", "ok");

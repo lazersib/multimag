@@ -158,6 +158,13 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
     ac_input.onblur = function (event) {
         hide_timer = window.setTimeout(hideList, 300);
     };
+    
+    ac_input.updateData = function(new_data) {
+        data = new_data;
+        if(ac_result.style.display == 'block') {
+            buildList();
+        }
+    };
 
     // События списка
     ac_list.onmouseover = function (event) {
@@ -201,6 +208,9 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
         ac_input.focus();
         update_callback();
     };
+    
+    
+    return ac_input;
 }
  
 
@@ -271,4 +281,85 @@ function getCacheObject() {
         mmCacheObject.storage[name] = null;
     };
     return mmCacheObject;
+}
+
+
+function getListProxy() {
+    var mmListProxy = new Object;
+    var cache = getCacheObject();
+    var callbacks = new Object;
+    var in_process = new Object;
+    
+    function onStorage(event) {
+        console.log("LS event:"+event.key);
+        callbackCaller(event.key, event.newValue);
+    }
+    
+    function callbackCaller(key, newValue) {
+        console.log("callback "+key);
+        if(callbacks[key]!==undefined) {
+            for(var i in callbacks[key]) {
+                callbacks[key][i](key, newValue);
+            }
+        }
+    }        
+    
+    function onReceive(json, data) {
+        if(json.object==='multiquery') {
+            for(var i in json.content) {
+                cache.set(i, json.content[i]);
+                callbackCaller(i, json.content[i]);
+                in_process[i] = undefined;
+            }
+        }
+        else {
+            var i = json.object+'.'+json.action;
+            cache.set(i, json.content);
+            callbackCaller(i, json.content);
+            in_process[i] = undefined;
+        }        
+    }
+    
+    function onError(status, data) {
+        for(var i in data.query) {
+            in_process[data.query[i]] = undefined;
+        }
+        alert("ListProxy error "+status);        
+    }
+    
+    /// Prefetch data from server
+    mmListProxy.prefetch = function(objects) { 
+        var data = {
+            query: objects
+        };
+        for(var i in objects) {
+            in_process[objects[i]] = true;
+        }
+        mm_api.callApi('multiquery', 'run', data, onReceive, onError);
+    };
+    
+    mmListProxy.bind = function(object, update_callback) {
+        if(update_callback!==undefined) {
+            if(callbacks[object]===undefined) {
+               callbacks[object] = new Array; 
+            }
+            callbacks[object].push(update_callback);
+        }
+        var data = cache.get(object);
+        if(data!==undefined) {
+            update_callback(object, data);
+            return;
+        }
+        mmListProxy.refresh(object);
+    };
+    
+    mmListProxy.refresh  = function(object) {
+        if(in_process[object]==undefined) {
+            var s = object.split('.',2);
+            mm_api.callApi(s[0], s[1], null, onReceive, onError);
+        }
+    };
+    
+    window.addEventListener('storage', onStorage);
+    return mmListProxy;
 }

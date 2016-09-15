@@ -72,7 +72,7 @@ function docTypeMultiSelect(div_id, data, update_callback) {
             update_callback();
             hideList();
         }
-    }
+    };
 
     // События списка
     ac_result.onclick = function (event) {
@@ -87,13 +87,13 @@ function docTypeMultiSelect(div_id, data, update_callback) {
         else
             base_div.values[event.target.value] = 0;
         update_callback();
-    }
+    };
 
     // Скролл блока
     ac_result.onscroll = function (event) {
         if (hide_timer)
             window.clearTimeout(hide_timer);
-    }
+    };
 
     // События кнопки clear
     clear_button.onclick = function () {
@@ -114,12 +114,12 @@ function docTypeMultiSelect(div_id, data, update_callback) {
         }
 
         update_callback();
-    }
+    };
 
     done_button.onclick = function (event) {
         hideList();
         update_callback();
-    }
+    };
 }
 
 function initDocJournal(container_id, default_filters, params) {
@@ -130,7 +130,7 @@ function initDocJournal(container_id, default_filters, params) {
     var filter_request = '';
     var old_filter_request = '';
     var httpRequest = new XMLHttpRequest();
-    ;
+
     var deffer_timer;
     var docj_list_body = document.getElementById('docj_list_body');
 
@@ -647,7 +647,7 @@ function initDocJournal(container_id, default_filters, params) {
     container.print = function () {
         buildFilterQuery();
         window.open('/docj_new.php?mode=print&' + filter_request);
-    }
+    };
 
     initFilter(doc_list_filter);
     buildFilterQuery();

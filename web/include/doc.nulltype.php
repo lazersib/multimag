@@ -1644,54 +1644,7 @@ class doc_Nulltype extends \document {
                     'contract_list' => $contract_list,
                     'dishonest' => $this->doc_data['agent_dishonest'],
                 );
-            }
-            if (in_array('sklad', $ret['header_fields'])) {
-                if (isset($CONFIG['site']['default_sklad'])) {
-                    $ret['default_store_id'] = $CONFIG['site']['default_sklad'];
-                }
-                $store_list = array();
-                $res = $db->query("SELECT `id`, `name`, `firm_id` FROM `doc_sklady` ORDER by `id` ASC");
-                while ($line = $res->fetch_assoc()) {
-                    $store_list[$line['id']] = $line;
-                }
-                $ret['store_list'] = $store_list;
-            }
-            if (in_array('kassa', $ret['header_fields'])) {
-                if (isset($CONFIG['site']['default_kassa'])) {
-                    $ret['default_cash_id'] = $CONFIG['site']['default_kassa'];
-                }
-                $cash_list = array();
-                $res = $db->query("SELECT `num` AS `id`, `name`, `firm_id`
-                    FROM `doc_kassa`
-                    WHERE `ids`='kassa' 
-                    ORDER BY `num`");
-                while ($line = $res->fetch_assoc()) {
-                    $cash_list[$line['id']] = $line;
-                }
-                $ret['cash_list'] = $cash_list;
-            }
-            if (in_array('bank', $ret['header_fields'])) {
-                if (isset($CONFIG['site']['default_bank'])) {
-                    $ret['default_bank_id'] = $CONFIG['site']['default_bank'];
-                }
-                $bank_list = array();
-                $res = $db->query("SELECT `num` AS `id`, `name`, `firm_id`
-                    FROM `doc_kassa`
-                    WHERE `ids`='bank'
-                    ORDER BY `num`");
-                while ($line = $res->fetch_assoc()) {
-                    $bank_list[$line['id']] = $line;
-                }
-                $ret['bank_list'] = $bank_list;
-            }
-            if (in_array('cena', $ret['header_fields'])) {
-                $price_list = array();
-                $res = $db->query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
-                while ($line = $res->fetch_assoc()) {
-                    $price_list[$line['id']] = $line;
-                }
-                $ret['price_list'] = $price_list;                
-            }
+            }            
             $ret['ext_fields'] = $this->getExtControls();
             $ret = array_merge($this->dop_data, $this->text_data, $ret);
         }

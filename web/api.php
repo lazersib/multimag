@@ -24,6 +24,7 @@ include_once("core.php");
 try {
     $object = request('object');
     $action = request('action');
+    $data = request('data');    
     $tmpl->ajax = 1;
 
     if (!auth()) {
@@ -37,33 +38,18 @@ try {
         'action' => $action,
         'response' => 'success',
     );
-    if($object=='getmessage') {
-        ignore_user_abort(FALSE);
-        sleep(10);
-        $agent_id = rand(1, 100);
-        $content = array(
-            'title' => 'Уведомление о звонке',
-            'icon' => '/img/i_add.png',
-            'message' => 'Лови звонок агента '.$agent_id,
-            'link' => '/docs.php?l=agent&mode=srv&opt=ep&pos='.$agent_id,
-        );
-        $result['content'] = $content;
-    } 
-    else if($object=='agent') {
-        $data = request('data');
-        $decoded_data = json_decode($data, true);
-        $disp = new \api\agent();
-        $result['content'] = $disp->dispatch($action, $decoded_data);        
+    if(!preg_match('/^\\w+$/', $object)) {
+        throw new \InvalidArgumentException('Некорректный объект '.$object);
     }
-    else if($object=='document') {
-        $data = request('data');
-        $decoded_data = json_decode($data, true);
-        $disp = new \api\document();
-        $result['content'] = $disp->dispatch($action, $decoded_data);        
+    $class_name = '\\api\\' . $object;
+    if(!class_exists($class_name)) {
+        throw new \NotFoundException('Отсутствует обработчик для '.$object);
     }
-    else {
-        throw new NotFoundException('Неверный объект');
-    }
+    $disp = new $class_name;
+    $decoded_data = json_decode($data, true);
+    $db->startTransaction();
+    $result['content'] = $disp->dispatch($action, $decoded_data);  
+    $db->commit();
     $exec_time = round(microtime(true) - $starttime, 3);
     $result["exec_time"] = $exec_time;
     $result["user_id"] = $_SESSION['uid'];

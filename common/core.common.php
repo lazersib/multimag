@@ -78,6 +78,7 @@ function getSubscribersEmailList() {
 /// @param $list_id ID рассылки
 function SendSubscribe($title, $subject, $msg, $list_id = '') {
     global $CONFIG, $db;
+    $error_list = array();
     if (!$list_id) {
         $list_id = md5($subject . $msg . microtime()) . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
     }
@@ -113,9 +114,11 @@ $msg
         $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            throw new Exception($error);
+            //throw new Exception($error);
+            $error_list[] = $subscriber['email'].": ".$error;
         }
     }
+    return $error_list;
 }
 
 /// Отправляет оповещение администратору сайта по всем доступным каналам связи

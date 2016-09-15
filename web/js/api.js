@@ -3,6 +3,7 @@ var mm_api = function () {
     var mm_api = new Object();
     mm_api.agent = new Object();
     mm_api.document = new Object();
+    mm_api.multiquery = new Object();
     
     function dataReceiver(msg, data, ok_callback, err_callback) {
         try {
@@ -50,6 +51,10 @@ var mm_api = function () {
     
     mm_api.document.update = function(data, ok_callback, err_callback) {
         mm_api.callApi('document', 'update', data, ok_callback, err_callback);
+    };
+    
+    mm_api.multiquery.run = function(data, ok_callback, err_callback) {
+        mm_api.callApi('multiquery', 'run', data, ok_callback, err_callback);
     };
     
     return mm_api;
