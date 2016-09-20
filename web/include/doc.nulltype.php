@@ -48,6 +48,10 @@ class doc_Nulltype extends \document {
         $this->get_docdata();
     }
 
+    public function isSkladEditorEnable() {
+        return $this->sklad_editor_enable;
+    }
+    
     public function getFirmVarsA() {
         return $this->firm_vars;
     }

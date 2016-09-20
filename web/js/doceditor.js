@@ -1,14 +1,20 @@
 function doceditor(doc_container_id, menu_container_id) {
     var doc = new Object;
     var container = document.getElementById(doc_container_id);
-    var left_block;
+    var left_block, main_block, v_separator;
     var cache = getCacheObject();
     var listproxy = getListProxy();
+    var hltimer;
+    var mim = mainInternalMenu();
     doc.agentnames = cache.get('agentnames');
     doc.element_classname = 'item';
     doc.label_classname = 'label';
     doc.input_id_prefix = 'dochead_';
     listproxy.prefetch(['agent.listnames', 'firm.listnames', 'mybank.shortlist', 'store.shortlist', 'price.listnames']);
+    
+    function clearHighlight() {
+        left_block.style.backgroundColor = '';
+    }
     
     function onLoadError(name, data) {
         alert("Ошибка:\n"+name+"\nСообщение:"+data.errorMessage);
@@ -17,7 +23,17 @@ function doceditor(doc_container_id, menu_container_id) {
     function onLoadSuccess(response) {
         if(response.object == 'document') {
             if(response.action=='get') {
+                doc.data = response.content;
                 doc.fillHeader(response.content.header);
+                doc.fillBody(response.content);
+                doc.updateMainMenu();
+            }
+            else if(response.action=='update') {
+                left_block.style.backgroundColor = '#afa';
+                if (hltimer) {
+                    window.clearTimeout(hltimer);
+                }
+                hltimer = window.setTimeout(clearHighlight, 400);
             }
             else {
                 //alert('document:action: '+response.action);
@@ -167,7 +183,7 @@ function doceditor(doc_container_id, menu_container_id) {
     }
     
     function onChangeHeaderField() {
-        doc_left_block.style.backgroundColor = '#ff8';
+        left_block.style.backgroundColor = '#ff8';
         var fstruct = formToArray();
         delete fstruct['agent_name'];
         mm_api.document.update(fstruct,onLoadSuccess, onLoadError);
@@ -227,6 +243,43 @@ function doceditor(doc_container_id, menu_container_id) {
         left_block = newElement('div', container, '', '');
         left_block.id = 'doc_left_block';
         mm_api.document.get({id:doc_id},onLoadSuccess, onLoadError);
+        v_separator = newElement('div', container, '', '');
+        v_separator.id = 'doc_v_separator';
+        main_block = newElement('div', container, '', '');
+        main_block.id = 'doc_main_block';
+        v_separator.addEventListener('click', leftBlockToggle, false);
+        if (supports_html5_storage()) {
+            if (localStorage['doc_left_block_hidden'] == 'hidden') {
+                lb_hide();
+            }
+        }
+        function lb_show() {
+            left_block.style.display = '';
+            main_block.style.marginLeft = main_block.oldmargin;
+            v_separator.style.backgroundImage = "url('/img/left_separator.png')";
+
+        };
+        function lb_hide() {
+            left_block.style.display = 'none';
+            main_block.oldmargin = main_block.style.marginLeft;
+            main_block.style.marginLeft = 10+"px";
+            v_separator.style.backgroundImage = "url('/img/right_separator.png')";
+
+        }    
+        function leftBlockToggle() {
+            var state;
+            if (left_block.style.display != 'none') {
+                lb_hide();
+                state = 'hidden';
+            }
+            else {
+                lb_show();
+                state = 'show';
+            }
+            if (supports_html5_storage()) {
+                localStorage['doc_left_block_hidden'] = state;
+            }
+        }
     };
     
     function newTextElement(name, value, options) {
@@ -287,11 +340,24 @@ function doceditor(doc_container_id, menu_container_id) {
 
     } 
     
+    doc.fillBody = function(content) {
+        
+        if(content.pe_config) {
+            var poseditor_div = newElement('div', main_block, '', '');
+            poseditor_div.id = 'poseditor_div';            
+            var storeview_container = newElement('div', main_block, '', '');
+            storeview_container.id = 'storeview_container';
+            var poseditor = PosEditorInit(content.pe_config);
+        }
+        
+    };
+    
     
     doc.fillHeader = function(data) {
         var tmp;
         doc.header = data;
-        var template = "<input type='hidden' name='id' id='dochead_doc_id' value=''>"
+        var template = "<h1 id='label_document_viewname'></h1>"
+            + "<input type='hidden' name='id' id='dochead_doc_id' value=''>"
             + "<input type='hidden' name='type' id='dochead_doc_type_id' value=''>"
             + "<div class='item'>"
             + "<img id='dochead_plus_altnum' src='/img/i_add.png' alt='Новый номер'></a>"
@@ -325,6 +391,8 @@ function doceditor(doc_container_id, menu_container_id) {
         doc.head_form = newElement('form', left_block, '', template);
         doc.head_form.id = 'doc_head_form';
         
+        doc.l_viewname = document.getElementById('label_document_viewname');
+        doc.l_viewname.innerHTML = data.viewname;
         tmp = document.getElementById('dochead_doc_id');
         tmp.value = data.id;        
         tmp = document.getElementById('dochead_doc_type_id');
@@ -387,6 +455,53 @@ function doceditor(doc_container_id, menu_container_id) {
         doc.i_comment = document.getElementById('dochead_comment');
         doc.i_comment.value = doc.header.comment;
         doc.i_comment.onchange  = onChangeHeaderField;
+        v_separator.style.height = Math.max(left_block.clientHeight, main_block.clientHeight)+"px";        
+    };  
+    
+    doc.updateMainMenu = function() {
+        // Убираем старые
+        mim.contextPanel.clear();
+        doc.contextPanel = new Object;
+        // История
+        doc.contextPanel.hist = mim.contextPanel.addButton({
+            icon:"i_log.png",
+            caption:"История изменений документа",
+            link:"/doc.php?mode=log&doc="+doc.id
+        });
+        if(doc.header.markdelete) {
+            doc.contextPanel.del = mim.contextPanel.addButton({
+                icon:"i_trash_undo.png",
+                caption:"Отменить удаление",
+                accesskey: "U",
+                onclick: doc.undelete
+            });
+        } 
+        else if(doc.header.ok>0) {
+            doc.contextPanel.del = mim.contextPanel.addButton({
+                icon:"i_revert.png",
+                caption:"Отменить проведение документа",
+                accesskey: "С",
+                onclick: doc.cancel
+            });
+        }
+        else {
+            doc.contextPanel.del = mim.contextPanel.addButton({
+                icon:"i_ok.png",
+                caption:"Провести документ",
+                accesskey: "A",
+                onclick: doc.apply
+            });
+            doc.contextPanel.del = mim.contextPanel.addButton({
+                icon:"i_trash.png",
+                caption:"Отметьть для удаления",
+                accesskey: "D",
+                onclick: doc.markdelete
+            });
+        }
+    };
+    
+    doc.apply = function() {
+        alert('apply');
     };
     
     return doc;

@@ -132,8 +132,10 @@ class DocPosEditor extends PosEditor {
         if(isset($CONFIG['poseditor']['show_bulkcnt'])) {
             $this->show_bulkcnt = $CONFIG['poseditor']['show_bulkcnt'];
         }
-        $pc = PriceCalc::getInstance();
-        //var_dump($doc_data);
+        $this->cost_id = $dop_data['cena'];
+        $this->sklad_id = $doc_data['sklad'];
+        $this->SetEditable($doc_data['ok'] ? 0 : 1);
+        $pc = PriceCalc::getInstance();        
         $pc->setFirmId($doc_data['firm_id']);
         $pc->setAgentId($doc_data['agent']);
         $pc->setUserId($doc_data['user']);
@@ -217,19 +219,9 @@ class DocPosEditor extends PosEditor {
         $pc->setOrderSum($this->doc_base_sum);
         return $pc;
     }
-
-    /// Формирует html код списка товаров документа
-    function Show($param = '') {
-        // Список товаров
-        /// @note TODO: возможность отключения редактирования в зависимости от статуса документа, настройка отображаемых столбцов из конфига. Не забыть про серийные номера.
-        /// Возможность отключения строки быстрого ввода
-        /// В итоге - сделать базовый класс, от которого наследуется редактор документов, редактор комплектующих, итп.
-        $ret = "
-	<script src='/js/poseditor.js' type='text/javascript'></script>
-	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
-	<div id='poseditor_div'></div>
-	<div id='storeview_container'></div>";
-
+    
+    /// Получить данные для инициализации JS компонента
+    public function getInitData($param = '') {
         $p_setup = array(
             'base_url' => '/doc.php?doc=' . $this->doc . '&mode=srv',
             'editable' => $this->editable,
@@ -237,7 +229,6 @@ class DocPosEditor extends PosEditor {
             'store_container' => 'storeview_container',
             'fastadd_line' => 1, // Показывать строку быстрого подбора
         );
-
         $cols = array();
         $col_names = array();
         if ($this->show_vc) {
@@ -268,7 +259,6 @@ class DocPosEditor extends PosEditor {
             $cols[] = 'reserve';
             $col_names[] = 'Резерв';
         }
-
         $cols[] = 'place';
         $col_names[] = 'Место';
         if ($this->show_gtd) {
@@ -279,10 +269,8 @@ class DocPosEditor extends PosEditor {
             $cols[] = 'sn';
             $col_names[] = 'SN';
         }
-
         $p_setup['columns'] = $cols;
         $p_setup['col_names'] = $col_names;
-
         if ($this->show_vc) {
             $sc = array(
                 'vc', 'name', 'vendor', 'price', 'liquidity'
@@ -327,8 +315,22 @@ class DocPosEditor extends PosEditor {
 
         $p_setup['store_columns'] = $sc;
         $p_setup['store_col_names'] = $sc_names;
+        return $p_setup;
+    }
 
-        $ret.="<script type=\"text/javascript\">
+    /// Формирует html код списка товаров документа
+    function Show($param = '') {
+        // Список товаров
+        /// @note TODO: возможность отключения редактирования в зависимости от статуса документа, настройка отображаемых столбцов из конфига. Не забыть про серийные номера.
+        /// Возможность отключения строки быстрого ввода
+        /// В итоге - сделать базовый класс, от которого наследуется редактор документов, редактор комплектующих, итп.
+        $p_setup = $this->getInitData();        
+        $ret = "
+	<script src='/js/poseditor.js' type='text/javascript'></script>
+	<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'>
+	<div id='poseditor_div'></div>
+	<div id='storeview_container'></div>
+        <script type=\"text/javascript\">
 	var poslist = PosEditorInit(" . json_encode($p_setup, JSON_UNESCAPED_UNICODE) . ");
 	</script>";
 

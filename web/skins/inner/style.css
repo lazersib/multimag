@@ -267,52 +267,52 @@ div.notify
 .f_green
 {
 	font-weight: bold;
-	COLOR: #00cc00;
+	color: #00cc00;
 }
 
 .f_purple
 {
 	font-weight: bold;
-	COLOR: #cc00cc;
+	color: #cc00cc;
 }
 
 .f_brown
 {
 	font-weight: bold;
-	COLOR: #773300;
+	color: #773300;
 }
 
 .f_more
 {
 	font-weight: bold;
-	COLOR: #28a488;
+	color: #28a488;
 }
 
 .f_red
 {
 	font-weight: bold;
-	COLOR: #ff0000;
+	color: #ff0000;
 }
 
 .f_blue
 {
 	font-weight: bold;
-	COLOR: #0000ff;
+	color: #0000ff;
 }
 
 .b_green
 {
-	BACKGROUND-COLOR: #aaffaa;
+	background-color: #aaffaa;
 }
 
 .b_red
 {
-	BACKGROUND-COLOR: #ffaaaa;
+	background-color: #ffaaaa;
 }
 
 .b_selection
 {
-	BACKGROUND-COLOR: #A9D1FF;
+	background-color: #A9D1FF;
 }
 
 input.tedit
@@ -869,10 +869,27 @@ table.editcard > tbody > tr > th, table.editcard > tr > th {
 	background-repeat: 	no-repeat;
 }
 
-#doc_menu_r
-{
+#doc_menu img, #doc_menu a {
+    border:0;
+}
+
+#doc_menu a {
+    padding-left: 1px;
+    padding-right: 1px;
+}
+
+#main_menu_right {
 	float:			right;
 }
+
+#main_menu_context_panel {
+    margin-left: 5px;
+    border-left: 3px #ccc dotted;
+    display: inline-block;
+    padding-left: 5px;
+}
+
+
 /* Новый вид документов */
 
 #doc_left_block
@@ -882,6 +899,7 @@ table.editcard > tbody > tr > th, table.editcard > tr > th {
 	width:			310px;
 	padding:		5px;
         padding-left:           10px;
+        padding-top:            0;
 	font-size:		12px;
 }
 
@@ -893,22 +911,20 @@ table.editcard > tbody > tr > th, table.editcard > tr > th {
 
 #doc_left_block select
 {
-	width:	100%;
+    width:	100%;
 }
 
 #doc_head_main
 {
-	border-spacing: 0px;
+    border-spacing: 0px;
 }
-
-
 
 #doc_head_main input
 {
-	border:			1px solid #ccc;
-	-moz-border-radius:	4px;
-	border-radius:		4px;
-	padding:		3px;
+    border:			1px solid #ccc;
+    -moz-border-radius:	4px;
+    border-radius:		4px;
+    padding:		3px;
 }
 
 #doc_head_main .altnum
@@ -943,10 +959,29 @@ table.editcard > tbody > tr > th, table.editcard > tr > th {
 	width:	150px;
 }
 
+#dochead_label_id {
+    position: relative;
+    z-index: 10;
+    float: right;
+}
+
+#doc_v_separator {
+    float:              left;
+    background-color:	#fff;
+    width:		8px;
+    height:             auto;
+    min-height:         500px;
+    font-size:		2px;
+    margin-left:        0px;
+    border-left:        1px solid #eee;
+    border-right:       1px solid #eee;
+    background-image: url(/img/left_separator.png);
+    cursor: pointer;
+}
 
 #doc_main_block
 {
-	margin-left:		320px;
+	margin-left:		335px;
 	border-left:		1px solid #ccc;
 }
 

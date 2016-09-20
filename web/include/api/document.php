@@ -40,10 +40,19 @@ class document {
         \acl::accessGuard('doc.' . $document->getTypeName(), \acl::VIEW);
         if ($firm_id > 0) {
             \acl::accessGuard([ 'firm.global', 'firm.' . $firm_id], \acl::VIEW);
-        }        
-        $header = $document->getDocumentHeader();
-        unset($header['dop_buttons']);
-        return ['id'=>$doc_id, 'header'=>$header];
+        }
+        $ret = [
+            'id' => $doc_id,
+            'header' => $document->getDocumentHeader(),
+            ];
+        if ($document->isSkladEditorEnable()) {
+            include_once('include/doc.poseditor.php');
+            $poseditor = new \DocPosEditor($document);
+            $ret['pe_config'] = $poseditor->getInitData();
+            
+        }
+        unset($ret['header']['dop_buttons']);
+        return $ret;
     }
     
     protected function update($data) {
@@ -63,6 +72,11 @@ class document {
         }
         return ['id'=>$doc_id, 'update'=>'ok', 'header'=>$header];
     }
+    
+    protected function apply($data) {
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+    }
 
     public function dispatch($action, $data=null) {
         switch($action) {
@@ -70,6 +84,8 @@ class document {
                 return $this->get($data);
             case 'update':
                 return $this->update($data);
+            case 'apply':
+                return $this->apply($data);
             default:
                 throw new \NotFoundException('Некорректное действие');
         }

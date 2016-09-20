@@ -222,7 +222,10 @@ function getCacheObject() {
         var expires = new Object;
         var expires_str = localStorage.getItem('__EXPIRES__');
         if (expires_str) {
-            expires = JSON.parse(expires_str);
+            try {
+                expires = JSON.parse(expires_str);
+            }
+            catch(e) {}
         }
         return expires;
     }
@@ -330,12 +333,19 @@ function getListProxy() {
     /// Prefetch data from server
     mmListProxy.prefetch = function(objects) { 
         var data = {
-            query: objects
+            query: []
         };
         for(var i in objects) {
-            in_process[objects[i]] = true;
+            var object = objects[i];            
+            var fc = cache.get(object);
+            if(fc===undefined) {
+                in_process[objects[i]] = true;
+                data.query.push(object);
+            }
         }
-        mm_api.callApi('multiquery', 'run', data, onReceive, onError);
+        if(data.query.length>0) {
+            mm_api.callApi('multiquery', 'run', data, onReceive, onError);
+        }
     };
     
     mmListProxy.bind = function(object, update_callback) {
@@ -359,6 +369,14 @@ function getListProxy() {
             mm_api.callApi(s[0], s[1], null, onReceive, onError);
         }
     };
+    
+    /// Сброс кеша по F5
+    function onkeydown(event) {        
+        if(event.keyCode===116) {
+            localStorage.removeItem('__EXPIRES__');
+        }
+    }
+    window.addEventListener('keydown', onkeydown);
     
     window.addEventListener('storage', onStorage);
     return mmListProxy;
