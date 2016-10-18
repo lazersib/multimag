@@ -80,16 +80,11 @@ class doc_Kompredl extends doc_Nulltype {
         if ($silent) {
             return;
         }
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа при проведении!');
-        }
-        if ($data['ok']) {
+        if ($this->doc_data['ok']) {
             throw new Exception('Документ уже проведён!');
         }
         $this->fixPrice();
-        $db->update('doc_list', $this->id, 'ok', time());
-        $this->sentZEvent('apply');        
+        parent::docApply($silent);       
     }
 
 }

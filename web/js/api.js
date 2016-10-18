@@ -49,6 +49,14 @@ var mm_api = function () {
         mm_api.callApi('document', 'get', data, ok_callback, err_callback);
     };
     
+    mm_api.document.apply = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'apply', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.cancel = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'cancel', data, ok_callback, err_callback);
+    };
+    
     mm_api.document.update = function(data, ok_callback, err_callback) {
         mm_api.callApi('document', 'update', data, ok_callback, err_callback);
     };

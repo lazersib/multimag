@@ -160,7 +160,7 @@ class doc_Postuplenie extends doc_Nulltype {
         if ($silent) {
             return;
         }
-        $db->update('doc_list', $this->id, 'ok', time());
+        parent::docApply($silent);
         // Транзиты
         if($doc_params['p_doc']) {
             $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=12 AND `id`={$doc_params['p_doc']}");
@@ -185,7 +185,7 @@ class doc_Postuplenie extends doc_Nulltype {
             }
         }
 
-        if (@$CONFIG['doc']['update_in_cost'] == 2) {
+        if ( \cfg::get('doc', 'update_in_cost') == 2) {
             $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, 
                     `doc_list_pos`.`cost`, `doc_base`.`cost`
                 FROM `doc_list_pos`
@@ -199,7 +199,6 @@ class doc_Postuplenie extends doc_Nulltype {
                 }
             }
         }
-        $this->sentZEvent('apply');
     }
 
     function docCancel() {
@@ -208,13 +207,16 @@ class doc_Postuplenie extends doc_Nulltype {
 		FROM `doc_list`
 		LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
 		WHERE `doc_list`.`id`='{$this->id}'");
-        if (!$rs->num_rows)
+        if (!$rs->num_rows) {
             throw new Exception("Документ {$this->id} не найден!");
+        }
         $nx = $rs->fetch_assoc();
-        if (!$nx['ok'])
+        if (!$nx['ok']) {
             throw new Exception("Документ ещё не проведён!");
+        }
 
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`pos_type`, `doc_base`.`vc`
 		FROM `doc_list_pos`

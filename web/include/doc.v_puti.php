@@ -138,14 +138,7 @@ class doc_v_puti extends doc_Nulltype {
         if (!$this->isAltNumUnique()) {
             throw new Exception("Номер документа не уникален!");
         }
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа при проведении!');
-        }
-        if ($data['ok']) {
-            throw new Exception('Документ уже проведён!');
-        }
-        $db->update('doc_list', $this->id, 'ok', time());
+        parent::docApply($silent);
     }
 
     /// Отменить проведение документа
@@ -159,6 +152,7 @@ class doc_v_puti extends doc_Nulltype {
             throw new Exception('Документ не проведён!');
         }
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
         // Транзиты
         $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=1 AND `p_doc`={$this->id}");
         if (!$res->num_rows) {
@@ -178,6 +172,7 @@ class doc_v_puti extends doc_Nulltype {
                    ON DUPLICATE KEY UPDATE `transit`=`transit`-VALUES(`transit`)");
             }
         }
+        $this->sentZEvent('cancel');
     }
 
     // Формирование другого документа на основании текущего

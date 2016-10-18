@@ -114,29 +114,16 @@ class doc_RBank extends doc_Nulltype {
             throw new Exception("Cумма в банке {$doc_params['bank']} не изменилась!");
         }
 
-        if (!$silent) {
-            $db->update('doc_list', $this->id, 'ok', time());
-            $this->sentZEvent('apply');
-        }
+        parent::docApply($silent);
     }
 
     // Отменить проведение
     function docCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа!');
-        }
-        if (!$data['ok']) {
-            throw new Exception('Документ не проведён!');
-        }
-
-        $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}' WHERE `ids`='bank' AND `num`='{$data['bank']}'");
+        $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$this->doc_data['sum']}' WHERE `ids`='bank' AND `num`='{$this->doc_data['bank']}'");
         if (!$db->affected_rows) {
-            throw new Exception("Cумма в банке {$data['bank']} не изменилась!");
+            throw new Exception("Cумма в банке {$this->doc_data['bank']} не изменилась!");
         }
-
-        $db->update('doc_list', $this->id, 'ok', 0);
-        $this->sentZEvent('cancel');
+        parent::docCancel();
     }
 }

@@ -28,7 +28,7 @@ try {
     $tmpl->ajax = 1;
 
     if (!auth()) {
-        throw new AccessException('Не аутентифицирован');
+        throw new \AccessException('Не аутентифицирован');
     }
     session_write_close();  /// Чтобы не тормозить загрузку других страниц
     ob_start();
@@ -57,22 +57,50 @@ try {
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (AccessException $e) {
     ob_end_clean();
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => 'Нет доступа: ' . $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'AccessException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (mysqli_sql_exception $e) {
     writeLogException($e);
     ob_end_clean();
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => 'Ошибка в базе данных: ' . $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'DbException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => 'Ошибка в базе данных: ' . $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (InvalidArgumentException $e) {
     ob_end_clean();
     writeLogException($e);
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => 'Некорректные данные в запросе: ' . $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'InvalidArgumentException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => 'Некорректные данные в запросе: ' . $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
     ob_end_clean();
     writeLogException($e);
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => get_class($e),
+        'errorcode' => $e->getCode(),
+        'errormessage' => $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } 
 

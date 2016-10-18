@@ -731,47 +731,8 @@ class doc_Nulltype extends \document {
         $tmpl->addContent("<div id='statusblock'></div><br><br></div></div>");
     }
 
-    public function apply($silent = false) {
-        global $tmpl, $db;
-
-        $tmpl->ajax = 1;
-
-        try {
-            if ($this->doc_data['mark_del'])
-                throw new Exception("Документ помечен на удаление!");
-            if (!method_exists($this, 'DocApply'))
-                throw new Exception("Метод проведения данного документа не определён!");
-            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
-            $db->startTransaction();
-            $this->DocApply($silent);
-            $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
-        } catch (mysqli_sql_exception $e) {
-            $db->rollback();
-            if (!$silent) {
-                $tmpl->addContent("<h3>" . $e->getMessage() . "</h3>");
-                doc_log("ERROR APPLY", $e->getMessage(), 'doc', $this->id);
-            }
-            $db->query("UNLOCK TABLES");
-            return $e->getMessage();
-        } catch (Exception $e) {
-            $db->rollback();
-            if (!$silent) {
-                $tmpl->addContent("<h3>" . $e->getMessage() . "</h3>");
-                doc_log("ERROR APPLY", $e->getMessage(), 'doc', $this->id);
-            }
-            $db->query("UNLOCK TABLES");
-            return $e->getMessage();
-        }
-
-        $db->commit();
-        if (!$silent) {
-            doc_log("APPLY", '', 'doc', $this->id);
-            $tmpl->addContent("<h3>Докумен успешно проведён!</h3>");
-        }
-        $db->query("UNLOCK TABLES");
-        return;
-    }
-
+   
+    
     /// Выполнение дополнительных проверок доступа для просмотра документа
     public function extendedViewAclCheck() {
         return true;
@@ -786,11 +747,23 @@ class doc_Nulltype extends \document {
     public function extendedCancelAclCheck() {
         return true;
     }
+    
+    /// Провести документ
+    public function apply($silent = false) {
+        global $db;
+        if ($this->doc_data['mark_del']) {
+            throw new \Exception("Документ помечен на удаление!");
+        }
+        $this->docApply($silent);
+        if(!$silent) {
+            doc_log("APPLY", '', 'doc', $this->id);
+        }
+        $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
+    }
 
-    /// Провести документ и вренуть JSON результат
+    /// Провести документ и вернуть JSON результат
     public function applyJson() {
         global $db;
-
         try {
             $d_start = date_day(time());
             $d_end = $d_start + 60 * 60 * 24 - 1;
@@ -816,19 +789,15 @@ class doc_Nulltype extends \document {
                 throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
             }
 
-            if (!method_exists($this, 'DocApply')) {
-                throw new Exception("Метод проведения данного документа не определён!");
-            }
-
-            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
             $db->startTransaction();
-
             $this->DocApply(0);
             $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
+            doc_log("APPLY", '', 'doc', $this->id);
+            $db->commit();            
         } catch (mysqli_sql_exception $e) {
             $db->rollback();
             writeLogException($e);
-            $db->query("UNLOCK TABLES");
+            
             $data = array(
                 'response' => 0,
                 'message' => $e->getMessage(),
@@ -837,8 +806,7 @@ class doc_Nulltype extends \document {
             return $json;
         } catch (Exception $e) {
             $db->rollback();
-            writeLogException($e);
-            $db->query("UNLOCK TABLES");
+            writeLogException($e);            
             $data = array(
                 'response' => 0,
                 'message' => $e->getMessage(),
@@ -846,10 +814,7 @@ class doc_Nulltype extends \document {
             $json = json_encode($data, JSON_UNESCAPED_UNICODE);
             return $json;
         }
-
-        $db->commit();
-        doc_log("APPLY", '', 'doc', $this->id);
-        $db->query("UNLOCK TABLES");
+        
         $data = array(
             'response' => 1,
             'message' => "Документ успешно проведён!",
@@ -862,6 +827,12 @@ class doc_Nulltype extends \document {
         return $json;
     }
 
+    /// Отменить проведение документа
+    public function cancel() {
+        $this->docCancel();
+        doc_log("CANCEL", '', 'doc', $this->id);
+    }
+    
     public function cancelJson() {
         global $db;
         $tim = time();
@@ -880,10 +851,6 @@ class doc_Nulltype extends \document {
             }
             $this->extendedCancelAclCheck();
 
-            if (!method_exists($this, 'DocCancel')) {
-                throw new Exception("Метод отмены данного документа не определён!");
-            }
-
             $res = $db->query("SELECT `recalc_active` FROM `variables`");
             if ($res->num_rows) {
                 list($lock) = $res->fetch_row();
@@ -894,7 +861,6 @@ class doc_Nulltype extends \document {
                 throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
             }
 
-            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
             $db->startTransaction();
             $this->get_docdata();
             $this->DocCancel();
@@ -902,18 +868,15 @@ class doc_Nulltype extends \document {
         } catch (mysqli_sql_exception $e) {
             $db->rollback();
             writeLogException($e);
-            $db->query("UNLOCK TABLES");
             $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
             return $json;
         } catch (AccessException $e) {
             $db->rollback();
-            $db->query("UNLOCK TABLES");
             doc_log("CANCEL-DENIED", $e->getMessage(), 'doc', $this->id);
             $json = " { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>" . $e->getMessage() . "<br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\">попросить руководителя</a> выполнить отмену этого документа.\" }";
             return $json;
         } catch (Exception $e) {
             $db->rollback();
-            $db->query("UNLOCK TABLES");
             $msg = '';
             if (\acl::testAccess('doc.' . $this->typename, \acl::CANCEL_FORCE)) {
                 $msg = "<br>Вы можете <a href='/doc.php?mode=forcecancel&amp;doc={$this->id}'>принудительно снять проведение</a>.";
@@ -925,7 +888,6 @@ class doc_Nulltype extends \document {
         $db->commit();
         doc_log("CANCEL", '', 'doc', $this->id);
         $json = ' { "response": "1", "message": "Документ успешно отменен!", "buttons": "' . $this->getApplyButtons() . '", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
-        $db->query("UNLOCK TABLES");
         return $json;
     }
 
@@ -936,28 +898,23 @@ class doc_Nulltype extends \document {
         if ($silent) {
             return;
         }
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа при проведении!');
-        }
-        if ($data['ok']) {
+        if ($this->doc_data['ok']) {
             throw new Exception('Документ уже проведён!');
         }
-        $db->update('doc_list', $this->id, 'ok', time());
+        $ok_time = time();
+        $db->update('doc_list', $this->id, 'ok', $ok_time);
+        $this->doc_data['ok'] = $ok_time;
         $this->sentZEvent('apply');
     }
 
     /// отменить проведение документа
     protected function docCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа!');
-        }
-        if (!$data['ok']) {
+        if (!$this->doc_data['ok']) {
             throw new Exception('Документ не проведён!');
         }
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
         $this->sentZEvent('cancel');
     }
 

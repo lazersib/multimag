@@ -471,33 +471,8 @@ class doc_Zayavka extends doc_Nulltype {
     /// Провести документ
     /// @param silent Не менять отметку проведения
     function docApply($silent = 0) {
-        global $db;
-        // Резервы
-        /*
-        $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=2 AND `p_doc`={$this->id}");
-        if (!$res->num_rows) {
-            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
-                FROM `doc_list_pos`
-                LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-                WHERE `doc_list_pos`.`doc`='{$this->id}'");
-            $vals = '';
-            while ($nxt = $res->fetch_row()) {
-                if ($vals) {
-                    $vals .= ',';
-                }
-                $vals .= "('$nxt[0]', '$nxt[1]')";
-            }
-            if($vals) {
-                $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
-                    ON DUPLICATE KEY UPDATE `reserve`=`reserve`+VALUES(`reserve`)");
-            } else {
-                throw new Exception("Не удалось провести пустой документ!");
-            }
-        }
-         * 
-         */
         if (!$silent) {
-            $this->setDopData('reserved', 1);
+            $this->setDopData('reserved', '1');
         }        
         $this->setReserves();
         if ($silent) {
@@ -507,46 +482,18 @@ class doc_Zayavka extends doc_Nulltype {
         if (!$this->isAltNumUnique()) {
             throw new Exception("Номер документа не уникален!");
         }
-        if ($this->doc_data['ok']) {
-            throw new Exception('Документ уже проведён!');
-        }
-        $db->update('doc_list', $this->id, 'ok', time());        
-        $this->sentZEvent('apply');
+        parent::docApply($silent);
     }
            
     /// Отменить проведение документа
     function docCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа!');
-        }
-        if (!$data['ok']) {
+        if (!$this->doc_data['ok']) {
             throw new Exception('Документ не проведён!');
         }        
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
         $this->unsetReserves();
-        // Резервы 
-        /*
-        $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=2 AND `p_doc`={$this->id}");
-        if (!$res->num_rows) {
-            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
-            FROM `doc_list_pos`
-            LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-            WHERE `doc_list_pos`.`doc`='{$this->id}'");
-            $vals = '';
-            while ($nxt = $res->fetch_row()) {
-                if ($vals) {
-                    $vals .= ',';
-                }
-                $vals .= "('$nxt[0]', '$nxt[1]')";
-            }
-            if($vals) {
-                $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
-                    ON DUPLICATE KEY UPDATE `reserve`=`reserve`-VALUES(`reserve`)");
-            }
-        }
-        */
         $this->sentZEvent('cancel');
     }
     

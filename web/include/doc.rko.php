@@ -122,30 +122,22 @@ class doc_Rko extends doc_Nulltype {
             if ($budet < 0) {
                 throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
             }
-
-            $db->update('doc_list', $this->id, 'ok', time());
-            $this->sentZEvent('apply');
         }
+        parent::docApply($silent);
     }
 
     // Отменить проведение
     function docCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа!');
-        }
-        if (!$data['ok']) {
+        if (!$this->doc_data['ok']) {
             throw new Exception('Документ не проведён!');
         }
-
-        $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$this->doc_data['sum']}'"
+            . " WHERE `ids`='kassa' AND `num`='{$this->doc_data['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }
-
-        $db->update('doc_list', $this->id, 'ok', 0);
-        $this->sentZEvent('cancel');
+        parent::docCancel();
     }
     
     protected function extendedAcl2Check($acl, $today_acl, $action) {

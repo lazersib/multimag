@@ -326,7 +326,9 @@ class doc_Realizaciya extends doc_Nulltype {
         
         if (!$silent) {
             $this->sentZEvent('pre-apply'); // В т.ч. для обсчёта резервов
-            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
+            $ok_time = time();
+            $db->update('doc_list', $this->id, 'ok', $ok_time);
+            $this->doc_data['ok'] = $ok_time;
         }
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
@@ -357,7 +359,7 @@ class doc_Realizaciya extends doc_Nulltype {
                 }
             }
 
-            if (@$CONFIG['poseditor']['sn_restrict']) {
+            if (\cfg::get('poseditor', 'sn_restrict')) {
                 $r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `rasx_list_pos`='$nxt[6]'");
                 list($sn_cnt) = $r->fetch_row();
                 if ($sn_cnt != $nxt[1]) {
@@ -366,7 +368,7 @@ class doc_Realizaciya extends doc_Nulltype {
                     continue;
                 }
             }
-            $bonus+=$nxt[8] * $nxt[1] * (@$CONFIG['bonus']['coeff']);
+            $bonus+=$nxt[8] * $nxt[1] * \cfg::get('bonus', 'coeff', 0);
         }        
         if($fail_text) {
             throw new Exception("Ошибка в номенклатуре: \n".$fail_text);
@@ -375,32 +377,7 @@ class doc_Realizaciya extends doc_Nulltype {
             return;
         }
         $this->fixPrice();
-        // Резервы
-        /*
-        if($doc_params['p_doc']) {
-            $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=3 AND `id`={$doc_params['p_doc']}");
-            if ($res->num_rows) {
-                $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
-                    FROM `doc_list_pos`
-                    LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-                    WHERE `doc_list_pos`.`doc`='{$doc_params['p_doc']}'");
-                $vals = '';
-                while ($nxt = $res->fetch_row()) {
-                    if ($vals) {
-                        $vals .= ',';
-                    }
-                    $vals .= "('$nxt[0]', '$nxt[1]')";
-                }
-                if($vals) {
-                    $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
-                        ON DUPLICATE KEY UPDATE `reserve`=`reserve`-VALUES(`reserve`)");
-                } else {
-                    throw new Exception("Не удалось провести пустой документ!");
-                }
-            }
-        }
-         * 
-         */
+
         if (!$doc_params['no_bonuses'] && $bonus > 0) {
             $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','$bonus')");
         }
@@ -424,39 +401,18 @@ class doc_Realizaciya extends doc_Nulltype {
         if ($res->num_rows) {
             throw new Exception('Нельзя отменять документ с проведёнными подчинёнными документами.');
         }
+        
         $this->sentZEvent('pre-cancel'); // В т.ч. для обсчёта резервов
-        $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
+        $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
+        
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type` FROM `doc_list_pos`
-		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`	WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
-
+            LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`	WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
         while ($nxt = $res->fetch_row()) {
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
         }
         $db->query("REPLACE INTO `doc_dopdata` (`doc`,`param`,`value`)	VALUES ( '{$this->id}' ,'bonus','0')");
-        // Резервы
-        /*
-        if($this->doc_data['p_doc']) {
-            $res = $db->query("SELECT `id`, `ok` FROM `doc_list` WHERE `ok`>0 AND `type`=3 AND `id`={$this->doc_data['p_doc']}");
-            if ($res->num_rows) {
-                $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
-                    FROM `doc_list_pos`
-                    LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
-                    WHERE `doc_list_pos`.`doc`='{$this->doc_data['p_doc']}'");
-                $vals = '';
-                while ($nxt = $res->fetch_row()) {
-                    if ($vals) {
-                        $vals .= ',';
-                    }
-                    $vals .= "('$nxt[0]', '$nxt[1]')";
-                }
-                if($vals) {
-                    $db->query("INSERT INTO `doc_base_dop` (`id`, `reserve`) VALUES $vals
-                        ON DUPLICATE KEY UPDATE `reserve`=`reserve`+VALUES(`reserve`)");
-                }
-            }
-        }
-         * 
-         */
+
         $this->sentZEvent('cancel');
     }
 

@@ -131,9 +131,7 @@ class doc_PerKas extends doc_Nulltype {
         if ($budet < 0) {
             throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
         }
-
-        $db->update('doc_list', $this->id, 'ok', time());
-        $this->sentZEvent('apply');
+        parent::docApply($silent);
     }
 
     function docCancel() {
@@ -156,8 +154,7 @@ class doc_PerKas extends doc_Nulltype {
             throw new Exception('Ошибка обновления кассы назначения!');
         }
 
-        $db->update('doc_list', $this->id, 'ok', 0);
-        $this->sentZEvent('cancel');
+        parent::docCancel();
     }
 
         /// Выполнение дополнительных проверок доступа для проведения документа

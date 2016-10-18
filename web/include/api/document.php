@@ -22,17 +22,33 @@ include_once("include/doc.nulltype.php");
 /// Обработчик API запросов к объектам *документ*. Проверяет необходимиые привилегии перед осуществлением действий.
 class document {
     
+    /// Извлечь ID документа из входных данных. Выбрасывает исключение, если ID не задан или не является положительным числом
     protected function extractDocumentId($data) {
         if(!is_array($data) || !isset($data['id'])) {
             throw new \InvalidArgumentException('id документа не задан');
         }
         $doc_id = intval($data['id']);
-        if(!$doc_id) {
+        if($doc_id<=0) {
             throw new \InvalidArgumentException('ID документа не задан');
         }
         return $doc_id;
     }
+    
+    /// Проверка на состояние пересчёта базы данных. Выбрасивает исключение, если установлен враг пересчёта
+    protected function checkDbRecalc() {
+        global $db;
+        $res = $db->query("SELECT `recalc_active` FROM `variables`");
+        if ($res->num_rows) {
+            list($lock) = $res->fetch_row();
+        } else {
+            $lock = 0;
+        }
+        if ($lock) {
+            throw new Exception("Идёт актуализация базы данных и перепроводка документов. Изменнеие статуса проведения невозможно!");
+        }
+    }
 
+    /// Получить данные документа
     protected function get($data) {
         $doc_id = $this->extractDocumentId($data);
         $document = \document::getInstanceFromDb($doc_id);
@@ -55,6 +71,7 @@ class document {
         return $ret;
     }
     
+    /// Обновить данные документа
     protected function update($data) {
         $doc_id = $this->extractDocumentId($data);
         $document = \document::getInstanceFromDb($doc_id);
@@ -73,9 +90,49 @@ class document {
         return ['id'=>$doc_id, 'update'=>'ok', 'header'=>$header];
     }
     
+    /// Провести документ
     protected function apply($data) {
+        global $db;
+        $db->startTransaction();
+        $this->checkDbRecalc();
         $doc_id = $this->extractDocumentId($data);
         $document = \document::getInstanceFromDb($doc_id);
+        $d_start = date_day(time());
+        $d_end = $d_start + 60 * 60 * 24 - 1;
+        if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::APPLY)) {
+            if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::TODAY_APPLY)) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа');
+            } elseif ($document->doc_data['date'] < $d_start || $document->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для проведения документа произвольной датой');
+            }
+        }
+        $document->extendedApplyAclCheck();
+        $document->apply();
+        $db->commit();
+        return ['id'=>$doc_id, 'apply'=>'ok', 'header' => $document->getDocumentHeader()];
+    }
+    
+    
+    /// Отменить проведение документа
+    protected function cancel($data) {
+        global $db;
+        $db->startTransaction();
+        $this->checkDbRecalc();
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $d_start = date_day(time());
+        $d_end = $d_start + 60 * 60 * 24 - 1;
+        if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::CANCEL)) {
+            if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::TODAY_CANCEL)) {
+                throw new \AccessException('Не достаточно привилегий для отмены документа');
+            } elseif ($document->doc_data['date'] < $d_start || $document->doc_data['date'] > $d_end) {
+                throw new \AccessException('Не достаточно привилегий для отмены документа произвольной датой');
+            }
+        }
+        $document->extendedCancelAclCheck();
+        $document->cancel();
+        $db->commit();
+        return ['id'=>$doc_id, 'cancel'=>'ok', 'header' => $document->getDocumentHeader()];
     }
 
     public function dispatch($action, $data=null) {
@@ -86,6 +143,8 @@ class document {
                 return $this->update($data);
             case 'apply':
                 return $this->apply($data);
+            case 'cancel':
+                return $this->cancel($data);
             default:
                 throw new \NotFoundException('Некорректное действие');
         }

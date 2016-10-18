@@ -1445,6 +1445,7 @@ function mainInternalMenu() {
             a.href = "#";
         }
         if(data.onclick) {
+            a.oldclickevent = data.onclick;
             a.addEventListener('click', data.onclick, false);
         }
         if(data.caption) {
@@ -1468,6 +1469,31 @@ function mainInternalMenu() {
         img.src = "/img/i_separator.png";
         mim.contextPanel.appendChild(img);
         return img;
+    };
+    
+    mim.contextPanel.updateButton = function(button, data) {
+        var a = button;
+        var img = button.firstChild;
+        if(data.link) {
+            a.href = data.link;
+        }
+        if(data.onclick) {
+            a.removeEventListener('click', a.oldclickevent);
+            a.oldclickevent = data.onclick;
+            a.addEventListener('click', data.onclick, false);
+        }
+        if(data.caption) {
+            a.title = img.alt = data.caption;
+        }
+        if(data.accesskey) {
+            a.accesskey = data.accesskey;
+            img.alt += " ("+data.accesskey+")";
+            a.title += " ("+data.accesskey+")";
+        }
+        if(data.icon) {
+            img.src = "/img/"+data.icon;
+        }
+        return a;
     };
     
     return mim;

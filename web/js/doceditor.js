@@ -2,11 +2,11 @@ function doceditor(doc_container_id, menu_container_id) {
     var doc = new Object;
     var container = document.getElementById(doc_container_id);
     var left_block, main_block, v_separator;
-    var cache = getCacheObject();
+    //var cache = getCacheObject();
     var listproxy = getListProxy();
     var hltimer;
     var mim = mainInternalMenu();
-    doc.agentnames = cache.get('agentnames');
+    //doc.agentnames = cache.get('agentnames');
     doc.element_classname = 'item';
     doc.label_classname = 'label';
     doc.input_id_prefix = 'dochead_';
@@ -35,15 +35,38 @@ function doceditor(doc_container_id, menu_container_id) {
                 }
                 hltimer = window.setTimeout(clearHighlight, 400);
             }
-            else {
-                //alert('document:action: '+response.action);
+            else if(response.action=='apply' || response.action=='cancel' ) {
+                doc.header = response.content.header;
+                doc.updateMainMenu();
+                updateStoreView();
+                alert('Документ успешно '+((response.action=='apply')?'проведён':'отменён'));
             }
-        } else if(response.object == 'reset_prices') {
-            var up = response.updated?' UPDATED':' NOT updated';
-            alert('Reset prices: '+up);
+            else {
+                alert('document:action: '+response.action);
+            }
         }
         else alert("Обработчик не задан:\n"+response);
     }  
+    
+    function updateStoreView() {
+        var store_view = document.getElementById("storeview_container");
+        var poslist = document.getElementById('poslist');
+        var pladd = document.getElementById('pladd');
+        if (store_view) {            
+            if (doc.header.ok==0) {
+                store_view.style.display = 'block';
+                poslist.editable = 1;
+                poslist.refresh();
+                pladd.style.display = 'table-row';
+            }
+            else {
+                store_view.style.display = 'none';
+                pladd.style.display = 'none';
+                poslist.editable = 0;
+                poslist.refresh();
+            }
+        }
+}
     
     function updateOptionsArray(select_elem, data, selected_id, not_select_item) {
         var value;
@@ -340,8 +363,7 @@ function doceditor(doc_container_id, menu_container_id) {
 
     } 
     
-    doc.fillBody = function(content) {
-        
+    doc.fillBody = function(content) {        
         if(content.pe_config) {
             var poseditor_div = newElement('div', main_block, '', '');
             poseditor_div.id = 'poseditor_div';            
@@ -477,7 +499,7 @@ function doceditor(doc_container_id, menu_container_id) {
             });
         } 
         else if(doc.header.ok>0) {
-            doc.contextPanel.del = mim.contextPanel.addButton({
+            doc.contextPanel.cancel = mim.contextPanel.addButton({
                 icon:"i_revert.png",
                 caption:"Отменить проведение документа",
                 accesskey: "С",
@@ -485,7 +507,7 @@ function doceditor(doc_container_id, menu_container_id) {
             });
         }
         else {
-            doc.contextPanel.del = mim.contextPanel.addButton({
+            doc.contextPanel.apply = mim.contextPanel.addButton({
                 icon:"i_ok.png",
                 caption:"Провести документ",
                 accesskey: "A",
@@ -501,7 +523,27 @@ function doceditor(doc_container_id, menu_container_id) {
     };
     
     doc.apply = function() {
-        alert('apply');
+        mm_api.document.apply({id:doc.id},onLoadSuccess, onLoadError);
+        if(doc.contextPanel.apply) {
+            mim.contextPanel.updateButton(doc.contextPanel.apply, {
+                icon:"icon_load.gif",
+                caption:"Проведение...",
+                accesskey: "",
+                onclick: function(){}
+            });
+        }
+    };
+    
+    doc.cancel = function() {
+        mm_api.document.cancel({id:doc.id},onLoadSuccess, onLoadError);
+        if(doc.contextPanel.cancel) {
+            mim.contextPanel.updateButton(doc.contextPanel.cancel, {
+                icon:"icon_load.gif",
+                caption:"Отмена...",
+                accesskey: "",
+                onclick: function(){}
+            });
+        }
     };
     
     return doc;

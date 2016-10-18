@@ -62,9 +62,7 @@ class doc_CorrAct extends doc_Nulltype {
             throw new Exception("Выбранная организация может списывать только со своих складов!!");
         }
         
-        if (!$silent) {
-            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
-        }
+        parent::docApply($silent);
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`,
                 `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_base`.`vc`, `doc_list_pos`.`cost`
@@ -133,14 +131,12 @@ class doc_CorrAct extends doc_Nulltype {
             throw new Exception('Нельзя отменять документ с проведёнными подчинёнными документами.');
         }
 
-        $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type` FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`	WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
 
         while ($nxt = $res->fetch_row()) {
             $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`-'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
         }
-
-        $this->sentZEvent('cancel');
+        parent::docCancel();
     }
 }

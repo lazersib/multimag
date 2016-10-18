@@ -36,28 +36,23 @@ class doc_Realiz_op extends doc_Realizaciya {
         if ($silent) {
             return;
         }
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new \Exception('Ошибка выборки данных документа при проведении!');
-        }
-        if ($data['ok']) {
+        if ($this->doc_data['ok']) {
             throw new \Exception('Документ уже проведён!');
         }
-        $db->update('doc_list', $this->id, 'ok', time());
+        $ok_time = time();
+        $db->update('doc_list', $this->id, 'ok', $ok_time);
+        $this->doc_data['ok'] = $ok_time;
         $this->sentZEvent('apply');
     }
 
     /// Отменить проведение документа
     function docCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new \Exception('Ошибка выборки данных документа!');
-        }
-        if (!$data['ok']) {
+        if (!$this->doc_data['ok']) {
             throw new \Exception('Документ не проведён!');
         }
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
         $this->sentZEvent('cancel');
     }
 

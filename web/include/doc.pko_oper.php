@@ -56,9 +56,7 @@ class doc_pko_oper extends doc_Pko {
         if ($doc_params['firm_till_lock'] && $doc_params['kassa_firm_id'] != $doc_params['firm_id']) {
             throw new Exception("Выбранная организация может работать только со своими кассами!");
         }
-
-        $db->update('doc_list', $this->id, 'ok', time());
-        $this->sentZEvent('apply');
+        parent::docApply($silent);
     }
 
     // Отменить проведение
@@ -73,11 +71,12 @@ class doc_pko_oper extends doc_Pko {
         }
 
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
         $budet = $this->checkKassMinus();
         if ($budet < 0) {
             throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
         }
-        $this->sentZEvent('cancel');
+        parent::docCancel();
     }
 
 }
