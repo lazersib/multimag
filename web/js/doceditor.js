@@ -16,8 +16,21 @@ function doceditor(doc_container_id, menu_container_id) {
         left_block.style.backgroundColor = '';
     }
     
-    function onLoadError(name, data) {
-        alert("Ошибка:\n"+name+"\nСообщение:"+data.errorMessage);
+    function onLoadError(response, data) {
+        if(response.errortype=='AccessException') {
+            var_dump(response);
+            if(response.object=='document' && response.action=='cancel') {
+                jAlert(response.errormessage+"<br>br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\""+
+                    ">попросить руководителя</a> выполнить отмену этого документа.", "Не достаточно привилегий!", null, 'icon_err');
+            }
+            else {
+                alert(response.errormessage);
+            }
+        }
+        else {
+            alert("Общая ошибка:\n"+response.errorname+"\nСообщение:"+response.errormessage);
+        }
+        doc.updateMainMenu();
     }
         
     function onLoadSuccess(response) {

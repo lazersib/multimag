@@ -99,11 +99,23 @@ class document {
         $document = \document::getInstanceFromDb($doc_id);
         $d_start = date_day(time());
         $d_end = $d_start + 60 * 60 * 24 - 1;
+        $doc_date = $document->getDocData('date');        
         if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::APPLY)) {
             if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::TODAY_APPLY)) {
                 throw new \AccessException('Не достаточно привилегий для проведения документа');
-            } elseif ($document->doc_data['date'] < $d_start || $document->doc_data['date'] > $d_end) {
+            } elseif ($doc_date < $d_start || $doc_date > $d_end) {
                 throw new \AccessException('Не достаточно привилегий для проведения документа произвольной датой');
+            }
+        }
+        $doc_firm_id = $document->getDocData('firm_id');
+        if ($doc_firm_id > 0) {
+            $acl_obj = [ 'firm.global', 'firm.' . $doc_firm_id];
+            if (!\acl::testAccess($acl_obj, \acl::APPLY)) {
+                if (!\acl::testAccess($acl_obj, \acl::TODAY_APPLY)) {
+                    throw new \AccessException('Не достаточно привилегий для проведения документа в выбранной организации');
+                } elseif ($doc_date < $d_start || $doc_date > $d_end) {
+                    throw new \AccessException('Не достаточно привилегий для проведения документа произвольной датой в выбранной организации');
+                }
             }
         }
         $document->extendedApplyAclCheck();
@@ -122,11 +134,23 @@ class document {
         $document = \document::getInstanceFromDb($doc_id);
         $d_start = date_day(time());
         $d_end = $d_start + 60 * 60 * 24 - 1;
+        $doc_date = $document->getDocData('date');  
         if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::CANCEL)) {
             if (!\acl::testAccess('doc.' . $document->getTypeName(), \acl::TODAY_CANCEL)) {
                 throw new \AccessException('Не достаточно привилегий для отмены документа');
-            } elseif ($document->doc_data['date'] < $d_start || $document->doc_data['date'] > $d_end) {
+            } elseif ($doc_date < $d_start || $doc_date > $d_end) {
                 throw new \AccessException('Не достаточно привилегий для отмены документа произвольной датой');
+            }
+        }
+        $doc_firm_id = $document->getDocData('firm_id');
+        if ($doc_firm_id > 0) {
+            $acl_obj = [ 'firm.global', 'firm.' . $doc_firm_id];
+            if (!\acl::testAccess($acl_obj, \acl::CANCEL)) {
+                if (!\acl::testAccess($acl_obj, \acl::TODAY_CANCEL)) {
+                    throw new \AccessException('Не достаточно привилегий для отмены документа в выбранной организации');
+                } elseif ($doc_date < $d_start || $doc_date > $d_end) {
+                    throw new \AccessException('Не достаточно привилегий для отмены документа произвольной датой в выбранной организации');
+                }
             }
         }
         $document->extendedCancelAclCheck();

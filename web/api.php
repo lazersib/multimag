@@ -28,7 +28,7 @@ try {
     $tmpl->ajax = 1;
 
     if (!auth()) {
-        throw new \AccessException('Не аутентифицирован');
+        throw new \LoginException('Не аутентифицирован');
     }
     session_write_close();  /// Чтобы не тормозить загрузку других страниц
     ob_start();
@@ -55,6 +55,17 @@ try {
     $result["user_id"] = $_SESSION['uid'];
     ob_end_clean();
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
+} catch (LoginException $e) {
+    ob_end_clean();
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'LoginException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => $e->getMessage()
+    );
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (AccessException $e) {
     ob_end_clean();
     $result = array(
@@ -66,7 +77,8 @@ try {
         'errormessage' => $e->getMessage()
     );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
-} catch (mysqli_sql_exception $e) {
+} 
+catch (mysqli_sql_exception $e) {
     writeLogException($e);
     ob_end_clean();
     $result = array(

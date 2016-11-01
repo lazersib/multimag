@@ -68,7 +68,7 @@ class ds_bank_import {
         $res = $db->query("SELECT `agent_id`, `rs` FROM `agent_banks`");
         while($line = $res->fetch_assoc()) {
             if($line['rs']) {
-                $this->agent_rs[$line['rs']] = $line['id'];
+                $this->agent_rs[$line['rs']] = $line['agent_id'];
             }
         }
     }
@@ -131,7 +131,7 @@ class ds_bank_import {
                     $agent_info = $import_doc['dst'];
                     $curr_rs = $import_doc['src']['rs'];
                     $doc_type = 5;
-                    if(isset($import_doc['s_date'])) {
+                    if(isset($import_doc['s_date']) && $import_doc['s_date']) {
                         list($d, $m, $y) = explode('.', $import_doc['s_date'], 3);
                     } else {
                         list($d, $m, $y) = explode('.', $import_doc['date'], 3);
@@ -140,7 +140,7 @@ class ds_bank_import {
                     $agent_info = $import_doc['src'];
                     $curr_rs = $import_doc['dst']['rs'];
                     $doc_type = 4;
-                    if(isset($import_doc['p_date'])) {
+                    if(isset($import_doc['p_date']) && $import_doc['p_date']) {
                         list($d, $m, $y) = explode('.', $import_doc['p_date'], 3);
                     } else {
                         list($d, $m, $y) = explode('.', $import_doc['date'], 3);
@@ -155,7 +155,7 @@ class ds_bank_import {
                 $import_doc['docnum'] = intval($import_doc['docnum']);
                 $sum = sprintf("%0.2f", $import_doc['sum']);                
                 if(!checkdate($m, $d, $y)) {
-                    throw new \Exception("Недопустимая дата в файле ($y-$m-$d)!");
+                    throw new \Exception("Недопустимая дата в файле ($y-$m-$d), документ {$import_doc['docnum']}!");
                 }
                 $start_day_time = mktime(0, 0, 0, $m, $d, $y);
                 $end_day_time = mktime(23, 59, 59, $m, $d, $y);
