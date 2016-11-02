@@ -30,9 +30,12 @@ $tmpl->addTop("<script type='text/javascript' src='/js/api.js'></script>
 <script type='text/javascript' src='/css/doc_script.js'></script>
 <script type='text/javascript' src='/css/jquery/jquery.js'></script>
 <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
+<script type='text/javascript' src='/css/jquery/jquery.alerts.js'></script>
 <script type='text/javascript' src='/js/doceditor.js'></script>
 <script type='text/javascript' src='/js/poseditor.js'></script>
-<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'></link>");
+<link href='/css/poseditor.css' rel='stylesheet' type='text/css' media='screen'></link>
+<link href='/css/jquery/jquery.alerts.css' rel='stylesheet' type='text/css' media='screen'></link>
+");
 
 $tmpl->addContent("<div id='doc_container'></div>
 <script type=\"text/javascript\">

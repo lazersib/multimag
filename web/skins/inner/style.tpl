@@ -29,9 +29,12 @@
 <!--site-top-->
 <!--site-breadcrumbs-->
 <!--site-content-->
-<hr>
-<div>Система <a href='http://multimag.tndproject.org'>MultiMag</a><br>Создано при поддержке <a href='http://tndproject.org'>TND team</a><br>
-Страница сгенерирована за <!--site-gentime--> сек.</div>
+<div class="clear"></div>
+<div id="footer">
+    <div id="footer-left"><a href='http://multimag.tndproject.org'>Свободная система комплексного учёта торговли MultiMag</a></div>
+    <div id="footer-right">Разработка и поддержка: <a href='http://tndproject.org'>TND team</a></div>
+    Страница сгенерирована за <!--site-gentime--> сек.
+</div>
 
 
 </div></body>

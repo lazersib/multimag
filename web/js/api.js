@@ -148,10 +148,12 @@ var mm_api = function () {
         );
     }    
     
+    /// Agent
     mm_api.agent.create = function(data, ok_callback, err_callback) {
         mm_api.callApi('agent', 'create', data, ok_callback, err_callback);
     };
     
+    /// Document
     mm_api.document.get = function(data, ok_callback, err_callback) {
         mm_api.callApi('document', 'get', data, ok_callback, err_callback);
     };
@@ -163,11 +165,16 @@ var mm_api = function () {
     mm_api.document.cancel = function(data, ok_callback, err_callback) {
         mm_api.callApi('document', 'cancel', data, ok_callback, err_callback);
     };
-    
+       
     mm_api.document.update = function(data, ok_callback, err_callback) {
         mm_api.callApi('document', 'update', data, ok_callback, err_callback);
     };
     
+    mm_api.document.getPrintFormList = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'getprintformlist', data, ok_callback, err_callback);
+    };
+    
+    /// Multiquery
     mm_api.multiquery.run = function(data, ok_callback, err_callback) {
         mm_api.callApi('multiquery', 'run', data, ok_callback, err_callback);
     };

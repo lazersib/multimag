@@ -982,7 +982,7 @@ class doc_Nulltype extends \document {
 
     /// Получить список доступных печатных форм c CSV экспортом
     /// @return Массив со списком печатных форм
-    protected function getCSVPrintFormList() {
+    public function getCSVPrintFormList() {
         $ret = $this->getPrintFormList();
         if ($this->sklad_editor_enable) {
             $ret[] = array('name' => 'csv:export', 'desc' => 'Экспорт в CSV', 'mime' => 'text/csv');
@@ -1049,7 +1049,7 @@ class doc_Nulltype extends \document {
     /// @param $form_name   Имя печатной формы
     /// @param $to_str      Вернуть ли данные в виде строки
     /// @return             Если $to_str == true - возвращает сформированный документ, false в ином случае
-    protected function makePrintFormNoACLTest($form_name, $to_str = false) {
+    public function makePrintFormNoACLTest($form_name, $to_str = false) {
         if (!$this->isPrintFormExists($form_name)) {
             throw new \NotFoundException('Печатная форма ' . html_out($form_name) . ' не зарегистрирована');
         }
@@ -1539,6 +1539,7 @@ class doc_Nulltype extends \document {
             $ret['id'] = $this->id;
             $ret['viewname'] = $this->viewname;
             $ret['type'] = $this->doc_type;
+            $ret['typename'] = $this->typename;
             $ret['altnum'] = $this->doc_data['altnum'];
             $ret['subtype'] = $this->doc_data['subtype'];
             $ret['mark_del'] = $this->doc_data['mark_del'];
@@ -1616,32 +1617,54 @@ class doc_Nulltype extends \document {
     public function updateDocumentHeader($data) {
         $doc_data = array();
         $dop_data = array();
-        $doc_data['altnum'] = $data['altnum'];
-        $doc_data['subtype'] = $data['subtype'];        
-        $doc_data['firm_id'] = $data['firm_id'];
-        $doc_data['comment'] = $data['comment']; 
+        if(isset($data['altnum'])) {
+            $doc_data['altnum'] = $data['altnum'];
+        }
+        if(isset($data['subtype'])) {
+            $doc_data['subtype'] = $data['subtype'];
+        }
+        if(isset($data['firm_id'])) {
+            $doc_data['firm_id'] = $data['firm_id'];
+        }
+        if(isset($data['comment'])) {
+            $doc_data['comment'] = $data['comment'];
+        }
         
         $fields = explode(' ', $this->header_fields);
         foreach ($fields as $f) {
             switch ($f) {
                 case 'agent': 
-                    $doc_data['agent'] = $data['agent_id']; 
-                    $doc_data['contract'] = $data['contract_id'];
+                    if (isset($data['agent_id'])) {
+                        $doc_data['agent'] = $data['agent_id'];
+                    }
+                    if (isset($data['contract_id'])) {
+                        $doc_data['contract'] = $data['contract_id'];
+                    }
                     break;
                 case 'sklad':
-                    $doc_data['sklad'] = $data['store_id'];
+                    if (isset($data['store_id'])) {
+                        $doc_data['sklad'] = $data['store_id'];
+                    }
                     break;
                 case 'kassa':
-                    $doc_data['kassa'] = $data['cash_id'];
+                    if (isset($data['cash_id'])) {
+                        $doc_data['kassa'] = $data['cash_id'];
+                    }
                     break;
                 case 'bank':
-                    $doc_data['bank'] = $data['bank_id'];
+                    if (isset($data['bank_id'])) {
+                        $doc_data['bank'] = $data['bank_id'];
+                    }
                     break;
                 case 'cena':
-                    $dop_data['cena'] = $data['price_id'];
+                    if (isset($data['price_id'])) {
+                        $dop_data['cena'] = $data['price_id'];
+                    }
                     break;
-                case 'sum': 
-                    $doc_data['sum'] = $data['sum']; 
+                case 'sum':
+                    if (isset($data['sum'])) {
+                        $doc_data['sum'] = $data['sum'];
+                    }
                     break;
             }
         }
@@ -1651,17 +1674,26 @@ class doc_Nulltype extends \document {
                 case 'text':
                 case 'select':
                 case 'status':
-                    $dop_data[$ex_name] = $data[$ex_name];
+                    if (isset($data[$ex_name])) {
+                        $dop_data[$ex_name] = $data[$ex_name];
+                    }
                     break;
                 case 'checkbox':
-                    $dop_data[$ex_name] = $data[$ex_name]?1:0;
+                    if (isset($data[$ex_name])) {
+                        $dop_data[$ex_name] = $data[$ex_name]?1:0;
+                    }
                     break;
             }
         }
         //if (method_exists($this, 'DopHead'))
         //    $this->DopHead();
-        $this->setDocDataA($doc_data);
-        $this->setDopDataA($dop_data);
+        if(count($doc_data)>0) {
+            $this->setDocDataA($doc_data);
+        }
+        if(count($dop_data)>0) {
+            throw new Exception(json_encode($dop_data));
+            $this->setDopDataA($dop_data);
+        }
     }
 
     /// Слияние табличной части двух документов

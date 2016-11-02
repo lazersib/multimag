@@ -50,11 +50,16 @@ try {
     $db->startTransaction();
     $result['content'] = $disp->dispatch($action, $decoded_data);  
     $db->commit();
-    $exec_time = round(microtime(true) - $starttime, 3);
-    $result["exec_time"] = $exec_time;
-    $result["user_id"] = $_SESSION['uid'];
-    ob_end_clean();
-    echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    if($disp->send_file) {
+        ob_end_flush();
+    }
+    else {
+        $exec_time = round(microtime(true) - $starttime, 3);
+        $result["exec_time"] = $exec_time;
+        $result["user_id"] = $_SESSION['uid'];
+        ob_end_clean();
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    }
 } catch (LoginException $e) {
     ob_end_clean();
     $result = array(

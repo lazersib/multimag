@@ -21,6 +21,7 @@ include_once("include/doc.nulltype.php");
 
 /// Обработчик API запросов к объектам *документ*. Проверяет необходимиые привилегии перед осуществлением действий.
 class document {
+    var $send_file = false;
     
     /// Извлечь ID документа из входных данных. Выбрасывает исключение, если ID не задан или не является положительным числом
     protected function extractDocumentId($data) {
@@ -158,7 +159,41 @@ class document {
         $db->commit();
         return ['id'=>$doc_id, 'cancel'=>'ok', 'header' => $document->getDocumentHeader()];
     }
+    
+    /// Получить список печатных форм
+    protected function getPrintFormList($data) {
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        if( !\acl::testAccess('doc.' . $document->getTypeName(), \acl::GET_PRINTFORM)
+         && !\acl::testAccess('doc.' . $document->getTypeName(), \acl::GET_PRINTDRAFT) ) {
+            throw new \AccessException('Не достаточно привилегий для получения печатной формы');
+        }
+        $ret_data = array(
+            'response' => 'item_list',
+            'content' => $document->getCSVPrintFormList()
+        );
+        return ['id'=>$doc_id, 'printforms' => $document->getCSVPrintFormList()];
+    }
 
+    /// Получить список печатных форм
+    protected function getPrintForm($data) {
+        if(!isset($data['name'])) {
+            throw new \NotFoundException('Имя печатной формы не задано');
+        }
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        if ($document->getDocData('ok')) {
+            \acl::accessGuard('doc.' . $document->getTypeName(), \acl::GET_PRINTFORM);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::GET_PRINTFORM);
+        } else {
+            \acl::accessGuard('doc.' . $document->getTypeName(), \acl::GET_PRINTDRAFT);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::GET_PRINTDRAFT);
+        }
+        $document->sentZEvent('print');
+        return $document->makePrintFormNoACLTest($data['name']);
+    }
+    
     public function dispatch($action, $data=null) {
         switch($action) {
             case 'get':
@@ -169,6 +204,11 @@ class document {
                 return $this->apply($data);
             case 'cancel':
                 return $this->cancel($data);
+            case 'getprintformlist':
+                return $this->getPrintFormList($data);
+            case 'getprintform':
+                $this->send_file = true;
+                return $this->getPrintForm($data);
             default:
                 throw new \NotFoundException('Некорректное действие');
         }

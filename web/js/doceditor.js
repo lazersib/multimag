@@ -18,9 +18,8 @@ function doceditor(doc_container_id, menu_container_id) {
     
     function onLoadError(response, data) {
         if(response.errortype=='AccessException') {
-            var_dump(response);
             if(response.object=='document' && response.action=='cancel') {
-                jAlert(response.errormessage+"<br>br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\""+
+                jAlert(response.errormessage+"<br><br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\""+
                     ">попросить руководителя</a> выполнить отмену этого документа.", "Не достаточно привилегий!", null, 'icon_err');
             }
             else {
@@ -533,6 +532,70 @@ function doceditor(doc_container_id, menu_container_id) {
                 onclick: doc.markdelete
             });
         }
+        
+        if(doc.header.typename=='zayavka') {
+            if(doc.header.reserved==0) {
+                doc.contextPanel.reserves = mim.contextPanel.addButton({
+                    icon:"22x22/object-unlocked.png",
+                    caption:"Разрешить резервы",
+                    onclick: doc.reservesToggle
+                });
+            }
+            else {
+                doc.contextPanel.reserves = mim.contextPanel.addButton({
+                    icon:"22x22/object-locked.png",
+                    caption:"Снять резервы",
+                    onclick: doc.reservesToggle
+                });
+            }
+        }
+        
+        doc.contextPanel.mailToClientForm = mim.contextPanel.addButton({
+            icon:"i_mailsend.png",
+            caption:"Отправить сообщение покупателю",
+            onclick: doc.mailToClientForm
+        });
+        
+        mim.contextPanel.addSeparator();
+        
+        doc.contextPanel.print = mim.contextPanel.addButton({
+            icon:"i_print.png",
+            caption:"Печатные формы",
+            accesskey: "P",
+            onclick: doc.printForms
+        });
+        
+        doc.contextPanel.sendFaxForm = mim.contextPanel.addButton({
+            icon:"i_fax.png",
+            caption:"Отправить по факсу",
+            onclick: doc.faxForms
+        });
+        
+        doc.contextPanel.sendEmailForm = mim.contextPanel.addButton({
+            icon:"i_mailsend.png",
+            caption:"Отправить по email",
+            onclick: doc.mailForms
+        });
+        
+        mim.contextPanel.addSeparator();  
+        
+        doc.contextPanel.connect = mim.contextPanel.addButton({
+            icon:"i_conn.png",
+            caption:"Связать с основанием",
+            onclick: doc.connectForm
+        });
+        
+        doc.contextPanel.morphto = mim.contextPanel.addButton({
+            icon:"i_to_new.png",
+            caption:"Преобразовать в",
+            onclick: doc.morphToMenu
+        });
+        
+        doc.contextPanel.refillNomenclature = mim.contextPanel.addButton({
+            icon:"i_addnom.png",
+            caption:"Перезаполнить номенклатуру",
+            onclick: doc.refillNomenclatureForm
+        });
     };
     
     doc.apply = function() {
@@ -558,6 +621,65 @@ function doceditor(doc_container_id, menu_container_id) {
             });
         }
     };
+    
+    doc.reservesToggle = function(event) {
+        if(doc.contextPanel.reserves) {
+            mim.contextPanel.updateButton(doc.contextPanel.reserves, {
+                icon:"icon_load.gif",
+                caption:"Переключение...",
+                accesskey: "",
+                onclick: function(){}
+            });
+        }
+        var fstruct = { id: doc.id, reserved: doc.header.reserved?0:1};
+        mm_api.document.update(fstruct,onLoadSuccess, onLoadError);
+        /*$.ajax({
+            type: 'POST',
+            url: '/doc.php',
+            data: 'mode=srv&doc=' + doc.id + '&opt=togglereserve',
+            success: function (msg) {
+                docScriptsServerDataReceiver(msg, null, event);
+            },
+            error: function () {
+                jAlert('Ошибка соединения!', 'Переключение резервов', null, 'icon_err');
+            }
+        });*/
+    }
+    
+    doc.printForms = function(event) {
+        var menu = CreateContextMenu(event);
+        function pickItem(event) {
+            var fname = event.target.fname;
+            menu.parentNode.removeChild(menu);
+            var data = {id: doc.id, name: fname};
+            window.location = "/api.php?object=document&action=getprintform&data="+encodeURIComponent(JSON.stringify(data));
+        }
+
+        function onLoadPFLError() {
+            jAlert('Ошибка соединения!', 'Печать', {}, 'icon_err');
+            menu.parentNode.removeChild(menu);
+        }
+        function onLoadPFLSuccess(response) {
+            menu.innerHTML = ''
+            var printforms = response.content.printforms;
+            for (var i = 0; i < printforms.length; i++) {
+                var elem = document.createElement('div');
+                if (printforms[i].mime) {
+                    var mime = printforms[i].mime.replace('/', '-');
+                    elem.style.backgroundImage = "url('/img/mime/22/" + mime + ".png')";
+                }
+                elem.innerHTML = printforms[i].desc;
+                elem.fname = printforms[i].name;
+                elem.onclick = pickItem;
+                menu.appendChild(elem);
+            }
+        }  
+        mm_api.document.getPrintFormList({id:doc.id},onLoadPFLSuccess, onLoadPFLError);
+
+        return false;
+    }
+    
+    
     
     return doc;
 };

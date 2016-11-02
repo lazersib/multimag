@@ -586,24 +586,26 @@ div#wiki-page {
 		clear:		both;
 	}
 
-div#wiki-foot {
-	padding:		0.6em;
+div#footer {
+	padding:		0.5em;
 	margin:			0;
 	border:			0;
-	min-height:		5em;
-	clear:			both;
-	height:			4em;
-	color: 			#fff;
-	background-color: rgb(100,135,220);
+	min-height:		1.5em;
+	height:			1em;
+	color: 			#000;
+	background-color: #eef2ff;
+        text-align: center;
+        border-top: 1px #ccc solid;
+        font-size: 0.8em;
 }
-	div#foot-left {
-		float:			left;
+	div#footer-left {
+		float:		left;
 	}
-	div#foot-right {
+	div#footer-right {
 		float:		right;
 		text-align:	right;
 	}
-	div#wiki-foot  ul, div#wiki-foot  div ul {
+	div#footer  ul, div#wiki-foot  div ul {
 		list-style-type: none;
 		list-style-position: inside;
 		margin: 	0;
@@ -611,31 +613,31 @@ div#wiki-foot {
 		border:		0;
 		white-space:normal;	
 	}
-	div#wiki-foot  li, div#wiki-foot  div ul li {
+	div#footer  li, div#wiki-foot  div ul li {
 		display:	inline;
 		margin: 	0;
 		padding: 	0 0.2em 0 0.4em;
 		border:		0;
 		border-left:0.1em solid white;
 	}
-	div#wiki-foot  li.noborder, div#wiki-foot  div ul li.noborder {
+	div#footer  li.noborder, div#wiki-foot  div ul li.noborder {
 		border:		0;
 	}
-	div#wiki-foot a:link, div#wiki-foot a:visited, div#wiki-foot a:active {
+	div#footer a:link, div#wiki-foot a:visited, div#wiki-foot a:active {
 		color:		#fff;
 		background-color:transparent;
 		text-decoration:none;
 	}
-	div#wiki-foot a:hover {
-		color:		#fff;
+	div#footer a:hover {
+		color:		#f00;
 		background-color:transparent;
 		text-decoration:underline;
 	}
-	div#wiki-foot p {
+	div#footer p {
 		margin:		0;
 		padding:	0;
 	}
-	div#wiki-top  li.noborder, div#wiki-top  div ul li.noborder {
+	div#footer  li.noborder, div#wiki-top  div ul li.noborder {
 		border:		0;
 	}
 
@@ -1360,3 +1362,8 @@ div.attachments ul {
 div.attachments span.size {
     cursor:help;
 }
+
+hr.botline {
+    clear: both;
+}
+
