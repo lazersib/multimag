@@ -16,6 +16,23 @@ $CONFIG['site']['location']	= $CONFIG['location'].'/web';
 $CONFIG['cli']['location']	= $CONFIG['location'].'/cli';
 $CONFIG['site']['user_pass_period'] = false;                    // Срок действия (суток) пароля обычного пользователя. Если false - не ограничен. false по умолчанию
 $CONFIG['site']['worker_pass_period'] = 90;                     // Срок действия (суток) пароля сотрудника. Если false - не ограничен. 90 по умолчанию.
+$CONFIG['site']['vitrina_pcnt']		= 1;	// Как отображать наличие товара. 0 - цифрой, 1 - звёздочками, 2 - много/мало
+$CONFIG['site']['vitrina_pcnt_limit']	= array(1,10,100);	// Лимиты для значений мало/есть/много, либо звёздочек
+
+// Настройки прайса
+$CONFIG['site']['price_col_cnt']	= 0;	// 2 по умолчанию
+$CONFIG['site']['price_width_cost']	= 0;	// 12 по умлочанию
+$CONFIG['site']['price_width_name']	= 0;	// 0 по умолчанию (автоматически)
+$CONFIG['site']['price_width_vc']	= 0;	// Ширина колонки *код производителя* в PDF прайсе
+$CONFIG['site']['price_text']		= array(
+'Ваш адрес',
+'Ваши телефоны',
+'Ваши e-mail, jabber, ICQ',
+'Ещё какая-то информация'
+);
+$CONFIG['site']['price_show_vc']	= 0;	// Отображать ли столбец с кодом производителя в прайсах
+
+
 //Проверка заданного типа в приходных/расходных кассовых ордерах
 //и средств из/в банк при проведении документа.
 $CONFIG['doc']['restrict_dc_nulltype'] = true;

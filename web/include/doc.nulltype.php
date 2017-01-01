@@ -1331,13 +1331,12 @@ class doc_Nulltype extends \document {
     function sendDocByEMail($email, $comment, $docname, $data, $filename, $body = '') {
         global $CONFIG, $db;
         $pref = \pref::getInstance();
-        require_once($CONFIG['location'] . '/common/email_message.php');
         $res_autor = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info`
             WHERE `user_id`='" . $this->doc_data['user'] . "'");
         $doc_autor = $res_autor->fetch_assoc();
         $agent = new \models\agent($this->doc_data['agent']);
 
-        $email_message = new email_message_class();
+        $email_message = new \email_message();
         $email_message->default_charset = "UTF-8";
         if ($agent->fullname) {
             $email_message->SetEncodedEmailHeader("To", $email, $agent->fullname);

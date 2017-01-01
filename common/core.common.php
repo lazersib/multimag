@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "930");
+define("MULTIMAG_REV", "932");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -27,7 +27,10 @@ function common_autoload($class_name) {
     global $CONFIG;
     $class_name = strtolower($class_name);
     $class_name = str_replace('\\', '/', $class_name);
-    @include_once $CONFIG['location'] . "/common/" . $class_name . '.php';
+    $file = $CONFIG['location'] . "/common/" . $class_name . '.php';
+    if(file_exists($file)) {
+        include_once $CONFIG['location'] . "/common/" . $class_name . '.php';
+    }
 }
 
 spl_autoload_register('common_autoload');
@@ -81,11 +84,13 @@ function SendSubscribe($title, $subject, $msg, $list_id = '') {
     if (!$list_id) {
         $list_id = md5($subject . $msg . microtime()) . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
     }
-    require_once($CONFIG['location'] . '/common/email_message.php');
     $res = $db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
     list($firm_name) = $res->fetch_row();
     $list = getSubscribersEmailList();
     foreach ($list as $subscriber) {
+        if(!$subscriber['email']) {
+            continue;
+        }
         $txt = "
 Здравствуйте, {$subscriber['name']}!
 
@@ -99,7 +104,7 @@ $msg
 Вы получили это письмо потому что подписаны на рассылку сайта {$CONFIG['site']['display_name']} ( http://{$CONFIG['site']['name']}?from=email ), либо являетесь клиентом $firm_name.
 Отказаться от рассылки можно, перейдя по ссылке http://{$CONFIG['site']['name']}/login.php?mode=unsubscribe&email={$subscriber['email']}&from=email
 ";
-        $email_message = new email_message_class();
+        $email_message = new \email_message();
         $email_message->default_charset = "UTF-8";
         $email_message->SetEncodedEmailHeader("To", $subscriber['email'], $subscriber['name']);
         $email_message->SetEncodedHeader("Subject", $subject . " - {$CONFIG['site']['name']}");
@@ -113,7 +118,7 @@ $msg
         $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            throw new Exception($error);
+            throw new Exception($error."; email: ".$subscriber['email']);
         }
     }
 }
@@ -156,7 +161,7 @@ function mailto($email, $subject, $msg, $from = "") {
     global $CONFIG;
     require_once($CONFIG['location'] . '/common/email_message.php');
 
-    $es = new \email_message_class();
+    $es = new \email_message();
     $es->default_charset = "UTF-8";
     $es->SetEncodedEmailHeader("To", $email, $email);
     $es->SetEncodedHeader("Subject", $subject);

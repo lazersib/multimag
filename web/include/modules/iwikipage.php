@@ -331,7 +331,11 @@ abstract class IWikiPage extends \IModule {
         $this->showPage($p_info, $title, $text);
     }
     
-    /** Отобразить страницу
+    public function getEditLink($page_name) {
+        return \webcore::concatLink($this->link_prefix, "p=" . html_out($page_name) . "&amp;sect=edit");
+    }
+
+        /** Отобразить страницу
      * 
      * @param type $p_info  Данные страницы
      * @param type $title   Отображаемый заголовок страницы
@@ -341,7 +345,7 @@ abstract class IWikiPage extends \IModule {
         global $tmpl;
         $tmpl->addBreadCrumb($title, '');
         $tmpl->setTitle($title);
-        $edit_link = \webcore::concatLink($this->link_prefix, "p=" . html_out($p_info['article_name']) . "&amp;sect=edit");
+        $edit_link = $this->getEditLink($p_info['article_name']);
         $attach_link = \webcore::concatLink($this->link_prefix, "p=" . html_out($p_info['article_name']) . "&amp;sect=attachfile");
         $ch = $p_info['editor_name']?", последнее изменение - {$p_info['editor_name']}, date {$p_info['changed']}":'';
         if ($p_info['type'] == 0 || $p_info['type'] == 2) {

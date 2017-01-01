@@ -19,12 +19,12 @@
 //
 
 /// Базовый класс для действий
-class action {
+abstract class action {
     const MANUAL = 0;
     const HOURLY = 1;
     const DAILY = 2;
     const WEEKLY = 3;
-    const MOUNTHLY = 4;
+    const MONTHLY = 4;
 
     protected $db;
     protected $config;
@@ -38,7 +38,7 @@ class action {
         $this->db = $db;
         $this->config = $config;
     }
-    
+        
     public function setVerbose($flag = true) {
         $this->verbose = $flag;
     }
@@ -50,4 +50,13 @@ class action {
     public function getInterval() {
         return $this->interval;
     }
+    
+    /// Получить имя действия
+    abstract public function getName();
+    
+    /// Проверить, разрешен ли периодический запуск действия
+    abstract public function isEnabled();
+    
+    /// Запустить задачу
+    abstract public function run();
 }

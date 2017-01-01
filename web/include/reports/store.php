@@ -65,6 +65,7 @@ class Report_Store extends BaseGSReport {
         }
         $tmpl->addContent("</select><br>Группа товаров:<br>");
         $this->GroupSelBlock();
+        $tmpl->addContent("<br>Произовдитель:<br><input type='text' name='vendor'><br>");
         $tmpl->addContent("<button type='submit'>Создать отчет</button></form>");
     }
 
@@ -93,6 +94,7 @@ class Report_Store extends BaseGSReport {
         $show_mincnt = rcvint('show_mincnt');
         $show_mass = rcvint('show_mass');
         $sklad = rcvint('sklad');
+        $vendor = request('vendor');
         $g = request('g');
         $cost = request('cost');
         $tmpl->loadTemplate('print');
@@ -228,6 +230,9 @@ class Report_Store extends BaseGSReport {
             }
             $cnt_join = '';
         }
+        
+        $sql_vendor = $db->real_escape_string($vendor);
+        $v_where = $vendor ? ("AND `doc_base`.`proizv`='$sql_vendor'"):'';
 
         $bsum = $summass = 0;
         $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
@@ -247,7 +252,7 @@ class Report_Store extends BaseGSReport {
                     `doc_base`.`vc`, `doc_base`.`group`, `doc_base`.`bulkcnt`, `doc_base`.`proizv` AS `vendor`
                 FROM `doc_base`
                 $cnt_join
-                WHERE `doc_base`.`group`='{$group_line['id']}'
+                WHERE `doc_base`.`group`='{$group_line['id']}' $v_where
                 ORDER BY $order");
             while ($nxt = $res->fetch_assoc()) {
                 if ($nxt['cnt'] == 0 && (!$show_mincnt)) {

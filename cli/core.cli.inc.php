@@ -38,7 +38,7 @@ if (!$db->set_charset("utf8")) {
 }
 
 function run_periodically_actions($interval) {
-    global $db, $executed, $verbose;
+    global $executed, $verbose;
     $verbose = 0;
 
     try {
@@ -67,7 +67,11 @@ function run_periodically_actions($interval) {
                     return false;
                 }
                 $nm = $action->getName();
+                if($verbose) {
+                    echo $nm . '...';
+                }                
                 if(!$action->isEnabled()) {
+                    echo " ОТКЛЮЧЕНО.\n";
                     return false;
                 }    
                 foreach ($action->getDepends() as $dep_name) {
@@ -76,9 +80,7 @@ function run_periodically_actions($interval) {
                         return false;
                     }
                 }
-                if($verbose) {
-                    echo $nm . '...';
-                }
+                
                 $action->setVerbose();
                 $action->run();
                 $executed[] = $action_name;
