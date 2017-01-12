@@ -1348,18 +1348,25 @@ public function getProductAutoDescription($product_data) {
         $i = 1;
         foreach ($basket['items'] as $item) {                
             $lock_mark = $item['locked_line'] ? "style='color: #f00'" : '';
-            $gray_price = $item['gray_price'] ? "style='color: #888'" : '';
-            $img = $item['img_uri'] ? "<img_src='{$item['img_uri']}' alt='" . html_out($item['name']) . "'>" : '';
-            $price_p = number_format($item['price'], 2, '.', '&nbsp;');
+            $gray_price = $item['gray_price'] ? "style='color: #888'" : ''; 
+            if(is_numeric($item['price'])) {
+                $price_p = number_format($item['price'], 2, '.', '&nbsp;'); 
+            }    
+            else {
+                $price_p = $item['price'];
+            }
             $sum_p = number_format($item['sum'], 2, '.', '&nbsp;');
             if ($item['img_id']) {
                 $miniimg = new \ImageProductor($item['img_id'], 'p', $item['img_type']);
                 $miniimg->SetX(24);
                 $miniimg->SetY(32);
                 $item['img_uri'] = $miniimg->GetURI();
+                $img = "<img_src='{$item['img_uri']}' alt='" . html_out($item['name']) . "'>";
             } else {
                 $item['img_uri'] = null;
+                $img = '';
             }
+            $img = isset($item['img_uri']) ? "<img_src='{$item['img_uri']}' alt='" . html_out($item['name']) . "'>" : '';
             $tmpl->addContent("<tr id='korz_ajax_item_{$item['pos_id']}'{$lock_mark}>
                 <td class='right'>$i <span id='korz_item_clear_url_{$item['pos_id']}'>
                     <a href='/vitrina.php?mode=korz_del&p={$item['pos_id']}' onClick='korz_item_clear({$item['pos_id']}); return false;'>
