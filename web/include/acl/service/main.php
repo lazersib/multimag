@@ -64,9 +64,13 @@ class main extends \acl\aclContainer {
                 "name" => "Сценарии и операции",
                 "mask" => \acl::VIEW | \acl::APPLY
             ),
-            'feedback' => array(
-                "name" => "Сообщения об ошибках",
-                "mask" => \acl::VIEW | \acl::CREATE
+            'scripts' => array(
+                "name" => "Сценарии и операции",
+                "mask" => \acl::VIEW | \acl::APPLY
+            ),
+            'sendprice' => array(
+                "name" => "Управление рассылкой прайс-листов",
+                "mask" => \acl::VIEW |\acl::CREATE | \acl::UPDATE | \acl::DELETE
             ),
             'images' => array(
                 "name" => "Управление изображениями",

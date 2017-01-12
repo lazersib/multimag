@@ -28,7 +28,15 @@ class priceSender {
     protected $contactlist;
     protected $price_content;
     protected $zip;
-    
+    protected $price_id = 1;
+
+    public function __construct() {
+        $pc = \PriceCalc::getInstance();
+        $pref = \pref::getInstance();
+        $pc->setFirmId($pref->site_default_firm_id);
+        $this->price_id = $pc->getDefaultPriceId();
+    }
+
     public function setFilters($filters) {
         $this->filters = $filters;
     }
@@ -49,6 +57,10 @@ class priceSender {
         $this->contactlist = $contactlist;
     }
     
+    public function setPriceId($price_id) {
+        $this->price_id = $price_id;
+    }
+    
     public function run() {
         $this->preparePriceList();
         $this->prepareEmail();
@@ -67,11 +79,8 @@ class priceSender {
             default:
                 throw new \Exception('Запрошенный формат не поддерживатеся модулем рассылки прайс-листов');
         }
-        $pc = \PriceCalc::getInstance();
-        $pref = \pref::getInstance();
-        $pc->setFirmId($pref->site_default_firm_id);
-        
-	$pricewriter->setCost( $pc->getDefaultPriceId() );
+       
+	$pricewriter->setCost($this->price_id);
         if( is_array($this->filters)) {
             if( isset($this->filters['groups_only'])
                 && $this->filters['groups_only'] && is_array($this->filters['groups_list']))	{

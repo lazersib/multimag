@@ -28,7 +28,7 @@ class sendprice extends \IModule {
 
     public function __construct() {
         parent::__construct();  
-        $this->acl_object_name = 'service.'.get_class();
+        $this->acl_object_name = 'service.sendprice';
         $this->table_name = 'prices_delivery';
     }
     
@@ -171,7 +171,9 @@ class sendprice extends \IModule {
     public function getList() {
         global $db;
         $ret = array();
-        $res = $db->query("SELECT `id`, `name`, `period`, `format`, `use_zip`, `filters` FROM `{$this->table_name}`");
+        $ldo = new \Models\LDO\pricenames();
+        $price_names = $ldo->getData();
+        $res = $db->query("SELECT `id`, `name`, `period`, `format`, `use_zip`, `price_id`, `filters` FROM `{$this->table_name}`");
         while($line=$res->fetch_assoc()) {
             $line['filters'] = json_decode($line['filters']);
             $cr = $db->query("SELECT `agent_contacts`.`no_ads`"
@@ -184,6 +186,7 @@ class sendprice extends \IModule {
                     $line['subscribers']--;
                 }
             }
+            $line['price_name'] = isset($price_names[$line['price_id']])?$price_names[$line['price_id']]:'';
             $ret[$line['id']] = $line;
         }
         return $ret;
@@ -193,7 +196,7 @@ class sendprice extends \IModule {
     public function viewList() {
         global $tmpl;
         $list = $this->getList();
-        $tmpl->addContent("<table class='list'><tr><th>Id</th><th>Название</th><th>Периодичность</th><th>Формат</th><th>Контактов</th></tr>");
+        $tmpl->addContent("<table class='list'><tr><th>Id</th><th>Название</th><th>Периодичность</th><th>Формат</th><th>Цена</th><th>Контактов</th></tr>");
         foreach($list as $id=>$line) {
             if(isset($this->pers[$line['period']])) {
                 $p = $this->pers[$line['period']];
@@ -207,7 +210,7 @@ class sendprice extends \IModule {
                 $format .= '.zip';
             }
             $tmpl->addContent("<tr><td><a href='{$this->link_prefix}&amp;sect=edit&amp;id={$line['id']}'>{$line['id']}</a></td>"
-            . "<td>".html_out($line['name'])."</td><td>$p</td><td>$format</td>"
+            . "<td>".html_out($line['name'])."</td><td>$p</td><td>$format</td><td>".html_out($line['price_name'])."</td>"
             . "<td><a href='{$this->link_prefix}&amp;sect=vs&amp;id={$line['id']}'{$as}>{$line['contacts']}/{$line['subscribers']}</a></td>"
             . "</tr>");
         }
@@ -222,7 +225,7 @@ class sendprice extends \IModule {
         $ret .= "<input type='hidden' name='sect' value='save'>";
 
         $item = $this->getItem($id);
-        $filters = array('vendor'=>'', 'count'=>'all');
+        $filters = array('vendor'=>'', 'count'=>'all', 'price_id'=>1);
         if ($item) {
             $ret .= "<input type='hidden' name='id' value='$id'>";
             $name = $this->getItemName($item);
@@ -260,7 +263,10 @@ class sendprice extends \IModule {
         $sel = ($item['use_zip'])?' checked':'';
         $ret .= "<label><input type='checkbox' name='use_zip' value='1'{$sel}>Упаковать в ZIP</label><br>";
         $ret .= "</td></tr>";
-        
+        $ret .= "<tr><td align='right'>Цена</td><td>";
+        $ldo = new \Models\LDO\pricenames();
+        $ret .= \widgets::getEscapedSelect('price_id', $ldo->getData(), $item['price_id']);
+        $ret .= "</td></tr>";
         $ret .= "<tr><td align='right'>Фильтр по производителю</td>"
             . "<td><input type='text' name='vendor' value='" . html_out($filters['vendor']) . "' style='width:95%;'></td>"
             . "</tr>";
@@ -296,13 +302,13 @@ class sendprice extends \IModule {
     public function saveItem($id, $data) {
         global $db;
         $write_data = array();
-        
+                
         $write_data['name'] = $data['name'];
         $write_data['period'] = $data['period'];
         $write_data['format'] = $data['format'];
         $write_data['lettertext'] = $data['lettertext'];
         $write_data['use_zip'] = $data['use_zip'];
-        
+        $write_data['price_id'] = $data['price_id'];
         
         $filters = array (
             'vendor' => $data['vendor'],
@@ -506,7 +512,7 @@ class sendprice extends \IModule {
                 break;
             case 'save':
                 $id = rcvint('id');
-                $data = requestA( array('name','period','format','use_zip','vendor','count','lettertext','g','gs') );
+                $data = requestA( array('name','period','format','use_zip','price_id','vendor','count','lettertext','g','gs') );
                 $data['groups'] = $data['g'];
                 $id = $this->saveItem($id, $data);
                 $tmpl->msg("Данные сохранены", "ok");
