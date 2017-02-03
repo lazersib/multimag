@@ -50,6 +50,7 @@ $CONFIG['xmpp']['login']	= '';	// Логин на XMPP сервере
 $CONFIG['xmpp']['pass']		= '';	// Пароль на XMPP сервере
 
 // настройки отправки факсов
+// $CONFIG['sendfax']['url']            = 'http://www.virtualofficetools.ru/API/fax.send.api.php';
 // $CONFIG['sendfax']['username']	= '';	
 // $CONFIG['sendfax']['password']	= '';
 // $CONFIG['sendfax']['attempts']	= 5;	// кол-во попыток отправки

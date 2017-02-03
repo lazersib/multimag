@@ -24,7 +24,7 @@ class ntpl {}
 $tmpl = new ntpl();
 
 
-$db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
+$db = new MysqiExtended(\cfg::get('mysql', 'host'), \cfg::get('mysql', 'login'), \cfg::get('mysql', 'pass'), \cfg::get('mysql', 'db'));
 
 if ($db->connect_error) {
     die("Ошибка соединения с базой данных");

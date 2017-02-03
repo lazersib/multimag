@@ -104,7 +104,7 @@ class doc_Postuplenie extends doc_Nulltype {
     }
         
     public function docApply($silent = 0) {
-        global $CONFIG, $db;
+        global $db;
         if(!$this->isAltNumUnique() && !$silent) {
             throw new Exception("Номер документа не уникален!");
         }
@@ -118,44 +118,55 @@ class doc_Postuplenie extends doc_Nulltype {
         $res->free();
         
         if (!$doc_params) {
-            throw new Exception('Документ ' . $this->id . ' не найден');
+            throw new \Exception('Документ ' . $this->id . ' не найден');
         }
         if ($doc_params['ok'] && (!$silent)) {
-            throw new Exception('Документ уже проведён!');
+            throw new \Exception('Документ уже проведён!');
         }
         
         // Запрет на списание со склада другой фирмы
         if($doc_params['store_firm_id']!=null && $doc_params['store_firm_id']!=$doc_params['firm_id']) {
-            throw new Exception("Выбранный склад принадлежит другой организации!");
+            throw new \Exception("Выбранный склад принадлежит другой организации!");
         }
         // Ограничение фирмы списком своих складов
         if($doc_params['firm_store_lock'] && $doc_params['store_firm_id']!=$doc_params['firm_id']) {
-            throw new Exception("Выбранная организация может работать только со своими складами!");
+            throw new \Exception("Выбранная организация может работать только со своими складами!");
         }
         
-        $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, `doc_list_pos`.`cost`, `doc_base`.`cost`
+        $res = $db->query("SELECT `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id` AS `line_id`
+                    , `doc_list_pos`.`cost` AS `line_price`, `doc_base`.`cost` AS `base_price`, `doc_base_cnt`.`mesto` AS `place`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='{$doc_params['sklad']}'
 		WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
-        while ($nxt = $res->fetch_row()) {
-            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='{$doc_params['sklad']}'");
+        while ($line = $res->fetch_assoc()) {
+            if(\cfg::get('doc', 'restrict_in_noplace') && !$silent) {
+                if($line['place']=='' || $line['place']==='0') {
+                    throw new \Exception("У товара ID:{$line['pos_id']} не задано место хранения. Проведение поступления без места хранения запрещено в настройках.");
+                }
+            }
+            $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt`+'{$line['cnt']}' WHERE `id`='{$line['pos_id']}' AND `sklad`='{$doc_params['sklad']}'");
             // Если это первое поступление
             if ($db->affected_rows == 0) {
-                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('$nxt[0]', '{$doc_params['sklad']}', '$nxt[1]')");
+                $db->query("INSERT INTO `doc_base_cnt` (`id`, `sklad`, `cnt`) VALUES ('{$line['pos_id']}', '{$doc_params['sklad']}', '{$line['cnt']}')");
             }
-            if (@$CONFIG['poseditor']['sn_restrict']) {
-                $r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `prix_list_pos`='$nxt[3]'");
+            if(\cfg::get('poseditor', 'sn_restrict')) {
+                $r = $db->query("SELECT COUNT(`doc_list_sn`.`id`) FROM `doc_list_sn` WHERE `prix_list_pos`='{$line['line_id']}'");
                 $sn_data = $r->fetch_row();
-                if ($sn_data[0] != $nxt[1]) {
-                    throw new Exception("Количество серийных номеров товара $nxt[0] ($nxt[1]) не соответствует количеству серийных номеров ($sn_data[0])");
+                if ($sn_data[0] != $line['cnt']) {
+                    throw new \Exception("Количество серийных номеров товара {$line['pos_id']} ({$line['cnt']})"
+                        . " не соответствует количеству серийных номеров ($sn_data[0])");
                 }
             }
-            if (@$CONFIG['doc']['update_in_cost'] == 1 && (!$silent)) {
-                if ($nxt[4] != $nxt[5]) {
-                    $db->query("UPDATE `doc_base` SET `cost`='$nxt[4]', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
-                    doc_log("UPDATE", "cost:($nxt[4] => $nxt[5])", 'pos', $nxt[0]);
+            if(\cfg::get('doc', 'update_in_cost') == 1 && (!$silent)) {
+                if ($line['line_price'] != $line['base_price']) {
+                    $db->query("UPDATE `doc_base` SET `cost`='{$line['line_price']}', `cost_date`=NOW() WHERE `id`='{$line['pos_id']}'");
+                    
+                    $array = ['price'=>['old'=>$line['base_price'], 'new'=>$line['line_price']]];
+                    doc_log("UPDATE", json_encode($array, JSON_UNESCAPED_UNICODE), 'pos', $line['pos_id']);
                 }
             }
+            
         }
         if ($silent) {
             return;
@@ -170,32 +181,31 @@ class doc_Postuplenie extends doc_Nulltype {
                     LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
                     WHERE `doc_list_pos`.`doc`='{$doc_params['p_doc']}'");
                 $vals = '';
-                while ($nxt = $res->fetch_row()) {
+                while ($line = $res->fetch_row()) {
                     if ($vals) {
                         $vals .= ',';
                     }
-                    $vals .= "('$nxt[0]', '$nxt[1]')";
+                    $vals .= "('$line[0]', '$line[1]')";
                 }
                 if($vals) {
                     $db->query("INSERT INTO `doc_base_dop` (`id`, `transit`) VALUES $vals
                        ON DUPLICATE KEY UPDATE `transit`=`transit`-VALUES(`transit`)");
                 } else {
-                    throw new Exception("Не удалось провести пустой документ!");
+                    throw new \Exception("Не удалось провести пустой документ!");
                 }
             }
         }
-
-        if (@$CONFIG['doc']['update_in_cost'] == 2) {
-            $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base`.`pos_type`, `doc_list_pos`.`id`, 
-                    `doc_list_pos`.`cost`, `doc_base`.`cost`
+        if(\cfg::get('doc', 'update_in_cost') == 2) {
+            $res = $db->query("SELECT `doc_list_pos`.`tovar` AS `pos_id`, `doc_base`.`cost` AS `base_price`
                 FROM `doc_list_pos`
                 LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
                 WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
-            while ($nxt = $res->fetch_row()) {
-                $acp = getInCost($nxt[0], $doc_params['date']);
-                if ($nxt[5] != $acp) {
-                    $db->query("UPDATE `doc_base` SET `cost`='$acp', `cost_date`=NOW() WHERE `id`='$nxt[0]'");
-                    doc_log("UPDATE", "cost:($nxt[4] => $acp)", 'pos', $nxt[0]);
+            while ($line = $res->fetch_assoc()) {
+                $acp = getInCost($line['pos_id'], $doc_params['date']);
+                if ($line['base_price'] != $acp) {
+                    $db->query("UPDATE `doc_base` SET `cost`='$acp', `cost_date`=NOW() WHERE `id`='{$line['pos_id']}'");
+                    $array = ['price'=>['old'=>$line['base_price'], 'new'=>$acp]];
+                    doc_log("UPDATE", json_encode($array, JSON_UNESCAPED_UNICODE), 'pos', $line['pos_id']);
                 }
             }
         }

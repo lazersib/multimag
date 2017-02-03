@@ -48,13 +48,15 @@ class Report_Store extends BaseGSReport {
         while ($nxt = $cres->fetch_row()) {
             $tmpl->addContent("<label><input type='checkbox' name='cost[$nxt[0]]' value='$nxt[0]'>" . html_out($nxt[1]) . "</label><br>");
         }
-        $tmpl->addContent("</fieldset><br>
-            <fieldset><legend>Показывать</legend>
-            <label><input type='checkbox' name='show_price' value='1'>Цены</label><br>
+        $tmpl->addContent("<hr>
+            <label><input type='checkbox' name='show_price' value='1'>АЦП и базовую</label><br>  
+            <label><input type='checkbox' name='show_lastp_price' value='1'>Цену последнего поступления (ЦПП)</label><br>
             <label><input type='checkbox' name='show_add' value='1'>Наценку</label><br>
+            </fieldset><br>
+            <fieldset><legend>А так же</legend>            
             <label><input type='checkbox' name='show_sum' value='1'>Суммы</label><br>
             <label><input type='checkbox' name='show_mincnt' value='1'>Минимально допустимый остаток</label><br>
-            <label><input type='checkbox' name='show_mass' value='1'>Массу</label>
+            <label><input type='checkbox' name='show_mass' value='1'>Массу</label>            
             </fieldset><br>
             Склад:<br>
             <select name='sklad'>
@@ -89,6 +91,7 @@ class Report_Store extends BaseGSReport {
 
         $gs = rcvint('gs');
         $show_price = rcvint('show_price');
+        $show_lastp_price = rcvint('show_lastp_price');
         $show_add = rcvint('show_add');
         $show_sum = rcvint('show_sum');
         $show_mincnt = rcvint('show_mincnt');
@@ -177,6 +180,12 @@ class Report_Store extends BaseGSReport {
                 $aligns[] = 'R';
                 $col_sizes[] = 18;
             }
+        }
+        if($show_lastp_price) {
+            $headers[] = 'ЦПП';
+            $haligns[] = 'C';
+            $aligns[] = 'R';
+            $col_sizes[] = 12;
         }
         $width = array_sum($col_sizes);
         if ($width < 200) {
@@ -282,7 +291,12 @@ class Report_Store extends BaseGSReport {
                 }
 
                 if ($show_add && \acl::testAccess('directory.goods.secfields', \acl::VIEW)) {
-                    $line[] = sprintf("%0.2f р. (%0.2f%%)", $cost_p - $act_cost, ($cost_p / $act_cost) * 100 - 100);
+                    if($act_cost!=0) {
+                        $line[] = sprintf("%0.2f р. (%0.2f%%)", $cost_p - $act_cost, ($cost_p / $act_cost) * 100 - 100);
+                    }
+                    else {
+                        $line[] = sprintf("?? р. (--)", $cost_p);
+                    }                    
                 }
 
 
@@ -303,6 +317,19 @@ class Report_Store extends BaseGSReport {
                 if (is_array($cost)) {
                     foreach ($cost as $id => $value) {
                         $line[] = $pc->getPosSelectedPriceValue($nxt['id'], $id, $nxt);
+                    }
+                }
+                if($show_lastp_price) {
+                    $r = $db->query("SELECT `doc_list`.`date`, `doc_list_pos`.`cost` FROM `doc_list_pos`
+                        LEFT JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
+                        WHERE `doc_list`.`ok`>'0' AND (`doc_list`.`type`='1' OR `doc_list`.`type`='25' AND `doc_list_pos`.`cnt`>'0')
+                        AND `doc_list_pos`.`tovar`='{$nxt['id']}'
+                        ORDER BY `doc_list`.`date` DESC LIMIT 1");
+                    if ($r->num_rows) {
+                        $rr = $r->fetch_row();
+                        $line[] = sprintf('%0.2f', $rr[1]);
+                    } else {
+                        $line[] = '--';
                     }
                 }
                 $pdf->RowIconv($line);

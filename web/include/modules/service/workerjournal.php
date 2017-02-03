@@ -24,7 +24,7 @@ class workerjournal extends \IModule {
     
     public function __construct() {
         parent::__construct();
-        $this->acl_object_name = 'service.orders';
+        $this->acl_object_name = 'service.workerjournal';
     }
 
     public function getName() {

@@ -2356,15 +2356,16 @@ class doc_s_Sklad {
             $sklad = $_SESSION['sklad_num'];
             settype($sklad, 'int');
             $sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`,
-				`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
-				`doc_base`.`cost_date`,	`doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
-				`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-				(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
-				`doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
-				FROM `doc_base`
-				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
-				LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-				WHERE 1 ";
+                        `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,  `doc_base`.`eol`,
+                        `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
+                        `doc_base_dop`.`reserve`,  `doc_base_dop`.`offer`,  `doc_base_dop`.`transit`,
+                        `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+                        (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
+                        `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
+                        FROM `doc_base`
+                        LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+                        LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+                        WHERE 1 ";
 
             switch (@$CONFIG['doc']['sklad_default_order']) {
                 case 'vc': $order = '`doc_base`.`vc`';
@@ -2425,7 +2426,7 @@ class doc_s_Sklad {
 
             if (@$CONFIG['poseditor']['vc'])
                 $tmpl->addContent("<th>Код</th>");
-            $tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>$cheader_add<th>Аналог</th>");
+            $tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>$cheader_add");
 
             if (@$CONFIG['poseditor']['tdb'] == 1)
                 $tmpl->addContent("<th>Тип</th><th>d</th><th>D</th><th>B</th>");
@@ -2436,7 +2437,7 @@ class doc_s_Sklad {
 
             $res = $db->query($sql);
             if ($cnt = $res->num_rows) {
-                $tmpl->addContent("<tr><th colspan='16' align='center'>Параметрический поиск, найдено $cnt");
+                $tmpl->addContent("<tr><th colspan='18' align='center'>Параметрический поиск, найдено $cnt");
                 $this->DrawSkladTable($res, $name);
                 $sf = 1;
             }
@@ -2790,8 +2791,10 @@ class doc_s_Sklad {
         <tr><td align='right'>Номер таможенной декларации</td><td><input type='text' name='ntd' value='{$pos_info['ntd']}'></td></tr>
         </table>
         </td>
-        <td valign='top' width='33%'><table class='list' width='100%' id='fg_table'><tbody><tfoot>$dyn_foot</tfoot>$dyn_table</tbody></table></td>
-        <td valign='top' width='33%'><table class='list' width='100%'>$srv_table</table></td>
+        <td valign='top' width='33%'>
+            <table class='list' width='100%' id='fg_table'><tbody><tfoot>$dyn_foot</tfoot>$dyn_table</tbody></table></td>
+        <td valign='top' width='33%'>
+            <table class='list' width='100%'>$srv_table</table></td>
         </table>
         <table width='100%'>
         <tr><td align='center'><input type='submit' value='Сохранить'>
