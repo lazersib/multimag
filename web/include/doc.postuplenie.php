@@ -141,7 +141,7 @@ class doc_Postuplenie extends doc_Nulltype {
 		WHERE `doc_list_pos`.`doc`='{$this->id}' AND `doc_base`.`pos_type`='0'");
         while ($line = $res->fetch_assoc()) {
             if(\cfg::get('doc', 'restrict_in_noplace') && !$silent) {
-                if($line['place']=='' || $line['place']==='0') {
+                if( ($line['place']=='' || $line['place']==='0') && $line['pos_type']==0 ) {
                     throw new \Exception("У товара ID:{$line['pos_id']} не задано место хранения. Проведение поступления без места хранения запрещено в настройках.");
                 }
             }

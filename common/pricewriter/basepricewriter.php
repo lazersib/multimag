@@ -22,6 +22,7 @@ namespace pricewriter;
 /// Базовый класс формирования прайс-листов
 class BasePriceWriter {
     protected $view_proizv;         ///< Отображать ли наименование производителя
+    protected $view_groupname;      ///< Отображать ли печатное имя группы
     protected $view_groups;         ///< Группы, которые надо отображать. Массив.
     protected $column_count;        ///< Кол-во колонок в прайсе
     protected $db;                  ///< mysqli коннектор к нужной базе
@@ -37,6 +38,7 @@ class BasePriceWriter {
         $this->view_proizv = 0;
         $this->cost_id = 1;
         $this->view_groups = false;
+        $this->view_groupname = true;
     }
 
     /// Сформировать прайс-лист, и отправить его в STDOUT
@@ -60,6 +62,12 @@ class BasePriceWriter {
         $this->view_proizv = $visible;
     }
 
+    /// Включает отображение префикса наименования - печатного наименования группы
+    /// @param $visible true - отображать , false - не отображать
+    public function showGroupName($visible = 1) {
+        $this->view_groupname = $visible;
+    }
+    
     /// Включает режим отображения в прайс-листе только заданных групп товаров
     /// @param $groups Массив с id групп, которые должны быть включены в прайс-лист
     public function setViewGroups($groups) {

@@ -160,15 +160,14 @@ class html extends BasePriceWriter {
             if ($c == 0) {
                 continue;
             }
-            if (($this->view_proizv) && ($nxt['proizv'])) {
-                $pr = " (" . $nxt['proizv'] . ")";
-            } else {
-                $pr = "";
+            $name = $nxt['name'];
+            if($this->view_groupname) {
+                $name = $group_name .' '.$name;
             }
             if (@$CONFIG['site']['price_show_vc']) {
                 echo"<td>" . html_out($nxt['vc']) . "</td>";
             }
-            echo "<td>" . html_out($group_name . $nxt['name'] . $pr) . "</td><td{$cce}>" . $c . "</td>";
+            echo "<td>" . html_out($name) . "</td><td{$cce}>" . $c . "</td>";
 
             $this->line++;
             $i = 1 - $i;

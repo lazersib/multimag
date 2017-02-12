@@ -1792,7 +1792,7 @@ class doc_s_Sklad {
                         WHERE `doc_base_params`.`param`='ym_url'");
                 if (!$res->num_rows) {
                     $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
-                            . " VALUES ('URL Я.Маркет', 'ym_url', 'double', 1)");
+                        . " VALUES ('URL Я.Маркет', 'ym_url', 'double', 1)");
                     $nxt = array(0 => $db->insert_id, 1 => 0);
                 } else
                     $nxt = $res->fetch_row();
@@ -1838,21 +1838,31 @@ class doc_s_Sklad {
                             $db->query("INSERT INTO `doc_base_pcollections_set` (`collection_id`, `param_id`) VALUES ('$collection', '$int_param')");
                         }
                     }
-                    if ($int_param < 1)
+                    if ($int_param < 1) {
                         continue;
+                    }
                     $db->query("UPDATE `doc_base_params` SET `ym_assign`='$param_sql' WHERE `id`='$int_param'");
                 }
-                if ($int_param < 1)
+                if ($int_param < 1) {
                     continue;
+                }
                 $val = $db->real_escape_string($_POST['val'][$id]);
                 $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
-                $log_add.=", $int_param:(=> $val)";
+                $log_add .= ", $int_param:(=> $val)";
             }
             $tmpl->msg("Данные сохранены!", "ok");
-            if ($log_add)
+            if ($log_add) {
                 doc_log("UPDATE", "$log_add", 'pos', $pos);
-        } else
+            }
+        } else if ($param == 'p') {
+            \acl::accessGuard('directory.goods.approve', \acl::VIEW);
+            $tab = request('tab');
+            doc_log("APPROVE", $tab, 'pos', $pos);
+            $tmpl->msg("Пометка о проверке внесена в журнал", "ok");
+        }
+        else {
             $tmpl->msg("Неизвестная закладка");
+        }
     }
 
     /// Формирует html код заданного уровня иерархии групп
@@ -2799,6 +2809,17 @@ class doc_s_Sklad {
         <table width='100%'>
         <tr><td align='center'><input type='submit' value='Сохранить'>
         </table></form>");
+        
+        $tmpl->addContent("<form action='' method='post'>
+        <input type='hidden' name='mode' value='esave'>
+        <input type='hidden' name='l' value='sklad'>
+        <input type='hidden' name='pos' value='$pos_id'>
+        <input type='hidden' name='param' value='p'>
+        <input type='hidden' name='tab' value='d'>
+        <td align='center'><input type='submit' value='Внести журнал запись о подтверждении правильности сведений в карточке'>
+        </form>");
+        
+        
     }
 
 }

@@ -278,9 +278,15 @@ class xls extends BasePriceWriter {
                 $str = iconv('UTF-8', 'windows-1251', $nxt['vc']);
                 $this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]); // код производителя
             }
-
-
-            $name = iconv('UTF-8', 'windows-1251', "$group_name {$nxt['name']}" . (($this->view_proizv && $nxt['proizv']) ? " ({$nxt['proizv']})" : ''));
+            
+            $name = $nxt['name'];
+            if($this->view_groupname) {
+                $name = $group_name .' '.$name;
+            }
+            if($this->view_proizv && $nxt['proizv']) {
+                $name .= " ({$nxt['proizv']})";
+            }
+            $name = iconv('UTF-8', 'windows-1251', $name);
             $this->worksheet->write($this->line, $c++, $name, $this->format_line[$i]); // наименование
 
             $nal = $this->GetCountInfo($nxt['cnt'], $nxt['transit']);

@@ -274,6 +274,12 @@ class sendprice extends \IModule {
         if(!isset($filters['count'])) {
             $filters['count'] = 'all';
         }
+        if(!isset($filters['view_pgroup'])) {
+            $filters['view_pgroup'] = true;
+        }
+        if(!isset($filters['view_vendor'])) {
+            $filters['view_vendor'] = true;
+        }
         $ret .= "<tr><td align='right'>Фильтр по наличию</td><td>";
         foreach($this->cnts as $p_id=>$p_value) {
             $sel = ($p_id==$filters['count'])?' checked':'';
@@ -289,6 +295,14 @@ class sendprice extends \IModule {
             . "<td>".$this->groupSelBlock($filters['groups_only'], $filters['groups_list'])."</td>"
             . "</tr>";
         
+        $pgroup_sel = ($filters['view_pgroup'])?' checked':'';
+        $vendoe_sel = ($filters['view_vendor'])?' checked':'';
+        $ret .= "<tr><td align='right'>Настройки отображения</td>"
+            . "<td>"
+            . "<label><input type='checkbox' name='view_pgroup' value='1'{$pgroup_sel}>Отображать префиксы групп у товаров</label><br>"
+            . "<label><input type='checkbox' name='view_vendor' value='1'{$vendoe_sel}>Отображать производителя у товаров</label><br>"
+            . "</td>"
+            . "</tr>";
         $ret .= "<tr><td align='right'>Тело письма</td>"
             . "<td><textarea name='lettertext'>" . html_out($item['lettertext']) . "</textarea></td>"
             . "</tr>";
@@ -313,6 +327,8 @@ class sendprice extends \IModule {
         $filters = array (
             'vendor' => $data['vendor'],
             'count' => $data['count'],
+            'view_pgroup' => $data['view_pgroup'],
+            'view_vendor' => $data['view_vendor'],
         );
         if(isset($data['gs']) && $data['gs'] && is_array($data['groups'])) {
             $filters['groups_only'] = $data['gs'];
@@ -512,7 +528,7 @@ class sendprice extends \IModule {
                 break;
             case 'save':
                 $id = rcvint('id');
-                $data = requestA( array('name','period','format','use_zip','price_id','vendor','count','lettertext','g','gs') );
+                $data = requestA( array('name','period','format','use_zip','price_id','vendor','count','lettertext','g','gs','view_pgroup','view_vendor') );
                 $data['groups'] = $data['g'];
                 $id = $this->saveItem($id, $data);
                 $tmpl->msg("Данные сохранены", "ok");
