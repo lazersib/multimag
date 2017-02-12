@@ -93,10 +93,10 @@ class priceSender {
                 $pricewriter->setVendorFilter($this->filters['vendor']);
             }
             if( isset($this->filters['view_pgroup']) ) {
-                $pricewriter->showGroupName(!$this->filters['view_pgroup']);
+                $pricewriter->showGroupName($this->filters['view_pgroup']);
             }
             if( isset($this->filters['view_vendor']) ) {
-                $pricewriter->showProizv(!$this->filters['view_vendor']);
+                $pricewriter->showProizv($this->filters['view_vendor']);
             }
         }
 	$this->price_content = $pricewriter->get();   
