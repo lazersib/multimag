@@ -65,11 +65,11 @@ class Report_goods_approve extends BaseGSReport {
 
     /// Сформировать отчёт
     protected function Make() {
-        global $tmpl, $db;
+        global $tmpl;
         $gs = rcvint('gs');
         $g = request('g');
         $show_mode = request('show_mode');
-        
+        $this->count = 0;
         $tmpl->addContent("<h1 id='page-title'>".$this->getName()."</h1>
 		<table class='list' width='100%'>
 		<tr><th>ID</th><th>Наименование</th><th>Пользователь</th><th>Дата</th></tr>
@@ -82,7 +82,8 @@ class Report_goods_approve extends BaseGSReport {
             'users' => $u_ldo->getData(),
         );
         $this->processGroup(0, $vars);  
-        $tmpl->addContent("</table>");   
+        $tmpl->addContent("</table>");
+        $tmpl->addContent("<br>Всего: {$this->count} элементов</b><br>");
     }
     
     protected function processGroup($group_id, $vars) {
@@ -152,6 +153,7 @@ class Report_goods_approve extends BaseGSReport {
             if($show_flag) {
                 $user_name = html_out($vars['users'][$user_id]);
                 $tmpl->addContent("<tr><td><a href='/docs.php?l=sklad&mode=srv&opt=ep&pos={$pos_info['id']}&param=v'>{$pos_info['id']}</td><td>".html_out($pos_info['name'])."</td><td>$user_name ($user_id)</td><td>$time</td></tr>");
+                $this->count++;
             }
         }
     }

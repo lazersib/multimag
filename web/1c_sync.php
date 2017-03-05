@@ -71,6 +71,7 @@ try {
     $start_date = rcvdate('start_date', "1970-01-01");      // Только для полной синхронизации. Начало интервала.    
     $end_date = rcvdate('end_date', date("Y-m-d"));         // Только для полной синхронизации. Конец интервала.
     $mode = request('mode');
+    $format = request('format', 'xml');
     
     if($mode == 'export') {
         $db->startTransaction();
@@ -81,9 +82,15 @@ try {
         $export->setPartialTimeshtamp($partial_time);
         $export->setPeriod($start_date, $end_date);
         $export->setStartCounters( request('startcounters'));
-        $data = $export->getData();    
-        header("Content-type: application/xml");
-        header("Content-Disposition: attachment; filename=1c.xml");
+        if($format=='xml') {
+            $data = $export->getData();    
+            header("Content-type: application/xml");
+            header("Content-Disposition: attachment; filename=1c.xml");
+        } else {
+            $data = $export->getJSONData();
+            header("Content-type: application/json");
+            header("Content-Disposition: attachment; filename=1c.json");
+        }
         echo $data; 
     } else if($mode=='import') {
         $import = new \sync\simplexml1cdataimport($db);

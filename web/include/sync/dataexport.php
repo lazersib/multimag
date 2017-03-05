@@ -78,7 +78,7 @@ class dataexport {
         $ret = array();
         $res = $this->db->query($query);
         while($line = $res->fetch_assoc()) {
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -173,7 +173,7 @@ class dataexport {
             } else {
                 $line['kpp'] = '';
             }
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -218,22 +218,22 @@ class dataexport {
                 WHERE `agent_id`='{$line['id']}'
                 ORDER BY `id`");
             while ($c_line = $c_res->fetch_assoc()) {
-                $contacts[$c_line['id']] = $c_line;
+                $contacts[] = $c_line;
             }
             $line['contacts'] = $contacts;   
             
             // Банковские реквизиты
             $bank_details = array();
-            if($line['rs'] || $line['bank'] || $line['ks'] || $line['bik']) {
+            /*if($line['rs'] || $line['bank'] || $line['ks'] || $line['bik']) {
                 $item = array('rs' => $line['rs'], 'bank_name' => $line['bank'], 'bik' => $line['bik'], 'ks' => $line['ks']);
                 $bank_details[0] = $item;
-            }
+            }*/
             $b_res = $this->db->query("SELECT `id`, `name` AS `bank_name`, `bik`, `ks`, `rs`
                 FROM `agent_banks`
                 WHERE `agent_id`='{$line['id']}'
                 ORDER BY `id`");
             while ($b_line = $b_res->fetch_assoc()) {
-                $bank_details[$b_line['id']] = $b_line;
+                $bank_details[] = $b_line;
             }
             $line['bank_details'] = $bank_details;   
             
@@ -249,7 +249,7 @@ class dataexport {
             unset($line['bik']);
             unset($line['ks']);
             
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -288,8 +288,8 @@ class dataexport {
                 while($c_line = $c_res->fetch_assoc()) {
                     $prices[$c_line['price_id']] = $c_line;
                 }
-                $line['prices'] = $prices;
-            }
+                //$line['prices'] = $prices;
+            }/*
             // Attachments
             $c_res = $this->db->query("SELECT `attachment_id` FROM  `doc_base_attachments` WHERE `pos_id`='{$line['id']}'");
             if($c_res->num_rows) {
@@ -327,8 +327,9 @@ class dataexport {
                     $values[] = $c_line;
                 }
                 $line['params'] = $values;
-            }
-            $ret[$line['id']] = $line;
+            }*/
+            unset($line['desc']);
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -433,11 +434,11 @@ class dataexport {
             if($price_res->num_rows) {
                 $prices = array();
                 while($price_line = $price_res->fetch_assoc()) {
-                    $prices[$price_line['price_id']] = $price_line;
+                    $prices[] = $price_line;
                 }
                 $line['prices'] = $prices;
             }
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }        
         return $ret;
     }
@@ -522,11 +523,11 @@ class dataexport {
                     if($nom_line['page_id']==0) {
                         unset($nom_line['page_id']);
                     }
-                    $positions[$nom_line['id']] = $nom_line;
+                    $positions[] = $nom_line;
                 }
                 $line['positions'] = $positions;
             }
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -552,11 +553,11 @@ class dataexport {
             foreach ($stores as $store_id) {
                 $cnt = getStoreCntOnDate($nxt['id'], $store_id, $this->start_time);
                 if($cnt!=0) {
-                    $data[$store_id] = $cnt;
+                    $data[] = ['store_id'=>$store_id, 'count'=>$cnt];
                 }
             }
             if(count($data)>0) {
-                $storedata[$nxt['id']] = $data;
+                $storedata[] = ['pos_id'=>$nxt['id'], 'data'=>$data];
             }
         }
         $debtdata = array();
@@ -566,16 +567,16 @@ class dataexport {
             foreach ($firms as $firm_id) {
                 $cnt = agentCalcDebt($nxt['id'], true, $firm_id, $this->db, $this->start_time);
                 if($cnt!=0) {
-                    $data[$firm_id] = $cnt;
+                    $data[] = ['firm_id'=>$firm_id, 'count'=>$cnt];
                 }
             }
             if(count($data)>0) {
-                $debtdata[$nxt['id']] = $data;
+                $debtdata[$nxt['id']] = ['agent_id'=>$nxt['id'], 'data'=>$data];
             }
         }
         return array(
             'nomenclature' => $storedata,
-            'debts' => $debtdata
+            'balance' => $debtdata
         );
     }
     
