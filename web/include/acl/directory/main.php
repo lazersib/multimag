@@ -76,7 +76,7 @@ class main extends \acl\aclContainer {
             ),
             'goods.approve' => array(
                 "name" => "Товары и услуги: Подтверждение правильности",
-                "mask" => \acl::UPDATE
+                "mask" => \acl::VIEW | \acl::UPDATE
             ),
             'bank' => array(
                 "name" => "Банки",

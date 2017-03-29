@@ -31,17 +31,27 @@ class doc_Postuplenie extends doc_Nulltype {
     }
 
     function initDefDopdata() {
-        $this->def_dop_data = array('kladovshik' => $this->firm_vars['firm_kladovshik_id'], 'input_doc' => '', 'input_date' => '', 'return' => 0, 'cena' => 1);
+        $this->def_dop_data = array(
+            'kladovshik' => $this->firm_vars['firm_kladovshik_id'],
+            'input_doc' => '',
+            'input_date' => '',
+            'sf_num' => '',
+            'sf_date' => '',
+            'return' => 0,
+            'cena' => 1);
     }
 
     function dopHead() {
         global $tmpl, $db;
         $klad_id = $this->dop_data['kladovshik'];
-        if (!$klad_id)
+        if (!$klad_id) {
             $klad_id = $this->firm_vars['firm_kladovshik_id'];
+        }
         $tmpl->addContent("<hr>");
-        $tmpl->addContent("Ном. вх. документа:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
-        $tmpl->addContent("Дата. вх. документа:<br><input type='text' name='input_date' value='{$this->dop_data['input_date']}'><br>");
+        $tmpl->addContent("Ном. вх. накладной:<br><input type='text' name='input_doc' value='{$this->dop_data['input_doc']}'><br>");
+        $tmpl->addContent("Дата. вх. накладной:<br><input type='text' name='input_date' value='{$this->dop_data['input_date']}'><br>");
+        $tmpl->addContent("Ном. вх. счет-фактуры:<br><input type='text' name='sf_num' value='{$this->dop_data['sf_num']}'><br>");
+        $tmpl->addContent("Дата. вх. счет-фактуры:<br><input type='text' name='sf_date' value='{$this->dop_data['sf_date']}'><br>");
         $checked = $this->dop_data['return'] ? 'checked' : '';
         $tmpl->addContent("<label><input type='checkbox' name='return' value='1' $checked>Возвратный документ</label><hr>
 		Кладовщик:<br><select name='kladovshik'>
@@ -58,6 +68,8 @@ class doc_Postuplenie extends doc_Nulltype {
         $new_data = array(
             'input_doc' => request('input_doc'),
             'input_date' => rcvdate('input_date'),
+            'sf_num' => request('sf_num'),
+            'sf_date' => rcvdate('sf_date'),
             'return' => rcvint('return'),
             'kladovshik' => rcvint('kladovshik')
         );

@@ -100,6 +100,12 @@ class Xml1cDataExport extends \sync\dataexport {
             $line['items'] = $this->getNomenclatureListData();
             $data['refbooks']['nomenclature'] = $line;
         }
+        
+         // Документы
+        $data['documents'] = $this->getDocumentsData();
+        $data['doctypes'] = $this->doctypes_list;
+        
+        
         return json_encode($data, JSON_UNESCAPED_UNICODE);
     }
     

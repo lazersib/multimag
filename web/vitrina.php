@@ -1766,7 +1766,7 @@ protected function BuyAuthForm() {
 
     /// Заключительная форма оформления покупки
     protected function BuyMakeForm() {
-        global $tmpl, $CONFIG;
+        global $tmpl;
         if (@$_SESSION['uid']) {
             $up = getUserProfile($_SESSION['uid']);
             $str = 'Товар будет зарезервирован для Вас на 3 рабочих дня.';
@@ -1800,15 +1800,18 @@ protected function BuyAuthForm() {
 	<br>
 
 	$email_field");
-        if (is_array($CONFIG['payments']['types'])) {
+        $pay_def = \cfg::get('payments', 'default');
+        if (is_array(\cfg::get('payments', 'types'))) {
             $tmpl->addContent("<br>Способ оплаты:<br>");
-            foreach ($CONFIG['payments']['types'] as $type => $val) {
-                if (!$val)
+            foreach (\cfg::get('payments', 'types') as $type => $val) {
+                if (!$val) {
                     continue;
-                if ($type == @$CONFIG['payments']['default'])
+                }
+                if ($type == $pay_def) {
                     $checked = ' checked';
-                else
+                } else {
                     $checked = '';
+                }
                 switch ($type) {
                     case 'cash': $s = "<label><input type='radio' name='pay_type' value='$type' id='soplat_nal'$checked>Наличный расчет.
 				<b>Только самовывоз</b>, расчет при отгрузке. $str</label><br>";
@@ -1880,7 +1883,10 @@ protected function BuyAuthForm() {
         }
 
         if (@$_SESSION['uid']) {
-            $res = $db->query("UPDATE `users` SET `real_name`='$rname_sql', `real_address`='$adres_sql' WHERE `id`='{$_SESSION['uid']}'");
+            $db->updateA('users', $_SESSION['uid'], [
+                'real_address'=>@$_SESSION['basket']['delivery_address'],
+                'real_name'=>$rname,
+            ]);            
             $res = $db->query("REPLACE `users_data` (`uid`, `param`, `value`) VALUES ('{$_SESSION['uid']}', 'dop_info', '$comment_sql') ");
             // Получить ID агента
             $res = $db->query("SELECT `name`, `reg_email`, `reg_date`, `reg_email_subscribe`, `real_name`, `reg_phone`, `real_address`, `agent_id` FROM `users` WHERE `id`='{$_SESSION['uid']}'");
@@ -1902,11 +1908,8 @@ protected function BuyAuthForm() {
             $pc = $this->priceCalcInit();
             $basket_items = $basket->getItems();
 
-            if (!isset($CONFIG['site']['vitrina_subtype'])) {
-                $subtype = "site";
-            } else {
-                $subtype = $CONFIG['site']['vitrina_subtype'];
-            }
+            $subtype = \cfg::get('site', 'vitrina_subtype', 'site');
+            
             $tm = time();
             $altnum = GetNextAltNum(3, $subtype, 0, date('Y-m-d'), $pref->site_default_firm_id);
             $ip = getenv("REMOTE_ADDR");
@@ -1925,10 +1928,21 @@ protected function BuyAuthForm() {
             } else {
                 $uid = 0;
             }
-
-            $res = $db->query("INSERT INTO doc_list (`type`,`agent`,`date`,`sklad`,`user`,`nds`,`altnum`,`subtype`,`comment`,`firm_id`,`bank`)
-		VALUES ('3','$agent','$tm','{$pref->site_default_store_id}','$uid','1','$altnum','$subtype','$comment_sql','{$pref->site_default_firm_id}','$bank')");
-            $doc = $db->insert_id;
+            
+            $doc_data = [
+                'type' => 3,
+                'agent' => $agent,
+                'date' => $tm,
+                'firm_id' => $pref->site_default_firm_id,
+                'sklad' => $pref->site_default_store_id,
+                'bank' => $bank,
+                'user' => $uid,
+                'nds' => 1,
+                'altnum' => $altnum,
+                'subtype' => $subtype,
+                'comment' => $comment,
+            ];
+            $doc = $db->insertA('doc_list', $doc_data);
 
             $res = $db->query("REPLACE INTO `doc_dopdata` (`doc`, `param`, `value`) VALUES ('$doc', 'ishop', '1'),  ('$doc', 'buyer_email', '$email_sql'), ('$doc', 'buyer_phone', '$phone'), ('$doc', 'buyer_rname', '$rname_sql'), ('$doc', 'buyer_ip', '$ip'), ('$doc', 'delivery', '$delivery'), ('$doc', 'delivery_date', '$delivery_date'), ('$doc', 'delivery_address', '$adres_sql'), ('$doc', 'delivery_region', '$delivery_region'), ('$doc', 'pay_type', '$pay_type')");
 
@@ -1938,7 +1952,13 @@ protected function BuyAuthForm() {
                 settype($item['pos_id'], 'int');
 
                 $price = $pc->getPosAutoPriceValue($item['pos_id'], $item['cnt']);
-                $db->insertA('doc_list_pos', array('doc' => $doc, 'tovar' => $item['pos_id'], 'cnt' => $item['cnt'], 'cost' => $price, 'comm' => $item['comment']));
+                $db->insertA('doc_list_pos', array(
+                    'doc' => $doc,
+                    'tovar' => $item['pos_id'],
+                    'cnt' => $item['cnt'],
+                    'cost' => $price,
+                    'comm' => $item['comment']
+                ));
 
                 $res = $db->query("SELECT `doc_base`.`id`, CONCAT(`doc_group`.`printname`, ' ' , `doc_base`.`name`) AS `pos_name`,
                         `doc_base`.`proizv` AS `vendor`, `doc_base`.`vc`, `doc_base`.`cost` AS `base_price`, 
@@ -1963,9 +1983,10 @@ protected function BuyAuthForm() {
                     $lock = 1;
                     $lock_mark = 1;
                 }
-
-                if (@$CONFIG['site']['vitrina_cntlock'] || @$CONFIG['site']['vitrina_pricelock']) {
-                    if (@$CONFIG['site']['vitrina_cntlock']) {
+                $cnt_lock = \cfg::get('site', 'vitrina_cntlock') ;
+                $price_lock = \cfg::get('site', 'vitrina_pricelock') ;
+                if ( $cnt_lock || $price_lock) {
+                    if ($cnt_lock) {
                         if ($pref->getSitePref('site_store_id')) {
                             $sklad_id = round($pref->getSitePref('site_store_id'));
                             $res = $db->query("SELECT `doc_base_cnt`.`cnt` FROM `doc_base_cnt` WHERE `id`='{$item['pos_id']}' AND `sklad`='$sklad_id'");
@@ -1984,7 +2005,7 @@ protected function BuyAuthForm() {
                             $lock_mark = 1;
                         }
                     }
-                    if (@$CONFIG['site']['vitrina_pricelock']) {
+                    if ($price_lock) {
                         if (strtotime($pos_info['cost_date']) < (time() - 60 * 60 * 24 * 30 * 6)) {
                             $lock = 1;
                             $lock_mark = 1;
@@ -2016,23 +2037,23 @@ protected function BuyAuthForm() {
                 $text.="\nLogin отправителя: " . $_SESSION['name'];
             }
             $text.="----------------------------------\n" . $admin_items;
-
-            if ($CONFIG['site']['doc_adm_jid']) {
+            
+            if ($pref->getSitePref['jid']) {
                 try {
                     require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
                     $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r' . MULTIMAG_REV);
                     $xmppclient->connect();
                     $xmppclient->processUntil('session_start');
                     $xmppclient->presence();
-                    $xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
+                    $xmppclient->message($pref->getSitePref['jid'], $text);
                     $xmppclient->disconnect();
                 } catch (XMPPHP_Exception $e) {
                     writeLogException($e);
                     $tmpl->errorMessage("Невозможно отправить сообщение XMPP!", "err");
                 }
             }
-            if ($CONFIG['site']['doc_adm_email']) {
-                mailto($CONFIG['site']['doc_adm_email'], "Message from {$pref->site_name}", $text);
+            if ($pref->getSitePref['email']) {
+                mailto($pref->getSitePref['email'], "Message from {$pref->site_name}", $text);
             }
 
             if (@$_SESSION['uid']) {

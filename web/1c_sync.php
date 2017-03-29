@@ -25,6 +25,8 @@ if(!@$_SERVER['HTTPS'] && (@$CONFIG['site']['force_https'] || @$CONFIG['site']['
     redirect('https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI']);
 }
 
+$format = request('format', 'xml');
+
 try {
     $login = request('login');
     $password = request('password');
@@ -71,14 +73,14 @@ try {
     $start_date = rcvdate('start_date', "1970-01-01");      // Только для полной синхронизации. Начало интервала.    
     $end_date = rcvdate('end_date', date("Y-m-d"));         // Только для полной синхронизации. Конец интервала.
     $mode = request('mode');
-    $format = request('format', 'xml');
+    
     
     if($mode == 'export') {
         $db->startTransaction();
         set_time_limit(600);
         $export = new \sync\Xml1cDataExport($db);
         $export->setRefbooksList( request('refbooks', null) );
-        $export->setDocTypesList( request('doctypes', null) );
+        $export->setDocTypesList( request('doc_types', null) );
         $export->setPartialTimeshtamp($partial_time);
         $export->setPeriod($start_date, $end_date);
         $export->setStartCounters( request('startcounters'));
@@ -116,38 +118,72 @@ try {
     }
 } 
 catch (mysqli_sql_exception $e) {
-    $dom = new domDocument("1.0", "utf-8");
-    $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
-    $root->setAttribute('version', '1.0');
-    $dom->appendChild($root);
-    
-    $lognum = writeLogException($e);
-    $result = $dom->createElement('result');            // Код возврата
-    $result_code = $dom->createElement('status', 'err');
-    $result_desc = $dom->createElement('message', "Ошибка в базе данных (код:".$e->getCode().", номер:$lognum): ".$e->getMessage());
-    $result->appendChild($result_code);
-    $result->appendChild($result_desc);
-    $root->appendChild($result);
-    
-    header("Content-type: application/xml");
-    echo $dom->saveXML(); 
+    if($format=='xml') {
+        $dom = new domDocument("1.0", "utf-8");
+        $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
+        $root->setAttribute('version', '1.0');
+        $dom->appendChild($root);
+
+        $lognum = writeLogException($e);
+        $result = $dom->createElement('result');            // Код возврата
+        $result_code = $dom->createElement('status', 'err');
+        $result_desc = $dom->createElement('message', "Ошибка в базе данных (код:".$e->getCode().", номер:$lognum): ".$e->getMessage());
+        $result->appendChild($result_code);
+        $result->appendChild($result_desc);
+        $root->appendChild($result);
+
+        header("Content-type: application/xml");
+        echo $dom->saveXML();
+    }
+    else {
+        $data = array(
+            'multimag_exchange' => 'Yes',
+            'version' => '1.2',
+            'result' => array(
+                'status' => 'err',
+                'message' =>  "Ошибка в базе данных (код:".$e->getCode().", номер:$lognum): ".$e->getMessage(),
+                'timestamp' => time()-1,
+            ),
+        );
+        
+        header("Content-type: application/json");
+        header("Content-Disposition: attachment; filename=1c.json");
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    }
     writeLogException($e);
 }
 catch (Exception $e) {
-    $dom = new domDocument("1.0", "utf-8");
-    $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
-    $root->setAttribute('version', '1.0');
-    $dom->appendChild($root);
-    
-    $result = $dom->createElement('result');            // Код возврата
-    $result_code = $dom->createElement('status', 'err');
-    $result_desc = $dom->createElement('message', $e->getMessage());
-    $result->appendChild($result_code);
-    $result->appendChild($result_desc);
-    $root->appendChild($result);
-    
-    header("Content-type: application/xml");
-    echo $dom->saveXML(); 
+    if($format=='xml') {
+        $dom = new domDocument("1.0", "utf-8");
+        $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
+        $root->setAttribute('version', '1.0');
+        $dom->appendChild($root);
+
+        $result = $dom->createElement('result');            // Код возврата
+        $result_code = $dom->createElement('status', 'err');
+        $result_desc = $dom->createElement('message', $e->getMessage());
+        $result->appendChild($result_code);
+        $result->appendChild($result_desc);
+        $root->appendChild($result);
+
+        header("Content-type: application/xml");
+        echo $dom->saveXML(); 
+    }
+    else {
+        $data = array(
+            'multimag_exchange' => 'Yes',
+            'version' => '1.2',
+            'result' => array(
+                'status' => 'err',
+                'message' =>  $e->getMessage(),
+                'timestamp' => time()-1,
+            ),
+        );
+        
+        header("Content-type: application/json");
+        header("Content-Disposition: attachment; filename=1c.json");
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    }
 }
 
 unset($_SESSION['uid']);

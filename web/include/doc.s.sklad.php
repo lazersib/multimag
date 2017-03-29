@@ -23,8 +23,9 @@
 class doc_s_Sklad {
 
     function __construct() {
-        $this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty', 'eol',
-            'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt',
+        $this->pos_vars = array('group', 'type_id', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock',
+            'warranty', 'eol', 'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 
+            'mult', 'bulkcnt', 
             'analog_group', 'mass', 'nds');
         $this->dop_vars = array('type', 'analog', 'd_int', 'd_ext', 'size', 'ntd');
         $this->group_vars = array('name', 'desc', 'pid', 'hidelevel', 'printname', 'no_export_yml', 'title_tag', 'meta_keywords', 'meta_description');
@@ -409,6 +410,8 @@ class doc_s_Sklad {
         $wt0_check = $form_data['warranty_type'] ? '' : 'checked';
         $wt1_check = $form_data['warranty_type'] ? 'checked' : '';        
 
+        $ldo = new \Models\LDO\nomtypes();
+        
         $ret .= "<form action='' method='post'>
             <input type='hidden' name='mode' value='esave'>
             <input type='hidden' name='l' value='sklad'>
@@ -416,7 +419,11 @@ class doc_s_Sklad {
             <input type='hidden' name='pd[id]' value='$pos_id'>
             <table cellpadding='0' width='100%' class='list'>
             <tr><td align='right' width='20%'>$pos_type_html</td>
-            <td colspan='3'><input type='text' name='pd[name]' value='" . html_out($form_data['name']) . "' style='width: 95%'>$image_html
+            <td><input type='text' name='pd[name]' value='" . html_out($form_data['name']) . "' style='width: 95%'>
+            <td align='right'>Тип номенклатуры</td><td>".
+                \widgets::getEscapedSelect('pd[type_id]', $ldo->getData(), $form_data['type_id'], 'не назначен').
+            "</td>
+            $image_html
             <tr><td align='right'>Группа</td>
                 <td>" . selectGroupPos('pd[group]', $form_data['group'], false, '', '', \cfg::get('store', 'leaf_only', false) ) . "</td>
                 <td align='right'>Имя группы аналогов:<br><small>Аналогами будут товары<br>с совпадающим значением поля</small></td>

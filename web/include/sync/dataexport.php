@@ -52,14 +52,14 @@ class dataexport {
     public function setRefbooksList($refbooks_list = null) {        
         $this->refbooks_list = $refbooks_list;
         if(!is_array($this->refbooks_list)) {
-            $this->refbooks_list = $this->drl;
+            $this->refbooks_list = array();
         }
     }
     
     public function setDocTypesList($doctypes_list) {        
         $this->doctypes_list = $doctypes_list;
         if(!is_array($this->doctypes_list)) {
-            $this->doctypes_list = $this->ddl;
+            $this->doctypes_list = array();
         }
     }
     
@@ -257,7 +257,8 @@ class dataexport {
     /// Получить данные справочника списка номенклатуры
     public function getNomenclatureListData() {
         $ret = array();
-        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`pos_type` AS `type`, `doc_base`.`name`, 
+        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`type_id`,
+                `doc_base`.`pos_type` AS `type`, `doc_base`.`name`, 
                 `doc_base`.`vc` AS `vendor_code`, `doc_base`.`country` AS `country_id`, `class_country`.`number_code` AS `country_code`,
                 `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_base`.`unit` AS `unit_id`, `class_unit`.`number_code` AS `unit_code`,
                 `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`create_time`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, 
@@ -457,7 +458,7 @@ class dataexport {
     /// Получить документы
     public function getDocumentsData() {
         $ret = array();
-        $res = $this->db->query("SELECT `id`, `type`, `agent`, `date`, `ok`, `sklad` AS `store_id`, `kassa` AS `till_id`, `bank` AS `bank_id`,
+        $res = $this->db->query("SELECT `id`, `type`, `agent` AS `agent_id`, `date`, `ok`, `sklad` AS `store_id`, `kassa` AS `till_id`, `bank` AS `bank_id`,
                 `user` AS `author_id`, `altnum`, `subtype`, `sum`, `nds`, `p_doc` AS `parent_doc_id`, `mark_del`, `firm_id`, `contract` AS `contract_id`,
                 `comment` 
             FROM `doc_list`

@@ -93,7 +93,7 @@ class pref {
     public function __get($name) {
         switch($name) {
             case 'site':
-                return $this->default_site;
+                return $this->current_site;
             case 'sites':
                 return $this->sites_data;
             case 'site_display_name':
