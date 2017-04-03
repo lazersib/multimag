@@ -513,20 +513,26 @@ class dataexport {
             while($dl = $dop_res->fetch_assoc()) {
                   $line['td_'.$dl['param']] = $dl['value'];
             }
-
+            
             // Таблица номенклатуры
-            $nom_res = $this->db->query("SELECT `id`, `tovar` AS `pos_id`, `cnt`, `cost` AS `price`, `gtd`, `comm`, `page` AS `page_id`
-                FROM  `doc_list_pos` 
-                WHERE `doc`='{$line['id']}'");
-            if($nom_res->num_rows) {
-                $positions = array();
-                while($nom_line = $nom_res->fetch_assoc()) {
-                    if($nom_line['page_id']==0) {
-                        unset($nom_line['page_id']);
+            if($line['type']=='realizaciya') {
+                $doc_obj = \document::getInstanceFromDb($line['id']);
+                $line['positions'] = $doc_obj->getDocumentNomenclatureWVATandNums();
+            }
+            else {
+                $nom_res = $this->db->query("SELECT `id`, `tovar` AS `pos_id`, `cnt`, `cost` AS `price`, `gtd`, `comm`, `page` AS `page_id`
+                    FROM  `doc_list_pos` 
+                    WHERE `doc`='{$line['id']}'");
+                if($nom_res->num_rows) {
+                    $positions = array();
+                    while($nom_line = $nom_res->fetch_assoc()) {
+                        if($nom_line['page_id']==0) {
+                            unset($nom_line['page_id']);
+                        }
+                        $positions[] = $nom_line;
                     }
-                    $positions[] = $nom_line;
+                    $line['positions'] = $positions;
                 }
-                $line['positions'] = $positions;
             }
             $ret[] = $line;
         }

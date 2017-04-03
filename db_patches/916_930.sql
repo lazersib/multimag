@@ -8,4 +8,4 @@ ALTER TABLE `users_worker_info`
 
 
 TRUNCATE `db_version`;
-INSERT INTO `db_version` (`version`) VALUES (929);
+INSERT INTO `db_version` (`version`) VALUES (930);

@@ -301,7 +301,7 @@ class upd extends \doc\printforms\iPrintFormPdf {
                 sprintf("%01.2f", $line['sum']),
                 $line['country_code'],
                 $line['country_name'],
-                $line['ncd']);
+                $line['gtd']);
             $lsy = $this->pdf->GetY();
             $this->pdf->RowIconv($row);
             $this->pdf->SetLineWidth($this->line_bold_w);

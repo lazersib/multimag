@@ -1913,8 +1913,8 @@ protected function BuyAuthForm() {
             $tm = time();
             $altnum = GetNextAltNum(3, $subtype, 0, date('Y-m-d'), $pref->site_default_firm_id);
             $ip = getenv("REMOTE_ADDR");
-            if ($pref->site_default_bank_id) {
-                $bank = $pref->site_default_bank_id;
+            if ($pref->getSitePref("default_bank_id")) {
+                $bank = $pref->getSitePref("default_bank_id");
             } else {
                 $res = $db->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `firm_id`='{$pref->site_default_firm_id}'");
                 if ($res->num_rows < 1) {
@@ -1933,8 +1933,8 @@ protected function BuyAuthForm() {
                 'type' => 3,
                 'agent' => $agent,
                 'date' => $tm,
-                'firm_id' => $pref->site_default_firm_id,
-                'sklad' => $pref->site_default_store_id,
+                'firm_id' => $pref->getSitePref("default_firm_id"),
+                'sklad' => $pref->getSitePref("default_store_id"),
                 'bank' => $bank,
                 'user' => $uid,
                 'nds' => 1,
@@ -2038,22 +2038,22 @@ protected function BuyAuthForm() {
             }
             $text.="----------------------------------\n" . $admin_items;
             
-            if ($pref->getSitePref['jid']) {
+            if ($pref->getSitePref('jid')) {
                 try {
                     require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
                     $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r' . MULTIMAG_REV);
                     $xmppclient->connect();
                     $xmppclient->processUntil('session_start');
                     $xmppclient->presence();
-                    $xmppclient->message($pref->getSitePref['jid'], $text);
+                    $xmppclient->message($pref->getSitePref('jid'), $text);
                     $xmppclient->disconnect();
                 } catch (XMPPHP_Exception $e) {
                     writeLogException($e);
                     $tmpl->errorMessage("Невозможно отправить сообщение XMPP!", "err");
                 }
             }
-            if ($pref->getSitePref['email']) {
-                mailto($pref->getSitePref['email'], "Message from {$pref->site_name}", $text);
+            if ($pref->getSitePref('email')) {
+                mailto($pref->getSitePref('email'), "Message from {$pref->site_name}", $text);
             }
 
             if (@$_SESSION['uid']) {

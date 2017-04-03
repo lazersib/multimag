@@ -2308,7 +2308,8 @@ class doc_Nulltype extends \document {
         $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
             `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, 
             `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`, `class_unit`.`number_code` AS `unit_code`, 
-            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`
+            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`, `doc_list_pos`.`comm`,
+            `doc_list_pos`.`id` AS `line_id`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -2356,7 +2357,7 @@ class doc_Nulltype extends \document {
                         $cnt = $line['cnt'];
                         while ($cnt > 0) {
                             if (count($gtd_array) == 0) {
-                                if ($CONFIG['poseditor']['true_gtd'] != 'easy') {
+                                if (\cfg::get('poseditor', 'true_gtd') != 'easy') {
                                     throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt['name']} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
                                 } else {
                                     $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $cnt);
@@ -2408,6 +2409,8 @@ class doc_Nulltype extends \document {
                 foreach ($unigtd as $gtd => $cnt) {
                     $pos = $this->calcVAT($nxt['cost'], $cnt, $nds);
                     $list[] = array(
+                        'id' => $nxt['line_id'],
+                        'pos_id' => $nxt['pos_id'],
                         'code' => $pos_code,
                         'name' => $pos_name,
                         'unit_code' => $nxt['unit_code'],
@@ -2421,13 +2424,16 @@ class doc_Nulltype extends \document {
                         'sum' => round($pos['sum'], 2),
                         'country_code' => $nxt['country_code'],
                         'country_name' => $nxt['country_name'],
-                        'ncd' => $gtd,
-                        'mass' => $nxt['mass']
+                        'gtd' => $gtd,
+                        'mass' => $nxt['mass'],
+                        'comm' => $nxt['comm'],
                     );
                 }
             } else {
                 $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $nds);
                 $list[] = array(
+                    'id' => $nxt['line_id'],
+                    'pos_id' => $nxt['pos_id'],
                     'code' => $pos_code,
                     'name' => $pos_name,
                     'unit_code' => $nxt['unit_code'],
@@ -2441,8 +2447,9 @@ class doc_Nulltype extends \document {
                     'sum' => round($pos['sum'], 2),
                     'country_code' => $nxt['country_code'],
                     'country_name' => $nxt['country_name'],
-                    'ncd' => $nxt['ntd'],
-                    'mass' => $nxt['mass']
+                    'gtd' => $nxt['ntd'],
+                    'mass' => $nxt['mass'],
+                    'comm' => $nxt['comm'],
                 );
             }
         }
