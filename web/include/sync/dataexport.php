@@ -515,25 +515,40 @@ class dataexport {
             }
             
             // Таблица номенклатуры
+            $positions = array();
             if($line['type']=='realizaciya') {
                 $doc_obj = \document::getInstanceFromDb($line['id']);
-                $line['positions'] = $doc_obj->getDocumentNomenclatureWVATandNums();
+                $noms = $doc_obj->getDocumentNomenclatureWVATandNums();
+                foreach($noms as $item) {
+                    $positions[] = array(
+                        'id' => $item['line_id'],
+                        'pos_id' => $item['pos_id'],
+                        'cnt' => $item['cnt'],
+                        'price' => $item['orig_price'],
+                        'gtd' => trim($item['gtd']),
+                        'comm' => $item['comm'],
+                        'country_code' => $item['country_code'],
+                    );
+                }
             }
             else {
-                $nom_res = $this->db->query("SELECT `id`, `tovar` AS `pos_id`, `cnt`, `cost` AS `price`, `gtd`, `comm`, `page` AS `page_id`
-                    FROM  `doc_list_pos` 
+                $nom_res = $this->db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`
+                        , `doc_list_pos`.`cost` AS `price`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`page` AS `page_id`
+                        , `class_country`.`number_code` AS `country_code`
+                    FROM  `doc_list_pos`
+                    INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                    LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
                     WHERE `doc`='{$line['id']}'");
-                if($nom_res->num_rows) {
-                    $positions = array();
+                if($nom_res->num_rows) {                    
                     while($nom_line = $nom_res->fetch_assoc()) {
                         if($nom_line['page_id']==0) {
                             unset($nom_line['page_id']);
                         }
                         $positions[] = $nom_line;
-                    }
-                    $line['positions'] = $positions;
+                    }                    
                 }
             }
+            $line['positions'] = $positions;
             $ret[] = $line;
         }
         return $ret;

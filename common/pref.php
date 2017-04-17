@@ -57,7 +57,7 @@ class pref {
                 'default_firm_id' => \cfg::get('site', 'default_firm'),
                 'default_bank_id' => \cfg::get('site', 'default_bank'),
                 'default_cash_id' => \cfg::get('site', 'default_kass'),
-                'default_agent_id' => \cfg::get('site', 'default_agent'),
+                'default_agent_id' => \cfg::get('site', 'default_agent_id'),
                 'default_store_id' => \cfg::get('site', 'default_sklad'),
                 'site_store_id' => \cfg::get('site', 'vitrina_sklad'),
             );

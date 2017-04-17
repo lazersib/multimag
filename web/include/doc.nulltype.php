@@ -2328,7 +2328,8 @@ class doc_Nulltype extends \document {
             $nds = $ndsp / 100;
 
             if (!$nxt['country_code']) {
-                throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
+                //throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
+                $nxt['country_code'] = 0;
             }
 
             $pos_name = $nxt['name'];
@@ -2400,7 +2401,7 @@ class doc_Nulltype extends \document {
                     }
                 }
                 if ($need_cnt > 0) {
-                    if ($CONFIG['poseditor']['true_gtd'] != 'easy') {
+                    if (\cfg::get('poseditor', 'true_gtd') != 'easy') {
                         throw new Exception("Не найдены поступления для $need_cnt единиц товара {$pos_name}. Товар был оприходован на другую организацию?");
                     } else {
                         $unigtd['   --   '] = $need_cnt;
@@ -2409,7 +2410,7 @@ class doc_Nulltype extends \document {
                 foreach ($unigtd as $gtd => $cnt) {
                     $pos = $this->calcVAT($nxt['cost'], $cnt, $nds);
                     $list[] = array(
-                        'id' => $nxt['line_id'],
+                        'line_id' => $nxt['line_id'],
                         'pos_id' => $nxt['pos_id'],
                         'code' => $pos_code,
                         'name' => $pos_name,
@@ -2417,6 +2418,7 @@ class doc_Nulltype extends \document {
                         'unit_name' => $nxt['unit_name'],
                         'cnt' => $cnt,
                         'price' => $pos['price'],
+                        'orig_price' => $nxt['cost'],
                         'sum_wo_vat' => round($pos['sum_wo_vat'], 2),
                         'excise' => 'без акциза',
                         'vat_p' => $ndsp,
@@ -2432,7 +2434,7 @@ class doc_Nulltype extends \document {
             } else {
                 $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $nds);
                 $list[] = array(
-                    'id' => $nxt['line_id'],
+                    'line_id' => $nxt['line_id'],
                     'pos_id' => $nxt['pos_id'],
                     'code' => $pos_code,
                     'name' => $pos_name,
@@ -2440,6 +2442,7 @@ class doc_Nulltype extends \document {
                     'unit_name' => $nxt['unit_name'],
                     'cnt' => $nxt['cnt'],
                     'price' => $pos['price'],
+                    'orig_price' => $nxt['cost'],
                     'sum_wo_vat' => round($pos['sum_wo_vat'], 2),
                     'excise' => 'без акциза',
                     'vat_p' => $ndsp,
