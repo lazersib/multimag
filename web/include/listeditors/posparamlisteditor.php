@@ -100,7 +100,7 @@ class PosParamListEditor extends \ListEditor {
     }
 
     public function getFieldType($data) {
-        if ($data['type']) {
+        if($data['type'] && isset($this->types[$data['type']])) {
             return html_out($this->types[$data['type']]);
         } else {
             return '-- не задано --';

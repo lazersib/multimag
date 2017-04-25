@@ -24,7 +24,7 @@ class ntpl {}
 $tmpl = new ntpl();
 
 
-$db = @ new MysqiExtended($CONFIG['mysql']['host'], $CONFIG['mysql']['login'], $CONFIG['mysql']['pass'], $CONFIG['mysql']['db']);
+$db = new MysqiExtended(\cfg::get('mysql', 'host'), \cfg::get('mysql', 'login'), \cfg::get('mysql', 'pass'), \cfg::get('mysql', 'db'));
 
 if ($db->connect_error) {
     die("Ошибка соединения с базой данных");
@@ -38,7 +38,7 @@ if (!$db->set_charset("utf8")) {
 }
 
 function run_periodically_actions($interval) {
-    global $db, $executed, $verbose;
+    global $executed, $verbose;
     $verbose = 0;
 
     try {
@@ -67,7 +67,11 @@ function run_periodically_actions($interval) {
                     return false;
                 }
                 $nm = $action->getName();
+                if($verbose) {
+                    echo $nm . '...';
+                }                
                 if(!$action->isEnabled()) {
+                    echo " ОТКЛЮЧЕНО.\n";
                     return false;
                 }    
                 foreach ($action->getDepends() as $dep_name) {
@@ -76,9 +80,7 @@ function run_periodically_actions($interval) {
                         return false;
                     }
                 }
-                if($verbose) {
-                    echo $nm . '...';
-                }
+                
                 $action->setVerbose();
                 $action->run();
                 $executed[] = $action_name;

@@ -32,6 +32,7 @@
 *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+namespace excel\writer;
 require_once 'PEAR.php';
 
 /**
@@ -51,7 +52,7 @@ require_once 'PEAR.php';
 * @package  Spreadsheet_Excel_Writer
 */
 
-class Spreadsheet_Excel_Writer_BIFFwriter extends PEAR
+class BIFFwriter extends \PEAR
 {
     /**
     * The BIFF/Excel version (5).
@@ -95,7 +96,7 @@ class Spreadsheet_Excel_Writer_BIFFwriter extends PEAR
     *
     * @access public
     */
-    function Spreadsheet_Excel_Writer_BIFFwriter()
+    function __construct()
     {
         $this->_byte_order = '';
         $this->_data       = '';

@@ -1255,13 +1255,12 @@ class doc_Nulltype extends \document {
     function sendDocByEMail($email, $comment, $docname, $data, $filename, $body = '') {
         global $CONFIG, $db;
         $pref = \pref::getInstance();
-        require_once($CONFIG['location'] . '/common/email_message.php');
         $res_autor = $db->query("SELECT `worker_real_name`, `worker_phone`, `worker_email` FROM `users_worker_info`
             WHERE `user_id`='" . $this->doc_data['user'] . "'");
         $doc_autor = $res_autor->fetch_assoc();
         $agent = new \models\agent($this->doc_data['agent']);
 
-        $email_message = new email_message_class();
+        $email_message = new \email_message();
         $email_message->default_charset = "UTF-8";
         if ($agent->fullname) {
             $email_message->SetEncodedEmailHeader("To", $email, $agent->fullname);
@@ -2285,7 +2284,8 @@ class doc_Nulltype extends \document {
         $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
             `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, 
             `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`, `class_unit`.`number_code` AS `unit_code`, 
-            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`
+            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`, `doc_list_pos`.`comm`,
+            `doc_list_pos`.`id` AS `line_id`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
 	LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_list_pos`.`tovar`
@@ -2304,7 +2304,8 @@ class doc_Nulltype extends \document {
             $nds = $ndsp / 100;
 
             if (!$nxt['country_code']) {
-                throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
+                //throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
+                $nxt['country_code'] = 0;
             }
 
             $pos_name = $nxt['name'];
@@ -2333,7 +2334,7 @@ class doc_Nulltype extends \document {
                         $cnt = $line['cnt'];
                         while ($cnt > 0) {
                             if (count($gtd_array) == 0) {
-                                if ($CONFIG['poseditor']['true_gtd'] != 'easy') {
+                                if (\cfg::get('poseditor', 'true_gtd') != 'easy') {
                                     throw new \Exception("Не найдены поступления для $cnt единиц товара {$nxt['name']} (для реализации N{$line['id']} в прошлом). Товар был оприходован на другую организацию?");
                                 } else {
                                     $gtd_array[] = array('num' => $line['gtd'], 'cnt' => $cnt);
@@ -2376,7 +2377,7 @@ class doc_Nulltype extends \document {
                     }
                 }
                 if ($need_cnt > 0) {
-                    if ($CONFIG['poseditor']['true_gtd'] != 'easy') {
+                    if (\cfg::get('poseditor', 'true_gtd') != 'easy') {
                         throw new Exception("Не найдены поступления для $need_cnt единиц товара {$pos_name}. Товар был оприходован на другую организацию?");
                     } else {
                         $unigtd['   --   '] = $need_cnt;
@@ -2385,12 +2386,15 @@ class doc_Nulltype extends \document {
                 foreach ($unigtd as $gtd => $cnt) {
                     $pos = $this->calcVAT($nxt['cost'], $cnt, $nds);
                     $list[] = array(
+                        'line_id' => $nxt['line_id'],
+                        'pos_id' => $nxt['pos_id'],
                         'code' => $pos_code,
                         'name' => $pos_name,
                         'unit_code' => $nxt['unit_code'],
                         'unit_name' => $nxt['unit_name'],
                         'cnt' => $cnt,
                         'price' => $pos['price'],
+                        'orig_price' => $nxt['cost'],
                         'sum_wo_vat' => round($pos['sum_wo_vat'], 2),
                         'excise' => 'без акциза',
                         'vat_p' => $ndsp,
@@ -2398,19 +2402,23 @@ class doc_Nulltype extends \document {
                         'sum' => round($pos['sum'], 2),
                         'country_code' => $nxt['country_code'],
                         'country_name' => $nxt['country_name'],
-                        'ncd' => $gtd,
-                        'mass' => $nxt['mass']
+                        'gtd' => $gtd,
+                        'mass' => $nxt['mass'],
+                        'comm' => $nxt['comm'],
                     );
                 }
             } else {
                 $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $nds);
                 $list[] = array(
+                    'line_id' => $nxt['line_id'],
+                    'pos_id' => $nxt['pos_id'],
                     'code' => $pos_code,
                     'name' => $pos_name,
                     'unit_code' => $nxt['unit_code'],
                     'unit_name' => $nxt['unit_name'],
                     'cnt' => $nxt['cnt'],
                     'price' => $pos['price'],
+                    'orig_price' => $nxt['cost'],
                     'sum_wo_vat' => round($pos['sum_wo_vat'], 2),
                     'excise' => 'без акциза',
                     'vat_p' => $ndsp,
@@ -2418,8 +2426,9 @@ class doc_Nulltype extends \document {
                     'sum' => round($pos['sum'], 2),
                     'country_code' => $nxt['country_code'],
                     'country_name' => $nxt['country_name'],
-                    'ncd' => $nxt['ntd'],
-                    'mass' => $nxt['mass']
+                    'gtd' => $nxt['ntd'],
+                    'mass' => $nxt['mass'],
+                    'comm' => $nxt['comm'],
                 );
             }
         }

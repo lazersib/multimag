@@ -132,6 +132,9 @@ class FirmListEditor extends \ListEditor {
         if(!isset($data['firm_till_lock'])) {
             $data['firm_till_lock'] = 0;
         }
+        if(!isset($data['no_retailprices'])) {
+            $data['no_retailprices'] = 0;
+        }
         return parent::saveItem($id, $data);
     }
 }

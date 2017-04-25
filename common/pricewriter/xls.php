@@ -27,6 +27,7 @@ class xls extends BasePriceWriter {
     var $format_line; // формат для строк наименований прайса
     var $a_format_line; // формат для строк наименований прайса для серой цены
     var $format_group; // формат для строк групп прайса
+    protected $tmp_filename; // Имя временного файла для генерации прайса
 
     /// Конструктор
 
@@ -37,12 +38,20 @@ class xls extends BasePriceWriter {
 
     /// Сформировать шапку прайса
     function open() {
-        require_once('include/Spreadsheet/Excel/Writer.php');
+        //require_once('Spreadsheet/Excel/Writer.php');
         global $CONFIG;
-        $pref = \pref::getInstance();
-        $this->workbook = new \Spreadsheet_Excel_Writer();
-        // sending HTTP headers
-        $this->workbook->send('price.xls');
+        $pref = \pref::getInstance();        
+        
+        if($this->to_string) {
+            $tmp_dir = sys_get_temp_dir();
+            $this->tmp_filename = tempnam($tmp_dir, "price_");
+            $this->workbook = new \excel\writerHelper($this->tmp_filename);
+        }
+        else {
+            $this->workbook = new \excel\writerHelper('');
+            // sending HTTP headers
+            $this->workbook->send('price.xls');
+        }
 
         // Creating a worksheet
         $this->worksheet = & $this->workbook->addWorksheet($pref->site_name);
@@ -223,6 +232,11 @@ class xls extends BasePriceWriter {
         $this->worksheet->write($this->line, 0, $str, $this->format_footer);
         $this->worksheet->setMerge($this->line, 0, $this->line, $this->column_count - 1);
         $this->workbook->close();
+        if($this->to_string) {
+            $buffer = file_get_contents($this->tmp_filename);
+            @unlink($this->tmp_filename);
+            return $buffer;
+        }
     }
 
     /// Сформировать строки прайса
@@ -242,14 +256,21 @@ class xls extends BasePriceWriter {
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
         $i = 0;
 
-        if (@$CONFIG['site']['grey_price_days']) {
-            $cce_time = $CONFIG['site']['grey_price_days'] * 60 * 60 * 24;
-        }
+        $cce_time = \cfg::get('site', 'grey_price_days', 0) * 60 * 60 * 24;
 
         $pc = \PriceCalc::getInstance();
         $pref = \pref::getInstance();
         $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
+            if($this->vendor_filter!='' && $nxt['proizv']!=$this->vendor_filter) {
+                continue;
+            }
+            if($this->count_filter=='instock' && $nxt['cnt']<=0) {
+                continue;
+            }
+            if($this->count_filter=='intransit' && $nxt['cnt']<=0 && $nxt['transit']<=0) {
+                continue;
+            }
             $c = 0;
             $this->worksheet->write($this->line, $c++, $nxt['id'], $this->format_line[$i]); // номер
 
@@ -257,9 +278,15 @@ class xls extends BasePriceWriter {
                 $str = iconv('UTF-8', 'windows-1251', $nxt['vc']);
                 $this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]); // код производителя
             }
-
-
-            $name = iconv('UTF-8', 'windows-1251', "$group_name {$nxt['name']}" . (($this->view_proizv && $nxt['proizv']) ? " ({$nxt['proizv']})" : ''));
+            
+            $name = $nxt['name'];
+            if($this->view_groupname) {
+                $name = $group_name .' '.$name;
+            }
+            if($this->view_proizv && $nxt['proizv']) {
+                $name .= " ({$nxt['proizv']})";
+            }
+            $name = iconv('UTF-8', 'windows-1251', $name);
             $this->worksheet->write($this->line, $c++, $name, $this->format_line[$i]); // наименование
 
             $nal = $this->GetCountInfo($nxt['cnt'], $nxt['transit']);
@@ -274,7 +301,7 @@ class xls extends BasePriceWriter {
 
             $format = $this->format_line[$i];
             
-            if (@$CONFIG['site']['grey_price_days']) {
+            if($cce_time) {
                 if (strtotime($nxt['cost_date']) < $cce_time) {
                     $format = $this->a_format_line[$i];
                 }

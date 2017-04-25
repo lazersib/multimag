@@ -48,8 +48,11 @@ try {
 } catch (NotFoundException $e) {
     $db->query("ROLLBACK");
     $tmpl->setContent("");
-    $tmpl->errorMessage($e->getMessage());    
-    $tmpl->addContent("<a href='/intkb.php?p=" . html_out(strip_tags($p)) . "&amp;sect=edit'>Создать статью</a>");
+
+    $tmpl->errorMessage($e->getMessage());   
+    $edit_link = $wikipage->getEditLink(strip_tags($p));
+    $tmpl->addContent("<a href='$edit_link'>Создать статью</a>");
+
 } catch (Exception $e) {
     $db->query("ROLLBACK");
     $tmpl->addContent("<br><br>");

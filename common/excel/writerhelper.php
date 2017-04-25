@@ -1,5 +1,6 @@
 <?php
 /*
+*  Module modifed by BlackLight, 2010 - 2016, blacklight@tndproject.org
 *  Module written/ported by Xavier Noguer <xnoguer@rezebra.com>
 *
 *  PERL Spreadsheet::WriteExcel module.
@@ -30,9 +31,9 @@
 *    License along with this library; if not, write to the Free Software
 *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+namespace excel;
 
 require_once 'PEAR.php';
-require_once 'include/Spreadsheet/Excel/Writer/Workbook.php';
 
 /**
 * Class for writing Excel Spreadsheets. This class should change COMPLETELY.
@@ -42,19 +43,7 @@ require_once 'include/Spreadsheet/Excel/Writer/Workbook.php';
 * @package  Spreadsheet_Excel_Writer
 */
 
-class Spreadsheet_Excel_Writer extends Spreadsheet_Excel_Writer_Workbook
-{
-    /**
-    * The constructor. It just creates a Workbook
-    *
-    * @param string $filename The optional filename for the Workbook.
-    * @return Spreadsheet_Excel_Writer_Workbook The Workbook created
-    */
-    function Spreadsheet_Excel_Writer($filename = '')
-    {
-        $this->_filename = $filename;
-        $this->Spreadsheet_Excel_Writer_Workbook($filename);
-    }
+class writerHelper extends writer\workbook {
 
     /**
     * Send HTTP headers for the Excel file.
@@ -84,7 +73,7 @@ class Spreadsheet_Excel_Writer extends Spreadsheet_Excel_Writer_Workbook
     function rowcolToCell($row, $col)
     {
         if ($col > 255) { //maximum column value exceeded
-            return new PEAR_Error("Maximum column value exceeded: $col");
+            return new \PEAR_Error("Maximum column value exceeded: $col");
         }
 
         $int = (int)($col / 26);
@@ -101,4 +90,4 @@ class Spreadsheet_Excel_Writer extends Spreadsheet_Excel_Writer_Workbook
         return $chr1 . $chr2 . $row;
     }
 }
-?>
+

@@ -17,46 +17,23 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+namespace Actions;
 
-/// Базовый класс для действий
-abstract class action {
-    const MANUAL = 0;
-    const HOURLY = 1;
-    const DAILY = 2;
-    const WEEKLY = 3;
-    const MONTHLY = 4;
+/// Рассылка ежедневных прайс-листов
+class pricesenddaily extends \pricesendaction {
 
-    protected $db;
-    protected $config;
-    protected $verbose = false;
-    protected $depends = array();   // Зависимости
-
-    protected $interval = self::MANUAL;
-
-    /// @brief Конструктор
+    /// Конструктор
     public function __construct($config, $db) {
-        $this->db = $db;
-        $this->config = $config;
-    }
-        
-    public function setVerbose($flag = true) {
-        $this->verbose = $flag;
+        parent::__construct($config, $db);
+        $this->interval = self::DAILY;
     }
     
-    public function getDepends() {
-        return $this->depends;
+    public function getName() {
+        return "Рассылка ежедневных прайс-листов";
     }
-    
-    public function getInterval() {
-        return $this->interval;
-    }
-    
-    /// Получить имя действия
-    abstract public function getName();
     
     /// Проверить, разрешен ли периодический запуск действия
-    abstract public function isEnabled();
-    
-    /// Запустить задачу
-    abstract public function run();
+    public function isEnabled() {
+        return \cfg::get('auto', 'pricesend');
+    }    
 }

@@ -18,9 +18,8 @@
 // +----------------------------------------------------------------------+
 //
 // $Id: File.php,v 1.12 2008/02/02 21:00:37 schmidt Exp $
+namespace excel\ole\pps;
 
-
-require_once 'include/OLE/PPS.php';
 require_once 'System.php';
 
 /**
@@ -30,8 +29,7 @@ require_once 'System.php';
 * @category Structures
 * @package  OLE
 */
-class OLE_PPS_File extends OLE_PPS
-{
+class File extends \excel\ole\pps {
     /**
     * The temporary dir for storing the OLE file
     * @var string
@@ -45,10 +43,10 @@ class OLE_PPS_File extends OLE_PPS
     * @param string $name The name of the file (in Unicode)
     * @see OLE::Asc2Ucs()
     */
-    function OLE_PPS_File($name)
+    function __construct($name)
     {
         $this->_tmp_dir = sys_get_temp_dir();
-        $this->OLE_PPS(
+        parent::__construct(
             null, 
             $name,
             OLE_PPS_TYPE_FILE,
@@ -122,4 +120,4 @@ class OLE_PPS_File extends OLE_PPS
         $this->ole->getStream($this);
     }
 }
-?>
+

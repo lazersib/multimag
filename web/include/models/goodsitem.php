@@ -28,7 +28,7 @@ class goodsitem {
     protected $img_data = array();      /// Данные изображений
     protected $def_img_data = array();  /// Данные изображения по умолчанию
     
-    protected $fields = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty', 'eol',
+    protected $fields = array('group', 'type_id', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty', 'eol',
             'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt',
             'analog_group', 'mass', 'nds');
     

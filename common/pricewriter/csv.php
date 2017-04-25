@@ -25,13 +25,19 @@ class csv extends BasePriceWriter {
     var $divider;  //< Разделитель
     var $shielder;  //< Экранирование строк
     var $line;  //< Текущая строка
+    var $buffer;
+    var $column_count;
+    protected $svc;
 
     /// Конструктор
     function __construct($db) {
         parent::__construct($db);
-        $this->divider = ",";
+        $this->divider = ";";
         $this->shielder = '"';
         $this->line = 0;
+        $this->buffer = '';
+        $this->column_count = 1;
+        $this->svc = \cfg::get('site', 'price_show_vc');
     }
 
     /// Установить символ разделителя колонок
@@ -41,6 +47,12 @@ class csv extends BasePriceWriter {
         if ($this->divider != ";" && $this->divider != ":") {
             $this->divider = ",";
         }
+    }
+    
+    /// Задать колонок
+    /// @param $divider Символ разделителя колонок (,;:)
+    function setColumnsCount($count = 1) {
+        $this->column_count = $count;
     }
 
     /// Установить символ экранирования строк
@@ -53,27 +65,23 @@ class csv extends BasePriceWriter {
     }
 
     /// Сформировать шапку прайса
-    function open() {
-        global $CONFIG;
-        header("Content-Type: text/csv; charset=utf-8");
-        header("Content-Disposition: attachment; filename=price_list.csv;");
+    function open() {        
         for ($i = 0; $i < $this->column_count; $i++) {
-            if (@$CONFIG['site']['price_show_vc']) {
-                echo $this->shielder . "Код" . $this->shielder . $this->divider;
+            if ($this->svc) {
+                $this->buffer.= $this->shielder . "Код" . $this->shielder . $this->divider;
             }
-            echo $this->shielder . "Название" . $this->shielder . $this->divider . $this->shielder . "Цена" . $this->shielder;
+            $this->buffer.= $this->shielder . "Название" . $this->shielder . $this->divider . $this->shielder . "Цена" . $this->shielder;
             if ($i < ($this->column_count - 1)) {
-                echo $this->divider . $this->shielder . $this->shielder . $this->divider;
+                $this->buffer.=  $this->divider . $this->shielder . $this->shielder . $this->divider;
             }
         }
-        echo "\n";
+        $this->buffer.= "\n";
         $this->line++;
     }
 
     /// Сформирвать тело прайса
     /// param $group id номенклатурной группы
     function write($group = 0) {
-        global $CONFIG;
         $res = $this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `id`");
         while ($nxt = $res->fetch_row()) {
             if ($nxt[0] == 0) {
@@ -86,11 +94,11 @@ class csv extends BasePriceWriter {
             }
 
             $this->line++;
-            if (@$CONFIG['site']['price_show_vc']) {
-                echo $this->divider;
+            if ($this->svc) {
+                $this->buffer.= $this->divider;
             }
-            echo $this->shielder . $nxt[1] . $this->shielder;
-            echo"\n";
+            $this->buffer.= $this->shielder . $nxt[1] . $this->shielder;
+            $this->buffer.="\n";
             $this->writepos($nxt[0], $nxt[2]);
             $this->write($nxt[0]); // рекурсия
         }
@@ -98,29 +106,41 @@ class csv extends BasePriceWriter {
 
     /// Сформировать завершающий блок прайса
     function close() {
-        global $CONFIG;
         $pref = \pref::getInstance();
-        echo"\n\n";
+        $this->buffer.="\n\n";
         $this->line+=5;
-        if (@$CONFIG['site']['price_show_vc']) {
-            echo $this->divider;
+        if ($this->svc) {
+            $this->buffer.= $this->divider;
         }
-        echo $this->shielder . "Generated from MultiMag (http://multimag.tndproject.org), for http://" . $pref->site_name . $this->shielder;
+        $this->buffer.= $this->shielder . "Generated from MultiMag (http://multimag.tndproject.org), for http://" . $pref->site_name . $this->shielder;
         $this->line++;
-        echo"\n";
-        if (@$CONFIG['site']['price_show_vc']) {
-            echo $this->divider;
+        $this->buffer.="\n";
+        if ($this->svc) {
+            $this->buffer.= $this->divider;
         }
-        echo $this->shielder . "Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://" . $pref->site_name . $this->shielder;
+        $this->buffer.= $this->shielder . "Прайс создан системой MultiMag (http://multimag.tndproject.org), специально для http://" . $pref->site_name . $this->shielder;
+        if($this->to_string) {
+            return $this->buffer;
+        }
+        else {
+            header("Content-Type: text/csv; charset=utf-8");
+            header("Content-Disposition: attachment; filename=price_list.csv;");
+            header("Content-Length: ".strlen($this->buffer));
+            echo $this->buffer;
+        }
     }
 
     /// Сформировать строки прайса
     /// param $group id номенклатурной группы
     function writepos($group = 0) {
-        global $CONFIG;
-        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,
-			`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
+        $pref = \pref::getInstance();
+        $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
+
+        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`name`, `doc_base`.`cost_date` , `doc_base`.`proizv`, `doc_base`.`vc`,		
+			( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where) AS `cnt`,
+				`doc_base_dop`.`transit`, `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`, `doc_base`.`group`
 		FROM `doc_base`
+                LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 		LEFT JOIN `doc_group` ON `doc_base`.`group`=`doc_group`.`id`
 		WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' ORDER BY `doc_base`.`name`");
         $i = $cur_col = 0;
@@ -128,11 +148,20 @@ class csv extends BasePriceWriter {
         $pref = \pref::getInstance();
         $pc->setFirmId($pref->getSitePref('default_firm_id'));
         while ($nxt = $res->fetch_assoc()) {
+            if($this->vendor_filter!='' && $nxt['proizv']!=$this->vendor_filter) {
+                continue;
+            }
+            if($this->count_filter=='instock' && $nxt['cnt']<=0) {
+                continue;
+            }
+            if($this->count_filter=='intransit' && $nxt['cnt']<=0 && $nxt['transit']<=0) {
+                continue;
+            }            
             if ($cur_col >= $this->column_count) {
                 $cur_col = 0;
-                echo"\n";
+                $this->buffer.="\n";
             } else if ($cur_col != 0) {
-                echo $this->divider . $this->shielder . $this->shielder . $this->divider;
+                $this->buffer.= $this->divider . $this->shielder . $this->shielder . $this->divider;
             }
 
             $c = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
@@ -144,16 +173,15 @@ class csv extends BasePriceWriter {
             } else {
                 $pr = "";
             }
-            if (@$CONFIG['site']['price_show_vc']) {
-                echo $this->shielder . $nxt['vc'] . $this->shielder . $this->divider;
+            if ($this->svc) {
+                $this->buffer.= $this->shielder . $nxt['vc'] . $this->shielder . $this->divider;
             }
-            echo $this->shielder . $nxt['name'] . $pr . $this->shielder . $this->divider . $this->shielder . $c . $this->shielder;
+            $this->buffer.= $this->shielder . $nxt['name'] . $pr . $this->shielder . $this->divider . $this->shielder . $c . $this->shielder;
 
             $this->line++;
             $i = 1 - $i;
             $cur_col++;
         }
-        echo"\n\n";
+        $this->buffer.="\n\n";
     }
-
 }

@@ -72,7 +72,8 @@ $CONFIG['auto']['agent_discount_notify']= true;	// Периодически ув
 $CONFIG['auto']['badpricenotify']       = true;	// Периодически уведомлять сотрудников о проблемах с ценами
 $CONFIG['auto']['clear_image_cahe']	= 14;	// Периодически стирать изображения из кеша, через Х дней
 $CONFIG['auto']['chpricenotify']	= false;// Периодически уведомлять обо всех изменениях цен
-$CONFIG['auto']['red_event_doc_notify'] = true;
+$CONFIG['auto']['red_event_doc_notify'] = true; // Уведомлять о красных событиях в документах
+$CONFIG['auto']['pricesend']            = true; // Выполнять периодическую рассылку прайсов
 
 $CONFIG['badpricenotify']['threshold_low'] = 10;    // Порог оповещений о понижении цены, в %
 $CONFIG['badpricenotify']['threshold_high'] = 20;   // Порог оповещений о повышении цены, в %

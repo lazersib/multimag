@@ -1,5 +1,6 @@
 <?php
 /*
+*  Module modifed by BlackLight, 2010 - 2016, blacklight@tndproject.org
 *  Module written/ported by Xavier Noguer <xnoguer@rezebra.com>
 *
 *  The majority of this is _NOT_ my code.  I simply ported it from the
@@ -32,12 +33,17 @@
 *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+namespace excel\writer;
+
+/*
 require_once 'include/Spreadsheet/Excel/Writer/Format.php';
 require_once 'include/Spreadsheet/Excel/Writer/BIFFwriter.php';
 require_once 'include/Spreadsheet/Excel/Writer/Worksheet.php';
 require_once 'include/Spreadsheet/Excel/Writer/Parser.php';
 require_once 'include/OLE/PPS/Root.php';
 require_once 'include/OLE/PPS/File.php';
+ * 
+ */
 
 /**
 * Class for generating Excel Spreadsheets
@@ -47,8 +53,7 @@ require_once 'include/OLE/PPS/File.php';
 * @package  Spreadsheet_Excel_Writer
 */
 
-class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwriter
-{
+class workbook extends biffwriter {
     /**
     * Filename for the Workbook
     * @var string
@@ -171,13 +176,12 @@ class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwri
     * @param string filename for storing the workbook. "-" for writing to stdout.
     * @access public
     */
-    function Spreadsheet_Excel_Writer_Workbook($filename)
-    {
+    function __construct($filename='') {
         // It needs to call its parent's constructor explicitly
-        $this->Spreadsheet_Excel_Writer_BIFFwriter();
+        parent::__construct();
 
         $this->_filename         = $filename;
-        $this->_parser           = new Spreadsheet_Excel_Writer_Parser($this->_byte_order, $this->_BIFF_version);
+        $this->_parser           = new Parser($this->_byte_order, $this->_BIFF_version);
         $this->_1904             = 0;
         $this->_activesheet      = 0;
         $this->_firstsheet       = 0;
@@ -186,7 +190,7 @@ class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwri
         $this->_fileclosed       = 0;
         $this->_biffsize         = 0;
         $this->_sheetname        = 'Sheet';
-        $this->_tmp_format       = new Spreadsheet_Excel_Writer_Format($this->_BIFF_version);
+        $this->_tmp_format       = new Format($this->_BIFF_version);
         $this->_worksheets       = array();
         $this->_sheetnames       = array();
         $this->_formats          = array();
@@ -332,7 +336,7 @@ class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwri
             }
         }
 
-        $worksheet = new Spreadsheet_Excel_Writer_Worksheet($this->_BIFF_version,
+        $worksheet = new Worksheet($this->_BIFF_version,
                                    $name, $index,
                                    $this->_activesheet, $this->_firstsheet,
                                    $this->_str_total, $this->_str_unique,
@@ -355,7 +359,7 @@ class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwri
     */
     function &addFormat($properties = array())
     {
-        $format = new Spreadsheet_Excel_Writer_Format($this->_BIFF_version, $this->_xf_index, $properties);
+        $format = new Format($this->_BIFF_version, $this->_xf_index, $properties);
         $this->_xf_index += 1;
         $this->_formats[] = &$format;
         return $format;
@@ -367,11 +371,8 @@ class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwri
      * @access public
      * @return &Spreadsheet_Excel_Writer_Validator reference to a Validator
      */
-    function &addValidator()
-    {
-        include_once 'Spreadsheet/Excel/Writer/Validator.php';
-        /* FIXME: check for successful inclusion*/
-        $valid = new Spreadsheet_Excel_Writer_Validator($this->_parser);
+    function &addValidator() {
+        $valid = new Validator($this->_parser);
         return $valid;
     }
 
@@ -566,9 +567,9 @@ class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwri
     function _storeOLEFile()
     {
         if($this->_BIFF_version == 0x0600) {
-            $OLE = new OLE_PPS_File(OLE::Asc2Ucs('Workbook'));
+            $OLE = new \excel\ole\pps\File(\excel\ole\OLE::Asc2Ucs('Workbook'));
         } else {
-            $OLE = new OLE_PPS_File(OLE::Asc2Ucs('Book'));
+            $OLE = new \excel\ole\pps\File(\excel\ole\OLE::Asc2Ucs('Book'));
         }
         if ($this->_tmp_dir != '') {
             $OLE->setTempDir($this->_tmp_dir);
@@ -586,7 +587,7 @@ class Spreadsheet_Excel_Writer_Workbook extends Spreadsheet_Excel_Writer_BIFFwri
             }
         }
 
-        $root = new OLE_PPS_Root(time(), time(), array($OLE));
+        $root = new \excel\ole\pps\Root(time(), time(), array($OLE));
         if ($this->_tmp_dir != '') {
             $root->setTempDir($this->_tmp_dir);
         }

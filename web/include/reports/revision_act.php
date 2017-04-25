@@ -448,9 +448,8 @@ class Report_Revision_Act extends BaseReport {
                 /// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 $data = $pdf->Output('rev_act.pdf', 'S');
                 $pref = \pref::getInstance();
-                require_once($CONFIG['location'] . '/common/email_message.php');
 
-                $email_message = new email_message_class();
+                $email_message = new \email_message();
                 $email_message->default_charset = "UTF-8";
                 if ($agent->fullname) {
                     $email_message->SetEncodedEmailHeader("To", $email, $agent->fullname);

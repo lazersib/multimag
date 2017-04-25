@@ -20,7 +20,6 @@
 
 namespace actions;
 
-require_once($CONFIG['location'] . '/common/email_message.php');
 require_once($CONFIG['location'] . '/web/include/doc.core.php');
 
 /// Информирование о потенциально неверных ценах наименований при помощи email
@@ -148,7 +147,7 @@ class BadPriceNotify extends \Action {
         if($this->verbose) {
             echo $mail_text;
         }
-        $email_message = new \email_message_class();
+        $email_message = new \email_message();
         $email_message->default_charset = "UTF-8";
         $email_message->SetEncodedEmailHeader("To", $email, $email);
         $email_message->SetEncodedHeader("Subject", 'Уведомление о проблемах с ценами - ' . $site_name);

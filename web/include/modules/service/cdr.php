@@ -240,7 +240,7 @@ class CDR extends \IModule {
 
     protected function getWorkerPhonesInverse($db) {
         $data = array();
-        $res = $db->query("SELECT `user_id`, `worker_phone` FROM `users_worker_info` WHERE `worker_phone`!='' ORDER BY `worker`");
+        $res = $db->query("SELECT `user_id`, `worker_int_fix_phone` FROM `users_worker_info` WHERE `worker_int_fix_phone`!='' ORDER BY `worker`");
         while($nxt = $res->fetch_row()) {
             $data[$nxt[1]] = $nxt[0];
         }

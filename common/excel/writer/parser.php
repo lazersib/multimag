@@ -6,7 +6,7 @@
 *
 *    Spreadsheet_Excel_Writer:  A library for generating Excel Spreadsheets
 *    Copyright (c) 2002-2003 Xavier Noguer xnoguer@rezebra.com
-*    Copyright (c) 2013 Blacklight blacklight@tndproject.org
+*    Copyright (c) 2013-2016 Blacklight blacklight@tndproject.org
 *
 *    This library is free software; you can redistribute it and/or
 *    modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,8 @@
 *    License along with this library; if not, write to the Free Software
 *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+
+namespace excel\writer;
 
 /**
 * @const SPREADSHEET_EXCEL_WRITER_ADD token identifier for character "+"
@@ -108,7 +110,7 @@ require_once 'PEAR.php';
 * @package  Spreadsheet_Excel_Writer
 */
 
-class Spreadsheet_Excel_Writer_Parser extends PEAR
+class Parser extends \PEAR
 {
     /**
     * The index of the character we are currently looking at
@@ -170,7 +172,7 @@ class Spreadsheet_Excel_Writer_Parser extends PEAR
     * @param integer $byte_order The byte order (Little endian or Big endian) of the architecture
                                  (optional). 1 => big endian, 0 (default) little endian.
     */
-    function Spreadsheet_Excel_Writer_Parser($byte_order, $biff_version)
+    function __construct($byte_order, $biff_version)
     {
         $this->_current_char  = 0;
         $this->_BIFF_version  = $biff_version;
@@ -1701,4 +1703,4 @@ class Spreadsheet_Excel_Writer_Parser extends PEAR
         return $polish;
     }
 }
-?>
+

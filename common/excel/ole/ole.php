@@ -19,6 +19,7 @@
 //
 // $Id: OLE.php,v 1.15 2007/12/18 20:59:11 schmidt Exp $
 
+namespace excel\ole;
 
 /**
 * Constants for OLE package
@@ -47,7 +48,7 @@ $GLOBALS['_OLE_INSTANCES'] = array();
 * @author   Xavier Noguer <xnoguer@php.net>
 * @author   Christian Schmidt <schmidt@php.net>
 */
-class OLE extends PEAR
+class OLE extends \PEAR
 {
 
     /**
@@ -96,7 +97,7 @@ class OLE extends PEAR
     * Creates a new OLE object
     * @access public
     */
-    function OLE()
+    function __construct()
     {
         $this->_list = array();
     }
@@ -567,4 +568,4 @@ class OLE extends PEAR
         return floor($big_date);
     }
 }
-?>
+

@@ -18,8 +18,6 @@
 //
 namespace Actions;
 
-require_once($CONFIG['location'].'/common/email_message.php');
-
 /// Информирование агентов об их накопительных скидках при помощи email
 class agentDiscountNotify extends \Action {
 	
@@ -240,7 +238,7 @@ class agentDiscountNotify extends \Action {
                     . "http://{$site_name}/login.php?mode=unsubscribe&email={$agent_info['email']}&from=email\n";
                 $list_id = 'adn.' . date("dmY") . '.' . $site_name;
 
-                $email_message = new \email_message_class();
+                $email_message = new \email_message();
                 $email_message->default_charset = "UTF-8";
                 $email_message->SetEncodedEmailHeader("To", $agent_info['email'], $agent_info['email']);
                 $email_message->SetEncodedHeader("Subject", 'Уведомление о скидках - ' . $site_name);

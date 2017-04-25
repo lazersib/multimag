@@ -47,12 +47,15 @@ try {
 	<li><a href='?mode=banks'>Банки</a></li>
 	<li><a href='?mode=kass'>Кассы</a></li>
 	<li><a href='?mode=stores'>Склады</a></li>
-	<li><a href='?mode=pos_types'>Типы товаров</a></li>
+        <li>Номенклатура</li><ul>
+            <li><a href='?mode=nom_types'>Типы номенклатуры</a></li>
+            <li><a href='?mode=dop_types'>Типы товаров</a></li>            
+            <li><a href='?mode=params'>Свойства</a></li>
+                <ul><li><a href='?mode=gparams'>Группы свойств</a></li></li>
+            <li><a href='?mode=param_collections'>Наборы свойств</a></li>
+        </ul>
 	<li><a href='?mode=cost'>Цены</a></li>
-        <li><a href='?mode=gparams'>Группы свойств складской номенклатуры</a></li>
-	<li><a href='?mode=params'>Свойства складской номенклатуры</a></li>
-	<li><a href='?mode=param_collections'>Наборы свойств складской номенклатуры</a></li>	
-	<li><a href='?mode=units'>Единицы измерения</a></li>
+        <li><a href='?mode=units'>Единицы измерения</a></li>
         <li><a href='?mode=regions'>Регионы доставки</a></li>
         <li><a href='?mode=shiptypes'>Способы доставки</a></li>
         <li><a href='?mode=ctemplates'>Шаблоны договоров</a></li>
@@ -682,10 +685,16 @@ try {
         $editor->link_prefix = '/doc_service.php?mode=stores';
         $editor->acl_object_name = 'directory.storelist';
         $editor->run();
-    } elseif ($mode == 'pos_types') {
+    } elseif ($mode == 'nom_types') {
+        $editor = new \ListEditors\nomTypesEditor($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=nom_types';
+        $editor->acl_object_name = 'directory.nomtypes';
+        $editor->run();
+    } elseif ($mode == 'dop_types') {
         $editor = new \ListEditors\PosTypesListEditor($db);
         $editor->line_var_name = 'id';
-        $editor->link_prefix = '/doc_service.php?mode=pos_types';
+        $editor->link_prefix = '/doc_service.php?mode=dop_types';
         $editor->acl_object_name = 'directory.postype';
         $editor->run();
     } elseif ($mode == 'gparams') {

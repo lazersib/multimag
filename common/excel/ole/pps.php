@@ -19,9 +19,9 @@
 //
 // $Id: PPS.php,v 1.7 2007/02/13 21:00:42 schmidt Exp $
 
+namespace excel\ole;
 
 require_once 'PEAR.php';
-require_once 'OLE.php';
 
 /**
 * Class for creating PPS's for OLE containers
@@ -30,7 +30,7 @@ require_once 'OLE.php';
 * @category Structures
 * @package  OLE
 */
-class OLE_PPS extends PEAR
+class PPS extends \PEAR
 {
     /**
     * The PPS index
@@ -125,7 +125,8 @@ class OLE_PPS extends PEAR
     * @param string  $data  The (usually binary) source data of the PPS
     * @param array   $children Array containing children PPS for this PPS
     */
-    function OLE_PPS($No, $name, $type, $prev, $next, $dir, $time_1st, $time_2nd, $data, $children)
+    //function __construct($No, $name, $type, $prev=null, $next=null, $dir=null, $time_1st=null, $time_2nd=null, $data=null, $children=[])
+    function __construct($No, $name, $type, $prev, $next, $dir, $time_1st, $time_2nd, $data, $children)
     {
         $this->No      = $No;
         $this->Name    = $name;
@@ -219,4 +220,4 @@ class OLE_PPS extends PEAR
         return $this->No;
     }
 }
-?>
+

@@ -41,13 +41,72 @@ class Xml1cDataExport extends \sync\dataexport {
                 if(is_array($value)) {
                     $param_node = $this->convertToXmlElement($name, substr($name, 0, -1), $value);
                 } else {
-                    $param_node = $this->dom->createElement($name, $value);
+                    $param_node = $this->dom->createElement($name, htmlspecialchars($value));
                 }
                 $item_node->appendChild($param_node);
             }
             $res_node->appendChild($item_node);
         }
         return $res_node;
+    }
+    
+    public function getJSONData() {
+        // Выгрузка справочника номенклатуры
+        $data = $this->createJSONStruct();
+        $data['refbooks'] = array();
+        // Выгрузка справочника собственных организаций
+        if (in_array('firms', $this->refbooks_list)) {
+            $data['refbooks']['firms'] = $this->getFirmsData();
+        }
+        // Выгрузка справочника складов
+        if (in_array('stores', $this->refbooks_list)) {
+            $data['refbooks']['stores'] = $this->getStoresData();
+        }
+        // Выгрузка справочника касс
+        if (in_array('tills', $this->refbooks_list)) {
+            $data['refbooks']['tills'] = $this->getTillsData();
+        }
+        // Выгрузка справочника банков
+        if (in_array('banks', $this->refbooks_list)) {
+            $data['refbooks']['banks'] = $this->getBanksData();
+        }
+        // Выгрузка справочника цен
+        if (in_array('prices', $this->refbooks_list)) {
+            $data['refbooks']['prices'] = $this->getPricesData();
+        }
+        // Выгрузка справочника сотрудников
+        if (in_array('workers', $this->refbooks_list)) {
+            $data['refbooks']['workers'] = $this->getWorkersData();
+        }
+        // Выгрузка справочника стран мира (ОКСМ)
+        if (in_array('countries', $this->refbooks_list)) {
+            $data['refbooks']['countries'] = $this->getCountriesData();
+        }
+        // Выгрузка справочника единиц измерения (ОКЕИ)
+        if (in_array('units', $this->refbooks_list)) {
+            $data['refbooks']['units'] = $this->getUnitsData();
+        }
+        // Выгрузка справочника агентов
+        if (in_array('agents', $this->refbooks_list)) {
+            $line = array();  
+            $line['groups'] = $this->getAgentGroupsData();
+            $line['items'] = $this->getAgentsListData();
+            $data['refbooks']['agents'] = $line;
+        }
+        if (in_array('nomenclature', $this->refbooks_list)) {
+            $line = array();
+            // Номенклатурные группы
+            $line['groups'] = $this->getNomenclatureGroupsData();
+            $line['items'] = $this->getNomenclatureListData();
+            $data['refbooks']['nomenclature'] = $line;
+        }
+        
+         // Документы
+        $data['documents'] = $this->getDocumentsData();
+        $data['doctypes'] = $this->doctypes_list;
+        
+        
+        return json_encode($data, JSON_UNESCAPED_UNICODE);
     }
     
     /// Получить экспортируемые данные
@@ -200,7 +259,7 @@ class Xml1cDataExport extends \sync\dataexport {
     protected function createDom() {
         $this->dom = new \domDocument("1.0", "utf-8");
         $this->rootNode = $this->dom->createElement("multimag_exchange"); // Создаём корневой элемент
-        $this->rootNode->setAttribute('version', '1.0');
+        $this->rootNode->setAttribute('version', '1.2');
         $this->dom->appendChild($this->rootNode);
         // Информация о выгрузке
         $result = $this->dom->createElement('result');            // Код возврата
@@ -211,5 +270,17 @@ class Xml1cDataExport extends \sync\dataexport {
         $result->appendChild($result_desc);
         $result->appendChild($result_timestamp);
         $this->rootNode->appendChild($result);
+    }
+    
+    protected function createJSONStruct() {
+        return array(
+            'multimag_exchange' => 'Yes',
+            'version' => '1.2',
+            'result' => array(
+                'status' => 'Ok',
+                'message' => 'Ok',
+                'timestamp' => time()-1,
+            ),
+        );
     }
 }

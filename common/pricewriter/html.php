@@ -119,7 +119,6 @@ class html extends BasePriceWriter {
 
     /// Сформировать завершающий блок прайса
     function close() {
-        global $CONFIG;
         $pref = \pref::getInstance();
         echo "<tr><td colspan='{$this->span}' class='mini'>Generated from MultiMag (<a href='http://multimag.tndproject.org'>http://multimag.tndproject.org</a>),"
             . " for <a href='http://{$pref->site_name}'>http://{$pref->site_name}</a><br>"
@@ -161,15 +160,14 @@ class html extends BasePriceWriter {
             if ($c == 0) {
                 continue;
             }
-            if (($this->view_proizv) && ($nxt['proizv'])) {
-                $pr = " (" . $nxt['proizv'] . ")";
-            } else {
-                $pr = "";
+            $name = $nxt['name'];
+            if($this->view_groupname) {
+                $name = $group_name .' '.$name;
             }
             if (@$CONFIG['site']['price_show_vc']) {
                 echo"<td>" . html_out($nxt['vc']) . "</td>";
             }
-            echo "<td>" . html_out($group_name . $nxt['name'] . $pr) . "</td><td{$cce}>" . $c . "</td>";
+            echo "<td>" . html_out($name) . "</td><td{$cce}>" . $c . "</td>";
 
             $this->line++;
             $i = 1 - $i;

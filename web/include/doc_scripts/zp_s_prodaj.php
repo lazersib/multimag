@@ -254,10 +254,12 @@ class ds_zp_s_prodaj {
                             else if($show == 'all')					$tmpl->addContent($out_line);
 			}
 			$but_disabled = '';
-			if (!$agent_id)	$but_disabled = 'disabled';
-
-			$tmpl->addContent("</table>
-			<button $but_disabled>Начислить зарплату</button>
+			if (!$agent_id)	$but_disabled = 'disabled'; 
+                        
+			$tmpl->addContent("</table><br>Организация для начисления зарплаты:<br>");                       
+                        $ldo = new \Models\LDO\firmnames();
+                        $tmpl->addContent( \widgets::getEscapedSelect('firm_id', $ldo->getData(), \cfg::get('site', 'default_firm')) );
+			$tmpl->addContent("<button $but_disabled>Начислить зарплату сотруднику выбранной организации</button>
 			</form>
 			<table>
 			<tr><th>К начислению</th><td>$kn_sum</td></tr>
@@ -271,6 +273,7 @@ class ds_zp_s_prodaj {
 		} else if ($mode == 'exec') {
 			$tov_id = intval($_REQUEST['tov_id']);
 			$user_id = intval($_REQUEST['user_id']);
+                        $firm_id = intval($_REQUEST['firm_id']);
 
 			if (!is_array($_REQUEST['sum_doc']))
 				throw new Exception("Нечего начислять!");
@@ -278,6 +281,8 @@ class ds_zp_s_prodaj {
 				throw new Exception("Некому начислять!");
 			if (!$tov_id)
 				throw new Exception("Не указана услуга!");
+                        if (!$firm_id)
+				throw new Exception("Не указана организация!");
 
 			$res = $db->query("SELECT `agent_id` FROM `users` WHERE `id`='$user_id'");
 			if (!$res->num_rows)	throw new Exception("Сотрудник на найден!");
@@ -298,7 +303,7 @@ class ds_zp_s_prodaj {
 			$uid = $_SESSION['uid'];
 			$altnum = GetNextAltNum(1, 'auto', 0, date("Y-m-d"), 1);
 			$db->query("INSERT INTO `doc_list` (`date`, `firm_id`, `type`, `user`, `altnum`, `subtype`, `sklad`, `agent`, `p_doc`, `sum`)
-				VALUES	('$tim', '1', '1', '$uid', '$altnum', 'auto', '1', '$agent_id', '0', '$all_sum')");
+				VALUES	('$tim', '$firm_id', '1', '$uid', '$altnum', 'auto', '1', '$agent_id', '0', '$all_sum')");
 			$post_doc = $db->insert_id;
 			$db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `cost`) VALUES ('$post_doc', '$tov_id', '1', '$all_sum')");
 			$db->commit();

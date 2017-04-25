@@ -35,7 +35,19 @@ class users extends \IModule {
         return 'Модуль для управления пользователями сайта.';  
     }
     
-    protected function viewList() {
+    protected function viewFilters($filter) {
+        global $tmpl;
+        \acl::accessGuard($this->acl_object_name, \acl::VIEW);
+        $f_set = array(
+            'all'=>['name'=>'Все'],
+            'workers'=>['name'=>'Сотрудники'],
+            'wemail'=>['name'=>'С почтой'],
+            'wphone'=>['name'=>'С телефоном']
+            );
+        $tmpl->addTabsWidget($f_set, $filter, $this->link_prefix, 'filter');
+    }
+    
+    protected function viewList($filter='all', $page=0) {
         global $tmpl, $db;
         \acl::accessGuard($this->acl_object_name, \acl::VIEW);
         
@@ -44,13 +56,26 @@ class users extends \IModule {
         while ($line = $res->fetch_assoc()) {
             $ll_dates[$line['user_id']] = $line['date'];
         }
-
         $order = '`users`.`id`';
+        switch($filter) {
+            case 'workers':
+                $where = "`users_worker_info`.`worker`=1";    
+                break;
+            case 'wemail':
+                $where = "`users`.`reg_email`!=''"; 
+                break;
+            case 'wphone':
+                $where = "`users`.`reg_phone`!=''"; 
+                break;
+            default:
+                $where = '1';
+        }
         $res = $db->query("SELECT `users`.`id`, `users`.`name`, `users`.`reg_email`, `users`.`reg_email_confirm`, `users`.`reg_email_subscribe`,
             `users`.`reg_phone`, `users`.`reg_phone_confirm`, `users`.`reg_phone_subscribe`, `users`.`reg_date`, `users`.`real_name`
                 , `users_worker_info`.`worker`
             FROM `users`
             LEFT JOIN `users_worker_info` ON `users_worker_info`.`user_id`=`users`.`id`
+            WHERE $where
             ORDER BY $order");        
         $tmpl->setTitle('Список пользователей');
         $tmpl->addContent("
@@ -246,11 +271,14 @@ class users extends \IModule {
         global $db;
         \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
 
-        $db->query("REPLACE `users_worker_info` (`user_id`, `worker`, `worker_email`, `worker_phone`, `worker_jid`, `worker_real_name`,
+        $db->query("REPLACE `users_worker_info` (`user_id`, `worker`, `worker_email`, `worker_phone`, `worker_int_fix_phone`, `worker_mobile_phone`, `worker_int_mobile_phone`, `worker_jid`, `worker_real_name`,
             `worker_real_address`, `worker_post_name`) VALUES 
             ($user_id, '" . $db->real_escape_string(rcvint('worker')) . "',
                 '" . $db->real_escape_string(request('worker_email')) . "',
                 '" . $db->real_escape_string(request('worker_phone')) . "',
+                '" . $db->real_escape_string(request('worker_int_fix_phone')) . "',
+                '" . $db->real_escape_string(request('worker_mobile_phone')) . "',
+                '" . $db->real_escape_string(request('worker_int_mobile_phone')) . "',
                 '" . $db->real_escape_string(request('worker_jid')) . "',
                 '" . $db->real_escape_string(request('worker_real_name')) . "',
                 '" . $db->real_escape_string(request('worker_real_address')) . "',
@@ -282,11 +310,15 @@ class users extends \IModule {
             <input type='hidden' name='save' value='1'>
             <table class='list'>
             <tr><td>Рабочий email сотрудника:</td><td><input type='email' name='worker_email' value='" . html_out($worker_info['worker_email']) . "'></td></tr>
-            <tr><td>Рабочий телефон сотрудника:</td><td><input type='text' name='worker_phone' value='" . html_out($worker_info['worker_phone']) . "'></td></tr>
             <tr><td>Рабочий jid сотрудника:</td><td><input type='text' name='worker_jid' value='" . html_out($worker_info['worker_jid']) . "'></td></tr>
             <tr><td>Имя и фамилия сотрудника:</td><td><input type='text' name='worker_real_name' value='" . html_out($worker_info['worker_real_name']) . "'></td></tr>
             <tr><td>Рабочий адрес сотрудника:</td><td><input type='text' name='worker_real_address' value='" . html_out($worker_info['worker_real_address']) . "'></td></tr>
             <tr><td>Должность сотрудника:</td><td><input type='text' name='worker_post_name' value='" . html_out($worker_info['worker_post_name']) . "'></td></tr>
+            <tr><th colspan='2'>Рабочие номера телефонов</th>
+            <tr><td>Внешний общий:</td><td><input type='text' name='worker_phone' value='" . html_out($worker_info['worker_phone']) . "'></td></tr>            
+            <tr><td>Внутренний стационарный:</td><td><input type='text' name='worker_int_fix_phone' value='" . html_out($worker_info['worker_int_fix_phone']) . "'></td></tr>
+            <tr><td>Мобильный:</td><td><input type='text' name='worker_mobile_phone' value='" . html_out($worker_info['worker_mobile_phone']) . "'></td></tr>            
+            <tr><td>Внутренний мобильный:</td><td><input type='text' name='worker_int_mobile_phone' value='" . html_out($worker_info['worker_int_mobile_phone']) . "'></td></tr>
             <tr><td></td><td><label><input type='checkbox' name='worker' value='1'{$worker_check}>Является сотрудником в настоящий момент</label></td></tr>
             <tr><td></td><td><button type='submit'>Сохранить</button></td></tr>
             </table>
@@ -436,9 +468,10 @@ class users extends \IModule {
     }
 
     public function run() {
-        global $CONFIG, $tmpl, $db;
+        global $tmpl, $db;
         $tmpl->addBreadcrumb($this->getName(), $this->link_prefix);
         $sect = request('sect');
+        $filter = request('filter');
         $list = array(
             'view'   => ['name' => 'Основные'],
             'edit'   => ['name' => 'Редактор'],
@@ -449,7 +482,8 @@ class users extends \IModule {
         switch ($sect) {
             case '':
                 $tmpl->addBreadcrumb($this->getName(), '');
-                $this->viewList();
+                $this->viewFilters($filter);
+                $this->viewList($filter);
                 break;
             case 'view':
                 $user_id = rcvint('user_id');

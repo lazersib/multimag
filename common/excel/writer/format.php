@@ -31,7 +31,7 @@
 *    License along with this library; if not, write to the Free Software
 *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-
+namespace excel\writer;
 require_once 'PEAR.php';
 
 /**
@@ -42,7 +42,7 @@ require_once 'PEAR.php';
 * @package  Spreadsheet_Excel_Writer
 */
 
-class Spreadsheet_Excel_Writer_Format extends PEAR
+class Format extends \PEAR
 {
     /**
     * The index given by the workbook when creating a new format.
@@ -249,7 +249,7 @@ class Spreadsheet_Excel_Writer_Format extends PEAR
     * @param integer $index the XF index for the format.
     * @param array   $properties array with properties to be set on initialization.
     */
-    function Spreadsheet_Excel_Writer_Format($BIFF_version, $index = 0, $properties =  array())
+    function __construct($BIFF_version, $index = 0, $properties =  array())
     {
         $this->_xf_index       = $index;
         $this->_BIFF_version   = $BIFF_version;

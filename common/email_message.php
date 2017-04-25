@@ -8,7 +8,7 @@
  */
 
 
-class email_message_class
+class email_message
 {
 	/* Private variables */
 

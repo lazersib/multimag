@@ -20,7 +20,6 @@
 
 namespace actions;
 
-require_once($CONFIG['location'] . '/common/email_message.php');
 require_once($CONFIG['location'] . '/web/include/doc.core.php');
 
 /// Информирование о красных событиях в документах при помощи email
@@ -107,7 +106,7 @@ class redEventDocNotify extends \Action {
     function sendMessage($text, $email) {        
         $mail_text = "В некоторых документах найдены красные события:\n\n" . $text;
         
-        $email_message = new \email_message_class();
+        $email_message = new \email_message();
         $email_message->default_charset = "UTF-8";
         $email_message->SetEncodedEmailHeader("To", $email, $email);
         $email_message->SetEncodedHeader("Subject", 'Уведомление о красных событиях в документах - ' . \cfg::get('site', 'name'));

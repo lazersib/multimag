@@ -242,7 +242,7 @@ abstract class ListEditor {
                 $id = rcvint($this->line_var_name);
                 $id = $this->saveItem($id, request($this->param_var_name));
                 $tmpl->msg("Данные сохранены", "ok");
-                $tmpl->addContent($this->getEditForm($id));
+                $tmpl->addContent($this->getEditForm($id));               
                 break;
             case 'd':
                 $id = rcvint($this->line_var_name);

@@ -337,7 +337,7 @@ else if($mode=="get")
                     $price = new pricewriter\html($db); 
                     break;
 		default:
-                    throw new Exception("Запрошенный формат прайс-лиска пока не поддерживается");
+                    throw new Exception("Запрошенный формат прайс-листа пока не поддерживается");
 	}	
 	$price->showProizv($proizv);
 	$price->setColCount($kol);

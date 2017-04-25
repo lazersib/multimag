@@ -52,14 +52,14 @@ class dataexport {
     public function setRefbooksList($refbooks_list = null) {        
         $this->refbooks_list = $refbooks_list;
         if(!is_array($this->refbooks_list)) {
-            $this->refbooks_list = $this->drl;
+            $this->refbooks_list = array();
         }
     }
     
     public function setDocTypesList($doctypes_list) {        
         $this->doctypes_list = $doctypes_list;
         if(!is_array($this->doctypes_list)) {
-            $this->doctypes_list = $this->ddl;
+            $this->doctypes_list = array();
         }
     }
     
@@ -78,7 +78,7 @@ class dataexport {
         $ret = array();
         $res = $this->db->query($query);
         while($line = $res->fetch_assoc()) {
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -173,7 +173,7 @@ class dataexport {
             } else {
                 $line['kpp'] = '';
             }
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -218,22 +218,22 @@ class dataexport {
                 WHERE `agent_id`='{$line['id']}'
                 ORDER BY `id`");
             while ($c_line = $c_res->fetch_assoc()) {
-                $contacts[$c_line['id']] = $c_line;
+                $contacts[] = $c_line;
             }
             $line['contacts'] = $contacts;   
             
             // Банковские реквизиты
             $bank_details = array();
-            if($line['rs'] || $line['bank'] || $line['ks'] || $line['bik']) {
+            /*if($line['rs'] || $line['bank'] || $line['ks'] || $line['bik']) {
                 $item = array('rs' => $line['rs'], 'bank_name' => $line['bank'], 'bik' => $line['bik'], 'ks' => $line['ks']);
                 $bank_details[0] = $item;
-            }
+            }*/
             $b_res = $this->db->query("SELECT `id`, `name` AS `bank_name`, `bik`, `ks`, `rs`
                 FROM `agent_banks`
                 WHERE `agent_id`='{$line['id']}'
                 ORDER BY `id`");
             while ($b_line = $b_res->fetch_assoc()) {
-                $bank_details[$b_line['id']] = $b_line;
+                $bank_details[] = $b_line;
             }
             $line['bank_details'] = $bank_details;   
             
@@ -249,7 +249,7 @@ class dataexport {
             unset($line['bik']);
             unset($line['ks']);
             
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -257,7 +257,8 @@ class dataexport {
     /// Получить данные справочника списка номенклатуры
     public function getNomenclatureListData() {
         $ret = array();
-        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`pos_type` AS `type`, `doc_base`.`name`, 
+        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`type_id`,
+                `doc_base`.`pos_type` AS `type`, `doc_base`.`name`, 
                 `doc_base`.`vc` AS `vendor_code`, `doc_base`.`country` AS `country_id`, `class_country`.`number_code` AS `country_code`,
                 `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_base`.`unit` AS `unit_id`, `class_unit`.`number_code` AS `unit_code`,
                 `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`create_time`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, 
@@ -288,8 +289,8 @@ class dataexport {
                 while($c_line = $c_res->fetch_assoc()) {
                     $prices[$c_line['price_id']] = $c_line;
                 }
-                $line['prices'] = $prices;
-            }
+                //$line['prices'] = $prices;
+            }/*
             // Attachments
             $c_res = $this->db->query("SELECT `attachment_id` FROM  `doc_base_attachments` WHERE `pos_id`='{$line['id']}'");
             if($c_res->num_rows) {
@@ -327,8 +328,9 @@ class dataexport {
                     $values[] = $c_line;
                 }
                 $line['params'] = $values;
-            }
-            $ret[$line['id']] = $line;
+            }*/
+            unset($line['desc']);
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -433,11 +435,11 @@ class dataexport {
             if($price_res->num_rows) {
                 $prices = array();
                 while($price_line = $price_res->fetch_assoc()) {
-                    $prices[$price_line['price_id']] = $price_line;
+                    $prices[] = $price_line;
                 }
                 $line['prices'] = $prices;
             }
-            $ret[$line['id']] = $line;
+            $ret[] = $line;
         }        
         return $ret;
     }
@@ -456,7 +458,7 @@ class dataexport {
     /// Получить документы
     public function getDocumentsData() {
         $ret = array();
-        $res = $this->db->query("SELECT `id`, `type`, `agent`, `date`, `ok`, `sklad` AS `store_id`, `kassa` AS `till_id`, `bank` AS `bank_id`,
+        $res = $this->db->query("SELECT `id`, `type`, `agent` AS `agent_id`, `date`, `ok`, `sklad` AS `store_id`, `kassa` AS `till_id`, `bank` AS `bank_id`,
                 `user` AS `author_id`, `altnum`, `subtype`, `sum`, `nds`, `p_doc` AS `parent_doc_id`, `mark_del`, `firm_id`, `contract` AS `contract_id`,
                 `comment` 
             FROM `doc_list`
@@ -511,22 +513,43 @@ class dataexport {
             while($dl = $dop_res->fetch_assoc()) {
                   $line['td_'.$dl['param']] = $dl['value'];
             }
-
+            
             // Таблица номенклатуры
-            $nom_res = $this->db->query("SELECT `id`, `tovar` AS `pos_id`, `cnt`, `cost` AS `price`, `gtd`, `comm`, `page` AS `page_id`
-                FROM  `doc_list_pos` 
-                WHERE `doc`='{$line['id']}'");
-            if($nom_res->num_rows) {
-                $positions = array();
-                while($nom_line = $nom_res->fetch_assoc()) {
-                    if($nom_line['page_id']==0) {
-                        unset($nom_line['page_id']);
-                    }
-                    $positions[$nom_line['id']] = $nom_line;
+            $positions = array();
+            if($line['type']=='realizaciya') {
+                $doc_obj = \document::getInstanceFromDb($line['id']);
+                $noms = $doc_obj->getDocumentNomenclatureWVATandNums();
+                foreach($noms as $item) {
+                    $positions[] = array(
+                        'id' => $item['line_id'],
+                        'pos_id' => $item['pos_id'],
+                        'cnt' => $item['cnt'],
+                        'price' => $item['orig_price'],
+                        'gtd' => trim($item['gtd']),
+                        'comm' => $item['comm'],
+                        'country_code' => $item['country_code'],
+                    );
                 }
-                $line['positions'] = $positions;
             }
-            $ret[$line['id']] = $line;
+            else {
+                $nom_res = $this->db->query("SELECT `doc_list_pos`.`id`, `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`
+                        , `doc_list_pos`.`cost` AS `price`, `doc_list_pos`.`gtd`, `doc_list_pos`.`comm`, `doc_list_pos`.`page` AS `page_id`
+                        , `class_country`.`number_code` AS `country_code`
+                    FROM  `doc_list_pos`
+                    INNER JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
+                    LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`
+                    WHERE `doc`='{$line['id']}'");
+                if($nom_res->num_rows) {                    
+                    while($nom_line = $nom_res->fetch_assoc()) {
+                        if($nom_line['page_id']==0) {
+                            unset($nom_line['page_id']);
+                        }
+                        $positions[] = $nom_line;
+                    }                    
+                }
+            }
+            $line['positions'] = $positions;
+            $ret[] = $line;
         }
         return $ret;
     }
@@ -552,11 +575,11 @@ class dataexport {
             foreach ($stores as $store_id) {
                 $cnt = getStoreCntOnDate($nxt['id'], $store_id, $this->start_time);
                 if($cnt!=0) {
-                    $data[$store_id] = $cnt;
+                    $data[] = ['store_id'=>$store_id, 'count'=>$cnt];
                 }
             }
             if(count($data)>0) {
-                $storedata[$nxt['id']] = $data;
+                $storedata[] = ['pos_id'=>$nxt['id'], 'data'=>$data];
             }
         }
         $debtdata = array();
@@ -566,16 +589,16 @@ class dataexport {
             foreach ($firms as $firm_id) {
                 $cnt = agentCalcDebt($nxt['id'], true, $firm_id, $this->db, $this->start_time);
                 if($cnt!=0) {
-                    $data[$firm_id] = $cnt;
+                    $data[] = ['firm_id'=>$firm_id, 'count'=>$cnt];
                 }
             }
             if(count($data)>0) {
-                $debtdata[$nxt['id']] = $data;
+                $debtdata[$nxt['id']] = ['agent_id'=>$nxt['id'], 'data'=>$data];
             }
         }
         return array(
             'nomenclature' => $storedata,
-            'debts' => $debtdata
+            'balance' => $debtdata
         );
     }
     

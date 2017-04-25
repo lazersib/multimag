@@ -23,8 +23,9 @@
 class doc_s_Sklad {
 
     function __construct() {
-        $this->pos_vars = array('group', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock', 'warranty', 'eol',
-            'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 'mult', 'bulkcnt',
+        $this->pos_vars = array('group', 'type_id', 'name', 'desc', 'proizv', 'cost', 'likvid', 'pos_type', 'hidden', 'unit', 'vc', 'stock',
+            'warranty', 'eol', 'warranty_type', 'no_export_yml', 'country', 'title_tag', 'meta_keywords', 'meta_description', 'cost_date', 
+            'mult', 'bulkcnt', 
             'analog_group', 'mass', 'nds');
         $this->dop_vars = array('type', 'analog', 'd_int', 'd_ext', 'size', 'ntd');
         $this->group_vars = array('name', 'desc', 'pid', 'hidelevel', 'printname', 'no_export_yml', 'title_tag', 'meta_keywords', 'meta_description');
@@ -409,6 +410,8 @@ class doc_s_Sklad {
         $wt0_check = $form_data['warranty_type'] ? '' : 'checked';
         $wt1_check = $form_data['warranty_type'] ? 'checked' : '';        
 
+        $ldo = new \Models\LDO\nomtypes();
+        
         $ret .= "<form action='' method='post'>
             <input type='hidden' name='mode' value='esave'>
             <input type='hidden' name='l' value='sklad'>
@@ -416,7 +419,11 @@ class doc_s_Sklad {
             <input type='hidden' name='pd[id]' value='$pos_id'>
             <table cellpadding='0' width='100%' class='list'>
             <tr><td align='right' width='20%'>$pos_type_html</td>
-            <td colspan='3'><input type='text' name='pd[name]' value='" . html_out($form_data['name']) . "' style='width: 95%'>$image_html
+            <td><input type='text' name='pd[name]' value='" . html_out($form_data['name']) . "' style='width: 95%'>
+            <td align='right'>Тип номенклатуры</td><td>".
+                \widgets::getEscapedSelect('pd[type_id]', $ldo->getData(), $form_data['type_id'], 'не назначен').
+            "</td>
+            $image_html
             <tr><td align='right'>Группа</td>
                 <td>" . selectGroupPos('pd[group]', $form_data['group'], false, '', '', \cfg::get('store', 'leaf_only', false) ) . "</td>
                 <td align='right'>Имя группы аналогов:<br><small>Аналогами будут товары<br>с совпадающим значением поля</small></td>
@@ -1792,7 +1799,7 @@ class doc_s_Sklad {
                         WHERE `doc_base_params`.`param`='ym_url'");
                 if (!$res->num_rows) {
                     $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
-                            . " VALUES ('URL Я.Маркет', 'ym_url', 'double', 1)");
+                        . " VALUES ('URL Я.Маркет', 'ym_url', 'double', 1)");
                     $nxt = array(0 => $db->insert_id, 1 => 0);
                 } else
                     $nxt = $res->fetch_row();
@@ -1838,21 +1845,31 @@ class doc_s_Sklad {
                             $db->query("INSERT INTO `doc_base_pcollections_set` (`collection_id`, `param_id`) VALUES ('$collection', '$int_param')");
                         }
                     }
-                    if ($int_param < 1)
+                    if ($int_param < 1) {
                         continue;
+                    }
                     $db->query("UPDATE `doc_base_params` SET `ym_assign`='$param_sql' WHERE `id`='$int_param'");
                 }
-                if ($int_param < 1)
+                if ($int_param < 1) {
                     continue;
+                }
                 $val = $db->real_escape_string($_POST['val'][$id]);
                 $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
-                $log_add.=", $int_param:(=> $val)";
+                $log_add .= ", $int_param:(=> $val)";
             }
             $tmpl->msg("Данные сохранены!", "ok");
-            if ($log_add)
+            if ($log_add) {
                 doc_log("UPDATE", "$log_add", 'pos', $pos);
-        } else
+            }
+        } else if ($param == 'p') {
+            \acl::accessGuard('directory.goods.approve', \acl::VIEW);
+            $tab = request('tab');
+            doc_log("APPROVE", $tab, 'pos', $pos);
+            $tmpl->msg("Пометка о проверке внесена в журнал", "ok");
+        }
+        else {
             $tmpl->msg("Неизвестная закладка");
+        }
     }
 
     /// Формирует html код заданного уровня иерархии групп
@@ -2356,15 +2373,16 @@ class doc_s_Sklad {
             $sklad = $_SESSION['sklad_num'];
             settype($sklad, 'int');
             $sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`proizv`, `doc_base`.`likvid`,
-				`doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,
-				`doc_base`.`cost_date`,	`doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
-				`doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
-				(SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
-				`doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
-				FROM `doc_base`
-				LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
-				LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-				WHERE 1 ";
+                        `doc_base`.`cost` AS `base_price`, `doc_base`.`bulkcnt`,  `doc_base`.`eol`,
+                        `doc_base`.`cost_date`, `doc_base_dop`.`analog`, `doc_base_dop`.`type`, `doc_base_dop`.`d_int`,
+                        `doc_base_dop`.`reserve`,  `doc_base_dop`.`offer`,  `doc_base_dop`.`transit`,
+                        `doc_base_dop`.`d_ext`, `doc_base_dop`.`size`, `doc_base`.`mass`, `doc_base_cnt`.`mesto`, `doc_base_cnt`.`cnt`,
+                        (SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` GROUP BY `doc_base_cnt`.`id`) AS `allcnt`,
+                        `doc_base`.`vc`, `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`stock`
+                        FROM `doc_base`
+                        LEFT JOIN `doc_base_cnt` ON `doc_base_cnt`.`id`=`doc_base`.`id` AND `doc_base_cnt`.`sklad`='$sklad'
+                        LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+                        WHERE 1 ";
 
             switch (@$CONFIG['doc']['sklad_default_order']) {
                 case 'vc': $order = '`doc_base`.`vc`';
@@ -2425,7 +2443,7 @@ class doc_s_Sklad {
 
             if (@$CONFIG['poseditor']['vc'])
                 $tmpl->addContent("<th>Код</th>");
-            $tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>$cheader_add<th>Аналог</th>");
+            $tmpl->addContent("<th>Наименование</th><th>Производитель</th><th>Цена, р.</th><th>Ликв.</th><th>АЦП, р.</th>$cheader_add");
 
             if (@$CONFIG['poseditor']['tdb'] == 1)
                 $tmpl->addContent("<th>Тип</th><th>d</th><th>D</th><th>B</th>");
@@ -2436,7 +2454,7 @@ class doc_s_Sklad {
 
             $res = $db->query($sql);
             if ($cnt = $res->num_rows) {
-                $tmpl->addContent("<tr><th colspan='16' align='center'>Параметрический поиск, найдено $cnt");
+                $tmpl->addContent("<tr><th colspan='18' align='center'>Параметрический поиск, найдено $cnt");
                 $this->DrawSkladTable($res, $name);
                 $sf = 1;
             }
@@ -2790,12 +2808,25 @@ class doc_s_Sklad {
         <tr><td align='right'>Номер таможенной декларации</td><td><input type='text' name='ntd' value='{$pos_info['ntd']}'></td></tr>
         </table>
         </td>
-        <td valign='top' width='33%'><table class='list' width='100%' id='fg_table'><tbody><tfoot>$dyn_foot</tfoot>$dyn_table</tbody></table></td>
-        <td valign='top' width='33%'><table class='list' width='100%'>$srv_table</table></td>
+        <td valign='top' width='33%'>
+            <table class='list' width='100%' id='fg_table'><tbody><tfoot>$dyn_foot</tfoot>$dyn_table</tbody></table></td>
+        <td valign='top' width='33%'>
+            <table class='list' width='100%'>$srv_table</table></td>
         </table>
         <table width='100%'>
         <tr><td align='center'><input type='submit' value='Сохранить'>
         </table></form>");
+        
+        $tmpl->addContent("<form action='' method='post'>
+        <input type='hidden' name='mode' value='esave'>
+        <input type='hidden' name='l' value='sklad'>
+        <input type='hidden' name='pos' value='$pos_id'>
+        <input type='hidden' name='param' value='p'>
+        <input type='hidden' name='tab' value='d'>
+        <td align='center'><input type='submit' value='Внести журнал запись о подтверждении правильности сведений в карточке'>
+        </form>");
+        
+        
     }
 
 }

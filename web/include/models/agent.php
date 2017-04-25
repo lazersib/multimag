@@ -22,6 +22,7 @@ namespace models;
 class agent {
     var $agents_tn = 'doc_agent';
     var $contacts_tn = 'agent_contacts';
+    var $banks_tn = 'agent_banks';
     protected $data = array();
     protected $parsed_contacts = array();
     
@@ -30,6 +31,7 @@ class agent {
         , 'leader_name', 'leader_post', 'leader_reason', 'leader_name_r', 'leader_post_r', 'leader_reason_r'
         , 'dishonest', 'p_agent', 'price_id', 'no_retail_prices', 'no_bulk_prices', 'no_bonuses', 'region');
     protected $contact_fields = array('context', 'type', 'value', 'person_name', 'person_post', 'for_sms', 'for_fax', 'no_ads', );
+    protected $banks_fields = array('name', 'bik', 'ks', 'rs', );
     
     /// Конструктор
     public function __construct($agent_id = null) {
@@ -46,8 +48,15 @@ class agent {
         if(!$this->data) {
             return false;
         }        
+        $this->loadContactData();
+        $this->loadBanksData();
+    }
+    
+    /// Загрузка контактных данных текущего агента
+    public function loadContactData() {
+        global $db;
         $contacts = array();
-        $res = $db->query("SELECT * FROM `{$this->contacts_tn}` WHERE `agent_id`='$agent_id'");
+        $res = $db->query("SELECT * FROM `{$this->contacts_tn}` WHERE `agent_id`='{$this->data['id']}'");
         while($line = $res->fetch_assoc()) {
             $contacts[$line['id']] = $line;
         }
@@ -55,6 +64,24 @@ class agent {
         $this->parseContacts();
     }
     
+    /// Загрузка банковских данных текущего агента
+    public function loadBanksData() {
+        global $db;
+        $banks = array();
+        $res = $db->query("SELECT * FROM `{$this->banks_tn}` WHERE `agent_id`='{$this->data['id']}'");
+        while($line = $res->fetch_assoc()) {
+            $banks[$line['id']] = $line;
+        }
+        $this->data['banks'] = $banks;
+        foreach($banks as $bank) {
+            $this->data['bank'] = $bank['name'];
+            $this->data['bik'] = $bank['bik'];
+            $this->data['rs'] = $bank['rs'];
+            $this->data['ks'] = $bank['ks'];
+            break;
+        }
+    }
+
     /// Создать агента на основе заданного набора данных
     public function create($data) {
         global $db;
@@ -80,7 +107,16 @@ class agent {
                     }
                 }
                 $contact_info['agent_id'] = $agent_id;
-                $db->insertA('agent_contacts', $contact_info);
+                $db->insertA($this->contacts_tn, $contact_info);
+            }
+        }
+        if(isset($data['banks']) && is_array($data['banks'])) {
+            foreach($data['banks'] as $bank) {
+                $bank_info = array_fill_keys($this->banks_fields, '');
+                $bank_info = array_intersect_key($bank, $bank_info);
+                //var_dump($contact_info);
+                $bank_info['agent_id'] = $agent_id;
+                $db->insertA($this->banks_tn, $bank_info);
             }
         }
         $this->load($agent_id);
@@ -127,6 +163,7 @@ class agent {
         }
     }
     
+    /// Разбор контактных данных агента 
     protected function parseContacts() {
         $this->parsed_contacts = array();
         foreach($this->data['contacts'] as $line) {

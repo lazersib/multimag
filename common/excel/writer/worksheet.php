@@ -32,8 +32,7 @@
 *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-require_once 'include/Spreadsheet/Excel/Writer/Parser.php';
-require_once 'include/Spreadsheet/Excel/Writer/BIFFwriter.php';
+namespace excel\writer;
 
 /**
 * Class for generating Excel Spreadsheets
@@ -43,7 +42,7 @@ require_once 'include/Spreadsheet/Excel/Writer/BIFFwriter.php';
 * @package  Spreadsheet_Excel_Writer
 */
 
-class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwriter
+class Worksheet extends BIFFwriter
 {
     /**
     * Name of the Worksheet
@@ -367,7 +366,7 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     * @param string  $tmp_dir      The path to the directory for temporary files
     * @access private
     */
-    function Spreadsheet_Excel_Writer_Worksheet($BIFF_version, $name,
+    function __construct($BIFF_version, $name,
                                                 $index, &$activesheet,
                                                 &$firstsheet, &$str_total,
                                                 &$str_unique, &$str_table,
@@ -375,7 +374,7 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
                                                 $tmp_dir)
     {
         // It needs to call its parent's constructor explicitly
-        $this->Spreadsheet_Excel_Writer_BIFFwriter();
+        parent::__construct();
         $this->_BIFF_version   = $BIFF_version;
         $rowmax                = 65536; // 16384 in Excel 5
         $colmax                = 256;
