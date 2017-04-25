@@ -36,6 +36,9 @@ class Report_RateTurnover extends BaseGSReport {
         global $tmpl, $db;
         $year = date("Y");
         $d_f = date("Y-m-d", time() - 60 * 60 * 24 * 31);
+        $ldo = new \Models\LDO\skladnames();
+        $this->storenames = $ldo->getData();
+        
         $tmpl->addContent("<h1>" . $this->getName() . "</h1>
             <script type='text/javascript' src='/css/jquery/jquery.autocomplete.js'></script>
             <form action='' method='post'>
@@ -43,7 +46,15 @@ class Report_RateTurnover extends BaseGSReport {
             <fieldset><legend>Год:</legend>
             <input type='text' name='year' value='$year'><br>
             </fieldset>
-
+            <fieldset><legend>Склады</legend>");
+        foreach($this->storenames as $store_id => $store_name) {
+            $tmpl->addContent("<label><input type='checkbox' name='stores[]' value='$store_id' checked>".html_out($store_name)."</label><br>");
+        }
+        $tmpl->addContent("</fieldset>
+            Не учитывать с ликвидностью менее:<br>
+            <input type='text' name='min_liq'><br>
+            Фильтр по производителю:<br>
+            <input type='text' name='vendor'><br>
             Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
             <button type='submit'>Сформировать отчёт</button>
             </form>
@@ -54,337 +65,6 @@ class Report_RateTurnover extends BaseGSReport {
             addEventListener('load',dtinit,false);	
             </script>
             ");
-    }
-
-    function dividedOutPos($pos_info, $dt_f, $dt_t, $subtype) {
-        global $db;
-        $start_cnt = getStoreCntOnDate($pos_info['id'], $this->sklad, $dt_f, 1);
-        $s_where = '';
-        $prix_cnt = $prix_sum = $r_cnt = $r_sum = 0;
-        if ($subtype) {
-            $s_where = " AND `doc_list`.`subtype` = '" . $db->real_escape_string($subtype) . "'";
-        }
-        if ($this->w_docs) {
-            $this->tableSpannedRow(array($this->col_cnt), array("{$pos_info['vc']} {$pos_info['name']} ({$pos_info['id']})"));
-            $this->tableRow(array('', 'На начало периода', '', $start_cnt, '', ''));
-            $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array('Приходы'));
-            $this->tableAltStyle(false);
-        }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`doc_list`.`sklad`
-            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
-                (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}')
-                OR (`doc_list`.`type`='8' AND `ns`.`value`='{$this->sklad}')
-                OR (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`page`='0')
-                OR (`doc_list`.`type`='25' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list_pos`.`cnt`>'0')
-            ) 
-            AND `doc_list`.`ok`>0
-            $s_where
-            ORDER BY `doc_list`.`date`");
-        
-        while ($nxt = $res->fetch_assoc()) {
-            $from = 'Сборка';
-            if ($nxt['type'] == 1) {
-                $from = $nxt['agent_name'];
-            } else if ($nxt['type'] == 8) {
-                $from = $nxt['sklad_name'];
-            }
-            $date = date("Y-m-d H:i:s", $nxt['date']);
-            $sumline = $nxt['cnt'] * $nxt['cost'];
-            if ($this->w_docs) {
-                $this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
-            }
-            $prix_cnt+=$nxt['cnt'];
-            $prix_sum+=$sumline;
-        }
-        if ($this->w_docs) {
-            $this->tableRow(array('', 'Всего приход:', '', $prix_cnt, '', $prix_sum));
-        }       
-                
-        if ($this->w_docs) {
-            $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array('Реализации'));
-            $this->tableAltStyle(false);
-        }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND
-            (`doc_list`.`type`='2' OR `doc_list`.`type`='20') AND `doc_list`.`ok`>0
-            $s_where
-            ORDER BY `doc_list`.`date`");
-        $realiz_cnt = $sum = 0;
-        while ($nxt = $res->fetch_assoc()) {
-            if ($this->w_docs) {
-                $from = '';
-                if ($nxt['type'] == 2) {
-                    $from = $nxt['agent_name'];
-                } else if ($nxt['type'] == 8) {
-                    $from = $nxt['sklad_name'];
-                }
-                $date = date("Y-m-d H:i:s", $nxt['date']);
-                $sumline = $nxt['cnt'] * $nxt['cost'];
-
-                $this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
-                $sum+=$sumline;
-            }
-            $realiz_cnt+=$nxt['cnt'];
-        }
-        if ($this->w_docs) {
-            $this->tableRow(array('', 'По реализациям:', '', $realiz_cnt, '', $sum));
-        }
-        $r_cnt+=$realiz_cnt;
-        $r_sum+=$sum;
-        
-        if ($this->w_docs) {
-            $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array('Перемещения'));
-            $this->tableAltStyle(false);
-        }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='8' AND `doc_list`.`ok`>0
-                    $s_where
-                    ORDER BY `doc_list`.`date`");
-        $perem_cnt = $sum = 0;
-        while ($nxt = $res->fetch_assoc()) {
-            if ($this->w_docs) {
-                $from = 'Сборка';
-                if ($nxt['type'] == 2) {
-                    $from = $nxt['agent_name'];
-                } else if ($nxt['type'] == 8) {
-                    $from = $nxt['sklad_name'];
-                }
-                $date = date("Y-m-d H:i:s", $nxt['date']);
-                $sumline = $nxt['cnt'] * $nxt['cost'];
-                $this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
-                $sum+=$sumline;
-            }
-            $perem_cnt+=$nxt['cnt'];
-        }
-        if ($this->w_docs) {
-            $this->tableRow(array('', 'По перемещениям:', '', $perem_cnt, '', $sum));
-        }
-        $r_cnt+=$perem_cnt;
-        $r_sum+=$sum;
-        
-        if ($this->w_docs) {
-            $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array('Корректировки'));
-            $this->tableAltStyle(false);
-        }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, ABS(`doc_list_pos`.`cnt`) AS `cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' "
-                . " AND `doc_list`.`sklad`='{$this->sklad}' AND `doc_list`.`type`='25' AND `doc_list_pos`.`cnt`<'0' AND `doc_list`.`ok`>0
-            $s_where
-            ORDER BY `doc_list`.`date`");
-        $corr_cnt = $sum = 0;
-        while ($nxt = $res->fetch_assoc()) {
-            if ($this->w_docs) {
-                $from = '';
-                if ($nxt['type'] == 2) {
-                    $from = $nxt['agent_name'];
-                } else if ($nxt['type'] == 8) {
-                    $from = $nxt['sklad_name'];
-                }
-                $date = date("Y-m-d H:i:s", $nxt['date']);
-                $sumline = $nxt['cnt'] * $nxt['cost'];
-
-                $this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
-                $sum+=$sumline;
-            }
-            $corr_cnt+=$nxt['cnt'];
-        }
-        if ($this->w_docs) {
-            $this->tableRow(array('', 'По корректировкам:', '', $corr_cnt, '', $sum));
-        }
-        $r_cnt+=$corr_cnt;
-        $r_sum+=$sum;
-        
-        if ($this->w_docs) {
-            $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array('Сборки'));
-            $this->tableAltStyle(false);
-        }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            LEFT JOIN `doc_sklady` ON `doc_sklady`.`id`=`ns`.`value`
-            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND `doc_list`.`sklad`='{$this->sklad}' AND (`doc_list`.`type`='17' AND `doc_list_pos`.`page`!='0') AND `doc_list`.`ok`>0
-                        $s_where
-                    ORDER BY `doc_list`.`date`");
-        $sbor_cnt = $sum = 0;
-        while ($nxt = $res->fetch_assoc()) {
-            if ($this->w_docs) {
-                $from = 'Сборка';
-                if ($nxt['type'] == 2) {
-                    $from = $nxt['agent_name'];
-                } else if ($nxt['type'] == 8) {
-                    $from = $nxt['sklad_name'];
-                }
-                $date = date("Y-m-d H:i:s", $nxt['date']);
-                $sumline = $nxt['cnt'] * $nxt['cost'];
-                $this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} ({$nxt['id']})", $from, $nxt['cnt'], $nxt['cost'], $sumline));
-                $sum+=$sumline;
-            }
-            $sbor_cnt+=$nxt['cnt'];
-        }
-        $r_cnt+=$sbor_cnt;
-        if ($this->w_docs) {
-            $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array(''));
-            $this->tableAltStyle(false);
-            $this->tableRow(array('', 'По сборкам:', '', $sbor_cnt, '', $sum));
-
-            $r_sum+=$sum;
-            $this->tableRow(array('', 'Всего расход:', '', $r_cnt, '', $r_sum));
-            $end_cnt = $start_cnt + $prix_cnt - $r_cnt;
-            $this->tableRow(array('', 'На конец периода:', '', $end_cnt, '', ''));
-        } else {
-            $end_cnt = $start_cnt + $prix_cnt - $r_cnt;
-            if ($prix_cnt || $realiz_cnt || $perem_cnt || $sbor_cnt || $corr_cnt) {
-                $this->tableRow(
-                    array(
-                        $pos_info['id'], $pos_info['vc'], $pos_info['name'], $this->getLastBuyDate($pos_info['id']),
-                        $pos_info['base_price'], $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $corr_cnt, $end_cnt)
-                    );
-            }
-        }
-        return array(
-            'start' => $start_cnt,
-            'prix' => $prix_cnt,
-            'real' => $realiz_cnt,
-            'perem' => $perem_cnt,
-            'sbor' => $sbor_cnt,
-            'korr' => $corr_cnt);
-    }
-
-    function serialOutPos($pos_info, $dt_f, $dt_t, $subtype) {
-        global $tmpl, $db;
-        $cur_cnt = getStoreCntOnDate($pos_info['id'], $this->sklad, $dt_f, 1);
-        $s_where = '';
-        if ($subtype) {
-            $s_where = " AND `doc_list`.`subtype` = '" . $db->real_escape_string($subtype) . "'";
-        }
-        if ($this->w_docs) {
-            $this->tableAltStyle();
-            $this->tableSpannedRow(array($this->col_cnt), array("{$pos_info['vc']} {$pos_info['name']} ({$pos_info['id']})"));
-            $this->tableAltStyle(false);
-            $this->tableSpannedRow(array($this->col_cnt - 1, 1), array('На начало периода:', $cur_cnt));
-        }
-        
-        $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`type`, `doc_list`.`sklad`, `doc_list_pos`.`page`,
-                `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `ds`.`name` AS `sklad_name`, `nsn`.`name` AS `nasklad_name`,
-                `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-            INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`
-            LEFT JOIN `doc_dopdata` AS `ns` ON `ns`.`doc`=`doc_list_pos`.`doc` AND `ns`.`param`='na_sklad'
-            LEFT JOIN `doc_sklady` AS `ds` ON `ds`.`id`=`doc_list`.`sklad`
-            LEFT JOIN `doc_sklady` AS `nsn` ON `nsn`.`id`=`ns`.`value`
-            WHERE `doc_list_pos`.`tovar`='{$pos_info['id']}' AND `doc_list`.`date`>='$dt_f' AND `doc_list`.`date`<'$dt_t' AND (
-                (`doc_list`.`type`='1' AND `doc_list`.`sklad`='{$this->sklad}') OR
-                ((`doc_list`.`type`='2' OR `doc_list`.`type`='20' OR `doc_list`.`type`='25') AND `doc_list`.`sklad`='{$this->sklad}') OR
-                (`doc_list`.`type`='8' AND (`doc_list`.`sklad`='{$this->sklad}' OR `ns`.`value`='{$this->sklad}')) OR
-                (`doc_list`.`type`='17' AND `doc_list`.`sklad`='{$this->sklad}') ) 
-                AND `doc_list`.`ok`>0
-                $s_where
-            ORDER BY `doc_list`.`date`");
-        $sp = $sr = 0;
-        while ($nxt = $res->fetch_assoc()) {
-            $p = $r = '';
-            $link = '';
-            switch ($nxt['type']) {
-                case 1: $p = $nxt['cnt'];
-                    $link = 'От ' . $nxt['agent_name'];
-                    break;
-                case 2:
-                case 20:$r = $nxt['cnt'];
-                    $link = 'Для ' . $nxt['agent_name'];
-                    break;
-                case 8: {
-                        if ($nxt['sklad'] == $this->sklad) {
-                            $r = $nxt['cnt'];
-                            $link = 'На ' . $nxt['nasklad_name'];
-                        } else {
-                            $p = $nxt['cnt'];
-                            $link = 'С ' . $nxt['sklad_name'];
-                        }
-                    }break;
-                case 17: {
-                        if ($nxt['page'] == 0)
-                            $p = $nxt['cnt'];
-                        else
-                            $r = $nxt['cnt'];
-                        $link = $nxt['agent_name'];
-                    }
-                    break;
-                case 25:
-                    if($nxt['cnt']>0) {
-                        $p = $nxt['cnt'];
-                    }
-                    else {
-                        $r = abs($nxt['cnt']);
-                    }
-                    break;
-                default:$p = $r = 'fff-' . $nxt['type'];
-            }
-            $cur_cnt += $p - $r;
-            $cur_cnt = round($cur_cnt, 5);
-            $date = date("Y-m-d H:i:s", $nxt['date']);
-            $this->tableRow(array($date, "{$nxt['doc_name']} {$nxt['snum']} / {$nxt['doc_id']}", $link, $p, $r, $cur_cnt));
-            $sp+=$p;
-            $sr+=$r;
-        }
-        $this->tableSpannedRow(array($this->col_cnt - 3, 1, 1, 1), array('На конец периода:', $sp, $sr, $cur_cnt));
-    }
-
-    function outPos($pos_info, $dt_f, $dt_t, $subtype) {
-        if ($this->div_dt || !$this->w_docs) {
-            return $this->dividedOutPos($pos_info, $dt_f, $dt_t, $subtype);
-        } else {
-            return $this->serialOutPos($pos_info, $dt_f, $dt_t, $subtype);
-        }
-    }
-    
-    function getLastBuyDate($pos_id) {
-        global $db;
-        $res = $db->query("SELECT `doc_list`.`id` AS `doc_id`, `doc_list`.`date`
-            FROM `doc_list_pos`
-            INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
-            WHERE `doc_list_pos`.`tovar`='$pos_id' AND `doc_list`.`type`='1'
-            ORDER BY `doc_list`.`date` DESC"
-            . " LIMIT 1");
-        if($res->num_rows) {
-            $info = $res->fetch_assoc();
-            return date('Y-m-d', $info['date']);
-        }
-        return '';
     }
     
     function processPosId($pos_id) {
@@ -401,24 +81,51 @@ class Report_RateTurnover extends BaseGSReport {
         while ($nxt = $res->fetch_row()) {
             switch($nxt[1]) {
                 case 1:
-                    $cnt+=$nxt[0];
-                    if($nxt[5]>=$this->dt_f) {
-                        $out += $nxt[0];
+                    if (in_array($nxt[2], $this->stores) ) {
+                        $cnt+=$nxt[0];
+                        if($nxt[5]>=$this->dt_f) {
+                            $out += $nxt[0];
+                        }
                     }
                     break;
                 case 2:
                 case 20:
-                    $cnt-=$nxt[0];
-                    break;
-                case 17:
-                    if ($nxt[4] == 0) {
-                        $cnt+=$nxt[0];
-                    } else {
+                    if (in_array($nxt[2], $this->stores) ) {
                         $cnt-=$nxt[0];
                     }
                     break;
+               case 8:
+                    if (in_array($nxt[2], $this->stores) ) {
+                        $cnt-=$nxt[0];
+                    } 
+                    {
+                        $r = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
+                        if (!$r->num_rows) {
+                            throw new \Exception("Cклад назначения в перемещении $nxt[3] не задан");
+                        }
+                        list($nasklad) = $r->fetch_row();
+                        if (!$nasklad) {
+                            throw new \Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
+                        }
+                        if (in_array($nasklad, $this->stores) ) {
+                            $cnt+=$nxt[0];
+                        }
+                        $r->free();
+                    }
+                break;
+                case 17:
+                    if (in_array($nxt[2], $this->stores) ) {
+                        if ($nxt[4] == 0) {
+                            $cnt+=$nxt[0];
+                        } else {
+                            $cnt-=$nxt[0];
+                        }
+                    }
+                    break;
                 case 25:
-                    $cnt+=$nxt[0];
+                    if (in_array($nxt[2], $this->stores) ) {
+                        $cnt+=$nxt[0];
+                    }
                     break;
             }
             $cnt = round($cnt, 3);
@@ -434,11 +141,15 @@ class Report_RateTurnover extends BaseGSReport {
         global $db;
         $this_stat = array('id'=>$group_id, 'name'=>'', 'start'=>0, 'end'=>0, 'out'=>0, 'childs'=>[]);
         $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id'");
+        $sql_add = ($this->min_liq>0) ? " AND `likvid`>='{$this->min_liq}' ":'';
+        if($this->vendor) {
+            $sql_add .= " AND `proizv`='".$db->real_escape_string($this->vendor)."'";
+        }
         while($g_info = $res->fetch_assoc()) {
             $g_stat = $this->processGroup($g_info['id'], $prefix.'-');
             $g_stat['id'] = $g_info['id'];
             $g_stat['name'] = $g_info['name'];
-            $p_res = $db->query("SELECT `id` FROM `doc_base` WHERE `group`='{$g_info['id']}' AND `pos_type`=0");
+            $p_res = $db->query("SELECT `id`, `likvid` FROM `doc_base` WHERE `group`='{$g_info['id']}' AND `pos_type`=0 ".$sql_add);
             while($p_info = $p_res->fetch_assoc()) {
                 $price = getInCost($p_info['id']);
                 $p_cnt = $this->processPosId($p_info['id']);
@@ -502,16 +213,18 @@ class Report_RateTurnover extends BaseGSReport {
     }
 
     function Make($engine) {
-        global $db;
         $this->loadEngine($engine);
 
+        $this->vendor = request('vendor');
         $this->year = rcvint("year");
         $this->dt_f = strtotime($this->year."-01-01");
-        $this->dt_t = strtotime($this->year."-12-31 23:59:59");
+        $this->dt_t = strtotime($this->year."-12-31 23:59:59");  
+        $this->stores = request('stores', []);
+        if(!is_array($this->stores)) {
+            throw new \Exception("Ошибка списка складов!");
+        }
+        $this->min_liq = rcvrounded('min_liq');
         
-        $ldo = new \Models\LDO\skladnames();
-        $this->storenames = $ldo->getData();
-
         $header = $this->getName();
         if ($this->dt_f > 1) {
             $header .= ", с " . date('Y-m-d', $this->dt_f);

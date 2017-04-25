@@ -87,7 +87,9 @@ function SendSubscribe($title, $subject, $msg, $list_id = '') {
     $res = $db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
     list($firm_name) = $res->fetch_row();
     $list = getSubscribersEmailList();
+    $err_cnt = 0;
     foreach ($list as $subscriber) {
+        $subscriber['email'] = trim($subscriber['email']);
         if(!$subscriber['email']) {
             continue;
         }
@@ -118,8 +120,9 @@ $msg
         $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            throw new Exception($error."; email: ".$subscriber['email']);
+            $err_cnt++;
         }
+        return $err_cnt;
     }
 }
 
