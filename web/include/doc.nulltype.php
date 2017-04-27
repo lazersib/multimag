@@ -1117,6 +1117,49 @@ class doc_Nulltype extends \document {
             $tmpl->setContent("{response: 'err', text: '" . $e->getMessage() . "'}");
         }
     }
+    
+    /** Отправка документа по факсу на указанный номер
+     * 
+     * @param $form_name Имя формы отправляемого документа
+     * @param $faxnum Номер факса получателя
+     */
+    final function sendFaxTo($form_name, $faxnum) {
+        global $db;
+        if ($faxnum == '') {
+            throw new \Exception('Номер факса не указан');
+        }
+        if (!preg_match('/^\+\d{8,15}$/', $faxnum)) {
+            throw new \Exception("Номер факса $faxnum указан в недопустимом формате");
+        }
+        include_once('sendfax.php');
+        $data = $this->makePrintFormNoACLTest($form_name, true);
+        $fs = new \FaxSender();
+        $fs->setFileBuf($data);
+        $fs->setFaxNumber($faxnum);
+
+        $res = $db->query("SELECT `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
+        if ($res->num_rows) {
+            list($email) = $res->fetch_row();
+            $fs->setNotifyMail($email);
+        }
+        $res = $fs->send();        
+        doc_log("Send FAX", $faxnum, 'doc', $this->id);
+        return true;
+    }
+    
+    function getExtensionFromMIME($mime) {
+        switch ($mime) {
+            case 'text/csv':
+                return '.csv';
+            case 'application/vnd.ms-excel':
+                return '.xls';
+            case 'application/vnd.oasis.opendocument.spreadsheet':
+                return '.ods';
+            case 'application/pdf':
+            default:
+                return '.pdf';
+        }
+    }
 
     /// Отправка документа по электронной почте
     /// @param $form_name   Имя печатной формы
@@ -1140,22 +1183,7 @@ class doc_Nulltype extends \document {
                 } else {
                     $data = $this->makePrintForm($form_name, true);
                     $mime = $this->getPrintFormMime($form_name);
-                    switch ($mime) {
-                        case 'application/pdf':
-                            $extension = '.pdf';
-                            break;
-                        case 'text/csv':
-                            $extension = '.csv';
-                            break;
-                        case 'application/vnd.ms-excel':
-                            $extension = '.xls';
-                            break;
-                        case 'application/vnd.oasis.opendocument.spreadsheet':
-                            $extension = '.ods';
-                            break;
-                        default:
-                            $extension = '.pdf';
-                    }
+                    $extension = $this->getExtensionFromMIME($mime);
 
                     $fname = $this->typename . '_' . str_replace(":", "_", $form_name) . $extension;
                     $viewname = $this->getPrintFormViewName($form_name) . ' (' . $this->viewname . ')';
@@ -1167,6 +1195,27 @@ class doc_Nulltype extends \document {
         } catch (Exception $e) {
             $tmpl->setContent("{'response':'err','text':'" . $e->getMessage() . "'}");
         }
+    }
+    
+    /** Отправка документа по электронной почте
+     * 
+     * @param $form_name Имя печатной формы
+     * @param $email Адрес электронной почты
+     * @param string $text Текст сообщения электронной почты
+     */
+    final function sendEmailTo($form_name, $email, $text='') {
+        if ($email == '') {
+            throw new \Exception('Адрес электронной почты не указан!');
+        }
+        $data = $this->makePrintFormNoACLTest($form_name, true);
+        $mime = $this->getPrintFormMime($form_name);
+        $extension = $this->getExtensionFromMIME($mime);
+
+        $fname = $this->typename . '_' . str_replace(":", "_", $form_name) . $extension;
+        $viewname = $this->getPrintFormViewName($form_name) . ' (' . $this->viewname . ')';
+        $this->sendDocByEMail($email, $text, $viewname, $data, $fname);
+        doc_log("Send email", $email, 'doc', $this->id);
+        return true;
     }
 
     /// Печать документа
@@ -1219,12 +1268,8 @@ class doc_Nulltype extends \document {
     }
 
     /// Сделать документ потомком указанного документа
-    function connect($p_doc) {
-        global $db;
-        \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-        if ($this->doc_data['firm_id'] > 0) {
-            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
-        }
+    function subordinate($p_doc) {
+        global $db;        
         if ($this->id == $p_doc) {
             throw new \Exception('Нельзя связать с самим собой!');
         }
@@ -1244,7 +1289,11 @@ class doc_Nulltype extends \document {
     /// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
     function connectJson($p_doc) {
         try {
-            $this->Connect($p_doc);
+            \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+            if ($this->doc_data['firm_id'] > 0) {
+                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
+            }
+            $this->subordinate($p_doc);
             return " { \"response\": \"connect_ok\" }";
         } catch (Exception $e) {
             return " { \"response\": \"error\", \"message\": \"" . $e->getMessage() . "\" }";
@@ -1307,7 +1356,7 @@ class doc_Nulltype extends \document {
         $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            throw new Exception($error);
+            throw new \Exception($error);
         } else {
             return 0;
         }
@@ -1546,6 +1595,7 @@ class doc_Nulltype extends \document {
             $ret['comment'] = $this->doc_data['comment'];
             $ret['created'] = $this->doc_data['created'];
             $ret['ok'] = $this->doc_data['ok'];
+            $ret['p_doc'] = $this->doc_data['p_doc'];
             
             $fields = explode(' ', $this->header_fields);
             $ret['header_fields'] = $fields;
@@ -1690,7 +1740,7 @@ class doc_Nulltype extends \document {
             $this->setDocDataA($doc_data);
         }
         if(count($dop_data)>0) {
-            throw new Exception(json_encode($dop_data));
+            //throw new Exception(json_encode($dop_data));
             $this->setDopDataA($dop_data);
         }
     }
@@ -2003,9 +2053,10 @@ class doc_Nulltype extends \document {
 
     // ====== Получение данных, связанных с документом =============================
     protected function get_docdata() {
-        if (isset($this->doc_data))
+        if (isset($this->doc_data)) {
             return;
-        global $CONFIG, $db;
+        }
+        global $db;
         if ($this->id) {
             $this->loadFromDb($this->id);
         } else {
@@ -2500,7 +2551,7 @@ class doc_Nulltype extends \document {
                 \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::DELETE);
             }
             $db->update('doc_list', $this->id, 'mark_del', 0);
-            doc_log("UNDELETE", '', "doc", $this->id);
+            doc_log("UNMARKDELETE", '', "doc", $this->id);
             $json = ' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "' . $this->getApplyButtons() . '", '
                 . '"statusblock": "Документ не будет удалён" }';
             return $json;

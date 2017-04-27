@@ -170,8 +170,28 @@ var mm_api = function () {
         mm_api.callApi('document', 'update', data, ok_callback, err_callback);
     };
     
+    mm_api.document.markForDelete = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'markfordelete', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.unMarkDelete = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'unmarkdelete', data, ok_callback, err_callback);
+    };
+    
     mm_api.document.getPrintFormList = function(data, ok_callback, err_callback) {
         mm_api.callApi('document', 'getprintformlist', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.sendFax = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'sendfax', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.sendEmail = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'sendemail', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.subordinate = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'subordinate', data, ok_callback, err_callback);
     };
     
     /// Multiquery

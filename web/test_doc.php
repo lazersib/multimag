@@ -40,7 +40,7 @@ $tmpl->addTop("<script type='text/javascript' src='/js/api.js'></script>
 $tmpl->addContent("<div id='doc_container'></div>
 <script type=\"text/javascript\">
 var doc = doceditor('doc_container', 'doc_menu');
-doc.init(114236);
+doc.init(176944);
 </script>
 
 ");

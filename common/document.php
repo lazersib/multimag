@@ -343,8 +343,8 @@ class document {
                 if(!isset($this->dop_data[$name])) {
                     $this->dop_data[$name] = null;
                 }
-                $log_data[$name] = ['old'=>$this->dop_data[$name], 'new'=>$value];
-                $this->dop_data[$name] = $value;                
+                $log_data[$name] = ['old'=>$this->dop_data[$name], 'new'=>$value];                
+                $this->dop_data[$name] = $value;
             }
             if(count($to_write_data)>0) {
                 $db->replaceKA('doc_dopdata', 'doc', $this->id, $to_write_data);
@@ -382,9 +382,51 @@ class document {
         $this->text_data[$name] = $value;
     }
     
+    /** 
+     * Отметить документ для удаления
+     * @throws Exception Есть подчинённые документы без пометок на удаление
+     */
+    public function markForDelete() {
+        global $db;
+        if ($this->getDocData('mark_del')>0) { // Уже отмечен на удаление
+            return false;
+        } 
+        if ($this->getDocData('ok')) {
+            throw new \Exception("Удаление проведённых документов не возможно!");
+        } 
+        $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='{$this->id}' AND `mark_del`='0'");
+        if ($res->num_rows) {
+            throw new \Exception("Есть подчинённые документы без пометок на удаление. Удаление невозможно.");
+        }
+        $tim = time();
+        $db->update('doc_list', $this->id, 'mark_del', $tim);
+        doc_log("MARKDELETE", '', "doc", $this->id);
+        return $tim;
+    }
+    
+    public function unMarkDelete() {
+        global $db;
+        if ($this->getDocData('mark_del')==0) { // Не отмечен на удаление
+            return false;
+        }
+        $db->update('doc_list', $this->id, 'mark_del', 0);
+        doc_log("UNMARKDELETE", '', "doc", $this->id);
+        return true;
+    }
     
     /// Получить все текстовые параметры документа в виде ассоциативного массива
     public function getTextDataA() {
         return $this->text_data;
+    }
+    
+    /// Получить список документов, в которые может быть преобразован текущий
+    /// Переопределяется у потомков
+    public function getMorphingList() {
+        return [];
+    }
+    
+    /// Создать подчинённый документ из текущего
+    public function morph($morph_code) {
+        return false;
     }
 }

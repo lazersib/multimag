@@ -53,6 +53,16 @@ function doceditor(doc_container_id, menu_container_id) {
                 updateStoreView();
                 alert('Документ успешно '+((response.action=='apply')?'проведён':'отменён'));
             }
+            else if(response.action=='markfordelete') {                
+                doc.header.mark_del = response.content.result;
+                doc.updateMainMenu();
+                alert('Документ помечен на удаление');
+            }
+            else if(response.action=='unmarkdelete') {                
+                doc.header.mark_del = 0;
+                doc.updateMainMenu();    
+                alert('Отметка об удалении снята');
+            }
             else {
                 alert('document:action: '+response.action);
             }
@@ -502,12 +512,12 @@ function doceditor(doc_container_id, menu_container_id) {
             caption:"История изменений документа",
             link:"/doc.php?mode=log&doc="+doc.id
         });
-        if(doc.header.markdelete) {
+        if(doc.header.mark_del>0) {
             doc.contextPanel.del = mim.contextPanel.addButton({
                 icon:"i_trash_undo.png",
                 caption:"Отменить удаление",
                 accesskey: "U",
-                onclick: doc.undelete
+                onclick: doc.unMarkDelete
             });
         } 
         else if(doc.header.ok>0) {
@@ -529,9 +539,52 @@ function doceditor(doc_container_id, menu_container_id) {
                 icon:"i_trash.png",
                 caption:"Отметьть для удаления",
                 accesskey: "D",
-                onclick: doc.markdelete
+                onclick: doc.markForDelete
             });
         }
+        
+        mim.contextPanel.addSeparator();
+        
+        doc.contextPanel.print = mim.contextPanel.addButton({
+            icon:"i_print.png",
+            caption:"Печатные формы",
+            accesskey: "P",
+            onclick: doc.printForms
+        });
+        
+        doc.contextPanel.sendFaxForm = mim.contextPanel.addButton({
+            icon:"i_fax.png",
+            caption:"Отправить по факсу",
+            onclick: doc.faxForms
+        });
+        
+        doc.contextPanel.sendEmailForm = mim.contextPanel.addButton({
+            icon:"i_mailsend.png",
+            caption:"Отправить по email",
+            onclick: doc.emailForms
+        });
+        
+        mim.contextPanel.addSeparator();  
+        
+        doc.contextPanel.connect = mim.contextPanel.addButton({
+            icon:"i_conn.png",
+            caption:"Подчинить",
+            onclick: doc.subordinateDialog
+        });
+        
+        doc.contextPanel.morphto = mim.contextPanel.addButton({
+            icon:"i_to_new.png",
+            caption:"Преобразовать в",
+            onclick: doc.morphToMenu
+        });
+        
+        mim.contextPanel.addSeparator(); 
+        
+        doc.contextPanel.refillNomenclature = mim.contextPanel.addButton({
+            icon:"i_addnom.png",
+            caption:"Перезаполнить номенклатуру",
+            onclick: doc.refillNomenclatureForm
+        });
         
         if(doc.header.typename=='zayavka') {
             if(doc.header.reserved==0) {
@@ -555,51 +608,10 @@ function doceditor(doc_container_id, menu_container_id) {
             caption:"Отправить сообщение покупателю",
             onclick: doc.mailToClientForm
         });
-        
-        mim.contextPanel.addSeparator();
-        
-        doc.contextPanel.print = mim.contextPanel.addButton({
-            icon:"i_print.png",
-            caption:"Печатные формы",
-            accesskey: "P",
-            onclick: doc.printForms
-        });
-        
-        doc.contextPanel.sendFaxForm = mim.contextPanel.addButton({
-            icon:"i_fax.png",
-            caption:"Отправить по факсу",
-            onclick: doc.faxForms
-        });
-        
-        doc.contextPanel.sendEmailForm = mim.contextPanel.addButton({
-            icon:"i_mailsend.png",
-            caption:"Отправить по email",
-            onclick: doc.mailForms
-        });
-        
-        mim.contextPanel.addSeparator();  
-        
-        doc.contextPanel.connect = mim.contextPanel.addButton({
-            icon:"i_conn.png",
-            caption:"Связать с основанием",
-            onclick: doc.connectForm
-        });
-        
-        doc.contextPanel.morphto = mim.contextPanel.addButton({
-            icon:"i_to_new.png",
-            caption:"Преобразовать в",
-            onclick: doc.morphToMenu
-        });
-        
-        doc.contextPanel.refillNomenclature = mim.contextPanel.addButton({
-            icon:"i_addnom.png",
-            caption:"Перезаполнить номенклатуру",
-            onclick: doc.refillNomenclatureForm
-        });
     };
     
     doc.apply = function() {
-        mm_api.document.apply({id:doc.id},onLoadSuccess, onLoadError);
+        mm_api.document.apply({id:doc.id}, onLoadSuccess, onLoadError);
         if(doc.contextPanel.apply) {
             mim.contextPanel.updateButton(doc.contextPanel.apply, {
                 icon:"icon_load.gif",
@@ -611,11 +623,35 @@ function doceditor(doc_container_id, menu_container_id) {
     };
     
     doc.cancel = function() {
-        mm_api.document.cancel({id:doc.id},onLoadSuccess, onLoadError);
+        mm_api.document.cancel({id:doc.id}, onLoadSuccess, onLoadError);
         if(doc.contextPanel.cancel) {
             mim.contextPanel.updateButton(doc.contextPanel.cancel, {
                 icon:"icon_load.gif",
                 caption:"Отмена...",
+                accesskey: "",
+                onclick: function(){}
+            });
+        }
+    };
+    
+    doc.markForDelete = function() {
+        mm_api.document.markForDelete({id:doc.id}, onLoadSuccess, onLoadError);
+        if(doc.contextPanel.del) {
+            mim.contextPanel.updateButton(doc.contextPanel.del, {
+                icon:"icon_load.gif",
+                caption:"Ставим пометку...",
+                accesskey: "",
+                onclick: function(){}
+            });
+        }
+    };
+    
+    doc.unMarkDelete = function() {
+        mm_api.document.unMarkDelete({id:doc.id}, onLoadSuccess, onLoadError);
+        if(doc.contextPanel.del) {
+            mim.contextPanel.updateButton(doc.contextPanel.del, {
+                icon:"icon_load.gif",
+                caption:"Снимаем пометку...",
                 accesskey: "",
                 onclick: function(){}
             });
@@ -632,18 +668,7 @@ function doceditor(doc_container_id, menu_container_id) {
             });
         }
         var fstruct = { id: doc.id, reserved: doc.header.reserved?0:1};
-        mm_api.document.update(fstruct,onLoadSuccess, onLoadError);
-        /*$.ajax({
-            type: 'POST',
-            url: '/doc.php',
-            data: 'mode=srv&doc=' + doc.id + '&opt=togglereserve',
-            success: function (msg) {
-                docScriptsServerDataReceiver(msg, null, event);
-            },
-            error: function () {
-                jAlert('Ошибка соединения!', 'Переключение резервов', null, 'icon_err');
-            }
-        });*/
+        mm_api.document.update(fstruct, onLoadSuccess, onLoadError);
     }
     
     doc.printForms = function(event) {
@@ -655,8 +680,8 @@ function doceditor(doc_container_id, menu_container_id) {
             window.location = "/api.php?object=document&action=getprintform&data="+encodeURIComponent(JSON.stringify(data));
         }
 
-        function onLoadPFLError() {
-            jAlert('Ошибка соединения!', 'Печать', {}, 'icon_err');
+        function onLoadPFLError(response, data) {
+            jAlert(response.errorname + ': ' + response.errormessage, 'Печать', null, 'icon_err');
             menu.parentNode.removeChild(menu);
         }
         function onLoadPFLSuccess(response) {
@@ -679,7 +704,178 @@ function doceditor(doc_container_id, menu_container_id) {
         return false;
     }
     
+    doc.faxForms = function(event) {
+        var menu = CreateContextMenu(event);
+        function pickItem(event) {
+            var fname = event.target.fname;
+
+            menu.innerHTML = '';
+            menu.morphToDialog();
+            var elem = document.createElement('div');
+            elem.innerHTML = 'Номер факса:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>';
+            menu.appendChild(elem);
+            var ifax = document.createElement('input');
+            ifax.type = 'text';
+            //ifax.value = fax_number;
+            ifax.style.width = '200px';
+            menu.appendChild(ifax);
+            ifax.onkeyup = function() {
+                var regexp = /^\+\d{8,15}$/;
+                if (!regexp.test(ifax.value)) {
+                    ifax.style.color = "#f00";
+                    bsend.disabled = true;
+                } else {
+                    ifax.style.color = "";
+                    bsend.disabled = false;
+                }
+            };
+            
+            elem = document.createElement('br');
+            menu.appendChild(elem);
+            var bcancel = document.createElement('button');
+            bcancel.innerHTML = 'Отменить';
+            bcancel.onclick = function () {
+                menu.parentNode.removeChild(menu);
+            };
+            menu.appendChild(bcancel);
+            var bsend = document.createElement('button');
+            bsend.innerHTML = 'Отправить';
+            menu.appendChild(bsend);
+            bsend.onclick = function () {
+                mm_api.document.sendFax({id:doc.id, faxnum: ifax.value, name: fname}, onLoadPFLSuccess, onLoadPFLError);
+                menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка факса...';
+            };
+            ifax.onkeyup();
+        }
+
+        function onLoadPFLError(response, data) {
+            jAlert(response.errorname + ': ' + response.errormessage, 'Отправка факса', null, 'icon_err');
+            menu.parentNode.removeChild(menu);
+        }
+        function onLoadPFLSuccess(response) {
+            if(response.action == 'getprintformlist') {
+                menu.innerHTML = '';
+                var printforms = response.content.printforms;
+                for (var i = 0; i < printforms.length; i++) {
+                    var elem = document.createElement('div');
+                    if (printforms[i].mime) {
+                        var mime = printforms[i].mime.replace('/', '-');
+                        elem.style.backgroundImage = "url('/img/mime/22/" + mime + ".png')";
+                    }
+                    elem.innerHTML = printforms[i].desc;
+                    elem.fname = printforms[i].name;
+                    elem.onclick = pickItem;
+                    menu.appendChild(elem);
+                }
+            }
+            else if(response.action == 'sendfax') {
+                jAlert('Факс успешно отправлен на сервер! Вы получите уведомление по email c результатом отправки получателю!', "Выполнено");
+                menu.parentNode.removeChild(menu);
+            } 
+            else {
+                jAlert("Обработка полученного сообщения не реализована", "Отправка факса", null, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            }
+        }  
+        mm_api.document.getPrintFormList({id:doc.id},onLoadPFLSuccess, onLoadPFLError);
+
+        return false;
+    };
     
+    doc.emailForms = function(event) {
+        var menu = CreateContextMenu(event);
+        var email = '';
+        function pickItem(event) {
+            var fname = event.target.fname;
+
+            menu.innerHTML = '';
+            menu.morphToDialog();
+            var elem=document.createElement('div');
+            elem.innerHTML='Адрес электронной почты:';
+            menu.appendChild(elem);
+            var imail=document.createElement('input');
+            imail.type='tel';
+            imail.value=email;
+            imail.style.width='200px';
+            menu.appendChild(imail);
+            elem=document.createElement('div');
+            elem.innerHTML='Комментарий:';
+            menu.appendChild(elem);
+            var mailtext=document.createElement('textarea');
+            menu.appendChild(mailtext);
+            menu.appendChild(document.createElement('br'));
+
+            
+            elem = document.createElement('br');
+            menu.appendChild(elem);
+            var bcancel = document.createElement('button');
+            bcancel.innerHTML = 'Отменить';
+            bcancel.onclick = function () {
+                menu.parentNode.removeChild(menu);
+            };
+            menu.appendChild(bcancel);
+            var bsend = document.createElement('button');
+            bsend.innerHTML = 'Отправить';
+            menu.appendChild(bsend);
+            bsend.onclick = function () {
+                mm_api.document.sendEmail({id:doc.id, email: imail.value, name: fname, text: mailtext.value}, onLoadPFLSuccess, onLoadPFLError);
+                menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка email...';
+            };
+            
+        }
+
+        function onLoadPFLError(response, data) {
+            jAlert(response.errorname + ': ' + response.errormessage, 'Отправка email', null, 'icon_err');
+            menu.parentNode.removeChild(menu);
+        }
+        function onLoadPFLSuccess(response) {
+            if(response.action == 'getprintformlist') {
+                menu.innerHTML = '';
+                var printforms = response.content.printforms;
+                for (var i = 0; i < printforms.length; i++) {
+                    var elem = document.createElement('div');
+                    if (printforms[i].mime) {
+                        var mime = printforms[i].mime.replace('/', '-');
+                        elem.style.backgroundImage = "url('/img/mime/22/" + mime + ".png')";
+                    }
+                    elem.innerHTML = printforms[i].desc;
+                    elem.fname = printforms[i].name;
+                    elem.onclick = pickItem;
+                    menu.appendChild(elem);
+                }
+            }
+            else if(response.action == 'sendemail') {
+                jAlert('Сообщение успешно отправлено!', "Выполнено");
+                menu.parentNode.removeChild(menu);
+            } 
+            else {
+                jAlert("Обработка полученного сообщения не реализована", "Отправка email", null, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            }
+        }  
+        mm_api.document.getPrintFormList({id:doc.id},onLoadPFLSuccess, onLoadPFLError);
+
+        return false;
+    };
+    
+    doc.subordinateDialog = function(event) {
+        
+        function onEnterData(result) {
+            mm_api.document.subordinate({id:doc.id, p_doc: result},onLoadSuccess, onLoadError);
+        }
+
+        function onLoadError(response, data) {
+            jAlert(response.errorname + ': ' + response.errormessage, 'Подчинение документа', null, 'icon_err');
+        }
+        function onLoadSuccess(response) {
+            jAlert('Сделано!', 'Подчинение документа');
+        }  
+        
+        jPrompt("Укажите <b>системный</b> номер документа,<br> к которому привязать <br>текущий документ:",
+            doc.header.p_doc, "Подчинение документа",  onEnterData);
+
+        return false;
+    }
     
     return doc;
 };

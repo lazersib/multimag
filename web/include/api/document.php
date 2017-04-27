@@ -175,7 +175,7 @@ class document {
         return ['id'=>$doc_id, 'printforms' => $document->getCSVPrintFormList()];
     }
 
-    /// Получить список печатных форм
+    /// Получить печатную форму
     protected function getPrintForm($data) {
         if(!isset($data['name'])) {
             throw new \NotFoundException('Имя печатной формы не задано');
@@ -194,7 +194,98 @@ class document {
         return $document->makePrintFormNoACLTest($data['name']);
     }
     
-    public function dispatch($action, $data=null) {
+    /**
+     * Отправить факс
+     * @param array $data Массив, содержащий ID документа, имя печатной формы, и номер факса
+     * @return array Массив с результатом операции
+     */
+    protected function sendFax($data) {
+        if(!isset($data['name'])) {
+            throw new \NotFoundException('Имя печатной формы не задано');
+        }
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        if ($document->getDocData('ok')) {
+            \acl::accessGuard('doc.' . $document->getTypeName(), \acl::GET_PRINTFORM);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::GET_PRINTFORM);
+        } else {
+            \acl::accessGuard('doc.' . $document->getTypeName(), \acl::GET_PRINTDRAFT);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::GET_PRINTDRAFT);
+        }
+        $document->sentZEvent('sendfax');
+        $result = $document->sendFaxTo($data['name'], $data['faxnum']);
+        return [ 'id'=>$doc_id, 'result'=>$result ];
+    }
+    
+    /**
+     * Отправить печатную форму документа по электронной почте
+     * @param array $data Массив, содержащий ID документа, имя печатной формы, email адрес, текст сообщения
+     * @return array Массив с результатом операции
+     */
+    protected function sendEmail($data) {
+        if(!isset($data['name'])) {
+            throw new \NotFoundException('Имя печатной формы не задано');
+        }
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        if ($document->getDocData('ok')) {
+            \acl::accessGuard('doc.' . $document->getTypeName(), \acl::GET_PRINTFORM);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::GET_PRINTFORM);
+        } else {
+            \acl::accessGuard('doc.' . $document->getTypeName(), \acl::GET_PRINTDRAFT);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::GET_PRINTDRAFT);
+        }
+        $document->sentZEvent('sendemail');
+        $result = $document->sendEmailTo($data['name'], $data['email'], $data['text']);
+        return [ 'id'=>$doc_id, 'result'=>$result ];
+    }
+    
+    /**
+     * Установить пометку *на удаление*
+     * @param array $data Массив, содержащий ID документа
+     * @return array Массив с результатом операции
+     */
+    protected function markForDelete($data) {
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        \acl::accessGuard('doc.' . $document->getTypeName(), \acl::DELETE);
+        \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::DELETE);
+        $result = $document->markForDelete();
+        return ['id'=>$doc_id, 'result'=>$result];
+    }
+    
+    /**
+     * Снять пометку на удаление
+     * @param array $data Массив, содержащий ID документа
+     * @return array Массив с результатом операции
+     */
+    protected function unMarkDelete($data) {
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        \acl::accessGuard('doc.' . $document->getTypeName(), \acl::DELETE);
+        \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::DELETE);
+        $result = $document->unMarkDelete();
+        return ['id'=>$doc_id, 'result'=>$result];
+    }
+    
+    protected function subordinate($data) {
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        \acl::accessGuard('doc.' . $document->getTypeName(), \acl::UPDATE);
+        \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::UPDATE);
+        if(!isset($data['p_doc'])) {
+            $data['p_doc'] = null;
+        }
+        $result = $document->subordinate($data['p_doc']);
+        return ['id'=>$doc_id, 'result'=>$result];
+    }
+
+        public function dispatch($action, $data=null) {
         switch($action) {
             case 'get':
                 return $this->get($data);
@@ -206,9 +297,19 @@ class document {
                 return $this->cancel($data);
             case 'getprintformlist':
                 return $this->getPrintFormList($data);
+            case 'markfordelete':
+                return $this->markForDelete($data);
+            case 'unmarkdelete':
+                return $this->unMarkDelete($data);
             case 'getprintform':
                 $this->send_file = true;
                 return $this->getPrintForm($data);
+            case 'sendfax':
+                return $this->sendFax($data);
+            case 'sendemail':
+                return $this->sendEmail($data);
+            case 'subordinate':
+                return $this->subordinate($data);
             default:
                 throw new \NotFoundException('Некорректное действие');
         }

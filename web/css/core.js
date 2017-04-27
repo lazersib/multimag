@@ -119,28 +119,44 @@ function CreateContextMenu(e)
 	menu.style.top=(e.clientY+scrollTop)+'px'
 	document.getElementsByTagName('body')[0].appendChild(menu)
 
-	menu.onmouseover=function() { if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer); menu.waitHideTimer=window.setTimeout(AnimateHideMenu, 5000) }
-	menu.onmouseout=ContextMenuOut
-	menu.waitHideTimer=window.setTimeout(AnimateHideMenu, 5000)
+	menu.onmouseover=function() {
+            menu.clearTimer();
+            menu.waitHideTimer = window.setTimeout(AnimateHideMenu, 5000);
+        };
+	menu.onmouseout=ContextMenuOut;
+        
+	menu.waitHideTimer=window.setTimeout(AnimateHideMenu, 5000);
 	menu.opacity=1
+        
+        menu.clearTimer = function() {
+            if(menu.waitHideTimer) {
+                window.clearTimeout(menu.waitHideTimer);
+            }
+        }
+        
+        menu.morphToDialog = function() {
+            menu.clearTimer();
+            menu.onmouseover = menu.onmouseout = null;
+            menu.className = 'contextlayer';
+        };
 
-
-	function ContextMenuOut()
-	{
-		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
-		menu.waitHideTimer=window.setTimeout(AnimateHideMenu, 500)
+	function ContextMenuOut() {
+            menu.clearTimer();
+            menu.waitHideTimer=window.setTimeout(AnimateHideMenu, 500)
 	}
 
-	function AnimateHideMenu()
-	{
+	function AnimateHideMenu() {
 		menu.opacity-=0.15
 		menu.style.opacity=menu.opacity
 		if(menu.opacity<=0)
 			menu.parentNode.removeChild(menu)
 		else	menu.animHideTimer=window.setTimeout(AnimateHideMenu, 50)
 	}
-	return menu
-}
+        
+        
+        
+	return menu;
+};
 
 function ShowContextMenu(event, url)
 {
