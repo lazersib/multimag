@@ -2298,17 +2298,18 @@ class doc_Nulltype extends \document {
             $line['sum'] = $line['price'] * $line['cnt'];
 
             if (isset($opts['vat'])) {
-                if ($line['vat'] !== null) {
+                if($this->firm_vars['param_nds']) {
+                    if($line['vat']===null) {
+                        $line['vat'] = 0;
+                    }                        
                     $ndsp = $line['vat'];
-                } else {
-                    $ndsp = $this->firm_vars['param_nds'];
+                    $vat = $ndsp / 100;
                 }
-                $vat = $ndsp / 100;
-                /*    if ($line['vat'] !== null) {
-                  $line['vat_p'] = $line['vat'];
-                  } else {
-                  $line['vat_p'] = $this->firm_vars['param_nds'];
-                  }
+                else {
+                    $ndsp = $vat = 0;
+                }
+
+                /* 
                   $line['price_wo_vat'] = round($line['price'] / (1 + ($line['vat_p'] / 100)), 2);
                   $line['sum_wo_vat'] = $line['price_wo_vat'] * $line['cnt'];
                   $line['vat_s'] = ($line['price'] * $line['cnt']) - $line['sum_wo_vat']; */
@@ -2318,6 +2319,7 @@ class doc_Nulltype extends \document {
                 $line['vat_p'] = $ndsp;
                 $line['vat_s'] = round($pos['vat_s'], 2);
                 $line['sum'] = round($pos['sum'], 2);
+                
             }
 
 
@@ -2347,12 +2349,16 @@ class doc_Nulltype extends \document {
 	ORDER BY `doc_list_pos`.`id`");
 
         while ($nxt = $res->fetch_assoc()) {
-            if ($nxt['nds'] !== null) {
-                $ndsp = $nxt['nds'];
-            } else {
-                $ndsp = $this->firm_vars['param_nds'];
+            if($this->firm_vars['param_nds']) {
+                if($nxt['vat']===null) {
+                    $nxt['vat'] = 0;
+                }                        
+                $ndsp = $nxt['vat'];
+                $vat = $ndsp / 100;
             }
-            $nds = $ndsp / 100;
+            else {
+                $ndsp = $vat = 0;
+            }
 
             if (!$nxt['country_code']) {
                 //throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
@@ -2435,7 +2441,7 @@ class doc_Nulltype extends \document {
                     }
                 }
                 foreach ($unigtd as $gtd => $cnt) {
-                    $pos = $this->calcVAT($nxt['cost'], $cnt, $nds);
+                    $pos = $this->calcVAT($nxt['cost'], $cnt, $vat);
                     $list[] = array(
                         'line_id' => $nxt['line_id'],
                         'pos_id' => $nxt['pos_id'],
@@ -2459,7 +2465,7 @@ class doc_Nulltype extends \document {
                     );
                 }
             } else {
-                $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $nds);
+                $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $vat);
                 $list[] = array(
                     'line_id' => $nxt['line_id'],
                     'pos_id' => $nxt['pos_id'],

@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "942");
+define("MULTIMAG_REV", "950");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -55,7 +55,7 @@ function getSubscribersEmailList() {
     $res = $db->query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `agent_contacts`.`value` AS `email`"
         . " FROM `agent_contacts`"
         . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`agent_contacts`.`agent_id`"
-        . " WHERE `agent_contacts`.`type='email' AND `agent_contacts`.`no_ads`='0'");
+        . " WHERE `agent_contacts`.`type`='email' AND `agent_contacts`.`no_ads`='0'");
     while($line = $res->fetch_assoc()) {
         if($line['fullname']) {
             $line['name'] = $line['fullname'];
