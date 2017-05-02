@@ -616,16 +616,22 @@ class BETemplate {
 
 }
 
+/// Класс-исключение используется для информирования о отсутствии привилегий на доступ к запрошенной функции
+class LoginException extends Exception {
 
+    function __construct($text = '', $code = 0, $previous = NULL) {
+        header('HTTP/1.0 403 Forbidden');
+        parent::__construct($text, $code, $previous);
+    }
+}
 
 /// Класс-исключение используется для информирования о отсутствии привилегий на доступ к запрошенной функции
 class AccessException extends Exception {
 
     function __construct($text = '', $code = 0, $previous = NULL) {
         header('HTTP/1.0 403 Forbidden');
-        parent::__construct("Нет доступа: " . $text, $code, $previous);
+        parent::__construct($text, $code, $previous);
     }
-
 }
 
 /// Класс-исключение используется для информирования о отсутствии запрашиваемого объекта. Устанавливает заголовок 404 Not found
@@ -744,7 +750,7 @@ if(isset($CONFIG['site']['session_cookie_domain'])) {
 session_start();
 require_once($CONFIG['location']."/common/core.common.php");
 
-if ($CONFIG['site']['force_https']) {
+if ($CONFIG['site']['force_https'] && !isset($_SERVER['HTTPS'])) {
     header('Location: https://' . $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'], true, 301);
 }
 

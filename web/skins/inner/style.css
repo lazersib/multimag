@@ -49,6 +49,21 @@ select
 	border-radius:		4px;*/
 }
 
+select.error {
+    background-color: #f00 !important;
+    color: #fff !important;
+}
+
+select.error option {
+    background-color: #fff;
+    color: #000;
+}
+
+option.error {
+    background-color: #f00 !important;
+    color: #fff !important;
+}
+
 form
 {
 	margin:1ex;
@@ -252,52 +267,52 @@ div.notify
 .f_green
 {
 	font-weight: bold;
-	COLOR: #00cc00;
+	color: #00cc00;
 }
 
 .f_purple
 {
 	font-weight: bold;
-	COLOR: #cc00cc;
+	color: #cc00cc;
 }
 
 .f_brown
 {
 	font-weight: bold;
-	COLOR: #773300;
+	color: #773300;
 }
 
 .f_more
 {
 	font-weight: bold;
-	COLOR: #28a488;
+	color: #28a488;
 }
 
 .f_red
 {
 	font-weight: bold;
-	COLOR: #ff0000;
+	color: #ff0000;
 }
 
 .f_blue
 {
 	font-weight: bold;
-	COLOR: #0000ff;
+	color: #0000ff;
 }
 
 .b_green
 {
-	BACKGROUND-COLOR: #aaffaa;
+	background-color: #aaffaa;
 }
 
 .b_red
 {
-	BACKGROUND-COLOR: #ffaaaa;
+	background-color: #ffaaaa;
 }
 
 .b_selection
 {
-	BACKGROUND-COLOR: #A9D1FF;
+	background-color: #A9D1FF;
 }
 
 input.tedit
@@ -571,24 +586,26 @@ div#wiki-page {
 		clear:		both;
 	}
 
-div#wiki-foot {
-	padding:		0.6em;
+div#footer {
+	padding:		0.5em;
 	margin:			0;
 	border:			0;
-	min-height:		5em;
-	clear:			both;
-	height:			4em;
-	color: 			#fff;
-	background-color: rgb(100,135,220);
+	min-height:		1.5em;
+	height:			1em;
+	color: 			#000;
+	background-color: #eef2ff;
+        text-align: center;
+        border-top: 1px #ccc solid;
+        font-size: 0.8em;
 }
-	div#foot-left {
-		float:			left;
+	div#footer-left {
+		float:		left;
 	}
-	div#foot-right {
+	div#footer-right {
 		float:		right;
 		text-align:	right;
 	}
-	div#wiki-foot  ul, div#wiki-foot  div ul {
+	div#footer  ul, div#wiki-foot  div ul {
 		list-style-type: none;
 		list-style-position: inside;
 		margin: 	0;
@@ -596,31 +613,31 @@ div#wiki-foot {
 		border:		0;
 		white-space:normal;	
 	}
-	div#wiki-foot  li, div#wiki-foot  div ul li {
+	div#footer  li, div#wiki-foot  div ul li {
 		display:	inline;
 		margin: 	0;
 		padding: 	0 0.2em 0 0.4em;
 		border:		0;
 		border-left:0.1em solid white;
 	}
-	div#wiki-foot  li.noborder, div#wiki-foot  div ul li.noborder {
+	div#footer  li.noborder, div#wiki-foot  div ul li.noborder {
 		border:		0;
 	}
-	div#wiki-foot a:link, div#wiki-foot a:visited, div#wiki-foot a:active {
+	div#footer a:link, div#wiki-foot a:visited, div#wiki-foot a:active {
 		color:		#fff;
 		background-color:transparent;
 		text-decoration:none;
 	}
-	div#wiki-foot a:hover {
-		color:		#fff;
+	div#footer a:hover {
+		color:		#f00;
 		background-color:transparent;
 		text-decoration:underline;
 	}
-	div#wiki-foot p {
+	div#footer p {
 		margin:		0;
 		padding:	0;
 	}
-	div#wiki-top  li.noborder, div#wiki-top  div ul li.noborder {
+	div#footer  li.noborder, div#wiki-top  div ul li.noborder {
 		border:		0;
 	}
 
@@ -854,10 +871,27 @@ table.editcard > tbody > tr > th, table.editcard > tr > th {
 	background-repeat: 	no-repeat;
 }
 
-#doc_menu_r
-{
+#doc_menu img, #doc_menu a {
+    border:0;
+}
+
+#doc_menu a {
+    padding-left: 1px;
+    padding-right: 1px;
+}
+
+#main_menu_right {
 	float:			right;
 }
+
+#main_menu_context_panel {
+    margin-left: 5px;
+    border-left: 3px #ccc dotted;
+    display: inline-block;
+    padding-left: 5px;
+}
+
+
 /* Новый вид документов */
 
 #doc_left_block
@@ -866,33 +900,33 @@ table.editcard > tbody > tr > th, table.editcard > tr > th {
 	background-color:	#e0f0ff;
 	width:			310px;
 	padding:		5px;
+        padding-left:           10px;
+        padding-top:            0;
 	font-size:		12px;
 }
 
 #doc_left_block  input[type=text]
 {
 	padding:	1px;
-	margin:		0px;
+	margin:		1px;
 }
 
 #doc_left_block select
 {
-	width:	100%;
+    width:	100%;
 }
 
 #doc_head_main
 {
-	border-spacing: 0px;
+    border-spacing: 0px;
 }
-
-
 
 #doc_head_main input
 {
-	border:			1px solid #ccc;
-	-moz-border-radius:	4px;
-	border-radius:		4px;
-	padding:		3px;
+    border:			1px solid #ccc;
+    -moz-border-radius:	4px;
+    border-radius:		4px;
+    padding:		3px;
 }
 
 #doc_head_main .altnum
@@ -927,10 +961,29 @@ table.editcard > tbody > tr > th, table.editcard > tr > th {
 	width:	150px;
 }
 
+#dochead_label_id {
+    position: relative;
+    z-index: 10;
+    float: right;
+}
+
+#doc_v_separator {
+    float:              left;
+    background-color:	#fff;
+    width:		8px;
+    height:             auto;
+    min-height:         500px;
+    font-size:		2px;
+    margin-left:        0px;
+    border-left:        1px solid #eee;
+    border-right:       1px solid #eee;
+    background-image: url(/img/left_separator.png);
+    cursor: pointer;
+}
 
 #doc_main_block
 {
-	margin-left:		320px;
+	margin-left:		335px;
 	border-left:		1px solid #ccc;
 }
 
@@ -1014,6 +1067,90 @@ div.clear
 	margin:			4px;
 	padding:		2px;
 }
+
+/* ajax вид документов */
+#doc_left_block h1 {
+    text-align: center;
+    margin: 5px;
+}
+
+#doc_left_block form {
+    margin: 0;
+    padding: 0;
+}
+
+#doc_left_block select {
+    margin: 3px 0;
+    padding: 0;
+    background-color: #fff;
+}
+
+#doc_left_block div.item {
+    margin: 0;
+    padding: 0;
+    padding-bottom: 4px;
+    padding-top: 2px;
+    border-bottom: 1px #ddd dotted;
+}
+
+#doc_left_block input[name=altnum] {
+    width: 50px;
+    margin: 3px 1px;
+}
+
+#doc_left_block input[name=subtype] {
+    width: 40px;
+    margin: 3px 1px;
+}
+
+#doc_left_block input[name=datetime] {
+    width:	150px;
+    margin: 3px 1px;
+    margin-left: 20px;
+}
+
+#dochead_plus_altnum {
+    border:0;
+    margin-right: 5px;
+}
+
+#dochead_dishonest_info {
+    color: #f00;
+    font-weight:bold;
+    display:none;
+}
+
+#dochead_comment {
+    margin: 3px 0;
+    width: 298px;
+    padding: 5px;
+}
+
+#dochead_agent_name {
+    margin: 3px 0px !important; 
+    width: 306px;
+}
+
+/* для autocomplete левого блока  */
+
+#doc_left_block .cac_results {
+	padding: 0px;
+	border: 1px solid #ccc;
+	background-color: #fff;
+	z-index:	  99999;
+	width: 308px;
+	height: 200px;
+	position: relative;
+	overflow-x: hidden;
+	overflow-y: auto;
+	left:	0px;
+	top:    -4px;
+}
+
+#doc_left_block .cac_clear {
+    left:	292px;
+}
+
 
 /* для autocomplete с кешированием в localstorage */
 
@@ -1225,3 +1362,8 @@ div.attachments ul {
 div.attachments span.size {
     cursor:help;
 }
+
+hr.botline {
+    clear: both;
+}
+

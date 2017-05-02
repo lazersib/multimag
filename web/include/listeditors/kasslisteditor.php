@@ -81,12 +81,17 @@ class KassListEditor extends \ListEditor {
 
 	public function saveItem($id, $data) {
 		settype($id, 'int');
-		$name_sql	= $this->db_link->real_escape_string($data['name']);
-		$firm_id	= intval($data['firm_id']);
+		$name_sql = $this->db_link->real_escape_string($data['name']);
+                if($data['firm_id']=='null') {
+                    $firm_id = 'NULL';
+                }
+                else {
+                    $firm_id = intval($data['firm_id']);
+                }
 		if($id) {
                     $res =  $this->db_link->query("SELECT `num` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='$id'");
                     if($res->num_rows) {
-			$this->db_link->query("UPDATE `doc_kassa` SET `name`='$name_sql', `firm_id`='$firm_id'
+			$this->db_link->query("UPDATE `doc_kassa` SET `name`='$name_sql', `firm_id`=$firm_id
 				WHERE `ids`='kassa' AND `num`=$id");
 			return $id;
                     }

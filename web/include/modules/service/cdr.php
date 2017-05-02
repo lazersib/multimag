@@ -731,7 +731,7 @@ class CDR extends \IModule {
             }
             
             $tmpl->addContent("<tr>"               
-                . "<td><a href='{$this->link_prefix}&amp;sect=queue&amp;callid=".html_out($data['callid'])."&amp;date_from=1970-01-01>".html_out($data['callid'])."</a></td>"
+                . "<td><a href='{$this->link_prefix}&amp;sect=queue&amp;callid=".html_out($data['callid'])."&amp;date_from=1970-01-01'>".html_out($data['callid'])."</a></td>"
                 . "<td>".html_out($number)."</td>"
                 . "<td>".$object."</td>"
                 . "<td>".html_out($data['wait'])."</td>"

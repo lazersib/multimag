@@ -58,6 +58,10 @@ class agent {
                 return $this->get($data);
             case 'create':
                 return $this->create($data);
+            case 'listnames':
+                \acl::accessGuard('directory.agent', \acl::VIEW);
+                $ldo = new \Models\LDO\agentnames();
+                return $ldo->getData();
             default:
                 throw new \NotFoundException('Некорректное действие');
         }

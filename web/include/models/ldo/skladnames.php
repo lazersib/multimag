@@ -20,17 +20,17 @@ namespace Models\LDO;
 
 /// Класс списка наименований складов
 class skladnames extends \Models\ListDataObject {
-	
-	/// @brief Получить данные
-	public function getData() {
-		global $db;
-		$sql = "SELECT `id`, `name` FROM `doc_sklady` ORDER by `id` ASC";
-		$result = '';
-		$a = array();
-		$res = $db->query($sql);
-		while ($line = $res->fetch_assoc()) {
-			$a[$line['id']] = $line['name'];
-		}
-		return $a;
-	}
+
+    /// @brief Получить данные
+    public function getData() {
+        global $db;
+        $sql = "SELECT `id`, `name` FROM `doc_sklady` ORDER by `id` ASC";
+        $a = array();
+        $res = $db->query($sql);
+        while ($line = $res->fetch_assoc()) {
+            $a[$line['id']] = $line['name'];
+        }
+        return $a;
+    }
+
 }

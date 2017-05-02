@@ -322,16 +322,15 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
 
 	$tmpl->addTop("<div id='doc_menu' $err>
 	<div id='doc_menu_container'>
-	<div id='doc_menu_r'>
+	<div id='main_menu_right'>
 	<!--<input type='text' id='quicksearch'>
-	<script>
-	var ac=initAutocomplete('quicksearch','/docs.php?l=sklad&mode=srv&opt=acj')
-	</script>
+
 	-->
         <a href='/intkb.php' title='База знаний'><img src='/img/i_help.png' alt='База знаний' border='0'></a>
 	<a href='/user.php' title='Возможности пользователя'><img src='/img/i_users.png' alt='Возможности пользователя' border='0'></a>
 	<a href='/login.php?mode=logout' title='Выход'><img src='/img/i_logout.png' alt='Выход'></a>
 	</div>
+        <div id='main_menu_left'>
 	<a href='/' title='Главная'><img src='/img/i_home.png' alt='Главная' border='0'></a>
 
 	<img src='/img/i_separator.png' alt=''>
@@ -374,7 +373,7 @@ function doc_menu($dop = "", $nd = 1, $doc = 0) {
             $tmpl->addTop("<img src='/img/i_separator.png' alt=''> $dop");
         }
 
-    $tmpl->addTop("</div></div>");
+    $tmpl->addTop("</div></div></div>");
 
 	if ($nd && @$CONFIG['doc']['mincount_info']) {
             $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `doc_base`.`name`, `doc_base_cnt`.`cnt`, `doc_base_cnt`.`mincnt`, `doc_sklady`.`name`

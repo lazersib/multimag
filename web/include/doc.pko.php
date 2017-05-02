@@ -118,13 +118,10 @@ class doc_Pko extends paymentbasedoc {
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }
-        if ($silent) {
-            return;
+        parent::docApply($silent);
+        if (!$silent) {
+            $this->paymentNotify();
         }
-
-        $db->update('doc_list', $this->id, 'ok', time());
-        $this->sentZEvent('apply');
-        $this->paymentNotify();
     }
 
     // Отменить проведение
@@ -144,11 +141,12 @@ class doc_Pko extends paymentbasedoc {
         }
 
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
         $budet = $this->checkKassMinus();
         if ($budet < 0) {
             throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
         }
-        $this->sentZEvent('cancel');
+        parent::docCancel();
     }
 
     protected function extendedAclCheck($acl, $today_acl, $action) {

@@ -523,117 +523,113 @@ function PrintMenu(event,doc)
 	return false
 }
 
-function FaxMenu(event,doc)
-{
-	var menu=CreateContextMenu(event)
-	var fax_number=''
-	function pickItem(event)
-	{
-		var obj=event.target
-		menu.innerHTML=''
-		menu.className='contextlayer'
-		menu.onmouseover=menu.onmouseout=function() {  }
-		if(menu.waitHideTimer) window.clearTimeout(menu.waitHideTimer)
-		var elem=document.createElement('div')
-		elem.innerHTML='Номер факса:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>'
-		menu.appendChild(elem)
-		var ifax=document.createElement('input')
-		ifax.type='text'
-		ifax.value=fax_number
-		ifax.style.width='200px'
-		menu.appendChild(ifax)
-		elem=document.createElement('br')
-		menu.appendChild(elem)
-		var bcancel=document.createElement('button')
-		bcancel.innerHTML='Отменить'
-		bcancel.onclick=function() {menu.parentNode.removeChild(menu)}
-		menu.appendChild(bcancel)
-		var bsend=document.createElement('button')
-		bsend.innerHTML='Отправить'
-		menu.appendChild(bsend)
-		bsend.onclick=function()
-		{
-			$.ajax({
-			type:   'GET',
-			url:    '/doc.php',
-			data:   'mode=fax&doc='+doc+'&opt='+event.target.fname+'&faxnum='+encodeURIComponent(ifax.value),
-			success: function(msg) { rcvDataSuccess(msg) },
-			error:   function() { jAlert('Ошибка соединения!','Отправка факса',null,'icon_err'); menu.parentNode.removeChild(menu);},
-			});
-			menu.innerHTML='<img src="/img/icon_load.gif" alt="отправка">Отправка факса...'
-		}
-		function validate_fax()
-		{
-			var regexp=/^\+\d{8,15}$/
-			if(!regexp.test(ifax.value))
-			{
-				ifax.style.color="#f00"
-				bsend.disabled=true
-			}
-			else
-			{
-				ifax.style.color=""
-				bsend.disabled=false
-			}
-		}
-		ifax.onkeyup=validate_fax
-		validate_fax()
-	}
+function FaxMenu(event, doc) {
+    var menu = CreateContextMenu(event)
+    var fax_number = ''
+    function pickItem(event) {
+        var obj = event.target
+        menu.innerHTML = ''
+        menu.morphToDialog();
+        var elem = document.createElement('div')
+        elem.innerHTML = 'Номер факса:<br><small>В международном формате +XXXXXXXXXXX...<br>без дефисов, пробелов, и пр.символов</small>'
+        menu.appendChild(elem)
+        var ifax = document.createElement('input')
+        ifax.type = 'text'
+        ifax.value = fax_number
+        ifax.style.width = '200px'
+        menu.appendChild(ifax)
+        elem = document.createElement('br')
+        menu.appendChild(elem)
+        var bcancel = document.createElement('button')
+        bcancel.innerHTML = 'Отменить'
+        bcancel.onclick = function () {
+            menu.parentNode.removeChild(menu)
+        }
+        menu.appendChild(bcancel)
+        var bsend = document.createElement('button')
+        bsend.innerHTML = 'Отправить'
+        menu.appendChild(bsend)
+        bsend.onclick = function () {
+            $.ajax({
+                type: 'GET',
+                url: '/doc.php',
+                data: 'mode=fax&doc=' + doc + '&opt=' + event.target.fname + '&faxnum=' + encodeURIComponent(ifax.value),
+                success: function (msg) {
+                    rcvDataSuccess(msg)
+                },
+                error: function () {
+                    jAlert('Ошибка соединения!', 'Отправка факса', null, 'icon_err');
+                    menu.parentNode.removeChild(menu);
+                },
+            });
+            menu.innerHTML = '<img src="/img/icon_load.gif" alt="отправка">Отправка факса...'
+        }
+        function validate_fax() {
+            var regexp = /^\+\d{8,15}$/
+            if (!regexp.test(ifax.value)) {
+                ifax.style.color = "#f00"
+                bsend.disabled = true
+            } else {
+                ifax.style.color = ""
+                bsend.disabled = false
+            }
+        }
+        ifax.onkeyup = validate_fax
+        validate_fax()
+    }
 
-	function rcvDataSuccess(msg)
-	{
-		try
-		{
-			var json=eval('('+msg+')');
-			if(json.response=='err')
-			{
-				jAlert(json.text,"Ошибка", {}, 'icon_err');
-				menu.parentNode.removeChild(menu);
-			}
-			else if(json.response=='item_list')
-			{
-				menu.innerHTML=''
-				fax_number=json.faxnum
-				for(var i=0;i<json.content.length;i++)
-				{
-					var elem=document.createElement('div')
-                                        if(json.content[i].mime) {
-                                            var mime = json.content[i].mime.replace('/', '-');
-                                            elem.style.backgroundImage = "url('/img/mime/22/"+mime+".png')";
-                                        }
-					elem.innerHTML=json.content[i].desc
-					elem.fname=json.content[i].name
-					elem.onclick=pickItem
-					menu.appendChild(elem)
-				}
-			}
-			else if(json.response=='send')
-			{
-				jAlert('Факс успешно отправлен на сервер! Вы получите уведомление по email c результатом отправки получателю!',"Выполнено", {});
-				menu.parentNode.removeChild(menu)
-			}
-			else
-			{
-				jAlert("Обработка полученного сообщения не реализована<br>"+msg, "Отправка факса", {},  'icon_err');
-				menu.parentNode.removeChild(menu)
-			}
-		}
-		catch(e)
-		{
-			jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!"+
-			"<br><br><i>Информация об ошибке</i>:<br>"+e.name+": "+e.message+"<br>"+msg, "Отправка факса", {},  'icon_err');
-			menu.parentNode.removeChild(menu)
-		}
-	}
+    function rcvDataSuccess(msg) {
+        try {
+            var json = eval('(' + msg + ')');
+            if (json.response == 'err') {
+                jAlert(json.text, "Ошибка", {}, 'icon_err');
+                menu.parentNode.removeChild(menu);
+            } 
+            else if (json.response == 'item_list') {
+                menu.innerHTML = ''
+                fax_number = json.faxnum
+                for (var i = 0; i < json.content.length; i++)
+                {
+                    var elem = document.createElement('div')
+                    if (json.content[i].mime) {
+                        var mime = json.content[i].mime.replace('/', '-');
+                        elem.style.backgroundImage = "url('/img/mime/22/" + mime + ".png')";
+                    }
+                    elem.innerHTML = json.content[i].desc
+                    elem.fname = json.content[i].name
+                    elem.onclick = pickItem
+                    menu.appendChild(elem)
+                }
+            } 
+            else if (json.response == 'send') {
+                jAlert('Факс успешно отправлен на сервер! Вы получите уведомление по email c результатом отправки получателю!', "Выполнено", {});
+                menu.parentNode.removeChild(menu)
+            } 
+            else {
+                jAlert("Обработка полученного сообщения не реализована<br>" + msg, "Отправка факса", {}, 'icon_err');
+                menu.parentNode.removeChild(menu)
+            }
+        } 
+        catch (e) {
+            jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
+                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + msg, "Отправка факса", {}, 'icon_err');
+            menu.parentNode.removeChild(menu)
+        }
+    }
 
-	$.ajax({
-		type:   'GET',
-	       url:    '/doc.php',
-	       data:   'mode=fax&doc='+doc,
-	       success: function(msg) { rcvDataSuccess(msg) },
-	       error:   function() { jAlert('Ошибка соединения!','Отправка факса',{},'icon_err'); menu.parentNode.removeChild(menu);},
-	});
-	return false
+    $.ajax({
+        type: 'GET',
+        url: '/doc.php',
+        data: 'mode=fax&doc=' + doc,
+        success: function (msg) {
+            rcvDataSuccess(msg)
+        },
+        error: function () {
+            jAlert('Ошибка соединения!', 'Отправка факса', {}, 'icon_err');
+            menu.parentNode.removeChild(menu);
+        },
+    });
+    return false
 }
 
 function MailMenu(event,doc)
@@ -1415,4 +1411,86 @@ function contractTextSaverInit(doc_id, textarea_id, button_id) {
     textarea.addEventListener('blur', obj_onblur, false);
     textarea.addEventListener('keyup', obj_onkeyup, false);
 
+}
+
+function mainInternalMenu() {
+    var mainMenu = document.getElementById("doc_menu");
+    if(mainMenu.mim!=undefined) {
+        return mainMenu.mim;
+    }    
+    var mim = new Object;
+    mim.contextPanel = document.createElement('div');
+    mim.contextPanel.id = "main_menu_context_panel";
+    mainMenu.mim = mim;
+    mim.leftDiv = document.getElementById("main_menu_left");
+    mim.leftDiv.appendChild(mim.contextPanel);
+    mim.rightDiv = document.getElementById("main_menu_right");
+    
+    
+    mim.contextPanel.clear = function() {
+        mim.contextPanel.innerHTML = '';
+    };
+    
+    mim.contextPanel.addButton = function(data) {
+        var a = document.createElement('a');
+        var img = document.createElement('img');
+        if(data.link) {
+            a.href = data.link;
+        }
+        else {
+            a.href = "#";
+        }
+        if(data.onclick) {
+            a.oldclickevent = data.onclick;
+            a.addEventListener('click', data.onclick, false);
+        }
+        if(data.caption) {
+            a.title = img.alt = data.caption;
+        }
+        if(data.accesskey) {
+            a.accesskey = data.accesskey;
+            img.alt += " ("+data.accesskey+")";
+            a.title += " ("+data.accesskey+")";
+        }
+        if(data.icon) {
+            img.src = "/img/"+data.icon;
+        }
+        a.appendChild(img);
+        mim.contextPanel.appendChild(a);
+        return a;
+    };
+    
+    mim.contextPanel.addSeparator = function() {
+        var img = document.createElement('img');
+        img.src = "/img/i_separator.png";
+        mim.contextPanel.appendChild(img);
+        return img;
+    };
+    
+    mim.contextPanel.updateButton = function(button, data) {
+        var a = button;
+        var img = button.firstChild;
+        if(data.link) {
+            a.href = data.link;
+        }
+        if(data.onclick) {
+            a.removeEventListener('click', a.oldclickevent);
+            a.oldclickevent = data.onclick;
+            a.addEventListener('click', data.onclick, false);
+        }
+        if(data.caption) {
+            a.title = img.alt = data.caption;
+        }
+        if(data.accesskey) {
+            a.accesskey = data.accesskey;
+            img.alt += " ("+data.accesskey+")";
+            a.title += " ("+data.accesskey+")";
+        }
+        if(data.icon) {
+            img.src = "/img/"+data.icon;
+        }
+        return a;
+    };
+    
+    return mim;
 }

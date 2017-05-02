@@ -154,12 +154,7 @@ class doc_PermitOut extends doc_Nulltype {
         }
         if($sum!=intval($pdop_data['mest'])) {
             throw new Exception('Сумма мест в пропуске не соответствует количеству мест реализации!');
-        }
-                
-        if (!$silent) {
-            $tim = time();
-            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
-            $this->sentZEvent('apply');
-        }
+        }                
+        parent::docApply($silent);
     }
 }

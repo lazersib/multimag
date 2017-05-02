@@ -138,13 +138,8 @@ class doc_Sborka extends doc_Nulltype {
         }
         if($fail_text) {
             throw new \Exception("Ошибка в номенклатуре: \n".$fail_text);
-        }
-        
-        if ($silent) {
-            return;
-        }
-        $db->update('doc_list', $this->id, 'ok', time() );
-        $this->sentZEvent('apply');
+        }        
+        parent::docApply($silent);
     }
 
     public function DocCancel() {
@@ -162,6 +157,7 @@ class doc_Sborka extends doc_Nulltype {
         }
 
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`, `doc_base`.`proizv`, 
                 `doc_base`.`pos_type`, `doc_list_pos`.`page`
@@ -175,6 +171,7 @@ class doc_Sborka extends doc_Nulltype {
                 $db->query("UPDATE `doc_base_cnt` SET `cnt`=`cnt` $sign '$nxt[1]' WHERE `id`='$nxt[0]' AND `sklad`='$nx[3]'");
             }
         }
+        $this->sentZEvent('cancel');
     }
 
     public function Service() {

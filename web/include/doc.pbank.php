@@ -127,11 +127,7 @@ class doc_PBank extends paymentbasedoc {
             throw new Exception("Cумма в банке {$doc_params['bank']} не изменилась!");
         }
 
-        if (!$silent) {
-            $db->update('doc_list', $this->id, 'ok', time());
-            $this->sentZEvent('apply');
-            $this->paymentNotify();
-        }
+        parent::docApply($silent);
     }
 
     // Отменить проведение
@@ -150,8 +146,7 @@ class doc_PBank extends paymentbasedoc {
             throw new Exception("Cумма в банке {$data['bank']} не изменилась!");
         }
 
-        $db->update('doc_list', $this->id, 'ok', 0);
-        $this->sentZEvent('cancel');
+        parent::docCancel();
     }
 
 }

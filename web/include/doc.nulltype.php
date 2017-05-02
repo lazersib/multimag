@@ -30,6 +30,9 @@ class doc_Nulltype extends \document {
     protected $bank_modify;   ///< Изменяет ли общие средства в банке
     protected $kassa_modify;  ///< Изменяет ли общие средства в кассе
     protected $header_fields;  ///< Поля заголовка документа, доступные через форму редактирования
+    protected $doc_data;   ///< Основные данные документа
+    protected $dop_data;   ///< Дополнительные данные документа
+    protected $firm_vars;   ///< Информация с данными о фирме
     protected $child_docs = array();        ///< Информация о документах-потомках
     protected $allow_neg_cnt;   ///< Разрешить отрицательное количество товара
 
@@ -44,6 +47,10 @@ class doc_Nulltype extends \document {
         $this->header_fields = '';
         $this->get_docdata();
     }
+
+    public function isSkladEditorEnable() {
+        return $this->sklad_editor_enable;
+    }
     
     public function getFirmVarsA() {
         return $this->firm_vars;
@@ -52,6 +59,10 @@ class doc_Nulltype extends \document {
     /// Шаблон метода для инициализации дополнительных данных документа
     protected function initDefDopData() {
         
+    }
+    
+    public function getExtControls() {
+        return null;
     }
 
     /// Зафиксировать цену документа, если она установлена в *авто*. Выполняется при проведении некоторых типов документов.
@@ -71,10 +82,10 @@ class doc_Nulltype extends \document {
     }
 
     /// Создать документ с заданными данными
-    public function create($doc_data) {
+    public function create($doc_data, $from = 0) {
         global $db;
         \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
-        \acl::accessGuard([ 'firm.global', 'firm.' . $doc_data['firm_id'] ], \acl::CREATE);
+        \acl::accessGuard([ 'firm.global', 'firm.' . $doc_data['firm_id']], \acl::CREATE);
         $date = time();
         $doc_data['altnum'] = $this->getNextAltNum($this->doc_type, $doc_data['subtype'], date("Y-m-d", $doc_data['date']), $doc_data['firm_id']);
         $doc_data['created'] = date("Y-m-d H:i:s");
@@ -92,8 +103,10 @@ class doc_Nulltype extends \document {
         $data['user'] = $_SESSION['uid'];
 
         $this->id = $db->insertA('doc_list', $data);
+        if ($from) {
+            $data['from'] = $from;
+        }
         $this->writeLogArray("CREATE", $data);
-        
         unset($this->doc_data);
         unset($this->dop_data);
         $this->get_docdata();
@@ -106,7 +119,7 @@ class doc_Nulltype extends \document {
      * @return int                  ID корневого документа
      * @throws Exception            Бросает исключение при обнаружении петли с участием текущего документа
      */
-    public function getRootDocumentId($no_exception=false) {        
+    public function getRootDocumentId($no_exception = false) {
         global $db;
         if ($this->doc_data['p_doc'] == 0) {
             return $this->id;
@@ -116,11 +129,10 @@ class doc_Nulltype extends \document {
         $doc = $this->doc_data['p_doc'];
 
         while ($doc) {
-            if(in_array($doc, $docmem)) {
-                if($no_exception) {
+            if (in_array($doc, $docmem)) {
+                if ($no_exception) {
                     return -1;
-                }
-                else {
+                } else {
                     throw new Exception('Обнаружена петля в иерархии документов!');
                 }
             }
@@ -162,16 +174,16 @@ class doc_Nulltype extends \document {
 
     protected function getDocumentSubtreeElementHTML($item, $last = true) {
         $ret = '';
-                
+
         $ok_status = $item['ok'] ? 'Проведённый' : 'Непроведённый';
         $r = ($last) ? " IsLast" : '';
         $ret .= "<li class='Node ExpandLeaf $r'><div class='Expand'></div><div class='Content'>";
-        if (!\acl::testAccess([ 'firm.global', 'firm.' . $item['firm_id'] ], \acl::VIEW) && $item['firm_id']>0) {
+        if (!\acl::testAccess([ 'firm.global', 'firm.' . $item['firm_id']], \acl::VIEW) && $item['firm_id'] > 0) {
             if ($item['id'] == $this->id) {
                 $ret .= "<b>";
             }
             $ret .= "Неизвестный документ N {$item['altnum']}{$item['subtype']} от {$item['date']}."
-                    . " Агент: {$item['agent_name']}";
+                . " Агент: {$item['agent_name']}";
             if ($item['id'] == $this->id) {
                 $ret .= "</b>";
             }
@@ -180,7 +192,7 @@ class doc_Nulltype extends \document {
                 $ret .= "<b>";
             }
             $ret .= "<a href='doc.php?mode=body&doc={$item['id']}'>$ok_status {$item['name']}</a> N {$item['altnum']}{$item['subtype']} от {$item['date']}."
-                    . " Агент: {$item['agent_name']}, на сумму {$item['sum']}";
+                . " Агент: {$item['agent_name']}, на сумму {$item['sum']}";
             if ($item['id'] == $this->id) {
                 $ret .= "</b>";
             }
@@ -204,8 +216,8 @@ class doc_Nulltype extends \document {
     public function viewDocumentTree() {
         global $tmpl;
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-        if($this->doc_data['firm_id']>0) {
-            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id'] ], \acl::VIEW);
+        if ($this->doc_data['firm_id'] > 0) {
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::VIEW);
         }
         $root_doc_id = $this->getRootDocumentId();
         $tmpl->addContent("<h1>Структура для {$this->id} с $root_doc_id </h1>");
@@ -225,7 +237,7 @@ class doc_Nulltype extends \document {
     public function createFrom($doc_obj) {
         $doc_data = $doc_obj->doc_data;
         $doc_data['p_doc'] = $doc_obj->id;
-        $this->create($doc_data);
+        $this->create($doc_data, $doc_obj->id);
 
         return $this->id;
     }
@@ -235,7 +247,7 @@ class doc_Nulltype extends \document {
         global $db;
         $doc_data = $doc_obj->doc_data;
         $doc_data['p_doc'] = $doc_obj->id;
-        $this->create($doc_data);
+        $this->create($doc_data, $doc_obj->id);
         if ($this->sklad_editor_enable) {
             $res = $db->query("SELECT `tovar`, `cnt`, `cost`, `page`, `comm` FROM `doc_list_pos` WHERE `doc`='{$doc_obj->id}' ORDER BY `doc_list_pos`.`id`");
             while ($line = $res->fetch_assoc()) {
@@ -332,7 +344,7 @@ class doc_Nulltype extends \document {
     /// @return Объект doc_Zayavka, или false если не найден. Может быть текущим документом.
     public function getZDoc() {
         global $db;
-        if($this->doc_type == 3) {
+        if ($this->doc_type == 3) {
             return $this;
         }
         $pdoc = $this->doc_data['p_doc'];
@@ -349,7 +361,7 @@ class doc_Nulltype extends \document {
         }
         return false;
     }
-    
+
     /// Послать в связанный заказ событие с заданным типом.
     /// Полное название события будет doc:{$docname}:{$event_type}
     /// @param event_type Название события
@@ -358,20 +370,20 @@ class doc_Nulltype extends \document {
         global $db;
         $event_name = "doc:{$this->typename}:$event_type";
         $zdoc = $this->getZDoc();
-        if($zdoc) {
+        if ($zdoc) {
             return $zdoc->dispatchZEvent($event_name, $this);
         }
         return false;
     }
-    
+
     /// Отправить оповещение по всем доступным каналам связи с клиентом
     function sendNotify($text) {
-        return 
+        return
             $this->sendEmailNotify($text) ||
-            $this->sendSMSNotify($text) || 
+            $this->sendSMSNotify($text) ||
             $this->sendXMPPNotify($text);
     }
-                    
+
     /// Отправить SMS с заданным текстом заказчику на первый из подходящих номеров
     /// @param text текст отправляемого сообщения
     function sendSMSNotify($text) {
@@ -381,15 +393,15 @@ class doc_Nulltype extends \document {
         }
         if (!$CONFIG['doc']['notify_sms']) {
             return false;
-        }        
+        }
         if (isset($this->dop_data['buyer_phone'])) {
-            if(preg_match('/^\+79\d{9}$/', $this->dop_data['buyer_phone'])) {
+            if (preg_match('/^\+79\d{9}$/', $this->dop_data['buyer_phone'])) {
                 $smsphone = $this->dop_data['buyer_phone'];
             }
-        } 
+        }
         if ($this->doc_data['agent'] > 1 && !$smsphone) {
             $agent = new \models\agent($this->doc_data['agent']);
-            $smsphone = $agent->getSMSPhone();                
+            $smsphone = $agent->getSMSPhone();
         }
         if (preg_match('/^\+79\d{9}$/', $smsphone)) {
             require_once('include/sendsms.php');
@@ -397,9 +409,9 @@ class doc_Nulltype extends \document {
             $sender->setNumber($smsphone);
             $sender->setContent($text);
             $sender->send();
-            if(@$CONFIG['doc']['notify_debug']) {
-                $this->writeLogArray("NOTIFY SMS", ['number'=>$smsphone,'text'=>$text]);
-            } 
+            if (@$CONFIG['doc']['notify_debug']) {
+                $this->writeLogArray("NOTIFY SMS", ['number' => $smsphone, 'text' => $text]);
+            }
             return true;
         }
         return false;
@@ -407,7 +419,7 @@ class doc_Nulltype extends \document {
 
     /// Отправить email с заданным текстом заказчику на все доступные адреса
     /// @param text текст отправляемого сообщения
-    function sendEmailNotify($text, $subject=null) {
+    function sendEmailNotify($text, $subject = null) {
         global $CONFIG, $db;
         $pref = \pref::getInstance();
         if (!isset($CONFIG['doc']['notify_email'])) {
@@ -418,35 +430,35 @@ class doc_Nulltype extends \document {
         }
         $emails = array();
         if (isset($this->dop_data['buyer_email'])) {
-            if($this->dop_data['buyer_email']) {
+            if ($this->dop_data['buyer_email']) {
                 $emails[$this->dop_data['buyer_email']] = $this->dop_data['buyer_email'];
             }
         }
         if ($this->doc_data['agent'] > 1) {
             $agent = new \models\agent($this->doc_data['agent']);
             $contacts = $agent->contacts;
-            foreach($contacts as $line) {
-                if($line['type']=='email') {
+            foreach ($contacts as $line) {
+                if ($line['type'] == 'email') {
                     $emails[$line['value']] = $line['value'];
                 }
             }
         }
-        if(count($emails)>0) {
-            foreach($emails as $email) {
+        if (count($emails) > 0) {
+            foreach ($emails as $email) {
                 $user_msg = "Уважаемый клиент!\n" . $text;
-                if(!$subject) {
+                if (!$subject) {
                     $subject = "Документ N {$this->id} на {$pref->site_name}";
                 }
                 mailto($email, $subject, $user_msg);
-                if(@$CONFIG['doc']['notify_debug']) {
-                    $this->writeLogArray("NOTIFY Email", ['email'=>$email,'text'=>$user_msg]);
+                if (@$CONFIG['doc']['notify_debug']) {
+                    $this->writeLogArray("NOTIFY Email", ['email' => $email, 'text' => $user_msg]);
                 }
             }
             return true;
         }
         return false;
     }
-    
+
     /// Отправить сообщение по XMPP с заданным текстом заказчику на все доступные адреса
     /// @param text текст отправляемого сообщения
     function sendXMPPNotify($text) {
@@ -461,23 +473,23 @@ class doc_Nulltype extends \document {
         if ($this->doc_data['agent'] > 1) {
             $agent = new \models\agent($this->doc_data['agent']);
             $contacts = $agent->contacts;
-            foreach($contacts as $line) {
-                if($line['type']=='jid' || $line['type']=='xmpp') {
+            foreach ($contacts as $line) {
+                if ($line['type'] == 'jid' || $line['type'] == 'xmpp') {
                     $addresses[$line['value']] = $line['value'];
                 }
             }
         }
-        if(count($addresses)>0) {
-            require_once($CONFIG['location'].'/common/XMPPHP/XMPP.php');
-            $xmppclient = new XMPPHP_XMPP( $CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
+        if (count($addresses) > 0) {
+            require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
+            $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r' . MULTIMAG_REV);
             $xmppclient->connect();
             $xmppclient->processUntil('session_start');
             $xmppclient->presence();
-            foreach($addresses as $addr) {
-                $user_msg = $text;                    
-                $xmppclient->message($addr, $user_msg);                    
-                if(@$CONFIG['doc']['notify_debug']) {
-                    $this->writeLogArray("NOTIFY xmpp", ['jid'=>$addr, 'text'=>$user_msg]);
+            foreach ($addresses as $addr) {
+                $user_msg = $text;
+                $xmppclient->message($addr, $user_msg);
+                if (@$CONFIG['doc']['notify_debug']) {
+                    $this->writeLogArray("NOTIFY xmpp", ['jid' => $addr, 'text' => $user_msg]);
                 }
             }
             $xmppclient->disconnect();
@@ -485,8 +497,7 @@ class doc_Nulltype extends \document {
         }
         return false;
     }
-    
-    
+
     /// отобразить заголовок документа
     public function head() {
         global $tmpl;
@@ -499,8 +510,8 @@ class doc_Nulltype extends \document {
             else
                 $object = 'doc';
             \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-            if($this->doc_data['firm_id']>0) {
-                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id'] ], \acl::VIEW);
+            if ($this->doc_data['firm_id'] > 0) {
+                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::VIEW);
             }
             doc_menu($this->getDopButtons());
             $this->drawHeadformStart();
@@ -529,44 +540,7 @@ class doc_Nulltype extends \document {
             $this->DrawHeadformEnd();
         }
     }
-    
-    protected function setDocDataA($data) {
-        global $db;
-        $log_data = array();
-        $res = $db->query("SHOW COLUMNS FROM `doc_list`");
-        $col_array = array();
-        while ($nxt = $res->fetch_row()) {
-            $col_array[$nxt[0]] = $nxt[0];
-        }
-        unset($col_array['id']);
-        $i_data = array_intersect_key($this->doc_data, $col_array);
-        
-        if($this->id) {
-            $to_write_data = array_diff_assoc($data, $i_data);        
-            foreach($to_write_data as $name=>$value) {
-                if(!isset($this->doc_data[$name])) {
-                    $log_data[$name] = ['new'=>$value];
-                }
-                else if($this->doc_data[$name]!==$value){
-                    $log_data[$name] = ['old'=>$this->doc_data[$name], 'new'=>$value];
-                }
-            }
-            if(count($to_write_data)>0) {
-                $db->updateA('doc_list', $this->id, $to_write_data);   
-                $this->writeLogArray('UPDATE', $log_data);
-            }
-        }
-        else {
-            $to_write_data = array_intersect_key($data, $i_data); 
-            $this->id = $db->insertA('doc_list', $to_write_data);
-            $this->writeLogArray("CREATE", $to_write_data);
-        }
-        foreach($to_write_data as $name=>$value) {
-             $this->doc_data[$name] = $value;
-        }
-        return $this->id;
-    }
-    
+
     protected function try_head_save() {
         $write_doc_data = array(
             'date' => @strtotime(request('datetime')),
@@ -580,19 +554,17 @@ class doc_Nulltype extends \document {
             $write_doc_data['altnum'] = $this->getNextAltNum($this->doc_type, $write_doc_data['subtype']
                 , date("Y-m-d", $write_doc_data['date']), $write_doc_data['firm_id']);
         }
-        if(!$this->id) {
+        if (!$this->id) {
             $write_doc_data['user'] = intval($_SESSION['uid']);
-            $write_doc_data['type'] = $this->doc_type; 
-        }
-        elseif (@$this->doc_data['ok']) {
+            $write_doc_data['type'] = $this->doc_type;
+        } elseif (@$this->doc_data['ok']) {
             throw new \Exception("Операция не допускается для проведённого документа!");
-        } 
-        else if (@$this->doc_data['mark_del']) {
+        } else if (@$this->doc_data['mark_del']) {
             throw new \Exception("Операция не допускается для документа, отмеченного для удаления!");
-        } 
+        }
         $fields = explode(' ', $this->header_fields);
         foreach ($fields as $f) {
-            switch($f) {
+            switch ($f) {
                 case 'cena':
                 case 'price':
                     $write_dop_data['cena'] = rcvint('cena');
@@ -600,7 +572,7 @@ class doc_Nulltype extends \document {
                     break;
                 case 'agent':
                     $write_doc_data['agent'] = rcvint('agent');
-                    if(!$write_doc_data['agent']) {
+                    if (!$write_doc_data['agent']) {
                         $pref = \pref::getInstance();
                         $write_doc_data['agent'] = $pref->getSitePref('default_agent_id');
                     }
@@ -614,21 +586,19 @@ class doc_Nulltype extends \document {
                 default:
                     $write_doc_data[$f] = rcvint($f);
                     break;
-                    
             }
         }
         if ($this->id) {
             \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);            
-        }
-        else {
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
+        } else {
             \acl::accessGuard('doc.' . $this->typename, \acl::CREATE);
             if ($this->doc_data['firm_id'] > 0) {
                 \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::CREATE);
-            }            
+            }
         }
         $this->setDocDataA($write_doc_data);
-        if(count($write_dop_data)) {
+        if (count($write_dop_data)) {
             $this->setDopDataA($write_dop_data);
         }
         if (method_exists($this, 'DopSave')) {
@@ -654,18 +624,15 @@ class doc_Nulltype extends \document {
             } else {
                 $b = 0;
             }
-            $json_content = json_encode(['response'=>'ok', 'agent_balance'=>$b], JSON_UNESCAPED_UNICODE);
+            $json_content = json_encode(['response' => 'ok', 'agent_balance' => $b], JSON_UNESCAPED_UNICODE);
             $tmpl->setContent($json_content);
-            
-        } 
-        catch (mysqli_sql_exception $e) {
+        } catch (mysqli_sql_exception $e) {
             $id = writeLogException($e);
             $ret_data = array('response' => 'err',
-                    'text' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение об ошибке занесено в журнал.");
+                'text' => "Ошибка в базе данных! Порядковый номер ошибки: $id. Сообщение об ошибке занесено в журнал.");
             $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
-        } 
-        catch (Exception $e) {
-            $json_content = json_encode(['response'=>'err', 'text'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            $json_content = json_encode(['response' => 'err', 'text' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
             $tmpl->setContent($json_content);
         }
     }
@@ -674,7 +641,7 @@ class doc_Nulltype extends \document {
     public function body() {
         global $tmpl, $db;
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-        if($this->doc_data['firm_id']>0) {
+        if ($this->doc_data['firm_id'] > 0) {
             \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::VIEW);
         }
         $this->extendedViewAclCheck();
@@ -746,7 +713,7 @@ class doc_Nulltype extends \document {
 		addEventListener('load',DocHeadInit,false);
                 //newDynamicDocHeader('doc_left_block', '{$this->id}');
 		</script>");
-	$tmpl->addContent("<div id='doc_main_block'>");
+        $tmpl->addContent("<div id='doc_main_block'>");
         $tmpl->addContent("<img src='/img/i_leftarrow.png' onclick='DocLeftToggle()' id='doc_left_arrow'><br>");
 
         if (method_exists($this, 'DopBody'))
@@ -764,47 +731,8 @@ class doc_Nulltype extends \document {
         $tmpl->addContent("<div id='statusblock'></div><br><br></div></div>");
     }
 
-    public function apply($silent = false) {
-        global $tmpl, $db;
-
-        $tmpl->ajax = 1;
-
-        try {
-            if ($this->doc_data['mark_del'])
-                throw new Exception("Документ помечен на удаление!");
-            if (!method_exists($this, 'DocApply'))
-                throw new Exception("Метод проведения данного документа не определён!");
-            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
-            $db->startTransaction();
-            $this->DocApply($silent);
-            $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
-        } catch (mysqli_sql_exception $e) {
-            $db->rollback();
-            if (!$silent) {
-                $tmpl->addContent("<h3>" . $e->getMessage() . "</h3>");
-                doc_log("ERROR APPLY", $e->getMessage(), 'doc', $this->id);
-            }
-            $db->query("UNLOCK TABLES");
-            return $e->getMessage();
-        } catch (Exception $e) {
-            $db->rollback();
-            if (!$silent) {
-                $tmpl->addContent("<h3>" . $e->getMessage() . "</h3>");
-                doc_log("ERROR APPLY", $e->getMessage(), 'doc', $this->id);
-            }
-            $db->query("UNLOCK TABLES");
-            return $e->getMessage();
-        }
-
-        $db->commit();
-        if (!$silent) {
-            doc_log("APPLY", '', 'doc', $this->id);
-            $tmpl->addContent("<h3>Докумен успешно проведён!</h3>");
-        }
-        $db->query("UNLOCK TABLES");
-        return;
-    }
-
+   
+    
     /// Выполнение дополнительных проверок доступа для просмотра документа
     public function extendedViewAclCheck() {
         return true;
@@ -819,11 +747,23 @@ class doc_Nulltype extends \document {
     public function extendedCancelAclCheck() {
         return true;
     }
-   
-    /// Провести документ и вренуть JSON результат
+    
+    /// Провести документ
+    public function apply($silent = false) {
+        global $db;
+        if ($this->doc_data['mark_del']) {
+            throw new \Exception("Документ помечен на удаление!");
+        }
+        $this->docApply($silent);
+        if(!$silent) {
+            doc_log("APPLY", '', 'doc', $this->id);
+        }
+        $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
+    }
+
+    /// Провести документ и вернуть JSON результат
     public function applyJson() {
         global $db;
-
         try {
             $d_start = date_day(time());
             $d_end = $d_start + 60 * 60 * 24 - 1;
@@ -849,19 +789,15 @@ class doc_Nulltype extends \document {
                 throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
             }
 
-            if (!method_exists($this, 'DocApply')) {
-                throw new Exception("Метод проведения данного документа не определён!");
-            }
-
-            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
             $db->startTransaction();
-
             $this->DocApply(0);
             $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
+            doc_log("APPLY", '', 'doc', $this->id);
+            $db->commit();            
         } catch (mysqli_sql_exception $e) {
             $db->rollback();
             writeLogException($e);
-            $db->query("UNLOCK TABLES");
+            
             $data = array(
                 'response' => 0,
                 'message' => $e->getMessage(),
@@ -870,8 +806,7 @@ class doc_Nulltype extends \document {
             return $json;
         } catch (Exception $e) {
             $db->rollback();
-            writeLogException($e);
-            $db->query("UNLOCK TABLES");
+            writeLogException($e);            
             $data = array(
                 'response' => 0,
                 'message' => $e->getMessage(),
@@ -879,22 +814,25 @@ class doc_Nulltype extends \document {
             $json = json_encode($data, JSON_UNESCAPED_UNICODE);
             return $json;
         }
-
-        $db->commit();
-        doc_log("APPLY", '', 'doc', $this->id);
-        $db->query("UNLOCK TABLES");
+        
         $data = array(
             'response' => 1,
             'message' => "Документ успешно проведён!",
             'buttons' => $this->getCancelButtons(),
             'sklad_view' => 'hide',
             'statusblock' => 'Дата проведения: ' . date("Y-m-d H:i:s"),
-            'poslist'   => 'refresh',
+            'poslist' => 'refresh',
         );
         $json = json_encode($data, JSON_UNESCAPED_UNICODE);
         return $json;
     }
 
+    /// Отменить проведение документа
+    public function cancel() {
+        $this->docCancel();
+        doc_log("CANCEL", '', 'doc', $this->id);
+    }
+    
     public function cancelJson() {
         global $db;
         $tim = time();
@@ -913,10 +851,6 @@ class doc_Nulltype extends \document {
             }
             $this->extendedCancelAclCheck();
 
-            if (!method_exists($this, 'DocCancel')) {
-                throw new Exception("Метод отмены данного документа не определён!");
-            }
-
             $res = $db->query("SELECT `recalc_active` FROM `variables`");
             if ($res->num_rows) {
                 list($lock) = $res->fetch_row();
@@ -927,7 +861,6 @@ class doc_Nulltype extends \document {
                 throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
             }
 
-            $db->query("LOCK TABLES `doc_list` WRITE, `doc_base_cnt` WRITE, `doc_kassa` WRITE, `doc_list_pos` READ");
             $db->startTransaction();
             $this->get_docdata();
             $this->DocCancel();
@@ -935,18 +868,15 @@ class doc_Nulltype extends \document {
         } catch (mysqli_sql_exception $e) {
             $db->rollback();
             writeLogException($e);
-            $db->query("UNLOCK TABLES");
             $json = " { \"response\": \"0\", \"message\": \"" . $e->getMessage() . "\" }";
             return $json;
         } catch (AccessException $e) {
             $db->rollback();
-            $db->query("UNLOCK TABLES");
             doc_log("CANCEL-DENIED", $e->getMessage(), 'doc', $this->id);
             $json = " { \"response\": \"0\", \"message\": \"Недостаточно привилегий для выполнения операции!<br>" . $e->getMessage() . "<br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\">попросить руководителя</a> выполнить отмену этого документа.\" }";
             return $json;
         } catch (Exception $e) {
             $db->rollback();
-            $db->query("UNLOCK TABLES");
             $msg = '';
             if (\acl::testAccess('doc.' . $this->typename, \acl::CANCEL_FORCE)) {
                 $msg = "<br>Вы можете <a href='/doc.php?mode=forcecancel&amp;doc={$this->id}'>принудительно снять проведение</a>.";
@@ -958,7 +888,6 @@ class doc_Nulltype extends \document {
         $db->commit();
         doc_log("CANCEL", '', 'doc', $this->id);
         $json = ' { "response": "1", "message": "Документ успешно отменен!", "buttons": "' . $this->getApplyButtons() . '", "sklad_view": "show", "statusblock": "Документ отменён", "poslist": "refresh" }';
-        $db->query("UNLOCK TABLES");
         return $json;
     }
 
@@ -969,28 +898,23 @@ class doc_Nulltype extends \document {
         if ($silent) {
             return;
         }
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа при проведении!');
-        }
-        if ($data['ok']) {
+        if ($this->doc_data['ok']) {
             throw new Exception('Документ уже проведён!');
         }
-        $db->update('doc_list', $this->id, 'ok', time());
+        $ok_time = time();
+        $db->update('doc_list', $this->id, 'ok', $ok_time);
+        $this->doc_data['ok'] = $ok_time;
         $this->sentZEvent('apply');
     }
 
     /// отменить проведение документа
     protected function docCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа!');
-        }
-        if (!$data['ok']) {
+        if (!$this->doc_data['ok']) {
             throw new Exception('Документ не проведён!');
         }
         $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
         $this->sentZEvent('cancel');
     }
 
@@ -999,8 +923,8 @@ class doc_Nulltype extends \document {
         global $tmpl, $db;
 
         \acl::accessGuard('doc.' . $this->typename, \acl::CANCEL_FORCE);
-        if($this->doc_data['firm_id']>0) {
-            \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id'] ], \acl::CANCEL_FORCE);
+        if ($this->doc_data['firm_id'] > 0) {
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::CANCEL_FORCE);
         }
         $opt = request('opt');
         if ($opt == '') {
@@ -1058,7 +982,7 @@ class doc_Nulltype extends \document {
 
     /// Получить список доступных печатных форм c CSV экспортом
     /// @return Массив со списком печатных форм
-    protected function getCSVPrintFormList() {
+    public function getCSVPrintFormList() {
         $ret = $this->getPrintFormList();
         if ($this->sklad_editor_enable) {
             $ret[] = array('name' => 'csv:export', 'desc' => 'Экспорт в CSV', 'mime' => 'text/csv');
@@ -1113,19 +1037,19 @@ class doc_Nulltype extends \document {
     protected function makePrintForm($form_name, $to_str = false) {
         if ($this->doc_data['ok']) {
             \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTFORM);
-            \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id'] ], \acl::GET_PRINTFORM);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::GET_PRINTFORM);
         } else {
             \acl::accessGuard('doc.' . $this->typename, \acl::GET_PRINTDRAFT);
-            \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id'] ], \acl::GET_PRINTDRAFT);
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::GET_PRINTDRAFT);
         }
         return $this->makePrintFormNoACLTest($form_name, $to_str);
     }
-    
+
     /// Сформировать печатную форму, не проверяя привилегии
     /// @param $form_name   Имя печатной формы
     /// @param $to_str      Вернуть ли данные в виде строки
     /// @return             Если $to_str == true - возвращает сформированный документ, false в ином случае
-    protected function makePrintFormNoACLTest($form_name, $to_str = false) {
+    public function makePrintFormNoACLTest($form_name, $to_str = false) {
         if (!$this->isPrintFormExists($form_name)) {
             throw new \NotFoundException('Печатная форма ' . html_out($form_name) . ' не зарегистрирована');
         }
@@ -1193,6 +1117,49 @@ class doc_Nulltype extends \document {
             $tmpl->setContent("{response: 'err', text: '" . $e->getMessage() . "'}");
         }
     }
+    
+    /** Отправка документа по факсу на указанный номер
+     * 
+     * @param $form_name Имя формы отправляемого документа
+     * @param $faxnum Номер факса получателя
+     */
+    final function sendFaxTo($form_name, $faxnum) {
+        global $db;
+        if ($faxnum == '') {
+            throw new \Exception('Номер факса не указан');
+        }
+        if (!preg_match('/^\+\d{8,15}$/', $faxnum)) {
+            throw new \Exception("Номер факса $faxnum указан в недопустимом формате");
+        }
+        include_once('sendfax.php');
+        $data = $this->makePrintFormNoACLTest($form_name, true);
+        $fs = new \FaxSender();
+        $fs->setFileBuf($data);
+        $fs->setFaxNumber($faxnum);
+
+        $res = $db->query("SELECT `worker_email` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
+        if ($res->num_rows) {
+            list($email) = $res->fetch_row();
+            $fs->setNotifyMail($email);
+        }
+        $res = $fs->send();        
+        doc_log("Send FAX", $faxnum, 'doc', $this->id);
+        return true;
+    }
+    
+    function getExtensionFromMIME($mime) {
+        switch ($mime) {
+            case 'text/csv':
+                return '.csv';
+            case 'application/vnd.ms-excel':
+                return '.xls';
+            case 'application/vnd.oasis.opendocument.spreadsheet':
+                return '.ods';
+            case 'application/pdf':
+            default:
+                return '.pdf';
+        }
+    }
 
     /// Отправка документа по электронной почте
     /// @param $form_name   Имя печатной формы
@@ -1216,22 +1183,7 @@ class doc_Nulltype extends \document {
                 } else {
                     $data = $this->makePrintForm($form_name, true);
                     $mime = $this->getPrintFormMime($form_name);
-                    switch ($mime) {
-                        case 'application/pdf':
-                            $extension = '.pdf';
-                            break;
-                        case 'text/csv':
-                            $extension = '.csv';
-                            break;
-                        case 'application/vnd.ms-excel':
-                            $extension = '.xls';
-                            break;
-                        case 'application/vnd.oasis.opendocument.spreadsheet':
-                            $extension = '.ods';
-                            break;
-                        default:
-                            $extension = '.pdf';
-                    }
+                    $extension = $this->getExtensionFromMIME($mime);
 
                     $fname = $this->typename . '_' . str_replace(":", "_", $form_name) . $extension;
                     $viewname = $this->getPrintFormViewName($form_name) . ' (' . $this->viewname . ')';
@@ -1243,6 +1195,27 @@ class doc_Nulltype extends \document {
         } catch (Exception $e) {
             $tmpl->setContent("{'response':'err','text':'" . $e->getMessage() . "'}");
         }
+    }
+    
+    /** Отправка документа по электронной почте
+     * 
+     * @param $form_name Имя печатной формы
+     * @param $email Адрес электронной почты
+     * @param string $text Текст сообщения электронной почты
+     */
+    final function sendEmailTo($form_name, $email, $text='') {
+        if ($email == '') {
+            throw new \Exception('Адрес электронной почты не указан!');
+        }
+        $data = $this->makePrintFormNoACLTest($form_name, true);
+        $mime = $this->getPrintFormMime($form_name);
+        $extension = $this->getExtensionFromMIME($mime);
+
+        $fname = $this->typename . '_' . str_replace(":", "_", $form_name) . $extension;
+        $viewname = $this->getPrintFormViewName($form_name) . ' (' . $this->viewname . ')';
+        $this->sendDocByEMail($email, $text, $viewname, $data, $fname);
+        doc_log("Send email", $email, 'doc', $this->id);
+        return true;
     }
 
     /// Печать документа
@@ -1258,12 +1231,12 @@ class doc_Nulltype extends \document {
             );
             $tmpl->setContent(json_encode($ret_data, JSON_UNESCAPED_UNICODE));
         } else {
-            $this->makePrintForm($form_name);            
+            $this->makePrintForm($form_name);
             $this->sentZEvent('print');
             doc_log("PRINT", $form_name, 'doc', $this->id);
         }
     }
-    
+
     /// Печать документа посетителем сайта / не сотрудником
     /// @param $form_name   Имя печатной формы
     /// @param $user_print  Если истина - документ запрошен из пользовательского раздела
@@ -1273,7 +1246,7 @@ class doc_Nulltype extends \document {
         if ($form_name == '') {
             throw new \NotFoundException('Печатная форма не выбрана');
         } else {
-            $this->makePrintFormNoACLTest($form_name);            
+            $this->makePrintFormNoACLTest($form_name);
             $this->sentZEvent('userprint');
             doc_log("USERPRINT", $form_name, 'doc', $this->id);
         }
@@ -1295,12 +1268,8 @@ class doc_Nulltype extends \document {
     }
 
     /// Сделать документ потомком указанного документа
-    function connect($p_doc) {
-        global $db;
-        \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-        if($this->doc_data['firm_id']>0) {
-            \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
-        }
+    function subordinate($p_doc) {
+        global $db;        
         if ($this->id == $p_doc) {
             throw new \Exception('Нельзя связать с самим собой!');
         }
@@ -1320,7 +1289,11 @@ class doc_Nulltype extends \document {
     /// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
     function connectJson($p_doc) {
         try {
-            $this->Connect($p_doc);
+            \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
+            if ($this->doc_data['firm_id'] > 0) {
+                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
+            }
+            $this->subordinate($p_doc);
             return " { \"response\": \"connect_ok\" }";
         } catch (Exception $e) {
             return " { \"response\": \"error\", \"message\": \"" . $e->getMessage() . "\" }";
@@ -1352,19 +1325,19 @@ class doc_Nulltype extends \document {
             $email_message->SetEncodedEmailHeader("From", $pref->site_email, "Почтовый робот {$pref->site_name}");
             $email_message->SetHeader("Sender", $pref->site_email);
             $text_message = "Здравствуйте, {$agent->fullname}!\n"
-                    . "Во вложении находится заказанный Вами документ ($docname) от {$pref->site_display_name} ({$pref->site_name})\n\n"
-                    . "$comment\n\n"
-                    . "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n"
-                    . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$pref->site_name}!";
+                . "Во вложении находится заказанный Вами документ ($docname) от {$pref->site_display_name} ({$pref->site_name})\n\n"
+                . "$comment\n\n"
+                . "Сообщение сгенерировано автоматически, отвечать на него не нужно!\n"
+                . "Для переписки используйте адрес, указанный в контактной информации на сайте http://{$pref->site_name}!";
         } else {
             $email_message->SetEncodedEmailHeader("From", $doc_autor['worker_email'], $doc_autor['worker_real_name']);
             $email_message->SetHeader("Sender", $doc_autor['worker_email']);
             $text_message = "Здравствуйте, {$agent->fullname}!\n"
-                    . "Во вложении находится заказанный Вами документ ($docname) от {$pref->site_name}\n\n$comment\n\n"
-                    . "Ответственный сотрудник: {$doc_autor['worker_real_name']}\n"
-                    . "Контактный телефон: {$doc_autor['worker_phone']}\n"
-                    . "Электронная почта (e-mail): {$doc_autor['worker_email']}\n"
-                    . "Отправитель: {$_SESSION['name']}";
+                . "Во вложении находится заказанный Вами документ ($docname) от {$pref->site_name}\n\n$comment\n\n"
+                . "Ответственный сотрудник: {$doc_autor['worker_real_name']}\n"
+                . "Контактный телефон: {$doc_autor['worker_phone']}\n"
+                . "Электронная почта (e-mail): {$doc_autor['worker_email']}\n"
+                . "Отправитель: {$_SESSION['name']}";
         }
         if ($body) {
             $email_message->AddQuotedPrintableTextPart($body);
@@ -1383,12 +1356,12 @@ class doc_Nulltype extends \document {
         $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            throw new Exception($error);
+            throw new \Exception($error);
         } else {
             return 0;
         }
     }
-    
+
     /// Обработка отправки запроса на отмену документа
     protected function sendPetition() {
         global $db;
@@ -1427,7 +1400,7 @@ class doc_Nulltype extends \document {
 
             if (\cfg::get('site', 'doc_adm_jid') && \cfg::get('xmpp', 'host')) {
                 require_once(\cfg::getroot('location') . '/common/XMPPHP/XMPP.php');
-                $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
+                $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp', 'login'), \cfg::get('xmpp', 'pass')
                     , 'MultiMag r' . MULTIMAG_REV);
                 $xmppclient->connect();
                 $xmppclient->processUntil('session_start');
@@ -1436,14 +1409,12 @@ class doc_Nulltype extends \document {
                 $xmppclient->disconnect();
             }
             $ret['message'] = "Сообщение было отправлено уполномоченному лицу! Ответ о снятии проводки придёт вам на e-mail!";
-        } 
-        catch (XMPPHP_Exception $e) {
+        } catch (XMPPHP_Exception $e) {
             writeLogException($e);
             $ret = array('object' => 'send_petition', 'response' => 'error',
                 'errormessage' => "Невозможно отправить сообщение по XMPP: " . $e->getMessage()
             );
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $ret = array('object' => 'send_petition', 'response' => 'error', 'errormessage' => $e->getMessage());
         }
         return json_encode($ret, JSON_UNESCAPED_UNICODE);
@@ -1474,15 +1445,15 @@ class doc_Nulltype extends \document {
         $peopt = request('peopt'); // Опции редактора списка товаров
 
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-        if($this->doc_data['firm_id']>0) {
-            \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::VIEW);
+        if ($this->doc_data['firm_id'] > 0) {
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::VIEW);
         }
-        
-        switch($opt) {
-           case 'link_info':
+
+        switch ($opt) {
+            case 'link_info':
                 $ret = $this->getLinkInfo();
                 $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
-                return 1; 
+                return 1;
             case 'petition':
                 $tmpl->setContent($this->sendPetition());
                 return 1;
@@ -1495,7 +1466,7 @@ class doc_Nulltype extends \document {
                 $tmpl->setContent(json_encode($ret, JSON_UNESCAPED_UNICODE));
                 return 1;
         }
-        
+
         /// Операции, для которых нужен доступ только на чтение
         switch ($peopt) {
             case 'jget':    // Json-вариант списка товаров
@@ -1507,7 +1478,7 @@ class doc_Nulltype extends \document {
             case 'jgetgroups':
                 $doc_content = $poseditor->getGroupList();
                 $tmpl->addContent($doc_content);
-                return 1;             
+                return 1;
             case 'jgpi':        // Получение данных наименования
                 $pos = rcvint('pos');
                 $tmpl->addContent($poseditor->GetPosInfo($pos));
@@ -1521,14 +1492,14 @@ class doc_Nulltype extends \document {
                 $s = request('s');
                 $str = "{ response: 'sklad_list', content: " . $poseditor->SearchSkladList($s) . " }";
                 $tmpl->setContent($str);
-                return 1;            
+                return 1;
         }
 
         /// TODO: Это тоже переделать!
         if ($this->doc_data['ok']) {
             throw new \Exception("Операция не допускается для проведённого документа!");
         }
-        switch($opt) {
+        switch ($opt) {
             case 'jdeldoc':     // Пометка на удаление
                 $tmpl->setContent($this->serviceDelDoc());
                 return 1;
@@ -1543,40 +1514,40 @@ class doc_Nulltype extends \document {
         if ($this->doc_data['mark_del']) {
             throw new \Exception("Операция не допускается для документа, отмеченного для удаления!");
         }
-        
+
         /// Операции, изменяющие документ        
         switch ($peopt) {
             case 'jadd':        // Json вариант добавления позиции
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                if($this->doc_data['firm_id']>0) {
-                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                if ($this->doc_data['firm_id'] > 0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $pe_pos = rcvint('pe_pos');
                 $tmpl->setContent($poseditor->AddPos($pe_pos));
                 break;
             case 'jdel':        // Json вариант удаления строки
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                if($this->doc_data['firm_id']>0) {
-                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                if ($this->doc_data['firm_id'] > 0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $line_id = rcvint('line_id');
                 $tmpl->setContent($poseditor->Removeline($line_id));
                 break;
             case 'jup':     // Json вариант обновления
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                if($this->doc_data['firm_id']>0) {
-                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                if ($this->doc_data['firm_id'] > 0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $line_id = rcvint('line_id');
                 $value = request('value');
                 $type = request('type');
                 // TODO: пересчет цены перенести внутрь poseditor
                 $tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
-                break;               
+                break;
             case 'jsn':         // Серийные номера
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                if($this->doc_data['firm_id']>0) {
-                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                if ($this->doc_data['firm_id'] > 0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $action = request('a');
                 $line_id = request('line');
@@ -1585,15 +1556,15 @@ class doc_Nulltype extends \document {
                 break;
             case 'jrc':         // Сброс цен
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                if($this->doc_data['firm_id']>0) {
-                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                if ($this->doc_data['firm_id'] > 0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $poseditor->resetPrices();
                 break;
             case 'jorder':      // Сортировка наименований
                 \acl::accessGuard('doc.' . $this->typename, \acl::UPDATE);
-                if($this->doc_data['firm_id']>0) {
-                    \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::UPDATE);
+                if ($this->doc_data['firm_id'] > 0) {
+                    \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::UPDATE);
                 }
                 $by = request('by');
                 $poseditor->reOrder($by);
@@ -1602,56 +1573,79 @@ class doc_Nulltype extends \document {
                 return 0;
         }
         return 1;
-
     }
 
     /// Получить многомерный массив с данными заголовка документа
     public function getDocumentHeader() {
         global $db, $CONFIG;
         $ret = array();
-        
+
         if ($this->doc_type == 0) {
             throw new Exception("Невозможно получить заголовок документа неизвестного типа");
-        }
-        else {           
+        } else {
             // Динамические: баланс, бонусы, список договоров агента            
             $ret['id'] = $this->id;
             $ret['viewname'] = $this->viewname;
             $ret['type'] = $this->doc_type;
+            $ret['typename'] = $this->typename;
             $ret['altnum'] = $this->doc_data['altnum'];
             $ret['subtype'] = $this->doc_data['subtype'];
             $ret['mark_del'] = $this->doc_data['mark_del'];
-            $ret['firm_id'] = $this->doc_data['firm_id'];
-            $ret['agent_id'] = $this->doc_data['agent'];
-            $ret['contract_id'] = $this->doc_data['contract'];
-            $ret['store_id'] = $this->doc_data['sklad'];
-            $ret['cash_id'] = $this->doc_data['kassa'];
-            $ret['sum'] = $this->doc_data['sum'];
+            $ret['firm_id'] = $this->doc_data['firm_id'];            
             $ret['comment'] = $this->doc_data['comment'];
             $ret['created'] = $this->doc_data['created'];
             $ret['ok'] = $this->doc_data['ok'];
+            $ret['p_doc'] = $this->doc_data['p_doc'];
             
-            if(isset($CONFIG['site']['default_firm'])) {
+            $fields = explode(' ', $this->header_fields);
+            $ret['header_fields'] = $fields;
+            
+            foreach ($fields as $f) {
+                switch ($f) {
+                    case 'agent': 
+                        $ret['agent_id'] = $this->doc_data['agent'];
+                        $ret['contract_id'] = $this->doc_data['contract'];
+                        break;
+                    case 'sklad':
+                        $ret['store_id'] = $this->doc_data['sklad'];
+                        break;
+                    case 'kassa':
+                        $ret['cash_id'] = $this->doc_data['kassa'];
+                        break;
+                    case 'bank':
+                        $ret['bank_id'] = $this->doc_data['bank'];
+                        break;
+                    case 'cena':
+                        $ret['price_id'] = $this->dop_data['cena'];
+                        break;
+                    case 'sum': 
+                        $ret['sum'] = $this->doc_data['sum'];
+                        break;
+                }
+            }
+
+            if (isset($CONFIG['site']['default_firm'])) {
                 $ret['default_firm_id'] = $CONFIG['site']['default_firm'];
             }
             $ret['dop_buttons'] = $this->getDopButtons();
             $firm_ldo = new \Models\LDO\firmnames();
             $ret['firm_names'] = $firm_ldo->getData();
-            $ret['header_fields'] = explode(' ', $this->header_fields);
             
+
             if ($this->doc_data['date']) {
                 $ret['date'] = date("Y-m-d H:i:s", $this->doc_data['date']);
             } else {
                 $ret['date'] = date("Y-m-d H:i:s");
             }
-            
-            if(in_array('agent', $ret['header_fields'])) {
+
+            if (in_array('agent', $ret['header_fields'])) {
                 $contract_list = array();
-                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_dopdata`.`value` AS `name`
+                $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_dopdata`.`value` AS `name`, `doc_list`.`date`
                     FROM `doc_list`
                     LEFT JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='name'
                     WHERE `agent`='{$this->doc_data['agent']}' AND `type`='14' AND `firm_id`='{$this->doc_data['firm_id']}'");
                 while ($line = $res->fetch_assoc()) {
+                    $line['date'] = date("Y-m-d H:i:s", $line['date']);
                     $contract_list[] = $line;
                 }
                 $ret['agent_info'] = array(
@@ -1660,64 +1654,97 @@ class doc_Nulltype extends \document {
                     'bonus' => docCalcBonus($this->doc_data['agent']),
                     'contract_list' => $contract_list,
                     'dishonest' => $this->doc_data['agent_dishonest'],
-
                 );
-            }
-            if(in_array('sklad', $ret['header_fields'])) {
-                if(isset($CONFIG['site']['default_sklad'])) {
-                    $ret['default_store_id'] = $CONFIG['site']['default_sklad'];
-                }
-                $store_list = array();
-                $res = $db->query("SELECT `id`, `name`, `firm_id` FROM `doc_sklady` ORDER by `id` ASC");
-                while ($line = $res->fetch_assoc()) {
-                    $store_list[$line['id']] = $line;
-                }
-                $ret['store_list'] = $store_list;
             }            
-            if(in_array('kassa', $ret['header_fields'])) {
-                if(isset($CONFIG['site']['default_kassa'])) {
-                    $ret['default_cash_id'] = $CONFIG['site']['default_kassa'];
-                }
-                $cash_list = array();
-                $res = $db->query("SELECT `num` AS `id`, `name`, `firm_id`
-                    FROM `doc_kassa`
-                    WHERE `ids`='kassa' 
-                    ORDER BY `num`");
-		while($line = $res->fetch_assoc()) {
-		    $cash_list[$line['id']] = $line;
-		}
-                $ret['cash_list'] = $cash_list;
-            }
-            if(in_array('bank', $ret['header_fields'])) {
-                if(isset($CONFIG['site']['default_bank'])) {
-                    $ret['default_bank_id'] = $CONFIG['site']['default_bank'];
-                }
-                $bank_list = array();
-                $res = $db->query("SELECT `num` AS `id`, `name`, `firm_id`
-                    FROM `doc_kassa`
-                    WHERE `ids`='bank'
-                    ORDER BY `num`");
-		while($line = $res->fetch_assoc()) {
-		    $bank_list[$line['id']] = $line;
-		}
-                $ret['bank_list'] = $bank_list;
-            }
-            if(in_array('cena', $ret['header_fields'])) {
-                $price_list = array();
-                $res = $db->query("SELECT `id`, `name` FROM `doc_cost` ORDER BY `id`");
-		while($line = $res->fetch_assoc()) {
-		    $price_list[$line['id']] = $line;
-		}
-                $ret['price_list'] = $price_list;
-                $ret['price'] = $this->dop_data['cena'];
-            }
-
-            //if (method_exists($this, 'DopHead'))
-            //    $this->DopHead();
+            $ret['ext_fields'] = $this->getExtControls();
+            $ret = array_merge($this->dop_data, $this->text_data, $ret);
         }
         return $ret;
     }
     
+    /// обновить заголовок документа данными из массива
+    public function updateDocumentHeader($data) {
+        $doc_data = array();
+        $dop_data = array();
+        if(isset($data['altnum'])) {
+            $doc_data['altnum'] = $data['altnum'];
+        }
+        if(isset($data['subtype'])) {
+            $doc_data['subtype'] = $data['subtype'];
+        }
+        if(isset($data['firm_id'])) {
+            $doc_data['firm_id'] = $data['firm_id'];
+        }
+        if(isset($data['comment'])) {
+            $doc_data['comment'] = $data['comment'];
+        }
+        
+        $fields = explode(' ', $this->header_fields);
+        foreach ($fields as $f) {
+            switch ($f) {
+                case 'agent': 
+                    if (isset($data['agent_id'])) {
+                        $doc_data['agent'] = $data['agent_id'];
+                    }
+                    if (isset($data['contract_id'])) {
+                        $doc_data['contract'] = $data['contract_id'];
+                    }
+                    break;
+                case 'sklad':
+                    if (isset($data['store_id'])) {
+                        $doc_data['sklad'] = $data['store_id'];
+                    }
+                    break;
+                case 'kassa':
+                    if (isset($data['cash_id'])) {
+                        $doc_data['kassa'] = $data['cash_id'];
+                    }
+                    break;
+                case 'bank':
+                    if (isset($data['bank_id'])) {
+                        $doc_data['bank'] = $data['bank_id'];
+                    }
+                    break;
+                case 'cena':
+                    if (isset($data['price_id'])) {
+                        $dop_data['cena'] = $data['price_id'];
+                    }
+                    break;
+                case 'sum':
+                    if (isset($data['sum'])) {
+                        $doc_data['sum'] = $data['sum'];
+                    }
+                    break;
+            }
+        }
+        $extcontrols = $this->getExtControls();
+        foreach ($extcontrols as $ex_name => $ex_data) {
+            switch($ex_data['type']) {
+                case 'text':
+                case 'select':
+                case 'status':
+                    if (isset($data[$ex_name])) {
+                        $dop_data[$ex_name] = $data[$ex_name];
+                    }
+                    break;
+                case 'checkbox':
+                    if (isset($data[$ex_name])) {
+                        $dop_data[$ex_name] = $data[$ex_name]?1:0;
+                    }
+                    break;
+            }
+        }
+        //if (method_exists($this, 'DopHead'))
+        //    $this->DopHead();
+        if(count($doc_data)>0) {
+            $this->setDocDataA($doc_data);
+        }
+        if(count($dop_data)>0) {
+            //throw new Exception(json_encode($dop_data));
+            $this->setDopDataA($dop_data);
+        }
+    }
+
     /// Слияние табличной части двух документов
     protected function mergeDocList($poseditor) {
         global $db;
@@ -1741,7 +1768,7 @@ class doc_Nulltype extends \document {
             }
 
             $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos`"
-                    . "WHERE `doc`=$from_doc AND `page`=0 GROUP BY `tovar`");
+                . "WHERE `doc`=$from_doc AND `page`=0 GROUP BY `tovar`");
             while ($line = $res->fetch_assoc()) {
                 if (!$no_sum) {
                     $poseditor->simpleIncrementPos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
@@ -1757,24 +1784,24 @@ class doc_Nulltype extends \document {
         }
         return $ret;
     }
-    
-        /// Получить информацию о связях документа
+
+    /// Получить информацию о связях документа
     protected function getLinkInfo() {
         global $db;
         $childs = array();
         $parent = null;
         if ($this->doc_data['p_doc']) {
             $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
-                `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
-                LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-                WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
+                                    `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
+                                    LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                                    WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
             $parent = $res->fetch_assoc();
             $parent['vdate'] = date("d.m.Y", $parent['date']);
         }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`,
-            `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
-            LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-            WHERE `doc_list`.`p_doc`='{$this->id}'");
+                                `doc_list`.`ok`, `doc_list`.`sum` FROM `doc_list`
+                                LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
+                                WHERE `doc_list`.`p_doc`='{$this->id}'");
 
         while ($line = $res->fetch_assoc()) {
             $line['vdate'] = date("d.m.Y", $line['date']);
@@ -1783,7 +1810,7 @@ class doc_Nulltype extends \document {
         $ret = array('response' => 'link_info', 'parent' => $parent, 'childs' => $childs);
         return $ret;
     }
-    
+
     protected function drawLHeadformStart() {
         $this->drawHeadformStart('j');
     }
@@ -1977,7 +2004,7 @@ class doc_Nulltype extends \document {
         settype($kassa, 'int');
         $tmpl->addContent("Касса:<br><select name='kassa'>");
         $res = $db->query("SELECT `num`, `name` FROM `doc_kassa` WHERE `ids`='kassa' AND 
-                    (`firm_id`='0' OR `firm_id` IS NULL OR `firm_id`='{$this->doc_data['firm_id']}' OR `num`='$kassa') ORDER BY `num`");        
+                    (`firm_id`='0' OR `firm_id` IS NULL OR `firm_id`='{$this->doc_data['firm_id']}' OR `num`='$kassa') ORDER BY `num`");
 
         if ($kassa == 0) {
             $tmpl->addContent("<option value='0'>--не выбрана--</option>");
@@ -2026,9 +2053,10 @@ class doc_Nulltype extends \document {
 
     // ====== Получение данных, связанных с документом =============================
     protected function get_docdata() {
-        if (isset($this->doc_data))
+        if (isset($this->doc_data)) {
             return;
-        global $CONFIG, $db;
+        }
+        global $db;
         if ($this->id) {
             $this->loadFromDb($this->id);
         } else {
@@ -2037,12 +2065,12 @@ class doc_Nulltype extends \document {
             }
             $this->dop_data = $this->def_dop_data;
             $pref = \pref::getInstance();
-            
+
             $this->doc_data = array('id' => 0, 'type' => '', 'agent' => $pref->getSitePref('default_agent_id'), 'comment' => '', 'date' => time(), 'ok' => 0,
                 'sklad' => $pref->getSitePref('default_store_id'), 'user' => 0, 'altnum' => 0, 'subtype' => '', 'sum' => 0, 'nds' => 1, 'p_doc' => 0, 'mark_del' => 0,
                 'kassa' => 0, 'bank' => 0, 'firm_id' => 0, 'contract' => 0, 'created' => 0, 'agent_name' => '', 'agent_fullname' => '', 'agent_dishonest' => 0, 'agent_comment' => '');
-            
-            if(!$this->doc_data['agent']) {
+
+            if (!$this->doc_data['agent']) {
                 $this->doc_data['agent'] = 1;
             }
             $agent_data = $db->selectRow('doc_agent', $this->doc_data['agent']);
@@ -2063,8 +2091,8 @@ class doc_Nulltype extends \document {
         $end_date = strtotime(date("Y-12-31 23:59:59", $this->doc_data['date']));
         $subtype_sql = $db->real_escape_string($this->doc_data['subtype']);
         $res = $db->query("SELECT `altnum` FROM `doc_list`"
-                . " WHERE `type`='{$this->doc_type}' AND `altnum`='{$this->doc_data['altnum']}' AND `subtype`='$subtype_sql'"
-                . " AND `id`!='{$this->id}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='{$this->doc_data['firm_id']}'");
+            . " WHERE `type`='{$this->doc_type}' AND `altnum`='{$this->doc_data['altnum']}' AND `subtype`='$subtype_sql'"
+            . " AND `id`!='{$this->id}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='{$this->doc_data['firm_id']}'");
         return $res->num_rows ? false : true;
     }
 
@@ -2077,8 +2105,8 @@ class doc_Nulltype extends \document {
         $start_date = strtotime(date("Y-01-01 00:00:00", strtotime($date)));
         $end_date = strtotime(date("Y-12-31 23:59:59", strtotime($date)));
         $res = $db->query("SELECT `altnum` FROM `doc_list` WHERE `type`='$doc_type' AND `subtype`='$subtype'"
-                . " AND `id`!='{$this->id}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id'"
-                . " ORDER BY `altnum` ASC");
+            . " AND `id`!='{$this->id}' AND `date`>='$start_date' AND `date`<='$end_date' AND `firm_id`='$firm_id'"
+            . " ORDER BY `altnum` ASC");
         $newnum = 0;
         while ($nxt = $res->fetch_row()) {
             if (($nxt[0] - 1 > $newnum) && @$CONFIG['doc']['use_persist_altnum'])
@@ -2130,10 +2158,9 @@ class doc_Nulltype extends \document {
     protected function getApplyButtons() {
         if ($this->doc_data['mark_del']) {
             return "<a href='#' title='Отменить удаление' onclick='unMarkDelDoc({$this->id}); return false;'><img src='img/i_trash_undo.png' alt='отменить удаление'></a>";
-        }
-        else {
-            return "<a href='#' title='Пометить на удаление' onclick='MarkDelDoc({$this->id}); return false;'><img src='img/i_trash.png' alt='Пометить на удаление'></a>".
-            "<a href='#' title='Провести документ' onclick='ApplyDoc({$this->id}); return false;'><img src='img/i_ok.png' alt='Провести'></a>";
+        } else {
+            return "<a href='#' title='Пометить на удаление' onclick='MarkDelDoc({$this->id}); return false;'><img src='img/i_trash.png' alt='Пометить на удаление'></a>" .
+                "<a href='#' title='Провести документ' onclick='ApplyDoc({$this->id}); return false;'><img src='img/i_ok.png' alt='Провести'></a>";
         }
         //<a href='?mode=ehead&amp;doc={$this->doc}' title='Правка заголовка'><img src='img/i_docedit.png' alt='Правка'></a>
     }
@@ -2178,8 +2205,8 @@ class doc_Nulltype extends \document {
     public function showLog() {
         global $tmpl;
         \acl::accessGuard('doc.' . $this->typename, \acl::VIEW);
-        if($this->doc_data['firm_id']>0) {
-            \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::VIEW);
+        if ($this->doc_data['firm_id'] > 0) {
+            \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::VIEW);
         }
         $tmpl->setTitle($this->viewname . ' N' . $this->id);
         doc_menu($this->getDopButtons());
@@ -2229,7 +2256,7 @@ class doc_Nulltype extends \document {
             $res = $db->query("SELECT `id` FROM `doc_base_params` WHERE `codename`='bigpack_cnt'");
             if (!$res->num_rows) {
                 $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
-                        . " VALUES ('Кол-во в большой упаковке', 'bigpack_cnt', 'int', 0)");
+                    . " VALUES ('Кол-во в большой упаковке', 'bigpack_cnt', 'int', 0)");
                 throw new \Exception("Параметр *bigpack_cnt - кол-во в большой упаковке* не найден. Параметр создан.");
             }
             list($p_bp_id) = $res->fetch_row();
@@ -2271,29 +2298,31 @@ class doc_Nulltype extends \document {
             $line['sum'] = $line['price'] * $line['cnt'];
 
             if (isset($opts['vat'])) {
-                if ($line['vat'] !== null) {
+                if($this->firm_vars['param_nds']) {
+                    if($line['vat']===null) {
+                        $line['vat'] = 0;
+                    }                        
                     $ndsp = $line['vat'];
-                } else {
-                    $ndsp = $this->firm_vars['param_nds'];
+                    $vat = $ndsp / 100;
                 }
-                $vat = $ndsp / 100;
-            /*    if ($line['vat'] !== null) {
-                    $line['vat_p'] = $line['vat'];
-                } else {
-                    $line['vat_p'] = $this->firm_vars['param_nds'];
+                else {
+                    $ndsp = $vat = 0;
                 }
-                $line['price_wo_vat'] = round($line['price'] / (1 + ($line['vat_p'] / 100)), 2);
-                $line['sum_wo_vat'] = $line['price_wo_vat'] * $line['cnt'];
-                $line['vat_s'] = ($line['price'] * $line['cnt']) - $line['sum_wo_vat'];*/
+
+                /* 
+                  $line['price_wo_vat'] = round($line['price'] / (1 + ($line['vat_p'] / 100)), 2);
+                  $line['sum_wo_vat'] = $line['price_wo_vat'] * $line['cnt'];
+                  $line['vat_s'] = ($line['price'] * $line['cnt']) - $line['sum_wo_vat']; */
                 $pos = $this->calcVAT($line['price'], $line['cnt'], $vat);
                 //$line['price'] = $pos['price'];
                 $line['sum_wo_vat'] = round($pos['sum_wo_vat'], 2);
                 $line['vat_p'] = $ndsp;
                 $line['vat_s'] = round($pos['vat_s'], 2);
                 $line['sum'] = round($pos['sum'], 2);
+                
             }
-            
-            
+
+
             $list[] = $line;
         }
         $res->free();
@@ -2320,12 +2349,16 @@ class doc_Nulltype extends \document {
 	ORDER BY `doc_list_pos`.`id`");
 
         while ($nxt = $res->fetch_assoc()) {
-            if ($nxt['nds'] !== null) {
-                $ndsp = $nxt['nds'];
-            } else {
-                $ndsp = $this->firm_vars['param_nds'];
+            if($this->firm_vars['param_nds']) {
+                if($nxt['vat']===null) {
+                    $nxt['vat'] = 0;
+                }                        
+                $ndsp = $nxt['vat'];
+                $vat = $ndsp / 100;
             }
-            $nds = $ndsp / 100;
+            else {
+                $ndsp = $vat = 0;
+            }
 
             if (!$nxt['country_code']) {
                 //throw new \Exception("Не возможно формирование списка номенклатуры без указания страны происхождения товара");
@@ -2408,7 +2441,7 @@ class doc_Nulltype extends \document {
                     }
                 }
                 foreach ($unigtd as $gtd => $cnt) {
-                    $pos = $this->calcVAT($nxt['cost'], $cnt, $nds);
+                    $pos = $this->calcVAT($nxt['cost'], $cnt, $vat);
                     $list[] = array(
                         'line_id' => $nxt['line_id'],
                         'pos_id' => $nxt['pos_id'],
@@ -2432,7 +2465,7 @@ class doc_Nulltype extends \document {
                     );
                 }
             } else {
-                $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $nds);
+                $pos = $this->calcVAT($nxt['cost'], $nxt['cnt'], $vat);
                 $list[] = array(
                     'line_id' => $nxt['line_id'],
                     'pos_id' => $nxt['pos_id'],
@@ -2495,8 +2528,8 @@ class doc_Nulltype extends \document {
         global $db;
         try {
             \acl::accessGuard('doc.' . $this->typename, \acl::DELETE);
-            if($this->doc_data['firm_id']>0) {
-                \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::DELETE);
+            if ($this->doc_data['firm_id'] > 0) {
+                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::DELETE);
             }
             $tim = time();
 
@@ -2508,7 +2541,7 @@ class doc_Nulltype extends \document {
             doc_log("MARKDELETE", '', "doc", $this->id);
             $this->doc_data['mark_del'] = $tim;
             $json = ' { "response": "1", "message": "Пометка на удаление установлена!", "buttons": "' . $this->getApplyButtons() . '", '
-                    . '"statusblock": "Документ помечен на удаление" }';
+                . '"statusblock": "Документ помечен на удаление" }';
             return $json;
         } catch (Exception $e) {
             return "{response: 0, message: '" . $e->getMessage() . "'}";
@@ -2520,13 +2553,13 @@ class doc_Nulltype extends \document {
         global $db;
         try {
             \acl::accessGuard('doc.' . $this->typename, \acl::DELETE);
-            if($this->doc_data['firm_id']>0) {
-                \acl::accessGuard([ 'firm.global', 'firm.'.$this->doc_data['firm_id']], \acl::DELETE);
+            if ($this->doc_data['firm_id'] > 0) {
+                \acl::accessGuard([ 'firm.global', 'firm.' . $this->doc_data['firm_id']], \acl::DELETE);
             }
             $db->update('doc_list', $this->id, 'mark_del', 0);
-            doc_log("UNDELETE", '', "doc", $this->id);
+            doc_log("UNMARKDELETE", '', "doc", $this->id);
             $json = ' { "response": "1", "message": "Пометка на удаление снята!", "buttons": "' . $this->getApplyButtons() . '", '
-                    . '"statusblock": "Документ не будет удалён" }';
+                . '"statusblock": "Документ не будет удалён" }';
             return $json;
         } catch (Exception $e) {
             return "{response: 0, message: '" . $e->getMessage() . "'}";
@@ -2582,14 +2615,13 @@ class doc_Nulltype extends \document {
             6 => 'credit_type',
             7 => 'rasxodi',
         ];
-        if(!isset($allowedTypes[$this->doc_type])) {
+        if (!isset($allowedTypes[$this->doc_type])) {
             throw new \Exception('Для данного типа документа проверка не разрешена');
         }
-        if(cfg::get('doc', 'restrict_dc_nulltype', true)
-            && isset($this->dop_data[$allowedTypes[$this->doc_type]])
-            && $this->dop_data[$allowedTypes[$this->doc_type]] == 0) {
-            $type = $this->doc_type%2 === 1 ? 'расхода' : 'дохода';
+        if (cfg::get('doc', 'restrict_dc_nulltype', true) && isset($this->dop_data[$allowedTypes[$this->doc_type]]) && $this->dop_data[$allowedTypes[$this->doc_type]] == 0) {
+            $type = $this->doc_type % 2 === 1 ? 'расхода' : 'дохода';
             throw new \Exception("Не задан вид $type у проводимого документа.");
         }
     }
+
 }

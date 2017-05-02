@@ -175,7 +175,7 @@ try {
     } else
         throw new Exception("Неверный параметр");
 
-    $tmpl->write();
+    
 } catch (mysqli_sql_exception $e) {
     $db->rollback();
     $id = writeLogException($e);
@@ -187,3 +187,4 @@ try {
 }
 
 
+$tmpl->write();

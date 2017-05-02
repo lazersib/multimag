@@ -36,14 +36,8 @@ class doc_Predlojenie extends doc_Nulltype {
     
     /// Провести документ
     function docApply($silent = 0) {
-        global $db;
-        $tim = time();
-        if ($this->doc_data['ok'] && (!$silent)) {
-            throw new Exception('Документ уже был проведён!');
-        }        
-        if (!$silent) {
-            $db->query("UPDATE `doc_list` SET `ok`='$tim' WHERE `id`='{$this->id}'");
-        }
+        global $db;      
+        parent::docApply($silent);
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
             FROM `doc_list_pos`
@@ -63,9 +57,6 @@ class doc_Predlojenie extends doc_Nulltype {
         } else {
             throw new Exception("Не удалось провести пустой документ!");
         }
-        if ($silent) {
-            return;
-        }
     }
     
     /// Отменить проводку документа
@@ -74,7 +65,8 @@ class doc_Predlojenie extends doc_Nulltype {
         if (!$this->doc_data['ok']) {
             throw new Exception('Документ не был проведён');
         }        
-        $db->query("UPDATE `doc_list` SET `ok`=0 WHERE `id`='{$this->id}'");
+        $db->update('doc_list', $this->id, 'ok', 0);
+        $this->doc_data['ok'] = 0;
 
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`
             FROM `doc_list_pos`
@@ -92,6 +84,7 @@ class doc_Predlojenie extends doc_Nulltype {
             $db->query("INSERT INTO `doc_base_dop` (`id`, `offer`) VALUES $vals
                 ON DUPLICATE KEY UPDATE `offer`=`offer`+VALUES(`offer`)");
         }
+        parent::docCancel();
     }
 
     /// Формирование другого документа на основании текущего

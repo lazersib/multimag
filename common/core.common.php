@@ -17,7 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-define("MULTIMAG_REV", "942");
+define("MULTIMAG_REV", "950");
 define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 
 /// Файл содержит код, используемый как web, так и cli скриптами
@@ -55,7 +55,7 @@ function getSubscribersEmailList() {
     $res = $db->query("SELECT `doc_agent`.`name`, `doc_agent`.`fullname`, `doc_agent`.`pfio`, `agent_contacts`.`value` AS `email`"
         . " FROM `agent_contacts`"
         . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`agent_contacts`.`agent_id`"
-        . " WHERE `no_ads`='0'");
+        . " WHERE `agent_contacts`.`type`='email' AND `agent_contacts`.`no_ads`='0'");
     while($line = $res->fetch_assoc()) {
         if($line['fullname']) {
             $line['name'] = $line['fullname'];
@@ -81,13 +81,13 @@ function getSubscribersEmailList() {
 /// @param $list_id ID рассылки
 function SendSubscribe($title, $subject, $msg, $list_id = '') {
     global $CONFIG, $db;
+    $error_list = array();
     if (!$list_id) {
         $list_id = md5($subject . $msg . microtime()) . '.' . date("dmY") . '.' . $CONFIG['site']['name'];
     }
     $res = $db->query("SELECT `firm_name` FROM `doc_vars` WHERE `id`='{$CONFIG['site']['default_firm']}'");
     list($firm_name) = $res->fetch_row();
     $list = getSubscribersEmailList();
-    $err_cnt = 0;
     foreach ($list as $subscriber) {
         $subscriber['email'] = trim($subscriber['email']);
         if(!$subscriber['email']) {
@@ -120,10 +120,11 @@ $msg
         $error = $email_message->Send();
 
         if (strcmp($error, "")) {
-            $err_cnt++;
+            //throw new Exception($error);
+            $error_list[] = $subscriber['email'].": ".$error;
         }
-        return $err_cnt;
     }
+    return $error_list;
 }
 
 /// Отправляет оповещение администратору сайта по всем доступным каналам связи

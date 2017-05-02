@@ -16,21 +16,21 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-namespace Models\LDO;
+namespace api; 
 
-/// Класс списка наименований агентов
-class agentnames extends \Models\ListDataObject {
-
-    /// @brief Получить данные
-    public function getData() {
-        global $db;
-        $sql = "SELECT `id`, `name` FROM `doc_agent`";
-        $a = array();
-        $res = $db->query($sql);
-        while ($line = $res->fetch_assoc()) {
-            $a[$line['id']] = $line['name'];
-        }
-        return $a;
+/// Обработчик API
+class getmessage {
+    
+    
+    public function dispatch($action, $data=null) {
+        ignore_user_abort(FALSE);
+        sleep(10);
+        $agent_id = rand(1, 100);
+        return array(
+            'title' => 'Уведомление о звонке',
+            'icon' => '/img/i_add.png',
+            'message' => 'Лови звонок агента '.$agent_id,
+            'link' => '/docs.php?l=agent&mode=srv&opt=ep&pos='.$agent_id,
+        );
     }
-
 }

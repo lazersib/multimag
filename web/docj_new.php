@@ -68,6 +68,7 @@ if (!isset($_REQUEST['mode'])) {
 
 	<br><b>Легенда</b>: строка - <span class='f_green'>интернет - магазин</span>, <span class='f_red'>с ошибкой</span><br>
 	Номер реализации - <span class='f_green'>Оплачено</span>, <span class='f_red'>Не оплачено</span>, <span class='f_brown'>Частично оплачено</span>, <span class='f_purple'>Переплата</span><br>
+        <script type='text/javascript' src='/js/common.js'></script>
 	<script type='text/javascript' src='/js/doc_journal.js'></script>
 	<script>
 	var dj = initDocJournal('doc_list', { $f }, {'no_new_page': $no_new_page});

@@ -16,21 +16,20 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-namespace Models\LDO;
+namespace api; 
 
-/// Класс списка наименований агентов
-class agentnames extends \Models\ListDataObject {
+/// Обработчик API запросов к объектам справочника собственных организаций. Проверяет необходимиые привилегии перед осуществлением действий.
+class firm {
 
-    /// @brief Получить данные
-    public function getData() {
-        global $db;
-        $sql = "SELECT `id`, `name` FROM `doc_agent`";
-        $a = array();
-        $res = $db->query($sql);
-        while ($line = $res->fetch_assoc()) {
-            $a[$line['id']] = $line['name'];
+    public function dispatch($action, $data = null) {
+        switch ($action) {
+            case 'listnames':
+                \acl::accessGuard('directory.firm', \acl::VIEW);
+                $ldo = new \Models\LDO\firmnames();
+                return $ldo->getData();
+            default:
+                throw new \NotFoundException('Некорректное действие');
         }
-        return $a;
     }
 
 }

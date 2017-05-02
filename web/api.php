@@ -24,62 +24,100 @@ include_once("core.php");
 try {
     $object = request('object');
     $action = request('action');
+    $data = request('data');    
     $tmpl->ajax = 1;
 
     if (!auth()) {
-        throw new AccessException('Не аутентифицирован');
+        throw new \LoginException('Не аутентифицирован');
     }
     session_write_close();  /// Чтобы не тормозить загрузку других страниц
     ob_start();
     $starttime = microtime(true);    
     $result = array(
         'object' => $object,
+        'action' => $action,
         'response' => 'success',
     );
-    if($object=='getmessage') {
-        ignore_user_abort(FALSE);
-        sleep(10);
-        $agent_id = rand(1, 100);
-        $content = array(
-            'title' => 'Уведомление о звонке',
-            'icon' => '/img/i_add.png',
-            'message' => 'Лови звонок агента '.$agent_id,
-            'link' => '/docs.php?l=agent&mode=srv&opt=ep&pos='.$agent_id,
-        );
-        $result['content'] = $content;
-    } 
-    else if($object=='agent') {
-        $data = request('data');
-        $decoded_data = json_decode($data, true);
-        $disp = new \api\agent();
-        $result['content'] = $disp->dispatch($action, $decoded_data);        
+    if(!preg_match('/^\\w+$/', $object)) {
+        throw new \InvalidArgumentException('Некорректный объект '.$object);
+    }
+    $class_name = '\\api\\' . $object;
+    if(!class_exists($class_name)) {
+        throw new \NotFoundException('Отсутствует обработчик для '.$object);
+    }
+    $disp = new $class_name;
+    $decoded_data = json_decode($data, true);
+    $db->startTransaction();
+    $result['content'] = $disp->dispatch($action, $decoded_data);  
+    $db->commit();
+    if($disp->send_file) {
+        ob_end_flush();
     }
     else {
-        throw new NotFoundException('Неверный объект');
+        $exec_time = round(microtime(true) - $starttime, 3);
+        $result["exec_time"] = $exec_time;
+        $result["user_id"] = $_SESSION['uid'];
+        ob_end_clean();
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
     }
-    $exec_time = round(microtime(true) - $starttime, 3);
-    $result["exec_time"] = $exec_time;
-    $result["user_id"] = $_SESSION['uid'];
+} catch (LoginException $e) {
     ob_end_clean();
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'LoginException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (AccessException $e) {
     ob_end_clean();
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => 'Нет доступа: ' . $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'AccessException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
-} catch (mysqli_sql_exception $e) {
+} 
+catch (mysqli_sql_exception $e) {
     writeLogException($e);
     ob_end_clean();
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => 'Ошибка в базе данных: ' . $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'DbException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => 'Ошибка в базе данных: ' . $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (InvalidArgumentException $e) {
     ob_end_clean();
     writeLogException($e);
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => 'Некорректные данные в запросе: ' . $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => 'InvalidArgumentException',
+        'errorcode' => $e->getCode(),
+        'errormessage' => 'Некорректные данные в запросе: ' . $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
     ob_end_clean();
     writeLogException($e);
-    $result = array('object'=>$object, 'response' => 'error', 'errormessage' => $e->getMessage());
+    $result = array(
+        'object'=>$object,
+        'action' => $action,
+        'response' => 'error',
+        'errortype' => get_class($e),
+        'errorcode' => $e->getCode(),
+        'errormessage' => $e->getMessage()
+    );
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } 
 
