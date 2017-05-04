@@ -858,7 +858,7 @@ class doc_Nulltype extends \document {
                 $lock = 0;
             }
             if ($lock) {
-                throw new Exception("Идёт обслуживание базы данных. Проведение невозможно!");
+                throw new \Exception("Идёт обслуживание базы данных. Проведение невозможно!");
             }
 
             $db->startTransaction();
@@ -893,7 +893,7 @@ class doc_Nulltype extends \document {
 
     /// Провести документ
     /// @param silent Не менять отметку проведения
-    protected function docApply($silent = 0) {
+    public function docApply($silent = 0) {
         global $db;
         if ($silent) {
             return;
@@ -908,10 +908,10 @@ class doc_Nulltype extends \document {
     }
 
     /// отменить проведение документа
-    protected function docCancel() {
+    public function docCancel() {
         global $db;
         if (!$this->doc_data['ok']) {
-            throw new Exception('Документ не проведён!');
+            throw new \Exception('Документ не проведён!');
         }
         $db->update('doc_list', $this->id, 'ok', 0);
         $this->doc_data['ok'] = 0;
@@ -2337,7 +2337,7 @@ class doc_Nulltype extends \document {
         $res = $db->query("SELECT `doc_group`.`printname` AS `group_printname`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `doc_list_pos`.`cnt`,
             `doc_list_pos`.`cost`, `doc_list_pos`.`gtd`, `class_country`.`name` AS `country_name`, `doc_base_dop`.`ntd`, 
             `class_unit`.`rus_name1` AS `unit_name`, `doc_list_pos`.`tovar` AS `pos_id`, `class_unit`.`number_code` AS `unit_code`, 
-            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds`, `doc_list_pos`.`comm`,
+            `class_country`.`number_code` AS `country_code`, `doc_base`.`vc`, `doc_base`.`mass`, `doc_base`.`nds` AS `vat`, `doc_list_pos`.`comm`,
             `doc_list_pos`.`id` AS `line_id`
 	FROM `doc_list_pos`
 	LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`

@@ -127,26 +127,17 @@ class doc_Pko extends paymentbasedoc {
     // Отменить проведение
     function DocCancel() {
         global $db;
-        $data = $db->selectRow('doc_list', $this->id);
-        if (!$data) {
-            throw new Exception('Ошибка выборки данных документа!');
-        }
-        if (!$data['ok']) {
-            throw new Exception('Документ не проведён!');
-        }
-
-        $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$data['sum']}'	WHERE `ids`='kassa' AND `num`='{$data['kassa']}'");
+        parent::docCancel();
+        $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`-'{$this->doc_data['sum']}'	WHERE `ids`='kassa' AND `num`='{$this->doc_data['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }
-
-        $db->update('doc_list', $this->id, 'ok', 0);
-        $this->doc_data['ok'] = 0;
+        
         $budet = $this->checkKassMinus();
         if ($budet < 0) {
             throw new Exception("Невозможно, т.к. будет недостаточно ($budet) денег в кассе!");
         }
-        parent::docCancel();
+        
     }
 
     protected function extendedAclCheck($acl, $today_acl, $action) {

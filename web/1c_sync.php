@@ -118,13 +118,14 @@ try {
     }
 } 
 catch (mysqli_sql_exception $e) {
-    if($format=='xml') {
-        $dom = new domDocument("1.0", "utf-8");
-        $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
-        $root->setAttribute('version', '1.0');
-        $dom->appendChild($root);
+    $dom = new domDocument("1.0", "utf-8");
+    $root = $dom->createElement("multimag_exchange"); // Создаём корневой элемент
+    $root->setAttribute('version', '1.0');
+    $dom->appendChild($root);
 
-        $lognum = writeLogException($e);
+    $lognum = writeLogException($e);
+        
+    if($format=='xml') {
         $result = $dom->createElement('result');            // Код возврата
         $result_code = $dom->createElement('status', 'err');
         $result_desc = $dom->createElement('message', "Ошибка в базе данных (код:".$e->getCode().", номер:$lognum): ".$e->getMessage());
@@ -150,7 +151,6 @@ catch (mysqli_sql_exception $e) {
         header("Content-Disposition: attachment; filename=1c.json");
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
     }
-    writeLogException($e);
 }
 catch (Exception $e) {
     if($format=='xml') {

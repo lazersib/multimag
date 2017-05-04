@@ -592,8 +592,8 @@ class doc_Zayavka extends doc_Nulltype {
         $new_doc->createFromP($this);
         $data = [
             'cena' => $this->dop_data['cena'],
-            'platelshik' => $this->dop_data['agent'],
-            'gruzop' => $this->dop_data['agent'],
+            'platelshik' => $this->doc_data['agent'],
+            'gruzop' => $this->doc_data['agent'],
             'ishop' => $this->dop_data['ishop'],
             'received' => 0,
         ];
@@ -611,8 +611,8 @@ class doc_Zayavka extends doc_Nulltype {
         $new_doc->createFromPDiff($this);
         $data = [
             'cena' => $this->dop_data['cena'],
-            'platelshik' => $this->dop_data['agent'],
-            'gruzop' => $this->dop_data['agent'],
+            'platelshik' => $this->doc_data['agent'],
+            'gruzop' => $this->doc_data['agent'],
             'ishop' => $this->dop_data['ishop'],
             'received' => 0,
         ];
@@ -650,7 +650,7 @@ class doc_Zayavka extends doc_Nulltype {
         }
         else if ($target_type == 'r_partial') {
             \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $new_doc = $this->morphTo_r_all();
+            $new_doc = $this->morphTo_r_partial();
             $new_doc_id = $new_doc->getId();
             header("Location: doc.php?mode=body&doc=$new_doc_id");
         }

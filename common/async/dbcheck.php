@@ -132,7 +132,7 @@ class dbcheck extends \AsyncWorker {
         }
 
         $db->query("UPDATE `doc_base`,`doc_base_likv_update` 
-            nhSET `doc_base`.`likvid`=`doc_base_likv_update`.`likvid` 
+            SET `doc_base`.`likvid`=`doc_base_likv_update`.`likvid` 
             WHERE `doc_base`.`id`=`doc_base_likv_update`.`id`");
     }
     
@@ -208,11 +208,12 @@ class dbcheck extends \AsyncWorker {
             $document = \document::getInstanceFromArray($line);
             try {
                 $db->startTransaction();
-                if ($document->doc_data['mark_del']) {
-                    throw new Exception("Документ помечен на удаление!");
+                if ($document->getDocData('mark_del')) {
+                    throw new \Exception("Документ помечен на удаление!");
                 }
                 $document->DocApply(true);
-                $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$this->id}'");
+                $doc_id = $document->getID();
+                $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$doc_id}'");
                 $db->commit();
             } catch (Exception $e) {
                 $db->rollback();

@@ -257,15 +257,16 @@ class dataexport {
     /// Получить данные справочника списка номенклатуры
     public function getNomenclatureListData() {
         $ret = array();
-        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`type_id`,
-                `doc_base`.`pos_type` AS `type`, `doc_base`.`name`, 
-                `doc_base`.`vc` AS `vendor_code`, `doc_base`.`country` AS `country_id`, `class_country`.`number_code` AS `country_code`,
-                `doc_base`.`proizv` AS `vendor`, `doc_base`.`cost` AS `base_price`, `doc_base`.`unit` AS `unit_id`, `class_unit`.`number_code` AS `unit_code`,
-                `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`create_time`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, 
-                `doc_base`.`mass`, `doc_base`.`desc` AS `comment`, `doc_base`.`stock`, `doc_base`.`hidden`, `doc_group`.`printname` AS `group_printname`,
-                `doc_base`.`no_export_yml`, `doc_base`.`eol`,
-                `doc_base`.`meta_description`, `doc_base`.`meta_keywords`,
-                `doc_base`.`title_tag`, `doc_base`.`analog_group`
+        $res = $this->db->query("SELECT `doc_base`.`id`, `doc_base`.`group` AS `group_id`, `doc_base`.`type_id`
+            , `doc_base`.`name`, `doc_base`.`vc` AS `vendor_code`, `doc_base`.`country` AS `country_id`, `class_country`.`number_code` AS `country_code`
+            , `doc_base`.`desc` AS `comment`, `doc_base`.`cost` AS `base_price`, `doc_base`.`stock`,`doc_base`.`proizv` AS `vendor`
+            , `doc_base`.`pos_type` AS `type`,  `doc_base`.`hidden`, `doc_base`.`no_export_yml`, `doc_base`.`eol`
+            , `doc_base`.`unit` AS `unit_id`, `class_unit`.`number_code` AS `unit_code`
+            , `doc_base`.`warranty`, `doc_base`.`warranty_type`, `doc_base`.`meta_description`, `doc_base`.`meta_keywords`, `doc_base`.`title_tag`
+            , `doc_base`.`create_time`, `doc_base`.`mult`, `doc_base`.`bulkcnt`, `doc_base`.`analog_group`
+            , `doc_base`.`mass`, `doc_base`.`nds`
+            , `doc_group`.`printname` AS `group_printname`
+                
             FROM `doc_base` 
             LEFT JOIN `class_unit` ON `class_unit`.`id`=`doc_base`.`unit`
             LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`

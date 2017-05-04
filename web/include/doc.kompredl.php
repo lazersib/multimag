@@ -75,7 +75,7 @@ class doc_Kompredl extends doc_Nulltype {
     
     /// Провести документ
     /// @param silent Не менять отметку проведения
-    protected function docApply($silent = 0) {
+    public function docApply($silent = 0) {
         global $db;
         if ($silent) {
             return;
