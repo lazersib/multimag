@@ -21,12 +21,14 @@ namespace ListEditors;
 
 class agentBankEditor extends \ListEditor {
     var $agent_id;
+    var $can_delete = true;
 
     public function __construct($db_link) {
         parent::__construct($db_link);
         $this->print_name = 'Редактор банков агента';
         $this->table_name = 'agent_banks';
         $this->agent_id = 0;
+        $this->can_delete = true;
     }
 
     /// Получить массив с именами колонок списка
@@ -34,9 +36,9 @@ class agentBankEditor extends \ListEditor {
         return array(
             'id' => 'id',
             'name' => 'Наименование',
-            'bik' => 'Бик',
+            'bik' => 'Бик',            
+            'ks' => 'К.счет',
             'rs' => 'Р.счет',
-            'ks' => 'К.счет'
         );
     }
 

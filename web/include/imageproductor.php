@@ -38,7 +38,7 @@ class ImageProductor {
     protected $fix_aspect = 1; //< Не изменять соотношение сторон (иначе - дополнять фоном)
     protected $no_enlarge = 0; //< Не увеличивать изображение
     protected $show_watermark = 1; //< Показывать наименование магазина поверх изображения
-    protected $font_watermark = 'dejavu/DejaVuSansCondensed-Bold.ttf'; //< Путь к шрифту для отображения наименования
+    protected $font_watermark = 'ttf-dejavu/DejaVuSansCondensed-Bold.ttf'; //< Путь к шрифту для отображения наименования
 
     public function __construct($img_id, $img_storage, $type = 'jpg') {
         global $CONFIG;

@@ -755,7 +755,7 @@ protected function TopGroup() {
         return $ret;
     }
     
-    /// Получить делево параметров товара/услуги
+    /// Получить дерево параметров товара/услуги
     protected function getProductParamsList($product_data) {
         global $db;
         $ret = array();
@@ -769,7 +769,7 @@ protected function TopGroup() {
             $ret[] = ['type'=>'item', 'name'=>'Высота', 'value'=>$product_data['size'], 'unit_name'=>'мм'];
         }
         if ($product_data['mass']) {
-            $ret[] = ['type'=>'item', 'name'=>'Масса', 'value'=>$product_data['mass'], 'unit_name'=>'мм'];
+            $ret[] = ['type'=>'item', 'name'=>'Масса', 'value'=>$product_data['mass'], 'unit_name'=>'Кг'];
         }
         if ($product_data['proizv']) {
             $ret[] = ['type'=>'item', 'name'=>'Производитель', 'value'=>$product_data['proizv'], 'unit_name'=>''];

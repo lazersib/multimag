@@ -215,7 +215,7 @@ class dbcheck extends \AsyncWorker {
                 $doc_id = $document->getID();
                 $db->query("UPDATE `doc_list` SET `err_flag`='0' WHERE `id`='{$doc_id}'");
                 $db->commit();
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 $db->rollback();
                 $err = $e->getMessage();
                 $dt = date("Y-m-d H:i:s", $line['date']);

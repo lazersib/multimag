@@ -233,8 +233,9 @@ class doc_Peremeshenie extends doc_Nulltype
         if (!$nx['ok']) {
             throw new Exception('Документ не проведён!');
         }
-        $db->query("UPDATE `doc_list` SET `ok`='0' WHERE `id`='{$this->id}'");
+        $db->update('doc_list', $this->id, 'ok', 0);
         $this->doc_data['ok'] = 0;
+        
         $res = $db->query("SELECT `doc_list_pos`.`tovar`, `doc_list_pos`.`cnt`, `doc_base_cnt`.`cnt`, `doc_base`.`name`
 		FROM `doc_list_pos`
 		LEFT JOIN `doc_base` ON `doc_base`.`id`=`doc_list_pos`.`tovar`
@@ -250,7 +251,7 @@ class doc_Peremeshenie extends doc_Nulltype
                 }
             }
         }
-        parent::docCancel();
+        $this->sentZEvent('cancel');
     }
 
 }

@@ -25,7 +25,7 @@ class doc_Zayavka extends doc_Nulltype {
         global $CONFIG, $db;
         $this->def_dop_data = array('status' => '', 'pie' => 0, 'buyer_phone' => '', 'buyer_email' => '',
             'delivery' => 0, 'delivery_address' => '', 'delivery_date' => '', 'delivery_region' => '', 'ishop' => 0, 'buyer_rname' => '', 'buyer_ip' => '',
-            'pay_type' => '', 'cena' => '');
+            'pay_type' => '', 'cena' => '', 'worker_id'=>0);
         parent::__construct($doc);
         $this->doc_type = 3;
         $this->typename = 'zayavka';
@@ -82,6 +82,11 @@ class doc_Zayavka extends doc_Nulltype {
             'status' => [
                 'type' => 'status',               
                 'label' => 'Статус',
+            ],
+            'worker_id' => [
+                'type' => 'select',               
+                'label' => 'Сотрудник',
+                'data_source' => 'workers',
             ],
         );
     }
@@ -411,6 +416,12 @@ class doc_Zayavka extends doc_Nulltype {
         }
 
         $tmpl->addContent("</select><br><hr>");
+        
+        
+        $ldo = new \Models\LDO\workernames();
+        $ret = \widgets::getEscapedSelect('worker_id', $ldo->getData(), $this->dop_data['worker_id'], 'не назначен');
+        
+        $tmpl->addContent("Сотрудник:<br>$ret");        
     }
 
     /// Сохранение расширенных свойств документа
@@ -421,7 +432,8 @@ class doc_Zayavka extends doc_Nulltype {
             'delivery_region' => rcvint('delivery_region'),
             'delivery_date' => request('delivery_date'),
             'buyer_email' => request('buyer_email'),
-            'buyer_phone' => request('buyer_phone')
+            'buyer_phone' => request('buyer_phone'),
+            'worker_id' => request('worker_id'),
         );
         $old_data = array_intersect_key($new_data, $this->dop_data);
 
@@ -664,7 +676,7 @@ class doc_Zayavka extends doc_Nulltype {
             header("Location: doc.php?mode=body&doc=$dd");
         }
         else if ($target_type == 16) {
-            \acl::accessGuard($morphs[$target_type]['acl_object'], \acl::CREATE);
+            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
             $new_doc = new doc_Specific();
             $dd = $new_doc->createFromP($this);
             $new_doc->setDopData('ishop', $this->dop_data['ishop']);
