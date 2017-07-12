@@ -187,16 +187,6 @@ class doc_s_Agent {
                 <td><input type=text name='ogrn' value='" . html_out($form_data['ogrn']) . "'>
                 <td align=right>ОКПО
                 <td><input type=text name='okpo' value='" . html_out($form_data['okpo']) . "' class='okpo validate'>
-            <tr><th colspan='$span_all'>Банковские реквизиты <b style='color:#f00'>ЗАПЛАНИРОВАНО К УДАЛЕНИЮ - переносится в одноимённую вкладку</b></th></tr>
-            <tr><td align=right>Рассчетный счет<br><small>Проверяется на корректность совместно с БИК</small>
-                <td><input type=text name='rs' value='" . html_out($form_data['rs']) . "' class='rs validate'>
-                <td align=right>БИК
-                <td><input type=text name='bik' value='" . html_out($form_data['bik']) . "' class='bik validate'>
-                <td><td>
-            <tr><td align=right>Корр. счет
-                <td><input type=text name='ks' value='" . html_out($form_data['ks']) . "' class='ks validate'>                
-                <td align=right>Банк
-                <td colspan='3'><input type=text name='bank' value='" . html_out($form_data['bank']) . "' style='width: 90%;'>
             <tr><th colspan='$span_all'>Сведения о руководителе (для договоров)</th></tr>
             <tr><td align=right>ФИО
                 <td><input type=text name='leader_name' value='" . html_out($form_data['leader_name']) . "'>
@@ -210,12 +200,6 @@ class doc_s_Agent {
                 <td><input type=text name='leader_post_r' value='" . html_out($form_data['leader_post_r']) . "'>
                 <td align=right>В родительном падеже
                 <td><input type=text name='leader_reason_r' value='" . html_out($form_data['leader_reason_r']) . "'>
-            <tr><th colspan='$span_all'>Контактное лицо <b style='color:#f00'>ЗАПЛАНИРОВАНО К УДАЛЕНИЮ - переносится во вкладку *контакты*</b></th></tr>
-            <tr><td align=right>ФИО
-                <td><input type=text name='pfio' value='" . html_out($form_data['pfio']) . "'>
-                <td align=right>Должность
-                <td><input type=text name='pdol' value='" . html_out($form_data['pdol']) . "'>
-                    <td><td>
             <tr><th colspan='$span_all'>Паспортные данные физического лица</th></tr>
             <tr><td align=right>Номер</td>
                 <td><input type=text name='pasp_num' value='" . html_out($form_data['pasp_num']) . "'></td>
