@@ -284,8 +284,11 @@ class Report_Manager extends BaseReport {
                     continue;
                 }
                 $this->tableRow(array($agent['fullname'], $contact['person_name'], $contact['person_post'], $contact['value']));
+                $no_contacts = 0;
             }
-            
+            if($no_contacts) {
+                $this->tableRow(array($agent['fullname'], "--не заполнено--", "--не заполнено--", "--не заполнено--"));
+            }
         }
         
         $this->output();
