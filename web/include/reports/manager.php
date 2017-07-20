@@ -94,6 +94,7 @@ class Report_Manager extends BaseReport {
         $this->tableHeader($headers);
         
         $this->tableRow(array("Количество рабочих дней:", $wd_count, ""));
+        $this->tableRow(array("Количество отработанных дней:", "", ""));
         
         $res = $db->query("SELECT `doc_list`.`id`, `wid`.`value` AS `worker_id` FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` AS `wid` ON `wid`.`doc`=`doc_list`.`id` AND `wid`.`param`='worker_id'"
@@ -128,6 +129,17 @@ class Report_Manager extends BaseReport {
         
         $res = $db->query("SELECT `doc_list`.`id`  FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` AS `wid` ON `wid`.`doc`=`doc_list`.`id` AND `wid`.`param`='worker_id'"
+            . " LEFT JOIN `doc_dopdata` AS `st` ON `st`.`doc`=`doc_list`.`id` AND `st`.`param`='status'"
+            . " WHERE `doc_list`.`type`='3' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
+            . "     AND (`st`.`value`='err')"
+            . "     AND (`doc_list`.`user`='$worker_id' OR `wid`.`value`='$worker_id')");
+        $z_err = 0;
+        while($line = $res->fetch_assoc()) {
+            $z_err++;
+        }
+        
+        $res = $db->query("SELECT `doc_list`.`id`  FROM `doc_list`"
+            . " LEFT JOIN `doc_dopdata` AS `wid` ON `wid`.`doc`=`doc_list`.`id` AND `wid`.`param`='worker_id'"
             . " INNER JOIN `doc_list` AS `d_r` ON `d_r`.`p_doc`=`doc_list`.`id` AND `d_r`.`type`='2' AND `d_r`.`ok`>'0'"
             . " WHERE `doc_list`.`type`='3' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"
             . "     AND (`doc_list`.`user`='$worker_id' OR `wid`.`value`='$worker_id')");
@@ -142,13 +154,28 @@ class Report_Manager extends BaseReport {
         $this->tableRow(array("Обработано:", $z_ok, ""));
         $this->tableRow(array("В работе:", $z_inproc, ""));
         $this->tableRow(array("Реализовано:", $z_real, ""));
+        $this->tableRow(array("Отказов:", $z_err, ""));
         
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`sum` FROM `doc_list`"
+        $ldo = new \Models\LDO\skladnames();
+        $storenames = $ldo->getData();
+        
+        // импорт/россияб физ/юр
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`sum`, `doc_list`.`agent`, `doc_agent`.`type` AS `agent_type`, `doc_list`.`sklad` AS `store`"
+            . " FROM `doc_list`"
+            . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`"
             . " WHERE `doc_list`.`type`='2' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
             . "     AND `doc_list`.`user`='$worker_id'");
         $r_ok = $r_sum = 0;
         $import_sum = $import_mass = 0;
         $rus_sum = $rus_mass = 0;
+        $ul_sum = $fl_sum = 0;
+        $ul_mass = $fl_mass = 0;
+        $s_sum = array();
+        $s_mass = array();
+        foreach($storenames as $s_id => $s_name) {
+            $s_sum[$s_id] = 0;
+            $s_mass[$s_id] = 0;
+        }
         while($doc_info = $res->fetch_assoc()) {
             $r_ok++;
             $r_sum+=$doc_info['sum'];
@@ -166,9 +193,20 @@ class Report_Manager extends BaseReport {
                     $import_sum+=$line['cnt']*$line['price'];
                     $import_mass+=$line['cnt']*$line['mass'];
                 }
+                if($doc_info['agent_type']==1) {
+                    $ul_sum+=$line['cnt']*$line['price'];
+                    $ul_mass+=$line['cnt']*$line['mass'];
+                }
+                else {
+                    $fl_sum+=$line['cnt']*$line['price'];
+                    $fl_mass+=$line['cnt']*$line['mass'];
+                }
+                $s_sum[$doc_info['store']] += $line['cnt']*$line['price'];
+                $s_mass[$doc_info['store']] += $line['cnt']*$line['mass'];
             }
         }
-        
+               
+        // возвраты
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`sum` FROM `doc_list`"
             . " INNER JOIN `doc_dopdata` ON `doc_dopdata`.`doc`=`doc_list`.`id` AND `doc_dopdata`.`param`='return' AND `doc_dopdata`.`value`!=''"
             . "      AND `doc_dopdata`.`value`!='0'"
@@ -195,6 +233,13 @@ class Report_Manager extends BaseReport {
         $this->tableRow(array("На сумму:", number_format($r_sum, 2, '.', ' '), ""));
         $this->tableRow(array("В т.ч импорта (сумма/масса):", number_format($import_sum, 2, '.', ' ')." / $import_mass", ""));
         $this->tableRow(array("В т.ч российских (сумма/масса):", number_format($rus_sum, 2, '.', ' ')." / $rus_mass", ""));
+        $this->tableRow(array("В т.ч физ.лиц (сумма/масса):", number_format($fl_sum, 2, '.', ' ')." / $fl_mass", ""));
+        $this->tableRow(array("В т.ч юр.лиц (сумма/масса):", number_format($ul_sum, 2, '.', ' ')." / $ul_mass", ""));
+        foreach($storenames as $s_id => $s_name) {
+            if($s_sum[$s_id]>0 || $s_mass[$s_id]>0) {
+                $this->tableRow(array("В т.ч со склада $s_name (сумма/масса):", number_format($s_sum[$s_id], 2, '.', ' ')." / $s_mass[$s_id]", ""));
+            }
+        }
         $this->tableRow(array("Откатов (количество/сумма):", "", ""));
         $this->tableRow(array("Возвратов (количество/сумма/масса):", "$ret_cnt / ".number_format($ret_sum, 2, '.', ' ')." / $ret_mass", ""));
         
@@ -259,10 +304,20 @@ class Report_Manager extends BaseReport {
             );            
         }
         
+        $res = $db->query("SELECT `doc_list`.`agent` FROM `doc_list`"
+            . " WHERE `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
+            . "     AND `doc_list`.`user`='$worker_id'"
+            . " GROUP BY `doc_list`.`agent`");
+        $agent_m_cnt = 0;
+        if($res->num_rows>0) {
+            $agent_m_cnt = $res->num_rows;
+        }
+        
         $this->tableAltStyle(1);
         $this->tableSpannedRow(array(3), array("Прочее:"));
         $this->tableAltStyle(0);
         $this->tableRow(array("Клиентов всего:", $agent_cnt, ""));
+        $this->tableRow(array("Клиентов за месяц:", $agent_m_cnt, ""));
         $this->tableRow(array("Создано договоров:", $contract_cnt, ""));
         $this->tableRow(array("Подписано договоров:", $contract_signed, ""));
         $this->tableRow(array("Новых клиентов (список с контактами в приложении):", $new_agent_cnt, ""));

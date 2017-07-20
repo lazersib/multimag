@@ -110,6 +110,9 @@ class upd2017 extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetY($y);                
         $str = 'Приложение №1 к постановлению правительства РФ от 26 декабря 2011г N1137';
         $this->pdf->CellIconv(0, 4, $str, 0, 1, 'R');
+        //$this->pdf->SetY($y);                
+        $str = '(в ред. Постановления Правительства РФ от 25.05.2017 № 625)';
+        $this->pdf->CellIconv(0, 4, $str, 0, 1, 'R');
         
         $this->pdf->SetY($y); 
         $this->pdf->SetFont('', '', 10);
