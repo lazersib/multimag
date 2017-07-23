@@ -165,6 +165,11 @@ class Report_Manager extends BaseReport {
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`"
             . " WHERE `doc_list`.`type`='2' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
             . "     AND `doc_list`.`user`='$worker_id'");
+        echo "SELECT `doc_list`.`id`, `doc_list`.`sum`, `doc_list`.`agent`, `doc_agent`.`type` AS `agent_type`, `doc_list`.`sklad` AS `store`"
+            . " FROM `doc_list`"
+            . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`"
+            . " WHERE `doc_list`.`type`='2' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
+            . "     AND `doc_list`.`user`='$worker_id'";
         $r_ok = $r_sum = 0;
         $import_sum = $import_mass = 0;
         $rus_sum = $rus_mass = 0;
