@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2017, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -95,6 +95,7 @@ class Report_Sales extends BaseGSReport {
             <input type='hidden' name='agent' id='agent_id' value=''>
             <input type='text' id='ag' name='agent_name' style='width: 400px;' value=''><br>
             </div>
+            <label><input type='checkbox' name='places' value='1'>Отображать места хранения</labl><br>
 
             </fieldset>
             Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
@@ -209,7 +210,9 @@ class Report_Sales extends BaseGSReport {
             $this->tableSpannedRow(array($this->col_cnt), array('Реализации'));
             $this->tableAltStyle(false);
         }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`, `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`type`, `doc_list`.`agent`, `doc_agent`.`name` AS `agent_name`, `doc_list_pos`.`cnt`
+                , `doc_list_pos`.`cost`, `ns`.`value` AS `na_sklad`, `doc_sklady`.`name` AS `sklad_name`, `doc_types`.`name` AS `doc_name`
+                , `doc_list`.`date`, CONCAT(`doc_list`.`altnum`, `doc_list`.`subtype`) AS `snum`
             FROM `doc_list_pos`
             INNER JOIN `doc_list` ON `doc_list`.`id`=`doc_list_pos`.`doc`
             INNER JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
@@ -364,11 +367,20 @@ class Report_Sales extends BaseGSReport {
         } else {
             $end_cnt = $start_cnt + $prix_cnt - $r_cnt;
             if ($prix_cnt || $realiz_cnt || $perem_cnt || $sbor_cnt || $corr_cnt) {
-                $this->tableRow(
-                    array(
-                        $pos_info['id'], $pos_info['vc'], $pos_info['name'], $this->getLastBuyDate($pos_info['id']),
-                        $pos_info['base_price'], $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $corr_cnt, $end_cnt)
-                    );
+                if($this->places) {
+                    $this->tableRow(
+                        array(
+                            $pos_info['id'], $pos_info['vc'], $pos_info['name'], $pos_info['place'], $this->getLastBuyDate($pos_info['id']),
+                            $pos_info['base_price'], $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $corr_cnt, $end_cnt)
+                        );
+                } 
+                else {
+                    $this->tableRow(
+                        array(
+                            $pos_info['id'], $pos_info['vc'], $pos_info['name'], $this->getLastBuyDate($pos_info['id']),
+                            $pos_info['base_price'], $start_cnt, $prix_cnt, $realiz_cnt, $perem_cnt, $sbor_cnt, $corr_cnt, $end_cnt)
+                        );
+                }
             }
         }
         return array(
@@ -381,7 +393,7 @@ class Report_Sales extends BaseGSReport {
     }
 
     function serialOutPos($pos_info, $dt_f, $dt_t, $subtype) {
-        global $tmpl, $db;
+        global $db;
         $cur_cnt = getStoreCntOnDate($pos_info['id'], $this->sklad, $dt_f, 1);
         $s_where = '';
         if ($subtype) {
@@ -495,6 +507,7 @@ class Report_Sales extends BaseGSReport {
         $this->sklad = rcvint('sklad');
         $this->w_docs = rcvint('w_docs');
         $this->div_dt = rcvint('div_dt');
+        $this->places = rcvint('places');
         $agent_id = rcvint('agent');
         $subtype = request('subtype');
 
@@ -503,8 +516,9 @@ class Report_Sales extends BaseGSReport {
         }
 
         $res = $db->query("SELECT `id`, `name` FROM `doc_sklady` WHERE `id`='{$this->sklad}'");
-        if (!$res->num_rows)
+        if (!$res->num_rows) {
             throw new Exception("Склад не найден");
+        }
         list($sklad_id, $sklad_name) = $res->fetch_row();
 
         $header = $this->getName();
@@ -516,11 +530,18 @@ class Report_Sales extends BaseGSReport {
             $header .= ", подтип документов: $subtype";
         }
 
-        if (!$this->w_docs) {
-            $widths = array(4, 6, 27, 8, 7, 7, 7, 7, 7, 7, 7, 7);
+        if (!$this->w_docs) {            
+            $header .= ", без детализации по документам";
+            if(!$this->places) {
+                $widths = array(4, 6, 27, 8, 7, 7, 7, 7, 7, 7, 7, 7);
             $headers = array('ID', 'Код', 'Наименование', 'ДПП', 'Б.цена', 'Нач. к-во', 'Прих.', 'Реал.', 'Пер.'
                 , 'Сбор.', 'Корр.', 'Итог');
-            $header .= ", без детализации по документам";
+            }
+            else {
+                $widths = array(4, 6, 22, 5, 8, 7, 7, 7, 7, 7, 7, 7, 7);
+                $headers = array('ID', 'Код', 'Наименование', 'Место', 'ДПП', 'Б.цена', 'Нач. к-во', 'Прих.', 'Реал.', 'Пер.'
+                    , 'Сбор.', 'Корр.', 'Итог');
+            }
         } else if ($this->div_dt) {
             $widths = array(15, 22, 40, 7, 7, 10);
             $headers = array('Дата', 'Документ', 'Источник', 'Кол-во', 'Цена', 'Сумма');
@@ -555,6 +576,10 @@ class Report_Sales extends BaseGSReport {
         $sql_fields = "`doc_base`.`id`, `doc_base`.`vc`, CONCAT(`doc_base`.`name`, ' - ', `doc_base`.`proizv`) AS `name`"
                 . ", `doc_base`.`cost` AS `base_price` ";
         $sql_joins = "";
+        if($this->places) {
+            $sql_joins .=" LEFT JOIN `doc_base_cnt` ON `doc_base`.`id`=`doc_base_cnt`.`id` AND `doc_base_cnt`.`sklad`='{$this->sklad}'";
+            $sql_fields .= ", `doc_base_cnt`.`mesto` AS `place`";
+        }
         
         $sql_header = "SELECT $sql_fields FROM `doc_base` $sql_joins";
 

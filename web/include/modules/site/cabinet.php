@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2017, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -52,7 +52,7 @@ class cabinet extends \IModule {
     /// Отобразить страницу личного кабинета
     /// @param mode: раздел личного кабинета
     public function ExecMode($mode = '') {
-        global $tmpl, $db;
+        global $tmpl;
         $tmpl->addBreadcrumb('Главная', '/');
         $tmpl->addBreadcrumb($this->getName(), $this->link_prefix);
         $tmpl->setContent("<h1>Личный кабинет</h1>");

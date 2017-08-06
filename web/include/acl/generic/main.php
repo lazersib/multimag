@@ -1,7 +1,7 @@
 <?php
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2017, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -47,6 +47,10 @@ class main extends \acl\aclContainer {
             'search' => array(
                 "name" => "Поиск по сайту",
                 "mask" => \acl::VIEW
+            ),
+            'qa' => array(
+                "name" => "Вопросы и ответы",
+                "mask" => \acl::VIEW | \acl::CREATE | \acl::UPDATE | \acl::DELETE,
             ),
             
         );

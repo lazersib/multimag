@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2017, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -59,4 +59,3 @@ if ($mode == '') {
 
 
 $tmpl->Write();
-?>

@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2016, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2017, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -165,11 +165,7 @@ class Report_Manager extends BaseReport {
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`"
             . " WHERE `doc_list`.`type`='2' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
             . "     AND `doc_list`.`user`='$worker_id'");
-        echo "SELECT `doc_list`.`id`, `doc_list`.`sum`, `doc_list`.`agent`, `doc_agent`.`type` AS `agent_type`, `doc_list`.`sklad` AS `store`"
-            . " FROM `doc_list`"
-            . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`"
-            . " WHERE `doc_list`.`type`='2' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
-            . "     AND `doc_list`.`user`='$worker_id'";
+
         $r_ok = $r_sum = 0;
         $import_sum = $import_mass = 0;
         $rus_sum = $rus_mass = 0;
@@ -220,7 +216,7 @@ class Report_Manager extends BaseReport {
         $ret_sum = $ret_cnt = $ret_mass = 0;
         while($doc_info = $res->fetch_assoc()) {
             $ret_sum+=$doc_info['sum'];
-            $l_res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, `doc_base`.`mass`, `class_country`.`alfa2` AS `cc`"
+            $l_res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, `doc_base`.`mass`"
                 . " FROM `doc_list_pos`"
                 . " INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`"
                 . " WHERE `doc_list_pos`.`doc`='{$doc_info['id']}'");
