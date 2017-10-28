@@ -110,6 +110,9 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetY($y);                
         $str = 'Приложение №1 к постановлению правительства РФ от 26 декабря 2011г N1137';
         $this->pdf->CellIconv(0, 4, $str, 0, 1, 'R');
+        //$this->pdf->SetY($y);                
+        $str = '(в ред. Постановления Правительства РФ от 19.08.2017 № 981)';
+        $this->pdf->CellIconv(0, 4, $str, 0, 1, 'R');
         
         $this->pdf->SetY($y); 
         $this->pdf->SetFont('', '', 10);
@@ -166,7 +169,8 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $this->outHeaderLine("Покупатель:", $agent_info['fullname'], "(6)");
         $this->outHeaderLine("Адрес:", $agent_info['adres'], "(6а)");
         $this->outHeaderLine("ИНН / КПП покупателя:", $agent_info['inn'] . ' / ' . $agent_info['kpp'], "(6б)");
-        $this->outHeaderLine("Валюта: наименование, код", "Российский рубль, 643", "(7)");        
+        $this->outHeaderLine("Валюта: наименование, код", "Российский рубль, 643", "(7)");      
+        $this->outHeaderLine("Идентификатор государственного контракта, договора (соглашения) (при наличии)", "", "(8)");  
         $this->pdf->lMargin = $old_l_margin;
         $this->pdf->Ln();
         
@@ -175,12 +179,13 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $t_all_offset = array();
 
         $this->pdf->SetLineWidth($this->line_normal_w); 
-        $t_width = array(10, 20, 58, 22, 10, 15, 20, 10, 10, 16, 28, 26, 0);
-        $t_ydelta = array(7, 7, 7, 0.2, 5, 5, 0.5, 6, 6, 7, 3, 0.2, 7);
+        $t_width = array(10, 20, 48, 10, 22, 10, 15, 20, 10, 10, 16, 28, 26, 0);
+        $t_ydelta = array(7, 7, 7, 7, 0.2, 5, 5, 0.5, 6, 6, 7, 3, 0.2, 7);
         $t_text = array(
             'N п/п',
-            'Код товара/ работ, услуг',
+            'Код товара/ работ, услуг',            
             'Наименование товара (описание выполненных работ, оказанных услуг), имущественного права',
+            'Код вида товара',
             'Единица измерения',
             'Количество (объ ём)',
             'Цена (тариф) за единицу измерения',
@@ -190,7 +195,7 @@ class upd extends \doc\printforms\iPrintFormPdf {
             'Сумма налога',
             'Стоимость товаров (работ, услуг), имущественных прав всего с учетом налога',
             'Страна происхождения',
-            'Номер таможенной декларации');
+            'Регистрационный номер таможенной декларации');
 
         foreach ($t_width as $w) {
             $this->pdf->Cell($w, 20, '', 1, 0, 'C', 0);
@@ -208,7 +213,7 @@ class upd extends \doc\printforms\iPrintFormPdf {
         }
 
         $t2_width = array(7, 15, 7, 19);
-        $t2_start = array(3, 3, 11, 11);
+        $t2_start = array(4, 4, 12, 12);
         $t2_ydelta = array(2, 1, 2, 3);
         $t2_text = array(
             "к\nо\nд",
@@ -241,7 +246,7 @@ class upd extends \doc\printforms\iPrintFormPdf {
             $this->pdf->MultiCellIconv($w2, 3, $t2_text[$i], 0, 'C', 0);
         }
 
-        $t3_text = array('А', 'Б', 1, 2, '2a', 3, 4, 5, 6, 7, 8, 9, 10, '10a', 11);
+        $t3_text = array('А', 'Б', 1, '1a', 2, '2a', 3, 4, 5, 6, 7, 8, 9, 10, '10a', 11);
         $this->pdf->SetLineWidth($this->line_normal_w);
         sort($t_all_offset, SORT_NUMERIC);
         $this->pdf->SetY($y + 14);
@@ -269,7 +274,7 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetFSizes($font_sizes);
         $this->pdf->SetHeight(3.5);
 
-        $aligns = array('R', 'C', 'L', 'C', 'L', 'R', 'R', 'R', 'C', 'C', 'R', 'R', 'R', 'L', 'R');
+        $aligns = array('R', 'C', 'L', 'C', 'C', 'L', 'R', 'R', 'R', 'C', 'C', 'R', 'R', 'R', 'L', 'R');
         $this->pdf->SetAligns($aligns);
         $this->pdf->SetY($y + 18);
         $this->pdf->SetFillColor(255, 255, 255);
@@ -290,8 +295,9 @@ class upd extends \doc\printforms\iPrintFormPdf {
                 $i++,
                 $line['code'],
                 $line['name'],
+                '--',
                 $line['unit_code'],
-                $line['unit_name'],
+                $line['unit_name'],                
                 $line['cnt'],
                 sprintf("%01.2f", $line['price']),
                 sprintf("%01.2f", $line['sum_wo_vat']),
@@ -335,15 +341,15 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $str = iconv('UTF-8', 'windows-1251', "Всего к оплате:");
         $allpay_w = 0;
         
-        for($c = 2; $c<7; $allpay_w += $t_all_width[$c++]) {}
+        for($c = 2; $c<8; $allpay_w += $t_all_width[$c++]) {}
         $this->pdf->CellIconv($allpay_w, $step, "Всего к оплате:", 1, 0, 'L', 0);
-        $this->pdf->Cell($t_all_width[7], $step, $sumbeznaloga, 1, 0, 'R', 0);
-        $this->pdf->Cell($t_all_width[8] + $t_all_width[8], $step, 'X', 1, 0, 'C', 0);
-        $this->pdf->CellIconv($t_all_width[10], $step, $sumnaloga, 1, 0, 'R', 0);
-        $this->pdf->Cell($t_all_width[11], $step, $sum, 1, 0, 'R', 0);
-        $this->pdf->Cell($t_all_width[12], $step, '', 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[8], $step, $sumbeznaloga, 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[9] + $t_all_width[10], $step, 'X', 1, 0, 'C', 0);
+        $this->pdf->CellIconv($t_all_width[11], $step, $sumnaloga, 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[12], $step, $sum, 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[13], $step, '', 1, 0, 'R', 0);
         $this->pdf->Cell($t_all_width[14], $step, '', 1, 0, 'R', 0);
+        $this->pdf->Cell($t_all_width[15], $step, '', 1, 0, 'R', 0);
         $this->pdf->ln();
         
         // Подписи
@@ -384,7 +390,8 @@ class upd extends \doc\printforms\iPrintFormPdf {
         $this->pdf->Ln(2);
         
         $this->pdf->SetFont('', '', 7);
-        $this->pdf->CellIconv($p1_w[0], $step, 'Индивидуальный предприниматель', 0, 0, 'L', 0);
+        $this->pdf->CellIconv(0, $step, 'Индивидуальный предприниматель', 0, 1, 'L', 0);
+        $this->pdf->CellIconv($p1_w[0], $step, 'или иное уполномоченное лицо', 0, 0, 'L', 0);
         $this->pdf->CellIconv($p1_w[1], $step, '', 'B', 0, 'C', 0);
         $this->pdf->CellIconv($p1_w[2], $step, '', 0, 0, 'C', 0);
         $this->pdf->CellIconv($p1_w[3], $step, $firm_vars['firm_director'], 'B', 0, 'R', 0);

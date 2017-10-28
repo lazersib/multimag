@@ -129,7 +129,7 @@ class search extends \IModule {
             }
             if ($groups_analog_list) {
                 $sqla = $sql . "WHERE `doc_base`.`id` NOT IN ($found_ids) AND `doc_base`.`analog_group` IN ($groups_analog_list) $sql_add"
-                    . " AND `doc_base`.`name` != '$s_sql' AND `doc_base`.`vc` = !'$s_sql'"
+                    . " AND `doc_base`.`name` != '$s_sql' AND `doc_base`.`vc` != '$s_sql'"
                     . " AND `doc_base`.`hidden`='0' AND `doc_group`.`hidelevel`='0'"
                     . " ORDER BY `doc_base`.`name`"
                     . " LIMIT $cnt_limit";
