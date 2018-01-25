@@ -51,10 +51,11 @@ class message extends \IModule {
             <input type='text' name='sender_contact' value='$sender_contact'><br>
             Текст сообщения:<br>
             <textarea name='text' rows='5' cols='40'>".html_out($text)."</textarea><br>
-            <b style='color:#c00'>Не забудте указать информацию для обратной связи!</b><br>";
+            <b style='color:#c00'>Не забудте указать информацию для обратной связи!</b><br><br>";
         if($show_captcha) {
-            $ret.="Подтвердите что вы не робот, введя текст с картинки:<br>
-            <img src='/kcaptcha/index.php'><br><input type='text' name='img'><br>";
+            $ret.="Подтвердите что вы не робот, введя текст с картинки:<br>"
+                    . "<small><a href='/login.php?mode=reg'>Зарегистрируйтесь</a> или <a href='/login.php'>войдите</a> на сайт (можно через социальную сеть) - и код вводить здесь не потребуется!</small><br>"
+                    . "<img src='/kcaptcha/index.php'><br><input type='text' name='img'><br>";
         }
         $ret.="<input type='submit' value='Отправить'>
             </form>";
@@ -71,9 +72,11 @@ class message extends \IModule {
             <input type='text' name='phone' value='{$form_data['phone']}'><br>
             Желаемая дата и время звонка:<br>
             <small>Желательно запрашивать звонок в рабочее время магазина</small><br>
-            <input type='text' name='call_date' value='{$form_data['call_date']}'><br>";
+            <input type='text' name='call_date' value='{$form_data['call_date']}'><br><br>";
         if($show_captcha) {
-            $ret .= "Подтвердите что вы не робот, введя текст с картинки:<br><img src='/kcaptcha/index.php'><br><input type='text' name='img'><br>";
+            $ret.="Подтвердите что вы не робот, введя текст с картинки:<br>"
+                    . "<small><a href='/login.php?mode=reg'>Зарегистрируйтесь</a> или <a href='/login.php'>войдите</a> на сайт (можно через социальную сеть) - и код вводить здесь не потребуется!</small><br>"
+                    . "<img src='/kcaptcha/index.php'><br><input type='text' name='img'><br>";
         }
         $ret .= "<button type='submit'>Отправить запрос</button></form>";
         return $ret;

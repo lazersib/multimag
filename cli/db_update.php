@@ -48,7 +48,7 @@ function applyPatch($patch) {
     $db->query("COMMIT");
 }
 
-try {
+try {    
     $patches = scandir($CONFIG['location'] . "/db_patches/");
     if (!is_array($patches))
         throw new Exception("Не удалось получить список файлов патчей!");
@@ -58,6 +58,9 @@ try {
             list($db_version) = $res->fetch_row();
         else
             $db_version = 0;
+        $data = "&s={$CONFIG['site']['name']}&e={$CONFIG['site']['admin_email']}&db=$db_version&mr=".MULTIMAG_REV;
+        if(isset($CONFIG['site']['forbid_notify_update']) && $CONFIG['site']['forbid_notify_update'] ) {}
+        else @file_get_contents("https://tndproject.org/mstat.php?m=s".$data);
         if ($db_version != MULTIMAG_REV) {
             foreach ($patches as $patch) {
                 if (strpos($patch, '~') !== false)
@@ -68,6 +71,8 @@ try {
                     break;
                 }
             }
+            if(isset($CONFIG['site']['forbid_notify_update']) && $CONFIG['site']['forbid_notify_update'] ) {}
+            else @file_get_contents("https://tndproject.org/mstat.php?m=e".$data);
         } else
             break;
     }
