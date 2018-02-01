@@ -314,7 +314,7 @@ class doc_Zayavka extends doc_Nulltype {
         }
         if(count($addresses)>0) {
             require_once(\cfg::getroot('location').'/common/XMPPHP/XMPP.php');
-            $xmppclient = new XMPPHP_XMPP( 
+            $xmppclient = new \XMPPHP\XMPP( 
                 \cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp', 'login'), \cfg::get('xmpp', 'pass'), 'MultiMag r'.MULTIMAG_REV);
             $xmppclient->connect();
             $xmppclient->processUntil('session_start');

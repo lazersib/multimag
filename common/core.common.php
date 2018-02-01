@@ -25,8 +25,13 @@ define("MULTIMAG_VERSION", "0.2.".MULTIMAG_REV);
 /// Автозагрузка общих классов для ядра и cli
 function common_autoload($class_name) {
     global $CONFIG;
-    $class_name = strtolower($class_name);
+    $class_name_lc = strtolower($class_name);
+    $class_name_lc = str_replace('\\', '/', $class_name_lc);
     $class_name = str_replace('\\', '/', $class_name);
+    $file = $CONFIG['location'] . "/common/" . $class_name_lc . '.php';
+    if(file_exists($file)) {
+        include_once $CONFIG['location'] . "/common/" . $class_name_lc . '.php';
+    }
     $file = $CONFIG['location'] . "/common/" . $class_name . '.php';
     if(file_exists($file)) {
         include_once $CONFIG['location'] . "/common/" . $class_name . '.php';
@@ -143,13 +148,13 @@ function sendAdmMessage($text, $subject = '') {
     if ($CONFIG['site']['doc_adm_jid'] && $CONFIG['xmpp']['host']) {
         try {
             require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
-            $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
+            $xmppclient = new \XMPPHP\XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r'.MULTIMAG_REV);
             $xmppclient->connect();
             $xmppclient->processUntil('session_start');
             $xmppclient->presence();
             $xmppclient->message($CONFIG['site']['doc_adm_jid'], $text);
             $xmppclient->disconnect();
-        } catch (XMPPHP_Exception $e) {
+        } catch (\XMPPHP\Exception $e) {
             writeLogException($e);
             $tmpl->errorMessage("Невозможно отправить сообщение по XMPP!");
         }

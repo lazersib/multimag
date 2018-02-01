@@ -67,7 +67,7 @@ class respDebtNotify extends \Action {
         $res_agents->free();
 
         if (\cfg::get('xmpp', 'host')) {
-            $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
+            $xmppclient = new \XMPPHP\XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
                 , 'MultiMag r' . MULTIMAG_REV .','. get_class($this));
         }
         $xmpp_connected = 0;

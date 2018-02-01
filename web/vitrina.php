@@ -2041,13 +2041,13 @@ protected function BuyAuthForm() {
             if ($pref->getSitePref('jid')) {
                 try {
                     require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
-                    $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r' . MULTIMAG_REV);
+                    $xmppclient = new \XMPPHP\XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r' . MULTIMAG_REV);
                     $xmppclient->connect();
                     $xmppclient->processUntil('session_start');
                     $xmppclient->presence();
                     $xmppclient->message($pref->getSitePref('jid'), $text);
                     $xmppclient->disconnect();
-                } catch (XMPPHP_Exception $e) {
+                } catch (\XMPPHP\Exception $e) {
                     writeLogException($e);
                     $tmpl->errorMessage("Невозможно отправить сообщение XMPP!", "err");
                 }

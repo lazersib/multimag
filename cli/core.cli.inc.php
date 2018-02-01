@@ -71,7 +71,9 @@ function run_periodically_actions($interval) {
                     echo $nm . '...';
                 }                
                 if(!$action->isEnabled()) {
-                    echo " ОТКЛЮЧЕНО.\n";
+                    if($verbose) {
+                        echo " ОТКЛЮЧЕНО.\n";
+                    }
                     return false;
                 }    
                 foreach ($action->getDepends() as $dep_name) {
@@ -88,7 +90,7 @@ function run_periodically_actions($interval) {
                     echo " Выполнено.\n";
                 }
             }
-            catch (XMPPHP_Exception $e) {
+            catch (\XMPPHP\Exception $e) {
                 if (\cfg::get('site', 'admin_email')) {
                     mailto(\cfg::get('site', 'admin_email'), "XMPP exception in daily.php", $e->getMessage());
                 }
@@ -123,7 +125,7 @@ function run_periodically_actions($interval) {
             }
         }
 
-    } catch (XMPPHP_Exception $e) {
+    } catch (\XMPPHP\Exception $e) {
         if (\cfg::get('site', 'admin_email')) {
             mailto(\cfg::get('site', 'admin_email'), "Global XMPP exception in daily.php", $e->getMessage());
         }

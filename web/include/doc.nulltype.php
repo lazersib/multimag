@@ -481,7 +481,7 @@ class doc_Nulltype extends \document {
         }
         if (count($addresses) > 0) {
             require_once($CONFIG['location'] . '/common/XMPPHP/XMPP.php');
-            $xmppclient = new XMPPHP_XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r' . MULTIMAG_REV);
+            $xmppclient = new \XMPPHP\XMPP($CONFIG['xmpp']['host'], $CONFIG['xmpp']['port'], $CONFIG['xmpp']['login'], $CONFIG['xmpp']['pass'], 'MultiMag r' . MULTIMAG_REV);
             $xmppclient->connect();
             $xmppclient->processUntil('session_start');
             $xmppclient->presence();
@@ -1400,7 +1400,7 @@ class doc_Nulltype extends \document {
 
             if (\cfg::get('site', 'doc_adm_jid') && \cfg::get('xmpp', 'host')) {
                 require_once(\cfg::getroot('location') . '/common/XMPPHP/XMPP.php');
-                $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp', 'login'), \cfg::get('xmpp', 'pass')
+                $xmppclient = new \XMPPHP\XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp', 'login'), \cfg::get('xmpp', 'pass')
                     , 'MultiMag r' . MULTIMAG_REV);
                 $xmppclient->connect();
                 $xmppclient->processUntil('session_start');
@@ -1409,7 +1409,7 @@ class doc_Nulltype extends \document {
                 $xmppclient->disconnect();
             }
             $ret['message'] = "Сообщение было отправлено уполномоченному лицу! Ответ о снятии проводки придёт вам на e-mail!";
-        } catch (XMPPHP_Exception $e) {
+        } catch (\XMPPHP\Exception $e) {
             writeLogException($e);
             $ret = array('object' => 'send_petition', 'response' => 'error',
                 'errormessage' => "Невозможно отправить сообщение по XMPP: " . $e->getMessage()

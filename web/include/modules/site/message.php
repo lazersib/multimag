@@ -159,7 +159,7 @@ class message extends \IModule {
         elseif ($send_params['transport'] == 'xmpp') {
             try {
                 require_once(\cfg::getroot('location') . '/common/XMPPHP/XMPP.php');
-                $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
+                $xmppclient = new \XMPPHP\XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
                     , 'MultiMag r' . MULTIMAG_REV);
                 $xmppclient->connect();
                 $xmppclient->processUntil('session_start');
@@ -167,7 +167,7 @@ class message extends \IModule {
                 $xmppclient->message($send_params['to'], $s_text);
                 $xmppclient->disconnect();
                 $tmpl->msg("Сообщение было отправлено!", "ok");
-            } catch (XMPPHP_Exception $e) {
+            } catch (\XMPPHP\Exception $e) {
                 writeLogException($e);
                 $tmpl->errorMessage("Невозможно отправить сообщение XMPP!");
                 $tmpl->addContent( $this->getMessageForm($send_params['to'], $send_params['transport'], $sender_name, $sender_contact, $show_captcha, $text) );
@@ -235,7 +235,7 @@ class message extends \IModule {
             }
             if (\cfg::get('call_request', 'xmpp') && \cfg::get('xmpp', 'host')) {
                 require_once(\cfg::getroot('location') . '/common/XMPPHP/XMPP.php');
-                $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
+                $xmppclient = new \XMPPHP\_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
                     , 'MultiMag r' . MULTIMAG_REV);
                 $xmppclient->connect();
                 $xmppclient->processUntil('session_start');

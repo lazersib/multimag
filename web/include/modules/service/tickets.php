@@ -544,7 +544,7 @@ class tickets extends \IModule {
         if ($jid && \cfg::get('xmpp', 'host') ) {
             try {
                 require_once( \cfg::getroot('location') . '/common/XMPPHP/XMPP.php');
-                $xmppclient = new \XMPPHP_XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
+                $xmppclient = new \XMPPHP\XMPP(\cfg::get('xmpp', 'host'), \cfg::get('xmpp', 'port'), \cfg::get('xmpp','login'), \cfg::get('xmpp','pass')
                     , 'MultiMag r' . MULTIMAG_REV);
                 $xmppclient->connect();
                 $xmppclient->processUntil('session_start');
