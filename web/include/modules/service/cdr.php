@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2017, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2018, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -65,13 +65,19 @@ class CDR extends \IModule {
             return '+7'.substr($phone,1);
         } elseif(!$phoneplus && $phone[0]==9 && $len==10) {
             return '+7'.$phone; 
-        } elseif(!$phoneplus && @$CONFIG['cdr']['local_length']==$len) {
-            return @$CONFIG['cdr']['local_perfix'].$phone;
+        } elseif(!$phoneplus && $file_def_ext = \cfg::get('service_cdr', 'local_length', 7)==$len) {
+            return \cfg::get('service_cdr', 'local_perfix', '').$phone;
         } else {
             return $phone;
         }
     }
     
+    /**
+     * @brief Получить данные детализации вызовов
+     * @param type $db Контекст базы данных mysql
+     * @param type $filter Массив фильтров для запроса
+     * @return Массив строк детализации
+     */
     protected function getCDR($db, $filter=null) {
         $data = array();
         $where_sql = ' WHERE 1 ';
@@ -106,7 +112,7 @@ class CDR extends \IModule {
             }
         }
         $res = $db->query("SELECT SQL_CALC_FOUND_ROWS `asterisk_cdr`.`id`, `calldate`, `clid`, `src`, `dst`, `dcontext`, `lastapp`, `lastdata`, `accountcode`"
-                . ", `duration`, `billsec`, `disposition`, `uniqueid`, `ex_queue`.`event` AS `q_event`, `conn_queue`.`agent` AS `q_agent`"
+                . ", `duration`, `billsec`, `disposition`, `uniqueid`, `ex_queue`.`event` AS `q_event`, `conn_queue`.`agent` AS `q_agent`, `asterisk_cdr`.`filename`"
             . " FROM `asterisk_cdr`"
             . " LEFT JOIN `asterisk_queue_log` AS `ex_queue` ON `ex_queue`.`callid`=`asterisk_cdr`.`uniqueid`"
                 . " AND (`ex_queue`.`event`='ABANDON' OR `ex_queue`.`event`='COMPLETECALLER' OR `ex_queue`.`event`='COMPLETEAGENT' OR `ex_queue`.`event`='TRANSFER')"
@@ -384,16 +390,10 @@ class CDR extends \IModule {
         $this->users = $users_ldo->getData();        
         
         $file_base_url = $this->link_prefix . "&amp;sect=audio&callid=";
-        if(isset($CONFIG['service_cdr']['file_path'])) {
-            $file_dir = $CONFIG['service_cdr']['file_path'];
-        } else {
-            $file_dir = '/var/spool/asterisk/monitor';
-        }
-        if(isset($CONFIG['service_cdr']['file_path'])) {
-            $file_ext= $CONFIG['service_cdr']['file_ext'];
-        } else {
-            $file_ext = 'wav';
-        }
+        
+        $file_dir = \cfg::get('service_cdr', 'file_path', '/var/spool/asterisk/monitor');
+        $file_def_ext = \cfg::get('service_cdr', 'file_ext', 'wav');
+        
         $count = $duration = 0;
         foreach ($data as $line_id=>$line) {
             $src_cell = $dst_cell = $queue_stat = '';
@@ -466,13 +466,23 @@ class CDR extends \IModule {
                 default:
                     $disposition = html_out($line['disposition']);
             }  
-            $file = $file_dir . '/' . $line['uniqueid'] . '.' . $file_ext;
             
+            $fname = $line['filename'] ? $line['filename'] : $line['uniqueid'];            
+            $file = $file_dir . '/' . $fname . '.' . $file_def_ext;
+            $extensions = [$file_def_ext, 'wav', 'opus', 'ogg', 'gsm', 'mp3'];
+            foreach($extensions as $ext) {
+                $fileext = $fname . '.' . $ext;
+                $file = $file_dir . '/' . $fileext;
+                if(file_exists($file)) {
+                    break;
+                }
+            }            
             if(file_exists($file)) {
-                $file_cell = "<a onclick=\"playAudio('".$file_base_url.$line['uniqueid']."')\">слушать</a> - "
-                    . "<a href='".$file_base_url.$line['uniqueid']."')\">загрузить</a>";
+                $enc_fileext = base64_encode($fileext);
+                $file_cell = "<a href='#' onclick=\"playAudio('".$file_base_url.$enc_fileext."')\"><img src='/img/16x16/play.png' alt='Слушать'></a>&nbsp;"
+                    . "<a href='".$file_base_url.$enc_fileext."')\"><img src='/img/16x16/download.png' alt='Загрузить'></a>";
             } else {
-                $file_cell = '';
+                $file_cell = "<img src='/img/16x16/error.png' alt='Файл не найден'></a>";
             }
             $q_agent_cell = $line['q_agent'];
             if(strpos($line['q_agent'], 'SIP/')===0) {
@@ -489,9 +499,9 @@ class CDR extends \IModule {
                     $q_agent_cell .= ' / '.$link;
                 }
             }
-            
+            $line_date = str_replace(' ', '&nbsp;', html_out($line['calldate']));
             $tmpl->addContent("<tr>"               
-                . "<td>".html_out($line['calldate'])."</td>"
+                . "<td>".$line_date."</td>"
                 . "<td>".$direction."</td>"
                 . "<td>".$cgroup."</td>"
                 . "<td>".html_out($line['src'])."</td>"
@@ -793,7 +803,7 @@ class CDR extends \IModule {
                 $editor->run();
                 break;
             case 'audio':
-                $callid = request('callid');
+                $callid = base64_decode(request('callid'));
                 if(!$callid) {
                     throw new \NotFoundException("Данные не найдены");
                 }
@@ -801,13 +811,8 @@ class CDR extends \IModule {
                     $file_dir = $CONFIG['service_cdr']['file_path'];
                 } else {
                     $file_dir = '/var/spool/asterisk/monitor';
-                }
-                if(isset($CONFIG['service_cdr']['file_path'])) {
-                    $file_ext= $CONFIG['service_cdr']['file_ext'];
-                } else {
-                    $file_ext = 'wav';
-                }
-                $file = $file_dir . '/' . $callid . '.' . $file_ext;
+                }                
+                $file = $file_dir . '/' . $callid;
                 $send = new \sendFile;
                 $send->Path = $file;                
                 $send->send();

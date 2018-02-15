@@ -74,6 +74,7 @@ $CONFIG['auto']['clear_image_cahe']	= 14;	// Периодически стира
 $CONFIG['auto']['chpricenotify']	= false;// Периодически уведомлять обо всех изменениях цен
 $CONFIG['auto']['red_event_doc_notify'] = true; // Уведомлять о красных событиях в документах
 $CONFIG['auto']['pricesend']            = true; // Выполнять периодическую рассылку прайсов
+$CONFIG['auto']['calls_transcode']      = true; // Выполнять перекодирование записей телефонных разговоров
 
 $CONFIG['badpricenotify']['threshold_low'] = 10;    // Порог оповещений о понижении цены, в %
 $CONFIG['badpricenotify']['threshold_high'] = 20;   // Порог оповещений о повышении цены, в %

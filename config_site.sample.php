@@ -149,5 +149,3 @@ $CONFIG['admin_mailconfig']['db_name']	= 'mail';
 $CONFIG['admin_mailconfig']['db_login']= '';
 $CONFIG['admin_mailconfig']['db_pass']	= '';
 
-
-

@@ -124,3 +124,13 @@ $CONFIG['oauth']['mailru']['secret'] = '';
 $CONFIG['oauth']['okru']['id'] = '';
 $CONFIG['oauth']['okru']['secret'] = '';
 $CONFIG['oauth']['okru']['public'] = '';
+
+// Модуль статистики телефонных вызовов (для asterisk)
+$CONFIG['service_cdr']['local_prefix']	= '';   // Глобальный префикс перед локальными номерами, например +7383
+$CONFIG['service_cdr']['local_length']	= 7;    // Длина локального номера телефона
+$CONFIG['service_cdr']['file_path']	= '/var/spool/asterisk/monitor';    // Путь к хранилищу телефонных записей
+$CONFIG['service_cdr']['file_ext']	= 'wav';// Расширение по умолчанию для записываемых файлов
+$CONFIG['service_cdr']['transcode_format'] = 'opus';   // Формат для перекодирования записей по прошествии заданного периода (opus, vorbis)
+$CONFIG['service_cdr']['transcode_bitrate'] = 8;   // Битрейт кбит/с для перекодирования записей
+$CONFIG['service_cdr']['transcode_limit'] = 500;   // Лимит на количество перекодирований записей за раз
+$CONFIG['service_cdr']['no_transcode_period'] = 30;     // Период, через какое кол-во дней нужно перекодировать
