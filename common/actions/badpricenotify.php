@@ -49,7 +49,6 @@ class BadPriceNotify extends \Action {
         $t_l = \cfg::get('badpricenotify', 'threshold_low');
         $t_h = \cfg::get('badpricenotify', 'threshold_high');
         
-        $notify = 0;
         $docadm_notify = array();
         $users_notify = array();
         $last_users = array();

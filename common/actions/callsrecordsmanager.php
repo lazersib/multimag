@@ -24,7 +24,7 @@ class CallsRecordsManager extends \Action {
     /// Конструктор
     public function __construct($config, $db) {
         parent::__construct($config, $db);
-        $this->interval = self::DAILY;
+        $this->interval = self::HOURLY;
     }
 
     /// Получить название действия

@@ -507,15 +507,15 @@ function getInCost($pos_id, $limit_date = 0, $serv_mode = 0) {
 }
 
 /// Получить количество товара на складе на заданную дату
-/// @param pos_id 		ID складского наименования, для которого производится расчёт
-/// @param sklad_id		ID склада, для которого производится расчёт
-/// @param unixtime		Дата, на которую производится расчёт в формате unixtime. Если не задан - расчитывается остаток на дату последнего документа.
-/// @param noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
+/// @param $pos_id 		ID складского наименования, для которого производится расчёт
+/// @param $store_id		ID склада, для которого производится расчёт
+/// @param $unixtime		Дата, на которую производится расчёт в формате unixtime. Если не задан - расчитывается остаток на дату последнего документа.
+/// @param $noBreakIfMinus	Если true - расчёт не будет прерван, если на каком-то из этапов расчёта остаток станет отрицательным.
 /// @param $extinfo             Вернуть расширенные данные о документе прерывания с отрицательными остатками
-function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0, $extinfo=false) {
+function getStoreCntOnDate($pos_id, $store_id, $unixtime=null, $noBreakIfMinus=0, $extinfo=false) {
     global $db;
     settype($pos_id, 'int');
-    settype($sklad_id, 'int');
+    settype($store_id, 'int');
     settype($unixtime, 'int');
     $cnt = $doc = 0;
     $sql_add = ($unixtime !== null) ? "AND `doc_list`.`date`<=$unixtime" : '';
@@ -527,18 +527,18 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0
     while ($nxt = $res->fetch_row()) {
         switch($nxt[1]) {
             case 1:
-                if ($nxt[2] == $sklad_id) {
+                if ($nxt[2] == $store_id) {
                     $cnt+=$nxt[0];
                 }
                 break;
             case 2:
             case 20:
-                if ($nxt[2] == $sklad_id) {
+                if ($nxt[2] == $store_id) {
                     $cnt-=$nxt[0];
                 }
                 break;
             case 8:
-                if ($nxt[2] == $sklad_id) {
+                if ($nxt[2] == $store_id) {
                     $cnt-=$nxt[0];
                 } else {
                     $r = $db->query("SELECT `value` FROM `doc_dopdata` WHERE `doc`=$nxt[3] AND `param`='na_sklad'");
@@ -549,14 +549,14 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0
                     if (!$nasklad) {
                         throw new Exception("Нулевой склад назначения в перемещении $nxt[3] при проверке на отрицательные остатки");
                     }
-                    if ($nasklad == $sklad_id) {
+                    if ($nasklad == $store_id) {
                         $cnt+=$nxt[0];
                     }
                     $r->free();
                 }
                 break;
             case 17:
-                if ($nxt[2] == $sklad_id) {
+                if ($nxt[2] == $store_id) {
                     if ($nxt[4] == 0) {
                         $cnt+=$nxt[0];
                     } else {
@@ -565,7 +565,7 @@ function getStoreCntOnDate($pos_id, $sklad_id, $unixtime=null, $noBreakIfMinus=0
                 }
                 break;
             case 25:
-                if ($nxt[2] == $sklad_id) {
+                if ($nxt[2] == $store_id) {
                     $cnt+=$nxt[0];
                 }
                 break;

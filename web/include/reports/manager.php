@@ -51,11 +51,46 @@ class Report_Manager extends BaseReport {
             Формат: <select name='opt'><option>pdf</option><option>html</option></select><br>
             <button type='submit'>Создать отчет</button></form>");
     }
-
-    function Make($engine) {
+    
+    protected function getDocDate($doc) {
+        global $db;
+        $ret = array();
+        settype($doc, 'int');        
+        
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`"
+            . " FROM `doc_list`"
+            . " WHERE `doc_list`.`type`='3' AND `doc_list`.`id`='$doc'");
+        
+        if($res->num_rows == 0) {
+            return 0;
+        }
+        $doc_info = $res->fetch_assoc();
+        return $doc_info['date'];        
+    }
+    
+    protected function getWorkingDays($user_id, $date) {
+        global $db;
+        $ldays = 0;
+        settype($user_id, 'int');
+        $date = getdate(strtotime($date));
+        $days = cal_days_in_month(CAL_GREGORIAN, $date['mon'], $date['year']);
+        for($d=1;$d<=$days;$d++) {
+            $d_start = mktime(0, 0, 0, $date['mon'], $d, $date['year']);
+            $d_end = mktime(23, 59, 59, $date['mon'], $d, $date['year']);
+            $d_start_p = date("Y-m-d H:i:s", $d_start);
+            $d_end_p = date("Y-m-d H:i:s", $d_end);
+            $res = $db->query("SELECT `id` FROM `doc_log` WHERE `user`='$user_id' AND `time`>='$d_start_p' AND `time`<='$d_end_p'");
+            if($res->num_rows>0) {
+                $ldays++;
+            }                
+        }
+        return $ldays;
+    }
+            
+    function make($engine) {
         global $db;
         $worker_id = rcvint('worker_id');
-        $date = rcvdate('date');
+        $date_in = rcvdate('date');
         $this->loadEngine($engine);
 
         $res = $db->query("SELECT `users`.`name`, `users_worker_info`.`worker_real_name` FROM `users`"
@@ -65,7 +100,7 @@ class Report_Manager extends BaseReport {
         }
         $worker_info = $res->fetch_assoc();
         
-        $date = getdate(strtotime($date));
+        $date = getdate(strtotime($date_in));
         $days = cal_days_in_month(CAL_GREGORIAN, $date['mon'], $date['year']);
         $d_start = mktime(0, 0, 0, $date['mon'], 1, $date['year']);
         $d_end = mktime(23, 59, 59, $date['mon'], $days, $date['year']);
@@ -78,6 +113,7 @@ class Report_Manager extends BaseReport {
                 $wd_count++;
             }
         }
+        $wdays = $this->getWorkingDays($worker_id, $date_in);
         
         
         $this->header("Отчёт по работе с клиентами");
@@ -94,7 +130,7 @@ class Report_Manager extends BaseReport {
         $this->tableHeader($headers);
         
         $this->tableRow(array("Количество рабочих дней:", $wd_count, ""));
-        $this->tableRow(array("Количество отработанных дней:", "", ""));
+        $this->tableRow(array("Количество отработанных дней:", $wdays, ""));
         
         $res = $db->query("SELECT `doc_list`.`id`, `wid`.`value` AS `worker_id` FROM `doc_list`"
             . " LEFT JOIN `doc_dopdata` AS `wid` ON `wid`.`doc`=`doc_list`.`id` AND `wid`.`param`='worker_id'"
@@ -156,11 +192,9 @@ class Report_Manager extends BaseReport {
         $this->tableRow(array("Реализовано:", $z_real, ""));
         $this->tableRow(array("Отказов:", $z_err, ""));
         
-        $ldo = new \Models\LDO\skladnames();
-        $storenames = $ldo->getData();
-        
         // импорт/россияб физ/юр
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`sum`, `doc_list`.`agent`, `doc_agent`.`type` AS `agent_type`, `doc_list`.`sklad` AS `store`"
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`sum`, `doc_list`.`agent`, `doc_agent`.`type` AS `agent_type`, `doc_list`.`sklad` AS `store_id`"
+                . ", `doc_list`.`p_doc`"
             . " FROM `doc_list`"
             . " LEFT JOIN `doc_agent` ON `doc_agent`.`id`=`doc_list`.`agent`"
             . " WHERE `doc_list`.`type`='2' AND `doc_list`.`date`>='$d_start' AND `doc_list`.`date`<='$d_end'"            
@@ -171,16 +205,15 @@ class Report_Manager extends BaseReport {
         $rus_sum = $rus_mass = 0;
         $ul_sum = $fl_sum = 0;
         $ul_mass = $fl_mass = 0;
-        $s_sum = array();
-        $s_mass = array();
-        foreach($storenames as $s_id => $s_name) {
-            $s_sum[$s_id] = 0;
-            $s_mass[$s_id] = 0;
-        }
+        $nal_sum = $nal_mass = $pz_sum = $pz_mass = 0;
         while($doc_info = $res->fetch_assoc()) {
+            $date_z = 0;
+            if($doc_info['p_doc']) {
+                $date_z = $this->getDocDate($doc_info['p_doc']);
+            }
             $r_ok++;
             $r_sum+=$doc_info['sum'];
-            $l_res = $db->query("SELECT `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, `doc_base`.`mass`, `class_country`.`alfa2` AS `cc`"
+            $l_res = $db->query("SELECT `doc_list_pos`.`tovar` AS `pos_id`, `doc_list_pos`.`cnt`, `doc_list_pos`.`cost` AS `price`, `doc_base`.`mass`, `class_country`.`alfa2` AS `cc`"
                 . " FROM `doc_list_pos`"
                 . " INNER JOIN `doc_base` ON `doc_list_pos`.`tovar`=`doc_base`.`id`"
                 . " LEFT JOIN `class_country` ON `class_country`.`id`=`doc_base`.`country`"
@@ -202,8 +235,21 @@ class Report_Manager extends BaseReport {
                     $fl_sum+=$line['cnt']*$line['price'];
                     $fl_mass+=$line['cnt']*$line['mass'];
                 }
-                $s_sum[$doc_info['store']] += $line['cnt']*$line['price'];
-                $s_mass[$doc_info['store']] += $line['cnt']*$line['mass'];
+                if($date_z > 0) {
+                    $z_cnt = getStoreCntOnDate($line['pos_id'], $doc_info['store_id'], $date_z, true);  
+                    if($z_cnt>=$line['cnt']) {
+                        $nal_sum+=$line['cnt']*$line['price'];
+                        $nal_mass+=$line['cnt']*$line['mass'];
+                    }
+                    else {
+                        $pz_sum+=$line['cnt']*$line['price'];
+                        $pz_mass+=$line['cnt']*$line['mass'];
+                    }
+                }
+                else {
+                    $nal_sum+=$line['cnt']*$line['price'];
+                    $nal_mass+=$line['cnt']*$line['mass'];
+                }
             }
         }
                
@@ -236,11 +282,8 @@ class Report_Manager extends BaseReport {
         $this->tableRow(array("В т.ч российских (сумма/масса):", number_format($rus_sum, 2, '.', ' ')." / $rus_mass", ""));
         $this->tableRow(array("В т.ч физ.лиц (сумма/масса):", number_format($fl_sum, 2, '.', ' ')." / $fl_mass", ""));
         $this->tableRow(array("В т.ч юр.лиц (сумма/масса):", number_format($ul_sum, 2, '.', ' ')." / $ul_mass", ""));
-        foreach($storenames as $s_id => $s_name) {
-            if($s_sum[$s_id]>0 || $s_mass[$s_id]>0) {
-                $this->tableRow(array("В т.ч со склада $s_name (сумма/масса):", number_format($s_sum[$s_id], 2, '.', ' ')." / $s_mass[$s_id]", ""));
-            }
-        }
+        $this->tableRow(array("В т.ч из наличия (сумма/масса):", number_format($nal_sum, 2, '.', ' ')." / $nal_mass", ""));
+        $this->tableRow(array("В т.ч под заказ (сумма/масса):", number_format($pz_sum, 2, '.', ' ')." / $pz_mass", ""));
         $this->tableRow(array("Откатов (количество/сумма):", "", ""));
         $this->tableRow(array("Возвратов (количество/сумма/масса):", "$ret_cnt / ".number_format($ret_sum, 2, '.', ' ')." / $ret_mass", ""));
         
