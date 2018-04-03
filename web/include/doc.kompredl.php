@@ -65,7 +65,7 @@ class doc_Kompredl extends doc_Nulltype {
         return $morphs;
     }
     
-    protected function morphTo_postuplenie() {
+    protected function morphTo_zayavka() {
         $new_doc = new doc_Zayavka();
         $new_doc->createFromP($this);
         $new_doc->setDopData('cena', $this->dop_data['cena']);
