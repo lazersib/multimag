@@ -92,8 +92,8 @@ abstract class iPrintFormPdf {
     }
     
     /// Добавить стандартный заголовок таблицы
-    protected function addTableHeader($th_widths, $th_texts, $tbody_aligns = null) {
-        $this->pdf->SetFontSize(10);
+    protected function addTableHeader($th_widths, $th_texts, $tbody_aligns = null, $font_size = 10) {
+        $this->pdf->SetFontSize($font_size);
         $this->pdf->SetLineWidth($this->line_bold_w);
         foreach ($th_widths as $id => $w) {
             $this->pdf->CellIconv($w, 6, $th_texts[$id], 1, 0, 'C', 0);

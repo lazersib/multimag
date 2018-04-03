@@ -174,25 +174,26 @@ class doc_v_puti extends doc_Nulltype {
         }
         $this->sentZEvent('cancel');
     }
-
-    // Формирование другого документа на основании текущего
-    function MorphTo($target_type) {
-        global $tmpl, $db;
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Поступление</div>");
-        } else if ($target_type == 1) {
-            \acl::accessGuard('doc.postuplenie', \acl::CREATE);
-            $db->startTransaction();
-            $new_doc = new doc_Postuplenie();
-            $dd = $new_doc->createFromP($this);
-            $new_doc->setDopData('cena', $this->dop_data['cena']);
-            $db->commit();
-            $ref = "Location: doc.php?mode=body&doc=$dd";
-            header($ref);
-        } else {
-            $tmpl->msg("В разработке", "info");
-        }
+    
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
+    public function getMorphList() {
+        $morphs = array(
+            'postuplenie' =>    ['name'=>'postuplenie', 'document' => 'postuplenie', 'viewname' => 'Поступление', ],
+        );
+        return $morphs;
     }
-
+    
+    protected function morphTo_postuplenie() {   
+        $new_doc = new \doc_Postuplenie();
+        $new_doc->createFromP($this);
+        $data = [
+            'cena' => $this->dop_data['cena'],
+            'received' => 0,
+        ];
+        $new_doc->setDopDataA($data);
+        return $new_doc;
+    }
 }

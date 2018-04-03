@@ -16,10 +16,21 @@
 //
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-/// Документ-основа для приходников
-class paymentbasedoc extends doc_Nulltype {
 
+/// Класс для документов-расходников
+class doc_debit extends \doc_Nulltype {
 
-
+    /** Установить вид расхода для документа по кодовому имени вида расхода
+     * 
+     * @param string $codename Кодовое имя вида расхода
+     */
+    public function setDebitTypeFromCodename($codename) {
+        global $db;
+        $codename_sql = $db->real_escape_string($codename);
+        $resource = $db->query("SELECT `id` FROM `doc_dtypes` WHERE `codename`='$codename_sql'");
+        if($resource->num_rows) {
+            $result = $resource->fetch_assoc();
+            $this->setDopData('rasxodi', $result['id']);
+        }
+    }
 }

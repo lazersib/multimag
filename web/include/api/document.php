@@ -168,10 +168,6 @@ class document {
          && !\acl::testAccess('doc.' . $document->getTypeName(), \acl::GET_PRINTDRAFT) ) {
             throw new \AccessException('Не достаточно привилегий для получения печатной формы');
         }
-        $ret_data = array(
-            'response' => 'item_list',
-            'content' => $document->getCSVPrintFormList()
-        );
         return ['id'=>$doc_id, 'printforms' => $document->getCSVPrintFormList()];
     }
 
@@ -272,6 +268,11 @@ class document {
         return ['id'=>$doc_id, 'result'=>$result];
     }
     
+    /**
+     * Сделать документ потомком указанного документа
+     * @param array $data Данные родительского документа
+     * @return array Массив с результатом операции
+     */
     protected function subordinate($data) {
         $doc_id = $this->extractDocumentId($data);
         $document = \document::getInstanceFromDb($doc_id);
@@ -284,8 +285,40 @@ class document {
         $result = $document->subordinate($data['p_doc']);
         return ['id'=>$doc_id, 'result'=>$result];
     }
+    
+    /**
+     * Получить список действий для создания новых документов на основании текущего
+     * @param array $data Данные родительского документа
+     * @return array Массив с результатом операции
+     */
+    protected function getMorphList($data) {
+        $doc_id = $this->extractDocumentId($data);
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        \acl::accessGuard('doc.' . $document->getTypeName(), \acl::VIEW);
+        \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::VIEW);
+        $result = $document->getMorphList();
+        return ['id'=>$doc_id, 'morphlist'=>$result];
+    }
+    
+    protected function morph($data) {
+        global $db;
+        $doc_id = $this->extractDocumentId($data);
+        if(!isset($data['target'])) {
+            throw new \InvalidArgumentException('цель морфинга не задана');
+        }        
+        $target = $data['target'];
+        $db->startTransaction();
+        $document = \document::getInstanceFromDb($doc_id);        
+        $morphs = $document->getMorphList();
+        \acl::accessGuard('doc.'.$morphs[$target]['document'], \acl::CREATE);
+        $new_doc = $document->morph($target);
+        $new_id = $new_doc->getID();
+        $db->commit();
+        return ['id'=>$doc_id, 'newdoc_id'=>$new_id];
+    }
 
-        public function dispatch($action, $data=null) {
+    public function dispatch($action, $data=null) {
         switch($action) {
             case 'get':
                 return $this->get($data);
@@ -310,6 +343,10 @@ class document {
                 return $this->sendEmail($data);
             case 'subordinate':
                 return $this->subordinate($data);
+            case 'getmorphlist':
+                return $this->getMorphList($data);
+            case 'morph':
+                return $this->morph($data);
             default:
                 throw new \NotFoundException('Некорректное действие');
         }

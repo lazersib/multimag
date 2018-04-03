@@ -18,7 +18,7 @@
 //
 
 /// Документ *приход средств в банк*
-class doc_PBank extends paymentbasedoc {
+class doc_PBank extends doc_credit {
 
     function __construct($doc = 0) {
         parent::__construct($doc);

@@ -18,7 +18,7 @@
 //
 
 /// Документ *информация о платеже*
-class doc_PayInfo extends paymentbasedoc {
+class doc_PayInfo extends doc_credit {
 
     function __construct($doc = 0) {
         parent::__construct($doc);

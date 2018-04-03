@@ -325,6 +325,7 @@ function doceditor(doc_container_id, menu_container_id) {
                 localStorage['doc_left_block_hidden'] = state;
             }
         }
+        history.replaceState({doc_id: doc_id}, null, window.href);
     };
     
     function newTextElement(name, value, options) {
@@ -441,6 +442,7 @@ function doceditor(doc_container_id, menu_container_id) {
         tmp.value = data.id;        
         tmp = document.getElementById('dochead_doc_type_id');
         tmp.value = data.type;
+        document.title = data.viewname + ' ' + doc.id;
         
         doc.i_altnum = document.getElementById('dochead_altnum');
         doc.i_altnum.value = data.altnum;        
@@ -452,8 +454,7 @@ function doceditor(doc_container_id, menu_container_id) {
         
         doc.i_firm_id.onchange = onUpdateFirmId;                
         listproxy.bind('firm.listnames', onNewData); 
-        
-        var value;
+
         for(var i=0;i<data.header_fields.length;i++) { 
             switch(data.header_fields[i]) {
                 case 'price':
@@ -574,7 +575,7 @@ function doceditor(doc_container_id, menu_container_id) {
         
         doc.contextPanel.morphto = mim.contextPanel.addButton({
             icon:"i_to_new.png",
-            caption:"Преобразовать в",
+            caption:"Создать подчинённый документ",
             onclick: doc.morphToMenu
         });
         
@@ -610,7 +611,8 @@ function doceditor(doc_container_id, menu_container_id) {
         });
     };
     
-    doc.apply = function() {
+    doc.apply = function(event) {
+        event.preventDefault();
         mm_api.document.apply({id:doc.id}, onLoadSuccess, onLoadError);
         if(doc.contextPanel.apply) {
             mim.contextPanel.updateButton(doc.contextPanel.apply, {
@@ -620,9 +622,11 @@ function doceditor(doc_container_id, menu_container_id) {
                 onclick: function(){}
             });
         }
+        return false;
     };
     
-    doc.cancel = function() {
+    doc.cancel = function(event) {
+        event.preventDefault();
         mm_api.document.cancel({id:doc.id}, onLoadSuccess, onLoadError);
         if(doc.contextPanel.cancel) {
             mim.contextPanel.updateButton(doc.contextPanel.cancel, {
@@ -634,7 +638,8 @@ function doceditor(doc_container_id, menu_container_id) {
         }
     };
     
-    doc.markForDelete = function() {
+    doc.markForDelete = function(event) {
+        event.preventDefault();
         mm_api.document.markForDelete({id:doc.id}, onLoadSuccess, onLoadError);
         if(doc.contextPanel.del) {
             mim.contextPanel.updateButton(doc.contextPanel.del, {
@@ -647,6 +652,7 @@ function doceditor(doc_container_id, menu_container_id) {
     };
     
     doc.unMarkDelete = function() {
+        event.preventDefault();
         mm_api.document.unMarkDelete({id:doc.id}, onLoadSuccess, onLoadError);
         if(doc.contextPanel.del) {
             mim.contextPanel.updateButton(doc.contextPanel.del, {
@@ -659,6 +665,7 @@ function doceditor(doc_container_id, menu_container_id) {
     };
     
     doc.reservesToggle = function(event) {
+        event.preventDefault();
         if(doc.contextPanel.reserves) {
             mim.contextPanel.updateButton(doc.contextPanel.reserves, {
                 icon:"icon_load.gif",
@@ -672,6 +679,7 @@ function doceditor(doc_container_id, menu_container_id) {
     }
     
     doc.printForms = function(event) {
+        event.preventDefault();
         var menu = CreateContextMenu(event);
         function pickItem(event) {
             var fname = event.target.fname;
@@ -705,6 +713,7 @@ function doceditor(doc_container_id, menu_container_id) {
     }
     
     doc.faxForms = function(event) {
+        event.preventDefault();
         var menu = CreateContextMenu(event);
         function pickItem(event) {
             var fname = event.target.fname;
@@ -783,6 +792,7 @@ function doceditor(doc_container_id, menu_container_id) {
     };
     
     doc.emailForms = function(event) {
+        event.preventDefault();
         var menu = CreateContextMenu(event);
         var email = '';
         function pickItem(event) {
@@ -859,23 +869,81 @@ function doceditor(doc_container_id, menu_container_id) {
     };
     
     doc.subordinateDialog = function(event) {
-        
+        event.preventDefault();
+        var p_doc_tmp = 0;
         function onEnterData(result) {
-            mm_api.document.subordinate({id:doc.id, p_doc: result},onLoadSuccess, onLoadError);
+            if(result!==null) {
+                mm_api.document.subordinate({id:doc.id, p_doc: result},onLoadSuccess, onLoadError);
+                p_doc_tmp = result;
+            }
         }
 
         function onLoadError(response, data) {
             jAlert(response.errorname + ': ' + response.errormessage, 'Подчинение документа', null, 'icon_err');
         }
         function onLoadSuccess(response) {
-            jAlert('Сделано!', 'Подчинение документа');
+            doc.header.p_doc = p_doc_tmp;
+            jAlert('Документ '+doc.id+' успешно подчинён документу '+p_doc_tmp, 'Подчинение документа');
         }  
         
         jPrompt("Укажите <b>системный</b> номер документа,<br> к которому привязать <br>текущий документ:",
-            doc.header.p_doc, "Подчинение документа",  onEnterData);
-
+            doc.header.p_doc, "Подчинение документа",  onEnterData);        
         return false;
     }
+    
+    doc.morphToMenu = function(event) {
+        event.preventDefault();
+        var menu = CreateContextMenu(event);
+        
+        function onLoadMMError(response, data) {
+            menu.destroy();
+            jAlert(response.errorname + ': ' + response.errormessage, 'Морфинг', null, 'icon_err');            
+        }
+        function onLoadMMSuccess(response) {
+            menu.innerHTML = ''
+            var morphlist = response.content.morphlist;
+            var i, c = 0;
+            
+            for(i in morphlist) {
+                var elem = document.createElement('div');
+                var docfname = morphlist[i].document.replace('/', '-');
+                elem.style.backgroundImage = "url('/img/doc/" + docfname + ".png')";
+                elem.innerHTML = morphlist[i].viewname;
+                elem.fname = morphlist[i].name;
+                elem.onclick = pickItem;
+                menu.appendChild(elem);
+                c++;
+            }
+            if(c==0) {
+                menu.destroy();
+                jAlert('На основе этого документа нельзя создать ни один другой документ.', 'Морфинг', null, 'icon_err');  
+            }
+        }
+        function onMorphSuccess(response) {
+            var newdoc_id = response.content.newdoc_id;
+            history.pushState({doc_id: newdoc_id}, null, '/test_doc.php?doc_id='+newdoc_id);
+            //history.replaceState({doc_id: doc_id}, null, window.href);
+            doc.init(newdoc_id);            
+        }
+        function pickItem(event) {
+            var fname = event.target.fname;
+            menu.destroy();
+            var data = {id: doc.id, target: fname};
+            mm_api.document.morph(data,onMorphSuccess, onLoadMMError);
+            //window.location = "/api.php?object=document&action=getprintform&data="+encodeURIComponent(JSON.stringify(data));
+        }
+        mm_api.document.getMorphList({id:doc.id},onLoadMMSuccess, onLoadMMError);
+        return false;
+    }
+    
+    window.addEventListener("popstate", function(e) {
+        if(e.state!= null) {
+            doc.init(e.state.doc_id);
+        }
+        else {
+            //history.go(0);
+        }
+    }, false)
     
     return doc;
 };

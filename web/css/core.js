@@ -139,6 +139,13 @@ function CreateContextMenu(e)
             menu.onmouseover = menu.onmouseout = null;
             menu.className = 'contextlayer';
         };
+        
+        menu.destroy = function() {
+            if(menu.waitHideTimer) {
+                window.clearTimeout(menu.waitHideTimer);
+            }
+            menu.parentNode.removeChild(menu);
+        }
 
 	function ContextMenuOut() {
             menu.clearTimer();
@@ -152,6 +159,8 @@ function CreateContextMenu(e)
 			menu.parentNode.removeChild(menu)
 		else	menu.animHideTimer=window.setTimeout(AnimateHideMenu, 50)
 	}
+        
+        
         
         
         

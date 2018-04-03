@@ -54,22 +54,22 @@ class doc_Kompredl extends doc_Nulltype {
         $tmpl->addContent("Срок поставки можно указать в комментариях наименования<br>");
     }
 
-    /// Формирование другого документа на основе текущего
-    /// @param $target_type Тип создаваемого документа
-    function MorphTo($target_type) {
-        global $tmpl, $db;
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=3'\">Заявка покупателя</div>");
-        } else if ($target_type == 3) {
-            $db->startTransaction();
-            \acl::accessGuard('doc.zayavka', \acl::CREATE); 
-            $new_doc = new doc_Zayavka();
-            $dd = $new_doc->createFromP($this);
-            $new_doc->setDopData('cena', $this->dop_data['cena']);
-            $db->commit();
-            redirect("/doc.php?mode=body&doc=$dd");
-        }
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
+    public function getMorphList() {
+        $morphs = array(
+            'zayavka' =>   ['name'=>'zayavka', 'document' => 'zayavka',    'viewname' => 'Заявка покупателя', ],
+        );
+        return $morphs;
+    }
+    
+    protected function morphTo_postuplenie() {
+        $new_doc = new doc_Zayavka();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        return $new_doc;
     }
     
     

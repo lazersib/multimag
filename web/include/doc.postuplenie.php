@@ -288,51 +288,64 @@ class doc_Postuplenie extends doc_Nulltype {
         }
         $this->sentZEvent('cancel');
     }
-
-    // Формирование другого документа на основании текущего
-    function morphTo($target_type) {
-        global $tmpl, $db;
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=2'\">Реализация</div>");
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=5'\">Расходный банковский ордер</div>");
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=7'\">Расходный кассовый ордер</div>");
-        } else if ($target_type == 2) {
-            \acl::accessGuard('doc.realizaciya', \acl::CREATE);
-            $db->startTransaction();
-            $new_doc = new doc_Realizaciya();
-            $dd = $new_doc->createFromP($this);
-            $db->commit();
-            header("Location: doc.php?mode=body&doc=$dd");
-        }
-        else {
-            if ($target_type == 5) {
-                \acl::accessGuard('doc.rbank', \acl::CREATE);
-                $classNameNewDocument = 'doc_RBank';
-            }
-            else if ($target_type == 7) {
-                \acl::accessGuard('doc.rko', \acl::CREATE);
-                $classNameNewDocument = 'doc_Rko';
-            }
-            else{
-                return;
-            }
-            $this->recalcSum();
-            $db->startTransaction();
-            $new_doc = new $classNameNewDocument();
-            $doc_num = $new_doc->createFrom($this);
-            $codeName =
-                isset($this->dop_data['return']) && $this->dop_data['return']
-                    ?'goods_return'
-                    :'goods_buy';
-            $resource = $db->query("SELECT `id` FROM `doc_dtypes` WHERE `codename`='$codeName'");
-            if($resource->num_rows) {
-                $result = $resource->fetch_assoc();
-                $new_doc->setDopData('rasxodi', $result['id']);
-            }
-            $db->commit();
-            header('Location: doc.php?mode=body&doc=' . $doc_num);
-        }
+    
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
+    public function getMorphList() {
+        $morphs = array(
+            'realizaciya' =>    ['name'=>'realizaciya',     'document' => 'realizaciya',    'viewname' => 'Реализация', ],
+            'rbank' =>          ['name'=>'rbank',           'document' => 'rbank',          'viewname' => 'Расходный банковский ордер', ],
+            'rko' =>            ['name'=>'rko',             'document' => 'rko',            'viewname' => 'Расходный кассовый ордер', ],
+        );
+        return $morphs;
     }
-
+    
+    /** Сформировать реализацию на основе этого документа
+     * 
+     * @return \doc_Realizaciya
+     */
+    protected function morphTo_realizaciya() {   
+        $new_doc = new \doc_Realizaciya();
+        $new_doc->createFromP($this);
+        $data = [
+            'cena' => $this->dop_data['cena'],
+            'platelshik' => $this->doc_data['agent'],
+            'gruzop' => $this->doc_data['agent'],
+            'received' => 0,
+        ];
+        $new_doc->setDopDataA($data);
+        return $new_doc;
+    }
+    
+    /** Сформировать Расходный банковский ордер на основе этого документа
+     * 
+     * @return \doc_rbank
+     */
+    protected function morphTo_rbank() {
+        global $db;
+        $this->recalcSum();
+        $new_doc = new \doc_rbank();        
+        $new_doc->createFrom($this);        
+        $codename = $this->getDopData('return')?'goods_return':'goods_buy';
+        $new_doc->setDebitTypeFromCodename($codename);
+        return $new_doc;
+    }
+    
+    /** Сформировать Расходный кассовый ордер на основе этого документа
+     * 
+     * @return \doc_rko
+     */
+    protected function morphTo_rko() {
+        global $db;
+        $this->recalcSum();
+        $new_doc = new \doc_rko();        
+        $new_doc->createFrom($this);        
+        $codename = $this->getDopData('return')?'goods_return':'goods_buy';
+        $new_doc->setDebitTypeFromCodename($codename);
+        $pref = \pref::getInstance();
+        $new_doc->setDocData('kassa', $pref->getSitePref('site_cash_id'));
+        return $new_doc;
+    }
 }

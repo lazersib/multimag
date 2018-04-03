@@ -414,6 +414,25 @@ class document {
         return true;
     }
     
+    /// Сделать документ потомком указанного документа
+    function subordinate($p_doc) {
+        global $db;        
+        if ($this->id == $p_doc) {
+            throw new \Exception('Нельзя связать с самим собой!');
+        }
+        if ($this->doc_data['ok']) {
+            throw new \Exception("Операция не допускается для проведённого документа!");
+        }
+        if ($p_doc != 0) {
+            // Проверяем существование документа
+            $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`=$p_doc");
+            if (!$res->num_rows) {
+                throw new \Exception('Документ с ID ' . $p_doc . ' не найден.');
+            }
+        }
+        $this->setDocData('p_doc', $p_doc);
+    }
+    
     /// Получить все текстовые параметры документа в виде ассоциативного массива
     public function getTextDataA() {
         return $this->text_data;
@@ -421,12 +440,27 @@ class document {
     
     /// Получить список документов, в которые может быть преобразован текущий
     /// Переопределяется у потомков
-    public function getMorphingList() {
+    public function getMorphList() {
         return [];
     }
     
     /// Создать подчинённый документ из текущего
-    public function morph($morph_code) {
-        return false;
+    public function morph($target) {
+        $ml = $this->getMorphList();
+        $info = null;
+        foreach($ml as $m_info) {
+            if($m_info['name']===$target) {
+                $info = $m_info;
+                break;
+            }
+        }
+        if(!$info) {
+            throw new \Exception("Неверный код целевого документа.");
+        }
+        $method = 'morphTo_'.$info['name'];
+        if(!method_exists($this, $method)) {
+            throw new \Exception("Метод морфинга не определён.");
+        }        
+        return $this->$method($target);
     }
 }

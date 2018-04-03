@@ -18,7 +18,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 /// Документ *приходный кассовый ордер*
-class doc_Pko extends paymentbasedoc {
+class doc_Pko extends doc_credit {
 
     function __construct($doc = 0) {
         parent::__construct($doc);

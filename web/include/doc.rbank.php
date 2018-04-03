@@ -18,7 +18,7 @@
 //
 
 /// Документ *Расход средств из банка*
-class doc_RBank extends doc_Nulltype {
+class doc_RBank extends \doc_debit {
 
     function __construct($doc = 0) {
         parent::__construct($doc);

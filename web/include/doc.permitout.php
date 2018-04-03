@@ -28,7 +28,7 @@ class doc_PermitOut extends doc_Nulltype {
         parent::__construct($doc);
         $this->doc_type = 23;
         $this->typename = 'permitout';
-        $this->viewname = 'Пропуск';
+        $this->viewname = 'Пропуск на вывоз';
         $this->sklad_editor_enable = false;
         $this->header_fields = 'separator agent separator';
         if(isset($CONFIG['doc']['permitout_lines'])) {

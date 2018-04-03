@@ -86,108 +86,105 @@ class doc_Predlojenie extends doc_Nulltype {
         }
         parent::docCancel();
     }
-
-    /// Формирование другого документа на основании текущего
-    function MorphTo($target_type) {
-        global $tmpl;
-
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Поступление</div>
-			<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=12'\">Товар в пути</div>");
-        } else if ($target_type == 1) {
-            \acl::accessGuard('doc.postuplenie', \acl::CREATE);
-            $base = $this->Postup();
-            redirect('/doc.php?mode=body&doc=' . $base);
-        }
-        else if ($target_type == 12) {
-            \acl::accessGuard('doc.v_puti', \acl::CREATE);
-            $base = $this->Vputi();
-            redirect('/doc.php?mode=body&doc=' . $base);
-        }
+    
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
+    public function getMorphList() {
+        $morphs = array(
+            'post_full' =>      ['name'=>'post_full',     'document' => 'postuplenie',    'viewname' => 'Поступление ТМЦ (все товары)', ],
+            'post_diff' =>      ['name'=>'post_diff',     'document' => 'postuplenie',    'viewname' => 'Поступление ТМЦ (разница)', ],
+            'vputi_full' =>     ['name'=>'vputi_full',    'document' => 'v_puti',         'viewname' => 'Товар в пути (все товары)', ],
+            'vputi_diff' =>     ['name'=>'vputi_diff',    'document' => 'v_puti',         'viewname' => 'Товар в пути (разница)', ],
+        );
+        return $morphs;
     }
-
-// ================== Функции только этого класса ======================================================
-    function Postup() {
+    
+    /** Сформировать Поступление ТМЦ с копированием табличной части на основе этого документа
+     * 
+     * @return \doc_postuplenie
+     */
+    protected function morphTo_post_full() {
+        $this->recalcSum();
+        $new_doc = new doc_Postuplenie();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        return $new_doc;
+    }
+    
+    /** Сформировать Поступление ТМЦ с недостающими строками в табличной части на основе этого документа
+     * 
+     * @return \doc_postuplenie
+     */
+    protected function morphTo_post_diff() {
+        return $this->morphDiffTarget(1, 'doc_Postuplenie');
+    }
+    
+    /** Сформировать товар в пути с копированием табличной части на основе этого документа
+     * 
+     * @return \doc_postuplenie
+     */
+    protected function morphTo_vputi_full() {
+        $this->recalcSum();
+        $new_doc = new doc_v_puti();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        return $new_doc;
+    }
+    
+    /** Сформировать товар в пути с недостающими строками в табличной части на основе этого документа
+     * 
+     * @return \doc_v_puti
+     */
+    protected function morphTo_vputi_diff() {
+        return $this->morphDiffTarget(12, 'doc_v_puti');
+    }
+    
+    protected function morphDiffTarget($target_id, $target_classname) {
         global $db;
-        $target_type = 1;
-        $db->startTransaction();
-        $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->id' AND `type`='$target_type'");
+        settype($target_id, 'int');
+        $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->id' AND `type`='$target_id'");
         if (!$res->num_rows) {
-            DocSumUpdate($this->id);
-            $new_doc = new doc_Postuplenie();
-            $x_doc_num = $new_doc->createFromP($this);
+            $this->recalcSum();
+            $new_doc = new $target_classname();
+            $new_doc->createFromP($this);
             $new_doc->setDopData('cena', $this->dop_data['cena']);
         } else {
             $x_doc_info = $res->fetch_row();
             $x_doc_num = $x_doc_info[0];
             $new_id = 0;
             $res = $db->query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
-			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
-			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->id}'
-			  WHERE `b`.`tovar`=`a`.`tovar` )
-			FROM `doc_list_pos` AS `a`
-			WHERE `a`.`doc`='{$this->id}'
-			ORDER BY `doc_list_pos`.`id`");
+                ( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
+                  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->id}' AND `doc_list`.`type`='$target_id'
+                  WHERE `b`.`tovar`=`a`.`tovar` )
+                FROM `doc_list_pos` AS `a`
+                WHERE `a`.`doc`='{$this->id}'
+                ORDER BY `a`.`id`");
             while ($nxt = $res->fetch_row()) {
                 if ($nxt[4] < $nxt[1]) {
                     if (!$new_id) {
-                        $new_doc = new doc_Postuplenie();
+                        $new_doc = new $target_classname();
                         $new_id = $new_doc->createFrom($this);
                         $new_doc->setDopData('cena', $this->dop_data['cena']);
                     }
-                    $n_cnt = $nxt[1] - $nxt[4];
-                    $db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
- 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
+                    $line = [
+                        'doc' => $new_id,
+                        'tovar' => $nxt[0],
+                        'cnt' => $nxt[1] - $nxt[4],
+                        'comm' => $nxt[2],
+                        'cost' => $nxt[3],
+                    ];
+                    $db->insertA('doc_list_pos', $line);
                 }
             }
             if ($new_id) {
-                $x_doc_num = $new_id;
+                $new_doc->recalcSum();
+            }
+            else {
+                $new_doc = new $target_classname($x_doc_num);
             }
         }
-        $db->commit();
-        return $x_doc_num;
-    }
-
-    //	================== Функции только этого класса ======================================================
-    function Vputi() {
-        global $db;
-        $target_type = 1;
-        $db->startTransaction();
-        $res = $db->query("SELECT `id` FROM `doc_list` WHERE `p_doc`='$this->id' AND `type`='$target_type'");
-        if (!$res->num_rows) {
-            DocSumUpdate($this->id);
-            $new_doc = new doc_v_puti();
-            $x_doc_num = $new_doc->createFromP($this);
-            $new_doc->setDopData('cena', $this->dop_data['cena']);
-        } else {
-            $x_doc_info = $res->fetch_row();
-            $x_doc_num = $x_doc_info[0];
-            $new_id = 0;
-            $res = $db->query("SELECT `a`.`tovar`, `a`.`cnt`, `a`.`comm`, `a`.`cost`,
-			( SELECT SUM(`b`.`cnt`) FROM `doc_list_pos` AS `b`
-			  INNER JOIN `doc_list` ON `b`.`doc`=`doc_list`.`id` AND `doc_list`.`p_doc`='{$this->id}'
-			  WHERE `b`.`tovar`=`a`.`tovar` )
-			FROM `doc_list_pos` AS `a`
-			WHERE `a`.`doc`='{$this->id}'
-			ORDER BY `doc_list_pos`.`id`");
-            while ($nxt = $res->fetch_row()) {
-                if ($nxt[4] < $nxt[1]) {
-                    if (!$new_id) {
-                        $new_doc = new doc_v_puti();
-                        $new_id = $new_doc->createFrom($this);
-                        $new_doc->setDopData('cena', $this->dop_data['cena']);
-                    }
-                    $n_cnt = $nxt[1] - $nxt[4];
-                    $db->query("INSERT INTO `doc_list_pos` (`doc`, `tovar`, `cnt`, `comm`, `cost`)
- 					VALUES ('$new_id', '$nxt[0]', '$n_cnt', '$nxt[2]', '$nxt[3]' )");
-                }
-            }
-            if ($new_id) {
-                $x_doc_num = $new_id;
-            }
-        }
-        $db->commit();
-        return $x_doc_num;
+        return $new_doc;
     }
 }

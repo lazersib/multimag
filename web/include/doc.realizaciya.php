@@ -415,92 +415,92 @@ class doc_Realizaciya extends doc_Nulltype {
 
         $this->sentZEvent('cancel');
     }
-
-    /// Формирование другого документа на основании текущего
-    /// @param target_type ID типа создаваемого документа
-    function MorphTo($target_type) {
-        global $tmpl, $db;
-
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            if(\acl::testAccess('doc.pko', \acl::CREATE)) {
-                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=6'\">Приходный кассовый ордер</div>");
-            }
-            if(\acl::testAccess('doc.pbank', \acl::CREATE)) {
-                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=4'\">Приход средств в банк</div>");
-            }
-            if(\acl::testAccess('doc.kordolga', \acl::CREATE)) {
-                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=18'\">Корректировка долга</div>");
-            }
-            if(\acl::testAccess('doc.permitout', \acl::CREATE)) {
-                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=23'\">Пропуск</div>");
-            }
-            if (!$this->doc_data['p_doc'] && \acl::testAccess('doc.zayavka', \acl::CREATE)) {
-                $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">Заявка (родительская)</div>");
-            }
+    
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
+    public function getMorphList() {
+        $morphs = array(
+            'permitout' =>      ['name'=>'permitout',   'document' => 'permitout',  'viewname' => 'Пропуск на вывоз', ],
+            'pbank' =>          ['name'=>'pbank',       'document' => 'pbank',      'viewname' => 'Приходный банковский ордер', ],
+            'pko' =>            ['name'=>'pko',         'document' => 'pko',        'viewname' => 'Приходный кассовый ордер', ],
+            'kordolga' =>       ['name'=>'kordolga',    'document' => 'kordolga',   'viewname' => 'Корректировка долга', ],
+        );
+        if (!$this->doc_data['p_doc']) {
+            $morphs['zayavka'] = ['name'=>'zayavka',    'document' => 'zayavka',    'viewname' => 'Заявка (родительская)', ];
         }
-        else if ($target_type == '1') {
-            \acl::accessGuard('doc.zayavka', \acl::CREATE);
-            $new_doc = new doc_Zayavka();
-            $dd = $new_doc->CreateParent($this);
-            $new_doc->setDopData('cena', $this->dop_data['cena']);
-            $this->setDocData('p_doc', $dd);
-            header("Location: doc.php?mode=body&doc=$dd");
-        } 
-        else if ($target_type == 6) {
-            \acl::accessGuard('doc.pko', \acl::CREATE);
-            $this->recalcSum();
-            $db->startTransaction();
-            $new_doc = new doc_Pko();
-            $dd = $new_doc->createFrom($this);
-            $new_doc->setDocData('kassa', 1);
-            $codeName =
-                isset($this->dop_data['return']) && $this->dop_data['return']
-                    ?'goods_return'
-                    :'goods_sell';
-            $resource = $db->query("SELECT `id` FROM `doc_ctypes` WHERE `codename`='$codeName'");
-            if($resource->num_rows) {
-                $result = $resource->fetch_assoc();
-                $new_doc->setDopData('credit_type', $result['id']);
-            }
-            $db->commit();
-            $ref = "Location: doc.php?mode=body&doc=" . $dd;
-            header($ref);
+        return $morphs;
+    }
+    
+    /** Создать родительскою заявку
+     * 
+     * @return \doc_Zayavka Документ заявки, как основание
+     * @throws Exception В случае если у документа уже есть основание
+     */
+    protected function morphTo_zayavka() {
+        if($this->doc_data['p_doc']) {
+            throw new Exception('У документа уже есть основание.');
         }
-        else if ($target_type == 4) {
-            \acl::accessGuard('doc.pbank', \acl::CREATE);
-            $this->recalcSum();
-            $db->startTransaction();
-            $new_doc = new doc_Pbank();
-            $dd = $new_doc->createFrom($this);
-            $new_doc->setDocData('bank', 1);
-            $codeName =
-                isset($this->dop_data['return']) && $this->dop_data['return']
-                    ?'goods_return'
-                    :'goods_sell';
-            $resource = $db->query("SELECT `id` FROM `doc_ctypes` WHERE `codename`='$codeName'");
-            if($resource->num_rows) {
-                $result = $resource->fetch_assoc();
-                $new_doc->setDopData('credit_type', $result['id']);
-            }
-            $db->commit();
-            $ref = "Location: doc.php?mode=body&doc=" . $dd;
-            header($ref);
-        }
-        else if ($target_type == 18) {
-            \acl::accessGuard('doc.kordolga', \acl::CREATE);
-            $new_doc = new doc_Kordolga();
-            $dd = $new_doc->createFrom($this);
-            $new_doc->setDocData('sum', $this->doc_data['sum'] * (-1));
-            header("Location: doc.php?mode=body&doc=$dd");
-        } else if ($target_type == 23) {
-            \acl::accessGuard('doc.permitout', \acl::CREATE);
-            $new_doc = new doc_PermitOut();
-            $dd = $new_doc->createFrom($this);
-            header("Location: doc.php?mode=body&doc=$dd");
-        } else {
-            $tmpl->msg("В разработке", "info");
-        }
+        $new_doc = new \doc_Zayavka();
+        $dd = $new_doc->CreateParent($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        $this->setDocData('p_doc', $dd);
+        return $new_doc;
+    }
+    
+    /** Создать подчинённый приходный кассовый ордер
+     * 
+     * @return \doc_Pko Подчинённый приходный кассовый ордер
+     */
+    protected function morphTo_pko() {
+    
+        $this->recalcSum();
+        $new_doc = new \doc_Pko();
+        $new_doc->createFrom($this);
+        $pref = \pref::getInstance();
+        $new_doc->setDocData('kassa', $pref->getSitePref('site_cash_id'));
+        $codename = $this->getDopData('return')?'goods_return':'goods_sell';
+        $new_doc->setCreditTypeFromCodename($codename);
+        return $new_doc;
+    }
+    
+    /** Создать подчинённый приходный банковский ордер
+     * 
+     * @return \doc_PbankПодчинённый приходный банковский ордер
+     */
+    protected function morphTo_pbank() {
+        $this->recalcSum();
+        $new_doc = new \doc_Pbank();
+        $new_doc->createFrom($this);
+        $pref = \pref::getInstance();
+        $new_doc->setDocData('bank', $pref->getSitePref('site_bank_id'));
+        $codename = $this->getDopData('return')?'goods_return':'goods_sell';
+        $new_doc->setCreditTypeFromCodename($codename);
+        return $new_doc;
+    }
+    
+    /** Создать подчинённую корректировку долга на сумму реализации
+     * 
+     * @return \doc_Kordolga
+     */
+    protected function morphTo_kordolga() {
+        $this->recalcSum();
+        $new_doc = new \doc_Kordolga();
+        $new_doc->createFrom($this);
+        $new_doc->setDocData('sum', $this->doc_data['sum'] * (-1));
+        return $new_doc;
+    }
+    
+    /** Создать подчинённый пропуск на вывоз товара
+     * 
+     * @return \doc_PermitOut
+     */
+    protected function morphTo_permitout() {
+        $this->recalcSum();
+        $new_doc = new \doc_PermitOut();
+        $new_doc->createFrom($this);
+        return $new_doc;
     }
 
     protected function getDovForm() {

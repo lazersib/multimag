@@ -219,20 +219,22 @@ class doc_Dogovor extends doc_Nulltype {
         $tmpl->addContent("<p>Для просмотра текста договора используйте печатную форму.</p>");
     }
 
-    /// Формирование другого документа на основании текущего
-    function MorphTo($target_type) {
-        global $tmpl;
-        $tmpl->ajax = 1;
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            $tmpl->addContent("<div onclick=\"window.location='?mode=morphto&amp;doc={$this->id}&amp;tt=16'\">Спецификация</div>");
-        } else if ($target_type == 16) {
-            \acl::accessGuard('doc.specific', \acl::CREATE);            
-            $new_doc = new doc_Specific();
-            $dd = $new_doc->createFrom($this);
-            $this->sentZEvent('morph_specific');
-            header("Location: doc.php?mode=body&doc=$dd");
-        }
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
+    public function getMorphList() {
+        $morphs = array(
+            'specific' =>   ['name'=>'specific', 'document' => 'specific',    'viewname' => 'Спецификация', ],
+        );
+        return $morphs;
+    }
+    
+    protected function morphTo_specific() {
+        $new_doc = new doc_Specific();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        return $new_doc;
     }
 
     public function Service() {

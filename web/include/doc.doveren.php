@@ -72,24 +72,22 @@ class doc_Doveren extends doc_Nulltype {
             doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
         }
     }
-
-    /// Формирование другого документа на основе текущего
-    /// @param $target_type Тип создаваемого документа
-    function MorphTo($target_type) {
-        global $tmpl;
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            $tmpl->addContent("<div onclick=\"window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=1'\">
-			<li><a href=''>Поступление товара</div>");
-        } else if ($target_type == 1) {
-            $this->recalcSum();
-            \acl::accessGuard('doc.postuplenie', \acl::CREATE);  
-            $new_doc = new doc_Postuplenie();
-            $dd = $new_doc->createFrom($this);
-            redirect("/doc.php?mode=body&doc=$dd");
-        } else {
-            throw new NotFoundException("Недоступно!");
-        }
+    
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
+    public function getMorphList() {
+        $morphs = array(
+            'postuplenie' =>   ['name'=>'postuplenie', 'document' => 'postuplenie',    'viewname' => 'Поступление ТМЦ', ],
+        );
+        return $morphs;
     }
-
+    
+    protected function morphTo_postuplenie() {
+        $new_doc = new doc_Postuplenie();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        return $new_doc;
+    }
 }

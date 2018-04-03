@@ -17,8 +17,9 @@
 //	You should have received a copy of the GNU Affero General Public License
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+
 /// Документ *Расходный кассовый ордер*
-class doc_Rko extends doc_Nulltype {
+class doc_Rko extends \doc_debit {
 
     function __construct($doc = 0) {
         parent::__construct($doc);

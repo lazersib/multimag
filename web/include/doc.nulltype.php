@@ -1267,25 +1267,6 @@ class doc_Nulltype extends \document {
         $db->query("DELETE FROM `doc_list` WHERE `id`='{$this->id}'");
     }
 
-    /// Сделать документ потомком указанного документа
-    function subordinate($p_doc) {
-        global $db;        
-        if ($this->id == $p_doc) {
-            throw new \Exception('Нельзя связать с самим собой!');
-        }
-        if ($this->doc_data['ok']) {
-            throw new \Exception("Операция не допускается для проведённого документа!");
-        }
-        if ($p_doc != 0) {
-            // Проверяем существование документа
-            $res = $db->query("SELECT `p_doc` FROM `doc_list` WHERE `id`=$p_doc");
-            if (!$res->num_rows) {
-                throw new \Exception('Документ с ID ' . $p_doc . ' не найден.');
-            }
-        }
-        $this->setDocData('p_doc', $p_doc);
-    }
-
     /// Сделать документ потомком указанного документа и вернуть резутьтат в json формате
     function connectJson($p_doc) {
         try {
@@ -2314,7 +2295,7 @@ class doc_Nulltype extends \document {
                   $line['sum_wo_vat'] = $line['price_wo_vat'] * $line['cnt'];
                   $line['vat_s'] = ($line['price'] * $line['cnt']) - $line['sum_wo_vat']; */
                 $pos = $this->calcVAT($line['price'], $line['cnt'], $vat);
-                //$line['price'] = $pos['price'];
+                $line['price_wo_vat'] = $pos['price'];
                 $line['sum_wo_vat'] = round($pos['sum_wo_vat'], 2);
                 $line['vat_p'] = $ndsp;
                 $line['vat_s'] = round($pos['vat_s'], 2);
@@ -2515,7 +2496,7 @@ class doc_Nulltype extends \document {
                 $pos['vat_s'] = round($doc_price * $count, 2) - $pos['sum_wo_vat'];
             }
         } else {
-            $pos['price'] = $doc_price;
+            $pos['price'] = $pos['price_w_vat'] = $doc_price;
             $pos['sum_wo_vat'] = round($pos['price'] * $count, 2);
             $pos['vat_s'] = round($pos['sum_wo_vat'] * $vat, 2);
             $pos['sum'] = $pos['sum_wo_vat'] + $pos['vat_s'];
@@ -2599,8 +2580,44 @@ class doc_Nulltype extends \document {
     /// Метод необходимо переопределить у потомков
     /// @param $target_type Тип создаваемого документа
     /// @return Всегда false
-    public function morphTo($target_type) {
-        return false;
+        /// Формирование другого документа на основании текущего
+    function morphTo($target) {
+        global $tmpl, $db;
+        $morphs = $this->getMorphList();
+        
+        if ($target == '') {
+            $tmpl->ajax = 1;            
+            $base_link = "window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=";
+            foreach($morphs as $line) {
+                $acl_obj = 'doc.'.$line['document'];
+                if(\acl::testAccess($acl_obj, \acl::CREATE)) {
+                    $tmpl->addContent("<div onclick=\"{$base_link}{$line['name']}'\">{$line['viewname']}</div>");
+                }
+            }
+        } else {
+            $morphs = $this->getMorphList();
+            $info = null;
+            foreach($morphs as $m_info) {
+                if($m_info['name']===$target) {
+                    $info = $m_info;
+                    break;
+                }
+            }
+            if(!$info) {
+                throw new \Exception("Неверный код целевого документа.");
+            }
+            
+            \acl::accessGuard('doc.'.$morphs[$target]['document'], \acl::CREATE);
+            $method = 'morphTo_'.$info['name'];
+            if(!method_exists($this, $method)) {
+                throw new \NotFoundException("Метод морфинга не определён.");
+            }  
+            $db->startTransaction();
+            $new_doc = $this->$method($target);
+            $new_doc_id = $new_doc->getId();
+            $db->commit();
+            redirect("/doc.php?mode=body&doc=$new_doc_id");
+        }
     }
 
     /**

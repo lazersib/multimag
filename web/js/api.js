@@ -194,6 +194,14 @@ var mm_api = function () {
         mm_api.callApi('document', 'subordinate', data, ok_callback, err_callback);
     };
     
+    mm_api.document.getMorphList = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'getmorphlist', data, ok_callback, err_callback);
+    };
+    
+    mm_api.document.morph = function(data, ok_callback, err_callback) {
+        mm_api.callApi('document', 'morph', data, ok_callback, err_callback);
+    };
+    
     /// Multiquery
     mm_api.multiquery.run = function(data, ok_callback, err_callback) {
         mm_api.callApi('multiquery', 'run', data, ok_callback, err_callback);

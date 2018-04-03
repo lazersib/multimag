@@ -563,39 +563,24 @@ class doc_Zayavka extends doc_Nulltype {
         }        
     }  
 
+    /**
+     * Получить список документов, которые можно создать на основе этого
+     * @return array Список документов
+     */
     public function getMorphList() {
         $morphs = array(
             'r_all' =>      ['name'=>'r_all', 'document' => 'realizaciya', 'viewname' => 'Реализация (все товары)', ],
             'r_partial' =>  ['name'=>'r_partial', 'document' => 'realizaciya', 'viewname' => 'Реализация (неотгруженные)', ],
-            '6' =>  ['name'=>'6',  'document' => 'pko',         'viewname' => 'Приходный кассовый ордер', ],
-            '4' =>  ['name'=>'4',  'document' => 'pbank',       'viewname' => 'Приход средств в банк', ],
-            '15' => ['name'=>'15', 'document' => 'realiz_op',   'viewname' => 'Оперативная реализация', ],
-            '1' =>  ['name'=>'1',  'document' => 'zayavka',     'viewname' => 'Копия заявки', ],
-            '16' => ['name'=>'16', 'document' => 'specific',    'viewname' => 'Спецификация (не используй здесь)', ],
+            'pko' =>        ['name'=>'pko',  'document' => 'pko',         'viewname' => 'Приходный кассовый ордер', ],
+            'pbank' =>      ['name'=>'pbank',  'document' => 'pbank',       'viewname' => 'Приход средств в банк', ],
+            'realiz_op' =>  ['name'=>'realiz_op', 'document' => 'realiz_op',   'viewname' => 'Оперативная реализация', ],
+            'zayavka' =>    ['name'=>'zayavka',  'document' => 'zayavka',     'viewname' => 'Копия заявки', ],
+            'specific' =>   ['name'=>'specific', 'document' => 'specific',    'viewname' => 'Спецификация (не используй здесь)', ],
         );
         return $morphs;
     }
-    
-    public function morph($morph_code) {
-        $ml = $this->getMorphList();
-        $info = null;
-        foreach($ml as $m_info) {
-            if($m_info['name']===$morph_code) {
-                $info = $m_info;
-                break;
-            }
-        }
-        if(!$info) {
-            throw new \Exception("Неверный код целевого документа.");
-        }
-        $method = 'morphTo_'.$info['name'];
-        if(!method_exists($this, $method)) {
-            throw new \Exception("Метод морфинга не определён.");
-        }        
-        return $this->$method();
-    }
 
-    /** Сформировать реализацию со всеми товарами
+    /** Сформировать реализацию со всеми товарами на основе этого документа
      * 
      * @return \doc_Realizaciya
      */
@@ -614,7 +599,7 @@ class doc_Zayavka extends doc_Nulltype {
         return $new_doc;
     }
     
-    /** Сформировать реализацию с неотгруженными товарами
+    /** Сформировать реализацию с неотгруженными товарами на основе этого документа
      * 
      * @return \doc_Realizaciya
      */
@@ -632,100 +617,62 @@ class doc_Zayavka extends doc_Nulltype {
         $this->sentZEvent('morph_realizaciya');
         return $new_doc;
     }
-
-    /// Формирование другого документа на основании текущего
-    function morphTo($target_type) {
-        global $tmpl, $db;
-        $morphs = $this->getMorphList();
-        
-        if ($target_type == '') {
-            $tmpl->ajax = 1;
-            
-            $base_link = "window.location='/doc.php?mode=morphto&amp;doc={$this->id}&amp;tt=";
-            foreach($morphs as $line) {
-                $acl_obj = 'doc.'.$line['document'];
-                if(\acl::testAccess($acl_obj, \acl::CREATE)) {
-                    $tmpl->addContent("<div onclick=\"{$base_link}{$line['name']}'\">{$line['viewname']}</div>");
-                }
-            }
-        } else if ($target_type == 'r_all') {
-            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $new_doc = $this->morphTo_r_all();
-            $new_doc_id = $new_doc->getId();
-            header("Location: doc.php?mode=body&doc=$new_doc_id");
-        } else if ($target_type == 1) {
-            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $new_doc = new doc_Zayavka();
-            $dd = $new_doc->createFromP($this);
-            $new_doc->setDopData('cena', $this->dop_data['cena']);
-            header("Location: doc.php?mode=body&doc=$dd");
+    
+    /**
+     * Сформировать приходный кассовый ордер
+     */
+    protected function morphTo_pko() {
+        global $db;        
+        $this->recalcSum();
+        $base = $this->Otgruzka();
+        if (!$base) {
+            throw new \Exception("Не удалось создать подчинённый документ");
         }
-        else if ($target_type == 'r_partial') {
-            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $new_doc = $this->morphTo_r_partial();
-            $new_doc_id = $new_doc->getId();
-            header("Location: doc.php?mode=body&doc=$new_doc_id");
-        }
-        // Оперативная реализация
-        else if ($target_type == 15) {
-            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $new_doc = new doc_Realiz_op();
-            $dd = $new_doc->createFromP($this);
-            $new_doc->setDopData('ishop', $this->dop_data['ishop']);
-            $this->sentZEvent('morph_oprealizaciya');
-            header("Location: doc.php?mode=body&doc=$dd");
-        }
-        else if ($target_type == 16) {
-            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $new_doc = new doc_Specific();
-            $dd = $new_doc->createFromP($this);
-            $new_doc->setDopData('ishop', $this->dop_data['ishop']);
-            header("Location: doc.php?mode=body&doc=$dd");
-        }
-        else if ($target_type == 6) {
-            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $this->sentZEvent('morph_pko');
-            $sum = $this->recalcSum();
-            $db->startTransaction();
-            $base = $this->Otgruzka();
-            if (!$base) {
-                $db->rollback();
-                $tmpl->msg("Не удалось создать подчинённый документ!", "err");
-            } else {
-                $new_doc = new doc_Pko();
-                $doc_data = $this->doc_data;
-                $doc_data['p_doc'] = $base;
-                $dd = $new_doc->create($doc_data);
-
-                $new_doc->setDocData('kassa', 1);
-                $db->commit();
-                $ref = "Location: doc.php?mode=body&doc=" . $dd;
-                header($ref);
-            }
-        } else if ($target_type == 4) {
-            \acl::accessGuard('doc.'.$morphs[$target_type]['document'], \acl::CREATE);
-            $this->sentZEvent('morph_pbank');
-            $sum = $this->recalcSum();
-            $db->startTransaction();
-            $base = $this->Otgruzka();
-            if (!$base) {
-                $db->rollback();
-                throw new Exception("Не удалось создать подчинённый документ!");
-            } else {
-                $new_doc = new doc_PBank();
-                $doc_data = $this->doc_data;
-                $doc_data['p_doc'] = $base;
-                $dd = $new_doc->create($doc_data);
-
-                $db->commit();
-                $ref = "Location: doc.php?mode=body&doc=" . $dd;
-                header($ref);
-            }
-        } 
-        else {
-            throw new \NotFoundException();
-        }
+        $new_doc = new doc_Pko();
+        $doc_data = $this->doc_data;
+        $doc_data['p_doc'] = $base;
+        $new_doc->create($doc_data);
+        $new_doc->setDocData('kassa', 1);
+        $this->sentZEvent('morph_pko');
+        return $new_doc;        
     }
+    
+    protected function morphTo_pbank() {
+        global $db;        
+        $this->recalcSum();
+        $base = $this->Otgruzka();
+        if (!$base) {
+            throw new Exception("Не удалось создать подчинённый документ!");
+        }        
+        $new_doc = new doc_PBank();
+        $doc_data = $this->doc_data;
+        $doc_data['p_doc'] = $base;
+        $new_doc->create($doc_data);
+        $this->sentZEvent('morph_pbank');
+        return $new_doc;        
+    }
+
+    protected function morphTo_realiz_op() {
+        $new_doc = new doc_Realiz_op();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('ishop', $this->dop_data['ishop']);
+        $this->sentZEvent('morph_oprealizaciya');
+        return $new_doc;
+    }
+    
+    protected function morphTo_zayavka() {
+        $new_doc = new doc_zayavka();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        return $new_doc;
+    }
+    
+    protected function morphTo_specific() {
+        $new_doc = new doc_Specific();
+        $new_doc->createFromP($this);
+        $new_doc->setDopData('cena', $this->dop_data['cena']);
+        return $new_doc;
+    } 
     
     protected function sendNotificationMessage() {
         global $tmpl;
