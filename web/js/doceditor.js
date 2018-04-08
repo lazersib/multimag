@@ -27,7 +27,7 @@ function doceditor(doc_container_id, menu_container_id) {
             }
         }
         else {
-            alert("Общая ошибка:\n"+response.errorname+"\nСообщение:"+response.errormessage);
+            alert("Общая ошибка:\n"+response.errortype+"\nСообщение:"+response.errormessage);
         }
         doc.updateMainMenu();
     }
@@ -222,7 +222,7 @@ function doceditor(doc_container_id, menu_container_id) {
             doc.l_dochead_dishonest_info.style.display = "none";
         }
         document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+doc.header.agent_id;
-        
+        document.getElementById('contract_edit_link').href='/test_doc.php?doc_id='+doc.header.contract_id;
         doc.i_contract_id = document.getElementById('dochead_contract_id'); 
         insertContractList(doc.i_contract_id, doc.header.agent_info.contract_list, doc.header.contract_id, true);
     }
@@ -429,7 +429,7 @@ function doceditor(doc_container_id, menu_container_id) {
 		+ "<input type='hidden' name='agent_id' id='dochead_agent_id' value=''>"
 		+ "<input type='text' name='agent_name' id='dochead_agent_name' value=''>"
 		+ "<div id='dochead_dishonest_info'>Был выбран недобросовестный агент!</div>",
-            agent_contract: "<div>Договор с агентом:</div>"
+            agent_contract: "<div>Договор с агентом: <a href='#' id='contract_edit_link' target='_blank'><img src='/img/i_edit.png'></a></div>"
 		+ "<select name='contract_id' id='dochead_contract_id'></select>",
             comment: "<div>Комментарий:</div><textarea id='dochead_comment' name='comment'></textarea>",
         };
@@ -603,12 +603,6 @@ function doceditor(doc_container_id, menu_container_id) {
                 });
             }
         }
-        
-        doc.contextPanel.mailToClientForm = mim.contextPanel.addButton({
-            icon:"i_mailsend.png",
-            caption:"Отправить сообщение покупателю",
-            onclick: doc.mailToClientForm
-        });
     };
     
     doc.apply = function(event) {
@@ -689,7 +683,7 @@ function doceditor(doc_container_id, menu_container_id) {
         }
 
         function onLoadPFLError(response, data) {
-            jAlert(response.errorname + ': ' + response.errormessage, 'Печать', null, 'icon_err');
+            jAlert(response.errortype + ': ' + response.errormessage, 'Печать', null, 'icon_err');
             menu.parentNode.removeChild(menu);
         }
         function onLoadPFLSuccess(response) {
@@ -758,7 +752,7 @@ function doceditor(doc_container_id, menu_container_id) {
         }
 
         function onLoadPFLError(response, data) {
-            jAlert(response.errorname + ': ' + response.errormessage, 'Отправка факса', null, 'icon_err');
+            jAlert(response.errortype + ': ' + response.errormessage, 'Отправка факса', null, 'icon_err');
             menu.parentNode.removeChild(menu);
         }
         function onLoadPFLSuccess(response) {
@@ -835,7 +829,7 @@ function doceditor(doc_container_id, menu_container_id) {
         }
 
         function onLoadPFLError(response, data) {
-            jAlert(response.errorname + ': ' + response.errormessage, 'Отправка email', null, 'icon_err');
+            jAlert(response.errortype + ': ' + response.errormessage, 'Отправка email', null, 'icon_err');
             menu.parentNode.removeChild(menu);
         }
         function onLoadPFLSuccess(response) {
@@ -879,7 +873,7 @@ function doceditor(doc_container_id, menu_container_id) {
         }
 
         function onLoadError(response, data) {
-            jAlert(response.errorname + ': ' + response.errormessage, 'Подчинение документа', null, 'icon_err');
+            jAlert(response.errortype + ': ' + response.errormessage, 'Подчинение документа', null, 'icon_err');
         }
         function onLoadSuccess(response) {
             doc.header.p_doc = p_doc_tmp;
@@ -897,7 +891,7 @@ function doceditor(doc_container_id, menu_container_id) {
         
         function onLoadMMError(response, data) {
             menu.destroy();
-            jAlert(response.errorname + ': ' + response.errormessage, 'Морфинг', null, 'icon_err');            
+            jAlert(response.errortype + ': ' + response.errormessage, 'Морфинг', null, 'icon_err');            
         }
         function onLoadMMSuccess(response) {
             menu.innerHTML = ''
@@ -933,6 +927,111 @@ function doceditor(doc_container_id, menu_container_id) {
             //window.location = "/api.php?object=document&action=getprintform&data="+encodeURIComponent(JSON.stringify(data));
         }
         mm_api.document.getMorphList({id:doc.id},onLoadMMSuccess, onLoadMMError);
+        return false;
+    }
+    
+    doc.refillNomenclatureForm = function(event) {
+        //var menu = CreateContextMenu(event);
+        //menu.morphToDialog();
+        var headStr = "Перезапись номенклатурной таблицы";
+        var selected_row = null;
+        
+        function selectRow(event) {
+            var obj = event.target;
+            while (obj != 'undefined' && obj != 'null') {
+                if (obj.tagName == 'TR') {
+                    if (!obj.marked) {
+                        obj.style.backgroundColor = '#8f8';
+                        obj.marked = 1;
+                        if(selected_row) {
+                            selected_row.style.backgroundColor = '';
+                            selected_row.marked = 0;
+                        }
+                        selected_row = obj;
+                        doc_id_refill.value = obj.doc_id;
+                    }
+                    else {
+                        obj.style.backgroundColor = '';
+                        obj.marked = 0;
+                        selected_row = null;
+                        doc_id_refill.value = '';
+                    }
+                    return;
+                }
+                obj = obj.parentNode;
+            }
+        }
+        
+        var dialogStr = "<table width='100%' class='list'><thead><tr><th colspan='4'>Заполнить из документа</th></tr></thead><tbody id='doc_sel_table_body'>";
+        dialogStr = dialogStr + "</tbody></table>" +
+            "<table width='100%'><tr><td><label><input type='checkbox' id='p_clear_cb'> Предочистка</label></td><td>Док.id:<input type='text' id='doc_id_refill'></td>" +
+            "<td><label><input type='checkbox' id='nsum_cb'> Не суммировать</label></td></tr><tr><td><button id='bcancel'>Отменить</button></td>" +
+            "<td></td><td style='text-align:right'><button id='bok'>Выполнить</button></td></table>";
+        
+        var menu = createModalLayer(headStr, dialogStr);
+
+        var doc_sel_table_body = document.getElementById('doc_sel_table_body');
+        var op_clear_cb = document.getElementById('p_clear_cb');
+        var onsum_cb = document.getElementById('nsum_cb');
+        var obok = document.getElementById('bok');
+        var obcancel = document.getElementById('bcancel');
+        var doc_id_refill = document.getElementById('doc_id_refill');
+
+        doc_sel_table_body.onclick = selectRow;
+        for(i in doc.data.sub_info) {
+            var tr = doc_sel_table_body.insertRow(-1);
+            var sub_info = doc.data.sub_info[i];
+            var str = "<td>" + sub_info.id + "</td><td>" + sub_info.viewname + "</td><td>" + sub_info.altnum + sub_info.subtype + "</td><td>" + sub_info.date + "</td>";
+            tr.innerHTML = str;
+            tr.doc_id = sub_info.id;
+            tr.style.cursor = 'pointer';
+        }
+
+        obcancel.onclick = function () {
+            menu.destroy();
+        };
+        obok.onclick = function () {
+            if(!doc_id_refill.value) {
+                return false;
+            }
+            var data = {
+                id: doc.id,
+                from_doc_id: doc_id_refill.value,
+                preclear: op_clear_cb.checked ? 1 : 0,
+                no_sum: onsum_cb.checked ? 1 : 0
+            };
+            mm_api.document.refillPosList(data, refillSuccess, refillError);
+            menu.innerHTML = '<img src="/img/icon_load.gif" alt="Загрузка">Загрузка...';
+        };
+
+        function selectNum(event) {
+            var odoc_num_field = document.getElementById('doc_num_field');
+            odoc_num_field.value = event.target.doc_id;
+        }
+
+        function refillError(response, data) {
+            menu.destroy();
+            jAlert(response.errortype + ': ' + response.errormessage, headStr, null, 'icon_err');
+        }
+
+        function refillSuccess(response, data) {
+            try {
+                if (response.response == 'success') {
+                    jAlert('Таблица загружена', "Выполнено", {});
+                    menu.destroy();
+                    poslist.refresh();
+                }
+                else {
+                    jAlert("Обработка полученного сообщения не реализована<br>" + response, headStr, {}, 'icon_err');
+                    menu.destroy();
+                }
+            }
+            catch (e) {
+                jAlert("Критическая ошибка!<br>Если ошибка повторится, уведомите администратора о том, при каких обстоятельствах возникла ошибка!" +
+                    "<br><br><i>Информация об ошибке</i>:<br>" + e.name + ": " + e.message + "<br>" + response, headStr, {}, 'icon_err');
+                menu.destroy();
+            }
+        }
         return false;
     }
     

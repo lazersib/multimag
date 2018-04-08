@@ -381,3 +381,40 @@ function getListProxy() {
     window.addEventListener('storage', onStorage);
     return mmListProxy;
 }
+
+function createModalLayer(headerHtml, dataHtml) {
+    var coverDiv = document.createElement('div');
+    coverDiv.id = 'cover-div';
+    document.body.appendChild(coverDiv);
+    coverDiv.style.opacity = 1;
+    
+    var dialogContainer = document.createElement('div');
+    dialogContainer.id = 'dialog-container';
+    document.body.appendChild(dialogContainer);
+    
+    var cont2 = document.createElement('div');
+    cont2.id = 'dialog-form';
+    dialogContainer.appendChild(cont2);
+    
+    var header = document.createElement('div');
+    header.id = 'dialog-header';
+    cont2.appendChild(header);
+    header.innerHTML = headerHtml;
+    
+    var mLayer = document.createElement('div');
+    mLayer.id = 'dialog-body';
+    cont2.appendChild(mLayer);
+    mLayer.innerHTML = dataHtml; 
+
+    
+    mLayer.destroy = function() {
+        if(dialogContainer) {
+            dialogContainer.parentNode.removeChild(dialogContainer);
+        }
+        if(coverDiv) {
+            coverDiv.parentNode.removeChild(coverDiv);
+        }
+    }    
+    //alert('ok');
+    return mLayer;
+}

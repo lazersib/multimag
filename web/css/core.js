@@ -141,10 +141,12 @@ function CreateContextMenu(e)
         };
         
         menu.destroy = function() {
-            if(menu.waitHideTimer) {
-                window.clearTimeout(menu.waitHideTimer);
+            if(menu) {
+                if(menu.waitHideTimer) {
+                    window.clearTimeout(menu.waitHideTimer);
+                }
+                menu.parentNode.removeChild(menu);
             }
-            menu.parentNode.removeChild(menu);
         }
 
 	function ContextMenuOut() {

@@ -676,34 +676,35 @@ class doc_Nulltype extends \document {
             $this->DopHead();
 
         $this->DrawLHeadformEnd();
-
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
-		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`id`='{$this->doc_data['p_doc']}'");
-        if ($nxt = $res->fetch_row()) {
-            if ($nxt[5])
-                $r = 'Проведённый';
-            else
-                $r = 'Непроведённый';
-            $dt = date("d.m.Y H:i:s", $nxt[4]);
-            $tmpl->addContent("<b>Относится к:</b><br>$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt");
+        
+        
+        if($info = $this->getParentInfo()) {
+            $str = "<b>Относится к:</b><br>";
+            if($info['ok']) {
+                $str.='Проведённый';
+            }
+            else {
+                $str.='Непроведённый';
+            }
+            $str .= " <a href='?mode=body&amp;doc={$info['id']}'>{$info['viewname']} N{$info['altnum']}{$info['subtype']}</a> от {$info['date']}";
+            $tmpl->addContent($str);
         }
 
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_types`.`name`, `doc_list`.`altnum`, `doc_list`.`subtype`, `doc_list`.`date`, `doc_list`.`ok` FROM `doc_list`
-		LEFT JOIN `doc_types` ON `doc_types`.`id`=`doc_list`.`type`
-		WHERE `doc_list`.`p_doc`='{$this->id}'");
-        $pod = '';
-        while ($nxt = $res->fetch_row()) {
-            if ($nxt[5])
-                $r = 'Проведённый';
-            else
-                $r = 'Непроведённый';
-            $dt = date("d.m.Y H:i:s", $nxt[4]);
-            //if($pod!='')	$pod.=', ';
-            $pod.="$r <a href='?mode=body&amp;doc=$nxt[0]'>$nxt[1] N$nxt[2]$nxt[3]</a>, от $dt<br>";
+        $infol = $this->getSubordinatesInfo();
+        if($infol && count($infol)>0) {
+            $tmpl->addContent("<br><b>Зависящие документы:</b><br>");
+            foreach($infol as $info) {
+                if($info['ok']) {
+                    $str='Проведённый';
+                }
+                else {
+                    $str='Непроведённый';
+                }
+                $str .= " <a href='?mode=body&amp;doc={$info['id']}'>{$info['viewname']} N{$info['altnum']}{$info['subtype']}</a> от {$info['date']}<br>";
+                $tmpl->addContent($str); 
+            }
         }
-        if ($pod)
-            $tmpl->addContent("<br><b>Зависящие документы:</b><br>$pod");
+            
         $tmpl->addContent("<br><b>Дата создания:</b>: {$this->doc_data['created']}<br>");
         if ($this->doc_data['ok']) {
             $tmpl->addContent("<b>Дата проведения:</b> " . date("Y-m-d H:i:s", $this->doc_data['ok']) . "<br>");
@@ -1417,9 +1418,6 @@ class doc_Nulltype extends \document {
         if ($this->sklad_editor_enable) {
             include_once('doc.poseditor.php');
             $poseditor = new DocPosEditor($this);
-            $poseditor->cost_id = @$this->dop_data['cena'];
-            $poseditor->sklad_id = $this->doc_data['sklad'];
-            $poseditor->SetEditable($this->doc_data['ok'] ? 0 : 1);
             $poseditor->setAllowNegativeCounts($this->allow_neg_cnt);
         }
 

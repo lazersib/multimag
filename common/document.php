@@ -80,65 +80,80 @@ class document {
             LEFT JOIN `doc_agent` AS `b` ON `a`.`agent`=`b`.`id`";
     }
     
-    /// Получить имя класса документа по его типу
+    /// Получить имя класса документа по его номеру типа
     static function getClassNameFromType($type) {
+        return self::getClassNameFromName(self::getNameFromType($type));
+    }
+    
+    static public function getNameFromType($type) {
         switch($type)	{
             case 1: 
-                return "doc_Postuplenie";
+                return "postuplenie";
             case 2: 
-                return "doc_Realizaciya";
+                return "realizaciya";
             case 3:
-                return "doc_Zayavka";
+                return "zayavka";
             case 4:
-                return "doc_PBank";
+                return "pbank";
             case 5:
-                return "doc_RBank";
+                return "rbank";
             case 6:
-                return "doc_Pko";
+                return "pko";
             case 7:
-                return "doc_Rko";
+                return "rko";
             case 8:
-                return "doc_Peremeshenie";
+                return "peremeshenie";
             case 9:
-                return "doc_PerKas";
+                return "perkas";
             case 10:
-                return "doc_Doveren";
+                return "doveren";
             case 11:
-                return "doc_Predlojenie";
+                return "predlojenie";
             case 12:
-                return "doc_v_puti";
+                return "v_puti";
             case 13:
-                return "doc_Kompredl";
+                return "kompredl";
             case 14:
-                return "doc_Dogovor";
+                return "dogovor";
             case 15:
-                return "doc_Realiz_op";
+                return "realiz_op";
             case 16:
-                return "doc_Specific";
+                return "specific";
             case 17:
-                return "doc_Sborka";
+                return "sborka";
             case 18:
-                return "doc_Kordolga";
+                return "kordolga";
             case 19:
-                return "doc_Korbonus";
+                return "korbonus";
             case 20:
-                return "doc_Realiz_bonus";
+                return "realiz_bonus";
             case 21:
-                return "doc_ZSbor";
+                return "zsbor";
             case 22:
-                return "doc_Pko_oper";
+                return "pko_oper";
             case 23:
-                return "doc_PermitOut";
+                return "permitout";
             case 24:
-                return "doc_payinfo";
+                return "payinfo";
             case 25:
-                return "doc_corract";
+                return "corract";
             default:
                 return null;
         }
     }
     
-    /// Получить спискок типов документов
+    /// Получить имя класса документа по его имени
+    static function getClassNameFromName($doc_name) {
+        return '\doc_'.$doc_name;
+    }
+    
+    static public function getViewNameFromName($doc_name) {
+        $classname = self::getClassNameFromName($doc_name);
+        $doc = new $classname;
+        return $doc->viewname;
+    }
+
+        /// Получить спискок типов документов
     static function getListTypes() {
         $list = array();
         for($i=1;$i<50;$i++) {
@@ -331,6 +346,7 @@ class document {
             $this->writeLogArray("UPDATE", $log_data);
         }
         $this->dop_data[$name] = $value;
+        return true;
     }
     
     /// Установить дополнительные данные текущего документа
@@ -380,6 +396,7 @@ class document {
             $this->writeLogArray("UPDATE", $log_data);
         }
         $this->text_data[$name] = $value;
+        return true;
     }
     
     /** 
@@ -400,7 +417,7 @@ class document {
         }
         $tim = time();
         $db->update('doc_list', $this->id, 'mark_del', $tim);
-        doc_log("MARKDELETE", '', "doc", $this->id);
+        $this->writeLogArray("MARKDELETE", []);
         return $tim;
     }
     
@@ -410,7 +427,7 @@ class document {
             return false;
         }
         $db->update('doc_list', $this->id, 'mark_del', 0);
-        doc_log("UNMARKDELETE", '', "doc", $this->id);
+        $this->writeLogArray("UNMARKDELETE", []);
         return true;
     }
     
@@ -431,6 +448,7 @@ class document {
             }
         }
         $this->setDocData('p_doc', $p_doc);
+        return true;
     }
     
     /// Получить все текстовые параметры документа в виде ассоциативного массива
@@ -462,5 +480,91 @@ class document {
             throw new \Exception("Метод морфинга не определён.");
         }        
         return $this->$method($target);
+    }
+    
+    /** Получить краткую информацию о родительском документе
+     * 
+     * @return array Информация о родительском бокументе или null 
+     */
+    public function getParentInfo() {
+        global $db;
+        if(!$this->id || !$this->doc_data['p_doc']) {
+            return null;
+        }
+        $p_doc = intval($this->doc_data['p_doc']);
+        $res = $db->query("SELECT `id`, `type`, `altnum`, `subtype`, `date`, `ok`
+            FROM `doc_list`
+            WHERE `doc_list`.`id`='$p_doc'");
+        $line = $res->fetch_assoc();
+        if(!$line) {
+            return null;
+        }
+        $line['typename'] = self::getNameFromType($line['type']);
+        $line['viewname'] = self::getViewNameFromName($line['typename']);
+        unset($line['type']);
+        $line['date'] = date("d.m.Y H:i:s", $line['date']);
+        return $line;            
+    }
+    
+    /** Получить краткую информацию о подчинённых документах
+     * 
+     * @global type $db
+     * @return type
+     */
+    public function getSubordinatesInfo() {
+        global $db;
+        if(!$this->id) {
+            return null;
+        }
+        $ret = array();
+        $res = $db->query("SELECT `id`, `type`, `altnum`, `subtype`, `date`, `ok` FROM `doc_list`
+            WHERE `doc_list`.`p_doc`='{$this->id}'");
+        $pod = '';
+        while ($line = $res->fetch_assoc()) {
+            $line['typename'] = self::getNameFromType($line['type']);
+            $line['viewname'] = self::getViewNameFromName($line['typename']);
+            unset($line['type']);
+            $line['date'] = date("d.m.Y H:i:s", $line['date']);
+            $ret[] = $line;
+        }
+        return $ret;
+    }
+    
+    /// Слияние или перезапись табличной части двух документов
+    public function refillPosList($from_doc_id, $preclear = 0, $no_sum = 0) {
+        global $db;
+        if (!$this->sklad_editor_enable) {
+            throw new \Exception('Номенклатурная таблица в этом документе отсутствует!');
+        }
+
+        include_once(\cfg::get('site', 'location') . "/include/doc.poseditor.php");
+        $poseditor = new \DocPosEditor($this);
+        $poseditor->setAllowNegativeCounts($this->allow_neg_cnt);            
+
+        if ($from_doc_id == 0) {
+            throw new \Exception("Документ с данными не задан");
+        }
+        $db->startTransaction();
+
+        $res = $db->query("SELECT `id` FROM `doc_list` WHERE `id`=$from_doc_id");
+        if (!$res->num_rows) {
+            throw new \Exception("Документ с данными не найден");
+        }
+        if ($preclear) {
+            $db->query("DELETE FROM `doc_list_pos` WHERE `doc`='{$this->id}'");
+        }
+        $res = $db->query("SELECT `doc`, `tovar`, SUM(`cnt`) AS `cnt`, `gtd`, `comm`, `cost`, `page` FROM `doc_list_pos`"
+            . "WHERE `doc`=$from_doc_id AND `page`=0 GROUP BY `tovar`");
+        while ($line = $res->fetch_assoc()) {
+            if (!$no_sum) {
+                $poseditor->simpleIncrementPos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
+            } else {
+                $poseditor->simpleRewritePos($line['tovar'], $line['cost'], $line['cnt'], $line['comm']);
+            }
+        }
+        $this->writeLogArray("REWRITE", []);
+        $db->commit();
+
+        return true;
     }
 }

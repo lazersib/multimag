@@ -62,6 +62,14 @@ class document {
             'id' => $doc_id,
             'header' => $document->getDocumentHeader(),
             ];
+        $info = $document->getParentInfo();
+        if($info) {
+            $ret['parent_info'] = $info;
+        }
+        $info = $document->getSubordinatesInfo();
+        if($info) {
+            $ret['sub_info'] = $info;
+        }
         if ($document->isSkladEditorEnable()) {
             include_once('include/doc.poseditor.php');
             $poseditor = new \DocPosEditor($document);
@@ -317,6 +325,28 @@ class document {
         $db->commit();
         return ['id'=>$doc_id, 'newdoc_id'=>$new_id];
     }
+    
+    /// Слияние или перезапись табличной части двух документов
+    protected function refillPosList($data) {
+        $doc_id = $this->extractDocumentId($data);
+        if(!isset($data['from_doc_id'])) {
+            throw new \InvalidArgumentException('документ-источник не задан');
+        }
+        $from_doc_id = $data['from_doc_id'];
+        $preclear = $no_sum = 0;
+        if(isset($data['preclear'])) {
+            $preclear = $data['preclear'];
+        }
+        if(isset($data['no_sum'])) {
+            $no_sum = $data['no_sum'];
+        }
+        $document = \document::getInstanceFromDb($doc_id);
+        $doc_firm_id = $document->getDocData('firm_id');
+        \acl::accessGuard('doc.' . $document->getTypeName(), \acl::UPDATE);
+        \acl::accessGuard([ 'firm.global', 'firm.' . $doc_firm_id], \acl::UPDATE);
+        $result = $document->refillPosList($from_doc_id, $preclear, $no_sum);
+        return ['id'=>$doc_id, 'result'=>$result];
+    }
 
     public function dispatch($action, $data=null) {
         switch($action) {
@@ -347,6 +377,8 @@ class document {
                 return $this->getMorphList($data);
             case 'morph':
                 return $this->morph($data);
+            case 'refillposlist':
+                return $this->refillPosList($data);
             default:
                 throw new \NotFoundException('Некорректное действие');
         }
