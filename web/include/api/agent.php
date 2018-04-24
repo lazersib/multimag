@@ -51,6 +51,18 @@ class agent {
         $agent_id = $agent->create($data);
         return ['id'=>$agent_id, 'data'=>$agent->getData()];
     }
+    
+    protected function shortlist() {
+        global $db;
+        $agent_list = array();
+        $res = $db->query("SELECT `id`, `name`, `inn`
+            FROM `doc_agent`
+            ORDER BY `id`");
+        while ($line = $res->fetch_assoc()) {
+            $agent_list[$line['id']] = $line;
+        }
+        return $agent_list;
+    }
 
     public function dispatch($action, $data=null) {
         switch($action) {
@@ -58,6 +70,8 @@ class agent {
                 return $this->get($data);
             case 'create':
                 return $this->create($data);
+            case 'shortlist':
+                return $this->shortlist();
             case 'listnames':
                 \acl::accessGuard('directory.agent', \acl::VIEW);
                 $ldo = new \Models\LDO\agentnames();

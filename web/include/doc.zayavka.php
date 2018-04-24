@@ -39,41 +39,14 @@ class doc_Zayavka extends doc_Nulltype {
         return $this->ext_controls = array(
             'ishop' => [
                 'type' => 'label_flag',
-                'label' => 'Интернет-заявка',
+                'label' => 'Заявка интернет-магазина',
             ],
-            'buyer_rname' => [
-                'type' => 'text',
-                'maxlength' => 32,                
-                'label' => 'ФИО покупателя',
+            'buyer_info' => [
+                'type' => 'buyer_info',
             ],
-            'buyer_phone' => [
-                'type' => 'text',
-                'maxlength' => 16, 
-                'label' => 'Телефон для sms, прикреплённый к заявке',
-            ],
-            'buyer_email' => [
-                'type' => 'text',
-                'maxlength' => 32,                
-                'label' => 'e-mail, прикреплённый к заявке',
-            ],
-            'delivery' => [
-                'type' => 'checkbox',              
-                'label' => 'Требуется доставка',
-            ],
-            'delivery_address' => [
-                'type' => 'text',
-                'maxlength' => 64,                
-                'label' => 'Адрес доставки',
-            ],
-            'delivery_region' => [
-                'type' => 'select',               
-                'label' => 'Регион доставки',
-                'data_source' => 'regions',
-            ],            
-            'buyer_ip' => [
-                'type' => 'label',           
-                'label' => 'IP адрес покупателя',
-            ],
+            'delivery_info' => [
+                'type' => 'delivery_info',
+            ],         
             'pay_type' => [
                 'type' => 'select',               
                 'label' => 'Способ оплаты',

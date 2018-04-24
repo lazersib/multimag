@@ -1696,6 +1696,11 @@ class doc_Nulltype extends \document {
                     break;
             }
         }
+        foreach($this->def_dop_data as $name => $value) {
+            if (isset($data[$name])) {
+                $dop_data[$name] = $data[$name];
+            }
+        }
         $extcontrols = $this->getExtControls();
         foreach ($extcontrols as $ex_name => $ex_data) {
             switch($ex_data['type']) {
@@ -1713,8 +1718,6 @@ class doc_Nulltype extends \document {
                     break;
             }
         }
-        //if (method_exists($this, 'DopHead'))
-        //    $this->DopHead();
         if(count($doc_data)>0) {
             $this->setDocDataA($doc_data);
         }

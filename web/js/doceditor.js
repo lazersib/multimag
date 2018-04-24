@@ -10,7 +10,7 @@ function doceditor(doc_container_id, menu_container_id) {
     doc.element_classname = 'item';
     doc.label_classname = 'label';
     doc.input_id_prefix = 'dochead_';
-    listproxy.prefetch(['agent.listnames', 'firm.listnames', 'mybank.shortlist', 'store.shortlist', 'price.listnames']);
+    listproxy.prefetch(['agent.shortlist', 'firm.listnames', 'mybank.shortlist', 'store.shortlist', 'price.listnames', 'deliverytype.listnames', 'deliveryregion.getlist', 'deliveryregion.listnames']);
     
     function clearHighlight() {
         left_block.style.backgroundColor = '';
@@ -21,15 +21,20 @@ function doceditor(doc_container_id, menu_container_id) {
             if(response.object=='document' && response.action=='cancel') {
                 jAlert(response.errormessage+"<br><br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\""+
                     ">попросить руководителя</a> выполнить отмену этого документа.", "Не достаточно привилегий!", null, 'icon_err');
+                doc.updateMainMenu();
             }
             else {
                 alert(response.errormessage);
+                doc.updateMainMenu();
             }
+        }
+        else if(response.errortype=='InvalidArgumentException') {
+            jAlert("Ошибка:\n"+response.errortype+"\nСообщение:"+response.errormessage);
         }
         else {
             alert("Общая ошибка:\n"+response.errortype+"\nСообщение:"+response.errormessage);
-        }
-        doc.updateMainMenu();
+            doc.updateMainMenu();
+        }        
     }
         
     function onLoadSuccess(response) {
@@ -204,17 +209,103 @@ function doceditor(doc_container_id, menu_container_id) {
             onChangeHeaderField();
         }
         var ac_agent = autoCompleteField('dochead_agent_name', [], agSelectItem);
+        ac_agent.buildList = function () {
+            var substr = ac_agent.value.toLowerCase();
+            var limit = ac_agent.max_limit;
+            ac_agent.ac_list.innerHTML = '';
+            var s = '';
+            var subs_len = substr.length;
+            if (substr == '') {
+                ac_agent.old_seeked = new Array;
+                for (var i in ac_agent.list_data) {
+                    var line = ac_agent.list_data[i];
+                    s += "<li value='" + i + "'>" + line.name + "</li>";
+                    ac_agent.old_seeked[i] = line;
+                    limit--;
+                    if(limit==0) {
+                        break;
+                    }
+                }
+                ac_agent.old_value = '';
+                ac_agent.ac_list.innerHTML = s;                
+            }
+            else if (ac_agent.old_value != '' && substr.indexOf(ac_agent.old_value) == 0) {
+                var cp = new Array;                
+                for (var i in ac_agent.old_seeked) {
+                    var line = ac_agent.old_seeked[i];
+                    var name_pos = line.name.toLowerCase().indexOf(substr);
+                    var inn_pos = line.inn.indexOf(substr);
+                    if (name_pos === -1 &&  inn_pos === -1) {
+                        continue;
+                    }                    
+                    var name = line.name;
+                    if(name_pos !== -1) {
+                        name = ac_agent.hlSubstrIndex(line.name, name_pos, subs_len); 
+                    }
+                    var li_inner = name;
+                    if(inn_pos !== -1) {
+                        var inn = ac_agent.hlSubstrIndex(line.inn, inn_pos, subs_len);
+                        li_inner =  name + "<div class='info'>ИНН: " + inn + "</div>";
+                    }
+                    var li = newElement('li', ac_agent.ac_list, '', li_inner);
+                    li.value = i;
+                    li.dataValue = line.name;
+                    cp[i] = line;                    
+                }
+                ac_agent.old_seeked = cp;
+                ac_agent.old_value = substr;
+            }
+            else {
+                ac_agent.old_seeked = new Array;
+                for (var i in ac_agent.list_data) {
+                    var line = ac_agent.list_data[i];
+                    var name_pos = line.name.toLowerCase().indexOf(substr);
+                    var inn_pos = line.inn.indexOf(substr);
+                    if (name_pos === -1 &&  inn_pos === -1) {
+                        continue;
+                    } 
+                    var name = line.name;
+                    if(name_pos !== -1) {
+                        name = ac_agent.hlSubstrIndex(line.name, name_pos, subs_len); 
+                    }
+                    var li_inner = name;
+                    if(inn_pos !== -1) {
+                        var inn = ac_agent.hlSubstrIndex(line.inn, inn_pos, subs_len);
+                        li_inner = name + "<div class='info'>ИНН: " + inn + "</div>";
+                    }
+                    var li = newElement('li', ac_agent.ac_list, '', li_inner);
+                    li.value = i;
+                    li.dataValue = line.name;
+                    ac_agent.old_seeked[i] = line;
+                    limit--;
+                    if(limit==0) {
+                        break;
+                    }
+                }
+                
+                ac_agent.old_value = substr;
+            }
+            if(limit==0) {
+                var li = newElement('li', ac_agent.ac_list, '', '-отобразить ещё--');
+            }
+            ac_agent.old_hl = ac_agent.ac_list.firstChild;
+            if (ac_agent.old_hl)
+                ac_agent.old_hl.className = 'cac_over';
+            ac_agent.ac_result.scrollTop = 0;
+        }
+        
+        
         function onNewData(key, data) {
             ac_agent.updateData(data);
         }      
-        listproxy.bind('agent.listnames', onNewData);       
+        listproxy.bind('agent.shortlist', onNewData);       
         
         doc.i_agent_id = document.getElementById('dochead_agent_id'); 
         doc.i_agent_id.value = doc.header.agent_id;
         doc.i_agent_name = document.getElementById('dochead_agent_name'); 
         doc.i_agent_name.value = doc.header.agent_info.name;
         doc.l_agent_balance_info = document.getElementById('agent_balance_info'); 
-        doc.l_agent_balance_info.innerHTML = doc.header.agent_info.balance + "р. / "+doc.header.agent_info.bonus +"б.";
+        doc.l_agent_balance_info.innerHTML = doc.header.agent_info.balance + "р. / "+doc.header.agent_info.bonus +"р.";
         doc.l_dochead_dishonest_info = document.getElementById('dochead_dishonest_info'); 
         if(doc.header.agent_info.dishonest!="0") {
             doc.l_dochead_dishonest_info.style.display = "block";
@@ -232,9 +323,6 @@ function doceditor(doc_container_id, menu_container_id) {
         var fstruct = formToArray();
         delete fstruct['agent_name'];
         mm_api.document.update(fstruct,onLoadSuccess, onLoadError);
-        
-        //var data = $('#doc_head_form').serialize();        
-        //httpReq('/api.php', 'POST', data, onLoadSuccess, onLoadError);
     }
     
     function onUpdateFirmId() {
@@ -280,6 +368,102 @@ function doceditor(doc_container_id, menu_container_id) {
         return obj;
     }
     
+    function showBuyerEditor(event) {
+        
+    }
+    
+    function showDeliveryEditor(event) {
+        var headStr = "Доставка";
+        var dialogStr = 
+            "<table width='100%'><tr><td>Вид доставки:<br><select id='de_delivery_id'></select></td>" +
+            "<td>Дата доставки:<br><input type='text' id='de_date'></td>" +
+            "<td>Регион доставки:<br><select id='de_delivery_region'></select></td></tr>" +
+            "<tr><td colspan=3>Адрес доставки:<br><textarea id='de_delivery_address' style='width:95%'><option>Ggg</textarea></td></tr>" +
+            "<tr><td><button id='bcancel'>Отменить</button></td><td></td>" +
+            "<td style='text-align:right'><button id='bok'>Выполнить</button></td></table>";
+        
+        var menu = createModalLayer(headStr, dialogStr);
+        var s_dtype = document.getElementById('de_delivery_id');
+        var s_dregion = document.getElementById('de_delivery_region');
+        var i_ddate = document.getElementById('de_date');
+        var i_daddress = document.getElementById('de_delivery_address');
+        
+        var bok = document.getElementById('bok');
+        var bcancel = document.getElementById('bcancel');
+         
+        var regions = null;
+        var selected_region = doc.header.delivery_region;
+        i_ddate.value = doc.header.delivery_date;
+        i_daddress.value = doc.header.delivery_address;
+        
+        bcancel.onclick = function() {
+            menu.destroy();
+        }
+        
+        function onDeliveryLoadSuccess(response) {
+            doc.data = response.content;
+            doc.fillHeader(response.content.header);
+            doc.updateMainMenu();
+        }
+        
+        bok.onclick = function() {
+            var fstruct = {
+                id: doc.id,
+                delivery: s_dtype.value,
+                delivery_region: s_dregion.value,
+                delivery_date: i_ddate.value,
+                delivery_address: i_daddress.value,
+            };
+            mm_api.document.update(fstruct, onDeliveryLoadSuccess, onLoadError);
+            menu.destroy();
+        }
+        function refillDR(data) {            
+            var selected = false;
+            s_dregion.innerHTML = '';    
+            var i;
+            var type = s_dtype.value;
+            for(i in data) {
+                var line = data[i];
+                if(line.delivery_type>0 && line.delivery_type!=type) {
+                    continue;
+                }
+                var opt = newElement('option', s_dregion, '', line.name);
+                opt.value = line.id;
+                if(line.id==selected_region) {
+                    opt.selected = true;
+                    selected = true;
+                }
+            }
+            if( (!selected_region) || (!selected)) {            
+                var opt = newElement('option', s_dregion, '', '--не задано--');
+                opt.value='null';
+                opt.selected=true;
+                opt.className="error";
+                s_dregion.className="error";
+            }
+        }
+        function onChangeR(event)  {
+            if(s_dregion.value!=0 && s_dregion.value!=null) {
+                s_dregion.className="";
+                selected_region = s_dregion.value;
+                refillDR(regions);
+            }
+        }
+        function onNewDTData(key, data) {
+            updateOptionsArray(s_dtype, data, doc.header.delivery, true);
+        }     
+        function onNewDRData(key, data) {
+            regions = data;
+            refillDR(data);
+        } 
+        function onChangeD(event) {
+            refillDR(regions);
+        }
+        listproxy.bind('deliverytype.listnames', onNewDTData);
+        listproxy.bind('deliveryregion.getlist', onNewDRData);
+        s_dtype.onchange = onChangeD;
+        s_dregion.onchange = onChangeR;
+    }
        
     doc.init = function(doc_id) {
         doc.id = doc_id;
@@ -354,6 +538,8 @@ function doceditor(doc_container_id, menu_container_id) {
     function initExtFields(data) {
         var ext_fields = data.ext_fields;
         var i;
+        var dtypes = listproxy.get('deliverytype.listnames');
+        var dregions = listproxy.get('deliveryregion.listnames');
         for(i in ext_fields) { 
             var field = ext_fields[i];
             switch(field.type) {
@@ -362,6 +548,66 @@ function doceditor(doc_container_id, menu_container_id) {
                     doc.head_form.appendChild(element);
                     element.input.onchange = onChangeHeaderField;
                     doc['i_'.i] = element.input;
+                    break;
+                case 'label':
+                    if(data[i]) {
+                        newElement('div', doc.head_form, 'item label', "<div class='name'>" + field.label + "</div>" + data[i]);
+                    }
+                break;
+                case 'label_flag':
+                    if(data[i]) {
+                        newElement('div', doc.head_form, 'item label_flag', field.label);
+                    }
+                    break;
+                case 'buyer_info':
+                    var text = '';
+                    if(data.buyer_rname != undefined && data.buyer_rname.length>0) {
+                        text = text + "<div class='infoline'><div class='name'>Покупатель:</div> "+data.buyer_rname+"</div><div class='clear'></div>";
+                    }
+                    if(data.buyer_phone != undefined && data.buyer_phone.length>0) {
+                        text = text + "<div class='infoline'><div class='name'>Телефон:</div> "+data.buyer_phone+"</div><div class='clear'></div>";
+                    }
+                    if(data.buyer_email != undefined && data.buyer_email.length>0) {
+                        text = text + "<div class='infoline'><div class='name'>Email:</div> "+data.buyer_email+"</div><div class='clear'></div>";
+                    }
+                    if(data.buyer_ip != undefined && data.buyer_ip.length>0) {
+                        text = text + "<div class='infoline'><div class='name'>IP:</div> "+data.buyer_ip+"</div><div class='clear'></div>";
+                    }
+                    if(text!='') {
+                        var element = newElement('div', doc.head_form, 'item infoblock', text);
+                        element.onclick = showBuyerEditor;
+                    }
+                    break;
+                case 'delivery_info':
+                    var text = '';    
+                    if(data.delivery == undefined || data.delivery == 0 || data.delivery == null ) {
+                        text = text + "<div class='infoline'><div class='name'>Доставка:</div> Не требуется</div><div class='clear'></div>";
+                    }
+                    else {
+                        text = text + "<div class='infoline'><div class='name'>Требуется доставка:</div></div><div class='clear'></div>";
+                        var type = data.delivery;
+                        if(dtypes != undefined && dtypes[type]!=undefined) {
+                            type = dtypes[type];
+                        }
+                        text = text + "<div class='infoline'><div class='name'>Вид:</div> " + type + "</div><div class='clear'></div>";
+                        
+                        if(data.delivery_region != undefined && data.delivery_region.length>0) {
+                            var region = data.delivery_region;
+                            if(dregions != undefined && dregions[region]!=undefined) {
+                                region = dregions[region];
+                            }
+                            text = text + "<div class='infoline'><div class='name'>Регион:</div> " + region + "</div><div class='clear'></div>";
+                        }
+                        if(data.delivery_date != undefined && data.delivery_date.length>0) {
+                            text = text + "<div class='infoline'><div class='name'>Дата:</div> " + data.delivery_date + "</div><div class='clear'></div>";
+                        }
+                        if(data.delivery_address != undefined && data.delivery_address.length>0) {
+                            text = text + "<div class='infoline'><div class='name'>Адрес:</div> " + data.delivery_address + "</div><div class='clear'></div>";
+                        }
+                    }                        
+                                        
+                    var element = newElement('div', doc.head_form, 'item infoblock', text);
+                    element.onclick = showDeliveryEditor;
                     break;
             }
         }
@@ -400,6 +646,7 @@ function doceditor(doc_container_id, menu_container_id) {
     
     doc.fillHeader = function(data) {
         var tmp;
+        left_block.innerHTML = '';
         doc.header = data;
         var template = "<h1 id='label_document_viewname'></h1>"
             + "<input type='hidden' name='id' id='dochead_doc_id' value=''>"

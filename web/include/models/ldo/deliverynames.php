@@ -19,12 +19,12 @@
 namespace Models\LDO;
 
 /// Класс списка наименований регионов доставки
-class regionnames extends \Models\ListDataObject {
-	
+class deliverynames extends \Models\ListDataObject {
+
     /// @brief Получить данные
     public function getData() {
         global $db;
-        $sql = "SELECT `id`, `name` FROM `delivery_regions`";
+        $sql = "SELECT `id`, `name` FROM `delivery_types`";
         $a = array();
         $res = $db->query($sql);
         while ($line = $res->fetch_assoc()) {

@@ -153,6 +153,14 @@ var mm_api = function () {
         mm_api.callApi('agent', 'create', data, ok_callback, err_callback);
     };
     
+    mm_api.agent.get = function(data, ok_callback, err_callback) {
+        mm_api.callApi('agent', 'get', data, ok_callback, err_callback);
+    };
+    
+    mm_api.agent.shortList = function(data, ok_callback, err_callback) {
+        mm_api.callApi('agent', 'shortlist', data, ok_callback, err_callback);
+    };
+    
     /// Document
     mm_api.document.get = function(data, ok_callback, err_callback) {
         mm_api.callApi('document', 'get', data, ok_callback, err_callback);

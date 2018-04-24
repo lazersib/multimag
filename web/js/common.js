@@ -17,7 +17,6 @@
 //
 
 function autoCompleteField(input_id, data, update_callback, ac_options) {
-    var old_hl = 0;
     var hidden = 1;
     if(!ac_options) {
         ac_options = new Object;
@@ -31,7 +30,9 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
 
     var ac_result = document.createElement('div');
     ac_input.parentNode.insertBefore(ac_result, ac_input.nextSibling);
-
+    
+    ac_input.max_limit = 100;
+    
     var ac_list = document.createElement('ul');
     hideList();
     ac_result.appendChild(ac_list);
@@ -39,53 +40,77 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
     ac_result.className = 'cac_results';
 
     var hide_timer = 0;
-    var old_value;
-    var old_seeked = new Array;
-
-    function buildList() {
+    
+    ac_input.old_seeked = new Array;    
+    ac_input.list_data = data;
+    ac_input.old_value = null;
+    ac_input.old_hl = 0;
+    
+    ac_input.buildList = function () {
         var substr = ac_input.value.toLowerCase();
         var s = '';
+        var limit = ac_input.max_limit;
         if (substr == '') {
-            old_seeked = new Array;
-            for (var i in data) {
-                s += "<li value='" + i + "'";
-                s += ">" + data[i] + "</li>";
-                old_seeked[i] = data[i];
+            ac_input.old_seeked = new Array;
+            for (var i in ac_input.list_data) {
+                s += "<li value='" + i + "'>" + ac_input.list_data[i] + "</li>";
+                ac_input.old_seeked[i] = ac_input.list_data[i];
+                limit--;
+                if(limit==0) {
+                    break;
+                }
             }
-            old_value = '';
+            ac_input.old_value = '';
         }
-        else if (old_value != '' && substr.indexOf(old_value) == 0) {
+        else if (ac_input.old_value != '' && substr.indexOf(ac_input.old_value) == 0) {
             var cp = new Array;
-            for (var i in old_seeked) {
-                if (old_seeked[i].toLowerCase().indexOf(substr) == -1)
+            var subs_len = substr.length;
+            for (var i in ac_input.old_seeked) {
+                var line = ac_input.old_seeked[i];
+                var name_pos = line.toLowerCase().indexOf(substr);
+                if (name_pos == -1)
                     continue;
-                s += "<li value='" + i + "'";
-                s += ">" + old_seeked[i] + "</li>";
-                cp[i] = old_seeked[i];
+                var name = ac_input.hlSubstrIndex(line, name_pos, subs_len);
+                s += "<li value='" + i + "'>" + name + "</li>";
+                cp[i] = ac_input.old_seeked[i];
             }
-            old_seeked = cp;
-            old_value = substr;
+            ac_input.old_seeked = cp;
+            ac_input.old_value = substr;
         }
         else {
-            old_seeked = new Array;
-            for (var i in data) {
-                if (data[i].toLowerCase().indexOf(substr) == -1)
+            ac_input.old_seeked = new Array;
+            var subs_len = substr.length;
+            for (var i in ac_input.list_data) {
+                var line = ac_input.list_data[i];
+                var name_pos = line.toLowerCase().indexOf(substr);
+                if (name_pos == -1)
                     continue;
-                s += "<li value='" + i + "'";
-                s += ">" + data[i] + "</li>";
-                old_seeked[i] = data[i];
+                var name = ac_input.hlSubstrIndex(line, name_pos, subs_len);
+                s += "<li value='" + i + "'>" + name + "</li>";
+                ac_input.old_seeked[i] = ac_input.list_data[i];
+                limit--;
+                if(limit==0) {
+                    break;
+                }
             }
-            old_value = substr;
+            ac_input.old_value = substr;
+        }
+        if(limit==0) {
+            s += "<li value='0'>--отобразить ещё--</li>";
         }
         ac_list.innerHTML = s;
-        old_hl = ac_list.firstChild;
-        if (old_hl)
-            old_hl.className = 'cac_over';
+        ac_input.old_hl = ac_list.firstChild;
+        if (ac_input.old_hl)
+            ac_input.old_hl.className = 'cac_over';
         ac_result.scrollTop = 0;
+    }
+    
+    ac_input.hlSubstrIndex = function(str, startIndex, len) {
+        return str.substr(0, startIndex) + '<span class="hl">' + str.substr(startIndex, len) + '</span>' + str.substring(startIndex+len);
     }
 
     function showList() {
-        buildList();
+        ac_input.buildList();
         ac_result.style.display = 'block';
         ac_clear.style.display = 'block';
         hidden = 0;
@@ -108,37 +133,49 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
         }
         else {
             if (event.keyCode == 40) {
-                if (!old_hl) {
-                    old_hl = ac_list.firstChild;
-                    old_hl.className = 'cac_over';
+                if (!ac_input.old_hl) {
+                    ac_input.old_hl = ac_list.firstChild;
+                    ac_input.old_hl.className = 'cac_over';
                 }
-                else if (old_hl.nextSibling) {
-                    old_hl.nextSibling.className = 'cac_over';
-                    old_hl.className = '';
-                    old_hl = old_hl.nextSibling;
+                else if (ac_input.old_hl.nextSibling) {
+                    ac_input.old_hl.nextSibling.className = 'cac_over';
+                    ac_input.old_hl.className = '';
+                    ac_input.old_hl = ac_input.old_hl.nextSibling;
                     ac_result.scrollTop += 18;
                 }
                 return;
             }
             else if (event.keyCode == 38) {
-                if (!old_hl) {
-                    old_hl = ac_list.lastChild;
-                    old_hl.className = 'cac_over';
+                if (!ac_input.old_hl) {
+                    ac_input.old_hl = ac_list.lastChild;
+                    ac_input.old_hl.className = 'cac_over';
                 }
-                else if (old_hl.previousSibling) {
-                    old_hl.previousSibling.className = 'cac_over';
-                    old_hl.className = '';
-                    old_hl = old_hl.previousSibling;
+                else if (ac_input.old_hl.previousSibling) {
+                    ac_input.old_hl.previousSibling.className = 'cac_over';
+                    ac_input.old_hl.className = '';
+                    ac_input.old_hl = ac_input.old_hl.previousSibling;
                     ac_result.scrollTop -= 18;
                 }
                 return;
             }
             else if (event.keyCode == 13) {
-                ac_input.value_id = old_hl.value;
-                ac_input.value = old_hl.innerHTML;
-                ac_input.blur();
-                hideList();
-                update_callback();
+                if(ac_input.old_hl.value) {
+                    ac_input.value_id = ac_input.old_hl.value;
+                    if(ac_input.old_hl.dataValue) {
+                        ac_input.value = ac_input.old_hl.dataValue;
+                    }
+                    else {
+                        ac_input.value = ac_input.old_hl.innerText;
+                    }
+                    ac_input.blur();
+                    hideList();
+                    if(update_callback) {
+                        update_callback();
+                    }
+                }
+                else {
+                    ac_input.max_limit *= 10; 
+                }
             }
             else if (event.keyCode == 27) {
                 ac_input.blur();
@@ -148,7 +185,7 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
 
         }
         //alert(event.keyCode);
-        buildList();
+        ac_input.buildList();
     };
 
     ac_input.onfocus = function (event) {
@@ -160,36 +197,56 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
     };
     
     ac_input.updateData = function(new_data) {
-        data = new_data;
+        ac_input.list_data = new_data;
         if(ac_result.style.display == 'block') {
-            buildList();
+            ac_input.buildList();
         }
     };
 
     // События списка
     ac_list.onmouseover = function (event) {
-        if (old_hl == event.target)
+        if (ac_input.old_hl == event.target)
             return;
         if (event.target.tagName == 'LI') {
-            if (old_hl)
-                old_hl.className = '';
-            old_hl = event.target;
-            old_hl.className = 'cac_over';
+            if (ac_input.old_hl)
+                ac_input.old_hl.className = '';
+            ac_input.old_hl = event.target;
+            ac_input.old_hl.className = 'cac_over';
         }
     };
 
     ac_list.onclick = function (event) {
         if (hide_timer)
             window.clearTimeout(hide_timer);
-        if (event.target.tagName != 'LI') {
-            ac_input.focus();
-            return;
+        var item = event.target;
+        if (item.tagName != 'LI') {
+            if(item.parentNode.tagName=='LI') {
+                item = item.parentNode;
+            }
+            else if(item.parentNode.parentNode.tagName=='LI') {
+                item = item.parentNode.parentNode;
+            }
+            else {
+                ac_input.focus();
+                return;
+            }
         }
-        var value = event.target.value;
-        ac_input.value_id = value;
-        ac_input.value = event.target.innerHTML;
-        hideList();
-        update_callback();
+        var value = item.value;
+        if(value) {
+            ac_input.value_id = value;
+            if(item.dataValue) {
+                ac_input.value = item.dataValue;
+            }
+            else {
+                ac_input.value = item.innerText;
+            }
+            hideList();
+            update_callback();
+        }
+        else {
+            ac_input.max_limit *= 10; 
+            ac_input.buildList();
+        }
     };
 
     // Скролл блока
@@ -209,10 +266,12 @@ function autoCompleteField(input_id, data, update_callback, ac_options) {
         update_callback();
     };
     
-    
+    ac_input.ac_result = ac_result;
+    ac_input.ac_clear = ac_clear;
+    ac_input.ac_list = ac_list;
+        
     return ac_input;
 }
- 
 
 function getCacheObject() {
     var mmCacheObject = new Object;
@@ -238,7 +297,7 @@ function getCacheObject() {
 
     mmCacheObject.set = function (name, object, ttl) {
         if (!ttl) {
-            ttl = 60000;	// miliseconds
+            ttl = 600000;	// miliseconds
         }
         else {
             ttl *= 1000;
@@ -294,12 +353,12 @@ function getListProxy() {
     var in_process = new Object;
     
     function onStorage(event) {
-        console.log("LS event:"+event.key);
+        //console.log("LS event:"+event.key);
         callbackCaller(event.key, event.newValue);
     }
     
     function callbackCaller(key, newValue) {
-        console.log("callback "+key);
+        //console.log("callback "+key);
         if(callbacks[key]!==undefined) {
             for(var i in callbacks[key]) {
                 callbacks[key][i](key, newValue);
@@ -323,11 +382,11 @@ function getListProxy() {
         }        
     }
     
-    function onError(status, data) {
+    function onError(json, data) {
         for(var i in data.query) {
             in_process[data.query[i]] = undefined;
         }
-        alert("ListProxy error "+status);        
+        alert("ListProxy error: "+json.errormessage);        
     }
     
     /// Prefetch data from server
@@ -347,7 +406,7 @@ function getListProxy() {
             mm_api.callApi('multiquery', 'run', data, onReceive, onError);
         }
     };
-    
+  
     mmListProxy.bind = function(object, update_callback) {
         if(update_callback!==undefined) {
             if(callbacks[object]===undefined) {
@@ -363,8 +422,12 @@ function getListProxy() {
         mmListProxy.refresh(object);
     };
     
+    mmListProxy.get = function(object) {
+        return cache.get(object);
+    };
+    
     mmListProxy.refresh  = function(object) {
-        if(in_process[object]==undefined) {
+        if(in_process[object]===undefined) {
             var s = object.split('.',2);
             mm_api.callApi(s[0], s[1], null, onReceive, onError);
         }
