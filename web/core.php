@@ -812,12 +812,5 @@ if(!isset($_REQUEST['ncnt']) && !isset($not_use_counter)) {
     $db->query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
 }
 
-$tmpl=new BETemplate;
+$tmpl = new BETemplate;
 testForeignSession();
-
-$dop_status=array('new'=>'Новый', 'err'=>'Ошибочный', 'inproc'=>'В процессе', 'ready'=>'Готов', 'ok'=>'Отгружен');
-if (is_array(@$CONFIG['doc']['status_list'])) {
-    $CONFIG['doc']['status_list'] = array_merge($dop_status, $CONFIG['doc']['status_list']);
-} else {
-    $CONFIG['doc']['status_list'] = $dop_status;
-}

@@ -106,7 +106,8 @@ if ($mode == 'z') {
 	<th>Доставка</th><th>Дата</th><th>С сайта</th><th>Автор</th></tr>");
 
     $new_lines = $inproc_lines = $other_lines = $ready_lines = '';
-
+    $ldo = new \Models\LDO\zstatuses();
+    $zstatus_list = $ldo->getData();
     while ($line = $res->fetch_assoc()) {
         if ($line['status'] == 'ok' || $line['status'] == 'err') {
             continue;
@@ -117,7 +118,7 @@ if ($mode == 'z') {
         if (!$line['status']) {
             $line['status'] = 'new';
         }
-        $status = @$CONFIG['doc']['status_list'][$line['status']];
+        $status = @$zstatus_list[$line['status']];
         if ($line['resp_name'] == 'anonymous') {
             $line['resp_name'] = '-';
         }

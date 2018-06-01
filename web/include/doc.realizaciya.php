@@ -63,6 +63,35 @@ class doc_Realizaciya extends doc_Nulltype {
         $this->get_docdata();
         return $this->id;
     }
+    
+    public function getExtControls() {
+        return $this->ext_controls = array(
+            'ishop' => [
+                'type' => 'label_flag',
+                'label' => 'Заявка интернет-магазина',
+            ],
+            'buyer_info' => [
+                'type' => 'buyer_info',
+            ],
+            'delivery_info' => [
+                'type' => 'delivery_info',
+            ],         
+            'pay_type' => [
+                'type' => 'select',               
+                'label' => 'Способ оплаты',
+                'data_source' => 'paytype.listnames',
+            ],
+            'status' => [
+                'type' => 'status',               
+                'label' => 'Статус',
+            ],
+            'worker_id' => [
+                'type' => 'select',               
+                'label' => 'Сотрудник',
+                'data_source' => 'worker.listnames',
+            ],
+        );
+    }
 
     function DopHead() {
         global $tmpl, $db;

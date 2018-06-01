@@ -10,7 +10,8 @@ function doceditor(doc_container_id, menu_container_id) {
     doc.element_classname = 'item';
     doc.label_classname = 'label';
     doc.input_id_prefix = 'dochead_';
-    listproxy.prefetch(['agent.shortlist', 'firm.listnames', 'mybank.shortlist', 'store.shortlist', 'price.listnames', 'deliverytype.listnames', 'deliveryregion.getlist', 'deliveryregion.listnames']);
+    listproxy.prefetch(['agent.shortlist', 'firm.listnames', 'mybank.shortlist', 'store.shortlist', 'price.listnames', 'deliverytype.listnames',
+        'deliveryregion.getlist', 'deliveryregion.listnames', 'worker.listnames']);
     
     function clearHighlight() {
         left_block.style.backgroundColor = '';
@@ -19,7 +20,7 @@ function doceditor(doc_container_id, menu_container_id) {
     function onLoadError(response, data) {
         if(response.errortype=='AccessException') {
             if(response.object=='document' && response.action=='cancel') {
-                jAlert(response.errormessage+"<br><br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '{$this->id}')\""+
+                jAlert(response.errormessage+"<br><br>Вы можете <a href='#' onclick=\"return petitionMenu(event, '"+doc.id+"')\""+
                     ">попросить руководителя</a> выполнить отмену этого документа.", "Не достаточно привилегий!", null, 'icon_err');
                 doc.updateMainMenu();
             }
@@ -46,11 +47,14 @@ function doceditor(doc_container_id, menu_container_id) {
                 doc.updateMainMenu();
             }
             else if(response.action=='update') {
-                left_block.style.backgroundColor = '#afa';
+                left_block.style.backgroundColor = '#cfc';
                 if (hltimer) {
                     window.clearTimeout(hltimer);
                 }
-                hltimer = window.setTimeout(clearHighlight, 400);
+                hltimer = window.setTimeout(clearHighlight, 500);
+                if(response.content.header) {
+                    doc.header = response.content.header;
+                }
             }
             else if(response.action=='apply' || response.action=='cancel' ) {
                 doc.header = response.content.header;
@@ -126,53 +130,76 @@ function doceditor(doc_container_id, menu_container_id) {
             }
         }
     }
-    function insertContractList(select_elem, data, selected_id, not_select_item) {
+    function updateContractList(select_elem, data, selected_id, not_select_item) {
         var i;
-        if(not_select_item) {
-            var opt = newElement('option', select_elem, '', '--не задано--');
-            opt.value='null';
-        }
+        select_elem.innerHTML = '';
+        var found = 0;
+        var selected = 0;
         for(i in data) { 
-            var str = data[i].name + " N:" + data[i].altnum + data[i].subtype + ", от " + data[i].date;
+            var str = "N:" + data[i].altnum + data[i].subtype + ", от " + data[i].date;
+            if(data[i].name!=null) {
+                str = data[i].name + " " + str;
+            }
             var opt = newElement('option', select_elem, '', str);
             opt.value = data[i].id;
             if(data[i].id==selected_id) {
                 opt.selected=true;
+                selected = 1;
             }
+            found = 1;
+        }        
+        if(not_select_item) {
+            var opt = newElement('option', select_elem, '', '--не задано--');
+            opt.value='null';
         }
     }
     
-    function initStoreSelect(store_list) {
+    function initStoreSelect() {
         var i;
         var firm_id = doc.i_firm_id.value;
         var select_elem = doc.i_store_id;
-        var selected = false;
-        select_elem.innerHTML = '';
+        var store_list;
         
-        for(i in store_list) {
-            var line = store_list[i];
-            if(line.firm_id>0 && line.firm_id!=firm_id) {
-                continue;
+        function refill() {
+            var selected = false;
+            select_elem.innerHTML = '';
+            for(i in store_list) {
+                var line = store_list[i];
+                if(line.firm_id>0 && line.firm_id!=firm_id) {
+                    console.log("lfi:"+line.firm_id+",fi:"+firm_id);
+                    continue;
+                }
+                var opt = newElement('option', select_elem, '', line.name);
+                opt.value = line.id;
+                if(line.id==doc.header.store_id) {
+                    opt.selected = true;
+                    selected = true;
+                }
             }
-            var opt = newElement('option', select_elem, '', line.name);
-            opt.value = line.id;
-            if(line.id==doc.header.store_id) {
-                opt.selected = true;
-                selected = true;
+            if( (!doc.header.store_id) || (!selected)) {            
+                var opt = newElement('option', select_elem, '', '--не задано--');
+                opt.value='null';
+                opt.selected=true;
             }
         }
-        if( (!doc.header.store_id) || (!selected)) {            
-            var opt = newElement('option', select_elem, '', '--не задано--');
-            opt.value='null';
-            opt.selected=true;
+        function onNewData(key, value) {
+            store_list = value;
+            refill();
+        }
+        if(select_elem.setbind == undefined) {
+            listproxy.bind('store.shortlist', onNewData);
+        }
+        else {
+            refill();
         }
     }
     
-    function initBankSelect() {        
-        function refill(bank_list) {
+    function initBankSelect() {   
+        var select_elem = doc.i_bank_id;
+        var bank_list;
+        function refill() {            
             var i;
-            var firm_id = doc.i_firm_id.value;
-            var select_elem = doc.i_bank_id;
+            var firm_id = doc.i_firm_id.value;            
             var selected = false;
             select_elem.innerHTML = '';        
             for(i in bank_list) {
@@ -195,10 +222,17 @@ function doceditor(doc_container_id, menu_container_id) {
                 select_elem.className="error";
             }
         }
-        function onNewData(key, data) {
-            refill(data);
-        }      
-        listproxy.bind('mybank.shortlist', onNewData); 
+        function onNewData(key, value) {
+            bank_list = value;
+            refill();
+        }
+        if(select_elem.setbind == undefined) {
+            listproxy.bind('mybank.shortlist', onNewData);
+        }
+        else {
+            refill();
+        }
+        
     }
     
     function initAgentField() {
@@ -315,11 +349,11 @@ function doceditor(doc_container_id, menu_container_id) {
         document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+doc.header.agent_id;
         document.getElementById('contract_edit_link').href='/test_doc.php?doc_id='+doc.header.contract_id;
         doc.i_contract_id = document.getElementById('dochead_contract_id'); 
-        insertContractList(doc.i_contract_id, doc.header.agent_info.contract_list, doc.header.contract_id, true);
+        updateContractList(doc.i_contract_id, doc.header.agent_info.contract_list, doc.header.contract_id, true);
     }
     
     function onChangeHeaderField() {
-        left_block.style.backgroundColor = '#ff8';
+        left_block.style.backgroundColor = '#ffc';
         var fstruct = formToArray();
         delete fstruct['agent_name'];
         mm_api.document.update(fstruct,onLoadSuccess, onLoadError);
@@ -369,7 +403,7 @@ function doceditor(doc_container_id, menu_container_id) {
     }
     
     function showBuyerEditor(event) {
-        
+        alert("В настоящее время эта информация не редактируется!");
     }
     
     function showDeliveryEditor(event) {
@@ -534,6 +568,24 @@ function doceditor(doc_container_id, menu_container_id) {
         inputElement.label = labelElement;
         return rootElement;
     }
+    
+    function newSelectElement(name, options) {
+        var rootElement = document.createElement('div');
+        rootElement.className = doc.element_classname;
+        var labelElement = document.createElement('div');
+        labelElement.className = doc.label_classname;
+        var label = document.createTextNode(options.label+':'); 
+        labelElement.appendChild(label);
+        rootElement.appendChild(labelElement); 
+        var selectElement = document.createElement('select');
+        selectElement.name = name;
+        selectElement.id = doc.input_id_prefix+name;
+        rootElement.appendChild(selectElement);        
+        doc.head_form.appendChild(rootElement);
+        rootElement.select = selectElement;
+        selectElement.label = labelElement;
+        return rootElement;
+    }
        
     function initExtFields(data) {
         var ext_fields = data.ext_fields;
@@ -543,6 +595,19 @@ function doceditor(doc_container_id, menu_container_id) {
         for(i in ext_fields) { 
             var field = ext_fields[i];
             switch(field.type) {
+                case 'select':
+                    var element = newSelectElement(i, field);
+                    var cb = function() {
+                        var e = element;
+                        var value = data[i];
+                        function refillSelect(key, info) {
+                            updateOptionsArray(e.select, info, value, true);
+                        };
+                        return refillSelect;
+                    }();
+                    listproxy.bind(field.data_source, cb);
+                    element.select.onchange = onChangeHeaderField;
+                    break;
                 case 'text':
                     var element = newTextElement(i, data[i], field);
                     doc.head_form.appendChild(element);
@@ -617,9 +682,6 @@ function doceditor(doc_container_id, menu_container_id) {
         switch(key) {
             case 'firm.listnames':
                 updateOptionsArray(doc.i_firm_id, data, doc.header.firm_id);
-                break;
-            case 'store.shortlist':
-                initStoreSelect(data);
                 break;
             case 'cash.shortlist':
                 var obj = document.getElementById('dochead_cash_id'); 
@@ -715,7 +777,7 @@ function doceditor(doc_container_id, menu_container_id) {
                 case 'sklad':
                     var tmp = newElement('div', doc.head_form, 'item', templates.store);
                     doc.i_store_id = document.getElementById('dochead_store_id'); 
-                    listproxy.bind('store.shortlist', onNewData); 
+                    initStoreSelect();
                     doc.i_store_id.onchange = onChangeHeaderField;
                     break;
                 case 'cash':

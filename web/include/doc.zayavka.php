@@ -50,7 +50,7 @@ class doc_Zayavka extends doc_Nulltype {
             'pay_type' => [
                 'type' => 'select',               
                 'label' => 'Способ оплаты',
-                'data_source' => 'paytypes',
+                'data_source' => 'paytype.listnames',
             ],
             'status' => [
                 'type' => 'status',               
@@ -59,7 +59,7 @@ class doc_Zayavka extends doc_Nulltype {
             'worker_id' => [
                 'type' => 'select',               
                 'label' => 'Сотрудник',
-                'data_source' => 'workers',
+                'data_source' => 'worker.listnames',
             ],
         );
     }
@@ -323,20 +323,13 @@ class doc_Zayavka extends doc_Nulltype {
         }
         if (@$this->dop_data['pay_type']) {
             $tmpl->addContent("<b>Способ оплаты: </b>");
-            switch ($this->dop_data['pay_type']) {
-                case 'bank': $tmpl->addContent("безналичный");
-                    break;
-                case 'cash': $tmpl->addContent("наличными");
-                    break;
-                case 'card': $tmpl->addContent("картой ?");
-                    break;
-                case 'card_o': $tmpl->addContent("картой на сайте");
-                    break;
-                case 'card_t': $tmpl->addContent("картой при получении");
-                    break;
-                case 'wmr': $tmpl->addContent("Webmoney WMR");
-                    break;
-                default: $tmpl->addContent("не определён ({$this->dop_data['pay_type']})");
+            $ldo = new \Models\LDO\paytypes();
+            $paytypes = $ldo->getData();
+            if(isset($paytypes[$this->dop_data['pay_type']])) {
+                $tmpl->addContent($paytypes[$this->dop_data['pay_type']]);
+            }
+            else {
+                $tmpl->addContent("не определён ({$this->dop_data['pay_type']})");
             }
             $tmpl->addContent("<br>");
         }
@@ -383,7 +376,9 @@ class doc_Zayavka extends doc_Nulltype {
         if (@$this->dop_data['status'] == '') {
             $tmpl->addContent("<option value=''>Не задан</option>");
         }
-        foreach ($CONFIG['doc']['status_list'] as $id => $name) {
+        $ldo = new \Models\LDO\zstatuses();
+        $status_list = $ldo->getData();
+        foreach ($status_list as $id => $name) {
             $s = (@$this->dop_data['status'] == $id) ? 'selected' : '';
             $tmpl->addContent("<option value='$id' $s>$name</option>");
         }

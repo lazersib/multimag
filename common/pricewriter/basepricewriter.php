@@ -29,6 +29,8 @@ class BasePriceWriter {
     protected $to_string = false;   ///< Сохранить в буфер, не отправлять в броузер
     protected $vendor_filter = '';  ///< Фильтр по производителю
     protected $count_filter = '';   ///< Фильтр по наличию
+    protected $show_vc = false; ///< Колонока с наименованием производителя
+    protected $show_vn = false; ///< Колонока с наименованием производителя
 
     /// Конструктор
     /// @param db mysqli-объект для подключения к базе данных
@@ -39,6 +41,8 @@ class BasePriceWriter {
         $this->cost_id = 1;
         $this->view_groups = false;
         $this->view_groupname = true;
+        $this->show_vc = \cfg::get('site', 'price_show_vc', false);
+        $this->show_vn = \cfg::get('site', 'price_show_vn', false);
     }
 
     /// Сформировать прайс-лист, и отправить его в STDOUT

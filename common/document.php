@@ -156,7 +156,7 @@ class document {
         /// Получить спискок типов документов
     static function getListTypes() {
         $list = array();
-        for($i=1;$i<50;$i++) {
+        for($i=1;$i<25;$i++) {
             $item = self::getClassNameFromType($i);
             if($item) {
                 $item = explode('_', $item, 2);

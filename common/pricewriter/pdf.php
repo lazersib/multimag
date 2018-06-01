@@ -111,7 +111,7 @@ class pdf extends BasePriceWriter {
 
         $this->pdf->numCols = $CONFIG['site']['price_col_cnt'];
 
-        if ($CONFIG['site']['price_show_vc']) {
+        if ($this->show_vc) {
             $str = iconv('UTF-8', 'windows-1251', 'Код');
             $this->pdf->AddCol('vc', $CONFIG['site']['price_width_vc'], $str, '');
         }

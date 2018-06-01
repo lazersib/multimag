@@ -89,6 +89,12 @@ class document {
         if ($firm_id > 0) {
             \acl::accessGuard([ 'firm.global', 'firm.' . $firm_id], \acl::UPDATE);
         } 
+        if ($document->getDocData('ok')) {
+            throw new \Exception("Операция не допускается для проведённого документа!");
+        }
+        if ($document->getDocData('mark_del')) {
+            throw new \Exception("Операция не допускается для документа, отмеченного для удаления!");
+        }
         $document->updateDocumentHeader($data);
         $firm_id = $document->getDocData('firm_id'); // т.к. могло измениться
         $header = null;

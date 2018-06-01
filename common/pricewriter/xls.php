@@ -71,6 +71,18 @@ class xls extends BasePriceWriter {
         $this->format_line[1]->setColor(0);
         $this->format_line[1]->setFgColor(41);
         $this->format_line[1]->SetSize(12);
+      
+        $this->format_exists = array();
+        $this->format_exists[0] = & $this->workbook->addFormat();
+        $this->format_exists[0]->setColor(0);
+        $this->format_exists[0]->setFgColor(26);
+        $this->format_exists[0]->SetSize(12);
+        $this->format_exists[0]->SetAlign('right');
+        $this->format_exists[1] = & $this->workbook->addFormat();
+        $this->format_exists[1]->setColor(0);
+        $this->format_exists[1]->setFgColor(41);
+        $this->format_exists[1]->SetSize(12);
+        $this->format_exists[1]->SetAlign('right');
 
         // для серых цен
         $this->a_format_line = array();
@@ -125,11 +137,30 @@ class xls extends BasePriceWriter {
         $format_header->SetAlign('vcenter');
         // Настройка ширины столбцов
 
-        if (@$CONFIG['site']['price_show_vc']) {
-            $column_width = array(8, 8, 112, 15, 15);
-        } else {
-            $column_width = array(8, 120, 15, 15);
+        $name_w = 120;
+        if(\cfg::get('site', 'price_show_vc', false)) {
+            $name_w -= 8;
         }
+        if($this->show_vn) {
+            $name_w -= 12;
+        }
+        $column_width = [8];
+        $headers = ["N"];
+        if($this->show_vc) {
+            $column_width[] = 8;
+            $headers[] = "Код";
+        }
+        $column_width[] = $name_w;
+        $headers[] = "Наименование";
+        if($this->show_vn) {
+            $column_width[] = 12;
+            $headers[] = "Произв.";
+        }
+        $column_width[] = 15;
+        $headers[] = "Наличие";
+        $column_width[] = 15;
+        $headers[] = "Цена";
+        
         foreach ($column_width as $id => $width) {
             $this->worksheet->setColumn($id, $id, $width);
         }
@@ -169,9 +200,6 @@ class xls extends BasePriceWriter {
 
         if (is_array($this->view_groups)) {
             $this->line++;
-            //$this->Ln(3);
-            //$this->SetFont('','',14);
-            //$this->SetTextColor(255,24,24);
             $str = 'Прайс содержит неполный список позиций, в соответствии с выбранными критериями при его загрузке с сайта.';
             $str = iconv('UTF-8', 'windows-1251', $str);
             $this->worksheet->write($this->line, 0, $str, $format_info);
@@ -181,11 +209,7 @@ class xls extends BasePriceWriter {
 
         $this->line++;
         $this->worksheet->write(8, 8, ' ');
-        if (@$CONFIG['site']['price_show_vc']) {
-            $headers = array("N", "Код", "Наименование", "Наличие", "Цена");
-        } else {
-            $headers = array("N", "Наименование", "Наличие", "Цена");
-        }
+
         foreach ($headers as $id => $item) {
             $headers[$id] = iconv('UTF-8', 'windows-1251', $item);
         }
@@ -274,7 +298,7 @@ class xls extends BasePriceWriter {
             $c = 0;
             $this->worksheet->write($this->line, $c++, $nxt['id'], $this->format_line[$i]); // номер
 
-            if (@$CONFIG['site']['price_show_vc']) {
+            if ($this->show_vc) {
                 $str = iconv('UTF-8', 'windows-1251', $nxt['vc']);
                 $this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]); // код производителя
             }
@@ -288,10 +312,15 @@ class xls extends BasePriceWriter {
             }
             $name = iconv('UTF-8', 'windows-1251', $name);
             $this->worksheet->write($this->line, $c++, $name, $this->format_line[$i]); // наименование
+            
+            if ($this->show_vn) {
+                $str = iconv('UTF-8', 'windows-1251', $nxt['proizv']);
+                $this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]); // наименование производителя
+            }
 
             $nal = $this->GetCountInfo($nxt['cnt'], $nxt['transit']);
             $str = iconv('UTF-8', 'windows-1251', $nal);
-            $this->worksheet->write($this->line, $c++, $str, $this->format_line[$i]);  // наличие - пока не отображается
+            $this->worksheet->write($this->line, $c++, $str, $this->format_exists[$i]);  // наличие - пока не отображается
 
             $cost = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
             if ($cost == 0) {

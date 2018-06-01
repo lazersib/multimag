@@ -76,13 +76,13 @@ class html extends BasePriceWriter {
         $this->line++;
         echo"</center><table><tr>";
         for ($cur_col = 0; $cur_col < $this->column_count; $cur_col++) {
-            if (@$CONFIG['site']['price_show_vc']) {
+            if ($this->show_vc) {
                 echo"<th class='cost'>Код</th>";
             }
             echo"<th class='cost'>Наименование</th><th class='cost'>Цена</th>";
         }
         echo"</tr>";
-        if (@$CONFIG['site']['price_show_vc']) {
+        if ($this->show_vc) {
             $this->span = $this->column_count * 3;
         } else {
             $this->span = $this->column_count * 2;
@@ -164,7 +164,7 @@ class html extends BasePriceWriter {
             if($this->view_groupname) {
                 $name = $group_name .' '.$name;
             }
-            if (@$CONFIG['site']['price_show_vc']) {
+            if ($this->show_vc) {
                 echo"<td>" . html_out($nxt['vc']) . "</td>";
             }
             echo "<td>" . html_out($name) . "</td><td{$cce}>" . $c . "</td>";
