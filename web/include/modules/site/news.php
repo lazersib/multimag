@@ -417,6 +417,9 @@ class News extends \IModule {
         if(!$news_info['hidden'])   {
             throw new \Exception('Новость уже была опубликована ранее.');
         }
+        if(!$news_info['img_ext']) {
+            throw new \Exception('Не задано изображение новости!');
+        }
         
         $db->startTransaction();
         $db->update('news', $id, 'hidden', 0);
