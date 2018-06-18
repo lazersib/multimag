@@ -405,11 +405,19 @@ function initDocJournal(container_id, default_filters, params) {
                                 else
                                     ras_cnt += parseFloat(data.doclist[i].pos_cnt);
                                 break;
+                            case 25:
+                                var tmpcnt = parseFloat(data.doclist[i].pos_cnt);
+                                if(tmpcnt>0) {
+                                    pr_cnt += tmpcnt;
+                                }
+                                else {
+                                    ras_cnt += tmpcnt;
+                                }                                
                         }
                     }
                 }
 
-                newLine(data.doclist[i], data.user_id)
+                newLine(data.doclist[i], data.user_id);
 
                 i++;
                 if (i % 40)

@@ -34,7 +34,6 @@ class dataexport {
         $this->drl = array('firms', 'stores', 'tills', 'banks', 'prices', 'workers', 'agents', 'countries', 'units', 'nomenclature', 'pos_links'
             , 'pos_params', 'pos_param_groups', 'pos_pcollections', 'credit_types', 'debit_types', 'delivery_types', 'delivery_regions', );
         $this->refbooks_list = $this->drl;
-        //$this->ddl = array(1=>'postuplenie', 2=>'realizaciya', 3=>'zayavka', 4=>'pbank', 5=>'rbank', 6=>'pko', 7=>'rko', 8=>'peremeshenie', 9=>'perkas');
         $this->ddl = \document::getListTypes();
         $this->doctypes_list = $this->ddl;
     }
@@ -84,52 +83,7 @@ class dataexport {
     }
     
     protected function getNameFromDocType($doc_type) {
-        switch ($doc_type) {
-            case 1:
-                return 'postuplenie';
-            case 2:
-                return 'realizaciya';
-            case 3:
-                return 'zayavka';
-            case 4:
-                return 'pbank';
-            case 5:
-                return 'rbank';
-            case 6:
-                return 'pko';
-            case 7:
-                return 'rko';
-            case 8:
-                return 'peremeshenie';
-            case 9:
-                return 'perkas';
-            case 10:
-                return 'doveren';
-            case 11:
-                return 'predlojenie';
-            case 12:
-                return 'v_puti';
-            case 13:
-                return 'kompredl';
-            case 14:
-                return 'dogovor';
-            case 15:
-                return 'realiz_op';
-            case 16:
-                return 'specific';
-            case 17:
-                return 'sborka';
-            case 18:
-                return 'kordolga';
-            case 19:
-                return 'korbonus';
-            case 20:
-                return 'realiz_bonus';
-            case 21:
-                return 'zsbor';
-            default:
-                return 'unknown';
-        }
+        return \document::getNameFromType($doc_type);        
     }
     
     /// Получить данные справочника собственных организаций

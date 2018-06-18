@@ -463,29 +463,7 @@ class dataimport {
     }
 
     protected function getTypeFromDocName($doc_name) {
-        $doc_types = array(
-            1 => 'postuplenie',
-            2 => 'realizaciya',
-            3 => 'zayavka',
-            4 => 'pbank',
-            5 => 'rbank',
-            6 => 'pko',
-            7 => 'rko',
-            8 => 'peremeshenie',
-            9 => 'perkas',
-            10 => 'doveren',
-            11 => 'predlojenie',
-            12 => 'v_puti',
-            13 => 'kompredl',
-            14 => 'dogovor',
-            15 => 'realiz_op',
-            16 => 'specific',
-            17 => 'sborka',
-            18 => 'kordolga',
-            19 => 'korbonus',
-            20 => 'realiz_bonus',
-            21 => 'zsbor'
-        );
+        $doc_types = \document::getListTypes();
         $type = array_search($doc_name, $doc_types);
         return $type;
     }

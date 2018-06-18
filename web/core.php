@@ -796,8 +796,10 @@ if(!$db->set_charset("utf8"))
 
 
 header("X-Powered-By: MultiMag ".MULTIMAG_VERSION);
+// не получилось из-за невалидного json в редакторе наименований документа. Нужен рефакторинг.
+//header("Content-Security-Policy: default-src 'self' 'unsafe-inline' *.".$_SERVER["HTTP_HOST"]); 
 // HSTS Mode
-if ((@$CONFIG['site']['force_https'] || @$CONFIG['site']['force_https_login']) && isset($_SERVER['HTTPS'])) {
+if ((\cfg::get('site', 'force_https') || \cfg::get('site', 'force_https_login')) && isset($_SERVER['HTTPS'])) {
 	header("Strict-Transport-Security: max-age=31536000");
 }
 

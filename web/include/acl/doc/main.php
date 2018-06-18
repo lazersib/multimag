@@ -38,7 +38,7 @@ class main extends \acl\aclContainer {
                     "name" => $item,
                     "mask" => \acl::VIEW | \acl::UPDATE | \acl::DELETE | \acl::CREATE 
                         | \acl::APPLY | \acl::CANCEL | \acl::TODAY_APPLY | \acl::TODAY_CANCEL
-                        | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT | \acl::VIEW
+                        | \acl::CANCEL_FORCE | \acl::GET_PRINTFORM | \acl::GET_PRINTDRAFT
                 );
         }
     }

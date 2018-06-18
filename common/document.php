@@ -26,11 +26,11 @@ class document {
     
     protected $doc_data;			///< Основные данные документа
     protected $dop_data;			///< Дополнительные данные документа
-    protected $text_data=array();               ///< Дополнительные текстовые данные документа
+    protected $text_data = [];                  ///< Дополнительные текстовые данные документа
     protected $firm_vars;			///< информация с данными о фирме
-    protected $def_dop_data=array();            ///< Список дополнительных параметров текущего документа со значениями по умолчанию
+    protected $def_dop_data = [];               ///< Список дополнительных параметров текущего документа со значениями по умолчанию
     
-    protected $def_doc_data = array(
+    protected $def_doc_data = [
         'id' => 0, 
         'type' => 0, 
         'agent' => null, 
@@ -54,7 +54,35 @@ class document {
         'agent_fullname' => '', 
         'agent_dishonest' => 0, 
         'agent_comment' => ''
-        );
+    ];
+    
+    const DOC_TYPES = [  /// TODO: вынести в фабрику документов
+        1 => "postuplenie",
+        2 => "realizaciya",
+        3 => "zayavka",
+        4 => "pbank",
+        5 => "rbank",
+        6 => "pko",
+        7 => "rko",
+        8 => "peremeshenie",
+        9 => "perkas",
+        10 => "doveren",
+        11 => "predlojenie",
+        12 => "v_puti",
+        13 => "kompredl",
+        14 => "dogovor",
+        15 => "realiz_op",
+        16 => "specific",
+        17 => "sborka",
+        18 => "kordolga",
+        19 => "korbonus",
+        20 => "realiz_bonus",
+        21 => "zsbor",
+        22 => "pko_oper",
+        23 => "permitout",
+        24 => "payinfo",
+        25 => "corract",
+    ];
 
     /// Получить ID документа
     public function getId() {
@@ -86,86 +114,32 @@ class document {
     }
     
     static public function getNameFromType($type) {
-        switch($type)	{
-            case 1: 
-                return "postuplenie";
-            case 2: 
-                return "realizaciya";
-            case 3:
-                return "zayavka";
-            case 4:
-                return "pbank";
-            case 5:
-                return "rbank";
-            case 6:
-                return "pko";
-            case 7:
-                return "rko";
-            case 8:
-                return "peremeshenie";
-            case 9:
-                return "perkas";
-            case 10:
-                return "doveren";
-            case 11:
-                return "predlojenie";
-            case 12:
-                return "v_puti";
-            case 13:
-                return "kompredl";
-            case 14:
-                return "dogovor";
-            case 15:
-                return "realiz_op";
-            case 16:
-                return "specific";
-            case 17:
-                return "sborka";
-            case 18:
-                return "kordolga";
-            case 19:
-                return "korbonus";
-            case 20:
-                return "realiz_bonus";
-            case 21:
-                return "zsbor";
-            case 22:
-                return "pko_oper";
-            case 23:
-                return "permitout";
-            case 24:
-                return "payinfo";
-            case 25:
-                return "corract";
-            default:
-                return null;
+        if(array_key_exists($type, self::DOC_TYPES)) {
+            return self::DOC_TYPES[$type];
         }
+        return null;
     }
     
     /// Получить имя класса документа по его имени
     static function getClassNameFromName($doc_name) {
-        return '\doc_'.$doc_name;
+        if(in_array($doc_name, self::DOC_TYPES)) {
+            return '\doc_'.$doc_name;
+        }
+        return null;
     }
     
     static public function getViewNameFromName($doc_name) {
         $classname = self::getClassNameFromName($doc_name);
+        if($classname == null) {
+            return null;
+        }
         $doc = new $classname;
         return $doc->viewname;
     }
 
         /// Получить спискок типов документов
     static function getListTypes() {
-        $list = array();
-        for($i=1;$i<25;$i++) {
-            $item = self::getClassNameFromType($i);
-            if($item) {
-                $item = explode('_', $item, 2);
-                $list[$i] = strtolower($item[1]);
-            } else {
-                break;
-            }
-        }
-        return $list;
+        return self::DOC_TYPES;
     }
     
     /// @return document
