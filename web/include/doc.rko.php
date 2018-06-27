@@ -20,7 +20,8 @@
 
 /// Документ *Расходный кассовый ордер*
 class doc_Rko extends \doc_debit {
-
+    use \doc\PrintCheck;
+    
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 7;
@@ -78,7 +79,7 @@ class doc_Rko extends \doc_debit {
             throw new Exception("Номер документа не уникален!");
         }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
-                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`
+                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`, `doc_kassa`.`cash_register_id` AS `cr_id`
             FROM `doc_list`
             INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`kassa` AND `ids`='kassa'
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
@@ -125,6 +126,12 @@ class doc_Rko extends \doc_debit {
             }
         }
         parent::docApply($silent);
+        if (!$silent) {
+            //  Напечатать чек при необходимости
+            if($doc_params['cr_id']>0) {
+                $this->printCheck($doc_params['cr_id']);
+            }
+        }
     }
 
     // Отменить проведение

@@ -298,6 +298,7 @@ class doc_Postuplenie extends doc_Nulltype {
             'realizaciya' =>    ['name'=>'realizaciya',     'document' => 'realizaciya',    'viewname' => 'Реализация', ],
             'rbank' =>          ['name'=>'rbank',           'document' => 'rbank',          'viewname' => 'Расходный банковский ордер', ],
             'rko' =>            ['name'=>'rko',             'document' => 'rko',            'viewname' => 'Расходный кассовый ордер', ],
+            'payinfo' =>        ['name'=>'payinfo',     'document' => 'payinfo',    'viewname' => 'Информация о безналичном платеже', ],
         );
         return $morphs;
     }
@@ -316,6 +317,20 @@ class doc_Postuplenie extends doc_Nulltype {
             'received' => 0,
         ];
         $new_doc->setDopDataA($data);
+        return $new_doc;
+    }
+    
+    /** Создать подчинённый информация о платеже
+     * 
+     * @return \doc_Pko Подчинённый информация о платеже
+     */
+    protected function morphTo_payinfo() {
+    
+        $this->recalcSum();
+        $new_doc = new \doc_PayInfo();
+        $new_doc->createFrom($this);
+        $pref = \pref::getInstance();
+        $new_doc->setDocData('bank', $this->getDocData('bank'));
         return $new_doc;
     }
     

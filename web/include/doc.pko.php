@@ -19,7 +19,8 @@
 //
 /// Документ *приходный кассовый ордер*
 class doc_Pko extends doc_credit {
-
+    use \doc\PrintCheck;
+    
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 6;
@@ -85,7 +86,7 @@ class doc_Pko extends doc_credit {
             throw new Exception("Касса не выбрана");
         }
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
-                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`
+                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_kassa`.`cash_register_id` AS `cr_id`, `doc_vars`.`firm_till_lock`
             FROM `doc_list`
             INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`kassa` AND `ids`='kassa'
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
@@ -113,17 +114,21 @@ class doc_Pko extends doc_credit {
         if ($doc_params['firm_till_lock'] && $doc_params['kassa_firm_id'] != $doc_params['firm_id']) {
             throw new Exception("Выбранная организация может работать только со своими кассами!");
         }
-
+        
         $res = $db->query("UPDATE `doc_kassa` SET `ballance`=`ballance`+'{$doc_params['sum']}' WHERE `ids`='kassa' AND `num`='{$doc_params['kassa']}'");
         if (!$db->affected_rows) {
             throw new Exception('Ошибка обновления кассы!');
         }
         parent::docApply($silent);
         if (!$silent) {
+            //  Напечатать чек при необходимости
+            if($doc_params['cr_id']>0) {
+                $this->printCheck($doc_params['cr_id']);
+            }
             $this->paymentNotify();
         }
     }
-
+    
     // Отменить проведение
     function DocCancel() {
         global $db;

@@ -454,6 +454,7 @@ class doc_Realizaciya extends doc_Nulltype {
             'permitout' =>      ['name'=>'permitout',   'document' => 'permitout',  'viewname' => 'Пропуск на вывоз', ],
             'pbank' =>          ['name'=>'pbank',       'document' => 'pbank',      'viewname' => 'Приходный банковский ордер', ],
             'pko' =>            ['name'=>'pko',         'document' => 'pko',        'viewname' => 'Приходный кассовый ордер', ],
+            'payinfo' =>        ['name'=>'payinfo',     'document' => 'payinfo',    'viewname' => 'Информация о безналичном платеже', ],
             'kordolga' =>       ['name'=>'kordolga',    'document' => 'kordolga',   'viewname' => 'Корректировка долга', ],
         );
         if (!$this->doc_data['p_doc']) {
@@ -491,6 +492,20 @@ class doc_Realizaciya extends doc_Nulltype {
         $new_doc->setDocData('kassa', $pref->getSitePref('site_cash_id'));
         $codename = $this->getDopData('return')?'goods_return':'goods_sell';
         $new_doc->setCreditTypeFromCodename($codename);
+        return $new_doc;
+    }
+    
+    /** Создать подчинённый информация о платеже
+     * 
+     * @return \doc_Pko Подчинённый информация о платеже
+     */
+    protected function morphTo_payinfo() {
+    
+        $this->recalcSum();
+        $new_doc = new \doc_PayInfo();
+        $new_doc->createFrom($this);
+        $pref = \pref::getInstance();
+        $new_doc->setDocData('bank', $this->getDocData('bank'));
         return $new_doc;
     }
     

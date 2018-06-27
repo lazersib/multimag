@@ -88,6 +88,10 @@ class main extends \acl\aclContainer {
                 "name" => "Список изменений в системе",
                 "mask" => \acl::VIEW
             ),
+            'cashservice' => array(
+                "name" => "Обслуживание кассового аппарата",
+                "mask" => \acl::VIEW | \acl::UPDATE | \acl::APPLY
+            ),
         );
     }
     

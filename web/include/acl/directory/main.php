@@ -86,6 +86,10 @@ class main extends \acl\aclContainer {
                 "name" => "Кассы",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
+            'cashregister' => array(
+                "name" => "Кассовые аппараты",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
             'contract_templates' => array(
                 "name" => "Шаблоны договоров",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE

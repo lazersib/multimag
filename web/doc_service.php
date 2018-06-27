@@ -46,6 +46,7 @@ try {
 	<li><a href='?mode=accounts'>Бухгалтерские счета</a></li>
 	<li><a href='?mode=banks'>Банки</a></li>
 	<li><a href='?mode=kass'>Кассы</a></li>
+        <li><a href='?mode=kkm'>Кассовые аппараты</a></li>
 	<li><a href='?mode=stores'>Склады</a></li>
         <li>Номенклатура</li><ul>
             <li><a href='?mode=nom_types'>Типы номенклатуры</a></li>
@@ -60,11 +61,12 @@ try {
         <li><a href='?mode=shiptypes'>Способы доставки</a></li>
         <li><a href='?mode=ctemplates'>Шаблоны договоров</a></li>
 	</ul>
-	<li>Обработки</li>
+	<li>Автоматизация</li>
 	<ul>
 	<li><a href='?mode=cimage'>Замена изображений</a></li>
 	<li><a href='?mode=merge_agent'>Группировка агентов</a></li>
 	<li><a href='?mode=merge_tovar'>Группировка складской номенклатуры</a></li>
+        <li><a href='?mode=cashservice'>Обслуживание кассового аппарата</a></li>
 	</ul>
 	<li>Отчёты</li>
 	<ul>
@@ -644,6 +646,12 @@ try {
         $editor->link_prefix = '/doc_service.php?mode=kass';
         $editor->acl_object_name = 'directory.cash';
         $editor->run();
+    }  elseif ($mode == 'kkm') {
+        $editor = new \ListEditors\CashRegisters($db);
+        $editor->line_var_name = 'id';
+        $editor->link_prefix = '/doc_service.php?mode=kkm';
+        $editor->acl_object_name = 'directory.cashregister';
+        $editor->run();
     } elseif ($mode == 'firms') {
         $editor = new \ListEditors\FirmListEditor($db);
         $editor->line_var_name = 'id';
@@ -756,6 +764,11 @@ try {
         $editor->link_prefix = '/doc_service.php?mode='.$mode;
         $editor->acl_object_name = 'directory.contract_templates';
         $editor->run();
+    }   elseif ($mode == 'cashservice') {
+        $sm = new \modules\docservice\CashRegister();
+        $sm->line_var_name = 'id';
+        $sm->link_prefix = '/doc_service.php?mode='.$mode;
+        $sm->run();
     } else {
         throw new NotFoundException("Несуществующая опция");
     }

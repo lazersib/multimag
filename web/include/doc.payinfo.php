@@ -19,7 +19,8 @@
 
 /// Документ *информация о платеже*
 class doc_PayInfo extends doc_credit {
-
+    use \doc\PrintCheck;
+    
     function __construct($doc = 0) {
         parent::__construct($doc);
         $this->doc_type = 24;
@@ -44,8 +45,27 @@ class doc_PayInfo extends doc_credit {
     
     // Провести
     function docApply($silent = 0) {
+        global $db;
+        if (!$this->isAltNumUnique() && !$silent) {
+            throw new Exception("Номер документа не уникален!");
+        }
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
+                `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`, `doc_kassa`.`cash_register_id` AS `cr_id`
+            FROM `doc_list`
+            INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`bank` AND `ids`='bank'
+            INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
+            WHERE `doc_list`.`id`='{$this->id}'");
+        $doc_params = $res->fetch_assoc();
+        $res->free();
+        if($doc_params['bank']==0) {
+            throw new Exception("Банк не задан");
+        }
         parent::docApply($silent);
         if (!$silent) {
+            //  Напечатать чек при необходимости
+            if($doc_params['cr_id']>0) {
+                $this->printCheck($doc_params['cr_id']);
+            }
             $this->paymentNotify();
         }
     }
