@@ -30,12 +30,7 @@ function core_autoload($class_name){
             include_once $fname;
             return;
         }
-    }
-    $fname = $CONFIG['site']['location'].'/include/'.$lower_class_name.'.php';
-    if(is_readable($fname)) {
-        include_once $fname;
-        return;
-    }
+    }    
     $filename = dirname(__DIR__)
         .DIRECTORY_SEPARATOR
         .str_replace('\\', DIRECTORY_SEPARATOR, $class_name)

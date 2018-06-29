@@ -28,14 +28,22 @@ function common_autoload($class_name) {
     $class_name_lc = strtolower($class_name);
     $class_name_lc = str_replace('\\', '/', $class_name_lc);
     $class_name = str_replace('\\', '/', $class_name);
-    $file = $CONFIG['location'] . "/common/" . $class_name_lc . '.php';
-    if(file_exists($file)) {
-        include_once $CONFIG['location'] . "/common/" . $class_name_lc . '.php';
+    $fname = $CONFIG['location'] . "/common/" . $class_name_lc . '.php';
+    if(file_exists($fname)) {
+        include_once $fname;
+        return;
     }
-    $file = $CONFIG['location'] . "/common/" . $class_name . '.php';
-    if(file_exists($file)) {
-        include_once $CONFIG['location'] . "/common/" . $class_name . '.php';
+    $fname = $CONFIG['location'] . "/common/" . $class_name . '.php';
+    if(is_readable($fname)) {
+        include_once $fname;
+        return;
     }
+    $fname = $CONFIG['site']['location'].'/include/'.$class_name_lc.'.php';
+    if(is_readable($fname)) {
+        include_once $fname;
+        return;
+    }
+    
 }
 
 spl_autoload_register('common_autoload');
