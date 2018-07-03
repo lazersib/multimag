@@ -27,11 +27,11 @@ class doc_PayInfo extends doc_credit {
         $this->typename = 'payinfo';
         $this->viewname = 'Информация о платеже';
         $this->bank_modify = 1;
-        $this->header_fields = 'bank sum separator agent';
+        $this->header_fields = 'bank kassa sum separator agent';
     }
 
     function initDefDopdata() {
-        $this->def_dop_data = array('cardpay' => '', 'cardholder' => '', 'masked_pan' => '', 'trx_id' => '', 'p_rnn' => '', 'credit_type' => 0);
+        $this->def_dop_data = array('cardpay' => '', 'cardholder' => '', 'masked_pan' => '', 'trx_id' => '', 'p_rnn' => '', 'credit_type' => 0, 'print_check' => true);
     }
 
     function dopHead() {
@@ -41,6 +41,22 @@ class doc_PayInfo extends doc_credit {
                 <b>PAN карты:</b>{$this->dop_data['masked_pan']}><br><b>Транзакция:</b>{$this->dop_data['trx_id']}><br>
                 <b>RNN транзакции:</b>{$this->dop_data['p_rnn']}><br>");
         }
+        $checked_r = $this->dop_data['print_check'] ? 'checked' : '';
+        $tmpl->addContent("<label><input type='checkbox' name='print_check' value='1' $checked_r>Печатать чек при проведении</label><br>");
+    }
+    
+    function dopSave() {
+        $new_data = array(
+            'print_check' => rcvint('print_check'),
+        );
+        $old_data = array_intersect_key($new_data, $this->dop_data);
+
+        $log_data = '';
+        if ($this->id)
+            $log_data = getCompareStr($old_data, $new_data);
+        $this->setDopDataA($new_data);
+        if ($log_data)
+            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
     }
     
     // Провести
@@ -49,10 +65,10 @@ class doc_PayInfo extends doc_credit {
         if (!$this->isAltNumUnique() && !$silent) {
             throw new Exception("Номер документа не уникален!");
         }
-        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
+        $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
                 `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`, `doc_kassa`.`cash_register_id` AS `cr_id`
             FROM `doc_list`
-            INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`bank` AND `ids`='bank'
+            INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`kassa` AND `ids`='kassa'
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
             WHERE `doc_list`.`id`='{$this->id}'");
         $doc_params = $res->fetch_assoc();
@@ -63,8 +79,9 @@ class doc_PayInfo extends doc_credit {
         parent::docApply($silent);
         if (!$silent) {
             //  Напечатать чек при необходимости
-            if($doc_params['cr_id']>0) {
+            if($doc_params['cr_id']>0 && $this->dop_data['print_check']) {
                 $this->printCheck($doc_params['cr_id']);
+                $this->setDopData('print_check', false);
             }
             $this->paymentNotify();
         }

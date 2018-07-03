@@ -71,7 +71,7 @@ trait PrintCheck {
     // Напечатать чек
     protected function printCheck($cr_id) {
         if($this->doc_data['p_doc']==0) {
-            throw new Exception("Невозможна печать чека для документа, не являющегося потомком накладной");
+            throw new \Exception("Невозможна печать чека для документа, не являющегося потомком накладной");
         }
         $doc = \document::getInstanceFromDb($this->doc_data['p_doc']);
         $check_type = 0;
@@ -85,7 +85,7 @@ trait PrintCheck {
                 $pay_sum = $ret ? 0:1;
             }
             else {
-                throw new Exception("Невозможна печать чека - данный документ не допустим для расхода товара");
+                throw new \Exception("Невозможна печать чека - данный документ не допустим для расхода товара");
             }
         }
         else if($doc->typename == 'postuplenie') {
@@ -96,12 +96,18 @@ trait PrintCheck {
                 $pay_sum = $ret ? 0:1;
             }
             else {
-                throw new Exception("Невозможна печать чека - данный документ не допустим для прихода товара");
+                throw new \Exception("Невозможна печать чека - данный документ не допустим для прихода товара");
             }
         }
         else {
-            throw new Exception("Печать чека возможна лишь на основании поступления или реализации");
+            throw new \Exception("Печать чека возможна лишь на основании поступления или реализации");
         }
+        if(!$doc->getDocData('ok')) {
+            throw new \Exception("Накладная-основание не проведена");
+        }
+        if($this->getDocData('sum')!=$doc->getDocData('sum')) {
+            throw new \Exception("Частичные поступления и возвраты не реализованы");
+        }        
         $cr = $this->getCashRegister($cr_id);
         try {
             $nom = $doc->getDocumentNomenclature('base_price,bulkcnt');  

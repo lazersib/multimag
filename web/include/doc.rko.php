@@ -38,7 +38,7 @@ class doc_Rko extends \doc_debit {
         if (is_array($def_acc)) {
             $acc = $def_acc['account'];
         }
-        $this->def_dop_data = array('rasxodi' => 0, 'account' => $acc);
+        $this->def_dop_data = array('rasxodi' => 0, 'account' => $acc, 'print_check' => true);
     }
 
     function dopHead() {
@@ -55,12 +55,15 @@ class doc_Rko extends \doc_debit {
 
         $tmpl->addContent("</select><br>");
         $tmpl->addContent("Номер бухгалтерского счёта:<br><input type='text' name='account' value='{$this->dop_data['account']}'><br>");
+        $checked_r = $this->dop_data['print_check'] ? 'checked' : '';
+        $tmpl->addContent("<label><input type='checkbox' name='print_check' value='1' $checked_r>Печатать чек при проведении</label><br>");
     }
 
     function dopSave() {
         $new_data = array(
             'rasxodi' => request('rasxodi'),
-            'account' => request('account')
+            'account' => request('account'),
+            'print_check' => rcvint('print_check'),
         );
         $old_data = array_intersect_key($new_data, $this->dop_data);
 
@@ -128,8 +131,9 @@ class doc_Rko extends \doc_debit {
         parent::docApply($silent);
         if (!$silent) {
             //  Напечатать чек при необходимости
-            if($doc_params['cr_id']>0) {
+            if($doc_params['cr_id']>0 && $this->dop_data['print_check']) {
                 $this->printCheck($doc_params['cr_id']);
+                $this->setDopData('print_check', false);
             }
         }
     }

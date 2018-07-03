@@ -82,7 +82,7 @@ abstract class LLPv3 {
         $address = gethostbyname($address);
         $result = socket_connect($this->socket, $address, $port);
         if ($result === false) {
-            throw new AtolException("Не могу принять данные: " . socket_strerror(socket_last_error($this->socket)));
+            throw new AtolException("Не могу соединиться: " . socket_strerror(socket_last_error($this->socket)));
         }
     }
 
