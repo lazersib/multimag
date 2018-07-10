@@ -68,11 +68,14 @@ class doc_PayInfo extends doc_credit {
         $res = $db->query("SELECT `doc_list`.`id`, `doc_list`.`date`, `doc_list`.`bank`, `doc_list`.`kassa`, `doc_list`.`ok`, `doc_list`.`firm_id`, `doc_list`.`sum`,
                 `doc_kassa`.`firm_id` AS `kassa_firm_id`, `doc_vars`.`firm_till_lock`, `doc_kassa`.`cash_register_id` AS `cr_id`
             FROM `doc_list`
-            INNER JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`kassa` AND `ids`='kassa'
+            LEFT JOIN `doc_kassa` ON `doc_kassa`.`num`=`doc_list`.`kassa` AND `ids`='kassa'
             INNER JOIN `doc_vars` ON `doc_list`.`firm_id` = `doc_vars`.`id`
             WHERE `doc_list`.`id`='{$this->id}'");
         $doc_params = $res->fetch_assoc();
         $res->free();
+        if(!$doc_params) {
+            throw new Exception("Не удалось загрузить данные документа");
+        }
         if($doc_params['bank']==0) {
             throw new Exception("Банк не задан");
         }

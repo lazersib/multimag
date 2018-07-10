@@ -936,11 +936,11 @@ class login extends \IModule {
         if ($db->affected_rows) {
             $db->query("INSERT INTO `users_unsubscribe_log` (`email`, `time`, `source`, `is_user`)
                 VALUES ('$email', NOW(), '$from_sql', 1)");
-            $tmpl->msg("Вы успешно отказались от автоматической рассылки!", "ok");
+            $tmpl->msg("Вы успешно отказались от подписки!", "ok");
             $c = 1;
         }
 
-        $res = $db->query("UPDATE `doc_agent` SET `no_mail`='1' WHERE `email`='$email'");
+        $res = $db->query("UPDATE `agent_contacts` SET `no_ads`='1' WHERE `value`='$email' AND `type`='email'");
         if ($db->affected_rows) {
             $db->query("INSERT INTO `users_unsubscribe_log` (`email`, `time`, `source`, `is_user`)
                 VALUES ('$email', NOW(), '$from_sql', 0)");
