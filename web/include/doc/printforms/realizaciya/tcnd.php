@@ -19,9 +19,11 @@
 namespace doc\printforms\realizaciya; 
 
 class tcnd extends \doc\printforms\realizaciya\tc {
-    protected $show_agent = 1;  ///< Выводить ли информацию о агенте-покупателе
-    protected $show_disc = 0;   ///< Выводить ли информацию о скидках
-    protected $show_kkt = 1;    ///< Выводить ли информацию о работе без использования ККТ
+  
+    public function __construct() {
+        parent::__construct();
+        $this->show_disc = 0;
+    }
     
     /// Возвращает имя документа
     public function getName() {

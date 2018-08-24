@@ -23,7 +23,14 @@ class tc extends \doc\printforms\iPrintFormIDPdf {
     protected $show_disc = 1;   ///< Выводить ли информацию о скидках
     protected $show_kkt = 1;    ///< Выводить ли информацию о работе без использования ККТ
     
-    /// Возвращает имя документа
+    public function __construct() {
+        parent::__construct();
+        $this->show_agent = 1;
+        $this->show_disc = 1;
+        $this->show_kkt = \cfg::get('doc', 'tc_nokkt', 1);
+    }
+    
+/// Возвращает имя документа
     public function getName() {
         return "Товарный чек";
     }

@@ -19,9 +19,11 @@
 namespace doc\printforms\realizaciya; 
 
 class tcna extends \doc\printforms\realizaciya\tc {
-    protected $show_agent = 0;  ///< Выводить ли информацию о агенте-покупателе
-    protected $show_disc = 1;   ///< Выводить ли информацию о скидках
-    protected $show_kkt = 1;    ///< Выводить ли информацию о работе без использования ККТ
+
+    public function __construct() {
+        parent::__construct();
+        $this->show_agent = 0;
+    }
     
     /// Возвращает имя документа
     public function getName() {

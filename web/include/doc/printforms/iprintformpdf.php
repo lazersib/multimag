@@ -31,7 +31,11 @@ abstract class iPrintFormPdf {
     
     public $mime = "application/pdf";
     
-    /// Установить ссылку на распечатываемый документ
+    public function __construct() {
+        
+    }
+
+        /// Установить ссылку на распечатываемый документ
     public function setDocument($doc) {
         $this->doc = $doc;
     }
