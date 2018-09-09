@@ -24,7 +24,7 @@ class baseGSReport extends BaseReport {
         global $db;
         $ret = '';
         settype($level, 'int');
-        $res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `name`");
+        $res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `vieworder`,`name`");
         $i = 0;
         $r = $cbroot = '';
         if ($level == 0) {

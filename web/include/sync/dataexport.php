@@ -382,7 +382,7 @@ class dataexport {
         $ret = array();
         $res = $this->db->query("SELECT `id`, `pid` AS `parent_id`, `name`, `printname`, `desc` AS `comment`, `hidelevel` AS `hidden`"
             . ", `no_export_yml`, `meta_description`, `meta_keywords`, `title_tag`"
-            . " FROM `doc_group` ORDER BY `id`");
+            . " FROM `doc_group` ORDER BY `vieworder`,`name`");
         while($line = $res->fetch_assoc()) {            
             $price_res = $this->db->query("SELECT `cost_id` AS `price_id`, `type`, `value`, `accuracy`, `direction` 
                 FROM  `doc_group_cost` 

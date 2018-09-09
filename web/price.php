@@ -24,7 +24,7 @@ function draw_groups_tree($level)
 {
 	global $db;
 	$ret='';
-	$res=$db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `name`");
+	$res=$db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `vieworder`,`name`");
 	$i=0;
 	$r='';
 	if($level==0) $r='IsRoot';

@@ -218,7 +218,7 @@ class Report_PriceTags {
     function draw_groups_tree($level) {
         global $db;
         $ret = '';
-        $res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `name`");
+        $res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' AND `hidelevel`='0' ORDER BY `vieworder`,`name`");
         $i = 0;
         $r = '';
         if ($level == 0) {
@@ -486,7 +486,7 @@ class Report_PriceTags {
         
         $pc = PriceCalc::getInstance();
         $pc->SetFirmId($firm_id);
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {
             if ($gs && is_array($g)) {
                 if (!in_array($group_line['id'], $g)) {

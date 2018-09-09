@@ -261,7 +261,7 @@ class Report_Profitability extends BaseGSReport {
             }
         }
         else if ($sel_type == 'group') {
-            $res_group = $db->query("SELECT `id`, `name`, `pos_type` FROM `doc_group` ORDER BY `id`");
+            $res_group = $db->query("SELECT `id`, `name`, `pos_type` FROM `doc_group` ORDER BY `vieworder`,`name`");
             while ($group_line = $res_group->fetch_assoc()) {
                 if (!in_array($group_line['id'], $g))
                     continue;

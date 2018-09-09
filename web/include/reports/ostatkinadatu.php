@@ -127,7 +127,7 @@ class Report_OstatkiNaDatu extends BaseGSReport {
                 $order = '`doc_base`.`name`';
         }
         
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {
             if ($this->group_filter && !in_array($group_line['id'], $this->group_filter)) {
                 continue;

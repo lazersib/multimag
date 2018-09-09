@@ -197,7 +197,7 @@ class PDF_MySQL_Table extends FPDF {
 
     function draw_groups_tree($pid, $query, $prop) {
         global $db;
-        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' AND `hidelevel`='0' ORDER BY `id`");
+        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' AND `hidelevel`='0' ORDER BY `vieworder`,`name`");
         while ($nxt = $res->fetch_row()) {
             if ($nxt[0] == 0) {
                 continue;

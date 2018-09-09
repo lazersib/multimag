@@ -244,7 +244,7 @@ class Report_Store extends BaseGSReport {
         $v_where = $vendor ? ("AND `doc_base`.`proizv`='$sql_vendor'"):'';
 
         $bsum = $summass = 0;
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {
             if ($gs && is_array($g)) {
                 if (!in_array($group_line['id'], $g)) {

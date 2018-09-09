@@ -93,7 +93,7 @@ class Report_goods_approve extends BaseGSReport {
         $this->processGroupItems($group_id, $vars);
         
         /// и подгруппы
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`=$group_id ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`=$group_id ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {
             if ($vars['group_filter'] && is_array($vars['group_list'])) {
                 if (!in_array($group_line['id'], $vars['group_list'])) {

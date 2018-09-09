@@ -384,9 +384,6 @@ class doc_s_Sklad {
         if(!isset($form_data['likvid'])) {
             $form_data['likvid'] = '';
         }
-//            foreach ($this->pos_vars as $value) {
-//                $pos_info[$value] = '';
-//            }
 
         $image_html = '';        
         if($def_img_data) {
@@ -614,6 +611,474 @@ class doc_s_Sklad {
             }  
         }
     }
+    
+    /// Сформировать форму редактирования изображений и файлов
+    protected function showImagesEditForm($pos) {
+        global $tmpl, $db;
+        $max_fs = \webcore::getMaxUploadFileSize();
+        $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
+
+        $res = $db->query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
+            FROM `doc_base_img`
+            LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
+            WHERE `doc_base_img`.`pos_id`='$pos'");
+        $checked = ($res->num_rows == 0) ? 'checked' : '';
+        $tmpl->addContent("
+            <table>
+            <tr><th width='50%'>Изображения</th><th width='50%'>Прикреплённые файлы</th></tr>
+            <tr><td valign='top'>
+            <form action='' method='post' enctype='multipart/form-data'>
+            <input type='hidden' name='mode' value='esave'>
+            <input type='hidden' name='l' value='sklad'>
+            <input type='hidden' name='pos' value='$pos'>
+            <input type='hidden' name='param' value='i'>
+            <table class='list' width='100%'>
+            <tr><th width='10%'>По умолч.</th><th>Файл</th><th>Имя изображения</th></tr>
+            <tr><td><input type='radio' name='def_img' value='1' $checked></td>
+            <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile1' type='file'></td>
+            <td><input type='text' name='photoname_1' value=''></td>
+            </tr>
+            <tr><td><input type='radio' name='def_img' value='2'></td>
+            <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile2' type='file'></td>
+            <td><input type='text' name='photoname_2' value=''></td>
+            </tr>
+            <tr><td><input type='radio' name='def_img' value='3'></td>
+            <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile3' type='file'></td>
+            <td><input type='text' name='photoname_3' value=''></td>
+            </tr>
+            <tr><td><input type='radio' name='def_img' value='4'></td>
+            <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile4' type='file'></td>
+            <td><input type='text' name='photoname_4' value=''></td>
+            </tr>
+            <tr><td><input type='radio' name='def_img' value='5'></td>
+            <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile5' type='file'></td>
+            <td><input type='text' name='photoname_5' value=''></td>
+            </tr>
+            <tr><td colspan='3' align='center'>
+            <button type='submit'>Сохранить</button>
+            </table>
+            <b>Форматы</b>: Не более $max_fs_size суммарно, разрешение от 150*150 до 10000*10000, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
+            <b>Примечание</b>: Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
+            </form><h2>Ассоциированные с товаром картинки</h2>");
+        while ($nxt = $res->fetch_row()) {
+            $miniimg = new ImageProductor($nxt[0], 'p', $nxt[1]);
+            $miniimg->SetX(175);
+            $img = "<img src='" . $miniimg->GetURI() . "' width='175'>";
+            $tmpl->addContent("$img<br><a href='?mode=esave&amp;l=sklad&amp;param=i_d&amp;pos=$pos&amp;img=$nxt[0]'>Убрать ассоциацию</a><br><br>");
+        }
+        $tmpl->addContent("</td><td valign='top'>
+            <form action='' method='post' enctype='multipart/form-data'>
+            <input type='hidden' name='mode' value='esave'>
+            <input type='hidden' name='l' value='sklad'>
+            <input type='hidden' name='pos' value='$pos'>
+            <input type='hidden' name='param' value='i_a'>
+            <table cellpadding='0' class='list'>
+            <tr><td>Прикрепляемый файл:
+            <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br><small>Не более $max_fs_size</small>
+            <tr><td>Описание файла (до 128 символов):
+            <td><input type='text' name='comment' value='Инструкция для $pos'><br>
+            <small>Если написать описание файла, которое уже есть в базе, то соответствующий файл и будет установлен, вне зависимости от того, передан он или нет.</small>
+            <tr><td colspan='2' align='center'>
+            <input type='submit' value='Сохранить'>
+            </table>
+            <table class='list' width='100%'>
+            <tr><th colspan='4'>Прикреплённые файлы</th></tr>");
+        $res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`description`
+            FROM `doc_base_attachments`
+            LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
+            WHERE `doc_base_attachments`.`pos_id`='$pos'");
+        while ($nxt = $res->fetch_row()) {
+            if (\cfg::get('site', 'rewrite_enable')) {
+                $link = "/attachments/{$nxt[0]}/$nxt[1]";
+            } else {
+                $link = "/attachments.php?att_id={$nxt[0]}";
+            }
+            $tmpl->addContent("<tr><td>$nxt[0]</td><td><a href='$link'>" . html_out($nxt[1]) . "</a></td></td><td>" . html_out($nxt[2]) . "</td><td><a href='?mode=esave&amp;l=sklad&amp;param=i_ad&amp;pos=$pos&amp;att=$nxt[0]' title='Убрать ассоциацию'><img src='/img/i_del.png' alt='Убрать ассоциацию'></a></td></tr>");
+        }
+        $tmpl->addContent("</table></td></tr></table>");
+    }
+    
+    protected function showPricesEditForm($pos) {
+        global $tmpl, $db;
+        $cres = $db->query("SELECT `cost` AS `base_price`, `group`, `bulkcnt` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
+        if (!$cres->num_rows)
+            throw new Exception("Позиция не найдена");
+        $pos_info = $cres->fetch_assoc();
+
+        //list($base_cost) = $cres->fetch_row();
+
+        $cost_types = array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
+        $direct = array((-1) => 'Вниз', 0 => 'K ближайшему', 1 => 'Вверх');
+        $res = $db->query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
+            FROM `doc_cost`
+            LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`='$pos'");
+        $tmpl->addContent("
+            <form action='docs.php' method='post'>
+            <input type='hidden' name='mode' value='esave'>
+            <input type='hidden' name='l' value='sklad'>
+            <input type='hidden' name='pos' value='$pos'>
+            <input type='hidden' name='param' value='c'>
+            <table cellpadding='0' width='50%' class='list'>
+            <tr><th>Цена</th><th>Тип</th><th>Значение</th><th>Точность</th><th>Округление</th><th>Результат</th></tr>
+            <tr><td><b>Базовая</b><td>Базовая цена<td>{$pos_info['base_price']} руб.<td>-<td>-<td>{$pos_info['base_price']} руб.");
+        $pc = PriceCalc::getInstance();
+        while ($cn = $res->fetch_row()) {
+            $sig = ($cn[4] > 0) ? '+' : '';
+            switch($cn[3]) {
+                case 'pp':
+                    $def_val = "({$sig}$cn[4] %)";
+                    break;
+                case 'abs':
+                    $def_val = "({$sig}$cn[4] руб.)";
+                    break;
+                case 'fix':
+                    $def_val = "(= $cn[4] руб.)";
+                    break;
+                default :
+                    $def_val = "({$sig}$cn[4] XX)";
+            }
+
+            $checked = $cn[1] ? 'checked' : '';
+            if (!$cn[1]) {
+                $cn[5] = $cn[3];
+                $cn[6] = $cn[4];
+                $cn[7] = $cn[9];
+                $cn[8] = $cn[10];
+            }
+
+            $tmpl->addContent("<tr><td><label><input type='checkbox' name='ch$cn[0]' value='1' $checked>" . html_out($cn[2]) . " $def_val</label>
+                            <td><select name='cost_type$cn[0]'>");
+            foreach ($cost_types as $id => $type) {
+                $sel = ($id == $cn[5]) ? ' selected' : '';
+                $tmpl->addContent("<option value='$id'$sel>$type</option>");
+            }
+
+            $tmpl->addContent("</select>
+                            <td><input type='text' name='val$cn[0]' value='$cn[6]'>
+                            <td><select name='accur$cn[0]'>");
+            for ($i = -3; $i < 3; $i++) {
+                $a = sprintf("%0.2f", pow(10, $i * (-1)));
+                $sel = $cn[7] == $i ? 'selected' : '';
+                $tmpl->addContent("<option value='$i' $sel>$a</option>");
+            }
+            $tmpl->addContent("</select>
+                            <td><select name='direct$cn[0]'>");
+            for ($i = (-1); $i < 2; $i++) {
+                $sel = $cn[8] == $i ? 'selected' : '';
+                $tmpl->addContent("<option value='$i' $sel>{$direct[$i]}</option>");
+            }
+            $result = $pc->getPosSelectedPriceValue($pos, $cn[0], $pos_info);
+            $tmpl->addContent("</select><td>$result руб.");
+        }
+        $tmpl->addContent("</table><button>Сохранить цены</button></form>");
+    }
+    
+    protected function showLinkedPosEditForm($pos) {
+        global $tmpl, $db;
+        $peopt = request('peopt');
+        require_once("include/doc.sklad.link.php");
+        $poseditor = new LinkPosList($pos);
+        $poseditor->SetEditable(1);
+        if ($peopt == '') {
+            $tmpl->addContent($poseditor->Show());
+        } else {
+            $tmpl->ajax = 1;
+            if ($peopt == 'jget') {
+                $str = $poseditor->GetAllContent();
+                $tmpl->setContent($str);
+            }
+            // Получение данных наименования
+            else if ($peopt == 'jgpi') {
+                $pos = rcvint('pos');
+                $tmpl->setContent($poseditor->GetPosInfo($pos));
+            }
+            // Json вариант добавления позиции
+            else if ($peopt == 'jadd') {
+                \acl::accessGuard('directory.goods', \acl::UPDATE);
+                $pe_pos = rcvint('pe_pos');
+                $tmpl->setContent($poseditor->AddPos($pe_pos));
+            }
+            // Json вариант удаления строки
+            else if ($peopt == 'jdel') {
+                \acl::accessGuard('directory.goods', \acl::UPDATE);
+                $line_id = rcvint('line_id');
+                $tmpl->setContent($poseditor->Removeline($line_id));
+            }
+            // Json вариант обновления
+            else if ($peopt == 'jup') {
+                \acl::accessGuard('directory.goods', \acl::UPDATE);
+                $line_id = rcvint('line_id');
+                $value = request('value');
+                $type = request('type');
+                $tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
+            }
+            // Получение номенклатуры выбранной группы
+            else if ($peopt == 'jsklad') {
+                $group_id = rcvint('group_id');
+                $str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
+                $tmpl->setContent($str);
+            }
+            // Поиск по подстроке по складу
+            else if ($peopt == 'jsklads') {
+                $s = request('s');
+                $str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
+                $tmpl->setContent($str);
+            }
+            // Получение списка групп
+            else if ($peopt == 'jgetgroups') {
+                $doc_content = $poseditor->getGroupList();
+                $tmpl->setContent($doc_content);
+            } else
+                throw new \NotFoundException();
+        }
+    }
+    
+    protected function showAnalogEditForm($pos) {
+        global $tmpl, $db;
+        $pos_info = $db->selectRow('doc_base', $pos);
+        $analog_group = $pos_info['analog_group'];
+        $tmpl->addContent("<form action='' method='post'>
+            <input type='hidden' name='mode' value='esave'>
+            <input type='hidden' name='l' value='sklad'>
+            <input type='hidden' name='pos' value='$pos'>
+            <input type='hidden' name='param' value='n'>
+            Имя группы аналогов:<br>
+            <input type='text' name='analog_group' value='$analog_group'>
+            <button type='submit'>Записать</button>
+            </form>
+            <h3>Аналоги в группе</h3>
+            <table class='list'>
+            <tr><th>id</th><th>Код</th><th>Название</th><th>Производитель</th><th>Цена</th><th>Остаток</th>");
+        if (\cfg::get('poseditor', 'rto')) {
+            $tmpl->addContent("<th>Резерв</th><th>Под заказ</th><th>В пути</th>");
+        }
+        $tmpl->addContent("</tr>");
+
+        $base_link = '/docs.php?mode=srv';
+        $analog_group_sql = $db->real_escape_string($analog_group);
+        $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `cost` AS `price`, (
+                SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`
+            ) AS `cnt`,
+            `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
+            FROM `doc_base`
+            LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
+            WHERE `analog_group`='$analog_group_sql' AND `analog_group`!=''");
+        while ($line = $res->fetch_assoc()) {
+            $link = $base_link . '&amp;pos=' . $line['id'];
+            $rto = '';
+            if (\cfg::get('poseditor', 'rto')) {
+                $clink = $link . '&amp;l=inf';
+                if ($line['reserve']) {
+                    $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=rezerv'); return false;\" href='#'>{$line['reserve']}</a></td>";
+                } else {
+                    $rto .= "<td></td>";
+                }
+                if ($line['offer']) {
+                    $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=p_zak'); return false;\" href='#'>{$line['offer']}</a></td>";
+                } else {
+                    $rto .= "<td></td>";
+                }
+                if ($line['transit']) {
+                    $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=vputi'); return false;\" href='#'>{$line['transit']}</a></td>";
+                } else {
+                    $rto .= "<td></td>";
+                }
+            }
+            if ($line['cnt'] != 0) {
+                $line['cnt'] = "<a href='#' onclick=\"ShowPopupWin('$link&amp;opt=ost'); return false;\" title='Отобразить все остатки'>{$line['cnt']}</a>";
+            } else {
+                $line['cnt'] = '';
+            }
+            $tmpl->addContent("<tr>
+                <td><a href='{$link}&amp;opt=ep'>{$line['id']}</a></td>
+                <td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['vendor']}</td> 
+                <td align='right'>{$line['price']}</td><td align='right'>{$line['cnt']}</td>$rto
+                </tr>");
+        }
+        $tmpl->addContent("</table>");
+    }
+
+    protected function showNomenclatureGroupsEditForm($group_id) {
+        global $tmpl, $db;
+        \acl::accessGuard('directory.goods.groups', \acl::VIEW);
+        $max_fs = \webcore::getMaxUploadFileSize();
+        $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
+
+        $res = $db->query("SELECT * FROM `doc_group` WHERE `id`='$group_id'");
+        if ($res->num_rows)
+            $group_info = $res->fetch_assoc();
+        else {
+            $group_info = array();
+            foreach ($this->group_vars as $value) {
+                $group_info[$value] = '';
+            }
+        }
+        $tmpl->addContent("<h1>Описание группы</h1>
+            <script type=\"text/javascript\">
+            function rmLine(t) {
+                var line=t.parentNode.parentNode
+                line.parentNode.removeChild(line)
+            }
+
+            function addLine() {
+                var fgtab=document.getElementById('fg_table').tBodies[0]
+                var sel=document.getElementById('fg_select')
+                var newrow=fgtab.insertRow(fgtab.rows.length)
+                var lineid=sel.value
+                var checked=(document.getElementById('fg_check').checked)?'checked':''
+                var ctext = sel.selectedIndex !== -1 ? sel.options[sel.selectedIndex].text : ''
+
+                newrow.innerHTML=\"<td><input type='hidden' name='fn[\"+lineid+\"]' value='1'>\"+
+                \"<input type='checkbox' name='fc[\"+lineid+\"]' value='1' \"+checked+\"></td><td>\"+ctext+\"</td><td>\"+
+                \"<img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td>\"
+            }
+
+            </script>
+            <form action='docs.php' method='post' enctype='multipart/form-data'>
+            <input type='hidden' name='mode' value='esave'>
+            <input type='hidden' name='l' value='sklad'>
+            <input type='hidden' name='g' value='$group_id'>
+            <input type='hidden' name='param' value='g'>
+            <table cellpadding='0' width='50%' class='list'>
+            <tr><td>Наименование группы $group_id:</td>
+            <td><input type='text' name='name' value='" . html_out($group_info['name']) . "'></td></tr>
+            <tr><td>Находится в группе:</td>
+            <td>" . selectGroupPos('pid', $group_info['pid'], true));
+
+        if (file_exists(\cfg::get('site', 'var_data_fs')."/category/$group_id.jpg")) {
+            $img = "<br><img src='".\cfg::get('site', 'var_data_fs')."/category/$group_id.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$group_id&amp;param=gid'>Удалить изображение</a>";
+        }
+        else {
+            $img = '';
+        }
+
+        $hid_check = $group_info['hidelevel'] ? 'checked' : '';
+        $yml_check = $group_info['no_export_yml'] ? 'checked' : '';
+
+        $tmpl->addContent("</td></tr>
+            <tr><td>Скрытие:</td>
+            <td><label><input type='checkbox' name='hid' value='3' $hid_check>Не отображать на витрине и в прайсах</label><br>
+            <label><input type='checkbox' name='no_export_yml' value='3' $yml_check>Не экспортировать в YML</label></td></tr>
+            <tr><td>Печатное название:</td>
+            <td><input type='text' name='pname' value='" . html_out($group_info['printname']) . "'></td></tr>
+            <tr><td>Порядковый номер отображения:</td>
+            <td><input type='text' name='vieworder' value='" . html_out($group_info['vieworder']) . "'></td></tr>
+            <tr><td>Тэг title группы на витрине:</td>
+            <td><input type='text' name='title_tag' value='" . html_out($group_info['title_tag']) . "' maxlength='128'></td></tr>
+            <tr><td>Мета-тэг keywords группы на витрине:</td>
+            <td><input type='text' name='meta_keywords' value='" . html_out($group_info['meta_keywords']) . "' maxlength='128'></td></tr>
+            <tr><td>Мета-тэг description группы на витрине:</td>
+            <td><input type='text' name='meta_description' value='" . html_out($group_info['meta_description']) . "' maxlength='256'></td></tr>
+
+            <tr><td>Изображение (jpg, до $max_fs_size, от 100*100):</td>
+            <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'>$img</td></tr>
+            <tr><td>Описание:</td>
+            <td><textarea name='desc'>" . html_out($group_info['desc']) . "</textarea></td></tr>
+            <tr><td>Статические дополнительные свойства товаров группы<br><br>
+            Добавить из набора:<select name='collection'>
+            <option value='0'>--не выбран--</option>");
+        $rgroups = $db->query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
+        while ($col = $rgroups->fetch_row()) {
+            $tmpl->addContent("<option value='$col[0]'>" . html_out($col[1]) . "</option>");
+        }
+        $tmpl->addContent("</select></td>
+            <td>
+            <table width='100%' id='fg_table' class='list'>
+            <thead>
+            <tr><th><img src='/img/i_filter.png' alt='Отображать в фильтрах'></th><th>Название параметра</th><th>&nbsp;</th></tr>
+            </thead>
+            <tfoot>
+            <tr><td><input type='checkbox' id='fg_check'><td>
+            <select name='pp' id='fg_select'>
+            <option value='0' selected>--не выбрано--</option>");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
+        while ($groupp = $res_group->fetch_row()) {
+            $tmpl->addContent("<option value='-1' disabled>" . html_out($groupp[1]) . "</option>");
+            $res = $db->query("SELECT `id`, `name` FROM `doc_base_params` WHERE `group_id`='$groupp[0]' ORDER BY `name`");
+            while ($param = $res->fetch_row()) {
+                $tmpl->addContent("<option value='$param[0]'>- " . html_out($param[1]) . "</option>");
+            }
+        }
+        $tmpl->addContent("</select>
+            </td><td><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
+            </td></tr></tfoot>
+            <tbody>");
+
+        $r = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
+            LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
+            WHERE  `doc_group_params`.`group_id`='$group_id'
+            ORDER BY `doc_base_params`.`id`");
+        while ($p = $r->fetch_row()) {
+            $checked = $p[2] ? 'checked' : '';
+            $tmpl->addContent("<tr><td><input type='hidden' name='fn[$p[0]]' value='1'>
+                <input type='checkbox' name='fc[$p[0]]' value='1' $checked></td><td>" . html_out($p[1]) . "</td>
+                <td><img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td></tr>");
+        }
+
+        $tmpl->addContent("</tbody></table>
+            <tr class='lin1'><td colspan='2' align='center'>
+            <button type='submit'>Сохранить</button>
+            </table></form>");
+
+        if ($group_id) {
+            $cost_types = array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
+            $direct = array((-1) => 'Вниз', 0 => 'K ближайшему', 1 => 'Вверх');
+            $res = $db->query("SELECT `doc_cost`.`id`, `doc_group_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
+                FROM `doc_cost`
+                LEFT JOIN `doc_group_cost` ON `doc_cost`.`id`=`doc_group_cost`.`cost_id` AND `doc_group_cost`.`group_id`='$group_id'");
+            $tmpl->addContent("<h1>Задание цен</h1>
+                <form action='docs.php' method='post'>
+                <input type='hidden' name='mode' value='esave'>
+                <input type='hidden' name='l' value='sklad'>
+                <input type='hidden' name='g' value='$group_id'>
+                <input type='hidden' name='param' value='gc'>
+                <table cellpadding='0' width='50%' class='list'>
+                <tr><th>Цена</th><th>Тип</th><th>Значение</th><th>Точность</th><th>Округление</th></tr>");
+            while ($cn = $res->fetch_row()) {
+                $sig = ($cn[4] > 0) ? '+' : '';
+                if ($cn[3] == 'pp') {
+                    $def_val = "({$sig}$cn[4] %)";
+                } else if ($cn[3] == 'abs') {
+                    $def_val = "({$sig}$cn[4] руб.)";
+                } else if ($cn[3] == 'fix') {
+                    $def_val = "(= $cn[4] руб.)";
+                } else {
+                    $def_val = "({$sig}$cn[4] XX)";
+                }
+
+                $checked = $cn[1] ? 'checked' : '';
+
+                $tmpl->addContent("<tr><td><label><input type='checkbox' name='ch$cn[0]' value='1' $checked>" . html_out($cn[2]) . " $def_val</label></td>
+                                    <td><select name='cost_type$cn[0]'>");
+                foreach ($cost_types as $id => $type) {
+                    $sel = ($id == $cn[5]) ? ' selected' : '';
+                    $tmpl->addContent("<option value='$id'$sel>$type</option>");
+                }
+                if (!$cn[1]) {
+                    $cn[5] = $cn[3];
+                    $cn[6] = $cn[4];
+                    $cn[7] = $cn[9];
+                    $cn[8] = $cn[10];
+                }
+                $tmpl->addContent("</select></td>
+                                    <td><input type='text' name='val$cn[0]' value='$cn[6]'></td>
+                                    <td><select name='accur$cn[0]'>");
+                for ($i = -3; $i < 3; $i++) {
+                    $a = sprintf("%0.2f", pow(10, $i * (-1)));
+                    $sel = $cn[7] == $i ? 'selected' : '';
+                    $tmpl->addContent("<option value='$i' $sel>$a</option>");
+                }
+                $tmpl->addContent("</select>
+                                    <td><select name='direct$cn[0]'>");
+                for ($i = (-1); $i < 2; $i++) {
+                    $sel = $cn[8] == $i ? 'selected' : '';
+                    $tmpl->addContent("<option value='$i' $sel>{$direct[$i]}</option>");
+                }
+                $tmpl->addContent("</select>");
+            }
+            $tmpl->addContent("</table><button>Сохранить цены</button></form>");
+        }
+    }
 
 
     /// Формы редактирования
@@ -631,7 +1096,8 @@ class doc_s_Sklad {
         if ($pos != 0) {
             $this->PosMenu($pos, $param);
         }
-
+        
+        // Карточка номенклатуры
         if ($param == '' || $param == 'v') {
             $this->showMainForm($pos, $group);
         }
@@ -647,294 +1113,26 @@ class doc_s_Sklad {
         else if ($param == 'k') {
             $this->showPartsForm($pos);
         }
+        // Настройки анализатора прайсов
         elseif ($param == 'a') {
-            //require_once("include/doc.sklad.kompl.php");
             $pran = new doc_s_Price_an();
             $tmpl->addContent( $pran->getRegExpEditForm($pos));
         }
         // Изображения
         else if ($param == 'i') {
-            $max_fs = \webcore::getMaxUploadFileSize();
-            $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
-
-            $res = $db->query("SELECT `doc_base_img`.`img_id`, `doc_img`.`type`
-                FROM `doc_base_img`
-                LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
-                WHERE `doc_base_img`.`pos_id`='$pos'");
-            $checked = ($res->num_rows == 0) ? 'checked' : '';
-            $tmpl->addContent("
-                <table>
-                <tr><th width='50%'>Изображения</th><th width='50%'>Прикреплённые файлы</th></tr>
-                <tr><td valign='top'>
-                <form action='' method='post' enctype='multipart/form-data'>
-                <input type='hidden' name='mode' value='esave'>
-                <input type='hidden' name='l' value='sklad'>
-                <input type='hidden' name='pos' value='$pos'>
-                <input type='hidden' name='param' value='i'>
-                <table class='list' width='100%'>
-                <tr><th width='10%'>По умолч.</th><th>Файл</th><th>Имя изображения</th></tr>
-                <tr><td><input type='radio' name='def_img' value='1' $checked></td>
-                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile1' type='file'></td>
-                <td><input type='text' name='photoname_1' value=''></td>
-                </tr>
-                <tr><td><input type='radio' name='def_img' value='2'></td>
-                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile2' type='file'></td>
-                <td><input type='text' name='photoname_2' value=''></td>
-                </tr>
-                <tr><td><input type='radio' name='def_img' value='3'></td>
-                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile3' type='file'></td>
-                <td><input type='text' name='photoname_3' value=''></td>
-                </tr>
-                <tr><td><input type='radio' name='def_img' value='4'></td>
-                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile4' type='file'></td>
-                <td><input type='text' name='photoname_4' value=''></td>
-                </tr>
-                <tr><td><input type='radio' name='def_img' value='5'></td>
-                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile5' type='file'></td>
-                <td><input type='text' name='photoname_5' value=''></td>
-                </tr>
-                <tr><td colspan='3' align='center'>
-                <button type='submit'>Сохранить</button>
-                </table>
-                <b>Форматы</b>: Не более $max_fs_size суммарно, разрешение от 150*150 до 10000*10000, форматы JPG, PNG, допустим, но не рекомендуется GIF<br>
-                <b>Примечание</b>: Если написать имя картинки, которая уже есть в базе, то она и будет установлена вне зависимости от того, передан файл или нет.
-                </form><h2>Ассоциированные с товаром картинки</h2>");
-            while ($nxt = $res->fetch_row()) {
-                $miniimg = new ImageProductor($nxt[0], 'p', $nxt[1]);
-                $miniimg->SetX(175);
-                $img = "<img src='" . $miniimg->GetURI() . "' width='175'>";
-                $tmpl->addContent("$img<br><a href='?mode=esave&amp;l=sklad&amp;param=i_d&amp;pos=$pos&amp;img=$nxt[0]'>Убрать ассоциацию</a><br><br>");
-            }
-            $tmpl->addContent("</td><td valign='top'>
-                <form action='' method='post' enctype='multipart/form-data'>
-                <input type='hidden' name='mode' value='esave'>
-                <input type='hidden' name='l' value='sklad'>
-                <input type='hidden' name='pos' value='$pos'>
-                <input type='hidden' name='param' value='i_a'>
-                <table cellpadding='0' class='list'>
-                <tr><td>Прикрепляемый файл:
-                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'><br><small>Не более $max_fs_size</small>
-                <tr><td>Описание файла (до 128 символов):
-                <td><input type='text' name='comment' value='Инструкция для $pos'><br>
-                <small>Если написать описание файла, которое уже есть в базе, то соответствующий файл и будет установлен, вне зависимости от того, передан он или нет.</small>
-                <tr><td colspan='2' align='center'>
-                <input type='submit' value='Сохранить'>
-                </table>
-                <table class='list' width='100%'>
-                <tr><th colspan='4'>Прикреплённые файлы</th></tr>");
-            $res = $db->query("SELECT `doc_base_attachments`.`attachment_id`, `attachments`.`original_filename`, `attachments`.`description`
-                FROM `doc_base_attachments`
-                LEFT JOIN `attachments` ON `attachments`.`id`=`doc_base_attachments`.`attachment_id`
-                WHERE `doc_base_attachments`.`pos_id`='$pos'");
-            while ($nxt = $res->fetch_row()) {
-                if ($CONFIG['site']['rewrite_enable']) {
-                    $link = "/attachments/{$nxt[0]}/$nxt[1]";
-                } else {
-                    $link = "/attachments.php?att_id={$nxt[0]}";
-                }
-                $tmpl->addContent("<tr><td>$nxt[0]</td><td><a href='$link'>" . html_out($nxt[1]) . "</a></td></td><td>" . html_out($nxt[2]) . "</td><td><a href='?mode=esave&amp;l=sklad&amp;param=i_ad&amp;pos=$pos&amp;att=$nxt[0]' title='Убрать ассоциацию'><img src='/img/i_del.png' alt='Убрать ассоциацию'></a></td></tr>");
-            }
-            $tmpl->addContent("</table></td></tr></table>");
+            $this->showImagesEditForm($pos);
         }
         // Цены
         else if ($param == 'c') {
-            $cres = $db->query("SELECT `cost` AS `base_price`, `group`, `bulkcnt` FROM `doc_base` WHERE `doc_base`.`id`='$pos'");
-            if (!$cres->num_rows)
-                throw new Exception("Позиция не найдена");
-            $pos_info = $cres->fetch_assoc();
-
-            //list($base_cost) = $cres->fetch_row();
-
-            $cost_types = array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
-            $direct = array((-1) => 'Вниз', 0 => 'K ближайшему', 1 => 'Вверх');
-            $res = $db->query("SELECT `doc_cost`.`id`, `doc_base_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_base_cost`.`type`, `doc_base_cost`.`value`, `doc_base_cost`.`accuracy`, `doc_base_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
-                FROM `doc_cost`
-                LEFT JOIN `doc_base_cost` ON `doc_cost`.`id`=`doc_base_cost`.`cost_id` AND `doc_base_cost`.`pos_id`='$pos'");
-            $tmpl->addContent("
-                <form action='docs.php' method='post'>
-                <input type='hidden' name='mode' value='esave'>
-                <input type='hidden' name='l' value='sklad'>
-                <input type='hidden' name='pos' value='$pos'>
-                <input type='hidden' name='param' value='c'>
-                <table cellpadding='0' width='50%' class='list'>
-                <tr><th>Цена</th><th>Тип</th><th>Значение</th><th>Точность</th><th>Округление</th><th>Результат</th></tr>
-                <tr><td><b>Базовая</b><td>Базовая цена<td>{$pos_info['base_price']} руб.<td>-<td>-<td>{$pos_info['base_price']} руб.");
-            $pc = PriceCalc::getInstance();
-            while ($cn = $res->fetch_row()) {
-                $sig = ($cn[4] > 0) ? '+' : '';
-                switch($cn[3]) {
-                    case 'pp':
-                        $def_val = "({$sig}$cn[4] %)";
-                        break;
-                    case 'abs':
-                        $def_val = "({$sig}$cn[4] руб.)";
-                        break;
-                    case 'fix':
-                        $def_val = "(= $cn[4] руб.)";
-                        break;
-                    default :
-                        $def_val = "({$sig}$cn[4] XX)";
-                }
-
-                $checked = $cn[1] ? 'checked' : '';
-                if (!$cn[1]) {
-                    $cn[5] = $cn[3];
-                    $cn[6] = $cn[4];
-                    $cn[7] = $cn[9];
-                    $cn[8] = $cn[10];
-                }
-
-                $tmpl->addContent("<tr><td><label><input type='checkbox' name='ch$cn[0]' value='1' $checked>" . html_out($cn[2]) . " $def_val</label>
-				<td><select name='cost_type$cn[0]'>");
-                foreach ($cost_types as $id => $type) {
-                    $sel = ($id == $cn[5]) ? ' selected' : '';
-                    $tmpl->addContent("<option value='$id'$sel>$type</option>");
-                }
-
-                $tmpl->addContent("</select>
-				<td><input type='text' name='val$cn[0]' value='$cn[6]'>
-				<td><select name='accur$cn[0]'>");
-                for ($i = -3; $i < 3; $i++) {
-                    $a = sprintf("%0.2f", pow(10, $i * (-1)));
-                    $sel = $cn[7] == $i ? 'selected' : '';
-                    $tmpl->addContent("<option value='$i' $sel>$a</option>");
-                }
-                $tmpl->addContent("</select>
-				<td><select name='direct$cn[0]'>");
-                for ($i = (-1); $i < 2; $i++) {
-                    $sel = $cn[8] == $i ? 'selected' : '';
-                    $tmpl->addContent("<option value='$i' $sel>{$direct[$i]}</option>");
-                }
-                $result = $pc->getPosSelectedPriceValue($pos, $cn[0], $pos_info);
-                $tmpl->addContent("</select><td>$result руб.");
-            }
-            $tmpl->addContent("</table>
-			<button>Сохранить цены</button></form>");
+            $this->showPricesEditForm($pos);
         }
         // Связанные товары
         else if ($param == 'l') {
-            $peopt = request('peopt');
-            require_once("include/doc.sklad.link.php");
-            $poseditor = new LinkPosList($pos);
-            $poseditor->SetEditable(1);
-            if ($peopt == '') {
-                $tmpl->addContent($poseditor->Show());
-            } else {
-                $tmpl->ajax = 1;
-                if ($peopt == 'jget') {
-                    $str = $poseditor->GetAllContent();
-                    $tmpl->setContent($str);
-                }
-                // Получение данных наименования
-                else if ($peopt == 'jgpi') {
-                    $pos = rcvint('pos');
-                    $tmpl->setContent($poseditor->GetPosInfo($pos));
-                }
-                // Json вариант добавления позиции
-                else if ($peopt == 'jadd') {
-                    \acl::accessGuard('directory.goods', \acl::UPDATE);
-                    $pe_pos = rcvint('pe_pos');
-                    $tmpl->setContent($poseditor->AddPos($pe_pos));
-                }
-                // Json вариант удаления строки
-                else if ($peopt == 'jdel') {
-                    \acl::accessGuard('directory.goods', \acl::UPDATE);
-                    $line_id = rcvint('line_id');
-                    $tmpl->setContent($poseditor->Removeline($line_id));
-                }
-                // Json вариант обновления
-                else if ($peopt == 'jup') {
-                    \acl::accessGuard('directory.goods', \acl::UPDATE);
-                    $line_id = rcvint('line_id');
-                    $value = request('value');
-                    $type = request('type');
-                    $tmpl->setContent($poseditor->UpdateLine($line_id, $type, $value));
-                }
-                // Получение номенклатуры выбранной группы
-                else if ($peopt == 'jsklad') {
-                    $group_id = rcvint('group_id');
-                    $str = "{ response: 'sklad_list', group: '$group_id',  content: [" . $poseditor->GetSkladList($group_id) . "] }";
-                    $tmpl->setContent($str);
-                }
-                // Поиск по подстроке по складу
-                else if ($peopt == 'jsklads') {
-                    $s = request('s');
-                    $str = "{ response: 'sklad_list', content: [" . $poseditor->SearchSkladList($s) . "] }";
-                    $tmpl->setContent($str);
-                }
-                // Получение списка групп
-                else if ($peopt == 'jgetgroups') {
-                    $doc_content = $poseditor->getGroupList();
-                    $tmpl->setContent($doc_content);
-                } else
-                    throw new NotFoundException();
-            }
+            $this->showLinkedPosEditForm($pos);
         }
         // Аналоги
         else if ($param == 'n') {
-            $pos_info = $db->selectRow('doc_base', $pos);
-
-            $analog_group = $pos_info['analog_group'];
-            $tmpl->addContent("<form action='' method='post'>
-                <input type='hidden' name='mode' value='esave'>
-                <input type='hidden' name='l' value='sklad'>
-                <input type='hidden' name='pos' value='$pos'>
-                <input type='hidden' name='param' value='n'>
-                Имя группы аналогов:<br>
-                <input type='text' name='analog_group' value='$analog_group'>
-                <button type='submit'>Записать</button>
-                </form>
-                <h3>Аналоги в группе</h3>
-                <table class='list'>
-                <tr><th>id</th><th>Код</th><th>Название</th><th>Производитель</th><th>Цена</th><th>Остаток</th>");
-            if (@$CONFIG['poseditor']['rto']) {
-                $tmpl->addContent("<th>Резерв</th><th>Под заказ</th><th>В пути</th>");
-            }
-            $tmpl->addContent("</tr>");
-
-            $base_link = '/docs.php?mode=srv';
-            $analog_group_sql = $db->real_escape_string($analog_group);
-            $res = $db->query("SELECT `doc_base`.`id`, `doc_base`.`vc`, `doc_base`.`name`, `doc_base`.`proizv` AS `vendor`, `cost` AS `price`, (
-                    SELECT SUM(`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id`
-                ) AS `cnt`,
-                `doc_base_dop`.`reserve`, `doc_base_dop`.`transit`, `doc_base_dop`.`offer`
-                FROM `doc_base`
-                LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
-                WHERE `analog_group`='$analog_group_sql' AND `analog_group`!=''");
-            while ($line = $res->fetch_assoc()) {
-                $link = $base_link . '&amp;pos=' . $line['id'];
-                $rto = '';
-                if (@$CONFIG['poseditor']['rto']) {
-                    $clink = $link . '&amp;l=inf';
-                    if ($line['reserve']) {
-                        $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=rezerv'); return false;\" href='#'>{$line['reserve']}</a></td>";
-                    } else {
-                        $rto .= "<td></td>";
-                    }
-                    if ($line['offer']) {
-                        $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=p_zak'); return false;\" href='#'>{$line['offer']}</a></td>";
-                    } else {
-                        $rto .= "<td></td>";
-                    }
-                    if ($line['transit']) {
-                        $rto .= "<td align='right'><a onclick=\"ShowPopupWin('{$clink}&amp;opt=vputi'); return false;\" href='#'>{$line['transit']}</a></td>";
-                    } else {
-                        $rto .= "<td></td>";
-                    }
-                }
-                if ($line['cnt'] != 0) {
-                    $line['cnt'] = "<a href='#' onclick=\"ShowPopupWin('$link&amp;opt=ost'); return false;\" title='Отобразить все остатки'>{$line['cnt']}</a>";
-                } else {
-                    $line['cnt'] = '';
-                }
-                $tmpl->addContent("<tr>
-                    <td><a href='{$link}&amp;opt=ep'>{$line['id']}</a></td>
-                    <td>{$line['vc']}</td><td>{$line['name']}</td><td>{$line['vendor']}</td> 
-                    <td align='right'>{$line['price']}</td><td align='right'>{$line['cnt']}</td>$rto
-                    </tr>");
-            }
-
-            $tmpl->addContent("</table>");
+            $this->showAnalogEditForm($pos);
         }
         // История изменений
         else if ($param == 'h') {
@@ -946,313 +1144,9 @@ class doc_s_Sklad {
         }
         // Правка описания группы
         else if ($param == 'g') {
-            \acl::accessGuard('directory.goods.groups', \acl::VIEW);
-            $max_fs = \webcore::getMaxUploadFileSize();
-            $max_fs_size = \webcore::toStrDataSizeInaccurate($max_fs);
-
-            $res = $db->query("SELECT * FROM `doc_group` WHERE `id`='$group'");
-            if ($res->num_rows)
-                $group_info = $res->fetch_assoc();
-            else {
-                $group_info = array();
-                foreach ($this->group_vars as $value)
-                    $group_info[$value] = '';
-            }
-            $tmpl->addContent("<h1>Описание группы</h1>
-                <script type=\"text/javascript\">
-                function rmLine(t)
-                {
-                        var line=t.parentNode.parentNode
-                        line.parentNode.removeChild(line)
-                }
-
-                function addLine()
-                {
-                        var fgtab=document.getElementById('fg_table').tBodies[0]
-                        var sel=document.getElementById('fg_select')
-                        var newrow=fgtab.insertRow(fgtab.rows.length)
-                        var lineid=sel.value
-                        var checked=(document.getElementById('fg_check').checked)?'checked':''
-
-                        var ctext = sel.selectedIndex !== -1 ? sel.options[sel.selectedIndex].text : ''
-
-                        newrow.innerHTML=\"<td><input type='hidden' name='fn[\"+lineid+\"]' value='1'>\"+
-                        \"<input type='checkbox' name='fc[\"+lineid+\"]' value='1' \"+checked+\"></td><td>\"+ctext+\"</td><td>\"+
-                        \"<img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td>\"
-                }
-
-                </script>
-                <form action='docs.php' method='post' enctype='multipart/form-data'>
-                <input type='hidden' name='mode' value='esave'>
-                <input type='hidden' name='l' value='sklad'>
-                <input type='hidden' name='g' value='$group'>
-                <input type='hidden' name='param' value='g'>
-                <table cellpadding='0' width='50%' class='list'>
-                <tr><td>Наименование группы $group:</td>
-                <td><input type='text' name='name' value='" . html_out($group_info['name']) . "'></td></tr>
-                <tr><td>Находится в группе:</td>
-                <td>" . selectGroupPos('pid', $group_info['pid'], true));
-
-            if (file_exists("{$CONFIG['site']['var_data_fs']}/category/$group.jpg"))
-                $img = "<br><img src='{$CONFIG['site']['var_data_web']}/category/$group.jpg'><br><a href='/docs.php?l=sklad&amp;mode=esave&amp;g=$group&amp;param=gid'>Удалить изображение</a>";
-            else
-                $img = '';
-
-            $hid_check = $group_info['hidelevel'] ? 'checked' : '';
-            $yml_check = $group_info['no_export_yml'] ? 'checked' : '';
-
-            $tmpl->addContent("</td></tr>
-                <tr><td>Скрытие:</td>
-                <td><label><input type='checkbox' name='hid' value='3' $hid_check>Не отображать на витрине и в прайсах</label><br>
-                <label><input type='checkbox' name='no_export_yml' value='3' $yml_check>Не экспортировать в YML</label></td></tr>
-                <tr><td>Печатное название:</td>
-                <td><input type='text' name='pname' value='" . html_out($group_info['printname']) . "'></td></tr>
-                <tr><td>Тэг title группы на витрине:</td>
-                <td><input type='text' name='title_tag' value='" . html_out($group_info['title_tag']) . "' maxlength='128'></td></tr>
-                <tr><td>Мета-тэг keywords группы на витрине:</td>
-                <td><input type='text' name='meta_keywords' value='" . html_out($group_info['meta_keywords']) . "' maxlength='128'></td></tr>
-                <tr><td>Мета-тэг description группы на витрине:</td>
-                <td><input type='text' name='meta_description' value='" . html_out($group_info['meta_description']) . "' maxlength='256'></td></tr>
-
-                <tr><td>Изображение (jpg, до $max_fs_size, от 100*100):</td>
-                <td><input type='hidden' name='MAX_FILE_SIZE' value='$max_fs'><input name='userfile' type='file'>$img</td></tr>
-                <tr><td>Описание:</td>
-                <td><textarea name='desc'>" . html_out($group_info['desc']) . "</textarea></td></tr>
-                <tr><td>Статические дополнительные свойства товаров группы<br><br>
-                Добавить из набора:<select name='collection'>
-                <option value='0'>--не выбран--</option>");
-            $rgroups = $db->query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
-            while ($col = $res->fetch_row()) {
-                $tmpl->addContent("<option value='$col[0]'>" . html_out($col[1]) . "</option>");
-            }
-            $tmpl->addContent("</select></td>
-                <td>
-                <table width='100%' id='fg_table' class='list'>
-                <thead>
-                <tr><th><img src='/img/i_filter.png' alt='Отображать в фильтрах'></th><th>Название параметра</th><th>&nbsp;</th></tr>
-                </thead>
-                <tfoot>
-                <tr><td><input type='checkbox' id='fg_check'><td>
-                <select name='pp' id='fg_select'>
-                <option value='0' selected>--не выбрано--</option>");
-            $res_group = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
-            while ($groupp = $res_group->fetch_row()) {
-                $tmpl->addContent("<option value='-1' disabled>" . html_out($groupp[1]) . "</option>");
-                $res = $db->query("SELECT `id`, `name` FROM `doc_base_params` WHERE `group_id`='$groupp[0]' ORDER BY `name`");
-                while ($param = $res->fetch_row()) {
-                    $tmpl->addContent("<option value='$param[0]'>- " . html_out($param[1]) . "</option>");
-                }
-            }
-            $tmpl->addContent("</select>
-                </td><td><img src='/img/i_add.png' alt='' onclick='return addLine()'></td></tr>
-                </td></tr></tfoot>
-                <tbody>");
-
-            $r = $db->query("SELECT `doc_base_params`.`id`, `doc_base_params`.`name`, `doc_group_params`.`show_in_filter` FROM `doc_base_params`
-                LEFT JOIN `doc_group_params` ON `doc_group_params`.`param_id`=`doc_base_params`.`id`
-                WHERE  `doc_group_params`.`group_id`='$group'
-                ORDER BY `doc_base_params`.`id`");
-            while ($p = $r->fetch_row()) {
-                $checked = $p[2] ? 'checked' : '';
-                $tmpl->addContent("<tr><td><input type='hidden' name='fn[$p[0]]' value='1'>
-				<input type='checkbox' name='fc[$p[0]]' value='1' $checked></td><td>" . html_out($p[1]) . "</td>
-				<td><img src='/img/i_del.png' alt='' onclick='return rmLine(this)'></td></tr>");
-            }
-
-            $tmpl->addContent("</tbody></table>
-			<tr class='lin1'><td colspan='2' align='center'>
-			<button type='submit'>Сохранить</button>
-			</table></form>");
-
-            if ($group) {
-                $cost_types = array('pp' => 'Процент', 'abs' => 'Абсолютная наценка', 'fix' => 'Фиксированная цена');
-                $direct = array((-1) => 'Вниз', 0 => 'K ближайшему', 1 => 'Вверх');
-                $res = $db->query("SELECT `doc_cost`.`id`, `doc_group_cost`.`id`, `doc_cost`.`name`, `doc_cost`.`type`, `doc_cost`.`value`, `doc_group_cost`.`type`, `doc_group_cost`.`value`, `doc_group_cost`.`accuracy`, `doc_group_cost`.`direction`, `doc_cost`.`accuracy`, `doc_cost`.`direction`
-				FROM `doc_cost`
-				LEFT JOIN `doc_group_cost` ON `doc_cost`.`id`=`doc_group_cost`.`cost_id` AND `doc_group_cost`.`group_id`='$group'");
-                $tmpl->addContent("<h1>Задание цен</h1>
-				<form action='docs.php' method='post'>
-				<input type='hidden' name='mode' value='esave'>
-				<input type='hidden' name='l' value='sklad'>
-				<input type='hidden' name='g' value='$group'>
-				<input type='hidden' name='param' value='gc'>
-				<table cellpadding='0' width='50%' class='list'>
-				<tr><th>Цена</th><th>Тип</th><th>Значение</th><th>Точность</th><th>Округление</th></tr>");
-                while ($cn = $res->fetch_row()) {
-                    $sig = ($cn[4] > 0) ? '+' : '';
-                    if ($cn[3] == 'pp')
-                        $def_val = "({$sig}$cn[4] %)";
-                    else if ($cn[3] == 'abs')
-                        $def_val = "({$sig}$cn[4] руб.)";
-                    else if ($cn[3] == 'fix')
-                        $def_val = "(= $cn[4] руб.)";
-                    else
-                        $def_val = "({$sig}$cn[4] XX)";
-
-                    $checked = $cn[1] ? 'checked' : '';
-
-                    $tmpl->addContent("<tr><td><label><input type='checkbox' name='ch$cn[0]' value='1' $checked>" . html_out($cn[2]) . " $def_val</label></td>
-					<td><select name='cost_type$cn[0]'>");
-                    foreach ($cost_types as $id => $type) {
-                        $sel = ($id == $cn[5]) ? ' selected' : '';
-                        $tmpl->addContent("<option value='$id'$sel>$type</option>");
-                    }
-                    if (!$cn[1]) {
-                        $cn[5] = $cn[3];
-                        $cn[6] = $cn[4];
-                        $cn[7] = $cn[9];
-                        $cn[8] = $cn[10];
-                    }
-                    $tmpl->addContent("</select></td>
-					<td><input type='text' name='val$cn[0]' value='$cn[6]'></td>
-					<td><select name='accur$cn[0]'>");
-                    for ($i = -3; $i < 3; $i++) {
-                        $a = sprintf("%0.2f", pow(10, $i * (-1)));
-                        $sel = $cn[7] == $i ? 'selected' : '';
-                        $tmpl->addContent("<option value='$i' $sel>$a</option>");
-                    }
-                    $tmpl->addContent("</select>
-					<td><select name='direct$cn[0]'>");
-                    for ($i = (-1); $i < 2; $i++) {
-                        $sel = $cn[8] == $i ? 'selected' : '';
-                        $tmpl->addContent("<option value='$i' $sel>{$direct[$i]}</option>");
-                    }
-                    $tmpl->addContent("</select>");
-                }
-                $tmpl->addContent("</table>
-				<button>Сохранить цены</button></form>");
-            }
+            $this->showNomenclatureGroupsEditForm($group);
         }
-        // Импорт из яндекс маркета
-        else if ($param == 'y') {
-            if (!request('a')) {
-                $res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-				LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
-				WHERE `doc_base_params`.`codename`='ym_url'");
-
-                $tmpl->addContent("
-				<form method='post' action='/docs.php'>
-				<input type='hidden' name='l' value='sklad'>
-				<input type='hidden' name='mode' value='srv'>
-				<input type='hidden' name='opt' value='ep'>
-				<input type='hidden' name='param' value='y'>
-				<input type='hidden' name='pos' value='$pos'>
-				<input type='hidden' name='a' value='parse'>
-				Введите url нужного предложения Яндекс-маркета:<br>
-				<input type='text' name='url' value=''>
-				<button>Получить данные</button>
-				</form>");
-                if ($res->num_rows) {
-                    $nxt = $res->fetch_row();
-                    $tmpl->addContent("<a href='http://market.yandex.ru/model-spec.xml?modelid=" . html_out($nxt[1]) . "'>Посмотреть на яндекс-маркете</a>");
-                }
-            } else {
-                $url = request('url');
-                $keywords = null;   // Чтобы подсветка не ругалась
-                preg_match("/[?]*modelid=([\d]{1,9})[?]*+/", $url, $keywords);
-                $ym_id = $keywords[1];
-                settype($ym_id, 'int');
-                $url = "http://market.yandex.ru/model-spec.xml?modelid=" . $ym_id;
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $url);
-                curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 4);
-                $result = curl_exec($ch);
-                if (curl_errno($ch))
-                    throw new Exception(curl_error($ch));
-                curl_close($ch);
-
-                $dom = new domDocument();
-                $dom->loadHTML($result);
-                $dom->preserveWhiteSpace = false;
-
-                $f = 0;
-                $tables = $dom->getElementsByTagName('table');
-                foreach ($tables as $table) {
-                    if ($table->getAttribute('class') == 'b-properties') {
-                        $f = 1;
-                        break;
-                    }
-                }
-
-                function getSelectParams($id, $name) {
-                    global $db;
-                    $ret = "<select name='sel[$id]'><option value='-1' selected>--не выбрано--</option>";
-                    $selected = $db->real_escape_string($name);
-                    $res = $db->query("SELECT CONCAT(`doc_base_gparams`.`name`,' - ',`doc_base_params`.`name`), `doc_base_params`.`ym_assign`
-                                    FROM `doc_base_params`
-                                    INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`group_id`
-                                    WHERE `doc_base_params`.`ym_assign`='$selected'");
-                    if ($res->num_rows) {
-                        $nxt = $res->fetch_row();
-                        return $nxt[0];
-                    }
-                    $res_group = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` ORDER BY `name`");
-                    while ($group = $res_group->fetch_row()) {
-                        $ret.="<option value='-1' disabled>" . html_out($group[1]) . "</option>";
-                        $res = $db->query("SELECT `id`, `param`, `ym_assign`"
-                            . " FROM `doc_base_params`"
-                            . " WHERE `group_id`='$group[0]'"
-                            . " ORDER BY `name`");
-                        while ($param = $res->fetch_row()) {
-                            $warn = $param[2] ? '(!)' : '';
-                            $ret.="<option value='$param[0]'>- " . html_out($param[1]) . " $warn</option>";
-                        }
-                    }
-                    $ret.="</select>";
-                    return $ret;
-                }
-
-                if ($f) {
-                    $values = array();
-
-                    mb_internal_encoding('UTF-8');
-                    $rows = $table->getElementsByTagName('tr');
-                    $prefix = $param = '';
-                    foreach ($rows as $row) {
-                        for ($item = $row->firstChild; $item != null; $item = $item->nextSibling) {
-                            $class = $item->getAttribute('class');
-                            if (strpos($class, 'b-properties__title') !== false)
-                                $prefix = $item->nodeValue;
-                            else if (strpos($class, 'b-properties__label') !== false)
-                                $param = $item->nodeValue;
-                            else if (strpos($class, 'b-properties__value') !== false)
-                                $values["$prefix:$param"] = $item->nodeValue;
-                        }
-                    }
-                    $tmpl->addContent("
-					<form method='post' action='/docs.php'>
-					<input type='hidden' name='l' value='sklad'>
-					<input type='hidden' name='mode' value='esave'>
-					<input type='hidden' name='param' value='y'>
-					<input type='hidden' name='pos' value='$pos'>
-					<input type='hidden' name='ym_id' value='$ym_id'>
-					<table class='list'>
-					<tr><th>Параметр Яндекс Маркета</th><th>Ассоциированный параметр</th><th>Значение из Яндекс Маркета</th></tr>");
-                    $i = 0;
-                    foreach ($values as $param => $value) {
-                        $tmpl->addContent("<tr><td><input type='checkbox' name='ch[$i]' value='" . html_out($param) . "' checked>" . html_out($param) . "</td><td>" . getSelectParams($i, $param) . "</td><td><input type='text' name='val[$i]' value='" . html_out($value) . "' style='width: 400px'></td></tr>");
-                        $i++;
-                    }
-                    $tmpl->addContent("</table>
-					<label><input type='checkbox' name='id_save' value='1' checked>Сохранить новый ID</label><br>
-					<label><input type='checkbox' name='auto' value='1' checked>Автоматически ассоциировать одноимённые параметры</label><br>
-					<label><input type='checkbox' name='create' value='1'>Создать и ассоциировать отсутствующие (не рекомендуется, т.к. это может нарушить авторские права)</label><br>
-					<label><input type='checkbox' name='to_collection' value='1'>Добавить создаваемые параметры в категорию</label><br>
-					<select name='collection'>
-					<option value='0'>--не выбран--</option>");
-                    $rgroups = $db->query("SELECT `id`, `name` FROM `doc_base_pcollections_list` ORDER BY `name`");
-                    while ($col = $rgroups->fetch_row()) {
-                        $tmpl->addContent("<option value='$col[0]'>" . html_out($col[1]) . "</option>");
-                    }
-                    $tmpl->addContent("</select>
-					<button>Записать</button>
-					</form>");
-                }
-            }
-        } else {
+        else {
             throw new \NotFoundException("Неизвестная закладка");
         }
     }
@@ -1359,7 +1253,8 @@ class doc_s_Sklad {
 
         if ($param == '' || $param == 'v') {
             $this->saveProduct($pos);
-        } else if ($param == 'd') {
+        } 
+        else if ($param == 'd') {
             $analog = request('analog');
             $d_int = request('d_int', 0);
             $d_ext = request('d_ext', 0);
@@ -1655,6 +1550,7 @@ class doc_s_Sklad {
             $max_size = \webcore::getMaxUploadFileSize();
             $name = request('name');
             $desc = request('desc');
+            $vieworder = rcvint('vieworder');
             $pid = rcvint('pid');
             $hid = rcvint('hid');
             $pname = request('pname');
@@ -1679,13 +1575,13 @@ class doc_s_Sklad {
                 }
                 \acl::accessGuard('directory.goods.groups', \acl::UPDATE);
                 $res = $db->query("UPDATE `doc_group` SET `name`='$name_sql', `desc`='$desc_sql', `pid`='$pid', `hidelevel`='$hid',
-                    `printname`='$pname_sql', `no_export_yml`='$no_export_yml', `title_tag`='$title_tag_sql',
+                    `vieworder`='$vieworder', `printname`='$pname_sql', `no_export_yml`='$no_export_yml', `title_tag`='$title_tag_sql',
                     `meta_keywords`='$meta_keywords_sql', `meta_description`='$meta_description_sql' WHERE `id` = '$group'");
             } else {
                 \acl::accessGuard('directory.goods.groups', \acl::CREATE);
-                $res = $db->query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `printname`, `no_export_yml`, `title_tag`,
+                $res = $db->query("INSERT INTO `doc_group` (`name`, `desc`, `pid`, `hidelevel`, `vieworder`, `printname`, `no_export_yml`, `title_tag`,
                         `meta_keywords`, `meta_description`)
-                    VALUES ('$name_sql', '$desc_sql', '$pid', '$hid', '$pname_sql', '$no_export_yml', '$title_tag_sql', '$meta_keywords_sql',
+                    VALUES ('$name_sql', '$desc_sql', '$pid', '$hid', '$vieworder', '$pname_sql', '$no_export_yml', '$title_tag_sql', '$meta_keywords_sql',
                         '$meta_description_sql' )");
             }
 
@@ -1783,85 +1679,7 @@ class doc_s_Sklad {
                 doc_log('UPDATE group-ceni', $log, 'group', $group);
             $db->commit();
         }
-        else if ($param == 'y') {
-            $url = request('url');
-            $checkboxes = request('ch');
-            $ym_id = rcvint('ym_id');
-            $id_save = request('id_save');
-            $auto = request('auto');
-            $create = request('create');
-            $collection = rcvint('collection');
-            $to_collection = request('to_collection');
-
-            if ($id_save) {
-                $res = $db->query("SELECT `doc_base_params`.`id`, `doc_base_values`.`value` FROM `doc_base_params`
-                        LEFT JOIN `doc_base_values` ON `doc_base_values`.`param_id`=`doc_base_params`.`id` AND `doc_base_values`.`id`='$pos'
-                        WHERE `doc_base_params`.`param`='ym_url'");
-                if (!$res->num_rows) {
-                    $db->query("INSERT INTO `doc_base_params` (`name`, `codename`, `type`, `hidden`)"
-                        . " VALUES ('URL Я.Маркет', 'ym_url', 'double', 1)");
-                    $nxt = array(0 => $db->insert_id, 1 => 0);
-                } else
-                    $nxt = $res->fetch_row();
-                if ($ym_id != $nxt[1]) {
-                    $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$nxt[0]', '$ym_id')");
-                    doc_log("UPDATE pos", "ym_url: ($nxt[1] => $ym_id)", 'pos', $pos);
-                }
-            }
-            if (!is_array($checkboxes))
-                throw new Exception('Не передан набор данных');
-            $log_add = '';
-            foreach ($checkboxes as $id => $param) {
-                $param_sql = $db->real_escape_string($param);
-                $res = $db->query("SELECT `doc_base_params`.`id` FROM `doc_base_params` WHERE `doc_base_params`.`ym_assign`='$param_sql'");
-                if ($res->num_rows)
-                    list($int_param) = $res->fetch_row();
-                else {
-                    $int_param = $_POST['sel'][$id];
-                    settype($int_param, 'int');
-                    if ($int_param < 1 && $auto) {
-                        $res = $db->query("SELECT `doc_base_params`.`id`, CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`name`) AS `pname`
-                                FROM `doc_base_params`
-                                INNER JOIN `doc_base_gparams` ON `doc_base_gparams`.`id`=`doc_base_params`.`group_id`
-                                WHERE CONCAT(`doc_base_gparams`.`name`,':',`doc_base_params`.`name`)='$param_sql'");
-                        if ($res->num_rows)
-                            list($int_param) = $res->fetch_row();
-                    }
-                    if ($int_param < 1 && $create) {
-                        list($gname, $pname) = mb_split(":", $param, 2);
-                        $gname_sql = $db->real_escape_string($gname);
-                        $pname_sql = $db->real_escape_string($pname);
-                        $gres = $db->query("SELECT `id`, `name` FROM `doc_base_gparams` WHERE `name` = '$gname_sql'");
-                        if ($gres->num_rows)
-                            list($g_id) = $gres->fetch_row();
-                        else {
-                            $db->query("INSERT INTO `doc_base_gparams` (`name`) VALUES ('$gname_sql')");
-                            $g_id = $db->insert_id;
-                        }
-                        $res = $db->query("SELECT `id`, `param` FROM `doc_base_params` WHERE `group_id`='$g_id' AND `name`='$pname_sql'");
-                        if (!$res->num_rows) {
-                            $db->query("INSERT INTO `doc_base_params` (`name`, `type`, `group_id`, `ym_assign`) VALUES ('$pname_sql', 'text', '$g_id', '$param_sql')");
-                            $int_param = $db->insert_id;
-                            $db->query("INSERT INTO `doc_base_pcollections_set` (`collection_id`, `param_id`) VALUES ('$collection', '$int_param')");
-                        }
-                    }
-                    if ($int_param < 1) {
-                        continue;
-                    }
-                    $db->query("UPDATE `doc_base_params` SET `ym_assign`='$param_sql' WHERE `id`='$int_param'");
-                }
-                if ($int_param < 1) {
-                    continue;
-                }
-                $val = $db->real_escape_string($_POST['val'][$id]);
-                $db->query("REPLACE `doc_base_values` (`id`, `param_id`, `value`) VALUES ('$pos', '$int_param', '$val')");
-                $log_add .= ", $int_param:(=> $val)";
-            }
-            $tmpl->msg("Данные сохранены!", "ok");
-            if ($log_add) {
-                doc_log("UPDATE", "$log_add", 'pos', $pos);
-            }
-        } else if ($param == 'p') {
+        else if ($param == 'p') {
             \acl::accessGuard('directory.goods.approve', \acl::VIEW);
             $tab = request('tab');
             doc_log("APPROVE", $tab, 'pos', $pos);
@@ -1879,7 +1697,7 @@ class doc_s_Sklad {
     function draw_level($select, $level) {
         global $db;
         $ret = '';
-        $res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
+        $res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `vieworder`, `id`");
         $i = 0;
         $r = '';
         if ($level == 0)
@@ -2631,8 +2449,7 @@ class doc_s_Sklad {
             $list['k']  = ['name' => 'Комплектующие'];
         }
         $list['a']  = ['name' => 'Анализатор'];
-        $list['h']  = ['name' => 'История'];
-        $list['y']  = ['name' => 'Импорт Я.Маркет'];        
+        $list['h']  = ['name' => 'История'];   
         
         $tmpl->addTabsWidget($list, $param, "/docs.php?l=sklad&amp;mode=srv&amp;opt=ep&amp;pos=$pos", 'param');
     }

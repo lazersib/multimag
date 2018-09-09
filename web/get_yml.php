@@ -59,7 +59,7 @@ try
 	
 	<categories>\n";
 
-	$res=$db->query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `hidelevel`='0' AND `no_export_yml`='0' ORDER BY `id`");
+	$res=$db->query("SELECT `id`, `name`, `pid` FROM `doc_group` WHERE `hidelevel`='0' AND `no_export_yml`='0' ORDER BY `vieworder`,`name`");
 	while($nxt=$res->fetch_row())
 	{
 		$nxt[1]=html_entity_decode($nxt[1],ENT_QUOTES,"UTF-8");

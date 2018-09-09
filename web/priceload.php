@@ -53,7 +53,7 @@ function draw_groups_tree($level, $firm) {
 	settype($firm, 'int');
 	$res = $db->query("SELECT `doc_group`.`id`, `doc_group`.`name`, `firm_info_group`.`id` FROM `doc_group`
 	LEFT JOIN `firm_info_group`	ON `firm_info_group`.`firm_id`='$firm' AND `firm_info_group`.`group_id`=`doc_group`.`id`
-	WHERE `doc_group`.`pid`='$level' ORDER BY `doc_group`.`name`");
+	WHERE `doc_group`.`pid`='$level' ORDER BY `doc_group`.`vieworder`,`doc_group`.`id`");
 	$i = 0;
 	$r = '';
 	if ($level == 0)
@@ -583,7 +583,7 @@ try {
 		<input type=text name=nm value='$nxt[0]'><br>
 		Группа:<br>
 		<select name='group'>");
-		$res = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
+		$res = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `vieworder`,`name`");
 		if (!$nxt[3])
 			$tmpl->addContent("<option style='background-color: #8f8;' selected disabled value='0'>--- не выбрана ---</option>");
 		while ($nx = $res->fetch_row()) {

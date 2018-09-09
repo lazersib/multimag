@@ -118,7 +118,7 @@ class Report_GroupStore extends BaseGSReport {
 
 
         $sum = $zeroflag = $bsum = $summass = 0;
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {
             if ($gs && !in_array($group_line['id'], $g)) {
                 continue;

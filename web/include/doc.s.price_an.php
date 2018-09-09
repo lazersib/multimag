@@ -250,7 +250,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		global $db;
 		$ret = '';
 		settype($level, 'int');
-		$res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `id`");
+		$res = $db->query("SELECT `id`, `name`, `desc` FROM `doc_group` WHERE `pid`='$level' ORDER BY `vieworder`,`name`");
 		$i=0;
 		$r='';
 		if($level == 0) $r = 'IsRoot';
@@ -390,7 +390,7 @@ class doc_s_Price_an extends doc_s_Sklad /// Наследование от doc_s
 		if($sf == 0)	$tmpl->msg("По данным критериям товаров не найдено!");
 	}
 	
-	function DrawSkladTable($res, $s = '', $limit = 1000000) {
+	function DrawSkladTable($res, $s = '', $limit = 1000, $opts = []) {
 		global $tmpl, $CONFIG;
 		$i = $c = 0;
 		$old_id = $old_cost = 0;

@@ -43,7 +43,7 @@ class Report_Reserve extends BaseGSReport {
     function groupsProcess($pgroup_id, $group_list) {
         global $db;
         settype($pgroup_id, 'int');
-        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pgroup_id' ORDER BY `id`");
+        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pgroup_id' ORDER BY `vieworder`,`name`");
         while ($group_line = $res->fetch_assoc()) {
             if (is_array($group_list)) {
                 if (!in_array($group_line['id'], $group_list)) {

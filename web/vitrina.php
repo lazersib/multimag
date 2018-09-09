@@ -1492,7 +1492,7 @@ protected function GroupList_ItemStyle($group)
 {
 	global $tmpl, $db;
 	settype($group,'int');
-	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
+	$res=$db->query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `vieworder`,`name`");
 	$tmpl->addStyle(".vitem { width: 250px; float: left; font-size:	14px; } .vitem:before{content: '\\203A \\0020' ; } hr.clear{border: 0 none; margin: 0;}");
 	while($nxt=$res->fetch_row()) {
 		$tmpl->addContent("<div class='vitem'><a href='".$this->GetGroupLink($nxt[0])."'>$nxt[1]</a></div>");
@@ -1503,7 +1503,7 @@ protected function GroupList_ItemStyle($group)
 protected function GroupList_ImageStyle($group) {
 	global $tmpl, $CONFIG, $db;
 
-	$res = $db->query("SELECT * FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
+	$res = $db->query("SELECT * FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `vieworder`,`name`");
 	$tmpl->addStyle(".vitem { width: 360px; float: left; font-size:	14px; margin: 10px;} .vitem img {float: left; padding-right: 8px;} hr.clear{border: 0 none; margin: 0;}");
 	while ($nxt = $res->fetch_row()) {
 		$link = $this->GetGroupLink($nxt[0]);

@@ -624,7 +624,7 @@ function selectAgentGroup($select_name, $selected = 0, $not_select = 0, $select_
 function selectGroupPosRecursive($group_id, $prefix, $selected, $leaf_only) {
     global $db;
     // Нет смысла в проверке входных параметров, т.к. функция вызывается только из selectGroupPos
-    $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `id`");
+    $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$group_id' ORDER BY `vieworder`,`name`");
     $ret = '';
     while ($line = $res->fetch_row()) {
         $sel = ($selected == $line[0]) ? ' selected' : '';

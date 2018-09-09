@@ -200,7 +200,7 @@ class Report_Images extends BaseGSReport {
     protected function walkGroup($pgroup_id=0, $level=0) {
         global $db;
         settype($pgroup_id, 'int');
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`=$pgroup_id ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`=$pgroup_id ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {  
             if($this->gs) {
                 if(!in_array($group_line['id'], $this->groups)) {

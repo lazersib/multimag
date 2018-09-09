@@ -82,7 +82,7 @@ class csv extends BasePriceWriter {
     /// Сформирвать тело прайса
     /// param $group id номенклатурной группы
     function write($group = 0) {
-        $res = $this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `id`");
+        $res = $this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `vieworder`,`name`");
         while ($nxt = $res->fetch_row()) {
             if ($nxt[0] == 0) {
                 continue;

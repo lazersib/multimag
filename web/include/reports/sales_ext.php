@@ -539,7 +539,7 @@ class Report_Sales_ext extends BaseGSReport {
                 }
             }
         } else if ($sel_type == 'group') {
-            $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+            $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `vieworder`,`name`");
             while ($group_line = $res_group->fetch_assoc()) {
                 if (is_array($g)) {
                     if (!in_array($group_line['id'], $g)) {

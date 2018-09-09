@@ -224,7 +224,7 @@ class xls extends BasePriceWriter {
         if ($level > 2) {
             $level = 2;
         }
-        $res = $this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `id`");
+        $res = $this->db->query("SELECT `id`, `name`, `printname` FROM `doc_group` WHERE `pid`='$group' AND `hidelevel`='0' ORDER BY `vieworder`,`name`");
         while ($nxt = $res->fetch_row()) {
             if ($nxt[0] == 0) {
                 continue;

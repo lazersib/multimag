@@ -71,7 +71,7 @@ class Report_Pos_Komplekt extends BaseGSReport {
         $this->tableHeader($headers);
         $cnt = 0;
         $col_cnt = count($headers);
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {
             $this->tableAltStyle();
             $this->tableSpannedRow(array($col_cnt), array($group_line['id'] . ': ' . $group_line['name']));

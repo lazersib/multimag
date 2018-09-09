@@ -191,7 +191,7 @@ class Report_China extends BaseGSReport {
         settype($pgroup_id, 'int');
         $gs = rcvint('gs');
         $g = request('g', array());
-        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`=$pgroup_id ORDER BY `id`");
+        $res_group = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`=$pgroup_id ORDER BY `vieworder`,`name`");
         while ($group_line = $res_group->fetch_assoc()) {  
             if($gs) {
                 if(!in_array($group_line['id'], $g)) {

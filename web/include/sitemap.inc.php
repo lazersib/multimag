@@ -45,7 +45,7 @@ class SiteMap {
     function addPriceGroup($group) {
         global $CONFIG, $db;
         $ret = '';
-        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `id`");
+        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `hidelevel`='0' AND `pid`='$group' ORDER BY `vieworder`,`name`");
         if ($res->num_rows) {
             $this->startGroup();
             while ($nxt = $res->fetch_row()) {

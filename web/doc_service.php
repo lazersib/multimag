@@ -119,11 +119,9 @@ try {
 	<fieldset><legend>Данные, необходимые для объединения</legend>
 	ID первого объекта:<br><input type='text' name='tov1'><br>
 	ID второго объекта:<br><input type='text' name='tov2'><br>
-	Группа для перемещения:<br><select name='gr'>");
-        $res = $db->query("SELECT `id`, `name` FROM `doc_group` ORDER BY `name`");
-        while ($nxt = $res->fetch_row())
-            $tmpl->addContent("<option value='$nxt[0]'>" . html_out($nxt[1]) . " (id:$nxt[0])</option>");
-        $tmpl->addContent("</select><br><br>
+	Группа для перемещения:<br>");
+        $tmpl->addText( selectGroupPos('gr', 0, false, '', '', \cfg::get('store', 'leaf_only', false)) );
+        $tmpl->addContent("<br><br>
 	<button>Выполнить запрошенную операцию</button>
 	</fieldset></form>");
     } else if ($mode == 'merge_tovar_ok') {

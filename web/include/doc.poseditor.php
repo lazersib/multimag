@@ -54,7 +54,7 @@ class PosEditor {
         global $db;
         settype($pid, 'int');
         $data = array();
-        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `id`");
+        $res = $db->query("SELECT `id`, `name` FROM `doc_group` WHERE `pid`='$pid' ORDER BY `vieworder`,`name`");
         while ($nxt = $res->fetch_row()) {
             if ($nxt[0] == 0)
                 continue;
