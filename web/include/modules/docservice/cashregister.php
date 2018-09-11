@@ -46,6 +46,7 @@ class CashRegister extends \IModule {
             'xreport' => 'Печать отчёта без гашения',
             'zreport' => 'Закрытие смены и печать отчёта с гашением',
             'incash' => 'Внесение денег',
+            'printfn' => 'Печать документа по номеру',
         ];
         $tmpl->addContent("<form action='{$this->link_prefix}' method='post'>"
         . "<input type='hidden' name='sect' value='action'>"
@@ -63,6 +64,7 @@ class CashRegister extends \IModule {
         global $db, $tmpl;
         $type = rcvint('type');
         $sum = rcvint('sum');
+        $num = rcvint('num');
         settype($kkm_id, 'int');
         $res = $db->query("SELECT `name`, `connect_line`, `password` FROM `cash_register` WHERE `id`='$kkm_id'");
         $kkm_line = $res->fetch_assoc();
@@ -105,9 +107,38 @@ class CashRegister extends \IModule {
                      $this->actionInCash($kkm_line['name'], $cr, $sum);
                 }
                 break;
+            case 'printfn':
+                if($num==0) {
+                    $this->showPrintFNForm($kkm_id, $kkm_line['name']);
+                }
+                else {
+                     $this->actionPrintFN($kkm_line['name'], $cr, $num);
+                }
+                break;
             default:
                 throw new \NotFoundException("Действие не найдено");
         }
+    }
+    
+    protected function actionPrintFN($name, $cr, $num) {
+        global $tmpl;
+        $statecode = $cr->requestGetStateCode();
+        if($statecode['state']>1) {
+            $cr->requestExitFromMode();
+            $statecode = $cr->requestGetStateCode();
+            if($statecode['state']>1) {
+                $cr->requestExitFromMode();
+                $statecode = $cr->requestGetStateCode();
+            }
+        }        
+        if($statecode['state']==0) {
+            $cr->requestEnterToMode(6, 30);
+        }
+        else if($statecode['state']!=6) {
+            throw new \Exception("Режим: {$statecode['state']} - в нём операция не возможна, и сменить не получается!");
+        }
+        $cr->requestRePrintDocument($num);
+        $tmpl->msg("Идёт печать документа N{$num}!");
     }
     
     protected function actionOpenSession($name, $cr) {
@@ -348,7 +379,20 @@ class CashRegister extends \IModule {
         . "</form>");
     }
     
-    protected function showInCashForm($kkm_id, $kkm_name) {
+    protected function showPrintFNForm($kkm_id, $kkm_name) {
+        global $tmpl;
+        $tmpl->addContent("<form action='{$this->link_prefix}' method='post'>"
+        . "<input type='hidden' name='sect' value='action'>"
+        . "<input type='hidden' name='kkm_id' value='$kkm_id'>"
+        . "<input type='hidden' name='action' value='printfn'>"
+        . "<label>Кассовый аппарат: ".html_out($kkm_name)."</label><br>"
+        . "<label>Номер документа:</label><br>"
+        . "<input type='text' name='num'><br>"
+        . "<button type='submit'>Выполнить операцию</button>"
+        . "</form>");
+    }
+    
+        protected function showInCashForm($kkm_id, $kkm_name) {
         global $tmpl;
         $tmpl->addContent("<form action='{$this->link_prefix}' method='post'>"
         . "<input type='hidden' name='sect' value='action'>"

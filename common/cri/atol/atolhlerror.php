@@ -122,6 +122,25 @@ class AtolHLError extends \Exception {
             case 156:
                 return 'Смена открыта, операция невозможна';
                 // ~~~~~~~~~~~~~~~~~~
+            case 212:
+                return 'Неверное состояние ФН';
+            case 213:
+                return 'Неисправимая ошибка ФН';
+            case 214:
+                return 'Ошибка КС ФН';
+            case 215:
+                return 'Закончен срок эксплуатации ФН';
+            case 214:
+                return 'Ошибка КС ФН';
+            case 215:
+                return 'Закончен срок эксплуатации ФН';
+            case 216:
+                return 'Архив ФН переполнен';
+            case 217:
+                return 'В ФН переданы неверная дата или время';
+            case 218:
+                return 'В ФН нет запрошенных данных';
+                // ~~~~~~~~~~~~~~~~~~
             case 246:  
                 return self::getnameForExtCode($extcode);
             default:

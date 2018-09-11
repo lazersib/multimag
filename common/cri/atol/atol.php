@@ -454,9 +454,35 @@ var $buf;
         }
         return $ret;
     }
+      
+    // -------- Команды режима запроса к ФН ------------------
+    public function cmdRePrintDocument($num) {
+        $data = [$this->password[0], $this->password[1], 0xAB];
+        $data = array_merge($data, $this->intToBCD($num, 5));
+        $this->cur_tld++;
+        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+    }
     
+    public function requestRePrintDocument($num) {
+        $this->result_flags = self::F_NEEDRESULT;
+        $this->cmdRePrintDocument($num);
+        $this->atolbuffer->dispatchData(1);
+        $ret = $this->getFreeAsyncResult($this->cur_tld);
+        $this->assertErrors($ret);
+        return $ret;
+    }
     
-    
+    protected function assertErrors($res) {
+        if($res['state']=='error') {
+            throw new AtolHLError($res['data'][1],$res['data'][2]);
+        }
+        $res = $res['data'];
+        if($res[0]!=0x55) {
+            throw new AtolHLException("Неверная сигнатура ответа");
+        }
+    }
+
+
     protected function stringToArray(string $str, int $size) {
         $str = iconv('UTF-8', 'CP866', $str);
         $str = substr($str, 0, $size);
