@@ -76,13 +76,13 @@ class html extends BasePriceWriter {
         $this->line++;
         echo"</center><table><tr>";
         for ($cur_col = 0; $cur_col < $this->column_count; $cur_col++) {
-            if ($this->show_vc) {
+            if ( isset($this->column_list['vc']) ) {
                 echo"<th class='cost'>Код</th>";
             }
             echo"<th class='cost'>Наименование</th><th class='cost'>Цена</th>";
         }
         echo"</tr>";
-        if ($this->show_vc) {
+        if ( isset($this->column_list['vc']) ) {
             $this->span = $this->column_count * 3;
         } else {
             $this->span = $this->column_count * 2;
@@ -101,8 +101,8 @@ class html extends BasePriceWriter {
             if ($nxt[0] == 0) {
                 continue;
             }
-            if (is_array($this->view_groups)) {
-                if (!in_array($nxt[0], $this->view_groups)) {
+            if (is_array($this->show_groups)) {
+                if (!in_array($nxt[0], $this->show_groups)) {
                     continue;
                 }
             }
@@ -156,15 +156,15 @@ class html extends BasePriceWriter {
                     $cce = ' style=\'color:#888\'';
                 }
             }
-            $c = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
+            $c = $pc->getPosSelectedPriceValue($nxt['id'], $this->price_id, $nxt);
             if ($c == 0) {
                 continue;
             }
             $name = $nxt['name'];
-            if($this->view_groupname) {
+            if($this->mn_pgroup) {
                 $name = $group_name .' '.$name;
             }
-            if ($this->show_vc) {
+            if ( isset($this->column_list['vc']) ) {
                 echo"<td>" . html_out($nxt['vc']) . "</td>";
             }
             echo "<td>" . html_out($name) . "</td><td{$cce}>" . $c . "</td>";

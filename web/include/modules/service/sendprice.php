@@ -21,10 +21,19 @@ namespace modules\service;
 /// Модуль управления рассылкой прайс-листов
 class sendprice extends \IModule {
 
-    protected $logdata = array();
-    protected $pers = array('daily'=>'Ежедневно', 'weekly'=>'Еженедельно','monthly'=>'Ежемесячно');
-    protected $cnts = array('all'=>'Все', 'instock'=>'Только в наличии', 'intransit'=>'В наличии + в пути');
-    protected $formats = array('xls','csv');
+    protected $logdata = [];
+    protected $pers = ['daily'=>'Ежедневно', 'weekly'=>'Еженедельно','monthly'=>'Ежемесячно'];
+    protected $cnts = ['all'=>'Все', 'instock'=>'Только в наличии', 'intransit'=>'В наличии + в пути'];
+    protected $formats = ['xls','csv'];
+    protected $columns = [
+            'id' => 'Id (внутренний уникальный артикул)',
+            'vc' => 'Код (Артикул/код изготовителя)',
+            'gpn' => 'Категория (Печатное наименование группы)',
+            'name' => 'Наименование (с модификаторами)',
+            'vendor' => 'Изготовитель',  
+            'count' => 'Количество',
+            'price' => 'Цена',            
+        ];
 
     public function __construct() {
         parent::__construct();  
@@ -154,7 +163,11 @@ class sendprice extends \IModule {
     /// Получить данные элемента справочника
     public function getItem($id) {
         global $db;
-        return $db->selectRow($this->table_name, $id);
+        $item = $db->selectRow($this->table_name, $id);
+        if($item) {
+            $item['options'] = json_decode($item['options'], true);
+        }
+        return $item;
     }  
     
     /// @brief Возвращает имя элемента
@@ -173,9 +186,9 @@ class sendprice extends \IModule {
         $ret = array();
         $ldo = new \Models\LDO\pricenames();
         $price_names = $ldo->getData();
-        $res = $db->query("SELECT `id`, `name`, `period`, `format`, `use_zip`, `price_id`, `filters` FROM `{$this->table_name}`");
+        $res = $db->query("SELECT `id`, `name`, `period`, `format`, `use_zip`, `price_id`, `options` FROM `{$this->table_name}`");
         while($line=$res->fetch_assoc()) {
-            $line['filters'] = json_decode($line['filters']);
+            //$line['options'] = json_decode($line['options'], true);
             $cr = $db->query("SELECT `agent_contacts`.`no_ads`"
                 . " FROM `prices_delivery_contact`"
                 . " INNER JOIN `agent_contacts` ON `agent_contacts`.`id`=`prices_delivery_contact`.`agent_contacts_id` AND `agent_contacts`.`type`='email'"
@@ -196,7 +209,7 @@ class sendprice extends \IModule {
     public function viewList() {
         global $tmpl;
         $list = $this->getList();
-        $tmpl->addContent("<table class='list'><tr><th>Id</th><th>Название</th><th>Периодичность</th><th>Формат</th><th>Цена</th><th>Контактов</th></tr>");
+        $tmpl->addContent("<table class='list'><tr><th>Id</th><th>Название</th><th>Периодичность</th><th>Формат</th><th>Цена</th><th>Контактов</th><th>Тест</th></tr>");
         foreach($list as $id=>$line) {
             if(isset($this->pers[$line['period']])) {
                 $p = $this->pers[$line['period']];
@@ -212,6 +225,7 @@ class sendprice extends \IModule {
             $tmpl->addContent("<tr><td><a href='{$this->link_prefix}&amp;sect=edit&amp;id={$line['id']}'>{$line['id']}</a></td>"
             . "<td>".html_out($line['name'])."</td><td>$p</td><td>$format</td><td>".html_out($line['price_name'])."</td>"
             . "<td><a href='{$this->link_prefix}&amp;sect=vs&amp;id={$line['id']}'{$as}>{$line['contacts']}/{$line['subscribers']}</a></td>"
+            . "<td><a href='{$this->link_prefix}&amp;sect=get&amp;id={$line['id']}'>Загрузить</a></td>"
             . "</tr>");
         }
         $tmpl->addContent("</table>");
@@ -221,26 +235,27 @@ class sendprice extends \IModule {
     /// Отобразить форму для редактирования элемента
     public function editForm($id) {
         global $tmpl;
+        
         $ret = "<form action='{$this->link_prefix}' method='post'>";
         $ret .= "<input type='hidden' name='sect' value='save'>";
 
-        $item = $this->getItem($id);
-        $filters = array('vendor'=>'', 'count'=>'all', 'price_id'=>1);
+        $item = $this->getItem($id);        
         if ($item) {
             $ret .= "<input type='hidden' name='id' value='$id'>";
             $name = $this->getItemName($item);
             if($name) {
-                $tmpl->addBreadcrumb('Правка рассылки "' . $this->getItemName($item) . '"', '');
+                $tmpl->addBreadcrumb('Правка рассылки "' . $name . '"', '');
             }
             else {
                 $tmpl->addBreadcrumb('Правка рассылки #'.$id, '');
             }
-            $filters = json_decode($item['filters'], true);
-            
         } else {
             $ret .= "<input type='hidden' name='id' value='null'>";
             $tmpl->addBreadcrumb('Новая рассылка', '');
         }
+        $filter = isset($item['options']['filter']) ? $item['options']['filter'] : [];
+        $columns = isset($item['options']['columns']) ? $item['options']['columns'] : [];   
+            
         $ret .= "<table class='list' width='600px'><tr>";
         
         $ret .= "<tr><td align='right'>Название рассылки</td>"
@@ -267,41 +282,49 @@ class sendprice extends \IModule {
         $ldo = new \Models\LDO\pricenames();
         $ret .= \widgets::getEscapedSelect('price_id', $ldo->getData(), $item['price_id']);
         $ret .= "</td></tr>";
-        $ret .= "<tr><td align='right'>Фильтр по производителю</td>"
-            . "<td><input type='text' name='vendor' value='" . html_out($filters['vendor']) . "' style='width:95%;'></td>"
-            . "</tr>";
         
-        if(!isset($filters['count'])) {
-            $filters['count'] = 'all';
+        if(!isset($filter['vendor'])) {
+            $filter['vendor'] = '';
         }
-        if(!isset($filters['view_pgroup'])) {
-            $filters['view_pgroup'] = true;
-        }
-        if(!isset($filters['view_vendor'])) {
-            $filters['view_vendor'] = true;
+        $ret .= "<tr><td align='right'>Фильтр по производителю</td>"
+            . "<td><input type='text' name='options[filter][vendor]' value='" . html_out($filter['vendor']) . "' style='width:95%;'></td>"
+            . "</tr>";        
+        
+        if(!isset($filter['count'])) {
+            $filter['count'] = 'all';
         }
         $ret .= "<tr><td align='right'>Фильтр по наличию</td><td>";
         foreach($this->cnts as $p_id=>$p_value) {
-            $sel = ($p_id==$filters['count'])?' checked':'';
-            $ret .= "<label><input type='radio' name='count' value='$p_id'{$sel}>$p_value</label><br>";
+            $sel = ($p_id==$filter['count'])?' checked':'';
+            $ret .= "<label><input type='radio' name='options[filter][count]' value='$p_id'{$sel}>$p_value</label><br>";
         }
         $ret .= "</td></tr>";
         
-        if(!isset($filters['groups_only'])) {
-            $filters['groups_only'] = false;
-            $filters['groups_list'] = false;
+        if(!isset($filter['groups_only'])) {
+            $filter['groups_only'] = false;
+            $filter['groups_list'] = false;
         }
         $ret .= "<tr><td align='right'>Фильтр по группам товаров</td>"
-            . "<td>".$this->groupSelBlock($filters['groups_only'], $filters['groups_list'])."</td>"
+            . "<td>".$this->groupSelBlock($filter['groups_only'], $filter['groups_list'])."</td>"
             . "</tr>";
         
-        $pgroup_sel = ($filters['view_pgroup'])?' checked':'';
-        $vendoe_sel = ($filters['view_vendor'])?' checked':'';
-        $ret .= "<tr><td align='right'>Настройки отображения</td>"
+        $pgroup_mn_sel = (isset($item['options']['modname']['pgroup']))?' checked':'';
+        $vendor_mn_sel = (isset($item['options']['modname']['vendor']))?' checked':'';
+        $ret .= "<tr><td align='right'>Модификаторы наименований</td>"
             . "<td>"
-            . "<label><input type='checkbox' name='view_pgroup' value='1'{$pgroup_sel}>Отображать префиксы групп у товаров</label><br>"
-            . "<label><input type='checkbox' name='view_vendor' value='1'{$vendoe_sel}>Отображать производителя у товаров</label><br>"
+            . "<label><input type='checkbox' name='options[modname][pgroup]' value='1'{$pgroup_mn_sel}>Добавить в начало печатное наименование группы</label><br>"
+            . "<label><input type='checkbox' name='options[modname][vendor]' value='1'{$vendor_mn_sel}>Добавить изготовителя в конец</label><br>"
             . "</td>"
+            . "</tr>";
+                    
+        $ret .= "<tr><td align='right'>Колонки</td>"
+            . "<td>";
+        
+        foreach($this->columns as $c_id => $c_name) {
+            $sel = (isset($columns) && in_array($c_id, $columns)) ? ' checked':'';
+            $ret .= "<label><input type='checkbox' name='options[columns][]' value='$c_id'{$sel}>$c_name</label><br>";
+        }
+        $ret .= "</td>"
             . "</tr>";
         $ret .= "<tr><td align='right'>Тело письма</td>"
             . "<td><textarea name='lettertext'>" . html_out($item['lettertext']) . "</textarea></td>"
@@ -324,18 +347,18 @@ class sendprice extends \IModule {
         $write_data['use_zip'] = $data['use_zip'];
         $write_data['price_id'] = $data['price_id'];
         
-        $filters = array (
-            'vendor' => $data['vendor'],
-            'count' => $data['count'],
-            'view_pgroup' => $data['view_pgroup'],
-            'view_vendor' => $data['view_vendor'],
-        );
+        $options = array (
+            'filter' => isset($data['options']['filter'])?$data['options']['filter']:[],
+            'columns' => isset($data['options']['columns'])?$data['options']['columns']:[],
+            'modname' => isset($data['options']['modname'])?$data['options']['modname']:[],
+        );        
+        
         if(isset($data['gs']) && $data['gs'] && is_array($data['groups'])) {
-            $filters['groups_only'] = $data['gs'];
-            $filters['groups_list'] = $data['groups'];
+            $options['filter']['groups_only'] = true;
+            $options['filter']['groups_list'] = $data['groups'];
         }
                
-        $write_data['filters'] = json_encode($filters, JSON_UNESCAPED_UNICODE);
+        $write_data['options'] = json_encode($options, JSON_UNESCAPED_UNICODE);
         if ($id) {
             \acl::accessGuard($this->acl_object_name, \acl::UPDATE);
             $db->updateA($this->table_name, $id, $write_data);
@@ -501,14 +524,21 @@ class sendprice extends \IModule {
                 echo"$nxt[1]|$nxt[0]|$nxt[2]\n";
         }
     }
-    
-    protected $items = array(
-            'new' => 'Новая рассылка',
-            'auth_acl' => 'Привилегии аутентифицированных пользователей',
-            'gle' => 'Редактор списка ролей пользователей',
-            'groups' => 'Привилегии для ролей пользователей',
-        );
-    
+
+    protected function getPrice($id) {
+        global $tmpl;
+        $tmpl->ajax = 1;
+        $item = $this->getItem($id);  
+        $psender = new \priceSender();
+        $psender->setFormat($item['format']);
+        $psender->setZip($item['use_zip']);
+        $psender->setPriceId($item['price_id']);
+        $psender->setText($item['lettertext']);
+        $psender->setOptions($item['options']);        
+        $psender->out();
+        exit(0);
+    }
+
     /// Запустить модуль на исполнение
     public function run() {
         global $tmpl;
@@ -528,7 +558,7 @@ class sendprice extends \IModule {
                 break;
             case 'save':
                 $id = rcvint('id');
-                $data = requestA( array('name','period','format','use_zip','price_id','vendor','count','lettertext','g','gs','view_pgroup','view_vendor') );
+                $data = requestA( array('name','period','format','use_zip','price_id','options','lettertext','g','gs') );
                 $data['groups'] = $data['g'];
                 $id = $this->saveItem($id, $data);
                 $tmpl->msg("Данные сохранены", "ok");
@@ -537,6 +567,10 @@ class sendprice extends \IModule {
             case 'edit':
                 $id = rcvint('id');
                 $tmpl->addContent($this->editForm($id));                
+                break;
+            case 'get':
+                $id = rcvint('id');
+                $this->getPrice($id);                
                 break;
             case 'vs':
                 $id = rcvint('id');

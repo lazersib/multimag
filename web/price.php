@@ -345,13 +345,13 @@ else if($mode=="get")
         $pref = \pref::getInstance();
         $pc->setFirmId($pref->site_default_firm_id);
         
-	$price->SetCost( $pc->getDefaultPriceId() );	
+	$price->setPriceId( $pc->getDefaultPriceId() );	
 	if($f=='csv')	{
 		$price->setDivider( request('divider') );
 		$price->setShielder( request('shielder') );
 	}	
 	if(request('gs') && is_array($_REQUEST['g']))	{
-		$price->setViewGroups($_REQUEST['g']);
+		$price->setGroupsFilter($_REQUEST['g']);
 	}
 	
 	$price->run();

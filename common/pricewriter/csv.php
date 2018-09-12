@@ -87,8 +87,8 @@ class csv extends BasePriceWriter {
             if ($nxt[0] == 0) {
                 continue;
             }
-            if (is_array($this->view_groups)) {
-                if (!in_array($nxt[0], $this->view_groups)) {
+            if (is_array($this->show_groups)) {
+                if (!in_array($nxt[0], $this->show_groups)) {
                     continue;
                 }
             }
@@ -164,11 +164,11 @@ class csv extends BasePriceWriter {
                 $this->buffer.= $this->divider . $this->shielder . $this->shielder . $this->divider;
             }
 
-            $c = $pc->getPosSelectedPriceValue($nxt['id'], $this->cost_id, $nxt);
+            $c = $pc->getPosSelectedPriceValue($nxt['id'], $this->price_id, $nxt);
             if ($c == 0) {
                 continue;
             }
-            if (($this->view_proizv) && ($nxt['proizv'])) {
+            if (($this->mn_vendor) && ($nxt['proizv'])) {
                 $pr = " (" . $nxt['proizv'] . ")";
             } else {
                 $pr = "";

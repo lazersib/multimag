@@ -21,9 +21,9 @@ namespace pricewriter;
 
 /// Базовый класс формирования прайс-листов
 class BasePriceWriter {
-    protected $view_proizv;         ///< Отображать ли наименование производителя
-    protected $view_groupname;      ///< Отображать ли печатное имя группы
-    protected $view_groups;         ///< Группы, которые надо отображать. Массив.
+    protected $mn_vendor;           ///< Модификатор наименования + наименование производителя
+    protected $mn_pgroup;           ///< Модификатор наименования + печатное имя группы
+    protected $show_groups;         ///< Группы, которые надо отображать. Массив.
     protected $column_count;        ///< Кол-во колонок в прайсе
     protected $db;                  ///< mysqli коннектор к нужной базе
     protected $to_string = false;   ///< Сохранить в буфер, не отправлять в броузер
@@ -31,18 +31,29 @@ class BasePriceWriter {
     protected $count_filter = '';   ///< Фильтр по наличию
     protected $show_vc = false; ///< Колонока с наименованием производителя
     protected $show_vn = false; ///< Колонока с наименованием производителя
+    protected $column_list;     ///< Список колонок для отображения
+    protected $price_id;         ///< Идентификатор цены
 
     /// Конструктор
     /// @param db mysqli-объект для подключения к базе данных
     public function __construct($db) {
         $this->db = $db;
-        $this->column_count = 2;
-        $this->view_proizv = 0;
-        $this->cost_id = 1;
-        $this->view_groups = false;
-        $this->view_groupname = true;
-        $this->show_vc = \cfg::get('site', 'price_show_vc', false);
-        $this->show_vn = \cfg::get('site', 'price_show_vn', false);
+        $this->column_list = ['id'];
+        if(\cfg::get('site', 'price_show_vc', false)) {
+            $this->column_list[] = 'vc';
+        }
+        $this->column_list[] = 'name';        
+        if(\cfg::get('site', 'price_show_vn', false)) {
+            $this->column_list[] = 'vendor';
+        }
+        $this->column_list[] = 'count'; 
+        $this->column_list[] = 'price'; 
+        
+        $this->column_count = 1;
+        $this->mn_vendor = false;
+        $this->mn_pgroup = true;     
+        $this->price_id = 1;
+        $this->show_groups = false;        
     }
 
     /// Сформировать прайс-лист, и отправить его в STDOUT
@@ -63,19 +74,19 @@ class BasePriceWriter {
     /// Включает отображение наименования производителя в наименовании товара
     /// @param $visible true - отображать , false - не отображать
     public function showProizv($visible = 1) {
-        $this->view_proizv = $visible;
+        $this->mn_vendor = $visible;
     }
 
     /// Включает отображение префикса наименования - печатного наименования группы
     /// @param $visible true - отображать , false - не отображать
     public function showGroupName($visible = 1) {
-        $this->view_groupname = $visible;
+        $this->mn_pgroup = $visible;
     }
     
-    /// Включает режим отображения в прайс-листе только заданных групп товаров
+    /// Включает фильтр по группам номенклатуры
     /// @param $groups Массив с id групп, которые должны быть включены в прайс-лист
-    public function setViewGroups($groups) {
-        $this->view_groups = $groups;
+    public function setGroupsFilter($groups) {
+        $this->show_groups = $groups;
     }
 
     /// Задаёт количество колонок, отображаемых в прайс-листе
@@ -90,12 +101,20 @@ class BasePriceWriter {
             $this->column_count = 5;
         }
     }
+    
+    /**
+     * Устанавливает список колонок для отображения в прайс-листе
+     * @param array $clist Массив с идентификаторами колонок
+     */    
+    public function setColumnList($clist) {        
+        $this->column_list = $clist;
+    }
 
     /// Устанавливает цену, которая должна быть отображена в прайс-листе
     /// @param $cost Id отображаемой цены
-    public function setCost($cost = 1) {
-        $this->cost_id = $cost;
-        settype($this->cost_id, "int");
+    public function setPriceId($price_id = 1) {
+        $this->price_id = $price_id;
+        settype($this->price_id, "int");
     }
     
     /// Устанавливает фильтрацию прайса по заданному производителю

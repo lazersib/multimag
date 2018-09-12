@@ -42,10 +42,10 @@ abstract class pricesendaction extends \Action {
             default:
                 throw new Exception('Недопустимый интервал запуска задачи!');
         }
-        $res = $db->query("SELECT `id`, `name`, `period`, `format`, `use_zip`, `price_id`, `filters`, `lettertext`"
+        $res = $db->query("SELECT `id`, `name`, `period`, `format`, `use_zip`, `price_id`, `options`, `lettertext`"
             . " FROM `prices_delivery` WHERE `period`='$period'");
         while($line=$res->fetch_assoc()) {
-            $line['filters'] = json_decode($line['filters'], true);
+            $line['options'] = json_decode($line['options'], true);
             $line['subscribers'] = array();
             $cr = $db->query("SELECT `agent_contacts`.`id`, `agents`.`name`, `agent_contacts`.`value` AS `email`"
                     . ", `agent_contacts`.`person_name`, `agent_contacts`.`person_post`"
@@ -67,7 +67,7 @@ abstract class pricesendaction extends \Action {
             $psender->setZip($line['use_zip']);
             $psender->setPriceId($line['price_id']);
             $psender->setText($line['lettertext']);
-            $psender->setFilters($line['filters']);
+            $psender->setOptions($line['options']);
             $psender->setContactList($line['subscribers']);
             $psender->run();
         }

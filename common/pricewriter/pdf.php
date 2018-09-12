@@ -78,7 +78,7 @@ class pdf extends BasePriceWriter {
         $str = iconv('UTF-8', 'windows-1251', $str);
         $this->pdf->Cell(0, 4, $str, 0, 1, 'C');
 
-        if (is_array($this->view_groups)) {
+        if (is_array($this->show_groups)) {
             $this->pdf->Ln(3);
             $this->pdf->SetFont('', '', 14);
             $this->pdf->SetTextColor(255, 24, 24);
@@ -111,7 +111,7 @@ class pdf extends BasePriceWriter {
 
         $this->pdf->numCols = $CONFIG['site']['price_col_cnt'];
 
-        if ($this->show_vc) {
+        if ( isset($this->column_list['vc']) ) {
             $str = iconv('UTF-8', 'windows-1251', 'Код');
             $this->pdf->AddCol('vc', $CONFIG['site']['price_width_vc'], $str, '');
         }
@@ -124,14 +124,14 @@ class pdf extends BasePriceWriter {
             'color1' => array(210, 245, 255),
             'color2' => array(255, 255, 210),
             'padding' => 1,
-            'cost_id' => $this->cost_id);
-        if (is_array($this->view_groups)) {
-            $prop['groups'] = $this->view_groups;
+            'cost_id' => $this->price_id);
+        if (is_array($this->show_groups)) {
+            $prop['groups'] = $this->show_groups;
         }
 
 
 
-        if ($this->view_proizv) {
+        if ($this->mn_vendor) {
             $proizv = '`doc_base`.`proizv`';
         } else {
             $proizv = "''";

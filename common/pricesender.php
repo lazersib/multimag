@@ -21,8 +21,7 @@
 
 /// Модуль рассылки прайс-листов
 class priceSender {
-
-    protected $filters;
+    protected $options;
     protected $text;
     protected $format;
     protected $contactlist;
@@ -37,8 +36,8 @@ class priceSender {
         $this->price_id = $pc->getDefaultPriceId();
     }
 
-    public function setFilters($filters) {
-        $this->filters = $filters;
+    public function setOptions($options) {
+        $this->options = $options;
     }
     
     public function setText($text) {
@@ -67,6 +66,22 @@ class priceSender {
         $this->sendEmails();
     }
     
+    public function out() {
+        $this->preparePriceList();
+        if($this->zip) {
+            header("Content-type: application/zip");
+            header("Content-Disposition: attachment; filename=\"price.zip\"");
+        }
+        else {
+            header("Content-type: application/vnd.ms-excel");
+            header("Content-Disposition: attachment; filename=\"price.xls\"");
+        }
+        header("Expires: 0");
+        header("Cache-Control: must-revalidate, post-check=0,pre-check=0");
+        header("Pragma: public");
+        echo $this->price_content;
+    }
+    
     protected function preparePriceList() {
         global $db;
         switch ($this->format) {
@@ -80,23 +95,41 @@ class priceSender {
                 throw new \Exception('Запрошенный формат не поддерживатеся модулем рассылки прайс-листов');
         }
        
-	$pricewriter->setCost($this->price_id);
-        if( is_array($this->filters)) {
-            if( isset($this->filters['groups_only'])
-                && $this->filters['groups_only'] && is_array($this->filters['groups_list']))	{
-                    $pricewriter->setViewGroups($this->filters['groups_list']);
+	$pricewriter->setPriceId($this->price_id);
+        if( is_array($this->options)) {
+            if(is_array($this->options['filter'])) {
+                $f = $this->options['filter'];
+                if( isset($f['groups_only']) && $f['groups_only'] && is_array($f['groups_list'])) {
+                    $pricewriter->setGroupsFilter($f['groups_list']);
+                }
+                if( isset($f['count']) ) {
+                    $pricewriter->setCountFilter($f['count']);
+                }
+                if( isset($f['vendor']) ) {
+                    $pricewriter->setVendorFilter($f['vendor']);
+                }
             }
-            if( isset($this->filters['count']) ) {
-                $pricewriter->setCountFilter($this->filters['count']);
+            if(is_array($this->options['modname'])) {
+                $mn = $this->options['modname'];
+                if( isset($mn['pgroup']) ) {
+                    $pricewriter->showGroupName($mn['pgroup']);
+                }
+                else {
+                    $pricewriter->showGroupName(false);
+                }
+                if( isset($mn['vendor']) ) {
+                    $pricewriter->showProizv($mn['vendor']);
+                }
+                else {
+                    $pricewriter->showProizv(false);
+                }
             }
-            if( isset($this->filters['vendor']) ) {
-                $pricewriter->setVendorFilter($this->filters['vendor']);
+            else {
+                $pricewriter->showGroupName(false);
+                $pricewriter->showProizv(false);
             }
-            if( isset($this->filters['view_pgroup']) ) {
-                $pricewriter->showGroupName($this->filters['view_pgroup']);
-            }
-            if( isset($this->filters['view_vendor']) ) {
-                $pricewriter->showProizv($this->filters['view_vendor']);
+            if(is_array($this->options['columns'])) {
+                $pricewriter->setColumnList($this->options['columns']);
             }
         }
 	$this->price_content = $pricewriter->get();   
