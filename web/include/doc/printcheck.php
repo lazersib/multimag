@@ -20,32 +20,47 @@
 
 namespace doc;
 
-/// Трейт *печать кассового чека*
+/**
+ * Трейт *печать кассового чека*
+ * @package doc
+ */
 trait PrintCheck {
-    
-    protected function getCashRegister($cr_id) {
+
+    /**
+     * @var \CRI\Atol\Atol Объект ККМ
+     */
+    private $crId;
+
+    /**
+     * Получить объект взаимодействия с ККМ по id
+     * @param $cr_id int ID регистратора
+     * @throws \NotFoundException
+     */
+    private function useCashRegister($cr_id) {
         global $db;
-        $res = $db->query("SELECT `name`, `connect_line`, `password`, `section` FROM `cash_register` WHERE `id`='$cr_id'");
-        $kkm_line = $res->fetch_assoc();
+        $kkm_line = $db->selectRow('cash_register', $cr_id);
         if(!$kkm_line) {
             throw new \NotFoundException("ID кассового аппарата $cr_id не найден в базе данных");
         }
-        $cr = new \CRI\Atol\Atol();
-        $cr->connect($kkm_line['connect_line']); 
-        $cr->setPassword($kkm_line['password']);
-        $cr->setSection($kkm_line['section']);
-        return $cr;
+        $this->crId = new \CRI\Atol\Atol();
+        $this->crId->connect($kkm_line['connect_line']);
+        $this->crId->setPassword($kkm_line['password']);
+        $this->crId->setSection($kkm_line['section']);
     }
-    
-    protected function touchRegMode($cr) {
+
+    /**
+     * Проверить, и при необходимости, установить нужный режим ККМ
+     * @throws \Exception
+     */
+    private function touchRegMode() {
         global $db;
-        $statecode = $cr->requestGetStateCode();
-        if($statecode['state']>0) {
-            $cr->requestExitFromMode();
-            $statecode = $cr->requestGetStateCode();
-            if($statecode['state']>0) {
-                $cr->requestExitFromMode();
-                $statecode = $cr->requestGetStateCode();
+        $stateCode = $this->crId->requestGetStateCode();
+        if($stateCode['state']>0) {
+            $this->crId->requestExitFromMode();
+            $stateCode = $this->crId->requestGetStateCode();
+            if($stateCode['state']>0) {
+                $this->crId->requestExitFromMode();
+                $stateCode = $this->crId->requestGetStateCode();
             }
         }    
         $res = $db->query("SELECT `cr_password` FROM `users_worker_info` WHERE `user_id`='{$_SESSION['uid']}'");
@@ -56,27 +71,32 @@ trait PrintCheck {
         if($ui['cr_password']==0) {
             throw new \Exception("Ваш пароль кассира не задан, и вы не можете распечатать чек!");
         }
-        if($statecode['state']==0) {
-            $cr->requestEnterToMode(1, $ui['cr_password']);
+        if($stateCode['state']==0) {
+            $this->crId->requestEnterToMode(1, $ui['cr_password']);
         }
         else {
-            throw new \Exception("Режим: {$statecode['state']} - в нём печать не возможна, и сменить не получается!");
+            throw new \Exception("Режим: {$stateCode['state']} - в нём печать не возможна, и сменить не получается!");
         }
-        $state = $cr->requestGetState();
+        $state = $this->crId->requestGetState();
         if($state['flags']['session']==false) {
             throw new \Exception("Смена не открыта, печать чека не возможна!");
         }
     }
-    
-    // Напечатать чек
+
+    /**
+     * Напечатать чек
+     * @param $cr_id
+     * @throws \CRI\Atol\AtolException
+     * @throws \CRI\Atol\AtolHLError
+     * @throws \CRI\Atol\AtolHLException
+     * @throws \NotFoundException
+     * @throws \Exception
+     */
     protected function printCheck($cr_id) {
         if($this->doc_data['p_doc']==0) {
             throw new \Exception("Невозможна печать чека для документа, не являющегося потомком накладной");
         }
         $doc = \document::getInstanceFromDb($this->doc_data['p_doc']);
-        $check_type = 0;
-        $pay_type = 0;
-        $pay_sum = 1;
         if($doc->typename == 'realizaciya') {
             if($this->typename == 'pko' || $this->typename == 'payinfo') {
                 $ret = $doc->getDopData('return');
@@ -108,33 +128,34 @@ trait PrintCheck {
         if($this->getDocData('sum')!=$doc->getDocData('sum')) {
             throw new \Exception("Частичные поступления и возвраты не реализованы");
         }        
-        $cr = $this->getCashRegister($cr_id);
+
         try {
-            $nom = $doc->getDocumentNomenclature('base_price,bulkcnt');  
-            $this->touchRegMode($cr);
-            $cr->requestOpenCheck($check_type);
+            $this->useCashRegister($cr_id);
+            $this->touchRegMode();
+            $this->crId->requestOpenCheck($check_type);
+            $nom = $doc->getDocumentNomenclature('base_price,bulkcnt');
             $sum = 0;
             foreach ($nom as $line) {
                 $tax = $section = 0;
-                $cr->requestRegisterNomenclature($line['name'], $line['price'], $line['cnt']);
+                $this->crId->requestRegisterNomenclature($line['name'], $line['price'], $line['cnt']);
                 //$cr->cmdRegisterNomenclature($line['name'], $line['price'], $line['cnt']);
                 $sum += $line['price'] * $line['cnt'];
             }
             $sum *= $pay_sum;
-            $cr->requestCloseCheck($pay_type, $sum);
+            $this->crId->requestCloseCheck($pay_type, $sum);
             /// TODO: услуги, коды товаров
         }
         catch(\CRI\Atol\AtolHLError $e) {
             try {
-                $cr->abortBuffer();
-                $cr->requestBreakCheck();                
+                $this->crId->abortBuffer();
+                $this->crId->requestBreakCheck();
             } catch (\Exception $ex) {}
             throw $e;
         }
         catch(\CRI\Atol\AtolException $e) {
             try {
-                $cr->abortBuffer();
-                $cr->requestBreakCheck();
+                $this->crId->abortBuffer();
+                $this->crId->requestBreakCheck();
             } catch (\Exception $ex) {}   
             throw $e;
         }

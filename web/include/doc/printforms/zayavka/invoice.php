@@ -34,8 +34,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
         $bank_data = $res->fetch_assoc();
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();        
+        $this->addPage();       
         $this->addHeadBanner($doc_data['firm_id']);
         $this->addSiteBanner();
         
@@ -156,10 +155,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
             }
             $row[] = $line['name'];
             $row = array_merge($row, array("{$line['cnt']} {$line['unit_name']}", $price, $sum_line));
-            if ($this->pdf->h <= ($this->pdf->GetY() + 40 )) {
-                $this->pdf->AddPage();
-                $this->addTechFooter();
-            }
+            $this->controlPageBreak(30);
             $this->pdf->SetFont('', '', 8);
             $this->pdf->RowIconv($row);
             $sum += $line['sum'];
@@ -172,20 +168,8 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $sumcost = sprintf("%01.2f", $sum);
         $summass = sprintf("%01.3f", $summass);
 
-        if ($this->pdf->h <= ($this->pdf->GetY() + 60)) {
-            $this->pdf->AddPage();
-            $this->addTechFooter();
-        }
-        
-        $delta = $this->pdf->h - ($this->pdf->GetY() + 55);
-        if ($delta > 17) {
-            $delta = 17;
-        }
-
-        if (@$CONFIG['site']['doc_shtamp']) {
-            $shtamp_img = str_replace('{FN}', $doc_data['firm_id'], $CONFIG['site']['doc_shtamp']);
-            $this->pdf->Image($shtamp_img, 4, $this->pdf->GetY() + $delta, 120);
-        }
+        $this->controlPageBreak(50);
+        $this->addSignAndStampImage($doc_data['firm_id']);
 
         $this->pdf->SetFont('', '', 10);
         $text = "Масса товара: $summass кг.";

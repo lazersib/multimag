@@ -75,9 +75,7 @@ class sfak extends \doc\printforms\iPrintFormPdf {
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         
-        $this->pdf->AddPage('L');
-        $y = $this->pdf->getY();
-        $this->addTechFooter();
+        $this->addPage('L');
         
         $this->pdf->Setx(150);
         $this->pdf->SetFont('Arial', '', 7);
@@ -278,12 +276,7 @@ class sfak extends \doc\printforms\iPrintFormPdf {
             $this->pdf->RowIconv($row);
         }
         
-        // Контроль расстояния до конца листа
-        $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
-        if ($workspace_h  <= $this->pdf->GetY() + 65) {
-            $this->pdf->AddPage('L');
-            $this->addTechFooter();
-        }
+        $this->controlPageBreak(65, 'L');
         $this->pdf->SetAutoPageBreak(0);        
 
         // Итоги

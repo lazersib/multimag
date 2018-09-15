@@ -32,8 +32,7 @@ class request extends \doc\printforms\iPrintFormPdf {
         $firm_vars = $this->doc->getFirmVarsA();
         $nomenclature = $this->doc->getDocumentNomenclature();
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();        
+        $this->addPage();       
         $this->addHeadBanner($doc_data['firm_id']);
         
         $text = "Заявка поставщику №{$doc_data['altnum']}{$doc_data['subtype']} от ".date("d.m.Y", $doc_data['date']);

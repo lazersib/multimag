@@ -32,8 +32,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $agent = new \models\agent($doc_data['agent']);
         $nomenclature = $this->doc->getDocumentNomenclature('vat');
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();        
+        $this->addPage();     
         $this->addHeadBanner($doc_data['firm_id']);
         
         $dres = $db->query("SELECT `altnum`, `date` FROM `doc_list` WHERE `id`='{$doc_data['p_doc']}'");
@@ -91,10 +90,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
             }
             $row[] = $line['name'];
             $row = array_merge($row, array($line['unit_name'], $line['cnt'], $price_wo_vat, $price, $sum_line));
-            if ($this->pdf->h <= ($this->pdf->GetY() + 40 )) {
-                $this->pdf->AddPage();
-                $this->addTechFooter();
-            }
+            $this->controlPageBreak(30);
             $this->pdf->SetFont('', '', 8);
             $this->pdf->RowIconv($row);
             $sum += $line['sum'];
@@ -107,10 +103,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         $sumcost = sprintf("%01.2f", $sum);
         $summass = sprintf("%01.3f", $summass);
 
-        if ($this->pdf->h <= ($this->pdf->GetY() + 60)) {
-            $this->pdf->AddPage();
-            $this->addTechFooter();
-        }
+        $this->controlPageBreak(50);
         
         $delta = $this->pdf->h - ($this->pdf->GetY() + 55);
         if ($delta > 17) {

@@ -89,8 +89,7 @@ class dov extends \doc\printforms\iPrintFormPdf {
         }
         $worker_info = $res->fetch_assoc();
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();
+        $this->addPage();
         
         $this->pdf->SetLineWidth($this->line_normal_w);        
         $this->pdf->SetFillColor(255, 255, 255);

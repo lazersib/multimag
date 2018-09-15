@@ -33,8 +33,7 @@ class order extends \doc\printforms\iPrintFormPdf {
         $doc_data = $this->doc->getDocDataA();
         $firm_vars = $this->doc->getFirmVarsA();
 
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();
+        $this->addPage();
         
         $this->pdf->SetFont('Arial', '', 10);
         $this->pdf->SetFillColor(255);

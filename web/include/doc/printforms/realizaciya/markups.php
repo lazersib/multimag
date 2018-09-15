@@ -192,8 +192,7 @@ class markups extends \doc\printforms\iPrintFormInvoicePdf {
     
     /// Сформировать печатную форму
     public function make() {
-        $this->pdf->AddPage('L');
-        $this->addTechFooter();
+        $this->addPage('L');
         
         $this->addFormHeaderBlock();      
         $this->addPartnerInfoBlock(); 

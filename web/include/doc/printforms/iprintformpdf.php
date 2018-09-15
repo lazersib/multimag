@@ -21,8 +21,16 @@ namespace doc\printforms;
 
 /// Абстрактный класс печатной формы
 abstract class iPrintFormPdf {
-    protected $doc;   //< Ссылка на документ с данными для печати
-    protected $pdf;   //< Объект FPDF
+
+    /**
+     * @var \document|\doc_Nulltype Ссылка на документ с данными для печати
+     */
+    protected $doc;
+
+    /**
+     * @var \PDF_MC_Table Объект FPDF
+     */
+    protected $pdf;
     
     // Параметы форм
     protected $line_normal_w = 0.25;   // Стандартная толщина линии
@@ -45,9 +53,9 @@ abstract class iPrintFormPdf {
     }
              
     /// Инициализация модуля вывода данных
-    public function initForm() {
+    public function initForm($orient = 'P') {
         require('fpdf/fpdf_mc.php');
-        $this->pdf = new \PDF_MC_Table('P');
+        $this->pdf = new \PDF_MC_Table($orient);
         $this->pdf->Open();
         $this->pdf->SetAutoPageBreak(1, 5);
         $this->pdf->AddFont('Arial', '', 'arial.php');
@@ -55,7 +63,13 @@ abstract class iPrintFormPdf {
         $this->pdf->tMargin = 5;
         $this->pdf->SetFillColor(255);
     }
-    
+        
+    /// Добавить страницу с техническим заголовком
+    protected function addPage($orientation = '') {
+        $this->pdf->AddPage($orientation);
+        $this->addTechFooter();
+    }
+
     /// Добавить к документу футер с технической информацией
     protected function addTechFooter() {
         $x = $this->pdf->getX();
@@ -71,7 +85,15 @@ abstract class iPrintFormPdf {
         $this->pdf->SetY($y);
     }
     
-    /// Добавить стандартный заголовок формы
+    // Контроль расстояния до конца листа
+    protected function controlPageBreak($offset = 20, $orientation = '') {
+        $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
+        if ($workspace_h <= ($this->pdf->GetY() + $offset )) {
+            $this->addPage($orientation);                
+        }
+    }
+
+        /// Добавить стандартный заголовок формы
     protected function addHeader($text) {
         $this->pdf->SetFontSize(18);
         $this->pdf->MultiCellIconv(0, 8, $text, 0, 'C');
@@ -111,18 +133,21 @@ abstract class iPrintFormPdf {
         }
         $this->pdf->SetFontSize(8);
     }
-    
-    /// Добавить изображение шапки
+
+    /**
+     * Добавить изображение шапки
+     * @param $firm_id int ID организации
+     * @throws \Exception
+     */
     protected function addHeadBanner($firm_id) {
-        global $CONFIG;
-        if (@$CONFIG['site']['doc_header']) {
-            $header_img = str_replace('{FN}', $firm_id, $CONFIG['site']['doc_header']);
+        if (\cfg::get('site', 'doc_header')) {
+            $header_img = str_replace('{FN}', $firm_id, \cfg::get('site', 'doc_header'));
             $size = getimagesize($header_img);
             if (!$size) {
                 throw new \Exception("Не удалось открыть файл изображения");
             }
             if ($size[2] != IMAGETYPE_JPEG) {
-                throw new Exception("Файл изображения не в jpeg формате");
+                throw new \Exception("Файл изображения не в jpeg формате");
             }
             if ($size[0] < 800) {
                 throw new \Exception("Разрешение изображения слишком мало! Допустимя ширина - не менее 800px");
@@ -136,7 +161,6 @@ abstract class iPrintFormPdf {
     
     /// Добавить информацию о сайте
     protected function addSiteBanner() {
-        global $CONFIG;
         $pref = \pref::getInstance();
         $this->pdf->SetFontSize(12);
         $str = "Система интернет-заказов для постоянных клиентов доступна на нашем сайте";
@@ -151,7 +175,26 @@ abstract class iPrintFormPdf {
         $str = "При оформлении заказа через сайт предоставляются специальные цены!";
         $this->pdf->CellIconv(0, 8, $str, 0, 1, 'C', 0);
     }
-    
+
+    /**  Добавить изображение с печатью и подписью
+     * @param $firm_id integer ID организации
+     */
+    protected function addSignAndStampImage($firm_id) {
+        if($firm_id == 0) {
+            throw new \OutOfBoundsException('ID организации не задан');
+        }
+        if (\cfg::get('site', 'doc_shtamp')) {
+            $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
+            $delta = $workspace_h - ($this->pdf->GetY() + 50);
+            if ($delta > 17) {
+                $delta = 17;
+            }
+            $shtamp_img = str_replace('{FN}', $firm_id, \cfg::get('site', 'doc_shtamp'));
+            $this->pdf->Image($shtamp_img, 4, $this->pdf->GetY() + $delta, 120);
+        }
+    }
+
+
     /// Добавить информацию о сторуднике в нижний правый угол страницы
     protected function addWorkerInfo($doc_data) {
         global $db;

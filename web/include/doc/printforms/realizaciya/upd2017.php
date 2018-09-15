@@ -78,9 +78,8 @@ class upd2017 extends \doc\printforms\iPrintFormPdf {
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         
-        $this->pdf->AddPage('L');
+        $this->addPage('L');
         $y = $this->pdf->getY();
-        $this->addTechFooter();
         
         $this->pdf->SetLineWidth($this->line_bold_w);        
         $this->pdf->Line(40, 5, 40, 79);
@@ -315,12 +314,7 @@ class upd2017 extends \doc\printforms\iPrintFormPdf {
             $this->pdf->Line(40, $this->pdf->GetY() , 40, $lsy);
             $this->pdf->SetLineWidth($this->line_normal_w);
         }
-        // Контроль расстояния до конца листа
-        $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
-        if ($workspace_h  <= $this->pdf->GetY() + 81) {
-            $this->pdf->AddPage('L');
-            $this->addTechFooter();
-        }
+        $this->controlPageBreak(81, 'L');
         $this->pdf->SetAutoPageBreak(0);        
 
         // Итоги

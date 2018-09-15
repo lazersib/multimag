@@ -68,10 +68,7 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
             }
             $row[] = $line['name'];
             $row = array_merge($row, array("{$line['mult']} {$line['unit_name']}", "{$line['cnt']} {$line['unit_name']}", $price, $sum_line, $line['place']));
-            if ($this->pdf->h <= ($this->pdf->GetY() + 18 )) {
-                $this->pdf->AddPage();
-                $this->addTechFooter();
-            }
+            $this->controlPageBreak(8);
             $this->pdf->SetFont('', '', 8);
             $this->pdf->RowIconv($row);
             $this->form_sum += $line['sum'];
@@ -118,8 +115,7 @@ abstract class iPrintFormIDPdf extends \doc\printforms\iPrintFormInvoicePdf {
     
     /// Сформировать данные печатной формы
     public function make() {
-        $this->pdf->AddPage();
-        $this->addTechFooter();
+        $this->addPage();
         
         $this->addFormHeaderBlock();      
         $this->addPartnerInfoBlock(); 

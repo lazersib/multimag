@@ -117,10 +117,7 @@ class komplektopt extends \doc\printforms\iPrintFormInvoicePdf {
                     $line['place'],
                 ) );
             $rowc = array_merge($rowc, array('','','', '','','','') );
-            if ($this->pdf->h <= ($this->pdf->GetY() + 18 )) {
-                $this->pdf->AddPage();
-                $this->addTechFooter();
-            }
+            $this->controlPageBreak();
             $this->pdf->SetFont('', '', 8);
             $this->pdf->RowIconvCommented($row, $rowc);
             $this->form_sum += $line['sum'];

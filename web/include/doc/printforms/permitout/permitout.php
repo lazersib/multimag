@@ -113,8 +113,7 @@ class permitout extends \doc\printforms\iPrintFormInvoicePdf {
 
     /// Сформировать данные печатной формы
     public function make() {
-        $this->pdf->AddPage();
-        $this->addTechFooter();
+        $this->addPage();
         
         $this->addFormHeaderBlock();      
         $this->addPartnerInfoBlock(); 

@@ -38,8 +38,7 @@ class label extends \doc\printforms\iPrintFormPdf {
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();
+        $this->addPage();
 
         $gruzop_info = new \models\agent($dop_data['gruzop']);
         $gruzop = '';
@@ -94,10 +93,7 @@ class label extends \doc\printforms\iPrintFormPdf {
         $cell_height = 0;
         for ($c = 1; $c <= $pack_cnt; $c++) {
             if($c>1) {
-                $rest = $this->pdf->h - $this->pdf->bMargin - $this->pdf->y - 5;
-                if($rest<$cell_height) {
-                    $this->pdf->addPage();
-                }
+                $this->controlPageBreak(5);
             }
             $start = $this->pdf->y - 5;
             $this->pdf->ln(0);

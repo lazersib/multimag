@@ -130,15 +130,11 @@ class certlist extends \doc\printforms\iPrintFormPdf {
     
     /// Сформировать данные печатной формы
     public function make() {
-        global $db;
         $doc_id = $this->doc->getId();
         $doc_data = $this->doc->getDocDataA();
-        $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
         
-        $this->pdf->AddPage('L');
-        $y = $this->pdf->getY();
-        $this->addTechFooter();
+        $this->addPage('L');    
         
         $this->pdf->SetFont('', '', 14);
         $str = 'Реестр сертификатов';
@@ -183,7 +179,7 @@ class certlist extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetAligns($aligns);
         $this->pdf->SetFillColor(255, 255, 255);
         $i = 1;
-        $sumbeznaloga = $sumnaloga = $sum = 0;
+        $sumnaloga = $sum = 0;
         foreach ($nomenclature as $line ) {
             $row = array(
                 $i++,
@@ -195,11 +191,7 @@ class certlist extends \doc\printforms\iPrintFormPdf {
             $this->pdf->RowIconv($row);
         }
         // Контроль расстояния до конца листа
-        $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
-        if ($workspace_h  <= $this->pdf->GetY() + 81) {
-            $this->pdf->AddPage('L');
-            $this->addTechFooter();
-        }
+        $this->controlPageBreak(81, 'L');
         $this->pdf->SetAutoPageBreak(0);        
         $this->pdf->ln(3);
         

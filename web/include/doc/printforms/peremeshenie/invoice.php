@@ -40,8 +40,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
         if(! $sklad_info )	throw new Exception("Склад назначения не найден!");
         $to_sklad = $sklad_info['name'];
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();
+        $this->addPage();
         
         $dt = date("d.m.Y", $doc_data['date']);
         $text = "Накладная перемещения N {$doc_data['altnum']}{$doc_data['subtype']} ($doc_id) от $dt";
@@ -83,10 +82,7 @@ class invoice extends \doc\printforms\iPrintFormPdf {
             $row[] = $line['name'];
             $comm[] = $line['comment'];
             $row = array_merge($row, array($line['place'], $line['dest_place'], "{$line['cnt']} {$line['unit_name']}", $line['mass'] * $line['cnt']));
-            if ($this->pdf->h <= ($this->pdf->GetY() + 40 )) {
-                $this->pdf->AddPage();
-                $this->addTechFooter();
-            }
+            $this->controlPageBreak(30);
             $comm  = array_merge($comm, array('', '',  '', ''));
             $this->pdf->RowIconvCommented($row, $comm);
             $cnt += $line['cnt'];

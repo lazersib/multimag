@@ -25,7 +25,7 @@ var $buf;
     var $pass;
     var $recv;
     
-    protected $atolbuffer;
+    protected $atolBuffer;
     protected $password = [0, 0];    
     protected $cur_tld = 0;
     protected $last_answer = null;
@@ -36,9 +36,9 @@ var $buf;
 
     // Flags
     const F_NOFLAGS = 0x00;
-    const F_NEEDRESULT = 0x01;
-    const F_IGNOREERROR = 0x02;
-    const F_WAITASYNCDATA = 0x04;
+    const F_NEED_RESULT = 0x01;
+    const F_IGNORE_ERROR = 0x02;
+    const F_WAIT_ASYNC_DATA = 0x04;
     
     // Check types
     const CT_IN = 1;
@@ -49,7 +49,7 @@ var $buf;
     const CT_CORRECTION_OUT = 8;
 
     public function __construct() {
-        $this->atolbuffer = new AtolBuffer([$this, 'asyncReceiveData'], [$this, 'asyncReceiveError']);
+        $this->atolBuffer = new AtolBuffer([$this, 'asyncReceiveData'], [$this, 'asyncReceiveError']);
     }
 
     public function __destruct() {
@@ -86,30 +86,30 @@ var $buf;
     }
 
     public function connect($connect_line) {        
-        $this->atolbuffer->connect($connect_line);
-        $this->atolbuffer->abort();
+        $this->atolBuffer->connect($connect_line);
+        $this->atolBuffer->abort();
     }
     
     public function abortBuffer() {
-        $this->atolbuffer->abort();
+        $this->atolBuffer->abort();
     }
     
     public function cmdBeep() {
         $data = [$this->password[0], $this->password[1], 0x47];
         $this->cur_tld++;
-        $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);      
+        $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function cmdRequestDeviceType() {
         $data = [$this->password[0], $this->password[1], 0xA5];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestDeviceType() {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdRequestDeviceType();        
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['data'][0]!=0) {
             throw new AtolHLException("Нет связи");
@@ -134,13 +134,13 @@ var $buf;
     public function cmdGetState() {
         $data = [$this->password[0], $this->password[1], 0x3F];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestGetState() {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdGetState();        
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLException("Ошибка получения статуса");
@@ -179,13 +179,13 @@ var $buf;
     public function cmdGetStateCode() {
         $data = [$this->password[0], $this->password[1], 0x45];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestGetStateCode() {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdGetStateCode();
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -212,12 +212,12 @@ var $buf;
         $data = [$this->password[0], $this->password[1], 0x56, $mode];
         $data = array_merge($data, $k_pass);
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestEnterToMode($mode, $password) {
         $this->cmdEnterToMode($mode, $password);
-        $this->atolbuffer->dispatchData(3);
+        $this->atolBuffer->dispatchData(3);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -232,12 +232,12 @@ var $buf;
     public function cmdExitFromMode() {
         $data = [$this->password[0], $this->password[1], 0x48];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestExitFromMode() {
         $this->cmdExitFromMode();
-        $this->atolbuffer->dispatchData(3);
+        $this->atolBuffer->dispatchData(3);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -258,13 +258,13 @@ var $buf;
         }
         $data = [$this->password[0], $this->password[1], 0x9A, $flags, 0];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestNewSession() {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdNewSession();
-        $this->atolbuffer->dispatchData(3);
+        $this->atolBuffer->dispatchData(3);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -286,13 +286,13 @@ var $buf;
         }
         $data = [$this->password[0], $this->password[1], 0x92, $flags, $type];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestOpenCheck(int $type, bool $no_print = false) {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdOpenCheck($type, $no_print);
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -318,13 +318,13 @@ var $buf;
         $data = array_merge($data, [$tax, $this->section]);
         $data = array_merge($data, $this->intToBCD(0, 17));
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestRegisterNomenclature(string $name, float $price, float $count, int $type = 0, int $sign = 0, int $size = 0, int $tax = 0) {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdRegisterNomenclature($name, $price, $count, $type, $sign, $size, $tax);
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -344,13 +344,13 @@ var $buf;
         $data = [$this->password[0], $this->password[1], 0x4A, $flags, $type];
         $data = array_merge($data, $this->intToBCD($sum*100, 5));
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestCloseCheck(int $type, float $sum) {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdCloseCheck($type, $sum);
-        $this->atolbuffer->dispatchData(5);
+        $this->atolBuffer->dispatchData(5);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -365,13 +365,13 @@ var $buf;
     public function cmdBreakCheck() {
         $data = [$this->password[0], $this->password[1], 0x59];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestBreakCheck() {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdBreakCheck();
-        $this->atolbuffer->dispatchData(5);
+        $this->atolBuffer->dispatchData(5);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -391,13 +391,13 @@ var $buf;
         $data = [$this->password[0], $this->password[1], 0x49, $flags];
         $data = array_merge($data, $this->intToBCD($sum*100, 5));
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestInCash(float $sum) {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdInCash($sum);
-        $this->atolbuffer->dispatchData(5);
+        $this->atolBuffer->dispatchData(5);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -414,13 +414,13 @@ var $buf;
         settype($type, 'int');
         $data = [$this->password[0], $this->password[1], 0x67, $type];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestXREport($type) {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdXREport($type);
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -437,13 +437,13 @@ var $buf;
     public function cmdZREport() {
         $data = [$this->password[0], $this->password[1], 0x5A];
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestZREport() {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdZREport();
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         if($ret['state']=='error') {
             throw new AtolHLError($ret['data'][1],$ret['data'][2]);
@@ -460,13 +460,13 @@ var $buf;
         $data = [$this->password[0], $this->password[1], 0xAB];
         $data = array_merge($data, $this->intToBCD($num, 5));
         $this->cur_tld++;
-        return $this->atolbuffer->add($this->result_flags, $this->cur_tld, $data);        
+        return $this->atolBuffer->add($this->result_flags, $this->cur_tld, $data);
     }
     
     public function requestRePrintDocument($num) {
-        $this->result_flags = self::F_NEEDRESULT;
+        $this->result_flags = self::F_NEED_RESULT;
         $this->cmdRePrintDocument($num);
-        $this->atolbuffer->dispatchData(1);
+        $this->atolBuffer->dispatchData(1);
         $ret = $this->getFreeAsyncResult($this->cur_tld);
         $this->assertErrors($ret);
         return $ret;

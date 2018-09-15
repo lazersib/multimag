@@ -73,10 +73,7 @@ class plus extends \doc\printforms\iPrintFormInvoicePdf {
             }
             $row[] = $line['name'];
             $row = array_merge($row, array($line['cnt'], $line['unit_name'], $price, $sum_line));
-            if ($this->pdf->h <= ($this->pdf->GetY() + 40 )) {
-                $this->pdf->AddPage();
-                $this->addTechFooter();
-            }
+            $this->controlPageBreak(30);
             $this->pdf->RowIconv($row);
             $this->form_sum += $line['sum'];
             $this->form_summass += $line['mass'] * $line['cnt'];
@@ -120,9 +117,7 @@ class plus extends \doc\printforms\iPrintFormInvoicePdf {
     
     /// Сформировать печатную форму
     public function make() {
-        $this->pdf->AddPage();
-        $this->addTechFooter();
-        
+        $this->addPage();        
         $this->addFormHeaderBlock();      
         $this->addPartnerInfoBlock(); 
         $this->addNomenclatureTableBlock();

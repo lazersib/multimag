@@ -433,12 +433,8 @@ class Report_Revision_Act extends BaseReport {
             $pdf->setY($y);
             $pdf->MultiCell(0, 5, $str, 0, 'L', 0);
 
-            if ($CONFIG['site']['doc_shtamp'] && !$no_stamp) {
-                $delta = -15;
-                $shtamp_img = str_replace('{FN}', $firm_id, $CONFIG['site']['doc_shtamp']);
-                if (file_exists($shtamp_img)) {
-                    $pdf->Image($shtamp_img, 3, $pdf->GetY() + $delta, 120);
-                }
+            if (!$no_stamp) {
+                $this->addSignAndStampImage($firm_id);
             }
 
             $pdf->Ln();

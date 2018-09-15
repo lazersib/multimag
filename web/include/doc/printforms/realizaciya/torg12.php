@@ -146,11 +146,8 @@ class torg12 extends \doc\printforms\iPrintFormPdf {
         $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
         $bank_info = $res->fetch_assoc();
 
-        $this->pdf->AddPage('L');
-        $y = $this->pdf->getY();
-        $this->addTechFooter();
+        $this->addPage('L');
 
-        $this->pdf->setY($y);
         $this->pdf->SetFont('', '', 6);
         $str = 'Унифицированная форма ТОРГ-12 Утверждена постановлением госкомстата России от 25.12.98 № 132';
         $this->pdf->CellIconv(0, 4, $str, 0, 1, 'R');
@@ -526,8 +523,7 @@ class torg12 extends \doc\printforms\iPrintFormPdf {
                     $list_sumnaloga = 'без налога';
                 }
                 $this->makeSummary('Всего:', $t_all_width, 3.5, $list_cnt, $list_sumbeznaloga, $list_sum, $list_sumnaloga, $list_summass);
-                $this->pdf->AddPage('L');
-                $this->addTechFooter();
+                $this->addPage('L');
                 $y = $this->pdf->GetY();
                 $list_summass = $list_sum = $list_sumnaloga = 0;
             }
@@ -536,12 +532,7 @@ class torg12 extends \doc\printforms\iPrintFormPdf {
         $this->makeSummary('Всего:', $t_all_width, 3.5, $list_cnt, $list_sumbeznaloga, $list_sum, $list_sumnaloga, $list_summass);
         $this->makeSummary('Итого по накладной:', $t_all_width, 3.5, $cnt, $sumbeznaloga, $sum, $sumnaloga, $summass);
 
-        // Контроль расстояния до конца листа
-        $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
-        if ($workspace_h <= $this->pdf->GetY() + 61) {
-            $this->pdf->AddPage('L');
-            $this->addTechFooter();
-        }
+        $this->controlPageBreak(61, 'L');
         $this->pdf->SetAutoPageBreak(0);
        
         // Подписи

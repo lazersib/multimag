@@ -42,8 +42,7 @@ class invoice extends \doc\printforms\iPrintFormInvoicePdf {
     
     /// Сформировать печатную форму
     public function make() {
-        $this->pdf->AddPage();
-        $this->addTechFooter();
+        $this->addPage();
         
         $this->addFormHeaderBlock();      
         $this->addPartnerInfoBlock(); 

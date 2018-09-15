@@ -34,8 +34,7 @@ class order extends \doc\printforms\iPrintFormPdf {
         $dop_data = $this->doc->getDopDataA();
         $firm_vars = $this->doc->getFirmVarsA();
 
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();
+        $this->addPage();
         
         $this->pdf->SetFillColor(255);
         $this->pdf->Rect(136, 3, 3, 120);

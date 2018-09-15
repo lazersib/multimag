@@ -130,9 +130,8 @@ class torg16 extends \doc\printforms\iPrintFormPdf {
         $res = $db->query("SELECT `name`, `bik`, `rs`, `ks` FROM `doc_kassa` WHERE `ids`='bank' AND `num`='{$doc_data['bank']}'");
         $bank_info = $res->fetch_assoc();
 
-        $this->pdf->AddPage('L');
-        $y = $this->pdf->getY();
-        $this->addTechFooter();
+        $this->addPage('L');
+        $y = $this->pdf->getY();        
 
         $this->pdf->setY($y);
         $this->pdf->SetFont('', '', 6);
@@ -332,12 +331,7 @@ class torg16 extends \doc\printforms\iPrintFormPdf {
                 '',
             );
             $this->pdf->RowIconv($row);
-
-            if ($this->pdf->GetY() > 190) {
-                $this->pdf->AddPage('L');
-                $this->addTechFooter();
-                $y = $this->pdf->GetY();
-            }
+            $this->controlPageBreak(30, 'L');
         }
         $this->pdf->ln(5);
         
@@ -474,8 +468,7 @@ class torg16 extends \doc\printforms\iPrintFormPdf {
 
             if ($this->pdf->GetY() > 190) {
                 $this->makeColRect($t_all_offset, $y);
-                $this->pdf->AddPage('L');
-                $this->addTechFooter();
+                $this->addPage('L');                
                 $y = $this->pdf->GetY();
                 $list_summass = $list_sum = $list_sumnaloga = 0;
             }
@@ -484,12 +477,7 @@ class torg16 extends \doc\printforms\iPrintFormPdf {
         $this->makeColRect($t_all_offset, $y);        
         $this->makeSummary('Итого:', $t_all_width, 3.5, $sum);
 
-        // Контроль расстояния до конца листа
-        $workspace_h = $this->pdf->h - $this->pdf->bMargin - $this->pdf->tMargin;
-        if ($workspace_h <= $this->pdf->GetY() + 61) {
-            $this->pdf->AddPage('L');
-            $this->addTechFooter();
-        }
+        $this->controlPageBreak(61);
         $this->pdf->SetAutoPageBreak(0);
        
         // Подписи

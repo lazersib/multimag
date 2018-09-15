@@ -36,7 +36,7 @@ class buisoffcnt extends buisoff {
                 $text .= ", мест: " . $dop_data['mest'];
             }
         }
-        $this->addInfoLine($text, 12); 
+        $this->addInfoLine($text );
     }
     
     /// Сформировать данные печатной формы
@@ -46,8 +46,7 @@ class buisoffcnt extends buisoff {
         $text_header = $this->doc->getTextData('text_header');
         $nomenclature = $this->doc->getDocumentNomenclature('comment');
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();        
+        $this->addPage();       
         $this->addHeadBanner($doc_data['firm_id']);
         
         $text = "Коммерческое предложение №{$doc_data['altnum']}{$doc_data['subtype']} от " . date("d.m.Y", $doc_data['date']);
@@ -85,9 +84,7 @@ class buisoffcnt extends buisoff {
                         
         }
         $this->form_linecount = $ii;
-        if ($this->pdf->h <= ($this->pdf->GetY() + 40)) {
-            $this->pdf->AddPage();
-        }
+        $this->controlPageBreak(30);
         $this->addSummaryBlock();
         if($firm_vars['param_nds']) {
             $this->addMiniHeader("Цены указаны с учётом НДС, за 1 ед. товара");
@@ -101,6 +98,7 @@ class buisoffcnt extends buisoff {
             $this->pdf->Ln(5);
         }
         $this->addSiteBanner();
+        $this->addSignAndStampImage($doc_data['firm_id']);
         $this->addWorkerInfo($doc_data);
     }    
 }

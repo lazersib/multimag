@@ -32,8 +32,7 @@ class testcnt extends \doc\printforms\iPrintFormPdf {
         $firm_vars = $this->doc->getFirmVarsA();
         $nomenclature = $this->doc->getDocumentNomenclature('comment,rto');
         
-        $this->pdf->AddPage('P');
-        $this->addTechFooter();
+        $this->addPage();
         
         $text = "Накладная на проверку наличия N {$doc_data['altnum']}{$doc_data['subtype']} от ".date("d.m.Y", $doc_data['date']);
         $this->addHeader($text);

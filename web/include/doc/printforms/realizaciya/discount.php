@@ -98,10 +98,7 @@ class discount extends \doc\printforms\iPrintFormIDPdf {
 
             $row = array_merge($row, array($line['cnt'] . ' ' . $line['unit_name'], $def_price_s, $price_s, $skid_s, $skid_p_s, $def_sum_line_s,
                 $skid_sum_line_s, $sum_line_s));
-            if ($this->pdf->h <= ($this->pdf->GetY() + 18 )) {
-                $this->pdf->AddPage();
-                $this->addTechFooter();
-            }
+            $this->controlPageBreak();
             $this->pdf->SetFont('', '', 8);
             $this->pdf->RowIconv($row);
             $this->form_sum += $line['sum'];
@@ -113,8 +110,7 @@ class discount extends \doc\printforms\iPrintFormIDPdf {
     
     /// Сформировать данные печатной формы
     public function make() {
-        $this->pdf->AddPage('L');
-        $this->addTechFooter();
+        $this->addPage('L');
         
         $this->addFormHeaderBlock();      
         $this->addPartnerInfoBlock(); 
