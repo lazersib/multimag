@@ -192,7 +192,7 @@ class document {
         $res = $db->query("SELECT `param`, `value` FROM `doc_dopdata` WHERE `doc`={$this->id}");
         $this->dop_data = array();
         while($nxt = $res->fetch_row())	{
-                $this->dop_data[$nxt[0]]=$nxt[1];
+            $this->dop_data[$nxt[0]]=$nxt[1];
         }
         $this->firm_vars = $db->selectRow('doc_vars', $this->doc_data['firm_id']);
 

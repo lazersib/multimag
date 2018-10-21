@@ -194,7 +194,7 @@ class goodsitem {
         $store_data = array();
         $log_data = array();
         foreach ($this->data as $field => $old_val) {
-            if ($field == 'id' || $field == 'likvid' || $field == 'cost_date' || !isset($data[$field])) {
+            if ($field == 'id' || $field == 'likvid' || $field == 'cost_date' || $field == 'pos_type' || !isset($data[$field])) {
                 continue;
             }
             if($data[$field]==='null') {

@@ -67,16 +67,7 @@ class doc_Pko extends doc_credit {
             'account' => request('account'),
             'print_check' => rcvint('print_check'),
         );
-        $old_data = array_intersect_key($new_data, $this->dop_data);
-
-        $log_data = '';
-        if ($this->id) {
-            $log_data = getCompareStr($old_data, $new_data);
-        }
         $this->setDopDataA($new_data);
-        if ($log_data) {
-            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-        }
     }
 
     // Провести

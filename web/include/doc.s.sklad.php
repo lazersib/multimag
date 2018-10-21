@@ -360,14 +360,14 @@ class doc_s_Sklad {
         $pos_id = intval($form_data['id']);
         if($pos_id) {
             if ($form_data['pos_type']) {
-                $pos_type_html = "<input type='hidden' name='pd[type]' value='1'>Услуга";
+                $pos_type_html = "<input type='hidden' name='pd[pos_type]' value='1'>Услуга";
             } else {
-                $pos_type_html = "<input type='hidden' name='pd[type]' value='0'>Товар";
+                $pos_type_html = "<input type='hidden' name='pd[pos_type]' value='0'>Товар";
             }
         } else {
             $ret .= "<h3>Новая запись</h3>";
-            $pos_type_html = "<label><input type='radio' name='pd[type]' value='0' checked>Товар</label><br>
-                <label><input type='radio' name='pd[type]' value='1'>Услуга</label>";
+            $pos_type_html = "<label><input type='radio' name='pd[pos_type]' value='0' checked>Товар</label><br>
+                <label><input type='radio' name='pd[pos_type]' value='1'>Услуга</label>";
         }
         if(!isset($form_data['no_export_yml'])) {
             $form_data['no_export_yml'] = 0;
@@ -1159,6 +1159,7 @@ class doc_s_Sklad {
         try {
             $pos_corr = array('hidden'=>0, 'no_export_yml'=>0, 'eol'=>0, 'stock'=>0);
             $pos_data = array_merge($pos_corr, $pos_data);
+
             if (($pos_id) && (!$copy_flag)) {
                 \acl::accessGuard('directory.goods', \acl::UPDATE);                
                 $db->startTransaction();

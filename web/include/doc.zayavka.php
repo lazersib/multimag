@@ -405,17 +405,10 @@ class doc_Zayavka extends doc_Nulltype {
         );
         $old_data = array_intersect_key($new_data, $this->dop_data);
 
-        $log_data = '';
-        if ($this->id) {
-            $log_data = getCompareStr($old_data, $new_data);
-            if (@$old_data['status'] != $new_data['status']) {
-                $this->sentZEvent('cstatus:' . $new_data['status']);
-            }
+        if ($this->id && @$old_data['status'] != $new_data['status']) {
+            $this->sentZEvent('cstatus:' . $new_data['status']);
         }
         $this->setDopDataA($new_data);
-        if ($log_data) {
-            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-        }
     }
 
     /// Выполнение дополнительных проверок доступа для проведения документа

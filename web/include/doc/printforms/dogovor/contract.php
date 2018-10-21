@@ -66,9 +66,6 @@ class contract extends \doc\printforms\iPrintFormPdf {
         if($agent->adres) {
             $str .= "\nАдрес: {$agent->adres}";
         }
-        if($agent->getPhone()) {
-            $str .= "\nТелефон: ".$agent->getPhone();
-        }
         if($agent->inn || $agent->kpp) {
             $str .= "\n";
             if($agent->inn) {
@@ -77,12 +74,6 @@ class contract extends \doc\printforms\iPrintFormPdf {
             if($agent->kpp) {
                 $str .= "КПП: ".$agent->kpp;
             }
-        }
-        if($agent->okpo) {
-            $str .= "\nОКПО: ".$agent->okpo;
-        }
-        if($agent->okved) {
-            $str .= "\nОКВЭД: ".$agent->okved;
         }
         if($agent->rs ||$agent->bank ||$agent->bik ||$agent->ks) {
             $str .= "\n";
@@ -108,7 +99,6 @@ class contract extends \doc\printforms\iPrintFormPdf {
         $this->pdf->SetX(100);
 
         $str = "{$firm_vars['firm_name']}\nАдрес: {$firm_vars['firm_adres']}\nИНН/КПП {$firm_vars['firm_inn']}";
-        $str .="\nОГРН:{$firm_vars['firm_ogrn']}, ОКПО:{$firm_vars['firm_okpo']}";
         $str .="\nР/С:{$bank_info['rs']} в банке {$bank_info['name']}, БИК:{$bank_info['bik']}, К/С:{$bank_info['ks']}";
         $str .="\n_________________________ / {$firm_vars['firm_director']} /\n\n      М.П.";
         $this->pdf->MultiCellIconv(0, 4, $str, 0, 'L', 0);

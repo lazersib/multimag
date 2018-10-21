@@ -61,16 +61,7 @@ class doc_Doveren extends doc_Nulltype {
             'worker_id' => rcvint('worker_id'),
             'end_date' => rcvdate('end_date')
         );
-        $old_data = array_intersect_key($new_data, $this->dop_data);
-
-        $log_data = '';
-        if ($this->id) {
-            $log_data = getCompareStr($old_data, $new_data);
-        }
         $this->setDopDataA($new_data);
-        if ($log_data) {
-            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
-        }
     }
     
     /**

@@ -142,6 +142,10 @@ class main extends \acl\aclContainer {
                 "name" => "Способы доставки",
                 "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
             ),
+            'nomtypes' => array(
+                "name" => "Типы номенклатуры",
+                "mask" => \acl::VIEW | \acl::CREATE  | \acl::UPDATE
+            ),
         );
         $this->list = array_merge($list1, $list2);
     }

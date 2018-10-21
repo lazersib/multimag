@@ -93,7 +93,13 @@ abstract class iPrintFormPdf {
         }
     }
 
-        /// Добавить стандартный заголовок формы
+    /// Добавить стандартную информационную строку
+    protected function addRightPreHeader($text) {
+        $this->pdf->SetFontSize(8);
+        $this->pdf->MultiCellIconv(0, 3.5, $text, 0, 'R');
+    }
+    
+    /// Добавить стандартный заголовок формы
     protected function addHeader($text) {
         $this->pdf->SetFontSize(18);
         $this->pdf->MultiCellIconv(0, 8, $text, 0, 'C');

@@ -28,31 +28,27 @@ class doc_Specific extends doc_Nulltype {
         $this->viewname = 'Спецификация';
         $this->sklad_editor_enable = true;
         $this->header_fields = 'bank cena separator agent';
-        settype($this->id, 'int');
     }
 
     function initDefDopdata() {
-        $this->def_dop_data = array('received' => 0, 'cena' => 1);
+        $this->def_dop_data = array('received' => 0, 'cena' => 1, 'warranty_time' => '', 'delivery_time' => '');
     }
 
     function DopHead() {
         global $tmpl;
         $checked = $this->dop_data['received'] ? 'checked' : '';
         $tmpl->addContent("<label><input type='checkbox' name='received' value='1' $checked>Документы подписаны и получены</label><br>");
+        $tmpl->addContent("Гарантийный срок:<br><input type='text' name='warranty_time' value='{$this->dop_data['warranty_time']}'><br>");
+        $tmpl->addContent("Cрок поставки:<br><input type='text' name='delivery_time' value='{$this->dop_data['delivery_time']}'><br>");
     }
 
     function DopSave() {
         $new_data = array(
-            'received' => rcvint('received')
+            'received' => rcvint('received'),
+            'warranty_time' => request('warranty_time'),
+            'delivery_time' => rcvint('delivery_time')
         );
-        $old_data = array_intersect_key($new_data, $this->dop_data);
-
-        $log_data = '';
-        if ($this->id)
-            $log_data = getCompareStr($old_data, $new_data);
         $this->setDopDataA($new_data);
-        if ($log_data)
-            doc_log("UPDATE {$this->typename}", $log_data, 'doc', $this->id);
     }
     
     /**
