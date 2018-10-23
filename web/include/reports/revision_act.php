@@ -424,18 +424,23 @@ class Report_Revision_Act extends BaseReport {
             $pdf->Ln(7);
             $x = $pdf->getX() + $t_width[0] + $t_width[1] + $t_width[2] + $t_width[3];
             $y = $pdf->getY();
-            $str = iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
-            $pdf->MultiCell($t_width[0] + $t_width[1] + $t_width[2] + $t_width[3], 5, $str, 0, 'L', 0);
-            $str = iconv('UTF-8', 'windows-1251', "От {$agent->fullname}\n\n{$agent->leader_post}  ____________________________ ({$agent->leader_name})\n\n           м.п.");
+            
+            if (!$no_stamp && \cfg::get('site', 'doc_leader_shtamp')) {
+                $shtamp_img = str_replace('{FN}', $firm_id, \cfg::get('site', 'doc_leader_shtamp'));
+                $pdf->Image($shtamp_img, 4, $pdf->GetY(), 120);                
+            }
+            else {
+                $str = iconv('UTF-8', 'windows-1251', "От {$firm_vars['firm_name']}\n\nДиректор ____________________________ ({$firm_vars['firm_director']})\n\n           м.п.");
+                $pdf->MultiCell($t_width[0] + $t_width[1] + $t_width[2] + $t_width[3], 5, $str, 0, 'L', 0);
+            }   
+            
             $pdf->lMargin = $x;
             $pdf->setX($x);
-
             $pdf->setY($y);
+            $str = iconv('UTF-8', 'windows-1251', "От {$agent->fullname}\n\n{$agent->leader_post}  ____________________________ ({$agent->leader_name})\n\n           м.п.");
             $pdf->MultiCell(0, 5, $str, 0, 'L', 0);
 
-            if (!$no_stamp) {
-                $this->addSignAndStampImage($firm_id);
-            }
+            
 
             $pdf->Ln();
             if (!$sendmail) {
@@ -495,6 +500,16 @@ class Report_Revision_Act extends BaseReport {
                 $tmpl->msg("Документ отправлен по адреск email: ".html_out($email), "ok");
             }
         }
+    }
+    
+    /**  Добавить изображение с печатью и подписью
+     * @param $firm_id integer ID организации
+     */
+    protected function addSignAndStampImage($firm_id) {
+        if($firm_id == 0) {
+            throw new \OutOfBoundsException('ID организации не задан');
+        }
+        
     }
 
 }

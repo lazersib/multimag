@@ -576,7 +576,7 @@ class doc_Nulltype extends \document {
                         $pref = \pref::getInstance();
                         $write_doc_data['agent'] = $pref->getSitePref('default_agent_id');
                     }
-                    $write_dop_data['contract'] = rcvint('contract');
+                    $write_doc_data['contract'] = rcvint('contract');
                     break;
                 case 'separator':
                     break;

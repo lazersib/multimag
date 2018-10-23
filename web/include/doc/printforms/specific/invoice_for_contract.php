@@ -140,9 +140,14 @@ class invoice_for_contract extends \doc\printforms\iPrintFormPdf {
         $this->pdf->MultiCellIconv(90, 5, $firm_vars['firm_name'], 0, 'L', 0);        
         
         $this->pdf->Ln(15);
-        $this->pdf->CellIconv(40, 6, $firm_vars['firm_leader_post'], 'B', 0, 'L', 0);
-        $this->pdf->CellIconv(45, 6, $firm_vars['firm_director'], 'B', 0, 'R', 0);
-        
+        if (\cfg::get('site', 'doc_leader_shtamp')) {
+            $shtamp_img = str_replace('{FN}', $doc_data['firm_id'], \cfg::get('site', 'doc_leader_shtamp'));
+            $this->pdf->Image($shtamp_img, 4, $this->pdf->GetY() - 12, 120);
+        }
+        else {
+            $this->pdf->CellIconv(40, 6, $firm_vars['firm_leader_post'], 'B', 0, 'L', 0);
+            $this->pdf->CellIconv(45, 6, $firm_vars['firm_director'], 'B', 0, 'R', 0);
+        }
         $this->pdf->SetY($y);
         $this->pdf->SetX(105);
         
@@ -157,10 +162,7 @@ class invoice_for_contract extends \doc\printforms\iPrintFormPdf {
             $delta = 17;
         }
 
-        if (\cfg::get('site', 'doc_leader_shtamp')) {
-            $shtamp_img = str_replace('{FN}', $doc_data['firm_id'], \cfg::get('site', 'doc_leader_shtamp'));
-            $this->pdf->Image($shtamp_img, 4, $this->pdf->GetY() + $delta, 120);
-        }
+        
         return;
     }    
 }
