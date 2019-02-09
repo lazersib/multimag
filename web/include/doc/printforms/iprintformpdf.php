@@ -20,12 +20,7 @@
 namespace doc\printforms; 
 
 /// Абстрактный класс печатной формы
-abstract class iPrintFormPdf {
-
-    /**
-     * @var \document|\doc_Nulltype Ссылка на документ с данными для печати
-     */
-    protected $doc;
+abstract class iPrintFormPdf extends iPrintForm {
 
     /**
      * @var \PDF_MC_Table Объект FPDF
@@ -36,22 +31,12 @@ abstract class iPrintFormPdf {
     protected $line_normal_w = 0.25;   // Стандартная толщина линии
     protected $line_bold_w = 0.6;   // Толщина жирной линии
     protected $line_thin_w = 0.18;   // Толщина тонкой линии
-    
-    public $mime = "application/pdf";
-    
+
     public function __construct() {
-        
+        parent::__construct();
+        $this->mime = "application/pdf";
     }
 
-        /// Установить ссылку на распечатываемый документ
-    public function setDocument($doc) {
-        $this->doc = $doc;
-    }
-    
-    public function getMimeType() {
-        return $this->mime;
-    }
-             
     /// Инициализация модуля вывода данных
     public function initForm($orient = 'P') {
         require('fpdf/fpdf_mc.php');
@@ -255,10 +240,4 @@ abstract class iPrintFormPdf {
             $this->pdf->Output($fname.'.pdf', 'I');
         }
     }
-    
-    /// Сформировать данные печатной формы
-    abstract public function make();
-    
-    /// Возвращает имя документа
-    abstract public function getName();
 }

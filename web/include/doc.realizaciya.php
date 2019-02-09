@@ -66,29 +66,36 @@ class doc_Realizaciya extends doc_Nulltype {
     
     public function getExtControls() {
         return $this->ext_controls = array(
-            'ishop' => [
-                'type' => 'label_flag',
-                'label' => 'Заявка интернет-магазина',
+            'platelshik' => [
+                'type' => 'InputSelector',
+                'label' => 'Плательщик',
+                'data_source' => 'agent.shortlist'
             ],
-            'buyer_info' => [
-                'type' => 'buyer_info',
+            'gruzop' => [
+                'type' => 'InputSelector',
+                'label' => 'Грузополучатель',
+                'data_source' => 'agent.shortlist'
             ],
-            'delivery_info' => [
-                'type' => 'delivery_info',
-            ],         
-            'pay_type' => [
-                'type' => 'select',               
-                'label' => 'Способ оплаты',
-                'data_source' => 'paytype.listnames',
+            'zinfo' => [
+                'type' => 'zinfo',
+                'label' => 'Информация о заявке интернет-магазина',
             ],
-            'status' => [
-                'type' => 'status',               
-                'label' => 'Статус',
-            ],
-            'worker_id' => [
-                'type' => 'select',               
-                'label' => 'Сотрудник',
+            'firm_kladovshik_id' => [
+                'type' => 'select',
+                'label' => 'Кладовщик',
                 'data_source' => 'worker.listnames',
+            ],
+            'mest' => [
+                'type' => 'text',
+                'label' => 'Количество мест',
+            ],
+            'received' => [
+                'type' => 'checkbox',
+                'label' => 'Документы подписаны и получены'
+            ],
+            'return' => [
+                'type' => 'checkbox',
+                'label' => 'Возвратный документ'
             ],
         );
     }

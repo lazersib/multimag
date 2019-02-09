@@ -84,7 +84,7 @@ class buisoffcnt extends buisoff {
                         
         }
         $this->form_linecount = $ii;
-        $this->controlPageBreak(30);
+        $this->controlPageBreak(90);
         $this->addSummaryBlock();
         if($firm_vars['param_nds']) {
             $this->addMiniHeader("Цены указаны с учётом НДС, за 1 ед. товара");

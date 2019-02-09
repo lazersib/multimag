@@ -52,10 +52,6 @@ class doc_Zayavka extends doc_Nulltype {
                 'label' => 'Способ оплаты',
                 'data_source' => 'paytype.listnames',
             ],
-            'status' => [
-                'type' => 'status',               
-                'label' => 'Статус',
-            ],
             'worker_id' => [
                 'type' => 'select',               
                 'label' => 'Сотрудник',

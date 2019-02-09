@@ -1,0 +1,142 @@
+/* Common */
+
+.flexbox {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.errorRequiredInput {
+    border: 1px solid #f00;
+    box-shadow: 0 0 10px rgba(255,0,0,0.5);
+    transition: background-color, 0.5s !important;
+}
+
+/* doceditor */
+.docHeaderBlock {
+    /*background-color: #f0f8ff;*/
+    color: #0A246A;
+}
+
+.docHeaderBlock .ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.docHeaderBlock .docTitle {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.docHeaderBlock .docName {
+    font-size: 17px;
+    color: #284F8F;
+    flex-grow: 1;
+    height: 24px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.docHeaderBlock .docId {
+    font-size: 10px;
+    color: #bbb;
+    padding-left: 5px;
+}
+
+.docHeaderBlock .statusButton {
+    height: 26px;
+    border: 1px solid #16cc00;
+    background-color: #fff;
+    color: #000;
+    cursor: pointer;
+    flex-grow: 1;
+    padding: 3px;
+    font-weight: bold;
+}
+
+.docHeaderBlock .headerItem {
+    margin: 0;
+    padding: 4px 0;
+}
+
+.docHeaderBlock .errorInput {
+    border: 1px solid #f00;
+    box-shadow: 0 0 10px rgba(255,0,0,0.5);
+    transition: background-color, 0.5s !important;
+}
+
+.docHeaderBlock .errorOption {
+    color: #f00;
+}
+
+
+.docHeaderBlock select {
+    text-overflow: ellipsis;
+    outline: none;
+}
+
+.docHeaderBlock input {
+    text-overflow: ellipsis;
+    outline: none;
+}
+
+.docHeaderBlock .inputDocNumDate {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.docHeaderBlock .inputDocNum {
+    height: 18px;
+    border: 1px #ccc solid;
+    display: inline-flex;
+    align-items: baseline;
+    background: #fff;
+    padding: 0;
+}
+
+.docHeaderBlock .inputDocNum .numPlusButton {
+    width: 10px;
+    height: 10px;
+    border:0;
+    margin-right: 5px;
+    margin-left: 3px;
+    cursor: pointer;
+}
+
+.docHeaderBlock .inputDocNum .altnumInput {
+    width: 30px!important;
+    text-align: right;
+    padding: 1px 3px;
+    margin: 0!important;
+    border: 0 none;
+    border-right: 1px solid #ddd;
+}
+
+.docHeaderBlock .inputDocNum .subtypeInput {
+    width: 30px!important;
+    padding: 1px 3px;
+    margin: 0!important;
+    border: 0 none;
+
+    background-color: #f8f8f8;
+}
+
+.docHeaderBlock .datetimeInput {
+    width:	120px!important;
+    margin: 1px 0 1px 1px!important;
+    margin-left: 20px;
+    padding: 1px 5px;
+    text-align: right;
+}
+
+.docHeaderBlock .labelFlag {
+    color: #00a389;
+    font-weight: bold;
+}
+
+.docHeaderBlock .dhbPointer {
+    cursor: pointer;
+}

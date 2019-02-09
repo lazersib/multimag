@@ -1,0 +1,138 @@
+<div class="docHeaderBlock">
+    <div class="docTitle flexbox">
+        <div class="docName ellipsis" :title="header.viewname">{{header.viewname}}</div>
+        <div class="docId">id:{{header.id}}</div>
+    </div>
+    <div class='headerItem flexbox'>
+        <div class='inputDocNum'>
+            <a title="Новый номер" @click="$emit('updateAltnum')"><img class='numPlusButton' src='/img/i_add.png' alt='Новый номер'></a>
+            <input type='text' name='altnum' class='altnumInput' :value='header.altnum' @input="save()">
+            <input type='text' name='subtype' class='subtypeInput' :value='header.subtype' @input="save()">
+        </div>
+        <input type='text' name='datetime' class='datetimeInput' :value='header.date' @input="save()">
+    </div>
+    <div v-if="header.status" class="docTitle flexbox">
+        <button class="statusButton ellipsis">{{header.status}}</button>
+    </div>
+    <div class='headerItem'>
+        <div>Организация: {{header.firm_id}}</div>
+        <FirmSelector name='firm_id' id='dochead_firm_id' v-model='header.firm_id' @firm-locks="firmFilters = $event" @input="save()"/>
+    </div>
+    <template v-for="field in headerFields">
+        <div v-if="field === 'separator'">
+            <hr>
+        </div>
+        <div class="headerItem" v-else-if="field === 'bank'">
+            <div>Банк: {{header.bank_id}}</div>
+            <FilteredSelector v-model='header.bank_id' :filter='header.firm_id' filterField="firm_id"
+                                  :isFiltered="firmFilters.bank" sourceName="mybank.shortlist" @input="save()"/>
+        </div>
+        <div class="headerItem" v-else-if="field === 'sklad' || field === 'store'">
+            <div>Склад: {{header.store_id}}</div>
+            <FilteredSelector v-model='header.store_id' :filter='header.firm_id' filterField="firm_id"
+                                  :isFiltered="firmFilters.store" sourceName="store.shortlist" @input="save()"/>
+        </div>
+        <div class="headerItem" v-else-if="field === 'kassa' || field === 'cashbox'">
+            <div>Касса: {{header.cash_id}}</div>
+            <FilteredSelector v-model='header.cash_id' :filter='header.firm_id' filterField="firm_id"
+                                  :isFiltered="firmFilters.cashbox" sourceName="cashbox.shortlist" @input="save()"/>
+        </div>
+        <div class="headerItem" v-else-if="field === 'agent'">
+            <div>Агент: {{header.agent_id}}</div>
+            <!-- TODO: недобросовестный, договор -->
+            <AgentSelector v-model='header.agent_id' @input="save()"/>
+        </div>
+        <template v-else-if="field === 'price' || field === 'cena'">
+            <DocHeader-PriceItem v-model="header.price_id" @input="save()"/>
+        </template>
+        <div class="headerItem" v-else>
+            {{field}}
+        </div>
+    </template>
+    <template v-for="(fieldData, fieldName) in extFields">
+        <div v-if="fieldData.type === 'text'" class="headerItem">
+            <div>{{fieldData.label}}: {{header[fieldName]}} ({{fieldData.type}})</div>
+            <input type="text" v-model="header[fieldName]" @input="save()">
+        </div>
+        <div v-else-if="fieldData.type === 'select'" class="headerItem">
+            <div>{{fieldData.label}}: {{header[fieldName]}}</div>
+            <Selector v-model="header[fieldName]" :sourceName="fieldData.data_source" :showNotSelected="true" @input="save()"/>
+        </div>
+        <div v-else-if="fieldData.type === 'InputSelector'" class="headerItem">
+            <div>{{fieldData.label}}: {{header[fieldName]}}</div>
+            <InputSelector v-model="header[fieldName]" :sourceName="fieldData.data_source" @input="save()"/>
+        </div>
+        <div v-else-if="fieldData.type === 'checkbox'" class="headerItem">
+            <label><input type="checkbox" v-model="header[fieldName]" @input="save()"/>{{fieldData.label}}</label>
+        </div>
+        <template v-else-if="fieldData.type === 'label_flag'">
+            <div v-if="header[fieldName] == true" class="headerItem labelFlag">
+                <div>{{fieldData.label}}</div>
+            </div>
+        </template>
+        <template v-else-if="fieldData.type === 'docNumDate'">
+            <div class="headerItem">
+                <div>{{fieldData.label}}: {{header[fieldName]}}</div>
+                <div class="headerItem flexbox">
+                    <div>№</div>
+                    <input type="text" v-model="header[fieldName]"  @input="save()"/>
+                    <div>Дата</div>
+                    <input type="text" v-model="header[fieldName]"  @input="save()"/>
+                </div>
+            </div>
+        </template>
+        <template v-else-if="fieldData.type === 'label'">
+            <div v-if="header[fieldName] == true" class="headerItem flexbox">
+                <div>{{fieldData.label}}</div>
+                <div>{{header[fieldName]}}</div>
+            </div>
+        </template>
+        <div v-else-if="fieldData.type === 'buyer_info'" class="headerItem">
+            <div v-if="header.buyer_rname && header.buyer_rname.length > 0" class="flexbox">
+                <div>Покупатель:</div>
+                <div>{{header.buyer_rname}}</div>
+            </div>
+            <div v-if="header.buyer_email && header.buyer_email.length > 0" class="flexbox">
+                <div>Телефон:</div>
+                <div>{{header.buyer_phone}}</div>
+            </div>
+            <div v-if="header.buyer_email && header.buyer_email.length > 0" class="flexbox">
+                <div>Email:</div>
+                <div>{{header.buyer_phone}}</div>
+            </div>
+            <div v-if="header.buyer_ip && header.buyer_ip.length > 0" class="flexbox">
+                <div>IP:</div>
+                <div>{{header.buyer_ip}}</div>
+            </div>
+        </div>
+        <template v-else-if="fieldData.type === 'delivery_info'">
+            <div v-if="header.delivery" class="headerItem dhbPointer" @click="onDeliveryClick($event)">
+                <div class="labelFlag">
+                    Требуется доставка
+                </div>
+                <div class="flexbox">
+                    <div>Вид:</div>
+                    <SourcedLabel :value="header.delivery" sourceName="deliverytype.listnames"/>
+                </div>
+                <div v-if="header.delivery_region" class="flexbox">
+                    <div>Регион:</div>
+                    <SourcedLabel :value="header.delivery_region" sourceName="deliveryregion.listnames"/>
+                </div>
+                <div v-if="header.delivery_date" class="flexbox">
+                    <div>Дата:</div>
+                    <div>{{header.delivery_date}}</div>
+                </div>
+                <div v-if="header.delivery_address" class="flexbox">
+                    <div>Адрес:</div>
+                    <div>{{header.delivery_address}}</div>
+                </div>
+            </div>
+            <div v-else class="headerItem flexbox dhbPointer" @click="onDeliveryClick($event)">
+                <div>Доставка</div><div>Не требуется</div>
+            </div>
+        </template>
+        <div class="headerItem" v-else>{{fieldData.label}}-{{fieldData.type}}-{{header[fieldName]}}</div>
+    </template>
+    <div>Комментарий:</div>
+    <textarea id='dochead_comment' name='comment' v-model='header.comment' @input="save()"></textarea>
+</div>

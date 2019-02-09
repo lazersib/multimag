@@ -425,8 +425,8 @@ class Report_Revision_Act extends BaseReport {
             $x = $pdf->getX() + $t_width[0] + $t_width[1] + $t_width[2] + $t_width[3];
             $y = $pdf->getY();
             
-            if (!$no_stamp && \cfg::get('site', 'doc_leader_shtamp')) {
-                $shtamp_img = str_replace('{FN}', $firm_id, \cfg::get('site', 'doc_leader_shtamp'));
+            if (!$no_stamp && \cfg::get('site', 'doc_shtamp')) {
+                $shtamp_img = str_replace('{FN}', $firm_id, \cfg::get('site', 'doc_shtamp'));
                 $pdf->Image($shtamp_img, 4, $pdf->GetY(), 120);                
             }
             else {

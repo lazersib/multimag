@@ -1,0 +1,24 @@
+.deliveryEditor {
+
+}
+
+.deliveryEditor .deItem {
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+}
+
+.deliveryEditor .deItemFull {
+    display: flex;
+    flex-direction: column;
+}
+
+.deliveryEditor .deItemName {
+    padding: 0px 2px;
+}
+
+.deliveryEditor .deAddress {
+    width: auto;
+    height: 100px;
+    margin: 0px;
+}

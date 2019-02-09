@@ -345,106 +345,6 @@ function getCacheObject() {
     return mmCacheObject;
 }
 
-
-function getListProxy() {
-    var mmListProxy = new Object;
-    var cache = getCacheObject();
-    var callbacks = new Object;
-    var in_process = new Object;
-    
-    function onStorage(event) {
-        //console.log("LS event:"+event.key);
-        callbackCaller(event.key, event.newValue);
-    }
-    
-    function callbackCaller(key, newValue) {
-        //console.log("callback "+key);
-        if(callbacks[key]!==undefined) {
-            for(var i in callbacks[key]) {
-                callbacks[key][i](key, newValue);
-            }
-        }
-    }        
-    
-    function onReceive(json, data) {
-        if(json.object==='multiquery') {
-            for(var i in json.content) {
-                cache.set(i, json.content[i]);
-                callbackCaller(i, json.content[i]);
-                in_process[i] = undefined;
-            }
-        }
-        else {
-            var i = json.object+'.'+json.action;
-            cache.set(i, json.content);
-            callbackCaller(i, json.content);
-            in_process[i] = undefined;
-        }        
-    }
-    
-    function onError(json, data) {
-        for(var i in data.query) {
-            in_process[data.query[i]] = undefined;
-        }
-        alert("ListProxy error: "+json.errormessage);        
-    }
-    
-    /// Prefetch data from server
-    mmListProxy.prefetch = function(objects) { 
-        var data = {
-            query: []
-        };
-        for(var i in objects) {
-            var object = objects[i];            
-            var fc = cache.get(object);
-            if(fc===undefined) {
-                in_process[objects[i]] = true;
-                data.query.push(object);
-            }
-        }
-        if(data.query.length>0) {
-            mm_api.callApi('multiquery', 'run', data, onReceive, onError);
-        }
-    };
-  
-    mmListProxy.bind = function(object, update_callback) {
-        if(update_callback!==undefined) {
-            if(callbacks[object]===undefined) {
-               callbacks[object] = new Array; 
-            }
-            callbacks[object].push(update_callback);
-        }
-        var data = cache.get(object);
-        if(data!==undefined) {
-            update_callback(object, data);
-            return;
-        }
-        mmListProxy.refresh(object);
-    };
-    
-    mmListProxy.get = function(object) {
-        return cache.get(object);
-    };
-    
-    mmListProxy.refresh  = function(object) {
-        if(in_process[object]===undefined) {
-            var s = object.split('.',2);
-            mm_api.callApi(s[0], s[1], null, onReceive, onError);
-        }
-    };
-    
-    /// Сброс кеша по F5
-    function onkeydown(event) {        
-        if(event.keyCode===116) {
-            localStorage.removeItem('__EXPIRES__');
-        }
-    }
-    window.addEventListener('keydown', onkeydown);
-    
-    window.addEventListener('storage', onStorage);
-    return mmListProxy;
-}
-
 function createModalLayer(headerHtml, dataHtml) {
     var coverDiv = document.createElement('div');
     coverDiv.id = 'cover-div';
@@ -467,8 +367,7 @@ function createModalLayer(headerHtml, dataHtml) {
     var mLayer = document.createElement('div');
     mLayer.id = 'dialog-body';
     cont2.appendChild(mLayer);
-    mLayer.innerHTML = dataHtml; 
-
+    mLayer.innerHTML = dataHtml;
     
     mLayer.destroy = function() {
         if(dialogContainer) {
@@ -478,6 +377,21 @@ function createModalLayer(headerHtml, dataHtml) {
             coverDiv.parentNode.removeChild(coverDiv);
         }
     }    
-    //alert('ok');
     return mLayer;
 }
+
+
+function debounce(func, wait, immediate) {
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        var later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        var callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
+};

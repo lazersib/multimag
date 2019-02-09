@@ -26,7 +26,7 @@ class komplekt extends \doc\printforms\iPrintFormInvoicePdf {
     }
     
     /// Инициализация модуля вывода данных
-    public function initForm() {
+    public function initForm($orient = 'P') {
         require('fpdf/fpdf_mc.php');
         $this->pdf = new \PDF_MC_Table('P');
         $this->pdf->Open();

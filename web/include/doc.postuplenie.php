@@ -30,6 +30,28 @@ class doc_Postuplenie extends doc_Nulltype {
         $this->header_fields = 'sklad cena separator agent';
     }
 
+    public function getExtControls() {
+        return $this->ext_controls = array(
+            'inputDoc' => [
+                'type' => 'docNumDate',
+                'label' => 'Входящая накладная',
+            ],
+            'inputSf' => [
+                'type' => 'docNumDate',
+                'label' => 'Счет-фактура',
+            ],
+            'kladovshik' => [
+                'type' => 'select',
+                'label' => 'Сотрудник',
+                'data_source' => 'worker.listnames',
+            ],
+            'return' => [
+                'type' => 'checkbox',
+                'label' => 'Возвратный документ'
+            ],
+        );
+    }
+
     function initDefDopdata() {
         $this->def_dop_data = array(
             'kladovshik' => $this->firm_vars['firm_kladovshik_id'],

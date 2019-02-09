@@ -1,0 +1,76 @@
+.inputSelector .isDivInput{
+    height: 18px;
+    border: 1px #ccc solid;
+    display: flex;
+    background: #fff;
+    padding: 0;
+}
+
+.inputSelector .isInput {
+    margin: 0;
+    border: 0;
+    padding: 1px 3px;
+    width: 200px;
+    flex-grow: 1;
+}
+
+.inputSelector .isClear {
+    background : Window url('/img/i_del.png') center center no-repeat;
+    width:	18px;
+    height: 18px;
+    padding: 0;
+    cursor:	pointer;
+}
+
+.inputSelector .isEdit {
+    background : Window url('/img/i_edit.png') center center no-repeat;
+    width:	18px;
+    height: 18px;
+    padding: 0;
+    cursor:	pointer;
+}
+
+.inputSelector .isResult {
+    position: absolute;
+    z-index: 999;
+    width: 200px;
+    height: 150px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    text-overflow: ellipsis;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-top: 0 none;
+}
+
+.inputSelector .isListItem {
+    position: relative;
+    margin: 0px;
+    padding: 2px 5px;
+    cursor: pointer;
+    width: auto;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inputSelector .isSubItem {
+    font-size: 0.8em;
+    color: #777;
+}
+
+.inputSelector .isItemSelected {
+    background-color: #18ff;
+    color: #fff;
+}
+
+.inputSelector .searchHl {
+    background-color: #ff4;
+    color: #000;
+}
+
+.inputSelector .dishonest{
+    color: #F80;
+    font-weight: bold;
+}
