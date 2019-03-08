@@ -805,8 +805,9 @@ if(!isset($_REQUEST['ncnt']) && !isset($not_use_counter)) {
     $rf = $db->real_escape_string(urldecode(getenv("HTTP_REFERER")));
     $qq = $db->real_escape_string(urldecode($_SERVER['REQUEST_URI'] . '?' . $_SERVER['QUERY_STRING']));
     $ff = $db->real_escape_string($_SERVER['SCRIPT_NAME']);
+    $uid = $db->real_escape_string(@$_SESSION['uid']);
     $tim = time();
-    $db->query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff')");
+    $db->query("INSERT INTO `counter` (`date`,`ip`,`agent`,`refer`,`query`,`file`,`user_id`) VALUES ('$tim','$ip','$ag','$rf','$qq','$ff','$uid')");
 }
 
 $tmpl = new BETemplate;
