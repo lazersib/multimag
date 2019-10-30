@@ -163,7 +163,13 @@ function (Vue, ListProxy) {
                 this.searchString = '';
             },
             clickEdit: function() {
-            }
+	        },
+	        onClick: function(item) {
+		        this.$emit('input', item.id);
+		        this.searchString = item.name;
+		        this.hideList();
+		        this.$refs.input.blur();
+	        }
         },
         created: function() {
             ListProxy.bind(this.sourceName, this.updateListNames, this);
@@ -197,7 +203,8 @@ function (Vue, ListProxy) {
                     'v-if="item !== undefined" ' +
                     ':key="index" ' +
                     'v-bind:value="index" ' +
-                    ':class="[{isItemSelected: selIndex===index}, \'isListItem\' ]">' +
+	                '@click="onClick(item)"' +
+                    ':class="[{isItemSelected: selIndex===index}, \'isListItem\' ]" >' +
                     '<div class="isMainItem">' +
                         '<HighlightDecorator :substr="searchString">{{item.name}}</HighlightDecorator>' +
                     '</div>' +

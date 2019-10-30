@@ -78,10 +78,21 @@ class doc_s_Agent {
             $q = request('q');
             $tmpl->ajax = 1;
             $q_sql = $db->real_escape_string($q);
-            $res = $db->query("SELECT `name`, `id`, '' FROM `doc_agent` WHERE LOWER(`name`) LIKE LOWER('%$q_sql%') ORDER BY `name`");
-            while ($nxt = $res->fetch_row()) {
-                $tmpl->addContent("$nxt[0]|$nxt[1]|$nxt[2]\n");
-            }
+	        $res = $db->query("
+				SELECT `name`, `id`, `tel`, `inn` FROM `doc_agent`
+				 WHERE (
+					 LOWER(`name`) LIKE LOWER('%$q_sql%') 
+					 OR 
+					 `inn` LIKE '%$q_sql%' 
+				 )
+				 ORDER BY `name`
+			");
+	        while ($nxt = $res->fetch_row()) {
+		        if(intval($q) == $q && intval($q) != 0) {
+			        list($nxt[0],$nxt[3])=[$nxt[3],$nxt[0]];
+		        }
+		        $tmpl->addContent("$nxt[0]|$nxt[1]|$nxt[2]|$nxt[3]\n");
+	        }
         } elseif ($opt == 'jgetcontracts') {
             $tmpl->ajax = 1;
             $agent_id = rcvint('agent_id');
