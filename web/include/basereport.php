@@ -17,13 +17,16 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use App\Reports\Engine\Xlsx;
+use App\Reports\Engine\Ods;
+
 class BaseReport {
 
     protected $output_format = 'html';
     protected $oe = null;   // output engine
 
     function __construct() {
-        
+
     }
 
 /// Выбрать движок вывода
@@ -32,6 +35,12 @@ class BaseReport {
             case 'pdf': $this->output_format = 'pdf';
                 $this->oe = new ReportEnginePDF();
                 break;
+	        case 'xls/xlsx': $this->output_format = 'xls';
+		        $this->oe = new Xlsx();
+		        break;
+	        case 'ods': $this->output_format = 'ods';
+		        $this->oe = new Ods();
+		        break;
             default: $this->output_format = 'html';
                 $this->oe = new ReportEngineHTML();
         }

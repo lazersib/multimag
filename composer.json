@@ -1,0 +1,13 @@
+{
+    "name": "lazersib/multimag",
+    "type": "project",
+    "license": "GNU Affero General Public License v3.0",
+    "require": {
+        "phpoffice/phpspreadsheet": "^1.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "web/include"
+        }
+    }
+}

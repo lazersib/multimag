@@ -42,7 +42,7 @@ function core_autoload($class_name){
 }
 
 spl_autoload_register('core_autoload');
-
+require "../vendor/autoload.php";
 /// @brief Форматирование номера телефона, записанного в международном формате, в легкочитаемый вид.
 ///
 /// Номера, не начинающиеся с +, возвращаются без форматирования
