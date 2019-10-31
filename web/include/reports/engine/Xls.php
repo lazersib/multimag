@@ -22,15 +22,15 @@
 
 namespace App\Reports\Engine;
 
-use PhpOffice\PhpSpreadsheet\Writer\Ods as OdsWriter;
+use PhpOffice\PhpSpreadsheet\Writer\Xls as XlsWriter;
 
-class Ods extends BaseSheet
+class Xls extends BaseSheet
 {
 	public function output($fname)
 	{
-		$writer = new OdsWriter($this->spreadsheet);
-		header('Content-Type: application/vnd.oasis.opendocument.spreadsheet');
-		header('Content-Disposition: attachment;filename="'. $fname .'.ods"');
+		$writer = new XlsWriter($this->spreadsheet);
+		header('Content-Type: application/vnd.ms-excel');
+		header('Content-Disposition: attachment;filename="'. $fname .'.xls"');
 		header('Cache-Control: max-age=0');
 		$writer->save('php://output');
 		exit;

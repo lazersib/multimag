@@ -2,7 +2,7 @@
 
 //	MultiMag v0.2 - Complex sales system
 //
-//	Copyright (C) 2005-2018, BlackLight, TND Team, http://tndproject.org
+//	Copyright (C) 2005-2019, BlackLight, TND Team, http://tndproject.org
 //
 //	This program is free software: you can redistribute it and/or modify
 //	it under the terms of the GNU Affero General Public License as
@@ -92,7 +92,14 @@ class Report_Agent_Purchases_By_Period extends BaseReport {
         </script>");
 		
 		$tmpl->addContent("<br>
-        Формат: <select name='opt'><option>pdf</option><option>html</option><option>xls/xlsx</option><option>ods</option></select><br>
+        Формат: 
+        <select name='opt'>
+	        <option>pdf</option>
+	        <option>html</option>
+	        <option>xlsx</option>
+	        <option>xls</option>
+	        <option>ods</option>
+        </select><br>
         <button type='submit'>Создать отчет</button></form>
         <script type=\"text/javascript\">
         initCalendar('datepicker_f',false);

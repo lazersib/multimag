@@ -17,8 +17,7 @@
 //	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use App\Reports\Engine\Xlsx;
-use App\Reports\Engine\Ods;
+use App\Reports\Engine\{Xls, Xlsx, Ods};
 
 class BaseReport {
 
@@ -35,7 +34,10 @@ class BaseReport {
             case 'pdf': $this->output_format = 'pdf';
                 $this->oe = new ReportEnginePDF();
                 break;
-	        case 'xls/xlsx': $this->output_format = 'xls';
+	        case 'xls': $this->output_format = 'xls';
+		        $this->oe = new Xls();
+		        break;
+	        case 'xlsx': $this->output_format = 'xlsx';
 		        $this->oe = new Xlsx();
 		        break;
 	        case 'ods': $this->output_format = 'ods';
