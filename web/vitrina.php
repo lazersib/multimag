@@ -193,9 +193,6 @@ class Vitrina {
                     }
                 }
             } else {
-                if (getenv("HTTP_REFERER")) {
-                    redirect(getenv("HTTP_REFERER"));
-                }
                 $tmpl->msg("Товар добавлен в корзину!", "info", "<a class='urllink' href='/vitrina.php?mode=basket'>Ваша корзина</a>");
             }
         } else {

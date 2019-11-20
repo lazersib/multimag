@@ -404,7 +404,6 @@ function popupReqWin(httpRequest,popup)
 	{
 		//popup.innerHTML="Обработка...";
 	}
-	else popup.innerHTML="state "+httpRequest.readyState;
 }
 
 // ============================== Динамическое модальное окно ===================================
