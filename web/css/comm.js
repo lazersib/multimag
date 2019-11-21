@@ -378,6 +378,7 @@ function ShowPopupWin(url)
 
     httpRequest.onreadystatechange = function() { popupReqWin(httpRequest,popup); };
     httpRequest.open('GET', url, true);
+	httpRequest.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     httpRequest.send(null);
     return false;
 }
