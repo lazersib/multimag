@@ -193,6 +193,15 @@ function request($varname,$def='')
 	return $def;
 }
 
+/// Проверяет был ли получен запрос через ajax
+/// @return boolean
+function isAjaxRequest()
+{
+	return isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+		&& !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+		&& strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+}
+
 /// Получает часть массива $_REQUEST, позволяет задать значение по умолчанию для отсутствующих элементов
 /// @param $varname Массив значений ключей $_REQUEST
 /// @param $dev Возвращаемое значение, если искомый элемент отсутствует
