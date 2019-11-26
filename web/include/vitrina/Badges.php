@@ -74,12 +74,14 @@ class Badges
 		if (isset($_GET['op'])) {
 			$_SESSION['vit_photo_only'] = $_GET['op'] ? 1 : 0;
 		}
-		$sql_photo_only = @$_SESSION['vit_photo_only'] ? "AND `img_id` IS NOT NULL" : "";
+		$sql_photo_only = @$_SESSION['vit_photo_only'] ? "AND `doc_base_img`.`img_id` IS NOT NULL" : "";
 		$sql = "
 			SELECT count(`doc_base`.`id`) as count, `doc_base_dop_type`.`name` as `dop_type_name`, `doc_base_dop_type`.`id`
 			FROM `doc_base`
 			LEFT JOIN `doc_base_dop` ON `doc_base_dop`.`id`=`doc_base`.`id`
 			LEFT JOIN `doc_base_dop_type` ON `doc_base_dop_type`.`id`=`doc_base_dop`.`type`
+			LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
+			LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 			WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' $sql_photo_only GROUP BY `doc_base_dop_type`.`id`
 		";
 		$res = $db->query($sql);
