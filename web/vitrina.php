@@ -396,13 +396,12 @@ protected function TopGroup() {
         if ($lim == 0) {
             $lim = 100;
         }
-
+	    $this->OrderAndViewBar($group, $page, $order, $view);
         if ($res->num_rows) {
             if ($page < 1 || $lim * ($page - 1) > $res->num_rows) {
                 header("Location: " . (empty($_SERVER['HTTPS']) ? "http" : "https") . "://" . $_SERVER['HTTP_HOST'] . html_in($this->GetGroupLink($group)), false, 301);
                 exit();
             }
-            $this->OrderAndViewBar($group, $page, $order, $view);
 
             $this->PageBar($group, $res->num_rows, $lim, $page);
             if (($lim < $res->num_rows) && $page) {
@@ -425,6 +424,8 @@ protected function TopGroup() {
         elseif (isset($page) && $page != 1) {
             header("Location: " . (empty($_SERVER['HTTPS']) ? "http" : "https") . "://" . $_SERVER['HTTP_HOST'] . html_in($this->GetGroupLink($group)), false, 301);
             exit();
+        } else {
+	        $tmpl->addContent("<h2 style='text-align: center'>Нет подходящих товаров</h2>");
         }
     }
 
