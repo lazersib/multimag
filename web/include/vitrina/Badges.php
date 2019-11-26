@@ -34,7 +34,8 @@ class Badges
 	 */
 	public static function productTypeFilter($group)
 	{
-		$dop_type = self::getParam();
+		if($group != $_SESSION[self::PARAM_NAME.'_group']) unset($_SESSION[self::PARAM_NAME]);
+		$dop_type = self::getParam($group);
 		foreach (self::getBadgeData($group) as $badge) {
 			self::addBadge($badge['name'], $badge['count'], $badge['link'], in_array($badge['id'], $dop_type));
 		}
@@ -45,7 +46,7 @@ class Badges
 	 * Получить значения из get параметра с фитром
 	 * @return array|null
 	 */
-	public static function getParam()
+	public static function getParam($group = null)
 	{
 		if($_GET[self::PARAM_NAME] == self::CLEAR_TRIGGER) {
 			unset($_GET[self::PARAM_NAME]);
@@ -53,6 +54,7 @@ class Badges
 		}
 		if(isset($_GET[self::PARAM_NAME]) || isset($_SESSION[self::PARAM_NAME])) {
 			if(isset($_GET[self::PARAM_NAME])) $_SESSION[self::PARAM_NAME] = $_GET[self::PARAM_NAME];
+			if(isset($_GET[self::PARAM_NAME]) && isset($group)) $_SESSION[self::PARAM_NAME.'_group'] = $group;
 			$dop_type =  explode(',', $_GET[self::PARAM_NAME] ? $_GET[self::PARAM_NAME] : $_SESSION[self::PARAM_NAME]);
 			$dop_type = array_map('intval', $dop_type);
 			$dop_type = array_map('strval', $dop_type);
