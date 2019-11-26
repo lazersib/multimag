@@ -19,6 +19,7 @@
 
 include_once("core.php");
 include_once("include/doc.core.php");
+include_once("include/vitrina/Badges.php");
 
 /// Класс витрины интернет-магазина
 class Vitrina {
@@ -311,8 +312,8 @@ protected function TopGroup() {
         } else {
             $this->GroupList_ImageStyle($group);
         }
-
-        $this->ProductList($group, $page);
+	    Badges::productTypeFilter($group);
+	    $this->ProductList($group, $page);
     }
 
     /// Список товаров в группе
@@ -320,6 +321,7 @@ protected function TopGroup() {
     /// @param $page Номер страницы отображаемой группы
     protected function ProductList($group, $page) {
         global $tmpl, $CONFIG, $db;
+	    $dop_type = Badges::getParam();
         settype($group, 'int');
         settype($page, 'int');
         $pref = \pref::getInstance();
@@ -379,6 +381,7 @@ protected function TopGroup() {
         $_SESSION['vitrina_view'] = $view;
 
         $sql_photo_only = @$_SESSION['vit_photo_only'] ? "AND `img_id` IS NOT NULL" : "";
+        $sql_dop_type = (count($dop_type) > 0) ? "AND `doc_base_dop`.`type` in (" . implode(',', $dop_type) . ")" : "";
         $cnt_where = $pref->getSitePref('site_store_id') ? (" AND `doc_base_cnt`.`sklad`=" . intval($pref->getSitePref('site_store_id')) . " ") : '';
         $sql = "SELECT `doc_base`.`id`, `doc_base`.`group`, `doc_base`.`name`, `doc_base`.`desc`, `doc_base`.`cost_date`, `doc_base`.`cost`, `doc_base`.`eol`
             , ( SELECT SUM(`doc_base_cnt`.`cnt`) FROM `doc_base_cnt` WHERE `doc_base_cnt`.`id`=`doc_base`.`id` $cnt_where GROUP BY `doc_base`.`id`) AS `count`
@@ -388,7 +391,7 @@ protected function TopGroup() {
 	LEFT JOIN `doc_base_img` ON `doc_base_img`.`pos_id`=`doc_base`.`id` AND `doc_base_img`.`default`='1'
 	LEFT JOIN `doc_img` ON `doc_img`.`id`=`doc_base_img`.`img_id`
 	LEFT JOIN `class_unit` ON `doc_base`.`unit`=`class_unit`.`id`
-	WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' $sql_photo_only
+	WHERE `doc_base`.`group`='$group' AND `doc_base`.`hidden`='0' $sql_photo_only $sql_dop_type
 	ORDER BY $sql_order";
 
         $res = $db->query($sql);
