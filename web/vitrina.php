@@ -1766,7 +1766,7 @@ protected function BuyAuthForm() {
 
     /// Заключительная форма оформления покупки
     protected function BuyMakeForm() {
-        global $tmpl;
+        global $tmpl, $db;
         if (@$_SESSION['uid']) {
             $up = getUserProfile($_SESSION['uid']);
             $str = 'Товар будет зарезервирован для Вас на 3 рабочих дня.';
@@ -1836,12 +1836,24 @@ protected function BuyAuthForm() {
             }
         }
 
-        $tmpl->addContent("
-	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='80'>" . html_out(@$up['dop']['dop_info']) . "</textarea><br>
-	<button type='submit'>Оформить заказ</button>
-	</div>
-	</form>");
+
+        $tmpl->addContent("Другая информация:<br><textarea name='dop' rows='5' cols='80'>" . html_out(@$up['dop']['dop_info']) . "</textarea><br>");
+
+	    if(!empty($_SESSION['basket']['delivery_region']) && !empty($_SESSION['basket']['delivery_type'])) {
+		    $delivery = $_SESSION['basket']['delivery_type'];
+		    $delivery_region = $_SESSION['basket']['delivery_region'];
+		    $res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='$delivery'");
+		    list($d_service_id) = $res->fetch_row();
+		    $res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='$delivery_region'");
+		    list($d_price) = $res->fetch_row();
+		    $tmpl->addContent('<p><strong>Стоимость доставки: ' . $d_price . ' руб.</strong></p>');
+	    }
+
+	    if(isset($this->getBasket()['sum'])) {
+		    $tmpl->addContent('<p><strong>Итого: ' . ($this->getBasket()['sum'] + (isset($d_price) ? $d_price : 0)) . ' руб.</strong></p>');
+	    }
+
+	    $tmpl->addContent("<button type='submit'>Оформить заказ</button></div></form>");
     }
 
 /// Сделать покупку
