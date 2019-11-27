@@ -1845,41 +1845,49 @@ protected function BuyAuthForm() {
 					<tbody>
 						<tr class="title">
 							<th width="60%">Наименование</th>
-							<th width="15%">Цена</th>
+							<th width="15%">Цена, руб.</th>
 							<th width="10%">Количество</th>
-							<th width="15%">Сумма</th>
+							<th width="15%">Сумма, руб.</th>
 						</tr>
 			');
 		    foreach ($basket['items'] as $item) {
 			    $tmpl->addContent("
 			        <tr>
 						<td style='text-align: left'>{$item['name']}</td>
-						<td>{$item['price']}</td>
+						<td>".number_format($item['price'], 2, ',', ' ')."</td>
 						<td>{$item['cnt']}</td>
-						<td>{$item['sum']}</td>
+						<td style='text-align: right'>".number_format($item['sum'], 2, ',', ' ')."</td>
 					</tr>
 			    ");
 		    }
 
+		    $tmpl->addContent("
+		        <tr>
+					<td colspan=\"3\">Сумма заказа:</td>
+					<td style='text-align: right' colspan=\"1\">" . number_format($basket['sum'], 2, ',', ' ') . "</td>
+				</tr>
+		    ");
+
 		    if(!empty($_SESSION['basket']['delivery_region']) && !empty($_SESSION['basket']['delivery_type'])) {
 			    $delivery = $_SESSION['basket']['delivery_type'];
 			    $delivery_region = $_SESSION['basket']['delivery_region'];
-			    $res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='$delivery'");
-			    list($d_service_id) = $res->fetch_row();
-			    $res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='$delivery_region'");
-			    list($d_price) = $res->fetch_row();
+			    $res = $db->query("SELECT `name` FROM `delivery_types` WHERE `id`='$delivery'");
+			    list($d_service_name) = $res->fetch_row();
+			    $res = $db->query("SELECT `price`, `name` FROM `delivery_regions` WHERE `id`='$delivery_region'");
+			    list($d_price, $d_region_name) = $res->fetch_row();
 			    $tmpl->addContent("
 			        <tr>
-						<td colspan=\"1\">Стоимость доставки:</td>
-						<td colspan=\"3\">$d_price руб.</td>
+						<td colspan=\"3\">$d_service_name ($d_region_name):</td>
+						<td style='text-align: right' colspan=\"1\">".number_format($d_price, 2, ',', ' ')."</td>
 					</tr>
 		         ");
 		    }
+
 		    $tmpl->addContent('
 						<tr class="total">
-							<td colspan="1">Итого:</td>
-							<td colspan="3">
-							' . ($basket['sum'] + (isset($d_price) ? $d_price : 0)) . ' рублей
+							<td colspan="3">Итого:</td>
+							<td style=\'text-align: right\' colspan="1">
+							' . number_format(($basket['sum'] + (isset($d_price) ? $d_price : 0)), 2, ',', ' ') . ' 
 							</td>
 						</tr>
 					</tbody>
