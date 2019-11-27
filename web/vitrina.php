@@ -1836,21 +1836,55 @@ protected function BuyAuthForm() {
             }
         }
 
-
         $tmpl->addContent("Другая информация:<br><textarea name='dop' rows='5' cols='80'>" . html_out(@$up['dop']['dop_info']) . "</textarea><br>");
 
-	    if(!empty($_SESSION['basket']['delivery_region']) && !empty($_SESSION['basket']['delivery_type'])) {
-		    $delivery = $_SESSION['basket']['delivery_type'];
-		    $delivery_region = $_SESSION['basket']['delivery_region'];
-		    $res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='$delivery'");
-		    list($d_service_id) = $res->fetch_row();
-		    $res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='$delivery_region'");
-		    list($d_price) = $res->fetch_row();
-		    $tmpl->addContent('<p><strong>Стоимость доставки: ' . $d_price . ' руб.</strong></p>');
-	    }
+	    if($this->getBasket()) {
+	    	$basket = $this->getBasket();
+		    $tmpl->addContent('<br>
+				<table class="list">
+					<tbody>
+						<tr class="title">
+							<th width="60%">Наименование</th>
+							<th width="15%">Цена</th>
+							<th width="10%">Количество</th>
+							<th width="15%">Сумма</th>
+						</tr>
+			');
+		    foreach ($basket['items'] as $item) {
+			    $tmpl->addContent("
+			        <tr>
+						<td style='text-align: left'>{$item['name']}</td>
+						<td>{$item['price']}</td>
+						<td>{$item['cnt']}</td>
+						<td>{$item['sum']}</td>
+					</tr>
+			    ");
+		    }
 
-	    if(isset($this->getBasket()['sum'])) {
-		    $tmpl->addContent('<p><strong>Итого: ' . ($this->getBasket()['sum'] + (isset($d_price) ? $d_price : 0)) . ' руб.</strong></p>');
+		    if(!empty($_SESSION['basket']['delivery_region']) && !empty($_SESSION['basket']['delivery_type'])) {
+			    $delivery = $_SESSION['basket']['delivery_type'];
+			    $delivery_region = $_SESSION['basket']['delivery_region'];
+			    $res = $db->query("SELECT `service_id` FROM `delivery_types` WHERE `id`='$delivery'");
+			    list($d_service_id) = $res->fetch_row();
+			    $res = $db->query("SELECT `price` FROM `delivery_regions` WHERE `id`='$delivery_region'");
+			    list($d_price) = $res->fetch_row();
+			    $tmpl->addContent("
+			        <tr>
+						<td colspan=\"1\">Стоимость доставки:</td>
+						<td colspan=\"3\">$d_price руб.</td>
+					</tr>
+		         ");
+		    }
+		    $tmpl->addContent('
+						<tr class="total">
+							<td colspan="1">Итого:</td>
+							<td colspan="3">
+							' . ($basket['sum'] + (isset($d_price) ? $d_price : 0)) . ' рублей
+							</td>
+						</tr>
+					</tbody>
+				</table><br>
+			');
 	    }
 
 	    $tmpl->addContent("<button type='submit'>Оформить заказ</button></div></form>");
