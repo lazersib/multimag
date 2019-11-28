@@ -1366,13 +1366,15 @@ public function getProductAutoDescription($product_data) {
                 $item['img_uri'] = null;
                 $img = '';
             }
+	        $product_data = $this->getProductData($item['id']);
+	        $product_name_html = html_out($product_data['group_printname'] . ' ' . $product_data['name']);
             $img = isset($item['img_uri']) ? "<img_src='{$item['img_uri']}' alt='" . html_out($item['name']) . "'>" : '';
             $tmpl->addContent("<tr id='korz_ajax_item_{$item['pos_id']}'{$lock_mark}>
                 <td class='right'>$i <span id='korz_item_clear_url_{$item['pos_id']}'>
                     <a href='/vitrina.php?mode=korz_del&p={$item['pos_id']}' onClick='korz_item_clear({$item['pos_id']}); return false;'>
                     <img src='/img/i_del.png' alt='Убрать'></a></span></td>
                 <td>$img</td>
-                <td><a href='/vitrina.php?mode=product&amp;p={$item['pos_id']}'>" . html_out($item['name']) . "</a></td>
+                <td><a href='/vitrina.php?mode=product&amp;p={$item['pos_id']}'>" . $product_name_html . "</a></td>
                 <td class='right'{$gray_price}>$price_p</td>
                 <td class='right'><span class='sum'>$sum_p</span></td>
                 <td><input type='number' name='cnt{$item['pos_id']}' value='{$item['cnt']}' class='mini'></td>
@@ -1851,9 +1853,11 @@ protected function BuyAuthForm() {
 						</tr>
 			');
 		    foreach ($basket['items'] as $item) {
+			    $product_data = $this->getProductData($item['id']);
+			    $product_name_html = html_out($product_data['group_printname'] . ' ' . $product_data['name']);
 			    $tmpl->addContent("
 			        <tr>
-						<td style='text-align: left'>{$item['name']}</td>
+						<td style='text-align: left'><a href='/vitrina.php?mode=product&amp;p={$item['pos_id']}'>{$product_name_html}</a></td>
 						<td>".number_format($item['price'], 2, ',', ' ')."</td>
 						<td>{$item['cnt']}</td>
 						<td style='text-align: right'>".number_format($item['sum'], 2, ',', ' ')."</td>
