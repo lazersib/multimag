@@ -20,6 +20,12 @@
 /// Класс для документов-приходников
 class doc_credit extends \doc_Nulltype {
 
+	/**
+	 * Предки документа
+	 * @var array
+	 */
+	private $ancestors = [];
+
     /** Установить вид дохода для документа по кодовому имени вида дохода
      * 
      * @param string $codename Кодовое имя вида расхода
@@ -106,9 +112,10 @@ class doc_credit extends \doc_Nulltype {
 
 		$this->DrawLHeadformEnd();
 
-		$tmpl->addContent("<b>Относится к:</b><br>");
-		$this->buildAncestors($this->getAncestors());
-
+		if($this->getAncestors()) {
+			$tmpl->addContent("<b>Относится к:</b><br>");
+			$this->buildAncestor($this->filterAncestorsByPriority([3, 2], $this->getAncestors()));
+		}
 		$infol = $this->getSubordinatesInfo();
 		if($infol && count($infol)>0) {
 			$tmpl->addContent("<br><b>Зависящие документы:</b><br>");
@@ -152,16 +159,17 @@ class doc_credit extends \doc_Nulltype {
 	}
 
 	/**
-	 * Построить документы от которых зависит текущий
+	 * Постротроить документ
 	 * @param $info array массив с данными
+	 * @return boolean
 	 */
-	protected function buildAncestors($info)
+	protected function buildAncestor($info)
 	{
 		global $tmpl;
+		if(empty($info)) return false;
 		$str = $info['ok'] ? 'Проведённый' : 'Непроведённый';
 		$str .= " <a href='?mode=body&amp;doc={$info['id']}'>{$info['viewname']} N{$info['altnum']}{$info['subtype']}</a> от {$info['date']}<br>";
 		$tmpl->addContent($str);
-		if($info['parent']) $this->buildAncestors($info['parent']);
 	}
 
 	/**
@@ -169,9 +177,10 @@ class doc_credit extends \doc_Nulltype {
 	 * @param null $id ид документа
 	 * @return array|null
 	 */
-	public function getAncestors($id = null)
+	protected function getAncestors($id = null)
 	{
 		global $db;
+		if(!empty($this->ancestors)) return $this->ancestors;
 		if(!$id && !$this->doc_data['p_doc']) {
 			return null;
 		}
@@ -188,6 +197,31 @@ class doc_credit extends \doc_Nulltype {
 				$row['parent'] = $this->getAncestors($row['p_doc']);
 			}
 		}
+		$this->ancestors = $row;
 		return $row;
+	}
+	
+	/**
+	 * Получить связанные документ по приоретету
+	 * указанный в $types
+	 * @param $types array приоритет по типу документа
+	 * @param $data array дерево документов
+	 * @param null $type
+	 * @return bool|array
+	 */
+	protected function filterAncestorsByPriority($types, $data, $type = null)
+	{
+		if(empty($type)) $type = array_shift($types);
+		if($data['type'] == $type) {
+			unset($data['parent']);
+			return $data;
+		}
+		if($data['parent']) return $this->filterAncestorsByPriority($types, $data['parent'], $type);
+		else {
+			$type = array_shift($types);
+			if(empty($type)) return false;
+			return $this->filterAncestorsByPriority($types, $this->getAncestors(), $type);
+		}
+
 	}
 }
