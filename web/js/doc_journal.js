@@ -131,6 +131,118 @@ function initDocJournal(container_id, default_filters, params) {
     var old_filter_request = '';
     var httpRequest = new XMLHttpRequest();
 
+    let sortableFields = [];
+    let fieldsWithCnt = [
+        {
+            attributes: {
+                width: 55
+            },
+            html: 'a.№'
+        },
+	    {
+		    attributes: {
+			    width: 20
+		    },
+		    html: ''
+	    },
+	    {
+		    attributes: {
+			    width: 20
+		    },
+		    html: ''
+	    },
+	    {
+		    html: 'Тип'
+	    },
+	    {
+		    html: 'Участник 1'
+	    },
+	    {
+		    html: 'Участник 2'
+	    },
+	    {
+		    html: 'Кол-во'
+	    },
+	    {
+		    html: 'Цена'
+	    },
+	    {
+		    attributes: {
+		        class: 'js-order-filter'
+		    },
+            field: 'sum',
+            order: 'asc',
+		    html: 'Сумма'
+	    },
+	    {
+		    attributes: {
+			    class: 'js-order-filter'
+		    },
+		    field: 'date',
+		    order: 'asc',
+		    html: 'Дата'
+	    },
+	    {
+		    html: 'Автор'
+	    },
+	    {
+		    html: 'id'
+	    },
+    ];
+
+	let fields = [
+		{
+			attributes: {
+				width: 55
+			},
+			html: 'a.№'
+		},
+		{
+			attributes: {
+				width: 20
+			},
+			html: ''
+		},
+		{
+			attributes: {
+				width: 20
+			},
+			html: ''
+		},
+		{
+			html: 'Тип'
+		},
+		{
+			html: 'Участник 1'
+		},
+		{
+			html: 'Участник 2'
+		},
+		{
+			attributes: {
+				class: 'js-order-filter'
+			},
+			field: 'sum',
+			order: 'asc',
+			html: 'Сумма'
+		},
+		{
+			attributes: {
+				class: 'js-order-filter'
+			},
+			field: 'date',
+			order: 'asc',
+			html: 'Дата'
+		},
+		{
+			html: 'Автор'
+		},
+		{
+			html: 'id'
+		},
+	];
+
+
     var deffer_timer;
     var docj_list_body = document.getElementById('docj_list_body');
 
@@ -217,6 +329,19 @@ function initDocJournal(container_id, default_filters, params) {
         var okfilter_id = document.getElementById('ok_filter');
         if (okfilter_id.value != '0')
             filter_request += '&doclist[ok]=' + encodeURIComponent(okfilter_id.value);
+
+        if(sortableFields) {
+            let orderQuery = [];
+            sortableFields.forEach(function(item){
+               if(item.hasOwnProperty('order') && item.hasOwnProperty('field')) {
+                   orderQuery.push({
+                       'field': item.field,
+                       'order': item.order
+                   });
+               }
+            });
+	        filter_request += '&doclist[order]=' + encodeURIComponent(JSON.stringify(orderQuery));
+        }
     }
 
     function restartRequest() {
@@ -557,14 +682,53 @@ function initDocJournal(container_id, default_filters, params) {
         tr.className = tr_class;
     }
 
+    function buldHeaderFields(data) {
+        let tr = document.createElement("tr");
+        data.forEach(function (item, i) {
+	        let th = document.createElement("th");
+	        th.innerText = item.html;
+	        if(item.hasOwnProperty('attributes')) {
+	            if(item.attributes.hasOwnProperty('class')){
+		            th.classList = item.attributes.class ? item.attributes.class : '';
+                }
+            }
+	        if(item.hasOwnProperty('order')) {
+		        th.style = 'background: url(/img/i_orderarrows.png) 100% '
+                    +(item.order === 'asc' ? '' : '10')
+                    +'0% no-repeat transparent; background-color: #6488DC; cursor: pointer';
+	        }
+	        if(item.hasOwnProperty('field')) {
+		        th.dataset.field = item.field;
+	        }
+	        th.dataset.fieldId = i;
+	        tr.appendChild(th);
+        });
+	    return tr.innerHTML;
+    }
+
+
     function initTableHead() {
         var head = document.getElementById('doc_list_head');
         if (show_count_column) {
-            head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Кол-во</th><th>Цена</th><th>Сумма</th><th>Дата</th><th>Автор</th><th width='45'>id</th></tr>";
+            head.innerHTML = buldHeaderFields(fieldsWithCnt);
         }
         else {
-            head.innerHTML = "<tr><th width='55'>a.№</th><th width='20'>&nbsp;</th><th width='20'>&nbsp;</th><th>Тип</th><th>Участник 1</th><th>Участник 2</th><th>Сумма</th><th>Дата</th><th>Автор</th><th width='45'>id</th></tr>";
+            head.innerHTML = buldHeaderFields(fields);
         }
+	    let orderFilter = function(e) {
+            let data = show_count_column ? fieldsWithCnt : fields;
+            let self = this;
+		    sortableFields = sortableFields.filter(function(val){
+			    return val.field !== data[self.dataset.fieldId].field;
+		    });
+		    sortableFields.unshift({
+			    field: data[this.dataset.fieldId].field,
+			    order: data[this.dataset.fieldId].order === 'asc' ? 'desc' : 'asc',
+            });
+		    data[this.dataset.fieldId].order = data[this.dataset.fieldId].order === 'asc' ? 'desc' : 'asc';
+		    beginDefferedRequest();
+	    };
+	    document.querySelectorAll("th.js-order-filter").forEach(box => { box.addEventListener('click', orderFilter, false); });
     }
 
     function initFilter(filter) {
