@@ -268,7 +268,6 @@ class MultimagPacketBuilder {
     public function run() {
         $this->preClean();
         $this->getSource();
-        exit();
         $this->loadMeta();
         $this->deleteServiceData();
         $this->calculateDataSize();
