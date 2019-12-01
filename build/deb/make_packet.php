@@ -92,16 +92,16 @@ class MultimagPacketBuilder {
         $xml->startDocument('1.0','UTF-8');
         $xml->startElement('log');
         $logs = explode("\n", $log);
-        $revnum = $this->revision;
+        $revnum = 1;
         foreach ($logs as $line) {
             $info = explode(":::", trim($line));
             $xml->startElement('logentry');
-            $xml->writeAttribute('number', $revnum);
+            $xml->writeAttribute('revision', $revnum);
             $xml->writeElement('author', $info[0]);
             $xml->writeElement('date', $info[1]);
             $xml->writeElement('msg', $info[2]);
             $xml->endElement();
-            $revnum--;
+            $revnum++;
         }
         $xml->endElement();
         $xml->endDocument();
@@ -110,7 +110,7 @@ class MultimagPacketBuilder {
     private function loadMetaGit() {
         chdir($this->repoDir);
         $this->revision = trim(`git rev-list {$this->repoBranch} --count`);
-        $log = `git log --pretty=format:"%an:::%ad:::%s" --date=short`;
+        $log = `git log --pretty=format:"%an:::%ad:::%s" --date=short --reverse`;
         echo $this->saveGitRevLog($log);
         chdir($this->runDir);
     }

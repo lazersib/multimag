@@ -62,14 +62,16 @@ class changelog extends \IModule {
         }        
     }
     
-    public function getLastChanges($count = 5) {
+    public function getLastChanges($count = 10) {
         $logdata = $this->logdata;
         $ret = '';
+        $lastmsg = '';
         while($count>0 && count($logdata)>0) {
             $item = array_pop($logdata);
-            if($item['msg']=='') {
+            if($item['msg']=='' || $item['msg'] === $lastmsg || strpos($item['msg'], 'Merge pull request')===0) {
                 continue;
             }
+            $lastmsg = $item['msg'];
             $ret .= "<p><b>".date("Y-m-d", $item['date']).", ".$item['author'].':</b><br>';
             $ret .= str_replace("\n", "<br>", $item['msg']);
             $ret .= "</p>";
