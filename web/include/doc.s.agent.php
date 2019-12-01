@@ -91,7 +91,7 @@ class doc_s_Agent {
 		        if(intval($q) == $q && intval($q) != 0) {
 			        list($nxt[0],$nxt[3])=[$nxt[3],$nxt[0]];
 		        }
-		        $tmpl->addContent("$nxt[0]|$nxt[1]|$nxt[2]|$nxt[3]\n");
+		        $tmpl->addContent("$nxt[0] ".($nxt[3] ? "($nxt[3])" : "")."|$nxt[1]|$nxt[2]|$nxt[3]\n");
 	        }
         } elseif ($opt == 'jgetcontracts') {
             $tmpl->ajax = 1;

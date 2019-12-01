@@ -89,6 +89,32 @@ class doclist extends \Models\ListDataObject {
         return $filter;
     }
 
+
+	/**
+	 * Сформировать order из запроса
+	 * @return string
+	 */
+	protected function getOrder()
+	{
+		$orderFields = [
+			'sum' => '`doc_list`.`sum`',
+			'date' => '`doc_list`.`date`',
+			'asc' => 'ASC',
+			'desc' => 'DESC'
+		];
+		if(!empty($this->options['order'])) {
+			foreach (json_decode($this->options['order'], true) as $item) {
+				if(!empty($orderFields[$item['field']]) && !empty($orderFields[$item['order']])) {
+					$orders[] = $orderFields[$item['field']] . ' ' . $orderFields[$item['order']];
+				}
+			}
+		}
+		if(!empty($orders)) {
+			return 'ORDER BY '.implode(', ', $orders);
+		}
+		return 'ORDER by `doc_list`.`date` DESC';
+    }
+
     /// @brief Получить строку дополнительных таблиц
     /// @return Возвращает JOIN часть SQL запроса к таблице журнала документов
     protected function getJoins() {
@@ -202,7 +228,7 @@ class doclist extends \Models\ListDataObject {
             LEFT JOIN `doc_dopdata` AS `v_kassu_t` ON `v_kassu_t`.`doc`=`doc_list`.`id` AND `v_kassu_t`.`param`='v_kassu'
             $sql_join
             WHERE 1 $sql_filter
-            ORDER by `doc_list`.`date` DESC
+            {$this->getOrder()}
             LIMIT $start,{$this->limit}";
         $result = array();
         $res = $db->query($sql);
