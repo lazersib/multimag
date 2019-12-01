@@ -1905,7 +1905,6 @@ class doc_Nulltype extends \document {
 		function agliFormat (row, i, num) {
 			var result = 
 				row[0] + 
-				' (' + row[3] + ')' + 
 				\"<em class='qnt'> тел . \" + row[2] + \"</em>\";
 			return result;
 		}
