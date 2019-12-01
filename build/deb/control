@@ -1,0 +1,20 @@
+Package: {PACKAGE_NAME}
+Version: {VERSION}
+Maintainer: Blacklight B. <blacklight@tndproject.org>
+Architecture: all
+Section: web
+Description: Комплексная торговая система на базе веб-интерфейса
+ Multimag - это свободная система комплексного учёта торговли,
+ основанная на веб интерфейсе. Отличительной особенностью является
+ единый интерфейс для интернет-торговли (интернет-магазин) и
+ прямых (розничный магазин) продаж. Имеет функции складского,
+ банковского и кассового учёта с возможностью печати сопутствующих
+ документов. Написана на PHP с использованием базы данных MySQL.
+ Отличительной особенностью является автоматическое поддержание
+ витрины интерент-магазина в актуальном состоянии при ведении
+ прямых продаж.
+Depends: libapache2-mod-php (>= 5.4.4), php-cli, php-gd, php-mysql, php-xml, php-curl, php-pear
+Recommends: default-mysql-client, default-mysql-server, zip, p7zip-full, fonts-dejavu, multimag-archive-keyring, opus-tools
+Origin: http://multimag.tndproject.org
+Installed-size: {PACKAGE_SIZE}
+Priority: optional
