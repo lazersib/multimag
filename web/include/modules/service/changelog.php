@@ -20,8 +20,9 @@ namespace modules\service;
 
 /// Модуль вывода списка изменений
 class changelog extends \IModule {
+    private $xml;
 
-    protected $logdata = array();
+    protected $logData = array();
 
     public function __construct() {
         parent::__construct();  
@@ -58,18 +59,20 @@ class changelog extends \IModule {
                     }
                 }
             }
-            $this->logdata[$rev] = $line;
+            $this->logData[$rev] = $line;
         }        
     }
     
-    public function getLastChanges($count = 5) {
-        $logdata = $this->logdata;
+    public function getLastChanges($count = 10) {
+        $logdata = $this->logData;
         $ret = '';
+        $lastmsg = '';
         while($count>0 && count($logdata)>0) {
             $item = array_pop($logdata);
-            if($item['msg']=='') {
+            if($item['msg']=='' || $item['msg'] === $lastmsg || strpos($item['msg'], 'Merge ')===0) {
                 continue;
             }
+            $lastmsg = $item['msg'];
             $ret .= "<p><b>".date("Y-m-d", $item['date']).", ".$item['author'].':</b><br>';
             $ret .= str_replace("\n", "<br>", $item['msg']);
             $ret .= "</p>";

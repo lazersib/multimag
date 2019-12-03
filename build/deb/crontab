@@ -1,0 +1,11 @@
+# Multimag crontab
+01 1	* * *	root	/usr/share/{PACKAGE_NAME}/cli/backup.php
+01 0	* * *	root	/usr/share/{PACKAGE_NAME}/cli/daily.php
+58 *	* * *	root	/usr/share/{PACKAGE_NAME}/cli/hourly.php
+03 0	* * *	root	/usr/share/{PACKAGE_NAME}/cli/ps_parser.php
+* *     1 * *   root	/usr/share/{PACKAGE_NAME}/cli/week.php
+01 21	* * *	root	/usr/share/{PACKAGE_NAME}/cli/db_optimize.php
+55 21	* * *	root	/usr/share/{PACKAGE_NAME}/cli/dolg_info.php
+10 *	* * * 	root	/usr/share/{PACKAGE_NAME}/cli/price_an.php
+*/3 *	* * * 	root	/usr/share/{PACKAGE_NAME}/cli/inet_backup.php
+*/2 *	* * * 	root	/usr/share/{PACKAGE_NAME}/cli/async.php

@@ -1,0 +1,4 @@
+/etc/{PACKAGE_NAME}/config_all.php
+/etc/{PACKAGE_NAME}/config_cli.php
+/etc/{PACKAGE_NAME}/config_site.php
+/etc/cron.d/{PACKAGE_NAME}

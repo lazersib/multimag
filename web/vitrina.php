@@ -399,13 +399,12 @@ protected function TopGroup() {
         if ($lim == 0) {
             $lim = 100;
         }
-
+	    $this->OrderAndViewBar($group, $page, $order, $view);
         if ($res->num_rows) {
             if ($page < 1 || $lim * ($page - 1) > $res->num_rows) {
                 header("Location: " . (empty($_SERVER['HTTPS']) ? "http" : "https") . "://" . $_SERVER['HTTP_HOST'] . html_in($this->GetGroupLink($group)), false, 301);
                 exit();
             }
-            $this->OrderAndViewBar($group, $page, $order, $view);
 
             $this->PageBar($group, $res->num_rows, $lim, $page);
             if (($lim < $res->num_rows) && $page) {
@@ -428,6 +427,8 @@ protected function TopGroup() {
         elseif (isset($page) && $page != 1) {
             header("Location: " . (empty($_SERVER['HTTPS']) ? "http" : "https") . "://" . $_SERVER['HTTP_HOST'] . html_in($this->GetGroupLink($group)), false, 301);
             exit();
+        } else {
+	        $tmpl->addContent("<h2 style='text-align: center'>Нет подходящих товаров</h2>");
         }
     }
 
@@ -1369,13 +1370,15 @@ public function getProductAutoDescription($product_data) {
                 $item['img_uri'] = null;
                 $img = '';
             }
+	        $product_data = $this->getProductData($item['id']);
+	        $product_name_html = html_out($product_data['group_printname'] . ' ' . $product_data['name']);
             $img = isset($item['img_uri']) ? "<img_src='{$item['img_uri']}' alt='" . html_out($item['name']) . "'>" : '';
             $tmpl->addContent("<tr id='korz_ajax_item_{$item['pos_id']}'{$lock_mark}>
                 <td class='right'>$i <span id='korz_item_clear_url_{$item['pos_id']}'>
                     <a href='/vitrina.php?mode=korz_del&p={$item['pos_id']}' onClick='korz_item_clear({$item['pos_id']}); return false;'>
                     <img src='/img/i_del.png' alt='Убрать'></a></span></td>
                 <td>$img</td>
-                <td><a href='/vitrina.php?mode=product&amp;p={$item['pos_id']}'>" . html_out($item['name']) . "</a></td>
+                <td><a href='/vitrina.php?mode=product&amp;p={$item['pos_id']}'>" . $product_name_html . "</a></td>
                 <td class='right'{$gray_price}>$price_p</td>
                 <td class='right'><span class='sum'>$sum_p</span></td>
                 <td><input type='number' name='cnt{$item['pos_id']}' value='{$item['cnt']}' class='mini'></td>
@@ -1769,7 +1772,7 @@ protected function BuyAuthForm() {
 
     /// Заключительная форма оформления покупки
     protected function BuyMakeForm() {
-        global $tmpl;
+        global $tmpl, $db;
         if (@$_SESSION['uid']) {
             $up = getUserProfile($_SESSION['uid']);
             $str = 'Товар будет зарезервирован для Вас на 3 рабочих дня.';
@@ -1839,12 +1842,68 @@ protected function BuyAuthForm() {
             }
         }
 
-        $tmpl->addContent("
-	Другая информация:<br>
-	<textarea name='dop' rows='5' cols='80'>" . html_out(@$up['dop']['dop_info']) . "</textarea><br>
-	<button type='submit'>Оформить заказ</button>
-	</div>
-	</form>");
+        $tmpl->addContent("Другая информация:<br><textarea name='dop' rows='5' cols='80'>" . html_out(@$up['dop']['dop_info']) . "</textarea><br>");
+
+	    if($this->getBasket()) {
+	    	$basket = $this->getBasket();
+		    $tmpl->addContent('<br>
+				<table class="list">
+					<tbody>
+						<tr class="title">
+							<th width="60%">Наименование</th>
+							<th width="15%">Цена, руб.</th>
+							<th width="10%">Количество</th>
+							<th width="15%">Сумма, руб.</th>
+						</tr>
+			');
+		    foreach ($basket['items'] as $item) {
+			    $product_data = $this->getProductData($item['id']);
+			    $product_name_html = html_out($product_data['group_printname'] . ' ' . $product_data['name']);
+			    $tmpl->addContent("
+			        <tr>
+						<td style='text-align: left'><a href='/vitrina.php?mode=product&amp;p={$item['pos_id']}'>{$product_name_html}</a></td>
+						<td>".number_format($item['price'], 2, ',', ' ')."</td>
+						<td>{$item['cnt']}</td>
+						<td style='text-align: right'>".number_format($item['sum'], 2, ',', ' ')."</td>
+					</tr>
+			    ");
+		    }
+
+		    $tmpl->addContent("
+		        <tr>
+					<td colspan=\"3\">Сумма заказа:</td>
+					<td style='text-align: right' colspan=\"1\">" . number_format($basket['sum'], 2, ',', ' ') . "</td>
+				</tr>
+		    ");
+
+		    if(!empty($_SESSION['basket']['delivery_region']) && !empty($_SESSION['basket']['delivery_type'])) {
+			    $delivery = $_SESSION['basket']['delivery_type'];
+			    $delivery_region = $_SESSION['basket']['delivery_region'];
+			    $res = $db->query("SELECT `name` FROM `delivery_types` WHERE `id`='$delivery'");
+			    list($d_service_name) = $res->fetch_row();
+			    $res = $db->query("SELECT `price`, `name` FROM `delivery_regions` WHERE `id`='$delivery_region'");
+			    list($d_price, $d_region_name) = $res->fetch_row();
+			    $tmpl->addContent("
+			        <tr>
+						<td colspan=\"3\">$d_service_name ($d_region_name):</td>
+						<td style='text-align: right' colspan=\"1\">".number_format($d_price, 2, ',', ' ')."</td>
+					</tr>
+		         ");
+		    }
+
+		    $tmpl->addContent('
+						<tr class="total">
+							<td colspan="3">Итого:</td>
+							<td style=\'text-align: right\' colspan="1">
+							' . number_format(($basket['sum'] + (isset($d_price) ? $d_price : 0)), 2, ',', ' ') . ' 
+							</td>
+						</tr>
+					</tbody>
+				</table><br>
+			');
+	    }
+
+	    $tmpl->addContent("<button type='submit'>Оформить заказ</button></div></form>");
     }
 
 /// Сделать покупку
