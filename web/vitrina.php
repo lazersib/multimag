@@ -312,7 +312,9 @@ protected function TopGroup() {
         } else {
             $this->GroupList_ImageStyle($group);
         }
-	    Badges::productTypeFilter($group);
+        if($CONFIG['site']['use_product_type_filter']) {
+	        Badges::productTypeFilter($group);
+        }
 	    $this->ProductList($group, $page);
     }
 
