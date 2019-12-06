@@ -168,6 +168,7 @@ jQuery.autocomplete = function(input, options) {
 	};
 
 	function selectItem(li) {
+		if (options.formatSelectedItem) li = options.formatSelectedItem(li);
 		if (!li) {
 			li = document.createElement("li");
 			li.extra = [];

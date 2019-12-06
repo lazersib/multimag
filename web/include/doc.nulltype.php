@@ -1896,6 +1896,11 @@ class doc_Nulltype extends \document {
 				matchContains:1,
 				cacheLength:10,
 				maxItemsToShow:15,
+				formatSelectedItem: function(li) { 
+					if(li.querySelector('em').dataset.name)
+						li.selectValue = li.querySelector('em').dataset.name;
+					return li; 
+				},
 				formatItem:agliFormat,
 				onItemSelect:agselectItem,
 				extraParams:{'l':'agent','mode':'srv','opt':'ac'}
@@ -1905,7 +1910,7 @@ class doc_Nulltype extends \document {
 		function agliFormat (row, i, num) {
 			var result = 
 				row[0] + 
-				\"<em class='qnt'> тел . \" + row[2] + \"</em>\";
+				\"<em class='qnt' data-name = '\"+row[4]+\"'> тел . \" + row[2] + \"</em>\";
 			return result;
 		}
 
