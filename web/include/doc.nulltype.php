@@ -1877,6 +1877,7 @@ class doc_Nulltype extends \document {
 		<div style='float: right; $col' id='agent_balance_info' onclick=\"ShowPopupWin('/docs.php?l=inf&mode=srv&opt=dolgi&agent={$this->doc_data['agent']}'); return false;\">$balance / $bonus</div>
 		Агент:
 		<a href='/docs.php?l=agent&mode=srv&opt=ep&pos={$this->doc_data['agent']}' id='ag_edit_link' target='_blank'><img src='/img/i_edit.png'></a>
+		<a href='/docj_new.php?agent_id={$this->doc_data['agent']}' id='ag_history_link' target='_blank'><img style='width: 15px' src='/img/i_user.png'></a>
 		<a href='/docs.php?l=agent&mode=srv&opt=ep' target='_blank'><img src='/img/i_add.png'></a>
 		</div>
 		<input type='hidden' name='agent' id='agent_id' value='{$this->doc_data['agent']}'>
@@ -1920,6 +1921,7 @@ class doc_Nulltype extends \document {
 			else var sValue = li.selectValue;
 			document.getElementById('agent_id').value=sValue;
 			document.getElementById('ag_edit_link').href='/docs.php?l=agent&mode=srv&opt=ep&pos='+sValue;
+			document.getElementById('ag_history_link').href='/docj_new.php?agent_id='+sValue;
 			var firm_id_elem = document.getElementById('firm_id');
                         var firm_id = 0;
                         if(firm_id_elem) {
